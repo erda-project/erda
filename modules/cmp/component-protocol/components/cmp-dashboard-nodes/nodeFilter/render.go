@@ -16,8 +16,6 @@ package nodeFilter
 
 import (
 	"context"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
@@ -26,79 +24,99 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (i *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-	i.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	i.SDK = sdk
+	nf.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	nf.SDK = sdk
+	nf.Props = nf.GetFilterProps()
+	nf.Operations = getFilterOperation()
 	var nodes []data.Object
 	// Get all nodes by cluster name
 	nodeReq := &apistructs.SteveRequest{}
 	nodeReq.OrgID = sdk.Identity.OrgID
 	nodeReq.UserID = sdk.Identity.UserID
 	nodeReq.Type = apistructs.K8SNode
-	if event.Operation == cptype.InitializeOperation {
-		if sdk.InParams["clusterName"] != nil {
-			nodeReq.ClusterName = sdk.InParams["clusterName"].(string)
-			i.ClusterName = nodeReq.ClusterName
-		} else {
-			return common.ClusterNotFoundErr
-		}
+	if sdk.InParams["clusterName"] != nil {
+		nodeReq.ClusterName = sdk.InParams["clusterName"].(string)
 	} else {
-		nodeReq.ClusterName = i.ClusterName
+		return common.ClusterNotFoundErr
 	}
-	resp, err := i.CtxBdl.ListSteveResource(nodeReq)
+
+	resp, err := nf.CtxBdl.ListSteveResource(nodeReq)
 	if err != nil {
 		return err
 	}
 	nodeList := resp.Slice("data")
 	switch event.Operation {
-	case cptype.InitializeOperation:
-		nodes = nodeList
-		break
-	case common.CMPDashboardFilterOperationKey:
-		if err := common.Transfer(c.State, &i.State); err != nil {
+	case common.CMPDashboardFilterOperationKey, common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey, common.CMPDashboardDeleteNode:
+		if err := common.Transfer(c.State, &nf.State); err != nil {
 			return err
 		}
-		labels := make([]string, 0)
-		nodeNameFilter := ""
-		if len(i.State.Values.Keys) == 0 {
-			nodes = nodeList
-		} else {
-			for k, v := range i.State.Values.Keys {
-				if k != "Q" {
-					labels = append(labels, v...)
-				} else {
-					nodeNameFilter = v[0]
-				}
+		nodes = DoFilter(nodeList, nf.State.Values)
+	default:
+		nodes = nodeList
+	}
+	nf.Operations = getFilterOperation()
+	(*gs)["nodes"] = nodes
+	return nf.SetComponentValue(c)
+}
+
+func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
+	var nodes []data.Object
+	labels := make([]string, 0)
+	nodeNameFilter := ""
+	if len(values) == 0 {
+		nodes = nodeList
+	} else {
+		for k, v := range values {
+			if k != "Q" {
+				labels = append(labels, v)
+			} else {
+				nodeNameFilter = v
 			}
-			// Filter by node name or node uid
-			for _, node := range nodeList {
-				for _, l := range labels {
-					for _, nl := range node.StringSlice("metadata", "labels") {
-						if strings.Contains(nl, l) && strings.Contains(node.String("metadata", "name"), nodeNameFilter) || strings.Contains(node.String("id"), nodeNameFilter) {
-							nodes = append(nodes, node)
-						}
+		}
+		// Filter by node name
+		for _, node := range nodeList {
+		NEXT:
+			for _, l := range labels {
+				for nl := range node.Map("metadata", "labels") {
+					if strings.Contains(nl, l) && strings.Contains(node.String("metadata", "name"), nodeNameFilter) || strings.Contains(node.String("id"), nodeNameFilter) {
+						nodes = append(nodes, node)
+						break NEXT
 					}
 				}
 			}
 		}
 	}
-	(*gs)["nodes"] = nodes
-	return i.SetComponentValue(c)
+	return nodes
 }
 
-// SetComponentValue mapping CpuInfoTable properties to Component
-func (i *NodeFilter) SetComponentValue(c *cptype.Component) error {
-	var (
-		Ops map[string]interface{}
-	)
+func getFilterOperation() map[string]interface{} {
+	ops := filter.Operation{Key: "filter", Reload: true}
+	return map[string]interface{}{"filter": ops}
+}
 
-	c.Operations = Ops
-	c.Props = i.GetFilterProps()
+// SetComponentValue mapping properties to Component
+func (nf *NodeFilter) SetComponentValue(c *cptype.Component) error {
+	var (
+		err error
+	)
+	if err = common.Transfer(nf.State, &c.State); err != nil {
+		return err
+	}
+	if err = common.Transfer(nf.Props, &c.Props); err != nil {
+		return err
+	}
+	if err = common.Transfer(nf.Operations, &c.Operations); err != nil {
+		return err
+	}
 	return nil
 }
 

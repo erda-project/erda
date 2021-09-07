@@ -15,22 +15,18 @@
 package nodeStatus
 
 import (
-	"context"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type NodeStatus struct {
-	CtxBdl *bundle.Bundle
 	base.DefaultProvider
 	SDK   *cptype.SDK
-	Ctx   context.Context
 	Type  string
 	Props Props
 }
 
 type Props struct {
-	Text   string
-	Status string
+	Text   string `json:"text"`
+	Status string `json:"status"`
 }

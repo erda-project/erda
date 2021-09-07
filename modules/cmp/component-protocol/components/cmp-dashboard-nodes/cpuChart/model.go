@@ -16,10 +16,8 @@ package cpuChart
 
 import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 )
 
 type CpuChart struct {
 	chart.Chart
-	filter.State
 }

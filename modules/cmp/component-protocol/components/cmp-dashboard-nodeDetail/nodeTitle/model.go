@@ -16,13 +16,12 @@ package nodeTitle
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type NodeTitle struct {
-	CtxBdl *bundle.Bundle
 	base.DefaultProvider
 	SDK   *cptype.SDK
 	Ctx   context.Context
@@ -31,5 +30,5 @@ type NodeTitle struct {
 }
 
 type Props struct {
-	Title string
+	Title string `json:"title,omitempty"`
 }

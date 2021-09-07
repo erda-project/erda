@@ -22,17 +22,18 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (c2 Charts) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (chart Charts) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	chart.Props = Props{
+		ContentSetting: "between",
+		SpaceSize:      "big",
+	}
+	c.Props = chart.Props
 	return nil
 }
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "charts", func() servicehub.Provider {
 		return &Charts{
 			Type: "RowContainer",
-			Props: Props{
-				ContentSetting: "between",
-				SpaceSize:      "big",
-			},
 		}
 	})
 }

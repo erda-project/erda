@@ -16,37 +16,19 @@ package tableTabs
 
 import (
 	"context"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	common "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
-	"github.com/sirupsen/logrus"
-)
-
-var (
-	ops = map[string]interface{}{
-		"onChange": Operation{
-			Key:      "changeTab",
-			Reload:   true,
-			FillMeta: "activeKey",
-		},
-	}
-	state = State{
-		ActiveKey: CPU_TAB,
-	}
 )
 
 func (t *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	// import components data
-	if err := common.Transfer(c.State, &t.State); err != nil {
-		logrus.Errorf("import components failed, err:%v", err)
-		return err
-	}
 	t.SDK = cputil.SDK(ctx)
-	t.Operations = ops
-	(*gs)["activeKey"] = t.State.ActiveKey
 	t.Props = Props{[]MenuPair{
 		{
 			Key:  CPU_TAB,
@@ -65,11 +47,27 @@ func (t *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Sc
 	switch event.Operation {
 	case cptype.InitializeOperation:
 		t.State.ActiveKey = CPU_TAB
+	case common.CMPDashboardTableTabs:
+		m1 := event.OperationData["meta"].(map[string]interface{})
+		m2 := m1["activeKey"].(map[string]interface{})
+		t.State.ActiveKey = m2["activeKey"].(string)
 	default:
 		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 	}
 	(*gs)["activeKey"] = t.State.ActiveKey
+	t.getOperations()
+
 	return t.RenderProtocol(c)
+}
+
+func (t *TableTabs) getOperations() {
+	t.Operations = map[string]interface{}{"onChange": Operation{
+		Key:      "changeTab",
+		Reload:   true,
+		FillMeta: "activeKey",
+		Meta:     Meta{},
+	},
+	}
 }
 
 func (t *TableTabs) RenderProtocol(c *cptype.Component) error {

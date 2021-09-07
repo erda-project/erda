@@ -16,6 +16,7 @@ package common
 
 import (
 	"errors"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 

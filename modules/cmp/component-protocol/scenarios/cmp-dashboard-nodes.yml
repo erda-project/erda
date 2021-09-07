@@ -51,11 +51,6 @@ rendering:
     - name: page
     - name: tableTabs
     - name: nodeFilter
-      state:
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-        - name: "namespace"
-          value: "{{ __InParams__.namespace }}"
     - name: cpuTable
     - name: podTable
     - name: memTable
@@ -66,21 +61,37 @@ rendering:
     - name: tableTabsContainer
     - name: addLabelModal
 
-  filter:
-    - name: page
-    - name: tab
+  tableTabs:
     - name: nodeFilter
-      state:
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-        - name: "namespace"
-          value: "{{ __InParams__.namespace }}"
     - name: cpuTable
     - name: podTable
     - name: memTable
-    - name: tableTabsContainer
     - name: addLabelModal
+
+  nodeFilter:
+    - state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: cpuTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: podTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: memTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
     - name: charts
     - name: cpuChart
     - name: memChart
     - name: podChart
+

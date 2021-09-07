@@ -15,9 +15,10 @@
 package label
 
 type Label struct {
-	RenderType string  `json:"type,omitempty"`
-	Name       string  `json:"name,omitempty"`
-	Value      string  `json:"value,omitempty"`
-	Group      string  `json:"group,omitempty"`
-	Options    []Label `json:"options,omitempty"`
+	RenderType string `json:"type,omitempty"`
+	Name       string `json:"name,omitempty"`
+	// change json tag to label
+	Value   string  `json:"label,omitempty"`
+	Group   string  `json:"group,omitempty"`
+	Options []Label `json:"options,omitempty"`
 }

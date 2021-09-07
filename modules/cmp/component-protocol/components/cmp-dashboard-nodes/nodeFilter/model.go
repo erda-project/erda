@@ -20,5 +20,5 @@ import (
 
 type NodeFilter struct {
 	filter.Filter
-	ClusterName string
+	clusterName string
 }

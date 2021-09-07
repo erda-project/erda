@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 )
 
 // Transfer transfer a to b with json, kind of b must be pointer
@@ -73,6 +72,9 @@ func ConvertToMap(obj interface{}) (map[string]interface{}, error) {
 }
 
 func GetPercent(a, b float64) string {
+	if b == 0 {
+		return "0"
+	}
 	return fmt.Sprintf("%.1f", a*100/b)
 }
 func GetInt64Len(a int64) int {
@@ -100,43 +102,4 @@ func ResetNumberBase(a, b float64) (float64, float64) {
 		b /= 10
 	}
 	return a, b
-}
-
-// SortByString sort by string value
-func SortByString(data []interface{}, sortColumn string, asc bool) {
-	sort.Slice(data, func(i, j int) bool {
-		a := reflect.ValueOf(data[i])
-		b := reflect.ValueOf(data[j])
-		if asc {
-			return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
-		}
-		return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
-
-	})
-}
-
-// SortByNode sort by node struct
-func SortByNode(data []interface{}, sortColumn string, asc bool) {
-	sort.Slice(data, func(i, j int) bool {
-		a := reflect.ValueOf(data[i])
-		b := reflect.ValueOf(data[j])
-		if asc {
-			return a.FieldByName(sortColumn).FieldByName("Value").String() > b.FieldByName(sortColumn).FieldByName("Value").String()
-		}
-		return a.FieldByName(sortColumn).FieldByName("Value").String() < b.FieldByName(sortColumn).FieldByName("Value").String()
-	})
-}
-
-// SortByDistribution sort by percent
-func SortByDistribution(data []interface{}, sortColumn string, asc bool) {
-	sort.Slice(data, func(i, j int) bool {
-		a := reflect.ValueOf(data[i])
-		b := reflect.ValueOf(data[j])
-		if asc {
-			return a.FieldByName(sortColumn).FieldByName("Value").FieldByName("Percent").Float() >
-				b.FieldByName(sortColumn).FieldByName("Value").FieldByName("Percent").Float()
-		}
-		return a.FieldByName(sortColumn).FieldByName("Value").FieldByName("Percent").Float() <
-			b.FieldByName(sortColumn).FieldByName("Value").FieldByName("Percent").Float()
-	})
 }

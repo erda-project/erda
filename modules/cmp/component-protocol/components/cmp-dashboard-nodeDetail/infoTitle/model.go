@@ -16,6 +16,7 @@ package infoTitle
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -31,6 +32,6 @@ type InfoTitle struct {
 }
 
 type Props struct {
-	Title string
-	Size  string
+	Title string `json:"title"`
+	Size  string `json:"size"`
 }

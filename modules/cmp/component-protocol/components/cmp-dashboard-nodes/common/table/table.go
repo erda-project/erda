@@ -18,22 +18,28 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"reflect"
+	"sort"
+	"strings"
 
+	"github.com/cznic/mathutil"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/common/table"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Table struct {
-	TableInterface
+	TableComponent GetRowItem
 	base.DefaultProvider
 	CtxBdl         *bundle.Bundle
 	SDK            *cptype.SDK
@@ -45,13 +51,23 @@ type Table struct {
 	State          State                     `json:"state"`
 }
 
-type TableInterface interface {
-	SetData(object data.Object, resName v1.ResourceName) error
-}
+//type TableInterface interface {
+//	SetData(object data.Object, resName v1.ResourceName) error
+//}
+type TableType string
+
+const (
+	DefaultPageSize = 10
+	DefaultPageNo   = 1
+
+	Pod    TableType = "pod"
+	Memory TableType = "memory"
+	Cpu    TableType = "cpu"
+)
 
 type Columns struct {
-	Title     string `json:"title"`
-	DataIndex string `json:"dataIndex"`
+	Title     string `json:"title,omitempty"`
+	DataIndex string `json:"dataIndex,omitempty"`
 	Width     int    `json:"width,omitempty"`
 	Sortable  bool   `json:"sorter,omitempty"`
 	Fixed     string `json:"fixed,omitempty"`
@@ -61,7 +77,7 @@ type Meta struct {
 	Id       int    `json:"id,omitempty"`
 	PageSize int    `json:"pageSize,omitempty"`
 	PageNo   int    `json:"pageNo,omitempty"`
-	Sorter   Sorter `json:"sorter"`
+	Sorter   Sorter `json:"sorter,omitempty"`
 }
 
 type Sorter struct {
@@ -74,88 +90,91 @@ type Scroll struct {
 }
 
 type RowItem struct {
-	ID      string             `json:"id"`
-	Status  common.SteveStatus `json:"status"`
-	Node    Node               `json:"node"`
-	Role    string             `json:"role"`
-	Version string             `json:"version"`
+	ID      string      `json:"id,omitempty"`
+	IP      string      `json:"IP,omitempty"`
+	Status  SteveStatus `json:"Status,omitempty"`
+	Node    Node        `json:"Node,omitempty"`
+	Role    string      `json:"Role,omitempty"`
+	Version string      `json:"Version,omitempty"`
 	//
-	Distribution Distribution `json:"distribution"`
-	Usage        Distribution `json:"usage"`
-	UsageRate    Distribution `json:"usageRate"`
-	Operate      Operate      `json:"operate"`
-	BatchOptions []string     `json:"batchOptions"`
+	Distribution Distribution `json:"Distribution,omitempty"`
+	Usage        Distribution `json:"Usage,omitempty"`
+	UsageRate    Distribution `json:"UsageRate,omitempty"`
+	Operate      Operate      `json:"Operate,omitempty"`
+	BatchOptions []string     `json:"BatchOptions,omitempty"`
 }
 
 type Operate struct {
-	RenderType string               `json:"renderType"`
-	Operations map[string]Operation `json:"operations"`
+	RenderType string               `json:"renderType,omitempty"`
+	Operations map[string]Operation `json:"operations,omitempty"`
 }
 
 type Operation struct {
-	Key           string      `json:"key"`
+	Key           string      `json:"key,omitempty"`
 	Reload        bool        `json:"reload"`
 	FillMeta      string      `json:"fillMeta,omitempty"`
 	Target        string      `json:"target,omitempty"`
 	Meta          interface{} `json:"meta,omitempty"`
 	ClickableKeys interface{} `json:"clickableKeys,omitempty"`
-	Text          string      `json:"text"`
-	Command       Command     `json:"command,omitempty"`
+	Text          string      `json:"text,omitempty"`
+	Command       Command     `json:"command"`
 }
 type BatchOperation struct {
-	Key       string   `json:"key"`
-	Text      string   `json:"text"`
-	Reload    bool     `json:"reload"`
-	ShowIndex []string `json:"showIndex"`
+	Key       string   `json:"key,omitempty"`
+	Text      string   `json:"text,omitempty"`
+	Reload    bool     `json:"reload,omitempty"`
+	ShowIndex []string `json:"showIndex,omitempty"`
 }
 type Command struct {
-	Key     string       `json:"key"`
-	Command CommandState `json:"state"`
-	Target  string       `json:"target"`
-	JumpOut bool         `json:"jumpOut"`
+	Key     string       `json:"key,omitempty"`
+	Command CommandState `json:"state,omitempty"`
+	Target  string       `json:"target,omitempty"`
+	JumpOut bool         `json:"jumpOut,omitempty"`
 }
 
 type CommandState struct {
-	Query    QueryData `json:"query"`
-	Visible  bool      `json:"visible"`
-	FormData FormData  `json:"formData"`
+	Params   Params   `json:"params,omitempty"`
+	Visible  bool     `json:"visible,omitempty"`
+	FormData FormData `json:"formData,omitempty"`
 }
-type QueryData struct {
-	NodeId string `json:"nodeId"`
+type Params struct {
+	NodeId string `json:"nodeId,omitempty"`
 }
 
 type FormData struct {
-	RecordId string `json:"recordId"`
+	RecordId string `json:"recordId,omitempty"`
 }
 
 type Node struct {
-	RenderType string        `json:"renderType"`
-	Renders    []interface{} `json:"renders"`
+	RenderType string        `json:"renderType,omitempty"`
+	Renders    []interface{} `json:"renders,omitempty"`
 }
 
 type NodeLink struct {
-	RenderType string               `json:"renderType"`
-	Value      string               `json:"value"`
-	Operation  map[string]Operation `json:"operation"`
+	RenderType string               `json:"renderType,omitempty"`
+	Value      string               `json:"value,omitempty"`
+	Operations map[string]Operation `json:"operations,omitempty"`
 	Reload     bool                 `json:"reload"`
 }
 
 type NodeTags struct {
-	RenderType string               `json:"renderType"`
-	Value      []label.Label        `json:"value"`
-	Operation  map[string]Operation `json:"operation"`
+	RenderType string               `json:"renderType,omitempty"`
+	Value      []label.Label        `json:"value,omitempty"`
+	Operation  map[string]Operation `json:"operation,omitempty"`
 }
 
 type Labels struct {
-	RenderType string               `json:"renderType"`
-	Value      []label.Label        `json:"value"`
-	Operation  map[string]Operation `json:"operation"`
+	RenderType string               `json:"renderType,omitempty"`
+	Value      []label.Label        `json:"value,omitempty"`
+	Operations map[string]Operation `json:"operations,omitempty"`
 }
 
 type Distribution struct {
-	RenderType string            `json:"renderType"`
-	Value      DistributionValue `json:"value"`
-	Status     string
+	RenderType string `json:"renderType,omitempty"`
+	//Value      DistributionValue `json:"value,omitempty"`
+	Value  string `json:"value"`
+	Status string `json:"status,omitempty"`
+	Tip    string `json:"tip,omitempty"`
 }
 
 type DistributionValue struct {
@@ -168,36 +187,55 @@ type LabelsValue struct {
 	Group string `json:"group"`
 }
 
-func (t *Table) GetUsageValue(metricsData apistructs.MetricsData) *DistributionValue {
-	return &DistributionValue{
+type GetRowItem interface {
+	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
+}
+
+func (t *Table) GetUsageValue(metricsData apistructs.MetricsData) DistributionValue {
+	return DistributionValue{
 		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Used, metricsData.Total),
 		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
 	}
 }
 
-func (t *Table) GetItemStatus(node data.Object) (*common.SteveStatus, error) {
+func GetDistributionStatus(str string) string {
+	d := cast.ToFloat64(str)
+	if d >= 100 {
+		return "error"
+	} else if d >= 80 {
+		return "warning"
+	} else {
+		return "success"
+	}
+}
+
+func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	if node == nil {
 		return nil, common.NodeNotFoundErr
 	}
-	ss := &common.SteveStatus{
+	ss := &SteveStatus{
 		RenderType: "textWithBadge",
 	}
 	ss.Value = t.SDK.I18n(node.StringSlice("metadata", "fields")[1])
-	ss.Status = node.StringSlice("metadata", "fields")[1]
+	if node.StringSlice("metadata", "fields")[1] == "Ready" {
+		ss.Status = "success"
+	} else {
+		ss.Status = "error"
+	}
 	return ss, nil
 }
 
-func (t *Table) GetDistributionValue(metricsData apistructs.MetricsData) *DistributionValue {
-	return &DistributionValue{
+func (t *Table) GetDistributionValue(metricsData apistructs.MetricsData) DistributionValue {
+	return DistributionValue{
 		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Request, metricsData.Total),
 		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
 	}
 }
 
-func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData) *DistributionValue {
-	return &DistributionValue{
-		Text:    fmt.Sprintf("%d/%d", metricsData.Used, metricsData.Request),
-		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
+func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData) DistributionValue {
+	return DistributionValue{
+		Text:    fmt.Sprintf("%f/%f", metricsData.Used, metricsData.Request),
+		Percent: common.GetPercent(metricsData.Used, metricsData.Request),
 	}
 }
 
@@ -209,7 +247,111 @@ func (t *Table) SetComponentValue(c *cptype.Component) error {
 	if err = common.Transfer(t.State, &c.State); err != nil {
 		return err
 	}
+	if err = common.Transfer(t.Props, &c.Props); err != nil {
+		return err
+	}
+	if err = common.Transfer(t.Operations, &c.Operations); err != nil {
+		return err
+	}
+	//if err = common.Transfer(t.BatchOperation); err != nil {
+	//	return err
+	//}
 	return nil
+}
+
+func (t *Table) GetBatchOperation() {
+	t.BatchOperation = map[string]BatchOperation{
+		"delete":   {Key: "delete", Text: t.SDK.I18n("delete"), Reload: true, ShowIndex: nil},
+		"freeze":   {Key: "freeze", Text: t.SDK.I18n("freeze"), Reload: true, ShowIndex: nil},
+		"unfreeze": {Key: "unfreeze", Text: t.SDK.I18n("unfreeze"), Reload: true, ShowIndex: nil},
+	}
+}
+
+func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object) error {
+	var (
+		err        error
+		sortColumn string
+		asc        bool
+		items      []RowItem
+	)
+	if t.State.PageNo == 0 {
+		t.State.PageNo = DefaultPageNo
+	}
+	if t.State.PageSize == 0 {
+		t.State.PageSize = DefaultPageSize
+	}
+	if t.State.Sorter.Field != "" {
+		sortColumn = t.State.Sorter.Field
+		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
+	}
+
+	if items, err = t.SetData(nodes, tableType); err != nil {
+		return err
+	}
+	if sortColumn != "" {
+		refCol := reflect.ValueOf(RowItem{}).FieldByName(sortColumn)
+		switch refCol.Type() {
+		case reflect.TypeOf(""):
+			SortByString(items, sortColumn, asc)
+		case reflect.TypeOf(Node{}):
+			SortByNode(items, sortColumn, asc)
+		case reflect.TypeOf(Distribution{}):
+			SortByDistribution(items, sortColumn, asc)
+		case reflect.TypeOf(SteveStatus{}):
+			SortByStatus(items, sortColumn, asc)
+		default:
+			logrus.Errorf("sort by column %s not found", sortColumn)
+			return common.TypeNotAvailableErr
+		}
+	}
+
+	t.State.Total = len(nodes)
+	start := (t.State.PageNo - 1) * t.State.PageSize
+	end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Total)
+
+	component.Data = map[string]interface{}{"list": items[start:end]}
+	return nil
+}
+
+// SetData assemble rowItem of table
+func (t *Table) SetData(nodes []data.Object, tableType TableType) ([]RowItem, error) {
+	var (
+		list []RowItem
+		ri   *RowItem
+		err  error
+	)
+	for i := 0; i < len(nodes); i++ {
+		if ri, err = t.TableComponent.GetRowItem(nodes[i], tableType); err != nil {
+			return nil, err
+		}
+		list = append(list, *ri)
+	}
+	return list, nil
+}
+
+func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
+	var nodes []data.Object
+	if (*gs)["nodes"] == nil {
+		// Get all nodes by cluster name
+		nodeReq := &apistructs.SteveRequest{}
+		nodeReq.OrgID = t.SDK.Identity.OrgID
+		nodeReq.UserID = t.SDK.Identity.UserID
+		nodeReq.Type = apistructs.K8SNode
+		if t.SDK.InParams["clusterName"] != nil {
+			nodeReq.ClusterName = t.SDK.InParams["clusterName"].(string)
+		} else {
+			return nil, common.ClusterNotFoundErr
+		}
+		resp, err := t.CtxBdl.ListSteveResource(nodeReq)
+		if err != nil {
+			return nil, err
+		}
+		nodes = resp.Slice("data")
+		nodeFilter.DoFilter(nodes, t.State.Values)
+	} else {
+		nodes = (*gs)["nodes"].([]data.Object)
+	}
+	return nodes, nil
 }
 
 // GetOpsInfo return request meta
@@ -312,13 +454,17 @@ func (t *Table) RenderChangePageNo(ops interface{}) error {
 }
 
 func (t *Table) GetTableOperation() map[string]interface{} {
-	ops := map[string]table.Operation{
+	ops := map[string]Operation{
 		"changePageNo": {
 			Key:    "changePageNo",
 			Reload: true,
 		},
 		"changePageSize": {
 			Key:    "changePageSize",
+			Reload: true,
+		},
+		"changeSort": {
+			Key:    "changeSort",
 			Reload: true,
 		},
 	}
@@ -350,16 +496,45 @@ func (t *Table) GetTableBatchOperation() map[string]BatchOperation {
 	return ops
 }
 
-func (t *Table) GetPodLabels(labels data.Object) []label.Label {
+func (t *Table) GetNodeLabels(labels data.Object) []label.Label {
 	labelValues := make([]label.Label, 0)
 	for key, value := range labels {
 		lv := label.Label{
 			Value: fmt.Sprintf("%s=%s", key, value),
-			Group: "",
+			Group: t.GetLabelGroup(key),
 		}
 		labelValues = append(labelValues, lv)
 	}
 	return labelValues
+}
+
+func (t *Table) GetLabelGroup(label string) string {
+	ls := []string{
+		"dev", "test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
+	}
+	groups := make(map[string]string)
+	groups["dev"] = "env"
+	groups["test"] = "env"
+	groups["staging"] = "env"
+	groups["prod"] = "env"
+
+	groups["stateful"] = "service"
+	groups["stateless"] = "service"
+
+	groups["packJob"] = "packjob"
+
+	groups["cluster-service"] = "other"
+	groups["mono"] = "other"
+	groups["cordon"] = "other"
+	groups["drain"] = "other"
+	groups["platform"] = "other"
+
+	for _, l := range ls {
+		if strings.Contains(label, l) {
+			return groups[l]
+		}
+	}
+	return "custom"
 }
 
 func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
@@ -373,7 +548,7 @@ func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
 					Visible:  true,
 					FormData: FormData{RecordId: rowId},
 				},
-				Target: "addLabelModel",
+				Target: "addLabelModal",
 			},
 		},
 		"delete": {
@@ -381,8 +556,8 @@ func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
 			Reload:   false,
 			FillMeta: "label",
 			Meta: map[string]string{
-				"RecordId": rowId,
-				"abc":      "",
+				"recordId": rowId,
+				"label":    "",
 			},
 		},
 	}
@@ -396,15 +571,19 @@ func (t *Table) GetIp(node data.Object) string {
 	return ""
 }
 
-func (t *Table) GetRenders(ip string, id string, labelMap data.Object) []interface{} {
+func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
 	nl := NodeLink{
 		RenderType: "linkText",
-		Value:      ip,
-		Operation: map[string]Operation{"click": {
+		Value:      id,
+		Operations: map[string]Operation{"click": {
 			Key: "gotoNodeDetail",
 			Command: Command{
 				Key:    "goto",
-				Target: "orgRoot",
+				Target: "cmp-dashboard-nodeDetail",
+				Command: CommandState{
+					Params: Params{NodeId: id},
+				},
+				JumpOut: true,
 			},
 			Text:   t.SDK.I18n("nodeDetail"),
 			Reload: false,
@@ -414,10 +593,12 @@ func (t *Table) GetRenders(ip string, id string, labelMap data.Object) []interfa
 	}
 	nt := Labels{
 		RenderType: "tagsRow",
-		Value:      t.GetPodLabels(labelMap),
-		Operation:  t.GetLabelOperation(id),
+		Value:      t.GetNodeLabels(labelMap),
+		Operations: t.GetLabelOperation(id),
 	}
-	return []interface{}{nl, nt}
+	return []interface{}{[]interface{}{nl}, []interface{}{nt}}
+
+	//return []interface{}{nl, nt}
 }
 
 func (t *Table) GetOperate(id string) Operate {
@@ -427,13 +608,63 @@ func (t *Table) GetOperate(id string) Operate {
 			"gotoPod": {Key: "gotoPod", Command: Command{
 				Key: "goto",
 				Command: CommandState{
-					Visible: false,
-					Query:   QueryData{NodeId: id},
+					Params: Params{NodeId: id},
 				},
-				Target: "cmpClustersPods",
-			}},
+				JumpOut: true,
+				Target:  "cmp-dashboard-pods",
+			},
+				Text:   t.SDK.I18n("查看") + "pods",
+				Reload: false,
+			},
 		},
 	}
+}
+
+// SortByString sort by string value
+func SortByString(data []RowItem, sortColumn string, asc bool) {
+	sort.Slice(data, func(i, j int) bool {
+		a := reflect.ValueOf(data[i])
+		b := reflect.ValueOf(data[j])
+		if asc {
+			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
+		}
+		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
+
+	})
+}
+
+// SortByNode sort by node struct
+func SortByNode(data []RowItem, sortColumn string, asc bool) {
+	sort.Slice(data, func(i, j int) bool {
+		if asc {
+			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
+		}
+		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
+	})
+}
+
+// SortByDistribution sort by percent
+func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
+	sort.Slice(data, func(i, j int) bool {
+		a := reflect.ValueOf(data[i])
+		b := reflect.ValueOf(data[j])
+		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
+		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
+		if asc {
+			return aValue < bValue
+		}
+		return aValue > bValue
+	})
+}
+
+// SortByStatus sort by percent
+func SortByStatus(data []RowItem, sortColumn string, asc bool) {
+	sort.Slice(data, func(i, j int) bool {
+		if asc {
+			return data[i].Status.Value < data[j].Status.Value
+		}
+		return data[i].Status.Value > data[j].Status.Value
+	})
 }
 
 type State struct {
@@ -441,5 +672,12 @@ type State struct {
 	PageSize        int      `json:"pageSize,omitempty"`
 	Total           int      `json:"total,omitempty"`
 	SelectedRowKeys []string `json:"selectedRowKeys,omitempty"`
-	Sorter          Sorter   `json:"sorter"`
+	Sorter          Sorter   `json:"sorterData,omitempty"`
+	filter.Values
+}
+
+type SteveStatus struct {
+	Value      string `json:"value,omitempty"`
+	RenderType string `json:"renderType"`
+	Status     string `json:"status"`
 }

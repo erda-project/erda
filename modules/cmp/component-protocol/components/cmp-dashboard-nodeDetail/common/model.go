@@ -16,9 +16,11 @@ package common
 
 import (
 	"errors"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
 const (
@@ -124,4 +126,11 @@ var (
 type ChartDataItem struct {
 	Value float64 `json:"value"`
 	Time  int64   `json:"time"`
+}
+
+func GetStatus(s string) string {
+	if strings.ToLower(s) == "ready" {
+		return "success"
+	}
+	return "error"
 }

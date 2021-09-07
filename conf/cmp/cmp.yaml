@@ -39,6 +39,7 @@ component-protocol.components.cmp-dashboard-nodeDetail.infoTitle:
 component-protocol.components.cmp-dashboard-nodeDetail.infoDetail:
 component-protocol.components.cmp-dashboard-nodeDetail.addLabelModal:
 component-protocol.components.cmp-dashboard-nodeDetail.nodeStatus:
+component-protocol.components.cmp-dashboard-nodeDetail.nodeTitle:
 component-protocol.components.cmp-dashboard-nodeDetail.statusBadge:
 component-protocol.components.cmp-dashboard-nodeDetail.statusTitle:
 

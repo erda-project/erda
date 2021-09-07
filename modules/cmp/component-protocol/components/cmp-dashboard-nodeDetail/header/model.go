@@ -23,6 +23,6 @@ import (
 type Header struct {
 	Type   string `json:"type"`
 	CtxBdl *bundle.Bundle
-	SDK *cptype.SDK
+	SDK    *cptype.SDK
 	base.DefaultProvider
 }

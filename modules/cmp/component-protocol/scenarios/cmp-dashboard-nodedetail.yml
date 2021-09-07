@@ -3,18 +3,17 @@ scenario: cmp-dashboard-nodeDetail
 hierarchy:
   root: page
   structure:
+    header:
+      - nodeTitle
+      - nodeStatus
     page:
       - header
-      - containerTitle
-      - containerTable
-      - podInfoTitle
-      - podInfo
-      - eventTable
-      - eventTitle
+      - statusTitle
+      - statusBadge
+      - infoTitle
+      - infoDetail
+      - infoMapTable
       - addLabelModal
-    header:
-      - podTitle
-      - podStatus
 
 components:
   page:
@@ -38,8 +37,6 @@ components:
   infoMapTable:
     type: Table
 
-
-
 rendering:
   __DefaultRendering__:
     - name: page
@@ -47,14 +44,21 @@ rendering:
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
-        - name: "namespace"
-          value: "{{ __InParams__.namespace }}"
-    - name: containerTitle
-    - name: containerTable
-    - name: podInfoTitle
-    - name: podInfo
-    - name: eventTable
-    - name: eventTitle
-    - name: podTitle
-    - name: podStatus
+        - name: "nodeId"
+          value: "{{ __InParams__.nodeId }}"
+    - name: statusTitle
+    - name: nodeTitle
+    - name: statusBadge
+    - name: infoTitle
+    - name: infoDetail
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "nodeId"
+          value: "{{ __InParams__.nodeId }}"
+    - name: infoMapTable
     - name: addLabelModal
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: nodeStatus

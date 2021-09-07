@@ -20,16 +20,14 @@ import (
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
-	common "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -205,7 +203,7 @@ func getColor(percent float64) string {
 
 func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData) *DistributionValue {
 	return &DistributionValue{
-		Text:    fmt.Sprintf("%d/%d", metricsData.Used, metricsData.Request),
+		Text:    fmt.Sprintf("%f/%f", metricsData.Used, metricsData.Request),
 		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
 	}
 }

@@ -16,44 +16,63 @@ package infoDetail
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/rancher/wrangler/pkg/data"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/rancher/wrangler/pkg/data"
-	"strings"
-	"time"
 )
 
 func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	infoDetail.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	infoDetail.Ctx = ctx
 	infoDetail.SDK = cputil.SDK(ctx)
-	node := (*gs)["node"].(data.Object)
-	infoDetail.Props = infoDetail.getProps()
+	var node data.Object
+	if (*gs)["node"] == nil {
+		req := apistructs.SteveRequest{}
+		req.ClusterName = infoDetail.State.ClusterName
+		req.OrgID = infoDetail.SDK.Identity.OrgID
+		req.UserID = infoDetail.SDK.Identity.UserID
+		req.Type = apistructs.K8SNode
+		req.Name = infoDetail.State.NodeID
+		resp, err := infoDetail.CtxBdl.GetSteveResource(&req)
+		if err != nil {
+			return err
+		}
+		(*gs)["node"] = resp
+	} else {
+		node = (*gs)["node"].(data.Object)
+	}
+	infoDetail.Props = infoDetail.getProps(node)
 	infoDetail.setOperation(node.String("id"))
 	d := Data{}
-	d.Os = node.String("nodeInfo", "osImage")
-	d.Version = node.String("nodeInfo", "kubeletVersion")
+	d.Os = node.String("status", "nodeInfo", "osImage")
+	d.Version = node.String("status", "nodeInfo", "kubeletVersion")
 	d.ContainerRuntime = node.StringSlice("metadata", "fields")[9]
 	d.NodeIp = infoDetail.getIp(node)
 	d.PodNum = node.String("status", "capacity", "pods")
 	d.Tags = infoDetail.getTags(node)
-	d.Desc = infoDetail.getDesc(node)
+	d.Annotation = infoDetail.getAnnotations(node)
 	t, err := infoDetail.parseTime(node)
 	if err != nil {
 		return err
 	}
 	d.Survive = t
 	c.Props = infoDetail.Props
-	c.Data["data"] = d
+	c.Data = map[string]interface{}{"data": d}
 	return nil
 }
 
 func (infoDetail *InfoDetail) parseTime(node data.Object) (string, error) {
-	t, err := time.Parse("2006-01-02 15:04:05", node.String("metadata", "creationTimestamp"))
+	t, err := time.Parse("2006-01-02T15:04:05Z", node.String("metadata", "creationTimestamp"))
 	if err != nil {
 		return "", err
 	}
@@ -80,37 +99,61 @@ func (infoDetail *InfoDetail) getIp(node data.Object) string {
 	}
 	return ""
 }
+func GetLabelGroup(label string) string {
+	ls := []string{
+		"dev", "test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
+	}
+	groups := make(map[string]string)
+	groups["dev"] = "env"
+	groups["test"] = "env"
+	groups["staging"] = "env"
+	groups["prod"] = "env"
+
+	groups["stateful"] = "service"
+	groups["stateless"] = "service"
+
+	groups["packJob"] = "packjob"
+
+	groups["cluster-service"] = "other"
+	groups["mono"] = "other"
+	groups["cordon"] = "other"
+	groups["drain"] = "other"
+	groups["platform"] = "other"
+
+	for _, l := range ls {
+		if strings.Contains(label, l) {
+			return groups[l]
+		}
+	}
+	return "custom"
+}
 
 func (infoDetail *InfoDetail) getTags(node data.Object) []Field {
 	//groups := filter.GetGroups()
 	tag := make([]Field, 0)
-	for _, l := range node.StringSlice("metadata", "labels") {
-		ls := strings.Split(l, ":")
-		//for k, _ := range groups {
-		//	if strings.Contains(ls[0], k) {
+	for k, v := range node.Map("metadata", "labels") {
+		g := GetLabelGroup(k)
 		tag = append(tag, Field{
-			Label: ls[0],
-			//Group: k,
+			Label: fmt.Sprintf("%s:%s", k, v),
+			Group: g,
 		})
-		//}
-		//}
 	}
 	return tag
 }
 
-func (infoDetail *InfoDetail) getDesc(node data.Object) []Field {
+func (infoDetail *InfoDetail) getAnnotations(node data.Object) []Field {
 	desc := make([]Field, 0)
-	for _, l := range node.StringSlice("metadata", "annotations") {
+	for k, v := range node.Map("metadata", "annotations") {
 		desc = append(desc, Field{
-			Label: l,
+			Label: fmt.Sprintf("%s:%s", k, v),
 		})
 	}
 	return desc
 }
 
-func (infoDetail *InfoDetail) getProps() Props {
+func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 	return Props{
-		ColumnNum: 2,
+		ColumnNum: 4,
 		Fields: []Field{
 			{Label: infoDetail.SDK.I18n("survive"), ValueKey: "survive"},
 			{Label: infoDetail.SDK.I18n("nodeIp"), ValueKey: "nodeIp"},
@@ -127,7 +170,7 @@ func (infoDetail *InfoDetail) getProps() Props {
 						Target: "addLabelModal",
 						CommandState: CommandState{
 							Visible:  true,
-							FormData: FormData{RecordId: ""},
+							FormData: FormData{RecordId: node.String("id")},
 						},
 					},
 				},
@@ -136,11 +179,11 @@ func (infoDetail *InfoDetail) getProps() Props {
 					Reload:   true,
 					FillMeta: "deleteData",
 					Meta: map[string]interface{}{
-						"RecordId":   "",
+						"RecordId":   node.String("id"),
 						"DeleteData": map[string]string{"label": ""},
 					},
 				}}},
-			{Label: infoDetail.SDK.I18n("survive"), ValueKey: "createCost"},
+			{Label: infoDetail.SDK.I18n("annotation"), ValueKey: "annotation", SpaceNum: 2, RenderType: "tagsRow"},
 		},
 	}
 }

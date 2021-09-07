@@ -16,6 +16,7 @@ package infoMapTable
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -40,7 +41,7 @@ type Label struct {
 }
 
 type StyleConfig struct {
-	FrontWeight string `json:"frontWeight"`
+	FontWeight string `json:"fontWeight"`
 }
 
 type Props struct {
@@ -53,5 +54,5 @@ type Props struct {
 type Column struct {
 	DataIndex string `json:"dataIndex"`
 	Title     string `json:"title"`
-	width     int    `json:"width"`
+	Width     int    `json:"width"`
 }

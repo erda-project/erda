@@ -16,20 +16,18 @@ package statusBadge
 
 import (
 	"context"
+
+	"github.com/rancher/wrangler/pkg/data"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
-	"github.com/rancher/wrangler/pkg/data"
 )
 
 func (statusBadge *StatusBadge) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	var (
-		bars []Bar
-	)
 	statusBadge.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	statusBadge.Ctx = ctx
 	statusBadge.SDK = cputil.SDK(ctx)
@@ -39,16 +37,17 @@ func (statusBadge *StatusBadge) Render(ctx context.Context, c *cptype.Component,
 	for _, cond := range conds {
 		t := cond.String("type")
 		if t != "Ready" {
+			statuses[t] = make([]string, 2)
 			s := cond.String("status")
-			if s == "True" {
+			if s == "False" {
 				statuses[t][0] = "success"
 			} else {
-				statuses[t][0] = "failed"
+				statuses[t][0] = "error"
 			}
 			statuses[t][1] = cond.String("reason")
 		}
 	}
-	bars = make([]Bar, 0)
+	bars := make([]Bar, 0)
 	for k, v := range statuses {
 		bars = append(bars, Bar{
 			Text:   k,
@@ -57,7 +56,7 @@ func (statusBadge *StatusBadge) Render(ctx context.Context, c *cptype.Component,
 			Tip:    v[1],
 		})
 	}
-	c.Data["list"] = bars
+	c.Data = map[string]interface{}{"list": bars}
 	c.Type = statusBadge.Type
 	return nil
 }

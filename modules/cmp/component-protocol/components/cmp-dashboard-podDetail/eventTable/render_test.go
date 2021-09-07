@@ -70,10 +70,8 @@ func TestGetRange(t *testing.T) {
 func TestComponentEventTable_SetComponentValue(t *testing.T) {
 	cet := &ComponentEventTable{}
 	cet.SetComponentValue()
-	if len(cet.Props.PageSizeOptions) != 4 {
-		t.Errorf("test failed, len of .Props.PageSizeOptions is unexpected, expected 4, actual %d", len(cet.Props.PageSizeOptions))
-	}
-	if len(cet.Props.Columns) != 9 {
+
+	if len(cet.Props.Columns) != 4 {
 		t.Errorf("test failed, len of .Props.Columns is unexpected, expected 9, actual %d", len(cet.Props.Columns))
 	}
 	if cet.Operations == nil {

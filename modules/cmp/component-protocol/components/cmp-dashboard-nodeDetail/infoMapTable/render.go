@@ -16,30 +16,45 @@ package infoMapTable
 
 import (
 	"context"
+	"sort"
+
+	"github.com/rancher/wrangler/pkg/data"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/rancher/wrangler/pkg/data"
-	"strings"
 )
 
 func (infoMapTable *InfoMapTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	node := (*gs)["node"].(data.Object)
 	infoMapTable.SDK = cputil.SDK(ctx)
 	pairs := make([]Pair, 0)
-	for _, k := range node.StringSlice("nodeInfo") {
-		pair := strings.Split(k, ":")
+	mapp := node.Map("status", "nodeInfo")
+	keys := make([]string, 0)
+	for k := range mapp {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	for _, k := range keys {
 		pairs = append(pairs, Pair{
-			Value: infoMapTable.SDK.I18n(pair[0]),
 			Label: Label{
-				Value:       pair[1],
+				Value:       k,
 				RenderType:  "text",
 				StyleConfig: StyleConfig{"bold"},
 			},
+			Value: mapp[k].(string),
 		})
 	}
-	c.Data["list"] = pairs
+	infoMapTable.Props = getProps()
+	c.Data = map[string]interface{}{"list": pairs}
+	err := common.Transfer(infoMapTable.Props, &c.Props)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -51,12 +66,11 @@ func getProps() Props {
 		Columns: []Column{{
 			DataIndex: "label",
 			Title:     "",
-			width:     200,
+			Width:     200,
 		}, {
 			DataIndex: "value",
 			Title:     "",
-			width:     200},
-		},
+		}},
 	}
 }
 func init() {

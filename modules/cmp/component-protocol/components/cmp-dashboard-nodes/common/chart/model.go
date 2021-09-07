@@ -16,14 +16,15 @@ package chart
 
 import (
 	"context"
+	"math"
+
+	"github.com/rancher/wrangler/pkg/data"
+	"k8s.io/apimachinery/pkg/api/resource"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
-	"github.com/rancher/wrangler/pkg/data"
-	"github.com/spf13/cast"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
 var (
@@ -35,8 +36,7 @@ var (
 	CPU    = "CPU"
 	Pods   = "Pods"
 
-	DefaultDegree = 60.0
-	DefaultFormat = "{d}%\n{c}/60"
+	DefaultFormat = "{d}%\n{c}"
 )
 
 type Chart struct {
@@ -52,28 +52,57 @@ type ChartInterface interface {
 }
 
 func setData(nodes []data.Object, resourceName string) []DataItem {
-	var allocatableTotal, capacityTotal, unAllocatableTotal float64
-	if len(nodes) == 0{
+	//var allocatableTotal, capacityTotal, unAllocatableTotal float64
+	resourceType := resource.DecimalSI
+	if resourceName == Memory {
+		resourceType = resource.BinarySI
+	}
+	allocatableQuantity := resource.NewQuantity(0, resourceType)
+	capacityQuantity := resource.NewQuantity(0, resourceType)
+	unAllocatableQuantity := resource.NewQuantity(0, resourceType)
+	if len(nodes) == 0 {
 		return []DataItem{}
 	}
 	for _, node := range nodes {
-		allocatableTotal += cast.ToFloat64(node.String("extra", "parsedResource", "allocated", resourceName))
-		capacityTotal += cast.ToFloat64(node.String("extra", "parsedResource", "capacity", resourceName))
-		unAllocatableTotal += cast.ToFloat64(node.String("extra", "parsedResource", "unallocatable", resourceName))
+		allocatableQuantity.Add(*parseResource(node.String("extra", "parsedResource", "allocated", resourceName), resourceType))
+		capacityQuantity.Add(*parseResource(node.String("extra", "parsedResource", "capacity", resourceName), resourceType))
+		unAllocatableQuantity.Add(*parseResource(node.String("extra", "parsedResource", "unallocatable", resourceName), resourceType))
 	}
+	allocatableQuantity.ToUnstructured()
+	capacityQuantity.Sub(*unAllocatableQuantity)
+	capacityQuantity.Sub(*allocatableQuantity)
+	GetScale(capacityQuantity)
+	GetScale(unAllocatableQuantity)
+	GetScale(allocatableQuantity)
 	return []DataItem{{
-		Value: allocatableTotal / capacityTotal * DefaultDegree,
+		Value: float64(allocatableQuantity.Value()),
 		Name:  Distributed_Desc,
-		Label: Label{DefaultFormat},
+		Label: Label{Formatter: allocatableQuantity.String()},
 	}, {
-		Value: (capacityTotal - unAllocatableTotal - allocatableTotal) / capacityTotal * DefaultDegree,
+		Value: float64(capacityQuantity.Value()),
 		Name:  Free_Desc,
-		Label: Label{DefaultFormat},
+		Label: Label{capacityQuantity.String()},
 	}, {
-		Value: unAllocatableTotal / capacityTotal * DefaultDegree,
+		Value: float64(unAllocatableQuantity.Value()),
 		Name:  Locked_Desc,
-		Label: Label{DefaultFormat},
+		Label: Label{unAllocatableQuantity.String()},
 	}}
+}
+
+func GetScale(quantity *resource.Quantity) {
+	start := 3.0
+	for ; quantity.Value() > int64(math.Pow(10, start)); start += 3 {
+	}
+	start -= 3.0
+	quantity.SetScaled(quantity.Value()/int64(math.Pow(10, start)), resource.Scale(start))
+}
+
+func parseResource(str string, format resource.Format) *resource.Quantity {
+	if str == "" {
+		return resource.NewQuantity(0, format)
+	}
+	res, _ := resource.ParseQuantity(str)
+	return &res
 }
 
 func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData, ResourceType string) error {
@@ -89,6 +118,7 @@ func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario
 
 type Props struct {
 	Option Option `json:"option"`
+	Style  Style  `json:"style"`
 }
 
 type Option struct {
@@ -130,7 +160,7 @@ type Label struct {
 
 func (c *Chart) GetProps() Props {
 	return Props{Option: Option{
-		Color:  []string{"green", "orange", "red"},
+		Color:  []string{"#F7A76B", "#6CB38B", "#DE5757"},
 		Legend: Legend{Data: []string{c.SDK.I18n("allocated"), c.SDK.I18n("cannot-allocated"), c.SDK.I18n("free-allocate")}},
 		Grid: Grid{
 			Bottom:       0,
@@ -142,5 +172,5 @@ func (c *Chart) GetProps() Props {
 			Radius: "60%",
 			Data:   nil,
 		}},
-	}}
+	}, Style: Style{Flex: 1}}
 }

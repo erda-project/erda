@@ -16,12 +16,12 @@ package statusTitle
 
 import (
 	"context"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -33,6 +33,7 @@ func (statusTitle *StatusTitle) Render(ctx context.Context, c *cptype.Component,
 	c.Props = statusTitle.Props
 	return nil
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodeDetail", "statusTitle", func() servicehub.Provider {
 		return &StatusTitle{Type: "Title", Props: Props{

@@ -35,10 +35,10 @@ type Filter struct {
 	base.DefaultProvider
 	CtxBdl     *bundle.Bundle
 	SDK        *cptype.SDK
-	Type       string                     `json:"type"`
-	Operations map[string]FilterOperation `json:"operations"`
-	State      State                      `json:"state"`
-	Props      Props                      `json:"props"`
+	Type       string                 `json:"type"`
+	Operations map[string]interface{} `json:"operations"`
+	State      State                  `json:"state"`
+	Props      Props                  `json:"props"`
 }
 
 func (f *Filter) GetFilterProps() Props {
@@ -46,8 +46,8 @@ func (f *Filter) GetFilterProps() Props {
 		LabelWidth: 40,
 		Fields: []Field{
 			{
-				Label: "env",
-				Key:   f.SDK.I18n("env"),
+				Key:   "env",
+				Label: f.SDK.I18n("env"),
 				Type:  "select",
 				Options: []Option{
 					{Label: f.SDK.I18n("dev"), Value: "dev"},
@@ -92,6 +92,7 @@ func (f *Filter) GetFilterProps() Props {
 	return p
 }
 
+type Values map[string]string
 type State struct {
 	Values Values `json:"values"`
 }
@@ -101,13 +102,9 @@ type Props struct {
 	Fields     []Field `json:"fields"`
 }
 
-type FilterOperation struct {
-	Key    string `json:"key"`
-	Reload bool   `json:"reload"`
-}
-
-type Values struct {
-	Keys map[string][]string `json:"keys,omitempty"`
+type Operation struct {
+	Key    string `json:"key,omitempty"`
+	Reload bool   `json:"reload,omitempty"`
 }
 
 type Field struct {

@@ -17,11 +17,9 @@ package memChart
 import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 )
 
 type MemChart struct {
 	CtxBdl *bundle.Bundle
 	chart.Chart
-	filter.State
 }

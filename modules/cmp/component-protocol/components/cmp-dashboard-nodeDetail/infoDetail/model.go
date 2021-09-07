@@ -16,6 +16,7 @@ package infoDetail
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -29,6 +30,12 @@ type InfoDetail struct {
 	Type  string          `json:"type"`
 	Props Props           `json:"props"`
 	Data  map[string]Data `json:"data"`
+	State State           `json:"state"`
+}
+
+type State struct {
+	ClusterName string `json:"clusterName,omitempty"`
+	NodeID      string `json:"nodeId,omitempty"`
 }
 
 type Data struct {
@@ -39,7 +46,7 @@ type Data struct {
 	ContainerRuntime string  `json:"containerRuntime"`
 	PodNum           string  `json:"podNum"`
 	Tags             []Field `json:"tag"`
-	Desc             []Field `json:"desc"`
+	Annotation       []Field `json:"annotation"`
 }
 
 type Props struct {
@@ -48,12 +55,12 @@ type Props struct {
 }
 
 type Field struct {
-	Label      string               `json:"label"`
-	Group      string               `json:"group"`
-	ValueKey   string               `json:"valueKey"`
-	RenderType string               `json:"renderType"`
-	SpaceNum   int                  `json:"spaceNum"`
-	Operations map[string]Operation `json:"operations"`
+	Label      string               `json:"label,omitempty"`
+	Group      string               `json:"group,omitempty"`
+	ValueKey   string               `json:"valueKey,omitempty"`
+	RenderType string               `json:"renderType,omitempty"`
+	SpaceNum   int                  `json:"spaceNum,omitempty"`
+	Operations map[string]Operation `json:"operations,omitempty"`
 }
 
 type Operation struct {
