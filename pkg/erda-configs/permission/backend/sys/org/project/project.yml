@@ -741,15 +741,15 @@
 ## 工作流 ##
 
 ## 测试空间 ##
-- role: Owner,PM
+- role: Owner,Lead,PM,QA
   scope: project
   resource: autotestSpace
   action: CREATE
-- role: Owner,PM
+- role: Owner,Lead,PM,QA
   scope: project
   resource: autotestSpace
   action: UPDATE
-- role: Owner,PM
+- role: Owner,Lead,PM,QA
   scope: project
   resource: autotestSpace
   action: DELETE
