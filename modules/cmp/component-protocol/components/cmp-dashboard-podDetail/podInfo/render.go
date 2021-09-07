@@ -2,127 +2,200 @@ package PodInfo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
+
+	"github.com/rancher/wrangler/pkg/data"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-podDetail/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/rancher/wrangler/pkg/data"
-	"strings"
 )
 
 func (podInfo *PodInfo) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	pod := (*gs)["pod"].(data.Object)
+	if err := podInfo.GenComponentState(c); err != nil {
+		return err
+	}
 	podInfo.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	podInfo.SDK = cputil.SDK(ctx)
-	podInfo.Props = podInfo.getProps(pod)
-	surviveTime, err := common.SurviveTime(pod.String("status", "startTime"))
+
+	splits := strings.Split(podInfo.State.PodID, "_")
+	if len(splits) != 2 {
+		return fmt.Errorf("invaild pod id: %s", podInfo.State.PodID)
+	}
+	namespace, name := splits[0], splits[1]
+
+	userID := podInfo.SDK.Identity.UserID
+	orgID := podInfo.SDK.Identity.OrgID
+	req := &apistructs.SteveRequest{
+		UserID:      userID,
+		OrgID:       orgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: podInfo.State.ClusterName,
+		Name:        name,
+		Namespace:   namespace,
+	}
+	obj, err := podInfo.CtxBdl.GetSteveResource(req)
 	if err != nil {
 		return err
 	}
-	data := Data{
-		Namespace:        pod.String("metadata", "namespace"),
-		Survive:          surviveTime,
-		Ip:               pod.String("status", "podIP"),
-		PodNum:           "",
-		Workload:         "workload...",
-		Node:             "containerRuntime",
-		ContainerRuntime: "",
-		Tag:              podInfo.getTags(pod),
-		Desc:             podInfo.getDesc(pod),
+	fields := obj.StringSlice("metadata", "fields")
+	if len(fields) != 9 {
+		return fmt.Errorf("pod %s/%s has invalid length of fields", namespace, name)
 	}
-	c.Props = podInfo.Props
-	c.Data["data"] = data
+	workloadId, err := podInfo.getWorkloadID(obj)
+	if err != nil {
+		return err
+	}
+	podInfo.Props = podInfo.getProps(obj, workloadId)
+
+	data := Data{
+		Namespace:   namespace,
+		Age:         fields[4],
+		Ip:          fields[5],
+		Workload:    workloadId,
+		Node:        fields[6],
+		Labels:      podInfo.getTags(obj, "labels"),
+		Annotations: podInfo.getTags(obj, "annotations"),
+	}
+	podInfo.Data = map[string]Data{
+		"data": data,
+	}
 	return nil
 }
 
-func (podInfo *PodInfo) getTags(pod data.Object) []Tag {
-	tags := make([]Tag, 0)
-	for _, s := range pod.StringSlice("metadata", "labels") {
+func (podInfo *PodInfo) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
+		return nil
+	}
+
+	data, err := json.Marshal(component.State)
+	if err != nil {
+		logrus.Errorf("failed to marshal for eventTable state, %v", err)
+		return err
+	}
+	var state State
+	err = json.Unmarshal(data, &state)
+	if err != nil {
+		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
+		return err
+	}
+	podInfo.State = state
+	return nil
+}
+
+func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
+	return Props{
+		ColumnNum: 4,
+		Fields: []Field{
+			{Label: podInfo.SDK.I18n("namespace"), ValueKey: "namespace"},
+			{Label: podInfo.SDK.I18n("age"), ValueKey: "age"},
+			{Label: podInfo.SDK.I18n("podIP"), ValueKey: "ip"},
+			{Label: podInfo.SDK.I18n("workload"), ValueKey: "workload", RenderType: "linkText",
+				Operation: map[string]Operation{
+					"click": {
+						Key:    "gotoWorkloadDetail",
+						Reload: false,
+						Command: Command{
+							Key:    "goto",
+							Target: "cmpClustersWorkloadDetail",
+							State: CommandState{Params: map[string]string{
+								"workloadID": workloadId,
+							}},
+							JumpOut: true,
+						},
+					},
+				}},
+			{Label: podInfo.SDK.I18n("node"), ValueKey: "node", RenderType: "linkText",
+				Operation: map[string]Operation{
+					"click": {
+						Key:    "gotoNodeDetail",
+						Reload: false,
+						Command: Command{
+							Key:    "goto",
+							Target: "cmpClustersNodeDetail",
+							State: CommandState{Params: map[string]string{
+								"nodeId": pod.String("spec", "nodeName"),
+							}},
+							JumpOut: true,
+						},
+					},
+				}},
+			{
+				Label:      podInfo.SDK.I18n("label"),
+				ValueKey:   "labels",
+				RenderType: "tagsRow",
+				SpaceNum:   2,
+			},
+			{Label: podInfo.SDK.I18n("annotations"), ValueKey: "annotations", SpaceNum: 2, RenderType: "tagsRow"},
+		},
+	}
+}
+
+func (podInfo *PodInfo) getTags(pod data.Object, kind string) []Tag {
+	var tags []Tag
+	for k, v := range pod.Map("metadata", kind) {
 		tags = append(tags, Tag{
-			Label: s,
-			Group: "",
+			Label: fmt.Sprintf("%s=%s", k, v),
 		})
 	}
 	return tags
 }
 
-func (podInfo *PodInfo) getProps(pod data.Object) Props {
-	return Props{
-		ColumnNum: 4,
-		Fields: []Field{
-			{Label: podInfo.SDK.I18n("namespace"), ValueKey: "namespace"},
-			{Label: podInfo.SDK.I18n("survive"), ValueKey: "survive"},
-			{Label: "Pod" + podInfo.SDK.I18n("ip"), ValueKey: "ip"},
-			{Label: podInfo.SDK.I18n("workload"), ValueKey: "workload", Operation: map[string]Operation{
-				"click": {
-					Key:    "gotoWorkloadDetail",
-					Reload: false,
-					Command: Command{
-						Key: "goto",
-						// todo
-						Target: "cmpClustersWorkloadDetail",
-						State: CommandState{Params: map[string]string{
-							"workloadID": podInfo.getWorkloadID(pod),
-						}},
-						JumpOut: true,
-					},
-				},
-			}},
-			{Label: podInfo.SDK.I18n("node"), ValueKey: "node", RenderType: "linkText", Operation: map[string]Operation{
-				"click": {
-					Key:    "gotoNodeDetail",
-					Reload: false,
-					Command: Command{
-						Key: "goto",
-						// todo
-						Target: "cmpClustersNodeDetail",
-						State: CommandState{Params: map[string]string{
-							"nodeId": pod.String("spec", "nodeName"),
-						}},
-						JumpOut: true,
-					},
-				},
-			}},
-			{
-				Label:      podInfo.SDK.I18n("tag"),
-				ValueKey:   "tag",
-				RenderType: "tagsRow",
-				SpaceNum:   2,
-			},
-			{Label: podInfo.SDK.I18n("desc"), ValueKey: "desc", SpaceNum: 2, RenderType: "tagsRow"},
-		},
+func (podInfo *PodInfo) getWorkloadID(pod data.Object) (string, error) {
+	ownerReferences := pod.Slice("metadata", "ownerReferences")
+	if len(ownerReferences) == 0 {
+		return "", nil
 	}
-}
+	ownerReference := ownerReferences[0]
+	name := ownerReference.String("name")
+	kind := ownerReference.String("kind")
+	namespace := pod.String("metadata", "namespace")
 
-func (podInfo *PodInfo) getDesc(pod data.Object) []Desc {
-	desces := make([]Desc, 0)
-	for _, s := range pod.StringSlice("metadata", "annotations") {
-		desces = append(desces, Desc{
-			Label: s,
-			Group: "",
-		})
-	}
-	return desces
-}
+	if kind == "ReplicaSet" {
+		req := &apistructs.SteveRequest{
+			UserID:      podInfo.SDK.Identity.UserID,
+			OrgID:       podInfo.SDK.Identity.OrgID,
+			Type:        apistructs.K8SReplicaSet,
+			ClusterName: podInfo.State.ClusterName,
+			Name:        name,
+			Namespace:   namespace,
+		}
 
-func (podInfo *PodInfo) getWorkloadID(pod data.Object) string {
-	var name = pod.String("metadata", "ownerReferences", "name")
-	if strings.HasPrefix(pod.String("metadata", "ownerReferences", "kind"), "Replica") {
-		//"name": "traffic-manager-6458cb9bf9",
-		name = name[:strings.LastIndex(name, "-")]
+		obj, err := podInfo.CtxBdl.GetSteveResource(req)
+		if err != nil {
+			return "", err
+		}
+
+		ownerReferences := obj.Slice("metadata", "ownerReferences")
+		if len(ownerReferences) == 0 {
+			return fmt.Sprintf("%s_%s_%s", apistructs.K8SReplicaSet, namespace, name), nil
+		}
+		ownerReference = ownerReferences[0]
+		kind = ownerReference.String("kind")
+		name = ownerReference.String("name")
 	}
-	return fmt.Sprintf("%s_%s_%s", apistructs.K8SCronJob, pod.String("metadata", "namespace"), name)
+
+	ownerKind := map[string]apistructs.K8SResType{
+		"Deployment":  apistructs.K8SDeployment,
+		"ReplicaSet":  apistructs.K8SReplicaSet,
+		"DaemonSet":   apistructs.K8SDaemonSet,
+		"StatefulSet": apistructs.K8SStatefulSet,
+		"Job":         apistructs.K8SJob,
+		"CronJob":     apistructs.K8SCronJob,
+	}
+
+	return fmt.Sprintf("%s_%s_%s", ownerKind[kind], namespace, name), nil
 }
 
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-podDetail", "podInfo", func() servicehub.Provider {
-		return &PodInfo{
-			Type: "Panel",
-		}
+		return &PodInfo{}
 	})
 }

@@ -10,9 +10,11 @@ type PodInfo struct {
 	base.DefaultProvider
 	CtxBdl *bundle.Bundle
 	SDK    *cptype.SDK
-	Type   string          `json:"type"`
-	Data   map[string]Data `json:"data"`
-	Props  Props           `json:"props"`
+
+	Type  string          `json:"type"`
+	Data  map[string]Data `json:"data,omitempty"`
+	Props Props           `json:"props"`
+	State State           `json:"state,omitempty"`
 }
 
 type Props struct {
@@ -21,33 +23,27 @@ type Props struct {
 }
 
 type Data struct {
-	Namespace        string `json:"namespace"`
-	Survive          string `json:"survive"`
-	Ip               string `json:"ip"`
-	PodNum           string `json:"podNum"`
-	Workload         string `json:"workload"`
-	Node             string `json:"node"`
-	ContainerRuntime string `json:"containerRuntime"`
-	Tag              []Tag  `json:"tag"`
-	Desc             []Desc `json:"desc"`
+	Namespace   string `json:"namespace"`
+	Age         string `json:"age"`
+	Ip          string `json:"ip"`
+	Workload    string `json:"workload"`
+	Node        string `json:"node"`
+	Labels      []Tag  `json:"labels"`
+	Annotations []Tag  `json:"annotations"`
 }
 
 type Field struct {
 	Label      string               `json:"label"`
 	ValueKey   string               `json:"valueKey"`
-	RenderType string               `json:"renderType"`
-	Operation  map[string]Operation `json:"operation"`
-	SpaceNum   int                  `json:"spaceNum"`
+	RenderType string               `json:"renderType,omitempty"`
+	Operation  map[string]Operation `json:"operation,omitempty"`
+	SpaceNum   int                  `json:"spaceNum,omitempty"`
 }
 
 type Operation struct {
-	Key           string      `json:"key"`
-	Reload        bool        `json:"reload"`
-	FillMeta      string      `json:"fillMeta,omitempty"`
-	Target        string      `json:"target,omitempty"`
-	Meta          interface{} `json:"meta,omitempty"`
-	ClickableKeys interface{} `json:"clickableKeys,omitempty"`
-	Command       Command     `json:"command,omitempty"`
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Command Command `json:"command,omitempty"`
 }
 
 type Command struct {
@@ -66,7 +62,7 @@ type Tag struct {
 	Group string `json:"group"`
 }
 
-type Desc struct {
-	Label string `json:"label"`
-	Group string `json:"group"`
+type State struct {
+	ClusterName string `json:"clusterName,omitempty"`
+	PodID       string `json:"podId,omitempty"`
 }

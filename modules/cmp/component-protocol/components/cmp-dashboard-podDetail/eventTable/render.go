@@ -16,22 +16,22 @@ package eventTable
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-podDetail/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -43,23 +43,8 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 	if err := t.GenComponentState(component); err != nil {
 		return err
 	}
-
-	// set page no. and page size in first render
-	if event.Operation != common.CMPDashboardChangePageNoOperationKey {
-		t.State.PageNo = 1
-	}
-	if event.Operation == cptype.InitializeOperation {
-		t.State.PageSize = 20
-	}
-	// set page no. if triggered by filter
-	if err := t.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for eventTable component, %v", err)
-	}
 	if err := t.RenderList(); err != nil {
 		return err
-	}
-	if err := t.EncodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to encode url query for eventTable component, %v", err)
 	}
 	t.SetComponentValue()
 	return nil
@@ -95,40 +80,12 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 	return nil
 }
 
-func (t *ComponentEventTable) DecodeURLQuery() error {
-	queryData, ok := t.SDK.InParams["eventTable__urlQuery"].(string)
-	if !ok {
-		return nil
-	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
-	if err != nil {
-		return err
-	}
-	query := make(map[string]int)
-	if err := json.Unmarshal(decode, &query); err != nil {
-		return err
-	}
-	t.State.PageNo = uint64(query["pageNo"])
-	t.State.PageSize = uint64(query["pageSize"])
-	return nil
-}
-
-func (t *ComponentEventTable) EncodeURLQuery() error {
-	query := make(map[string]int)
-	query["pageNo"] = int(t.State.PageNo)
-	query["pageSize"] = int(t.State.PageSize)
-
-	data, err := json.Marshal(query)
-	if err != nil {
-		return err
-	}
-
-	encode := base64.StdEncoding.EncodeToString(data)
-	t.State.EventTableUQLQuery = encode
-	return nil
-}
-
 func (t *ComponentEventTable) RenderList() error {
+	splits := strings.Split(t.State.PodID, "_")
+	if len(splits) != 2 {
+		return fmt.Errorf("invalid pod id: %s", t.State.PodID)
+	}
+	namespace, name := splits[0], splits[1]
 	userID := t.SDK.Identity.UserID
 	orgID := t.SDK.Identity.OrgID
 
@@ -137,6 +94,7 @@ func (t *ComponentEventTable) RenderList() error {
 		OrgID:       orgID,
 		Type:        apistructs.K8SEvent,
 		ClusterName: t.State.ClusterName,
+		Namespace:   namespace,
 	}
 
 	obj, err := t.ctxBdl.ListSteveResource(&req)
@@ -147,15 +105,18 @@ func (t *ComponentEventTable) RenderList() error {
 
 	var items []Item
 	for _, obj := range list {
-		if t.State.FilterValues.Namespace != nil && !contain(t.State.FilterValues.Namespace, obj.String("metadata", "namespace")) {
-			continue
-		}
-		if t.State.FilterValues.Type != nil && !contain(t.State.FilterValues.Type, obj.String("_type")) {
-			continue
-		}
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 10 {
 			logrus.Errorf("length of event fields is invalid: %d", len(fields))
+			continue
+		}
+		ref := fields[3]
+		splits := strings.Split(ref, "/")
+		if len(splits) != 2 {
+			continue
+		}
+		res, refName := splits[0], splits[1]
+		if res != "pod" || refName != name {
 			continue
 		}
 		lastSeenTimestamp, err := time.ParseDuration(fields[0])
@@ -168,80 +129,39 @@ func (t *ComponentEventTable) RenderList() error {
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
 			Type:              fields[1],
 			Reason:            fields[2],
-
-			Message: fields[6],
+			Message:           fields[6],
 		})
 	}
-	if t.State.Sorter.Field != "" {
-		cmpWrapper := func(field, order string) func(int, int) bool {
-			ascend := order == "ascend"
-			switch field {
-			case "lastSeen":
-				return func(i int, j int) bool {
-					less := items[i].LastSeenTimestamp < items[j].LastSeenTimestamp
-					if ascend {
-						return less
-					}
-					return !less
-				}
-			case "type":
-				return func(i int, j int) bool {
-					less := items[i].Type < items[j].Type
-					if ascend {
-						return less
-					}
-					return !less
-				}
-			case "reason":
-				return func(i int, j int) bool {
-					less := items[i].Reason < items[j].Reason
-					if ascend {
-						return less
-					}
-					return !less
-				}
-			default:
-				return func(i int, j int) bool {
-					return false
-				}
-			}
-		}
-		slice.Sort(items, cmpWrapper(t.State.Sorter.Field, t.State.Sorter.Order))
-	}
-
-	l, r := getRange(len(items), int(t.State.PageNo), int(t.State.PageSize))
-	t.Data.List = items[l:r]
-	t.State.Total = uint64(len(items))
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].LastSeenTimestamp < items[j].LastSeenTimestamp
+	})
+	t.Data.List = items
 	return nil
 }
 
 func (t *ComponentEventTable) SetComponentValue() {
 	t.Props = Props{
-		PageSizeOptions: []string{"10", "20", "50", "100"},
+		Pagination: false,
 		Columns: []Column{
 			{
 				DataIndex: "lastSeen",
 				Title:     "Last Seen",
 				Width:     160,
-				Sorter:    true,
 			},
 			{
 				DataIndex: "type",
 				Title:     "Event Type",
 				Width:     100,
-				Sorter:    true,
 			},
 			{
 				DataIndex: "reason",
 				Title:     "Reason",
 				Width:     100,
-				Sorter:    true,
 			},
 			{
 				DataIndex: "message",
 				Title:     "Message",
 				Width:     120,
-				Sorter:    false,
 			},
 		},
 	}

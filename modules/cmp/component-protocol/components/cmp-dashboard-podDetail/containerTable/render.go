@@ -2,71 +2,182 @@ package ContainerTable
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-podDetail/common"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/rancher/wrangler/pkg/data"
 )
 
 func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	pod := (*gs)["pod"].(data.Object)
-	d := make([]Data, 0)
-	namespace := pod.String("metadata", "namespace")
-	pods := pod.String("metadata", "name")
-	for _, container := range pod.Slice("status", "containerStatuses") {
-		surviveTime, err := common.SurviveTime(pod.String("state", "running", "startedAt"))
-		if err != nil {
-			return err
+	if err := containerTable.GenComponentState(c); err != nil {
+		return err
+	}
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	sdk := cputil.SDK(ctx)
+
+	userID := sdk.Identity.UserID
+	orgID := sdk.Identity.OrgID
+
+	splits := strings.Split(containerTable.State.PodID, "_")
+	if len(splits) != 2 {
+		return fmt.Errorf("invalid pod id: %s", containerTable.State.PodID)
+	}
+
+	namespace, name := splits[0], splits[1]
+	req := &apistructs.SteveRequest{
+		UserID:      userID,
+		OrgID:       orgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: containerTable.State.ClusterName,
+		Name:        name,
+		Namespace:   namespace,
+	}
+
+	obj, err := bdl.GetSteveResource(req)
+	if err != nil {
+		return err
+	}
+
+	var data []Data
+	containerStatuses := obj.Slice("status", "containerStatuses")
+	for _, containerStatus := range containerStatuses {
+		states := containerStatus.Map("state")
+		status := Status{}
+		for k := range states {
+			status = parseContainerStatus(k)
 		}
-		d = append(d, Data{
-			Survive: surviveTime,
-			Operate: Operate{RenderType: "tableOperation", Operations: map[string]Operation{"log": {
-				Key:     "gotoPod",
-				Command: Command{Key: "goto", Target: "log", JumpOut: true},
-				Text:    containerTable.SDK.I18n("logPage"),
-				Reload:  false,
-				State:   CommandState{Params: map[string]string{"namespace": namespace, "pods": pods, "containerName": container.String("name")}},
-			}, "console": {
-				Key:     "gotoPod",
-				Command: Command{Key: "goto", Target: "consolePage", JumpOut: true},
-				Text:    containerTable.SDK.I18n("console"),
-				Reload:  false,
-				State:   CommandState{Params: map[string]string{"namespace": namespace, "pods": pods, "containerName": container.String("name")}},
-			}},
-			},
-			Status: Status{RenderType: "text", Value: pod.String("status", "phase")},
-			Ready:  container.String("ready"),
-			Name:   container.String("name"),
+
+		data = append(data, Data{
+			Status: status,
+			Ready:  containerStatus.String("ready"),
+			Name:   containerStatus.String("name"),
 			Images: Images{
 				RenderType: "copyText",
-				Value:      Value{Text: container.String("image")},
+				Value: Value{
+					Text: containerStatus.String("image"),
+				},
 			},
-			RebootTimes: container.String("restartCount"),
+			RestartCount: containerStatus.String("restartCount"),
+			Operate: Operate{
+				Operations: map[string]Operation{
+					"log": {
+						Key:    "checkLog",
+						Text:   cputil.I18n(ctx, "log"),
+						Reload: false,
+						Meta: map[string]string{
+							"containerName": containerStatus.String("name"),
+							"podName":       name,
+							"namespace":     namespace,
+						},
+					},
+					"console": {
+						Key:    "checkConsole",
+						Text:   cputil.I18n(ctx, "console"),
+						Reload: false,
+						Meta: map[string]string{
+							"containerName": containerStatus.String("name"),
+							"podName":       name,
+							"namespace":     namespace,
+						},
+					},
+				},
+				RenderType: "tableOperation",
+			},
 		})
 	}
-	c.Props = containerTable.GetProps()
-	c.Data["list"] = d
-	return nil
-}
-func (containerTable *ContainerTable) GetProps() Props {
-	p := Props{
-		Pagination: false,
-		Scroll:     Scroll{X: 1000},
-		Columns: []Column{
-			{DataIndex: "status", Title: containerTable.SDK.I18n("status"), Width: 120},
-			{DataIndex: "ready", Title: containerTable.SDK.I18n("ready"), Width: 120},
-			{DataIndex: "name", Title: containerTable.SDK.I18n("name"), Width: 120},
-			{DataIndex: "images", Title: containerTable.SDK.I18n("images")},
-			{DataIndex: "rebootTimes", Title: containerTable.SDK.I18n("rebootTimes"), Width: 120},
-			{DataIndex: "survive", Title: containerTable.SDK.I18n("survive"), Width: 120},
-			{DataIndex: "operate", Title: containerTable.SDK.I18n("operate"), Width: 200, Fixed: "right"},
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Name < data[j].Name
+	})
+	containerTable.Data = map[string][]Data{
+		"list": data,
+	}
+
+	containerTable.Props.Pagination = false
+	containerTable.Props.Scroll.X = 1000
+	containerTable.Props.Columns = []Column{
+		{
+			Width:     80,
+			DataIndex: "status",
+			Title:     cputil.I18n(ctx, "status"),
+		},
+		{
+			Width:     80,
+			DataIndex: "ready",
+			Title:     cputil.I18n(ctx, "ready"),
+		},
+		{
+			Width:     120,
+			DataIndex: "name",
+			Title:     cputil.I18n(ctx, "name"),
+		},
+		{
+			Width:     400,
+			DataIndex: "images",
+			Title:     cputil.I18n(ctx, "images"),
+		},
+		{
+			Width:     80,
+			DataIndex: "restartCount",
+			Title:     cputil.I18n(ctx, "restartCount"),
+		},
+		{
+			Width:     100,
+			DataIndex: "operate",
+			Title:     cputil.I18n(ctx, "operate"),
+			Fixed:     "right",
 		},
 	}
-	return p
+	return nil
 }
+
+func (containerTable *ContainerTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
+		return nil
+	}
+
+	data, err := json.Marshal(component.State)
+	if err != nil {
+		logrus.Errorf("failed to marshal for eventTable state, %v", err)
+		return err
+	}
+	var state State
+	err = json.Unmarshal(data, &state)
+	if err != nil {
+		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
+		return err
+	}
+	containerTable.State = state
+	return nil
+}
+
+func parseContainerStatus(state string) Status {
+	status := Status{
+		RenderType: "text",
+		Value:      "state",
+	}
+	switch state {
+	case "running":
+		status.StyleConfig.Color = "green"
+	case "waiting":
+		status.StyleConfig.Color = "steelblue"
+	case "terminated":
+		status.StyleConfig.Color = "red"
+	}
+	return status
+}
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-podDetail", "containerTable", func() servicehub.Provider {
-		return &ContainerTable{Type: "Table"}
+		return &ContainerTable{}
 	})
 }

@@ -188,6 +188,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
+		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
 			Status: status,
 			Name: Link{
@@ -195,13 +196,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Value:      name,
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
+						Key: "gotoPodDetail",
 						Command: Command{
-							Key:    "goto",
+							Key:    "gotoPodDetail",
 							Target: "cmpClustersPodDetail",
 							State: CommandState{
-								Query: map[string]string{
-									"podName":   name,
-									"namespace": namespace,
+								Params: map[string]string{
+									"podId": id,
 								},
 							},
 							JumpOut: true,
@@ -366,7 +367,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
-	p.Props.Visible = true
+	p.Props.RowKey = "id"
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}

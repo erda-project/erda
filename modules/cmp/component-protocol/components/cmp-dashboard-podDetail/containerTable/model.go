@@ -1,31 +1,30 @@
 package ContainerTable
 
 import (
-	"context"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ContainerTable struct {
-	Ctx    context.Context
-	CtxBdl *bundle.Bundle
 	base.DefaultProvider
-	SDK *cptype.SDK
 
 	Type  string            `json:"type"`
 	Data  map[string][]Data `json:"data"`
 	Props Props             `json:"props"`
+	State State             `json:"state,omitempty"`
+}
+
+type State struct {
+	ClusterName string `json:"clusterName,omitempty"`
+	PodID       string `json:"podId,omitempty"`
 }
 
 type Data struct {
-	Survive     string  `json:"survive"`
-	Operate     Operate `json:"operate"`
-	Status      Status  `json:"status"`
-	Ready       string  `json:"ready"`
-	Name        string  `json:"name"`
-	Images      Images  `json:"images"`
-	RebootTimes string  `json:"rebootTimes"`
+	Status       Status  `json:"status"`
+	Ready        string  `json:"ready"`
+	Name         string  `json:"name"`
+	Images       Images  `json:"images"`
+	RestartCount string  `json:"restartCount"`
+	Operate      Operate `json:"operate"`
 }
 
 type Scroll struct {
@@ -42,7 +41,7 @@ type Column struct {
 	Width     int    `json:"width"`
 	DataIndex string `json:"dataIndex"`
 	Title     string `json:"title"`
-	Fixed     string `json:"fixed"`
+	Fixed     string `json:"fixed,omitempty"`
 }
 
 type Operate struct {
@@ -62,15 +61,10 @@ type Images struct {
 }
 
 type Operation struct {
-	Key     string       `json:"key"`
-	Command Command      `json:"command"`
-	Text    string       `json:"text"`
-	Reload  bool         `json:"reload"`
-	State   CommandState `json:"state"`
-}
-
-type CommandState struct {
-	Params map[string]string `json:"params"`
+	Key    string            `json:"key"`
+	Text   string            `json:"text"`
+	Reload bool              `json:"reload"`
+	Meta   map[string]string `json:"meta,omitempty"`
 }
 
 type StyleConfig struct {
@@ -79,10 +73,4 @@ type StyleConfig struct {
 
 type Value struct {
 	Text string `json:"text"`
-}
-
-type Command struct {
-	JumpOut bool   `json:"jumpOut"`
-	Key     string `json:"key"`
-	Target  string `json:"target"`
 }

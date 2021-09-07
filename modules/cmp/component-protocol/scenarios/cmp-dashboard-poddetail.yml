@@ -1,3 +1,5 @@
+version: 0.1
+
 scenario: cmp-dashboard-podDetail
 
 hierarchy:
@@ -37,22 +39,38 @@ components:
   eventTable:
     type: Table
 
-
-
 rendering:
   __DefaultRendering__:
     - name: page
     - name: header
+    - name: podStatus
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
-        - name: "namespace"
-          value: "{{ __InParams__.namespace }}"
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"
+    - name: podTitle
+      state:
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"
     - name: podInfoTitle
     - name: podInfo
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"
     - name: containerTitle
     - name: containerTable
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"
     - name: eventTitle
     - name: eventTable
-    - name: podTitle
-    - name: podStatus
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"

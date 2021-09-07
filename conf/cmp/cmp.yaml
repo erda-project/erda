@@ -54,6 +54,7 @@ component-protocol.components.cmp-dashboard-podDetail.header:
 component-protocol.components.cmp-dashboard-podDetail.podInfoTitle:
 component-protocol.components.cmp-dashboard-podDetail.podInfo:
 component-protocol.components.cmp-dashboard-podDetail.containerTitle:
+component-protocol.components.cmp-dashboard-podDetail.containerTable:
 component-protocol.components.cmp-dashboard-podDetail.eventTitle:
 component-protocol.components.cmp-dashboard-podDetail.eventTable:
 component-protocol.components.cmp-dashboard-podDetail.podTitle:

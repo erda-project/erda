@@ -21,9 +21,10 @@ import (
 )
 
 type ComponentEventTable struct {
-	ctxBdl *bundle.Bundle
 	base.DefaultProvider
-	SDK *cptype.SDK
+	ctxBdl *bundle.Bundle
+	SDK    *cptype.SDK
+
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`
 	Props      Props                  `json:"props,omitempty"`
@@ -32,18 +33,8 @@ type ComponentEventTable struct {
 }
 
 type State struct {
-	PageNo             uint64       `json:"pageNo,omitempty"`
-	PageSize           uint64       `json:"pageSize,omitempty"`
-	Total              uint64       `json:"total"`
-	Sorter             Sorter       `json:"sorterData,omitempty"`
-	ClusterName        string       `json:"clusterName,omitempty"`
-	FilterValues       FilterValues `json:"filterValues,omitempty"`
-	EventTableUQLQuery string       `json:"eventTable__urlQuery,omitempty"`
-}
-
-type FilterValues struct {
-	Namespace []string `json:"namespace,omitempty"`
-	Type      []string `json:"type,omitempty"`
+	ClusterName string `json:"clusterName,omitempty"`
+	PodID       string `json:"podId,omitempty"`
 }
 
 type Data struct {
@@ -59,15 +50,14 @@ type Item struct {
 }
 
 type Props struct {
-	PageSizeOptions []string `json:"pageSizeOptions"`
-	Columns         []Column `json:"columns"`
+	Pagination bool     `json:"pagination"`
+	Columns    []Column `json:"columns"`
 }
 
 type Column struct {
 	DataIndex string `json:"dataIndex"`
 	Title     string `json:"title"`
 	Width     int    `json:"width"`
-	Sorter    bool   `json:"sorter,omitempty"`
 }
 
 type Operation struct {
