@@ -90,7 +90,7 @@ zh:
  requests: 分配量
  limits: 限制量
  usage: 使用率
- restartTimes: 重启次数
+ restartCount: 重启次数
  category: 分类
  tag: 标签
  success: 安全
@@ -109,10 +109,10 @@ zh:
  podInfo: Pod信息
  Completed: 完成
  ContainerCreating: 容器创建中
- CrashLoopBackOff: 后台拉起中
+ CrashLoopBackOff: 崩溃重启中
  Error: 错误
- Evicted: 驱赶
- ImagePullBackOff: 拉取镜像中
+ Evicted: 驱逐
+ ImagePullBackOff: 镜像拉取失败
  Pending: 挂起
  Running: 运行中
  Terminating: 已结束
@@ -143,6 +143,10 @@ zh:
  Memory Chart: 内存图表
  Cpu Chart: CPU 图表
  Pod Chart: Pod 图表
+ podSearchPlaceHolder: 搜索pod名或IP
+ podInfoTitle: Pod 详情
+ podIP: Pod IP
+ log: 查看日志
 
 en:
  # general
@@ -232,5 +236,9 @@ en:
  requests: Requestes
  limits: Limits
  usage: Utilization rate
- restartTimes: Restart Times
+ restartCount: Restart Count
  category: category
+ podSearchPlaceHolder: input pod name or ip
+ podInfoTitle: Pod Detail
+ podIP: Pod IP
+ log: Logs

@@ -17,7 +17,10 @@ package PodDistribution
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -26,9 +29,17 @@ import (
 )
 
 func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if gs == nil {
+		return nil
+	}
+	countValues, ok := (*gs)["countValues"].(map[string]int)
+	if !ok {
+		logrus.Errorf("invalid count values type: %v", reflect.TypeOf((*gs)["countValues"]))
+		return nil
+	}
 	total := 0
 	pd.Data.Lists = nil
-	for state, count := range pd.State.Values {
+	for state, count := range countValues {
 		total += count
 		pd.Data.Lists = append(pd.Data.Lists, pd.ParsePodStatus(ctx, state, count))
 	}
