@@ -31,4 +31,3 @@ func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.P
 	// TODO Temporarily use the original API implementation of echo
 	return &common.VoidResponse{}, nil
 }
-
