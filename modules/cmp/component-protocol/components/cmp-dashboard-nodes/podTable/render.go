@@ -33,11 +33,6 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-const (
-	DefaultPageSize = 10
-	DefaultPageNo   = 1
-)
-
 func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	err := common.Transfer(c.State, &pt.State)
 	if err != nil {
@@ -48,8 +43,8 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	pt.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	pt.Table.TableComponent = pt
 	pt.getProps()
-	pt.GetBatchOperation()
 	activeKey := (*gs)["activeKey"].(string)
+	// Tab name not equal this component name
 	if activeKey != tableTabs.POD_TAB {
 		pt.Props["visible"] = false
 		return pt.SetComponentValue(c)
@@ -58,19 +53,8 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	if event.Operation != cptype.InitializeOperation {
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey:
-			if err := pt.RenderChangePageSize(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardChangePageNoOperationKey:
-			if err := pt.RenderChangePageNo(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardDeleteNode:
-			err := pt.DeleteNode(pt.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
+		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
+		case common.CMPDashboardSortByColumnOperationKey:
 		case common.CMPDashboardUnfreezeNode:
 			err := pt.UnFreezeNode(pt.State.SelectedRowKeys)
 			if err != nil {
@@ -103,7 +87,7 @@ func (pt *PodInfoTable) getProps() {
 		"rowKey": "id",
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true},
+			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 260},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: pt.SDK.I18n("role"), Sortable: true},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version")},
@@ -113,11 +97,8 @@ func (pt *PodInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"operations": map[string]table.Operation{
-			"changePageNo": {Key: "changePageNo", Reload: true},
-			"changeSort":   {Key: "changeSort", Reload: true},
-		},
-		"scroll": table.Scroll{X: 1200},
+		"batchOperations": []string{"freeze", "unfreeze"},
+		"scroll":          table.Scroll{X: 1200},
 	}
 	pt.Props = p
 }

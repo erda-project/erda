@@ -55,7 +55,7 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	}
 	nodeList := resp.Slice("data")
 	switch event.Operation {
-	case common.CMPDashboardFilterOperationKey, common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey, common.CMPDashboardDeleteNode:
+	case common.CMPDashboardFilterOperationKey:
 		if err := common.Transfer(c.State, &nf.State); err != nil {
 			return err
 		}

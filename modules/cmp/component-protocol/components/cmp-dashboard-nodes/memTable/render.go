@@ -45,6 +45,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	mt.Table.TableComponent = mt
 	mt.getProps()
 	activeKey := (*gs)["activeKey"].(string)
+	// Tab name not equal this component name
 	if activeKey != tableTabs.MEM_TAB {
 		mt.Props["visible"] = false
 		return mt.SetComponentValue(c)
@@ -52,28 +53,17 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		mt.Props["visible"] = true
 	}
 	if event.Operation != cptype.InitializeOperation {
-		// Tab name not equal this component name
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey:
-			if err := mt.RenderChangePageSize(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardChangePageNoOperationKey:
-			if err := mt.RenderChangePageNo(event.OperationData); err != nil {
-				return err
-			}
+		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
-			mt.State.PageNo = 1
-		case common.CMPDashboardDeleteNode:
-			if err := mt.DeleteNode(mt.State.SelectedRowKeys); err != nil {
-				return err
-			}
 		case common.CMPDashboardUnfreezeNode:
-			if err := mt.UnFreezeNode(mt.State.SelectedRowKeys); err != nil {
+			err := mt.UnFreezeNode(mt.State.SelectedRowKeys)
+			if err != nil {
 				return err
 			}
 		case common.CMPDashboardFreezeNode:
-			if err := mt.FreezeNode(mt.State.SelectedRowKeys); err != nil {
+			err := mt.FreezeNode(mt.State.SelectedRowKeys)
+			if err != nil {
 				return err
 			}
 		default:
@@ -165,7 +155,7 @@ func (mt *MemInfoTable) getProps() {
 		"rowKey": "id",
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true},
+			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true, Width: 260},
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: mt.SDK.I18n("role"), Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Width: 120},
@@ -177,12 +167,8 @@ func (mt *MemInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"operations": map[string]table.Operation{
-			"changePageNo": {Key: "changePageNo", Reload: true},
-			"changeSort":   {Key: "changeSort", Reload: true},
-		},
-
-		"scroll": table.Scroll{X: 1200},
+		"batchOperations": []string{"freeze", "unfreeze"},
+		"scroll":          table.Scroll{X: 1200},
 	}
 
 }

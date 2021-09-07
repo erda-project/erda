@@ -16,7 +16,6 @@ package chart
 
 import (
 	"context"
-	"math"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -71,30 +70,43 @@ func setData(nodes []data.Object, resourceName string) []DataItem {
 	allocatableQuantity.ToUnstructured()
 	capacityQuantity.Sub(*unAllocatableQuantity)
 	capacityQuantity.Sub(*allocatableQuantity)
-	GetScale(capacityQuantity)
-	GetScale(unAllocatableQuantity)
-	GetScale(allocatableQuantity)
+	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
 	return []DataItem{{
 		Value: float64(allocatableQuantity.Value()),
 		Name:  Distributed_Desc,
-		Label: Label{Formatter: allocatableQuantity.String()},
+		Label: Label{Formatter: allocatableStr},
 	}, {
 		Value: float64(capacityQuantity.Value()),
 		Name:  Free_Desc,
-		Label: Label{capacityQuantity.String()},
+		Label: Label{capacityStr},
 	}, {
 		Value: float64(unAllocatableQuantity.Value()),
 		Name:  Locked_Desc,
-		Label: Label{unAllocatableQuantity.String()},
+		Label: Label{unAllocatableStr},
 	}}
 }
 
-func GetScale(quantity *resource.Quantity) {
-	start := 3.0
-	for ; quantity.Value() > int64(math.Pow(10, start)); start += 3 {
+func GetScaleValue(quantity1 *resource.Quantity, quantity2 *resource.Quantity, quantity3 *resource.Quantity) (string, string, string) {
+	factor := 10
+	for ; quantity1.Value() > int64(1<<factor) && quantity2.Value() > int64(1<<factor) && quantity3.Value() > int64(1<<factor); factor += 10 {
 	}
-	start -= 3.0
-	quantity.SetScaled(quantity.Value()/int64(math.Pow(10, start)), resource.Scale(start))
+	factor -= 10
+	quantity1.Set(quantity1.Value() / (1 << factor))
+	quantity2.Set(quantity2.Value() / (1 << factor))
+	quantity3.Set(quantity3.Value() / (1 << factor))
+	switch factor {
+	case 0:
+		return quantity1.String(), quantity2.String(), quantity3.String()
+	case 10:
+		return quantity1.String() + "K", quantity2.String() + "K", quantity3.String() + "K"
+	case 20:
+		return quantity1.String() + "M", quantity2.String() + "M", quantity3.String() + "M"
+	case 30:
+		return quantity1.String() + "G", quantity2.String() + "G", quantity3.String() + "G"
+	case 40:
+		return quantity1.String() + "T", quantity2.String() + "T", quantity3.String() + "T"
+	}
+	return "", "", ""
 }
 
 func parseResource(str string, format resource.Format) *resource.Quantity {
@@ -126,6 +138,16 @@ type Option struct {
 	Legend Legend   `json:"legend"`
 	Grid   Grid     `json:"grid"`
 	Series []Serie  `json:"series"`
+	Title  Title    `json:"title"`
+}
+
+type Title struct {
+	Text      string    `json:"text"`
+	TextStyle TextStyle `json:"textStyle"`
+}
+
+type TextStyle struct {
+	FrontSize int `json:"frontSize"`
 }
 
 type Serie struct {
@@ -158,7 +180,7 @@ type Label struct {
 	Formatter string `json:"formatter"`
 }
 
-func (c *Chart) GetProps() Props {
+func (c *Chart) GetProps(name string) Props {
 	return Props{Option: Option{
 		Color:  []string{"#F7A76B", "#6CB38B", "#DE5757"},
 		Legend: Legend{Data: []string{c.SDK.I18n("allocated"), c.SDK.I18n("cannot-allocated"), c.SDK.I18n("free-allocate")}},
@@ -172,5 +194,9 @@ func (c *Chart) GetProps() Props {
 			Radius: "60%",
 			Data:   nil,
 		}},
+		Title: Title{
+			Text:      name,
+			TextStyle: TextStyle{FrontSize: 14},
+		},
 	}, Style: Style{Flex: 1}}
 }

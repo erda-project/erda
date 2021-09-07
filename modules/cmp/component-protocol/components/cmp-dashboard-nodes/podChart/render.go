@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memChart
+package podChart
 
 import (
 	"context"
@@ -26,16 +26,16 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (cht *MemChart) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (cht *PodChart) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	cht.SDK = cputil.SDK(ctx)
-	cht.Props = cht.GetProps()
+	cht.Props = cht.GetProps(cht.SDK.I18n("Pod Chart"))
 	return cht.ChartRender(ctx, c, s, event, gs, chart.Pods)
 }
 
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "podChart", func() servicehub.Provider {
-		cc := &MemChart{}
+		cc := &PodChart{}
 		cc.Type = "Chart"
 		return cc
 	})

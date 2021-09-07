@@ -16,7 +16,6 @@ package table
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -41,19 +40,15 @@ import (
 type Table struct {
 	TableComponent GetRowItem
 	base.DefaultProvider
-	CtxBdl         *bundle.Bundle
-	SDK            *cptype.SDK
-	Ctx            context.Context
-	Type           string                    `json:"type"`
-	Props          map[string]interface{}    `json:"props"`
-	Operations     map[string]interface{}    `json:"operations"`
-	BatchOperation map[string]BatchOperation `json:"batchOperation"`
-	State          State                     `json:"state"`
+	CtxBdl     *bundle.Bundle
+	SDK        *cptype.SDK
+	Ctx        context.Context
+	Type       string                 `json:"type"`
+	Props      map[string]interface{} `json:"props"`
+	Operations map[string]interface{} `json:"operations"`
+	State      State                  `json:"state"`
 }
 
-//type TableInterface interface {
-//	SetData(object data.Object, resName v1.ResourceName) error
-//}
 type TableType string
 
 const (
@@ -253,18 +248,7 @@ func (t *Table) SetComponentValue(c *cptype.Component) error {
 	if err = common.Transfer(t.Operations, &c.Operations); err != nil {
 		return err
 	}
-	//if err = common.Transfer(t.BatchOperation); err != nil {
-	//	return err
-	//}
 	return nil
-}
-
-func (t *Table) GetBatchOperation() {
-	t.BatchOperation = map[string]BatchOperation{
-		"delete":   {Key: "delete", Text: t.SDK.I18n("delete"), Reload: true, ShowIndex: nil},
-		"freeze":   {Key: "freeze", Text: t.SDK.I18n("freeze"), Reload: true, ShowIndex: nil},
-		"unfreeze": {Key: "unfreeze", Text: t.SDK.I18n("unfreeze"), Reload: true, ShowIndex: nil},
-	}
 }
 
 func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object) error {
@@ -354,43 +338,6 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 	return nodes, nil
 }
 
-// GetOpsInfo return request meta
-func (t *Table) GetOpsInfo(opsData interface{}) (*Meta, error) {
-	if opsData == nil {
-		return nil, common.OperationsEmptyErr
-	}
-	var op Operation
-	cont, err := json.Marshal(opsData)
-	if err != nil {
-		logrus.Errorf("marshal inParams failed, content:%v, err:%v", opsData, err)
-		return nil, err
-	}
-	err = json.Unmarshal(cont, &op)
-	if err != nil {
-		logrus.Errorf("unmarshal move out request failed, content:%v, err:%v", cont, err)
-		return nil, err
-	}
-	meta := op.Meta.(Meta)
-	return &meta, nil
-}
-
-func (t *Table) DeleteNode(nodeNames []string) error {
-	for _, name := range nodeNames {
-		req := &apistructs.SteveRequest{
-			UserID:      t.SDK.Identity.UserID,
-			OrgID:       t.SDK.Identity.OrgID,
-			Type:        apistructs.K8SNode,
-			ClusterName: t.SDK.InParams["clusterName"].(string),
-			Name:        name,
-		}
-		err := t.CtxBdl.DeleteSteveResource(req)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (t *Table) FreezeNode(nodeNames []string) error {
 	for _, name := range nodeNames {
 		req := &apistructs.SteveRequest{
@@ -434,25 +381,6 @@ func (t *Table) GetNodeAddress(addrs []v1.NodeAddress) string {
 	return ""
 }
 
-func (t *Table) RenderChangePageSize(ops interface{}) error {
-	meta, err := t.GetOpsInfo(ops)
-	if err != nil {
-		return err
-	}
-	t.State.PageNo = 1
-	t.State.PageSize = meta.PageSize
-	return nil
-}
-
-func (t *Table) RenderChangePageNo(ops interface{}) error {
-	meta, err := t.GetOpsInfo(ops)
-	if err != nil {
-		return err
-	}
-	t.State.PageNo = meta.PageNo
-	return nil
-}
-
 func (t *Table) GetTableOperation() map[string]interface{} {
 	ops := map[string]Operation{
 		"changePageNo": {
@@ -467,21 +395,6 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 			Key:    "changeSort",
 			Reload: true,
 		},
-	}
-	res := map[string]interface{}{}
-	for key, op := range ops {
-		res[key] = interface{}(op)
-	}
-	return res
-}
-
-func (t *Table) GetTableBatchOperation() map[string]BatchOperation {
-	ops := map[string]BatchOperation{
-		"delete": {
-			Key:    "delete",
-			Reload: true,
-			Text:   t.SDK.I18n("delete"),
-		},
 		"freeze": {
 			Key:    "freeze",
 			Reload: true,
@@ -493,7 +406,11 @@ func (t *Table) GetTableBatchOperation() map[string]BatchOperation {
 			Reload: true,
 		},
 	}
-	return ops
+	res := map[string]interface{}{}
+	for key, op := range ops {
+		res[key] = interface{}(op)
+	}
+	return res
 }
 
 func (t *Table) GetNodeLabels(labels data.Object) []label.Label {
@@ -629,12 +546,11 @@ func SortByString(data []RowItem, sortColumn string, asc bool) {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
-
 	})
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, sortColumn string, asc bool) {
+func SortByNode(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		if asc {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -658,7 +574,7 @@ func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
 }
 
 // SortByStatus sort by percent
-func SortByStatus(data []RowItem, sortColumn string, asc bool) {
+func SortByStatus(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		if asc {
 			return data[i].Status.Value < data[j].Status.Value
