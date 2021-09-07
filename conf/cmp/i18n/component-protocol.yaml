@@ -96,6 +96,7 @@ zh:
  success: 安全
  error: 错误
  danger: 危险
+ custom: 自定义
  containerRuntimeVersion: 容器运行时版本
  kernelVersion: kernel 版本
  kubeProxyVersion: kubectl 代理版本
@@ -139,6 +140,9 @@ zh:
  relative events: 相关日志
  desc: 注释
  workload: 工作负载
+ Memory Chart: 内存图表
+ Cpu Chart: CPU 图表
+ Pod Chart: Pod 图表
 
 en:
  # general
