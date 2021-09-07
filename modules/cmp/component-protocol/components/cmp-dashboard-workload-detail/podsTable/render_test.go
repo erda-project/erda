@@ -126,7 +126,7 @@ func TestComponentPodsTable_SetComponentValue(t *testing.T) {
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
 	p := &ComponentPodsTable{}
 	p.SetComponentValue(ctx)
-	if len(p.Props.PageSizeOptions) != 4 || len(p.Props.Columns) != 11 || len(p.Operations) != 3 {
+	if len(p.Props.PageSizeOptions) != 4 || len(p.Props.Columns) != 12 || len(p.Operations) != 3 {
 		t.Errorf("test failed, length of pods table fileds is unexpected")
 	}
 }

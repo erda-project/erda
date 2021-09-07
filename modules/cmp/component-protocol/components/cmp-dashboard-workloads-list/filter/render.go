@@ -220,7 +220,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:         "search",
 		Label:       cputil.I18n(ctx, "search"),
-		Placeholder: cputil.I18n(ctx, "searchPlaceHolder"),
+		Placeholder: cputil.I18n(ctx, "workloadSearchPlaceHolder"),
 		Type:        "input",
 		Fixed:       true,
 	})

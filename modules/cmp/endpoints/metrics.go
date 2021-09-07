@@ -29,6 +29,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -41,33 +42,27 @@ func (e *Endpoints) MetricsQuery(ctx context.Context, r *http.Request, vars map[
 		req apistructs.MetricsRequest
 		err error
 	)
-
 	// get identity info
 	i, resp := e.GetIdentity(r)
 	if resp != nil {
-		return mkResponse(apistructs.RmNodesResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: permissionFailErr.Error()},
-			},
-		})
+		return httpserver.ErrResp(http.StatusInternalServerError, "InternalError", "identity not found")
 	}
 	// permission check
 	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.GetAction)
 	if err != nil {
-		return nil, permissionFailErr
+		return httpserver.ErrResp(http.StatusInternalServerError, "InternalError", permissionFailErr.Error())
 	}
 	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logrus.Errorf("failed to unmarshal request: %+v", err)
-		return mkResponse(apistructs.RmNodesResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: err.Error()},
-			},
-		})
+		logrus.Errorf("failed to unmarshal request: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "InternalError", "request json unmarshal err")
 	}
-	logrus.Infof("query metrics :%s %s %v", req.ClusterName, req.ResourceType, req.HostName)
-	return e.metrics.Query(ctx, &req)
+
+	logrus.Infof("query metrics :%s %s %s %v", req.ClusterName, req.ResourceKind, req.ResourceType, req.Names)
+	if strings.ToLower(req.ResourceKind) == metrics.Node {
+		return e.metrics.QueryNodeResource(ctx, &req)
+	} else {
+		return e.metrics.QueryPodResource(ctx, &req)
+	}
 }
 
 func ProxyMetrics(ctx context.Context, r *http.Request, vars map[string]string) error {

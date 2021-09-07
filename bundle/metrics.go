@@ -15,6 +15,10 @@
 package bundle
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -29,16 +33,21 @@ func (b *Bundle) GetMetrics(req apistructs.MetricsRequest) ([]apistructs.Metrics
 	hc := b.hc
 
 	var metricsResp apistructs.MetricsResponse
-	resp, err := hc.Get(host).Path("/api/metrics").JSONBody(req).
+	resp, err := hc.Post(host).Path("/api/metrics").JSONBody(req).
 		Header(httputil.InternalHeader, "bundle").
 		Header("User-ID", req.UserID).
 		Header("Org-ID", req.OrgID).
-		Do().JSON(&metricsResp)
+		Do().RAW()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !resp.IsOK() {
-		return nil, toAPIError(resp.StatusCode(), metricsResp.Error)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if err = json.Unmarshal(data, &metricsResp); err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(fmt.Errorf(string(data)))
 	}
 
 	return metricsResp.Data, nil
