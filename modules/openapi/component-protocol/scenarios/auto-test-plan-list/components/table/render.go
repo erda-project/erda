@@ -192,7 +192,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 				RenderType: "progress",
 				Value:      data.PassRate,
 			},
-			ExecuteTime: data.ExecuteTime.Format("2006-01-02 15:04:05"),
+			ExecuteTime: convertExecuteTime(data),
 		}
 		if data.IsArchived == true {
 			item.Operate.Operations["archive"] = map[string]interface{}{
@@ -261,6 +261,17 @@ func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Comp
 	}
 
 	return nil
+}
+
+func convertExecuteTime(data *apistructs.TestPlanV2) string {
+	executeTime := ""
+	if data.ExecuteTime != nil {
+		executeTime = data.ExecuteTime.Format("2006-01-02 15:04:05")
+	}
+	if executeTime == "0001-01-01 00:00:00" {
+		executeTime = ""
+	}
+	return executeTime
 }
 
 // TODO:

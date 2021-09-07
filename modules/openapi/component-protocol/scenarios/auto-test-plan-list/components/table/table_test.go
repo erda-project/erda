@@ -16,6 +16,7 @@ package table
 
 import (
 	"testing"
+	"time"
 
 	"github.com/alecthomas/assert"
 
@@ -55,4 +56,21 @@ func Test_ConvertSortData(t *testing.T) {
 		Asc:     false,
 	}
 	assert.Equal(t, want, req)
+}
+
+func Test_executeTime(t *testing.T) {
+	time := time.Now()
+	data := &apistructs.TestPlanV2{
+		ExecuteTime: nil,
+	}
+	executeTime := convertExecuteTime(data)
+	want := ""
+	assert.Equal(t, want, executeTime)
+
+	data = &apistructs.TestPlanV2{
+		ExecuteTime: &time,
+	}
+	executeTime = convertExecuteTime(data)
+	want = time.Format("2006-01-02 15:04:05")
+	assert.Equal(t, want, executeTime)
 }
