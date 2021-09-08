@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -188,26 +189,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 		req := apistructs.MetricsRequest{}
-		req.ResourceType = "cpu"
+		req.ResourceType = metrics.Cpu
 		usedCPUPercent := 0.0
 		cpuMetrics, err := p.bdl.GetMetrics(req)
 		if err != nil {
 			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(cpuMetrics) != 0 {
-			usedCPUPercent = cpuMetrics[0].Used
+			usedCPUPercent = cpuMetrics[0].Used * 100
 		}
 		cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
 
 		// mem
-		req.ResourceType = "mem"
+		req.ResourceType = metrics.Memory
 		usedMemPercent := 0.0
 		memMetrics, err := p.bdl.GetMetrics(req)
 		if err != nil {
 			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(memMetrics) != 0 {
-			usedMemPercent = memMetrics[0].Used
+			usedMemPercent = memMetrics[0].Used * 100
 		}
 		memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
 

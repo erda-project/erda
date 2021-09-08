@@ -52,9 +52,11 @@ type ChartInterface interface {
 
 func setData(nodes []data.Object, resourceName string) []DataItem {
 	//var allocatableTotal, capacityTotal, unAllocatableTotal float64
+	var suffix = ""
 	resourceType := resource.DecimalSI
 	if resourceName == Memory {
 		resourceType = resource.BinarySI
+		suffix = "i"
 	}
 	allocatableQuantity := resource.NewQuantity(0, resourceType)
 	capacityQuantity := resource.NewQuantity(0, resourceType)
@@ -74,15 +76,15 @@ func setData(nodes []data.Object, resourceName string) []DataItem {
 	return []DataItem{{
 		Value: float64(allocatableQuantity.Value()),
 		Name:  Distributed_Desc,
-		Label: Label{Formatter: allocatableStr},
+		Label: Label{Formatter: allocatableStr + suffix},
 	}, {
 		Value: float64(capacityQuantity.Value()),
 		Name:  Free_Desc,
-		Label: Label{capacityStr},
+		Label: Label{capacityStr + suffix},
 	}, {
 		Value: float64(unAllocatableQuantity.Value()),
 		Name:  Locked_Desc,
-		Label: Label{unAllocatableStr},
+		Label: Label{unAllocatableStr + suffix},
 	}}
 }
 
