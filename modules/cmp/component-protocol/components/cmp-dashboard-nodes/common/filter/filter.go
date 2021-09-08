@@ -94,7 +94,8 @@ func (f *Filter) GetFilterProps() Props {
 
 type Values map[string]string
 type State struct {
-	Values Values `json:"values"`
+	Values      Values `json:"values"`
+	ClusterName string `json:"clusterName"`
 }
 
 type Props struct {
