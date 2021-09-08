@@ -450,8 +450,8 @@ github.com/erda-project/erda-infra v0.0.0-20210901113044-1130cdf38f06/go.mod h1:
 github.com/erda-project/erda-infra v0.0.0-20210907124129-709cc0069f2f h1:u72lb4bVQRbnIFKeoNShBAoYtukvEO2VBIZSJld/+Hk=
 github.com/erda-project/erda-infra v0.0.0-20210907124129-709cc0069f2f/go.mod h1:Aec8FrEVnfzqeAjQSQDnBuRJ/AFJjpHYEG/QpKqVeHk=
 github.com/erda-project/erda-proto-go v0.0.0-20210820073528-bcd612c2efb7/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
-github.com/erda-project/erda-proto-go v0.0.0-20210908085556-8c95f674d907 h1:W9z8V0IiQGc95XatTeYQnGs+66MNk66/Yka8ZhDbWkY=
-github.com/erda-project/erda-proto-go v0.0.0-20210908085556-8c95f674d907/go.mod h1:tbepes1Qnq9I9ex23EZbZ4u+ImurAapGYQf0yISZRpI=
+github.com/erda-project/erda-proto-go v0.0.0-20210908122055-e9a71c35f41b h1:C1OsLGixssA1wlrX4lxJZrx8PWxVYzsdZ4lXSzFXWD8=
+github.com/erda-project/erda-proto-go v0.0.0-20210908122055-e9a71c35f41b/go.mod h1:tbepes1Qnq9I9ex23EZbZ4u+ImurAapGYQf0yISZRpI=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2 h1:5QKXIq0yTPulGqXzEQx96fLK6HDCb8xC1H6kOjj4hsk=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
