@@ -115,12 +115,14 @@ zh:
  Pending: 挂起
  Running: 运行中
  Terminating: 已结束
- memUsed: mem 使用率
+ memUsed: Mem 使用率
  use: mem 使用率
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
+ memDistribution: 内存分配率
  distributionRate: 分配使用率
+ memDistributionRate: 内存分配使用率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -139,15 +141,17 @@ zh:
  relative events: 相关日志
  desc: 注释
  workload: 工作负载
- Memory Chart: 内存图表
- Pod Chart: Pod 图表
+ Memory Chart: 内存
+ Pod Chart: Pods
  podSearchPlaceHolder: 搜索 pod 名称或 IP
  podInfoTitle: Pod 详情
  podIP: Pod IP
  log: 查看日志
  Cpu Chart: CPU
-  annotation: 注释
-  containerRuntime: 容器运行时
+ annotation: 注释
+ containerRuntime: 容器运行时
+ placeholderFilterByNodeName: 按节点名称过滤
+ cpuUsage: CPU 使用率
 
 en:
  # general
@@ -251,10 +255,12 @@ en:
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
  distributionRate: Distribution Rate
+ memDistribution: Mem Distribution
+ memDistributionRate: Mem Distribution Rate
  kernelVersion: kernel version
  kubeletVersion: kubelet version
  machineID: machine ID
- memUsed: mem usage
+ memUsed: Mem Usage
  nodeDetail: Node Detail
  operate: Operation
  operatingSystem: Operation System
@@ -265,5 +271,7 @@ en:
  rebootTimes: Reboot Times
  systemUUID: System UUID
  use: mem usage
-  annotation: Annotation
-  containerRuntime: Container Runtime
+ annotation: Annotation
+ containerRuntime: Container Runtime
+ placeholderFilterByNodeName: filter by node name
+ cpuUsage: CPU Usage
