@@ -23,14 +23,9 @@ type PodTitle struct {
 
 	Props Props  `json:"props"`
 	Type  string `json:"type"`
-	State State  `json:"state,omitempty"`
 }
 
 type Props struct {
 	Size  string `json:"size"`
 	Title string `json:"title"`
-}
-
-type State struct {
-	Values map[string]int `json:"values"`
 }

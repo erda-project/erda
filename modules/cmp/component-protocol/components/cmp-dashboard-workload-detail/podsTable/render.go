@@ -425,7 +425,7 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
+	return status, fmt.Sprintf("%.2f", usedPercent*100), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {

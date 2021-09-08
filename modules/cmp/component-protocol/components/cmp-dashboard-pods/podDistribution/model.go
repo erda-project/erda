@@ -21,9 +21,8 @@ import (
 type PodDistribution struct {
 	base.DefaultProvider
 
-	Data  Data   `json:"data"`
-	Type  string `json:"type"`
-	State State  `json:"state,omitempty"`
+	Data Data   `json:"data"`
+	Type string `json:"type"`
 }
 
 type Data struct {
@@ -36,8 +35,4 @@ type List struct {
 	Tip   string `json:"tip"`
 	Value int    `json:"value"`
 	Label string `json:"label"`
-}
-
-type State struct {
-	Values map[string]int `json:"values,omitempty"`
 }

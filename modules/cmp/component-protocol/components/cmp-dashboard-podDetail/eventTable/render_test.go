@@ -15,8 +15,11 @@
 package eventTable
 
 import (
+	"context"
 	"testing"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -67,9 +70,23 @@ func TestGetRange(t *testing.T) {
 	}
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestComponentEventTable_SetComponentValue(t *testing.T) {
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
+
 	cet := &ComponentEventTable{}
-	cet.SetComponentValue()
+	cet.SetComponentValue(ctx)
 
 	if len(cet.Props.Columns) != 4 {
 		t.Errorf("test failed, len of .Props.Columns is unexpected, expected 9, actual %d", len(cet.Props.Columns))

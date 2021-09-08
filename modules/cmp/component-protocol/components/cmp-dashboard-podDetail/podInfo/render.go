@@ -112,7 +112,7 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 			{Label: podInfo.SDK.I18n("age"), ValueKey: "age"},
 			{Label: podInfo.SDK.I18n("podIP"), ValueKey: "ip"},
 			{Label: podInfo.SDK.I18n("workload"), ValueKey: "workload", RenderType: "linkText",
-				Operation: map[string]Operation{
+				Operations: map[string]Operation{
 					"click": {
 						Key:    "gotoWorkloadDetail",
 						Reload: false,
@@ -127,7 +127,7 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 					},
 				}},
 			{Label: podInfo.SDK.I18n("node"), ValueKey: "node", RenderType: "linkText",
-				Operation: map[string]Operation{
+				Operations: map[string]Operation{
 					"click": {
 						Key:    "gotoNodeDetail",
 						Reload: false,

@@ -224,39 +224,39 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Options: []Option{
 			{
 				Label: "Completed",
-				Value: "Completed",
+				Value: cputil.I18n(ctx, "Completed"),
 			},
 			{
 				Label: "ContainerCreating",
-				Value: "ContainerCreating",
+				Value: cputil.I18n(ctx, "ContainerCreating"),
 			},
 			{
 				Label: "CrashLoopBackOff",
-				Value: "CrashLoopBackOff",
+				Value: cputil.I18n(ctx, "CrashLoopBackOff"),
 			},
 			{
 				Label: "Error",
-				Value: "Error",
+				Value: cputil.I18n(ctx, "Error"),
 			},
 			{
 				Label: "Evicted",
-				Value: "Evicted",
+				Value: cputil.I18n(ctx, "Evicted"),
 			},
 			{
 				Label: "ImagePullBackOff",
-				Value: "ImagePullBackOff",
+				Value: cputil.I18n(ctx, "ImagePullBackOff"),
 			},
 			{
 				Label: "Pending",
-				Value: "Pending",
+				Value: cputil.I18n(ctx, "Pending"),
 			},
 			{
 				Label: "Running",
-				Value: "Running",
+				Value: cputil.I18n(ctx, "Running"),
 			},
 			{
 				Label: "Terminating",
-				Value: "Terminating",
+				Value: cputil.I18n(ctx, "Terminating"),
 			},
 		},
 	})
@@ -274,7 +274,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	}
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:     "node",
-		Label:   "Node",
+		Label:   cputil.I18n(ctx, "node"),
 		Type:    "select",
 		Fixed:   true,
 		Options: nodeOptions,
@@ -283,7 +283,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:         "search",
 		Label:       cputil.I18n(ctx, "search"),
-		Placeholder: cputil.I18n(ctx, "searchNameOrIP"),
+		Placeholder: cputil.I18n(ctx, "podSearchPlaceHolder"),
 		Type:        "input",
 		Fixed:       true,
 	})
