@@ -709,3 +709,30 @@ func (e *Endpoints) GetAllProjects(ctx context.Context, r *http.Request, vars ma
 	}
 	return httpserver.OkResp(projects)
 }
+
+func (e *Endpoints) GetModelProjectsMap(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	internalClient := r.Header.Get(httputil.InternalHeader)
+	if internalClient == "" {
+		return apierrors.ErrListAllProject.AccessDenied().ToResp(), nil
+	}
+
+	var req apistructs.GetModelProjectsMapRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrListAllProject.InvalidParameter(err).ToResp(), nil
+	}
+
+	res, err := e.project.GetModelProjectsMap(req.ProjectIDs)
+	if err != nil {
+		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
+	}
+	projectDtos := make(map[uint64]apistructs.ProjectDTO)
+	for i, v := range res {
+		projectDtos[uint64(i)] = apistructs.ProjectDTO{
+			ID:          uint64(v.ID),
+			DisplayName: v.DisplayName,
+			Logo:        v.Logo,
+		}
+	}
+
+	return httpserver.OkResp(projectDtos)
+}
