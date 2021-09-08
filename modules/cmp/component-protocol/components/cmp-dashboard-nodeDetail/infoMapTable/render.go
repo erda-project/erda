@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -42,7 +43,7 @@ func (infoMapTable *InfoMapTable) Render(ctx context.Context, c *cptype.Componen
 	for _, k := range keys {
 		pairs = append(pairs, Pair{
 			Label: Label{
-				Value:       k,
+				Value:       infoMapTable.SDK.I18n(k),
 				RenderType:  "text",
 				StyleConfig: StyleConfig{"bold"},
 			},

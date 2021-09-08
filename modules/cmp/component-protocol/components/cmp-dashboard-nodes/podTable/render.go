@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
@@ -91,7 +92,7 @@ func (pt *PodInfoTable) getProps() {
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: pt.SDK.I18n("role"), Sortable: true},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version")},
-			{DataIndex: "UsageRate", Title: "pod" + pt.SDK.I18n("usage"), Sortable: true},
+			{DataIndex: "UsageRate", Title: "Pods " + pt.SDK.I18n("usage"), Sortable: true},
 			{DataIndex: "Operate", Title: pt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
