@@ -685,6 +685,11 @@ func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([
 	return res, total, nil
 }
 
+var expireTypes = []ExpireType{
+	ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day,
+	ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture,
+}
+
 var conditions = map[ExpireType]string{
 	ExpireTypeUndefined:      "a.plan_finished_at IS NULL",
 	ExpireTypeExpired:        "a.plan_finished_at < CURDATE()",
@@ -696,8 +701,11 @@ var conditions = map[ExpireType]string{
 }
 
 func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueStateBelong) error {
-	for key, condition := range conditions {
-		sql := "UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id SET a.expiry_status = ? WHERE a.expiry_status != ? AND b.belong IN (?) AND " + condition
+	for _, key := range expireTypes {
+		if _, ok := conditions[key]; !ok {
+			continue
+		}
+		sql := fmt.Sprintf("UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id SET a.expiry_status = ? WHERE a.expiry_status != ? AND b.belong IN (?) AND %s", conditions[key])
 		if err := client.Exec(sql, key, key, states).Error; err != nil {
 			return err
 		}
