@@ -154,6 +154,7 @@ zh:
  placeholderFilterByNodeName: 按节点名称过滤
  cpuUsage: CPU 使用率
  SchedulingDisabled: 冻结
+ architecture: 架构
 
 en:
  # general
