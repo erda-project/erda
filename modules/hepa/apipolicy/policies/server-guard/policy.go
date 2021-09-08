@@ -36,7 +36,7 @@ func (policy Policy) NeedSerialUpdate() bool {
 
 func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
 	dto := &PolicyDto{
-		ExtraLatency:   50,
+		ExtraLatency:   500,
 		RefuseCode:     429,
 		RefuseResponse: "System is busy, please try it later.",
 	}
@@ -46,7 +46,7 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 
 func (policy Policy) MergeDiceConfig(conf map[string]interface{}) (apipolicy.PolicyDto, error) {
 	dto := &PolicyDto{
-		ExtraLatency:   50,
+		ExtraLatency:   500,
 		RefuseCode:     429,
 		RefuseResponse: "System is busy, please try it later.",
 	}
@@ -148,7 +148,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if burst != 0 {
 		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d;\n", id, burst)
 	} else {
-		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s nodelay;\n", id)
+		// set burst=tps by default when user set a zero extra latency
+		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d nodelay;\n", id, tps)
 	}
 	limitReqStatus := fmt.Sprintf("limit_req_status %d;\n", LIMIT_INNER_STATUS)
 	errorPage := fmt.Sprintf("error_page %d = @LIMIT-%s;\n", LIMIT_INNER_STATUS, id)

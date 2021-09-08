@@ -15,19 +15,22 @@
 package hepa
 
 import (
-	"context"
 	"net/http"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/base/version"
 	_ "github.com/erda-project/erda-infra/providers/health"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/hepa/common"
+	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
-	"github.com/erda-project/erda/modules/hepa/server"
-	"github.com/erda-project/erda/modules/hepa/ver"
+	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 type myCfg struct {
@@ -36,8 +39,9 @@ type myCfg struct {
 }
 
 type provider struct {
-	Cfg *myCfg      // auto inject this field
-	Log logs.Logger // auto inject this field
+	Cfg        *myCfg            // auto inject this field
+	Log        logs.Logger       // auto inject this field
+	HttpServer httpserver.Router `autowired:"http-server"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -45,41 +49,26 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	config.LogConf = &p.Cfg.Log
 	common.InitLogger()
 	orm.Init()
+	logrus.Info(version.String())
 	logrus.Infof("server conf: %+v", config.ServerConf)
 	logrus.Infof("log conf: %+v", config.LogConf)
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
-	server.CreateSingleton(common.AccessLog)
-	gwCtl, err := server.NewGatewayController()
-	if err != nil {
-		return err
-	}
-	gwCtl.Register()
-	openapiCtl, err := server.NewOpenapiController()
-	if err != nil {
-		return err
-	}
-	openapiCtl.Register()
-	logrus.Info(ver.String())
-	srv := &http.Server{
-		Addr: p.Cfg.Server.ListenAddr,
-	}
-	errChan := make(chan error, 0)
-	go func() {
-		err = server.Start(srv)
-		errChan <- err
-	}()
-	select {
-	case <-ctx.Done():
-		if err := srv.Shutdown(context.Background()); err != nil {
-			logrus.Fatal("Server Shutdown:", err)
+	p.HttpServer.GET("/api/gateway/openapi/metrics/*", func(resp http.ResponseWriter, req *http.Request) {
+		path := strings.Replace(req.URL.Path, "/api/gateway/openapi/metrics/charts", "/api/metrics", 1)
+		path += "?" + req.URL.RawQuery
+		logrus.Infof("monitor proxy url:%s", path)
+		code, body, err := util.CommonRequest("GET", discover.Monitor()+path, nil)
+		if err != nil {
+			logrus.Error(err)
+			code = http.StatusInternalServerError
+			body = []byte("")
 		}
-		return nil
-	case err := <-errChan:
-		return err
-	}
+		resp.WriteHeader(code)
+		resp.Write(body)
+	}, permission.Intercepter(
+		permission.ScopeOrg, permission.OrgIDFromHeader(),
+		"org", permission.ActionGet,
+	))
+	return nil
 }
 
 func init() {

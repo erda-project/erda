@@ -14,6 +14,8 @@
 
 package dto
 
+import "github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
+
 type ConsumerInfoDto struct {
 	ConsumerId       string               `json:"consumerId"`
 	ConsumerName     string               `json:"consumerName"`
@@ -24,4 +26,13 @@ type OpenConsumerInfoDto struct {
 	Id       string `json:"id"`
 	CreateAt string `json:"createAt"`
 	OpenConsumerDto
+}
+
+func (dto OpenConsumerInfoDto) ToConsumer() *pb.Consumer {
+	return &pb.Consumer{
+		Id:          dto.Id,
+		CreateAt:    dto.CreateAt,
+		Name:        dto.Name,
+		Description: dto.Description,
+	}
 }

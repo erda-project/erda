@@ -14,6 +14,8 @@
 
 package dto
 
+import "github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
+
 type ConsumerAclsDto struct {
 	Packages []string `json:"packages"`
 }
@@ -21,4 +23,13 @@ type ConsumerAclsDto struct {
 type ConsumerAclInfoDto struct {
 	PackageInfoDto
 	Selected bool `json:"selected"`
+}
+
+func (dto ConsumerAclInfoDto) ToAcl() *pb.Acl {
+	return &pb.Acl{
+		Id:          dto.Id,
+		Name:        dto.Name,
+		Description: dto.Description,
+		Selected:    dto.Selected,
+	}
 }
