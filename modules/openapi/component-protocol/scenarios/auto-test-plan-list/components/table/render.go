@@ -264,12 +264,12 @@ func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Comp
 }
 
 func convertExecuteTime(data *apistructs.TestPlanV2) string {
-	executeTime := ""
+	if data.ExecuteTime == nil {
+		return ""
+	}
+	var executeTime string
 	if data.ExecuteTime != nil {
 		executeTime = data.ExecuteTime.Format("2006-01-02 15:04:05")
-	}
-	if executeTime == "0001-01-01 00:00:00" {
-		executeTime = ""
 	}
 	return executeTime
 }

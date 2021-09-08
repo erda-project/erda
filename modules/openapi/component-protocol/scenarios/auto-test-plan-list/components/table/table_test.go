@@ -59,18 +59,21 @@ func Test_ConvertSortData(t *testing.T) {
 }
 
 func Test_executeTime(t *testing.T) {
-	time := time.Now()
-	data := &apistructs.TestPlanV2{
-		ExecuteTime: nil,
+	nowTime := time.Now()
+	var data = []*apistructs.TestPlanV2{
+		{
+			ExecuteTime: nil,
+		},
+		{
+			ExecuteTime: &nowTime,
+		},
 	}
-	executeTime := convertExecuteTime(data)
-	want := ""
-	assert.Equal(t, want, executeTime)
-
-	data = &apistructs.TestPlanV2{
-		ExecuteTime: &time,
+	want := []string{
+		"",
+		nowTime.Format("2006-01-02 15:04:05"),
 	}
-	executeTime = convertExecuteTime(data)
-	want = time.Format("2006-01-02 15:04:05")
-	assert.Equal(t, want, executeTime)
+	for i := range data {
+		executeTime := convertExecuteTime(data[i])
+		assert.Equal(t, executeTime, want[i])
+	}
 }
