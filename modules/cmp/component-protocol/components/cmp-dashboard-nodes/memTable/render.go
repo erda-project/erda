@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
@@ -178,9 +179,9 @@ func (mt *MemInfoTable) getProps() {
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: mt.SDK.I18n("role"), Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Width: 120},
-			{DataIndex: "Distribution", Title: "mem" + mt.SDK.I18n("distribution"), Sortable: true, Width: 120},
-			{DataIndex: "Usage", Title: "mem" + mt.SDK.I18n("use"), Sortable: true, Width: 120},
-			{DataIndex: "UsageRate", Title: "mem" + mt.SDK.I18n("distributionRate"), Sortable: true, Width: 120},
+			{DataIndex: "Distribution", Title: mt.SDK.I18n("memDistribution"), Sortable: true, Width: 120},
+			{DataIndex: "Usage", Title: mt.SDK.I18n("memUsed"), Sortable: true, Width: 120},
+			{DataIndex: "UsageRate", Title: mt.SDK.I18n("memDistributionRate"), Sortable: true, Width: 120},
 			{DataIndex: "Operate", Title: mt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
