@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
 var CMDB_ISSUE_STATE_DELETE = apis.ApiSpec{
@@ -33,4 +34,26 @@ var CMDB_ISSUE_STATE_DELETE = apis.ApiSpec{
 	ResponseType: apistructs.IssueStateDeleteResponse{},
 	IsOpenAPI:    true,
 	Doc:          "summary: 删除 issueState",
+	Audit: func(ctx *spec.AuditContext) error {
+		var responseBody apistructs.IssueStateDeleteResponse
+		if err := ctx.BindResponseData(&responseBody); err != nil {
+			return err
+		}
+		projectID := uint64(responseBody.Data.ProjectID)
+		project, err := ctx.Bundle.GetProject(projectID)
+		if err != nil {
+			return err
+		}
+		return ctx.CreateAudit(&apistructs.Audit{
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      projectID,
+			ProjectID:    projectID,
+			TemplateName: apistructs.DeleteIssueStateTemplate,
+			Context: map[string]interface{}{
+				"projectName": project.Name,
+				"issueType":   responseBody.Data.IssueType,
+				"stateName":   responseBody.Data.StateName,
+			},
+		})
+	},
 }

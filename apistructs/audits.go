@@ -49,6 +49,9 @@ const (
 	DeleteIssueTemplate      TemplateName = "deleteIssue"
 	CreateIssueTemplate      TemplateName = "createIssue"
 	UpdateIssueTemplate      TemplateName = "updateIssue"
+	DeleteIssueStateTemplate TemplateName = "deleteIssueState"
+	CreateIssueStateTemplate TemplateName = "createIssueState"
+	UpdateIssueStateTemplate TemplateName = "updateIssueState"
 	// =====================Iteration============================
 	CreateIterationTemplate TemplateName = "createIteration"
 	DeleteIterationTemplate TemplateName = "deleteIteration"

@@ -267,34 +267,38 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 	}
 
 	if isUpdateArchive {
-		now := strconv.FormatInt(time.Now().Unix(), 10)
-		project, err := t.bdl.GetProject(testPlan.ProjectID)
-		if err != nil {
-			return err
-		}
-		audit := apistructs.Audit{
-			UserID:       req.UserID,
-			ScopeType:    apistructs.ProjectScope,
-			ScopeID:      testPlan.ProjectID,
-			OrgID:        project.OrgID,
-			Result:       "success",
-			StartTime:    now,
-			EndTime:      now,
-			TemplateName: apistructs.ArchiveTestplanTemplate,
-			Context: map[string]interface{}{
-				"projectId":    project.ID,
-				"projectName":  project.Name,
-				"testPlanName": testPlan.Name,
-			},
-		}
-		if !*req.IsArchived {
-			audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
-		}
-		return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
-			Audit: audit,
-		})
+		return t.createAudit(testPlan, req)
 	}
 	return nil
+}
+
+func (t *TestPlan) createAudit(testPlan *dao.TestPlan, req apistructs.TestPlanUpdateRequest) error {
+	now := strconv.FormatInt(time.Now().Unix(), 10)
+	project, err := t.bdl.GetProject(testPlan.ProjectID)
+	if err != nil {
+		return err
+	}
+	audit := apistructs.Audit{
+		UserID:       req.UserID,
+		ScopeType:    apistructs.ProjectScope,
+		ScopeID:      testPlan.ProjectID,
+		OrgID:        project.OrgID,
+		ProjectID:    testPlan.ProjectID,
+		Result:       "success",
+		StartTime:    now,
+		EndTime:      now,
+		TemplateName: apistructs.ArchiveTestplanTemplate,
+		Context: map[string]interface{}{
+			"projectName":  project.Name,
+			"testPlanName": testPlan.Name,
+		},
+	}
+	if !*req.IsArchived {
+		audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
+	}
+	return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+		Audit: audit,
+	})
 }
 
 // Delete
