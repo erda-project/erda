@@ -15,8 +15,21 @@
 package i18n
 
 const (
+	I18nKeyAdd                = "wb.content.autotest.space.add"
+	I18nKeyNoPermission       = "wb.content.autotest.space.no.permission.notify"
+	I18nKeyEditNoPermission   = "wb.content.autotest.space.no.edit.permission.notify"
+	I18nKeyCopyNoPermission   = "wb.content.autotest.space.no.copy.permission.notify"
 	I18nKeyImport             = "wb.content.autotest.space.import"
 	I18nKeyExport             = "wb.content.autotest.space.export"
+	I18nKeyExportConfirm      = "wb.content.autotest.space.export.confirm"
+	I18nKeyExportSuccessMsg   = "wb.content.autotest.space.export.success.msg"
+	I18nKeyEdit               = "wb.content.autotest.space.edit"
+	I18nKeyCopy               = "wb.content.autotest.space.copy"
+	I18nKeyCopyConfirm        = "wb.content.autotest.space.copy.confirm"
+	I18nKeyDelete             = "wb.content.autotest.space.delete"
+	I18nKeyDeleteConfirm      = "wb.content.autotest.space.delete.confirm"
+	I18nKeyDeleteDisabledTip  = "wb.content.autotest.space.delete.disable.tip"
+	I18nKeyRetry              = "wb.content.autotest.space.retry"
 	I18nKeyStatusSuccess      = "wb.content.autotest.space.status.success"
 	I18nKeyStatusFailed       = "wb.content.autotest.space.status.failed"
 	I18nKeyStatusPending      = "wb.content.autotest.space.status.pending"
