@@ -18,11 +18,27 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/nexus"
 )
 
+// needEnableNexusOrgGroupRepos judge if need enable nexus org group repos
+// TODO: maybe use org-level nexus config in the future. Now org does not have nexus config yet.
+func needEnableNexusOrgGroupRepos(nexusAddr string, org *apistructs.OrgDTO) bool {
+	// disable if no nexus
+	if len(nexusAddr) == 0 {
+		return false
+	}
+	return org.EnableReleaseCrossCluster || org.PublisherID > 0
+}
+
 func (o *Org) EnsureNexusOrgGroupRepos(org *apistructs.OrgDTO) error {
+	// judge if need enable nexus org group repos
+	if !needEnableNexusOrgGroupRepos(conf.NexusAddr(), org) {
+		return nil
+	}
+
 	// group repos
 
 	// TODO nexus 3.24
