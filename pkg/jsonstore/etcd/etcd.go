@@ -109,9 +109,9 @@ func New(ops ...OpOption) (*Store, error) {
 	}
 	if url.Scheme == "https" {
 		tlsInfo := transport.TLSInfo{
-			CertFile:      getEnvOrDefault("ETCD_CERT_FILE", "/Users/craig/debug/certs/etcd-client.pem"),
-			KeyFile:       getEnvOrDefault("ETCD_CERT_KEY_FILE", "/Users/craig/debug/certs/etcd-client-key.pem"),
-			TrustedCAFile: getEnvOrDefault("ETCD_CA_FILE", "/Users/craig/debug/certs/etcd-ca.pem"),
+			CertFile:      getEnvOrDefault("ETCD_CERT_FILE", "/certs/etcd-client.pem"),
+			KeyFile:       getEnvOrDefault("ETCD_CERT_KEY_FILE", "/certs/etcd-client-key.pem"),
+			TrustedCAFile: getEnvOrDefault("ETCD_CA_FILE", "/certs/etcd-ca.pem"),
 		}
 		tlsConfig, err = tlsInfo.ClientConfig()
 		if err != nil {
