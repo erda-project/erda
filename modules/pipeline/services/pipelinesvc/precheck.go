@@ -57,7 +57,7 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 		if err == nil {
 			itemsForCheck.Files["dice.yml"] = string(diceymlByte)
 		} else {
-			logrus.Errorf("fail to fetchFile from gittar, err: %s", err.Error())
+			logrus.Error(err)
 		}
 	}
 	err = setItemForCheckRealDiceYml(p, &itemsForCheck, userID)

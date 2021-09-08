@@ -74,7 +74,7 @@ func checkDiceYmlAndDiceWorkspaceYml(p *spec.Pipeline) error {
 	diceworkspaceymlName = fmt.Sprintf("dice_%s.yml", diceymlworkspace)
 
 	repo := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr)
-	diceymlcontent, err := repo.FetchFile(p.GetCommitID(), diceymlName, "")
+	diceymlcontent, err := repo.FetchFile(p.GetCommitID(), diceymlName, p.GetRunUserID())
 	if err != nil {
 		return err
 	}
