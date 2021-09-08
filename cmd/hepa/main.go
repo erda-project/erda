@@ -21,6 +21,18 @@ import (
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/hepa"
+	_ "github.com/erda-project/erda/modules/hepa/providers/api_policy"
+	_ "github.com/erda-project/erda/modules/hepa/providers/domain"
+	_ "github.com/erda-project/erda/modules/hepa/providers/endpoint_api"
+	_ "github.com/erda-project/erda/modules/hepa/providers/global"
+	_ "github.com/erda-project/erda/modules/hepa/providers/legacy_consumer"
+	_ "github.com/erda-project/erda/modules/hepa/providers/legacy_upstream"
+	_ "github.com/erda-project/erda/modules/hepa/providers/legacy_upstream_lb"
+	_ "github.com/erda-project/erda/modules/hepa/providers/micro_api"
+	_ "github.com/erda-project/erda/modules/hepa/providers/openapi_consumer"
+	_ "github.com/erda-project/erda/modules/hepa/providers/openapi_rule"
+	_ "github.com/erda-project/erda/modules/hepa/providers/org_client"
+	_ "github.com/erda-project/erda/modules/hepa/providers/runtime_service"
 )
 
 func main() {

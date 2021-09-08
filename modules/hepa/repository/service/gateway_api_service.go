@@ -94,15 +94,17 @@ func (impl *GatewayApiServiceImpl) GetPageByConsumerId(consumerId string, page *
 		return nil, errors.Wrap(err, "get total consumer count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayApi{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayApi{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayApi
 	err = orm.SelectPage(impl.executor.Desc("create_time"), &result, page, "consumer_id = ?", consumerId)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayApiServiceImpl) GetById(id string) (*orm.GatewayApi, error) {
@@ -126,15 +128,17 @@ func (impl *GatewayApiServiceImpl) GetPage(options []orm.SelectOption, page *com
 		return nil, errors.Wrap(err, "get total count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayApi{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayApi{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayApi
 	err = orm.SelectPageWithOption(options, impl.executor, &result, page)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayApiServiceImpl) Count(options []orm.SelectOption) (int64, error) {

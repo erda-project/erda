@@ -20,6 +20,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
 )
 
 // RedirectType
@@ -53,6 +56,46 @@ type OpenapiDto struct {
 	Env                string   `json:"-"`
 	RuntimeServiceId   string   `json:"-"`
 	Hosts              []string `json:"hosts"`
+}
+
+func (dto OpenapiDto) ToEndpointApi() *pb.EndpointApi {
+	ep := &pb.EndpointApi{
+		ApiPath:             dto.ApiPath,
+		RedirectAddr:        dto.RedirectAddr,
+		RedirectPath:        dto.RedirectPath,
+		RedirectRuntimeId:   dto.RedirectRuntimeId,
+		RedirectRuntimeName: dto.RedirectRuntimeName,
+		RedirectApp:         dto.RedirectApp,
+		RedirectService:     dto.RedirectService,
+		RedirectType:        dto.RedirectType,
+		AllowPassAuth:       dto.AllowPassAuth,
+		Description:         dto.Description,
+		Hosts:               dto.Hosts,
+	}
+	if dto.Method != "" {
+		ep.Method = structpb.NewStringValue(dto.Method)
+	}
+	return ep
+}
+
+func FromEndpointApi(ep *pb.EndpointApi) *OpenapiDto {
+	dto := &OpenapiDto{
+		ApiPath:             ep.ApiPath,
+		RedirectAddr:        ep.RedirectAddr,
+		RedirectPath:        ep.RedirectPath,
+		RedirectRuntimeId:   ep.RedirectRuntimeId,
+		RedirectRuntimeName: ep.RedirectRuntimeName,
+		RedirectApp:         ep.RedirectApp,
+		RedirectService:     ep.RedirectService,
+		RedirectType:        ep.RedirectType,
+		AllowPassAuth:       ep.AllowPassAuth,
+		Description:         ep.Description,
+		Hosts:               ep.Hosts,
+	}
+	if ep.Method != nil {
+		dto.Method = ep.Method.GetStringValue()
+	}
+	return dto
 }
 
 const varSlot = ""

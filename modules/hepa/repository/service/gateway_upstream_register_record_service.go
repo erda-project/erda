@@ -63,15 +63,17 @@ func (impl *GatewayUpstreamRegisterRecordServiceImpl) GetPage(upstreamId string,
 		return nil, errors.WithStack(err)
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayUpstreamRegisterRecord{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayUpstreamRegisterRecord{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayUpstreamRegisterRecord
 	err = orm.SelectPage(impl.engine.Desc("create_time"), &result, page, "upstream_id = ?", upstreamId)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayUpstreamRegisterRecordServiceImpl) Get(upstreamId string, registerId string) (*orm.GatewayUpstreamRegisterRecord, error) {

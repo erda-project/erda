@@ -335,6 +335,7 @@ type GatewayKongInfoService interface {
 	Insert(*GatewayKongInfo) error
 	GetTenantId(projectId, env, az string) (string, error)
 	GetByAny(*GatewayKongInfo) (*GatewayKongInfo, error)
+	GetForUpdate(projectId, env, az string) (*GatewayKongInfo, error)
 	GenK8SInfo(kongInfo *orm.GatewayKongInfo) (string, string, error)
 	GetKongInfo(*GatewayKongInfo) (*GatewayKongInfo, error)
 	GetK8SInfo(*GatewayKongInfo) (string, string, error)

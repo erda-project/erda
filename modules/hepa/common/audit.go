@@ -15,16 +15,17 @@
 package common
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/bundle"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type ScopeInfo struct {
@@ -35,15 +36,15 @@ type ScopeInfo struct {
 	RuntimeName string
 }
 
-func MakeAuditInfo(reqCtx *gin.Context, scopeInfo ScopeInfo, name apistructs.TemplateName, res *StandardResult, ctx map[string]interface{}) *apistructs.Audit {
+func MakeAuditInfo(reqCtx context.Context, scopeInfo ScopeInfo, name apistructs.TemplateName, errInfo error, ctx map[string]interface{}) *apistructs.Audit {
 	if reqCtx == nil {
 		return nil
 	}
-	orgId := reqCtx.GetHeader("Org-ID")
+	orgId := apis.GetOrgID(reqCtx)
 	if orgId == "" {
 		return nil
 	}
-	userId := reqCtx.GetHeader("User-ID")
+	userId := apis.GetUserID(reqCtx)
 	if userId == "" {
 		return nil
 	}
@@ -64,8 +65,8 @@ func MakeAuditInfo(reqCtx *gin.Context, scopeInfo ScopeInfo, name apistructs.Tem
 		ScopeType:    "project",
 		ScopeID:      id,
 		TemplateName: name,
-		StartTime:    strconv.FormatInt(reqCtx.MustGet("startTime").(int64), 10),
-		ClientIP:     reqCtx.ClientIP(),
+		// TODO: get start time from reqCtx
+		StartTime: strconv.FormatInt(time.Now().Unix(), 10),
 	}
 	audit.ProjectID = id
 	id, err = strconv.ParseUint(orgId, 10, 64)
@@ -92,16 +93,10 @@ func MakeAuditInfo(reqCtx *gin.Context, scopeInfo ScopeInfo, name apistructs.Tem
 	if scopeInfo.RuntimeName != "" {
 		ctx["runtime"] = scopeInfo.RuntimeName
 	}
-	if res != nil {
-		if res.Success {
-			audit.Result = apistructs.SuccessfulResult
-		} else {
-			//audit.Result = apistructs.FailureResult
-			return nil
-		}
-		// if res.Err != nil {
-		// 	audit.ErrorMsg = res.Err.Msg
-		// }
+	if errInfo == nil {
+		audit.Result = apistructs.SuccessfulResult
+	} else {
+		return nil
 	}
 	audit.Context = ctx
 	audit.EndTime = strconv.FormatInt(time.Now().Unix(), 10)

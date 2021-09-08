@@ -25,11 +25,14 @@ const (
 )
 
 type ManageDomainReq struct {
+	OrgId       string
 	Domain      string
 	ClusterName string
 	Type        DomainType
 	ProjectID   string
 	Workspace   string
+	PageSize    int64
+	PageNo      int64
 }
 
 type DomainLinkInfo struct {

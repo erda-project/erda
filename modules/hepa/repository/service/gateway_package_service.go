@@ -160,15 +160,17 @@ func (impl *GatewayPackageServiceImpl) GetPage(options []orm.SelectOption, page 
 		return nil, errors.Wrap(err, "get total count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayPackage{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayPackage{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayPackage
 	err = orm.SelectPageWithOption(options, impl.executor.OrderBy(`field (scene, 'unity') desc`).Desc("create_time"), &result, page)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayPackageServiceImpl) Count(options []orm.SelectOption) (int64, error) {

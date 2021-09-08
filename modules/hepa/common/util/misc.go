@@ -15,6 +15,7 @@
 package util
 
 import (
+	"encoding/json"
 	"runtime/debug"
 	"sort"
 
@@ -38,6 +39,13 @@ func UniqStringSlice(slice []string) []string {
 	} else {
 		return slice[:size]
 	}
+}
+
+func GetPureInterface(i interface{}) interface{} {
+	var res interface{}
+	bytes, _ := json.Marshal(i)
+	json.Unmarshal(bytes, &res)
+	return res
 }
 
 func DoRecover() {

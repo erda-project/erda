@@ -15,17 +15,29 @@
 package common
 
 import (
+	"encoding/json"
 	"reflect"
+
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/pb"
 )
 
 type PageQuery struct {
-	Result interface{} `json:"result"`
-	Page   *Page       `json:"page"`
+	Result interface{}
+	Page   *pb.Page
 }
 
 type NewPageQuery struct {
 	List  interface{} `json:"list"`
 	Total int64       `json:"total"`
+}
+
+func GetPageQuery(page *Page, list interface{}) PageQuery {
+	return PageQuery{
+		Result: list,
+		Page:   (*pb.Page)(page),
+	}
 }
 
 func NewPages(list interface{}, total int64) NewPageQuery {
@@ -45,5 +57,27 @@ func (query PageQuery) Convert() NewPageQuery {
 	return NewPageQuery{
 		List:  query.Result,
 		Total: query.Page.TotalNum,
+	}
+}
+
+func (query PageQuery) ToPbPage() *pb.PageResult {
+	var listv interface{}
+	bytes, _ := json.Marshal(query.Result)
+	json.Unmarshal(bytes, &listv)
+	value, _ := structpb.NewValue(listv)
+	return &pb.PageResult{
+		Result: value,
+		Page:   query.Page,
+	}
+}
+
+func (query NewPageQuery) ToPbPage() *pb.NewPageResult {
+	var listv interface{}
+	bytes, _ := json.Marshal(query.List)
+	json.Unmarshal(bytes, &listv)
+	value, _ := structpb.NewValue(listv)
+	return &pb.NewPageResult{
+		List:  value,
+		Total: query.Total,
 	}
 }

@@ -15,6 +15,7 @@
 package orm
 
 import (
+	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"
 )
 
@@ -35,4 +36,41 @@ type AuthItem struct {
 
 type ConsumerAuthConfig struct {
 	Auths []AuthItem `json:"auths"`
+}
+
+func (item AuthItem) ToAuth() *pb.ConsumerAuthItem {
+	res := &pb.ConsumerAuthItem{
+		AuthType: item.AuthType,
+		AuthTips: item.AuthTips,
+	}
+	authData := &pb.CredentialList{
+		Total: item.AuthData.Total,
+	}
+	data := []*pb.Credential{}
+	for _, auth := range item.AuthData.Data {
+		data = append(data, auth.ToCredential())
+	}
+	authData.Data = data
+	res.AuthData = authData
+	return res
+}
+
+func FromAuth(item *pb.ConsumerAuthItem) AuthItem {
+	res := AuthItem{
+		AuthType: item.AuthType,
+		AuthTips: item.AuthTips,
+	}
+	if item.AuthData == nil {
+		return res
+	}
+	authData := kongDto.KongCredentialListDto{
+		Total: item.AuthData.Total,
+	}
+	data := []kongDto.KongCredentialDto{}
+	for _, auth := range item.AuthData.Data {
+		data = append(data, kongDto.FromCredential(auth))
+	}
+	authData.Data = data
+	res.AuthData = authData
+	return res
 }
