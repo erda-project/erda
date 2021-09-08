@@ -17,6 +17,9 @@ package PodTitle
 import (
 	"context"
 	"fmt"
+	"reflect"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -28,8 +31,17 @@ func (podTitle *PodTitle) Render(ctx context.Context, c *cptype.Component, s cpt
 	podTitle.Type = "Title"
 	podTitle.Props.Size = "small"
 
+	if gs == nil {
+		return nil
+	}
+	countValues, ok := (*gs)["countValues"].(map[string]int)
+	if !ok {
+		logrus.Errorf("invalid count values type: %v", reflect.TypeOf((*gs)["countValues"]))
+		return nil
+	}
+
 	total := 0
-	for _, count := range podTitle.State.Values {
+	for _, count := range countValues {
 		total += count
 	}
 	podTitle.Props.Title = fmt.Sprintf("%s: %d", cputil.I18n(ctx, "podNum"), total)
