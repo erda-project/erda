@@ -21,6 +21,7 @@ type MetricsRequest struct {
 	ResourceType string
 	ResourceKind string
 	Names        []string
+	IP           []string
 }
 
 type MetricsResponse struct {

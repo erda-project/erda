@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -35,6 +36,20 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	infoDetail.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	infoDetail.Ctx = ctx
 	infoDetail.SDK = cputil.SDK(ctx)
+	if event.Operation == common.CMPDashboardRemoveLabel {
+		metaName := event.OperationData["fillMeta"].(string)
+		label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
+		req := apistructs.SteveRequest{}
+		req.ClusterName = infoDetail.State.ClusterName
+		req.OrgID = infoDetail.SDK.Identity.OrgID
+		req.UserID = infoDetail.SDK.Identity.UserID
+		req.Type = apistructs.K8SNode
+		req.Name = infoDetail.State.NodeID
+		err := infoDetail.CtxBdl.UnlabelNode(&req, []string{label})
+		if err != nil {
+			return err
+		}
+	}
 	var node data.Object
 	if (*gs)["node"] == nil {
 		req := apistructs.SteveRequest{}
@@ -57,7 +72,7 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	d.Os = node.String("status", "nodeInfo", "osImage")
 	d.Version = node.String("status", "nodeInfo", "kubeletVersion")
 	d.ContainerRuntime = node.StringSlice("metadata", "fields")[9]
-	d.NodeIp = infoDetail.getIp(node)
+	d.NodeIP = infoDetail.getIp(node)
 	d.PodNum = node.String("status", "capacity", "pods")
 	d.Tags = infoDetail.getTags(node)
 	d.Annotation = infoDetail.getAnnotations(node)
@@ -156,7 +171,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 		ColumnNum: 4,
 		Fields: []Field{
 			{Label: infoDetail.SDK.I18n("survive"), ValueKey: "survive"},
-			{Label: infoDetail.SDK.I18n("nodeIp"), ValueKey: "nodeIp"},
+			{Label: infoDetail.SDK.I18n("nodeIP"), ValueKey: "nodeIP"},
 			{Label: infoDetail.SDK.I18n("version"), ValueKey: "version"},
 			{Label: infoDetail.SDK.I18n("os"), ValueKey: "os"},
 			{Label: infoDetail.SDK.I18n("containerRuntime"), ValueKey: "containerRuntime"},
@@ -178,10 +193,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 					Key:      "deleteLabel",
 					Reload:   true,
 					FillMeta: "deleteData",
-					Meta: map[string]interface{}{
-						"RecordId":   node.String("id"),
-						"DeleteData": map[string]string{"label": ""},
-					},
+					Meta:     map[string]interface{}{},
 				}}},
 			{Label: infoDetail.SDK.I18n("annotation"), ValueKey: "annotation", SpaceNum: 2, RenderType: "tagsRow"},
 		},
