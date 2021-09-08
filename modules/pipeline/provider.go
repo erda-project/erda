@@ -22,33 +22,25 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/etcd"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
-	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 type provider struct {
 	CmsService         pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
 	ReconcilerElection election.Interface  `autowired:"etcd-election@reconciler"`
 	GcElection         election.Interface  `autowired:"etcd-election@gc"`
-	server             *httpserver.Server
+	Router             httpserver.Router   `autowired:"http-router"`
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Infof("[alert] starting pipeline instance")
 	var err error
-	done := make(chan struct{}, 1)
-
-	go func() {
-		err = p.server.ListenAndServe()
-		done <- struct{}{}
-	}()
 
 	select {
 	case <-ctx.Done():
-	case <-done:
 	}
-
 	return err
 }
 
