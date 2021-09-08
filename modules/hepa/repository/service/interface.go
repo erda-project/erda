@@ -15,11 +15,11 @@
 package service
 
 import (
+	"github.com/xormplus/xorm"
+
 	. "github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	. "github.com/erda-project/erda/modules/hepa/repository/orm"
-
-	"github.com/xormplus/xorm"
 )
 
 const (

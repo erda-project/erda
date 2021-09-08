@@ -15,8 +15,9 @@
 package dto
 
 import (
-	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
 )
 
 type KongCredentialListDto struct {

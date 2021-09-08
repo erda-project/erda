@@ -18,8 +18,9 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/erda-project/erda-proto-go/core/hepa/pb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/pb"
 )
 
 type PageQuery struct {

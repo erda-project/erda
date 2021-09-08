@@ -17,13 +17,14 @@ package runtime_service
 import (
 	context "context"
 
+	"github.com/pkg/errors"
+
 	pb "github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/services/runtime_service"
 	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
-	"github.com/pkg/errors"
 )
 
 type runtimeService struct {

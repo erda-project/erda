@@ -17,9 +17,9 @@ package custom
 import (
 	"encoding/json"
 
-	"github.com/erda-project/erda/modules/hepa/apipolicy"
-
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/modules/hepa/apipolicy"
 )
 
 type Policy struct {
