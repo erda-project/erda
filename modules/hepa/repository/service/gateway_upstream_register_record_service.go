@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,12 +15,12 @@
 package service
 
 import (
-	"github.com/pkg/errors"
-	"github.com/xormplus/xorm"
-
 	"github.com/erda-project/erda/modules/hepa/common"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
+
+	"github.com/pkg/errors"
+	"github.com/xormplus/xorm"
 )
 
 type GatewayUpstreamRegisterRecordServiceImpl struct {
@@ -63,15 +63,17 @@ func (impl *GatewayUpstreamRegisterRecordServiceImpl) GetPage(upstreamId string,
 		return nil, errors.WithStack(err)
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayUpstreamRegisterRecord{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayUpstreamRegisterRecord{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayUpstreamRegisterRecord
 	err = orm.SelectPage(impl.engine.Desc("create_time"), &result, page, "upstream_id = ?", upstreamId)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayUpstreamRegisterRecordServiceImpl) Get(upstreamId string, registerId string) (*orm.GatewayUpstreamRegisterRecord, error) {

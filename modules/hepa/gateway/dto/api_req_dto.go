@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,8 @@
 
 package dto
 
+import "github.com/erda-project/erda-proto-go/core/hepa/api/pb"
+
 var INNER_HOSTS = []string{
 	"dev-api-gateway.kube-system.svc.cluster.local",
 	"test-api-gateway.kube-system.svc.cluster.local",
@@ -22,8 +24,6 @@ var INNER_HOSTS = []string{
 }
 
 type ApiDto struct {
-	// 入口来源
-	From string `json:"from"`
 	// 路径
 	Path string `json:"path"`
 	// 方法
@@ -90,4 +90,22 @@ func (dto *ApiReqDto) IsEmpty() bool {
 
 func (dto *ApiReqDto) AddHost(host string) {
 	dto.Hosts = append(dto.Hosts, host)
+}
+
+func MakeApiDto(req *pb.ApiRequest) *ApiDto {
+	return &ApiDto{
+		Path:           req.Path,
+		Method:         req.Method,
+		RedirectType:   req.RedirectType,
+		RedirectAddr:   req.RedirectAddr,
+		RedirectPath:   req.RedirectPath,
+		Hosts:          req.Hosts,
+		ProjectId:      req.ProjectId,
+		Description:    req.Description,
+		DiceApp:        req.DiceApp,
+		DiceService:    req.DiceService,
+		OuterNetEnable: req.OuterNetEnable,
+		RuntimeId:      req.RuntimeId,
+		Env:            req.Env,
+	}
 }

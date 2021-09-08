@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/xormplus/xorm"
-
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
+
+	"github.com/pkg/errors"
+	"github.com/xormplus/xorm"
 )
 
 type GatewayKongInfoServiceImpl struct {
@@ -120,6 +120,25 @@ func (impl *GatewayKongInfoServiceImpl) GetKongInfo(cond *orm.GatewayKongInfo) (
 		return nil, err
 	}
 	return kongInfo, nil
+}
+
+func (impl *GatewayKongInfoServiceImpl) GetForUpdate(projectId, env, az string) (*orm.GatewayKongInfo, error) {
+	if projectId == "" || env == "" || az == "" {
+		return nil, errors.New(ERR_INVALID_ARG)
+	}
+	if impl.session == nil {
+		return nil, errors.New("session is nil")
+	}
+	impl.session.Exec("set innodb_lock_wait_timeout=600")
+	dao := &orm.GatewayKongInfo{}
+	succ, err := orm.GetForUpdate(impl.session, impl.engine, dao, "project_id = ? and env = ? and az = ?", projectId, env, az)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if !succ {
+		return nil, nil
+	}
+	return dao, nil
 }
 
 func (impl *GatewayKongInfoServiceImpl) GetByAny(cond *orm.GatewayKongInfo) (*orm.GatewayKongInfo, error) {

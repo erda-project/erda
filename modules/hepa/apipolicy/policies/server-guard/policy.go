@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/modules/hepa/apipolicy"
 	"github.com/erda-project/erda/modules/hepa/k8s"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type Policy struct {
@@ -36,7 +36,7 @@ func (policy Policy) NeedSerialUpdate() bool {
 
 func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
 	dto := &PolicyDto{
-		ExtraLatency:   50,
+		ExtraLatency:   500,
 		RefuseCode:     429,
 		RefuseResponse: "System is busy, please try it later.",
 	}
@@ -46,7 +46,7 @@ func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.P
 
 func (policy Policy) MergeDiceConfig(conf map[string]interface{}) (apipolicy.PolicyDto, error) {
 	dto := &PolicyDto{
-		ExtraLatency:   50,
+		ExtraLatency:   500,
 		RefuseCode:     429,
 		RefuseResponse: "System is busy, please try it later.",
 	}
@@ -148,7 +148,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if burst != 0 {
 		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d;\n", id, burst)
 	} else {
-		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s nodelay;\n", id)
+		// set burst=tps by default when user set a zero extra latency
+		limitReq = fmt.Sprintf("limit_req zone=server-guard-%s burst=%d nodelay;\n", id, tps)
 	}
 	limitReqStatus := fmt.Sprintf("limit_req_status %d;\n", LIMIT_INNER_STATUS)
 	errorPage := fmt.Sprintf("error_page %d = @LIMIT-%s;\n", LIMIT_INNER_STATUS, id)

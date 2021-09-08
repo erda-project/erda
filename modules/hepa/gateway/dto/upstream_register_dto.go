@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 )
 
 type UpstreamRegisterDto struct {
@@ -37,6 +39,35 @@ type UpstreamRegisterDto struct {
 	OldRegisterId *int             `json:"registerId"`
 	RegisterId    string           `json:"registerTag"`
 	PathPrefix    *string          `json:"pathPrefix"`
+}
+
+func FromUpstream(u *pb.Upstream) *UpstreamRegisterDto {
+	dto := &UpstreamRegisterDto{
+		Az:           u.Az,
+		DiceAppId:    u.DiceAppId,
+		DiceService:  u.DiceService,
+		RuntimeName:  u.RuntimeName,
+		RuntimeId:    u.RuntimeId,
+		AppName:      u.AppName,
+		ServiceAlias: u.ServiceName,
+		OrgId:        u.OrgId,
+		ProjectId:    u.ProjectId,
+		Env:          u.Env,
+		RegisterId:   u.RegisterTag,
+	}
+	apiList := []UpstreamApiDto{}
+	for _, api := range u.ApiList {
+		apiList = append(apiList, FromUpstreamApi(api))
+	}
+	dto.ApiList = apiList
+	if u.RegisterId != 0 {
+		id := int(u.RegisterId)
+		dto.OldRegisterId = &id
+	}
+	if u.PathPrefix != "" {
+		dto.PathPrefix = &u.PathPrefix
+	}
+	return dto
 }
 
 func (dto *UpstreamRegisterDto) Init() bool {

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 package dto
+
+import "github.com/erda-project/erda-proto-go/core/hepa/endpoint_api/pb"
 
 type PackageInfoDto struct {
 	Id       string `json:"id"`
@@ -34,4 +36,28 @@ func (list SortBySceneList) Less(i, j int) bool {
 		return false
 	}
 	return list[i].CreateAt > list[j].CreateAt
+}
+
+func (dto PackageInfoDto) ToEndpoint() *pb.Endpoint {
+	return &pb.Endpoint{
+		Id:          dto.Id,
+		CreateAt:    dto.CreateAt,
+		Name:        dto.Name,
+		BindDomain:  dto.BindDomain,
+		AuthType:    dto.AuthType,
+		AclType:     dto.AclType,
+		Scene:       dto.Scene,
+		Description: dto.Description,
+	}
+}
+
+func FromEndpoint(ep *pb.Endpoint) *PackageDto {
+	return &PackageDto{
+		Name:        ep.Name,
+		BindDomain:  ep.BindDomain,
+		AuthType:    ep.AuthType,
+		AclType:     ep.AclType,
+		Scene:       ep.Scene,
+		Description: ep.Description,
+	}
 }

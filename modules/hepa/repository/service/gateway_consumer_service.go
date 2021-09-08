@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,11 +15,11 @@
 package service
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/modules/hepa/common"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
+
+	"github.com/pkg/errors"
 )
 
 type GatewayConsumerServiceImpl struct {
@@ -175,15 +175,17 @@ func (impl *GatewayConsumerServiceImpl) GetPage(options []orm.SelectOption, page
 		return nil, errors.Wrap(err, "get total count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayConsumer{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayConsumer{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayConsumer
 	err = orm.SelectPageWithOption(options, impl.engine.Desc("create_time"), &result, page)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayConsumerServiceImpl) Count(options []orm.SelectOption) (int64, error) {

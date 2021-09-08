@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,15 +65,17 @@ func (impl *GatewayGroupServiceImpl) GetPageByConsumerId(consumerId string, page
 		return nil, errors.Wrap(err, "get total consumer count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayGroup{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayGroup{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayGroup
 	err = orm.SelectPage(impl.engine.Desc("create_time"), &result, page, "consumer_id = ?", consumerId)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayGroupServiceImpl) GetById(id string) (*orm.GatewayGroup, error) {

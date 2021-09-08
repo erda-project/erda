@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,11 @@
 // limitations under the License.
 
 package dto
+
+import (
+	"github.com/erda-project/erda-proto-go/core/hepa/api/pb"
+	"google.golang.org/protobuf/types/known/structpb"
+)
 
 const (
 	RT_AUTO_REGISTER = "register"
@@ -66,4 +71,24 @@ type ApiInfoDto struct {
 	CreateAt          string      `json:"createAt"`
 	Policies          []PolicyDto `json:"policies"`
 	Swagger           interface{} `json:"swagger,omitempty"`
+}
+
+func MakePolicies(dtos []PolicyDto) (res []*pb.Policy) {
+	for _, dto := range dtos {
+		policy := &pb.Policy{
+			Category:    dto.Category,
+			PolicyId:    dto.PolicyId,
+			PolicyName:  dto.PolicyName,
+			DisplayName: dto.DisplayName,
+			CreateAt:    dto.CreateAt,
+		}
+		config := map[string]*structpb.Value{}
+		for key, value := range dto.Config {
+			v, _ := structpb.NewValue(value)
+			config[key] = v
+		}
+		policy.Config = config
+		res = append(res, policy)
+	}
+	return
 }

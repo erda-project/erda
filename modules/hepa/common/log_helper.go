@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,11 @@
 package common
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math"
 	"os"
 	"time"
@@ -26,6 +30,9 @@ import (
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda/modules/hepa/config"
 )
 
@@ -77,6 +84,45 @@ func InitLogger() {
 			config.LogConf.PrettyPrint,
 		)
 	}
+}
+
+func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
+	return transport.WithHTTPOptions(http.WithInterceptor(func(h interceptor.Handler) interceptor.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			httpReq := http.ContextRequest(ctx)
+			path := httpReq.URL.RequestURI()
+			start := time.Now()
+			reqBody, err := ioutil.ReadAll(httpReq.Body)
+			if err != nil {
+				return nil, err
+			}
+			httpReq.Body = io.NopCloser(bytes.NewReader(reqBody))
+			resp, err := h(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			stop := time.Since(start)
+			latency := int(math.Ceil(float64(stop.Nanoseconds()) / 1000000.0))
+			clientUserAgent := httpReq.UserAgent()
+			referer := httpReq.Referer()
+			hostname, err := os.Hostname()
+			if err != nil {
+				hostname = "unknow"
+			}
+			entry := logrus.NewEntry(log).WithFields(logrus.Fields{
+				"hostname":  hostname,
+				"latency":   latency, // time to process
+				"method":    httpReq.Method,
+				"path":      path,
+				"referer":   referer,
+				"userAgent": clientUserAgent,
+			})
+			msg := fmt.Sprintf(`[%s %s] [%s]`, httpReq.Method, path, reqBody)
+			entry.Info(msg)
+			return resp, nil
+		}
+
+	}))
 }
 
 // Logger is the logrus logger handler

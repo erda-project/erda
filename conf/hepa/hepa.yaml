@@ -1,3 +1,6 @@
+http-server:
+  addr: ":8080"
+health:
 hepa:
   server:
     dbSources:
@@ -8,4 +11,20 @@ hepa:
     aoneAppName: ${SERVER_AONE_APP_NAME}
     clusterUIType: ${SERVER_CLUSTER_UI_TYPE}
     subDomainSplit: ${SERVER_SUB_DOMAIN_SPLIT}
+  log:
+    errorLevel: ${LOG_ERROR_LEVEL}
 
+service-register:
+permission:
+erda.core.hepa.global:    
+erda.core.hepa.domain:
+erda.core.hepa.consumer:
+erda.core.hepa.api:  
+erda.core.hepa.legacy_upstream:
+erda.core.hepa.legacy_upstream_lb:
+erda.core.hepa.openapi_rule:
+erda.core.hepa.openapi_consumer:
+erda.core.hepa.api_policy:  
+erda.core.hepa.org_client:
+erda.core.hepa.endpoint_api:
+erda.core.hepa.runtime_service:

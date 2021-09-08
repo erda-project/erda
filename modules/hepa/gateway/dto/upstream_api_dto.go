@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 )
 
 type UpstreamApiDto struct {
@@ -29,6 +31,19 @@ type UpstreamApiDto struct {
 	IsCustom    bool        `json:"isCustom"`
 	Doc         interface{} `json:"doc"`
 	Name        string      `json:"name"`
+}
+
+func FromUpstreamApi(api *pb.UpstreamApi) UpstreamApiDto {
+	return UpstreamApiDto{
+		Path:        api.Path,
+		GatewayPath: api.GatewayPath,
+		Method:      api.Method,
+		Address:     api.Address,
+		IsInner:     api.IsInner,
+		IsCustom:    api.IsCustom,
+		Name:        api.Name,
+		Doc:         api.Doc.AsInterface(),
+	}
 }
 
 func (dto *UpstreamApiDto) Init() bool {
