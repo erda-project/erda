@@ -14,7 +14,16 @@
 
 package endpoints
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+)
 
 func Test_shouldCheckPermission(t *testing.T) {
 	type args struct {
@@ -66,4 +75,15 @@ func Test_shouldCheckPermission(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateCmsNsConfigsWhenUserNotExist(t *testing.T) {
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetMemberByUserAndScope",
+		func(*bundle.Bundle, apistructs.ScopeType, string, uint64) ([]apistructs.Member, error) {
+			return nil, nil
+		})
+	defer monkey.UnpatchAll()
+	e := New()
+	assert.Equal(t, "the member is not exist", e.updateCmsNsConfigs("1", 1).Error())
 }
