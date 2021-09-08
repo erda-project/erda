@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/environment"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
 	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
@@ -115,6 +116,9 @@ func (p *provider) Initialize() error {
 	}
 
 	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
+	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
+		issuefilterbm.WithDBClient((*dao.DBClient)(dbclient.DB)),
+	))
 
 	server := httpserver.New(conf.ListenAddr())
 	server.Router().UseEncodedPath()

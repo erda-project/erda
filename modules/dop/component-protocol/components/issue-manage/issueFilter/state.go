@@ -28,6 +28,9 @@ type State struct {
 	FrontendConditionProps  FrontendConditionProps `json:"conditions,omitempty"`
 	FrontendConditionValues FrontendConditions     `json:"values,omitempty"`
 
+	// only for `filter` operation, prompting of which filter be operated
+	FrontendChangedKey string `json:"changedKey,omitempty"`
+
 	// 方便后端使用的 state
 	IssuePagingRequest apistructs.IssuePagingRequest `json:"issuePagingRequest,omitempty"`
 

@@ -15,6 +15,7 @@
 package issueFilter
 
 import (
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -32,6 +33,22 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 		cond := f.State.FrontendConditionProps[i]
 		flag := true
 		switch cond.Key {
+		case PropConditionKeyFilterID:
+			var options []filter.PropConditionOption
+			for _, bm := range f.Bms {
+				options = append(options, filter.PropConditionOption{
+					Label: bm.Name,
+					Value: bm.ID,
+				})
+			}
+			// re-determine filterID
+			filterID := f.determineFilterID(f.State.Base64UrlQueryParams)
+			f.State.FrontendConditionValues.FilterID = filterID
+			if f.State.FrontendConditionValues.FilterID == "" && len(f.Bms) < conf.MaxIssueFilterBm() {
+				// no filter selected, so display `quick-add`
+				cond.QuickAdd.Show = true
+			}
+			cond.Options = options
 		case PropConditionKeyIterationIDs:
 			cond.Options, err = f.getPropIterationsOptions()
 			if err != nil {
