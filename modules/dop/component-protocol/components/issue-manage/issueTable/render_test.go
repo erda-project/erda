@@ -78,3 +78,12 @@ func Test_getPrefixIcon(t *testing.T) {
 	assert.Equal(t, "ISSUE_ICON.issue.123", getPrefixIcon("123"))
 	assert.Equal(t, "ISSUE_ICON.issue.", getPrefixIcon(""))
 }
+
+func Test_resetPageNoByFilterCondition(t *testing.T) {
+	assert.False(t, resetPageNoByFilterCondition("a", struct {
+		a string
+	}{}, map[string]interface{}{"a": "111"}))
+	assert.True(t, resetPageNoByFilterCondition("b", struct {
+		a string
+	}{}, map[string]interface{}{"a": "111"}))
+}
