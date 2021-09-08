@@ -78,19 +78,20 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 	}
 	orgID, _ := strconv.ParseUint(pc.Extra.NormalLabels[apistructs.LabelOrgID], 10, 64)
 	return &apistructs.PipelineCronDTO{
-		ID:              pc.ID,
-		TimeCreated:     pc.TimeCreated,
-		TimeUpdated:     pc.TimeUpdated,
-		ApplicationID:   pc.ApplicationID,
-		Branch:          pc.Branch,
-		CronExpr:        pc.CronExpr,
-		CronStartTime:   pc.Extra.CronStartFrom,
-		PipelineYmlName: pc.PipelineYmlName,
-		BasePipelineID:  pc.BasePipelineID,
-		Enable:          pc.Enable,
-		PipelineYml:     pc.Extra.PipelineYml,
-		UserID:          pc.Extra.NormalLabels[apistructs.LabelUserID],
-		OrgID:           orgID,
+		ID:                     pc.ID,
+		TimeCreated:            pc.TimeCreated,
+		TimeUpdated:            pc.TimeUpdated,
+		ApplicationID:          pc.ApplicationID,
+		Branch:                 pc.Branch,
+		CronExpr:               pc.CronExpr,
+		CronStartTime:          pc.Extra.CronStartFrom,
+		PipelineYmlName:        pc.PipelineYmlName,
+		BasePipelineID:         pc.BasePipelineID,
+		Enable:                 pc.Enable,
+		PipelineYml:            pc.Extra.PipelineYml,
+		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		UserID:                 pc.Extra.NormalLabels[apistructs.LabelUserID],
+		OrgID:                  orgID,
 	}
 }
 
