@@ -40,6 +40,10 @@ zh:
   label: 标签
   please-choose-label: 请选择标签
   priority: 优先级
+  complexity: 复杂度
+  HARD: 复杂
+  NORMAL: 中
+  EASY: 容易
   choose-priorities: 选择优先级
   severity: 严重程度
   choose-severity: 选择严重程度
@@ -119,6 +123,10 @@ en:
   label: Label
   please-choose-label: Please choose label
   priority: Priority
+  complexity: Complexity
+  HARD: Hard
+  NORMAL: Normal
+  EASY: Easy
   choose-priorities: Choose Priorities
   severity: Severity
   choose-severity: Choose Severity

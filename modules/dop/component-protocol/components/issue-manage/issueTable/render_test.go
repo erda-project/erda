@@ -15,10 +15,13 @@
 package issueTable
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -71,4 +74,38 @@ func Test_resetPageInfo(t *testing.T) {
 			assert.Equal(t, expected[i], tt.args.req)
 		})
 	}
+}
+
+func Test_getPrefixIcon(t *testing.T) {
+	assert.Equal(t, "ISSUE_ICON.issue.abc", getPrefixIcon("abc"))
+	assert.Equal(t, "ISSUE_ICON.issue.123", getPrefixIcon("123"))
+	assert.Equal(t, "ISSUE_ICON.issue.", getPrefixIcon(""))
+}
+
+func Test_resetPageNoByFilterCondition(t *testing.T) {
+	assert.False(t, resetPageNoByFilterCondition("a", struct {
+		a string
+	}{}, map[string]interface{}{"a": "111"}))
+	assert.True(t, resetPageNoByFilterCondition("b", struct {
+		a string
+	}{}, map[string]interface{}{"a": "111"}))
+}
+
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
+func Test_buildTableItem(t *testing.T) {
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
+	ca := ComponentAction{}
+	i := ca.buildTableItem(ctx, &apistructs.Issue{})
+	assert.NotNil(t, i)
 }
