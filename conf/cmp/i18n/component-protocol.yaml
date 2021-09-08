@@ -152,6 +152,7 @@ zh:
  containerRuntime: 容器运行时
  placeholderFilterByNodeName: 按节点名称过滤
  cpuUsage: CPU 使用率
+ SchedulingDisabled: 冻结
 
 en:
  # general
