@@ -256,6 +256,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	autotestV2.CreateFileRecord = testCaseSvc.CreateFileRecord
 
+	p.TestPlanSvc.WithAutoTestSvc(autotestV2)
+
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
 
