@@ -434,12 +434,8 @@ github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+
 github.com/erda-project/erda-infra v0.0.0-20210706133120-0a742437972c/go.mod h1:TUQYSZ60w9dk7m0q3U3AVg7U74APj/sdEVvRWR3wYv8=
 github.com/erda-project/erda-infra v0.0.0-20210729162038-a2e798d921de h1:jI4eyZ0bMf0UmEeZY8yJBnetcSICpH8M6+FEEKadTjc=
 github.com/erda-project/erda-infra v0.0.0-20210729162038-a2e798d921de/go.mod h1:L+fFQghY2po2P3H9pzwEOufDLAhL+mRRhPGdZ7vFnAw=
-github.com/erda-project/erda-proto-go v0.0.0-20210803124211-0d0ca1e699db h1:G560VTGWDmlt1peOBIblmlsliCYW1s7UnxArIQt5x08=
-github.com/erda-project/erda-proto-go v0.0.0-20210803124211-0d0ca1e699db/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
-github.com/erda-project/erda-proto-go v0.0.0-20210804030051-79c0be70a3ed h1:CQ20gYsNe+d9UoZ29Go0VSQGE2AY3+G4lor5UW2aUgM=
-github.com/erda-project/erda-proto-go v0.0.0-20210804030051-79c0be70a3ed/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
-github.com/erda-project/erda-proto-go v0.0.0-20210805063629-d4e8ac75e06d h1:6qHof6d0/OWdgKGGpdhvSWZGwtZNK6GXLLcXfn7W5UA=
-github.com/erda-project/erda-proto-go v0.0.0-20210805063629-d4e8ac75e06d/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
+github.com/erda-project/erda-proto-go v0.0.0-20210823110307-c397defb820e h1:iRg9u84sDRggQyhMo3mwy2OqFh4AioPHd7OivgccBLE=
+github.com/erda-project/erda-proto-go v0.0.0-20210823110307-c397defb820e/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
@@ -899,8 +895,6 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/tdigest v0.0.1/go.mod h1:Z0kXnxzbTC2qrx4NaIzYkE1k66+6oEDQTvL95hQFh5Y=
-github.com/innerpeacez/erda-proto-go v0.0.0-20210803085231-aed8cda2cfc1 h1:rCC/MKq2tL2gmNGN/sKsLkG5xksA5bxHFEFHloqpFgE=
-github.com/innerpeacez/erda-proto-go v0.0.0-20210803085231-aed8cda2cfc1/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/ishidawataru/sctp v0.0.0-20190723014705-7c296d48a2b5/go.mod h1:DM4VvS+hD/kDi1U1QsX2fnZowwBhqD0Dk3bRPKF/Oc8=
 github.com/jackc/pgx v3.6.2+incompatible h1:2zP5OD7kiyR3xzRYMhOcXVvkDZsImVXfj+yIyTQf3/o=
 github.com/jackc/pgx v3.6.2+incompatible/go.mod h1:0ZGrqGqkRlliWnWB4zKnWtjbSWbGkVEFm4TeybAXq+I=
