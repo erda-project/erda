@@ -76,6 +76,7 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 	if pc == nil {
 		return nil
 	}
+	orgID, _ := strconv.ParseUint(pc.Extra.NormalLabels[apistructs.LabelOrgID], 10, 64)
 	return &apistructs.PipelineCronDTO{
 		ID:              pc.ID,
 		TimeCreated:     pc.TimeCreated,
@@ -87,6 +88,9 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 		PipelineYmlName: pc.PipelineYmlName,
 		BasePipelineID:  pc.BasePipelineID,
 		Enable:          pc.Enable,
+		PipelineYml:     pc.Extra.PipelineYml,
+		UserID:          pc.Extra.NormalLabels[apistructs.LabelUserID],
+		OrgID:           orgID,
 	}
 }
 

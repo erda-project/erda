@@ -183,6 +183,9 @@ func (p *provider) Initialize() error {
 		}
 	}()
 
+	// update pipeline cms
+	go updateCmsNsConfigs(ep)
+
 	return server.ListenAndServe()
 }
 
@@ -591,4 +594,41 @@ func copyTestFileTask(ep *endpoints.Endpoints) {
 		return
 	}
 	ep.TestSetService().CopyTestSet(record)
+}
+
+// updateCmsNsConfigs update pipeline cms according to pipeline cron which enable is true
+// it will be deprecated in version 1.4
+func updateCmsNsConfigs(ep *endpoints.Endpoints) error {
+	cron, err := bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		AllSources: true,
+		Sources:    nil,
+		YmlNames:   nil,
+		PageSize:   1,
+		PageNo:     9999,
+	})
+	if err != nil {
+		logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
+		return err
+	}
+	for _, v := range cron.Data {
+		if v.Enable != nil && *v.Enable &&
+			v.UserID != "" && v.OrgID != 0 {
+			err := bdl.Bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+				ID:                     v.ID,
+				PipelineYml:            v.PipelineYml,
+				CronExpr:               v.CronExpr,
+				ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)},
+			})
+			if err != nil {
+				logrus.Errorf("failed to UpdatePipelineCron, err: %s", err.Error())
+				return err
+			}
+			err = ep.UpdateCmsNsConfigs(v.UserID, v.OrgID)
+			if err != nil {
+				logrus.Errorf("failed to UpdateCmsNsConfigs, err: %s", err.Error())
+				return err
+			}
+		}
+	}
+	return nil
 }
