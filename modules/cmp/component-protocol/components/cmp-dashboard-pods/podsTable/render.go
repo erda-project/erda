@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -43,7 +44,7 @@ func init() {
 }
 
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
-	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	p.InitComponent(ctx)
 	if err := p.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen podsTable component state, %v", err)
@@ -68,6 +69,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	if err := p.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render podsTable component, %v", err)
 	}
+	(*gs)["countValues"] = p.State.CountValues
 	if err := p.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
@@ -150,7 +152,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}
 	list := obj.Slice("data")
 
-	countValues := make(map[string]int)
+	p.State.CountValues = make(map[string]int)
 	var items []Item
 	for _, obj := range list {
 		name := obj.String("metadata", "name")
@@ -174,7 +176,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
-		countValues[fields[2]]++
+		p.State.CountValues[fields[2]]++
 		status := parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)
@@ -188,26 +190,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 		req := apistructs.MetricsRequest{}
-		req.ResourceType = "cpu"
+		req.ResourceType = metrics.Cpu
 		usedCPUPercent := 0.0
 		cpuMetrics, err := p.bdl.GetMetrics(req)
 		if err != nil {
 			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(cpuMetrics) != 0 {
-			usedCPUPercent = cpuMetrics[0].Used
+			usedCPUPercent = cpuMetrics[0].Used * 100
 		}
 		cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
 
 		// mem
-		req.ResourceType = "mem"
+		req.ResourceType = metrics.Memory
 		usedMemPercent := 0.0
 		memMetrics, err := p.bdl.GetMetrics(req)
 		if err != nil {
 			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(memMetrics) != 0 {
-			usedMemPercent = memMetrics[0].Used
+			usedMemPercent = memMetrics[0].Used * 100
 		}
 		memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
 
@@ -219,9 +221,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Value:      name,
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
-						Key: "gotoPodDetail",
 						Command: Command{
-							Key:    "gotoPodDetail",
+							Key:    "goto",
 							Target: "cmpClustersPodDetail",
 							State: CommandState{
 								Params: map[string]string{
@@ -256,7 +257,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 			Node:         fields[6],
 		})
 	}
-	p.State.CountValues = countValues
 
 	if p.State.Sorter.Field != "" {
 		cmpWrapper := func(field, order string) func(int, int) bool {

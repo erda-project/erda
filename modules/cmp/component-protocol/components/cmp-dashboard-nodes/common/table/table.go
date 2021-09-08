@@ -496,7 +496,7 @@ func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
 			Key: "gotoNodeDetail",
 			Command: Command{
 				Key:    "goto",
-				Target: "cmp-dashboard-nodeDetail",
+				Target: "cmpClustersNodeDetail",
 				Command: CommandState{
 					Params: Params{NodeId: id},
 				},
@@ -528,7 +528,7 @@ func (t *Table) GetOperate(id string) Operate {
 					Params: Params{NodeId: id},
 				},
 				JumpOut: true,
-				Target:  "cmp-dashboard-pods",
+				Target:  "cmpClustersPods",
 			},
 				Text:   t.SDK.I18n("查看") + "pods",
 				Reload: false,
