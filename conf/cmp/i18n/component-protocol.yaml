@@ -237,7 +237,7 @@ en:
  node: Node
  version: Version
  label: Label
- arch: Architectural
+ arch: Architecture
  podNum: Number of Pods
  containerVersion: Container Version
  image: Image
@@ -246,31 +246,34 @@ en:
  usage: Utilization rate
  restartCount: Restart Times
  category: category
- podSearchPlaceHolder: input pod name or ip
+ podSearchPlaceHolder: filter by pod name or IP
  podInfoTitle: Pod Detail
  podIP: Pod IP
  log: Logs
  Cpu Chart: CPU
+ Memory Chart: Mem
+ Pod Chart: Pods
  addLabel: Add Label
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
  distributionRate: Distribution Rate
  memDistribution: Mem Distribution
  memDistributionRate: Mem Distribution Rate
- kernelVersion: kernel version
- kubeletVersion: kubelet version
- machineID: machine ID
+ kernelVersion: Kernel Version
+ kubeProxyVersion: Kubectl Proxy Version
+ kubeletVersion: Kubelet Version
+ machineID: Machine ID
  memUsed: Mem Usage
  nodeDetail: Node Detail
  operate: Operation
  operatingSystem: Operation System
  osImage: OS Image
- packjob: pack job
+ packjob: Pack Job
  podInfo: Pod Info
  podInspect: Pod Inspect
  rebootTimes: Reboot Times
  systemUUID: System UUID
- use: mem usage
+ use: Usage
  annotation: Annotation
  containerRuntime: Container Runtime
  placeholderFilterByNodeName: filter by node name
