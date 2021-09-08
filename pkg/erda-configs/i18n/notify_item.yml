@@ -90,6 +90,9 @@ zh-CN:
   notify.issue.issue_create.markdown_template: "事件【{{issue_title}}】{{content}}"
   notify.issue.issue_update: 更新项目协同事件
   notify.issue.issue_update.markdown_template: "你关注的事件【{{issue_title}}】 {{content}}"
+  notify.autotest.autotest-plan-execute: 执行自动化测试计划
+  notify.autotest.autotest-plan-execute.markdown_template: |-
+    {{org_name}}/{{project_name}} {{plan_name}}测试计划执行完成, 接口通过率：{{pass_rate}}%
   notify.workflow.Failed: 工作流运行失败
   notify.workflow.Failed.email: |-
     <p>工作流名:{{workflowName}}</p>
