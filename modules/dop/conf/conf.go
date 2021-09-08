@@ -69,7 +69,8 @@ type Conf struct {
 	TestSetSyncCopyMaxNum       int `env:"TEST_SET_SYNC_COPY_MAX_NUM" default:"300"`
 	TestFileRecordPurgeCycleDay int `env:"TEST_FILE_RECORD_PURGE_CYCLE_DAY" default:"7"`
 
-	ProjectStatsCacheCron string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
+	ProjectStatsCacheCron       string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
+	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
 }
 
 var cfg Conf
@@ -238,4 +239,8 @@ func TestSetSyncCopyMaxNum() int {
 
 func TestFileRecordPurgeCycleDay() int {
 	return cfg.TestFileRecordPurgeCycleDay
+}
+
+func UpdateIssueExpiryStatusCron() string {
+	return cfg.UpdateIssueExpiryStatusCron
 }

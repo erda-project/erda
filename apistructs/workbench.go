@@ -15,10 +15,12 @@
 package apistructs
 
 type WorkbenchRequest struct {
-	OrgID     uint64 `json:"orgID"`
-	PageNo    int    `json:"pageNo"`
-	PageSize  int    `json:"pageSize"`
-	IssueSize int    `json:"issueSize"`
+	OrgID      uint64   `json:"orgID"`
+	PageNo     int      `json:"pageNo"`
+	PageSize   int      `json:"pageSize"`
+	IssueSize  int      `json:"issueSize"`
+	ProjectIDs []uint64 `json:"projectIDs"`
+	IssuePagingRequest
 }
 
 type WorkbenchResponse struct {
@@ -43,4 +45,12 @@ type WorkbenchProjectItem struct {
 	ExpiredThirtyDayNum int        `json:"expiredThirtyDayNum"`
 	FeatureDayNum       int        `json:"featureDayNum"`
 	IssueList           []Issue    `json:"issueList"`
+}
+
+var StateBelongs = []IssueStateBelong{
+	IssueStateBelongReopen,
+	IssueStateBelongWontfix,
+	IssueStateBelongResloved,
+	IssueStateBelongWorking,
+	IssueStateBelongOpen,
 }

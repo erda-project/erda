@@ -451,3 +451,27 @@ func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.Pro
 
 	return &fetchResp.Data, nil
 }
+
+// Get projects map
+func (b *Bundle) GetProjectsMap(projectIDs []uint64) (map[uint64]apistructs.ProjectDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	req := apistructs.GetModelProjectsMapRequest{
+		ProjectIDs: projectIDs,
+	}
+	var rsp apistructs.GetModelProjectsMapResponse
+	resp, err := hc.Get(host).Path("/api/projects/actions/get-projects-map").
+		Header(httputil.InternalHeader, "bundle").JSONBody(&req).Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+
+	return rsp.Data, nil
+}

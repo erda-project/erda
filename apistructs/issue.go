@@ -593,6 +593,8 @@ type IssuePagingRequest struct {
 	PageSize uint64 `json:"pageSize"`
 	// +required 企业id
 	OrgID int64 `json:"orgID"`
+	// +optional
+	ProjectIDs []uint64 `json:"projectIDs"`
 	IssueListRequest
 }
 
