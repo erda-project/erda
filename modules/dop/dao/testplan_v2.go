@@ -36,7 +36,7 @@ type TestPlanV2 struct {
 	SpaceID     uint64
 	IsArchived  bool
 	PassRate    float64
-	ExecuteTime time.Time
+	ExecuteTime *time.Time
 }
 
 // TableName table name
@@ -58,7 +58,7 @@ func (tp *TestPlanV2) Convert2DTO() apistructs.TestPlanV2 {
 		CreateAt:    &tp.CreatedAt,
 		UpdateAt:    &tp.UpdatedAt,
 		PassRate:    tp.PassRate,
-		ExecuteTime: &tp.ExecuteTime,
+		ExecuteTime: tp.ExecuteTime,
 	}
 }
 
@@ -82,7 +82,7 @@ func (tp TestPlanV2Join) Convert2DTO() *apistructs.TestPlanV2 {
 		Steps:       []*apistructs.TestPlanV2Step{},
 		IsArchived:  tp.IsArchived,
 		PassRate:    tp.PassRate,
-		ExecuteTime: &tp.ExecuteTime,
+		ExecuteTime: tp.ExecuteTime,
 	}
 }
 

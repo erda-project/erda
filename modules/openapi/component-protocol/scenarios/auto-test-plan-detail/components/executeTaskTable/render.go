@@ -521,6 +521,11 @@ func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *a
 		e.State.PageNo = DefaultPageNo
 		e.State.PageSize = DefaultPageSize
 	}
+
+	if e.State.PipelineDetail == nil {
+		c.Data = map[string]interface{}{}
+		return nil
+	}
 	if e.State.PipelineDetail.ID == 0 {
 		c.Data = map[string]interface{}{}
 		return nil
