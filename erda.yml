@@ -383,7 +383,7 @@ services:
     health_check:
       http:
         port: 8080
-        path: "/api/gateway/health/check"
+        path: "/health"
         duration: 120
       exec: { }
   monitor:
