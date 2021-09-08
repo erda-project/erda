@@ -132,12 +132,12 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			ScopeType:    apistructs.ProjectScope,
 			ScopeID:      projectID,
 			OrgID:        project.OrgID,
+			ProjectID:    projectID,
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
 			TemplateName: apistructs.ArchiveTestplanTemplate,
 			Context: map[string]interface{}{
-				"projectId":    project.ID,
 				"projectName":  project.Name,
 				"testPlanName": testplan.Data.Name,
 			},

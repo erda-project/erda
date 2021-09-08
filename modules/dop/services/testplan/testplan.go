@@ -277,12 +277,12 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 			ScopeType:    apistructs.ProjectScope,
 			ScopeID:      testPlan.ProjectID,
 			OrgID:        project.OrgID,
+			ProjectID:    testPlan.ProjectID,
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
 			TemplateName: apistructs.ArchiveTestplanTemplate,
 			Context: map[string]interface{}{
-				"projectId":    project.ID,
 				"projectName":  project.Name,
 				"testPlanName": testPlan.Name,
 			},
