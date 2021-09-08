@@ -41,6 +41,8 @@ var (
 	CMPDashboardTableTabs cptype.OperationKey = "changeTab"
 
 	CMPDashboardSubmit cptype.OperationKey = "submit"
+
+	CMPDashboardRemoveLabel cptype.OperationKey = "deleteLabel"
 )
 var (
 	NodeNotFoundErr    = errors.New("node not found")

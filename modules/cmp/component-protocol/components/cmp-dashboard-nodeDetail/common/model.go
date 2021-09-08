@@ -103,8 +103,8 @@ var (
 	//ResourceWarning UsageStatusEnum = "warning"
 	//ResourceDanger  UsageStatusEnum = "danger"
 
-	CMPDashboardAddLabel    cptype.OperationKey = "deleteLabel"
-	CMPDashboardRemoveLabel cptype.OperationKey = "addLabel"
+	CMPDashboardAddLabel    cptype.OperationKey = "addLabel"
+	CMPDashboardRemoveLabel cptype.OperationKey = "deleteLabel"
 )
 var (
 	NodeNotFoundErr           = errors.New("node not found")

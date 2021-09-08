@@ -72,7 +72,7 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	var nodes []data.Object
 	labels := make([]string, 0)
 	nodeNameFilter := ""
-	if len(values) == 0 {
+	if values == nil || len(values) == 0 {
 		nodes = nodeList
 	} else {
 		for k, v := range values {

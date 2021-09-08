@@ -87,7 +87,7 @@ func (pt *PodInfoTable) getProps() {
 		"rowKey": "id",
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 260},
+			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 340},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: pt.SDK.I18n("role"), Sortable: true},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version")},
@@ -119,17 +119,18 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 	capacity := cast.ToFloat64(node.String("extra", "parsedResource", "capacity", "Pods"))
 	ur := table.DistributionValue{Percent: common.GetPercent(allocatable, capacity)}
 	role := node.StringSlice("metadata", "fields")[2]
+	ip := node.StringSlice("metadata", "fields")[5]
 	if role == "<none>" {
 		role = "worker"
 	}
 	ri := &table.RowItem{
 		ID:      node.String("id"),
-		IP:      node.StringSlice("metadata", "fields")[5],
+		IP:      ip,
 		Version: node.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    pt.GetRenders(node.String("id"), node.Map("metadata", "labels")),
+			Renders:    pt.GetRenders(node.String("id"), ip, node.Map("metadata", "labels")),
 		},
 		Status: *status,
 		UsageRate: table.Distribution{
@@ -138,8 +139,8 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 			Status:     table.GetDistributionStatus(ur.Percent),
 			Tip:        fmt.Sprintf("%d/%d", int64(allocatable), int64(capacity)),
 		},
-		Operate:      pt.GetOperate(node.String("id")),
-		BatchOptions: []string{"delete", "freeze", "unfreeze"},
+		Operate:         pt.GetOperate(node.String("id")),
+		BatchOperations: []string{"delete", "freeze", "unfreeze"},
 	}
 	return ri, nil
 }

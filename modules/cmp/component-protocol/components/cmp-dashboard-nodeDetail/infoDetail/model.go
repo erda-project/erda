@@ -40,7 +40,7 @@ type State struct {
 
 type Data struct {
 	Survive          string  `json:"survive"`
-	NodeIp           string  `json:"nodeIp"`
+	NodeIP           string  `json:"nodeIP"`
 	Version          string  `json:"version"`
 	Os               string  `json:"os"`
 	ContainerRuntime string  `json:"containerRuntime"`

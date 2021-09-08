@@ -52,7 +52,7 @@ type ChartInterface interface {
 
 func setData(nodes []data.Object, resourceName string) []DataItem {
 	//var allocatableTotal, capacityTotal, unAllocatableTotal float64
-	var suffix = ""
+	suffix := ""
 	resourceType := resource.DecimalSI
 	if resourceName == Memory {
 		resourceType = resource.BinarySI
@@ -90,7 +90,7 @@ func setData(nodes []data.Object, resourceName string) []DataItem {
 
 func GetScaleValue(quantity1 *resource.Quantity, quantity2 *resource.Quantity, quantity3 *resource.Quantity) (string, string, string) {
 	factor := 10
-	for ; quantity1.Value() > int64(1<<factor) && quantity2.Value() > int64(1<<factor) && quantity3.Value() > int64(1<<factor); factor += 10 {
+	for ; (quantity1.Value() != 0 && quantity1.Value() > int64(1<<factor)) && ((quantity1.Value() != 0) && quantity2.Value() > int64(1<<factor)) && (quantity3.Value() != 0 && quantity3.Value() > int64(1<<factor)); factor += 10 {
 	}
 	factor -= 10
 	quantity1.Set(quantity1.Value() / (1 << factor))

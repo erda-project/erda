@@ -96,7 +96,8 @@ type RowItem struct {
 	Usage        Distribution `json:"Usage,omitempty"`
 	UsageRate    Distribution `json:"UsageRate,omitempty"`
 	Operate      Operate      `json:"Operate,omitempty"`
-	BatchOptions []string     `json:"BatchOptions,omitempty"`
+	// batchOperations for json
+	BatchOperations []string `json:"batchOperations,omitempty"`
 }
 
 type Operate struct {
@@ -134,6 +135,7 @@ type CommandState struct {
 }
 type Params struct {
 	NodeId string `json:"nodeId,omitempty"`
+	NodeIP string `json:"nodeIP,omitempty"`
 }
 
 type FormData struct {
@@ -211,7 +213,11 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	ss := &SteveStatus{
 		RenderType: "textWithBadge",
 	}
-	ss.Value = t.SDK.I18n(node.StringSlice("metadata", "fields")[1])
+	strs := make([]string, 0)
+	for _, s := range strings.Split(node.StringSlice("metadata", "fields")[1], ",") {
+		strs = append(strs, t.SDK.I18n(s))
+	}
+	ss.Value = strings.Join(strs, ",")
 	if node.StringSlice("metadata", "fields")[1] == "Ready" {
 		ss.Status = "success"
 	} else {
@@ -236,9 +242,7 @@ func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData) Distribu
 
 // SetComponentValue mapping CpuInfoTable properties to Component
 func (t *Table) SetComponentValue(c *cptype.Component) error {
-	var (
-		err error
-	)
+	var err error
 	if err = common.Transfer(t.State, &c.State); err != nil {
 		return err
 	}
@@ -488,7 +492,7 @@ func (t *Table) GetIp(node data.Object) string {
 	return ""
 }
 
-func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
+func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
 	nl := NodeLink{
 		RenderType: "linkText",
 		Value:      id,
@@ -498,7 +502,7 @@ func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
 				Key:    "goto",
 				Target: "cmpClustersNodeDetail",
 				Command: CommandState{
-					Params: Params{NodeId: id},
+					Params: Params{NodeId: id, NodeIP: ip},
 				},
 				JumpOut: true,
 			},
@@ -584,12 +588,12 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 }
 
 type State struct {
-	PageNo          int      `json:"pageNo,omitempty"`
-	PageSize        int      `json:"pageSize,omitempty"`
-	Total           int      `json:"total,omitempty"`
-	SelectedRowKeys []string `json:"selectedRowKeys,omitempty"`
-	Sorter          Sorter   `json:"sorterData,omitempty"`
-	filter.Values
+	PageNo          int           `json:"pageNo,omitempty"`
+	PageSize        int           `json:"pageSize,omitempty"`
+	Total           int           `json:"total,omitempty"`
+	SelectedRowKeys []string      `json:"selectedRowKeys,omitempty"`
+	Sorter          Sorter        `json:"sorterData,omitempty"`
+	Values          filter.Values `json:"values"`
 }
 
 type SteveStatus struct {
