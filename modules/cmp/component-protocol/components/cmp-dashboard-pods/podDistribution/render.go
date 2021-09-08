@@ -75,6 +75,8 @@ func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt
 		status.Color = "lightgreen"
 	case "Terminating":
 		status.Color = "brown"
+	case "OOMKilled":
+		status.Color = "darkslategray"
 	}
 	return status
 }

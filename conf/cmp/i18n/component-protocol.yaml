@@ -52,6 +52,10 @@ zh:
  search: 搜索
  workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
+ Active: 活跃
+ Error: 错误
+ Succeeded: 成功
+ Failed: 失败
 
  # cmp-dashboard-workloads-list.workloadTable
  upToDate: 已更新
@@ -109,7 +113,6 @@ zh:
  Completed: 完成
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
- Error: 错误
  Evicted: 驱逐
  ImagePullBackOff: 镜像拉取失败
  Pending: 挂起
@@ -117,6 +120,7 @@ zh:
  Terminating: 已结束
  memUsed: Mem 使用率
  use: mem 使用率
+ OOMKilled: 内存溢出
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
@@ -211,6 +215,10 @@ en:
  search: Search
  workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
+ Active: Active
+ Error: Error
+ Succeeded: Succeeded
+ Failed: Failed
 
  # cmp-dashboard-workloads-list.workloadTable
  upToDate: Up-to-Date

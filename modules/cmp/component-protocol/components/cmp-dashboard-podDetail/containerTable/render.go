@@ -71,6 +71,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			status = parseContainerStatus(k)
 		}
 
+		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
 		data = append(data, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
@@ -85,9 +86,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Operate: Operate{
 				Operations: map[string]Operation{
 					"log": {
-						Key:    "checkLog",
-						Text:   cputil.I18n(ctx, "log"),
-						Reload: false,
+						ContainerID: containerId,
+						Key:         "checkLog",
+						Text:        cputil.I18n(ctx, "log"),
+						Reload:      false,
 						Meta: map[string]string{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,

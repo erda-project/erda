@@ -418,9 +418,9 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 		usedQty = resource.NewQuantity(usedRes, resource.BinarySI)
 	}
 	status := ""
-	if usedPercent <= 80 {
+	if usedPercent <= 0.8 {
 		status = "success"
-	} else if usedPercent < 100 {
+	} else if usedPercent < 1 {
 		status = "warning"
 	} else {
 		status = "error"
