@@ -685,22 +685,22 @@ func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([
 	return res, total, nil
 }
 
+var conditions = map[ExpireType]string{
+	ExpireTypeUndefined:      "a.plan_finished_at IS NULL",
+	ExpireTypeExpired:        "a.plan_finished_at < CURDATE()",
+	ExpireTypeExpireIn1Day:   "a.plan_finished_at = CURDATE()",
+	ExpireTypeExpireIn2Days:  "a.plan_finished_at = DATE_ADD(CURDATE(),INTERVAL 1 DAY)",
+	ExpireTypeExpireIn7Days:  "a.plan_finished_at > DATE_ADD(CURDATE(),INTERVAL 1 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 7 DAY)",
+	ExpireTypeExpireIn30Days: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 7 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+	ExpireTypeExpireInFuture: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+}
+
 func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueStateBelong) error {
-	sql := `
-	UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id
-	SET a.expiry_status = 
-	(
-	CASE
-	  WHEN a.plan_finished_at IS NULL THEN 'Undefined'
-	  WHEN a.plan_finished_at < CURDATE() THEN 'Expired'
-	  WHEN a.plan_finished_at = CURDATE() THEN 'ExpireIn1Day'
-	  WHEN a.plan_finished_at = DATE_ADD(CURDATE(),INTERVAL 1 DAY) THEN 'ExpireIn2Day'
-	  WHEN a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 7 DAY) THEN 'ExpireIn7Day'
-	  WHEN a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 30 DAY) THEN 'ExpireIn30Day'
-	  ELSE 'ExpireInFuture'
-	END
-	)
-    WHERE a.plan_finished_at IS NOT NULL AND b.belong IN (?)
-	`
-	return client.Exec(sql, states).Error
+	for key, condition := range conditions {
+		sql := "UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id SET a.expiry_status = ? WHERE a.expiry_status != ? AND b.belong IN (?) AND " + condition
+		if err := client.Exec(sql, key, key, states).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

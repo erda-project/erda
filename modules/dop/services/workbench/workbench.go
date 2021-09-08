@@ -78,35 +78,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-// GetUndoneProjectItem query issue list and use SetSpecialIssueNum func set issue num
-func (w *Workbench) GetUndoneProjectItem(userID string, issueSize int, pro apistructs.ProjectDTO) (*apistructs.WorkbenchProjectItem, error) {
-	var issueItem apistructs.WorkbenchProjectItem
-	issueItem.IssueList = make([]apistructs.Issue, 0)
-	issueReq := apistructs.IssuePagingRequest{
-		OrgID:    int64(pro.OrgID),
-		PageNo:   1,
-		PageSize: uint64(issueSize),
-		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID:    uint64(pro.ID),
-			StateBelongs: apistructs.StateBelongs,
-			Assignees:    []string{userID},
-			External:     true,
-			OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
-			Priority:     IssuePriorities,
-			Type:         IssueTypes,
-			Asc:          true,
-		},
-	}
-	issues, total, err := w.issueSvc.Paging(issueReq)
-	if err != nil {
-		return nil, err
-	}
-	issueItem.TotalIssueNum = int(total)
-	issueItem.IssueList = issues
-	issueItem.ProjectDTO = pro
-	return &issueItem, nil
-}
-
 // e.workBench.GetUndoneProjectItem concurrent query different expire issue num
 func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, items []*apistructs.WorkbenchProjectItem) error {
 	if len(items) == 0 {
