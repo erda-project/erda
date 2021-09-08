@@ -132,6 +132,7 @@ zh:
  packjob: 构建
  mono: 独占
  cordon: 锁住节点
+ uncordon: 解冻
  cluster-service: 集群服务
  drain: 驱逐节点
  rebootTimes: 重启次数
