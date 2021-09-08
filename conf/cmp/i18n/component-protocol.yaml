@@ -3,12 +3,12 @@ zh:
  name: 名称
  namespace: 命名空间
  status: 状态
- ip: IP地址
+ ip: IP 地址
  age: 存活时间
  images: 镜像
  labels: 标签
  annotations: 注释
- project: 项目名
+ project: 项目名称
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: 上次触发时间
@@ -33,9 +33,9 @@ zh:
  warning: 警告
 
  # cmp-dashboard-workload-detail.podsTable
- cpuRequests: CPU请求值
- cpuLimits: CPU限制值
- cpuPercent: CPU水位
+ cpuRequests: CPU 请求值
+ cpuLimits: CPU 限制值
+ cpuPercent: CPU 水位
  memoryRequests: 内存请求值
  memoryLimits: 内存限制值
  memoryPercent: 内存水位
@@ -62,7 +62,6 @@ zh:
  jobDuration: 运行时间
  schedule: 运行计划
  lastSchedule: 上次运行时间
-
  node-list: 节点列表
  env: 环境
  platform: 平台
@@ -73,8 +72,8 @@ zh:
  nodeIp: IP
  allocated: 已分配
  cannot-allocated: 不可分配
- free-allocate: 剩余分配
- cpu-analysis: Cpu 分析
+ free-allocate: 可分配
+ cpu-analysis: CPU 分析
  mem-analysis: 内存分析
  pod-analysis: Pod 分析
  nodeInfo: 节点信息
@@ -84,7 +83,7 @@ zh:
  version: 版本
  label: 标签
  arch: 架构
- podNum: pod 数量
+ podNum: Pod 数量
  containerVersion: 容器版本
  image: 镜像
  requests: 分配量
@@ -106,7 +105,7 @@ zh:
  systemUUID: 系统 UUID
  bootID: 启动 ID
  osImage: 系统镜像
- podInfo: Pod信息
+ podInfo: Pod 信息
  Completed: 完成
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
@@ -116,8 +115,8 @@ zh:
  Pending: 挂起
  Running: 运行中
  Terminating: 已结束
- memUsed: mem使用率
- use: mem使用率
+ memUsed: mem 使用率
+ use: mem 使用率
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
@@ -141,12 +140,14 @@ zh:
  desc: 注释
  workload: 工作负载
  Memory Chart: 内存图表
- Cpu Chart: CPU 图表
  Pod Chart: Pod 图表
- podSearchPlaceHolder: 搜索pod名或IP
+ podSearchPlaceHolder: 搜索 pod 名称或 IP
  podInfoTitle: Pod 详情
  podIP: Pod IP
  log: 查看日志
+ Cpu Chart: CPU
+  annotation: 注释
+  containerRuntime: 容器运行时
 
 en:
  # general
@@ -171,7 +172,7 @@ en:
 
  # cmp-dashboard-events-list.filter
  workspace-dev: Workspace-Dev
- workspace-list: Workspace-Test
+ workspace-test: Workspace-Test
  workspace-staging: Workspace-Staging
  workspace-production: Workspace-Production
  addons: Addons
@@ -218,27 +219,51 @@ en:
  service: Service
  job: Job
  other: Other
+ os: OS
+ nodeIp: Node IP
  allocated: Allocated
- cannot-allocated: Not Allocated
+ cannot-allocated: Non-Distributable
  free-allocate: Allocatable
- cpu-analysis: Cpu Ananlysis
- mem-analysis: Mem Ananlysis
- pod-analysis: Pod Ananlysis
+ cpu-analysis: CPU Analysis
+ mem-analysis: Mem Analysis
+ pod-analysis: Pod Analysis
  nodeInfo: Node Info
  nodeStatus: Node Status
  survive: Survive Duration
  node: Node
  version: Version
  label: Label
- arch: Architectual
+ arch: Architectural
+ podNum: Number of Pods
  containerVersion: Container Version
  image: Image
- requests: Requestes
+ requests: Requests
  limits: Limits
  usage: Utilization rate
- restartCount: Restart Count
+ restartCount: Restart Times
  category: category
  podSearchPlaceHolder: input pod name or ip
  podInfoTitle: Pod Detail
  podIP: Pod IP
  log: Logs
+ Cpu Chart: CPU
+ addLabel: Add Label
+ bootID: Boot ID
+ containerRuntimeVersion: Container Running Version
+ distributionRate: Distribution Rate
+ kernelVersion: kernel version
+ kubeletVersion: kubelet version
+ machineID: machine ID
+ memUsed: mem usage
+ nodeDetail: Node Detail
+ operate: Operation
+ operatingSystem: Operation System
+ osImage: OS Image
+ packjob: pack job
+ podInfo: Pod Info
+ podInspect: Pod Inspect
+ rebootTimes: Reboot Times
+ systemUUID: System UUID
+ use: mem usage
+  annotation: Annotation
+  containerRuntime: Container Runtime
