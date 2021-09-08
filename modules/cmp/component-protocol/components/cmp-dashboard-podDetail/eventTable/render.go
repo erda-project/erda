@@ -144,22 +144,22 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 		Columns: []Column{
 			{
 				DataIndex: "lastSeen",
-				Title:     cputil.I18n(ctx, "Last Seen"),
+				Title:     cputil.I18n(ctx, "lastSeen"),
 				Width:     160,
 			},
 			{
 				DataIndex: "type",
-				Title:     cputil.I18n(ctx, "Event Type"),
+				Title:     cputil.I18n(ctx, "eventType"),
 				Width:     100,
 			},
 			{
 				DataIndex: "reason",
-				Title:     cputil.I18n(ctx, "Reason"),
+				Title:     cputil.I18n(ctx, "reason"),
 				Width:     100,
 			},
 			{
 				DataIndex: "message",
-				Title:     cputil.I18n(ctx, "Message"),
+				Title:     cputil.I18n(ctx, "message"),
 				Width:     120,
 			},
 		},

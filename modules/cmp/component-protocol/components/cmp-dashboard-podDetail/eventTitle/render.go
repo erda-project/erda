@@ -25,9 +25,7 @@ import (
 
 func (eventTable *EventTitle) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	eventTable.SDK = cputil.SDK(ctx)
-	eventTable.Props = Props{
-		eventTable.SDK.I18n("relative events"),
-	}
+	eventTable.Props.Title = eventTable.SDK.I18n("events")
 	return nil
 }
 func init() {

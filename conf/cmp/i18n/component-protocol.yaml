@@ -139,7 +139,7 @@ zh:
  operate: 操作
  console: 控制台
  podInspect: 查看容器
- relative events: 相关日志
+ events: 相关事件
  desc: 注释
  workload: 工作负载
  Memory Chart: 内存
@@ -155,6 +155,7 @@ zh:
  cpuUsage: CPU 使用率
  SchedulingDisabled: 冻结
  architecture: 架构
+ container: 容器
 
 en:
  # general
@@ -282,3 +283,5 @@ en:
  placeholderFilterByNodeName: filter by node name
  cpuUsage: CPU Usage
  architecture: Architecture
+ container: Containers
+ events: Events
