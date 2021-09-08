@@ -48,6 +48,9 @@ type PipelineYml struct {
 	needUpgrade        bool   // 是否需要升级
 	upgradedYmlContent []byte // 升级后的 yml content
 
+	// triggerLabels
+	triggerLabels map[string]string
+
 	runParams []apistructs.PipelineRunParam // 运行时的输入参数
 }
 
@@ -96,6 +99,13 @@ func New(b []byte, ops ...Option) (_ *PipelineYml, err error) {
 	//   bp_args:     -> bp_args: '{"URL":"\\"}' -> valid json
 	//     URL: \
 	//
+	if y.triggerLabels != nil {
+		y.s.Accept(NewLabelsVisitor(y.data, y.triggerLabels))
+		y.data, err = GenerateYml(y.s)
+		if err != nil {
+			panic(err)
+		}
+	}
 	if y.secrets != nil {
 		// 占位符文本渲染，yaml hint 不丢失，更新结构体。示例：!!str ((secret_a)) -> !!str 12345 -> "12345" (string in struct)
 		y.s.Accept(NewSecretVisitor(y.data, y.secrets, y.secretsRecursiveRenderTimes))
@@ -220,6 +230,12 @@ func WithFlatParams(flatParams bool) Option {
 func WithEnvs(envs map[string]string) Option {
 	return func(y *PipelineYml) {
 		y.envs = envs
+	}
+}
+
+func WithTriggerLabels(triggerLabels map[string]string) Option {
+	return func(y *PipelineYml) {
+		y.triggerLabels = triggerLabels
 	}
 }
 

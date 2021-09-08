@@ -42,6 +42,7 @@ const (
 	Globals      = "globals"
 	Configs      = "configs"
 	Base64Decode = "base64-decode"
+	TriggerLabel = "triggers"
 )
 
 const (

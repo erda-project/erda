@@ -172,6 +172,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		//pipelineyml.WithRenderSnippet(p.Labels, p.Snippets),
 		pipelineyml.WithFlatParams(true),
 		pipelineyml.WithRunParams(p.Snapshot.RunPipelineParams),
+		pipelineyml.WithTriggerLabels(p.Labels),
 	)
 	if err != nil {
 		return false, errorsx.UserErrorf(err.Error())

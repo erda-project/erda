@@ -95,3 +95,14 @@ func Test_cronCompensatorReset(t *testing.T) {
 		})
 	}
 }
+
+func TestTest(t *testing.T) {
+	b, err := ioutil.ReadFile("./samples/trigger.yml")
+	assert.NoError(t, err)
+	newYml, err := ConvertToGraphPipelineYml(b)
+	assert.NoError(t, err)
+	assert.Contains(t, newYml.YmlContent, "trigger")
+	//n := &apistructs.PipelineYml{}
+	//assert.EqualValues(t, newYml.On, n.On)
+	fmt.Println(newYml.YmlContent)
+}

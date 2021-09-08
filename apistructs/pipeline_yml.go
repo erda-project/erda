@@ -59,9 +59,9 @@ type PipelineYml struct {
 	// 2) 当 needUpgrade 为 false 时：
 	//    1) 用户传入的为 YAML(apistructs.PipelineYml) 时，ymlContent 返回 YAML(spec.PipelineYml)
 	//    2) 用户传入的为 YAML(spec.PipelineYml) 时，返回优化后的 YAML(spec.PipelineYml)
-	YmlContent string         `json:"ymlContent,omitempty"`
-	On         *TriggerConfig `json:"on,omitempty"`
-
+	YmlContent string             `json:"ymlContent,omitempty"`
+	On         *TriggerConfig     `json:"on,omitempty"`
+	Triggers   []*PipelineTrigger `json:"triggers,omitempty"`
 	// describe the use of network hooks in the pipeline
 	Lifecycle []*NetworkHookInfo `json:"lifecycle"`
 }
@@ -214,4 +214,9 @@ type PipelineYmlParseGraphRequest struct {
 type PipelineYmlParseGraphResponse struct {
 	Header
 	Data *PipelineYml `json:"data"`
+}
+
+type PipelineTrigger struct {
+	On     string            `yaml:"on,omitempty" json:"on,omitempty"`
+	Filter map[string]string `yaml:"filter,omitempty" json:"filter,omitempty"`
 }
