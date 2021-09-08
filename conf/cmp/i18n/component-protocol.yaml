@@ -281,3 +281,4 @@ en:
  containerRuntime: Container Runtime
  placeholderFilterByNodeName: filter by node name
  cpuUsage: CPU Usage
+ architecture: Architecture
