@@ -3,7 +3,7 @@ pipeline:
 service-register:
 
 http-server:
-  addr: ":3082"
+  addr: ":3081"
 grpc-server:
   addr: ":30810"
 
