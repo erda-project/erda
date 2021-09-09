@@ -41,6 +41,7 @@ func TestGetAllESClients_WithErrorAccessDb_Should_Return_Nil(t *testing.T) {
 	}
 }
 
+/*
 func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients(t *testing.T) {
 	p := provider{
 		db: &db.DB{
@@ -113,3 +114,4 @@ func TestGetESClientsFromLogAnalyticsByLogDeployment_On_Preload_Enabled_Should_T
 		t.Errorf("ESClient.Entrys should not empty when preload matched")
 	}
 }
+*/
