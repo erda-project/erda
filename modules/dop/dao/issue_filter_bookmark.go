@@ -15,8 +15,9 @@
 package dao
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // IssueFilterBookmark users' bookmark of issue filter
