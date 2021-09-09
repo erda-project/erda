@@ -176,7 +176,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
-		p.State.CountValues[convertPodStatus(fields[2])]++
+		p.State.CountValues[fields[2]]++
 		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)

@@ -54,7 +54,6 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt int) List {
 	color := podsTable.PodStatusToColor[state]
 	if color == "" {
-		state = "other"
 		color = "darkslategray"
 	}
 	status := List{
