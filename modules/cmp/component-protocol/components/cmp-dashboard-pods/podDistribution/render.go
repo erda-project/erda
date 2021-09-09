@@ -39,12 +39,15 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 		return nil
 	}
 	total := 0
+	for _, count := range countValues {
+		total += count
+	}
+	pd.Data.Total = total
 	pd.Data.Lists = nil
 	for state, count := range countValues {
 		total += count
 		pd.Data.Lists = append(pd.Data.Lists, pd.ParsePodStatus(ctx, state, count))
 	}
-	pd.Data.Total = total
 	sort.Slice(pd.Data.Lists, func(i, j int) bool {
 		return pd.Data.Lists[i].Label < pd.Data.Lists[j].Label
 	})

@@ -17,6 +17,7 @@ package bundle
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -61,7 +62,7 @@ func (b *Bundle) PatchNode(req *apistructs.SteveRequest) error {
 
 	obj := map[string]interface{}{}
 	if err = json.Unmarshal(data, &obj); err != nil {
-		return apierrors.ErrInvoke.InternalError(err)
+		return fmt.Errorf(string(data))
 	}
 	return isSteveError(obj)
 }

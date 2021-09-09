@@ -23,7 +23,7 @@ components:
   header:
     type: RowContainer
   podStatus:
-    type: Text
+    type: Tags
   podTitle:
     type: Title
   containerTitle:

@@ -16,6 +16,7 @@ package bundle
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -65,7 +66,7 @@ func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (data.Object, er
 
 	obj := map[string]interface{}{}
 	if err = json.Unmarshal(data, &obj); err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
+		return nil, fmt.Errorf(string(data))
 	}
 
 	if err = isSteveError(obj); err != nil {
@@ -107,7 +108,7 @@ func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (data.Object, e
 
 	obj := map[string]interface{}{}
 	if err = json.Unmarshal(data, &obj); err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
+		return nil, fmt.Errorf(string(data))
 	}
 
 	if err = isSteveError(obj); err != nil {
@@ -151,7 +152,7 @@ func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (data.Object,
 
 	obj := map[string]interface{}{}
 	if err = json.Unmarshal(data, &obj); err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
+		return nil, fmt.Errorf(string(data))
 	}
 
 	if err = isSteveError(obj); err != nil {
@@ -195,7 +196,7 @@ func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (data.Object,
 
 	obj := map[string]interface{}{}
 	if err = json.Unmarshal(data, &obj); err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
+		return nil, fmt.Errorf(string(data))
 	}
 
 	if err = isSteveError(obj); err != nil {
@@ -236,7 +237,7 @@ func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
 
 	obj := map[string]interface{}{}
 	if err = json.Unmarshal(data, &obj); err != nil {
-		return apierrors.ErrInvoke.InternalError(err)
+		return fmt.Errorf(string(data))
 	}
 	return isSteveError(obj)
 }

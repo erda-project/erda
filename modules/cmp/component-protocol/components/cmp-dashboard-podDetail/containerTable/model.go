@@ -64,9 +64,14 @@ type Operate struct {
 }
 
 type Status struct {
-	RenderType  string      `json:"renderType"`
-	Value       string      `json:"value"`
-	StyleConfig StyleConfig `json:"styleConfig"`
+	RenderType string      `json:"renderType"`
+	Size       string      `json:"size,omitempty"`
+	Value      StatusValue `json:"value,omitempty"`
+}
+
+type StatusValue struct {
+	Label string `json:"label,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type Images struct {

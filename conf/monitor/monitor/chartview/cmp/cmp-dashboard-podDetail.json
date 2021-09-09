@@ -1,7 +1,6 @@
 {
   "id": "cmp-dashboard-podDetail",
   "scope": "org",
-  "scopeId": "erda",
   "version": "v2",
   "name": "Pod Detail",
   "desc": "",

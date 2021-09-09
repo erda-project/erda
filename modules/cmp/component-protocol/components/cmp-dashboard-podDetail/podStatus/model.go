@@ -22,17 +22,22 @@ type PodStatus struct {
 	base.DefaultProvider
 
 	Type  string `json:"type"`
+	Data  Data   `json:"data,omitempty"`
 	Props Props  `json:"props"`
 	State State  `json:"state,omitempty"`
 }
 
 type Props struct {
-	Value       string      `json:"value"`
-	StyleConfig StyleConfig `json:"styleConfig"`
+	Size string `json:"size,omitempty"`
 }
 
-type StyleConfig struct {
-	Color string `json:"color"`
+type Data struct {
+	Labels Labels `json:"labels,omitempty"`
+}
+
+type Labels struct {
+	Label string `json:"label,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type State struct {

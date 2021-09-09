@@ -26,16 +26,21 @@ type ComponentWorkloadStatus struct {
 	bdl *bundle.Bundle
 
 	Type  string `json:"type,omitempty"`
+	Data  Data   `json:"data,omitempty"`
 	Props Props  `json:"props,omitempty"`
 	State State  `json:"state,omitempty"`
 }
 
 type Props struct {
-	Value       string      `json:"value,omitempty"`
-	StyleConfig StyleConfig `json:"styleConfig,omitempty"`
+	Size string `json:"size,omitempty"`
 }
 
-type StyleConfig struct {
+type Data struct {
+	Labels Labels `json:"labels,omitempty"`
+}
+
+type Labels struct {
+	Label string `json:"label,omitempty"`
 	Color string `json:"color,omitempty"`
 }
 
