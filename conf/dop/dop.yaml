@@ -2,7 +2,7 @@ dop:
 
 service-register:
 http-server:
-  addr: ":9528"
+  addr: "${LISTEN_ADDR::9527}"
 grpc-server:
   addr: ":9529"
 i18n:

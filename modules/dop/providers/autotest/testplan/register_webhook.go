@@ -15,9 +15,6 @@
 package testplan
 
 import (
-	"errors"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -29,16 +26,10 @@ import (
 const TestPlanExecuteCallback = "/api/autotests/actions/plan-execute-callback"
 
 func (p *provider) registerWebHook() error {
-	// TODO remove :9528, merge to :9527
-	// dopAddr:xxx => dopAddr:9528
-	addr, err := convertAddr(discover.DOP())
-	if err != nil {
-		return err
-	}
 	ev := apistructs.CreateHookRequest{
 		Name:   "auto_test_plan_update",
 		Events: []string{bundle.AutoTestPlanExecuteEvent},
-		URL:    strutil.Concat("http://", addr, TestPlanExecuteCallback),
+		URL:    strutil.Concat("http://", discover.DOP(), TestPlanExecuteCallback),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",
@@ -52,21 +43,4 @@ func (p *provider) registerWebHook() error {
 	}
 	logrus.Infof("register release event to eventbox, event:%+v", ev)
 	return nil
-}
-
-func convertAddr(oldAddr string) (string, error) {
-	var newAddr string
-	addrParts := strings.Split(oldAddr, ":")
-	if len(addrParts) < 2 {
-		return "", errors.New("invalid dop addr: " + discover.DOP())
-	}
-
-	for _, v := range addrParts[:len(addrParts)-1] {
-		newAddr = newAddr + v + ":"
-	}
-
-	// grpc http addr
-	newAddr += "9528"
-
-	return newAddr, nil
 }

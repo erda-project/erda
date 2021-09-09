@@ -15,11 +15,11 @@
 package dop
 
 import (
-	"context"
 	"embed"
 	"os"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -52,6 +52,7 @@ type provider struct {
 
 	Protocol componentprotocol.Interface
 	Tran     i18n.Translator `translator:"component-protocol"`
+	DB       *gorm.DB        `autowired:"mysql-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -87,10 +88,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	p.Log.Info("init component-protocol done")
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,
@@ -101,7 +98,7 @@ func (p *provider) Run(ctx context.Context) error {
 	dumpstack.Open()
 	logrus.Infoln(version.String())
 
-	return p.Initialize()
+	return p.Initialize(ctx)
 }
 
 func init() {
