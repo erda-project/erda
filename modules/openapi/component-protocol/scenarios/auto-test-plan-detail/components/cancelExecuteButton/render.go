@@ -68,13 +68,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		if _, ok := c.State["visible"]; ok {
 			visible = c.State["visible"].(bool)
 		}
-		pipelineId := ca.State.PipelineDetail.ID
-		if pipelineId > 0 {
-			if !ca.State.PipelineDetail.Status.IsReconcilerRunningStatus() {
+		if ca.State.PipelineDetail == nil {
+			visible = false
+		} else {
+			pipelineId := ca.State.PipelineDetail.ID
+			if pipelineId > 0 {
+				if !ca.State.PipelineDetail.Status.IsReconcilerRunningStatus() {
+					visible = false
+				}
+			} else {
 				visible = false
 			}
-		} else {
-			visible = false
 		}
 		c.Props = map[string]interface{}{
 			"text":    "取消执行",

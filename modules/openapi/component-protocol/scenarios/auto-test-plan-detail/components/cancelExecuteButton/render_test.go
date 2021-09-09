@@ -15,9 +15,13 @@
 package cancelExecuteButton
 
 import (
+	"context"
 	"testing"
 
+	"github.com/alecthomas/assert"
+
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func TestComponentAction_marshal(t *testing.T) {
@@ -100,4 +104,25 @@ func TestComponentAction_Import(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComponentAction_Render(t *testing.T) {
+	ctx := protocol.ContextBundle{
+		InParams: map[string]interface{}{},
+	}
+	ctx1 := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), ctx)
+	a := &ComponentAction{}
+	a.State.PipelineDetail = nil
+	err := a.Render(ctx1, &apistructs.Component{}, apistructs.ComponentProtocolScenario{},
+		apistructs.ComponentEvent{
+			Operation:     apistructs.RenderingOperation,
+			OperationData: nil,
+		}, nil)
+	assert.NoError(t, err)
+	a.State.PipelineDetail = &apistructs.PipelineDetailDTO{
+		PipelineDTO: apistructs.PipelineDTO{
+			ID: 0,
+		},
+	}
+	assert.NoError(t, err)
 }
