@@ -142,12 +142,13 @@ func (m *Manager) checkDeployed(chart *ChartSpec) (bool, error) {
 		return false, nil
 	}
 
+	if lr.Chart.Metadata.Version != chart.Version {
+		logrus.Warnf("[%s] installed version %s, spce: %s", chart.ReleaseName, lr.Chart.Metadata.Version, chart.Version)
+	}
+
 	// check status by action type
 	switch chart.Action {
 	case ActionInstall:
-		if lr.Chart.Metadata.Version != chart.Version {
-			return false, fmt.Errorf("[%s] had installed version %s", chart.ReleaseName, lr.Chart.Metadata.Version)
-		}
 		if lr.Info.Status != "deployed" {
 			logrus.Infof("[%s] check status is %s", chart.ChartName, lr.Info.Status)
 			return false, nil
@@ -155,9 +156,6 @@ func (m *Manager) checkDeployed(chart *ChartSpec) (bool, error) {
 		logrus.Infof("[%s] check chart install success", chart.ChartName)
 		return true, nil
 	case ActionUpgrade:
-		if lr.Chart.Metadata.Version != chart.Version {
-			return false, nil
-		}
 		if lr.Info.Status != "deployed" {
 			logrus.Infof("[%s] check status is %s", chart.ChartName, lr.Info.Status)
 			return false, nil
