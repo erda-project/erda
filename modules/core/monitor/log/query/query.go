@@ -167,7 +167,7 @@ func (p *provider) queryBaseLog(table, source, id, stream string, start, end, co
 		} else {
 			bucket = trncateDate(end)
 		}
-		slogs, err := p.queryBaseLogInBucket(table, source, id, stream, bucket, start, end, orderBy, limit)
+		slogs, err := p.queryBaseLogInBucket(table, source, id, stream, bucket, start+1, end, orderBy, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -229,9 +229,8 @@ func (p *provider) queryBaseLogInBucket(
 				qb.Eq("id"),
 				qb.Eq("stream"),
 				qb.Eq("time_bucket"),
-				// compatibility for frontend scroll
-				qb.GtNamed("timestamp", "start"),
-				qb.LtOrEqNamed("timestamp", "end")).
+				qb.GtOrEqNamed("timestamp", "start"),
+				qb.LtNamed("timestamp", "end")).
 			OrderBy("timestamp", order).OrderBy("offset", order).
 			Limit(limit),
 		qb.M{
