@@ -485,7 +485,9 @@ func (impl GatewayOpenapiRuleServiceImpl) CreateOrUpdateLimitRule(consumerId, pa
 
 func (impl GatewayOpenapiRuleServiceImpl) CreateLimitRule(args *gw.DiceArgsDto, dto *gw.OpenLimitRuleDto) (res bool, existed bool, err error) {
 	defer func() {
-		log.Errorf("error happened, err:%+v", err)
+		if err != nil {
+			log.Errorf("error happened, err:%+v", err)
+		}
 	}()
 	if args.ProjectId == "" || args.Env == "" || dto.ConsumerId == "" || dto.PackageId == "" {
 		err = errors.New("id is empty")

@@ -45,16 +45,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	if p.Register != nil {
 		type clientService = pb.OrgClientServiceServer
-		pb.RegisterOrgClientServiceImp(p.Register, p.orgClientService, apis.Options(),
-			p.Perm.Check(
-				perm.Method(clientService.ChangeClientLimit, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-				perm.Method(clientService.CreateClient, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-				perm.Method(clientService.DeleteClient, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-				perm.Method(clientService.GetCredentials, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-				perm.Method(clientService.GrantEndpoint, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-				perm.Method(clientService.RevokeEndpoint, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-				perm.Method(clientService.UpdateCredentials, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-			), common.AccessLogWrap(common.AccessLog))
+		pb.RegisterOrgClientServiceImp(p.Register, p.orgClientService, apis.Options(), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil
 }

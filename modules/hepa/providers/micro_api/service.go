@@ -38,7 +38,7 @@ func (s *apiService) GetApis(ctx context.Context, req *pb.GetApisRequest) (resp 
 		Method:       req.Method,
 		DiceApp:      req.DiceApp,
 		DiceService:  req.DiceService,
-		RuntimeId:    req.DiceService,
+		RuntimeId:    req.RuntimeId,
 		ApiPath:      req.ApiPath,
 		RegisterType: req.RegisterType,
 		NetType:      req.NetType,
@@ -71,7 +71,8 @@ func (s *apiService) GetApis(ctx context.Context, req *pb.GetApisRequest) (resp 
 func (s *apiService) CreateApi(ctx context.Context, req *pb.CreateApiRequest) (resp *pb.CreateApiResponse, err error) {
 	service := micro_api.Service.Clone(ctx)
 	reqDto := &dto.ApiReqDto{
-		ApiDto: dto.MakeApiDto(req.ApiRequest),
+		ApiDto:          dto.MakeApiDto(req.ApiRequest),
+		ApiReqOptionDto: &dto.ApiReqOptionDto{},
 	}
 	apiId, err := service.CreateApi(reqDto)
 	if err != nil {
