@@ -46,11 +46,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		type runtimeService = pb.RuntimeServiceServer
 		pb.RegisterRuntimeServiceImp(p.Register, p.runtimeService, apis.Options(), p.Perm.Check(
-			perm.Method(runtimeService.ChangeRuntime, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ProjectID")),
-			perm.Method(runtimeService.DeleteRuntime, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.NoPermMethod(runtimeService.ChangeRuntime),
+			perm.NoPermMethod(runtimeService.DeleteRuntime),
 			perm.Method(runtimeService.GetApps, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
-			perm.Method(runtimeService.GetServiceRuntimes, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("projectId")),
-			perm.Method(runtimeService.GetServiceApiPrefix, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("projectId")),
+			perm.Method(runtimeService.GetServiceRuntimes, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ProjectId")),
+			perm.Method(runtimeService.GetServiceApiPrefix, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ProjectId")),
 		), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil

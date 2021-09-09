@@ -75,7 +75,7 @@ func FromLimitRequest(limit *pb.LimitRequest) *OpenLimitRuleDto {
 		qpm := int(limit.Limit.Qpm)
 		lt.Minute = &qpm
 	}
-	if limit.Limit.Qpd > 0 {
+	if limit.Limit.Qps > 0 {
 		qps := int(limit.Limit.Qps)
 		lt.Second = &qps
 	}

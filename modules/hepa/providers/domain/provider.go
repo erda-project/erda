@@ -65,6 +65,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(domainService.ChangeRuntimeDomains, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(domainService.GetRuntimeDomains, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 			perm.Method(domainService.GetTenantDomains, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
+			perm.NoPermMethod(domainService.ChangeInnerIngress),
 		), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil
