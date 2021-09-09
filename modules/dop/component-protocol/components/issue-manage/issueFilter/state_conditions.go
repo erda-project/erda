@@ -47,6 +47,8 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 			if f.State.FrontendConditionValues.FilterID == "" && len(f.Bms) < conf.MaxIssueFilterBm() {
 				// no filter selected, so display `quick-add`
 				cond.QuickAdd.Show = true
+			} else {
+				cond.QuickAdd.Show = false
 			}
 			cond.Options = options
 		case PropConditionKeyIterationIDs:

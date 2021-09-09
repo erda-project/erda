@@ -92,6 +92,8 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	case f.Operations[OperationKeyFilter].Key.String():
 		if f.State.FrontendChangedKey == string(PropConditionKeyFilterID) {
 			f.FlushOptsFromBm = f.State.FrontendConditionValues.FilterID
+		} else {
+			f.FlushOptsFromBm = ""
 		}
 		// use rendering later `PostSetState`
 	case f.Operations[OperationKeyCreatorSelectMe].Key.String():
@@ -273,6 +275,7 @@ func (f *ComponentFilter) flushOptsByFilter(filterID, filterEntity string) error
 	if err != nil {
 		return err
 	}
+	f.State.FrontendConditionValues = FrontendConditions{} // clear exist value
 	if err := json.Unmarshal(b, &f.State.FrontendConditionValues); err != nil {
 		return err
 	}
