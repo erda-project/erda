@@ -72,7 +72,7 @@ func (rc *RequestCtx) PatternMode() bool {
 const (
 	defaultStream      = "stdout"
 	defaultCount       = 50
-	maxCount, minCount = 200, -200
+	maxCount, minCount = 700, -700
 	maxTimeRange       = 7 * 24 * int64(time.Hour)
 )
 
