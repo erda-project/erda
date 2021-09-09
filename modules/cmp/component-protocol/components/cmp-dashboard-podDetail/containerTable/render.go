@@ -177,19 +177,23 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 }
 
 func parseContainerStatus(ctx context.Context, state string) Status {
-	status := Status{
-		RenderType: "text",
-		Value:      cputil.I18n(ctx, state),
-	}
+	color := ""
 	switch state {
 	case "running":
-		status.StyleConfig.Color = "green"
+		color = "green"
 	case "waiting":
-		status.StyleConfig.Color = "steelblue"
+		color = "steelblue"
 	case "terminated":
-		status.StyleConfig.Color = "red"
+		color = "red"
 	}
-	return status
+	return Status{
+		RenderType: "tagsRow",
+		Size:       "default",
+		Value: StatusValue{
+			Label: cputil.I18n(ctx, state),
+			Color: color,
+		},
+	}
 }
 
 func init() {

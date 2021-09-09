@@ -88,10 +88,9 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 		color = "brown"
 	}
 
-	podStatus.Props = Props{
-		StyleConfig: StyleConfig{Color: color},
-		Value:       cputil.I18n(ctx, status),
-	}
+	podStatus.Data.Labels.Color = color
+	podStatus.Data.Labels.Label = cputil.I18n(ctx, status)
+	podStatus.Props.Size = "default"
 	return nil
 }
 
