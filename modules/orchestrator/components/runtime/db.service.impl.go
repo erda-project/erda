@@ -26,6 +26,14 @@ type dbServiceImpl struct {
 	db *dbclient.DBClient
 }
 
+func (d *dbServiceImpl) UpdateRuntime(runtime *dbclient.Runtime) error {
+	return d.db.UpdateRuntime(runtime)
+}
+
+func (d *dbServiceImpl) GetRuntime(id uint64) (*dbclient.Runtime, error) {
+	return d.db.GetRuntime(id)
+}
+
 func (d *dbServiceImpl) FindDomainsByRuntimeId(id uint64) ([]dbclient.RuntimeDomain, error) {
 	return d.db.FindDomainsByRuntimeId(id)
 }

@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package runtime
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+import "github.com/erda-project/erda/modules/orchestrator/events"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/orchestrator"
-	_ "github.com/erda-project/erda/modules/orchestrator/components"
-)
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/orchestrator/orchestrator.yaml",
-	})
+type EventManagerService interface {
+	EmitEvent(e *events.RuntimeEvent)
 }
