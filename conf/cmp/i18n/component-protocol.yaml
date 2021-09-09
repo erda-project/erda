@@ -117,9 +117,9 @@ zh:
  ImagePullBackOff: 镜像拉取失败
  Pending: 挂起
  Running: 运行中
- Terminating: 已结束
  memUsed: Mem 使用率
  use: mem 使用率
+ Terminating: 终止
  OOMKilled: 内存溢出
  addLabel: 添加标签
  nodeDetail: 节点详情
