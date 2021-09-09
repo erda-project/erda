@@ -201,10 +201,11 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 
 	f.State.Conditions = nil
 	namespaceCond := Condition{
-		Key:   "namespace",
-		Label: cputil.I18n(ctx, "namespace"),
-		Type:  "select",
-		Fixed: true,
+		HaveFilter: true,
+		Key:        "namespace",
+		Label:      cputil.I18n(ctx, "namespace"),
+		Type:       "select",
+		Fixed:      true,
 	}
 	for _, option := range []Option{devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, defaultNs, systemNs, otherNs} {
 		if option.Children != nil {
@@ -223,40 +224,48 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Fixed: true,
 		Options: []Option{
 			{
-				Label: "Completed",
-				Value: cputil.I18n(ctx, "Completed"),
+				Label: cputil.I18n(ctx, "Completed"),
+				Value: "Completed",
 			},
 			{
-				Label: "ContainerCreating",
-				Value: cputil.I18n(ctx, "ContainerCreating"),
+				Label: cputil.I18n(ctx, "ContainerCreating"),
+				Value: "ContainerCreating",
 			},
 			{
-				Label: "CrashLoopBackOff",
-				Value: cputil.I18n(ctx, "CrashLoopBackOff"),
+				Label: cputil.I18n(ctx, "CrashLoopBackOff"),
+				Value: "CrashLoopBackOff",
 			},
 			{
-				Label: "Error",
-				Value: cputil.I18n(ctx, "Error"),
+				Label: cputil.I18n(ctx, "Error"),
+				Value: "Error",
 			},
 			{
-				Label: "Evicted",
-				Value: cputil.I18n(ctx, "Evicted"),
+				Label: cputil.I18n(ctx, "Evicted"),
+				Value: "Evicted",
 			},
 			{
-				Label: "ImagePullBackOff",
-				Value: cputil.I18n(ctx, "ImagePullBackOff"),
+				Label: cputil.I18n(ctx, "ImagePullBackOff"),
+				Value: "ImagePullBackOff",
 			},
 			{
-				Label: "Pending",
-				Value: cputil.I18n(ctx, "Pending"),
+				Label: cputil.I18n(ctx, "Pending"),
+				Value: "Pending",
 			},
 			{
-				Label: "Running",
-				Value: cputil.I18n(ctx, "Running"),
+				Label: cputil.I18n(ctx, "Running"),
+				Value: "Running",
 			},
 			{
-				Label: "Terminating",
-				Value: cputil.I18n(ctx, "Terminating"),
+				Label: cputil.I18n(ctx, "Terminating"),
+				Value: "Terminating",
+			},
+			{
+				Label: cputil.I18n(ctx, "OOMKilled"),
+				Value: "OOMKilled",
+			},
+			{
+				Label: cputil.I18n(ctx, "others"),
+				Value: "others",
 			},
 		},
 	})
