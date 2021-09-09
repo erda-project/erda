@@ -16,6 +16,8 @@ package query
 import (
 	"fmt"
 	"reflect"
+	"regexp"
+	"sort"
 	"testing"
 
 	"github.com/scylladb/gocqlx/qb"
@@ -95,9 +97,43 @@ func Test_provider_getLogItems(t *testing.T) {
 					TimeBucket: "1604880000000000000",
 					Timestamp:  "1604880002000000000",
 					Offset:     "11",
+					Content:    "goodbye world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "query base log with pattern",
+			args: args{
+				r: &RequestCtx{
+					RequestID:     "",
+					LogID:         "",
+					Source:        "container",
+					ID:            "aaa",
+					Stream:        "stdout",
+					Start:         1604880000000000000,
+					End:           1604880001000000000,
+					Count:         -200,
+					ApplicationID: "app-1",
+					ClusterName:   "",
+					Pattern:       "hello",
+					patternRegexp: regexp.MustCompile("hello"),
+				},
+			},
+			want: []*pb.LogItem{
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880001000000000",
+					Offset:     "11",
 					Content:    "hello world",
 					Level:      "INFO",
 					RequestId:  "",
+					Pattern:    "hello",
 				},
 			},
 			wantErr: false,
@@ -272,7 +308,7 @@ func (m *mockCqlQuery) Query(builder *qb.SelectBuilder, binding qb.M, dest inter
 				TimeBucket: 1604880000000000000,
 				Timestamp:  1604880002000000000,
 				Offset:     11,
-				Content:    gzipString("hello world"),
+				Content:    gzipString("goodbye world"),
 				Level:      "INFO",
 				RequestID:  "",
 			},
@@ -301,4 +337,88 @@ func (m *mockCqlQuery) Query(builder *qb.SelectBuilder, binding qb.M, dest inter
 		return nil
 	}
 	return nil
+}
+
+func Test_filterWithRegexp(t *testing.T) {
+	type args struct {
+		logs []*pb.LogItem
+		r    *RequestCtx
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*pb.LogItem
+	}{
+		{
+			name: "normal",
+			args: args{
+				logs: []*pb.LogItem{
+					{
+						Timestamp: "1",
+						Content:   "aaabbbccc",
+					},
+					{
+						Timestamp: "2",
+						Content:   "xxx",
+					},
+					{
+						Timestamp: "3",
+						Content:   "bbbddd",
+					},
+					{
+						Timestamp: "4",
+						Content:   "yyy",
+					},
+					{
+						Timestamp: "5",
+						Content:   "eeebbbxxx",
+					},
+				},
+				r: &RequestCtx{
+					patternRegexp: regexp.MustCompile("bbb"),
+				},
+			},
+			want: []*pb.LogItem{
+				{
+					Timestamp: "1",
+					Content:   "aaabbbccc",
+				},
+				{
+					Timestamp: "3",
+					Content:   "bbbddd",
+				},
+				{
+					Timestamp: "5",
+					Content:   "eeebbbxxx",
+				},
+			},
+		},
+		{
+			name: "edge",
+			args: args{
+				logs: []*pb.LogItem{
+					{
+						Content: "aaabbbccc",
+					},
+				},
+				r: &RequestCtx{
+					patternRegexp: regexp.MustCompile("bbb"),
+				},
+			},
+			want: []*pb.LogItem{
+				{
+					Content: "aaabbbccc",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterWithRegexp(tt.args.logs, tt.args.r)
+			sort.Sort(Logs(got))
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterWithRegexp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
