@@ -26,7 +26,7 @@ etcd-election@reconciler:
 
 etcd-election@gc:
   root_path: erda/component-leader/pipeline/gc
-
+erda.core.pipeline.trigger:
 erda.core.pipeline.definition:
 erda.core.pipeline.cms:
   # TODO refactor it: use kms to make key-change operation easier. No encrypt if key-pair not provided.
