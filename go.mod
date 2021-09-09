@@ -46,7 +46,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
+	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
@@ -95,7 +95,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rakyll/statik v0.1.7
 	github.com/rancher/remotedialer v0.0.0
-	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
+	github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1
