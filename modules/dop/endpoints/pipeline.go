@@ -117,6 +117,11 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 		reqPipeline.PipelineYml = string(convertedyml)
 	}
 
+	// update CmsNsConfigs
+	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, app.OrgID); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	resp, err := e.pipeline.CreatePipelineV2(reqPipeline)
 	if err != nil {
 		logrus.Errorf("create pipeline failed, reqPipeline: %+v, (%+v)", reqPipeline, err)

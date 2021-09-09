@@ -132,12 +132,12 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			ScopeType:    apistructs.ProjectScope,
 			ScopeID:      projectID,
 			OrgID:        project.OrgID,
+			ProjectID:    projectID,
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
 			TemplateName: apistructs.ArchiveTestplanTemplate,
 			Context: map[string]interface{}{
-				"projectId":    project.ID,
 				"projectName":  project.Name,
 				"testPlanName": testplan.Data.Name,
 			},
@@ -264,13 +264,11 @@ func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Comp
 }
 
 func convertExecuteTime(data *apistructs.TestPlanV2) string {
-	executeTime := ""
-	if data.ExecuteTime != nil {
-		executeTime = data.ExecuteTime.Format("2006-01-02 15:04:05")
+	if data.ExecuteTime == nil {
+		return ""
 	}
-	if executeTime == "0001-01-01 00:00:00" {
-		executeTime = ""
-	}
+	var executeTime string
+	executeTime = data.ExecuteTime.Format("2006-01-02 15:04:05")
 	return executeTime
 }
 

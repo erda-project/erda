@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -56,6 +58,31 @@ func (e *Endpoints) CreateIssueState(ctx context.Context, r *http.Request, vars 
 	}
 	state, err := e.issueState.CreateIssueState(&Req)
 	if err != nil {
+		return apierrors.ErrCreateIssueState.InternalError(err).ToResp(), nil
+	}
+
+	project, err := e.bdl.GetProject(Req.ProjectID)
+	if err != nil {
+		return apierrors.ErrCreateIssueState.InternalError(err).ToResp(), nil
+	}
+	now := strconv.FormatInt(time.Now().Unix(), 10)
+	audit := apistructs.Audit{
+		UserID:       identityInfo.UserID,
+		ScopeType:    apistructs.ProjectScope,
+		ScopeID:      Req.ProjectID,
+		OrgID:        project.OrgID,
+		ProjectID:    Req.ProjectID,
+		Result:       "success",
+		StartTime:    now,
+		EndTime:      now,
+		TemplateName: apistructs.CreateIssueStateTemplate,
+		Context: map[string]interface{}{
+			"projectName": project.Name,
+			"issueType":   Req.IssueType,
+			"stateName":   state.Name,
+		},
+	}
+	if err := e.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
 		return apierrors.ErrCreateIssueState.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(state.ID)

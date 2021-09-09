@@ -19,11 +19,12 @@ import (
 
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cast"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
@@ -56,6 +57,22 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		switch event.Operation {
 		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
+		case common.CMPDashboardRemoveLabel:
+			if event.Operation == common.CMPDashboardRemoveLabel {
+				metaName := event.OperationData["fillMeta"].(string)
+				label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
+				nodeId := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["recordId"].(string)
+				req := apistructs.SteveRequest{}
+				req.ClusterName = ct.SDK.InParams["clusterName"].(string)
+				req.OrgID = ct.SDK.Identity.OrgID
+				req.UserID = ct.SDK.Identity.UserID
+				req.Type = apistructs.K8SNode
+				req.Name = nodeId
+				err = ct.CtxBdl.UnlabelNode(&req, []string{label})
+				if err != nil {
+					return err
+				}
+			}
 		case common.CMPDashboardUnfreezeNode:
 			err := ct.UnFreezeNode(ct.State.SelectedRowKeys)
 			if err != nil {
@@ -88,13 +105,13 @@ func (ct *CpuInfoTable) getProps() {
 		"rowKey": "id",
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 260},
+			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 340},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: ct.SDK.I18n("role"), Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Width: 120},
-			{DataIndex: "Distribution", Title: "cpu" + ct.SDK.I18n("distribution"), Sortable: true, Width: 120},
-			{DataIndex: "Usage", Title: "cpu" + ct.SDK.I18n("use"), Sortable: true, Width: 120},
-			{DataIndex: "UsageRate", Title: "cpu" + ct.SDK.I18n("distributionRate"), Sortable: true, Width: 120},
+			{DataIndex: "Distribution", Title: "CPU " + ct.SDK.I18n("distribution"), Sortable: true, Width: 120},
+			{DataIndex: "Usage", Title: ct.SDK.I18n("cpuUsage"), Sortable: true, Width: 120},
+			{DataIndex: "UsageRate", Title: "CPU " + ct.SDK.I18n("distributionRate"), Sortable: true, Width: 120},
 			{DataIndex: "Operate", Title: ct.SDK.I18n("operate"), Sortable: true, Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
@@ -123,7 +140,7 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	}
 	req := apistructs.MetricsRequest{
 		ClusterName:  ct.SDK.InParams["clusterName"].(string),
-		Names:        []string{c.String("id")},
+		IP:           []string{c.StringSlice("metadata", "fields")[5]},
 		ResourceType: metrics.Cpu,
 		ResourceKind: metrics.Node,
 		OrgID:        ct.SDK.Identity.OrgID,
@@ -135,23 +152,28 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		resp = []apistructs.MetricsData{{Used: 0}}
 	}
 	//request := c.Map("status", "allocatable").String("cpu")
-	limit := c.Map("status", "capacity").String("cpu")
-	resp[0].Total = cast.ToFloat64(limit)
+	limitStr := c.Map("extra", "parsedResource", "capacity").String("CPU")
+	limitQuantity, _ := resource.ParseQuantity(limitStr)
+	requestStr := c.Map("extra", "parsedResource", "allocated").String("CPU")
+	requestQuantity, _ := resource.ParseQuantity(requestStr)
+	resp[0].Total = float64(limitQuantity.Value()) / 1000
+	resp[0].Request = float64(requestQuantity.Value()) / 1000
 	distribution = ct.GetDistributionValue(resp[0])
 	usage = ct.GetUsageValue(resp[0])
 	dr = ct.GetDistributionRate(resp[0])
 	role := c.StringSlice("metadata", "fields")[2]
+	ip := c.StringSlice("metadata", "fields")[5]
 	if role == "<none>" {
 		role = "worker"
 	}
 	ri := &table.RowItem{
 		ID:      c.String("id"),
-		IP:      c.StringSlice("metadata", "fields")[5],
+		IP:      ip,
 		Version: c.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    ct.GetRenders(c.String("id"), c.Map("metadata", "labels")),
+			Renders:    ct.GetRenders(c.String("id"), ip, c.Map("metadata", "labels")),
 		},
 		Status: *status,
 		Distribution: table.Distribution{
@@ -172,8 +194,8 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Status:     table.GetDistributionStatus(dr.Percent),
 			Tip:        dr.Text,
 		},
-		Operate:      ct.GetOperate(c.String("id")),
-		BatchOptions: []string{"delete", "freeze", "unfreeze"},
+		Operate:         ct.GetOperate(c.String("id")),
+		BatchOperations: []string{"delete", "freeze", "unfreeze"},
 	}
 	return ri, nil
 }

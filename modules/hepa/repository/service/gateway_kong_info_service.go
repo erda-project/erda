@@ -122,6 +122,25 @@ func (impl *GatewayKongInfoServiceImpl) GetKongInfo(cond *orm.GatewayKongInfo) (
 	return kongInfo, nil
 }
 
+func (impl *GatewayKongInfoServiceImpl) GetForUpdate(projectId, env, az string) (*orm.GatewayKongInfo, error) {
+	if projectId == "" || env == "" || az == "" {
+		return nil, errors.New(ERR_INVALID_ARG)
+	}
+	if impl.session == nil {
+		return nil, errors.New("session is nil")
+	}
+	impl.session.Exec("set innodb_lock_wait_timeout=600")
+	dao := &orm.GatewayKongInfo{}
+	succ, err := orm.GetForUpdate(impl.session, impl.engine, dao, "project_id = ? and env = ? and az = ?", projectId, env, az)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if !succ {
+		return nil, nil
+	}
+	return dao, nil
+}
+
 func (impl *GatewayKongInfoServiceImpl) GetByAny(cond *orm.GatewayKongInfo) (*orm.GatewayKongInfo, error) {
 	if cond == nil {
 		return nil, errors.New(ERR_INVALID_ARG)

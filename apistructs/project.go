@@ -339,3 +339,12 @@ type GetAllProjectsResponse struct {
 
 	Data []ProjectDTO `json:"data"`
 }
+
+type GetModelProjectsMapRequest struct {
+	ProjectIDs []uint64 `json:"projectIDs"`
+}
+
+type GetModelProjectsMapResponse struct {
+	Header
+	Data map[uint64]ProjectDTO `json:"data"`
+}

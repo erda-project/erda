@@ -16,6 +16,7 @@ package filter
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -86,7 +87,7 @@ func (f *Filter) GetFilterProps() Props {
 					{Label: f.SDK.I18n("platform"), Value: "platform"},
 				},
 			},
-			{Key: "Q", Type: "input", Placeholder: "请输入"},
+			{Key: "Q", Type: "input", Placeholder: f.SDK.I18n("placeholderFilterByNodeName")},
 		},
 	}
 	return p
@@ -94,7 +95,8 @@ func (f *Filter) GetFilterProps() Props {
 
 type Values map[string]string
 type State struct {
-	Values Values `json:"values"`
+	Values      Values `json:"values"`
+	ClusterName string `json:"clusterName"`
 }
 
 type Props struct {

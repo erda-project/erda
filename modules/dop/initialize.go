@@ -70,6 +70,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -189,6 +190,23 @@ func (p *provider) Initialize() error {
 		if err = compensatePipelineCms(ep); err != nil {
 			logrus.Error(err)
 		}
+	}()
+
+	// daily issue expiry status update cron job
+	go func() {
+		cron := cron.New()
+		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
+			start := time.Now()
+			if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
+				logrus.Errorf("daily issue expiry status batch update err: %v", err)
+				return
+			}
+			logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
+		})
+		if err != nil {
+			panic(err)
+		}
+		cron.Start()
 	}()
 
 	return server.ListenAndServe()

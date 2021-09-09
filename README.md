@@ -75,7 +75,7 @@ To get started, see [Local installation](https://docs.erda.cloud/latest/manual/i
 ## Installation
 
 Erda can be deployed in either a single node or multi-node setup. 
-Please download binaries of [Erda release](https://github.com/erda-project/erda/releases) and follow [Installation & Configuration Guide](https://docs.erda.cloud/latest/manual/install/helm-install.html) to install Erda.
+Please download binaries of [Erda release](https://github.com/erda-project/erda/releases) and follow [Installation & Configuration Guide](https://docs.erda.cloud/latest/manual/install/helm-install/introduction.html) to install Erda.
 
 ## User Manual
 

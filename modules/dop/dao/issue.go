@@ -51,8 +51,27 @@ type Issue struct {
 	Stage          string                     // bug阶段 or 任务类型 的值
 	Owner          string                     // 负责人
 
-	FinishTime *time.Time // 实际结束时间
+	FinishTime   *time.Time // 实际结束时间
+	ExpiryStatus ExpireType
 }
+
+type ExpireType string
+
+func (e ExpireType) String() string {
+	return string(e)
+}
+
+const (
+	ExpireTypeUndefined      ExpireType = "Undefined"
+	ExpireTypeExpired        ExpireType = "Expired"
+	ExpireTypeExpireIn1Day   ExpireType = "ExpireIn1Day"
+	ExpireTypeExpireIn2Days  ExpireType = "ExpireIn2Days"
+	ExpireTypeExpireIn7Days  ExpireType = "ExpireIn7Days"
+	ExpireTypeExpireIn30Days ExpireType = "ExpireIn30Days"
+	ExpireTypeExpireInFuture ExpireType = "ExpireInFuture"
+)
+
+var ExpireTypes = []ExpireType{ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day, ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture}
 
 func (Issue) TableName() string {
 	return "dice_issues"
@@ -77,6 +96,7 @@ func (i *Issue) GetCanUpdateFields() map[string]interface{} {
 		"stage":            i.Stage,
 		"owner":            i.Owner,
 		"finish_time":      i.FinishTime,
+		"expiry_status":    i.ExpiryStatus,
 	}
 }
 
@@ -230,6 +250,9 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 	}
 	if len(req.State) > 0 {
 		sql = sql.Where("state IN (?)", req.State)
+	}
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Joins(joinState).Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
 	if len(req.Owner) > 0 {
 		sql = sql.Where("owner IN (?)", req.Owner)
@@ -619,4 +642,73 @@ func (client *DBClient) GetIssueNumByPros(projectIDS []uint64, req apistructs.Is
 	}
 
 	return res, nil
+}
+
+var joinState = "LEFT JOIN dice_issue_state ON dice_issues.state = dice_issue_state.id"
+
+type IssueExpiryStatus struct {
+	IssueNum     uint64
+	ProjectID    uint64
+	ExpiryStatus ExpireType
+}
+
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
+	sql := client.Table("dice_issues").Joins(joinState).Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status")
+	sql = sql.Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
+	if len(req.ProjectIDs) > 0 {
+		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
+	}
+	offset := (req.PageNo - 1) * req.PageSize
+	var res []IssueExpiryStatus
+	if err := sql.Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([]Issue, uint64, error) {
+	var res []Issue
+	sql := client.Table("dice_issues").Joins(joinState)
+	sql = sql.Where("dice_issues.project_id = ? AND assignee = ? AND dice_issue_state.belong IN (?)", req.ProjectID, req.Assignees, req.StateBelongs)
+	if req.OrderBy != "" {
+		if req.Asc {
+			sql = sql.Order(fmt.Sprintf("%s", req.OrderBy))
+		} else {
+			sql = sql.Order(fmt.Sprintf("%s DESC", req.OrderBy))
+		}
+	}
+	var total uint64
+	offset := (req.PageNo - 1) * req.PageSize
+	if err := sql.Offset(offset).Limit(req.PageSize).Find(&res).Offset(0).Limit(-1).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	return res, total, nil
+}
+
+var expireTypes = []ExpireType{
+	ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day,
+	ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture,
+}
+
+var conditions = map[ExpireType]string{
+	ExpireTypeUndefined:      "a.plan_finished_at IS NULL",
+	ExpireTypeExpired:        "a.plan_finished_at < CURDATE()",
+	ExpireTypeExpireIn1Day:   "a.plan_finished_at = CURDATE()",
+	ExpireTypeExpireIn2Days:  "a.plan_finished_at = DATE_ADD(CURDATE(),INTERVAL 1 DAY)",
+	ExpireTypeExpireIn7Days:  "a.plan_finished_at > DATE_ADD(CURDATE(),INTERVAL 1 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 7 DAY)",
+	ExpireTypeExpireIn30Days: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 7 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+	ExpireTypeExpireInFuture: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+}
+
+func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueStateBelong) error {
+	for _, key := range expireTypes {
+		if _, ok := conditions[key]; !ok {
+			continue
+		}
+		sql := fmt.Sprintf("UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id SET a.expiry_status = ? WHERE a.expiry_status != ? AND b.belong IN (?) AND %s", conditions[key])
+		if err := client.Exec(sql, key, key, states).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

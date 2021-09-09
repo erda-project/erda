@@ -31,8 +31,8 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/erda-project/erda-infra v0.0.0-20210907120855-d8155c2a5939
-	github.com/erda-project/erda-proto-go v0.0.0-20210907100640-16a94e5c7eaf
+	github.com/erda-project/erda-infra v0.0.0-20210907124129-709cc0069f2f
+	github.com/erda-project/erda-proto-go v0.0.0-20210908122055-e9a71c35f41b
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -156,7 +156,7 @@ require (
 	k8s.io/apiserver v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kubectl v0.21.0
-	k8s.io/kubernetes v1.21.0
+	k8s.io/kubernetes v1.21.2
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
