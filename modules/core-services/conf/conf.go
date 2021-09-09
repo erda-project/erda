@@ -63,8 +63,7 @@ type Conf struct {
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
-	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 
 	// Allow people who are not admin to create org
 	CreateOrgEnabled bool `default:"false" env:"CREATE_ORG_ENABLED"`
@@ -112,7 +111,6 @@ var (
 func initPermissions() {
 	permissions = getAllFiles("erda-configs/permission", permissions)
 }
-
 func initAuditTemplate() {
 	auditsTemplate = genTempFromFiles("erda-configs/audit/template.json")
 }

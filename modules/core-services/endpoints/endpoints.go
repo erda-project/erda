@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/manual_review"
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
 	"github.com/erda-project/erda/modules/core-services/services/member"
+	"github.com/erda-project/erda/modules/core-services/services/migration"
 	"github.com/erda-project/erda/modules/core-services/services/notice"
 	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/org"
@@ -71,6 +72,7 @@ type Endpoints struct {
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
 	fileSvc            *filesvc.FileService
+	migration          *migration.Migration
 }
 
 type Option func(*Endpoints)
@@ -244,6 +246,12 @@ func WithFileSvc(svc *filesvc.FileService) Option {
 	}
 }
 
+func WithMigrationSvc(svc *migration.Migration) Option {
+	return func(e *Endpoints) {
+		e.migration = svc
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
@@ -252,6 +260,14 @@ func (e *Endpoints) DBClient() *dao.DBClient {
 // GetLocale 获取本地化资源
 func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 	return e.bdl.GetLocaleByRequest(request)
+}
+
+func (e *Endpoints) MigrationSvc() *migration.Migration {
+	return e.migration
+}
+
+func (e *Endpoints) UcSvc() *ucauth.UCClient {
+	return e.uc
 }
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
@@ -433,5 +449,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
+		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
 	}
 }
