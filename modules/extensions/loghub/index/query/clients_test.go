@@ -46,6 +46,8 @@ func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients
 		db: &db.DB{
 			LogDeployment: db.LogDeploymentDB{},
 		},
+		timeRanges: make(map[string]map[string]*timeRange),
+		reload:     make(chan struct{}),
 	}
 
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List")
@@ -83,6 +85,8 @@ func TestGetESClientsFromLogAnalyticsByLogDeployment_On_Preload_Enabled_Should_T
 		C: &config{
 			IndexPreload: true,
 		},
+		timeRanges: make(map[string]map[string]*timeRange),
+		reload:     make(chan struct{}),
 	}
 	p.indices.Store(map[string]map[string][]*IndexEntry{
 		"cluster_1": map[string][]*IndexEntry{
