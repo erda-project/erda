@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -37,7 +38,7 @@ func (c *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.C
 	if err := c.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadChart component state, %v", err)
 	}
-	if err := c.SetComponentValue(); err != nil {
+	if err := c.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("faield to set workloadChart component value, %v", err)
 	}
 	return nil
@@ -62,7 +63,7 @@ func (c *ComponentWorkloadChart) GenComponentState(component *cptype.Component) 
 	return nil
 }
 
-func (c *ComponentWorkloadChart) SetComponentValue() error {
+func (c *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	c.Props.Option.Tooltip.Trigger = "axis"
 	c.Props.Option.Tooltip.AxisPointer.Type = "shadow"
 	c.Props.Option.Grid = Grid{
@@ -73,10 +74,10 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		ContainLabel: true,
 	}
 	c.Props.Option.Color = []string{
-		"green", "red", "steelBlue", "red",
+		"green", "red", "steelBlue", "maroon",
 	}
 	c.Props.Option.Legend.Data = []string{
-		"Active", "Error", "Succeeded", "Failed",
+		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Error"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),
 	}
 	c.Props.Option.XAxis.Type = "value"
 	c.Props.Option.YAxis.Type = "category"
@@ -105,7 +106,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	activeCronJob := c.State.Values.CronJobCount.Active
 
 	activeSeries := Series{
-		Name:     "Active",
+		Name:     cputil.I18n(ctx, "Active"),
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
@@ -115,7 +116,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 
 	errorSeries := Series{
-		Name:     "Error",
+		Name:     cputil.I18n(ctx, "Error"),
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
@@ -125,7 +126,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 
 	succeededSeries := Series{
-		Name:     "Succeeded",
+		Name:     cputil.I18n(ctx, "Succeeded"),
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
@@ -135,7 +136,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 
 	failedSeries := Series{
-		Name:     "Failed",
+		Name:     cputil.I18n(ctx, "Failed"),
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",

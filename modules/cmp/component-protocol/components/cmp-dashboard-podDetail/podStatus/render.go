@@ -90,7 +90,7 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 
 	podStatus.Props = Props{
 		StyleConfig: StyleConfig{Color: color},
-		Value:       status,
+		Value:       cputil.I18n(ctx, status),
 	}
 	return nil
 }
