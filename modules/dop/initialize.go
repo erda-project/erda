@@ -118,7 +118,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
 	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
-		issuefilterbm.WithDBClient((*dao.DBClient)(dbclient.DB)),
+		issuefilterbm.WithDBClient(db),
 	))
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
