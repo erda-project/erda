@@ -169,7 +169,6 @@ require (
 )
 
 replace (
-	github.com/erda-project/erda-proto-go v0.0.0-20210908122055-e9a71c35f41b => ../erda-proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
