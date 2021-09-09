@@ -67,7 +67,7 @@ func (p *provider) getLogItems(r *RequestCtx) ([]*pb.LogItem, error) {
 	if r.Count == 0 {
 		return nil, nil
 	}
-	return p.queryBaseLog(
+	logs, err := p.queryBaseLog(
 		p.getTableNameWithFilters(map[string]interface{}{
 			"source": r.Source,
 			"id":     r.ID,
@@ -79,6 +79,29 @@ func (p *provider) getLogItems(r *RequestCtx) ([]*pb.LogItem, error) {
 		r.End,
 		r.Count,
 	)
+	if err != nil {
+		return nil, err
+	}
+	if r.PatternMode() {
+		logs = filterWithRegexp(logs, r)
+	}
+	sort.Sort(Logs(logs))
+	return logs, nil
+}
+
+func filterWithRegexp(logs []*pb.LogItem, r *RequestCtx) []*pb.LogItem {
+	start, end := 0, len(logs)-1
+	for start <= end {
+		item := logs[start]
+		if r.patternRegexp.MatchString(item.Content) {
+			item.Pattern = r.Pattern
+			start++
+		} else {
+			logs[start], logs[end] = logs[end], logs[start]
+			end--
+		}
+	}
+	return logs[:start]
 }
 
 func (p *provider) queryBaseLogMetaWithFilters(filters map[string]interface{}) (*LogMeta, error) {
@@ -162,7 +185,6 @@ func (p *provider) queryBaseLog(table, source, id, stream string, start, end, co
 			end = bucket - 1
 		}
 	}
-	sort.Sort(Logs(logs))
 	return logs, nil
 }
 
