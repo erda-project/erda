@@ -24,6 +24,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/reflectx"
 
+	"github.com/erda-project/erda/modules/extensions/loghub/index/query/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -36,9 +37,11 @@ const (
 // ESClient .
 type ESClient struct {
 	*elastic.Client
+	Cluster    string
 	URLs       string
 	LogVersion string
 	Indices    []string
+	Entrys     []*IndexEntry
 }
 
 func (c *ESClient) printSearchSource(searchSource *elastic.SearchSource) (string, error) {
@@ -50,6 +53,14 @@ func (c *ESClient) printSearchSource(searchSource *elastic.SearchSource) (string
 	body = c.URLs + "\n" + strings.Join(c.Indices, ",") + "\n" + body
 	fmt.Println(body)
 	return body, nil
+}
+
+func (p *provider) getAllESClients() []*ESClient {
+	list, err := p.db.LogDeployment.List()
+	if err != nil {
+		return nil
+	}
+	return p.getESClientsFromLogAnalyticsByLogDeployment("", list...)
 }
 
 func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
@@ -107,13 +118,24 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 	if err != nil {
 		return nil
 	}
+	return p.getESClientsFromLogAnalyticsByLogDeployment(addon, list...)
+}
+
+func (p *provider) getESClientsFromLogAnalyticsByLogDeployment(addon string, logDeployments ...*db.LogDeployment) []*ESClient {
 	type ESConfig struct {
 		Security bool   `json:"securityEnable"`
 		Username string `json:"securityUsername"`
 		Password string `json:"securityPassword"`
 	}
+	var indices map[string]map[string][]*IndexEntry
+	if p.C.IndexPreload {
+		v := p.indices.Load()
+		if v != nil {
+			indices = v.(map[string]map[string][]*IndexEntry)
+		}
+	}
 	var clients []*ESClient
-	for _, d := range list {
+	for _, d := range logDeployments {
 		if len(d.ESURL) <= 0 {
 			continue
 		}
@@ -140,15 +162,25 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 		}
 		d.CollectorURL = strings.TrimSpace(d.CollectorURL)
 		if len(d.CollectorURL) > 0 {
-			clients = append(clients, &ESClient{
+			c := &ESClient{
 				Client:     client,
+				Cluster:    d.ClusterName,
 				LogVersion: LogVersion2,
 				URLs:       d.ESURL,
 				Indices:    getLogIndices("rlogs-", addon),
-			})
+			}
+			clients = append(clients, c)
+
+			if p.C.IndexPreload && indices != nil && len(addon) > 0 {
+				if addons, ok := indices[d.ClusterName]; ok {
+					c.Entrys = addons[addon]
+				}
+			}
+
 		} else {
 			clients = append(clients, &ESClient{
 				Client:     client,
+				Cluster:    d.ClusterName,
 				LogVersion: LogVersion1,
 				URLs:       d.ESURL,
 				Indices:    getLogIndices("spotlogs-", addon),
