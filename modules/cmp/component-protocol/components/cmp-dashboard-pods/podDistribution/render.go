@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -51,35 +52,20 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 }
 
 func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt int) List {
+	color := podsTable.PodStatusToColor[state]
+	if color == "" {
+		state = "other"
+		color = "darkslategray"
+	}
 	status := List{
+		Color: color,
 		Tip:   fmt.Sprintf("%s %d/%d", cputil.I18n(ctx, state), cnt, pd.Data.Total),
 		Value: cnt,
 		Label: fmt.Sprintf("%s %d", cputil.I18n(ctx, state), cnt),
 	}
-	switch state {
-	case "Completed":
-		status.Color = "steelBlue"
-	case "ContainerCreating":
-		status.Color = "orange"
-	case "CrashLoopBackOff":
-		status.Color = "red"
-	case "Error":
-		status.Color = "maroon"
-	case "Evicted":
-		status.Color = "darkgoldenrod"
-	case "ImagePullBackOff":
-		status.Color = "darksalmon"
-	case "Pending":
-		status.Color = "teal"
-	case "Running":
-		status.Color = "lightgreen"
-	case "Terminating":
-		status.Color = "brown"
-	case "OOMKilled":
-		status.Color = "darkslategray"
-	}
 	return status
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-pods", "podDistribution", func() servicehub.Provider {
 		return &PodDistribution{Type: "LinearDistribution"}

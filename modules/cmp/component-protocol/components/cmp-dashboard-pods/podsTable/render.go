@@ -165,7 +165,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		if len(p.State.Values.Namespace) != 0 && !contain(p.State.Values.Namespace, namespace) {
 			continue
 		}
-		if len(p.State.Values.Status) != 0 && !contain(p.State.Values.Status, fields[2]) {
+		if len(p.State.Values.Status) != 0 && !contain(p.State.Values.Status, convertPodStatus(fields[2])) {
 			continue
 		}
 		if len(p.State.Values.Node) != 0 && !contain(p.State.Values.Node, fields[6]) {
@@ -176,7 +176,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
-		p.State.CountValues[fields[2]]++
+		p.State.CountValues[convertPodStatus(fields[2])]++
 		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)
@@ -189,7 +189,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memRequests.Add(*parseResource(container.String("resources", "requests", "memory"), resource.BinarySI))
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
-		req := apistructs.MetricsRequest{}
+		req := apistructs.MetricsRequest{
+			UserID:       userID,
+			OrgID:        orgID,
+			ClusterName:  p.State.ClusterName,
+			ResourceKind: "pod",
+			Names:        []string{name},
+		}
 		req.ResourceType = metrics.Cpu
 		usedCPUPercent := 0.0
 		cpuMetrics, err := p.bdl.GetMetrics(req)
@@ -524,32 +530,30 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
+var PodStatusToColor = map[string]string{
+	"Completed":         "steelBlue",
+	"ContainerCreating": "orange",
+	"CrashLoopBackOff":  "red",
+	"Error":             "maroon",
+	"Evicted":           "darkgoldenrod",
+	"ImagePullBackOff":  "darksalmon",
+	"Pending":           "teal",
+	"Running":           "lightgreen",
+	"Terminating":       "brown",
+}
+
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	status := Status{
+	color := PodStatusToColor[state]
+	if color == "" {
+		color = "darkslategray"
+	}
+	return Status{
 		RenderType: "text",
 		Value:      p.sdk.I18n(state),
+		StyleConfig: StyleConfig{
+			Color: color,
+		},
 	}
-	switch state {
-	case "Completed":
-		status.StyleConfig.Color = "steelBlue"
-	case "ContainerCreating":
-		status.StyleConfig.Color = "orange"
-	case "CrashLoopBackOff":
-		status.StyleConfig.Color = "red"
-	case "Error":
-		status.StyleConfig.Color = "maroon"
-	case "Evicted":
-		status.StyleConfig.Color = "darkgoldenrod"
-	case "ImagePullBackOff":
-		status.StyleConfig.Color = "darksalmon"
-	case "Pending":
-		status.StyleConfig.Color = "teal"
-	case "Running":
-		status.StyleConfig.Color = "lightgreen"
-	case "Terminating":
-		status.StyleConfig.Color = "brown"
-	}
-	return status
 }
 
 func contain(arr []string, target string) bool {
@@ -559,6 +563,13 @@ func contain(arr []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func convertPodStatus(status string) string {
+	if _, ok := PodStatusToColor[status]; ok {
+		return status
+	}
+	return "others"
 }
 
 func parseResource(str string, format resource.Format) *resource.Quantity {

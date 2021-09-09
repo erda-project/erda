@@ -196,10 +196,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		req := apistructs.MetricsRequest{
-			UserID:      userID,
-			OrgID:       orgID,
-			ClusterName: p.State.ClusterName,
-			Names:       []string{name},
+			UserID:       userID,
+			OrgID:        orgID,
+			ClusterName:  p.State.ClusterName,
+			ResourceKind: "pod",
+			Names:        []string{name},
 		}
 
 		// cpu

@@ -263,6 +263,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 				Label: cputil.I18n(ctx, "OOMKilled"),
 				Value: "OOMKilled",
 			},
+			{
+				Label: cputil.I18n(ctx, "others"),
+				Value: "others",
+			},
 		},
 	})
 
