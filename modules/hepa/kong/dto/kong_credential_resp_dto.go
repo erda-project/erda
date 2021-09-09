@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
+	"github.com/erda-project/erda/modules/hepa/common/util"
 )
 
 type KongCredentialListDto struct {
@@ -38,7 +39,7 @@ func (dto KongCredentialDto) ToCredential() *pb.Credential {
 		Secret:       dto.Secret,
 		Username:     dto.Username,
 	}
-	v, _ := structpb.NewValue(dto.RedirectUrl)
+	v, _ := structpb.NewValue(util.GetPureInterface(dto.RedirectUrl))
 	res.RedirectUrl = v
 	return res
 }

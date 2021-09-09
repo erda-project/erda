@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/hepa/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -1307,13 +1306,11 @@ func (impl GatewayApiServiceImpl) GetApiInfos(dto *gw.GetApisDto) (result *commo
 	}()
 	if !verifyRes.Success {
 		if CONSUMER_NOT_EXIST.Code == verifyRes.Err.Code {
-			var value *structpb.Value
-			value, err = structpb.NewValue([]interface{}{})
 			if err != nil {
 				return
 			}
 			result = &common.PageQuery{
-				Result: value,
+				Result: apiInfoList,
 				Page:   common.NewPage2(dto.Size, dto.Page),
 			}
 			return
@@ -1376,12 +1373,8 @@ func (impl GatewayApiServiceImpl) GetApiInfos(dto *gw.GetApisDto) (result *commo
 			apiInfoList = append(apiInfoList, *apiInfo)
 		}
 	}
-	value, err := structpb.NewValue(apiInfoList)
-	if err != nil {
-		return
-	}
 	result = &common.PageQuery{
-		Result: value,
+		Result: apiInfoList,
 		Page:   pageInfo,
 	}
 	return

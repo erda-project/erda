@@ -97,10 +97,7 @@ func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
 				return nil, err
 			}
 			httpReq.Body = io.NopCloser(bytes.NewReader(reqBody))
-			resp, err := h(ctx, req)
-			if err != nil {
-				return nil, err
-			}
+			resp, rerr := h(ctx, req)
 			stop := time.Since(start)
 			latency := int(math.Ceil(float64(stop.Nanoseconds()) / 1000000.0))
 			clientUserAgent := httpReq.UserAgent()
@@ -119,7 +116,7 @@ func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
 			})
 			msg := fmt.Sprintf(`[%s %s] [%s]`, httpReq.Method, path, reqBody)
 			entry.Info(msg)
-			return resp, nil
+			return resp, rerr
 		}
 
 	}))

@@ -49,6 +49,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(apiService.CreateApi, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ApiRequest.ProjectId")),
 			perm.Method(apiService.UpdateApi, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ApiRequest.ProjectId")),
 			perm.Method(apiService.GetApis, perm.ScopeProject, "project", perm.ActionGet, perm.FieldValue("ProjectId")),
+			perm.Method(apiService.DeleteApi, perm.ScopeOrg, "org", perm.ActionGet, perm.OrgIDValue()),
 		), common.AccessLogWrap(common.AccessLog))
 	}
 	return nil

@@ -17,7 +17,7 @@ package vars
 import "github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 
 const (
-	TODO_PARAM = "is"
+	TODO_PARAM = "request error"
 )
 
 var (
