@@ -123,7 +123,7 @@ func (c *ESClient) statisticLogsV1(req *LogStatisticRequest, timeout time.Durati
 	if req.Debug {
 		c.printSearchSource(searchSource)
 	}
-	resp, err := c.doRequest(searchSource, timeout)
+	resp, err := c.doRequest(&req.LogRequest, searchSource, timeout)
 	if err != nil {
 		return nil, err
 	}
