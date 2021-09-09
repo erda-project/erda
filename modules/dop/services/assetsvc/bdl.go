@@ -17,8 +17,6 @@
 package assetsvc
 
 import (
-	"strconv"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -45,8 +43,8 @@ func status2Action(status apistructs.ContractStatus) Action {
 	}
 }
 
-func (svc *Service) CheckClientIDSecret(clientID string, clientSecret string) error {
-	credentials, err := bdl.Bdl.GetClientCredentials(clientID)
+func (svc *Service) CheckClientIDSecret(orgID, userID, clientID, clientSecret string) error {
+	credentials, err := bdl.Bdl.GetClientCredentials(orgID, userID, clientID)
 	if err != nil {
 		return err
 	}
@@ -89,7 +87,7 @@ func (svc *Service) GetEndpointDomains(orgID, userID, endpointID string) []strin
 	return endpoint.BindDomain
 }
 
-func (svc *Service) createOrUpdateClientLimits(endpointID string, clientID string, contractID uint64) (err error) {
+func (svc *Service) createOrUpdateClientLimits(orgID, userID, endpointID, clientID string, contractID uint64) (err error) {
 	var contract apistructs.ContractModel
 	if err = svc.FirstRecord(&contract, map[string]interface{}{"id": contractID}); err != nil {
 		return err
@@ -101,10 +99,10 @@ func (svc *Service) createOrUpdateClientLimits(endpointID string, clientID strin
 	switch curSLAID := contract.CurSLAID; {
 	case curSLAID == nil:
 		// 无当前 SLA, 设置 1 次/天 的流量限制
-		return bdl.Bdl.CreateOrUpdateClientLimits(clientID, endpointID, onceADayLimitType())
+		return bdl.Bdl.CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID, onceADayLimitType())
 	case *curSLAID == 0:
 		// 设置无流量限制
-		return bdl.Bdl.CreateOrUpdateClientLimits(clientID, endpointID, nil)
+		return bdl.Bdl.CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID, nil)
 	}
 
 	// 正常情况, 按 SLA 流量规则设置流量限制
@@ -113,7 +111,8 @@ func (svc *Service) createOrUpdateClientLimits(endpointID string, clientID strin
 		return err
 	} // 目前支持一条流量限制, 所以用 FirstRecord
 
-	return bdl.Bdl.CreateOrUpdateClientLimits(clientID, endpointID, svc.limitModels2Types([]*apistructs.SLALimitModel{&limitModel}))
+	return bdl.Bdl.CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID,
+		svc.limitModels2Types([]*apistructs.SLALimitModel{&limitModel}))
 }
 
 func (svc *Service) limitModels2Types(models []*apistructs.SLALimitModel) []apistructs.LimitType {

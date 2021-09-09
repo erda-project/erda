@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -52,7 +53,7 @@ const (
 )
 
 func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetIdentityInfo(r)
+	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.UpdateClient.NotLogin().ToResp(), nil
 	}
@@ -118,7 +119,7 @@ func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, var
 	}
 
 	// 查找域名
-	domains := e.assetSvc.GetEndpointDomains(access.EndpointID)
+	domains := e.assetSvc.GetEndpointDomains(strconv.FormatUint(orgID, 10), identity.UserID, access.EndpointID)
 	if len(domains) == 0 {
 		return apierrors.AttemptExecuteAPITest.InternalError(errors.New("no domain")).ToResp(), nil
 	}

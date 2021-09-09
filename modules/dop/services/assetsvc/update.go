@@ -344,7 +344,8 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 	}
 
 	defer func() {
-		err := svc.createOrUpdateClientLimits(access.EndpointID, client.ClientID, contractID)
+		err := svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			access.EndpointID, client.ClientID, contractID)
 		if err != nil {
 			logrus.Errorf("createOrUpdateClientLimits failed, err:%+v", err)
 		}
@@ -911,7 +912,8 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 					continue
 				}
 				svc.contractMsgToUser(req.OrgID, affectedContract.CreatorID, asset.AssetName, affectedClient, ManagerRewriteSLA(sla.Name))
-				err = svc.createOrUpdateClientLimits(access.EndpointID, affectedClient.ClientID, affectedContract.ID)
+				err = svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+					access.EndpointID, affectedClient.ClientID, affectedContract.ID)
 				if err != nil {
 					logrus.Errorf("createOrUpdateClientLimits failed, err:%+v", err)
 				}

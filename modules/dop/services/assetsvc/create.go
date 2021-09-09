@@ -784,7 +784,8 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 		tx.Commit()
 
 		go func() {
-			err := svc.createOrUpdateClientLimits(access.EndpointID, client.ClientID, contract.ID)
+			err := svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+				access.EndpointID, client.ClientID, contract.ID)
 			if err != nil {
 				logrus.Errorf("create or update client limits failed, err:%+v", err)
 			}
@@ -940,7 +941,8 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 	tx.Commit()
 
 	go func() {
-		err := svc.createOrUpdateClientLimits(access.EndpointID, client.ClientID, contract.ID)
+		err := svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			access.EndpointID, client.ClientID, contract.ID)
 		if err != nil {
 			logrus.Errorf("createOrUpdateClientLimits failed, err:%+v", err)
 		}
