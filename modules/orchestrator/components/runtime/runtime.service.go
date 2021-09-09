@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -41,6 +42,81 @@ type Service struct {
 
 	bundle BundleService
 	db     DBService
+	evMgr  EventManagerService
+}
+
+func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
+	return &pb.Runtime{
+		Name:            runtime.Name,
+		GitBranch:       runtime.Name,
+		Workspace:       runtime.Workspace,
+		ClusterName:     runtime.ClusterName,
+		Status:          runtime.Status,
+		ClusterID:       runtime.ClusterId,
+		ApplicationID:   runtime.ApplicationID,
+		ApplicationName: app.Name,
+		ProjectID:       app.ProjectID,
+		ProjectName:     app.ProjectName,
+		OrgID:           app.OrgID,
+		Id:              runtime.ID,
+	}
+}
+
+// Delete turn status of runtime to be Deleting
+func (r *Service) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*pb.Runtime, error) {
+	runtime, err := r.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
+	}
+	// TODO: do not query app
+	app, err := r.bundle.GetApp(runtime.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.checkRuntimeScopePermission(operator, runtime, apistructs.DeleteAction)
+	if err != nil {
+		return nil, err
+	}
+
+	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
+		// already marked
+		return convertRuntimeToPB(runtime, app), nil
+	}
+	// set status to DELETING
+	runtime.LegacyStatus = dbclient.LegacyStatusDeleting
+	if err := r.db.UpdateRuntime(runtime); err != nil {
+		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
+	}
+	event := events.RuntimeEvent{
+		EventName: events.RuntimeDeleting,
+		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
+		Operator:  operator.String(),
+	}
+	r.evMgr.EmitEvent(&event)
+	// TODO: should emit RuntimeDeleted after really deleted or RuntimeDeleteFailed if failed
+	return convertRuntimeToPB(runtime, app), nil
+}
+
+func (r *Service) DelRuntime(ctx context.Context, req *pb.DelRuntimeRequest) (*pb.Runtime, error) {
+	var (
+		userID    user.ID
+		orgID     uint64
+		err       error
+		runtimeID uint64
+	)
+
+	if userID, _, err = r.getUserAndOrgID(ctx); err != nil {
+		return nil, err
+	}
+
+	runtimeID, err = strconv.ParseUint(req.Id, 10, 64)
+
+	if err != nil {
+		return nil, apierrors.ErrDeleteRuntime.InvalidParameter(strutil.Concat("runtimeID: ", req.Id))
+	}
+
+	return r.Delete(userID, orgID, runtimeID)
 }
 
 func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace string) (*dbclient.Runtime, error) {
@@ -74,12 +150,14 @@ func (r *Service) findByIDOrName(idOrName string, appIDStr string, workspace str
 	return runtime, err
 }
 
-func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID int64, err error) {
-	orgID, err = apis.GetIntOrgID(ctx)
+func (r *Service) getUserAndOrgID(ctx context.Context) (userID user.ID, orgID uint64, err error) {
+	orgIntID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		err = apierrors.ErrGetRuntime.InvalidParameter(errors.New("Org-ID"))
 		return
 	}
+
+	orgID = uint64(orgIntID)
 
 	userID = user.ID(apis.GetUserID(ctx))
 	if userID.Invalid() {
@@ -258,14 +336,14 @@ func fillInspectByDeployment(data *pb.RuntimeInspect, runtime *dbclient.Runtime,
 	if runtime.LegacyStatus == "DELETING" {
 		data.DeleteStatus = "DELETING"
 	}
-	data.ReleaseId = deployment.ReleaseId
-	data.ClusterId = runtime.ClusterId
+	data.ReleaseID = deployment.ReleaseId
+	data.ClusterID = runtime.ClusterId
 	data.ClusterName = runtime.ClusterName
 	data.ClusterType = cluster.Type
 	data.Extra = &pb.Extra{
-		ApplicationId: runtime.ApplicationID,
+		ApplicationID: runtime.ApplicationID,
 		Workspace:     runtime.Workspace,
-		BuildId:       deployment.BuildId,
+		BuildID:       deployment.BuildId,
 	}
 }
 
@@ -411,6 +489,13 @@ func WithBundleService(s BundleService) ServiceOption {
 func WithDBService(db DBService) ServiceOption {
 	return func(service *Service) *Service {
 		service.db = db
+		return service
+	}
+}
+
+func WithEventManagerService(evMgr EventManagerService) ServiceOption {
+	return func(service *Service) *Service {
+		service.evMgr = evMgr
 		return service
 	}
 }

@@ -19,11 +19,15 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
+	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/queue"
 )
 
 type provider struct {
-	Election election.Interface `autowired:"etcd-election"`
-	Orm      *gorm.DB           `autowired:"mysql-client"`
+	Election     election.Interface   `autowired:"etcd-election"`
+	Orm          *gorm.DB             `autowired:"mysql-client"`
+	EventManager *events.EventManager `autowired:"erda.orchestrator.events.event-manager"`
+	PusherQueue  *queue.PusherQueue   `autowired:"erda.orchestrator.events.pusher-queue"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -37,6 +41,7 @@ func init() {
 			"etcd-election",
 			"http-server",
 			"mysql",
+			"erda.orchestrator.events",
 		},
 		Creator: func() servicehub.Provider { return &provider{} },
 	})

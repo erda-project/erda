@@ -14,7 +14,8 @@ grpc-server:
   addr: ":7080"
 service-register:
 
-# erda.orchestrator.runtime:
+erda.orchestrator.runtime:
+erda.orchestrator.events:
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: ${MYSQL_PORT:3306}

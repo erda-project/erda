@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
+	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -29,10 +30,11 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Logger   logs.Logger
-	Register transport.Register
-	DB       *gorm.DB `autowired:"mysql-client"`
+	Cfg          *config
+	Logger       logs.Logger
+	Register     transport.Register
+	DB           *gorm.DB             `autowired:"mysql-client"`
+	EventManager *events.EventManager `autowired:"erda.orchestrator.events.event-manager"`
 
 	runtimeService pb.RuntimeServiceServer
 }
@@ -41,6 +43,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.runtimeService = NewRuntimeService(
 		WithBundleService(NewBundleService()),
 		WithDBService(NewDBService(p.DB)),
+		WithEventManagerService(p.EventManager),
 	)
 
 	if p.Register != nil {
@@ -63,6 +66,7 @@ func init() {
 		Services: append(pb.ServiceNames()),
 		Types:    pb.Types(),
 		OptionalDependencies: []string{
+			"erda.orchestrator.events",
 			"service-register",
 			"mysql",
 		},
