@@ -51,16 +51,23 @@ func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients
 	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List")
 	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List", func(_ *db.LogDeploymentDB) ([]*db.LogDeployment, error) {
 		return []*db.LogDeployment{
-			{ID: 123},
+			&db.LogDeployment{
+				ClusterName:  "cluster_1",
+				ClusterType:  0,
+				ESURL:        "http://localhost:9200",
+				ESConfig:     "{}",
+				CollectorURL: "http://collector:7096",
+			},
 		}, nil
 	})
 
-	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p), "getESClientsFromLogAnalyticsByLogDeployment")
-	monkey.PatchInstanceMethod(reflect.TypeOf(&p), "getESClientsFromLogAnalyticsByLogDeployment", func(_ *provider, addon string, logDeployments ...*db.LogDeployment) []*ESClient {
-		return []*ESClient{
-			&ESClient{URLs: "success"},
-		}
-	})
+	// why can not patch the provider struct?
+	//defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p), "getESClientsFromLogAnalyticsByLogDeployment")
+	//monkey.PatchInstanceMethod(reflect.TypeOf(&p), "getESClientsFromLogAnalyticsByLogDeployment", func(_ *provider, addon string, logDeployments []*db.LogDeployment) []*ESClient {
+	//	return []*ESClient{
+	//		&ESClient{URLs: "success"},
+	//	}
+	//})
 
 	clients := p.getAllESClients()
 	if len(clients) == 0 {
