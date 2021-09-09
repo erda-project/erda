@@ -175,15 +175,17 @@ func (impl *GatewayDomainServiceImpl) GetPage(options []orm.SelectOption, page *
 		return nil, errors.Wrap(err, "get total count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayDomain{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayDomain{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayDomain
 	err = orm.SelectPageWithOption(options, impl.executor, &result, page)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayDomainServiceImpl) SelectByOptions(options []orm.SelectOption) ([]orm.GatewayDomain, error) {

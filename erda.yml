@@ -60,6 +60,7 @@ services:
       replicas: 1
     envs:
       DEBUG: "true"
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     health_check:
       exec: { }
       http:
@@ -67,10 +68,7 @@ services:
         path: /_api/health
         port: 9527
     ports:
-      - port: 9527 # legacy http port
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9528 # new http port
+      - port: 9527 # http port
         protocol: "TCP"
         l4_protocol: "TCP"
       - port: 9529 # grpc port
@@ -383,7 +381,7 @@ services:
     health_check:
       http:
         port: 8080
-        path: "/api/gateway/health/check"
+        path: "/health"
         duration: 120
       exec: { }
   monitor:

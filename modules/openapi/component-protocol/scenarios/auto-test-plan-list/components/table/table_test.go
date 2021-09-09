@@ -15,12 +15,17 @@
 package table
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"golang.org/x/net/context"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func Test_ConvertSortData(t *testing.T) {
@@ -59,18 +64,63 @@ func Test_ConvertSortData(t *testing.T) {
 }
 
 func Test_executeTime(t *testing.T) {
-	time := time.Now()
-	data := &apistructs.TestPlanV2{
-		ExecuteTime: nil,
+	nowTime := time.Now()
+	var data = []*apistructs.TestPlanV2{
+		{
+			ExecuteTime: nil,
+		},
+		{
+			ExecuteTime: &nowTime,
+		},
 	}
-	executeTime := convertExecuteTime(data)
-	want := ""
-	assert.Equal(t, want, executeTime)
+	want := []string{
+		"",
+		nowTime.Format("2006-01-02 15:04:05"),
+	}
+	for i := range data {
+		executeTime := convertExecuteTime(data[i])
+		assert.Equal(t, executeTime, want[i])
+	}
+}
 
-	data = &apistructs.TestPlanV2{
-		ExecuteTime: &time,
+func Test_Render(t *testing.T) {
+	bdl := &bundle.Bundle{}
+	cb := protocol.ContextBundle{
+		Bdl: bdl,
+		InParams: map[string]interface{}{
+			"projectId": 1,
+		},
 	}
-	executeTime = convertExecuteTime(data)
-	want = time.Format("2006-01-02 15:04:05")
-	assert.Equal(t, want, executeTime)
+	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), cb)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PagingTestPlansV2",
+		func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
+			list := []*apistructs.TestPlanV2{
+				{
+					PassRate: 10,
+				},
+				{
+					PassRate: 0,
+				},
+			}
+
+			return &apistructs.TestPlanV2PagingResponseData{
+				List: list,
+			}, nil
+		})
+	defer monkey.UnpatchAll()
+	p := &TestPlanManageTable{}
+	c := &apistructs.Component{}
+	gs := &apistructs.GlobalStateData{}
+	err := p.Render(ctx, c, apistructs.ComponentProtocolScenario{},
+		apistructs.ComponentEvent{
+			Operation:     "ooo",
+			OperationData: nil,
+		}, gs)
+	assert.NoError(t, err)
+	list := c.Data["list"].([]TableItem)
+	want := []string{"10", "0"}
+	for i := range list {
+		assert.Equal(t, list[i].PassRate.Value, want[i])
+	}
+
 }

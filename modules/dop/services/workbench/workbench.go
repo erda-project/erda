@@ -36,14 +36,7 @@ var (
 	issueThirtyDay   = "thirtyDay"
 	issueFeature     = "feature"
 	expireDays       = []string{issueUnspecified, issueExpired, issueOneDay, issueTomorrow, issueSevenDay, issueThirtyDay, issueFeature}
-	StateBelongs     = []apistructs.IssueStateBelong{
-		apistructs.IssueStateBelongReopen,
-		apistructs.IssueStateBelongWontfix,
-		apistructs.IssueStateBelongResloved,
-		apistructs.IssueStateBelongWorking,
-		apistructs.IssueStateBelongOpen,
-	}
-	IssuePriorities = []apistructs.IssuePriority{
+	IssuePriorities  = []apistructs.IssuePriority{
 		apistructs.IssuePriorityUrgent,
 		apistructs.IssuePriorityHigh,
 		apistructs.IssuePriorityNormal,
@@ -83,35 +76,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	return func(w *Workbench) {
 		w.bdl = bdl
 	}
-}
-
-// GetUndoneProjectItem query issue list and use SetSpecialIssueNum func set issue num
-func (w *Workbench) GetUndoneProjectItem(userID string, issueSize int, pro apistructs.ProjectDTO) (*apistructs.WorkbenchProjectItem, error) {
-	var issueItem apistructs.WorkbenchProjectItem
-	issueItem.IssueList = make([]apistructs.Issue, 0)
-	issueReq := apistructs.IssuePagingRequest{
-		OrgID:    int64(pro.OrgID),
-		PageNo:   1,
-		PageSize: uint64(issueSize),
-		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID:    uint64(pro.ID),
-			StateBelongs: StateBelongs,
-			Assignees:    []string{userID},
-			External:     true,
-			OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
-			Priority:     IssuePriorities,
-			Type:         IssueTypes,
-			Asc:          true,
-		},
-	}
-	issues, total, err := w.issueSvc.Paging(issueReq)
-	if err != nil {
-		return nil, err
-	}
-	issueItem.TotalIssueNum = int(total)
-	issueItem.IssueList = issues
-	issueItem.ProjectDTO = pro
-	return &issueItem, nil
 }
 
 // e.workBench.GetUndoneProjectItem concurrent query different expire issue num
@@ -154,7 +118,7 @@ func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, i
 					etIssueReq.EndFinishedAt = timeList[idx][1] * 1000
 				}
 			}
-			etIssueReq.StateBelongs = StateBelongs
+			etIssueReq.StateBelongs = apistructs.StateBelongs
 			etIssueReq.External = true
 			etIssueReq.Type = IssueTypes
 			etIssueReq.Assignees = req.Assignees
@@ -192,4 +156,33 @@ func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, i
 	}
 	wg.Wait()
 	return iErr
+}
+
+func (w *Workbench) GetUndoneProjectItems(req apistructs.WorkbenchRequest, userID string) (*apistructs.WorkbenchResponse, error) {
+	req.IssuePagingRequest = apistructs.IssuePagingRequest{
+		OrgID:    int64(req.OrgID),
+		PageNo:   1,
+		PageSize: uint64(req.IssueSize),
+		IssueListRequest: apistructs.IssueListRequest{
+			StateBelongs: apistructs.StateBelongs,
+			Assignees:    []string{userID},
+			External:     true,
+			OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
+			Priority:     IssuePriorities,
+			Type:         IssueTypes,
+			Asc:          true,
+		},
+	}
+	projectMap, err := w.issueSvc.GetIssuesByStates(req)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &apistructs.WorkbenchResponse{}
+	res.Data.TotalProject = len(projectMap)
+	res.Data.List = make([]*apistructs.WorkbenchProjectItem, 0)
+	for _, v := range projectMap {
+		res.Data.List = append(res.Data.List, v)
+	}
+	return res, nil
 }

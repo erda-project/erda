@@ -120,7 +120,7 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 							Key:    "goto",
 							Target: "cmpClustersWorkloadDetail",
 							State: CommandState{Params: map[string]string{
-								"workloadID": workloadId,
+								"workloadId": workloadId,
 							}},
 							JumpOut: true,
 						},

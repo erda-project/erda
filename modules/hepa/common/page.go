@@ -14,31 +14,44 @@
 
 package common
 
+import "github.com/erda-project/erda-proto-go/core/hepa/pb"
+
 var (
 	serialVersionUID  int64 = -802234107812549630
 	DEFAULT_PAGE_SIZE int64 = 15
 	DEFAULT_TOTAL_NUM int64 = 0
 )
 
-type Page struct {
-	SerialVersionUID *int64 `json:"serialVersionUID"`
-	PageSize         int64  `json:"pageSize"`
-	CurPage          int64  `json:"curPage"`
-	TotalNum         int64  `json:"totalNum"`
-	StartIndex       int64  `json:"startIndex"`
-	EndIndex         int64  `json:"endIndex"`
+type Page pb.Page
+
+func NewPage() *pb.Page {
+	return &pb.Page{
+		PageSize:   DEFAULT_PAGE_SIZE,
+		CurPage:    1,
+		TotalNum:   DEFAULT_TOTAL_NUM,
+		StartIndex: 0,
+		EndIndex:   0,
+	}
 }
 
-func NewPage() *Page {
-	return &Page{&serialVersionUID, DEFAULT_PAGE_SIZE, 1, DEFAULT_TOTAL_NUM, 0, 0}
+func NewPage2(PageSize int64, CurPage int64) *pb.Page {
+	return &pb.Page{
+		PageSize:   PageSize,
+		CurPage:    CurPage,
+		TotalNum:   DEFAULT_TOTAL_NUM,
+		StartIndex: 0,
+		EndIndex:   0,
+	}
 }
 
-func NewPage2(PageSize int64, CurPage int64) *Page {
-	return &Page{&serialVersionUID, PageSize, CurPage, DEFAULT_TOTAL_NUM, 0, 0}
-}
-
-func NewPage3(PageSize int64, CurPage int64, TotalNum int64) *Page {
-	return &Page{&serialVersionUID, PageSize, CurPage, TotalNum, 0, 0}
+func NewPage3(PageSize int64, CurPage int64, TotalNum int64) *pb.Page {
+	return &pb.Page{
+		PageSize:   PageSize,
+		CurPage:    CurPage,
+		TotalNum:   TotalNum,
+		StartIndex: 0,
+		EndIndex:   0,
+	}
 }
 
 /**

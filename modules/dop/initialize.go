@@ -22,13 +22,14 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/endpoints"
 	"github.com/erda-project/erda/modules/dop/event"
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
@@ -45,6 +46,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/environment"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
 	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
@@ -69,7 +71,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -79,7 +83,7 @@ import (
 )
 
 // Initialize 初始化应用启动服务.
-func (p *provider) Initialize() error {
+func (p *provider) Initialize(ctx servicehub.Context) error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -89,13 +93,12 @@ func (p *provider) Initialize() error {
 	// TODO invoke self use service
 	//_ = os.Setenv("QA_ADDR", discover.QA())
 
-	// init db
-	if err := dbclient.Open(); err != nil {
-		return err
+	db := &dao.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: p.DB,
+		},
 	}
-	defer dbclient.Close()
-
-	ep, err := p.initEndpoints((*dao.DBClient)(dbclient.DB))
+	ep, err := p.initEndpoints(db)
 	if err != nil {
 		return err
 	}
@@ -114,15 +117,21 @@ func (p *provider) Initialize() error {
 	}
 
 	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
+	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
+		issuefilterbm.WithDBClient(db),
+	))
 
-	server := httpserver.New(conf.ListenAddr())
+	// This server will never be started. Only the routes and locale loader are used by new http server
+	server := httpserver.New(":0")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
 
-	loadMetricKeysFromDb((*dao.DBClient)(dbclient.DB))
+	loadMetricKeysFromDb(db)
+
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	interval := time.Duration(conf.TestFileIntervalSec())
@@ -183,7 +192,24 @@ func (p *provider) Initialize() error {
 		}
 	}()
 
-	return server.ListenAndServe()
+	// daily issue expiry status update cron job
+	go func() {
+		cron := cron.New()
+		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
+			start := time.Now()
+			if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
+				logrus.Errorf("daily issue expiry status batch update err: %v", err)
+				return
+			}
+			logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
+		})
+		if err != nil {
+			panic(err)
+		}
+		cron.Start()
+	}()
+
+	return nil
 }
 
 func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {

@@ -21,21 +21,22 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 var (
-	Distributed_Desc = "已分配"
-	Free_Desc        = "剩余分配"
-	Locked_Desc      = "不可分配"
+	Allocated       = "Allocated"
+	Free_Allocate   = "Free-Allocate"
+	Cannot_Allocate = "Cannot-Allocate"
 
 	Memory = "Memory"
 	CPU    = "CPU"
 	Pods   = "Pods"
 
-	DefaultFormat = "{d}%\n{c}"
+	DefaultFormat = "{d}%\n"
 )
 
 type Chart struct {
@@ -50,9 +51,9 @@ type ChartInterface interface {
 	ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error
 }
 
-func setData(nodes []data.Object, resourceName string) []DataItem {
+func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	//var allocatableTotal, capacityTotal, unAllocatableTotal float64
-	var suffix = ""
+	suffix := ""
 	resourceType := resource.DecimalSI
 	if resourceName == Memory {
 		resourceType = resource.BinarySI
@@ -73,24 +74,36 @@ func setData(nodes []data.Object, resourceName string) []DataItem {
 	capacityQuantity.Sub(*unAllocatableQuantity)
 	capacityQuantity.Sub(*allocatableQuantity)
 	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
+	distributedDesc := DefaultFormat + allocatableStr + suffix
+	if allocatableQuantity.Value() == 0 {
+		distributedDesc = ""
+	}
+	freeDesc := DefaultFormat + capacityStr + suffix
+	if capacityQuantity.Value() == 0 {
+		freeDesc = ""
+	}
+	lockedDesc := DefaultFormat + unAllocatableStr + suffix
+	if unAllocatableQuantity.Value() == 0 {
+		lockedDesc = ""
+	}
 	return []DataItem{{
 		Value: float64(allocatableQuantity.Value()),
-		Name:  Distributed_Desc,
-		Label: Label{Formatter: allocatableStr + suffix},
+		Name:  c.SDK.I18n(Allocated),
+		Label: Label{Formatter: distributedDesc},
 	}, {
 		Value: float64(capacityQuantity.Value()),
-		Name:  Free_Desc,
-		Label: Label{capacityStr + suffix},
+		Name:  c.SDK.I18n(Free_Allocate),
+		Label: Label{Formatter: freeDesc},
 	}, {
 		Value: float64(unAllocatableQuantity.Value()),
-		Name:  Locked_Desc,
-		Label: Label{unAllocatableStr + suffix},
+		Name:  c.SDK.I18n(Cannot_Allocate),
+		Label: Label{Formatter: lockedDesc},
 	}}
 }
 
 func GetScaleValue(quantity1 *resource.Quantity, quantity2 *resource.Quantity, quantity3 *resource.Quantity) (string, string, string) {
 	factor := 10
-	for ; quantity1.Value() > int64(1<<factor) && quantity2.Value() > int64(1<<factor) && quantity3.Value() > int64(1<<factor); factor += 10 {
+	for ; (quantity1.Value() != 0 && quantity1.Value() > int64(1<<factor)) && ((quantity1.Value() != 0) && quantity2.Value() > int64(1<<factor)) && (quantity3.Value() != 0 && quantity3.Value() > int64(1<<factor)); factor += 10 {
 	}
 	factor -= 10
 	quantity1.Set(quantity1.Value() / (1 << factor))
@@ -121,11 +134,12 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 
 func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData, ResourceType string) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	cht.SDK = cputil.SDK(ctx)
 	var (
 		nodes []data.Object
 	)
 	nodes = (*gs)["nodes"].([]data.Object)
-	cht.Props.Option.Series[0].Data = setData(nodes, ResourceType)
+	cht.Props.Option.Series[0].Data = cht.setData(nodes, ResourceType)
 	c.Props = cht.Props
 	return nil
 }
@@ -185,7 +199,7 @@ type Label struct {
 func (c *Chart) GetProps(name string) Props {
 	return Props{Option: Option{
 		Color:  []string{"#F7A76B", "#6CB38B", "#DE5757"},
-		Legend: Legend{Data: []string{c.SDK.I18n("allocated"), c.SDK.I18n("cannot-allocated"), c.SDK.I18n("free-allocate")}},
+		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)}},
 		Grid: Grid{
 			Bottom:       0,
 			Top:          0,

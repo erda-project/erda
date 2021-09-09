@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 )
 
@@ -39,6 +40,7 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 	f.sdk = cputil.SDK(ctx)
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueStateSvc = ctx.Value(types.IssueStateService).(*issuestate.IssueState)
+	f.issueFilterBmSvc = ctx.Value(types.IssueFilterBmService).(*issuefilterbm.IssueFilterBookmark)
 	// inParams
 	if err := f.setInParams(ctx); err != nil {
 		return err

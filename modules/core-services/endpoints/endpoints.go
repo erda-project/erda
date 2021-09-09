@@ -299,6 +299,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/actions/list-my-projectIDs", Method: http.MethodGet, Handler: e.ListMyProjectIDs},
 		{Path: "/api/projects/actions/list-by-states", Method: http.MethodGet, Handler: e.GetProjectListByStates},
 		{Path: "/api/projects/actions/list-all", Method: http.MethodGet, Handler: e.GetAllProjects},
+		{Path: "/api/projects/actions/get-projects-map", Method: http.MethodGet, Handler: e.GetModelProjectsMap},
 
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},

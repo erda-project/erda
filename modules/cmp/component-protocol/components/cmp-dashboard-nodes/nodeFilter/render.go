@@ -35,7 +35,6 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	sdk := cputil.SDK(ctx)
 	nf.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	nf.SDK = sdk
-	nf.Props = nf.GetFilterProps()
 	nf.Operations = getFilterOperation()
 	var nodes []data.Object
 	// Get all nodes by cluster name
@@ -54,6 +53,13 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 		return err
 	}
 	nodeList := resp.Slice("data")
+	labels := make(map[string]struct{})
+	for _, node := range nodeList {
+		for k, v := range node.Map("metadata", "labels") {
+			labels[k+"="+v.(string)] = struct{}{}
+		}
+	}
+	nf.Props = nf.GetFilterProps(labels)
 	switch event.Operation {
 	case common.CMPDashboardFilterOperationKey:
 		if err := common.Transfer(c.State, &nf.State); err != nil {
@@ -72,7 +78,7 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	var nodes []data.Object
 	labels := make([]string, 0)
 	nodeNameFilter := ""
-	if len(values) == 0 {
+	if values == nil || len(values) == 0 {
 		nodes = nodeList
 	} else {
 		for k, v := range values {
