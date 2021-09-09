@@ -46,6 +46,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/environment"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
 	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
@@ -116,6 +117,9 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}
 
 	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
+	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
+		issuefilterbm.WithDBClient(db),
+	))
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")

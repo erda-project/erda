@@ -37,8 +37,11 @@ type PropCondition struct {
 	Fixed       bool                   `json:"fixed,omitempty"`
 	ShowIndex   int                    `json:"showIndex,omitempty"`
 	HaveFilter  bool                   `json:"haveFilter,omitempty"`
+	Split       bool                   `json:"split,omitempty"`
 	Type        PropConditionType      `json:"type,omitempty"`
 	QuickSelect QuickSelect            `json:"quickSelect,omitempty"`
+	QuickAdd    QuickAdd               `json:"quickAdd,omitempty"`
+	QuickDelete QuickDelete            `json:"quickDelete,omitempty"`
 	Placeholder string                 `json:"placeholder,omitempty"`
 	Options     []PropConditionOption  `json:"options,omitempty"`
 	CustomProps map[string]interface{} `json:"customProps,omitempty"`
@@ -46,6 +49,15 @@ type PropCondition struct {
 
 type QuickSelect struct {
 	Label        string       `json:"label,omitempty"`
+	OperationKey OperationKey `json:"operationKey,omitempty"`
+}
+
+type QuickAdd struct {
+	OperationKey OperationKey `json:"operationKey,omitempty"`
+	Show         bool         `json:"show"`
+}
+
+type QuickDelete struct {
 	OperationKey OperationKey `json:"operationKey,omitempty"`
 }
 
@@ -68,8 +80,10 @@ type StateKey string
 
 type OperationKey string
 type Operation struct {
-	Key    OperationKey `json:"key,omitempty"`
-	Reload bool         `json:"reload,omitempty"`
+	Key      OperationKey           `json:"key,omitempty"`
+	Reload   bool                   `json:"reload,omitempty"`
+	Meta     map[string]interface{} `json:"meta,omitempty"`
+	FillMeta string                 `json:"fillMeta,omitempty"`
 }
 
 func (k OperationKey) String() string {
