@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cast"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -203,9 +202,9 @@ func (p *ComponentPodsTable) RenderTable() error {
 			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(cpuMetrics) != 0 {
-			usedCPUPercent = cpuMetrics[0].Used * 100
+			usedCPUPercent = cpuMetrics[0].Used
 		}
-		cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
+		cpuStatus, cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
 
 		// mem
 		req.ResourceType = metrics.Memory
@@ -215,9 +214,9 @@ func (p *ComponentPodsTable) RenderTable() error {
 			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(memMetrics) != 0 {
-			usedMemPercent = memMetrics[0].Used * 100
+			usedMemPercent = memMetrics[0].Used
 		}
-		memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
+		memStatus, memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -252,7 +251,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				RenderType: "progress",
 				Value:      cpuValue,
 				Tip:        cpuTip,
-				Status:     getDistributionStatus(memValue),
+				Status:     cpuStatus,
 			},
 			CPULimits:      cpuLimits.String(),
 			MemoryRequests: memRequests.String(),
@@ -260,7 +259,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				RenderType: "progress",
 				Value:      memValue,
 				Tip:        memTip,
-				Status:     getDistributionStatus(memValue),
+				Status:     memStatus,
 			},
 			MemoryLimits: memLimits.String(),
 			Ready:        fields[1],
@@ -399,18 +398,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 	return nil
 }
 
-func getDistributionStatus(str string) string {
-	d := cast.ToFloat64(str)
-	if d >= 100 {
-		return "error"
-	} else if d >= 80 {
-		return "warning"
-	} else {
-		return "success"
-	}
-}
-
-func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string) (string, string) {
+func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string) (string, string, string) {
 	var totRes int64
 	if kind == "cpu" {
 		totRes = totQty.MilliValue()
@@ -424,7 +412,15 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		usedQty = resource.NewQuantity(usedRes, resource.BinarySI)
 	}
-	return fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
+	status := ""
+	if usedPercent <= 0.8 {
+		status = "success"
+	} else if usedPercent < 1 {
+		status = "warning"
+	} else {
+		status = "error"
+	}
+	return status, fmt.Sprintf("%.2f", usedPercent*100), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
