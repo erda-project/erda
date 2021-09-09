@@ -126,7 +126,7 @@ func (t *ComponentEventTable) RenderList() error {
 		items = append(items, Item{
 			LastSeen:          fields[0],
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
-			Type:              fields[1],
+			Type:              t.SDK.I18n(fields[1]),
 			Reason:            fields[2],
 			Message:           fields[6],
 		})

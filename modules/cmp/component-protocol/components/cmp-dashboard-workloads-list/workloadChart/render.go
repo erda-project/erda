@@ -77,7 +77,7 @@ func (c *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		"green", "red", "steelBlue", "maroon",
 	}
 	c.Props.Option.Legend.Data = []string{
-		"Active", "Error", "Succeeded", "Failed",
+		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Error"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),
 	}
 	c.Props.Option.XAxis.Type = "value"
 	c.Props.Option.YAxis.Type = "category"

@@ -179,7 +179,7 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 func parseContainerStatus(state string) Status {
 	status := Status{
 		RenderType: "text",
-		Value:      "state",
+		Value:      state,
 	}
 	switch state {
 	case "running":

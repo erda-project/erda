@@ -542,10 +542,10 @@ func matchSelector(selector, labels map[string]interface{}) bool {
 	return true
 }
 
-func parsePodStatus(state string) Status {
+func (p *ComponentPodsTable) parsePodStatus(state string) Status {
 	status := Status{
 		RenderType: "text",
-		Value:      state,
+		Value:      p.sdk.I18n(state),
 	}
 	switch state {
 	case "Completed":

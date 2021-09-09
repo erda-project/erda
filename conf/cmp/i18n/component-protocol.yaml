@@ -160,6 +160,9 @@ zh:
  SchedulingDisabled: 冻结
  architecture: 架构
  container: 容器
+ running: 运行中
+ waiting: 等待
+ terminated: 终止
 
 en:
  # general
@@ -293,3 +296,6 @@ en:
  architecture: Architecture
  container: Containers
  events: Events
+ running: Running
+ waiting: Waiting
+ terminated: Terminated
