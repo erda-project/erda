@@ -250,38 +250,3 @@ func TestSortByStatus(t *testing.T) {
 	}
 }
 
-func TestTable_GetLabelGroup(t1 *testing.T) {
-
-	type args struct {
-		label string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "labelTest",
-			args: args{label: "dev"},
-			want: "env",
-		},
-		{
-			name: "labelTest2",
-			args: args{label: "drain"},
-			want: "other",
-		},
-		{
-			name: "labelTest3",
-			args: args{label: "stateless"},
-			want: "service",
-		},
-	}
-	for _, tt := range tests {
-		t1.Run(tt.name, func(t1 *testing.T) {
-			t := &Table{}
-			if got := t.GetLabelGroup(tt.args.label); got != tt.want {
-				t1.Errorf("GetLabelGroup() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}

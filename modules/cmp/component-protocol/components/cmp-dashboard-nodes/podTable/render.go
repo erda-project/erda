@@ -16,7 +16,6 @@ package podTable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -25,7 +24,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
@@ -56,13 +54,13 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		switch event.Operation {
 		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
-		case common.CMPDashboardUnfreezeNode:
-			err := pt.UnFreezeNode(pt.State.SelectedRowKeys)
+		case common.CMPDashboardUncordonNode:
+			err := pt.UncordonNode(pt.State.SelectedRowKeys)
 			if err != nil {
 				return err
 			}
-		case common.CMPDashboardFreezeNode:
-			err := pt.FreezeNode(pt.State.SelectedRowKeys)
+		case common.CMPDashboardCordonNode:
+			err := pt.CordonNode(pt.State.SelectedRowKeys)
 			if err != nil {
 				return err
 			}
@@ -87,7 +85,7 @@ func (pt *PodInfoTable) getProps() {
 	p := map[string]interface{}{
 		"rowKey": "id",
 		"columns": []table.Columns{
-			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
+			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 340},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: pt.SDK.I18n("role"), Sortable: true},
@@ -98,7 +96,7 @@ func (pt *PodInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"freeze", "unfreeze"},
+		"batchOperations": []string{"cordon", "uncordon"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 	pt.Props = p
@@ -138,10 +136,10 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 			RenderType: "progress",
 			Value:      ur.Percent,
 			Status:     table.GetDistributionStatus(ur.Percent),
-			Tip:        fmt.Sprintf("%d/%d", int64(allocatable), int64(capacity)),
+			Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
 		},
 		Operate:         pt.GetOperate(node.String("id")),
-		BatchOperations: []string{"delete", "freeze", "unfreeze"},
+		BatchOperations: []string{"cordon", "uncordon"},
 	}
 	return ri, nil
 }
