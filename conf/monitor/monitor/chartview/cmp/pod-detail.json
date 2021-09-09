@@ -1,5 +1,5 @@
 {
-  "id": "pod-detail",
+  "id": "cmp-dashboard-podDetail",
   "scope": "org",
   "scopeId": "erda",
   "version": "v2",
@@ -8,7 +8,7 @@
   "viewConfig":
   [
     {
-      "w": 8,
+      "w": 12,
       "h": 9,
       "x": 0,
       "y": 0,
@@ -16,6 +16,12 @@
       "view":
       {
         "title": "Pod CPU Usage",
+        "i18n": {
+          "title": {
+            "zh": "Pod CPU 使用率",
+            "cn": "Pod CPU Usage"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -35,6 +41,12 @@
             [
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "filter":
                 {
@@ -47,6 +59,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "filter":
                 {
@@ -59,6 +77,12 @@
               },
               {
                 "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
                 "field": "docker_container_summary-cluster_name::tag",
                 "filter":
                 {
@@ -74,11 +98,23 @@
             [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
                 "key": "type1QU1sVhL",
                 "type": "time"
               },
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "key": "typezA1u39Sk",
                 "resultType": "string",
@@ -86,6 +122,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "key": "typezD9yHXZy",
                 "resultType": "string",
@@ -97,6 +139,14 @@
               {
                 "aggregation": "sum",
                 "alias": "CPU使用率",
+                "i18n": {
+                  "alias": {
+                    "alias": {
+                      "zh": "CPU使用率",
+                      "en": "CPU Usage Percent"
+                    }
+                  }
+                },
                 "field": "docker_container_summary-cpu_usage_percent::field",
                 "key": "valueODppjgDJ",
                 "resultType": "number",
@@ -164,19 +214,24 @@
           },
           "url": "/api/orgCenter/metrics-query"
         },
-        "controls": null,
-        "i18n": null
+        "controls": null
       }
     },
     {
-      "w": 8,
+      "w": 12,
       "h": 9,
-      "x": 0,
-      "y": 9,
+      "x": 12,
+      "y": 0,
       "i": "view-I0Ko82c6",
       "view":
       {
         "title": "Pod Memory Usage",
+        "i18n": {
+          "title": {
+            "zh": "Pod 内存使用率",
+            "en": "Pod Memory Usage"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -196,6 +251,12 @@
             [
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "filter":
                 {
@@ -208,6 +269,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "filter":
                 {
@@ -220,6 +287,12 @@
               },
               {
                 "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
                 "field": "docker_container_summary-cluster_name::tag",
                 "filter":
                 {
@@ -235,11 +308,23 @@
             [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
                 "key": "typebBcx9Cpb",
                 "type": "time"
               },
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "key": "typeVMkEyiPU",
                 "resultType": "string",
@@ -247,6 +332,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "key": "typel96VLnB0",
                 "resultType": "string",
@@ -258,6 +349,12 @@
               {
                 "aggregation": "sum",
                 "alias": "Mem Usage Percent",
+                "i18n": {
+                  "alias": {
+                    "zh": "内存使用率",
+                    "en": "Mem Usage"
+                  }
+                },
                 "field": "docker_container_summary-mem_usage_percent::field",
                 "key": "valuee0jRZAOK",
                 "resultType": "number",
@@ -325,19 +422,24 @@
           },
           "url": "/api/orgCenter/metrics-query"
         },
-        "controls": null,
-        "i18n": null
+        "controls": null
       }
     },
     {
-      "w": 8,
+      "w": 12,
       "h": 9,
       "x": 0,
-      "y": 18,
+      "y": 9,
       "i": "view-jLdXS0f5",
       "view":
       {
         "title": "Pod Read Bytes",
+        "i18n": {
+          "title": {
+            "zh": "Pod 磁盘读取速率",
+            "en": "Pod Read Bytes"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -357,6 +459,12 @@
             [
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "filter":
                 {
@@ -369,6 +477,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "filter":
                 {
@@ -381,6 +495,12 @@
               },
               {
                 "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
                 "field": "docker_container_summary-cluster_name::tag",
                 "filter":
                 {
@@ -396,11 +516,23 @@
             [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
                 "key": "typefhINpT8W",
                 "type": "time"
               },
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "key": "typeVfO4zHJO",
                 "resultType": "string",
@@ -408,6 +540,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "key": "type2evCIOCL",
                 "resultType": "string",
@@ -419,6 +557,12 @@
               {
                 "aggregation": "sum",
                 "alias": "磁盘读取字节数",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 磁盘读取速率",
+                    "en": "Pod Read Bytes"
+                  }
+                },
                 "field": "docker_container_summary-blk_read_bytes::field",
                 "key": "valueO5ZLWXGs",
                 "resultType": "number",
@@ -491,19 +635,24 @@
           },
           "url": "/api/orgCenter/metrics-query"
         },
-        "controls": null,
-        "i18n": null
+        "controls": null
       }
     },
     {
-      "w": 8,
+      "w": 12,
       "h": 9,
-      "x": 0,
-      "y": 27,
+      "x": 12,
+      "y": 9,
       "i": "view-dVHW28yb",
       "view":
       {
         "title": "Pod Write Bytes",
+        "i18n":{
+          "title": {
+            "zh": "Pod 磁盘写入速率",
+            "en": "Pod Write Bytes"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -523,6 +672,12 @@
             [
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "filter":
                 {
@@ -535,6 +690,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "{{namespace}}",
                 "filter":
                 {
@@ -547,6 +708,12 @@
               },
               {
                 "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
                 "field": "docker_container_summary-cluster_name::tag",
                 "filter":
                 {
@@ -562,11 +729,23 @@
             [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
                 "key": "typedfUpBUe8",
                 "type": "time"
               },
               {
                 "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
                 "field": "docker_container_summary-pod_name::tag",
                 "key": "typeJQCsQ5VP",
                 "resultType": "string",
@@ -574,6 +753,12 @@
               },
               {
                 "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "key": "typeVKNVPbM7",
                 "resultType": "string",
@@ -585,6 +770,12 @@
               {
                 "aggregation": "sum",
                 "alias": "磁盘写入字节数",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 磁盘写入字节数",
+                    "en": "Pod Write Bytes"
+                  }
+                },
                 "field": "docker_container_summary-blk_write_bytes::field",
                 "key": "valueGyXXhnzk",
                 "resultType": "number",
@@ -657,8 +848,7 @@
           },
           "url": "/api/orgCenter/metrics-query"
         },
-        "controls": null,
-        "i18n": null
+        "controls": null
       }
     }
   ]

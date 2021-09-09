@@ -29,8 +29,8 @@ zh:
  default: 默认
  system: 系统
  others: 其他
- normal: 普通
- warning: 警告
+ Normal: 普通
+ Warning: 警告
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU 请求值
@@ -192,8 +192,8 @@ en:
  default: Default
  system: System
  others: Others
- normal: Normal
- warning: Warning
+ Normal: Normal
+ Warning: Warning
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests

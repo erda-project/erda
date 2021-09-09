@@ -177,7 +177,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		p.State.CountValues[fields[2]]++
-		status := parsePodStatus(fields[2])
+		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)
 		cpuLimits := resource.NewQuantity(0, resource.DecimalSI)
@@ -524,10 +524,10 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func parsePodStatus(state string) Status {
+func (p *ComponentPodsTable) parsePodStatus(state string) Status {
 	status := Status{
 		RenderType: "text",
-		Value:      state,
+		Value:      p.sdk.I18n(state),
 	}
 	switch state {
 	case "Completed":

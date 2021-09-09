@@ -178,7 +178,7 @@ func (t *ComponentEventTable) RenderList() error {
 		items = append(items, Item{
 			LastSeen:          fields[0],
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
-			Type:              fields[1],
+			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],
 			Object:            fields[3],
 			Source:            fields[5],

@@ -38,6 +38,7 @@ type State struct {
 }
 
 type Condition struct {
+	HaveFilter  bool     `json:"haveFilter,omitempty"`
 	Key         string   `json:"key,omitempty"`
 	Label       string   `json:"label,omitempty"`
 	Placeholder string   `json:"placeholder,omitempty"`
