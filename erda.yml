@@ -60,6 +60,7 @@ services:
       replicas: 1
     envs:
       DEBUG: "true"
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     health_check:
       exec: { }
       http:
