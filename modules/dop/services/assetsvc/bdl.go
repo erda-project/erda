@@ -17,6 +17,8 @@
 package assetsvc
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -79,8 +81,8 @@ func (svc *Service) MboxNotify(title, templateName string, params map[string]str
 	return bdl.Bdl.CreateMboxNotify(templateName, params, locale, orgID, users)
 }
 
-func (svc *Service) GetEndpointDomains(endpointID string) []string {
-	endpoint, err := bdl.Bdl.GetEndpoint(endpointID)
+func (svc *Service) GetEndpointDomains(orgID, userID, endpointID string) []string {
+	endpoint, err := bdl.Bdl.GetEndpoint(orgID, userID, endpointID)
 	if err != nil {
 		return nil
 	}
