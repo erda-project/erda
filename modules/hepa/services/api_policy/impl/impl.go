@@ -141,7 +141,12 @@ func (impl GatewayApiPolicyServiceImpl) GetPolicyConfig(category, packageId, pac
 		}
 	}()
 	if category == "" || packageId == "" {
-		err = errors.New("invalid argument")
+		// keep compatible
+		result = map[string]interface{}{
+			"category":    "",
+			"description": "",
+			"policyList":  nil,
+		}
 		return
 	}
 	pack, err := impl.packageDb.Get(packageId)
