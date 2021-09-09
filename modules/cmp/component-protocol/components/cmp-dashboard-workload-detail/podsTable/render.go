@@ -181,7 +181,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
 			continue
 		}
-		status := parsePodStatus(fields[2])
+		status := p.parsePodStatus(fields[2])
 
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)
