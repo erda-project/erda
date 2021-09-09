@@ -251,7 +251,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "spot-v2"
     expose:
@@ -399,14 +399,14 @@ services:
     envs:
       LOG_LEVEL: INFO
     resources:
-      cpu: ${request_cpu:1}
+      cpu: ${request_cpu:0.5}
       mem: ${request_mem:512}
       max_cpu: 1
-      max_mem: 512
+      max_mem: 1024
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "spot-v2"
     health_check:
@@ -436,11 +436,11 @@ services:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
       max_cpu: 1
-      max_mem: 512
+      max_mem: 1024
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:2}
       labels:
         GROUP: "msp"
     health_check:
@@ -666,7 +666,7 @@ services:
       TRACE_TTL: "168h"
       LOG_LEVEL: INFO
     resources:
-      cpu: ${request_cpu:1.5}
+      cpu: ${request_cpu:0.5}
       mem: ${request_mem:1024}
       max_cpu: 1.5
       max_mem: 1024
@@ -677,7 +677,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "spot-v2"
     health_check:
