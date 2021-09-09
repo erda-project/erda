@@ -78,7 +78,7 @@ To get started, see [Quick Start](./docs/guides/quickstart/quickstart-full.md).
 
 ## Installation
 
-Download binaries of [Erda release](https://github.com/erda-project/erda/releases) and follow [Installation & Configuration Guide](https://docs.erda.cloud/1.2/manual/install/helm-install.html) to install Erda.
+Download binaries of [Erda release](https://github.com/erda-project/erda/releases) and follow [Installation & Configuration Guide](https://docs.erda.cloud/1.2/manual/install/helm-install/introduction.html) to install Erda.
 
 ## User Manual
 
