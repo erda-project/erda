@@ -35,7 +35,7 @@ import (
 type config struct {
 	Timeout              time.Duration `file:"timeout" default:"60s"`
 	QueryBackES          bool          `file:"query_back_es" default:"false"`
-	IndexPreload         bool          `file:"index_preload" default:"false" env:"LOG_INDEX_PRELOAD"`
+	IndexPreload         bool          `file:"index_preload" default:"true" env:"LOG_INDEX_PRELOAD"`
 	IndexPreloadInterval time.Duration `file:"index_preload_interval" default:"60s" env:"LOG_INDEX_PRELOAD_INTERVAL"`
 }
 
