@@ -184,8 +184,12 @@ func (p *provider) Initialize() error {
 		}
 	}()
 
-	// update pipeline cms
-	go updateCmsNsConfigs(ep)
+	// compensate pipeline cms according to pipeline cron which enable is true
+	go func() {
+		if err = compensatePipelineCms(ep); err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	return server.ListenAndServe()
 }
@@ -597,14 +601,14 @@ func copyTestFileTask(ep *endpoints.Endpoints) {
 	ep.TestSetService().CopyTestSet(record)
 }
 
-// updateCmsNsConfigs update pipeline cms according to pipeline cron which enable is true
+// compensatePipelineCms compensate pipeline cms according to pipeline cron which enable is true
 // it will be deprecated in the later version
-func updateCmsNsConfigs(ep *endpoints.Endpoints) error {
+func compensatePipelineCms(ep *endpoints.Endpoints) error {
 	enable := true
 	// get total
 	cron, err := bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
-		AllSources: true,
-		Sources:    nil,
+		AllSources: false,
+		Sources:    []apistructs.PipelineSource{apistructs.PipelineSourceDice},
 		YmlNames:   nil,
 		PageSize:   1,
 		PageNo:     1,
@@ -633,7 +637,7 @@ func updateCmsNsConfigs(ep *endpoints.Endpoints) error {
 		crons = append(crons, cron.Data...)
 	}
 
-	// userOrgMap judge the user ns is updated or not in the org
+	// userOrgMap judge the user ns is compensated or not in the org
 	// key: userID-orgID, value: struct{}
 	userOrgMap := make(map[string]struct{})
 	for _, v := range crons {

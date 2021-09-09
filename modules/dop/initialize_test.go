@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/endpoints"
 )
 
-func TestUpdateCmsNsConfigs(t *testing.T) {
+func TestCompensatePipelineCms(t *testing.T) {
 	ep := endpoints.New()
 	var bdl *bundle.Bundle
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PageListPipelineCrons",
@@ -58,6 +58,6 @@ func TestUpdateCmsNsConfigs(t *testing.T) {
 		func(*endpoints.Endpoints, string, uint64) error {
 			return nil
 		})
-	err := updateCmsNsConfigs(ep)
+	err := compensatePipelineCms(ep)
 	assert.NoError(t, err)
 }
