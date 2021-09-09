@@ -107,8 +107,10 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 
 	var req = testplanpb.Content{
-		TestPlanID:  testPlanID,
-		ExecuteTime: ctx.SDK.Pipeline.ExtraTimeCreated.Format("2006-01-02 15:04:05"),
+		TestPlanID:     testPlanID,
+		ExecuteTime:    ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
+		ApiTotalNum:    int64(apiTotalNum),
+		ExecuteMinutes: ctx.SDK.Pipeline.TimeEnd.Sub(*ctx.SDK.Pipeline.TimeBegin).Minutes(),
 	}
 
 	if apiTotalNum == 0 {

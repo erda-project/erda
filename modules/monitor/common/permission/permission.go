@@ -64,7 +64,7 @@ const (
 type ValueGetter func(ctx httpserver.Context) (string, error)
 
 var (
-	hc   = httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
+	hc   = httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))
 	bdl  *bundle.Bundle
 	once sync.Once
 	cmdb *bundlecmdb.Cmdb // 为了调用 /api/orgs/clusters/relations 接口
@@ -152,7 +152,7 @@ func Failure(context httpserver.Context, ctx interface{}) {
 	if resp.Status(context) > 0 {
 		w.WriteHeader(resp.Status(context))
 	} else {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusForbidden)
 	}
 	reader := resp.ReadCloser(context)
 	io.Copy(context.ResponseWriter(), reader)

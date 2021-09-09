@@ -15,15 +15,31 @@
 package testplan
 
 import (
+	"os"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 func Test_convertAddr(t *testing.T) {
-	s := "dop:9527"
-	want := "dop:9528"
-	addr, err := convertAddr(s)
+	err := os.Setenv("DOP_ADDR", "dop:9999")
 	assert.NoError(t, err)
-	assert.Equal(t, want, addr)
+
+	var bdl *bundle.Bundle
+	p := &provider{
+		bundle: bdl,
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateWebhook",
+		func(bdl *bundle.Bundle, r apistructs.CreateHookRequest) error {
+			assert.Equal(t, r.URL, "http://dop:9999/api/autotests/actions/plan-execute-callback")
+			return nil
+		})
+	defer monkey.UnpatchAll()
+	err = p.registerWebHook()
+	assert.NoError(t, err)
 }

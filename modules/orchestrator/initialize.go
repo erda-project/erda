@@ -27,8 +27,6 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
-	"github.com/erda-project/erda/modules/orchestrator/events"
-	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/domain"
@@ -59,7 +57,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}
 
 	// init endpoints
-	ep, err := initEndpoints(db)
+	ep, err := p.initEndpoints(db)
 	if err != nil {
 		return err
 	}
@@ -84,10 +82,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 }
 
 // 初始化 Endpoints
-func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
-	// init PusherQueue
-	pq := queue.NewPusherQueue()
-
+func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 	// init pool
 	pool := goroutinepool.New(conf.PoolSize())
 	pool.Start()
@@ -125,10 +120,6 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 			PrivateKeyDataType: encryption.Base64,
 		})))
 
-	// init EventManager
-	evMgr := events.NewEventManager(1000, pq, db, bdl)
-	evMgr.Start()
-
 	migration := migration.New(
 		migration.WithBundle(bdl),
 		migration.WithDBClient(db))
@@ -152,14 +143,14 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 	// init runtime service
 	rt := runtime.New(
 		runtime.WithDBClient(db),
-		runtime.WithEventManager(evMgr),
+		runtime.WithEventManager(p.EventManager),
 		runtime.WithBundle(bdl),
 		runtime.WithAddon(a))
 
 	// init deployment service
 	d := deployment.New(
 		deployment.WithDBClient(db),
-		deployment.WithEventManager(evMgr),
+		deployment.WithEventManager(p.EventManager),
 		deployment.WithBundle(bdl),
 		deployment.WithAddon(a),
 		deployment.WithMigration(migration),
@@ -170,7 +161,7 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 	// init domain service
 	dom := domain.New(
 		domain.WithDBClient(db),
-		domain.WithEventManager(evMgr),
+		domain.WithEventManager(p.EventManager),
 		domain.WithBundle(bdl))
 
 	ins := instance.New(
@@ -181,8 +172,8 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 	ep := endpoints.New(
 		endpoints.WithDBClient(db),
 		endpoints.WithPool(pool),
-		endpoints.WithQueue(pq),
-		endpoints.WithEventManager(evMgr),
+		endpoints.WithQueue(p.PusherQueue),
+		endpoints.WithEventManager(p.EventManager),
 		endpoints.WithBundle(bdl),
 		endpoints.WithRuntime(rt),
 		endpoints.WithDeployment(d),
