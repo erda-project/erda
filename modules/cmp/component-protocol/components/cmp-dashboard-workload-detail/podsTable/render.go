@@ -283,7 +283,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			switch field {
 			case "status":
 				return func(i int, j int) bool {
-					less := items[i].Status.Value < items[j].Status.Value
+					less := items[i].Status.Value.Label < items[j].Status.Value.Label
 					if ascend {
 						return less
 					}
@@ -415,12 +415,12 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		totRes = totQty.Value()
 	}
-	usedRes := int64(float64(totRes) * usedPercent / 100)
-	var usedQty *resource.Quantity
+	usedRes := float64(totRes) * usedPercent / 100
+	usedQtyString := ""
 	if kind == "cpu" {
-		usedQty = resource.NewMilliQuantity(usedRes, resource.DecimalSI)
+		usedQtyString = fmt.Sprintf("%.3f", usedRes/1000)
 	} else {
-		usedQty = resource.NewQuantity(usedRes, resource.BinarySI)
+		usedQtyString = convertUnit(usedRes)
 	}
 	status := ""
 	if usedPercent <= 80 {
@@ -430,7 +430,17 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
+	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+}
+
+func convertUnit(bytes float64) string {
+	units := []string{"B", "Ki", "Mi", "Gi"}
+	i := 0
+	for bytes >= 1<<10 && i < len(units)-1 {
+		bytes /= 1 << 10
+		i++
+	}
+	return fmt.Sprintf("%.3f%s", bytes, units[i])
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
@@ -548,31 +558,35 @@ func matchSelector(selector, labels map[string]interface{}) bool {
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	status := Status{
-		RenderType: "text",
-		Value:      p.sdk.I18n(state),
-	}
+	color := ""
 	switch state {
 	case "Completed":
-		status.StyleConfig.Color = "steelBlue"
+		color = "steelBlue"
 	case "ContainerCreating":
-		status.StyleConfig.Color = "orange"
+		color = "orange"
 	case "CrashLoopBackOff":
-		status.StyleConfig.Color = "red"
+		color = "red"
 	case "Error":
-		status.StyleConfig.Color = "maroon"
+		color = "maroon"
 	case "Evicted":
-		status.StyleConfig.Color = "darkgoldenrod"
+		color = "darkgoldenrod"
 	case "ImagePullBackOff":
-		status.StyleConfig.Color = "darksalmon"
+		color = "darksalmon"
 	case "Pending":
-		status.StyleConfig.Color = "teal"
+		color = "teal"
 	case "Running":
-		status.StyleConfig.Color = "lightgreen"
+		color = "lightgreen"
 	case "Terminating":
-		status.StyleConfig.Color = "brown"
+		color = "brown"
 	}
-	return status
+	return Status{
+		RenderType: "tagsRow",
+		Size:       "default",
+		Value: StatusValue{
+			Label: p.sdk.I18n(state),
+			Color: color,
+		},
+	}
 }
 
 func parseResource(str string, format resource.Format) *resource.Quantity {

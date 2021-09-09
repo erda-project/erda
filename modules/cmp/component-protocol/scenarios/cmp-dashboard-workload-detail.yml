@@ -21,7 +21,7 @@ components:
   header:
     type: RowContainer
   workloadStatus:
-    type: Text
+    type: Tags
   workloadTitle:
     type: Title
   podsTableTitle:
