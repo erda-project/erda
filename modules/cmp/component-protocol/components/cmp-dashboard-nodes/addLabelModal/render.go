@@ -55,13 +55,9 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 			Name:        alm.State.FormData["recordId"],
 			ClusterName: clusterNameIter.(string),
 		}
-		labelGroup := alm.State.FormData["labelGroup"]
-		labelName := alm.State.FormData[labelGroup]
-		strs := strings.Split(labelName, "=")
-		if len(strs) == 1 {
-			return errors.New("label format illegal, contact key and value with '=' is required")
-		}
-		err := alm.CtxBdl.LabelNode(req, map[string]string{strs[0]: strs[1]})
+		labelKey := alm.State.FormData["label_custom_key"]
+		labelValue := alm.State.FormData["label_custom_value"]
+		err := alm.CtxBdl.LabelNode(req, map[string]string{labelKey: labelValue})
 		if err != nil {
 			return err
 		}
@@ -139,7 +135,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "environment",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "workspace-dev", Value: "workspace-dev=true"}, {Name: "workspace-tes", Value: "workspace-test=true"}, {Name: "workspace-staging", Value: "workspace-staging=true"}, {Name: "workspace-prod", Value: "workspace-prod=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("workspace-dev"), Value: "dice/workspace-dev=true"}, {Name: alm.SDK.I18n("workspace-test"), Value: "dice/workspace-test=true"}, {Name: alm.SDK.I18n("workspace-staging"), Value: "dice/workspace-staging=true"}, {Name: alm.SDK.I18n("workspace-prod"), Value: "dice/workspace-prod=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,
@@ -153,7 +149,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "service",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "stateful-service", Value: "stateful-service=true"}, {Name: "stateless-service", Value: "stateless-service=true"}, {Name: "location-cluster-service", Value: "location-cluster-service=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("stateful-service"), Value: "dice/stateful-service=true"}, {Name: alm.SDK.I18n("stateless-service"), Value: "dice/stateless-service=true"}, {Name: alm.SDK.I18n("location-cluster-service"), Value: "dice/location-cluster-service=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,
@@ -167,7 +163,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "job",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "pack-job", Value: "pack-job=true"}, {Name: "bigdata-job", Value: "bigdata-job=true"}, {Name: "job", Value: "job=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,
@@ -181,7 +177,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "other",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "locked", Value: "locked=true"}, {Name: "topology-zone", Value: "topology-zone=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("lb"), Value: "dice/lb=true"}, {Name: alm.SDK.I18n("platform"), Value: "dice/platform=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,
@@ -194,13 +190,30 @@ func (alm *AddLabelModal) getProps() {
 			},
 		},
 		{
-			Key:       "custom",
+			Key:       "label_custom_key",
 			Label:     alm.SDK.I18n("label"),
 			Component: "input",
 			Required:  true,
 			Rules: Rules{
-				Msg:     alm.SDK.I18n("regex") + "label=true",
+				Msg:     "",
 				Pattern: "pattern: '/^[.a-z\\u4e00-\\u9fa5A-Z0-9_-\\s]*$/'",
+			},
+			RemoveWhen: [][]RemoveWhen{
+				{
+					{
+						Field: "labelGroup", Operator: "!=", Value: "custom",
+					},
+				},
+			},
+		},
+		{
+			Component: "input",
+			Key:       "label_custom_value",
+			Label:     alm.SDK.I18n("label-value"),
+			Required:  true,
+			Rules: Rules{
+				Msg:     "",
+				Pattern: "/^[.a-z\\u4e00-\\u9fa5A-Z0-9_-\\s]*$/",
 			},
 			RemoveWhen: [][]RemoveWhen{
 				{

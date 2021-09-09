@@ -15,22 +15,13 @@
 package filter
 
 import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"sort"
+	"strings"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
-
-func (f *Filter) GetGroups() map[string]struct{} {
-	props := f.GetFilterProps()
-	groups := make(map[string]struct{})
-	for _, f := range props.Fields {
-		for _, l := range f.Options {
-			groups[l.Value] = struct{}{}
-		}
-	}
-	return groups
-}
 
 type Filter struct {
 	base.DefaultProvider
@@ -42,53 +33,103 @@ type Filter struct {
 	Props      Props                  `json:"props"`
 }
 
-func (f *Filter) GetFilterProps() Props {
+var DefaultLabels = []string{"dice/workspace-dev=true", "dice/workspace-test=true", "dice/workspace-staging=true",
+	"dice/workspace-prod=true", "dice/stateful-service=true", "dice/stateless-service=true",
+	"dice/location-cluster-service=true", "dice/job=true", "dice/bigdata-job=true", "dice/lb", "dice/platform"}
+
+func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
+	fields := []Field{
+		{
+			Key:     "enterprise",
+			Label:   f.SDK.I18n("enterprise"),
+			Type:    "select",
+			Options: []Option{},
+		},
+	}
+	var custom []string
+	var enterprise []string
+	for l := range labels {
+		if strings.HasPrefix(l, "dice/org-") && strings.HasSuffix(l, "=true") {
+			enterprise = append(enterprise, l)
+
+			continue
+		}
+		i := 0
+		for _, dl := range DefaultLabels {
+			if dl == l {
+				break
+			}
+		}
+		if i == len(DefaultLabels) {
+			custom = append(custom, l)
+		}
+	}
+	sort.Slice(enterprise, func(i, j int) bool {
+		return enterprise[i] < enterprise[j]
+	})
+	for _, l := range enterprise {
+		i := strings.Index(l, "=true")
+		fields[0].Options = append(fields[0].Options, Option{
+			Label: l[9:i],
+			Value: l,
+		})
+	}
+	sort.Slice(custom, func(i, j int) bool {
+		return custom[i] < custom[j]
+	})
+	var customOps []Option
+	for _, l := range custom {
+		customOps = append(customOps, Option{
+			Label: l,
+			Value: l,
+		})
+	}
+	fields = append(fields, []Field{
+		{
+			Key:   "env",
+			Label: f.SDK.I18n("env"),
+			Type:  "select",
+			Options: []Option{
+				{Label: f.SDK.I18n("dev"), Value: "dice/workspace-dev"},
+				{Label: f.SDK.I18n("test"), Value: "dice/workspace-test=true"},
+				{Label: f.SDK.I18n("staging"), Value: "dice/workspace-staging=true"},
+				{Label: f.SDK.I18n("prod"), Value: "dice/workspace-prod=true"},
+			},
+		},
+		{
+			Key:   "service",
+			Label: f.SDK.I18n("service"),
+			Type:  "select",
+			Options: []Option{
+				{Label: f.SDK.I18n("stateful-service"), Value: "dice/stateful-service=true"},
+				{Label: f.SDK.I18n("stateless-service"), Value: "dice/stateless-service=true"},
+				{Label: f.SDK.I18n("location-cluster-service"), Value: "dice/location-cluster-service=true"},
+			},
+		},
+		{
+			Key:   "job",
+			Label: f.SDK.I18n("job"),
+			Type:  "select",
+			Options: []Option{
+				{Label: f.SDK.I18n("cicd-job"), Value: "dice/job=true"},
+				{Label: f.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"},
+			},
+		},
+		{
+			Key:   "other",
+			Label: f.SDK.I18n("other"),
+			Type:  "select",
+			Options: append([]Option{
+				{Label: f.SDK.I18n("lb"), Value: "dice/lb"},
+				{Label: f.SDK.I18n("platform"), Value: "dice/platform"},
+			}, customOps...),
+		},
+		{Key: "Q", Type: "input", Placeholder: "请输入"},
+	}...,
+	)
 	p := Props{
 		LabelWidth: 40,
-		Fields: []Field{
-			{
-				Key:   "env",
-				Label: f.SDK.I18n("env"),
-				Type:  "select",
-				Options: []Option{
-					{Label: f.SDK.I18n("dev"), Value: "dev"},
-					{Label: f.SDK.I18n("test"), Value: "test"},
-					{Label: f.SDK.I18n("staging"), Value: "staging"},
-					{Label: f.SDK.I18n("prod"), Value: "prod"},
-				},
-			},
-			{
-				Key:   "service",
-				Label: f.SDK.I18n("service"),
-				Type:  "select",
-				Options: []Option{
-					{Label: f.SDK.I18n("stateful"), Value: "stateful"},
-					{Label: f.SDK.I18n("stateless"), Value: "stateless"},
-				},
-			},
-			{
-				Key:   "packjob",
-				Label: f.SDK.I18n("packjob"),
-				Type:  "select",
-				Options: []Option{
-					{Label: "pack-job", Value: "packJob"},
-				},
-			},
-			{
-				Key:   "other",
-				Label: f.SDK.I18n("other"),
-				Type:  "select",
-				Options: []Option{
-					{Label: f.SDK.I18n("cluster-service"), Value: "cluster-service"},
-					{Label: f.SDK.I18n("custom"), Value: "custom"},
-					{Label: f.SDK.I18n("mono"), Value: "mono"},
-					{Label: f.SDK.I18n("cordon"), Value: "cordon"},
-					{Label: f.SDK.I18n("drain"), Value: "drain"},
-					{Label: f.SDK.I18n("platform"), Value: "platform"},
-				},
-			},
-			{Key: "Q", Type: "input", Placeholder: f.SDK.I18n("placeholderFilterByNodeName")},
-		},
+		Fields:     fields,
 	}
 	return p
 }

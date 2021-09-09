@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
@@ -73,13 +72,13 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 					return err
 				}
 			}
-		case common.CMPDashboardUnfreezeNode:
-			err := mt.UnFreezeNode(mt.State.SelectedRowKeys)
+		case common.CMPDashboardUncordonNode:
+			err := mt.UncordonNode(mt.State.SelectedRowKeys)
 			if err != nil {
 				return err
 			}
-		case common.CMPDashboardFreezeNode:
-			err := mt.FreezeNode(mt.State.SelectedRowKeys)
+		case common.CMPDashboardCordonNode:
+			err := mt.CordonNode(mt.State.SelectedRowKeys)
 			if err != nil {
 				return err
 			}
@@ -128,9 +127,9 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	requestQuantity, _ := resource.ParseQuantity(requestStr)
 	resp[0].Total = float64(limitQuantity.Value())
 	resp[0].Request = float64(requestQuantity.Value())
-	distribution = mt.GetDistributionValue(resp[0])
-	usage = mt.GetUsageValue(resp[0])
-	dr = mt.GetDistributionRate(resp[0])
+	distribution = mt.GetDistributionValue(resp[0], table.Memory)
+	usage = mt.GetUsageValue(resp[0], table.Memory)
+	dr = mt.GetDistributionRate(resp[0], table.Memory)
 	role := c.StringSlice("metadata", "fields")[2]
 	ip := c.StringSlice("metadata", "fields")[5]
 	if role == "<none>" {
@@ -165,7 +164,7 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Tip:        dr.Text,
 		},
 		Operate:         mt.GetOperate(c.String("id")),
-		BatchOperations: []string{"delete", "freeze", "unfreeze"},
+		BatchOperations: []string{"cordon", "uncordon"},
 	}
 	return ri, nil
 }
@@ -174,7 +173,7 @@ func (mt *MemInfoTable) getProps() {
 	mt.Props = map[string]interface{}{
 		"rowKey": "id",
 		"columns": []table.Columns{
-			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
+			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true, Width: 340},
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: mt.SDK.I18n("role"), Sortable: true, Width: 120},
@@ -187,7 +186,7 @@ func (mt *MemInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"freeze", "unfreeze"},
+		"batchOperations": []string{"cordon", "cordon"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 

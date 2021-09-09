@@ -39,8 +39,8 @@ const (
 	// usage rate , distribution rate , usage percent of distribution
 	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip ORDER BY time DESC LIMIT 1`
 	NodeMemoryUsageSelectStatement = `SELECT mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  ORDER BY time DESC LIMIT 1`
-	PodCpuUsageSelectStatement     = `SELECT cpu_usage_percent::field FROM docker_container_summary WHERE pod_name::tag=$pod_name ORDER BY time DESC LIMIT 1`
-	PodMemoryUsageSelectStatement  = `SELECT mem_usage_percent::field FROM docker_container_summary WHERE pod_name::tag=$pod_name ORDER BY time DESC LIMIT 1`
+	PodCpuUsageSelectStatement     = `SELECT round_float(sum(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name podsandbox != true ORDER BY time DESC LIMIT 1`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(sum(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and podsandbox != true ORDER BY time DESC LIMIT 1`
 
 	Memory = "memory"
 	Cpu    = "cpu"

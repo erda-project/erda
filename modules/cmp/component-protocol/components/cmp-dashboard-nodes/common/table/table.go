@@ -82,6 +82,7 @@ type Sorter struct {
 
 type Scroll struct {
 	X int `json:"x,omitempty"`
+	Y int `json:"y,omitempty"`
 }
 
 type RowItem struct {
@@ -188,9 +189,9 @@ type GetRowItem interface {
 	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
 }
 
-func (t *Table) GetUsageValue(metricsData apistructs.MetricsData) DistributionValue {
+func (t *Table) GetUsageValue(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Used, metricsData.Total),
+		Text:    t.GetScaleValue(metricsData.Used, metricsData.Total, resourceType),
 		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
 	}
 }
@@ -226,17 +227,36 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	return ss, nil
 }
 
-func (t *Table) GetDistributionValue(metricsData apistructs.MetricsData) DistributionValue {
+func (t *Table) GetDistributionValue(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Request, metricsData.Total),
+		Text:    t.GetScaleValue(metricsData.Request, metricsData.Total, resourceType),
 		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
 	}
 }
 
-func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData) DistributionValue {
+func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    fmt.Sprintf("%f/%f", metricsData.Used, metricsData.Request),
+		Text:    t.GetScaleValue(metricsData.Used, metricsData.Request, resourceType),
 		Percent: common.GetPercent(metricsData.Used, metricsData.Request),
+	}
+}
+
+func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
+	level := []string{"K", "M", "G", "T"}
+	i := 0
+	switch resourceType {
+	case Memory:
+		for ; a > 1024 && b > 1024 && i < 4; i++ {
+			a /= 1024
+			b /= 1024
+		}
+		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i]) + "i"
+	default:
+		for ; a > 1000 && b > 1000 && i < 4; i++ {
+			a /= 1000
+			b /= 1000
+		}
+		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i])
 	}
 }
 
@@ -342,7 +362,7 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 	return nodes, nil
 }
 
-func (t *Table) FreezeNode(nodeNames []string) error {
+func (t *Table) CordonNode(nodeNames []string) error {
 	for _, name := range nodeNames {
 		req := &apistructs.SteveRequest{
 			UserID:      t.SDK.Identity.UserID,
@@ -359,7 +379,7 @@ func (t *Table) FreezeNode(nodeNames []string) error {
 	return nil
 }
 
-func (t *Table) UnFreezeNode(nodeNames []string) error {
+func (t *Table) UncordonNode(nodeNames []string) error {
 	for _, name := range nodeNames {
 		req := &apistructs.SteveRequest{
 			UserID:      t.SDK.Identity.UserID,
@@ -399,14 +419,14 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 			Key:    "changeSort",
 			Reload: true,
 		},
-		"freeze": {
-			Key:    "freeze",
+		"cordon": {
+			Key:    "cordon",
 			Reload: true,
-			Text:   t.SDK.I18n("freeze"),
+			Text:   t.SDK.I18n("cordon"),
 		},
-		"unfreeze": {
-			Key:    "unfreeze",
-			Text:   t.SDK.I18n("unfreeze"),
+		"uncordon": {
+			Key:    "uncordon",
+			Text:   t.SDK.I18n("uncordon"),
 			Reload: true,
 		},
 	}
@@ -420,42 +440,56 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 func (t *Table) GetNodeLabels(labels data.Object) []label.Label {
 	labelValues := make([]label.Label, 0)
 	for key, value := range labels {
+		l := fmt.Sprintf("%s=%s", key, value)
+		group, displayName := t.GetLabelGroupAndDisplayName(l)
 		lv := label.Label{
-			Value: fmt.Sprintf("%s=%s", key, value),
-			Group: t.GetLabelGroup(key),
+			Value: l,
+			Name:  displayName,
+			Group: group,
 		}
 		labelValues = append(labelValues, lv)
 	}
+	sort.Slice(labelValues, func(i, j int) bool {
+		return labelValues[i].Group < labelValues[j].Group
+	})
 	return labelValues
 }
 
-func (t *Table) GetLabelGroup(label string) string {
-	ls := []string{
-		"dev", "test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
-	}
+func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
+	//ls := []string{
+	//	"dice/workspace-dev", "dice/workspace-test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
+	//}
 	groups := make(map[string]string)
-	groups["dev"] = "env"
-	groups["test"] = "env"
-	groups["staging"] = "env"
-	groups["prod"] = "env"
+	groups["dice/workspace-dev=true"] = t.SDK.I18n("env")
+	groups["dice/workspace-test=true"] = t.SDK.I18n("env")
+	groups["dice/workspace-staging=true"] = t.SDK.I18n("env")
+	groups["dice/workspace-prod=true"] = t.SDK.I18n("env")
 
-	groups["stateful"] = "service"
-	groups["stateless"] = "service"
+	groups["dice/stateful-service=true"] = t.SDK.I18n("service")
+	groups["dice/stateless-service=true"] = t.SDK.I18n("service")
+	groups["dice/location-cluster-service=true"] = t.SDK.I18n("service")
 
-	groups["packJob"] = "packjob"
+	groups["dice/job=true"] = t.SDK.I18n("job")
+	groups["dice/bigdata-job=true"] = t.SDK.I18n("job")
 
-	groups["cluster-service"] = "other"
-	groups["mono"] = "other"
-	groups["cordon"] = "other"
-	groups["drain"] = "other"
-	groups["platform"] = "other"
+	groups["dice/lb=true"] = t.SDK.I18n("other")
+	groups["dice/platform=true"] = t.SDK.I18n("other")
 
-	for _, l := range ls {
-		if strings.Contains(label, l) {
-			return groups[l]
-		}
+	if group, ok := groups[label]; ok {
+		idx := strings.Index(label, "=true")
+		return t.SDK.I18n(group), t.SDK.I18n(label[5:idx])
 	}
-	return "custom"
+
+	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
+		idx := strings.Index(label, "=true")
+		return t.SDK.I18n("enterprise"), t.SDK.I18n(label[5:idx])
+	}
+	otherDisplayName := label
+	if label == "dice/lb=true" || label == "dice/platform=true" {
+		idx := strings.Index(label, "=true")
+		otherDisplayName = t.SDK.I18n(label[5:idx])
+	}
+	return t.SDK.I18n("other"), otherDisplayName
 }
 
 func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
@@ -474,11 +508,11 @@ func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
 		},
 		"delete": {
 			Key:      "deleteLabel",
-			Reload:   false,
-			FillMeta: "label",
-			Meta: map[string]string{
+			Reload:   true,
+			FillMeta: "dlabel",
+			Meta: map[string]interface{}{
 				"recordId": rowId,
-				"label":    "",
+				"dlabel":   label.Label{Value: ""},
 			},
 		},
 	}
@@ -518,8 +552,6 @@ func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
 		Operations: t.GetLabelOperation(id),
 	}
 	return []interface{}{[]interface{}{nl}, []interface{}{nt}}
-
-	//return []interface{}{nl, nt}
 }
 
 func (t *Table) GetOperate(id string) Operate {

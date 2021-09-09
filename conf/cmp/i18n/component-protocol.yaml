@@ -23,7 +23,7 @@ zh:
  workspace-dev: 开发环境
  workspace-test: 测试环境
  workspace-staging: 预发环境
- workspace-production: 生产环境
+ workspace-prod: 生产环境
  addons: 扩展组件
  pipelines: 流水线
  default: 默认
@@ -66,18 +66,23 @@ zh:
  jobDuration: 运行时间
  schedule: 运行计划
  lastSchedule: 上次运行时间
+
+ # cmp-dashboard-nodes
  node-list: 节点列表
  env: 环境
- platform: 平台
+ platform: 平台组件
  service: 服务
+ cicd-job: CICD任务
+ bigdata-job: 大数据任务
+ lb: 负载均衡
  job: 任务
  other: 其他
  os: 系统
  nodeIp: IP
- allocated: 已分配
- cannot-allocated: 不可分配
- free-allocate: 可分配
- cpu-analysis: CPU 分析
+ Allocated: 已分配
+ Cannot-Allocate: 不可分配
+ Free-Allocate: 剩余分配
+ cpu-analysis: Cpu 分析
  mem-analysis: 内存分析
  pod-analysis: Pod 分析
  nodeInfo: 节点信息
@@ -135,7 +140,7 @@ zh:
  stateless: 无状态服务
  packjob: 构建
  mono: 独占
- cordon: 锁住节点
+ cordon: 冻结
  uncordon: 解冻
  cluster-service: 集群服务
  drain: 驱逐节点
@@ -152,6 +157,14 @@ zh:
  podInfoTitle: Pod 详情
  podIP: Pod IP
  log: 查看日志
+ enterprise: 企业
+ location-cluster-service: 集群级服务
+ stateless-service: 无状态服务
+ stateful-service: 有状态服务
+ SchedulingDisabled: 冻结
+ label-value: 标签值
+ begin and end with character and number,include: 以字母或数字开头或结尾，可以包含
+ e.g.: 例如
  Cpu Chart: CPU
  annotation: 注释
  containerRuntime: 容器运行时

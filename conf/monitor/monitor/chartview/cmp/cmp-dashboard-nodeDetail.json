@@ -14,6 +14,12 @@
         "i": "view-gFiqDRf8",
         "view": {
           "title": "cpu usage",
+          "i18n": {
+            "title": {
+              "en": "cpu usage",
+              "zh": "cpu 使用率"
+            }
+          },
           "description": "",
           "chartType": "chart:line",
           "dataSourceType": "api",
@@ -128,6 +134,12 @@
         "i": "view-EYTeXEO3",
         "view": {
           "title": "memory usage",
+          "i18n": {
+            "title": {
+              "en": "memory usage",
+              "zh": "内存使用率"
+            }
+          },
           "description": "",
           "chartType": "chart:line",
           "dataSourceType": "api",
@@ -241,7 +253,13 @@
         "y": 18,
         "i": "view-u2XKlluN",
         "view": {
-          "title": "load rate5",
+          "title": "disk load rate",
+          "i18n": {
+            "title": {
+              "en": "disk load rate",
+              "zh": "磁盘负载速率"
+            }
+          },
           "description": "",
           "chartType": "chart:line",
           "dataSourceType": "api",
@@ -356,6 +374,12 @@
         "i": "view-JXTWYiZP",
         "view": {
           "title": "io rate",
+          "i18n": {
+            "title": {
+              "en": "disk io rate",
+              "zh": "磁盘吞吐速率"
+            }
+          },
           "description": "",
           "chartType": "chart:line",
           "dataSourceType": "api",
@@ -482,6 +506,12 @@
         "i": "view-QWRT8bM3",
         "view": {
           "title": "network io",
+          "i18n": {
+            "title": {
+              "en": "network IO",
+              "zh": "网络吞吐速率"
+            }
+          },
           "description": "",
           "chartType": "chart:line",
           "dataSourceType": "api",
