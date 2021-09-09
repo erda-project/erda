@@ -34,17 +34,17 @@ type runtimeService struct {
 func (s *runtimeService) ChangeRuntime(ctx context.Context, req *pb.ChangeRuntimeRequest) (resp *pb.ChangeRuntimeResponse, err error) {
 	service := runtime_service.Service.Clone(ctx)
 	reqDto := &dto.RuntimeServiceReqDto{
-		OrgId:                 apis.GetOrgID(ctx),
-		ProjectId:             req.ProjectID,
+		OrgId:                 req.OrgId,
+		ProjectId:             req.ProjectId,
 		Env:                   req.Env,
 		ClusterName:           req.ClusterName,
-		RuntimeId:             req.RuntimeID,
+		RuntimeId:             req.RuntimeId,
 		RuntimeName:           req.RuntimeName,
 		ReleaseId:             req.ReleaseId,
 		ServiceGroupNamespace: req.ServiceGroupNamespace,
 		ProjectNamespace:      req.ProjectNamespace,
 		ServiceGroupName:      req.ServiceGroupName,
-		AppId:                 req.AppID,
+		AppId:                 req.AppId,
 		AppName:               req.AppName,
 		UseApigw:              req.UseApigw,
 	}
