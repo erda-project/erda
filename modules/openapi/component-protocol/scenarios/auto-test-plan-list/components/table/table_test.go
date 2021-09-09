@@ -15,12 +15,17 @@
 package table
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"golang.org/x/net/context"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func Test_ConvertSortData(t *testing.T) {
@@ -76,4 +81,46 @@ func Test_executeTime(t *testing.T) {
 		executeTime := convertExecuteTime(data[i])
 		assert.Equal(t, executeTime, want[i])
 	}
+}
+
+func Test_Render(t *testing.T) {
+	bdl := &bundle.Bundle{}
+	cb := protocol.ContextBundle{
+		Bdl: bdl,
+		InParams: map[string]interface{}{
+			"projectId": 1,
+		},
+	}
+	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), cb)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PagingTestPlansV2",
+		func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
+			list := []*apistructs.TestPlanV2{
+				{
+					PassRate: 10,
+				},
+				{
+					PassRate: 0,
+				},
+			}
+
+			return &apistructs.TestPlanV2PagingResponseData{
+				List: list,
+			}, nil
+		})
+	defer monkey.UnpatchAll()
+	p := &TestPlanManageTable{}
+	c := &apistructs.Component{}
+	gs := &apistructs.GlobalStateData{}
+	err := p.Render(ctx, c, apistructs.ComponentProtocolScenario{},
+		apistructs.ComponentEvent{
+			Operation:     "ooo",
+			OperationData: nil,
+		}, gs)
+	assert.NoError(t, err)
+	list := c.Data["list"].([]TableItem)
+	want := []string{"10", "0"}
+	for i := range list {
+		assert.Equal(t, list[i].PassRate.Value, want[i])
+	}
+
 }

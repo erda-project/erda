@@ -44,8 +44,8 @@ type TableItem struct {
 }
 
 type PassRate struct {
-	RenderType string  `json:"renderType"`
-	Value      float64 `json:"value"`
+	RenderType string `json:"renderType"`
+	Value      string `json:"value"`
 }
 
 type Operate struct {
@@ -190,7 +190,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			},
 			PassRate: PassRate{
 				RenderType: "progress",
-				Value:      data.PassRate,
+				Value:      fmt.Sprintf("%.f", data.PassRate),
 			},
 			ExecuteTime: convertExecuteTime(data),
 		}
