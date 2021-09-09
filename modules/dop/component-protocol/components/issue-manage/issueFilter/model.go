@@ -22,23 +22,28 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {
-	sdk           *cptype.SDK
-	bdl           *bundle.Bundle
-	issueStateSvc *issuestate.IssueState
+	sdk              *cptype.SDK
+	bdl              *bundle.Bundle
+	issueStateSvc    *issuestate.IssueState
+	issueFilterBmSvc *issuefilterbm.IssueFilterBookmark
 	filter.CommonFilter
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
 	base.DefaultProvider
+	Bms             []issuefilterbm.MyFilterBm `json:"-"` // bookmarks
+	FlushOptsFromBm string                     `json:"-"` // bm ID
 }
 
 // FrontendConditions 前端支持的过滤参数
 type FrontendConditions struct {
+	FilterID           string                        `json:"filterID,omitempty"`
 	IterationIDs       []int64                       `json:"iterationIDs,omitempty"`
 	Title              string                        `json:"title,omitempty"`
 	StateBelongs       []apistructs.IssueStateBelong `json:"stateBelongs,omitempty"`
@@ -58,11 +63,33 @@ type FrontendConditions struct {
 func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fixedIssueType string, state State) FrontendConditionProps {
 	conditionProps := []filter.PropCondition{
 		{
+			Key:        PropConditionKeyFilterID,
+			Label:      cputil.I18n(ctx, "my-filter-bookmark"),
+			EmptyText:  cputil.I18n(ctx, "empty-filter-bookmark"),
+			Fixed:      true,
+			ShowIndex:  1,
+			HaveFilter: true,
+			Split:      true,
+			CustomProps: map[string]interface{}{
+				"mode": "single",
+			},
+			QuickAdd: filter.QuickAdd{
+				OperationKey: OperationKeySaveFilter,
+				Show:         false,
+			},
+			QuickDelete: filter.QuickDelete{
+				OperationKey: OperationKeyDeleteFilter,
+			},
+			Type:        filter.PropConditionTypeSelect,
+			Placeholder: cputil.I18n(ctx, "choose-filter-bookmark"),
+			Options:     nil,
+		},
+		{
 			Key:         PropConditionKeyIterationIDs,
 			Label:       cputil.I18n(ctx, "sprint"),
 			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
-			ShowIndex:   1,
+			ShowIndex:   2,
 			HaveFilter:  true,
 			Type:        filter.PropConditionTypeSelect,
 			Placeholder: cputil.I18n(ctx, "choose-sprint"),
@@ -73,7 +100,7 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 			Label:       cputil.I18n(ctx, "title"),
 			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
-			ShowIndex:   2,
+			ShowIndex:   3,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeInput,
 			Placeholder: cputil.I18n(ctx, "please-enter-title-or-id"),
@@ -315,6 +342,7 @@ func convertAllConditions(ctx context.Context, stateMap map[apistructs.IssueType
 }
 
 var (
+	PropConditionKeyFilterID           filter.PropConditionKey = "filterID" // special, need emit it when hashing filter
 	PropConditionKeyIterationIDs       filter.PropConditionKey = "iterationIDs"
 	PropConditionKeyTitle              filter.PropConditionKey = "title"
 	PropConditionKeyStateBelongs       filter.PropConditionKey = "stateBelongs"
@@ -337,6 +365,8 @@ func GetAllOperations() map[filter.OperationKey]filter.Operation {
 		OperationKeyAssigneeSelectMe: {Key: OperationKeyAssigneeSelectMe, Reload: true},
 		OperationKeyCreatorSelectMe:  {Key: OperationKeyCreatorSelectMe, Reload: true},
 		OperationKeyOwnerSelectMe:    {Key: OperationKeyOwnerSelectMe, Reload: true},
+		OperationKeySaveFilter:       {Key: OperationKeySaveFilter, Reload: true, FillMeta: "name"},
+		OperationKeyDeleteFilter:     {Key: OperationKeyDeleteFilter, Reload: true, FillMeta: "id"},
 	}
 	return allOperations
 }
@@ -346,4 +376,6 @@ var (
 	OperationKeyCreatorSelectMe  filter.OperationKey = "creatorSelectMe"
 	OperationKeyAssigneeSelectMe filter.OperationKey = "assigneeSelectMe"
 	OperationKeyOwnerSelectMe    filter.OperationKey = "ownerSelectMe"
+	OperationKeySaveFilter       filter.OperationKey = "saveFilter"
+	OperationKeyDeleteFilter     filter.OperationKey = "deleteFilter"
 )

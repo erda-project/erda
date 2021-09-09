@@ -15,6 +15,7 @@
 package types
 
 const (
-	GlobalCtxKeyBundle = "__bundle__"
-	IssueStateService  = "issueState"
+	GlobalCtxKeyBundle   = "__bundle__"
+	IssueStateService    = "issueState"
+	IssueFilterBmService = "issueFilterBookmark"
 )

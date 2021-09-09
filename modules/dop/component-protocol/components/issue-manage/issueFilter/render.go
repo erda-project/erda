@@ -18,12 +18,16 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/conf"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (i *ComponentFilter) GenComponentState(c *cptype.Component) error {
@@ -45,6 +49,26 @@ func (i *ComponentFilter) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
+type SaveMeta struct {
+	Name string `json:"name"`
+}
+
+type DeleteMeta struct {
+	ID string `json:"id"`
+}
+
+func getMeta(ori map[string]interface{}, dst interface{}) error {
+	m := ori["meta"]
+	if m == nil {
+		return nil
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, dst)
+}
+
 func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	// init filter
 	if err := f.InitFromProtocol(ctx, c); err != nil {
@@ -55,6 +79,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	if err := f.initFilterBms(); err != nil {
+		return err
+	}
+
 	// operation
 	switch event.Operation.String() {
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
@@ -62,13 +90,55 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			return err
 		}
 	case f.Operations[OperationKeyFilter].Key.String():
-		// use rendering
+		if f.State.FrontendChangedKey == string(PropConditionKeyFilterID) {
+			f.FlushOptsFromBm = f.State.FrontendConditionValues.FilterID
+		} else {
+			f.FlushOptsFromBm = ""
+		}
+		// use rendering later `PostSetState`
 	case f.Operations[OperationKeyCreatorSelectMe].Key.String():
 		f.State.FrontendConditionValues.CreatorIDs = []string{f.sdk.Identity.UserID}
 	case f.Operations[OperationKeyAssigneeSelectMe].Key.String():
 		f.State.FrontendConditionValues.AssigneeIDs = []string{f.sdk.Identity.UserID}
 	case f.Operations[OperationKeyOwnerSelectMe].Key.String():
 		f.State.FrontendConditionValues.OwnerIDs = []string{f.sdk.Identity.UserID}
+	case f.Operations[OperationKeySaveFilter].Key.String():
+		if len(f.Bms) >= conf.MaxIssueFilterBm() {
+			// wont go to here
+			return fmt.Errorf("issue filter bookmarks execced limit: %d", conf.MaxIssueFilterBm())
+		}
+		var meta SaveMeta
+		if err := getMeta(event.OperationData, &meta); err != nil {
+			return err
+		}
+		pageKey := f.issueFilterBmSvc.GenPageKey(f.InParams.FrontendFixedIteration, f.InParams.FrontendFixedIssueType)
+		filterID, err := f.issueFilterBmSvc.Create(&dao.IssueFilterBookmark{
+			Name:         meta.Name,
+			UserID:       f.sdk.Identity.UserID,
+			ProjectID:    strutil.String(f.InParams.ProjectID),
+			PageKey:      pageKey,
+			FilterEntity: f.InParams.FrontendUrlQuery,
+		})
+		if err != nil {
+			return err
+		}
+		f.State.FrontendConditionValues.FilterID = filterID
+		// re-init bookmarks
+		if err := f.initFilterBms(); err != nil {
+			return err
+		}
+	case f.Operations[OperationKeyDeleteFilter].Key.String():
+		var meta DeleteMeta
+		if err := getMeta(event.OperationData, &meta); err != nil {
+			return err
+		}
+		if err := f.issueFilterBmSvc.Delete(meta.ID); err != nil {
+			return err
+		}
+		// re-init bookmarks
+		if err := f.initFilterBms(); err != nil {
+			return err
+		}
 	}
 
 	if err := f.PostSetState(); err != nil {
@@ -84,6 +154,13 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 
 func (f *ComponentFilter) PostSetState() error {
 	var err error
+
+	if f.FlushOptsFromBm != "" {
+		err = f.flushOptsByFilterID(f.FlushOptsFromBm)
+		if err != nil {
+			return err
+		}
+	}
 
 	// url query
 	f.State.Base64UrlQueryParams, err = f.generateUrlQueryParams()
@@ -109,6 +186,12 @@ func (f *ComponentFilter) PostSetState() error {
 }
 
 func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
+	filterID := f.State.FrontendConditionValues.FilterID
+	f.State.FrontendConditionValues.FilterID = "" // remove filterID, it's not filter entity
+	defer func() {
+		f.State.FrontendConditionValues.FilterID = filterID // restore
+	}()
+
 	fb, err := json.Marshal(f.State.FrontendConditionValues)
 	if err != nil {
 		return "", err
@@ -158,16 +241,54 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 
 	// 初始化时从 url query params 中获取已经存在的过滤参数
 	if f.InParams.FrontendUrlQuery != "" {
-		b, err := base64.StdEncoding.DecodeString(f.InParams.FrontendUrlQuery)
-		if err != nil {
-			return err
-		}
-		if err := json.Unmarshal(b, &f.State.FrontendConditionValues); err != nil {
+		filterID := f.determineFilterID(f.InParams.FrontendUrlQuery)
+		if err := f.flushOptsByFilter(filterID, f.InParams.FrontendUrlQuery); err != nil {
 			return err
 		}
 	} else {
 		f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]
 	}
 
+	return nil
+}
+
+func (f *ComponentFilter) determineFilterID(filterEntity string) string {
+	for _, bm := range f.Bms {
+		if bm.FilterEntity == filterEntity {
+			return bm.ID
+		}
+	}
+	return ""
+}
+
+func (f *ComponentFilter) flushOptsByFilterID(filterID string) error {
+	for _, bm := range f.Bms {
+		if bm.ID == filterID {
+			return f.flushOptsByFilter(bm.ID, bm.FilterEntity)
+		}
+	}
+	return nil
+}
+
+func (f *ComponentFilter) flushOptsByFilter(filterID, filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	f.State.FrontendConditionValues = FrontendConditions{} // clear exist value
+	if err := json.Unmarshal(b, &f.State.FrontendConditionValues); err != nil {
+		return err
+	}
+	f.State.FrontendConditionValues.FilterID = filterID
+	return nil
+}
+
+func (f *ComponentFilter) initFilterBms() error {
+	pageKey := f.issueFilterBmSvc.GenPageKey(f.InParams.FrontendFixedIteration, f.InParams.FrontendFixedIssueType)
+	mp, err := f.issueFilterBmSvc.ListMyBms(f.sdk.Identity.UserID, strutil.String(f.InParams.ProjectID))
+	if err != nil {
+		return err
+	}
+	f.Bms = mp.GetByPageKey(pageKey)
 	return nil
 }

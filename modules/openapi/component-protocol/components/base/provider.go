@@ -22,6 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 )
 
+var compCreatorMap = map[string]protocol.RenderCreator{}
+
 type DefaultProvider struct{}
 
 // Render is empty implement.
@@ -36,8 +38,8 @@ func (p *DefaultProvider) Init(ctx servicehub.Context) error {
 		Scenario: scenario,
 		CompName: compName,
 		RenderC: func() protocol.CompRender {
-			if c, ok := ctx.Provider().(protocol.CompRender); ok {
-				return c
+			if c, ok := compCreatorMap[ctx.Key()]; ok {
+				return c()
 			}
 			return &DefaultProvider{}
 		},
@@ -61,4 +63,10 @@ func InitProviderWithCreator(scenario, compName string, creator servicehub.Creat
 		creator = func() servicehub.Provider { return &DefaultProvider{} }
 	}
 	servicehub.Register(MakeComponentProviderName(scenario, compName), &servicehub.Spec{Creator: creator})
+	compCreatorMap[MakeComponentProviderName(scenario, compName)] = func() protocol.CompRender {
+		if r, ok := creator().(protocol.CompRender); ok {
+			return r
+		}
+		return &DefaultProvider{}
+	}
 }
