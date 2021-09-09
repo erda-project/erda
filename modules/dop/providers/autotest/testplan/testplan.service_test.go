@@ -19,10 +19,14 @@ import (
 	reflect "reflect"
 	testing "testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 )
 
 func Test_TestPlanService_UpdateTestPlanV2ByHook(t *testing.T) {
@@ -88,4 +92,67 @@ func Test_convertTime(t *testing.T) {
 	s := time.Format("2006-01-02 15:04:05")
 	want := "2020-01-01 20:00:00"
 	assert.Equal(t, want, s)
+}
+
+func Test_processEvent(t *testing.T) {
+	svc := &autotestv2.Service{}
+	bdl := &bundle.Bundle{}
+	p := &TestPlanService{
+		bdl:         bdl,
+		autoTestSvc: svc,
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "GetTestPlanV2",
+		func(svc *autotestv2.Service, testPlanID uint64, identityInfo apistructs.IdentityInfo) (*apistructs.TestPlanV2, error) {
+			return &apistructs.TestPlanV2{
+				Name:      "test",
+				ProjectID: 1,
+			}, nil
+		})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryNotifiesBySource",
+		func(b *bundle.Bundle, orgID string, sourceType, sourceID, itemName, label string, clusterNames ...string) ([]*apistructs.NotifyDetail, error) {
+			return []*apistructs.NotifyDetail{
+				{
+					NotifyGroup: &apistructs.NotifyGroup{},
+					NotifyItems: []*apistructs.NotifyItem{
+						{},
+					},
+				},
+			}, nil
+		})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateGroupNotifyEvent",
+		func(b *bundle.Bundle, groupNotifyRequest apistructs.EventBoxGroupNotifyRequest) error {
+			want := map[string]string{
+				"org_name":        "org",
+				"project_name":    "project",
+				"plan_name":       "test",
+				"pass_rate":       "10.12",
+				"execute_minutes": "20",
+				"api_total_num":   "100",
+			}
+			assert.True(t, reflect.DeepEqual(want, groupNotifyRequest.Params))
+			return nil
+		})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProject",
+		func(b *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{
+				Name:  "project",
+				OrgID: uint64(1),
+				ID:    uint64(1),
+			}, nil
+		})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
+		func(b *bundle.Bundle, idOrName interface{}) (*apistructs.OrgDTO, error) {
+			return &apistructs.OrgDTO{
+				Name: "org",
+			}, nil
+		})
+
+	err := p.processEvent(&pb.Content{
+		TestPlanID:     1,
+		ExecuteTime:    "2020-10-10",
+		PassRate:       10.123,
+		ExecuteMinutes: 20.333,
+		ApiTotalNum:    100,
+	})
+	assert.NoError(t, err)
 }

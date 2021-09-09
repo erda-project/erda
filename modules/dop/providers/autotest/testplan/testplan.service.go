@@ -93,10 +93,12 @@ func (s *TestPlanService) processEvent(req *pb.Content) error {
 		}
 		notifyItem := notifyDetail.NotifyItems[0]
 		params := map[string]string{
-			"org_name":     org.Name,
-			"project_name": project.Name,
-			"plan_name":    testPlan.Name,
-			"pass_rate":    fmt.Sprintf("%.2f", req.PassRate),
+			"org_name":        org.Name,
+			"project_name":    project.Name,
+			"plan_name":       testPlan.Name,
+			"pass_rate":       fmt.Sprintf("%.2f", req.PassRate),
+			"execute_minutes": fmt.Sprintf("%.f", req.ExecuteMinutes),
+			"api_total_num":   fmt.Sprintf("%d", req.ApiTotalNum),
 		}
 		marshal, _ := json.Marshal(params)
 		logrus.Debugf("testplan params :%s", string(marshal))
