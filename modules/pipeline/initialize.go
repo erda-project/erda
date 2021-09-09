@@ -142,6 +142,8 @@ func (p *provider) do() error {
 		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
+	p.TriggerService.SetPipelineSvc(pipelineSvc)
+
 	// todo resolve cycle import here through better module architecture
 	pipelineFun := &reconciler.PipelineSvcFunc{
 		CronNotExecuteCompensate:                pipelineSvc.CronNotExecuteCompensateById,
