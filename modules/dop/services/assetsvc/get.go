@@ -17,6 +17,7 @@ package assetsvc
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -373,7 +374,7 @@ func (svc *Service) GetMyClient(req *apistructs.GetClientReq) (*apistructs.Clien
 		return nil, apierrors.GetClient.InternalError(err)
 	}
 
-	credentials, err := bdl.Bdl.GetClientCredentials(model.ClientID)
+	credentials, err := bdl.Bdl.GetClientCredentials(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, model.ClientID)
 	if err != nil {
 		return nil, apierrors.GetClient.InternalError(err)
 	}
@@ -407,7 +408,7 @@ func (svc *Service) GetContract(req *apistructs.GetContractReq) (*apistructs.Cli
 	}
 
 	// 查询 sk
-	credentials, err := bdl.Bdl.GetClientCredentials(req.URIParams.ClientID)
+	credentials, err := bdl.Bdl.GetClientCredentials(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, req.URIParams.ClientID)
 	if err != nil {
 		return nil, nil, nil, apierrors.GetContract.InternalError(err)
 	}
@@ -449,7 +450,8 @@ func (svc *Service) GetAccess(req *apistructs.GetAccessReq) (map[string]interfac
 	}
 
 	// 查询 tenantGroupID
-	tenantGroupID, err := bdl.Bdl.GetTenantGroupID(access.ProjectID, access.Workspace)
+	tenantGroupID, err := bdl.Bdl.GetTenantGroupID(strconv.FormatUint(req.OrgID, 10),
+		req.Identity.UserID, strconv.FormatUint(access.ProjectID, 10), access.Workspace)
 	if err != nil {
 		logrus.Errorf("failed to GetTenantGroupID, err: %v", err)
 		return nil, apierrors.GetAccess.InternalError(err)
@@ -460,7 +462,7 @@ func (svc *Service) GetAccess(req *apistructs.GetAccessReq) (map[string]interfac
 		endpointBindDomain []string
 		endpointName       string
 	)
-	endpoint, err := bdl.Bdl.GetEndpoint(access.EndpointID)
+	endpoint, err := bdl.Bdl.GetEndpoint(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, access.EndpointID)
 	if err != nil {
 		logrus.Errorf("failed to GetEndpoint, err: %v", err)
 	} else {

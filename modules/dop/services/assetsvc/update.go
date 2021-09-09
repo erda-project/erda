@@ -245,14 +245,16 @@ func (svc *Service) UpdateClient(req *apistructs.UpdateClientReq) (*apistructs.C
 
 	var sk apistructs.SK
 	if req.QueryParams.ResetClientSecret {
-		credentials, err := bdl.Bdl.ResetClientCredentials(model.ClientID)
+		credentials, err := bdl.Bdl.ResetClientCredentials(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			model.ClientID)
 		if err != nil {
 			return nil, nil, apierrors.UpdateClient.InternalError(err)
 		}
 		sk.ClientID = credentials.ClientId
 		sk.ClientSecret = credentials.ClientSecret
 	} else {
-		credentials, err := bdl.Bdl.GetClientCredentials(model.ClientID)
+		credentials, err := bdl.Bdl.GetClientCredentials(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			model.ClientID)
 		if err != nil {
 			return nil, nil, apierrors.UpdateClient.InternalError(err)
 		}
@@ -342,7 +344,8 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 	}
 
 	defer func() {
-		err := svc.createOrUpdateClientLimits(access.EndpointID, client.ClientID, contractID)
+		err := svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			access.EndpointID, client.ClientID, contractID)
 		if err != nil {
 			logrus.Errorf("createOrUpdateClientLimits failed, err:%+v", err)
 		}
@@ -399,14 +402,16 @@ func (svc *Service) updateContractStatus(req *apistructs.UpdateContractReq, clie
 	switch status {
 	case apistructs.ContractApproved:
 		// the manager change the contract status to "approved", call the api-gateway to grant to the client
-		if err := bdl.Bdl.GrantEndpointToClient(client.ClientID, access.EndpointID); err != nil {
+		if err := bdl.Bdl.GrantEndpointToClient(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			client.ClientID, access.EndpointID); err != nil {
 			return err
 		}
 	case apistructs.ContractDisapproved:
 		// do nothing with api-gateway
 	case apistructs.ContractUnapproved:
 		//  call the api-gateway to revoke the grant
-		if err := bdl.Bdl.RevokeEndpointFromClient(client.ClientID, access.EndpointID); err != nil {
+		if err := bdl.Bdl.RevokeEndpointFromClient(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			client.ClientID, access.EndpointID); err != nil {
 			return err
 		}
 	default:
@@ -718,20 +723,24 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 	default:
 		return nil, apierrors.CreateAccess.InvalidParameter("不支持的认证方式")
 	}
-	if err := bdl.Bdl.UpdateEndpoint(access.EndpointID, apistructs.PackageDto{
-		Name:             fmt.Sprintf("%s_%d_%s", access.AssetID, access.Major, access.Workspace),
-		BindDomain:       req.Body.BindDomain,
-		AuthType:         authType,
-		AclType:          apistructs.ACL_ON,
-		Scene:            apistructs.OPENAPI_SCENE,
-		Description:      "creation of endpoint from apim",
-		NeedBindCloudapi: false,
-	}); err != nil {
+	if err := bdl.Bdl.UpdateEndpoint(
+		strconv.FormatUint(req.OrgID, 10),
+		req.Identity.UserID,
+		access.EndpointID, apistructs.PackageDto{
+			Name:             fmt.Sprintf("%s_%d_%s", access.AssetID, access.Major, access.Workspace),
+			BindDomain:       req.Body.BindDomain,
+			AuthType:         authType,
+			AclType:          apistructs.ACL_ON,
+			Scene:            apistructs.OPENAPI_SCENE,
+			Description:      "creation of endpoint from apim",
+			NeedBindCloudapi: false,
+		}); err != nil {
 		return nil, apierrors.UpdateAccess.InternalError(errors.Wrap(err, "failed to UpdateEndpoint"))
 	}
 
 	// 更新路由配置
-	if err := bdl.Bdl.CreateOrUpdateEndpointRootRoute(access.EndpointID, host, path); err != nil {
+	if err := bdl.Bdl.CreateOrUpdateEndpointRootRoute(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+		access.EndpointID, host, path); err != nil {
 		return nil, apierrors.UpdateAccess.InternalError(errors.Wrap(err, "failed to UpdateEndpointRootRoute"))
 	}
 
@@ -903,7 +912,8 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 					continue
 				}
 				svc.contractMsgToUser(req.OrgID, affectedContract.CreatorID, asset.AssetName, affectedClient, ManagerRewriteSLA(sla.Name))
-				err = svc.createOrUpdateClientLimits(access.EndpointID, affectedClient.ClientID, affectedContract.ID)
+				err = svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+					access.EndpointID, affectedClient.ClientID, affectedContract.ID)
 				if err != nil {
 					logrus.Errorf("createOrUpdateClientLimits failed, err:%+v", err)
 				}

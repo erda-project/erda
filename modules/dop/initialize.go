@@ -24,12 +24,14 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/endpoints"
 	"github.com/erda-project/erda/modules/dop/event"
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
@@ -98,6 +100,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 			DB: p.DB,
 		},
 	}
+	dbclient.Set(db.DBEngine)
 	ep, err := p.initEndpoints(db)
 	if err != nil {
 		return err

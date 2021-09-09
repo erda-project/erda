@@ -558,7 +558,7 @@ func (svc *Service) CreateClient(req *apistructs.CreateClientReq) (*apistructs.C
 		return nil, apierrors.CreateClient.InternalError(errors.New("用户名下已有同名客户端"))
 	}
 
-	consumer, err := bdl.Bdl.CreateClientConsumer(req.OrgID, req.Body.Name)
+	consumer, err := bdl.Bdl.CreateClientConsumer(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, req.Body.Name)
 	if err != nil {
 		return nil, apierrors.CreateClient.InternalError(err)
 	}
@@ -629,7 +629,8 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 	}
 
 	// 查询 SK
-	credentials, err := bdl.Bdl.GetClientCredentials(client.ClientID)
+	credentials, err := bdl.Bdl.GetClientCredentials(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+		client.ClientID)
 	if err != nil {
 		logrus.Errorf("failed to GetClientCredentials, err: %v", err)
 		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("查询客户端密钥失败"))
@@ -760,15 +761,18 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 
 		case updatingStatus == apistructs.ContractApproving:
 			// 如果是更新后的状态是"等待授权", 向管理员发送通知
-			go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
+			go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access,
+				RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
 			record.Action += ", 等待审批中"
 
 		case updatingStatus == apistructs.ContractApproved:
 			// 如果更新后的状态是"已授权", 向用户发送通知; 调用网关测的授权
 			go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)
 			record.Action += ", 并自动通过了审批"
-			if err = bdl.Bdl.GrantEndpointToClient(client.ClientID, access.EndpointID); err != nil {
-				err = errors.Wrapf(err, "failed to GrantEndpointToClient, clientID: %s, endpointID: %s", client.ClientID, access.EndpointID)
+			if err = bdl.Bdl.GrantEndpointToClient(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+				client.ClientID, access.EndpointID); err != nil {
+				err = errors.Wrapf(err, "failed to GrantEndpointToClient, clientID: %s, endpointID: %s",
+					client.ClientID, access.EndpointID)
 				return
 			}
 		}
@@ -780,7 +784,8 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 		tx.Commit()
 
 		go func() {
-			err := svc.createOrUpdateClientLimits(access.EndpointID, client.ClientID, contract.ID)
+			err := svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+				access.EndpointID, client.ClientID, contract.ID)
 			if err != nil {
 				logrus.Errorf("create or update client limits failed, err:%+v", err)
 			}
@@ -926,7 +931,8 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 			return nil, errors.Wrap(err, "failed to Create record")
 		}
 
-		if err := bdl.Bdl.GrantEndpointToClient(client.ClientID, access.EndpointID); err != nil {
+		if err := bdl.Bdl.GrantEndpointToClient(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			client.ClientID, access.EndpointID); err != nil {
 			logrus.Errorf("failed to GrantEndpointToClient, err: %v", err)
 			return nil, errors.Wrap(err, "failed to GrantEndpointToClient")
 		}
@@ -935,7 +941,8 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 	tx.Commit()
 
 	go func() {
-		err := svc.createOrUpdateClientLimits(access.EndpointID, client.ClientID, contract.ID)
+		err := svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
+			access.EndpointID, client.ClientID, contract.ID)
 		if err != nil {
 			logrus.Errorf("createOrUpdateClientLimits failed, err:%+v", err)
 		}
@@ -1038,8 +1045,9 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 		return nil, apierrors.CreateAccess.InvalidParameter("不支持的认证方式")
 	}
 	endpointID, err := bdl.Bdl.CreateEndpoint(
-		req.OrgID,
-		req.Body.ProjectID,
+		strconv.FormatUint(req.OrgID, 10),
+		req.Identity.UserID,
+		strconv.FormatUint(req.Body.ProjectID, 10),
 		req.Body.Workspace,
 		apistructs.PackageDto{
 			Name:             fmt.Sprintf("%s_%d_%s", req.Body.AssetID, req.Body.Major, req.Body.Workspace),
@@ -1057,9 +1065,11 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 	}
 
 	// 路由规则
-	if err = bdl.Bdl.CreateOrUpdateEndpointRootRoute(endpointID, host, path); err != nil {
-		_ = bdl.Bdl.DeleteEndpoint(endpointID)
-		return nil, apierrors.CreateAccess.InternalError(errors.Wrapf(err, "failed to CreateOrUpdateEndpointRootRoute, {endpointID:%s, host:%s, path:%s}",
+	if err = bdl.Bdl.CreateOrUpdateEndpointRootRoute(strconv.FormatUint(req.OrgID, 10),
+		req.Identity.UserID, endpointID, host, path); err != nil {
+		_ = bdl.Bdl.DeleteEndpoint(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, endpointID)
+		return nil, apierrors.CreateAccess.InternalError(errors.Wrapf(err,
+			"failed to CreateOrUpdateEndpointRootRoute, {endpointID:%s, host:%s, path:%s}",
 			endpointID, host, path))
 	}
 
@@ -1096,7 +1106,7 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 		ProjectName:     project.Name,
 	}
 	if err := dbclient.Sq().Create(&access).Error; err != nil {
-		_ = bdl.Bdl.DeleteEndpoint(endpointID)
+		_ = bdl.Bdl.DeleteEndpoint(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, endpointID)
 		return nil, apierrors.CreateAccess.InternalError(errors.Wrap(err, "failed to CreateAccess"))
 	}
 

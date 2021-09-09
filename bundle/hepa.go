@@ -16,7 +16,6 @@ package bundle
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -24,7 +23,7 @@ import (
 )
 
 // 创建流量入口
-func (b *Bundle) CreateEndpoint(orgID, projectID uint64, workspace string, packageDto apistructs.PackageDto) (endpointID string, err error) {
+func (b *Bundle) CreateEndpoint(orgID, userID, projectID string, workspace string, packageDto apistructs.PackageDto) (endpointID string, err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -33,8 +32,10 @@ func (b *Bundle) CreateEndpoint(orgID, projectID uint64, workspace string, packa
 	resp, err := b.hc.Post(host).
 		Path("/api/gateway/openapi/packages").
 		Header(httputil.InternalHeader, "bundle").
-		Param("orgId", strconv.FormatUint(orgID, 10)).
-		Param("projectId", strconv.FormatUint(projectID, 10)).
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		Param("orgId", orgID).
+		Param("projectId", projectID).
 		Param("env", workspace).
 		JSONBody(packageDto).Do().JSON(&fetchResp)
 	if err != nil {
@@ -50,7 +51,7 @@ func (b *Bundle) CreateEndpoint(orgID, projectID uint64, workspace string, packa
 }
 
 // 更新流量入口
-func (b *Bundle) UpdateEndpoint(endpointID string, packageDto apistructs.PackageDto) (err error) {
+func (b *Bundle) UpdateEndpoint(orgID, userID, endpointID string, packageDto apistructs.PackageDto) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -59,6 +60,8 @@ func (b *Bundle) UpdateEndpoint(endpointID string, packageDto apistructs.Package
 	resp, err := b.hc.Patch(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/packages/%s", endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		JSONBody(packageDto).Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -72,7 +75,7 @@ func (b *Bundle) UpdateEndpoint(endpointID string, packageDto apistructs.Package
 }
 
 // 删除流量入口
-func (b *Bundle) DeleteEndpoint(endpointID string) (err error) {
+func (b *Bundle) DeleteEndpoint(orgID, userID, endpointID string) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -81,6 +84,8 @@ func (b *Bundle) DeleteEndpoint(endpointID string) (err error) {
 	resp, err := b.hc.Delete(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/packages/%s", endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -94,7 +99,7 @@ func (b *Bundle) DeleteEndpoint(endpointID string) (err error) {
 }
 
 // 获取流量入口详情
-func (b *Bundle) GetEndpoint(endpointID string) (dto *apistructs.PackageInfoDto, err error) {
+func (b *Bundle) GetEndpoint(orgID, userID, endpointID string) (dto *apistructs.PackageInfoDto, err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -103,6 +108,8 @@ func (b *Bundle) GetEndpoint(endpointID string) (dto *apistructs.PackageInfoDto,
 	resp, err := b.hc.Get(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/packages/%s", endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -117,7 +124,7 @@ func (b *Bundle) GetEndpoint(endpointID string) (dto *apistructs.PackageInfoDto,
 }
 
 // 创建或更新路由规则
-func (b *Bundle) CreateOrUpdateEndpointRootRoute(endpointID, redirectAddr, redirectPath string) (err error) {
+func (b *Bundle) CreateOrUpdateEndpointRootRoute(orgID, userID, endpointID, redirectAddr, redirectPath string) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -126,6 +133,8 @@ func (b *Bundle) CreateOrUpdateEndpointRootRoute(endpointID, redirectAddr, redir
 	resp, err := b.hc.Put(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/packages/%s/root-api", endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		JSONBody(apistructs.OpenapiDto{
 			RedirectAddr: redirectAddr,
 			RedirectPath: redirectPath,
@@ -143,7 +152,7 @@ func (b *Bundle) CreateOrUpdateEndpointRootRoute(endpointID, redirectAddr, redir
 }
 
 // 创建调用方
-func (b *Bundle) CreateClientConsumer(orgID uint64, clientName string) (dto *apistructs.ClientInfoDto, err error) {
+func (b *Bundle) CreateClientConsumer(orgID, userID string, clientName string) (dto *apistructs.ClientInfoDto, err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -152,7 +161,9 @@ func (b *Bundle) CreateClientConsumer(orgID uint64, clientName string) (dto *api
 	resp, err := b.hc.Post(host).
 		Path("/api/gateway/openapi/clients").
 		Header(httputil.InternalHeader, "bundle").
-		Param("orgId", strconv.FormatUint(orgID, 10)).
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		Param("orgId", orgID).
 		Param("clientName", clientName).
 		Do().JSON(&fetchResp)
 	if err != nil {
@@ -168,7 +179,7 @@ func (b *Bundle) CreateClientConsumer(orgID uint64, clientName string) (dto *api
 }
 
 // 删除调用方
-func (b *Bundle) DeleteClientConsumer(clientID string) (err error) {
+func (b *Bundle) DeleteClientConsumer(orgID, userID, clientID string) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -177,6 +188,8 @@ func (b *Bundle) DeleteClientConsumer(clientID string) (err error) {
 	resp, err := b.hc.Delete(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/clients/%s", clientID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -190,7 +203,7 @@ func (b *Bundle) DeleteClientConsumer(clientID string) (err error) {
 }
 
 // 获取调用方凭证信息
-func (b *Bundle) GetClientCredentials(clientID string) (dto *apistructs.ClientInfoDto, err error) {
+func (b *Bundle) GetClientCredentials(orgID, userID, clientID string) (dto *apistructs.ClientInfoDto, err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -199,6 +212,8 @@ func (b *Bundle) GetClientCredentials(clientID string) (dto *apistructs.ClientIn
 	resp, err := b.hc.Get(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/clients/%s/credentials", clientID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -213,7 +228,7 @@ func (b *Bundle) GetClientCredentials(clientID string) (dto *apistructs.ClientIn
 }
 
 // 重置调用方密钥
-func (b *Bundle) ResetClientCredentials(clientID string) (dto *apistructs.ClientInfoDto, err error) {
+func (b *Bundle) ResetClientCredentials(orgID, userID, clientID string) (dto *apistructs.ClientInfoDto, err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -222,6 +237,8 @@ func (b *Bundle) ResetClientCredentials(clientID string) (dto *apistructs.Client
 	resp, err := b.hc.Patch(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/clients/%s/credentials", clientID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -236,7 +253,7 @@ func (b *Bundle) ResetClientCredentials(clientID string) (dto *apistructs.Client
 }
 
 // 授权调用方流量入口权限
-func (b *Bundle) GrantEndpointToClient(clientID, endpointID string) (err error) {
+func (b *Bundle) GrantEndpointToClient(orgID, userID, clientID, endpointID string) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -245,6 +262,8 @@ func (b *Bundle) GrantEndpointToClient(clientID, endpointID string) (err error) 
 	resp, err := b.hc.Post(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/clients/%s/packages/%s", clientID, endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -258,7 +277,7 @@ func (b *Bundle) GrantEndpointToClient(clientID, endpointID string) (err error) 
 }
 
 // 收回调用方流量入口权限
-func (b *Bundle) RevokeEndpointFromClient(clientID, endpointID string) (err error) {
+func (b *Bundle) RevokeEndpointFromClient(orgID, userID, clientID, endpointID string) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -267,6 +286,8 @@ func (b *Bundle) RevokeEndpointFromClient(clientID, endpointID string) (err erro
 	resp, err := b.hc.Delete(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/clients/%s/packages/%s", clientID, endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
@@ -280,7 +301,7 @@ func (b *Bundle) RevokeEndpointFromClient(clientID, endpointID string) (err erro
 }
 
 // 获取tenant-group id
-func (b *Bundle) GetTenantGroupID(projectID uint64, workspace string) (id string, err error) {
+func (b *Bundle) GetTenantGroupID(orgID, userID, projectID, workspace string) (id string, err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -289,7 +310,9 @@ func (b *Bundle) GetTenantGroupID(projectID uint64, workspace string) (id string
 	resp, err := b.hc.Get(host).
 		Path("/api/gateway/tenant-group").
 		Header(httputil.InternalHeader, "bundle").
-		Param("projectId", strconv.FormatUint(projectID, 10)).
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		Param("projectId", projectID).
 		Param("env", workspace).
 		Do().JSON(&fetchResp)
 	if err != nil {
@@ -305,8 +328,7 @@ func (b *Bundle) GetTenantGroupID(projectID uint64, workspace string) (id string
 }
 
 // 创建或更新限流规则
-
-func (b *Bundle) CreateOrUpdateClientLimits(clientID, endpointID string, limits []apistructs.LimitType) (err error) {
+func (b *Bundle) CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID string, limits []apistructs.LimitType) (err error) {
 	host, err := b.urls.Hepa()
 	if err != nil {
 		return
@@ -315,6 +337,8 @@ func (b *Bundle) CreateOrUpdateClientLimits(clientID, endpointID string, limits 
 	resp, err := b.hc.Put(host).
 		Path(fmt.Sprintf("/api/gateway/openapi/clients/%s/packages/%s/limits", clientID, endpointID)).
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
 		JSONBody(apistructs.ChangeLimitsReq{Limits: limits}).Do().JSON(&fetchResp)
 	if err != nil {
 		err = apierrors.ErrInvoke.InternalError(err)
