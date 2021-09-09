@@ -33,11 +33,5 @@ COPY --from=build "/tmp/erda/bin/${APP_NAME}" "/app/${APP_NAME}"
 COPY --from=build "/tmp/erda/conf/${CONFIG_PATH}" "/app/conf/${CONFIG_PATH}"
 COPY --from=build "/tmp/erda/pkg/erda-configs" "/app/erda-configs"
 
-# build change at release 1.2
-RUN mkdir -p /app/charts && cd /app/charts \
-    && wget http://terminus-dice.oss.aliyuncs.com/erda-charts/cluster-init/erda-1.1.0.tgz \
-    && wget http://terminus-dice.oss.aliyuncs.com/erda-charts/cluster-init/erda-addons-1.1.0.tgz \
-    && wget http://terminus-dice.oss.aliyuncs.com/erda-charts/cluster-init/erda-base-1.1.0.tgz
-
 CMD ["sh", "-c", "/app/${APP_NAME}"]
 
