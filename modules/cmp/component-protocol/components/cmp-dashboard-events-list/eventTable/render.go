@@ -287,19 +287,19 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "lastSeen",
 				Title:     cputil.I18n(ctx, "lastSeen"),
-				Width:     160,
+				Width:     50,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "type",
 				Title:     cputil.I18n(ctx, "eventType"),
-				Width:     100,
+				Width:     50,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "reason",
 				Title:     cputil.I18n(ctx, "reason"),
-				Width:     100,
+				Width:     80,
 				Sorter:    true,
 			},
 			{
@@ -311,19 +311,19 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "source",
 				Title:     cputil.I18n(ctx, "source"),
-				Width:     120,
+				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "message",
 				Title:     cputil.I18n(ctx, "message"),
-				Width:     120,
+				Width:     200,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "count",
 				Title:     cputil.I18n(ctx, "count"),
-				Width:     80,
+				Width:     50,
 				Sorter:    true,
 			},
 			{
@@ -335,7 +335,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "namespace",
 				Title:     cputil.I18n(ctx, "namespace"),
-				Width:     120,
+				Width:     80,
 				Sorter:    true,
 			},
 		},

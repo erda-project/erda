@@ -202,7 +202,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(cpuMetrics) != 0 {
-			usedCPUPercent = cpuMetrics[0].Used
+			usedCPUPercent = cpuMetrics[0].Used / 100
 		}
 		cpuStatus, cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
 
@@ -214,7 +214,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
 		}
 		if err == nil && len(memMetrics) != 0 {
-			usedMemPercent = memMetrics[0].Used
+			usedMemPercent = memMetrics[0].Used / 100
 		}
 		memStatus, memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
 
