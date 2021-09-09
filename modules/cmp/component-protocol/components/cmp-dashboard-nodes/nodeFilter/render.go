@@ -83,9 +83,9 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	} else {
 		for k, v := range values {
 			if k != "Q" {
-				labels = append(labels, v)
+				labels = append(labels, v...)
 			} else {
-				nodeNameFilter = v
+				nodeNameFilter = v[0]
 			}
 		}
 		// Filter by node name
