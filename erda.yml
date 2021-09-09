@@ -709,7 +709,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:0}
       labels:
         GROUP: "spot-v2"
     health_check:
