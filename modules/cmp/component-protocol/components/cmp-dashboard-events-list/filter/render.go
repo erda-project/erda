@@ -212,10 +212,11 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 
 	f.State.Conditions = nil
 	namespaceCond := Condition{
-		Key:   "namespace",
-		Label: cputil.I18n(ctx, "namespace"),
-		Type:  "select",
-		Fixed: true,
+		HaveFilter: true,
+		Key:        "namespace",
+		Label:      cputil.I18n(ctx, "namespace"),
+		Type:       "select",
+		Fixed:      true,
 	}
 	for _, option := range []Option{devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, defaultNs, systemNs, otherNs} {
 		if option.Children != nil {
@@ -234,11 +235,11 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Fixed: true,
 		Options: []Option{
 			{
-				Label: cputil.I18n(ctx, "normal"),
+				Label: cputil.I18n(ctx, "Normal"),
 				Value: "Normal",
 			},
 			{
-				Label: cputil.I18n(ctx, "warning"),
+				Label: cputil.I18n(ctx, "Warning"),
 				Value: "Warning",
 			},
 		},

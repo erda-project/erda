@@ -96,7 +96,7 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	if err != nil {
 		return err
 	}
-	s.Props.Value = status
+	s.Props.Value = s.sdk.I18n(status)
 	s.Props.StyleConfig.Color = color
 	return nil
 }

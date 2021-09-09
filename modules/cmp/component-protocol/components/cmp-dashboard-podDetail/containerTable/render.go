@@ -68,9 +68,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		states := containerStatus.Map("state")
 		status := Status{}
 		for k := range states {
-			status = parseContainerStatus(k)
+			status = parseContainerStatus(ctx, k)
 		}
 
+		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
 		data = append(data, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
@@ -85,9 +86,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Operate: Operate{
 				Operations: map[string]Operation{
 					"log": {
-						Key:    "checkLog",
-						Text:   cputil.I18n(ctx, "log"),
-						Reload: false,
+						ContainerID: containerId,
+						Key:         "checkLog",
+						Text:        cputil.I18n(ctx, "log"),
+						Reload:      false,
 						Meta: map[string]string{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
@@ -174,10 +176,10 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 	return nil
 }
 
-func parseContainerStatus(state string) Status {
+func parseContainerStatus(ctx context.Context, state string) Status {
 	status := Status{
 		RenderType: "text",
-		Value:      "state",
+		Value:      cputil.I18n(ctx, state),
 	}
 	switch state {
 	case "running":

@@ -75,10 +75,11 @@ type Images struct {
 }
 
 type Operation struct {
-	Key    string            `json:"key"`
-	Text   string            `json:"text"`
-	Reload bool              `json:"reload"`
-	Meta   map[string]string `json:"meta,omitempty"`
+	ContainerID string            `json:"containerId,omitempty"`
+	Key         string            `json:"key"`
+	Text        string            `json:"text"`
+	Reload      bool              `json:"reload"`
+	Meta        map[string]string `json:"meta,omitempty"`
 }
 
 type StyleConfig struct {

@@ -29,8 +29,8 @@ zh:
  default: 默认
  system: 系统
  others: 其他
- normal: 普通
- warning: 警告
+ Normal: 普通
+ Warning: 警告
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU 请求值
@@ -52,6 +52,10 @@ zh:
  search: 搜索
  workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
+ Active: 活跃
+ Error: 错误
+ Succeeded: 成功
+ Failed: 失败
 
  # cmp-dashboard-workloads-list.workloadTable
  upToDate: 已更新
@@ -109,14 +113,14 @@ zh:
  Completed: 完成
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
- Error: 错误
  Evicted: 驱逐
  ImagePullBackOff: 镜像拉取失败
  Pending: 挂起
  Running: 运行中
- Terminating: 已结束
  memUsed: Mem 使用率
  use: mem 使用率
+ Terminating: 终止
+ OOMKilled: 内存溢出
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
@@ -139,7 +143,7 @@ zh:
  operate: 操作
  console: 控制台
  podInspect: 查看容器
- relative events: 相关日志
+ events: 相关事件
  desc: 注释
  workload: 工作负载
  Memory Chart: 内存
@@ -155,6 +159,10 @@ zh:
  cpuUsage: CPU 使用率
  SchedulingDisabled: 冻结
  architecture: 架构
+ container: 容器
+ running: 运行中
+ waiting: 等待
+ terminated: 终止
 
 en:
  # general
@@ -187,8 +195,8 @@ en:
  default: Default
  system: System
  others: Others
- normal: Normal
- warning: Warning
+ Normal: Normal
+ Warning: Warning
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests
@@ -210,6 +218,10 @@ en:
  search: Search
  workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
+ Active: Active
+ Error: Error
+ Succeeded: Succeeded
+ Failed: Failed
 
  # cmp-dashboard-workloads-list.workloadTable
  upToDate: Up-to-Date
@@ -282,3 +294,8 @@ en:
  placeholderFilterByNodeName: filter by node name
  cpuUsage: CPU Usage
  architecture: Architecture
+ container: Containers
+ events: Events
+ running: Running
+ waiting: Waiting
+ terminated: Terminated

@@ -44,11 +44,12 @@ type Values struct {
 }
 
 type Condition struct {
-	Key     string   `json:"key,omitempty"`
-	Label   string   `json:"label,omitempty"`
-	Type    string   `json:"type,omitempty"`
-	Fixed   bool     `json:"fixed"`
-	Options []Option `json:"options,omitempty"`
+	HaveFilter bool     `json:"haveFilter,omitempty"`
+	Key        string   `json:"key,omitempty"`
+	Label      string   `json:"label,omitempty"`
+	Type       string   `json:"type,omitempty"`
+	Fixed      bool     `json:"fixed"`
+	Options    []Option `json:"options,omitempty"`
 }
 
 type Option struct {

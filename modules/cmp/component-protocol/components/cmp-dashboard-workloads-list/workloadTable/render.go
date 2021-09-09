@@ -179,7 +179,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			}
 			status := Status{
 				RenderType: "text",
-				Value:      value,
+				Value:      w.sdk.I18n(value),
 				StyleConfig: StyleConfig{
 					Color: color,
 				},
@@ -259,7 +259,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			}
 			status := Status{
 				RenderType: "text",
-				Value:      value,
+				Value:      w.sdk.I18n(value),
 				StyleConfig: StyleConfig{
 					Color: color,
 				},
@@ -341,7 +341,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			}
 			status := Status{
 				RenderType: "text",
-				Value:      value,
+				Value:      w.sdk.I18n(value),
 				StyleConfig: StyleConfig{
 					Color: color,
 				},
@@ -421,7 +421,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			}
 			status := Status{
 				RenderType: "text",
-				Value:      value,
+				Value:      w.sdk.I18n(value),
 				StyleConfig: StyleConfig{
 					Color: color,
 				},
@@ -496,7 +496,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			activeCronJob++
 			status := Status{
 				RenderType: "text",
-				Value:      value,
+				Value:      w.sdk.I18n(value),
 				StyleConfig: StyleConfig{
 					Color: color,
 				},
