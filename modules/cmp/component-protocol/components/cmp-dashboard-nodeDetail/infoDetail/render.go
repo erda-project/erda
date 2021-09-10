@@ -46,7 +46,7 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 		req.UserID = infoDetail.SDK.Identity.UserID
 		req.Type = apistructs.K8SNode
 		req.Name = recordId
-		labelKey := strings.Split(label,":")[0]
+		labelKey := strings.Split(label, ":")[0]
 		err := infoDetail.CtxBdl.UnlabelNode(&req, []string{labelKey})
 		if err != nil {
 			return err

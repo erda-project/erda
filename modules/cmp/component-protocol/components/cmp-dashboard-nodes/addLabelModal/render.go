@@ -17,6 +17,7 @@ package AddLabelModal
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -53,8 +54,18 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 			Name:        alm.State.FormData["recordId"],
 			ClusterName: clusterNameIter.(string),
 		}
-		labelKey := alm.State.FormData["label_custom_key"]
-		labelValue := alm.State.FormData["label_custom_value"]
+		labelValue := ""
+		labelKey := ""
+		if alm.State.FormData["group"] == "custom"{
+			labelKey = alm.State.FormData["label_custom_key"]
+			labelValue = alm.State.FormData["label_custom_value"]
+		}else{
+			labelKey = alm.State.FormData["labelGroup"]
+			labelValue = alm.State.FormData[labelKey]
+			splits := strings.Split(labelValue,"=")
+			labelKey = splits[0]
+			labelValue = splits[1]
+		}
 		err := alm.CtxBdl.LabelNode(req, map[string]string{labelKey: labelValue})
 		if err != nil {
 			return err

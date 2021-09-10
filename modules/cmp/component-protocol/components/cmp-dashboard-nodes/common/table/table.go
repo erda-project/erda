@@ -245,7 +245,7 @@ func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData, resource
 }
 
 func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
-	level := []string{"K", "M", "G", "T"}
+	level := []string{"","K", "M", "G", "T"}
 	i := 0
 	switch resourceType {
 	case Memory:
@@ -253,17 +253,23 @@ func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
 			a /= 1024
 			b /= 1024
 		}
-		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i]) + "i"
+		return fmt.Sprintf("%.1f%si/%.1f%si", a, level[i], b, level[i])
+	case Cpu:
+		for ; a > 1000 && b > 1000 && i < 4;{
+			a /= 1000
+			b /= 1000
+		}
+		return fmt.Sprintf("%.3f/%.3f", a, b)
 	default:
 		for ; a > 1000 && b > 1000 && i < 4; i++ {
 			a /= 1000
 			b /= 1000
 		}
-		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i])
+		return fmt.Sprintf("%d%s/%d%s", int64(a), level[i], int64(b), level[i])
 	}
 }
 
-// SetComponentValue mapping CpuInfoTable properties to Component
+// SetComponentValue mapping properties to Component
 func (t *Table) SetComponentValue(c *cptype.Component) error {
 	var err error
 	if err = common.Transfer(t.State, &c.State); err != nil {
