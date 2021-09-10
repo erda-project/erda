@@ -56,13 +56,13 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 		}
 		labelValue := ""
 		labelKey := ""
-		if alm.State.FormData["group"] == "custom"{
+		if alm.State.FormData["group"] == "custom" {
 			labelKey = alm.State.FormData["label_custom_key"]
 			labelValue = alm.State.FormData["label_custom_value"]
-		}else{
+		} else {
 			labelKey = alm.State.FormData["labelGroup"]
 			labelValue = alm.State.FormData[labelKey]
-			splits := strings.Split(labelValue,"=")
+			splits := strings.Split(labelValue, "=")
 			labelKey = splits[0]
 			labelValue = splits[1]
 		}

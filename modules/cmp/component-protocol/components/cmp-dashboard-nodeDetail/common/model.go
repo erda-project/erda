@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
-
 var (
 	CMPDashboardAddLabel    cptype.OperationKey = "addLabel"
 	CMPDashboardRemoveLabel cptype.OperationKey = "deleteLabel"

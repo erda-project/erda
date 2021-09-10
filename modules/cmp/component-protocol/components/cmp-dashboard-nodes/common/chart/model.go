@@ -190,8 +190,8 @@ type Serie struct {
 }
 
 type Legend struct {
-	Data []string `json:"data"`
-	Bottom string `json:"bottom"`
+	Data   []string `json:"data"`
+	Bottom string   `json:"bottom"`
 }
 
 type Grid struct {
@@ -217,7 +217,7 @@ type Label struct {
 func (c *Chart) GetProps(name string) Props {
 	return Props{Option: Option{
 		Color:  []string{"#F7A76B", "#6CB38B", "#DE5757"},
-		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)},Bottom: "0"},
+		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)}, Bottom: "0"},
 		Grid: Grid{
 			Bottom:       0,
 			Top:          0,
