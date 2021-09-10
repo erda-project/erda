@@ -133,7 +133,7 @@ func (s *PipelineSvc) UpgradePipelineCron(pc *spec.PipelineCron) error {
 		}
 		repo := gittarutil.NewRepo(discover.Gittar(), app.GitRepoAbbrev)
 		var f []byte
-		f, err = repo.FetchFile(pc.Branch, pc.PipelineYmlName, pc.Extra.NormalLabels[apistructs.LabelUserID])
+		f, err = repo.FetchFile(pc.Branch, pc.PipelineYmlName, pc.GetUserID())
 		if err != nil {
 			return err
 		}
@@ -146,7 +146,7 @@ func (s *PipelineSvc) UpgradePipelineCron(pc *spec.PipelineCron) error {
 		pc.Extra.ClusterName = app.ClusterName
 		pc.Extra.NormalLabels = app.GenerateLabels()
 		// commit
-		commit, err := repo.GetCommit(app.Branch, pc.Extra.NormalLabels[apistructs.LabelUserID])
+		commit, err := repo.GetCommit(app.Branch, pc.GetUserID())
 		if err != nil {
 			return apierrors.ErrGetGittarRepo.InternalError(err)
 		}

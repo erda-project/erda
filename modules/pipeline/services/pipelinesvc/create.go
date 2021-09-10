@@ -388,7 +388,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 		newStages = append(newStages, *stage)
 	}
 
-	_ = s.PreCheck(pipelineYml, p, newStages, p.GetSubmitUserID())
+	_ = s.PreCheck(pipelineYml, p, newStages, p.GetUserID())
 
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
