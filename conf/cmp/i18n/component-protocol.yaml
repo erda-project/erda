@@ -130,9 +130,7 @@ zh:
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
- memDistribution: 内存分配率
  distributionRate: 分配使用率
- memDistributionRate: 内存分配使用率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -274,6 +272,7 @@ en:
  requests: Requests
  limits: Limits
  usage: Utilization rate
+ usedRate: Used Rate
  restartCount: Restart Times
  category: category
  podSearchPlaceHolder: filter by pod name or IP
@@ -286,9 +285,8 @@ en:
  addLabel: Add Label
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
- distributionRate: Distribution Rate
- memDistribution: Mem Distribution
- memDistributionRate: Mem Distribution Rate
+ distribution: Reserved
+ distributionRate: Reversed Used Rate
  kernelVersion: Kernel Version
  kubeProxyVersion: Kubectl Proxy Version
  kubeletVersion: Kubelet Version
