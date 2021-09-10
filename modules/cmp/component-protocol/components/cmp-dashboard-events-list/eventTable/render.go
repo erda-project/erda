@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/recallsong/go-utils/container/slice"
@@ -52,6 +53,8 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 	if event.Operation == cptype.InitializeOperation {
 		t.State.PageNo = 1
 		t.State.PageSize = 20
+		t.State.Sorter.Field = "lastSeen"
+		t.State.Sorter.Order = "ascend"
 	}
 	// set page no. if triggered by filter
 	if event.Operation == cptype.RenderingOperation || event.Operation == "changeSort" ||
@@ -163,6 +166,12 @@ func (t *ComponentEventTable) RenderList() error {
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 10 {
 			logrus.Errorf("length of event fields is invalid: %d", len(fields))
+			continue
+		}
+		if t.State.FilterValues.Search != "" && !strings.Contains(fields[2], t.State.FilterValues.Search) &&
+			!strings.Contains(fields[3], t.State.FilterValues.Search) &&
+			!strings.Contains(fields[5], t.State.FilterValues.Search) &&
+			!strings.Contains(fields[6], t.State.FilterValues.Search) {
 			continue
 		}
 		count, err := strconv.ParseInt(fields[8], 10, 64)
@@ -287,13 +296,13 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "lastSeen",
 				Title:     cputil.I18n(ctx, "lastSeen"),
-				Width:     50,
+				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "type",
 				Title:     cputil.I18n(ctx, "eventType"),
-				Width:     50,
+				Width:     80,
 				Sorter:    true,
 			},
 			{
