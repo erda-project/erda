@@ -38,9 +38,6 @@ openapi-interceptor-auth-session-compatibility:
 openapi-interceptor-user-info:
   order: 900
 
-openapi-interceptor-audit:
-  order: 1000
-
 openapi-auth:
 openapi-auth-ory-kratos:
   _enable: ${ORY_ENABLED:false}

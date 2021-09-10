@@ -86,10 +86,10 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 	methods := make(map[string]*Permission)
 	for _, perm := range perms {
 		if _, ok := methods[perm.method]; ok {
-			panic(fmt.Errorf("method %q already exists", perm.method))
+			panic(fmt.Errorf("method %q already exists for prermission", perm.method))
 		}
 		if len(perm.method) <= 0 {
-			panic(fmt.Errorf("invalid method %q", perm.method))
+			panic(fmt.Errorf("invalid method %q for prermission", perm.method))
 		}
 		methods[perm.method] = perm
 		if perm.resource != nil {

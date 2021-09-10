@@ -94,6 +94,23 @@ func Test_buildPathToSegments(t *testing.T) {
 			},
 		},
 		{
+			path: "/abc/{def.gh}/ijk",
+			wantSegs: []*pathSegment{
+				{
+					typ:  pathStatic,
+					name: "/abc/",
+				},
+				{
+					typ:  pathField,
+					name: "def.gh",
+				},
+				{
+					typ:  pathStatic,
+					name: "/ijk",
+				},
+			},
+		},
+		{
 			path: "/abc/{def=subpath/**}/g",
 			wantSegs: []*pathSegment{
 				{

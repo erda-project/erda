@@ -15,6 +15,8 @@
 package apis
 
 import (
+	"context"
+
 	"github.com/go-redis/redis"
 	"github.com/jinzhu/gorm"
 
@@ -28,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {
@@ -44,6 +47,7 @@ type provider struct {
 	Redis         *redis.Client                  `autowired:"redis-client"`
 	DB            *gorm.DB                       `autowired:"mysql-client"`
 	Perm          perm.Interface                 `autowired:"permission"`
+	audit         audit.Auditor
 
 	// implements
 	checkerService   *checkerService
@@ -51,6 +55,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
 	cache := cache.New(p.Cfg.CacheKey, p.Redis)
 
 	p.checkerService = &checkerService{p}
@@ -74,6 +79,32 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				perm.Method(CheckerServiceV1.DescribeCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionList, p.checkerV1Service.getProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.GetCheckerStatusV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.getProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.GetCheckerIssuesV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.getProjectFromMetricID()),
+			),
+			p.audit.Audit(
+				audit.Method(CheckerServiceV1.CreateCheckerV1, audit.ProjectScope, "createInitiativeMonitor",
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := req.(*pb.CreateCheckerV1Request)
+						return r.Data.ProjectID, map[string]interface{}{
+							"metricName": r.Data.Name,
+						}, nil
+					},
+				),
+				audit.Method(CheckerServiceV1.UpdateCheckerV1, audit.ProjectScope, "updateInitiativeMonitor",
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := req.(*pb.CreateCheckerV1Request)
+						return r.Data.ProjectID, map[string]interface{}{
+							"metricName": r.Data.Name,
+						}, nil
+					},
+				),
+				audit.Method(CheckerServiceV1.DeleteCheckerV1, audit.ProjectScope, "deleteInitiativeMonitor",
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeleteCheckerV1Response)
+						return r.Data.ProjectID, map[string]interface{}{
+							"metricName": r.Data.Name,
+						}, nil
+					},
+				),
 			),
 		)
 	}
