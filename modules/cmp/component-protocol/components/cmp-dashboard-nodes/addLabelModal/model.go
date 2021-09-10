@@ -40,7 +40,7 @@ type Props struct {
 
 type State struct {
 	FormData map[string]string `json:"formData,omitempty"`
-	Visible  bool              `json:"visible,omitempty"`
+	Visible  bool              `json:"visible"`
 }
 
 type Operations struct {

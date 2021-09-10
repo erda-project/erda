@@ -122,15 +122,14 @@
             },
             "url": "/api/orgCenter/metrics-query"
           },
-          "controls": null,
-          "i18n": null
+          "controls": null
         }
       },
       {
         "w": 8,
         "h": 9,
-        "x": 0,
-        "y": 9,
+        "x": 8,
+        "y": 0,
         "i": "view-EYTeXEO3",
         "view": {
           "title": "memory usage",
@@ -242,15 +241,14 @@
             },
             "url": "/api/orgCenter/metrics-query"
           },
-          "controls": null,
-          "i18n": null
+          "controls": null
         }
       },
       {
         "w": 8,
         "h": 9,
-        "x": 0,
-        "y": 18,
+        "x": 16,
+        "y": 0,
         "i": "view-u2XKlluN",
         "view": {
           "title": "disk load rate",
@@ -362,15 +360,14 @@
             },
             "url": "/api/orgCenter/metrics-query"
           },
-          "controls": null,
-          "i18n": null
+          "controls": null
         }
       },
       {
         "w": 8,
         "h": 9,
         "x": 0,
-        "y": 27,
+        "y": 9,
         "i": "view-JXTWYiZP",
         "view": {
           "title": "io rate",
@@ -494,15 +491,14 @@
             },
             "url": "/api/orgCenter/metrics-query"
           },
-          "controls": null,
-          "i18n": null
+          "controls": null
         }
       },
       {
         "w": 8,
         "h": 9,
-        "x": 0,
-        "y": 36,
+        "x": 8,
+        "y": 9,
         "i": "view-QWRT8bM3",
         "view": {
           "title": "network io",
@@ -625,8 +621,7 @@
             },
             "url": "/api/orgCenter/metrics-query"
           },
-          "controls": null,
-          "i18n": null
+          "controls": null
         }
       }
     ]

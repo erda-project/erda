@@ -17,8 +17,6 @@ package AddLabelModal
 import (
 	"context"
 	"errors"
-	"strconv"
-	"strings"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -61,8 +59,8 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 		if err != nil {
 			return err
 		}
+		alm.State.Visible = false
 	}
-	delete(*gs, "nodes")
 	return alm.SetComponentValue(c)
 }
 
@@ -230,23 +228,6 @@ func (alm *AddLabelModal) getProps() {
 	}
 }
 
-func (alm *AddLabelModal) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := alm.CtxBdl.GetProject(uint64(num))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
-}
-
 func (alm *AddLabelModal) GetOperations() {
 	alm.Operations = map[string]Operations{
 		"submit": {
@@ -259,7 +240,7 @@ func (alm *AddLabelModal) GetOperations() {
 func (alm *AddLabelModal) GetState() {
 	alm.State = State{
 		Visible:  false,
-		FormData: nil,
+		FormData: map[string]string{},
 	}
 }
 

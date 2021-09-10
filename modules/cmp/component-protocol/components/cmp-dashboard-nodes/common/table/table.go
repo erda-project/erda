@@ -130,9 +130,10 @@ type Command struct {
 }
 
 type CommandState struct {
-	Params   Params   `json:"params,omitempty"`
-	Visible  bool     `json:"visible,omitempty"`
-	FormData FormData `json:"formData,omitempty"`
+	Params   Params                 `json:"params,omitempty"`
+	Visible  bool                   `json:"visible,omitempty"`
+	FormData FormData               `json:"formData,omitempty"`
+	Query    map[string]interface{} `json:"query,omitempty"`
 }
 type Params struct {
 	NodeId string `json:"nodeId,omitempty"`
@@ -482,7 +483,7 @@ func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
 
 	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
 		idx := strings.Index(label, "=true")
-		return t.SDK.I18n("enterprise"), t.SDK.I18n(label[5:idx])
+		return t.SDK.I18n("organization"), t.SDK.I18n(label[5:idx])
 	}
 	otherDisplayName := label
 	if label == "dice/lb=true" || label == "dice/platform=true" {
@@ -537,6 +538,7 @@ func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
 				Target: "cmpClustersNodeDetail",
 				Command: CommandState{
 					Params: Params{NodeId: id, NodeIP: ip},
+					Query:  map[string]interface{}{"nodeIP": ip},
 				},
 				JumpOut: true,
 			},

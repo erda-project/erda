@@ -62,3 +62,27 @@ rendering:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: nodeStatus
+  addLabelModal:
+    - name: page
+    - name: header
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "nodeId"
+          value: "{{ __InParams__.nodeId }}"
+    - name: statusTitle
+    - name: nodeTitle
+    - name: statusBadge
+    - name: infoTitle
+    - name: infoDetail
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "nodeId"
+          value: "{{ __InParams__.nodeId }}"
+    - name: infoMapTable
+    - name: addLabelModal
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: nodeStatus

@@ -39,35 +39,27 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	if event.Operation == common.CMPDashboardRemoveLabel {
 		metaName := event.OperationData["fillMeta"].(string)
 		label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
+		recordId := event.OperationData["meta"].(map[string]interface{})["recordId"].(string)
 		req := apistructs.SteveRequest{}
-		req.ClusterName = infoDetail.State.ClusterName
+		req.ClusterName = infoDetail.SDK.InParams["clusterName"].(string)
 		req.OrgID = infoDetail.SDK.Identity.OrgID
 		req.UserID = infoDetail.SDK.Identity.UserID
 		req.Type = apistructs.K8SNode
-		req.Name = infoDetail.State.NodeID
+		req.Name = recordId
 		err := infoDetail.CtxBdl.UnlabelNode(&req, []string{label})
 		if err != nil {
 			return err
 		}
-	}
-	var node data.Object
-	if (*gs)["node"] == nil {
-		req := apistructs.SteveRequest{}
-		req.ClusterName = infoDetail.State.ClusterName
-		req.OrgID = infoDetail.SDK.Identity.OrgID
-		req.UserID = infoDetail.SDK.Identity.UserID
-		req.Type = apistructs.K8SNode
-		req.Name = infoDetail.State.NodeID
 		resp, err := infoDetail.CtxBdl.GetSteveResource(&req)
 		if err != nil {
 			return err
 		}
 		(*gs)["node"] = resp
-	} else {
-		node = (*gs)["node"].(data.Object)
 	}
+	var node data.Object
+	node = (*gs)["node"].(data.Object)
 	infoDetail.Props = infoDetail.getProps(node)
-	infoDetail.setOperation(node.String("id"))
+	//infoDetail.setOperation(node.String("id"))
 	d := Data{}
 	d.Os = node.String("status", "nodeInfo", "osImage")
 	d.Version = node.String("status", "nodeInfo", "kubeletVersion")
@@ -94,18 +86,6 @@ func (infoDetail *InfoDetail) parseTime(node data.Object) (string, error) {
 	return time.Now().Sub(t).String(), nil
 }
 
-func (infoDetail *InfoDetail) setOperation(nodeId string) {
-	for _, f := range infoDetail.Props.Fields {
-		if f.ValueKey == "tag" {
-			op := f.Operations["add"]
-			op.Command.CommandState.FormData.RecordId = nodeId
-			op = f.Operations["delete"]
-			op.Meta["RecordId"] = nodeId
-			return
-		}
-	}
-}
-
 func (infoDetail *InfoDetail) getIp(node data.Object) string {
 	for _, addr := range node.Slice("status", "addresses") {
 		if addr.String("type") == "InternalIP" {
@@ -114,40 +94,48 @@ func (infoDetail *InfoDetail) getIp(node data.Object) string {
 	}
 	return ""
 }
-func GetLabelGroup(label string) string {
-	ls := []string{
-		"dev", "test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
-	}
+func (infoDetail *InfoDetail) GetLabelGroupAndDisplayName(label string) (string, string) {
+	//ls := []string{
+	//	"dice/workspace-dev", "dice/workspace-test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
+	//}
 	groups := make(map[string]string)
-	groups["dev"] = "env"
-	groups["test"] = "env"
-	groups["staging"] = "env"
-	groups["prod"] = "env"
+	groups["dice/workspace-dev=true"] = infoDetail.SDK.I18n("env")
+	groups["dice/workspace-test=true"] = infoDetail.SDK.I18n("env")
+	groups["dice/workspace-staging=true"] = infoDetail.SDK.I18n("env")
+	groups["dice/workspace-prod=true"] = infoDetail.SDK.I18n("env")
 
-	groups["stateful"] = "service"
-	groups["stateless"] = "service"
+	groups["dice/stateful-service=true"] = infoDetail.SDK.I18n("service")
+	groups["dice/stateless-service=true"] = infoDetail.SDK.I18n("service")
+	groups["dice/location-cluster-service=true"] = infoDetail.SDK.I18n("service")
 
-	groups["packJob"] = "packjob"
+	groups["dice/job=true"] = infoDetail.SDK.I18n("job")
+	groups["dice/bigdata-job=true"] = infoDetail.SDK.I18n("job")
 
-	groups["cluster-service"] = "other"
-	groups["mono"] = "other"
-	groups["cordon"] = "other"
-	groups["drain"] = "other"
-	groups["platform"] = "other"
+	groups["dice/lb=true"] = infoDetail.SDK.I18n("other")
+	groups["dice/platform=true"] = infoDetail.SDK.I18n("other")
 
-	for _, l := range ls {
-		if strings.Contains(label, l) {
-			return groups[l]
-		}
+	if group, ok := groups[label]; ok {
+		idx := strings.Index(label, "=true")
+		return infoDetail.SDK.I18n(group), infoDetail.SDK.I18n(label[5:idx])
 	}
-	return "custom"
+
+	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
+		idx := strings.Index(label, "=true")
+		return infoDetail.SDK.I18n("organization"), infoDetail.SDK.I18n(label[5:idx])
+	}
+	otherDisplayName := label
+	if label == "dice/lb=true" || label == "dice/platform=true" {
+		idx := strings.Index(label, "=true")
+		otherDisplayName = infoDetail.SDK.I18n(label[5:idx])
+	}
+	return infoDetail.SDK.I18n("other"), otherDisplayName
 }
 
 func (infoDetail *InfoDetail) getTags(node data.Object) []Field {
 	//groups := filter.GetGroups()
 	tag := make([]Field, 0)
 	for k, v := range node.Map("metadata", "labels") {
-		g := GetLabelGroup(k)
+		g, _ := infoDetail.GetLabelGroupAndDisplayName(k + "=" + v.(string))
 		tag = append(tag, Field{
 			Label: fmt.Sprintf("%s:%s", k, v),
 			Group: g,
@@ -192,8 +180,11 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 				"delete": {
 					Key:      "deleteLabel",
 					Reload:   true,
-					FillMeta: "deleteData",
-					Meta:     map[string]interface{}{},
+					FillMeta: "dlabel",
+					Meta: map[string]interface{}{
+						"recordId": node.String("id"),
+						"dlabel":   Field{Label: ""},
+					},
 				}}},
 			{Label: infoDetail.SDK.I18n("annotation"), ValueKey: "annotation", SpaceNum: 2, RenderType: "tagsRow"},
 		},

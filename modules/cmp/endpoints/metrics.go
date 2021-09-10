@@ -57,7 +57,7 @@ func (e *Endpoints) MetricsQuery(ctx context.Context, r *http.Request, vars map[
 		return httpserver.ErrResp(http.StatusInternalServerError, "InternalError", "request json unmarshal err")
 	}
 
-	logrus.Infof("query metrics :%s %s %s %v", req.ClusterName, req.ResourceKind, req.ResourceType, req.Names)
+	logrus.Infof("query metrics :%s %s %s names = %v ,ips = %v", req.ClusterName, req.ResourceKind, req.ResourceType, req.Names, req.IP)
 	if strings.ToLower(req.ResourceKind) == metrics.Node {
 		return e.metrics.QueryNodeResource(ctx, &req)
 	} else {
