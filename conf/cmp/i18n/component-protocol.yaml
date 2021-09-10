@@ -158,10 +158,10 @@ zh:
  podIP: Pod IP
  log: 查看日志
  enterprise: 企业
+ organization: 组织
  location-cluster-service: 集群级服务
  stateless-service: 无状态服务
  stateful-service: 有状态服务
- SchedulingDisabled: 冻结
  label-value: 标签值
  begin and end with character and number,include: 以字母或数字开头或结尾，可以包含
  e.g.: 例如
