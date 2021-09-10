@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -430,7 +431,13 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+	tip := fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+	value := fmt.Sprintf("%.2f", usedPercent)
+	if usedRes < 1e-4 {
+		tip = "N/A"
+		value = "N/A"
+	}
+	return status, value, tip
 }
 
 func convertUnit(bytes float64) string {
@@ -558,26 +565,9 @@ func matchSelector(selector, labels map[string]interface{}) bool {
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	color := ""
-	switch state {
-	case "Completed":
-		color = "steelBlue"
-	case "ContainerCreating":
-		color = "orange"
-	case "CrashLoopBackOff":
-		color = "red"
-	case "Error":
-		color = "maroon"
-	case "Evicted":
-		color = "darkgoldenrod"
-	case "ImagePullBackOff":
-		color = "darksalmon"
-	case "Pending":
-		color = "teal"
-	case "Running":
-		color = "lightgreen"
-	case "Terminating":
-		color = "brown"
+	color := podsTable.PodStatusToColor[state]
+	if color == "" {
+		color = "darkslategray"
 	}
 	return Status{
 		RenderType: "tagsRow",
