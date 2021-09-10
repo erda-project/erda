@@ -16,6 +16,7 @@ package query
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -58,12 +59,20 @@ type RequestCtx struct {
 	Count         int64  `form:"count"`
 	ApplicationID string `from:"applicationId"`
 	ClusterName   string `from:"clusterName"`
+
+	// match mode
+	Pattern       string
+	patternRegexp *regexp.Regexp
+}
+
+func (rc *RequestCtx) PatternMode() bool {
+	return rc.Pattern != ""
 }
 
 const (
 	defaultStream      = "stdout"
 	defaultCount       = 50
-	maxCount, minCount = 200, -200
+	maxCount, minCount = 700, -700
 	maxTimeRange       = 7 * 24 * int64(time.Hour)
 )
 
@@ -80,6 +89,7 @@ func convertToRequestCtx(req interface{}) (*RequestCtx, error) {
 			Start:         v.Start,
 			End:           v.End,
 			Count:         v.Count,
+			Pattern:       v.Pattern,
 			ApplicationID: "",
 			ClusterName:   "",
 		}, nil
@@ -94,6 +104,7 @@ func convertToRequestCtx(req interface{}) (*RequestCtx, error) {
 			Start:         v.Start,
 			End:           v.End,
 			Count:         v.Count,
+			Pattern:       v.Pattern,
 			ApplicationID: v.ApplicationId,
 			ClusterName:   "",
 		}, nil
@@ -108,6 +119,7 @@ func convertToRequestCtx(req interface{}) (*RequestCtx, error) {
 			Start:         v.Start,
 			End:           v.End,
 			Count:         v.Count,
+			Pattern:       v.Pattern,
 			ApplicationID: "",
 			ClusterName:   v.ClusterName,
 		}, nil
@@ -150,6 +162,15 @@ func normalizeRequest(r *RequestCtx) error {
 	} else if r.Count == 0 {
 		r.Count = defaultCount
 	}
+
+	if r.Pattern != "" {
+		rxp, err := regexp.Compile(r.Pattern)
+		if err != nil {
+			return err
+		}
+		r.patternRegexp = rxp
+	}
+
 	return nil
 }
 

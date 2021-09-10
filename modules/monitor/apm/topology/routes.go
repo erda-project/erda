@@ -38,7 +38,8 @@ func (topology *provider) initRoutes(routes httpserver.Router) error {
 	routes.GET("/api/apm/topology/exception/message", topology.exceptionMessage)
 	routes.GET("/api/apm/topology/exception/types", topology.exceptionTypes)
 	routes.GET("/api/apm/topology/translation", topology.translation)
-	routes.GET("/api/apm/topology/translation/db", topology.dbTransaction)
+	routes.GET("/api/apm/topology/translation/db", topology.middlewareTransaction)
+	routes.GET("/api/apm/topology/translation/mq", topology.middlewareTransaction)
 	routes.GET("/api/apm/topology/translation/slow", topology.slowTranslationTrace)
 	return nil
 }
@@ -82,6 +83,7 @@ type translation struct {
 	TerminusKey       string `query:"terminusKey" validate:"required"`
 	Sort              int64  `query:"sort"`
 	ServiceId         string `query:"serviceId" validate:"required"`
+	Type              string `query:"type"`
 }
 
 func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) interface{} {

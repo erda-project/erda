@@ -170,10 +170,27 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 	return searchSource
 }
 
-func (c *ESClient) doRequest(searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+	var indices []string
+	if len(req.Addon) > 0 {
+		start := req.Start * int64(time.Millisecond)
+		end := req.End * int64(time.Millisecond)
+		for _, entry := range c.Entrys {
+			if (entry.MinTS == 0 || entry.MinTS <= end) &&
+				(entry.MaxTS == 0 || entry.MaxTS >= start) {
+				indices = append(indices, entry.Index)
+			}
+		}
+		if req.Debug {
+			fmt.Println(start, end, indices)
+		}
+	}
+	if len(indices) <= 0 {
+		indices = c.Indices
+	}
 	context, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	resp, err := c.Client.Search(c.Indices...).
+	resp, err := c.Client.Search(indices...).
 		IgnoreUnavailable(true).
 		AllowNoIndices(true).
 		SearchSource(searchSource).Do(context)
@@ -187,7 +204,7 @@ func (c *ESClient) doRequest(searchSource *elastic.SearchSource, timeout time.Du
 }
 
 func (c *ESClient) doSearchLogs(req *LogSearchRequest, searchSource *elastic.SearchSource, timeout time.Duration) (int64, []*elastic.SearchHit, error) {
-	resp, err := c.doRequest(searchSource, timeout)
+	resp, err := c.doRequest(&req.LogRequest, searchSource, timeout)
 	if err != nil {
 		return 0, nil, err
 	}

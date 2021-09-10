@@ -98,6 +98,7 @@ type TableItem struct {
 	Priority    Priority `json:"priority"`
 	Progress    Progress `json:"progress,omitempty"`
 	Severity    Severity `json:"severity,omitempty"`
+	Complexity  string   `json:"complexity,omitempty"`
 	State       State    `json:"state"`
 	Title       Title    `json:"title"`
 	Type        string   `json:"type"`
@@ -563,6 +564,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			Type:        string(data.Type),
 			Progress:    progress,
 			Severity:    severity,
+			Complexity:  data.Complexity.GetZhName(),
 			Priority: Priority{
 				Value:      data.Priority.GetZhName(),
 				RenderType: "operationsDropdownMenu",
@@ -672,6 +674,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		progressCol +
 		severityCol +
 		`{
+            "width": 100,
+            "dataIndex": "complexity",
+            "title": "复杂度"
+        },
+        {
             "width": 100,
             "dataIndex": "priority",
             "title": "优先级"

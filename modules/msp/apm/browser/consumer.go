@@ -57,6 +57,9 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 
 	metric.Timestamp = t * int64(time.Millisecond)
+	metric.Tags["_meta"] = "true"
+	metric.Tags["_metric_scope"] = "micro_service"
+	metric.Tags["_metric_scope_id"] = parts[0]
 	metric.Tags["tk"] = parts[0]
 	metric.Tags["cid"] = parts[1]
 	metric.Tags["uid"] = parts[2]

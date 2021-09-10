@@ -33,6 +33,8 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/org/logs/statistic/histogram", p.logStatistic)
 	routes.GET("/api/org/logs/search", p.logSearch)
 	routes.GET("/api/org/logs/tags/tree", p.orgLogTagsTree)
+
+	routes.GET("/api/logs-query/indices", p.inspectIndices)
 	return nil
 }
 
@@ -157,4 +159,8 @@ func (p *provider) logMSTagsTree(r *http.Request) interface{} {
 }
 func (p *provider) orgLogTagsTree(r *http.Request) interface{} {
 	return api.Success(p.GetTagsTree("org", api.Language(r)))
+}
+
+func (p *provider) inspectIndices(r *http.Request) interface{} {
+	return api.Success(p.indices.Load())
 }

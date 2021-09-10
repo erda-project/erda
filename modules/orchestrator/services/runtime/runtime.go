@@ -454,7 +454,7 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 			apistructs.LabelAppName:       app.Name,
 			apistructs.LabelProjectName:   app.ProjectName,
 		},
-		PipelineYmlName: fmt.Sprintf("dice-deploy-redeploy-%d", runtime.ID),
+		PipelineYmlName: getRedeployPipelineYmlName(*runtime),
 		ClusterName:     runtime.ClusterName,
 		PipelineSource:  apistructs.PipelineSourceDice,
 		AutoRunAtOnce:   true,
@@ -1907,4 +1907,8 @@ var queryStringDecoder *schema.Decoder
 func init() {
 	queryStringDecoder = schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
+}
+
+func getRedeployPipelineYmlName(runtime dbclient.Runtime) string {
+	return fmt.Sprintf("%d/%s/%s/pipeline.yml", runtime.ApplicationID, runtime.Workspace, runtime.Name)
 }

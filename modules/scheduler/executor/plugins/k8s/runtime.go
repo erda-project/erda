@@ -318,30 +318,16 @@ func (k *Kubernetes) inspectStateless(sg *apistructs.ServiceGroup) (*apistructs.
 		ns = sg.ProjectNamespace
 		k.setProjectServiceName(sg)
 	}
-	services, err := k.service.List(ns, map[string]string{
-		LabelServiceGroupID: sg.ID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("list service in ns %s error %v", ns, err)
-	}
-	serviceMap := make(map[string]string, len(services.Items))
-
-	for _, svc := range services.Items {
-		serviceMap[svc.Name] = svc.Spec.ClusterIP
-	}
 
 	for i, svc := range sg.Services {
 		serviceName := getServiceName(&svc)
 		if len(svc.Ports) == 0 {
 			continue
 		}
-		clusterIP, ok := serviceMap[serviceName]
-		if ok {
-			logrus.Errorf("failed to get service cluster ip, namespace: %s, name: %s, not found", ns, svc.Name)
-		}
-		sg.Services[i].ProxyIp = clusterIP
-		sg.Services[i].Vip = strutil.Join([]string{serviceName, ns, "svc.cluster.local"}, ".")
-		sg.Services[i].ShortVIP = clusterIP
+		serviceHost := strutil.Join([]string{serviceName, ns, "svc.cluster.local"}, ".")
+		sg.Services[i].ProxyIp = serviceHost
+		sg.Services[i].Vip = serviceHost
+		sg.Services[i].ShortVIP = serviceHost
 		sg.Services[i].ProxyPorts = diceyml.ComposeIntPortsFromServicePorts(svc.Ports)
 	}
 	return sg, nil

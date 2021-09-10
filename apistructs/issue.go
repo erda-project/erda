@@ -368,7 +368,7 @@ func (is IssueComplexity) GetZhName() string {
 	case IssueComplexityEasy:
 		return "容易"
 	default:
-		panic(fmt.Sprintf("invalid issue complexity: %s", is))
+		return string(is)
 	}
 }
 

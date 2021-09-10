@@ -58,13 +58,22 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("project_key")
 	params.Del("project_key")
+	var projectIDs []string
+	for _, p := range perms.List {
+		if p.Scope.Type == apistructs.ProjectScope && p.Access {
+			projectIDs = append(projectIDs, p.Scope.ID)
+		}
+	}
+
+	if projectIDs == nil || len(projectIDs) == 0 {
+		Success(w, nil)
+		return
+	}
 	if key == "gateway" {
 		paramsForProject := url.Values{}
 		paramsForProject.Del("projectId")
-		for _, p := range perms.List {
-			if p.Scope.Type == apistructs.ProjectScope && p.Access {
-				paramsForProject.Add("projectId", p.Scope.ID)
-			}
+		for _, id := range projectIDs {
+			paramsForProject.Add("projectId", id)
 		}
 		var data []string
 		cr = client.Get(discover.MSP()).
@@ -84,10 +93,8 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fk := fmt.Sprintf("in_%s", key)
 		params.Del(fk)
-		for _, p := range perms.List {
-			if p.Scope.Type == apistructs.ProjectScope && p.Access {
-				params.Add(fk, p.Scope.ID)
-			}
+		for _, id := range projectIDs {
+			params.Add(fk, id)
 		}
 	}
 

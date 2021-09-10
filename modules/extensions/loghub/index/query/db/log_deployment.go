@@ -63,3 +63,13 @@ func (db *LogDeploymentDB) QueryByClusters(clusters ...string) ([]*LogDeployment
 	}
 	return list, nil
 }
+
+// List .
+func (db *LogDeploymentDB) List() ([]*LogDeployment, error) {
+	var list []*LogDeployment
+	if err := db.Table(LogDeploymentTable).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
