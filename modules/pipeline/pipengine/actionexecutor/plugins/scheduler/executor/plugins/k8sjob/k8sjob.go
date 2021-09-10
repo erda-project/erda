@@ -651,6 +651,14 @@ func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo 
 		},
 	)
 
+	// add container TerminusDefineTag env
+	if len(job.TaskContainers) > 0 {
+		env = append(env, corev1.EnvVar{
+			Name:  apistructs.TerminusDefineTag,
+			Value: job.TaskContainers[0].ContainerID,
+		})
+	}
+
 	if len(clusterInfo) > 0 {
 		for k, v := range clusterInfo {
 			env = append(env, corev1.EnvVar{

@@ -17,6 +17,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -25,6 +27,8 @@ func (e *Endpoints) healthCheck(ctx context.Context, r *http.Request, vars map[s
 	httpserver.Responser, error) {
 	_, err := e.dbClient.Exec("select 1")
 	if err != nil {
+		logrus.Errorf("failed to health check, err: %v", err)
+
 		return apierrors.ErrPipelineHealthCheck.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp("success")

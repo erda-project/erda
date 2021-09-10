@@ -65,29 +65,30 @@ type Job struct {
 }
 
 type JobFromUser struct {
-	Name         string                 `json:"name"`
-	Namespace    string                 `json:"namespace"`    // the default namespace is "default"
-	ID           string                 `json:"id,omitempty"` // if Job has owner, e.g. jobflow, it's ID can be specified.
-	CallBackUrls []string               `json:"callbackurls,omitempty"`
-	Image        string                 `json:"image,omitempty"`
-	Resource     string                 `json:"resource,omitempty"`  // Flink时，为jarId；Spark时，为jar url
-	MainClass    string                 `json:"mainClass,omitempty"` // 入口类, 主要用于Flink/Spark
-	MainArgs     []string               `json:"mainArgs"`            // 入口类参数, 主要用于Flink/Spark
-	Cmd          string                 `json:"cmd,omitempty"`
-	CPU          float64                `json:"cpu,omitempty"`
-	Memory       float64                `json:"memory,omitempty"`
-	Labels       map[string]string      `json:"labels,omitempty"`
-	Extra        map[string]string      `json:"extra,omitempty"`
-	Env          map[string]string      `json:"env,omitempty"`
-	Binds        []Bind                 `json:"binds,omitempty"`
-	Volumes      []diceyml.Volume       `json:"volumes,omitempty"`
-	Executor     string                 `json:"executor,omitempty"`
-	ClusterName  string                 `json:"clusterName,omitempty"`
-	Kind         string                 `json:"kind"`              // Metronome/FLink/Spark/LocalDocker/Swarm/Kubernetes
-	Depends      []string               `json:"depends,omitempty"` // JobName
-	PreFetcher   *PreFetcher            `json:"preFetcher,omitempty"`
-	BackoffLimit int                    `json:"backoffLimit,omitempty"`
-	Params       map[string]interface{} `json:"params,omitempty"`
+	Name           string                 `json:"name"`
+	Namespace      string                 `json:"namespace"`    // the default namespace is "default"
+	ID             string                 `json:"id,omitempty"` // if Job has owner, e.g. jobflow, it's ID can be specified.
+	CallBackUrls   []string               `json:"callbackurls,omitempty"`
+	Image          string                 `json:"image,omitempty"`
+	Resource       string                 `json:"resource,omitempty"`  // Flink时，为jarId；Spark时，为jar url
+	MainClass      string                 `json:"mainClass,omitempty"` // 入口类, 主要用于Flink/Spark
+	MainArgs       []string               `json:"mainArgs"`            // 入口类参数, 主要用于Flink/Spark
+	Cmd            string                 `json:"cmd,omitempty"`
+	CPU            float64                `json:"cpu,omitempty"`
+	Memory         float64                `json:"memory,omitempty"`
+	Labels         map[string]string      `json:"labels,omitempty"`
+	Extra          map[string]string      `json:"extra,omitempty"`
+	Env            map[string]string      `json:"env,omitempty"`
+	Binds          []Bind                 `json:"binds,omitempty"`
+	Volumes        []diceyml.Volume       `json:"volumes,omitempty"`
+	Executor       string                 `json:"executor,omitempty"`
+	ClusterName    string                 `json:"clusterName,omitempty"`
+	Kind           string                 `json:"kind"`              // Metronome/FLink/Spark/LocalDocker/Swarm/Kubernetes
+	Depends        []string               `json:"depends,omitempty"` // JobName
+	PreFetcher     *PreFetcher            `json:"preFetcher,omitempty"`
+	BackoffLimit   int                    `json:"backoffLimit,omitempty"`
+	Params         map[string]interface{} `json:"params,omitempty"`
+	TaskContainers []TaskContainer        `json:"taskContainers"`
 }
 
 // PreFetcher 用于 job 下载功能
