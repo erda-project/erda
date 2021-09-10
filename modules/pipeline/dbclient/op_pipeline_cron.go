@@ -49,10 +49,13 @@ func (client *Client) PagingPipelineCron(req apistructs.PipelineCronPagingReques
 		limitSQL.In("pipeline_source", req.Sources)
 	}
 	// ymlName
-	if len(req.YmlNames) == 0 {
-		return nil, -1, errors.Errorf("ymlName is empty")
+	if len(req.YmlNames) != 0 {
+		limitSQL.In("pipeline_yml_name", req.YmlNames)
 	}
-	limitSQL.In("pipeline_yml_name", req.YmlNames)
+
+	if req.Enable != nil {
+		limitSQL.Where("enable = ?", *req.Enable)
+	}
 
 	// total
 	totalSQL := *limitSQL

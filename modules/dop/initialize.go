@@ -15,6 +15,8 @@
 package dop
 
 import (
+	"context"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -83,6 +85,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
+
+const EtcdPipelineCmsCompensate = "dop/pipelineCms/compensate"
 
 // Initialize 初始化应用启动服务.
 func (p *provider) Initialize(ctx servicehub.Context) error {
@@ -193,6 +197,27 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				}
 			}
 		}
+	}()
+
+	// compensate pipeline cms according to pipeline cron which enable is true
+	go func() {
+		// add etcd lock to ensure that it is executed only once
+		resp, err := p.EtcdClient.Get(context.Background(), EtcdPipelineCmsCompensate)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		if len(resp.Kvs) == 0 {
+			logrus.Infof("start compensate pipelineCms")
+			if err = compensatePipelineCms(ep); err != nil {
+				logrus.Error(err)
+			}
+			_, err = p.EtcdClient.Put(context.Background(), EtcdPipelineCmsCompensate, "true")
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+
 	}()
 
 	// daily issue expiry status update cron job
@@ -620,4 +645,71 @@ func copyTestFileTask(ep *endpoints.Endpoints) {
 		return
 	}
 	ep.TestSetService().CopyTestSet(record)
+}
+
+// compensatePipelineCms compensate pipeline cms according to pipeline cron which enable is true
+// it will be deprecated in the later version
+func compensatePipelineCms(ep *endpoints.Endpoints) error {
+	enable := true
+	// get total
+	cron, err := bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		AllSources: false,
+		Sources:    []apistructs.PipelineSource{apistructs.PipelineSourceDice},
+		YmlNames:   nil,
+		PageSize:   1,
+		PageNo:     1,
+		Enable:     &enable,
+	})
+	if err != nil {
+		logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
+		return err
+	}
+	total := cron.Total
+	pageSize := 1000
+	crons := make([]*apistructs.PipelineCronDTO, 0, total)
+	for i := 0; i < int(total)/pageSize+1; i++ {
+		cron, err = bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+			AllSources: true,
+			Sources:    nil,
+			YmlNames:   nil,
+			PageSize:   pageSize,
+			PageNo:     i + 1,
+			Enable:     &enable,
+		})
+		if err != nil {
+			logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
+			return err
+		}
+		crons = append(crons, cron.Data...)
+	}
+
+	// userOrgMap judge the user ns is compensated or not in the org
+	// key: userID-orgID, value: struct{}
+	userOrgMap := make(map[string]struct{})
+	for _, v := range crons {
+		if v.Enable != nil && *v.Enable &&
+			v.UserID != "" && v.OrgID != 0 {
+			ns := utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)
+			if !strutil.InSlice(ns, v.ConfigManageNamespaces) {
+				err := bdl.Bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+					ID:                     v.ID,
+					PipelineYml:            v.PipelineYml,
+					CronExpr:               v.CronExpr,
+					ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)},
+				})
+				if err != nil {
+					logrus.Errorf("failed to UpdatePipelineCron, err: %s", err.Error())
+				}
+			}
+			if _, ok := userOrgMap[fmt.Sprintf("%s-%d", v.UserID, v.OrgID)]; !ok {
+				userOrgMap[fmt.Sprintf("%s-%d", v.UserID, v.OrgID)] = struct{}{}
+				// the member may not exist
+				err = ep.UpdateCmsNsConfigs(v.UserID, v.OrgID)
+				if err != nil {
+					logrus.Errorf("failed to UpdateCmsNsConfigs, err: %s", err.Error())
+				}
+			}
+		}
+	}
+	return nil
 }

@@ -324,14 +324,17 @@ func (b *Bundle) PageListPipelineCrons(req apistructs.PipelineCronPagingRequest)
 	}
 
 	var pageResp apistructs.PipelineCronPagingResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/pipeline-crons")).
+	request := hc.Get(host).Path(fmt.Sprintf("/api/pipeline-crons")).
 		Header(httputil.InternalHeader, "bundle").
 		Param("allSources", strconv.FormatBool(req.AllSources)).
 		Params(map[string][]string{"source": sources}).
 		Params(map[string][]string{"ymlName": req.YmlNames}).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
-		Param("pageNo", strconv.Itoa(req.PageNo)).
-		Do().JSON(&pageResp)
+		Param("pageNo", strconv.Itoa(req.PageNo))
+	if req.Enable != nil {
+		request = request.Param("enable", strconv.FormatBool(*req.Enable))
+	}
+	httpResp, err := request.Do().JSON(&pageResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}

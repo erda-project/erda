@@ -118,7 +118,7 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	}
 
 	// update CmsNsConfigs
-	if err = e.updateCmsNsConfigs(identityInfo.UserID, app.OrgID); err != nil {
+	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, app.OrgID); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -379,7 +379,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 	}
 
 	// update CmsNsConfigs
-	if err = e.updateCmsNsConfigs(identityInfo.UserID, p.OrgID); err != nil {
+	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, p.OrgID); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -414,8 +414,8 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(nil)
 }
 
-// updateCmsNsConfigs update CmsNsConfigs
-func (e *Endpoints) updateCmsNsConfigs(userID string, orgID uint64) error {
+// UpdateCmsNsConfigs update CmsNsConfigs
+func (e *Endpoints) UpdateCmsNsConfigs(userID string, orgID uint64) error {
 	members, err := e.bdl.GetMemberByUserAndScope(apistructs.OrgScope, userID, orgID)
 	if err != nil {
 		return err

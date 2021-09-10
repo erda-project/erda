@@ -85,5 +85,5 @@ func TestUpdateCmsNsConfigsWhenUserNotExist(t *testing.T) {
 		})
 	defer monkey.UnpatchAll()
 	e := New()
-	assert.Equal(t, "the member is not exist", e.updateCmsNsConfigs("1", 1).Error())
+	assert.Equal(t, "the member is not exist", e.UpdateCmsNsConfigs("1", 1).Error())
 }

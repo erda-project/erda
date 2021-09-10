@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PipelineCronSvc struct {
@@ -148,6 +149,7 @@ func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRe
 	}
 	cron.CronExpr = req.CronExpr
 	cron.Extra.PipelineYml = req.PipelineYml
+	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
 	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, []string{spec.PipelineCronCronExpr, spec.Extra})
 	return err
 }
