@@ -332,8 +332,6 @@ services:
         l4_protocol: "TCP"
         expose: true
     envs:
-      GIT_INNER_USER_NAME: "18000000000"
-      GIT_INNER_USER_PASSWORD: "123456"
       GITTAR_BRANCH_FILTER: "master,develop,feature/*,support/*,release/*,hotfix/*"
       GITTAR_PORT: "5566"
       UC_CLIENT_ID: "dice"
@@ -586,8 +584,6 @@ services:
         l4_protocol: "TCP"
     envs:
       DEBUG: "false"
-      GIT_INNER_USER_NAME: "18000000000"
-      GIT_INNER_USER_PASSWORD: "123456"
       PIPELINE_STORAGE_URL: "file:///devops/storage"
     resources:
       cpu: ${request_cpu:1}
