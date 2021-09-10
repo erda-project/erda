@@ -38,7 +38,7 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 		return err
 	}
 	alm.getProps()
-	alm.GetOperations()
+	alm.getOperations()
 	clusterNameIter := alm.SDK.InParams["clusterName"]
 	if clusterNameIter == nil {
 		return errors.New("clusterName not found")
@@ -66,9 +66,7 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 
 // SetComponentValue mapping properties to Component
 func (alm *AddLabelModal) SetComponentValue(c *cptype.Component) error {
-	var (
-		err error
-	)
+	var err error
 	if err = common.Transfer(alm.State, &c.State); err != nil {
 		return err
 	}
@@ -91,10 +89,6 @@ func (alm *AddLabelModal) getProps() {
 			ComponentProps: ComponentProps{
 				Options: []Option{
 					{
-						Name:  alm.SDK.I18n("platform"),
-						Value: "platform",
-					},
-					{
 						Name:  alm.SDK.I18n("env"),
 						Value: "environment",
 					},
@@ -113,20 +107,6 @@ func (alm *AddLabelModal) getProps() {
 					{
 						Name:  alm.SDK.I18n("custom"),
 						Value: "custom",
-					},
-				},
-			},
-		},
-		{
-			Key:            "platform",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "platform", Value: "platform=true"}}},
-			Label:          alm.SDK.I18n("label"),
-			Component:      "select",
-			Required:       true,
-			RemoveWhen: [][]RemoveWhen{
-				{
-					{
-						Field: "labelGroup", Operator: "!=", Value: "platform",
 					},
 				},
 			},
@@ -228,7 +208,7 @@ func (alm *AddLabelModal) getProps() {
 	}
 }
 
-func (alm *AddLabelModal) GetOperations() {
+func (alm *AddLabelModal) getOperations() {
 	alm.Operations = map[string]Operations{
 		"submit": {
 			Key:    "submit",

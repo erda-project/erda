@@ -185,8 +185,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ResourceType: metrics.Memory,
 	}
 	for _, obj := range list {
-		cpuReq.Names = append(cpuReq.Names, obj.String("metadata", "name"))
-		memReq.Names = append(memReq.Names, obj.String("metadata", "name"))
+		name := obj.String("metadata", "name")
+		namespace := obj.String("metadata", "namespace")
+		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
+			PodName:   name,
+			Namespace: namespace,
+		})
+		memReq.PodRequests = append(memReq.PodRequests, apistructs.MetricsPodRequest{
+			PodName:   name,
+			Namespace: namespace,
+		})
 	}
 
 	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)

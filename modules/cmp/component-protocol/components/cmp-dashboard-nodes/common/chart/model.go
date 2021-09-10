@@ -16,6 +16,7 @@ package chart
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -73,7 +74,17 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	allocatableQuantity.ToUnstructured()
 	capacityQuantity.Sub(*unAllocatableQuantity)
 	capacityQuantity.Sub(*allocatableQuantity)
+
+	allocatableQuantityValue := float64(allocatableQuantity.Value())
+	capacityQuantityValue := float64(capacityQuantity.Value())
+	unAllocatableQuantityValue := float64(unAllocatableQuantity.Value())
+
 	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
+	if resourceName == CPU{
+		allocatableStr = fmt.Sprintf("%.3f",allocatableQuantityValue /1000)
+		capacityStr = fmt.Sprintf("%.3f",capacityQuantityValue /1000)
+		unAllocatableStr= fmt.Sprintf("%.3f",unAllocatableQuantityValue /1000)
+	}
 	distributedDesc := DefaultFormat + allocatableStr + suffix
 	if allocatableQuantity.Value() == 0 {
 		distributedDesc = ""
@@ -86,16 +97,17 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	if unAllocatableQuantity.Value() == 0 {
 		lockedDesc = ""
 	}
+
 	return []DataItem{{
-		Value: float64(allocatableQuantity.Value()),
+		Value: allocatableQuantityValue,
 		Name:  c.SDK.I18n(Allocated),
 		Label: Label{Formatter: distributedDesc},
 	}, {
-		Value: float64(capacityQuantity.Value()),
+		Value: capacityQuantityValue,
 		Name:  c.SDK.I18n(Free_Allocate),
 		Label: Label{Formatter: freeDesc},
 	}, {
-		Value: float64(unAllocatableQuantity.Value()),
+		Value: unAllocatableQuantityValue,
 		Name:  c.SDK.I18n(Cannot_Allocate),
 		Label: Label{Formatter: lockedDesc},
 	}}

@@ -141,8 +141,10 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		return nil, err
 	}
 	req := apistructs.MetricsRequest{
-		ClusterName:  ct.SDK.InParams["clusterName"].(string),
-		IP:           []string{c.StringSlice("metadata", "fields")[5]},
+		ClusterName: ct.SDK.InParams["clusterName"].(string),
+		NodeRequests: []apistructs.MetricsNodeRequest{{
+			IP: c.StringSlice("metadata", "fields")[5],
+		}},
 		ResourceType: metrics.Cpu,
 		ResourceKind: metrics.Node,
 		OrgID:        ct.SDK.Identity.OrgID,

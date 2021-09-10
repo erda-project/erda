@@ -74,11 +74,20 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	return nf.SetComponentValue(c)
 }
 
+func isEmptyFilter(values filter.Values)bool{
+	for _, v := range values {
+		if len(v) != 0{
+			return false
+		}
+	}
+	return true
+}
+
 func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	var nodes []data.Object
 	labels := make([]string, 0)
 	nodeNameFilter := ""
-	if values == nil || len(values) == 0 {
+	if isEmptyFilter(values) {
 		nodes = nodeList
 	} else {
 		for k, v := range values {
