@@ -245,7 +245,7 @@ func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData, resource
 }
 
 func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
-	level := []string{"","K", "M", "G", "T"}
+	level := []string{"", "K", "M", "G", "T"}
 	i := 0
 	switch resourceType {
 	case Memory:
@@ -255,7 +255,7 @@ func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
 		}
 		return fmt.Sprintf("%.1f%si/%.1f%si", a, level[i], b, level[i])
 	case Cpu:
-		for ; a > 1000 && b > 1000 && i < 4;{
+		for a > 1000 && b > 1000 && i < 4 {
 			a /= 1000
 			b /= 1000
 		}

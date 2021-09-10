@@ -105,7 +105,7 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 				}
 			}
 		}
-		if len(nodes) != 0{
+		if len(nodes) != 0 {
 			nodeList = nodes
 		}
 		for _, node := range nodeList {
