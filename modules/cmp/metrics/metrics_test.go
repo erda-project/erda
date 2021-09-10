@@ -107,7 +107,7 @@ func TestToInfluxReq(t *testing.T) {
 					ResourceType: Memory,
 					ResourceKind: Pod,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					Names: []string{"telegraf-app-00e2f41199-z92wc"},
+					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc"}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{
@@ -127,7 +127,7 @@ func TestToInfluxReq(t *testing.T) {
 					ResourceType: Cpu,
 					ResourceKind: Pod,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					Names: []string{"telegraf-app-00e2f41199-z92wc"},
+					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc"}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{

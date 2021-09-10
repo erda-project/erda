@@ -34,6 +34,8 @@ rendering:
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ filter.values }}"
     - name: workloadTitle
       state:
         - name: "values"
