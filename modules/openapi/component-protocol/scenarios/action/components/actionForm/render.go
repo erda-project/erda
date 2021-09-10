@@ -306,7 +306,7 @@ func registerActionTypeRender() {
 
 		actionTypeRender["testscene-run"] = testSceneRun
 
-		actionTypeRender["mysql-cli"] = mysqlCliRender
+		//actionTypeRender["mysql-cli"] = mysqlCliRender
 	})
 }
 
