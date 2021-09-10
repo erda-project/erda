@@ -132,18 +132,18 @@ func (pc *PipelineCron) GetBranch() string {
 
 // GetUserID if user is empty, means it doesn't exist
 func (pc *PipelineCron) GetUserID() string {
-	userID := pc.Extra.NormalLabels[apistructs.LabelUserID]
+	userID := pc.Extra.FilterLabels[apistructs.LabelUserID]
 	if userID != "" {
 		return userID
 	}
-	return pc.Extra.FilterLabels[apistructs.LabelUserID]
+	return pc.Extra.NormalLabels[apistructs.LabelUserID]
 }
 
 // GetOrgID if org is 0, means it doesn't exist
 func (pc *PipelineCron) GetOrgID() uint64 {
-	orgIDStr := pc.Extra.NormalLabels[apistructs.LabelOrgID]
+	orgIDStr := pc.Extra.FilterLabels[apistructs.LabelOrgID]
 	if orgIDStr == "" {
-		orgIDStr = pc.Extra.FilterLabels[apistructs.LabelOrgID]
+		orgIDStr = pc.Extra.NormalLabels[apistructs.LabelOrgID]
 	}
 	orgID, _ := strconv.ParseUint(orgIDStr, 10, 64)
 	return orgID
