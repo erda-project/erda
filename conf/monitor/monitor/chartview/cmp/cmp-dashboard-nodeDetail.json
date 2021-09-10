@@ -13,11 +13,11 @@
         "y": 0,
         "i": "view-gFiqDRf8",
         "view": {
-          "title": "cpu usage",
+          "title": "CPU Usage Percent",
           "i18n": {
             "title": {
-              "en": "cpu usage",
-              "zh": "cpu 使用率"
+              "en": "CPU Usage Percent",
+              "zh": "CPU 使用率"
             }
           },
           "description": "",
@@ -72,6 +72,12 @@
               "valueDimensions": [
                 {
                   "alias": "CPU使用率",
+                  "i18n": {
+                    "alias": {
+                      "en": "CPU Usage Percent",
+                      "zh": "CPU使用率"
+                    }
+                  },
                   "field": "host_summary-cpu_usage_active::field",
                   "key": "valuet7zCXJIE",
                   "resultType": "number",
@@ -191,6 +197,12 @@
               "valueDimensions": [
                 {
                   "alias": "内存使用率",
+                  "i18n": {
+                    "alias": {
+                      "en": "Memory Usage Percent",
+                      "zh": "内存使用率"
+                    }
+                  },
                   "field": "host_summary-mem_used_percent::field",
                   "key": "valueyCdPr8Ju",
                   "resultType": "number",
@@ -251,11 +263,11 @@
         "y": 0,
         "i": "view-u2XKlluN",
         "view": {
-          "title": "disk load rate",
+          "title": "system load rate",
           "i18n": {
             "title": {
-              "en": "disk load rate",
-              "zh": "磁盘负载速率"
+              "en": "system load rate",
+              "zh": "系统负载"
             }
           },
           "description": "",
@@ -310,6 +322,12 @@
               "valueDimensions": [
                 {
                   "alias": "5分钟平均负载",
+                  "i18n": {
+                    "alias": {
+                      "en": "average system load per 5 min",
+                      "zh": "5分钟平均系统负载"
+                    }
+                  },
                   "field": "host_summary-load5::field",
                   "key": "value8uMdDg94",
                   "resultType": "number",
@@ -430,6 +448,12 @@
               "valueDimensions": [
                 {
                   "alias": "写速率",
+                  "i18n": {
+                    "alias": {
+                      "en": "write rate",
+                      "zh": "写速率"
+                    }
+                  },
                   "field": "diskio-write_rate::field",
                   "key": "valueI5H6xYdH",
                   "resultType": "number",
@@ -437,6 +461,12 @@
                 },
                 {
                   "alias": "读速率",
+                  "i18n": {
+                    "alias": {
+                      "en": "read rate",
+                      "zh": "读速率"
+                    }
+                  },
                   "field": "diskio-read_rate::field",
                   "key": "value02MlFDkE",
                   "resultType": "number",

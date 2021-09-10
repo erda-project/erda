@@ -16,6 +16,7 @@ package chart
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -73,32 +74,50 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	allocatableQuantity.ToUnstructured()
 	capacityQuantity.Sub(*unAllocatableQuantity)
 	capacityQuantity.Sub(*allocatableQuantity)
+
+	allocatableQuantityValue := float64(allocatableQuantity.Value())
+	capacityQuantityValue := float64(capacityQuantity.Value())
+	unAllocatableQuantityValue := float64(unAllocatableQuantity.Value())
+
 	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
+	if resourceName == CPU {
+		allocatableStr = fmt.Sprintf("%.3f", allocatableQuantityValue/1000)
+		capacityStr = fmt.Sprintf("%.3f", capacityQuantityValue/1000)
+		unAllocatableStr = fmt.Sprintf("%.3f", unAllocatableQuantityValue/1000)
+	}
+
+	var di []DataItem
 	distributedDesc := DefaultFormat + allocatableStr + suffix
 	if allocatableQuantity.Value() == 0 {
 		distributedDesc = ""
+	} else {
+		di = append(di, DataItem{
+			Value: allocatableQuantityValue,
+			Name:  c.SDK.I18n(Allocated),
+			Label: Label{Formatter: distributedDesc},
+		})
 	}
 	freeDesc := DefaultFormat + capacityStr + suffix
 	if capacityQuantity.Value() == 0 {
 		freeDesc = ""
+	} else {
+		di = append(di, DataItem{
+			Value: capacityQuantityValue,
+			Name:  c.SDK.I18n(Free_Allocate),
+			Label: Label{Formatter: freeDesc},
+		})
 	}
 	lockedDesc := DefaultFormat + unAllocatableStr + suffix
 	if unAllocatableQuantity.Value() == 0 {
 		lockedDesc = ""
+	} else {
+		di = append(di, DataItem{
+			Value: unAllocatableQuantityValue,
+			Name:  c.SDK.I18n(Cannot_Allocate),
+			Label: Label{Formatter: lockedDesc},
+		})
 	}
-	return []DataItem{{
-		Value: float64(allocatableQuantity.Value()),
-		Name:  c.SDK.I18n(Allocated),
-		Label: Label{Formatter: distributedDesc},
-	}, {
-		Value: float64(capacityQuantity.Value()),
-		Name:  c.SDK.I18n(Free_Allocate),
-		Label: Label{Formatter: freeDesc},
-	}, {
-		Value: float64(unAllocatableQuantity.Value()),
-		Name:  c.SDK.I18n(Cannot_Allocate),
-		Label: Label{Formatter: lockedDesc},
-	}}
+	return di
 }
 
 func GetScaleValue(quantity1 *resource.Quantity, quantity2 *resource.Quantity, quantity3 *resource.Quantity) (string, string, string) {
@@ -135,9 +154,7 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData, ResourceType string) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	cht.SDK = cputil.SDK(ctx)
-	var (
-		nodes []data.Object
-	)
+	var nodes []data.Object
 	nodes = (*gs)["nodes"].([]data.Object)
 	cht.Props.Option.Series[0].Data = cht.setData(nodes, ResourceType)
 	c.Props = cht.Props
@@ -173,7 +190,8 @@ type Serie struct {
 }
 
 type Legend struct {
-	Data []string `json:"data"`
+	Data   []string `json:"data"`
+	Bottom string   `json:"bottom"`
 }
 
 type Grid struct {
@@ -199,7 +217,7 @@ type Label struct {
 func (c *Chart) GetProps(name string) Props {
 	return Props{Option: Option{
 		Color:  []string{"#F7A76B", "#6CB38B", "#DE5757"},
-		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)}},
+		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)}, Bottom: "0"},
 		Grid: Grid{
 			Bottom:       0,
 			Top:          0,

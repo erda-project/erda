@@ -124,6 +124,7 @@ func (t *ComponentEventTable) RenderList() error {
 			continue
 		}
 		items = append(items, Item{
+			ID:                obj.String("metadata", "name"),
 			LastSeen:          fields[0],
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
 			Type:              t.SDK.I18n(fields[1]),
@@ -140,6 +141,7 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
+		RowKey:     "id",
 		Pagination: false,
 		Columns: []Column{
 			{

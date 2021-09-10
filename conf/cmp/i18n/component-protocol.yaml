@@ -31,6 +31,7 @@ zh:
  others: 其他
  Normal: 普通
  Warning: 警告
+ eventSearchPlaceHolder: 搜索事件内容
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU 请求值
@@ -125,7 +126,7 @@ zh:
  memUsed: Mem 使用率
  use: mem 使用率
  Terminating: 终止
- OOMKilled: 内存溢出
+ OOMKilled: 内存溢出被杀
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
@@ -210,6 +211,7 @@ en:
  others: Others
  Normal: Normal
  Warning: Warning
+ eventSearchPlaceHolder: Search Events
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests

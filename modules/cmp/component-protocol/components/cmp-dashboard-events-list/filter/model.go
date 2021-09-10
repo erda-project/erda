@@ -35,21 +35,23 @@ type State struct {
 	ClusterName    string      `json:"clusterName,omitempty"`
 	Conditions     []Condition `json:"conditions,omitempty"`
 	Values         Values      `json:"values,omitempty"`
-	FilterURLQuery string      `json:"filter_urlQuery,omitempty"`
+	FilterURLQuery string      `json:"filter__urlQuery,omitempty"`
 }
 
 type Values struct {
 	Type      []string `json:"type,omitempty"`
 	Namespace []string `json:"namespace,omitempty"`
+	Search    string   `json:"search,omitempty"`
 }
 
 type Condition struct {
-	HaveFilter bool     `json:"haveFilter,omitempty"`
-	Key        string   `json:"key,omitempty"`
-	Label      string   `json:"label,omitempty"`
-	Type       string   `json:"type,omitempty"`
-	Fixed      bool     `json:"fixed"`
-	Options    []Option `json:"options,omitempty"`
+	HaveFilter  bool     `json:"haveFilter,omitempty"`
+	Key         string   `json:"key,omitempty"`
+	Placeholder string   `json:"placeholder,omitempty"`
+	Label       string   `json:"label,omitempty"`
+	Type        string   `json:"type,omitempty"`
+	Fixed       bool     `json:"fixed"`
+	Options     []Option `json:"options,omitempty"`
 }
 
 type Option struct {

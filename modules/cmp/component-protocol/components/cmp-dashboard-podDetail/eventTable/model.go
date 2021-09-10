@@ -42,6 +42,7 @@ type Data struct {
 }
 
 type Item struct {
+	ID                string `json:"id,omitempty"`
 	LastSeen          string `json:"lastSeen"`
 	LastSeenTimestamp int64  `json:"lastSeenTimestamp"`
 	Type              string `json:"type"`
@@ -50,6 +51,7 @@ type Item struct {
 }
 
 type Props struct {
+	RowKey     string   `json:"rowKey,omitempty''"`
 	Pagination bool     `json:"pagination"`
 	Columns    []Column `json:"columns"`
 }

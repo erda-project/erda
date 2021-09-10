@@ -46,6 +46,7 @@ type Scroll struct {
 }
 
 type Props struct {
+	RowKey     string   `json:"rowKey"`
 	Pagination bool     `json:"pagination"`
 	Scroll     Scroll   `json:"scroll"`
 	Columns    []Column `json:"columns"`

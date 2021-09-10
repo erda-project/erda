@@ -43,13 +43,15 @@ func init() {
 }
 
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
-	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	f.InitComponent(ctx)
-	if err := f.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for filter component, %v", err)
-	}
 	if err := f.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen filter component state, %v", err)
+	}
+	if event.Operation == cptype.InitializeOperation {
+		if err := f.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for filter component, %v", err)
+		}
 	}
 	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)
@@ -243,6 +245,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 				Value: "Warning",
 			},
 		},
+	})
+
+	f.State.Conditions = append(f.State.Conditions, Condition{
+		Key:         "search",
+		Label:       cputil.I18n(ctx, "search"),
+		Placeholder: cputil.I18n(ctx, "eventSearchPlaceHolder"),
+		Type:        "input",
+		Fixed:       true,
 	})
 
 	f.Operations = make(map[string]interface{})
