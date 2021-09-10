@@ -15,6 +15,7 @@ package endpoints
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -42,7 +43,22 @@ func (e *Endpoints) CICDTaskLog(ctx context.Context, r *http.Request, vars map[s
 	if err := queryStringDecoder.Decode(&logReq, r.URL.Query()); err != nil {
 		return apierrors.ErrGetCICDTaskLog.InvalidParameter(err).ToResp(), nil
 	}
-	logReq.ID = task.Extra.UUID
+	logID := task.Extra.UUID
+	if logReq.ID != "" {
+		var exist bool
+		for _, container := range task.Extra.TaskContainers {
+			if container.ContainerID == logReq.ID {
+				exist = true
+			}
+		}
+		if !exist {
+			return apierrors.ErrGetCICDTaskLog.InvalidParameter(
+				fmt.Errorf("container: %s don't exist", logReq.ID),
+			).ToResp(), nil
+		}
+		logID = logReq.ID
+	}
+	logReq.ID = logID
 	logReq.Source = apistructs.DashboardSpotLogSourceJob
 
 	log, err := e.bdl.GetLog(logReq)
@@ -59,6 +75,27 @@ func (e *Endpoints) ProxyCICDTaskLogDownload(ctx context.Context, r *http.Reques
 		return apierrors.ErrDownloadCICDTaskLog.InternalError(err)
 	}
 
+	var logReq apistructs.DashboardSpotLogRequest
+	if err := queryStringDecoder.Decode(&logReq, r.URL.Query()); err != nil {
+		return apierrors.ErrDownloadCICDTaskLog.InvalidParameter(err)
+	}
+
+	logID := task.Extra.UUID
+	if logReq.ID != "" {
+		var exist bool
+		for _, container := range task.Extra.TaskContainers {
+			if container.ContainerID == logReq.ID {
+				exist = true
+			}
+		}
+		if !exist {
+			return apierrors.ErrDownloadCICDTaskLog.InvalidParameter(
+				fmt.Errorf("container: %s don't exist", logReq.ID),
+			)
+		}
+		logID = logReq.ID
+	}
+
 	// proxy
 	r.URL.Scheme = "http"
 	r.Host = discover.Monitor()
@@ -66,7 +103,10 @@ func (e *Endpoints) ProxyCICDTaskLogDownload(ctx context.Context, r *http.Reques
 	r.URL.Path = "/api/logs/actions/download"
 	q := r.URL.Query()
 	q.Add("source", string(apistructs.DashboardSpotLogSourceJob))
-	q.Add("id", task.Extra.UUID)
+	q.Add("id", logID)
+	q.Add("start", strconv.FormatInt(int64(logReq.Start), 10))
+	q.Add("end", strconv.FormatInt(int64(logReq.End), 10))
+	q.Add("stream", string(logReq.Stream))
 	r.URL.RawQuery = q.Encode()
 
 	return nil
