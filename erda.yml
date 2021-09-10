@@ -178,7 +178,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -373,7 +373,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "addons"
     expose:
@@ -538,7 +538,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -632,7 +632,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
