@@ -16,3 +16,8 @@ package common
 const Layout = "2006-01-02 15:04:05"
 
 type Void struct{}
+
+const (
+	// CALL_ANALYSIS_HTTP_CLIENT span call analysis dashboard id
+	CALL_ANALYSIS_HTTP_CLIENT = "span_call_analysis_http_client"
+)

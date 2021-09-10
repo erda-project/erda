@@ -28,6 +28,16 @@ const (
 	INPUT ConditionType = "input"
 )
 
+const (
+	JavaMemoryMetricName   = "jvm_memory"
+	NodeJsMemoryMetricName = "nodejs_memory"
+)
+
+var ProcessMetrics = []string{
+	JavaMemoryMetricName,
+	NodeJsMemoryMetricName,
+}
+
 var sortConditions = []*pb.TraceQueryCondition{
 	{Key: strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()), Value: strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String())},
 	{Key: strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()), Value: strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String())},
