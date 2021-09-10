@@ -634,7 +634,8 @@ func (svc *Service) renderPreSceneStepsOutput(sceneID uint64, replaceYml string)
 	for _, stage := range pipeline.PipelineStages {
 		for _, task := range stage.PipelineTasks {
 			for _, result := range task.Result.Metadata {
-				replaceYml = strings.ReplaceAll(replaceYml, expression.GenOutputRef(task.Name, result.Name), result.Value)
+				replaceValue := convertJsonParam(result.Value)
+				replaceYml = strings.ReplaceAll(replaceYml, expression.GenOutputRef(task.Name, result.Name), replaceValue)
 			}
 		}
 	}
