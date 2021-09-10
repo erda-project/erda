@@ -15,6 +15,7 @@
 package dop
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -81,6 +82,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
+
+const EtcdPipelineCmsCompensate = "dop/pipelineCms/compensate"
 
 // Initialize 初始化应用启动服务.
 func (p *provider) Initialize(ctx servicehub.Context) error {
@@ -191,9 +194,23 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	// compensate pipeline cms according to pipeline cron which enable is true
 	go func() {
-		if err = compensatePipelineCms(ep); err != nil {
+		// add etcd lock to ensure that it is executed only once
+		resp, err := p.EtcdClient.Get(context.Background(), EtcdPipelineCmsCompensate)
+		if err != nil {
 			logrus.Error(err)
+			return
 		}
+		if len(resp.Kvs) == 0 {
+			logrus.Infof("start compensate pipelineCms")
+			if err = compensatePipelineCms(ep); err != nil {
+				logrus.Error(err)
+			}
+			_, err = p.EtcdClient.Put(context.Background(), EtcdPipelineCmsCompensate, "true")
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+
 	}()
 
 	// daily issue expiry status update cron job
