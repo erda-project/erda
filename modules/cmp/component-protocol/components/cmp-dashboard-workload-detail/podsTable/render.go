@@ -192,6 +192,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
+		name := obj.String("metadata", "name")
+		namespace := obj.String("metadata", "namespace")
 		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
 			PodName:   name,
 			Namespace: namespace,
@@ -201,8 +203,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 			Namespace: namespace,
 		})
 
-		name := obj.String("metadata", "name")
-		namespace := obj.String("metadata", "namespace")
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 9 {
 			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
