@@ -17,15 +17,18 @@ package gittarutil
 import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type Ref struct {
 	Name string `json:"name"`
 }
 
-func (r *Repo) Branches() ([]string, error) {
+func (r *Repo) Branches(userID string) ([]string, error) {
 	var refs []Ref
-	req := httpclient.New().Get(r.GittarAddr).Path("/" + r.Repo + "/branches")
+	req := httpclient.New().Get(r.GittarAddr).
+		Header(httputil.UserHeader, userID).
+		Path("/" + r.Repo + "/branches")
 	if err := httpclientutil.DoJson(req, &refs); err != nil {
 		return nil, err
 	}
@@ -36,9 +39,11 @@ func (r *Repo) Branches() ([]string, error) {
 	return branches, nil
 }
 
-func (r *Repo) Tags() ([]string, error) {
+func (r *Repo) Tags(userID string) ([]string, error) {
 	var refs []Ref
-	req := httpclient.New().Get(r.GittarAddr).Path("/" + r.Repo + "/tags")
+	req := httpclient.New().Get(r.GittarAddr).
+		Header(httputil.UserHeader, userID).
+		Path("/" + r.Repo + "/tags")
 	if err := httpclientutil.DoJson(req, &refs); err != nil {
 		return nil, err
 	}

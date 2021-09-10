@@ -19,16 +19,19 @@ import (
 
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (r *Repo) FetchFile(ref string, filename string) (b []byte, err error) {
+func (r *Repo) FetchFile(ref string, filename, userID string) (b []byte, err error) {
 	defer func() {
 		err = errors.Wrapf(err, "failed to fetch file from gittar, ref [%s], filename [%s]", ref, filename)
 	}()
 	var content struct {
 		Content string `json:"content"`
 	}
-	req := httpclient.New().Get(r.GittarAddr, httpclient.RetryOption{}).
+	req := httpclient.New().
+		Get(r.GittarAddr, httpclient.RetryOption{}).
+		Header(httputil.UserHeader, userID).
 		Path("/"+r.Repo+"/blob/"+ref+"/"+filename).
 		Param("expand", "false").Param("comment", "false")
 	if err = httpclientutil.DoJson(req, &content); err != nil {

@@ -94,6 +94,18 @@ func (p *Pipeline) GetRunUserID() string {
 	return mustUserID(userID)
 }
 
+// GetUserID first to get run userID,if not exists, to get submit userID
+// Not included internal UserID
+func (p *Pipeline) GetUserID() string {
+	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+	}
+	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+	}
+	return ""
+}
+
 func (p *Pipeline) GetCancelUserID() string {
 	var userID string
 	if p.Extra.CancelUser != nil && p.Extra.CancelUser.ID != nil {
