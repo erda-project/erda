@@ -135,7 +135,12 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	if err := s.metricDB.Update(metric); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	checker := s.ConvertToChecker(ctx, metric, metric.ProjectID)
+	projectID, err := s.getProjectID(metric)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	req.Data.ProjectID = projectID
+	checker := s.ConvertToChecker(ctx, metric, projectID)
 	if checker != nil {
 		err := s.cache.Put(checker)
 		if err != nil {
@@ -154,13 +159,9 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 		return &pb.DeleteCheckerV1Response{}, nil
 	}
 
-	var projectID int64
-	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	projectID, err := s.getProjectID(metric)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
-	}
-	if proj != nil {
-		projectID = proj.ProjectID
 	}
 
 	err = s.metricDB.Delete(req.Id)
@@ -171,7 +172,6 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 	if err != nil {
 		return nil, err
 	}
-
 	return &pb.DeleteCheckerV1Response{Data: &pb.CheckerV1{
 		Name:      metric.Name,
 		Mode:      metric.Mode,
@@ -189,15 +189,37 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 	if metric == nil {
 		return &pb.GetCheckerV1Response{}, nil
 	}
+	projectID, err := s.getProjectID(metric)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
 	return &pb.GetCheckerV1Response{
 		Data: &pb.CheckerV1{
 			Name:      metric.Name,
 			Mode:      metric.Mode,
 			Url:       metric.URL,
-			ProjectID: metric.ProjectID,
+			ProjectID: projectID,
 			Env:       metric.Env,
 		},
 	}, nil
+}
+
+func (s *checkerV1Service) getProjectID(m *db.Metric) (int64, error) {
+	var projectID int64 = -1
+	if m.Extra != "" {
+		_, err := strconv.ParseInt(m.Extra, 10, 64)
+		if err == nil {
+			projectID = m.ProjectID
+		}
+	}
+	if projectID < 0 {
+		proj, err := s.projectDB.GetByID(m.ProjectID)
+		if err != nil {
+			return 0, err
+		}
+		projectID = proj.ProjectID
+	}
+	return projectID, nil
 }
 
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {
@@ -208,27 +230,24 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	var list []*db.Metric
 	if proj != nil {
 		// history record
-		oldCheckers, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
-		for _, checker := range oldCheckers {
-			if checker.Extra == "" {
-				list = append(list, checker)
+		oldMetrics, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		for _, m := range oldMetrics {
+			if m.Extra == "" {
+				list = append(list, m)
 			}
 		}
+		newMetrics, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
 		if err != nil {
 			return nil, errors.NewDatabaseError(err)
 		}
-		newCheckers, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
-		if err != nil {
-			return nil, errors.NewDatabaseError(err)
-		}
-		for _, checker := range newCheckers {
-			if checker.Extra != "" {
-				extra, err := strconv.ParseInt(checker.Extra, 10, 64)
-				if err != nil {
-					return nil, errors.NewDatabaseError(err)
-				}
-				if checker.ProjectID == extra {
-					list = append(list, checker)
+		for _, m := range newMetrics {
+			if m.Extra != "" {
+				extra, err := strconv.ParseInt(m.Extra, 10, 64)
+				if err == nil && m.ProjectID == extra {
+					list = append(list, m)
 				}
 			}
 		}

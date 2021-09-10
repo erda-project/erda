@@ -47,11 +47,6 @@ func (p *DefaultProvider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-// Provide .
-func (p *DefaultProvider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
-}
-
 // InitProvider register component as provider.
 func InitProvider(scenario, compName string) {
 	InitProviderWithCreator(scenario, compName, nil)

@@ -50,7 +50,6 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 var _ servicediscover.Interface = (*provider)(nil)
 
 func (p *provider) Endpoint(scheme, service string) (string, error) {
-	fmt.Println(scheme, service, p.urls)
 	for _, u := range p.urls[service] {
 		if u.Scheme == scheme {
 			return u.Host, nil
