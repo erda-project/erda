@@ -158,23 +158,23 @@ func (s *traceService) getSpanServiceAnalysis(ctx context.Context, req *pb.GetSp
 func (s *traceService) getSpanCallAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
 	switch req.Type {
 	case strings.ToLower(pb.SpanType_HTTP_CLIENT.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpClient, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpClient, Conditions: []string{"http_path", "http_method", "source_service_id"}}, nil
 	case strings.ToLower(pb.SpanType_HTTP_SERVER.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpServer, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpServer, Conditions: []string{"http_path", "http_method", "target_service_id"}}, nil
 	case strings.ToLower(pb.SpanType_RPC_CLIENT.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisRpcClient, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisRpcClient, Conditions: []string{"dubbo_service", "dubbo_method", "source_service_id"}}, nil
 	case strings.ToLower(pb.SpanType_RPC_SERVER.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisRpcServer, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisRpcServer, Conditions: []string{"dubbo_service", "dubbo_method", "target_service_id"}}, nil
 	case strings.ToLower(pb.SpanType_CACHE_CLIENT.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisCacheClient, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisCacheClient, Conditions: []string{"db_statement", "source_service_id"}}, nil
 	case strings.ToLower(pb.SpanType_MQ_PRODUCER.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisMqProducer, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisMqProducer, Conditions: []string{"span_kind", "target_service_id", "message_bus_destination"}}, nil
 	case strings.ToLower(pb.SpanType_MQ_CONSUMER.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisMqConsumer, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisMqConsumer, Conditions: []string{"span_kind", "source_service_id", "message_bus_destination"}}, nil
 	case strings.ToLower(pb.SpanType_INVOKE_LOCAL.String()):
-		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisInvokeLocal, Conditions: []string{"service_instance_id"}}, nil
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisInvokeLocal, Conditions: []string{"service_id"}}, nil
 	default:
-		return nil, errors.NewInternalServerError(errors.NewNotFoundError("span type not support"))
+		return nil, errors.NewNotFoundError(fmt.Sprintf("span type (%s)", req.Type))
 	}
 }
 
@@ -182,12 +182,12 @@ func (s *traceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDas
 	// call details analysis
 	callAnalysis, err := s.getSpanCallAnalysis(ctx, req)
 	if err != nil {
-
+		s.p.Log.Error(err)
 	}
 	// relate service analysis
 	serviceAnalysis, err := s.getSpanServiceAnalysis(ctx, req)
 	if err != nil {
-
+		s.p.Log.Error(err)
 	}
 	return &pb.GetSpanDashboardsResponse{
 		CallAnalysis:    callAnalysis,
