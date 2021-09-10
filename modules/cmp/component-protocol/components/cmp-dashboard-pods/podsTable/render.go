@@ -426,7 +426,13 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+	tip := fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+	value := fmt.Sprintf("%.2f", usedPercent)
+	if usedRes < 1e-4 {
+		tip = "N/A"
+		value = "N/A"
+	}
+	return status, value, tip
 }
 
 func convertUnit(bytes float64) string {
