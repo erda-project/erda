@@ -258,11 +258,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
 	if err != nil || len(cpuMetrics) == 0 {
-		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
+		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
+		cpuMetrics = make([]apistructs.MetricsData, len(items), len(items))
 	}
 	memMetrics, err := p.bdl.GetMetrics(memReq)
 	if err != nil || len(memMetrics) == 0 {
-		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
+		logrus.Errorf("failed to get mem metrics for pods, %v", err)
+		memMetrics = make([]apistructs.MetricsData, len(items), len(items))
 	}
 
 	for i, item := range items {
