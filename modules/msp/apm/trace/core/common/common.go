@@ -18,6 +18,20 @@ const Layout = "2006-01-02 15:04:05"
 type Void struct{}
 
 const (
-	// CALL_ANALYSIS_HTTP_CLIENT span call analysis dashboard id
-	CALL_ANALYSIS_HTTP_CLIENT = "span_call_analysis_http_client"
+	// CallAnalysisHttpClient http-client
+	CallAnalysisHttpClient = "span_call_analysis_http_client"
+	// CallAnalysisHttpServer http-server
+	CallAnalysisHttpServer = "span_call_analysis_http_server"
+	// CallAnalysisRpcClient rpc-client
+	CallAnalysisRpcClient = "span_call_analysis_rpc_client"
+	// CallAnalysisRpcServer rpc-server
+	CallAnalysisRpcServer = "span_call_analysis_rpc_server"
+	// CallAnalysisCacheClient cache client
+	CallAnalysisCacheClient = "span_call_analysis_cache_client"
+	// CallAnalysisMqProducer mq producer
+	CallAnalysisMqProducer = "span_call_analysis_mq_producer"
+	// CallAnalysisMqConsumer mq consumer
+	CallAnalysisMqConsumer = "span_call_analysis_mq_consumer"
+	// CallAnalysisInvokeLocal invoke local
+	CallAnalysisInvokeLocal = "span_call_analysis_invoke_local"
 )
