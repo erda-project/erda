@@ -654,7 +654,7 @@ type IssueExpiryStatus struct {
 
 func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
 	sql := client.Table("dice_issues").Joins(joinState).Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status")
-	sql = sql.Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
+	sql = sql.Where("deleted = 0").Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
 	if len(req.ProjectIDs) > 0 {
 		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
 	}
@@ -669,7 +669,7 @@ func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchR
 func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([]Issue, uint64, error) {
 	var res []Issue
 	sql := client.Table("dice_issues").Joins(joinState)
-	sql = sql.Where("dice_issues.project_id = ? AND assignee = ? AND dice_issue_state.belong IN (?)", req.ProjectID, req.Assignees, req.StateBelongs)
+	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ? AND assignee = ? AND dice_issue_state.belong IN (?)", req.ProjectID, req.Assignees, req.StateBelongs)
 	if req.OrderBy != "" {
 		if req.Asc {
 			sql = sql.Order(fmt.Sprintf("%s", req.OrderBy))
@@ -705,7 +705,7 @@ func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueSt
 		if _, ok := conditions[key]; !ok {
 			continue
 		}
-		sql := fmt.Sprintf("UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id SET a.expiry_status = ? WHERE a.expiry_status != ? AND b.belong IN (?) AND %s", conditions[key])
+		sql := fmt.Sprintf("UPDATE dice_issues a LEFT JOIN dice_issue_state b ON a.state = b.id SET a.expiry_status = ? WHERE a.deleted = 0 AND a.expiry_status != ? AND b.belong IN (?) AND %s", conditions[key])
 		if err := client.Exec(sql, key, key, states).Error; err != nil {
 			return err
 		}
