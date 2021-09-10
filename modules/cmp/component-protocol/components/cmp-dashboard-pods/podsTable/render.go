@@ -556,7 +556,7 @@ var PodStatusToColor = map[string]string{
 	"Evicted":           "darkgoldenrod",
 	"ImagePullBackOff":  "darksalmon",
 	"Pending":           "teal",
-	"Running":           "lightgreen",
+	"Running":           "green",
 	"Terminating":       "brown",
 }
 
