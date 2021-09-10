@@ -16,12 +16,52 @@ package apis
 
 import (
 	"context"
+	"net"
+	"strings"
+
+	"google.golang.org/grpc/peer"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
+// WithInternalClientContext .
 func WithInternalClientContext(ctx context.Context, internalClient string) context.Context {
 	header := transport.Header{}
 	header.Set(headerInternalClient, internalClient)
 	return transport.WithHeader(ctx, header)
+}
+
+// GetClientIP
+func GetClientIP(ctx context.Context) string {
+	header := transport.ContextHeader(ctx)
+	if header != nil {
+		for _, key := range []string{"X-Forwarded-For", "X-Real-IP"} {
+			for _, v := range header.Get(key) {
+				if len(v) > 0 {
+					return strings.Split(v, ",")[0]
+				}
+			}
+		}
+	}
+
+	if req := transhttp.ContextRequest(ctx); req != nil {
+		ip, _, err := net.SplitHostPort(req.RemoteAddr)
+		if err != nil {
+			return req.RemoteAddr
+		}
+		return ip
+	} else if pr, ok := peer.FromContext(ctx); ok {
+		if tcpAddr, ok := pr.Addr.(*net.TCPAddr); ok {
+			return tcpAddr.IP.String()
+		} else {
+			addr := pr.Addr.String()
+			ip, _, err := net.SplitHostPort(addr)
+			if err != nil {
+				return addr
+			}
+			return ip
+		}
+	}
+	return ""
 }
