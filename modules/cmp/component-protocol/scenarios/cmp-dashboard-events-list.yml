@@ -28,6 +28,8 @@ rendering:
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
+        - name: "filterValues"
+          value: "{{ filter.values }}"
   filter:
     - name: eventTable
       state:

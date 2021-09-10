@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -98,7 +99,7 @@ func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) erro
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	queryData, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := p.sdk.InParams["podsTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
@@ -150,9 +151,37 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}
 	list := obj.Slice("data")
 
+	cpuReq := apistructs.MetricsRequest{
+		UserID:       userID,
+		OrgID:        orgID,
+		ClusterName:  p.State.ClusterName,
+		ResourceKind: metrics.Pod,
+		ResourceType: metrics.Cpu,
+	}
+	memReq := apistructs.MetricsRequest{
+		UserID:       userID,
+		OrgID:        orgID,
+		ClusterName:  p.State.ClusterName,
+		ResourceKind: metrics.Pod,
+		ResourceType: metrics.Memory,
+	}
+	for _, obj := range list {
+		cpuReq.Names = append(cpuReq.Names, obj.String("metadata", "name"))
+		memReq.Names = append(memReq.Names, obj.String("metadata", "name"))
+	}
+
+	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
+	if err != nil || len(cpuMetrics) == 0 {
+		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+	memMetrics, err := p.bdl.GetMetrics(memReq)
+	if err != nil || len(memMetrics) == 0 {
+		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+
 	p.State.CountValues = make(map[string]int)
 	var items []Item
-	for _, obj := range list {
+	for i, obj := range list {
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
 		fields := obj.StringSlice("metadata", "fields")
@@ -188,6 +217,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		usedCPUPercent := cpuMetrics[i].Used
+		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
+
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		usedMemPercent := memMetrics[i].Used
+		memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
 			Status: status,
@@ -214,14 +250,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:      namespace,
-			IP:             fields[5],
-			CPURequests:    cpuRequests.String(),
-			CPULimits:      cpuLimits.String(),
+			Namespace:   namespace,
+			IP:          fields[5],
+			CPURequests: cpuRequests.String(),
+			CPULimits:   cpuLimits.String(),
+			CPUPercent: Percent{
+				RenderType: "progress",
+				Value:      cpuValue,
+				Tip:        cpuTip,
+				Status:     cpuStatus,
+			},
 			MemoryRequests: memRequests.String(),
 			MemoryLimits:   memLimits.String(),
-			Ready:          fields[1],
-			Node:           fields[6],
+			MemoryPercent: Percent{
+				RenderType: "progress",
+				Value:      memValue,
+				Tip:        memTip,
+				Status:     memStatus,
+			},
+			Ready: fields[1],
+			Node:  fields[6],
 		})
 	}
 
@@ -351,54 +399,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}
 
 	l, r := getRange(len(items), p.State.PageNo, p.State.PageSize)
-	for i := l; i < r; i++ {
-		cpuLimits, _ := resource.ParseQuantity(items[i].CPULimits)
-		memLimits, _ := resource.ParseQuantity(items[i].MemoryLimits)
-
-		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		memStatus, memValue, memTip := "success", "0", "N/A"
-		req := apistructs.MetricsRequest{
-			UserID:       userID,
-			OrgID:        orgID,
-			ClusterName:  p.State.ClusterName,
-			ResourceKind: "pod",
-			Names:        []string{items[i].Name.Value},
-		}
-
-		// cpu
-		req.ResourceType = "cpu"
-		usedCPUPercent := 0.0
-		cpuMetrics, err := p.bdl.GetMetrics(req)
-		if err != nil {
-			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", items[i].Namespace, items[i].Name.Value, err)
-		}
-		if err == nil && len(cpuMetrics) != 0 {
-			usedCPUPercent = cpuMetrics[0].Used
-		}
-		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, &cpuLimits, "cpu")
-
-		items[i].CPUPercent.RenderType = "progress"
-		items[i].CPUPercent.Status = cpuStatus
-		items[i].CPUPercent.Value = cpuValue
-		items[i].CPUPercent.Tip = cpuTip
-
-		// mem
-		req.ResourceType = "mem"
-		usedMemPercent := 0.0
-		memMetrics, err := p.bdl.GetMetrics(req)
-		if err != nil {
-			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", items[i].Namespace, items[i].Name.Value, err)
-		}
-		if err == nil && len(memMetrics) != 0 {
-			usedMemPercent = memMetrics[0].Used
-		}
-		memStatus, memValue, memTip = parseResPercent(usedMemPercent, &memLimits, "mem")
-
-		items[i].MemoryPercent.RenderType = "progress"
-		items[i].MemoryPercent.Status = memStatus
-		items[i].MemoryPercent.Value = memValue
-		items[i].MemoryPercent.Tip = memTip
-	}
 	p.Data.List = items[l:r]
 	p.State.Total = len(items)
 	return nil

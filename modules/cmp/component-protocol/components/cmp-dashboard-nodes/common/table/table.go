@@ -16,6 +16,8 @@ package table
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -557,13 +559,22 @@ func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
 }
 
 func (t *Table) GetOperate(id string) Operate {
+	obj := map[string]interface{}{
+		"node": []string{
+			id,
+		},
+	}
+	data, _ := json.Marshal(obj)
+	encode := base64.StdEncoding.EncodeToString(data)
 	return Operate{
 		RenderType: "tableOperation",
 		Operations: map[string]Operation{
 			"gotoPod": {Key: "gotoPod", Command: Command{
 				Key: "goto",
 				Command: CommandState{
-					Params: Params{NodeId: id},
+					Query: map[string]interface{}{
+						"filter__urlQuery": encode,
+					},
 				},
 				JumpOut: true,
 				Target:  "cmpClustersPods",

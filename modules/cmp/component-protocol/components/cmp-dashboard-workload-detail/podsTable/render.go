@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -168,8 +169,37 @@ func (p *ComponentPodsTable) RenderTable() error {
 		return err
 	}
 	list := obj.Slice("data")
-	var items []Item
+
+	cpuReq := apistructs.MetricsRequest{
+		UserID:       userID,
+		OrgID:        orgID,
+		ClusterName:  p.State.ClusterName,
+		ResourceKind: metrics.Pod,
+		ResourceType: metrics.Cpu,
+	}
+	memReq := apistructs.MetricsRequest{
+		UserID:       userID,
+		OrgID:        orgID,
+		ClusterName:  p.State.ClusterName,
+		ResourceKind: metrics.Pod,
+		ResourceType: metrics.Memory,
+	}
 	for _, obj := range list {
+		cpuReq.Names = append(cpuReq.Names, obj.String("metadata", "name"))
+		memReq.Names = append(memReq.Names, obj.String("metadata", "name"))
+	}
+
+	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
+	if err != nil || len(cpuMetrics) == 0 {
+		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+	memMetrics, err := p.bdl.GetMetrics(memReq)
+	if err != nil || len(memMetrics) == 0 {
+		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+
+	var items []Item
+	for i, obj := range list {
 		labels := obj.Map("metadata", "labels")
 		if !matchSelector(labelSelectors, labels) {
 			continue
@@ -197,40 +227,12 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		usedCPUPercent := cpuMetrics[i].Used
+		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
+
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		if fields[2] != "Completed" && fields[2] != "Error" {
-			req := apistructs.MetricsRequest{
-				UserID:       userID,
-				OrgID:        orgID,
-				ClusterName:  p.State.ClusterName,
-				ResourceKind: "pod",
-				Names:        []string{name},
-			}
-
-			// cpu
-			req.ResourceType = "cpu"
-			usedCPUPercent := 0.0
-			cpuMetrics, err := p.bdl.GetMetrics(req)
-			if err != nil {
-				logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
-			}
-			if err == nil && len(cpuMetrics) != 0 {
-				usedCPUPercent = cpuMetrics[0].Used
-			}
-			cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
-
-			// mem
-			req.ResourceType = "mem"
-			usedMemPercent := 0.0
-			memMetrics, err := p.bdl.GetMetrics(req)
-			if err != nil {
-				logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
-			}
-			if err == nil && len(memMetrics) != 0 {
-				usedMemPercent = memMetrics[0].Used
-			}
-			memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
-		}
+		usedMemPercent := memMetrics[i].Used
+		memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{

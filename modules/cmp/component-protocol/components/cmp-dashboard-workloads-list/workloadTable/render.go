@@ -54,13 +54,13 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 	case cptype.InitializeOperation:
 		w.State.PageNo = 1
 		w.State.PageSize = 20
+		if err := w.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to get url query for workloadTable component, %v", err)
+		}
 	case cptype.RenderingOperation, "changePageSize", "changeSort":
 		w.State.PageNo = 1
 	}
 
-	if err := w.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to get url query for workloadTable component, %v", err)
-	}
 	if err := w.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render workloadTable component, %v", err)
 	}
@@ -80,20 +80,23 @@ func (w *ComponentWorkloadTable) DecodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-	query := make(map[string]int)
+	query := make(map[string]interface{})
 	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(query["pageNo"])
-	w.State.PageSize = uint64(query["pageSize"])
+	w.State.PageNo = uint64(query["pageNo"].(float64))
+	w.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
+	w.State.Sorter.Field = sorter["field"].(string)
+	w.State.Sorter.Order = sorter["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	query := make(map[string]int)
-	query["pageNo"] = int(w.State.PageNo)
-	query["pageSize"] = int(w.State.PageSize)
-
+	query := make(map[string]interface{})
+	query["pageNo"] = w.State.PageNo
+	query["pageSize"] = w.State.PageSize
+	query["sorterData"] = w.State.Sorter
 	data, err := json.Marshal(query)
 	if err != nil {
 		return err
