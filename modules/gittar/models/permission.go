@@ -23,10 +23,6 @@ import (
 )
 
 func (svc *Service) CheckPermission(repo *gitmodule.Repository, user *User, permission Permission, resourceRoleList []string) error {
-	//用于pipeline的特殊用户
-	if user.IsInnerUser() {
-		return nil
-	}
 	resourceRole := ""
 	if len(resourceRoleList) > 0 {
 		resourceRole = strings.Join(resourceRoleList, ",")
