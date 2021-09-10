@@ -325,7 +325,7 @@ func (m *mockCqlQuery) Query(builder *qb.SelectBuilder, binding qb.M, dest inter
 			},
 		}
 		reflect.ValueOf(dest).Elem().Set(reflect.ValueOf(tmp))
-	case "SELECT * FROM spot_org_1.base_log WHERE source=? AND id=? AND stream=? AND time_bucket=? AND timestamp>=? AND timestamp<? ORDER BY timestamp ASC,offset ASC LIMIT 200 ":
+	case "SELECT * FROM spot_org_1.base_log WHERE source=? AND id=? AND stream=? AND time_bucket=? AND timestamp>=? AND timestamp<? ORDER BY timestamp ASC,offset ASC ":
 		tmp := []*SavedLog{
 			{
 				ID:         "aaa",
