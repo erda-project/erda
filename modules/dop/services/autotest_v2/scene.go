@@ -525,6 +525,8 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 	}
 
+	apiTestStr = svc.renderPreSceneStepsOutput(step.SceneID, apiTestStr)
+
 	for _, conf := range configs.Data {
 		switch conf.Key {
 		case autotest.CmsCfgKeyAPIGlobalConfig:
@@ -594,6 +596,50 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 	}
 
 	return &respData, nil
+}
+
+func (svc *Service) renderPreSceneStepsOutput(sceneID uint64, replaceYml string) string {
+	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
+		PageNum:  1,
+		PageSize: 1,
+		Sources: []apistructs.PipelineSource{
+			apistructs.PipelineSourceAutoTest,
+		},
+		YmlNames: []string{
+			strconv.Itoa(int(sceneID)),
+		},
+		Statuses: []string{apistructs.PipelineStatusSuccess.String(), apistructs.PipelineStatusFailed.String()},
+		DescCols: []string{"id"},
+	}
+	pagePipeline, err := svc.bdl.PageListPipeline(pipelinePageListRequest)
+	if err != nil {
+		logrus.Errorf("renderPreSceneStepsOutput, pageListPipeline error %v", err)
+		return replaceYml
+	}
+
+	if pagePipeline == nil || len(pagePipeline.Pipelines) <= 0 {
+		return replaceYml
+	}
+
+	pipeline, err := svc.bdl.GetPipeline(pagePipeline.Pipelines[0].ID)
+	if err != nil {
+		logrus.Errorf("renderPreSceneStepsOutput, GetPipeline error %v", err)
+		return replaceYml
+	}
+
+	if pipeline == nil {
+		return replaceYml
+	}
+
+	for _, stage := range pipeline.PipelineStages {
+		for _, task := range stage.PipelineTasks {
+			for _, result := range task.Result.Metadata {
+				replaceYml = strings.ReplaceAll(replaceYml, expression.GenOutputRef(task.Name, result.Name), result.Value)
+			}
+		}
+	}
+
+	return replaceYml
 }
 
 func (svc *Service) SceneToYml(scene uint64) (string, error) {
