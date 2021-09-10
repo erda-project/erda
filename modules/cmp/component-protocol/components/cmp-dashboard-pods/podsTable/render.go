@@ -265,7 +265,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
 		usedCPUPercent := cpuMetrics[i].Used
 		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, &cpuLimits, "cpu")
-		item.CPUPercent = Percent{
+		items[i].CPUPercent = Percent{
 			RenderType: "progress",
 			Value:      cpuValue,
 			Tip:        cpuTip,
@@ -275,7 +275,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		memStatus, memValue, memTip := "success", "0", "N/A"
 		usedMemPercent := memMetrics[i].Used
 		memStatus, memValue, memTip = parseResPercent(usedMemPercent, &memLimits, "mem")
-		item.MemoryPercent = Percent{
+		items[i].MemoryPercent = Percent{
 			RenderType: "progress",
 			Value:      memValue,
 			Tip:        memTip,
