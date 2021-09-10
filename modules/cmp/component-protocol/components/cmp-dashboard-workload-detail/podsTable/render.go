@@ -184,9 +184,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ResourceKind: metrics.Pod,
 		ResourceType: metrics.Memory,
 	}
+
+	var items []Item
 	for _, obj := range list {
-		name := obj.String("metadata", "name")
-		namespace := obj.String("metadata", "namespace")
+		labels := obj.Map("metadata", "labels")
+		if !matchSelector(labelSelectors, labels) {
+			continue
+		}
+
 		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
 			PodName:   name,
 			Namespace: namespace,
@@ -195,23 +200,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 			PodName:   name,
 			Namespace: namespace,
 		})
-	}
-
-	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
-	if err != nil || len(cpuMetrics) == 0 {
-		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
-	}
-	memMetrics, err := p.bdl.GetMetrics(memReq)
-	if err != nil || len(memMetrics) == 0 {
-		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
-	}
-
-	var items []Item
-	for i, obj := range list {
-		labels := obj.Map("metadata", "labels")
-		if !matchSelector(labelSelectors, labels) {
-			continue
-		}
 
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
@@ -233,14 +221,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memRequests.Add(*parseResource(container.String("resources", "requests", "memory"), resource.BinarySI))
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
-
-		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[i].Used
-		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
-
-		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[i].Used
-		memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -265,27 +245,49 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:   namespace,
-			IP:          fields[5],
-			CPURequests: cpuRequests.String(),
-			CPUPercent: Percent{
-				RenderType: "progress",
-				Value:      cpuValue,
-				Tip:        cpuTip,
-				Status:     cpuStatus,
-			},
+			Namespace:      namespace,
+			IP:             fields[5],
+			CPURequests:    cpuRequests.String(),
 			CPULimits:      cpuLimits.String(),
 			MemoryRequests: memRequests.String(),
-			MemoryPercent: Percent{
-				RenderType: "progress",
-				Value:      memValue,
-				Tip:        memTip,
-				Status:     memStatus,
-			},
-			MemoryLimits: memLimits.String(),
-			Ready:        fields[1],
-			NodeName:     fields[6],
+			MemoryLimits:   memLimits.String(),
+			Ready:          fields[1],
+			NodeName:       fields[6],
 		})
+	}
+
+	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
+	if err != nil || len(cpuMetrics) == 0 {
+		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+	memMetrics, err := p.bdl.GetMetrics(memReq)
+	if err != nil || len(memMetrics) == 0 {
+		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+
+	for i, item := range items {
+		cpuLimits, _ := resource.ParseQuantity(item.CPULimits)
+		memLimits, _ := resource.ParseQuantity(item.MemoryLimits)
+
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		usedCPUPercent := cpuMetrics[i].Used
+		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, &cpuLimits, "cpu")
+		item.CPUPercent = Percent{
+			RenderType: "progress",
+			Value:      cpuValue,
+			Tip:        cpuTip,
+			Status:     cpuStatus,
+		}
+
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		usedMemPercent := memMetrics[i].Used
+		memStatus, memValue, memTip = parseResPercent(usedMemPercent, &memLimits, "mem")
+		item.MemoryPercent = Percent{
+			RenderType: "progress",
+			Value:      memValue,
+			Tip:        memTip,
+			Status:     memStatus,
+		}
 	}
 
 	if p.State.Sorter.Field != "" {

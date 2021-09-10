@@ -165,31 +165,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ResourceKind: metrics.Pod,
 		ResourceType: metrics.Memory,
 	}
-	for _, obj := range list {
-		name := obj.String("metadata", "name")
-		namespace := obj.String("metadata", "namespace")
-		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
-			PodName:   name,
-			Namespace: namespace,
-		})
-		memReq.PodRequests = append(memReq.PodRequests, apistructs.MetricsPodRequest{
-			PodName:   name,
-			Namespace: namespace,
-		})
-	}
-
-	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
-	if err != nil || len(cpuMetrics) == 0 {
-		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
-	}
-	memMetrics, err := p.bdl.GetMetrics(memReq)
-	if err != nil || len(memMetrics) == 0 {
-		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
-	}
 
 	p.State.CountValues = make(map[string]int)
 	var items []Item
-	for i, obj := range list {
+	for _, obj := range list {
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
 		fields := obj.StringSlice("metadata", "fields")
@@ -211,6 +190,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
+		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
+			PodName:   name,
+			Namespace: namespace,
+		})
+		memReq.PodRequests = append(memReq.PodRequests, apistructs.MetricsPodRequest{
+			PodName:   name,
+			Namespace: namespace,
+		})
 		p.State.CountValues[fields[2]]++
 		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
@@ -225,13 +212,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
-		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[i].Used
-		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
-
-		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[i].Used
-		memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
 			Status: status,
@@ -258,27 +238,49 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:   namespace,
-			IP:          fields[5],
-			CPURequests: cpuRequests.String(),
-			CPULimits:   cpuLimits.String(),
-			CPUPercent: Percent{
-				RenderType: "progress",
-				Value:      cpuValue,
-				Tip:        cpuTip,
-				Status:     cpuStatus,
-			},
+			Namespace:      namespace,
+			IP:             fields[5],
+			CPURequests:    cpuRequests.String(),
+			CPULimits:      cpuLimits.String(),
 			MemoryRequests: memRequests.String(),
 			MemoryLimits:   memLimits.String(),
-			MemoryPercent: Percent{
-				RenderType: "progress",
-				Value:      memValue,
-				Tip:        memTip,
-				Status:     memStatus,
-			},
-			Ready: fields[1],
-			Node:  fields[6],
+			Ready:          fields[1],
+			Node:           fields[6],
 		})
+	}
+
+	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
+	if err != nil || len(cpuMetrics) == 0 {
+		cpuMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+	memMetrics, err := p.bdl.GetMetrics(memReq)
+	if err != nil || len(memMetrics) == 0 {
+		memMetrics = make([]apistructs.MetricsData, len(list), len(list))
+	}
+
+	for i, item := range items {
+		cpuLimits, _ := resource.ParseQuantity(item.CPULimits)
+		memLimits, _ := resource.ParseQuantity(item.MemoryLimits)
+
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		usedCPUPercent := cpuMetrics[i].Used
+		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, &cpuLimits, "cpu")
+		item.CPUPercent = Percent{
+			RenderType: "progress",
+			Value:      cpuValue,
+			Tip:        cpuTip,
+			Status:     cpuStatus,
+		}
+
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		usedMemPercent := memMetrics[i].Used
+		memStatus, memValue, memTip = parseResPercent(usedMemPercent, &memLimits, "mem")
+		item.MemoryPercent = Percent{
+			RenderType: "progress",
+			Value:      memValue,
+			Tip:        memTip,
+			Status:     memStatus,
+		}
 	}
 
 	if p.State.Sorter.Field != "" {
