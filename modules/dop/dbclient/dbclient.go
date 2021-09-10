@@ -34,6 +34,13 @@ type DBClient struct {
 	*dbengine.DBEngine
 }
 
+func Set(ng *dbengine.DBEngine) {
+	if DB == nil {
+		DB = new(DBClient)
+	}
+	DB.DBEngine = ng
+}
+
 func Open() error {
 	if DB != nil {
 		return nil

@@ -64,9 +64,14 @@ type Operate struct {
 }
 
 type Status struct {
-	RenderType  string      `json:"renderType"`
-	Value       string      `json:"value"`
-	StyleConfig StyleConfig `json:"styleConfig"`
+	RenderType string      `json:"renderType"`
+	Size       string      `json:"size,omitempty"`
+	Value      StatusValue `json:"value,omitempty"`
+}
+
+type StatusValue struct {
+	Label string `json:"label,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type Images struct {
@@ -75,10 +80,11 @@ type Images struct {
 }
 
 type Operation struct {
-	Key    string            `json:"key"`
-	Text   string            `json:"text"`
-	Reload bool              `json:"reload"`
-	Meta   map[string]string `json:"meta,omitempty"`
+	ContainerID string            `json:"containerId,omitempty"`
+	Key         string            `json:"key"`
+	Text        string            `json:"text"`
+	Reload      bool              `json:"reload"`
+	Meta        map[string]string `json:"meta,omitempty"`
 }
 
 type StyleConfig struct {

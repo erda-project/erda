@@ -115,15 +115,9 @@ func (p *Provider) ProcessPipelineDefinition(ctx context.Context, req deftype.Cl
 }
 
 func init() {
-	var services []string
-	var types []reflect.Type
-
-	services = append(services, "erda.core.pipeline.definition.ClientDefinitionService")
-	types = append(types, reflect.TypeOf(reflect.TypeOf((*Processor)(nil)).Elem()))
-
-	servicehub.Register("erda.core.pipeline.definition-client", &servicehub.Spec{
-		Services:             services,
-		Types:                types,
+	servicehub.Register("erda.core.pipeline.definition-process-client", &servicehub.Spec{
+		Services:             []string{"erda.core.pipeline.definition-process-client"},
+		Types:                []reflect.Type{reflect.TypeOf(reflect.TypeOf((*Processor)(nil)).Elem())},
 		OptionalDependencies: []string{"service-register"},
 		Description:          "",
 		ConfigFunc: func() interface{} {

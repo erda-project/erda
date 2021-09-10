@@ -448,7 +448,7 @@ func (svc *Service) ListMyClients(req *apistructs.ListMyClientsReq) (*apistructs
 
 	var list []*apistructs.ClientObj
 	for _, v := range models {
-		credentials, err := bdl.Bdl.GetClientCredentials(v.ClientID)
+		credentials, err := bdl.Bdl.GetClientCredentials(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, v.ClientID)
 		if err != nil {
 			return nil, apierrors.ListClients.InternalError(err)
 		}
@@ -512,7 +512,7 @@ func (svc *Service) ListContracts(req *apistructs.ListContractsReq) (*apistructs
 		c.ProjectID = access.ProjectID
 		c.Workspace = access.Workspace
 
-		endpoint, err := bdl.Bdl.GetEndpoint(access.EndpointID)
+		endpoint, err := bdl.Bdl.GetEndpoint(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, access.EndpointID)
 		if err != nil {
 			continue
 		}

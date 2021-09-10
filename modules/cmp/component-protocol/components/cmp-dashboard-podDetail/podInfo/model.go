@@ -50,7 +50,7 @@ type Field struct {
 	Label      string               `json:"label"`
 	ValueKey   string               `json:"valueKey"`
 	RenderType string               `json:"renderType,omitempty"`
-	Operation  map[string]Operation `json:"operation,omitempty"`
+	Operations map[string]Operation `json:"operations,omitempty"`
 	SpaceNum   int                  `json:"spaceNum,omitempty"`
 }
 
@@ -64,7 +64,7 @@ type Command struct {
 	Key     string       `json:"key"`
 	Target  string       `json:"target"`
 	State   CommandState `json:"state"`
-	JumpOut bool         `json:"jump_out"`
+	JumpOut bool         `json:"jumpOut"`
 }
 
 type CommandState struct {
@@ -72,8 +72,8 @@ type CommandState struct {
 }
 
 type Tag struct {
-	Label string `json:"label"`
-	Group string `json:"group"`
+	Label string `json:"label,omitempty"`
+	Group string `json:"group,omitempty"`
 }
 
 type State struct {

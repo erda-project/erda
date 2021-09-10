@@ -48,7 +48,7 @@ type RuntimeServiceReqDto struct {
 	AppId                 string             `json:"appID"`
 	AppName               string             `json:"appName"`
 	Services              []ServiceDetailDto `json:"services"`
-	UseApigw              *bool              `json:"useApigw"`
+	UseApigw              bool               `json:"useApigw"`
 }
 
 func (dto EndpointDomainDto) CheckValid() error {
@@ -76,8 +76,7 @@ func (dto ServiceDetailDto) CheckValid() error {
 
 func (dto RuntimeServiceReqDto) CheckValid() error {
 	if dto.ProjectId == "" || dto.OrgId == "" || dto.Env == "" || dto.ClusterName == "" ||
-		dto.RuntimeId == "" || dto.RuntimeName == "" || dto.AppId == "" ||
-		dto.UseApigw == nil {
+		dto.RuntimeId == "" || dto.RuntimeName == "" || dto.AppId == "" {
 		return errors.Errorf("invalid runtime req dto:%+v", dto)
 	}
 	for _, service := range dto.Services {

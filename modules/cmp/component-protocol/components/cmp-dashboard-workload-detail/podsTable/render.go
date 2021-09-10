@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -181,7 +182,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
 			continue
 		}
-		status := parsePodStatus(fields[2])
+		status := p.parsePodStatus(fields[2])
 
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)
@@ -195,36 +196,41 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
-		req := apistructs.MetricsRequest{
-			UserID:      userID,
-			OrgID:       orgID,
-			ClusterName: p.State.ClusterName,
-			Names:       []string{name},
-		}
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		if fields[2] != "Completed" && fields[2] != "Error" {
+			req := apistructs.MetricsRequest{
+				UserID:       userID,
+				OrgID:        orgID,
+				ClusterName:  p.State.ClusterName,
+				ResourceKind: "pod",
+				Names:        []string{name},
+			}
 
-		// cpu
-		req.ResourceType = "cpu"
-		usedCPUPercent := 0.0
-		cpuMetrics, err := p.bdl.GetMetrics(req)
-		if err != nil {
-			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
-		}
-		if err == nil && len(cpuMetrics) != 0 {
-			usedCPUPercent = cpuMetrics[0].Used
-		}
-		cpuStatus, cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
+			// cpu
+			req.ResourceType = "cpu"
+			usedCPUPercent := 0.0
+			cpuMetrics, err := p.bdl.GetMetrics(req)
+			if err != nil {
+				logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
+			}
+			if err == nil && len(cpuMetrics) != 0 {
+				usedCPUPercent = cpuMetrics[0].Used
+			}
+			cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
 
-		// mem
-		req.ResourceType = "mem"
-		usedMemPercent := 0.0
-		memMetrics, err := p.bdl.GetMetrics(req)
-		if err != nil {
-			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
+			// mem
+			req.ResourceType = "mem"
+			usedMemPercent := 0.0
+			memMetrics, err := p.bdl.GetMetrics(req)
+			if err != nil {
+				logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
+			}
+			if err == nil && len(memMetrics) != 0 {
+				usedMemPercent = memMetrics[0].Used
+			}
+			memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
 		}
-		if err == nil && len(memMetrics) != 0 {
-			usedMemPercent = memMetrics[0].Used
-		}
-		memStatus, memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -278,7 +284,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			switch field {
 			case "status":
 				return func(i int, j int) bool {
-					less := items[i].Status.Value < items[j].Status.Value
+					less := items[i].Status.Value.Label < items[j].Status.Value.Label
 					if ascend {
 						return less
 					}
@@ -410,12 +416,12 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		totRes = totQty.Value()
 	}
-	usedRes := int64(float64(totRes) * usedPercent)
-	var usedQty *resource.Quantity
+	usedRes := float64(totRes) * usedPercent / 100
+	usedQtyString := ""
 	if kind == "cpu" {
-		usedQty = resource.NewMilliQuantity(usedRes, resource.DecimalSI)
+		usedQtyString = fmt.Sprintf("%.3f", usedRes/1000)
 	} else {
-		usedQty = resource.NewQuantity(usedRes, resource.BinarySI)
+		usedQtyString = convertUnit(usedRes)
 	}
 	status := ""
 	if usedPercent <= 80 {
@@ -425,7 +431,23 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
+	tip := fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+	value := fmt.Sprintf("%.2f", usedPercent)
+	if usedRes < 1e-4 {
+		tip = "N/A"
+		value = "N/A"
+	}
+	return status, value, tip
+}
+
+func convertUnit(bytes float64) string {
+	units := []string{"B", "Ki", "Mi", "Gi"}
+	i := 0
+	for bytes >= 1<<10 && i < len(units)-1 {
+		bytes /= 1 << 10
+		i++
+	}
+	return fmt.Sprintf("%.3f%s", bytes, units[i])
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
@@ -542,32 +564,19 @@ func matchSelector(selector, labels map[string]interface{}) bool {
 	return true
 }
 
-func parsePodStatus(state string) Status {
-	status := Status{
-		RenderType: "text",
-		Value:      state,
+func (p *ComponentPodsTable) parsePodStatus(state string) Status {
+	color := podsTable.PodStatusToColor[state]
+	if color == "" {
+		color = "darkslategray"
 	}
-	switch state {
-	case "Completed":
-		status.StyleConfig.Color = "steelBlue"
-	case "ContainerCreating":
-		status.StyleConfig.Color = "orange"
-	case "CrashLoopBackOff":
-		status.StyleConfig.Color = "red"
-	case "Error":
-		status.StyleConfig.Color = "maroon"
-	case "Evicted":
-		status.StyleConfig.Color = "darkgoldenrod"
-	case "ImagePullBackOff":
-		status.StyleConfig.Color = "darksalmon"
-	case "Pending":
-		status.StyleConfig.Color = "teal"
-	case "Running":
-		status.StyleConfig.Color = "lightgreen"
-	case "Terminating":
-		status.StyleConfig.Color = "brown"
+	return Status{
+		RenderType: "tagsRow",
+		Size:       "default",
+		Value: StatusValue{
+			Label: p.sdk.I18n(state),
+			Color: color,
+		},
 	}
-	return status
 }
 
 func parseResource(str string, format resource.Format) *resource.Quantity {

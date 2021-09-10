@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
 )
 
 type ComponentSpaceList struct {
@@ -143,9 +143,70 @@ func getStatus(req apistructs.AutoTestSpaceStatus) map[string]interface{} {
 	return res
 }
 
-func (a *ComponentSpaceList) setData(spaces apistructs.AutoTestSpaceList) error {
+func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTestSpaceList) error {
+	access, err := a.CtxBdl.Bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   a.CtxBdl.Identity.UserID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  uint64(projectID),
+		Resource: apistructs.TestSpaceResource,
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return err
+	}
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	lists := []spaceList{}
 	for _, each := range spaces.List {
+		var (
+			edit = dataOperation{
+				Key:         "edit",
+				Reload:      false,
+				Text:        i18nLocale.Get(i18n.I18nKeyEdit),
+				Command:     map[string]interface{}{},
+				Disabled:    false,
+				ShowIndex:   1,
+				DisabledTip: i18nLocale.Get(i18n.I18nKeyNoPermission),
+			}
+			copyOp = dataOperation{
+				Key:         "copy",
+				Reload:      true,
+				Text:        i18nLocale.Get(i18n.I18nKeyCopy),
+				Confirm:     i18nLocale.Get(i18n.I18nKeyCopyConfirm),
+				Meta:        map[string]interface{}{},
+				Disabled:    true,
+				ShowIndex:   2,
+				DisabledTip: i18nLocale.Get(i18n.I18nKeyNoPermission),
+			}
+			export = dataOperation{
+				Key:         "export",
+				Reload:      true,
+				Text:        i18nLocale.Get(i18n.I18nKeyExport),
+				Confirm:     i18nLocale.Get(i18n.I18nKeyExportConfirm),
+				Meta:        map[string]interface{}{},
+				Disabled:    false,
+				SuccessMsg:  i18nLocale.Get(i18n.I18nKeyExportSuccessMsg),
+				ShowIndex:   3,
+				DisabledTip: i18nLocale.Get(i18n.I18nKeyNoPermission),
+			}
+			deleteOp = dataOperation{
+				Key:         "delete",
+				Reload:      true,
+				Text:        i18nLocale.Get(i18n.I18nKeyDelete),
+				Confirm:     i18nLocale.Get(i18n.I18nKeyDeleteConfirm),
+				Meta:        map[string]interface{}{},
+				DisabledTip: i18nLocale.Get(i18n.I18nKeyDeleteDisabledTip),
+				Disabled:    true,
+				ShowIndex:   4,
+			}
+			retry = dataOperation{
+				Key:       "retry",
+				Reload:    true,
+				Text:      i18nLocale.Get(i18n.I18nKeyRetry),
+				Meta:      map[string]interface{}{},
+				Disabled:  false,
+				ShowIndex: 5,
+			}
+		)
 		list := spaceList{
 			ID:   each.ID,
 			Name: each.Name,
@@ -161,9 +222,9 @@ func (a *ComponentSpaceList) setData(spaces apistructs.AutoTestSpaceList) error 
 			edit.Command = setCommand(list)
 			edit.Disabled = true
 			list.Operate.Operations["a-edit"] = edit
-			delete.Meta = setMeta(list)
-			delete.Disabled = false
-			list.Operate.Operations["delete"] = delete
+			deleteOp.Meta = setMeta(list)
+			deleteOp.Disabled = false
+			list.Operate.Operations["delete"] = deleteOp
 			retry.Meta = setMeta(list)
 			export.Meta = setMeta(list)
 			export.Disabled = true
@@ -171,20 +232,22 @@ func (a *ComponentSpaceList) setData(spaces apistructs.AutoTestSpaceList) error 
 			list.Operate.Operations["retry"] = retry
 		} else {
 			edit.Command = setCommand(list)
-			copy.Meta = setMeta(list)
-			delete.Meta = setMeta(list)
-			delete.Disabled = true
-			copy.Disabled = true
+			copyOp.Meta = setMeta(list)
+			deleteOp.Meta = setMeta(list)
+			deleteOp.Disabled = true
+			copyOp.Disabled = true
 			edit.Disabled = true
-			if each.Status == apistructs.TestSpaceOpen {
+			export.Disabled = true
+			if each.Status == apistructs.TestSpaceOpen && access.Access {
 				edit.Disabled = false
-				copy.Disabled = false
+				copyOp.Disabled = false
+				export.Disabled = false
 			}
 			list.Operate.Operations["a-edit"] = edit
-			list.Operate.Operations["copy"] = copy
+			list.Operate.Operations["copy"] = copyOp
 			export.Meta = setMeta(list)
 			list.Operate.Operations["export"] = export
-			list.Operate.Operations["delete"] = delete
+			list.Operate.Operations["delete"] = deleteOp
 		}
 		lists = append(lists, list)
 	}

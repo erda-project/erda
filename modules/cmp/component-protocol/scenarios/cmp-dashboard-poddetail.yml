@@ -13,7 +13,7 @@ hierarchy:
       - containerTable
       - eventTitle
       - eventTable
-    tableTabs:
+    header:
       - podTitle
       - podStatus
 
@@ -23,7 +23,7 @@ components:
   header:
     type: RowContainer
   podStatus:
-    type: Text
+    type: Tags
   podTitle:
     type: Title
   containerTitle:

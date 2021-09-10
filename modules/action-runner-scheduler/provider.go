@@ -42,8 +42,8 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func init() {
-	servicehub.Register("action-runner-scheduler", &servicehub.Spec{
-		Services: []string{"action-runner-scheduler"},
+	servicehub.Register("action_runner_scheduler", &servicehub.Spec{
+		Services: []string{"action_runner_scheduler"},
 		Creator:  func() servicehub.Provider { return &provider{} },
 	})
 }

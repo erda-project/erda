@@ -37,10 +37,10 @@ type ResourceType string
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
-	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field, cpu_request_total::field, n_cpus::tag FROM host_summary WHERE cluster_name::tag=$cluster_name AND hostname::tag=$hostname ORDER BY time DESC LIMIT 1`
-	NodeMemoryUsageSelectStatement = `SELECT mem_used::field, mem_limit_total::field, mem_total::field  FROM host_summary  WHERE cluster_name::tag=$cluster_name AND hostname::tag=$hostname  ORDER BY time DESC LIMIT 1`
-	PodCpuUsageSelectStatement     = `SELECT cpu_usage_percent::field FROM docker_container_summary WHERE pod_name::tag=$pod_name ORDER BY time DESC LIMIT 1`
-	PodMemoryUsageSelectStatement  = `SELECT mem_usage_percent::field FROM docker_container_summary WHERE pod_name::tag=$pod_name ORDER BY time DESC LIMIT 1`
+	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip ORDER BY time DESC LIMIT 1`
+	NodeMemoryUsageSelectStatement = `SELECT mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  ORDER BY time DESC LIMIT 1`
+	PodCpuUsageSelectStatement     = `SELECT round_float(cpu_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and podsandbox != true ORDER BY time DESC LIMIT 1`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(mem_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and podsandbox != true ORDER BY time DESC LIMIT 1`
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -63,7 +63,7 @@ type MetricError struct {
 }
 
 func (m MetricError) Render(locale *i18n.LocaleResource) string {
-	return m.message
+	return locale.Name()
 }
 
 func (m MetricError) Code() string {
@@ -131,7 +131,7 @@ func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsR
 	reqs := ToInfluxReq(req)
 	for _, queryReq := range reqs {
 		d := apistructs.MetricsData{}
-		key := cache.GenerateKey([]string{queryReq.Params["hostname"].String(), req.ClusterName, string(req.ResourceType)})
+		key := cache.GenerateKey([]string{queryReq.Params["host_ip"].String(), req.ClusterName, req.ResourceType})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
 			return httpserver.ErrResp(http.StatusInternalServerError, "Internal Error", err.Error())
@@ -140,8 +140,6 @@ func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsR
 				return httpserver.ErrResp(http.StatusServiceUnavailable, "Internal Error", NilValueError.Error())
 			}
 			d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
-			d.Request = resp.Results[0].Series[0].Rows[0].Values[1].GetNumberValue()
-			d.Total = resp.Results[0].Series[0].Rows[0].Values[2].GetNumberValue()
 		}
 		data = append(data, d)
 	}
@@ -186,11 +184,9 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequest {
 	queryReqs := make([]*pb.QueryWithInfluxFormatRequest, 0)
 	//start, end, _ := getTimeRange("hour", 1, false)
-	for _, name := range req.Names {
-		queryReq := &pb.QueryWithInfluxFormatRequest{}
-		//queryReq.Start = strconv.FormatInt(start, 10)
-		//queryReq.End = strconv.FormatInt(end, 10)
-		if req.ResourceKind == "node" {
+	if req.ResourceKind == Node {
+		for _, ip := range req.IP {
+			queryReq := &pb.QueryWithInfluxFormatRequest{}
 			switch req.ResourceType {
 			case Cpu:
 				queryReq.Statement = NodeCpuUsageSelectStatement
@@ -201,9 +197,13 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			}
 			queryReq.Params = map[string]*structpb.Value{
 				"cluster_name": structpb.NewStringValue(req.ClusterName),
-				"hostname":     structpb.NewStringValue(name),
+				"host_ip":      structpb.NewStringValue(ip),
 			}
-		} else {
+			queryReqs = append(queryReqs, queryReq)
+		}
+	} else {
+		for _, name := range req.Names {
+			queryReq := &pb.QueryWithInfluxFormatRequest{}
 			switch req.ResourceType {
 			case Cpu:
 				queryReq.Statement = PodCpuUsageSelectStatement
@@ -215,8 +215,8 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			queryReq.Params = map[string]*structpb.Value{
 				"pod_name": structpb.NewStringValue(name),
 			}
+			queryReqs = append(queryReqs, queryReq)
 		}
-		queryReqs = append(queryReqs, queryReq)
 	}
 	return queryReqs
 }

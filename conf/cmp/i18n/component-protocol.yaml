@@ -3,12 +3,12 @@ zh:
  name: 名称
  namespace: 命名空间
  status: 状态
- ip: IP地址
+ ip: IP 地址
  age: 存活时间
  images: 镜像
  labels: 标签
  annotations: 注释
- project: 项目名
+ project: 项目名称
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: 上次触发时间
@@ -23,19 +23,19 @@ zh:
  workspace-dev: 开发环境
  workspace-test: 测试环境
  workspace-staging: 预发环境
- workspace-production: 生产环境
+ workspace-prod: 生产环境
  addons: 扩展组件
  pipelines: 流水线
  default: 默认
  system: 系统
  others: 其他
- normal: 普通
- warning: 警告
+ Normal: 普通
+ Warning: 警告
 
  # cmp-dashboard-workload-detail.podsTable
- cpuRequests: CPU请求值
- cpuLimits: CPU限制值
- cpuPercent: CPU水位
+ cpuRequests: CPU 请求值
+ cpuLimits: CPU 限制值
+ cpuPercent: CPU 水位
  memoryRequests: 内存请求值
  memoryLimits: 内存限制值
  memoryPercent: 内存水位
@@ -52,6 +52,10 @@ zh:
  search: 搜索
  workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
+ Active: 活跃
+ Error: 错误
+ Succeeded: 成功
+ Failed: 失败
 
  # cmp-dashboard-workloads-list.workloadTable
  upToDate: 已更新
@@ -63,17 +67,21 @@ zh:
  schedule: 运行计划
  lastSchedule: 上次运行时间
 
+ # cmp-dashboard-nodes
  node-list: 节点列表
  env: 环境
- platform: 平台
+ platform: 平台组件
  service: 服务
+ cicd-job: CICD任务
+ bigdata-job: 大数据任务
+ lb: 负载均衡
  job: 任务
  other: 其他
  os: 系统
  nodeIp: IP
- allocated: 已分配
- cannot-allocated: 不可分配
- free-allocate: 剩余分配
+ Allocated: 已分配
+ Cannot-Allocate: 不可分配
+ Free-Allocate: 剩余分配
  cpu-analysis: Cpu 分析
  mem-analysis: 内存分析
  pod-analysis: Pod 分析
@@ -84,18 +92,19 @@ zh:
  version: 版本
  label: 标签
  arch: 架构
- podNum: pod 数量
+ podNum: Pod 数量
  containerVersion: 容器版本
  image: 镜像
  requests: 分配量
  limits: 限制量
  usage: 使用率
- restartTimes: 重启次数
+ restartCount: 重启次数
  category: 分类
  tag: 标签
  success: 安全
  error: 错误
  danger: 危险
+ custom: 自定义
  containerRuntimeVersion: 容器运行时版本
  kernelVersion: kernel 版本
  kubeProxyVersion: kubectl 代理版本
@@ -105,22 +114,24 @@ zh:
  systemUUID: 系统 UUID
  bootID: 启动 ID
  osImage: 系统镜像
- podInfo: Pod信息
+ podInfo: Pod 信息
  Completed: 完成
  ContainerCreating: 容器创建中
- CrashLoopBackOff: 后台拉起中
- Error: 错误
- Evicted: 驱赶
- ImagePullBackOff: 拉取镜像中
+ CrashLoopBackOff: 崩溃重启中
+ Evicted: 驱逐
+ ImagePullBackOff: 镜像拉取失败
  Pending: 挂起
  Running: 运行中
- Terminating: 已结束
- memUsed: mem使用率
- use: mem使用率
+ memUsed: Mem 使用率
+ use: mem 使用率
+ Terminating: 终止
+ OOMKilled: 内存溢出
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
+ memDistribution: 内存分配率
  distributionRate: 分配使用率
+ memDistributionRate: 内存分配使用率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -129,16 +140,42 @@ zh:
  stateless: 无状态服务
  packjob: 构建
  mono: 独占
- cordon: 锁住节点
+ cordon: 冻结
+ uncordon: 解冻
  cluster-service: 集群服务
  drain: 驱逐节点
  rebootTimes: 重启次数
  operate: 操作
  console: 控制台
  podInspect: 查看容器
- relative events: 相关日志
+ events: 相关事件
  desc: 注释
  workload: 工作负载
+ Memory Chart: 内存
+ Pod Chart: Pods
+ podSearchPlaceHolder: 搜索 pod 名称或 IP
+ podInfoTitle: Pod 详情
+ podIP: Pod IP
+ log: 查看日志
+ enterprise: 企业
+ organization: 组织
+ location-cluster-service: 集群级服务
+ stateless-service: 无状态服务
+ stateful-service: 有状态服务
+ label-value: 标签值
+ begin and end with character and number,include: 以字母或数字开头或结尾，可以包含
+ e.g.: 例如
+ Cpu Chart: CPU
+ annotation: 注释
+ containerRuntime: 容器运行时
+ placeholderFilterByNodeName: 按节点名称过滤
+ cpuUsage: CPU 使用率
+ SchedulingDisabled: 冻结
+ architecture: 架构
+ container: 容器
+ running: 运行中
+ waiting: 等待
+ terminated: 终止
 
 en:
  # general
@@ -163,7 +200,7 @@ en:
 
  # cmp-dashboard-events-list.filter
  workspace-dev: Workspace-Dev
- workspace-list: Workspace-Test
+ workspace-test: Workspace-Test
  workspace-staging: Workspace-Staging
  workspace-production: Workspace-Production
  addons: Addons
@@ -171,8 +208,8 @@ en:
  default: Default
  system: System
  others: Others
- normal: Normal
- warning: Warning
+ Normal: Normal
+ Warning: Warning
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests
@@ -194,6 +231,10 @@ en:
  search: Search
  workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
+ Active: Active
+ Error: Error
+ Succeeded: Succeeded
+ Failed: Failed
 
  # cmp-dashboard-workloads-list.workloadTable
  upToDate: Up-to-Date
@@ -210,23 +251,64 @@ en:
  service: Service
  job: Job
  other: Other
+ os: OS
+ nodeIp: Node IP
  allocated: Allocated
- cannot-allocated: Not Allocated
+ cannot-allocated: Non-Distributable
  free-allocate: Allocatable
- cpu-analysis: Cpu Ananlysis
- mem-analysis: Mem Ananlysis
- pod-analysis: Pod Ananlysis
+ cpu-analysis: CPU Analysis
+ mem-analysis: Mem Analysis
+ pod-analysis: Pod Analysis
  nodeInfo: Node Info
  nodeStatus: Node Status
  survive: Survive Duration
  node: Node
  version: Version
  label: Label
- arch: Architectual
+ arch: Architecture
+ podNum: Number of Pods
  containerVersion: Container Version
  image: Image
- requests: Requestes
+ requests: Requests
  limits: Limits
  usage: Utilization rate
- restartTimes: Restart Times
+ restartCount: Restart Times
  category: category
+ podSearchPlaceHolder: filter by pod name or IP
+ podInfoTitle: Pod Detail
+ podIP: Pod IP
+ log: Logs
+ Cpu Chart: CPU
+ Memory Chart: Mem
+ Pod Chart: Pods
+ addLabel: Add Label
+ bootID: Boot ID
+ containerRuntimeVersion: Container Running Version
+ distributionRate: Distribution Rate
+ memDistribution: Mem Distribution
+ memDistributionRate: Mem Distribution Rate
+ kernelVersion: Kernel Version
+ kubeProxyVersion: Kubectl Proxy Version
+ kubeletVersion: Kubelet Version
+ machineID: Machine ID
+ memUsed: Mem Usage
+ nodeDetail: Node Detail
+ operate: Operation
+ operatingSystem: Operation System
+ osImage: OS Image
+ packjob: Pack Job
+ podInfo: Pod Info
+ podInspect: Pod Inspect
+ rebootTimes: Reboot Times
+ systemUUID: System UUID
+ use: Usage
+ annotation: Annotation
+ containerRuntime: Container Runtime
+ placeholderFilterByNodeName: filter by node name
+ cpuUsage: CPU Usage
+ architecture: Architecture
+ container: Containers
+ events: Events
+ running: Running
+ waiting: Waiting
+ terminated: Terminated

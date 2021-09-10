@@ -103,6 +103,8 @@ jobs:
       - name: Go generate files
         run: make prepare
       - name: Run Test
+        env:
+          GOLANG_PROTOBUF_REGISTRATION_CONFLICT: ignore
         run: |
           make run-test
           curl -s https://codecov.io/bash | bash

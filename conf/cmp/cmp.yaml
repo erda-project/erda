@@ -22,6 +22,7 @@ component-protocol.components.cmp-dashboard-workload-detail.workloadTitle:
 component-protocol.components.cmp-dashboard-nodes.nodeFilter:
 component-protocol.components.cmp-dashboard-nodes.page:
 component-protocol.components.cmp-dashboard-nodes.charts:
+component-protocol.components.cmp-dashboard-nodes.cleanData:
 component-protocol.components.cmp-dashboard-nodes.tableTabsContainer:
 component-protocol.components.cmp-dashboard-nodes.addLabelModal:
 component-protocol.components.cmp-dashboard-nodes.tableTabs:

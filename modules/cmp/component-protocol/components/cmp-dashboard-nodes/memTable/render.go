@@ -45,6 +45,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	mt.Table.TableComponent = mt
 	mt.getProps()
 	activeKey := (*gs)["activeKey"].(string)
+	// Tab name not equal this component name
 	if activeKey != tableTabs.MEM_TAB {
 		mt.Props["visible"] = false
 		return mt.SetComponentValue(c)
@@ -52,28 +53,33 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		mt.Props["visible"] = true
 	}
 	if event.Operation != cptype.InitializeOperation {
-		// Tab name not equal this component name
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey:
-			if err := mt.RenderChangePageSize(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardChangePageNoOperationKey:
-			if err := mt.RenderChangePageNo(event.OperationData); err != nil {
-				return err
-			}
+		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
-			mt.State.PageNo = 1
-		case common.CMPDashboardDeleteNode:
-			if err := mt.DeleteNode(mt.State.SelectedRowKeys); err != nil {
+		case common.CMPDashboardRemoveLabel:
+			if event.Operation == common.CMPDashboardRemoveLabel {
+				metaName := event.OperationData["fillMeta"].(string)
+				label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
+				nodeId := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["recordId"].(string)
+				req := apistructs.SteveRequest{}
+				req.ClusterName = mt.SDK.InParams["clusterName"].(string)
+				req.OrgID = mt.SDK.Identity.OrgID
+				req.UserID = mt.SDK.Identity.UserID
+				req.Type = apistructs.K8SNode
+				req.Name = nodeId
+				err = mt.CtxBdl.UnlabelNode(&req, []string{label})
+				if err != nil {
+					return err
+				}
+			}
+		case common.CMPDashboardUncordonNode:
+			err := mt.UncordonNode(mt.State.SelectedRowKeys)
+			if err != nil {
 				return err
 			}
-		case common.CMPDashboardUnfreezeNode:
-			if err := mt.UnFreezeNode(mt.State.SelectedRowKeys); err != nil {
-				return err
-			}
-		case common.CMPDashboardFreezeNode:
-			if err := mt.FreezeNode(mt.State.SelectedRowKeys); err != nil {
+		case common.CMPDashboardCordonNode:
+			err := mt.CordonNode(mt.State.SelectedRowKeys)
+			if err != nil {
 				return err
 			}
 		default:
@@ -105,7 +111,7 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	}
 	req := apistructs.MetricsRequest{
 		ClusterName:  mt.SDK.InParams["clusterName"].(string),
-		Names:        []string{c.String("id")},
+		IP:           []string{c.StringSlice("metadata", "fields")[5]},
 		ResourceType: metrics.Memory,
 		ResourceKind: metrics.Node,
 		OrgID:        mt.SDK.Identity.OrgID,
@@ -115,25 +121,28 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		logrus.Errorf("metrics error: %v", err)
 		resp = []apistructs.MetricsData{{Used: 0}}
 	}
-	limitStr := c.Map("status", "capacity").String("memory")
+	limitStr := c.Map("extra", "parsedResource", "capacity").String("Memory")
 	limitQuantity, _ := resource.ParseQuantity(limitStr)
-	limit, _ := limitQuantity.AsInt64()
-	resp[0].Total = float64(limit)
-	distribution = mt.GetDistributionValue(resp[0])
-	usage = mt.GetUsageValue(resp[0])
-	dr = mt.GetDistributionRate(resp[0])
+	requestStr := c.Map("extra", "parsedResource", "allocated").String("Memory")
+	requestQuantity, _ := resource.ParseQuantity(requestStr)
+	resp[0].Total = float64(limitQuantity.Value())
+	resp[0].Request = float64(requestQuantity.Value())
+	distribution = mt.GetDistributionValue(resp[0], table.Memory)
+	usage = mt.GetUsageValue(resp[0], table.Memory)
+	dr = mt.GetDistributionRate(resp[0], table.Memory)
 	role := c.StringSlice("metadata", "fields")[2]
+	ip := c.StringSlice("metadata", "fields")[5]
 	if role == "<none>" {
 		role = "worker"
 	}
 	ri := &table.RowItem{
 		ID:      c.String("id"),
-		IP:      c.StringSlice("metadata", "fields")[5],
+		IP:      ip,
 		Version: c.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    mt.GetRenders(c.String("id"), c.Map("metadata", "labels")),
+			Renders:    mt.GetRenders(c.String("id"), ip, c.Map("metadata", "labels")),
 		},
 		Status: *status,
 		Distribution: table.Distribution{
@@ -154,8 +163,8 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Status:     table.GetDistributionStatus(dr.Percent),
 			Tip:        dr.Text,
 		},
-		Operate:      mt.GetOperate(c.String("id")),
-		BatchOptions: []string{"delete", "freeze", "unfreeze"},
+		Operate:         mt.GetOperate(c.String("id")),
+		BatchOperations: []string{"cordon", "uncordon"},
 	}
 	return ri, nil
 }
@@ -164,25 +173,21 @@ func (mt *MemInfoTable) getProps() {
 	mt.Props = map[string]interface{}{
 		"rowKey": "id",
 		"columns": []table.Columns{
-			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true},
+			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
+			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true, Width: 340},
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: mt.SDK.I18n("role"), Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Width: 120},
-			{DataIndex: "Distribution", Title: "mem" + mt.SDK.I18n("distribution"), Sortable: true, Width: 120},
-			{DataIndex: "Usage", Title: "mem" + mt.SDK.I18n("use"), Sortable: true, Width: 120},
-			{DataIndex: "UsageRate", Title: "mem" + mt.SDK.I18n("distributionRate"), Sortable: true, Width: 120},
+			{DataIndex: "Distribution", Title: mt.SDK.I18n("memDistribution"), Sortable: true, Width: 120},
+			{DataIndex: "Usage", Title: mt.SDK.I18n("memUsed"), Sortable: true, Width: 120},
+			{DataIndex: "UsageRate", Title: mt.SDK.I18n("memDistributionRate"), Sortable: true, Width: 120},
 			{DataIndex: "Operate", Title: mt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"operations": map[string]table.Operation{
-			"changePageNo": {Key: "changePageNo", Reload: true},
-			"changeSort":   {Key: "changeSort", Reload: true},
-		},
-
-		"scroll": table.Scroll{X: 1200},
+		"batchOperations": []string{"cordon", "cordon"},
+		"scroll":          table.Scroll{X: 1200},
 	}
 
 }

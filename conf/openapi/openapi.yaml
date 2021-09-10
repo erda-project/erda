@@ -68,7 +68,7 @@ openapi-v1-routes:
   component-protocol:
     scenario-proxy-binds:
       - app: dop
-        addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9528}
+        addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9527}
         scenarios:
           - issue-manage
       - addr: http://localhost:8080
@@ -95,6 +95,11 @@ etcd:
 openapi-dynamic-routes:
   _enable: ${OPENAPI_DEV_MODE:false}
 
+remote-forward-server:
+  _enable: ${OPENAPI_DEV_MODE:false}
+  addr: ":9431"
+  token: "${REMOTE_FORWARD_TOKEN}"
+
 # for test
 openapi-example:
 openapi-example-custom:
@@ -112,3 +117,6 @@ http-server@admin:
   _enable: ${OPENAPI_DEV_MODE:false}
   addr: ":9432"
   reloadable: ${OPENAPI_DEV_MODE:false}
+
+
+  

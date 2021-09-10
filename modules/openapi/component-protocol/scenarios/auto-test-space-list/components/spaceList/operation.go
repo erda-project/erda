@@ -76,54 +76,6 @@ type operationData struct {
 	Meta meta `json:"meta"`
 }
 
-var (
-	edit = dataOperation{
-		Key:       "edit",
-		Reload:    false,
-		Text:      "编辑",
-		Command:   map[string]interface{}{},
-		Disabled:  false,
-		ShowIndex: 1,
-	}
-	copy = dataOperation{
-		Key:       "copy",
-		Reload:    true,
-		Text:      "复制",
-		Confirm:   "是否确认复制",
-		Meta:      map[string]interface{}{},
-		Disabled:  true,
-		ShowIndex: 2,
-	}
-	export = dataOperation{
-		Key:        "export",
-		Reload:     true,
-		Text:       "导出",
-		Confirm:    "是否确认导出",
-		Meta:       map[string]interface{}{},
-		Disabled:   false,
-		SuccessMsg: "导出任务已创建, 请在导入导出记录表中查看进度",
-		ShowIndex:  3,
-	}
-	delete = dataOperation{
-		Key:         "delete",
-		Reload:      true,
-		Text:        "删除",
-		Confirm:     "是否确认删除",
-		Meta:        map[string]interface{}{},
-		DisabledTip: "无法删除",
-		Disabled:    true,
-		ShowIndex:   4,
-	}
-	retry = dataOperation{
-		Key:       "retry",
-		Reload:    true,
-		Text:      "重试",
-		Meta:      map[string]interface{}{},
-		Disabled:  false,
-		ShowIndex: 5,
-	}
-)
-
 func setCommand(space spaceList) map[string]interface{} {
 	return map[string]interface{}{
 		"key": "set",
@@ -161,7 +113,7 @@ func (a *ComponentSpaceList) handlerListOperation(bdl protocol.ContextBundle, c 
 	}
 	a.State.Total = int64(spaceList.Total)
 
-	if err = a.setData(*spaceList); err != nil {
+	if err = a.setData(inParams.ProjectID, *spaceList); err != nil {
 		return err
 	}
 	return nil

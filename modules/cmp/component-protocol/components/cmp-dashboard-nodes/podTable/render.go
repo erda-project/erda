@@ -16,7 +16,6 @@ package podTable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -33,11 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-const (
-	DefaultPageSize = 10
-	DefaultPageNo   = 1
-)
-
 func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	err := common.Transfer(c.State, &pt.State)
 	if err != nil {
@@ -48,8 +42,8 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	pt.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	pt.Table.TableComponent = pt
 	pt.getProps()
-	pt.GetBatchOperation()
 	activeKey := (*gs)["activeKey"].(string)
+	// Tab name not equal this component name
 	if activeKey != tableTabs.POD_TAB {
 		pt.Props["visible"] = false
 		return pt.SetComponentValue(c)
@@ -58,26 +52,15 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	if event.Operation != cptype.InitializeOperation {
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey:
-			if err := pt.RenderChangePageSize(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardChangePageNoOperationKey:
-			if err := pt.RenderChangePageNo(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardDeleteNode:
-			err := pt.DeleteNode(pt.State.SelectedRowKeys)
+		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
+		case common.CMPDashboardSortByColumnOperationKey:
+		case common.CMPDashboardUncordonNode:
+			err := pt.UncordonNode(pt.State.SelectedRowKeys)
 			if err != nil {
 				return err
 			}
-		case common.CMPDashboardUnfreezeNode:
-			err := pt.UnFreezeNode(pt.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
-		case common.CMPDashboardFreezeNode:
-			err := pt.FreezeNode(pt.State.SelectedRowKeys)
+		case common.CMPDashboardCordonNode:
+			err := pt.CordonNode(pt.State.SelectedRowKeys)
 			if err != nil {
 				return err
 			}
@@ -102,22 +85,19 @@ func (pt *PodInfoTable) getProps() {
 	p := map[string]interface{}{
 		"rowKey": "id",
 		"columns": []table.Columns{
-			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true},
+			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
+			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 340},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: pt.SDK.I18n("role"), Sortable: true},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version")},
-			{DataIndex: "UsageRate", Title: "pod" + pt.SDK.I18n("usage"), Sortable: true},
+			{DataIndex: "UsageRate", Title: "Pods " + pt.SDK.I18n("usage"), Sortable: true},
 			{DataIndex: "Operate", Title: pt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"operations": map[string]table.Operation{
-			"changePageNo": {Key: "changePageNo", Reload: true},
-			"changeSort":   {Key: "changeSort", Reload: true},
-		},
-		"scroll": table.Scroll{X: 1200},
+		"batchOperations": []string{"cordon", "uncordon"},
+		"scroll":          table.Scroll{X: 1200},
 	}
 	pt.Props = p
 }
@@ -138,27 +118,28 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 	capacity := cast.ToFloat64(node.String("extra", "parsedResource", "capacity", "Pods"))
 	ur := table.DistributionValue{Percent: common.GetPercent(allocatable, capacity)}
 	role := node.StringSlice("metadata", "fields")[2]
+	ip := node.StringSlice("metadata", "fields")[5]
 	if role == "<none>" {
 		role = "worker"
 	}
 	ri := &table.RowItem{
 		ID:      node.String("id"),
-		IP:      node.StringSlice("metadata", "fields")[5],
+		IP:      ip,
 		Version: node.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    pt.GetRenders(node.String("id"), node.Map("metadata", "labels")),
+			Renders:    pt.GetRenders(node.String("id"), ip, node.Map("metadata", "labels")),
 		},
 		Status: *status,
 		UsageRate: table.Distribution{
 			RenderType: "progress",
 			Value:      ur.Percent,
 			Status:     table.GetDistributionStatus(ur.Percent),
-			Tip:        fmt.Sprintf("%d/%d", int64(allocatable), int64(capacity)),
+			Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
 		},
-		Operate:      pt.GetOperate(node.String("id")),
-		BatchOptions: []string{"delete", "freeze", "unfreeze"},
+		Operate:         pt.GetOperate(node.String("id")),
+		BatchOperations: []string{"cordon", "uncordon"},
 	}
 	return ri, nil
 }

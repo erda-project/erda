@@ -3,7 +3,7 @@ pipeline:
 service-register:
 
 http-server:
-  addr: ":3082"
+  addr: ":3081"
 grpc-server:
   addr: ":30810"
 
@@ -26,7 +26,7 @@ etcd-election@reconciler:
 
 etcd-election@gc:
   root_path: erda/component-leader/pipeline/gc
-
+erda.core.pipeline.trigger:
 erda.core.pipeline.definition:
 erda.core.pipeline.cms:
   # TODO refactor it: use kms to make key-change operation easier. No encrypt if key-pair not provided.
@@ -45,6 +45,7 @@ erda.core.pipeline.aop:
         - "basic"
         - "apitest-report"
         - "scene-after"
+        - "testplan-after"
     task:
       task_before_exec:
       task_after_exec:
@@ -63,6 +64,7 @@ erda.core.pipeline.aop:
       task_after_wait:
 
 erda.core.pipeline.aop.plugins.pipeline.testplan-before:
+erda.core.pipeline.aop.plugins.pipeline.testplan-after:
 erda.core.pipeline.aop.plugins.pipeline.project:
 erda.core.pipeline.aop.plugins.pipeline.scene-before:
 erda.core.pipeline.aop.plugins.pipeline.precheck-before-pop:

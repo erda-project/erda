@@ -1,0 +1,854 @@
+{
+  "id": "cmp-dashboard-podDetail",
+  "scope": "org",
+  "version": "v2",
+  "name": "Pod Detail",
+  "desc": "",
+  "viewConfig":
+  [
+    {
+      "w": 12,
+      "h": 9,
+      "x": 0,
+      "y": 0,
+      "i": "view-YgQzTkyR",
+      "view":
+      {
+        "title": "Pod CPU Usage",
+        "i18n": {
+          "title": {
+            "zh": "Pod CPU 使用率",
+            "cn": "Pod CPU Usage"
+          }
+        },
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData":
+        {},
+        "config":
+        {
+          "dataSourceConfig":
+          {
+            "activedMetricGroups":
+            [
+              "project",
+              "project_container"
+            ],
+            "isSqlMode": false,
+            "resultFilters":
+            [
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{podName}}"
+                },
+                "key": "filterJ0Bqcpok",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{namespace}}"
+                },
+                "key": "filter6EyyQUZy",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
+                "field": "docker_container_summary-cluster_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{clusterName}}"
+                },
+                "key": "filtervMuELYUT",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions":
+            [
+              {
+                "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
+                "key": "type1QU1sVhL",
+                "type": "time"
+              },
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typezA1u39Sk",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "key": "typezD9yHXZy",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions":
+            [
+              {
+                "aggregation": "sum",
+                "alias": "CPU使用率",
+                "i18n": {
+                  "alias": {
+                    "alias": {
+                      "zh": "CPU使用率",
+                      "en": "CPU Usage Percent"
+                    }
+                  }
+                },
+                "field": "docker_container_summary-cpu_usage_percent::field",
+                "key": "valueODppjgDJ",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps":
+          {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api":
+        {
+          "body":
+          {
+            "from":
+            [
+              "docker_container_summary"
+            ],
+            "groupby":
+            [
+              "time()",
+              "pod_name::tag",
+              "pod_namespace::tag"
+            ],
+            "select":
+            [
+              {
+                "alias": "type1QU1sVhL",
+                "expr": "time()"
+              },
+              {
+                "alias": "typezA1u39Sk",
+                "expr": "pod_name::tag"
+              },
+              {
+                "alias": "typezD9yHXZy",
+                "expr": "pod_namespace::tag"
+              },
+              {
+                "alias": "valueODppjgDJ",
+                "expr": "round_float(sum(cpu_usage_percent::field), 2)"
+              }
+            ],
+            "where":
+            [
+              "pod_name::tag='{{podName}}'",
+              "pod_namespace::tag='{{namespace}}'",
+              "cluster_name::tag='{{clusterName}}'"
+            ]
+          },
+          "method": "post",
+          "query":
+          {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "match_project_id": "*",
+            "neq_podsandbox": "true",
+            "notMatch_addon_id": "*",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 9,
+      "x": 12,
+      "y": 0,
+      "i": "view-I0Ko82c6",
+      "view":
+      {
+        "title": "Pod Memory Usage",
+        "i18n": {
+          "title": {
+            "zh": "Pod 内存使用率",
+            "en": "Pod Memory Usage"
+          }
+        },
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData":
+        {},
+        "config":
+        {
+          "dataSourceConfig":
+          {
+            "activedMetricGroups":
+            [
+              "project",
+              "project_container"
+            ],
+            "isSqlMode": false,
+            "resultFilters":
+            [
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{podName}}"
+                },
+                "key": "filteraKDJEt6P",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{namespace}}"
+                },
+                "key": "filterdW9VcY5O",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
+                "field": "docker_container_summary-cluster_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{clusterName}}"
+                },
+                "key": "filterKQEpl4S4",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions":
+            [
+              {
+                "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
+                "key": "typebBcx9Cpb",
+                "type": "time"
+              },
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeVMkEyiPU",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "key": "typel96VLnB0",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions":
+            [
+              {
+                "aggregation": "sum",
+                "alias": "Mem Usage Percent",
+                "i18n": {
+                  "alias": {
+                    "zh": "内存使用率",
+                    "en": "Mem Usage"
+                  }
+                },
+                "field": "docker_container_summary-mem_usage_percent::field",
+                "key": "valuee0jRZAOK",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps":
+          {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api":
+        {
+          "body":
+          {
+            "from":
+            [
+              "docker_container_summary"
+            ],
+            "groupby":
+            [
+              "time()",
+              "pod_name::tag",
+              "pod_namespace::tag"
+            ],
+            "select":
+            [
+              {
+                "alias": "typebBcx9Cpb",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeVMkEyiPU",
+                "expr": "pod_name::tag"
+              },
+              {
+                "alias": "typel96VLnB0",
+                "expr": "pod_namespace::tag"
+              },
+              {
+                "alias": "valuee0jRZAOK",
+                "expr": "round_float(sum(mem_usage_percent::field), 2)"
+              }
+            ],
+            "where":
+            [
+              "pod_name::tag='{{podName}}'",
+              "pod_namespace::tag='{{namespace}}'",
+              "cluster_name::tag='{{clusterName}}'"
+            ]
+          },
+          "method": "post",
+          "query":
+          {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "match_project_id": "*",
+            "neq_podsandbox": "true",
+            "notMatch_addon_id": "*",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 9,
+      "x": 0,
+      "y": 9,
+      "i": "view-jLdXS0f5",
+      "view":
+      {
+        "title": "Pod Read Bytes",
+        "i18n": {
+          "title": {
+            "zh": "Pod 磁盘读取速率",
+            "en": "Pod Read Bytes"
+          }
+        },
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData":
+        {},
+        "config":
+        {
+          "dataSourceConfig":
+          {
+            "activedMetricGroups":
+            [
+              "project",
+              "project_container"
+            ],
+            "isSqlMode": false,
+            "resultFilters":
+            [
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{podName}}"
+                },
+                "key": "filterfMK0qb14",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{namespace}}"
+                },
+                "key": "filterYeF6Js4z",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
+                "field": "docker_container_summary-cluster_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{clusterName}}"
+                },
+                "key": "filterjykPmc3u",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions":
+            [
+              {
+                "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
+                "key": "typefhINpT8W",
+                "type": "time"
+              },
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeVfO4zHJO",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "key": "type2evCIOCL",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions":
+            [
+              {
+                "aggregation": "sum",
+                "alias": "磁盘读取字节数",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 磁盘读取速率",
+                    "en": "Pod Read Bytes"
+                  }
+                },
+                "field": "docker_container_summary-blk_read_bytes::field",
+                "key": "valueO5ZLWXGs",
+                "resultType": "number",
+                "type": "field",
+                "unit":
+                {
+                  "type": "TRAFFIC",
+                  "unit": "B/S"
+                }
+              }
+            ]
+          },
+          "optionProps":
+          {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api":
+        {
+          "body":
+          {
+            "from":
+            [
+              "docker_container_summary"
+            ],
+            "groupby":
+            [
+              "time()",
+              "pod_name::tag",
+              "pod_namespace::tag"
+            ],
+            "select":
+            [
+              {
+                "alias": "typefhINpT8W",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeVfO4zHJO",
+                "expr": "pod_name::tag"
+              },
+              {
+                "alias": "type2evCIOCL",
+                "expr": "pod_namespace::tag"
+              },
+              {
+                "alias": "valueO5ZLWXGs",
+                "expr": "round_float(sum(blk_read_bytes::field), 2)"
+              }
+            ],
+            "where":
+            [
+              "pod_name::tag='{{podName}}'",
+              "pod_namespace::tag='{{namespace}}'",
+              "cluster_name::tag='{{clusterName}}'"
+            ]
+          },
+          "method": "post",
+          "query":
+          {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "match_project_id": "*",
+            "neq_podsandbox": "true",
+            "notMatch_addon_id": "*",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 9,
+      "x": 12,
+      "y": 9,
+      "i": "view-dVHW28yb",
+      "view":
+      {
+        "title": "Pod Write Bytes",
+        "i18n":{
+          "title": {
+            "zh": "Pod 磁盘写入速率",
+            "en": "Pod Write Bytes"
+          }
+        },
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData":
+        {},
+        "config":
+        {
+          "dataSourceConfig":
+          {
+            "activedMetricGroups":
+            [
+              "project",
+              "project_container"
+            ],
+            "isSqlMode": false,
+            "resultFilters":
+            [
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{podName}}"
+                },
+                "key": "filterbiBIFqnM",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "{{namespace}}",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "project-387-test"
+                },
+                "key": "filterb66pIvp0",
+                "resultType": "string",
+                "type": "filter"
+              },
+              {
+                "alias": "集群名",
+                "i18n": {
+                  "alias": {
+                    "zh": "集群名",
+                    "en": "Cluster Name"
+                  }
+                },
+                "field": "docker_container_summary-cluster_name::tag",
+                "filter":
+                {
+                  "operation": "=",
+                  "value": "{{clusterName}}"
+                },
+                "key": "filterNAKWTXwE",
+                "resultType": "string",
+                "type": "filter"
+              }
+            ],
+            "typeDimensions":
+            [
+              {
+                "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "zh": "时间",
+                    "en": "timestamp"
+                  }
+                },
+                "key": "typedfUpBUe8",
+                "type": "time"
+              },
+              {
+                "alias": "Pod Name",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
+                  }
+                },
+                "field": "docker_container_summary-pod_name::tag",
+                "key": "typeJQCsQ5VP",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Pod Namespace",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
+                  }
+                },
+                "field": "docker_container_summary-pod_namespace::tag",
+                "key": "typeVKNVPbM7",
+                "resultType": "string",
+                "type": "field"
+              }
+            ],
+            "valueDimensions":
+            [
+              {
+                "aggregation": "sum",
+                "alias": "磁盘写入字节数",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 磁盘写入字节数",
+                    "en": "Pod Write Bytes"
+                  }
+                },
+                "field": "docker_container_summary-blk_write_bytes::field",
+                "key": "valueGyXXhnzk",
+                "resultType": "number",
+                "type": "field",
+                "unit":
+                {
+                  "type": "TRAFFIC",
+                  "unit": "B/S"
+                }
+              }
+            ]
+          },
+          "optionProps":
+          {
+            "isMoreThanOneDay": false
+          }
+        },
+        "api":
+        {
+          "body":
+          {
+            "from":
+            [
+              "docker_container_summary"
+            ],
+            "groupby":
+            [
+              "time()",
+              "pod_name::tag",
+              "pod_namespace::tag"
+            ],
+            "select":
+            [
+              {
+                "alias": "typedfUpBUe8",
+                "expr": "time()"
+              },
+              {
+                "alias": "typeJQCsQ5VP",
+                "expr": "pod_name::tag"
+              },
+              {
+                "alias": "typeVKNVPbM7",
+                "expr": "pod_namespace::tag"
+              },
+              {
+                "alias": "valueGyXXhnzk",
+                "expr": "round_float(sum(blk_write_bytes::field), 2)"
+              }
+            ],
+            "where":
+            [
+              "pod_name::tag='{{podName}}'",
+              "pod_namespace::tag='{{namespace}}'",
+              "cluster_name::tag='{{clusterName}}'"
+            ]
+          },
+          "method": "post",
+          "query":
+          {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "format": "chartv2",
+            "match_project_id": "*",
+            "neq_podsandbox": "true",
+            "notMatch_addon_id": "*",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/orgCenter/metrics-query"
+        },
+        "controls": null
+      }
+    }
+  ]
+}
