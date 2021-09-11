@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
 
 type ComponentFileInfo struct {
@@ -50,9 +51,7 @@ type PropColumn struct {
 	DataIndex string `json:"dataIndex"`
 }
 
-type State struct {
-	EnvData apistructs.AutoTestAPIConfig `json:"envData"`
-}
+type State struct{}
 
 func (a *ComponentFileInfo) unmarshal(c *apistructs.Component) error {
 	b, err := json.Marshal(c)
@@ -78,6 +77,8 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 	}()
 	i.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
+	envData := (*gs)[types.AutotestGlobalKeyEnvData].(apistructs.AutoTestAPIConfig)
+
 	i.Props = make(map[string]interface{})
 	i.Props["columns"] = []PropColumn{
 		{
@@ -91,7 +92,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 	}
 	i.Data = make(map[string]interface{})
 	var list []DataList
-	for k, v := range i.State.EnvData.Header {
+	for k, v := range envData.Header {
 		list = append(list, DataList{
 			Name:    k,
 			Content: v,
