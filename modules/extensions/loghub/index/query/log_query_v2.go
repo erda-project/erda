@@ -28,8 +28,8 @@ func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {
 	end := req.End * int64(time.Millisecond)
 	boolQuery = boolQuery.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lte(end))
 	if len(req.Query) > 0 {
-		byts, _ := json.Marshal(req.Query)
-		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery("content:" + string(byts)))
+		//byts, _ := json.Marshal(req.Query)
+		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery("content:" + req.Query))
 	}
 	return boolQuery
 }

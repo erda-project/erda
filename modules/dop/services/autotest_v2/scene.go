@@ -519,10 +519,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 
 	var apiTestStr = string(specJson)
 	for _, param := range sceneInputs {
-		if (strings.HasPrefix(param.Temp, "[") && strings.HasSuffix(param.Temp, "]")) ||
-			(strings.HasPrefix(param.Temp, "{") && strings.HasSuffix(param.Temp, "}")) {
-			param.Temp = strings.ReplaceAll(param.Temp, "\"", "\\\"")
-		}
+		param.Temp = convertJsonParam(param.Temp)
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Params+"."+param.Name+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 	}
@@ -537,6 +534,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 				return nil, fmt.Errorf("failed to unmarshal apiConfig, err: %v", err)
 			}
 			for _, item := range apiConfig.Global {
+				item.Value = convertJsonParam(item.Value)
 				apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Configs+"."+apistructs.PipelineSourceAutoTest.String()+"."+item.Name+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(item.Value))
 			}
 		}
@@ -599,6 +597,14 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 	return &respData, nil
 }
 
+func convertJsonParam(value string) string {
+	if (strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]")) ||
+		(strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}")) {
+		return strings.ReplaceAll(value, "\"", "\\\"")
+	}
+	return value
+}
+
 func (svc *Service) renderPreSceneStepsOutput(sceneID uint64, replaceYml string) string {
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
 		PageNum:  1,
@@ -635,7 +641,8 @@ func (svc *Service) renderPreSceneStepsOutput(sceneID uint64, replaceYml string)
 	for _, stage := range pipeline.PipelineStages {
 		for _, task := range stage.PipelineTasks {
 			for _, result := range task.Result.Metadata {
-				replaceYml = strings.ReplaceAll(replaceYml, expression.GenOutputRef(task.Name, result.Name), result.Value)
+				replaceValue := convertJsonParam(result.Value)
+				replaceYml = strings.ReplaceAll(replaceYml, expression.GenOutputRef(task.Name, result.Name), replaceValue)
 			}
 		}
 	}
