@@ -78,8 +78,8 @@ func (topology *provider) Init(ctx servicehub.Context) (err error) {
 	topology.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 
 	c := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := c.Session(&topology.Cfg.Cassandra)
-	topology.cassandraSession = session
+	session, err := c.NewSession(&topology.Cfg.Cassandra)
+	topology.cassandraSession = session.Session()
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}

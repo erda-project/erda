@@ -54,12 +54,12 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.ttlSec = int(p.Cfg.Output.Cassandra.TTL.Seconds())
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := cassandra.Session(&p.Cfg.Output.Cassandra.SessionConfig)
-	p.cassandraSession = session
+	session, err := cassandra.NewSession(&p.Cfg.Output.Cassandra.SessionConfig)
+	p.cassandraSession = session.Session()
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
-	err = p.initCassandra(session)
+	err = p.initCassandra(session.Session())
 	if err != nil {
 		return err
 	}

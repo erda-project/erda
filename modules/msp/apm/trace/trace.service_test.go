@@ -823,3 +823,66 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 		})
 	}
 }
+
+func Test_getSpanProcessAnalysisDashboard(t *testing.T) {
+	type args struct {
+		metricType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{metricType: "jvm_memory"}, "span_process_analysis_java"},
+		{"case2", args{metricType: "nodejs_memory"}, "span_process_analysis_nodejs"},
+		{"case3", args{metricType: "xxx"}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getSpanProcessAnalysisDashboard(tt.args.metricType); got != tt.want {
+				t.Errorf("getSpanProcessAnalysisDashboard() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_traceService_getSpanCallAnalysis(t *testing.T) {
+	type fields struct {
+		p                     *provider
+		i18n                  i18n.Translator
+		traceRequestHistoryDB *db.TraceRequestHistoryDB
+	}
+	type args struct {
+		ctx context.Context
+		req *pb.GetSpanDashboardsRequest
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{"case1", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "http_client"}}, "span_call_analysis_http_client"},
+		{"case2", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "http_server"}}, "span_call_analysis_http_client"},
+		{"case3", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "rpc_client"}}, "span_call_analysis_rpc_client"},
+		{"case4", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "rpc_server"}}, "span_call_analysis_rpc_server"},
+		{"case5", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "mq_producer"}}, "span_call_analysis_mq_producer"},
+		{"case6", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "mq_consumer"}}, "span_call_analysis_mq_consumer"},
+		{"case7", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "cache_client"}}, "span_call_analysis_cache_client"},
+		{"case8", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "invoke_local"}}, "span_call_analysis_invoke_local"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     tt.fields.p,
+				i18n:                  tt.fields.i18n,
+				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
+			}
+			got, err := s.getSpanCallAnalysis(tt.args.ctx, tt.args.req)
+			if (err != nil) && got.DashboardID != tt.want {
+				t.Errorf("getSpanCallAnalysis() error = %v, wantErr %v", err, tt.want)
+				return
+			}
+		})
+	}
+}

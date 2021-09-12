@@ -14,30 +14,27 @@
 package storage
 
 import (
-	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bluele/gcache"
-	"github.com/gocql/gocql"
-	"github.com/jinzhu/gorm"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/gocql/gocql"
+	"github.com/jinzhu/gorm"
 )
 
-func Test_provider_Init(t *testing.T) {
-	mp := mockProvider()
-	err := mp.Init(&mockContext{
-		l: logrusx.New(),
-	})
-	assert.Nil(t, err)
-}
+//func Test_provider_Init(t *testing.T) {
+//	mp := mockProvider()
+//	err := mp.Init(&mockContext{
+//		l: logrusx.New(),
+//	})
+//	assert.Nil(t, err)
+//}
 
 type mockContext struct {
 	l logs.Logger
