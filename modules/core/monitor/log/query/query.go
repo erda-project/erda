@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"github.com/erda-project/erda-infra/providers/cassandra"
 	"io/ioutil"
 	"sort"
 	"strconv"
@@ -27,6 +26,7 @@ import (
 	"github.com/scylladb/gocqlx"
 	"github.com/scylladb/gocqlx/qb"
 
+	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 )
