@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
@@ -72,25 +71,15 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	akMap := make(map[string]interface{})
-	data, err := json.Marshal(accessKey.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	err = json.Unmarshal(data, &akMap)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	fileData := make([][]string, 0)
-	for k, v := range akMap {
-		fileData = append(fileData, []string{k, fmt.Sprint(v)})
+	fileData := [][]string{
+		{"secretKey", accessKey.Data.SecretKey},
+		{"accessKey", accessKey.Data.AccessKey},
 	}
 	err = w.WriteAll(fileData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	w.Flush()
-	//返回
 	return &pb.DownloadAccessKeyFileResponse{
 		Content: buf.Bytes(),
 	}, nil
