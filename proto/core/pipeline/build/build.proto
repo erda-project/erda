@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package erda.core.pipeline.build;
+
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+import "common/identity.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/build/pb";
+
+// TODO Deprecated, move to dop
+service BuildService {
+  rpc QueryBuildArtifact (BuildArtifactQueryRequest) returns (BuildArtifactQueryResponse) {
+    option (google.api.http) = {
+      post: "/api/build-artifacts/{sha}",
+    };
+  }
+  rpc RegisterBuildArtifact (BuildArtifactRegisterRequest) returns (BuildArtifactRegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/build-artifacts",
+    };
+  }
+  rpc ReportBuildCache (BuildCacheReportRequest) returns (BuildCacheReportResponse) {
+    option (google.api.http) = {
+      post: "/api/build-caches",
+    };
+  }
+}
+
+message BuildCacheReportRequest {
+  string action = 1;
+  string name = 2;
+  string clusterName = 3;
+}
+message BuildCacheReportResponse {
+}
+message BuildArtifactRegisterRequest {
+  string sha = 1;
+  string identityText = 2;
+  string type = 3;
+  string content = 4;
+  string clusterName = 5;
+  uint64 pipelineID = 6;
+}
+message BuildArtifactRegisterResponse {
+  BuildArtifact data = 1;
+}
+message BuildArtifactQueryRequest {
+  string sha = 1;
+}
+message BuildArtifactQueryResponse {
+  BuildArtifact data = 1;
+}
+message BuildArtifact {
+  int64 ID = 1 [json_name = "id"];
+  string sha256 = 2;
+  string identityText = 3;
+  string type = 4;
+  string content = 5;
+  string clusterName = 6;
+  uint64 pipelineID = 7;
+}
