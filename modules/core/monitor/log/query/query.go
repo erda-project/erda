@@ -17,12 +17,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"github.com/erda-project/erda-infra/providers/cassandra"
 	"io/ioutil"
 	"sort"
 	"strconv"
 	"time"
 
-	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"github.com/scylladb/gocqlx"
 	"github.com/scylladb/gocqlx/qb"
@@ -39,12 +39,12 @@ type CQLQueryInf interface {
 }
 
 type cassandraQuery struct {
-	session *gocql.Session
+	session *cassandra.Session
 }
 
 func (c *cassandraQuery) Query(builder *qb.SelectBuilder, binding qb.M, dest interface{}) error {
 	stmt, names := builder.ToCql()
-	cql := gocqlx.Query(c.session.Query(stmt), names).BindMap(binding)
+	cql := gocqlx.Query(c.session.Session().Query(stmt), names).BindMap(binding)
 	return cql.SelectRelease(dest)
 }
 

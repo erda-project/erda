@@ -55,7 +55,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
 	p.cqlQuery = &cassandraQuery{
-		session: session.Session(),
+		session: session,
 	}
 
 	p.intRoutes(p.HttpServer)
