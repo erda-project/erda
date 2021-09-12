@@ -50,12 +50,12 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	session, err := p.Cassandra.Session(&p.Cfg.Cassandra)
+	session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
 	p.cqlQuery = &cassandraQuery{
-		session: session,
+		session: session.Session(),
 	}
 
 	p.intRoutes(p.HttpServer)

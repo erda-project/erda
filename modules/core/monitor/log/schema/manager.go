@@ -62,11 +62,11 @@ func WithMutexKey(key string) Option {
 func NewCassandraSchema(cass cassandra.Interface, l logs.Logger, ops ...Option) (*CassandraSchema, error) {
 	cs := &CassandraSchema{}
 	cs.cass = cass
-	sysSession, err := cs.cass.Session(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
+	sysSession, err := cs.cass.NewSession(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
 	if err != nil {
 		return nil, err
 	}
-	cs.defaultSession = sysSession
+	cs.defaultSession = sysSession.Session()
 	cs.lastOrgList = []string{}
 	cs.Logger = l
 	cs.mutexKey = "logs_store"
