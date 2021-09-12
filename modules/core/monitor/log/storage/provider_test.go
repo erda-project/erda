@@ -40,6 +40,7 @@ func Test_provider_Init(t *testing.T) {
 }
 
 type mockContext struct {
+	servicehub.Context
 	l logs.Logger
 }
 
