@@ -40,7 +40,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bundle = bundle.New(bundle.WithEventBox())
+	p.bundle = bundle.New(bundle.WithEventBox(), bundle.WithCoreServices())
 	p.TestPlanService = &TestPlanService{
 		p: p,
 		db: db.TestPlanDB{

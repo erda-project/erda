@@ -2,7 +2,7 @@ dop:
 
 service-register:
 http-server:
-  addr: ":9528"
+  addr: "${LISTEN_ADDR::9527}"
 grpc-server:
   addr: ":9529"
 i18n:
@@ -14,6 +14,12 @@ mysql:
   username: "${MYSQL_USERNAME}"
   password: "${MYSQL_PASSWORD}"
   database: "${MYSQL_DATABASE}"
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
@@ -43,3 +49,5 @@ component-protocol.components.issue-manage.issueOperations:
 component-protocol.components.issue-manage.issueTable:
 component-protocol.components.issue-manage.issueViewGroup:
 component-protocol.components.issue-manage.topHead:
+
+

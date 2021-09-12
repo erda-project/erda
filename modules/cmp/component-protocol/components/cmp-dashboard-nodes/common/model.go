@@ -35,12 +35,14 @@ var (
 	CMPDashboardFilterOperationKey cptype.OperationKey = "filter"
 
 	// Freeze Button
-	CMPDashboardUnfreezeNode cptype.OperationKey = "unfreeze"
-	CMPDashboardFreezeNode   cptype.OperationKey = "freeze"
+	CMPDashboardUncordonNode cptype.OperationKey = "uncordon"
+	CMPDashboardCordonNode   cptype.OperationKey = "cordon"
 
 	CMPDashboardTableTabs cptype.OperationKey = "changeTab"
 
 	CMPDashboardSubmit cptype.OperationKey = "submit"
+
+	CMPDashboardRemoveLabel cptype.OperationKey = "deleteLabel"
 )
 var (
 	NodeNotFoundErr    = errors.New("node not found")

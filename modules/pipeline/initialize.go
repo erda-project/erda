@@ -142,6 +142,8 @@ func (p *provider) do() error {
 		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
+	p.TriggerService.SetPipelineSvc(pipelineSvc)
+
 	// todo resolve cycle import here through better module architecture
 	pipelineFun := &reconciler.PipelineSvcFunc{
 		CronNotExecuteCompensate:                pipelineSvc.CronNotExecuteCompensateById,
@@ -190,9 +192,10 @@ func (p *provider) do() error {
 		endpoints.WithReconciler(r),
 	)
 
-	server := httpserver.New(conf.ListenAddr())
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
+	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(ep.Routes())
+	p.Router.Any("/**", server.Router())
 
 	// 加载 event manager
 	events.Initialize(bdl, publisher, dbClient)
@@ -217,8 +220,6 @@ func (p *provider) do() error {
 		return err
 	}
 
-	//return server, nil
-	p.server = server
 	return nil
 }
 

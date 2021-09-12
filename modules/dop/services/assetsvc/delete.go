@@ -196,7 +196,7 @@ func (svc *Service) DeleteClient(req *apistructs.DeleteClientReq) *errorresp.API
 		return apierrors.DeleteClient.InternalError(err)
 	}
 
-	if err := bdl.Bdl.DeleteClientConsumer(clientModel.ClientID); err != nil {
+	if err := bdl.Bdl.DeleteClientConsumer(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, clientModel.ClientID); err != nil {
 		logrus.Errorf("failed to DeleteClientConsumer, err: %v", err)
 		return apierrors.DeleteClient.InternalError(err)
 	}
@@ -267,7 +267,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 			logrus.Errorf("failed to FirstRecord client, contract: %+v, err: %v", contract, err)
 			return apierrors.DeleteContract.InternalError(err)
 		}
-		if apiError := svc.deleteContract(tx.Sq(), req.OrgID, contract, &client, &asset, &access); apiError != nil {
+		if apiError := svc.deleteContract(tx.Sq(), req.OrgID, req.Identity.UserID, contract, &client, &asset, &access); apiError != nil {
 			logrus.Errorf("failed to deleteContract, err: %v", apiError)
 			return apiError
 		}
@@ -278,7 +278,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 		return apierrors.DeleteAccess.InternalError(err)
 	}
 
-	if err := bdl.Bdl.DeleteEndpoint(endpointID); err != nil {
+	if err := bdl.Bdl.DeleteEndpoint(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, endpointID); err != nil {
 		return apierrors.DeleteAccess.InternalError(err)
 	}
 
@@ -287,6 +287,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 	return nil
 }
 
+// DeleteContract deletes contract
 func (svc *Service) DeleteContract(req *apistructs.GetContractReq) *errorresp.APIError {
 	// 参数校验
 	if req == nil || req.URIParams == nil {
@@ -349,7 +350,7 @@ func (svc *Service) DeleteContract(req *apistructs.GetContractReq) *errorresp.AP
 		return apierrors.DeleteContract.InternalError(err)
 	}
 
-	return svc.deleteContract(nil, req.OrgID, &contract, &client, &asset, &access)
+	return svc.deleteContract(nil, req.OrgID, req.Identity.UserID, &contract, &client, &asset, &access)
 }
 
 func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError {
@@ -443,7 +444,7 @@ func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError 
 	return nil
 }
 
-func (svc *Service) deleteContract(tx *gorm.DB, orgID uint64, contract *apistructs.ContractModel, client *apistructs.ClientModel,
+func (svc *Service) deleteContract(tx *gorm.DB, orgID uint64, userID string, contract *apistructs.ContractModel, client *apistructs.ClientModel,
 	asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel) *errorresp.APIError {
 	sq := tx
 	if sq == nil {
@@ -464,7 +465,7 @@ func (svc *Service) deleteContract(tx *gorm.DB, orgID uint64, contract *apistruc
 		"contract_id": contract.ID,
 	})
 
-	if err := bdl.Bdl.RevokeEndpointFromClient(client.ClientID, access.EndpointID); err != nil {
+	if err := bdl.Bdl.RevokeEndpointFromClient(strconv.FormatUint(orgID, 10), userID, client.ClientID, access.EndpointID); err != nil {
 		logrus.Errorf("failed to RevokeEndpointFromClient, err: %v", err)
 	}
 

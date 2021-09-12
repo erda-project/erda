@@ -18,6 +18,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -75,4 +78,14 @@ func Test_reorderMemberOption(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_filterBmOption(t *testing.T) {
+	f := ComponentFilter{}
+	f.Bms = []issuefilterbm.MyFilterBm{
+		{ID: "123", Name: "n123"},
+	}
+	assert.Equal(t, []filter.PropConditionOption{
+		{Label: "n123", Value: "123"},
+	}, f.filterBmOption())
 }

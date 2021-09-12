@@ -38,7 +38,7 @@ type State struct {
 	PageSize          int            `json:"pageSize"`
 	Sorter            Sorter         `json:"sorterData,omitempty"`
 	Total             int            `json:"total"`
-	PodsTableURLQuery string         `json:"podsTableURLQuery,omitempty"`
+	PodsTableURLQuery string         `json:"podsTable__urlQuery,omitempty"`
 	Values            Values         `json:"values,omitempty"`
 	CountValues       map[string]int `json:"countValues"`
 	ActiveKey         string         `json:"activeKey,omitempty"`
@@ -94,7 +94,6 @@ type Link struct {
 }
 
 type LinkOperation struct {
-	Key     string  `json:"key,omitempty"`
 	Command Command `json:"command,omitempty"`
 	Reload  bool    `json:"reload"`
 }

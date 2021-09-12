@@ -8,6 +8,7 @@ hierarchy:
       - charts
       - tableTabsContainer
       - addLabelModal
+      - cleanData
     tableTabsContainer:
       - tableTabs
     tableTabs:
@@ -45,6 +46,9 @@ components:
     type: Chart
   podChart:
     type: Chart
+  cleanData:
+    type: Container
+
 
 rendering:
   __DefaultRendering__:
@@ -60,6 +64,7 @@ rendering:
     - name: podChart
     - name: tableTabsContainer
     - name: addLabelModal
+    - name: cleanData
 
   tableTabs:
     - name: nodeFilter
@@ -67,31 +72,55 @@ rendering:
     - name: podTable
     - name: memTable
     - name: addLabelModal
+    - name: cleanData
+
 
   nodeFilter:
-    - state:
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
     - name: cpuTable
       state:
         - name: "values"
-          value: "{{ filter.values }}"
+          value: "{{ nodeFilter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: podTable
       state:
         - name: "values"
-          value: "{{ filter.values }}"
+          value: "{{ nodeFilter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: memTable
       state:
         - name: "values"
-          value: "{{ filter.values }}"
+          value: "{{ nodeFilter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: charts
     - name: cpuChart
     - name: memChart
     - name: podChart
+    - name: addLabelModal
+    - name: cleanData
+
+  addLabelModal:
+    - name: cpuTable
+      state:
+        - name: "values"
+          value: "{{ nodeFilter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: podTable
+      state:
+        - name: "values"
+          value: "{{ nodeFilter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: memTable
+      state:
+        - name: "values"
+          value: "{{ nodeFilter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: cleanData
+
+
 

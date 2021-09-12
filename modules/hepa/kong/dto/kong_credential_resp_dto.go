@@ -14,9 +14,51 @@
 
 package dto
 
+import (
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/core/hepa/openapi_consumer/pb"
+	"github.com/erda-project/erda/modules/hepa/common/util"
+)
+
 type KongCredentialListDto struct {
 	Total int64               `json:"total"`
 	Data  []KongCredentialDto `json:"data"`
+}
+
+func (dto KongCredentialDto) ToCredential() *pb.Credential {
+	res := &pb.Credential{
+		ConsumerId:   dto.ConsumerId,
+		CreatedAt:    dto.CreatedAt,
+		Id:           dto.Id,
+		Key:          dto.Key,
+		RedirectUrls: dto.RedirectUrls,
+		Name:         dto.Name,
+		ClientId:     dto.ClientId,
+		ClientSecret: dto.ClientSecret,
+		Secret:       dto.Secret,
+		Username:     dto.Username,
+	}
+	v, _ := structpb.NewValue(util.GetPureInterface(dto.RedirectUrl))
+	res.RedirectUrl = v
+	return res
+}
+
+func FromCredential(cred *pb.Credential) KongCredentialDto {
+	res := KongCredentialDto{
+		ConsumerId:   cred.ConsumerId,
+		CreatedAt:    cred.CreatedAt,
+		Id:           cred.Id,
+		Key:          cred.Key,
+		RedirectUrls: cred.RedirectUrls,
+		Name:         cred.Name,
+		ClientId:     cred.ClientId,
+		ClientSecret: cred.ClientSecret,
+		Secret:       cred.Secret,
+		Username:     cred.Username,
+	}
+	res.RedirectUrl = cred.RedirectUrl.AsInterface()
+	return res
 }
 
 type KongCredentialDto struct {

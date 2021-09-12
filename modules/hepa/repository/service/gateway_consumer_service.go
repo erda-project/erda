@@ -175,15 +175,17 @@ func (impl *GatewayConsumerServiceImpl) GetPage(options []orm.SelectOption, page
 		return nil, errors.Wrap(err, "get total count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayConsumer{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayConsumer{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayConsumer
 	err = orm.SelectPageWithOption(options, impl.engine.Desc("create_time"), &result, page)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayConsumerServiceImpl) Count(options []orm.SelectOption) (int64, error) {

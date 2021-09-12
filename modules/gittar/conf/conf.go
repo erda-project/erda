@@ -44,8 +44,6 @@ type Conf struct {
 	GitMaxDiffFiles          int    `env:"GIT_DIFF_FILES" default:"300"`
 	GitMaxDiffSize           int    `env:"GIT_MAX_DIFF_SIZE" default:"256000"`
 	GitDiffContextLines      int    `env:"GIT_DIFF_CONTEXT_LINES" default:"3"`
-	GitInnerUserName         string `env:"GIT_INNER_USER_NAME"`
-	GitInnerUserPassword     string `env:"GIT_INNER_USER_PASSWORD"`
 	GitMergeTemplatePath     string `env:"GIT_MERGE_TEMPLATE_PATH" default:".gitlab/merge_request_templates"`
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
 	GitGCMaxNum              int    `env:"GIT_GC_MAX_NUM" default:"1"`
@@ -151,16 +149,6 @@ func GitDiffContextLines() int {
 // GitDiffContextLines 最大diff行数
 func GitMaxDiffLines() int {
 	return cfg.GitMaxDiffLines
-}
-
-// GitInnerUserName 内部用户名
-func GitInnerUserName() string {
-	return cfg.GitInnerUserName
-}
-
-// GitInnerUserPassword 内部用户名密码
-func GitInnerUserPassword() string {
-	return cfg.GitInnerUserPassword
 }
 
 // GitMergeTemplatePath merge模板文件对应路径

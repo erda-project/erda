@@ -45,7 +45,7 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 	if err := t.RenderList(); err != nil {
 		return err
 	}
-	t.SetComponentValue()
+	t.SetComponentValue(ctx)
 	return nil
 }
 
@@ -124,9 +124,10 @@ func (t *ComponentEventTable) RenderList() error {
 			continue
 		}
 		items = append(items, Item{
+			ID:                obj.String("metadata", "name"),
 			LastSeen:          fields[0],
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
-			Type:              fields[1],
+			Type:              t.SDK.I18n(fields[1]),
 			Reason:            fields[2],
 			Message:           fields[6],
 		})
@@ -138,28 +139,29 @@ func (t *ComponentEventTable) RenderList() error {
 	return nil
 }
 
-func (t *ComponentEventTable) SetComponentValue() {
+func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
+		RowKey:     "id",
 		Pagination: false,
 		Columns: []Column{
 			{
 				DataIndex: "lastSeen",
-				Title:     "Last Seen",
+				Title:     cputil.I18n(ctx, "lastSeen"),
 				Width:     160,
 			},
 			{
 				DataIndex: "type",
-				Title:     "Event Type",
+				Title:     cputil.I18n(ctx, "eventType"),
 				Width:     100,
 			},
 			{
 				DataIndex: "reason",
-				Title:     "Reason",
+				Title:     cputil.I18n(ctx, "reason"),
 				Width:     100,
 			},
 			{
 				DataIndex: "message",
-				Title:     "Message",
+				Title:     cputil.I18n(ctx, "message"),
 				Width:     120,
 			},
 		},
