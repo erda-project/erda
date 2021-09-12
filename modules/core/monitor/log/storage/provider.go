@@ -79,7 +79,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	cass := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := cass.Session(&p.Cfg.Output.Cassandra.SessionConfig)
+	session, err := cass.NewSession(&p.Cfg.Output.Cassandra.SessionConfig)
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session, err=%s", err)
 	}
