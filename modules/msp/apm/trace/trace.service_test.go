@@ -823,3 +823,25 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 		})
 	}
 }
+
+func Test_getSpanProcessAnalysisDashboard(t *testing.T) {
+	type args struct {
+		metricType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{metricType: "jvm_memory"}, "span_process_analysis_java"},
+		{"case1", args{metricType: "nodejs_memory"}, "span_process_analysis_nodejs"},
+		{"case1", args{metricType: "xxx"}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getSpanProcessAnalysisDashboard(tt.args.metricType); got != tt.want {
+				t.Errorf("getSpanProcessAnalysisDashboard() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
