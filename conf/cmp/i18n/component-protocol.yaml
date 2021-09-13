@@ -175,6 +175,7 @@ zh:
  running: 运行中
  waiting: 等待
  terminated: 终止
+ usedRate: 使用率
 
 en:
  # general
@@ -272,7 +273,7 @@ en:
  requests: Requests
  limits: Limits
  usage: Utilization rate
- usedRate: Used Rate
+ usedRate: Used
  restartCount: Restart Times
  category: category
  podSearchPlaceHolder: filter by pod name or IP
@@ -286,7 +287,7 @@ en:
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
  distribution: Reserved
- distributionRate: Reversed Used Rate
+ distributionRate: Reverse Used
  kernelVersion: Kernel Version
  kubeProxyVersion: Kubectl Proxy Version
  kubeletVersion: Kubelet Version
