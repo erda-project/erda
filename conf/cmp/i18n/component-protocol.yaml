@@ -72,20 +72,22 @@ zh:
 
  # cmp-dashboard-nodes
  node-list: 节点列表
- env: 环境
+ organization-label: 组织标签
+ service-label: 服务标签
+ env-label: 环境标签
+ job-label: 任务标签
+ other-label: 其他标签
+ custom-label: 自定义标签
  platform: 平台组件
- service: 服务
  cicd-job: CICD任务
  bigdata-job: 大数据任务
  lb: 负载均衡
- job: 任务
- other: 其他
  os: 系统
  nodeIp: IP
  Allocated: 已分配
  Cannot-Allocate: 不可分配
  Free-Allocate: 剩余分配
- cpu-analysis: Cpu 分析
+ cpu-analysis: CPU 分析
  mem-analysis: 内存分析
  pod-analysis: Pod 分析
  nodeInfo: 节点信息
@@ -159,7 +161,6 @@ zh:
  podIP: Pod IP
  log: 查看日志
  enterprise: 企业
- organization: 组织
  location-cluster-service: 集群级服务
  stateless-service: 无状态服务
  stateful-service: 有状态服务
@@ -178,6 +179,9 @@ zh:
  waiting: 等待
  terminated: 终止
  usedRate: 使用率
+ core: 核
+ taint: 污点
+ input node Name or IP: 请输入节点名称或IP
 
 en:
  # general
@@ -316,4 +320,12 @@ en:
  events: Events
  running: Running
  waiting: Waiting
+ role: Role
+ ta: Tag
+ taint: Taint
  terminated: Terminated
+ organization-label: Organization Label
+ service-label: Service Label
+ env-label: Enviorment Label
+ job-label: Job Label
+ other-label: Other Label
