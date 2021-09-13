@@ -16,7 +16,6 @@ package testplan_after
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +26,6 @@ import (
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -121,7 +119,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		req.PassRate = float64(apiSuccessNum) / float64(apiTotalNum) * 100
 	}
 
-	return p.sendMessage(req, ctx.SDK.Pipeline.Snapshot.Secrets[autotest.CmsCfgKeyAPIGlobalConfig])
+	return p.sendMessage(req, ctx)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -173,33 +171,19 @@ func convertReport(pipelineID uint64, report spec.PipelineReport) (ApiReportMeta
 	return meta, nil
 }
 
-func (p *provider) sendMessage(req testplanpb.Content, configString string) error {
-	// get projectID from GlobalConfig
-	config := apistructs.AutoTestAPIConfig{}
-	err := json.Unmarshal([]byte(configString), &config)
-	if err != nil {
-		return err
-	}
-
-	projectID, err := strconv.ParseUint(config.Header["project-id"], 10, 64)
-	project, err := p.Bundle.GetProject(projectID)
-	if err != nil {
-		return err
-	}
-
+func (p *provider) sendMessage(req testplanpb.Content, ctx *aoptypes.TuneContext) error {
 	ev2 := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.AutoTestPlanExecuteEvent,
 			Action:        bundle.UpdateAction,
-			OrgID:         fmt.Sprintf("%d", project.OrgID),
-			ProjectID:     fmt.Sprintf("%d", project.ID),
+			OrgID:         ctx.SDK.Pipeline.Labels[apistructs.LabelProjectID],
+			ProjectID:     ctx.SDK.Pipeline.Labels[apistructs.LabelOrgID],
 			ApplicationID: "-1",
 			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 		},
 		Sender:  bundle.SenderDOP,
 		Content: req,
 	}
-
 	// create event
 	if err := p.Bundle.CreateEvent(ev2); err != nil {
 		logrus.Warnf("failed to send autoTestPlan update event, (%v)", err)
