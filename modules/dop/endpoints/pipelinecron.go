@@ -68,6 +68,15 @@ func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars
 		return errorresp.ErrResp(err)
 	}
 
+	// update CmsNsConfigs
+	appDto, err := e.bdl.GetApp(cronInfo.ApplicationID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if err = e.UpdateCmsNsConfigs(identityInfo.UserID, appDto.OrgID); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	cron, err := e.bdl.StartPipelineCron(cronID)
 	if err != nil {
 		return errorresp.ErrResp(err)

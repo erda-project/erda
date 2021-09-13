@@ -36,7 +36,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
+	hc := httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
 		bundle.WithCoreServices(),

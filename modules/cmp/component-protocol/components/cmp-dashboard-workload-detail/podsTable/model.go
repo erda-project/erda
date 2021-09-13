@@ -68,9 +68,14 @@ type Item struct {
 }
 
 type Status struct {
-	RenderType  string      `json:"renderType,omitempty"`
-	Value       string      `json:"value,omitempty"`
-	StyleConfig StyleConfig `json:"styleConfig,omitempty"`
+	RenderType string      `json:"renderType,omitempty"`
+	Size       string      `json:"size,omitempty"`
+	Value      StatusValue `json:"value,omitempty"`
+}
+
+type StatusValue struct {
+	Label string `json:"label,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type StyleConfig struct {

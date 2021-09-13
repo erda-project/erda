@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/recallsong/go-utils/container/slice"
@@ -52,6 +53,8 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 	if event.Operation == cptype.InitializeOperation {
 		t.State.PageNo = 1
 		t.State.PageSize = 20
+		t.State.Sorter.Field = "lastSeen"
+		t.State.Sorter.Order = "ascend"
 	}
 	// set page no. if triggered by filter
 	if event.Operation == cptype.RenderingOperation || event.Operation == "changeSort" ||
@@ -165,6 +168,12 @@ func (t *ComponentEventTable) RenderList() error {
 			logrus.Errorf("length of event fields is invalid: %d", len(fields))
 			continue
 		}
+		if t.State.FilterValues.Search != "" && !strings.Contains(fields[2], t.State.FilterValues.Search) &&
+			!strings.Contains(fields[3], t.State.FilterValues.Search) &&
+			!strings.Contains(fields[5], t.State.FilterValues.Search) &&
+			!strings.Contains(fields[6], t.State.FilterValues.Search) {
+			continue
+		}
 		count, err := strconv.ParseInt(fields[8], 10, 64)
 		if err != nil {
 			logrus.Errorf("failed to parse count for event %s, %v", fields[9], err)
@@ -178,7 +187,7 @@ func (t *ComponentEventTable) RenderList() error {
 		items = append(items, Item{
 			LastSeen:          fields[0],
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
-			Type:              fields[1],
+			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],
 			Object:            fields[3],
 			Source:            fields[5],
@@ -287,19 +296,19 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "lastSeen",
 				Title:     cputil.I18n(ctx, "lastSeen"),
-				Width:     160,
+				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "type",
 				Title:     cputil.I18n(ctx, "eventType"),
-				Width:     100,
+				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "reason",
 				Title:     cputil.I18n(ctx, "reason"),
-				Width:     100,
+				Width:     80,
 				Sorter:    true,
 			},
 			{
@@ -311,19 +320,19 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "source",
 				Title:     cputil.I18n(ctx, "source"),
-				Width:     120,
+				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "message",
 				Title:     cputil.I18n(ctx, "message"),
-				Width:     120,
+				Width:     200,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "count",
 				Title:     cputil.I18n(ctx, "count"),
-				Width:     80,
+				Width:     50,
 				Sorter:    true,
 			},
 			{
@@ -335,7 +344,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "namespace",
 				Title:     cputil.I18n(ctx, "namespace"),
-				Width:     120,
+				Width:     80,
 				Sorter:    true,
 			},
 		},

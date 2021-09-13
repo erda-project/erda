@@ -15,11 +15,14 @@
 package envGlobalText
 
 import (
+	"context"
 	"testing"
 
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
 
 func Test_render(t *testing.T) {
@@ -31,22 +34,12 @@ func Test_render(t *testing.T) {
 			},
 			State: State{
 				Value: "[{ name: 'a', content: 'xxxxxxx' }]",
-				EnvData: apistructs.AutoTestAPIConfig{
-					Domain: "domain",
-					Header: nil,
-					Global: nil,
-				},
 			},
 		},
 	}
 	c := &apistructs.Component{}
 	want := &apistructs.Component{
 		State: map[string]interface{}{
-			"envData": map[string]interface{}{
-				"domain": "domain",
-				"header": nil,
-				"global": nil,
-			},
 			"value": "[{ name: 'a', content: 'xxxxxxx' }]",
 		},
 		Props: map[string]interface{}{
@@ -57,4 +50,34 @@ func Test_render(t *testing.T) {
 	err := a.marshal(c)
 	assert.NoError(t, err)
 	assert.Equal(t, c, want)
+}
+
+func Test_Render(t *testing.T) {
+	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), protocol.ContextBundle{})
+	i := &ComponentFileInfo{}
+	gs := &apistructs.GlobalStateData{
+		types.AutotestGlobalKeyEnvData: apistructs.AutoTestAPIConfig{
+			Domain: "domain",
+			Global: map[string]apistructs.AutoTestConfigItem{
+				"key": {
+					Name:  "name",
+					Value: "value",
+				},
+			},
+			Header: map[string]string{
+				"key": "value",
+			},
+		},
+	}
+	c := &apistructs.Component{}
+	err := i.Render(ctx, c, apistructs.ComponentProtocolScenario{},
+		apistructs.ComponentEvent{
+			Operation:     "ooo",
+			OperationData: nil,
+		}, gs)
+	assert.NoError(t, err)
+	want := map[string]interface{}{
+		"value": `[{"name":"name","content":"value"}]`,
+	}
+	assert.Equal(t, c.State, want)
 }

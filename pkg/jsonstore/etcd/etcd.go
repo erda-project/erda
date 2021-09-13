@@ -107,11 +107,14 @@ func New(ops ...OpOption) (*Store, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Invalid Etcd endpoints")
 	}
+
+	teleRootPathPrefix := os.Getenv("TELEPRESENCE_ROOT")
+
 	if url.Scheme == "https" {
 		tlsInfo := transport.TLSInfo{
-			CertFile:      getEnvOrDefault("ETCD_CERT_FILE", "/certs/etcd-client.pem"),
-			KeyFile:       getEnvOrDefault("ETCD_CERT_KEY_FILE", "/certs/etcd-client-key.pem"),
-			TrustedCAFile: getEnvOrDefault("ETCD_CA_FILE", "/certs/etcd-ca.pem"),
+			CertFile:      teleRootPathPrefix + getEnvOrDefault("ETCD_CERT_FILE", "/certs/etcd-client.pem"),
+			KeyFile:       teleRootPathPrefix + getEnvOrDefault("ETCD_CERT_KEY_FILE", "/certs/etcd-client-key.pem"),
+			TrustedCAFile: teleRootPathPrefix + getEnvOrDefault("ETCD_CA_FILE", "/certs/etcd-ca.pem"),
 		}
 		tlsConfig, err = tlsInfo.ClientConfig()
 		if err != nil {

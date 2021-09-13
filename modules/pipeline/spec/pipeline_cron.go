@@ -77,16 +77,20 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 		return nil
 	}
 	return &apistructs.PipelineCronDTO{
-		ID:              pc.ID,
-		TimeCreated:     pc.TimeCreated,
-		TimeUpdated:     pc.TimeUpdated,
-		ApplicationID:   pc.ApplicationID,
-		Branch:          pc.Branch,
-		CronExpr:        pc.CronExpr,
-		CronStartTime:   pc.Extra.CronStartFrom,
-		PipelineYmlName: pc.PipelineYmlName,
-		BasePipelineID:  pc.BasePipelineID,
-		Enable:          pc.Enable,
+		ID:                     pc.ID,
+		TimeCreated:            pc.TimeCreated,
+		TimeUpdated:            pc.TimeUpdated,
+		ApplicationID:          pc.ApplicationID,
+		Branch:                 pc.Branch,
+		CronExpr:               pc.CronExpr,
+		CronStartTime:          pc.Extra.CronStartFrom,
+		PipelineYmlName:        pc.PipelineYmlName,
+		BasePipelineID:         pc.BasePipelineID,
+		Enable:                 pc.Enable,
+		PipelineYml:            pc.Extra.PipelineYml,
+		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		UserID:                 pc.GetUserID(),
+		OrgID:                  pc.GetOrgID(),
 	}
 }
 
@@ -124,4 +128,23 @@ func (pc *PipelineCron) GetBranch() string {
 		return ""
 	}
 	return pc.Extra.FilterLabels[apistructs.LabelBranch]
+}
+
+// GetUserID if user is empty, means it doesn't exist
+func (pc *PipelineCron) GetUserID() string {
+	userID := pc.Extra.FilterLabels[apistructs.LabelUserID]
+	if userID != "" {
+		return userID
+	}
+	return pc.Extra.NormalLabels[apistructs.LabelUserID]
+}
+
+// GetOrgID if org is 0, means it doesn't exist
+func (pc *PipelineCron) GetOrgID() uint64 {
+	orgIDStr := pc.Extra.FilterLabels[apistructs.LabelOrgID]
+	if orgIDStr == "" {
+		orgIDStr = pc.Extra.NormalLabels[apistructs.LabelOrgID]
+	}
+	orgID, _ := strconv.ParseUint(orgIDStr, 10, 64)
+	return orgID
 }

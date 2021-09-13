@@ -196,15 +196,17 @@ func (impl *GatewayPackageApiServiceImpl) GetPage(options []orm.SelectOption, pa
 		return nil, errors.Wrap(err, "get total count failed")
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayPackageApi{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayPackageApi{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayPackageApi
 	err = orm.SelectPageWithOption(options, impl.executor, &result, page)
 	if err != nil {
 		return nil, errors.Wrap(err, ERR_SQL_FAIL)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayPackageApiServiceImpl) Count(options []orm.SelectOption) (int64, error) {

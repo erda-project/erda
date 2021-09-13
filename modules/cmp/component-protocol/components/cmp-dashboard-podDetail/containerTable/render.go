@@ -68,9 +68,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		states := containerStatus.Map("state")
 		status := Status{}
 		for k := range states {
-			status = parseContainerStatus(k)
+			status = parseContainerStatus(ctx, k)
 		}
 
+		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
 		data = append(data, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
@@ -85,9 +86,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Operate: Operate{
 				Operations: map[string]Operation{
 					"log": {
-						Key:    "checkLog",
-						Text:   cputil.I18n(ctx, "log"),
-						Reload: false,
+						ContainerID: containerId,
+						Key:         "checkLog",
+						Text:        cputil.I18n(ctx, "log"),
+						Reload:      false,
 						Meta: map[string]string{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
@@ -116,6 +118,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		"list": data,
 	}
 
+	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
 	containerTable.Props.Scroll.X = 1000
 	containerTable.Props.Columns = []Column{
@@ -174,20 +177,24 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 	return nil
 }
 
-func parseContainerStatus(state string) Status {
-	status := Status{
-		RenderType: "text",
-		Value:      "state",
-	}
+func parseContainerStatus(ctx context.Context, state string) Status {
+	color := ""
 	switch state {
 	case "running":
-		status.StyleConfig.Color = "green"
+		color = "green"
 	case "waiting":
-		status.StyleConfig.Color = "steelblue"
+		color = "steelblue"
 	case "terminated":
-		status.StyleConfig.Color = "red"
+		color = "red"
 	}
-	return status
+	return Status{
+		RenderType: "tagsRow",
+		Size:       "default",
+		Value: StatusValue{
+			Label: cputil.I18n(ctx, state),
+			Color: color,
+		},
+	}
 }
 
 func init() {

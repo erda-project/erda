@@ -42,17 +42,18 @@ func init() {
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	f.InitComponent(ctx)
-	if event.Operation == cptype.InitializeOperation {
-		if _, ok := f.sdk.InParams["filter__urlQuery"]; !ok {
-			f.State.Values.Namespace = []string{"default"}
-		}
-	}
-	if err := f.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for filter component, %v", err)
-	}
 	if err := f.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen filter component state, %v", err)
 	}
+
+	if event.Operation == cptype.InitializeOperation {
+		if _, ok := f.sdk.InParams["filter__urlQuery"]; !ok {
+			f.State.Values.Namespace = []string{"default"}
+		} else if err := f.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for filter component, %v", err)
+		}
+	}
+
 	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)
 	}
@@ -201,10 +202,11 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 
 	f.State.Conditions = nil
 	namespaceCond := Condition{
-		Key:   "namespace",
-		Label: cputil.I18n(ctx, "namespace"),
-		Type:  "select",
-		Fixed: true,
+		HaveFilter: true,
+		Key:        "namespace",
+		Label:      cputil.I18n(ctx, "namespace"),
+		Type:       "select",
+		Fixed:      true,
 	}
 	for _, option := range []Option{devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, defaultNs, systemNs, otherNs} {
 		if option.Children != nil {
@@ -223,40 +225,48 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Fixed: true,
 		Options: []Option{
 			{
-				Label: "Completed",
+				Label: cputil.I18n(ctx, "Completed"),
 				Value: "Completed",
 			},
 			{
-				Label: "ContainerCreating",
+				Label: cputil.I18n(ctx, "ContainerCreating"),
 				Value: "ContainerCreating",
 			},
 			{
-				Label: "CrashLoopBackOff",
+				Label: cputil.I18n(ctx, "CrashLoopBackOff"),
 				Value: "CrashLoopBackOff",
 			},
 			{
-				Label: "Error",
+				Label: cputil.I18n(ctx, "Error"),
 				Value: "Error",
 			},
 			{
-				Label: "Evicted",
+				Label: cputil.I18n(ctx, "Evicted"),
 				Value: "Evicted",
 			},
 			{
-				Label: "ImagePullBackOff",
+				Label: cputil.I18n(ctx, "ImagePullBackOff"),
 				Value: "ImagePullBackOff",
 			},
 			{
-				Label: "Pending",
+				Label: cputil.I18n(ctx, "Pending"),
 				Value: "Pending",
 			},
 			{
-				Label: "Running",
+				Label: cputil.I18n(ctx, "Running"),
 				Value: "Running",
 			},
 			{
-				Label: "Terminating",
+				Label: cputil.I18n(ctx, "Terminating"),
 				Value: "Terminating",
+			},
+			{
+				Label: cputil.I18n(ctx, "OOMKilled"),
+				Value: "OOMKilled",
+			},
+			{
+				Label: cputil.I18n(ctx, "others"),
+				Value: "others",
 			},
 		},
 	})
@@ -274,7 +284,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	}
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:     "node",
-		Label:   "Node",
+		Label:   cputil.I18n(ctx, "node"),
 		Type:    "select",
 		Fixed:   true,
 		Options: nodeOptions,
@@ -283,7 +293,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:         "search",
 		Label:       cputil.I18n(ctx, "search"),
-		Placeholder: cputil.I18n(ctx, "searchNameOrIP"),
+		Placeholder: cputil.I18n(ctx, "podSearchPlaceHolder"),
 		Type:        "input",
 		Fixed:       true,
 	})

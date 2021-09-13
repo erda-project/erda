@@ -96,7 +96,8 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	if err != nil {
 		return err
 	}
-	s.Props.Value = status
-	s.Props.StyleConfig.Color = color
+	s.Data.Labels.Label = s.sdk.I18n(status)
+	s.Data.Labels.Color = color
+	s.Props.Size = "default"
 	return nil
 }

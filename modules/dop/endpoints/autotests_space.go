@@ -206,13 +206,13 @@ func (e *Endpoints) CopyAutoTestSpaceV2(ctx context.Context, r *http.Request, va
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  uint64(res.ProjectID),
 			Resource: apistructs.TestSpaceResource,
-			Action:   apistructs.DeleteAction,
+			Action:   apistructs.CreateAction,
 		})
 		if err != nil {
-			return nil, err
+			return apierrors.ErrCopyAutoTestSpace.InternalError(err).ToResp(), nil
 		}
 		if !access.Access {
-			return nil, apierrors.ErrCreateTestPlan.AccessDenied()
+			return apierrors.ErrCopyAutoTestSpace.AccessDenied().ToResp(), nil
 		}
 	}
 	space := e.autotestV2.CopyAutotestSpaceV2(*res, identityInfo)
@@ -247,13 +247,13 @@ func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, r *http.Request, va
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  uint64(res.ProjectID),
 			Resource: apistructs.TestSpaceResource,
-			Action:   apistructs.DeleteAction,
+			Action:   apistructs.CreateAction,
 		})
 		if err != nil {
 			return apierrors.ErrExportAutoTestSpace.InternalError(err).ToResp(), nil
 		}
 		if !access.Access {
-			return apierrors.ErrCreateTestPlan.AccessDenied().ToResp(), nil
+			return apierrors.ErrExportAutoTestSpace.AccessDenied().ToResp(), nil
 		}
 	}
 	req.ProjectID = uint64(res.ProjectID)
@@ -298,13 +298,13 @@ func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, va
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  uint64(req.ProjectID),
 			Resource: apistructs.TestSpaceResource,
-			Action:   apistructs.DeleteAction,
+			Action:   apistructs.CreateAction,
 		})
 		if err != nil {
 			return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
 		}
 		if !access.Access {
-			return apierrors.ErrCreateTestPlan.AccessDenied().ToResp(), nil
+			return apierrors.ErrImportAutoTestSpace.AccessDenied().ToResp(), nil
 		}
 	}
 

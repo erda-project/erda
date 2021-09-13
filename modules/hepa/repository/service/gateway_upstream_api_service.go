@@ -90,15 +90,17 @@ func (impl *GatewayUpstreamApiServiceImpl) GetPage(ids []string, page *common.Pa
 		return nil, errors.WithStack(err)
 	}
 	page.SetTotalNum(total)
+	result := []orm.GatewayUpstreamApi{}
 	if total == 0 {
-		return &common.PageQuery{Result: []orm.GatewayUpstreamApi{}, Page: page}, nil
+		p := common.GetPageQuery(page, result)
+		return &p, nil
 	}
-	var result []orm.GatewayUpstreamApi
 	err = orm.SelectPageNoCond(impl.engine.In("id", ids).Desc("create_time"), &result, page)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return &common.PageQuery{Result: result, Page: page}, nil
+	p := common.GetPageQuery(page, result)
+	return &p, nil
 }
 
 func (impl *GatewayUpstreamApiServiceImpl) SelectInIdsAndDeleted(ids []string) ([]orm.GatewayUpstreamApi, error) {

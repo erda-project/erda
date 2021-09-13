@@ -60,6 +60,7 @@ services:
       replicas: 1
     envs:
       DEBUG: "true"
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     health_check:
       exec: { }
       http:
@@ -67,10 +68,7 @@ services:
         path: /_api/health
         port: 9527
     ports:
-      - port: 9527 # legacy http port
-        protocol: "TCP"
-        l4_protocol: "TCP"
-      - port: 9528 # new http port
+      - port: 9527 # http port
         protocol: "TCP"
         l4_protocol: "TCP"
       - port: 9529 # grpc port
@@ -180,7 +178,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -253,7 +251,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "spot-v2"
     expose:
@@ -375,7 +373,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "addons"
     expose:
@@ -383,7 +381,7 @@ services:
     health_check:
       http:
         port: 8080
-        path: "/api/gateway/health/check"
+        path: "/health"
         duration: 120
       exec: { }
   monitor:
@@ -401,14 +399,14 @@ services:
     envs:
       LOG_LEVEL: INFO
     resources:
-      cpu: ${request_cpu:1}
+      cpu: ${request_cpu:0.5}
       mem: ${request_mem:512}
       max_cpu: 1
-      max_mem: 512
+      max_mem: 1024
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "spot-v2"
     health_check:
@@ -438,11 +436,11 @@ services:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
       max_cpu: 1
-      max_mem: 512
+      max_mem: 1024
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:2}
       labels:
         GROUP: "msp"
     health_check:
@@ -465,6 +463,9 @@ services:
         l4_protocol: "TCP"
         expose: true
       - port: 9432
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9431
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
@@ -537,7 +538,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -631,7 +632,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -665,7 +666,7 @@ services:
       TRACE_TTL: "168h"
       LOG_LEVEL: INFO
     resources:
-      cpu: ${request_cpu:1.5}
+      cpu: ${request_cpu:0.5}
       mem: ${request_mem:1024}
       max_cpu: 1.5
       max_mem: 1024
@@ -676,7 +677,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "spot-v2"
     health_check:
@@ -708,7 +709,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:0}
       labels:
         GROUP: "spot-v2"
     health_check:

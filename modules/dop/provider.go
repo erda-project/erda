@@ -15,11 +15,12 @@
 package dop
 
 import (
-	"context"
 	"embed"
 	"os"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
+	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -27,12 +28,14 @@ import (
 	"github.com/erda-project/erda-infra/base/version"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
+	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -47,9 +50,13 @@ type provider struct {
 
 	PipelineCms cmspb.CmsServiceServer      `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
 	PipelineDs  definition_client.Processor `autowired:"erda.core.pipeline.definition-process-client"`
+	TestPlanSvc *testplan.TestPlanService   `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
 
-	Protocol componentprotocol.Interface
-	Tran     i18n.Translator `translator:"component-protocol"`
+	Protocol   componentprotocol.Interface
+	Tran       i18n.Translator  `translator:"component-protocol"`
+	DB         *gorm.DB         `autowired:"mysql-client"`
+	ETCD       etcd.Interface   // autowired
+	EtcdClient *clientv3.Client // autowired
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -85,10 +92,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	p.Log.Info("init component-protocol done")
 
-	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,
@@ -99,12 +102,13 @@ func (p *provider) Run(ctx context.Context) error {
 	dumpstack.Open()
 	logrus.Infoln(version.String())
 
-	return p.Initialize()
+	return p.Initialize(ctx)
 }
 
 func init() {
 	servicehub.Register("dop", &servicehub.Spec{
-		Services: []string{"dop"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		Services:     []string{"dop"},
+		Dependencies: []string{"etcd"},
+		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }

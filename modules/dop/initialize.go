@@ -15,12 +15,17 @@
 package dop
 
 import (
+	"context"
+	"fmt"
 	"net/url"
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -45,6 +50,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/environment"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
 	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
@@ -69,7 +75,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -78,8 +86,10 @@ import (
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
+const EtcdPipelineCmsCompensate = "dop/pipelineCms/compensate"
+
 // Initialize 初始化应用启动服务.
-func (p *provider) Initialize() error {
+func (p *provider) Initialize(ctx servicehub.Context) error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -89,13 +99,13 @@ func (p *provider) Initialize() error {
 	// TODO invoke self use service
 	//_ = os.Setenv("QA_ADDR", discover.QA())
 
-	// init db
-	if err := dbclient.Open(); err != nil {
-		return err
+	db := &dao.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: p.DB,
+		},
 	}
-	defer dbclient.Close()
-
-	ep, err := p.initEndpoints((*dao.DBClient)(dbclient.DB))
+	dbclient.Set(db.DBEngine)
+	ep, err := p.initEndpoints(db)
 	if err != nil {
 		return err
 	}
@@ -114,15 +124,21 @@ func (p *provider) Initialize() error {
 	}
 
 	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
+	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
+		issuefilterbm.WithDBClient(db),
+	))
 
-	server := httpserver.New(conf.ListenAddr())
+	// This server will never be started. Only the routes and locale loader are used by new http server
+	server := httpserver.New(":0")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(ep.Routes())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
 
-	loadMetricKeysFromDb((*dao.DBClient)(dbclient.DB))
+	loadMetricKeysFromDb(db)
+
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	interval := time.Duration(conf.TestFileIntervalSec())
@@ -183,7 +199,45 @@ func (p *provider) Initialize() error {
 		}
 	}()
 
-	return server.ListenAndServe()
+	// compensate pipeline cms according to pipeline cron which enable is true
+	go func() {
+		// add etcd lock to ensure that it is executed only once
+		resp, err := p.EtcdClient.Get(context.Background(), EtcdPipelineCmsCompensate)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		if len(resp.Kvs) == 0 {
+			logrus.Infof("start compensate pipelineCms")
+			if err = compensatePipelineCms(ep); err != nil {
+				logrus.Error(err)
+			}
+			_, err = p.EtcdClient.Put(context.Background(), EtcdPipelineCmsCompensate, "true")
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+
+	}()
+
+	// daily issue expiry status update cron job
+	go func() {
+		cron := cron.New()
+		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
+			start := time.Now()
+			if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
+				logrus.Errorf("daily issue expiry status batch update err: %v", err)
+				return
+			}
+			logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
+		})
+		if err != nil {
+			panic(err)
+		}
+		cron.Start()
+	}()
+
+	return nil
 }
 
 func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
@@ -255,6 +309,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	autotestV2.CreateFileRecord = testCaseSvc.CreateFileRecord
+
+	p.TestPlanSvc.WithAutoTestSvc(autotestV2)
 
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
@@ -589,4 +645,71 @@ func copyTestFileTask(ep *endpoints.Endpoints) {
 		return
 	}
 	ep.TestSetService().CopyTestSet(record)
+}
+
+// compensatePipelineCms compensate pipeline cms according to pipeline cron which enable is true
+// it will be deprecated in the later version
+func compensatePipelineCms(ep *endpoints.Endpoints) error {
+	enable := true
+	// get total
+	cron, err := bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		AllSources: false,
+		Sources:    []apistructs.PipelineSource{apistructs.PipelineSourceDice},
+		YmlNames:   nil,
+		PageSize:   1,
+		PageNo:     1,
+		Enable:     &enable,
+	})
+	if err != nil {
+		logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
+		return err
+	}
+	total := cron.Total
+	pageSize := 1000
+	crons := make([]*apistructs.PipelineCronDTO, 0, total)
+	for i := 0; i < int(total)/pageSize+1; i++ {
+		cron, err = bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+			AllSources: true,
+			Sources:    nil,
+			YmlNames:   nil,
+			PageSize:   pageSize,
+			PageNo:     i + 1,
+			Enable:     &enable,
+		})
+		if err != nil {
+			logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
+			return err
+		}
+		crons = append(crons, cron.Data...)
+	}
+
+	// userOrgMap judge the user ns is compensated or not in the org
+	// key: userID-orgID, value: struct{}
+	userOrgMap := make(map[string]struct{})
+	for _, v := range crons {
+		if v.Enable != nil && *v.Enable &&
+			v.UserID != "" && v.OrgID != 0 {
+			ns := utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)
+			if !strutil.InSlice(ns, v.ConfigManageNamespaces) {
+				err := bdl.Bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+					ID:                     v.ID,
+					PipelineYml:            v.PipelineYml,
+					CronExpr:               v.CronExpr,
+					ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)},
+				})
+				if err != nil {
+					logrus.Errorf("failed to UpdatePipelineCron, err: %s", err.Error())
+				}
+			}
+			if _, ok := userOrgMap[fmt.Sprintf("%s-%d", v.UserID, v.OrgID)]; !ok {
+				userOrgMap[fmt.Sprintf("%s-%d", v.UserID, v.OrgID)] = struct{}{}
+				// the member may not exist
+				err = ep.UpdateCmsNsConfigs(v.UserID, v.OrgID)
+				if err != nil {
+					logrus.Errorf("failed to UpdateCmsNsConfigs, err: %s", err.Error())
+				}
+			}
+		}
+	}
+	return nil
 }
