@@ -237,7 +237,7 @@ func childSpanDuration(id string, spanTree query.SpanTree) int64 {
 	duration := int64(0)
 	for _, span := range spanTree {
 		if span.ParentSpanId == id {
-			duration += span.EndTime - span.StartTime
+			duration += mathpkg.AbsInt64(span.EndTime - span.StartTime)
 		}
 	}
 	return duration
