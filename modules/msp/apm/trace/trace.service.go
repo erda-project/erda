@@ -71,8 +71,8 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	if req.TraceID == "" || req.ScopeID == "" {
 		return nil, errors.NewMissingParameterError("traceId or scopeId")
 	}
-	if req.Limit <= 0 || req.Limit > 1000 {
-		req.Limit = 1000
+	if req.Limit <= 0 || req.Limit > 10000 {
+		req.Limit = 10000
 	}
 	iter := s.p.cassandraSession.Session().Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()
 	spanTree := make(query.SpanTree)
@@ -99,6 +99,103 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	return response, nil
 }
 
+func getSpanProcessAnalysisDashboard(metricType string) string {
+	switch metricType {
+	case query.JavaMemoryMetricName:
+		return "span_process_analysis_java"
+	case query.NodeJsMemoryMetricName:
+		return "span_process_analysis_nodejs"
+	default:
+		return ""
+	}
+}
+
+func (s *traceService) getServiceInstanceType(startTime, endTime int64, tenantId, serviceInstanceId string) (string, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	for _, metricType := range query.ProcessMetrics {
+		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key=$terminus_key "+
+			"AND service_instance_id=$service_instance_id LIMIT 1", metricType)
+		queryParams := map[string]*structpb.Value{
+			"terminus_key":        structpb.NewStringValue(tenantId),
+			"service_instance_id": structpb.NewStringValue(serviceInstanceId),
+		}
+
+		request := &metricpb.QueryWithInfluxFormatRequest{
+			Start:     strconv.FormatInt(startTime, 10),
+			End:       strconv.FormatInt(endTime, 10),
+			Statement: statement,
+			Params:    queryParams,
+		}
+
+		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
+		if err != nil {
+			return "", errors.NewInternalServerError(err)
+		}
+
+		rows := response.Results[0].Series[0].Rows
+		if len(rows) == 1 {
+			return metricType, nil
+		}
+	}
+	return "", nil
+}
+
+func (s *traceService) getSpanServiceAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
+	instanceType, err := s.getServiceInstanceType(req.StartTime, req.EndTime, req.TenantID, req.ServiceInstanceID)
+	if err != nil {
+		return nil, err
+	}
+	dashboardId := getSpanProcessAnalysisDashboard(instanceType)
+
+	return &pb.SpanAnalysis{
+		DashboardID: dashboardId,
+		Conditions:  []string{"service_instance_id"},
+	}, nil
+}
+
+func (s *traceService) getSpanCallAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
+	switch req.Type {
+	case strings.ToLower(pb.SpanType_HTTP_CLIENT.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpClient, Conditions: []string{"http_path", "http_method", "source_service_id"}}, nil
+	case strings.ToLower(pb.SpanType_HTTP_SERVER.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpServer, Conditions: []string{"http_path", "http_method", "target_service_id"}}, nil
+	case strings.ToLower(pb.SpanType_RPC_CLIENT.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisRpcClient, Conditions: []string{"dubbo_service", "dubbo_method", "source_service_id"}}, nil
+	case strings.ToLower(pb.SpanType_RPC_SERVER.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisRpcServer, Conditions: []string{"dubbo_service", "dubbo_method", "target_service_id"}}, nil
+	case strings.ToLower(pb.SpanType_CACHE_CLIENT.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisCacheClient, Conditions: []string{"db_statement", "source_service_id"}}, nil
+	case strings.ToLower(pb.SpanType_MQ_PRODUCER.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisMqProducer, Conditions: []string{"span_kind", "target_service_id", "message_bus_destination"}}, nil
+	case strings.ToLower(pb.SpanType_MQ_CONSUMER.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisMqConsumer, Conditions: []string{"span_kind", "source_service_id", "message_bus_destination"}}, nil
+	case strings.ToLower(pb.SpanType_INVOKE_LOCAL.String()):
+		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisInvokeLocal, Conditions: []string{"service_id"}}, nil
+	default:
+		return nil, errors.NewNotFoundError(fmt.Sprintf("span type (%s)", req.Type))
+	}
+}
+
+func (s *traceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.GetSpanDashboardsResponse, error) {
+	// call details analysis
+	callAnalysis, err := s.getSpanCallAnalysis(ctx, req)
+	if err != nil {
+		s.p.Log.Error(err)
+	}
+	// relate service analysis
+	serviceAnalysis, err := s.getSpanServiceAnalysis(ctx, req)
+	if err != nil {
+		s.p.Log.Error(err)
+	}
+	return &pb.GetSpanDashboardsResponse{
+		CallAnalysis:    callAnalysis,
+		ServiceAnalysis: serviceAnalysis,
+	}, nil
+}
+
 func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpansResponse, error) {
 	var (
 		spans          []*pb.Span
@@ -114,6 +211,9 @@ func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpans
 	services := map[string]common.Void{}
 	for id, span := range spanTree {
 		services[span.Tags["service_name"]] = common.Void{}
+		if span.ParentSpanId == span.Id {
+			span.ParentSpanId = ""
+		}
 		tempDepth := calculateDepth(depth, span, spanTree)
 		if tempDepth > depth {
 			depth = tempDepth
@@ -145,6 +245,9 @@ func childSpanDuration(id string, spanTree query.SpanTree) int64 {
 }
 
 func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
+	if span.ParentSpanId == span.Id {
+		return 0
+	}
 	if span.ParentSpanId != "" && spanTree[span.ParentSpanId] != nil {
 		depth += 1
 		calculateDepth(depth, spanTree[span.ParentSpanId], spanTree)
