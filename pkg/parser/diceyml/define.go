@@ -25,6 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/ghodss/yaml"
 )
 
 var (
@@ -152,6 +153,85 @@ type ServicePort struct {
 	L4Protocol apiv1.Protocol `yaml:"l4_protocol" json:"l4_protocol"`
 	Expose     bool           `yaml:"expose" json:"expose"`
 	Default    bool           `yaml:"default" json:"default"`
+}
+
+type MarshalableContainerSnippet struct {
+	WorkingDir               string                      `json:"workingDir,omitempty"`
+	EnvFrom                  []v1.EnvFromSource          `json:"envFrom,omitempty"`
+	Env                      []v1.EnvVar                 `json:"env,omitempty"`
+	LivenessProbe            *v1.Probe                   `json:"livenessProbe,omitempty"`
+	ReadinessProbe           *v1.Probe                   `json:"readinessProbe,omitempty"`
+	StartupProbe             *v1.Probe                   `json:"startupProbe,omitempty"`
+	Lifecycle                *v1.Lifecycle               `json:"lifecycle,omitempty"`
+	TerminationMessagePath   string                      `json:"terminationMessagePath,omitempty"`
+	TerminationMessagePolicy v1.TerminationMessagePolicy `json:"terminationMessagePolicy,omitempty"`
+	ImagePullPolicy          v1.PullPolicy               `json:"imagePullPolicy,omitempty"`
+	SecurityContext          *v1.SecurityContext         `json:"securityContext,omitempty"`
+	Stdin                    bool                        `json:"stdin,omitempty"`
+	StdinOnce                bool                        `json:"stdinOnce,omitempty"`
+	TTY                      bool                        `json:"tty,omitempty"`
+}
+
+func (cs *ContainerSnippet) ConvertToMarshalable() *MarshalableContainerSnippet {
+	return &MarshalableContainerSnippet{
+		WorkingDir:               cs.WorkingDir,
+		EnvFrom:                  cs.EnvFrom,
+		Env:                      cs.Env,
+		LivenessProbe:            cs.LivenessProbe,
+		ReadinessProbe:           cs.ReadinessProbe,
+		StartupProbe:             cs.StartupProbe,
+		Lifecycle:                cs.Lifecycle,
+		TerminationMessagePath:   cs.TerminationMessagePath,
+		TerminationMessagePolicy: cs.TerminationMessagePolicy,
+		ImagePullPolicy:          cs.ImagePullPolicy,
+		SecurityContext:          cs.SecurityContext,
+		Stdin:                    cs.Stdin,
+		StdinOnce:                cs.StdinOnce,
+		TTY:                      cs.TTY,
+	}
+}
+
+func (cs *ContainerSnippet) MarshalYAML() (interface{}, error) {
+	return yaml.Marshal(cs.ConvertToMarshalable())
+}
+
+func (cs *ContainerSnippet) MarshalJSON() ([]byte, error) {
+	return json.Marshal(cs.ConvertToMarshalable())
+}
+
+type MarshalableServiceProt struct {
+	Port       int             `json:"port"`
+	Protocol   string          `json:"protocol,omitempty"`
+	L4Protocol *apiv1.Protocol `json:"l4_protocol,omitempty"`
+	Expose     bool            `json:"expose,omitempty"`
+	Default    bool            `json:"default,omitempty"`
+}
+
+func (sp *ServicePort) ConvertToMarshalable() *MarshalableServiceProt {
+	spObj := &MarshalableServiceProt{
+		Port:       sp.Port,
+		Protocol:   sp.Protocol,
+		L4Protocol: &sp.L4Protocol,
+		Expose:     sp.Expose,
+		Default:    sp.Default,
+	}
+	if strings.EqualFold(sp.Protocol, "tcp") {
+		spObj.Protocol = ""
+	}
+	if sp.L4Protocol == apiv1.ProtocolTCP {
+		spObj.L4Protocol = nil
+	}
+	return spObj
+}
+
+// simplify marshal yaml
+func (sp *ServicePort) MarshalYAML() (interface{}, error) {
+	return yaml.Marshal(sp.ConvertToMarshalable())
+}
+
+// simplify marshal json
+func (sp *ServicePort) MarshalJSON() ([]byte, error) {
+	return json.Marshal(sp.ConvertToMarshalable())
 }
 
 // The ServicePort UnmarshalYAML unmarshal custom yaml definition
