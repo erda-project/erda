@@ -94,6 +94,8 @@ message Runtime {
   string projectName = 11;
   uint64 orgID = 12 [json_name = "orgId"];
   repeated ErrorResponse errors = 13;
+
+  string reserved0 = 100;
 }
 
 service RuntimeService {
