@@ -70,6 +70,7 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 }
 
 func replaceOpenapiV1Path(path string) string {
+	path = strings.ReplaceAll(path, "<*>", "**")
 	newPath := strings.NewReplacer("<", "{", ">", "}").Replace(path)
 	return newPath
 }
