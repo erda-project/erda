@@ -16,10 +16,12 @@ package diceyml
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
+	apiv1 "k8s.io/api/core/v1"
 )
 
 func TestUnmarshalBinds(t *testing.T) {
@@ -46,4 +48,88 @@ func TestUnmarshalVolumes(t *testing.T) {
 	vols := Volumes{}
 	assert.Nil(t, yaml.Unmarshal([]byte(s), &vols))
 
+}
+
+func TestContainerSnippet_MarshalYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		cs      *ContainerSnippet
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			"case1",
+			&ContainerSnippet{
+				Name: "test",
+				TTY:  true,
+				SecurityContext: &apiv1.SecurityContext{
+					Privileged: &[]bool{true}[0],
+				},
+			},
+			[]byte(`securityContext:
+  privileged: true
+tty: true
+`),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cs.MarshalYAML()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ContainerSnippet.MarshalYAML() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ContainerSnippet.MarshalYAML() = %s, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestServicePort_MarshalYAML(t *testing.T) {
+	type fields struct {
+		Port       int
+		Protocol   string
+		L4Protocol apiv1.Protocol
+		Expose     bool
+		Default    bool
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			"case1",
+			fields{
+				Port:       80,
+				Protocol:   "TCP",
+				L4Protocol: apiv1.ProtocolTCP,
+			},
+			[]byte(`port: 80
+`),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &ServicePort{
+				Port:       tt.fields.Port,
+				Protocol:   tt.fields.Protocol,
+				L4Protocol: tt.fields.L4Protocol,
+				Expose:     tt.fields.Expose,
+				Default:    tt.fields.Default,
+			}
+			got, err := sp.MarshalYAML()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ServicePort.MarshalYAML() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ServicePort.MarshalYAML() = %s, want %v", got, tt.want)
+			}
+		})
+	}
 }
