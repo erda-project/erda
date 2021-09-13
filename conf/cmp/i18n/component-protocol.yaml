@@ -202,7 +202,7 @@ en:
  workspace-dev: Workspace-Dev
  workspace-test: Workspace-Test
  workspace-staging: Workspace-Staging
- workspace-production: Workspace-Production
+ workspace-prod: Workspace-Production
  addons: Addons
  pipelines: Pipelines
  default: Default

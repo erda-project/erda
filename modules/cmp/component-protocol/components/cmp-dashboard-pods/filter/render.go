@@ -134,8 +134,8 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Value: "workspace-staging",
 	}
 	productionNs := Option{
-		Label: cputil.I18n(ctx, "workspace-production"),
-		Value: "workspace-production",
+		Label: cputil.I18n(ctx, "workspace-prod"),
+		Value: "workspace-prod",
 	}
 	addonNs := Option{
 		Label: cputil.I18n(ctx, "addons"),
