@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
 
 type ComponentFileInfo struct {
@@ -80,6 +81,8 @@ func (i *ComponentFileInfo) RenderProtocol(c *apistructs.Component, g *apistruct
 	}
 	(*c).Data["data"] = i.Data
 	c.Props = i.Props
+
+	(*g)[types.AutotestGlobalKeyEnvData] = i.State.EnvData
 }
 
 func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
