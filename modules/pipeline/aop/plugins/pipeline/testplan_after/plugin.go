@@ -16,6 +16,8 @@ package testplan_after
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"strconv"
 	"strings"
 	"time"
@@ -119,25 +121,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		req.PassRate = float64(apiSuccessNum) / float64(apiTotalNum) * 100
 	}
 
-	ev2 := &apistructs.EventCreateRequest{
-		EventHeader: apistructs.EventHeader{
-			Event:         bundle.AutoTestPlanExecuteEvent,
-			Action:        bundle.UpdateAction,
-			OrgID:         "-1",
-			ProjectID:     "-1",
-			ApplicationID: "-1",
-			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-		},
-		Sender:  bundle.SenderDOP,
-		Content: req,
-	}
-
-	// create event
-	if err := p.Bundle.CreateEvent(ev2); err != nil {
-		logrus.Warnf("failed to send autoTestPlan update event, (%v)", err)
-		return err
-	}
-	return nil
+	return p.sendMessage(req, ctx.SDK.Pipeline.Snapshot.Secrets[autotest.CmsCfgKeyAPIGlobalConfig])
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -187,4 +171,39 @@ func convertReport(pipelineID uint64, report spec.PipelineReport) (ApiReportMeta
 		return ApiReportMeta{}, err
 	}
 	return meta, nil
+}
+
+func (p *provider) sendMessage(req testplanpb.Content, configString string) error {
+	// get projectID from GlobalConfig
+	config := apistructs.AutoTestAPIConfig{}
+	err := json.Unmarshal([]byte(configString), &config)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := strconv.ParseUint(config.Header["project-id"], 10, 64)
+	project, err := p.Bundle.GetProject(projectID)
+	if err != nil {
+		return err
+	}
+
+	ev2 := &apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:         bundle.AutoTestPlanExecuteEvent,
+			Action:        bundle.UpdateAction,
+			OrgID:         fmt.Sprintf("%d", project.OrgID),
+			ProjectID:     fmt.Sprintf("%d", project.ID),
+			ApplicationID: "-1",
+			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
+		},
+		Sender:  bundle.SenderDOP,
+		Content: req,
+	}
+
+	// create event
+	if err := p.Bundle.CreateEvent(ev2); err != nil {
+		logrus.Warnf("failed to send autoTestPlan update event, (%v)", err)
+		return err
+	}
+	return nil
 }
