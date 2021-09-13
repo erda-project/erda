@@ -31,18 +31,6 @@ import (
 	discover "github.com/erda-project/erda/providers/service-discover"
 )
 
-var allMethods = []string{
-	http.MethodConnect,
-	http.MethodDelete,
-	http.MethodGet,
-	http.MethodHead,
-	http.MethodOptions,
-	http.MethodPatch,
-	http.MethodPost,
-	http.MethodPut,
-	http.MethodTrace,
-}
-
 type config struct {
 	CP types.ComponentProtocolConfigs `file:"component-protocol"`
 }
@@ -76,9 +64,8 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 		newPath := replaceOpenapiV1Path(api.Path.String())
 		router.Add(api.Method, newPath, p.handler.ServeHTTP)
 	}
-	for _, method := range allMethods {
-		router.Add(method, "/**", p.handler.ServeHTTP)
-	}
+	// v1 router add backport methods routes
+	router.Add("", "/**", p.handler.ServeHTTP)
 	return nil
 }
 
