@@ -23,9 +23,9 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/ghodss/yaml"
 )
 
 var (
