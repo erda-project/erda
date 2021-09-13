@@ -46,7 +46,6 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "createAliCloudOnsTopic", "添加阿里云消息队列Topic")
 
 	message.SetString(language.SimplifiedChinese, "DCOS-compatible label", "DCOS 兼容性的 label")
-	message.SetString(language.SimplifiedChinese, "cluster name", "集群标识")
 	message.SetString(language.SimplifiedChinese, "cluster type", "集群类型")
 	message.SetString(language.SimplifiedChinese, "cluster version", "集群版本")
 	message.SetString(language.SimplifiedChinese, "root domain", "泛域名")

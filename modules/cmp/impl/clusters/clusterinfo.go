@@ -76,9 +76,15 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 
 			baseInfo := map[string]apistructs.NameValue{
 				"manageType":         {Name: i18n.Sprintf("manage type"), Value: parseManageType(clusterMetaData.ManageConfig)},
-				"clusterName":        {Name: i18n.Sprintf("cluster name"), Value: clusterName},
-				"clusterDisplayName": {Name: i18n.Sprintf("cluster display name"), Value: clusterMetaData.DisplayName},
+				"clusterName":        {Name: i18n.Sprintf("cluster display name"), Value: clusterMetaData.Name},
 				"initJobClusterName": {Name: i18n.Sprintf("init job cluster name"), Value: os.Getenv("DICE_CLUSTER_NAME")},
+			}
+
+			if clusterMetaData.DisplayName != "" {
+				baseInfo["clusterName"] = apistructs.NameValue{
+					Name:  i18n.Sprintf("cluster display name"),
+					Value: clusterMetaData.DisplayName,
+				}
 			}
 
 			if clusterMetaData.ManageConfig != nil && (clusterMetaData.ManageConfig.Type == apistructs.ManageProxy &&
