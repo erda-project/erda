@@ -16,9 +16,9 @@ package jaeger
 
 import (
 	"context"
-	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 )
