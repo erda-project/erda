@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
@@ -67,6 +68,62 @@ func TestAddRegistryLabel(t *testing.T) {
 			}
 			if !flag {
 				t.Errorf("AddRegistryLabel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReplaceProjectApplication(t *testing.T) {
+	type args struct {
+		r map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				r: map[string]string{
+					"bp.docker.artifact.registry": "addon-registry.default.svc.cluster.local:5000",
+					"dice.project.application":    "project/app",
+				},
+			},
+			want: map[string]string{
+				"bp.docker.artifact.registry": "addon-registry.default.svc.cluster.local:5000",
+				"dice.project.application":    "project/app",
+			},
+		},
+		{
+			args: args{
+				r: map[string]string{
+					"bp.docker.artifact.registry": "addon-registry.default.svc.cluster.local:500/123/123",
+					"dice.project.application":    "project/app",
+				},
+			},
+			want: map[string]string{
+				"bp.docker.artifact.registry": "addon-registry.default.svc.cluster.local:500/123/123",
+				"dice.project.application":    "project-app",
+			},
+		},
+		{
+			args: args{
+				r: map[string]string{
+					"bp.docker.artifact.registry": "addon-registry.default.svc.cluster.local:500/registry",
+					"dice.project.application":    "project/app",
+				},
+			},
+			want: map[string]string{
+				"bp.docker.artifact.registry": "addon-registry.default.svc.cluster.local:500/registry",
+				"dice.project.application":    "project-app",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ReplaceProjectApplication(tt.args.r); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ReplaceProjectApplication() = %v, want %v", got, tt.want)
 			}
 		})
 	}
