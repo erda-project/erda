@@ -1,6 +1,6 @@
 {
-  "id": "translation_analysis_rpc",
-  "name": "translation_analysis_rpc",
+  "id": "translation_analysis_mq",
+  "name": "translation_analysis_mq",
   "desc": "",
   "scope": "micro_service",
   "scopeId": "global",
@@ -20,28 +20,66 @@
           "query": {
             "end": "{{endTime}}",
             "filterServiceName": "{{serviceName}}",
-            "layer": "rpc",
-            "search": "{{search}}",
+            "layer": "mq",
+            "search": "{{topic}}",
             "serviceId": "{{serviceId}}",
             "sort": "{{sort}}",
+            "type": "{{type}}",
             "start": "{{startTime}}",
             "terminusKey": "{{terminusKey}}"
           },
-          "url": "/api/apm/topology/translation"
+          "url": "/api/apm/topology/translation/db"
         },
         "chartType": "table",
         "config": {
           "dataSourceConfig": {
             "valueDimensions": [
               {
-                "alias": "事务名称",
+                "alias": "Topic",
                 "i18n": {
                   "alias": {
-                    "en": "Translation Name",
-                    "zh": "事务名称"
+                    "en": "Topic",
+                    "zh": "Topic"
                   }
                 },
-                "key": "translation_name",
+                "key": "operation",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "调用类型",
+                "i18n": {
+                  "alias": {
+                    "en": "Call Type",
+                    "zh": "调用类型"
+                  }
+                },
+                "key": "type",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "MQ 类型",
+                "i18n": {
+                  "alias": {
+                    "en": "MQ Type",
+                    "zh": "MQ 类型"
+                  }
+                },
+                "key": "component",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "服务地址",
+                "width": 300,
+                "i18n": {
+                  "alias": {
+                    "en": "Service Address",
+                    "zh": "服务地址"
+                  }
+                },
+                "key": "host",
                 "resultType": "string",
                 "type": "field"
               },
@@ -49,23 +87,11 @@
                 "alias": "调用次数",
                 "i18n": {
                   "alias": {
-                    "en": "Called Count",
+                    "en": "Request Count",
                     "zh": "调用次数"
                   }
                 },
-                "key": "elapsed_count",
-                "resultType": "number",
-                "type": "field"
-              },
-              {
-                "alias": "错误次数",
-                "i18n": {
-                  "alias": {
-                    "en": "Error Count",
-                    "zh": "错误次数"
-                  }
-                },
-                "key": "error_count",
+                "key": "call_count",
                 "resultType": "number",
                 "type": "field"
               },
@@ -73,7 +99,7 @@
                 "alias": "慢调用次数",
                 "i18n": {
                   "alias": {
-                    "en": "Slow Called Count",
+                    "en": "Slow Request Count",
                     "zh": "慢调用次数"
                   }
                 },
@@ -82,11 +108,11 @@
                 "type": "field"
               },
               {
-                "alias": "平均时延",
+                "alias": "平均延迟",
                 "i18n": {
                   "alias": {
                     "en": "Avg Time Delay",
-                    "zh": "平均时延"
+                    "zh": "平均延迟"
                   }
                 },
                 "key": "avg_elapsed",
@@ -100,7 +126,7 @@
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "searchTranslation",
-              "value": "translation_name"
+              "value": "operation"
             }
           }
         },
@@ -108,11 +134,11 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "RPC 事务",
+        "title": "MQ 事务",
         "i18n": {
           "title": {
-            "en": "RPC Translation",
-            "zh": "RPC 事务"
+            "en": "MQ Translation",
+            "zh": "MQ 事务"
           }
         }
       }
@@ -122,23 +148,23 @@
       "w": 12,
       "x": 0,
       "y": 10,
-      "i": "view-UQW30sdQ",
+      "i": "view-1XA1pzWR",
       "view": {
         "api": {
           "body": {
             "from": [
-              "application_rpc"
+              "application_mq"
             ],
             "groupby": [
               "time()"
             ],
             "select": [
               {
-                "alias": "typeHWstw9Kl",
+                "alias": "typegq99wZs2",
                 "expr": "time()"
               },
               {
-                "alias": "valueV71fTatk",
+                "alias": "valueSR6vrde7",
                 "expr": "round_float(sum(elapsed_count::field), 2)"
               }
             ]
@@ -151,8 +177,10 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -164,7 +192,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_rpc"
+              "application_mq"
             ],
             "typeDimensions": [
               {
@@ -175,8 +203,7 @@
                     "zh": "时间"
                   }
                 },
-                "key": "typeHWstw9Kl",
-                "timeField": {},
+                "key": "typegq99wZs2",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
                   "unit": "m",
@@ -195,17 +222,15 @@
                     "zh": "请求次数"
                   }
                 },
-                "field": "application_rpc-elapsed_count::field",
-                "key": "valueV71fTatk",
+                "field": "application_mq-elapsed_count::field",
+                "key": "valueSR6vrde7",
                 "resultType": "number",
                 "type": "field"
               }
             ]
           },
           "optionProps": {
-            "isConnectNulls": false,
-            "isLabel": false,
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "YYYY/MM/DD"
           }
         },
@@ -227,23 +252,23 @@
       "w": 12,
       "x": 12,
       "y": 10,
-      "i": "view-WPTjI5ir",
+      "i": "view-J4SwjHDP",
       "view": {
         "api": {
           "body": {
             "from": [
-              "application_rpc"
+              "application_mq"
             ],
             "groupby": [
               "time()"
             ],
             "select": [
               {
-                "alias": "type2jCjYVIp",
+                "alias": "typeQuPvs7M2",
                 "expr": "time()"
               },
               {
-                "alias": "valueaecENLIN",
+                "alias": "valueCxbcWuWT",
                 "expr": "round_float(avg(elapsed_mean::field), 2)"
               }
             ]
@@ -256,8 +281,10 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -269,7 +296,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_rpc"
+              "application_mq"
             ],
             "typeDimensions": [
               {
@@ -280,7 +307,7 @@
                     "zh": "时间"
                   }
                 },
-                "key": "type2jCjYVIp",
+                "key": "typeQuPvs7M2",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
                   "unit": "m",
@@ -292,15 +319,15 @@
             "valueDimensions": [
               {
                 "aggregation": "avg",
-                "alias": "请求耗时平均值",
+                "alias": "平均响应时间",
                 "i18n": {
                   "alias": {
-                    "en": "Avg Request Elapse",
-                    "zh": "请求耗时平均值"
+                    "en": "Avg Response Time",
+                    "zh": "平均响应时间"
                   }
                 },
-                "field": "application_rpc-elapsed_mean::field",
-                "key": "valueaecENLIN",
+                "field": "application_mq-elapsed_mean::field",
+                "key": "valueCxbcWuWT",
                 "resultType": "number",
                 "type": "field",
                 "unit": {
@@ -311,7 +338,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "YYYY/MM/DD",
             "noAreaColor": true
           }
@@ -345,10 +372,12 @@
             "end": "{{endTime}}",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
-            "q": "SELECT dubbo_service::tag as Service,dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时 FROM application_rpc_slow GROUP BY dubbo_method::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
+            "q": "SELECT message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_mq_slow GROUP BY message_bus_destination::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
             "ql": "influxql",
             "start": "{{startTime}}",
             "type": "_"
@@ -360,14 +389,14 @@
           "dataSourceConfig": {
             "isSqlMode": true,
             "sql": {
-              "from": "application_rpc_slow",
+              "from": "application_mq_slow",
               "fromSource": [
-                "application_rpc_slow"
+                "application_mq_slow"
               ],
-              "groupBy": "dubbo_method::tag",
+              "groupBy": "message_bus_destination::tag",
               "limit": 50,
               "orderBy": "",
-              "select": "dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
+              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
             }
           },
           "optionProps": {
@@ -375,7 +404,7 @@
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
-              "value": "Method"
+              "value": "Topic"
             }
           }
         },
@@ -408,10 +437,12 @@
             "end": "{{endTime}}",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
-            "q": "SELECT dubbo_service::tag as Service,dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_rpc_error GROUP BY dubbo_method::tag ORDER BY max(timestamp) DESC  LIMIT 50 ",
+            "q": "SELECT message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_mq_error GROUP BY message_bus_destination::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
             "ql": "influxql",
             "start": "{{startTime}}",
             "type": "_"
@@ -423,13 +454,13 @@
           "dataSourceConfig": {
             "isSqlMode": true,
             "sql": {
-              "from": "application_rpc_error",
+              "from": "application_mq_error",
               "fromSource": [
-                "application_rpc_error"
+                "application_mq_error"
               ],
-              "groupBy": "dubbo_method::tag",
+              "groupBy": "message_bus_destination::tag",
               "limit": 50,
-              "select": "dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
+              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
             }
           },
           "optionProps": {
@@ -437,7 +468,7 @@
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
-              "value": "Method"
+              "value": "Topic"
             }
           }
         },
@@ -445,7 +476,7 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "错误事务追踪Top50",
+        "title": "错误事务追踪 Top50",
         "i18n": {
           "title": {
             "en": "Error Translation Tracing Top50",
