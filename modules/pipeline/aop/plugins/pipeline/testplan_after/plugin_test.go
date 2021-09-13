@@ -24,6 +24,7 @@ import (
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -108,13 +109,6 @@ func Test_sendMessage(t *testing.T) {
 		Sender:  bundle.SenderDOP,
 		Content: req,
 	}
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProject",
-		func(b *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
-			return &apistructs.ProjectDTO{
-				ID:    id,
-				OrgID: uint64(1),
-			}, nil
-		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent",
 		func(b *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
 			want.TimeStamp = ev.TimeStamp
@@ -122,7 +116,11 @@ func Test_sendMessage(t *testing.T) {
 			return nil
 		})
 	defer monkey.UnpatchAll()
-	str := `{"domain":"domain","header":{"Cookie":"ck","cluster-id":"1","cluster-name":"cluster","org":"erda","project-id":"13"},"global":{"config":{"name":"name","type":"string","value":"111","desc":"desc"}}}`
-	err := p.sendMessage(req, str)
+	ctx := &aoptypes.TuneContext{}
+	ctx.SDK.Pipeline.Labels = map[string]string{
+		apistructs.LabelProjectID: "13",
+		apistructs.LabelOrgID:     "1",
+	}
+	err := p.sendMessage(req, ctx)
 	assert.NoError(t, err)
 }

@@ -176,8 +176,8 @@ func (p *provider) sendMessage(req testplanpb.Content, ctx *aoptypes.TuneContext
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.AutoTestPlanExecuteEvent,
 			Action:        bundle.UpdateAction,
-			OrgID:         ctx.SDK.Pipeline.Labels[apistructs.LabelProjectID],
-			ProjectID:     ctx.SDK.Pipeline.Labels[apistructs.LabelOrgID],
+			OrgID:         ctx.SDK.Pipeline.Labels[apistructs.LabelOrgID],
+			ProjectID:     ctx.SDK.Pipeline.Labels[apistructs.LabelProjectID],
 			ApplicationID: "-1",
 			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 		},
