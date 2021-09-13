@@ -47,6 +47,7 @@ type Data struct {
 	PodNum           string  `json:"podNum"`
 	Tags             []Field `json:"tag"`
 	Annotation       []Field `json:"annotation"`
+	Taints           []Field `json:"taint"`
 }
 
 type Props struct {
