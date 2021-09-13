@@ -32,7 +32,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/erda-project/erda-infra v0.0.0-20210910055258-e82f28947881
-	github.com/erda-project/erda-proto-go v0.0.0-20210910055828-89edfc75e378
+	github.com/erda-project/erda-proto-go v0.0.0-20210910095156-3fc5a72048ca
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
