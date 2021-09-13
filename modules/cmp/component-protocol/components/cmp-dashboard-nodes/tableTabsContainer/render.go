@@ -23,6 +23,7 @@ import (
 )
 
 func (t *TableTabsContainer) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	c.Props = Props{WhiteBg: true}
 	return nil
 }
 
