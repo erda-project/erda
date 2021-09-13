@@ -41,6 +41,13 @@ func Test_replaceOpenapiV1Path(t *testing.T) {
 			},
 			want: "/api/projects",
 		},
+		{
+			name: "*",
+			args: args{
+				path: "/api/repo/<*>",
+			},
+			want: "/api/repo/**",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
