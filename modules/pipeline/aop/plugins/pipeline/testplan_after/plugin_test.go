@@ -15,15 +15,15 @@
 package testplan_after
 
 import (
-	"bou.ke/monkey"
-	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
-	"github.com/erda-project/erda/bundle"
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
+	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )

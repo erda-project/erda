@@ -17,7 +17,6 @@ package testplan_after
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +27,7 @@ import (
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
