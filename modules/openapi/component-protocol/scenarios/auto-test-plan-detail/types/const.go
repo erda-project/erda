@@ -12,17 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package types
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
-
-var MONITOR_GLOBAL_SETTINGS_PUT = apis.ApiSpec{
-	Path:        "/api/monitor/settings",
-	BackendPath: "/api/global/settings",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
-	Scheme:      "http",
-	Method:      "PUT",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 设置企业级全局配置",
-}
+const (
+	AutotestGlobalKeyEnvData = "envData"
+)

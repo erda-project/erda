@@ -43,16 +43,15 @@ func init() {
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	f.InitComponent(ctx)
+	if err := f.GenComponentState(component); err != nil {
+		return fmt.Errorf("failed to gen filter component state, %v", err)
+	}
 	if event.Operation == cptype.InitializeOperation {
 		if _, ok := f.sdk.InParams["filter__urlQuery"]; !ok {
 			f.State.Values.Namespace = []string{"default"}
+		} else if err := f.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for filter component, %v", err)
 		}
-	}
-	if err := f.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for filter component, %v", err)
-	}
-	if err := f.GenComponentState(component); err != nil {
-		return fmt.Errorf("failed to gen filter component state, %v", err)
 	}
 	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)

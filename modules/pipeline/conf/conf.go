@@ -80,10 +80,6 @@ type Conf struct {
 	// DisablePipelineVolume default is false, means enable context volumes
 	DisablePipelineVolume bool `env:"DISABLE_PIPELINE_VOLUME" default:"false"`
 
-	// gittar inner user name and password
-	GitInnerUserName     string `env:"GIT_INNER_USER_NAME"`
-	GitInnerUserPassword string `env:"GIT_INNER_USER_PASSWORD"`
-
 	// queue handle loop interval
 	QueueLoopHandleIntervalSec uint64 `env:"QUEUE_LOOP_HANDLE_INTERVAL_SEC" default:"10"`
 
@@ -284,16 +280,6 @@ func OpenapiOAuth2TokenClientSecret() string {
 // DisablePipelineVolume 返回 是否关闭 pipeline volume，只有值引用.
 func DisablePipelineVolume() bool {
 	return cfg.DisablePipelineVolume
-}
-
-// GitInnerUserName gittar内部用户名
-func GitInnerUserName() string {
-	return cfg.GitInnerUserName
-}
-
-// GitInnerUserPassword gittar内部用户名密码
-func GitInnerUserPassword() string {
-	return cfg.GitInnerUserPassword
 }
 
 // QueueLoopHandleIntervalSec return reconciler queueManager loop handle interval second.

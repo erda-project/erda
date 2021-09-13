@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type Commit struct {
@@ -31,9 +32,10 @@ type Commit struct {
 	CommitMessage string `json:"commitMessage"`
 }
 
-func (r *Repo) GetCommit(ref string) (Commit, error) {
+func (r *Repo) GetCommit(ref, userID string) (Commit, error) {
 	var commit []Commit
 	req := httpclient.New().Get(r.GittarAddr).
+		Header(httputil.UserHeader, userID).
 		Path("/"+r.Repo+"/commits/"+ref).
 		Param("pageNo", "1").Param("pageSize", "1")
 
