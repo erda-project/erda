@@ -19,6 +19,7 @@ zh:
  source: 事件源
  message: 事件信息
  count: 累计次数
+ ago: 前
 
  # cmp-dashboard-events-list.filter
  workspace-dev: 开发环境
@@ -199,6 +200,7 @@ en:
  source: Source
  message: Message
  count: Count
+ ago: ago
 
  # cmp-dashboard-events-list.filter
  workspace-dev: Workspace-Dev
