@@ -165,7 +165,7 @@ func (am *AdminManager) UnpublishNotice(contenxt context.Context, req *http.Requ
 
 	id, err := strconv.ParseUint(resources["id"], 10, 64)
 	if err != nil {
-		return apierrors.ErrPublishNotice.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrUnpublishNotice.InvalidParameter(err).ToResp(), nil
 	}
 
 	// check permission
@@ -180,12 +180,12 @@ func (am *AdminManager) UnpublishNotice(contenxt context.Context, req *http.Requ
 		return nil, err
 	}
 	if !checkResp.Access {
-		return nil, apierrors.ErrPublishNotice.AccessDenied()
+		return nil, apierrors.ErrUnpublishNotice.AccessDenied()
 	}
 
 	err = am.bundle.PublishORUnPublishNotice(orgID, id, userID, "unpublish")
 	if err != nil {
-		return apierrors.ErrPublishNotice.InternalError(err).ToResp(), nil
+		return apierrors.ErrUnpublishNotice.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(nil)
 }
