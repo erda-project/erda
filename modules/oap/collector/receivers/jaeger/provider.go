@@ -19,14 +19,17 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/providers/kafka"
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 )
 
 type config struct {
 	// some fields of config for this provider
-	Message string `file:"message" flag:"msg" default:"hi" desc:"message to print"`
-	Enable  bool   `file:"enable" default:"true" desc:"enable jaeger receiver"`
+	Enable bool `file:"enable" default:"true" desc:"enable jaeger receiver"`
+	Kafka  struct {
+		Producer kafka.ProducerConfig `file:"producer"  desc:"kafka Producer Config"`
+	} `file:"kafka"`
 }
 
 // +provider
@@ -36,12 +39,17 @@ type provider struct {
 
 	jaegerService pb.JaegerServiceServer
 	Register      transport.Register `autowired:"service-register" optional:"true"`
+	Kafka         kafka.Interface    `autowired:"kafka@receiver-jaeger"`
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Cfg.Enable && p.Register != nil {
-		p.jaegerService = &jaegerServiceImpl{Log: p.Log}
+		writer, err := p.Kafka.NewProducer(&p.Cfg.Kafka.Producer)
+		if err != nil {
+			return err
+		}
+		p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer}
 		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService, transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder)),
 			transport.WithInterceptors(common.Authentication, common.TagOverwrite))
 	}

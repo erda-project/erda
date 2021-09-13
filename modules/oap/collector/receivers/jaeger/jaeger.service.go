@@ -16,6 +16,7 @@ package jaeger
 
 import (
 	"context"
+	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	common "github.com/erda-project/erda-proto-go/common/pb"
@@ -23,11 +24,17 @@ import (
 )
 
 type jaegerServiceImpl struct {
-	Log logs.Logger
+	Log    logs.Logger
+	writer writer.Writer
 }
 
 func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.PostSpansRequest) (*common.VoidResponse, error) {
-	// not support media type: application/x-thrift
-	// TODO Temporarily use the original API implementation of echo
+	if req.Spans != nil {
+		for _, span := range req.Spans {
+			if err := s.writer.Write(span); err != nil {
+				s.Log.Warn("write jaeger traces to kafka failed")
+			}
+		}
+	}
 	return &common.VoidResponse{}, nil
 }

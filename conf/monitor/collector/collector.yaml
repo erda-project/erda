@@ -8,6 +8,17 @@ service-register:
 
 erda.oap.collector.receiver.jaeger:
   enable: "${COLLECTOR_RECEIVER_JAEGER_ENABLE:true}"
+  kafka:
+#    server: ${BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      topic: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_TOPIC:msp_jaeger_trace}
+      shared: "false"
+      options:
+            go.produce.channel.size: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_PRODUCE_CHANNEL_SIZE:100}
+            queue.buffering.max.kbytes: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
+
+kafka@receiver-jaeger:
+  servers: ${BOOTSTRAP_SERVERS:localhost:9092}
 
 grpc-client@erda.core.services.authentication.credentials.accesskey:
     addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
