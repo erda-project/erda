@@ -15,7 +15,9 @@
 package dicehub
 
 import (
+	"context"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
@@ -50,7 +52,7 @@ func Initialize(p *provider) error {
 	}
 
 	// extension init
-	go InitExtension(ep.Extension())
+	go p.InitExtension(ep.Extension())
 
 	// 启动 release 定时清理任务
 	if err := ReleaseGC(ep.Release()); err != nil {
@@ -82,12 +84,17 @@ func ReleaseGC(rl *release.Release) error {
 	return nil
 }
 
-func InitExtension(ex *extension.Extension) {
-	err := ex.InitExtension("/app/extensions")
-	if err != nil {
-		panic(err)
-	}
-	logrus.Infoln("End init extension")
+func (p *provider) InitExtension(ex *extension.Extension) {
+	var once sync.Once
+	p.InitExtensionElection.OnLeader(func(ctx context.Context) {
+		once.Do(func() {
+			err := ex.InitExtension("/app/extensions")
+			if err != nil {
+				panic(err)
+			}
+			logrus.Infoln("End init extension")
+		})
+	})
 }
 
 // 初始化 Endpoints

@@ -20,16 +20,18 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	image "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/metrics"
 	"github.com/erda-project/erda/providers/metrics/query"
 )
 
 type provider struct {
-	Log         logs.Logger
-	QueryClient query.MetricQuery `autowired:"metricq-client"`
-	DB          *gorm.DB          `autowired:"mysql-client"`
-	ImageDB     *image.ImageConfigDB
+	Log                   logs.Logger
+	QueryClient           query.MetricQuery  `autowired:"metricq-client"`
+	DB                    *gorm.DB           `autowired:"mysql-client"`
+	InitExtensionElection election.Interface `autowired:"etcd-election@initExtension"`
+	ImageDB               *image.ImageConfigDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
