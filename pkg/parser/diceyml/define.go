@@ -156,20 +156,20 @@ type ServicePort struct {
 }
 
 type MarshalableContainerSnippet struct {
-	WorkingDir               string                      `json:"workingDir,omitempty"`
-	EnvFrom                  []v1.EnvFromSource          `json:"envFrom,omitempty"`
-	Env                      []v1.EnvVar                 `json:"env,omitempty"`
-	LivenessProbe            *v1.Probe                   `json:"livenessProbe,omitempty"`
-	ReadinessProbe           *v1.Probe                   `json:"readinessProbe,omitempty"`
-	StartupProbe             *v1.Probe                   `json:"startupProbe,omitempty"`
-	Lifecycle                *v1.Lifecycle               `json:"lifecycle,omitempty"`
-	TerminationMessagePath   string                      `json:"terminationMessagePath,omitempty"`
-	TerminationMessagePolicy v1.TerminationMessagePolicy `json:"terminationMessagePolicy,omitempty"`
-	ImagePullPolicy          v1.PullPolicy               `json:"imagePullPolicy,omitempty"`
-	SecurityContext          *v1.SecurityContext         `json:"securityContext,omitempty"`
-	Stdin                    bool                        `json:"stdin,omitempty"`
-	StdinOnce                bool                        `json:"stdinOnce,omitempty"`
-	TTY                      bool                        `json:"tty,omitempty"`
+	WorkingDir               string                      `json:"workingDir,omitempty" yaml:"workingDir,omitempty"`
+	EnvFrom                  []v1.EnvFromSource          `json:"envFrom,omitempty" yaml:"envFrom,omitempty"`
+	Env                      []v1.EnvVar                 `json:"env,omitempty" yaml:"env,omitempty"`
+	LivenessProbe            *v1.Probe                   `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
+	ReadinessProbe           *v1.Probe                   `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
+	StartupProbe             *v1.Probe                   `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
+	Lifecycle                *v1.Lifecycle               `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
+	TerminationMessagePath   string                      `json:"terminationMessagePath,omitempty" yaml:"terminationMessagePath,omitempty"`
+	TerminationMessagePolicy v1.TerminationMessagePolicy `json:"terminationMessagePolicy,omitempty" yaml:"terminationMessagePolicy,omitempty"`
+	ImagePullPolicy          v1.PullPolicy               `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	SecurityContext          *v1.SecurityContext         `json:"securityContext,omitempty" yaml:"securityContext,omitempty"`
+	Stdin                    bool                        `json:"stdin,omitempty" yaml:"stdin,omitempty"`
+	StdinOnce                bool                        `json:"stdinOnce,omitempty" yaml:"stdinOnce,omitempty"`
+	TTY                      bool                        `json:"tty,omitempty" yaml:"tty,omitempty"`
 }
 
 func (cs *ContainerSnippet) ConvertToMarshalable() *MarshalableContainerSnippet {
@@ -200,11 +200,11 @@ func (cs *ContainerSnippet) MarshalJSON() ([]byte, error) {
 }
 
 type MarshalableServiceProt struct {
-	Port       int             `json:"port"`
-	Protocol   string          `json:"protocol,omitempty"`
-	L4Protocol *apiv1.Protocol `json:"l4_protocol,omitempty"`
-	Expose     bool            `json:"expose,omitempty"`
-	Default    bool            `json:"default,omitempty"`
+	Port       int             `json:"port" yaml:"port"`
+	Protocol   string          `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	L4Protocol *apiv1.Protocol `json:"l4_protocol,omitempty" yaml:"l4_protocol,omitempty"`
+	Expose     bool            `json:"expose,omitempty" yaml:"expose,omitempty"`
+	Default    bool            `json:"default,omitempty" yaml:"default,omitempty"`
 }
 
 func (sp *ServicePort) ConvertToMarshalable() *MarshalableServiceProt {
