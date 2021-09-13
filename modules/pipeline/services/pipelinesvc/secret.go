@@ -152,6 +152,8 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 	}
 	r = AddRegistryLabel(r, clusterInfo)
 
+	r = ReplaceProjectApplication(r)
+
 	// 额外加载 labels，项目级别的流水线，对应的项目名称和企业名称是传递过来的
 	if r["dice.org.name"] == "" {
 		r["dice.org.name"] = p.Labels[apistructs.LabelOrgName]
@@ -251,5 +253,15 @@ func AddRegistryLabel(r map[string]string, clusterInfo apistructs.ClusterInfoDat
 	r[secretKeyDockerArtifactRegistry] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR))
 	r[secretKeyDockerArtifactRegistryUsername] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_USERNAME))
 	r[secretKeyDockerArtifactRegistryPassword] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_PASSWORD))
+	return r
+}
+
+// ReplaceProjectApplication Determine the splicing result according to the given registry addresses of different types
+func ReplaceProjectApplication(r map[string]string) map[string]string {
+	ss := strings.SplitN(r[secretKeyDockerArtifactRegistry], "/", 4)
+	if len(ss) <= 1 {
+		return r
+	}
+	r["dice.project.application"] = strings.ReplaceAll(r["dice.project.application"], "/", "-")
 	return r
 }
