@@ -118,6 +118,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		"list": data,
 	}
 
+	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
 	containerTable.Props.Scroll.X = 1000
 	containerTable.Props.Columns = []Column{

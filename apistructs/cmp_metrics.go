@@ -20,8 +20,17 @@ type MetricsRequest struct {
 	ClusterName  string
 	ResourceType string
 	ResourceKind string
-	Names        []string
-	IP           []string
+	PodRequests  []MetricsPodRequest
+	NodeRequests []MetricsNodeRequest
+}
+
+type MetricsPodRequest struct {
+	PodName   string
+	Namespace string
+}
+
+type MetricsNodeRequest struct {
+	IP string
 }
 
 type MetricsResponse struct {

@@ -111,7 +111,7 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	}
 	req := apistructs.MetricsRequest{
 		ClusterName:  mt.SDK.InParams["clusterName"].(string),
-		IP:           []string{c.StringSlice("metadata", "fields")[5]},
+		NodeRequests: []apistructs.MetricsNodeRequest{{IP: c.StringSlice("metadata", "fields")[5]}},
 		ResourceType: metrics.Memory,
 		ResourceKind: metrics.Node,
 		OrgID:        mt.SDK.Identity.OrgID,
