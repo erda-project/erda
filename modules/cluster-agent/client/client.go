@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cluster-agent/config"
 	"github.com/erda-project/erda/pkg/discover"
 )
@@ -36,9 +37,8 @@ import (
 var connected = make(chan struct{})
 
 const (
-	inClusterKey = "DICE_CLUSTER_NAME"
-	tokenFile    = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-	rootCAFile   = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
 func getClusterInfo(apiserverAddr string) (map[string]interface{}, error) {
@@ -65,7 +65,7 @@ func parseDialerEndpoint(clusterKey, endpoint string) (string, error) {
 	}
 
 	//inCluster, visit dialer inner service first.
-	if os.Getenv(inClusterKey) == clusterKey && discover.ClusterDialer() != "" {
+	if os.Getenv(string(apistructs.DICE_IS_EDGE)) == "false" && discover.ClusterDialer() != "" {
 		return "ws://" + discover.ClusterDialer() + u.Path, nil
 	}
 
