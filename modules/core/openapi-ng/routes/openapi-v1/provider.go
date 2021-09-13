@@ -16,11 +16,12 @@ package openapiv1
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-	openapi "github.com/erda-project/erda/modules/core/openapi-ng"
+	"github.com/erda-project/erda/modules/core/openapi-ng"
 	"github.com/erda-project/erda/modules/core/openapi-ng/proxy"
 	openapiv1 "github.com/erda-project/erda/modules/openapi"
 	apiv1 "github.com/erda-project/erda/modules/openapi/api"
@@ -59,14 +60,16 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 }
 
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {
-	methods := make(map[string]struct{})
 	for _, api := range apiv1.API {
-		methods[api.Method] = struct{}{}
-	}
-	for method := range methods {
-		router.Add(method, "/**", p.handler.ServeHTTP)
+		newPath := replaceOpenapiV1Path(api.Path.String())
+		router.Add(api.Method, newPath, p.handler.ServeHTTP)
 	}
 	return nil
+}
+
+func replaceOpenapiV1Path(path string) string {
+	newPath := strings.NewReplacer("<", "{", ">", "}").Replace(path)
+	return newPath
 }
 
 func init() {

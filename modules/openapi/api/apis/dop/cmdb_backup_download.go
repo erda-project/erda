@@ -23,7 +23,7 @@ import (
 var CMDB_BACKUP_DOWNLOAD = apis.ApiSpec{
 	Path:          "/api/backup/<uuid>",
 	BackendPath:   "/api/files/<uuid>",
-	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
+	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:        "http",
 	Method:        http.MethodGet,
 	CheckLogin:    false,
