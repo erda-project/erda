@@ -248,10 +248,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			Namespace:      namespace,
 			IP:             fields[5],
-			CPURequests:    cpuRequests.String(),
-			CPULimits:      cpuLimits.String(),
-			MemoryRequests: memRequests.String(),
-			MemoryLimits:   memLimits.String(),
+			CPURequests:    cmpcputil.ResourceToString(p.sdk, float64(cpuRequests.MilliValue()), resource.DecimalSI),
+			CPULimits:      cmpcputil.ResourceToString(p.sdk, float64(cpuLimits.MilliValue()), resource.DecimalSI),
+			MemoryRequests: cmpcputil.ResourceToString(p.sdk, float64(memRequests.Value()), resource.BinarySI),
+			MemoryLimits:   cmpcputil.ResourceToString(p.sdk, float64(memLimits.Value()), resource.BinarySI),
 			Ready:          fields[1],
 			NodeName:       fields[6],
 		})
@@ -455,16 +455,6 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		value = "N/A"
 	}
 	return status, value, tip
-}
-
-func convertUnit(bytes float64) string {
-	units := []string{"B", "Ki", "Mi", "Gi"}
-	i := 0
-	for bytes >= 1<<10 && i < len(units)-1 {
-		bytes /= 1 << 10
-		i++
-	}
-	return fmt.Sprintf("%.3f%s", bytes, units[i])
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {

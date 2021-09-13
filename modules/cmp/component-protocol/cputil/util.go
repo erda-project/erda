@@ -16,7 +16,6 @@ package cputil
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
@@ -134,8 +133,7 @@ func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) string {
 	switch format {
 	case resource.DecimalSI:
-		str := strconv.FormatFloat(res/1000, 'f', -1, 64)
-		return fmt.Sprintf("%s%s", str, sdk.I18n("core"))
+		return fmt.Sprintf("%.3f%s", res/1000, sdk.I18n("core"))
 	case resource.BinarySI:
 		units := []string{"B", "K", "M", "G", "T"}
 		i := 0
