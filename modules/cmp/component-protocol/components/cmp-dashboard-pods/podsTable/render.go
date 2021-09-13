@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -266,7 +267,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
 		usedCPUPercent := cpuMetrics[i].Used
-		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, &cpuLimits, "cpu")
+		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, &cpuLimits, resource.DecimalSI)
 		items[i].CPUPercent = Percent{
 			RenderType: "progress",
 			Value:      cpuValue,
@@ -276,7 +277,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
 		usedMemPercent := memMetrics[i].Used
-		memStatus, memValue, memTip = parseResPercent(usedMemPercent, &memLimits, "mem")
+		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, &memLimits, resource.BinarySI)
 		items[i].MemoryPercent = Percent{
 			RenderType: "progress",
 			Value:      memValue,
@@ -416,20 +417,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 	return nil
 }
 
-func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string) (string, string, string) {
+func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
 	var totRes int64
-	if kind == "cpu" {
+	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
 	} else {
 		totRes = totQty.Value()
 	}
 	usedRes := float64(totRes) * usedPercent / 100
-	usedQtyString := ""
-	if kind == "cpu" {
-		usedQtyString = fmt.Sprintf("%.3f", usedRes/1000)
-	} else {
-		usedQtyString = convertUnit(usedRes)
-	}
+	usedQtyString := cmpcputil.ResourceToString(p.sdk, usedRes, format)
+
 	status := ""
 	if usedPercent <= 80 {
 		status = "success"
@@ -438,23 +435,19 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	tip := fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+
+	tip := ""
+	if format == resource.DecimalSI {
+		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
+	} else {
+		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
+	}
 	value := fmt.Sprintf("%.2f", usedPercent)
 	if usedRes < 1e-4 {
 		tip = "N/A"
 		value = "N/A"
 	}
 	return status, value, tip
-}
-
-func convertUnit(bytes float64) string {
-	units := []string{"B", "Ki", "Mi", "Gi"}
-	i := 0
-	for bytes >= 1<<10 && i < len(units)-1 {
-		bytes /= 1 << 10
-		i++
-	}
-	return fmt.Sprintf("%.3f%s", bytes, units[i])
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {

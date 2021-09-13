@@ -9,6 +9,7 @@ zh:
  labels: 标签
  annotations: 注释
  project: 项目名称
+ core: 核
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: 上次触发时间
@@ -188,6 +189,7 @@ en:
  labels: Labels
  annotations: Annotations
  project: Project Name
+ core: cores
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: Last Seen

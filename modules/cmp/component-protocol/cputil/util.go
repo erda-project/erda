@@ -16,13 +16,17 @@ package cputil
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
+	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 )
 
+// ParseWorkloadStatus get status for workloads from .metadata.fields
 func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 	kind := obj.String("kind")
 	fields := obj.StringSlice("metadata", "fields")
@@ -79,6 +83,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 	}
 }
 
+// ParseWorkloadID get workloadKind, namespace and name from id
 func ParseWorkloadID(id string) (apistructs.K8SResType, string, string, error) {
 	splits := strings.Split(id, "_")
 	if len(splits) != 3 {
@@ -87,6 +92,7 @@ func ParseWorkloadID(id string) (apistructs.K8SResType, string, string, error) {
 	return apistructs.K8SResType(splits[0]), splits[1], splits[2], nil
 }
 
+// GetWorkloadAgeAndImage get age and image for workloads from .metadata.fields
 func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 	kind := obj.String("kind")
 	fields := obj.StringSlice("metadata", "fields")
@@ -119,5 +125,26 @@ func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 		return fields[5], fields[7], nil
 	default:
 		return "", "", fmt.Errorf("invalid workload kind: %s", kind)
+	}
+}
+
+// ResourceToString return resource with unit
+// Only support resource.DecimalSI and resource.BinarySI format
+// Original unit is m (for DecimalSI) or B (for resource.BinarySI)
+func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) string {
+	switch format {
+	case resource.DecimalSI:
+		str := strconv.FormatFloat(res/1000, 'f', -1, 64)
+		return fmt.Sprintf("%s%s", str, sdk.I18n("core"))
+	case resource.BinarySI:
+		units := []string{"B", "K", "M", "G", "T"}
+		i := 0
+		for res >= 1<<10 && i < len(units)-1 {
+			res /= 1 << 10
+			i++
+		}
+		return fmt.Sprintf("%.3f%s", res, units[i])
+	default:
+		return ""
 	}
 }
