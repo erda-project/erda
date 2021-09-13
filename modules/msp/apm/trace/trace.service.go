@@ -224,7 +224,7 @@ func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpans
 			traceEndTime = span.EndTime
 		}
 		span.Duration = mathpkg.AbsInt64(span.EndTime - span.StartTime)
-		span.SelfDuration = span.Duration - childSpanDuration(id, spanTree)
+		span.SelfDuration = mathpkg.AbsInt64(span.Duration - childSpanDuration(id, spanTree))
 		spans = append(spans, span)
 	}
 
@@ -237,7 +237,7 @@ func childSpanDuration(id string, spanTree query.SpanTree) int64 {
 	duration := int64(0)
 	for _, span := range spanTree {
 		if span.ParentSpanId == id {
-			duration += span.EndTime - span.StartTime
+			duration += mathpkg.AbsInt64(span.EndTime - span.StartTime)
 		}
 	}
 	return duration
