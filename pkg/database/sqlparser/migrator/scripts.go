@@ -184,14 +184,14 @@ func (s *Scripts) Lint() error {
 			}
 		}
 	}
-	if len(linter.Errors()) == 0 {
+	if !linter.HasError() {
 		return nil
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, linter.Report())
 	for src, es := range linter.Errors() {
 		logrus.Println(src)
-		for _, err := range es {
+		for _, err := range es.Lints {
 			_, _ = fmt.Fprintln(os.Stdout, err)
 		}
 		_, _ = fmt.Fprintln(os.Stdout)

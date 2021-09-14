@@ -23,6 +23,8 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda/pkg/database/schema"
 )
 
 // Module is the list of Script
@@ -37,28 +39,28 @@ type Module struct {
 }
 
 // BaselineEqualCloud check baseline script schema is equal with cloud schema or not
-func (m *Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
+func (m *Module) BaselineEqualCloud(tx *gorm.DB) *schema.Equal {
 	tableNames := m.BaselineTableNames()
-	cloud := NewSchema()
+	cloud := schema.NewSchema()
 	for _, tableName := range tableNames {
 		raw := "SHOW CREATE TABLE " + tableName
 		this := tx.Raw(raw)
 		if err := this.Error; err != nil {
-			return &Equal{
+			return &schema.Equal{
 				equal:  false,
 				reason: fmt.Sprintf("failed to exec %s", raw),
 			}
 		}
 		var _ig, create string
 		if err := this.Row().Scan(&_ig, &create); err != nil {
-			return &Equal{
+			return &schema.Equal{
 				equal:  false,
 				reason: fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw),
 			}
 		}
 		node, err := parser.New().ParseOneStmt(create, "", "")
 		if err != nil {
-			return &Equal{
+			return &schema.Equal{
 				equal:  false,
 				reason: fmt.Sprintf("failed to ParseOneStmt: %s, raw: %s", create, raw),
 			}
@@ -69,8 +71,8 @@ func (m *Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
 	return m.BaselineSchema().Equal(cloud)
 }
 
-func (m *Module) Schema() *Schema {
-	schema := NewSchema()
+func (m *Module) Schema() *schema.Schema {
+	schema := schema.NewSchema()
 	for _, script := range m.Scripts {
 		for _, ddl := range script.DDLNodes() {
 			ddl.Accept(schema)
@@ -79,8 +81,8 @@ func (m *Module) Schema() *Schema {
 	return schema
 }
 
-func (m *Module) BaselineSchema() *Schema {
-	schema := NewSchema()
+func (m *Module) BaselineSchema() *schema.Schema {
+	schema := schema.NewSchema()
 	for _, script := range m.Scripts {
 		if !script.IsBaseline() {
 			continue

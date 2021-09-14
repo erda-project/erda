@@ -43,7 +43,7 @@ func TestNewCommentLinter(t *testing.T) {
 	}
 	errors := linter.Errors()
 	t.Logf("errors: %v", errors)
-	if len(errors["columnCommentLinterSQL [lints]"]) != 2 {
+	if errs := linter.GetError("columnCommentLinterSQL"); errs == nil || len(errs.Lints) != 2 {
 		t.Fatal("failed")
 	}
 }

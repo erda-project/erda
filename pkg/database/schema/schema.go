@@ -1,18 +1,18 @@
-// Copyright (c) 2021 Terminus, Inc.
+//  Copyright (c) 2021 Terminus, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 
-package migrator
+package schema
 
 import (
 	"fmt"
@@ -20,22 +20,24 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 )
 
 // Schema is the set of TableDefinitions.
 // Is presents the status of the set of some tables.
 type Schema struct {
-	TableDefinitions map[string]*TableDefinition
+	TableDefinitions map[string]*migrator.TableDefinition
 }
 
 func NewSchema() *Schema {
-	return &Schema{TableDefinitions: make(map[string]*TableDefinition)}
+	return &Schema{TableDefinitions: make(map[string]*migrator.TableDefinition)}
 }
 
 func (s *Schema) Enter(in ast.Node) (ast.Node, bool) {
 	switch stmt := in.(type) {
 	case *ast.CreateTableStmt:
-		s.TableDefinitions[stmt.Table.Name.String()] = NewTableDefinition(stmt)
+		s.TableDefinitions[stmt.Table.Name.String()] = migrator.NewTableDefinition(stmt)
 
 	case *ast.DropTableStmt:
 		for _, table := range stmt.Tables {

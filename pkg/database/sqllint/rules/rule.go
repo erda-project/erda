@@ -17,6 +17,7 @@ package rules
 import (
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/schema"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
@@ -26,6 +27,12 @@ type Rule interface {
 	ast.Visitor
 
 	Error() error
+}
+
+type StatefulRule interface {
+	Rule
+
+	SetSchema(schema *schema.Schema)
 }
 
 // Ruler is a function that returns a Rule interface

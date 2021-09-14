@@ -21,6 +21,7 @@ import (
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
+	"github.com/erda-project/erda/pkg/database/schema"
 	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 )
 
@@ -111,7 +112,7 @@ func TestTableDefinition_Enter(t *testing.T) {
 }
 
 func TestSchema_Enter(t *testing.T) {
-	schema := migrator.NewSchema()
+	schema := schema.NewSchema()
 
 	nodes, _, err := parser.New().Parse(createStmt+alters, "", "")
 	if err != nil {
@@ -129,8 +130,8 @@ func TestSchema_Enter(t *testing.T) {
 }
 
 func TestSchema_Enter2(t *testing.T) {
-	local := migrator.NewSchema()
-	db := migrator.NewSchema()
+	local := schema.NewSchema()
+	db := schema.NewSchema()
 
 	nodes, _, err := parser.New().Parse(createStmt+alters, "", "")
 	if err != nil {

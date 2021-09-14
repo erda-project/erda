@@ -40,9 +40,9 @@ func TestNewTableNameLinter(t *testing.T) {
 	if err := linter.Input([]byte(tablenameLinterSQL), "tablenameLinterSQL"); err != nil {
 		t.Error(err)
 	}
-	errors := linter.Errors()
+	errors := linter.GetError("tablenameLinterSQL")
 	t.Logf("errors: %v", errors)
-	if len(errors) == 0 {
+	if errors == nil || len(errors.Lints) == 0 {
 		t.Fatal("failed")
 	}
 }

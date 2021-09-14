@@ -18,6 +18,7 @@ import (
 	"github.com/pingcap/parser"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/schema"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
@@ -26,18 +27,20 @@ import (
 type Linter struct {
 	stop    bool
 	layer   int
-	errs    map[string][]error
+	errs    map[string]*Errors
 	reports map[string]map[string][]string
 	linters []rules.Ruler
+	schema  *schema.Schema
 }
 
 func New(rules ...rules.Ruler) *Linter {
 	r := &Linter{
 		stop:    false,
 		layer:   0,
-		errs:    make(map[string][]error, 0),
+		errs:    make(map[string]*Errors),
 		reports: make(map[string]map[string][]string, 0),
 		linters: nil,
+		schema:  new(schema.Schema),
 	}
 	for _, l := range rules {
 		r.linters = append(r.linters, l)
@@ -51,7 +54,10 @@ func (r *Linter) Input(scriptData []byte, scriptName string) error {
 	if err != nil {
 		return err
 	}
-
+	// update schema state
+	for _, node := range nodes {
+		node.Accept(r.schema)
+	}
 	s := script.New(scriptName, scriptData)
 	r.reports[scriptName] = make(map[string][]string, 0)
 
@@ -59,6 +65,10 @@ func (r *Linter) Input(scriptData []byte, scriptName string) error {
 	for _, node := range nodes {
 		for _, f := range r.linters {
 			linter := f(s)
+			// if the linter lints with state, set its schema
+			if stateLinter, ok := linter.(rules.StatefulRule); ok {
+				stateLinter.SetSchema(r.schema)
+			}
 			_, _ = node.Accept(linter)
 			if err := linter.Error(); err != nil {
 				errs = append(errs, err)
@@ -75,18 +85,36 @@ func (r *Linter) Input(scriptData []byte, scriptName string) error {
 		}
 	}
 
-	if len(warns) > 0 {
-		r.errs[scriptName+" [warns]"] = warns
-	}
-	if len(errs) > 0 {
-		r.errs[scriptName+" [lints]"] = errs
+	if len(warns) > 0 || len(errs) > 0 {
+		if r.errs[scriptName] == nil {
+			r.errs[scriptName] = new(Errors)
+		}
+		r.errs[scriptName].Warns = append(r.errs[scriptName].Warns, warns...)
+		r.errs[scriptName].Lints = append(r.errs[scriptName].Lints, errs...)
 	}
 
 	return nil
 }
 
-func (r *Linter) Errors() map[string][]error {
+func (r *Linter) Errors() map[string]*Errors {
 	return r.errs
+}
+
+func (r *Linter) GetError(scriptName string) *Errors {
+	return r.errs[scriptName]
+}
+
+func (r *Linter) HasError(scriptNames ...string) bool {
+	var names = make(map[string]bool, len(scriptNames))
+	for _, name := range scriptNames {
+		names[name] = true
+	}
+	for k, v := range r.errs {
+		if len(v.Lints) > 0 && (len(names) == 0 || names[k]) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Linter) Report() string {
@@ -95,4 +123,9 @@ func (r *Linter) Report() string {
 		return ""
 	}
 	return string(data)
+}
+
+type Errors struct {
+	Warns []error
+	Lints []error
 }

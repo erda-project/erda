@@ -33,9 +33,7 @@ func TestNewFloatDoubleLinter(t *testing.T) {
 	if err := linter.Input([]byte(floatLinterSQL), "floatLinterSQL"); err != nil {
 		t.Error(err)
 	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors["floatLinterSQL [lints]"]) == 0 {
+	if errors := linter.GetError("floatLinterSQL"); errors == nil || len(errors.Lints) == 0 {
 		t.Fatal("failed")
 	}
 }

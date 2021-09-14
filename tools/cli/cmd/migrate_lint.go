@@ -189,7 +189,12 @@ func CustomMigrateLint(ctx *command.Context, input, config string, noDetail bool
 			if _, err = fmt.Fprintln(out, src); err != nil {
 				return errors.Wrapf(err, "failed to print lint error")
 			}
-			for _, e := range errs {
+			for _, e := range errs.Lints {
+				if _, err = fmt.Fprintln(out, e); err != nil {
+					return errors.Wrapf(err, "failed to print lint error")
+				}
+			}
+			for _, e := range errs.Warns {
 				if _, err = fmt.Fprintln(out, e); err != nil {
 					return errors.Wrapf(err, "failed to print lint error")
 				}

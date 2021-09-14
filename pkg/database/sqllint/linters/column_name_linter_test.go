@@ -45,9 +45,7 @@ func TestNewColumnNameLinter(t *testing.T) {
 		t.Error(err)
 	}
 
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors["columnNameLinterSQL [lints]"]) != 4 {
-		t.Fatal("failed", len(errors["columnNameLinterSQL"]))
+	if errors := linter.GetError("columnNameLinterSQL"); !(errors != nil && len(errors.Lints) == 4) {
+		t.Fatalf("failed: %+v", errors)
 	}
 }

@@ -20,6 +20,8 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+
+	"github.com/erda-project/erda/pkg/database/schema"
 )
 
 // TableDefinition is the table definition (CreateTableStmt) object.
@@ -67,7 +69,7 @@ func (d *TableDefinition) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
+func (d *TableDefinition) Equal(o *TableDefinition) *schema.Equal {
 	var (
 		reasons string
 		eq      = true
@@ -80,7 +82,7 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
 			return o.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
 		})
-		return &Equal{
+		return &schema.Equal{
 			equal: false,
 			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v, ",
 				o.CreateStmt.Cols, d.CreateStmt.Cols),
@@ -105,13 +107,13 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 			reasons += fmt.Sprintf("the column is missing in actual, column name: %s, ", name)
 			continue
 		}
-		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
+		if equal := schema.FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
 			eq = false
 			reasons += fmt.Sprintf("column: %s, %s, ", name, equal.Reason())
 		}
 	}
 
-	return &Equal{
+	return &schema.Equal{
 		equal:  eq,
 		reason: strings.TrimRight(reasons, ", "),
 	}

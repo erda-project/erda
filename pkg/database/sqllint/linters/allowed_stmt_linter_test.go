@@ -182,19 +182,19 @@ func TestNewAllowedStmtLinter(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if errors := linterA.Errors(); len(errors["stmt [lints]"]) > 0 {
-		data, _ := json.Marshal(errors)
+	if linterA.HasError("stmt") {
+		data, _ := json.Marshal(linterA.Errors())
 		t.Logf("%s", string(data))
 		t.Fatal("fails")
 	}
-	if errors := linterB.Errors(); len(errors["stmt [lints]"]) == 0 {
-		t.Fatal("fails")
+	if !linterB.HasError("stmt") {
+		t.Fatalf("fails: %+v", linterB.GetError("stmt"))
 	}
 
 	if err := linterA.Input([]byte(begin), "begin"); err != nil {
 		t.Fatal(err)
 	}
-	if errors := linterA.Errors(); len(errors["begin [lints]"]) == 0 {
+	if !linterA.HasError("begin") {
 		t.Fatal("fails")
 	}
 	data, _ := json.Marshal(linterA.Errors())
