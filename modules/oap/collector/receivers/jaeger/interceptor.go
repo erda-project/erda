@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"html"
 	"io/ioutil"
 	"net/http"
@@ -26,7 +28,6 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/recallsong/go-utils/reflectx"
 
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-oap-thirdparty-protocol/jaeger-thrift/jaeger"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
@@ -47,10 +48,11 @@ var (
 
 func injectCtx(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, entity interface{}) (interface{}, error) {
+		header := transport.ContextHeader(ctx)
 		req := transhttp.ContextRequest(ctx)
-		ctx = context.WithValue(ctx, common.CTX_MSP_ENV_ID, req.Header.Get(common.HEADER_MSP_ENV_ID))
-		ctx = context.WithValue(ctx, common.CTX_MSP_AK_ID, req.Header.Get(common.HEADER_MSP_AK_ID))
-		ctx = context.WithValue(ctx, common.CTX_MSP_AK_SECRET, req.Header.Get(common.HEADER_MSP_AK_SECRET))
+		header.Set(common.HEADER_MSP_ENV_ID, req.Header.Get(common.HEADER_MSP_ENV_ID))
+		header.Set(common.HEADER_MSP_AK_ID, req.Header.Get(common.HEADER_MSP_AK_ID))
+		header.Set(common.HEADER_MSP_AK_SECRET, req.Header.Get(common.HEADER_MSP_AK_SECRET))
 		if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
 			ctx = context.WithValue(ctx, common.CTX_SPANS, data.Spans)
 		}

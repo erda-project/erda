@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"errors"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"strings"
 
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
@@ -32,7 +33,6 @@ var (
 )
 
 type Interceptors interface {
-
 	Authentication(next interceptor.Handler) interceptor.Handler
 
 	TagOverwrite(next interceptor.Handler) interceptor.Handler
@@ -66,9 +66,9 @@ func (i *interceptorImpl) TagOverwrite(next interceptor.Handler) interceptor.Han
 
 func (i *interceptorImpl) Authentication(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		envId := ctx.Value(CTX_MSP_ENV_ID).(string)
-		akId := ctx.Value(CTX_MSP_AK_ID).(string)
-		akSecret := ctx.Value(CTX_MSP_AK_SECRET).(string)
+		envId := apis.GetHeader(ctx, HEADER_MSP_ENV_ID)
+		akId := apis.GetHeader(ctx, HEADER_MSP_AK_ID)
+		akSecret := apis.GetHeader(ctx, HEADER_MSP_AK_SECRET)
 
 		if envId == "" {
 			return nil, INVALID_MSP_ENV_ID

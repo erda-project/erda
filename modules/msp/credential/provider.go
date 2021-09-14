@@ -33,7 +33,7 @@ type provider struct {
 	Cfg                  *config
 	Register             transport.Register `autowired:"service-register"`
 	credentialKeyService *accessKeyService
-	AccessKeyService     akpb.AccessKeyServiceServer `autowired:erda.core.services.authentication.credentials.accesskey.accessKeyService"`
+	AccessKeyService     akpb.AccessKeyServiceServer `autowired:erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
