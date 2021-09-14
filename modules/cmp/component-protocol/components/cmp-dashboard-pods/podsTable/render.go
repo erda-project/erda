@@ -261,14 +261,18 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:      namespace,
-			IP:             fields[5],
-			CPURequests:    cpuRequestStr,
-			CPULimits:      cpuLimitsStr,
-			MemoryRequests: memRequestsStr,
-			MemoryLimits:   memLimitsStr,
-			Ready:          fields[1],
-			Node:           fields[6],
+			Namespace:         namespace,
+			IP:                fields[5],
+			CPURequests:       cpuRequestStr,
+			CPURequestsNum:    cpuRequests.MilliValue(),
+			CPULimits:         cpuLimitsStr,
+			CPULimitsNum:      cpuLimits.MilliValue(),
+			MemoryRequests:    memRequestsStr,
+			MemoryRequestsNum: memRequests.Value(),
+			MemoryLimits:      memLimitsStr,
+			MemoryLimitsNum:   memLimits.Value(),
+			Ready:             fields[1],
+			Node:              fields[6],
 		})
 	}
 
@@ -346,9 +350,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "cpuRequests":
 				return func(i int, j int) bool {
-					cpuI, _ := resource.ParseQuantity(items[i].CPURequests)
-					cpuJ, _ := resource.ParseQuantity(items[j].CPURequests)
-					less := cpuI.Cmp(cpuJ) < 0
+					less := items[i].CPURequestsNum < items[j].CPURequestsNum
 					if ascend {
 						return less
 					}
@@ -366,9 +368,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "cpuLimits":
 				return func(i int, j int) bool {
-					cpuI, _ := resource.ParseQuantity(items[i].CPULimits)
-					cpuJ, _ := resource.ParseQuantity(items[j].CPULimits)
-					less := cpuI.Cmp(cpuJ) < 0
+					less := items[i].CPULimitsNum < items[j].CPULimitsNum
 					if ascend {
 						return less
 					}
@@ -376,9 +376,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "memoryRequests":
 				return func(i int, j int) bool {
-					memI, _ := resource.ParseQuantity(items[i].MemoryRequests)
-					memJ, _ := resource.ParseQuantity(items[j].MemoryRequests)
-					less := memI.Cmp(memJ) < 0
+					less := items[i].MemoryRequestsNum < items[j].MemoryRequestsNum
 					if ascend {
 						return less
 					}
@@ -396,9 +394,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "memoryLimits":
 				return func(i int, j int) bool {
-					memI, _ := resource.ParseQuantity(items[i].MemoryLimits)
-					memJ, _ := resource.ParseQuantity(items[j].MemoryLimits)
-					less := memI.Cmp(memJ) < 0
+					less := items[i].MemoryLimitsNum < items[j].MemoryLimitsNum
 					if ascend {
 						return less
 					}
