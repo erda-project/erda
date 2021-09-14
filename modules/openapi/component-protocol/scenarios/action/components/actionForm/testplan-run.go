@@ -46,6 +46,8 @@ func testPlanRun(ctx context.Context, c *apistructs.Component, scenario apistruc
 	// get testplan
 	testPlanRequest := apistructs.TestPlanV2PagingRequest{
 		ProjectID: uint64(projectId),
+		PageNo:    1,
+		PageSize:  999,
 	}
 	testPlanRequest.UserID = bdl.Identity.UserID
 	plans, err := bdl.Bdl.PagingTestPlansV2(testPlanRequest)
@@ -98,7 +100,9 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 		Required:  true,
 		Key:       "params.test_plan",
 		ComponentProps: map[string]interface{}{
-			"options": testPlans,
+			"options":          testPlans,
+			"showSearch":       true,
+			"optionFilterProp": "children",
 		},
 		Group: "params",
 	}
@@ -108,7 +112,9 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 		Required:  true,
 		Key:       "params.cms",
 		ComponentProps: map[string]interface{}{
-			"options": cms,
+			"options":          cms,
+			"showSearch":       true,
+			"optionFilterProp": "children",
 		},
 		Group: "params",
 	}
