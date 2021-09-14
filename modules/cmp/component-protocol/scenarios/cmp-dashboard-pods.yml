@@ -6,9 +6,15 @@ hierarchy:
   root: page
   structure:
     page:
+      - filterContainer
+      - chartContainer
+      - tableContainer
+    filterContainer:
       - filter
+    chartContainer:
       - podTitle
       - podDistribution
+    tableContainer:
       - tableTabs
     tableTabs:
       - podsTable
@@ -16,6 +22,12 @@ hierarchy:
 
 components:
   page:
+    type: Container
+  filterContainer:
+    type: Container
+  chartContainer:
+    type: Container
+  tableContainer:
     type: Container
   podTitle:
     type: Title
@@ -32,6 +44,9 @@ components:
 rendering:
   __DefaultRendering__:
     - name: page
+    - name: filterContainer
+    - name: chartContainer
+    - name: tableContainer
     - name: filter
       state:
         - name: "clusterName"

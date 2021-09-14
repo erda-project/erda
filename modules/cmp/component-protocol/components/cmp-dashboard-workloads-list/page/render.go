@@ -26,7 +26,7 @@ func (page *Page) Render(ctx context.Context, c *cptype.Component, s cptype.Scen
 	return nil
 }
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-pods", "page", func() servicehub.Provider {
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "page", func() servicehub.Provider {
 		return &Page{Type: "Container", Props: Props{SpaceSize: "middle"}}
 	})
 }

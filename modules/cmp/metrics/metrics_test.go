@@ -88,6 +88,8 @@ func TestMetricsSearch(t *testing.T) {
 
 func TestToInfluxReq(t *testing.T) {
 	clusterName := "terminus-dev"
+	namespace := "default"
+	ip := "1.1.1.1"
 	type args struct {
 		req *apistructs.MetricsRequest
 	}
@@ -103,17 +105,17 @@ func TestToInfluxReq(t *testing.T) {
 				&apistructs.MetricsRequest{
 					UserID:       "1",
 					OrgID:        "2",
-					ClusterName:  "terminus-dev",
+					ClusterName:  clusterName,
 					ResourceType: Memory,
-					ResourceKind: Pod,
+					ResourceKind: Node,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc"}},
+					NodeRequests: []apistructs.MetricsNodeRequest{{IP: "1.1.1.1"}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{
 				{
-					Statement: PodMemoryUsageSelectStatement,
-					Params:    map[string]*structpb.Value{"pod_name": structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")},
+					Statement: NodeMemoryUsageSelectStatement,
+					Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName),"host_ip":structpb.NewStringValue(ip)},
 				},
 			},
 		},
@@ -127,21 +129,21 @@ func TestToInfluxReq(t *testing.T) {
 					ResourceType: Cpu,
 					ResourceKind: Pod,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc"}},
+					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc",Namespace: namespace}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{
 				{
-					Statement: PodMemoryUsageSelectStatement,
-					Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName), "hostname": structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")},
+					Statement: PodCpuUsageSelectStatement,
+					Params:    map[string]*structpb.Value{"pod_namespace": structpb.NewStringValue(namespace), "pod_name": structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")},
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ToInfluxReq(tt.args.req); !reflect.DeepEqual(got, tt.want) {
-
+			if got,_ := ToInfluxReq(tt.args.req); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("test failed, edcode result is not expected got=%v,want=%v",got,tt.want)
 			}
 		})
 	}

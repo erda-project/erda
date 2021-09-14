@@ -22,11 +22,11 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (page *Page) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (cc *ChartContainer) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	return nil
 }
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-pods", "page", func() servicehub.Provider {
-		return &Page{Type: "Container", Props: Props{SpaceSize: "middle"}}
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "chartContainer", func() servicehub.Provider {
+		return &ChartContainer{Type: "Container", Props: Props{WhiteBg: true}}
 	})
 }
