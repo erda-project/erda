@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/endpoints/request"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/steve"
@@ -96,24 +97,8 @@ func (s *ShellHandler) HandleShell(next http.Handler) http.Handler {
 		token := string(secret.Data["token"])
 
 		podClient := client.ClientSet.CoreV1().Pods("")
-		pods, err := podClient.List(s.ctx, metav1.ListOptions{
-			LabelSelector: "app=cluster-agent",
-		})
-		if err != nil {
-			logrus.Errorf("failed to list cluster-agent pod in steve handle shell by app=cluster-agent label, %v", err)
-			//resp.WriteHeader(http.StatusInternalServerError)
-			//resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
-			//return
-		}
 
-		diceLabelPods, err := podClient.List(s.ctx, metav1.ListOptions{
-			LabelSelector: "dice/component=cluster-agent",
-		})
-		if err != nil {
-			logrus.Errorf("failed to list cluster-agent pod in steve handle shell by dice/component=cluster-agent label, %v", err)
-		}
-
-		for _, pod := range append(pods.Items, diceLabelPods.Items...) {
+		for _, pod := range s.getAgentPods(podClient) {
 			if !isPodReady(&pod) {
 				continue
 			}
@@ -144,4 +129,27 @@ func (s *ShellHandler) HandleShell(next http.Handler) http.Handler {
 
 func isPodReady(pod *v1.Pod) bool {
 	return pod.Status.Phase == v1.PodRunning
+}
+
+func (s *ShellHandler) getAgentPods(podClient corev1client.PodInterface) []v1.Pod {
+	var res []v1.Pod
+	pods, err := podClient.List(s.ctx, metav1.ListOptions{
+		LabelSelector: "app=cluster-agent",
+	})
+	if err != nil {
+		logrus.Errorf("failed to list cluster-agent pod in steve handle shell by app=cluster-agent label, %v", err)
+		//resp.WriteHeader(http.StatusInternalServerError)
+		//resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
+		//return
+	}
+
+	res = append(res, pods.Items...)
+	pods, err = podClient.List(s.ctx, metav1.ListOptions{
+		LabelSelector: "dice/component=cluster-agent",
+	})
+	if err != nil {
+		logrus.Errorf("failed to list cluster-agent pod in steve handle shell by dice/component=cluster-agent label, %v", err)
+	}
+	res = append(res, pods.Items...)
+	return res
 }
