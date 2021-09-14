@@ -56,6 +56,9 @@ func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Compone
 	} else {
 		c.State["name"] = ""
 		c.State["archive"] = false
+		c.State["values"] = Value{
+			Archive: []string{"inprogress"},
+		}
 	}
 
 	return nil
