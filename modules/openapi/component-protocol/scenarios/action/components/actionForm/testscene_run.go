@@ -234,7 +234,9 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 		Required:  true,
 		Key:       "params.test_space",
 		ComponentProps: map[string]interface{}{
-			"options": testSpaces,
+			"options":          testSpaces,
+			"showSearch":       true,
+			"optionFilterProp": "children",
 		},
 		Group: "params",
 	}
@@ -244,7 +246,9 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 		Required:  true,
 		Key:       "params.test_scene_set",
 		ComponentProps: map[string]interface{}{
-			"options": testSceneSets,
+			"options":          testSceneSets,
+			"showSearch":       true,
+			"optionFilterProp": "children",
 		},
 		Group: "params",
 	}
@@ -258,7 +262,9 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 		Required:  true,
 		Key:       "params.test_scene",
 		ComponentProps: map[string]interface{}{
-			"options": testScenes,
+			"options":          testScenes,
+			"showSearch":       true,
+			"optionFilterProp": "children",
 		},
 		Group: "params",
 	}
