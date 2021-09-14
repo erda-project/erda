@@ -450,6 +450,8 @@ github.com/erda-project/erda-infra v0.0.0-20210910055258-e82f28947881/go.mod h1:
 github.com/erda-project/erda-infra v0.0.0-20210914104843-6cca8cf452d6 h1:RRgQUPX0ZepCNDAm8Fo7GpB1D1xUcP56z1lbi0td/4k=
 github.com/erda-project/erda-infra v0.0.0-20210914104843-6cca8cf452d6/go.mod h1:Aec8FrEVnfzqeAjQSQDnBuRJ/AFJjpHYEG/QpKqVeHk=
 github.com/erda-project/erda-proto-go v0.0.0-20210820073528-bcd612c2efb7/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
+github.com/erda-project/erda-proto-go v0.0.0-20210910055828-89edfc75e378 h1:Ez5b5zCZyZxuezfOQOIXKqjrcJ/75pdT5wzA++fOkng=
+github.com/erda-project/erda-proto-go v0.0.0-20210910055828-89edfc75e378/go.mod h1:l+9rt1kA1uLqqGV7Stte32wNpL2IlllCsD7KfxgOY+s=
 github.com/erda-project/erda-proto-go v0.0.0-20210910095156-3fc5a72048ca h1:j3uk0YrN60RUEDG2KdN4RT7F+OlyLn4344m9IPQV40A=
 github.com/erda-project/erda-proto-go v0.0.0-20210910095156-3fc5a72048ca/go.mod h1:l+9rt1kA1uLqqGV7Stte32wNpL2IlllCsD7KfxgOY+s=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2 h1:5QKXIq0yTPulGqXzEQx96fLK6HDCb8xC1H6kOjj4hsk=
