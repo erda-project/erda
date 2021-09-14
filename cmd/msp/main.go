@@ -73,6 +73,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/tenant"
 	_ "github.com/erda-project/erda/modules/msp/tenant/project"
 	_ "github.com/erda-project/erda/pkg/common/permission"
+	_ "github.com/erda-project/erda/providers/audit"
 )
 
 func main() {

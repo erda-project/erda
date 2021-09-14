@@ -91,7 +91,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				),
 				audit.Method(CheckerServiceV1.UpdateCheckerV1, audit.ProjectScope, "updateInitiativeMonitor",
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := req.(*pb.CreateCheckerV1Request)
+						r := req.(*pb.UpdateCheckerV1Request)
 						return r.Data.ProjectID, map[string]interface{}{
 							"metricName": r.Data.Name,
 						}, nil
