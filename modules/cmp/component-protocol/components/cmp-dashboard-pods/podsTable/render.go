@@ -215,6 +215,23 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
+		cpuRequestStr := cmpcputil.ResourceToString(p.sdk, float64(cpuRequests.MilliValue()), resource.DecimalSI)
+		if cpuRequests.MilliValue() == 0 {
+			cpuRequestStr = "-"
+		}
+		cpuLimitsStr := cmpcputil.ResourceToString(p.sdk, float64(cpuLimits.MilliValue()), resource.DecimalSI)
+		if cpuLimits.MilliValue() == 0 {
+			cpuLimitsStr = "-"
+		}
+		memRequestsStr := cmpcputil.ResourceToString(p.sdk, float64(memRequests.Value()), resource.BinarySI)
+		if memRequests.Value() == 0 {
+			memRequestsStr = "-"
+		}
+		memLimitsStr := cmpcputil.ResourceToString(p.sdk, float64(memLimits.Value()), resource.BinarySI)
+		if memLimits.Value() == 0 {
+			memLimitsStr = "-"
+		}
+
 		tempCPULimits = append(tempCPULimits, cpuLimits)
 		tempMemLimits = append(tempMemLimits, memLimits)
 
@@ -246,10 +263,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			Namespace:      namespace,
 			IP:             fields[5],
-			CPURequests:    cmpcputil.ResourceToString(p.sdk, float64(cpuRequests.MilliValue()), resource.DecimalSI),
-			CPULimits:      cmpcputil.ResourceToString(p.sdk, float64(cpuLimits.MilliValue()), resource.DecimalSI),
-			MemoryRequests: cmpcputil.ResourceToString(p.sdk, float64(memRequests.Value()), resource.BinarySI),
-			MemoryLimits:   cmpcputil.ResourceToString(p.sdk, float64(memLimits.Value()), resource.BinarySI),
+			CPURequests:    cpuRequestStr,
+			CPULimits:      cpuLimitsStr,
+			MemoryRequests: memRequestsStr,
+			MemoryLimits:   memLimitsStr,
 			Ready:          fields[1],
 			Node:           fields[6],
 		})
