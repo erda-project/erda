@@ -490,13 +490,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "cpuRequests",
 			Title:     cputil.I18n(ctx, "cpuRequests"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "cpuLimits",
 			Title:     cputil.I18n(ctx, "cpuLimits"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
@@ -508,13 +508,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "memoryRequests",
 			Title:     cputil.I18n(ctx, "memoryRequests"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "memoryLimits",
 			Title:     cputil.I18n(ctx, "memoryLimits"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{

@@ -154,7 +154,7 @@ zh:
  workload: 工作负载
  Memory Chart: 内存
  Pod Chart: Pods
- podSearchPlaceHolder: 搜索 pod 名称或 IP
+ podSearchPlaceHolder: 搜索 Pod 名称或 IP
  podInfoTitle: Pod 详情
  podIP: Pod IP
  log: 查看日志
