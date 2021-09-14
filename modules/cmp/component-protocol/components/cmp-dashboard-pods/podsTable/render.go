@@ -448,7 +448,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
 	}
 	value := fmt.Sprintf("%.2f", usedPercent)
-	if usedRes < 1e-4 {
+	if usedRes < 1e-8 {
 		tip = "N/A"
 		value = "N/A"
 	}
