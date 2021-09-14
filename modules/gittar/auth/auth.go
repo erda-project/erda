@@ -196,50 +196,43 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	var gitRepository = &gitmodule.Repository{}
 	var err error
 	var userInfo *ucauth.UserInfo
-	//skip authentication
-	host := c.Host()
-	for _, skipUrl := range conf.SkipAuthUrls() {
-		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
-			logrus.Debugf("skip authenticate host: %s", host)
-			gitRepository, err = openRepository(c, repo)
-			if err != nil {
-				c.AbortWithStatus(500, err)
-				return
-			}
-			c.Set("repository", gitRepository)
 
-			userIdStr := c.GetHeader(httputil.UserHeader)
-			if userIdStr == "" {
-				c.AbortWithStatus(500, errors.New("the userID is empty"))
-				return
-			}
-
-			userInfoDto, err := uc.FindUserById(userIdStr)
-			if err != nil {
-				c.AbortWithStatus(500, err)
-				return
-			}
-			logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
-			//校验通过缓存5分钟结果
-			//校验失败每次都会请求
-			_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
-			if validateError != nil {
-				logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
-				c.AbortWithStatus(403, validateError)
-				return
-			}
-			c.Set("repository", gitRepository)
-			//c.Set("lock", repoLock.Lock)
-
-			c.Set("user", &models.User{
-				Name:     userInfoDto.Username,
-				NickName: userInfoDto.NickName,
-				Email:    userInfoDto.Email,
-				Id:       userIdStr,
-			})
-			c.Next()
+	if !isGitProtocolRequest(c) {
+		gitRepository, err = openRepository(c, repo)
+		if err != nil {
+			c.AbortWithStatus(500, err)
 			return
 		}
+		c.Set("repository", gitRepository)
+
+		userIdStr := c.GetHeader(httputil.UserHeader)
+		if userIdStr == "" {
+			c.AbortWithStatus(500, errors.New("the userID is empty"))
+			return
+		}
+		userInfoDto, err := uc.FindUserById(userIdStr)
+		if err != nil {
+			c.AbortWithStatus(500, err)
+			return
+		}
+		logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
+		//校验通过缓存5分钟结果
+		//校验失败每次都会请求
+		_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
+		if validateError != nil {
+			logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
+			c.AbortWithStatus(403, validateError)
+			return
+		}
+
+		c.Set("user", &models.User{
+			Name:     userInfoDto.Username,
+			NickName: userInfoDto.NickName,
+			Email:    userInfoDto.Email,
+			Id:       userIdStr,
+		})
+		c.Next()
+		return
 	}
 
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)
@@ -452,4 +445,12 @@ func getOrgIDV3(c *webcontext.Context, orgName string) (int64, error) {
 		return 0, err
 	}
 	return orgID, nil
+}
+
+// isGitProtocolRequest if request like git clone,git push... return true
+func isGitProtocolRequest(c *webcontext.Context) bool {
+	if c.GetHeader("Git-Protocol") != "" {
+		return true
+	}
+	return false
 }
