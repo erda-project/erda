@@ -36,3 +36,7 @@ mysql:
 
 metricq-client:
   endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
+
+
+etcd-election@initExtension:
+  root_path: erda/component-leader/dicehub/init_extension
