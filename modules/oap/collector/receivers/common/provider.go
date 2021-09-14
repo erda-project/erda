@@ -15,10 +15,11 @@
 package common
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
-	"reflect"
 )
 
 var InterceptorType = reflect.TypeOf((*Interceptors)(nil)).Elem()
