@@ -73,6 +73,9 @@ func (impl *GatewayAzInfoServiceImpl) GetAz(cond *orm.GatewayAzInfo) (string, er
 	if err != nil {
 		return "", err
 	}
+	if azInfo == nil {
+		return "", errors.Errorf("cluster not found in :%+v", cond)
+	}
 	return azInfo.Az, nil
 }
 
