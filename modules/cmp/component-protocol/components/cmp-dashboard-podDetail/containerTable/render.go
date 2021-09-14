@@ -86,14 +86,14 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Operate: Operate{
 				Operations: map[string]Operation{
 					"log": {
-						ContainerID: containerId,
-						Key:         "checkLog",
-						Text:        cputil.I18n(ctx, "log"),
-						Reload:      false,
+						Key:    "checkLog",
+						Text:   cputil.I18n(ctx, "log"),
+						Reload: false,
 						Meta: map[string]string{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
 							"namespace":     namespace,
+							"containerId":   containerId,
 						},
 					},
 					"console": {

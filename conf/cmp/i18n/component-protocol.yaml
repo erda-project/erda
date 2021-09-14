@@ -9,6 +9,7 @@ zh:
  labels: 标签
  annotations: 注释
  project: 项目名称
+ core: 核
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: 上次触发时间
@@ -18,6 +19,7 @@ zh:
  source: 事件源
  message: 事件信息
  count: 累计次数
+ ago: 前
 
  # cmp-dashboard-events-list.filter
  workspace-dev: 开发环境
@@ -152,7 +154,7 @@ zh:
  workload: 工作负载
  Memory Chart: 内存
  Pod Chart: Pods
- podSearchPlaceHolder: 搜索 pod 名称或 IP
+ podSearchPlaceHolder: 搜索 Pod 名称或 IP
  podInfoTitle: Pod 详情
  podIP: Pod IP
  log: 查看日志
@@ -188,6 +190,7 @@ en:
  labels: Labels
  annotations: Annotations
  project: Project Name
+ core: cores
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: Last Seen
@@ -197,12 +200,13 @@ en:
  source: Source
  message: Message
  count: Count
+ ago: ago
 
  # cmp-dashboard-events-list.filter
  workspace-dev: Workspace-Dev
  workspace-test: Workspace-Test
  workspace-staging: Workspace-Staging
- workspace-production: Workspace-Production
+ workspace-prod: Workspace-Production
  addons: Addons
  pipelines: Pipelines
  default: Default

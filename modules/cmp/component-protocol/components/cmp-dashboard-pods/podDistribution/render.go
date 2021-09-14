@@ -49,7 +49,7 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 		pd.Data.Lists = append(pd.Data.Lists, pd.ParsePodStatus(ctx, state, count))
 	}
 	sort.Slice(pd.Data.Lists, func(i, j int) bool {
-		return pd.Data.Lists[i].Label < pd.Data.Lists[j].Label
+		return pd.Data.Lists[i].Value > pd.Data.Lists[j].Value
 	})
 	return nil
 }

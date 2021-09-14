@@ -204,6 +204,9 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			ctx[auditResourceType] = typ
 			auditReq.Context = ctx
 		}
+		if len(ctx) == 0 {
+			return
+		}
 		if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
 			logrus.Errorf("faild to audit in steve audit, %v", err)
 		}

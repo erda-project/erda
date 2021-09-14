@@ -133,8 +133,8 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Value: "workspace-staging",
 	}
 	productionNs := Option{
-		Label: cputil.I18n(ctx, "workspace-production"),
-		Value: "workspace-production",
+		Label: cputil.I18n(ctx, "workspace-prod"),
+		Value: "workspace-prod",
 	}
 	addonNs := Option{
 		Label: cputil.I18n(ctx, "addons"),
@@ -207,7 +207,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Type:       "select",
 		Fixed:      true,
 	}
-	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, otherNs, pipelineNs} {
+	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, otherNs} {
 		if option.Children != nil {
 			sort.Slice(option.Children, func(i, j int) bool {
 				return option.Children[i].Label < option.Children[j].Label
