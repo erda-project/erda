@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
 )
 
@@ -97,26 +98,28 @@ func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
 				return nil, err
 			}
 			httpReq.Body = io.NopCloser(bytes.NewReader(reqBody))
-			resp, rerr := h(ctx, req)
-			stop := time.Since(start)
-			latency := int(math.Ceil(float64(stop.Nanoseconds()) / 1000000.0))
-			clientUserAgent := httpReq.UserAgent()
-			referer := httpReq.Referer()
-			hostname, err := os.Hostname()
-			if err != nil {
-				hostname = "unknow"
-			}
-			entry := logrus.NewEntry(log).WithFields(logrus.Fields{
-				"hostname":  hostname,
-				"latency":   latency, // time to process
-				"method":    httpReq.Method,
-				"path":      path,
-				"referer":   referer,
-				"userAgent": clientUserAgent,
-			})
-			msg := fmt.Sprintf(`[%s %s] [%s]`, httpReq.Method, path, reqBody)
-			entry.Info(msg)
-			return resp, rerr
+			defer func() {
+				util.DoRecover()
+				stop := time.Since(start)
+				latency := int(math.Ceil(float64(stop.Nanoseconds()) / 1000000.0))
+				clientUserAgent := httpReq.UserAgent()
+				referer := httpReq.Referer()
+				hostname, err := os.Hostname()
+				if err != nil {
+					hostname = "unknow"
+				}
+				entry := logrus.NewEntry(log).WithFields(logrus.Fields{
+					"hostname":  hostname,
+					"latency":   latency, // time to process
+					"method":    httpReq.Method,
+					"path":      path,
+					"referer":   referer,
+					"userAgent": clientUserAgent,
+				})
+				msg := fmt.Sprintf(`[%s %s] [%s]`, httpReq.Method, path, reqBody)
+				entry.Info(msg)
+			}()
+			return h(ctx, req)
 		}
 
 	}))
