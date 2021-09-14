@@ -190,3 +190,4 @@ cli-linux:
 upload-cli: cli cli-linux
 	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
 	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
+
