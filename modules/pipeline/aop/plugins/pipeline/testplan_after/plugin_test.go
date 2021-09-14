@@ -15,11 +15,16 @@
 package testplan_after
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
+	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -78,4 +83,44 @@ func Test_convertReport(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, meta, want)
+}
+
+func Test_sendMessage(t *testing.T) {
+	bdl := &bundle.Bundle{}
+	p := &provider{
+		Bundle: bdl,
+	}
+	req := testplanpb.Content{
+		TestPlanID:     1,
+		ExecuteTime:    "2020-10-10 11:11:11",
+		PassRate:       10,
+		ExecuteMinutes: 1,
+		ApiTotalNum:    100,
+	}
+	want := &apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:         bundle.AutoTestPlanExecuteEvent,
+			Action:        bundle.UpdateAction,
+			OrgID:         "1",
+			ProjectID:     "13",
+			ApplicationID: "-1",
+			TimeStamp:     "2020-10-10 11:11:11",
+		},
+		Sender:  bundle.SenderDOP,
+		Content: req,
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent",
+		func(b *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+			want.TimeStamp = ev.TimeStamp
+			assert.Equal(t, want, ev)
+			return nil
+		})
+	defer monkey.UnpatchAll()
+	ctx := &aoptypes.TuneContext{}
+	ctx.SDK.Pipeline.Labels = map[string]string{
+		apistructs.LabelProjectID: "13",
+		apistructs.LabelOrgID:     "1",
+	}
+	err := p.sendMessage(req, ctx)
+	assert.NoError(t, err)
 }
