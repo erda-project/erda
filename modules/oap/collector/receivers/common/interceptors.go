@@ -17,12 +17,12 @@ package common
 import (
 	"context"
 	"errors"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"strings"
 
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	trace "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 var (
