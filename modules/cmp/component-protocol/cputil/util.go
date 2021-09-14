@@ -16,6 +16,8 @@ package cputil
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
@@ -130,10 +132,11 @@ func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 // ResourceToString return resource with unit
 // Only support resource.DecimalSI and resource.BinarySI format
 // Original unit is m (for DecimalSI) or B (for resource.BinarySI)
+// Accurate to 3 decimal places. Zero in suffix will be removed
 func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) string {
 	switch format {
 	case resource.DecimalSI:
-		return fmt.Sprintf("%.3f%s", res/1000, sdk.I18n("core"))
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64), sdk.I18n("core"))
 	case resource.BinarySI:
 		units := []string{"B", "K", "M", "G", "T"}
 		i := 0
@@ -141,8 +144,14 @@ func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) stri
 			res /= 1 << 10
 			i++
 		}
-		return fmt.Sprintf("%.3f%s", res, units[i])
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
 	default:
 		return ""
 	}
+}
+
+func setPrec(f float64, prec int) float64 {
+	pow := math.Pow10(prec)
+	f = float64(int64(f*pow)) / pow
+	return f
 }
