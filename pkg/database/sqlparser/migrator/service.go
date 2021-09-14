@@ -41,29 +41,20 @@ type Module struct {
 // BaselineEqualCloud check baseline script schema is equal with cloud schema or not
 func (m *Module) BaselineEqualCloud(tx *gorm.DB) *schema.Equal {
 	tableNames := m.BaselineTableNames()
-	cloud := schema.NewSchema()
+	cloud := schema.New()
 	for _, tableName := range tableNames {
 		raw := "SHOW CREATE TABLE " + tableName
 		this := tx.Raw(raw)
 		if err := this.Error; err != nil {
-			return &schema.Equal{
-				equal:  false,
-				reason: fmt.Sprintf("failed to exec %s", raw),
-			}
+			return schema.NewEqual(false, fmt.Sprintf("failed to exec %s", raw))
 		}
 		var _ig, create string
 		if err := this.Row().Scan(&_ig, &create); err != nil {
-			return &schema.Equal{
-				equal:  false,
-				reason: fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw),
-			}
+			return schema.NewEqual(false, fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw))
 		}
 		node, err := parser.New().ParseOneStmt(create, "", "")
 		if err != nil {
-			return &schema.Equal{
-				equal:  false,
-				reason: fmt.Sprintf("failed to ParseOneStmt: %s, raw: %s", create, raw),
-			}
+			return schema.NewEqual(false, fmt.Sprintf("failed to ParseOneStmt: %s, raw: %s", create, raw))
 		}
 		node.Accept(cloud)
 	}
@@ -72,26 +63,26 @@ func (m *Module) BaselineEqualCloud(tx *gorm.DB) *schema.Equal {
 }
 
 func (m *Module) Schema() *schema.Schema {
-	schema := schema.NewSchema()
+	sch := schema.New()
 	for _, script := range m.Scripts {
 		for _, ddl := range script.DDLNodes() {
-			ddl.Accept(schema)
+			ddl.Accept(sch)
 		}
 	}
-	return schema
+	return sch
 }
 
 func (m *Module) BaselineSchema() *schema.Schema {
-	schema := schema.NewSchema()
+	sch := schema.New()
 	for _, script := range m.Scripts {
 		if !script.IsBaseline() {
 			continue
 		}
 		for _, ddl := range script.DDLNodes() {
-			ddl.Accept(schema)
+			ddl.Accept(sch)
 		}
 	}
-	return schema
+	return sch
 }
 
 func (m *Module) TableNames() []string {

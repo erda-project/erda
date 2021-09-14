@@ -20,24 +20,22 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"gorm.io/gorm"
-
-	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 )
 
 // Schema is the set of TableDefinitions.
 // Is presents the status of the set of some tables.
 type Schema struct {
-	TableDefinitions map[string]*migrator.TableDefinition
+	TableDefinitions map[string]*TableDefinition
 }
 
-func NewSchema() *Schema {
-	return &Schema{TableDefinitions: make(map[string]*migrator.TableDefinition)}
+func New() *Schema {
+	return &Schema{TableDefinitions: make(map[string]*TableDefinition)}
 }
 
 func (s *Schema) Enter(in ast.Node) (ast.Node, bool) {
 	switch stmt := in.(type) {
 	case *ast.CreateTableStmt:
-		s.TableDefinitions[stmt.Table.Name.String()] = migrator.NewTableDefinition(stmt)
+		s.TableDefinitions[stmt.Table.Name.String()] = NewTableDefinition(stmt)
 
 	case *ast.DropTableStmt:
 		for _, table := range stmt.Tables {
@@ -94,7 +92,7 @@ func (s *Schema) EqualWith(db *gorm.DB) *Equal {
 		return &Equal{equal: true}
 	}
 
-	cloud := NewSchema()
+	cloud := New()
 	for tableName := range s.TableDefinitions {
 		raw := "SHOW CREATE TABLE " + tableName
 		this := db.Raw(raw)

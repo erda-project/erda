@@ -56,8 +56,8 @@ func (l *CreatedAtExistsLinter) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	// if no "created_at"
-	l.err = linterror.New(l.s, l.text, "missing necessary field: created_at", func(line []byte) bool {
-		return false
+	l.err = linterror.New(l.s, l.text, "missing necessary column: created_at", func(line []byte) bool {
+		return bytes.Contains(bytes.ToLower(line), []byte("create"))
 	})
 
 	return in, true

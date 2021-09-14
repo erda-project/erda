@@ -55,8 +55,8 @@ func (l *UpdatedAtExistsLinter) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 
-	l.err = linterror.New(l.s, l.text, "missing necessary column: updated_at", func(_ []byte) bool {
-		return false
+	l.err = linterror.New(l.s, l.text, "missing necessary column: updated_at", func(line []byte) bool {
+		return bytes.Contains(bytes.ToLower(line), []byte("create"))
 	})
 
 	return in, true

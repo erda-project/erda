@@ -70,4 +70,5 @@ var defaultRulers = []rules.Ruler{
 	linters.NewManualTimeSetterLinter,
 
 	linters.NewExplicitCollationLinter,
+	linters.NewNullToNotNullLinter,
 }

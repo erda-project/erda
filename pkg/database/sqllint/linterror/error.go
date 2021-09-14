@@ -59,7 +59,7 @@ func (e LintError) Error() string {
 		}
 	}
 	buf.WriteString("\n")
-	return fmt.Sprintf("%s:%v: %s: %s\n", e.ScriptName, e.LintNo, e.Lint, buf.String())
+	return fmt.Sprintf("%s:%v %s: %s\n", e.ScriptName, e.LintNo, e.Lint, buf.String())
 }
 
 func (e LintError) StmtName() string {

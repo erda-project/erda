@@ -27,6 +27,13 @@ type Equal struct {
 	reason string
 }
 
+func NewEqual(equal bool, reason string) *Equal {
+	return &Equal{
+		equal:  equal,
+		reason: reason,
+	}
+}
+
 func (e *Equal) Equal() bool {
 	return e.equal
 }

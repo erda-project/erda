@@ -15,16 +15,25 @@
 package linters
 
 import (
+	"bytes"
+
 	"github.com/pingcap/parser/ast"
 
 	"github.com/erda-project/erda/pkg/database/schema"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
+	"github.com/erda-project/erda/pkg/database/sqllint/rules"
+	"github.com/erda-project/erda/pkg/database/sqllint/script"
+	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 )
 
 type NullToNotNullLinter struct {
 	baseLinter
 	tableName string
 	schema    *schema.Schema
+}
+
+func NewNullToNotNullLinter(script script.Script) rules.Rule {
+	return &NullToNotNullLinter{baseLinter: newBaseLinter(script)}
 }
 
 func (l *NullToNotNullLinter) Enter(in ast.Node) (ast.Node, bool) {
@@ -37,35 +46,41 @@ func (l *NullToNotNullLinter) Enter(in ast.Node) (ast.Node, bool) {
 		l.tableName = stmt.Table.Name.String()
 		return in, false
 	case *ast.AlterTableSpec:
+		var colName string
 		switch stmt.Tp {
-		case ast.AlterTableChangeColumn, ast.AlterTableAlterColumn, ast.AlterTableModifyColumn:
-			if len(stmt.NewColumns) == 0 {
-				return in, true
-			}
-			if !hasOption(ast.ColumnOptionNotNull, stmt.NewColumns[0].Options) {
-				return in, true
-			}
-			definition := l.schema.TableDefinitions[l.tableName]
-			if definition == nil {
-				return in, true
-			}
-			oldCol := getCol(stmt.OldColumnName.String(), definition.CreateStmt.Cols)
-			if oldCol == nil {
-				return in, true
-			}
-			if hasOption(ast.ColumnOptionNull, oldCol.Options) {
-				l.err = linterror.New(l.s, l.text, "can not convert 'NULL' column to 'NOT NULL'",
-					func(line []byte) bool {
-						return true
-					})
-				return in, true
-			}
+		case ast.AlterTableChangeColumn:
+			colName = ddlconv.ExtractAlterTableChangeColOldName(stmt)
+		case ast.AlterTableModifyColumn:
+			colName = ddlconv.ExtractAlterTableModifyColName(stmt)
+		default:
 			return in, true
 		}
+
+		if len(stmt.NewColumns) == 0 {
+			return in, true
+		}
+		newCol := stmt.NewColumns[0]
+		if !hasOption(ast.ColumnOptionNotNull, newCol.Options) {
+			return in, true
+		}
+		tableDef := l.schema.TableDefinitions[l.tableName]
+		if tableDef == nil {
+			return in, true
+		}
+		oldCol := getCol(colName, tableDef.CreateStmt.Cols)
+		if oldCol == nil {
+			return in, true
+		}
+		if hasOption(ast.ColumnOptionNull, oldCol.Options) {
+			l.err = linterror.New(l.s, l.text, "can not convert 'NULL' column to 'NOT NULL'",
+				func(line []byte) bool {
+					return bytes.Contains(bytes.ToLower(line), []byte("alter"))
+				})
+		}
+		return in, true
 	default:
 		return in, true
 	}
-	return in, true
 }
 
 func (l *NullToNotNullLinter) Leave(in ast.Node) (ast.Node, bool) {

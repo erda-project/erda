@@ -1,18 +1,18 @@
-// Copyright (c) 2021 Terminus, Inc.
+//  Copyright (c) 2021 Terminus, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 
-package migrator_test
+package schema_test
 
 import (
 	"testing"
@@ -22,7 +22,6 @@ import (
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
 	"github.com/erda-project/erda/pkg/database/schema"
-	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 )
 
 const createStmt = `
@@ -101,7 +100,7 @@ func TestTableDefinition_Enter(t *testing.T) {
 		t.Fatalf("failed to Parse, err: %v", err)
 	}
 
-	def := migrator.TableDefinition{CreateStmt: c.(*ast.CreateTableStmt)}
+	def := schema.TableDefinition{CreateStmt: c.(*ast.CreateTableStmt)}
 	for _, node := range nodes {
 		node.Accept(&def)
 	}
@@ -112,17 +111,17 @@ func TestTableDefinition_Enter(t *testing.T) {
 }
 
 func TestSchema_Enter(t *testing.T) {
-	schema := schema.NewSchema()
+	sch := schema.New()
 
 	nodes, _, err := parser.New().Parse(createStmt+alters, "", "")
 	if err != nil {
 		t.Logf("failed to Parse, err: %v", err)
 	}
 	for _, node := range nodes {
-		node.Accept(schema)
+		node.Accept(sch)
 	}
 
-	for _, tbl := range schema.TableDefinitions {
+	for _, tbl := range sch.TableDefinitions {
 		for _, col := range tbl.CreateStmt.Cols {
 			t.Logf("column name: %s, column type: %s, %+v", col.Name.String(), col.Tp.String(), *col.Tp)
 		}
@@ -130,8 +129,8 @@ func TestSchema_Enter(t *testing.T) {
 }
 
 func TestSchema_Enter2(t *testing.T) {
-	local := schema.NewSchema()
-	db := schema.NewSchema()
+	local := schema.New()
+	db := schema.New()
 
 	nodes, _, err := parser.New().Parse(createStmt+alters, "", "")
 	if err != nil {

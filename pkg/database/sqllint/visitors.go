@@ -15,6 +15,10 @@
 package sqllint
 
 import (
+	"fmt"
+	"io"
+	"os"
+
 	"github.com/pingcap/parser"
 	"gopkg.in/yaml.v3"
 
@@ -40,7 +44,7 @@ func New(rules ...rules.Ruler) *Linter {
 		errs:    make(map[string]*Errors),
 		reports: make(map[string]map[string][]string, 0),
 		linters: nil,
-		schema:  new(schema.Schema),
+		schema:  schema.New(),
 	}
 	for _, l := range rules {
 		r.linters = append(r.linters, l)
@@ -123,6 +127,24 @@ func (r *Linter) Report() string {
 		return ""
 	}
 	return string(data)
+}
+
+// FprintErrors writes errors details to the w io.Writer
+func (r *Linter) FprintErrors(w io.Writer) {
+	if w == nil {
+		w = os.Stderr
+	}
+	_, _ = fmt.Fprintln(w, r.Report())
+	errors := r.Errors()
+	for filename, es := range errors {
+		_, _ = fmt.Fprintln(w, filename)
+		for i := range es.Lints {
+			_, _ = fmt.Fprintf(w, "ERRORS[%v]\n%v", i, es.Lints[i])
+		}
+		for i := range es.Warns {
+			_, _ = fmt.Fprintf(w, "WARNS[%v]\n%v", i, es.Warns[i])
+		}
+	}
 }
 
 type Errors struct {

@@ -56,6 +56,7 @@ type Configuration struct {
 	CompleteInsertLinter        bool         `json:"complete_insert_linter" yaml:"complete_insert_linter"`
 	ManualTimeSetterLinter      bool         `json:"manual_time_setter_linter" yaml:"manual_time_setter_linter"`
 	ExplicitCollationLinter     bool         `json:"explicit_collation_linter" yaml:"explicit_collation_linter"`
+	NullToNotNullLinter         bool         `json:"null_to_not_null_linter" yaml:"null_to_not_null_linter"`
 }
 
 // ToJsonIndent marshals the Configuration to JSON []byte
@@ -369,6 +370,9 @@ func (c *Configuration) Rulers() (rulers []rules.Ruler, err error) {
 	}
 	if c.ExplicitCollationLinter {
 		rulers = append(rulers, linters.NewExplicitCollationLinter)
+	}
+	if c.NullToNotNullLinter {
+		rulers = append(rulers, linters.NewNullToNotNullLinter)
 	}
 
 	return rulers, nil

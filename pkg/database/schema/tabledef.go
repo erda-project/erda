@@ -1,18 +1,18 @@
-// Copyright (c) 2021 Terminus, Inc.
+//  Copyright (c) 2021 Terminus, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 
-package migrator
+package schema
 
 import (
 	"fmt"
@@ -20,8 +20,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
-
-	"github.com/erda-project/erda/pkg/database/schema"
 )
 
 // TableDefinition is the table definition (CreateTableStmt) object.
@@ -69,7 +67,7 @@ func (d *TableDefinition) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (d *TableDefinition) Equal(o *TableDefinition) *schema.Equal {
+func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 	var (
 		reasons string
 		eq      = true
@@ -82,7 +80,7 @@ func (d *TableDefinition) Equal(o *TableDefinition) *schema.Equal {
 		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
 			return o.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
 		})
-		return &schema.Equal{
+		return &Equal{
 			equal: false,
 			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v, ",
 				o.CreateStmt.Cols, d.CreateStmt.Cols),
@@ -107,13 +105,13 @@ func (d *TableDefinition) Equal(o *TableDefinition) *schema.Equal {
 			reasons += fmt.Sprintf("the column is missing in actual, column name: %s, ", name)
 			continue
 		}
-		if equal := schema.FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
+		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
 			eq = false
 			reasons += fmt.Sprintf("column: %s, %s, ", name, equal.Reason())
 		}
 	}
 
-	return &schema.Equal{
+	return &Equal{
 		equal:  eq,
 		reason: strings.TrimRight(reasons, ", "),
 	}

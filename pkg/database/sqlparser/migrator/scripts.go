@@ -16,7 +16,6 @@ package migrator
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -173,9 +172,13 @@ func (s *Scripts) Lint() error {
 	if !s.markPending {
 		return errors.New("scripts did not mark if is pending, please mark it and then do Lint")
 	}
-
-	linter := sqllint.New(s.rulers...)
+	var (
+		linters   []*sqllint.Linter
+		hasErrors bool
+	)
 	for moduleName, module := range s.Services {
+		linter := sqllint.New(s.rulers...)
+		linters = append(linters, linter)
 		for _, script := range module.Scripts {
 			if !script.isBase && script.Pending && script.Type == ScriptTypeSQL {
 				if err := linter.Input(script.Rawtext, filepath.Join(s.Dirname, moduleName, script.GetName())); err != nil {
@@ -184,20 +187,16 @@ func (s *Scripts) Lint() error {
 			}
 		}
 	}
-	if !linter.HasError() {
-		return nil
-	}
-
-	_, _ = fmt.Fprintln(os.Stdout, linter.Report())
-	for src, es := range linter.Errors() {
-		logrus.Println(src)
-		for _, err := range es.Lints {
-			_, _ = fmt.Fprintln(os.Stdout, err)
+	for _, linter := range linters {
+		if linter.HasError() {
+			hasErrors = true
+			linter.FprintErrors(os.Stdout)
 		}
-		_, _ = fmt.Fprintln(os.Stdout)
 	}
-
-	return errors.New("many lint errors")
+	if hasErrors {
+		return errors.New("many lint errors")
+	}
+	return nil
 }
 
 func (s *Scripts) AlterPermissionLint() error {

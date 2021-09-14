@@ -96,3 +96,4 @@ varchar_length_linter: true
 complete_insert_linter: true
 manual_time_setter_linter: true
 explicit_collation_linter: true
+null_to_not_null_linter: true
