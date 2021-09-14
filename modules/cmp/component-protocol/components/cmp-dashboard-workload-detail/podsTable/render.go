@@ -186,6 +186,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ResourceType: metrics.Memory,
 	}
 
+	tempCPULimits := make([]*resource.Quantity, 0)
+	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
 	for _, obj := range list {
 		labels := obj.Map("metadata", "labels")
@@ -222,6 +224,9 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memRequests.Add(*parseResource(container.String("resources", "requests", "memory"), resource.BinarySI))
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
+
+		tempCPULimits = append(tempCPULimits, cpuLimits)
+		tempMemLimits = append(tempMemLimits, memLimits)
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -268,13 +273,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 		memMetrics = make([]apistructs.MetricsData, len(items), len(items))
 	}
 
-	for i, item := range items {
-		cpuLimits, _ := resource.ParseQuantity(item.CPULimits)
-		memLimits, _ := resource.ParseQuantity(item.MemoryLimits)
+	for i := range items {
+		cpuLimits := tempCPULimits[i]
+		memLimits := tempMemLimits[i]
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
 		usedCPUPercent := cpuMetrics[i].Used
-		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, &cpuLimits, resource.DecimalSI)
+		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		items[i].CPUPercent = Percent{
 			RenderType: "progress",
 			Value:      cpuValue,
@@ -284,7 +289,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
 		usedMemPercent := memMetrics[i].Used
-		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, &memLimits, resource.BinarySI)
+		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		items[i].MemoryPercent = Percent{
 			RenderType: "progress",
 			Value:      memValue,
