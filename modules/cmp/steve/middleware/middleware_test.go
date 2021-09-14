@@ -26,6 +26,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -167,4 +170,58 @@ func TestAudit(t *testing.T) {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	buf := bytes.NewBuffer(make([]byte, 1024))
 	hc.Post(fmt.Sprintf("127.0.0.1:%d/api/k8s/clusters/local/kubectl-shell", server.port)).Header("Org-ID", "1").Header("User-ID", "2").Do().Body(buf)
+}
+
+type MockPodInterface struct {
+	v1.PodInterface
+}
+
+func (m *MockPodInterface) List(ctx context.Context, opts metav1.ListOptions) (*corev1.PodList, error) {
+	pods := map[string][]corev1.Pod{
+		"app=cluster-agent": {
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "appPod1",
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "appPod2",
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "appPod3",
+				},
+			},
+		},
+		"dice/component=cluster-agent": {
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "dicePod1",
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "dicePod2",
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "dicePod3",
+				},
+			},
+		},
+	}
+	return &corev1.PodList{
+		Items: pods[opts.LabelSelector],
+	}, nil
+}
+
+func TestShellHandler_GetAgentPod(t *testing.T) {
+	s := &ShellHandler{ctx: context.Background()}
+	pods := s.getAgentPods(&MockPodInterface{})
+	if len(pods) != 6 {
+		t.Errorf("test failed, expect length of pods is %d, actual %d", 6, len(pods))
+	}
 }
