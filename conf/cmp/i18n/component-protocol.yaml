@@ -220,9 +220,9 @@ en:
  cpuRequests: CPU Requests
  cpuLimits: CPU Limits
  cpuPercent: CPU Percent
- memoryRequests: Memory Requests
- memoryLimits: Memory Limits
- memoryPercent: Memory Percent
+ memoryRequests: Mem Requests
+ memoryLimits: Mem Limits
+ memoryPercent: Mem Percent
  ready: Ready
 
  # cmp-dashboard-workload-detail.podsTableTitle
