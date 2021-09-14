@@ -48,10 +48,10 @@ func (m *define) Creator() servicehub.Creator {
 
 // provider .
 type provider struct {
-	Cfg              *config
-	Logger           logs.Logger
-	writer           writer.Writer
-	Kafka            kafka.Interface
+	Cfg    *config
+	Logger logs.Logger
+	writer writer.Writer
+	Kafka  kafka.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

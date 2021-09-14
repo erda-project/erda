@@ -72,7 +72,6 @@ func (p *provider) SyncAKItemTask(ctx context.Context) error {
 	}
 }
 
-
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
 	case ctx.Service() == "erda.oap.collector.authentication.Validator":
