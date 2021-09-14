@@ -16,13 +16,13 @@ package testplan
 
 import (
 	context "context"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	testing "testing"
 	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
@@ -124,12 +124,12 @@ func Test_processEvent(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateGroupNotifyEvent",
 		func(b *bundle.Bundle, groupNotifyRequest apistructs.EventBoxGroupNotifyRequest) error {
 			want := map[string]string{
-				"org_name":        "org",
-				"project_name":    "project",
-				"plan_name":       "test",
-				"pass_rate":       "10.12",
+				"org_name":         "org",
+				"project_name":     "project",
+				"plan_name":        "test",
+				"pass_rate":        "10.12",
 				"execute_duration": "10:10:10",
-				"api_total_num":   "100",
+				"api_total_num":    "100",
 			}
 			assert.True(t, reflect.DeepEqual(want, groupNotifyRequest.Params))
 			return nil
@@ -150,11 +150,11 @@ func Test_processEvent(t *testing.T) {
 		})
 
 	err := p.processEvent(&pb.Content{
-		TestPlanID:     1,
-		ExecuteTime:    timestamppb.New(time.Now()),
-		PassRate:       10.123,
+		TestPlanID:      1,
+		ExecuteTime:     timestamppb.New(time.Now()),
+		PassRate:        10.123,
 		ExecuteDuration: "10:10:10",
-		ApiTotalNum:    100,
+		ApiTotalNum:     100,
 	})
 	assert.NoError(t, err)
 }
