@@ -16,8 +16,10 @@ package testplan
 
 import (
 	context "context"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	testing "testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
@@ -126,7 +128,7 @@ func Test_processEvent(t *testing.T) {
 				"project_name":    "project",
 				"plan_name":       "test",
 				"pass_rate":       "10.12",
-				"execute_minutes": "20",
+				"execute_duration": "10:10:10",
 				"api_total_num":   "100",
 			}
 			assert.True(t, reflect.DeepEqual(want, groupNotifyRequest.Params))
@@ -149,9 +151,9 @@ func Test_processEvent(t *testing.T) {
 
 	err := p.processEvent(&pb.Content{
 		TestPlanID:     1,
-		ExecuteTime:    "2020-10-10",
+		ExecuteTime:    timestamppb.New(time.Now()),
 		PassRate:       10.123,
-		ExecuteMinutes: 20.333,
+		ExecuteDuration: "10:10:10",
 		ApiTotalNum:    100,
 	})
 	assert.NoError(t, err)

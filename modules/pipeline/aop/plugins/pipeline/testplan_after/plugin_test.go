@@ -15,8 +15,10 @@
 package testplan_after
 
 import (
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
@@ -90,11 +92,12 @@ func Test_sendMessage(t *testing.T) {
 	p := &provider{
 		Bundle: bdl,
 	}
+	tm:=time.Now()
 	req := testplanpb.Content{
 		TestPlanID:     1,
-		ExecuteTime:    "2020-10-10 11:11:11",
+		ExecuteTime:    timestamppb.New(tm),
 		PassRate:       10,
-		ExecuteMinutes: 1,
+		ExecuteDuration: "11:11:11",
 		ApiTotalNum:    100,
 	}
 	want := &apistructs.EventCreateRequest{

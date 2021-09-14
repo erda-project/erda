@@ -55,12 +55,8 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 
 	fields := make(map[string]interface{}, 0)
 	fields["pass_rate"] = req.Content.PassRate
-	executeTime, err := convertUTCTime(req.Content.ExecuteTime)
-	if err != nil {
-		return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, apierrors.ErrUpdateTestPlan.InternalError(err)
-	}
-	fields["execute_time"] = executeTime
-
+	fields["execute_time"] = req.Content.ExecuteTime.AsTime()
+	fields["execute_api_num"] = req.Content.ApiTotalNum
 	if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
 		return nil, err
 	}
@@ -93,12 +89,12 @@ func (s *TestPlanService) processEvent(req *pb.Content) error {
 		}
 		notifyItem := notifyDetail.NotifyItems[0]
 		params := map[string]string{
-			"org_name":        org.Name,
-			"project_name":    project.Name,
-			"plan_name":       testPlan.Name,
-			"pass_rate":       fmt.Sprintf("%.2f", req.PassRate),
-			"execute_minutes": fmt.Sprintf("%.f", req.ExecuteMinutes),
-			"api_total_num":   fmt.Sprintf("%d", req.ApiTotalNum),
+			"org_name":         org.Name,
+			"project_name":     project.Name,
+			"plan_name":        testPlan.Name,
+			"pass_rate":        fmt.Sprintf("%.2f", req.PassRate),
+			"execute_duration": req.ExecuteDuration,
+			"api_total_num":    fmt.Sprintf("%d", req.ApiTotalNum),
 		}
 		marshal, _ := json.Marshal(params)
 		logrus.Debugf("testplan params :%s", string(marshal))
