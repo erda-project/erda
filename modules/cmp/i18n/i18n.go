@@ -60,7 +60,7 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "init job cluster name", "初始化任务集群")
 	message.SetString(language.SimplifiedChinese, "manage type", "管理方式")
 	message.SetString(language.SimplifiedChinese, "node count", "节点数")
-	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
+	message.SetString(language.SimplifiedChinese, "cluster name", "集群标识")
 	message.SetString(language.SimplifiedChinese, "cluster init container id", "集群初始化任务容器ID")
 	message.SetString(language.SimplifiedChinese, "cluster agent registered", "Agent 注册")
 	// cloud resource type
