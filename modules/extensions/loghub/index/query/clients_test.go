@@ -28,6 +28,17 @@ import (
 	db2 "github.com/erda-project/erda/modules/msp/instance/db"
 )
 
+func TestNewESClient(t *testing.T) {
+	c := ESClient{
+		Cluster: "cluster-1",
+		Entrys:  []*IndexEntry{},
+	}
+
+	if len(c.Cluster) == 0 {
+		t.Log("hennnnnnnn...")
+	}
+}
+
 func TestGetLogIndices_WithNoneEmptyOrgId_Should_Return_Indices_With_OrgAlias(t *testing.T) {
 	result := getLogIndices("rlogs-", "1")
 	if len(result) == 0 {
@@ -97,12 +108,19 @@ func TestGetAllESClients_WithErrorAccessDb_Should_Return_Nil(t *testing.T) {
 	}
 }
 
-/*
 func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	p := provider{
+		L:     NewMockLogger(ctrl),
+		C:     &config{},
+		mysql: &gorm.DB{},
 		db: &db.DB{
-			LogDeployment: db.LogDeploymentDB{},
+			LogDeployment:        db.LogDeploymentDB{},
+			LogServiceInstanceDB: db.LogServiceInstanceDB{},
+			LogInstanceDB:        db.LogInstanceDB{},
 		},
+		bdl:        bundle.New(),
 		timeRanges: make(map[string]map[string]*timeRange),
 		reload:     make(chan struct{}),
 	}
@@ -111,7 +129,7 @@ func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients
 	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "List", func(_ *db.LogDeploymentDB) ([]*db.LogDeployment, error) {
 		return []*db.LogDeployment{
 			&db.LogDeployment{
-				ClusterName:  "cluster_1",
+				ClusterName:  "cluster-1",
 				ClusterType:  0,
 				ESURL:        "http://localhost:9200",
 				ESConfig:     "{}",
@@ -120,13 +138,26 @@ func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients
 		}, nil
 	})
 
-	// why can not patch the provider struct?
-	//defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p), "getESClientsFromLogAnalyticsByLogDeployment")
-	//monkey.PatchInstanceMethod(reflect.TypeOf(&p), "getESClientsFromLogAnalyticsByLogDeployment", func(_ *provider, addon string, logDeployments []*db.LogDeployment) []*ESClient {
-	//	return []*ESClient{
-	//		&ESClient{URLs: "success"},
-	//	}
-	//})
+	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters")
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters", func(_ *db.LogDeploymentDB, orgID int64, clusters ...string) ([]*db.LogDeployment, error) {
+		return []*db.LogDeployment{
+			{LogType: string(db2.LogTypeLogService), ESURL: "http://localhost:9200"},
+		}, nil
+	})
+
+	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey")
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey", func(_ *db.LogInstanceDB, logKey string) (*db.LogInstance, error) {
+		return &db.LogInstance{LogType: string(db2.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`}, nil
+	})
+
+	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace")
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace", func(_ *db.LogInstanceDB, clusterName, projectId, workspace string) ([]db.LogInstance, error) {
+		return []db.LogInstance{
+			{LogType: string(db2.LogTypeLogService), LogKey: "logKey-3", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
+			{LogType: string(db2.LogTypeLogService), LogKey: "logKey-2", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
+			{LogType: string(db2.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
+		}, nil
+	})
 
 	clients := p.getAllESClients()
 	if len(clients) == 0 {
@@ -134,6 +165,7 @@ func TestGetAllESClients_On_ExistsLogDeployment_Should_Return_None_Empty_Clients
 	}
 }
 
+/*
 func TestGetESClientsFromLogAnalyticsByLogDeployment_On_Preload_Enabled_Should_Try_Fill_ESClient_Entrys(t *testing.T) {
 	p := &provider{
 		db: &db.DB{
