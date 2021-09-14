@@ -456,3 +456,61 @@ func Test_ymlTasksMergeDBTasks(t *testing.T) {
 		})
 	}
 }
+
+func TestPipelineSvc_MergePipelineYmlTasks(t *testing.T) {
+	type args struct {
+		pipelineYml          string
+		dbTasks              []spec.PipelineTask
+		p                    *spec.Pipeline
+		dbStages             []spec.PipelineStage
+		passedDataWhenCreate *action_info.PassedDataWhenCreate
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			args: args{
+				pipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          params:\n            build_type: maven\n            container_type: spring-boot\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n          caches:\n            - path: /root/.m2/repository\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n  - stage:\n      - snippet:\n          alias: snippet\n",
+				dbTasks:     nil,
+				p: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
+						ID: 1,
+					},
+					PipelineExtra: spec.PipelineExtra{},
+				},
+				dbStages: []spec.PipelineStage{
+					{
+						ID: 1,
+					},
+					{
+						ID: 2,
+					},
+					{
+						ID: 3,
+					},
+					{
+						ID: 4,
+					}, {
+						ID: 5,
+					},
+				},
+				passedDataWhenCreate: nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &PipelineSvc{}
+			yml, _ := pipelineyml.New([]byte(tt.args.pipelineYml))
+			_, err := s.MergePipelineYmlTasks(yml, tt.args.dbTasks, tt.args.p, tt.args.dbStages, tt.args.passedDataWhenCreate)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MergePipelineYmlTasks() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}

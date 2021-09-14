@@ -224,7 +224,7 @@ func (s *PipelineSvc) MergePipelineYmlTasks(pipelineYml *pipelineyml.PipelineYml
 	}
 
 	// combine the task converted from yml with the task in the database
-	return ymlTasksMergeDBTasks(actionTasks, dbTasks), nil
+	return ymlTasksMergeDBTasks(operateActionTasks, dbTasks), nil
 }
 
 // generate task array according to yml structure
