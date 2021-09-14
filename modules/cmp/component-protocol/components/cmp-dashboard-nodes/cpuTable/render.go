@@ -114,7 +114,7 @@ func (ct *CpuInfoTable) getProps() {
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true, Width: 120},
 			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Width: 130},
 			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Width: 130},
-			{DataIndex: "UsageRate", Title: ct.SDK.I18n("distributionRate"), Sortable: true, Width: 130},
+			{DataIndex: "UsageRate", Title: ct.SDK.I18n("distributionRate"), Sortable: true, Width: 140},
 			{DataIndex: "Operate", Title: ct.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,

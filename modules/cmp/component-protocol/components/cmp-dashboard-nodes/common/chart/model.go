@@ -54,11 +54,9 @@ type ChartInterface interface {
 
 func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	//var allocatableTotal, capacityTotal, unAllocatableTotal float64
-	suffix := ""
 	resourceType := resource.DecimalSI
 	if resourceName == Memory {
 		resourceType = resource.BinarySI
-		suffix = "i"
 	}
 	allocatableQuantity := resource.NewQuantity(0, resourceType)
 	capacityQuantity := resource.NewQuantity(0, resourceType)
@@ -81,13 +79,13 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 
 	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
 	if resourceName == CPU {
-		allocatableStr = fmt.Sprintf("%.3f", allocatableQuantityValue/1000)
-		capacityStr = fmt.Sprintf("%.3f", capacityQuantityValue/1000)
-		unAllocatableStr = fmt.Sprintf("%.3f", unAllocatableQuantityValue/1000)
+		allocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("core"), allocatableQuantityValue/1000)
+		capacityStr = fmt.Sprintf("%.1f"+c.SDK.I18n("core"), capacityQuantityValue/1000)
+		unAllocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("core"), unAllocatableQuantityValue/1000)
 	}
 
 	var di []DataItem
-	distributedDesc := DefaultFormat + allocatableStr + suffix
+	distributedDesc := DefaultFormat + allocatableStr
 	if allocatableQuantity.Value() == 0 {
 		distributedDesc = ""
 	} else {
@@ -97,7 +95,7 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 			Label: Label{Formatter: distributedDesc},
 		})
 	}
-	freeDesc := DefaultFormat + capacityStr + suffix
+	freeDesc := DefaultFormat + capacityStr
 	if capacityQuantity.Value() == 0 {
 		freeDesc = ""
 	} else {
@@ -107,7 +105,7 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 			Label: Label{Formatter: freeDesc},
 		})
 	}
-	lockedDesc := DefaultFormat + unAllocatableStr + suffix
+	lockedDesc := DefaultFormat + unAllocatableStr
 	if unAllocatableQuantity.Value() == 0 {
 		lockedDesc = ""
 	} else {
@@ -216,7 +214,7 @@ type Label struct {
 
 func (c *Chart) GetProps(name string) Props {
 	return Props{Option: Option{
-		Color:  []string{"#F7A76B", "#6CB38B", "#DE5757"},
+		Color:  []string{"orange", "green", "red"},
 		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)}, Bottom: "0"},
 		Grid: Grid{
 			Bottom:       0,
