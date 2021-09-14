@@ -57,7 +57,7 @@ func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
 		pageNumber++
 	}
 	v.Lock()
-	for k, _ := range v.collection {
+	for k := range v.collection {
 		delete(v.collection, k)
 	}
 	for _, item := range results {
