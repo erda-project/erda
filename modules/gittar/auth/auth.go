@@ -216,8 +216,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 			return
 		}
 		logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
-		//校验通过缓存5分钟结果
-		//校验失败每次都会请求
+
+		// if success, caches the results for 5 minutes
 		_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
 		if validateError != nil {
 			logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
