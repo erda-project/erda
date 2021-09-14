@@ -220,7 +220,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Type:       "select",
 		Fixed:      true,
 	}
-	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, otherNs, pipelineNs} {
+	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, otherNs} {
 		if option.Children != nil {
 			sort.Slice(option.Children, func(i, j int) bool {
 				return option.Children[i].Label < option.Children[j].Label
