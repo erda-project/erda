@@ -181,7 +181,7 @@ func (mt *MemInfoTable) getProps() {
 			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Width: 120},
 			{DataIndex: "Distribution", Title: mt.SDK.I18n("distribution"), Sortable: true, Width: 130},
 			{DataIndex: "Usage", Title: mt.SDK.I18n("usedRate"), Sortable: true, Width: 130},
-			{DataIndex: "UsageRate", Title: mt.SDK.I18n("distributionRate"), Sortable: true, Width: 130},
+			{DataIndex: "UsageRate", Title: mt.SDK.I18n("distributionRate"), Sortable: true, Width: 140},
 			{DataIndex: "Operate", Title: mt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,

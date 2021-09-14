@@ -55,16 +55,19 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 			ClusterName: clusterNameIter.(string),
 		}
 		labelValue := ""
-		labelKey := ""
-		if alm.State.FormData["group"] == "custom" {
+		labelKey := alm.State.FormData["labelGroup"]
+		if labelKey == "custom" {
 			labelKey = alm.State.FormData["label_custom_key"]
 			labelValue = alm.State.FormData["label_custom_value"]
 		} else {
-			labelKey = alm.State.FormData["labelGroup"]
 			labelValue = alm.State.FormData[labelKey]
 			splits := strings.Split(labelValue, "=")
 			labelKey = splits[0]
-			labelValue = splits[1]
+			if len(splits) == 1 {
+				labelValue = ""
+			} else {
+				labelValue = splits[1]
+			}
 		}
 		err := alm.CtxBdl.LabelNode(req, map[string]string{labelKey: labelValue})
 		if err != nil {
@@ -100,23 +103,23 @@ func (alm *AddLabelModal) getProps() {
 			ComponentProps: ComponentProps{
 				Options: []Option{
 					{
-						Name:  alm.SDK.I18n("env"),
+						Name:  alm.SDK.I18n("env-label"),
 						Value: "environment",
 					},
 					{
-						Name:  alm.SDK.I18n("service"),
+						Name:  alm.SDK.I18n("service-label"),
 						Value: "service",
 					},
 					{
-						Name:  alm.SDK.I18n("job"),
+						Name:  alm.SDK.I18n("job-label"),
 						Value: "job",
 					},
 					{
-						Name:  alm.SDK.I18n("other"),
+						Name:  alm.SDK.I18n("other-label"),
 						Value: "other",
 					},
 					{
-						Name:  alm.SDK.I18n("custom"),
+						Name:  alm.SDK.I18n("custom-label"),
 						Value: "custom",
 					},
 				},
@@ -152,7 +155,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "job",
-			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("cicd-job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,

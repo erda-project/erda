@@ -69,6 +69,7 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	d.PodNum = node.String("status", "capacity", "pods")
 	d.Tags = infoDetail.getTags(node)
 	d.Annotation = infoDetail.getAnnotations(node)
+	d.Taints = infoDetail.getTaints(node)
 	t, err := infoDetail.parseTime(node)
 	if err != nil {
 		return err
@@ -155,6 +156,16 @@ func (infoDetail *InfoDetail) getAnnotations(node data.Object) []Field {
 	return desc
 }
 
+func (infoDetail *InfoDetail) getTaints(node data.Object) []Field {
+	desc := make([]Field, 0)
+	for _, v := range node.Slice("spec", "taints") {
+		desc = append(desc, Field{
+			Label: fmt.Sprintf("%s=%s:%s", v.String("key"), v.String("value"), v.String("effect")),
+		})
+	}
+	return desc
+}
+
 func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 	return Props{
 		ColumnNum: 4,
@@ -188,6 +199,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 					},
 				}}},
 			{Label: infoDetail.SDK.I18n("annotation"), ValueKey: "annotation", SpaceNum: 2, RenderType: "tagsRow"},
+			{Label: infoDetail.SDK.I18n("taint"), ValueKey: "taint", SpaceNum: 2, RenderType: "tagsRow"},
 		},
 	}
 }

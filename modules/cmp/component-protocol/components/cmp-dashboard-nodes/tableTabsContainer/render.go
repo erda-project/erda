@@ -19,10 +19,15 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func (t *TableTabsContainer) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	err := common.Transfer(t.Props, &c.Props)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

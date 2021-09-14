@@ -20,14 +20,11 @@ import (
 )
 
 const (
-	CPU_TAB    = "cpu-analysis"
-	CPU_TAB_ZH = "cpu分析"
+	CPU_TAB = "cpu-analysis"
 
-	MEM_TAB    = "mem-analysis"
-	MEM_TAB_ZH = "mem分析"
+	MEM_TAB = "mem-analysis"
 
-	POD_TAB    = "pod-analysis"
-	POD_TAB_ZH = "pod分析"
+	POD_TAB = "pod-analysis"
 )
 
 type TableTabs struct {

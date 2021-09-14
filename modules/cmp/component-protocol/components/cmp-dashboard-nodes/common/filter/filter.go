@@ -42,7 +42,7 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 		{
 			Key:      "organization",
 			Multiple: true,
-			Label:    f.SDK.I18n("organization"),
+			Label:    f.SDK.I18n("organization-label"),
 			Type:     "select",
 			Options:  []Option{},
 		},
@@ -88,7 +88,7 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	fields = append(fields, []Field{
 		{
 			Key:      "env",
-			Label:    f.SDK.I18n("env"),
+			Label:    f.SDK.I18n("env-label"),
 			Multiple: true,
 			Type:     "select",
 			Options: []Option{
@@ -100,7 +100,7 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 		},
 		{
 			Key:      "service",
-			Label:    f.SDK.I18n("service"),
+			Label:    f.SDK.I18n("service-label"),
 			Multiple: true,
 			Type:     "select",
 			Options: []Option{
@@ -110,8 +110,8 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			},
 		},
 		{
-			Key:      "job",
-			Label:    f.SDK.I18n("job"),
+			Key:      "job-label",
+			Label:    f.SDK.I18n("job-label"),
 			Multiple: true,
 			Type:     "select",
 			Options: []Option{
@@ -120,16 +120,16 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			},
 		},
 		{
-			Key:      "other",
-			Label:    f.SDK.I18n("other"),
+			Key:      "other-label",
+			Label:    f.SDK.I18n("other-label"),
 			Multiple: true,
-			Type:     "select",
+			Type:     "dropdown-select",
 			Options: append([]Option{
 				{Label: f.SDK.I18n("lb"), Value: "dice/lb"},
 				{Label: f.SDK.I18n("platform"), Value: "dice/platform"},
 			}, customOps...),
 		},
-		{Key: "Q", Type: "input", Placeholder: "请输入"},
+		{Key: "Q", Type: "input", Placeholder: f.SDK.I18n("input node Name or IP")},
 	}...,
 	)
 	p := Props{
@@ -139,7 +139,8 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	return p
 }
 
-type Values map[string][]string
+type Values map[string]interface{}
+
 type State struct {
 	Values      Values `json:"values"`
 	ClusterName string `json:"clusterName"`

@@ -253,7 +253,7 @@ func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
 			a /= 1024
 			b /= 1024
 		}
-		return fmt.Sprintf("%.1f%si/%.1f%si", a, level[i], b, level[i])
+		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i])
 	case Cpu:
 		for a > 1000 && b > 1000 && i < 4 {
 			a /= 1000
@@ -465,24 +465,22 @@ func (t *Table) GetNodeLabels(labels data.Object) []label.Label {
 }
 
 func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
-	//ls := []string{
-	//	"dice/workspace-dev", "dice/workspace-test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
-	//}
+
 	groups := make(map[string]string)
-	groups["dice/workspace-dev=true"] = t.SDK.I18n("env")
-	groups["dice/workspace-test=true"] = t.SDK.I18n("env")
-	groups["dice/workspace-staging=true"] = t.SDK.I18n("env")
-	groups["dice/workspace-prod=true"] = t.SDK.I18n("env")
+	groups["dice/workspace-dev=true"] = t.SDK.I18n("env-label")
+	groups["dice/workspace-test=true"] = t.SDK.I18n("env-label")
+	groups["dice/workspace-staging=true"] = t.SDK.I18n("env-label")
+	groups["dice/workspace-prod=true"] = t.SDK.I18n("env-label")
 
-	groups["dice/stateful-service=true"] = t.SDK.I18n("service")
-	groups["dice/stateless-service=true"] = t.SDK.I18n("service")
-	groups["dice/location-cluster-service=true"] = t.SDK.I18n("service")
+	groups["dice/stateful-service=true"] = t.SDK.I18n("service-label")
+	groups["dice/stateless-service=true"] = t.SDK.I18n("service-label")
+	groups["dice/location-cluster-service=true"] = t.SDK.I18n("service-label")
 
-	groups["dice/job=true"] = t.SDK.I18n("job")
-	groups["dice/bigdata-job=true"] = t.SDK.I18n("job")
+	groups["dice/job=true"] = t.SDK.I18n("job-label")
+	groups["dice/bigdata-job=true"] = t.SDK.I18n("job-label")
 
-	groups["dice/lb=true"] = t.SDK.I18n("other")
-	groups["dice/platform=true"] = t.SDK.I18n("other")
+	groups["dice/lb=true"] = t.SDK.I18n("other-label")
+	groups["dice/platform=true"] = t.SDK.I18n("other-label")
 
 	if group, ok := groups[label]; ok {
 		idx := strings.Index(label, "=true")
@@ -491,14 +489,14 @@ func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
 
 	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
 		idx := strings.Index(label, "=true")
-		return t.SDK.I18n("organization"), t.SDK.I18n(label[5:idx])
+		return t.SDK.I18n("organization-label"), t.SDK.I18n(label[5:idx])
 	}
 	otherDisplayName := label
 	if label == "dice/lb=true" || label == "dice/platform=true" {
 		idx := strings.Index(label, "=true")
 		otherDisplayName = t.SDK.I18n(label[5:idx])
 	}
-	return t.SDK.I18n("other"), otherDisplayName
+	return t.SDK.I18n("other-label"), otherDisplayName
 }
 
 func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
