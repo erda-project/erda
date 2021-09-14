@@ -447,8 +447,8 @@ github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
 github.com/erda-project/erda-infra v0.0.0-20210706133120-0a742437972c/go.mod h1:TUQYSZ60w9dk7m0q3U3AVg7U74APj/sdEVvRWR3wYv8=
 github.com/erda-project/erda-infra v0.0.0-20210910055258-e82f28947881/go.mod h1:Aec8FrEVnfzqeAjQSQDnBuRJ/AFJjpHYEG/QpKqVeHk=
-github.com/erda-project/erda-infra v0.0.0-20210914062236-cdb207c49882 h1:+vfc0vK97W+OWCrOFkDYfV1SE4Oz0t2+UwxhGhkSAmg=
-github.com/erda-project/erda-infra v0.0.0-20210914062236-cdb207c49882/go.mod h1:Aec8FrEVnfzqeAjQSQDnBuRJ/AFJjpHYEG/QpKqVeHk=
+github.com/erda-project/erda-infra v0.0.0-20210914104843-6cca8cf452d6 h1:RRgQUPX0ZepCNDAm8Fo7GpB1D1xUcP56z1lbi0td/4k=
+github.com/erda-project/erda-infra v0.0.0-20210914104843-6cca8cf452d6/go.mod h1:Aec8FrEVnfzqeAjQSQDnBuRJ/AFJjpHYEG/QpKqVeHk=
 github.com/erda-project/erda-proto-go v0.0.0-20210820073528-bcd612c2efb7/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/erda-proto-go v0.0.0-20210910095156-3fc5a72048ca h1:j3uk0YrN60RUEDG2KdN4RT7F+OlyLn4344m9IPQV40A=
 github.com/erda-project/erda-proto-go v0.0.0-20210910095156-3fc5a72048ca/go.mod h1:l+9rt1kA1uLqqGV7Stte32wNpL2IlllCsD7KfxgOY+s=

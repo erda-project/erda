@@ -65,7 +65,7 @@ func (e *AlreadyExistsError) Error() string {
 	}
 	return "already exists"
 }
-func (e *AlreadyExistsError) HTTPStatus() int { return http.StatusNotFound }
+func (e *AlreadyExistsError) HTTPStatus() int { return http.StatusConflict }
 func (e *AlreadyExistsError) Translate(t i18n.Translator, langs i18n.LanguageCodes) string {
 	if len(e.Resource) > 0 {
 		return t.Sprintf(langs, "%s ${already exists}", t.Text(langs, e.Resource))
