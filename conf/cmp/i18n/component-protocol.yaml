@@ -179,7 +179,7 @@ zh:
  waiting: 等待
  terminated: 终止
  usedRate: 使用率
- core: 核
+ cores: 核
  taint: 污点
  input node Name or IP: 请输入节点名称或IP
 
