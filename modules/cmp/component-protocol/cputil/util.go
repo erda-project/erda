@@ -16,13 +16,18 @@ package cputil
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
+	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 )
 
+// ParseWorkloadStatus get status for workloads from .metadata.fields
 func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 	kind := obj.String("kind")
 	fields := obj.StringSlice("metadata", "fields")
@@ -79,6 +84,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 	}
 }
 
+// ParseWorkloadID get workloadKind, namespace and name from id
 func ParseWorkloadID(id string) (apistructs.K8SResType, string, string, error) {
 	splits := strings.Split(id, "_")
 	if len(splits) != 3 {
@@ -87,6 +93,7 @@ func ParseWorkloadID(id string) (apistructs.K8SResType, string, string, error) {
 	return apistructs.K8SResType(splits[0]), splits[1], splits[2], nil
 }
 
+// GetWorkloadAgeAndImage get age and image for workloads from .metadata.fields
 func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 	kind := obj.String("kind")
 	fields := obj.StringSlice("metadata", "fields")
@@ -120,4 +127,31 @@ func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 	default:
 		return "", "", fmt.Errorf("invalid workload kind: %s", kind)
 	}
+}
+
+// ResourceToString return resource with unit
+// Only support resource.DecimalSI and resource.BinarySI format
+// Original unit is m (for DecimalSI) or B (for resource.BinarySI)
+// Accurate to 3 decimal places. Zero in suffix will be removed
+func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) string {
+	switch format {
+	case resource.DecimalSI:
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64), sdk.I18n("core"))
+	case resource.BinarySI:
+		units := []string{"B", "K", "M", "G", "T"}
+		i := 0
+		for res >= 1<<10 && i < len(units)-1 {
+			res /= 1 << 10
+			i++
+		}
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
+	default:
+		return ""
+	}
+}
+
+func setPrec(f float64, prec int) float64 {
+	pow := math.Pow10(prec)
+	f = float64(int64(f*pow)) / pow
+	return f
 }
