@@ -15,7 +15,9 @@
 package extension
 
 import (
+	"context"
 	"net/http"
+	"sync"
 
 	"github.com/jinzhu/gorm"
 	"github.com/robfig/cron"
@@ -26,6 +28,7 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	pb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/extension/db"
@@ -42,11 +45,12 @@ const FilePath = "/app/extensions-init"
 
 // +provider
 type provider struct {
-	Cfg              *config
-	Log              logs.Logger
-	Register         transport.Register `autowired:"service-register" required:"true"`
-	DB               *gorm.DB           `autowired:"mysql-client"`
-	extensionService *extensionService
+	Cfg                   *config
+	Log                   logs.Logger
+	Register              transport.Register `autowired:"service-register" required:"true"`
+	DB                    *gorm.DB           `autowired:"mysql-client"`
+	InitExtensionElection election.Interface `autowired:"etcd-election@initExtension"`
+	extensionService      *extensionService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -63,13 +67,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				}),
 			))
 	}
-	go func() {
-		err := p.extensionService.InitExtension(FilePath, false)
-		if err != nil {
-			panic(err)
-		}
-		logrus.Infoln("End init extension")
-	}()
+
+	var once sync.Once
+	p.InitExtensionElection.OnLeader(func(ctx context.Context) {
+		once.Do(func() {
+			err := p.extensionService.InitExtension(FilePath, false)
+			if err != nil {
+				panic(err)
+			}
+			logrus.Infoln("End init extension")
+		})
+	})
 
 	go func() {
 		c := cron.New()

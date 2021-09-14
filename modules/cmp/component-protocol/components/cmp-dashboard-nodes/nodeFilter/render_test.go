@@ -12,47 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package openapiv1
+package nodeFilter
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/rancher/wrangler/pkg/data"
+
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 )
 
-func Test_replaceOpenapiV1Path(t *testing.T) {
+func TestDoFilter(t *testing.T) {
 	type args struct {
-		path string
+		nodeList []data.Object
+		values   filter.Values
 	}
+	d := []data.Object{{"id": "nameID", "metadata": map[string]interface{}{"name": "name", "labels": map[string]interface{}{"key1": "value1"}}}}
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []data.Object
 	}{
 		{
-			name: "<>",
+			name: "test",
 			args: args{
-				path: "/api/projects/<projectID>",
+				nodeList: d,
+				values:   map[string]interface{}{"Q": "na", "service": []interface{}{"key1=value1", "serviceLabel2"}},
 			},
-			want: "/api/projects/{projectID}",
-		},
-		{
-			name: "normal",
-			args: args{
-				path: "/api/projects",
-			},
-			want: "/api/projects",
-		},
-		{
-			name: "*",
-			args: args{
-				path: "/api/repo/<*>",
-			},
-			want: "/api/repo/**",
+			want: d,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := replaceOpenapiV1Path(tt.args.path); got != tt.want {
-				t.Errorf("replaceOpenapiV1Path() = %v, want %v", got, tt.want)
+			if got := DoFilter(tt.args.nodeList, tt.args.values); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DoFilter() = %v, want %v", got, tt.want)
 			}
 		})
 	}

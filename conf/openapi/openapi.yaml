@@ -114,6 +114,3 @@ http-server@admin:
   _enable: ${OPENAPI_DEV_MODE:false}
   addr: ":9432"
   reloadable: ${OPENAPI_DEV_MODE:false}
-
-
-  

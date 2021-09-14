@@ -185,7 +185,7 @@ func (t *ComponentEventTable) RenderList() error {
 			continue
 		}
 		items = append(items, Item{
-			LastSeen:          fields[0],
+			LastSeen:          fmt.Sprintf("%s %s", fields[0], t.sdk.I18n("ago")),
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
 			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],
@@ -332,7 +332,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "count",
 				Title:     cputil.I18n(ctx, "count"),
-				Width:     50,
+				Width:     60,
 				Sorter:    true,
 			},
 			{
@@ -344,7 +344,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "namespace",
 				Title:     cputil.I18n(ctx, "namespace"),
-				Width:     80,
+				Width:     120,
 				Sorter:    true,
 			},
 		},

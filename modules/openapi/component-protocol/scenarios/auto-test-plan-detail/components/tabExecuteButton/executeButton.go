@@ -106,6 +106,8 @@ type ClientMetaData struct {
 	Env        string `json:"env"`
 	TestPlanID uint64 `json:"testPlanID"`
 	ConfigEnv  string `json:"ConfigEnv"`
+	OrgID      uint64 `json:"orgID"`
+	ProjectID  uint64 `json:"projectID"`
 }
 
 type Props struct {
@@ -210,6 +212,8 @@ func (a *ComponentAction) handleDefault() error {
 						Env:        testClusterName,
 						TestPlanID: a.State.TestPlanID,
 						ConfigEnv:  "",
+						OrgID:      project.OrgID,
+						ProjectID:  project.ID,
 					},
 				},
 			},
@@ -228,6 +232,8 @@ func (a *ComponentAction) handleDefault() error {
 						Env:        testClusterName,
 						TestPlanID: a.State.TestPlanID,
 						ConfigEnv:  v.Ns,
+						OrgID:      project.OrgID,
+						ProjectID:  project.ID,
 					},
 				},
 			},
@@ -251,6 +257,10 @@ func (a *ComponentAction) handleClick(event apistructs.ComponentEvent, gs *apist
 	req.ClusterName = metaData.Env
 	req.ConfigManageNamespaces = metaData.ConfigEnv
 	req.UserID = a.CtxBdl.Identity.UserID
+	req.Labels = map[string]string{
+		apistructs.LabelProjectID: strconv.FormatUint(metaData.ProjectID, 10),
+		apistructs.LabelOrgID:     strconv.FormatUint(metaData.OrgID, 10),
+	}
 	a.State.ActiveKey = "Execute"
 	pipeline, err := a.CtxBdl.Bdl.ExecuteDiceAutotestTestPlan(req)
 	if err != nil {

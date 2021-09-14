@@ -75,9 +75,15 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 }
 
 func isEmptyFilter(values filter.Values) bool {
-	for _, v := range values {
-		if len(v) != 0 {
-			return false
+	for k, v := range values {
+		if k == "Q" {
+			if v.(string) != "" {
+				return false
+			}
+		} else {
+			if v == nil || len(v.([]interface{})) != 0 {
+				return false
+			}
 		}
 	}
 	return true
@@ -92,9 +98,15 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	} else {
 		for k, v := range values {
 			if k != "Q" {
-				labels = append(labels, v...)
+				vs := v.([]interface{})
+				ss := make([]string, 0)
+				for _, s := range vs {
+					ss = append(ss, s.(string))
+				}
+				labels = append(labels, ss...)
 			} else {
-				nodeNameFilter = v[0]
+				vs := v.(string)
+				nodeNameFilter = vs
 			}
 		}
 		// Filter by node name
@@ -104,21 +116,24 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 					nodes = append(nodes, node)
 				}
 			}
-		}
-		if len(nodes) != 0 {
 			nodeList = nodes
+			nodes = make([]data.Object, 0)
 		}
-		for _, node := range nodeList {
-		NEXT:
-			for _, l := range labels {
-				for k, v := range node.Map("metadata", "labels") {
-					nl := k + "=" + v.(string)
-					if strings.Contains(nl, l) {
-						nodes = append(nodes, node)
-						break NEXT
+		if len(labels) != 0 {
+			for _, node := range nodeList {
+			NEXT:
+				for _, l := range labels {
+					for k, v := range node.Map("metadata", "labels") {
+						nl := k + "=" + v.(string)
+						if strings.Contains(nl, l) {
+							nodes = append(nodes, node)
+							break NEXT
+						}
 					}
 				}
 			}
+		} else {
+			nodes = nodeList
 		}
 	}
 	return nodes
