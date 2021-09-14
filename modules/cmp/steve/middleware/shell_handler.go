@@ -100,13 +100,20 @@ func (s *ShellHandler) HandleShell(next http.Handler) http.Handler {
 			LabelSelector: "app=cluster-agent",
 		})
 		if err != nil {
-			logrus.Errorf("failed to list cluster-agent pod in steve handle shell, %v", err)
-			resp.WriteHeader(http.StatusInternalServerError)
-			resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
-			return
+			logrus.Errorf("failed to list cluster-agent pod in steve handle shell by app=cluster-agent label, %v", err)
+			//resp.WriteHeader(http.StatusInternalServerError)
+			//resp.Write(apistructs.NewSteveError(apistructs.ServerError, "interval server error").JSON())
+			//return
 		}
 
-		for _, pod := range pods.Items {
+		diceLabelPods, err := podClient.List(s.ctx, metav1.ListOptions{
+			LabelSelector: "dice/component=cluster-agent",
+		})
+		if err != nil {
+			logrus.Errorf("failed to list cluster-agent pod in steve handle shell by dice/component=cluster-agent label, %v", err)
+		}
+
+		for _, pod := range append(pods.Items, diceLabelPods.Items...) {
 			if !isPodReady(&pod) {
 				continue
 			}
