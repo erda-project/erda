@@ -67,6 +67,10 @@ func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.
 	}
 }
 
+func (s *traceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.GetSpanDashboardsResponse, error) {
+	return nil,errors.NewUnimplementedError("span dashboards")
+}
+
 func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*pb.GetSpansResponse, error) {
 	if req.TraceID == "" || req.ScopeID == "" {
 		return nil, errors.NewMissingParameterError("traceId or scopeId")
