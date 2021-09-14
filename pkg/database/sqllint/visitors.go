@@ -54,27 +54,27 @@ func New(rules ...rules.Ruler) *Linter {
 
 func (r *Linter) Input(scriptData []byte, scriptName string) error {
 	p := parser.New()
-	nodes, warns, err := p.Parse(string(scriptData), "", "")
+	stmts, warns, err := p.Parse(string(scriptData), "", "")
 	if err != nil {
 		return err
-	}
-	// update schema state
-	for _, node := range nodes {
-		node.Accept(r.schema)
 	}
 	s := script.New(scriptName, scriptData)
 	r.reports[scriptName] = make(map[string][]string, 0)
 
 	var errs []error
-	for _, node := range nodes {
-		for _, f := range r.linters {
-			linter := f(s)
-			// if the linter lints with state, set its schema
-			if stateLinter, ok := linter.(rules.StatefulRule); ok {
+	for _, stmt := range stmts {
+		// lint the statement range every rule
+		for _, newRule := range r.linters {
+			rule := newRule(s)
+			// if the rule lints with state, set its schema
+			stateLinter, ok := rule.(rules.StatefulRule)
+			if ok {
 				stateLinter.SetSchema(r.schema)
 			}
-			_, _ = node.Accept(linter)
-			if err := linter.Error(); err != nil {
+			// lint this statement for this rule
+			stmt.Accept(rule)
+			// collect the lint errors
+			if err := rule.Error(); err != nil {
 				errs = append(errs, err)
 				lintError, ok := err.(linterror.LintError)
 				if !ok {
@@ -87,6 +87,8 @@ func (r *Linter) Input(scriptData []byte, scriptName string) error {
 				r.reports[scriptName][stmtName] = append(r.reports[scriptName][stmtName], lintError.Lint)
 			}
 		}
+		// update schema state
+		stmt.Accept(r.schema)
 	}
 
 	if len(warns) > 0 || len(errs) > 0 {
@@ -134,7 +136,6 @@ func (r *Linter) FprintErrors(w io.Writer) {
 	if w == nil {
 		w = os.Stderr
 	}
-	_, _ = fmt.Fprintln(w, r.Report())
 	errors := r.Errors()
 	for filename, es := range errors {
 		_, _ = fmt.Fprintln(w, filename)
