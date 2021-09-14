@@ -187,7 +187,7 @@ func (mt *MemInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"cordon", "cordon"},
+		"batchOperations": []string{"cordon", "uncordon"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 
