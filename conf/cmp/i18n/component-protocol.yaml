@@ -273,7 +273,7 @@ en:
  requests: Requests
  limits: Limits
  usage: Utilization rate
- usedRate: Used
+ usedRate: Usage
  restartCount: Restart Times
  category: category
  podSearchPlaceHolder: filter by pod name or IP
@@ -287,7 +287,7 @@ en:
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
  distribution: Reserved
- distributionRate: Reserved Usage
+ distributionRate: Reserve Usage
  kernelVersion: Kernel Version
  kubeProxyVersion: Kubectl Proxy Version
  kubeletVersion: Kubelet Version
