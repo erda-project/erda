@@ -15,9 +15,7 @@
 package collector
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -25,7 +23,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 type config struct {
@@ -36,8 +33,6 @@ type config struct {
 	}
 	Output         kafka.ProducerConfig `file:"output"`
 	TaSamplingRate float64              `file:"ta_sampling_rate" default:"100"`
-
-	SignAuth signAuthConfig `file:"sign_auth"`
 }
 
 type define struct{}
@@ -57,15 +52,9 @@ type provider struct {
 	Logger           logs.Logger
 	writer           writer.Writer
 	Kafka            kafka.Interface
-	AccessKeyService akpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
-
-	auth *Authenticator
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	if err := p.initAuthenticator(context.TODO()); err != nil {
-		return err
-	}
 	w, err := p.Kafka.NewProducer(&p.Cfg.Output)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
@@ -80,30 +69,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.intRoute(r); err != nil {
 		return fmt.Errorf("fail to init route: %s", err)
 	}
-	return nil
-}
-
-func (p *provider) initAuthenticator(ctx context.Context) error {
-	p.auth = &Authenticator{
-		store:            make(map[string]*akpb.AccessKeysItem),
-		logger:           p.Logger.Sub("Authenticator"),
-		AccessKeyService: p.AccessKeyService,
-	}
-	if err := p.auth.syncAccessKey(ctx); err != nil {
-		return err
-	}
-	go func() {
-		tick := time.NewTicker(p.Cfg.SignAuth.SyncInterval)
-		defer tick.Stop()
-		for {
-			select {
-			case <-tick.C:
-			}
-			if err := p.auth.syncAccessKey(ctx); err != nil {
-				p.Logger.Errorf("auth.syncAccessKey failed. err: %s", err)
-			}
-		}
-	}()
 	return nil
 }
 

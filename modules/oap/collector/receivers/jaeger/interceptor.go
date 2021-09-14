@@ -15,6 +15,7 @@
 package jaeger
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html"
@@ -25,9 +26,10 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/recallsong/go-utils/reflectx"
 
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-oap-thirdparty-protocol/jaeger-thrift/jaeger"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
-	oap "github.com/erda-project/erda-proto-go/oap/common/pb"
 	tracing "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 )
@@ -42,6 +44,19 @@ var (
 	JAEGER_MSP_AK_ID     = "msp.ak.id"
 	JAEGER_MSP_AK_SECRET = "msp.ak.secret"
 )
+
+func injectCtx(next interceptor.Handler) interceptor.Handler {
+	return func(ctx context.Context, entity interface{}) (interface{}, error) {
+		req := transhttp.ContextRequest(ctx)
+		ctx = context.WithValue(ctx, common.CTX_MSP_ENV_ID, req.Header.Get(common.HEADER_MSP_ENV_ID))
+		ctx = context.WithValue(ctx, common.CTX_MSP_AK_ID, req.Header.Get(common.HEADER_MSP_AK_ID))
+		ctx = context.WithValue(ctx, common.CTX_MSP_AK_SECRET, req.Header.Get(common.HEADER_MSP_AK_SECRET))
+		if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
+			ctx = context.WithValue(ctx, common.CTX_SPANS, data.Spans)
+		}
+		return next(ctx, entity)
+	}
+}
 
 func ThriftDecoder(r *http.Request, entity interface{}) error {
 	contentType := r.Header.Get("Content-Type")
@@ -59,8 +74,7 @@ func ThriftDecoder(r *http.Request, entity interface{}) error {
 			return err
 		}
 		spansRequest.Spans = thrift2Proto(batch)
-		spansRequest.Principal = &oap.Principal{}
-		extractPrincipal(spansRequest.Principal, batch.Process.Tags)
+		extractAuthenticationTags(r, batch.Process.Tags)
 	}
 	return nil
 }
@@ -102,17 +116,24 @@ func extractTraceID(tSpan *jaeger.Span) []byte {
 	return reflectx.StringToBytes(fmt.Sprintf("%016x%016x", tSpan.TraceIdHigh, tSpan.TraceIdLow))
 }
 
-func extractPrincipal(principal *oap.Principal, tags []*jaeger.Tag) {
+func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
 	if tags != nil {
 		for _, tag := range tags {
 			if tag.Key == common.TAG_MSP_ENV_ID || tag.Key == JAEGER_MSP_ENV_ID {
-				principal.Identity = extractTagValue(tag)
+				// If the headers does not have x-msp-env-id, use msp.env.id contained in tags
+				if val := r.Header.Get(common.HEADER_MSP_ENV_ID); val == "" {
+					r.Header.Set(common.HEADER_MSP_ENV_ID, extractTagValue(tag))
+				}
 			}
 			if tag.Key == common.TAG_MSP_AK_ID || tag.Key == JAEGER_MSP_AK_ID {
-				principal.AccessKey = extractTagValue(tag)
+				if val := r.Header.Get(common.HEADER_MSP_AK_ID); val == "" {
+					r.Header.Set(common.HEADER_MSP_AK_ID, extractTagValue(tag))
+				}
 			}
 			if tag.Key == common.TAG_MSP_AK_SECRET || tag.Key == JAEGER_MSP_AK_SECRET {
-				principal.AccessSecret = extractTagValue(tag)
+				if val := r.Header.Get(common.HEADER_MSP_AK_SECRET); val == "" {
+					r.Header.Set(common.HEADER_MSP_AK_SECRET, extractTagValue(tag))
+				}
 			}
 		}
 	}

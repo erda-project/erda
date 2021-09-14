@@ -26,8 +26,7 @@ import (
 
 type config struct {
 	// some fields of config for this provider
-	Enable bool `file:"enable" default:"true" desc:"enable jaeger receiver"`
-	Kafka  struct {
+	Kafka struct {
 		Producer kafka.ProducerConfig `file:"producer"  desc:"kafka Producer Config"`
 	} `file:"kafka"`
 }
@@ -38,20 +37,21 @@ type provider struct {
 	Log logs.Logger
 
 	jaegerService pb.JaegerServiceServer
-	Register      transport.Register `autowired:"service-register" optional:"true"`
-	Kafka         kafka.Interface    `autowired:"kafka@receiver-jaeger"`
+	Register      transport.Register  `autowired:"service-register" optional:"true"`
+	Kafka         kafka.Interface     `autowired:"kafka@receiver-jaeger"`
+	Interceptors  common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	if p.Cfg.Enable && p.Register != nil {
+	if p.Register != nil {
 		writer, err := p.Kafka.NewProducer(&p.Cfg.Kafka.Producer)
 		if err != nil {
 			return err
 		}
 		p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer}
-		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService, transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder)),
-			transport.WithInterceptors(common.Authentication, common.TagOverwrite))
+		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService, transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder), transhttp.WithInterceptor(injectCtx)),
+			transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.TagOverwrite))
 	}
 	return nil
 }

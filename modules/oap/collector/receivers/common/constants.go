@@ -21,4 +21,16 @@ var (
 	TAG_MSP_AK_ID     = "msp_ak_id"
 	TAG_MSP_AK_SECRET = "msp_ak_secret"
 	TAG_TERMINUS_KEY  = "terminus_key"
+
+	HEADER_MSP_ENV_ID    = "x-msp-env-id"
+	HEADER_MSP_AK_ID     = "x-msp-ak-id"
+	HEADER_MSP_AK_SECRET = "x-msp-ak-secret"
+
+	CTX_PREFIX        = "ctx_"
+	CTX_MSP_ENV_ID    = CTX_PREFIX + TAG_MSP_ENV_ID
+	CTX_MSP_AK_ID     = CTX_PREFIX + TAG_MSP_AK_ID
+	CTX_MSP_AK_SECRET = CTX_PREFIX + TAG_MSP_AK_SECRET
+	CTX_SPANS         = CTX_PREFIX + "spans"
+
+	SCOPE_MSP_ENV = "msp_env"
 )

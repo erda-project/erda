@@ -17,34 +17,46 @@ package common
 import (
 	"context"
 	"errors"
+	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"strings"
 
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
-	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+	trace "github.com/erda-project/erda-proto-go/oap/trace/pb"
 )
 
 var (
 	INVALID_MSP_ENV_ID        = errors.New("invalid msp.env.id field")
 	INVALID_MSP_ACCESS_KEY    = errors.New("invalid msp.access.key field")
 	INVALID_MSP_ACCESS_SECRET = errors.New("invalid msp.access.secret field")
+	AUTHENTICATION_FAILED     = errors.New("authentication failed, please use the correct accessKey and accessKeySecret")
 )
 
-func TagOverwrite(next interceptor.Handler) interceptor.Handler {
+type Interceptors interface {
+
+	Authentication(next interceptor.Handler) interceptor.Handler
+
+	TagOverwrite(next interceptor.Handler) interceptor.Handler
+}
+
+type interceptorImpl struct {
+	validator authentication.Validator
+}
+
+func (i *interceptorImpl) TagOverwrite(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		if data, ok := req.(*jaegerpb.PostSpansRequest); ok {
-			if data.Spans != nil {
-				for _, span := range data.Spans {
-					for k, v := range span.Attributes {
-						if idx := strings.Index(k, "."); idx > -1 {
-							span.Attributes[strings.Replace(k, ".", "_", -1)] = v
-							delete(span.Attributes, k)
-						}
+		spans := ctx.Value(CTX_SPANS).([]*trace.Span)
+		if spans != nil {
+			for _, span := range spans {
+				for k, v := range span.Attributes {
+					if idx := strings.Index(k, "."); idx > -1 {
+						span.Attributes[strings.Replace(k, ".", "_", -1)] = v
+						delete(span.Attributes, k)
 					}
-					delete(span.Attributes, TAG_MSP_AK_ID)
-					delete(span.Attributes, TAG_MSP_AK_SECRET)
-					if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
-						span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_MSP_ENV_ID]
-					}
+				}
+				delete(span.Attributes, TAG_MSP_AK_ID)
+				delete(span.Attributes, TAG_MSP_AK_SECRET)
+				if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
+					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_MSP_ENV_ID]
 				}
 			}
 		}
@@ -52,19 +64,26 @@ func TagOverwrite(next interceptor.Handler) interceptor.Handler {
 	}
 }
 
-func Authentication(next interceptor.Handler) interceptor.Handler {
+func (i *interceptorImpl) Authentication(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		if data, ok := req.(*jaegerpb.PostSpansRequest); ok {
-			if data.Principal.Identity == "" {
-				return nil, INVALID_MSP_ENV_ID
-			}
-			if data.Principal.AccessKey == "" {
-				return nil, INVALID_MSP_ACCESS_KEY
-			}
-			if data.Principal.AccessSecret == "" {
-				return nil, INVALID_MSP_ACCESS_SECRET
-			}
+		envId := ctx.Value(CTX_MSP_ENV_ID).(string)
+		akId := ctx.Value(CTX_MSP_AK_ID).(string)
+		akSecret := ctx.Value(CTX_MSP_AK_SECRET).(string)
+
+		if envId == "" {
+			return nil, INVALID_MSP_ENV_ID
 		}
+		if akId == "" {
+			return nil, INVALID_MSP_ACCESS_KEY
+		}
+		if akSecret == "" {
+			return nil, INVALID_MSP_ACCESS_SECRET
+		}
+
+		if !i.validator.Validate(SCOPE_MSP_ENV, envId, akId, akSecret) {
+			return nil, AUTHENTICATION_FAILED
+		}
+
 		return next(ctx, req)
 	}
 }

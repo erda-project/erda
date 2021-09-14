@@ -71,7 +71,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	if req.TraceID == "" || req.ScopeID == "" {
 		return nil, errors.NewMissingParameterError("traceId or scopeId")
 	}
-	if req.Limit <= 0 || req.Limit > 1000 {
+	if req.Limit <= 0 || req.Limit > 10000 {
 		req.Limit = 10000
 	}
 	iter := s.p.cassandraSession.Session().Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()

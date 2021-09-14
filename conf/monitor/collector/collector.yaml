@@ -6,21 +6,26 @@ health:
 
 service-register:
 
+erda.oap.collector.receiver.common:
+
 erda.oap.collector.receiver.jaeger:
-  enable: "${COLLECTOR_RECEIVER_JAEGER_ENABLE:true}"
+  _enable: "${COLLECTOR_RECEIVER_JAEGER_ENABLE:true}"
   kafka:
 #    server: ${BOOTSTRAP_SERVERS:localhost:9092}
     producer:
-      topic: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_TOPIC:msp_jaeger_trace}
+      topic: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_TOPIC:msp-jaeger-trace}
       shared: "false"
       options:
             go.produce.channel.size: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_PRODUCE_CHANNEL_SIZE:100}
             queue.buffering.max.kbytes: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
 
+erda.oap.collector.authentication:
+  sync_interval: ${COLLECTOR_AUTHENTICATION_AK_SYNC_INTERVAL:2m}
+
 kafka@receiver-jaeger:
   servers: ${BOOTSTRAP_SERVERS:localhost:9092}
 
-grpc-client@erda.core.services.authentication.credentials.accesskey:
+grpc-client@erda.core.services.authentication.credentials.accesskey.accessKeyService:
     addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.authentication.credentials.accesskey-client:
 
@@ -42,9 +47,6 @@ monitor-collector:
         username: "${COLLECTOR_AUTH_USERNAME:collector}"
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
-    sign_auth:
-        sync_interval: ${COLLECTOR_AK_SYNC_INTERVAL:3m}
-        expired_duration: ${COLLECTOR_AK_EXPIRED_DURATION:10m}
 
 pprof:
 http-server@admin:
