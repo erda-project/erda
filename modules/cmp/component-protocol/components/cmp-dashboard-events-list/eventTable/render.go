@@ -332,7 +332,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "count",
 				Title:     cputil.I18n(ctx, "count"),
-				Width:     50,
+				Width:     60,
 				Sorter:    true,
 			},
 			{
@@ -344,7 +344,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "namespace",
 				Title:     cputil.I18n(ctx, "namespace"),
-				Width:     80,
+				Width:     120,
 				Sorter:    true,
 			},
 		},
