@@ -216,7 +216,7 @@ func (cht *Chart) GetProps(name string) Props {
 	return Props{
 		Title: name,
 		Option: Option{
-			Color:  []string{"yellow", "green", "red"},
+			Color:  []string{"orange", "green", "red"},
 			Legend: Legend{Data: []string{cht.SDK.I18n(Allocated), cht.SDK.I18n(Cannot_Allocate), cht.SDK.I18n(Free_Allocate)}, Bottom: "0"},
 			Grid: Grid{
 				Bottom:       0,
