@@ -507,6 +507,9 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		scopeIDFilter.Value = structpb.NewStringValue(tk)
 		rule.Filters = append(rule.Filters, &scopeIDFilter)
 
+		if rule.Metric == StatusPage {
+			continue
+		}
 		scopeApplicationFilter := monitor.CustomizeAlertRuleFilter{}
 		scopeApplicationFilter.Tag = "application_id"
 		scopeApplicationFilter.Operator = OperateIn
@@ -695,6 +698,9 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 		scopeIDFilter.Value = structpb.NewStringValue(tk)
 		rule.Filters = append(rule.Filters, &scopeIDFilter)
 
+		if rule.Metric == StatusPage {
+			continue
+		}
 		scopeApplicationFilter := monitor.CustomizeAlertRuleFilter{}
 		scopeApplicationFilter.Tag = "application_id"
 		scopeApplicationFilter.Operator = OperateIn
