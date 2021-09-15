@@ -20,3 +20,13 @@ mysql:
 
 metricq-client:
   endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
+
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
+etcd-election@initExtension:
+  root_path: erda/component-leader/dicehub/init_extension
