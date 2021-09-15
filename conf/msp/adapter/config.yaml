@@ -1,2 +1,64 @@
-stratege: {{strategy}}
-language: {{language}}
+- name: Jageger
+  language: Java
+  template:
+    JJ_content {{msp_env_id}}
+- name: Jageger
+  language: Golang
+  template:
+    JG_content {{msp_env_id}}
+- name: Jageger
+  language: PHP
+  template:
+    JP_content {{msp_env_id}}
+- name: Jageger
+  language: .NET Core
+  template:
+    JC_content {{msp_env_id}}
+- name: Jageger
+  language: Node.js
+  template:
+    JN_content {{msp_env_id}}
+- name: Java Agent
+  language: Java
+  template:
+    JAJ_content {{msp_env_id}}
+- name: Apache SkyWalking
+  language: Java
+  template:
+    ASJ_content {{msp_env_id}}
+- name: Apache SkyWalking
+  language: Golang
+  template:
+    ASG_content {{msp_env_id}}
+- name: Apache SkyWalking
+  language: PHP
+  template:
+    ASP_content {{msp_env_id}}
+- name: Apache SkyWalking
+  language: .NET Core
+  template:
+    ASC_content {{msp_env_id}}
+- name: Apache SkyWalking
+  language: Node.js
+  template:
+    ASN_content {{msp_env_id}}
+- name: OpenTelemetry
+  language: Java
+  template:
+    OJ_content {{msp_env_id}}
+- name: OpenTelemetry
+  language: Golang
+  template:
+    OG_content {{msp_env_id}}
+- name: OpenTelemetry
+  language: PHP
+  template:
+    OP_content {{msp_env_id}}
+- name: OpenTelemetry
+  language: .NET Core
+  template:
+    OC_content {{msp_env_id}}
+- name: OpenTelemetry
+  language: Node.js
+  template:
+    ON_content {{msp_env_id}}

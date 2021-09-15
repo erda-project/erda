@@ -17,8 +17,9 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"os"
 
-	config2 "github.com/recallsong/go-utils/config"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -27,6 +28,17 @@ import (
 
 type adapterService struct {
 	p *provider
+}
+
+const (
+	MSP_ENV_ID   = "msp_env_id"
+	EnvCollector = "COLLECTOR_ADDR"
+)
+
+type InstrumentationLibrary struct {
+	Name     string `json:"name"`
+	Language string `json:"language"`
+	Template string `json:"template"`
 }
 
 func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request *pb.GetInstrumentationLibraryRequest) (*pb.GetInstrumentationLibraryResponse, error) {
@@ -55,16 +67,32 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 }
 
 func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, request *pb.GetInstrumentationLibraryDocsRequest) (*pb.GetInstrumentationLibraryDocsResponse, error) {
-	data, err := config2.LoadFile(s.p.configFile)
 	renderMap := map[string]string{
-		"language": request.Language,
-		"strategy": request.Strategy,
+		MSP_ENV_ID:   request.ScopeId,
+		EnvCollector: os.Getenv(EnvCollector),
 	}
-	configFile := template.Render(string(data), renderMap)
+	file, err := os.Open(s.p.configFile)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	defer file.Close()
+	decode := yaml.NewDecoder(file)
+	libraryArr := make([]InstrumentationLibrary, 0)
+	err = decode.Decode(&libraryArr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	var data string
+	for _, v := range libraryArr {
+		if v.Language == request.Language && v.Name == request.Strategy {
+			data = template.Render(v.Template, renderMap)
+		}
+	}
 	return &pb.GetInstrumentationLibraryDocsResponse{
-		Data: configFile,
+		Data: data,
 	}, nil
 }
