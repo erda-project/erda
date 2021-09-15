@@ -187,6 +187,7 @@ i18n@metric:
 http-server@admin:
   addr: ":7098"
 pprof:
+prometheus:
 
 alert-storage:
   input:

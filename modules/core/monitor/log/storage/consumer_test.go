@@ -83,7 +83,7 @@ func Test_provider_invokeV2(t *testing.T) {
 		Offset:    1024,
 		Timestamp: time.Now().UnixNano(),
 		Content:   "hello world",
-		Tags:      map[string]string{"level": "INFO"},
+		Tags:      map[string]string{"level": "INFO", diceOrgNameKey: "abc"},
 	}
 
 	value, err := json.Marshal(log)
@@ -100,6 +100,14 @@ func Test_provider_invokeV2(t *testing.T) {
 	// bad value
 	err = mp.invoke(nil, []byte(`bad value`), nil, time.Now())
 	ass.Error(err)
+
+	// log invalid
+	mw = &mockWriter{}
+	mp.output = mw
+	mp.schema = &mockLogSchema{validateOrgTriggered: true}
+	err = mp.invoke(nil, value, nil, time.Now())
+	ass.Nil(err)
+	ass.Empty(mw.datas)
 }
 
 type mockWriter struct {

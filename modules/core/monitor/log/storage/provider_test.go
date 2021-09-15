@@ -16,30 +16,21 @@ package storage
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bluele/gcache"
 	"github.com/gocql/gocql"
 	"github.com/jinzhu/gorm"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda-infra/providers/kafka"
 )
-
-func Test_provider_Init(t *testing.T) {
-	mp := mockProvider()
-	err := mp.Init(&mockContext{
-		l: logrusx.New(),
-	})
-	assert.Nil(t, err)
-}
 
 type mockContext struct {
 	servicehub.Context
@@ -172,5 +163,26 @@ func mockProvider() *provider {
 	p.ttl = mockMysqlStore()
 	p.Mysql = newMockMysql()
 	p.Log = logrusx.New()
+	p.schema = &mockLogSchema{}
 	return p
+}
+
+type mockLogSchema struct {
+	validateOrgTriggered bool
+}
+
+func (m *mockLogSchema) Name() string {
+	return ""
+}
+
+func (m *mockLogSchema) RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface) {
+	return
+}
+
+func (m *mockLogSchema) CreateDefault() error {
+	return nil
+}
+
+func (m *mockLogSchema) ValidateOrg(orgName string) bool {
+	return !m.validateOrgTriggered
 }
