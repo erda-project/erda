@@ -108,7 +108,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 
 	t := ctx.SDK.Pipeline.TimeEnd.Sub(*ctx.SDK.Pipeline.TimeBegin)
-	executeDuration := strconv.FormatInt(int64(t.Hours()), 10) + ":" +time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05")
+	executeDuration := strconv.FormatInt(int64(t.Hours()), 10) + ":" + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05")
 	if t.Hours() < 10 {
 		executeDuration = "0" + executeDuration
 	}
