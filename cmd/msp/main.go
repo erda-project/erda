@@ -27,7 +27,6 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
-	_ "github.com/erda-project/erda/modules/msp/apm/adapter"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/apis"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/plugins/certificate"
@@ -40,6 +39,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/fixed"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/scheduled"
 	_ "github.com/erda-project/erda/modules/msp/apm/exception"
+	_ "github.com/erda-project/erda/modules/msp/apm/instrumentationlibrary"
 	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"

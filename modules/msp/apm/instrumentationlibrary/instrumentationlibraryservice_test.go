@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapter
+package instrumentationlibrary
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
-////go:generate mockgen -destination=./adapter_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
-////go:generate mockgen -destination=./adapter_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./instrumentationLibraryService_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
+////go:generate mockgen -destination=./instrumentationLibraryService_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
 func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -38,7 +38,7 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 		},
 		Log:            logger,
 		Register:       nil,
-		adapterService: &adapterService{},
+		adapterService: &instrumentationLibraryService{},
 		libraryMap: map[string]interface{}{
 			"Java Agent":        []interface{}{"Java"},
 			"Apache SkyWalking": []interface{}{"Java"},
@@ -64,7 +64,7 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 		},
 		Log:            logger,
 		Register:       nil,
-		adapterService: &adapterService{},
+		adapterService: &instrumentationLibraryService{},
 		libraryMap: map[string]interface{}{
 			"Java Agent":        []interface{}{"Java"},
 			"Apache SkyWalking": []interface{}{"Java"},

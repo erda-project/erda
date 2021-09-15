@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapter
+package instrumentationlibrary
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/pkg/template"
 )
 
-type adapterService struct {
+type instrumentationLibraryService struct {
 	p *provider
 }
 
@@ -41,7 +41,7 @@ type InstrumentationLibrary struct {
 	Template string `json:"template"`
 }
 
-func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request *pb.GetInstrumentationLibraryRequest) (*pb.GetInstrumentationLibraryResponse, error) {
+func (s *instrumentationLibraryService) GetInstrumentationLibrary(ctx context.Context, request *pb.GetInstrumentationLibraryRequest) (*pb.GetInstrumentationLibraryResponse, error) {
 	result := &pb.GetInstrumentationLibraryResponse{
 		Data: make([]*pb.InstrumentationLibrary, 0),
 	}
@@ -66,7 +66,7 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 	return result, nil
 }
 
-func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, request *pb.GetInstrumentationLibraryDocsRequest) (*pb.GetInstrumentationLibraryDocsResponse, error) {
+func (s *instrumentationLibraryService) GetInstrumentationLibraryDocs(ctx context.Context, request *pb.GetInstrumentationLibraryDocsRequest) (*pb.GetInstrumentationLibraryDocsResponse, error) {
 	renderMap := map[string]string{
 		MSP_ENV_ID:   request.ScopeId,
 		EnvCollector: os.Getenv(EnvCollector),

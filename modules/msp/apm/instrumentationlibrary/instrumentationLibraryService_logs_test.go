@@ -2,7 +2,7 @@
 // Source: github.com/erda-project/erda-infra/base/logs (interfaces: Logger)
 
 // Package exporter is a generated GoMock package.
-package adapter
+package instrumentationlibrary
 
 import (
 	reflect "reflect"

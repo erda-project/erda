@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapter
+package instrumentationlibrary
 
 import (
 	"io/ioutil"
@@ -36,13 +36,13 @@ type provider struct {
 	Cfg            *config
 	Log            logs.Logger
 	Register       transport.Register
-	adapterService *adapterService
+	adapterService *instrumentationLibraryService
 	libraryMap     map[string]interface{}
 	configFile     string
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.adapterService = &adapterService{p}
+	p.adapterService = &instrumentationLibraryService{p}
 	p.libraryMap = make(map[string]interface{})
 	for _, file := range p.Cfg.Library {
 		//reconfig.LoadToMap(file, p.libraryMap)
