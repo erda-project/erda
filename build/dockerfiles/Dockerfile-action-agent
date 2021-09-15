@@ -10,7 +10,7 @@ COPY . /go/src/github.com/erda-project/erda/
 WORKDIR /go/src/github.com/erda-project/erda/
 
 RUN set -x \
-	&& eval "GOOS=linux GOARCH=amd64 go build -mod=vendor $BUILD_FLAGS -o /opt/action/agent ./cmd/actionagent"
+	&& eval "GOOS=linux GOARCH=amd64 go build -mod=readonly $BUILD_FLAGS -o /opt/action/agent ./cmd/actionagent"
 
 RUN md5sum /opt/action/agent | cut -d ' ' -f1 > /opt/action/action-agent-md5 && cat /opt/action/action-agent-md5
 
