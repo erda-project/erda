@@ -61,7 +61,7 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	}
 	nf.Props = nf.GetFilterProps(labels)
 	switch event.Operation {
-	case common.CMPDashboardFilterOperationKey:
+	case common.CMPDashboardFilterOperationKey, common.CMPDashboardTableTabs, cptype.RenderingOperation:
 		if err := common.Transfer(c.State, &nf.State); err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 		// Filter by node name
 		if nodeNameFilter != "" {
 			for _, node := range nodeList {
-				if strings.Contains(node.String("metadata", "name"), nodeNameFilter) || strings.Contains(node.String("id"), nodeNameFilter) {
+				if strings.Contains(node.String("metadata", "name"), nodeNameFilter) || strings.Contains(node.StringSlice("metadata", "fields")[5], nodeNameFilter) {
 					nodes = append(nodes, node)
 				}
 			}

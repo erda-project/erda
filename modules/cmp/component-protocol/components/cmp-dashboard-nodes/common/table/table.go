@@ -112,6 +112,7 @@ type Operation struct {
 	Key           string      `json:"key,omitempty"`
 	Reload        bool        `json:"reload"`
 	FillMeta      string      `json:"fillMeta,omitempty"`
+	Confirm       string      `json:"confirm"`
 	Target        string      `json:"target,omitempty"`
 	Meta          interface{} `json:"meta,omitempty"`
 	ClickableKeys interface{} `json:"clickableKeys,omitempty"`
@@ -221,8 +222,13 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	for _, s := range strings.Split(node.StringSlice("metadata", "fields")[1], ",") {
 		strs = append(strs, t.SDK.I18n(s))
 	}
+	for _, conf := range node.Slice("status", "conditions") {
+		if conf.String("type") != "Ready" && conf.String("status") != "False" {
+			strs = append(strs, t.SDK.I18n(conf.String("type")))
+		}
+	}
 	ss.Value = strings.Join(strs, ",")
-	if node.StringSlice("metadata", "fields")[1] == "Ready" {
+	if len(strs) == 1 && strs[0] == t.SDK.I18n("Ready") {
 		ss.Status = "success"
 	} else {
 		ss.Status = "error"
@@ -364,7 +370,7 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 			return nil, err
 		}
 		nodes = resp.Slice("data")
-		nodeFilter.DoFilter(nodes, t.State.Values)
+		nodes = nodeFilter.DoFilter(nodes, t.State.Values)
 	} else {
 		nodes = (*gs)["nodes"].([]data.Object)
 	}
@@ -429,14 +435,16 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 			Reload: true,
 		},
 		"cordon": {
-			Key:    "cordon",
-			Reload: true,
-			Text:   t.SDK.I18n("cordon"),
+			Key:     "cordon",
+			Reload:  true,
+			Confirm: t.SDK.I18n("cordon confirm"),
+			Text:    t.SDK.I18n("cordon"),
 		},
 		"uncordon": {
-			Key:    "uncordon",
-			Text:   t.SDK.I18n("uncordon"),
-			Reload: true,
+			Key:     "uncordon",
+			Confirm: t.SDK.I18n("uncordon confirm"),
+			Text:    t.SDK.I18n("uncordon"),
+			Reload:  true,
 		},
 	}
 	res := map[string]interface{}{}

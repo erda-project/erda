@@ -52,18 +52,14 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	for l := range labels {
 		if strings.HasPrefix(l, "dice/org-") && strings.HasSuffix(l, "=true") {
 			enterprise = append(enterprise, l)
-
 			continue
 		}
-		i := 0
 		for _, dl := range DefaultLabels {
 			if dl == l {
 				break
 			}
 		}
-		if i == len(DefaultLabels) {
-			custom = append(custom, l)
-		}
+		custom = append(custom, l)
 	}
 	sort.Slice(enterprise, func(i, j int) bool {
 		return enterprise[i] < enterprise[j]

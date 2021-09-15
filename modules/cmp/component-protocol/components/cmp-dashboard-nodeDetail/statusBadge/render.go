@@ -50,10 +50,10 @@ func (statusBadge *StatusBadge) Render(ctx context.Context, c *cptype.Component,
 	bars := make([]Bar, 0)
 	for k, v := range statuses {
 		bars = append(bars, Bar{
-			Text:   k,
-			Status: v[0],
-			withBg: true,
-			Tip:    v[1],
+			Text:    k,
+			Status:  v[0],
+			WhiteBg: true,
+			Tip:     statusBadge.SDK.I18n(v[1]) + "(" + v[1] + ")",
 		})
 	}
 	c.Data = map[string]interface{}{"list": bars}
