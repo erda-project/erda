@@ -33,8 +33,8 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 	//register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
-			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
-			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+			Library:    []string{"./../../../../conf/msp/instrumentationlibrary/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/instrumentationlibrary/config.yaml"},
 		},
 		Log:            logger,
 		Register:       nil,
@@ -43,7 +43,7 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 			"Java Agent":        []interface{}{"Java"},
 			"Apache SkyWalking": []interface{}{"Java"},
 		},
-		configFile: "./../../../../conf/msp/adapter/config.yaml",
+		configFile: "./../../../../conf/msp/instrumentationlibrary/config.yaml",
 	}
 	pro.adapterService.p = pro
 	_, err := pro.adapterService.GetInstrumentationLibrary(context.Background(), &pb.GetInstrumentationLibraryRequest{})
@@ -59,8 +59,8 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 	//register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
-			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
-			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+			Library:    []string{"./../../../../conf/msp/instrumentationlibrary/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/instrumentationlibrary/config.yaml"},
 		},
 		Log:            logger,
 		Register:       nil,
@@ -69,7 +69,7 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 			"Java Agent":        []interface{}{"Java"},
 			"Apache SkyWalking": []interface{}{"Java"},
 		},
-		configFile: "./../../../../conf/msp/adapter/config.yaml",
+		configFile: "./../../../../conf/msp/instrumentationlibrary/config.yaml",
 	}
 	pro.adapterService.p = pro
 	_, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
