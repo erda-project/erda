@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -52,7 +53,7 @@ type ChartInterface interface {
 	ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error
 }
 
-func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
+func (cht Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	//var allocatableTotal, capacityTotal, unAllocatableTotal float64
 	resourceType := resource.DecimalSI
 	if resourceName == Memory {
@@ -79,9 +80,9 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 
 	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
 	if resourceName == CPU {
-		allocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("cores"), allocatableQuantityValue/1000)
-		capacityStr = fmt.Sprintf("%.1f"+c.SDK.I18n("cores"), capacityQuantityValue/1000)
-		unAllocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("cores"), unAllocatableQuantityValue/1000)
+		allocatableStr = fmt.Sprintf("%.1f"+cht.SDK.I18n("cores"), allocatableQuantityValue/1000)
+		capacityStr = fmt.Sprintf("%.1f"+cht.SDK.I18n("cores"), capacityQuantityValue/1000)
+		unAllocatableStr = fmt.Sprintf("%.1f"+cht.SDK.I18n("cores"), unAllocatableQuantityValue/1000)
 	}
 
 	var di []DataItem
@@ -91,7 +92,7 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	} else {
 		di = append(di, DataItem{
 			Value: allocatableQuantityValue,
-			Name:  c.SDK.I18n(Allocated),
+			Name:  cht.SDK.I18n(Allocated),
 			Label: Label{Formatter: distributedDesc},
 		})
 	}
@@ -101,7 +102,7 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	} else {
 		di = append(di, DataItem{
 			Value: capacityQuantityValue,
-			Name:  c.SDK.I18n(Free_Allocate),
+			Name:  cht.SDK.I18n(Free_Allocate),
 			Label: Label{Formatter: freeDesc},
 		})
 	}
@@ -111,7 +112,7 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 	} else {
 		di = append(di, DataItem{
 			Value: unAllocatableQuantityValue,
-			Name:  c.SDK.I18n(Cannot_Allocate),
+			Name:  cht.SDK.I18n(Cannot_Allocate),
 			Label: Label{Formatter: lockedDesc},
 		})
 	}
@@ -155,12 +156,12 @@ func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario
 	var nodes []data.Object
 	nodes = (*gs)["nodes"].([]data.Object)
 	cht.Props.Option.Series[0].Data = cht.setData(nodes, ResourceType)
-	c.Props = cht.Props
-	return nil
+	return common.Transfer(cht.Props, &c.Props)
 }
 
 type Props struct {
 	Option Option `json:"option"`
+	Title  string `json:"title"`
 	Style  Style  `json:"style"`
 }
 
@@ -169,7 +170,6 @@ type Option struct {
 	Legend Legend   `json:"legend"`
 	Grid   Grid     `json:"grid"`
 	Series []Serie  `json:"series"`
-	Title  Title    `json:"title"`
 }
 
 type Title struct {
@@ -212,23 +212,23 @@ type Label struct {
 	Formatter string `json:"formatter"`
 }
 
-func (c *Chart) GetProps(name string) Props {
-	return Props{Option: Option{
-		Color:  []string{"orange", "green", "red"},
-		Legend: Legend{Data: []string{c.SDK.I18n(Allocated), c.SDK.I18n(Cannot_Allocate), c.SDK.I18n(Free_Allocate)}, Bottom: "0"},
-		Grid: Grid{
-			Bottom:       0,
-			Top:          0,
-			ContainLabel: true,
+func (cht *Chart) GetProps(name string) Props {
+	return Props{
+		Title: name,
+		Option: Option{
+			Color:  []string{"yellow", "green", "red"},
+			Legend: Legend{Data: []string{cht.SDK.I18n(Allocated), cht.SDK.I18n(Cannot_Allocate), cht.SDK.I18n(Free_Allocate)}, Bottom: "0"},
+			Grid: Grid{
+				Bottom:       0,
+				Top:          0,
+				ContainLabel: true,
+			},
+			Series: []Serie{{
+				Type:   "pie",
+				Radius: "60%",
+				Data:   nil,
+			}},
 		},
-		Series: []Serie{{
-			Type:   "pie",
-			Radius: "60%",
-			Data:   nil,
-		}},
-		Title: Title{
-			Text:      name,
-			TextStyle: TextStyle{FrontSize: 14},
-		},
-	}, Style: Style{Flex: 1}}
+		Style: Style{Flex: 1},
+	}
 }
