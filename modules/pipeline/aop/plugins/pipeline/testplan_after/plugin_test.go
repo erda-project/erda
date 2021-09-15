@@ -17,9 +17,11 @@ package testplan_after
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -90,12 +92,13 @@ func Test_sendMessage(t *testing.T) {
 	p := &provider{
 		Bundle: bdl,
 	}
+	tm := time.Now()
 	req := testplanpb.Content{
-		TestPlanID:     1,
-		ExecuteTime:    "2020-10-10 11:11:11",
-		PassRate:       10,
-		ExecuteMinutes: 1,
-		ApiTotalNum:    100,
+		TestPlanID:      1,
+		ExecuteTime:     timestamppb.New(tm),
+		PassRate:        10,
+		ExecuteDuration: "11:11:11",
+		ApiTotalNum:     100,
 	}
 	want := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{

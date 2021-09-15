@@ -102,14 +102,29 @@ func Test_Render(t *testing.T) {
 					PassRate: 0,
 				},
 			}
-
+			if req.OrderBy == "execute_api_num" {
+				if req.Asc == true {
+					list[0].ExecuteApiNum = 1
+					list[1].ExecuteApiNum = 2
+				} else {
+					list[0].ExecuteApiNum = 2
+					list[1].ExecuteApiNum = 1
+				}
+			}
 			return &apistructs.TestPlanV2PagingResponseData{
 				List: list,
 			}, nil
 		})
 	defer monkey.UnpatchAll()
 	p := &TestPlanManageTable{}
-	c := &apistructs.Component{}
+	c := &apistructs.Component{
+		State: map[string]interface{}{
+			"sorterData": SortData{
+				Field: "executeApiNum",
+				Order: OrderAscend,
+			},
+		},
+	}
 	gs := &apistructs.GlobalStateData{}
 	err := p.Render(ctx, c, apistructs.ComponentProtocolScenario{},
 		apistructs.ComponentEvent{
@@ -119,8 +134,9 @@ func Test_Render(t *testing.T) {
 	assert.NoError(t, err)
 	list := c.Data["list"].([]TableItem)
 	want := []string{"10", "0"}
+	wantExecuteApiNum := []string{"1", "2"}
 	for i := range list {
 		assert.Equal(t, list[i].PassRate.Value, want[i])
+		assert.Equal(t, list[i].ExecuteApiNum, wantExecuteApiNum[i])
 	}
-
 }
