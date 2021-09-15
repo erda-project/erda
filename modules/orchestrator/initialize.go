@@ -74,9 +74,12 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	// Limit only one instance of scheduler to do the cron jobs
 	p.Election.OnLeader(func(ctx context.Context) {
 		logrus.Infof("i'm the leader now")
-		_ = initCron(ep, ctx)
+		_ = initLeaderCron(ep, ctx)
 		logrus.Infof("i resign the leader now")
 	})
+
+	// start cron jobs to sync addon & project infos
+	go initCron(ep, ctx)
 
 	return nil
 }
@@ -188,22 +191,14 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 	return ep, nil
 }
 
-// 初始化定时任务
-func initCron(ep *endpoints.Endpoints, ctx context.Context) error {
+// 初始化 leader 定时任务, 单实例执行
+func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	// cron for pushOn deployment
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeploymentPolling)
 	go loop.New(loop.WithContext(ctx), loop.WithDeclineRatio(1.2), loop.WithInterval(50*time.Millisecond),
 		loop.WithDeclineLimit(3*time.Second)).Do(ep.PushOnDeployment)
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeletingRuntimesPolling)
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(2*time.Second)).Do(ep.PushOnDeletingRuntimes)
-
-	go ep.SyncAddons()
-	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddons)
-
-	//go loop.New(loop.WithContext(ctx), loop.WithInterval(10 * time.Minute)).Do(ep.RemoveAddons)
-
-	go ep.SyncProjects()
-	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncProjects)
 
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddonReferenceNum)
 
@@ -217,4 +212,18 @@ func initCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	ep.FullGCLoop(ctx)
 
 	return nil
+}
+
+type SharedCronjobRunner interface {
+	SyncAddons() (bool, error)
+	SyncProjects() (bool, error)
+}
+
+// 初始化定时任务
+func initCron(ep SharedCronjobRunner, ctx context.Context) {
+	go ep.SyncAddons()
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddons)
+	go ep.SyncProjects()
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncProjects)
+	<-ctx.Done()
 }
