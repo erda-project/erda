@@ -14,14 +14,16 @@
 
 package actionagent
 
-func (agent *Agent) PreStop() {
-	// TODO invoke /opt/action/pre-stop
+import (
+	"context"
+	"testing"
+)
 
-	go agent.stopWatchFiles()
-
-	// 打包目录并上传
-	agent.uploadDir()
-
-	// agent cancel context to stop other running things
-	agent.Cancel()
+func TestAgent_PreStop(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	agent := Agent{
+		Ctx:    ctx,
+		Cancel: cancel,
+	}
+	agent.PreStop()
 }
