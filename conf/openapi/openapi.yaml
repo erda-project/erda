@@ -38,9 +38,6 @@ openapi-interceptor-auth-session-compatibility:
 openapi-interceptor-user-info:
   order: 900
 
-openapi-interceptor-audit:
-  order: 1000
-
 openapi-auth:
 openapi-auth-ory-kratos:
   _enable: ${ORY_ENABLED:false}
@@ -117,6 +114,3 @@ http-server@admin:
   _enable: ${OPENAPI_DEV_MODE:false}
   addr: ":9432"
   reloadable: ${OPENAPI_DEV_MODE:false}
-
-
-  

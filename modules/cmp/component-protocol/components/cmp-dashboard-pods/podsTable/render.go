@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -99,7 +100,7 @@ func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) erro
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	queryData, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := p.sdk.InParams["podsTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
@@ -151,7 +152,24 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}
 	list := obj.Slice("data")
 
+	cpuReq := apistructs.MetricsRequest{
+		UserID:       userID,
+		OrgID:        orgID,
+		ClusterName:  p.State.ClusterName,
+		ResourceKind: metrics.Pod,
+		ResourceType: metrics.Cpu,
+	}
+	memReq := apistructs.MetricsRequest{
+		UserID:       userID,
+		OrgID:        orgID,
+		ClusterName:  p.State.ClusterName,
+		ResourceKind: metrics.Pod,
+		ResourceType: metrics.Memory,
+	}
+
 	p.State.CountValues = make(map[string]int)
+	tempCPULimits := make([]*resource.Quantity, 0)
+	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
 	for _, obj := range list {
 		name := obj.String("metadata", "name")
@@ -175,6 +193,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
+		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
+			PodName:   name,
+			Namespace: namespace,
+		})
+		memReq.PodRequests = append(memReq.PodRequests, apistructs.MetricsPodRequest{
+			PodName:   name,
+			Namespace: namespace,
+		})
 		p.State.CountValues[fields[2]]++
 		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
@@ -189,39 +215,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
-		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		memStatus, memValue, memTip := "success", "0", "N/A"
-		if fields[2] != "Completed" && fields[2] != "Error" {
-			req := apistructs.MetricsRequest{
-				UserID:       userID,
-				OrgID:        orgID,
-				ClusterName:  p.State.ClusterName,
-				ResourceKind: "pod",
-				Names:        []string{name},
-			}
-			req.ResourceType = metrics.Cpu
-			usedCPUPercent := 0.0
-			cpuMetrics, err := p.bdl.GetMetrics(req)
-			if err != nil {
-				logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
-			}
-			if err == nil && len(cpuMetrics) != 0 {
-				usedCPUPercent = cpuMetrics[0].Used
-			}
-			cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, cpuLimits, "cpu")
-
-			// mem
-			req.ResourceType = metrics.Memory
-			usedMemPercent := 0.0
-			memMetrics, err := p.bdl.GetMetrics(req)
-			if err != nil {
-				logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
-			}
-			if err == nil && len(memMetrics) != 0 {
-				usedMemPercent = memMetrics[0].Used
-			}
-			memStatus, memValue, memTip = parseResPercent(usedMemPercent, memLimits, "mem")
+		cpuRequestStr := cmpcputil.ResourceToString(p.sdk, float64(cpuRequests.MilliValue()), resource.DecimalSI)
+		if cpuRequests.MilliValue() == 0 {
+			cpuRequestStr = "-"
 		}
+		cpuLimitsStr := cmpcputil.ResourceToString(p.sdk, float64(cpuLimits.MilliValue()), resource.DecimalSI)
+		if cpuLimits.MilliValue() == 0 {
+			cpuLimitsStr = "-"
+		}
+		memRequestsStr := cmpcputil.ResourceToString(p.sdk, float64(memRequests.Value()), resource.BinarySI)
+		if memRequests.Value() == 0 {
+			memRequestsStr = "-"
+		}
+		memLimitsStr := cmpcputil.ResourceToString(p.sdk, float64(memLimits.Value()), resource.BinarySI)
+		if memLimits.Value() == 0 {
+			memLimitsStr = "-"
+		}
+
+		tempCPULimits = append(tempCPULimits, cpuLimits)
+		tempMemLimits = append(tempMemLimits, memLimits)
+
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
 			Status: status,
@@ -248,27 +261,55 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:   namespace,
-			IP:          fields[5],
-			CPURequests: cpuRequests.String(),
-			CPUPercent: Percent{
-				RenderType: "progress",
-				Value:      cpuValue,
-				Tip:        cpuTip,
-				Status:     cpuStatus,
-			},
-			CPULimits:      cpuLimits.String(),
-			MemoryRequests: memRequests.String(),
-			MemoryPercent: Percent{
-				RenderType: "progress",
-				Value:      memValue,
-				Tip:        memTip,
-				Status:     memStatus,
-			},
-			MemoryLimits: memLimits.String(),
-			Ready:        fields[1],
-			Node:         fields[6],
+			Namespace:         namespace,
+			IP:                fields[5],
+			CPURequests:       cpuRequestStr,
+			CPURequestsNum:    cpuRequests.MilliValue(),
+			CPULimits:         cpuLimitsStr,
+			CPULimitsNum:      cpuLimits.MilliValue(),
+			MemoryRequests:    memRequestsStr,
+			MemoryRequestsNum: memRequests.Value(),
+			MemoryLimits:      memLimitsStr,
+			MemoryLimitsNum:   memLimits.Value(),
+			Ready:             fields[1],
+			Node:              fields[6],
 		})
+	}
+
+	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
+	if err != nil || len(cpuMetrics) == 0 {
+		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
+		cpuMetrics = make([]apistructs.MetricsData, len(items), len(items))
+	}
+	memMetrics, err := p.bdl.GetMetrics(memReq)
+	if err != nil || len(memMetrics) == 0 {
+		logrus.Errorf("failed to get memory metrics for pods, %v", err)
+		memMetrics = make([]apistructs.MetricsData, len(items), len(items))
+	}
+
+	for i := range items {
+		cpuLimits := tempCPULimits[i]
+		memLimits := tempMemLimits[i]
+
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		usedCPUPercent := cpuMetrics[i].Used
+		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+		items[i].CPUPercent = Percent{
+			RenderType: "progress",
+			Value:      cpuValue,
+			Tip:        cpuTip,
+			Status:     cpuStatus,
+		}
+
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		usedMemPercent := memMetrics[i].Used
+		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
+		items[i].MemoryPercent = Percent{
+			RenderType: "progress",
+			Value:      memValue,
+			Tip:        memTip,
+			Status:     memStatus,
+		}
 	}
 
 	if p.State.Sorter.Field != "" {
@@ -309,9 +350,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "cpuRequests":
 				return func(i int, j int) bool {
-					cpuI, _ := resource.ParseQuantity(items[i].CPURequests)
-					cpuJ, _ := resource.ParseQuantity(items[j].CPURequests)
-					less := cpuI.Cmp(cpuJ) < 0
+					less := items[i].CPURequestsNum < items[j].CPURequestsNum
 					if ascend {
 						return less
 					}
@@ -329,9 +368,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "cpuLimits":
 				return func(i int, j int) bool {
-					cpuI, _ := resource.ParseQuantity(items[i].CPULimits)
-					cpuJ, _ := resource.ParseQuantity(items[j].CPULimits)
-					less := cpuI.Cmp(cpuJ) < 0
+					less := items[i].CPULimitsNum < items[j].CPULimitsNum
 					if ascend {
 						return less
 					}
@@ -339,9 +376,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "memoryRequests":
 				return func(i int, j int) bool {
-					memI, _ := resource.ParseQuantity(items[i].MemoryRequests)
-					memJ, _ := resource.ParseQuantity(items[j].MemoryRequests)
-					less := memI.Cmp(memJ) < 0
+					less := items[i].MemoryRequestsNum < items[j].MemoryRequestsNum
 					if ascend {
 						return less
 					}
@@ -359,9 +394,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "memoryLimits":
 				return func(i int, j int) bool {
-					memI, _ := resource.ParseQuantity(items[i].MemoryLimits)
-					memJ, _ := resource.ParseQuantity(items[j].MemoryLimits)
-					less := memI.Cmp(memJ) < 0
+					less := items[i].MemoryLimitsNum < items[j].MemoryLimitsNum
 					if ascend {
 						return less
 					}
@@ -402,20 +435,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 	return nil
 }
 
-func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string) (string, string, string) {
+func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
 	var totRes int64
-	if kind == "cpu" {
+	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
 	} else {
 		totRes = totQty.Value()
 	}
-	usedRes := int64(float64(totRes) * usedPercent / 100)
-	var usedQty *resource.Quantity
-	if kind == "cpu" {
-		usedQty = resource.NewMilliQuantity(usedRes, resource.DecimalSI)
-	} else {
-		usedQty = resource.NewQuantity(usedRes, resource.BinarySI)
-	}
+	usedRes := float64(totRes) * usedPercent / 100
+	usedQtyString := cmpcputil.ResourceToString(p.sdk, usedRes, format)
+
 	status := ""
 	if usedPercent <= 80 {
 		status = "success"
@@ -424,7 +453,19 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
+
+	tip := ""
+	if format == resource.DecimalSI {
+		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
+	} else {
+		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
+	}
+	value := fmt.Sprintf("%.2f", usedPercent)
+	if usedRes < 1e-8 {
+		tip = "N/A"
+		value = "N/A"
+	}
+	return status, value, tip
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
@@ -538,7 +579,7 @@ var PodStatusToColor = map[string]string{
 	"Evicted":           "darkgoldenrod",
 	"ImagePullBackOff":  "darksalmon",
 	"Pending":           "teal",
-	"Running":           "lightgreen",
+	"Running":           "green",
 	"Terminating":       "brown",
 }
 

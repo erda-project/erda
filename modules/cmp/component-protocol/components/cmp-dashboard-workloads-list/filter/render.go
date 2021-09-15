@@ -43,16 +43,15 @@ func init() {
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	f.InitComponent(ctx)
+	if err := f.GenComponentState(component); err != nil {
+		return fmt.Errorf("failed to gen filter component state, %v", err)
+	}
 	if event.Operation == cptype.InitializeOperation {
 		if _, ok := f.sdk.InParams["filter__urlQuery"]; !ok {
 			f.State.Values.Namespace = []string{"default"}
+		} else if err := f.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for filter component, %v", err)
 		}
-	}
-	if err := f.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for filter component, %v", err)
-	}
-	if err := f.GenComponentState(component); err != nil {
-		return fmt.Errorf("failed to gen filter component state, %v", err)
 	}
 	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)
@@ -71,33 +70,33 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decodeData, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
 
 	var values Values
-	if err := json.Unmarshal(decode, &values); err != nil {
+	if err := json.Unmarshal(decodeData, &values); err != nil {
 		return err
 	}
 	f.State.Values = values
 	return nil
 }
 
-func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	f.State = state
@@ -134,8 +133,8 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Value: "workspace-staging",
 	}
 	productionNs := Option{
-		Label: cputil.I18n(ctx, "workspace-production"),
-		Value: "workspace-production",
+		Label: cputil.I18n(ctx, "workspace-prod"),
+		Value: "workspace-prod",
 	}
 	addonNs := Option{
 		Label: cputil.I18n(ctx, "addons"),
@@ -208,7 +207,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Type:       "select",
 		Fixed:      true,
 	}
-	for _, option := range []Option{devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, defaultNs, systemNs, otherNs} {
+	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, otherNs} {
 		if option.Children != nil {
 			sort.Slice(option.Children, func(i, j int) bool {
 				return option.Children[i].Label < option.Children[j].Label
@@ -289,21 +288,21 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
+	jsonData, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	f.State.FilterURLQuery = encode
+	encodeData := base64.StdEncoding.EncodeToString(jsonData)
+	f.State.FilterURLQuery = encodeData
 	return nil
 }
 
 func hasSuffix(name string) (string, bool) {
-	suffixes := []string{"-dev", "-staging", "-test", "-prod"}
-	for _, suffix := range suffixes {
-		if strings.HasSuffix(name, suffix) {
-			return suffix, true
+	targetSuffixes := []string{"-dev", "-staging", "-test", "-prod"}
+	for _, s := range targetSuffixes {
+		if strings.HasSuffix(name, s) {
+			return s, true
 		}
 	}
 	return "", false

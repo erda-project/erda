@@ -78,7 +78,7 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 
 	// --- repo info ---
 	repo := gittarutil.NewRepo(discover.Gittar(), app.GitRepoAbbrev)
-	commit, err := repo.GetCommit(req.Branch)
+	commit, err := repo.GetCommit(req.Branch, req.UserID)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarRepo.InternalError(err)
 	}
@@ -126,7 +126,7 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	switch req.PipelineYmlSource {
 	case apistructs.PipelineYmlSourceGittar:
 		// get yaml
-		f, err := repo.FetchFile(req.Branch, p.Extra.PipelineYmlNameV1)
+		f, err := repo.FetchFile(req.Branch, p.Extra.PipelineYmlNameV1, req.UserID)
 		if err != nil {
 			return nil, apierrors.ErrGetGittarRepoFile.InternalError(err)
 		}
@@ -224,7 +224,7 @@ func (s *PipelineSvc) MergePipelineYmlTasks(pipelineYml *pipelineyml.PipelineYml
 	}
 
 	// combine the task converted from yml with the task in the database
-	return ymlTasksMergeDBTasks(actionTasks, dbTasks), nil
+	return ymlTasksMergeDBTasks(operateActionTasks, dbTasks), nil
 }
 
 // generate task array according to yml structure
@@ -388,7 +388,7 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 		newStages = append(newStages, *stage)
 	}
 
-	_ = s.PreCheck(pipelineYml, p, newStages)
+	_ = s.PreCheck(pipelineYml, p, newStages, p.GetUserID())
 
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())

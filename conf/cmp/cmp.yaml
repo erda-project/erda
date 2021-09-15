@@ -8,6 +8,8 @@ component-protocol.components.cmp-dashboard-events-list.filter:
 component-protocol.components.cmp-dashboard-workloads-list.filter:
 component-protocol.components.cmp-dashboard-workloads-list.workloadChart:
 component-protocol.components.cmp-dashboard-workloads-list.workloadTable:
+component-protocol.components.cmp-dashboard-workloads-list.filterContainer:
+component-protocol.components.cmp-dashboard-workloads-list.chartContainer:
 component-protocol.components.cmp-dashboard-workloads-list.workloadTitle:
 component-protocol.components.cmp-dashboard-workload-detail.podsTable:
 component-protocol.components.cmp-dashboard-workload-detail.podsTableTitle:
@@ -22,6 +24,7 @@ component-protocol.components.cmp-dashboard-workload-detail.workloadTitle:
 component-protocol.components.cmp-dashboard-nodes.nodeFilter:
 component-protocol.components.cmp-dashboard-nodes.page:
 component-protocol.components.cmp-dashboard-nodes.charts:
+component-protocol.components.cmp-dashboard-nodes.cleanData:
 component-protocol.components.cmp-dashboard-nodes.tableTabsContainer:
 component-protocol.components.cmp-dashboard-nodes.addLabelModal:
 component-protocol.components.cmp-dashboard-nodes.tableTabs:
@@ -44,6 +47,9 @@ component-protocol.components.cmp-dashboard-nodeDetail.statusBadge:
 component-protocol.components.cmp-dashboard-nodeDetail.statusTitle:
 
 component-protocol.components.cmp-dashboard-pods.page:
+component-protocol.components.cmp-dashboard-pods.filterContainer:
+component-protocol.components.cmp-dashboard-pods.chartContainer:
+component-protocol.components.cmp-dashboard-pods.tableContainer:
 component-protocol.components.cmp-dashboard-pods.filter:
 component-protocol.components.cmp-dashboard-pods.podTitle:
 component-protocol.components.cmp-dashboard-pods.podDistribution:

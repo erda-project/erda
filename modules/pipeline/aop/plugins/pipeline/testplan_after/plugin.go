@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
@@ -106,11 +107,16 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		}
 	}
 
+	t := ctx.SDK.Pipeline.TimeEnd.Sub(*ctx.SDK.Pipeline.TimeBegin)
+	executeDuration := strconv.FormatInt(int64(t.Hours()), 10) + ":" + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05")
+	if t.Hours() < 10 {
+		executeDuration = "0" + executeDuration
+	}
 	var req = testplanpb.Content{
-		TestPlanID:     testPlanID,
-		ExecuteTime:    ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
-		ApiTotalNum:    int64(apiTotalNum),
-		ExecuteMinutes: ctx.SDK.Pipeline.TimeEnd.Sub(*ctx.SDK.Pipeline.TimeBegin).Minutes(),
+		TestPlanID:      testPlanID,
+		ExecuteTime:     timestamppb.New(*ctx.SDK.Pipeline.TimeBegin),
+		ApiTotalNum:     int64(apiTotalNum),
+		ExecuteDuration: executeDuration,
 	}
 
 	if apiTotalNum == 0 {
@@ -119,25 +125,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		req.PassRate = float64(apiSuccessNum) / float64(apiTotalNum) * 100
 	}
 
-	ev2 := &apistructs.EventCreateRequest{
-		EventHeader: apistructs.EventHeader{
-			Event:         bundle.AutoTestPlanExecuteEvent,
-			Action:        bundle.UpdateAction,
-			OrgID:         "-1",
-			ProjectID:     "-1",
-			ApplicationID: "-1",
-			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-		},
-		Sender:  bundle.SenderDOP,
-		Content: req,
-	}
-
-	// create event
-	if err := p.Bundle.CreateEvent(ev2); err != nil {
-		logrus.Warnf("failed to send autoTestPlan update event, (%v)", err)
-		return err
-	}
-	return nil
+	return p.sendMessage(req, ctx)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -187,4 +175,25 @@ func convertReport(pipelineID uint64, report spec.PipelineReport) (ApiReportMeta
 		return ApiReportMeta{}, err
 	}
 	return meta, nil
+}
+
+func (p *provider) sendMessage(req testplanpb.Content, ctx *aoptypes.TuneContext) error {
+	ev2 := &apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:         bundle.AutoTestPlanExecuteEvent,
+			Action:        bundle.UpdateAction,
+			OrgID:         ctx.SDK.Pipeline.Labels[apistructs.LabelOrgID],
+			ProjectID:     ctx.SDK.Pipeline.Labels[apistructs.LabelProjectID],
+			ApplicationID: "-1",
+			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
+		},
+		Sender:  bundle.SenderDOP,
+		Content: req,
+	}
+	// create event
+	if err := p.Bundle.CreateEvent(ev2); err != nil {
+		logrus.Warnf("failed to send autoTestPlan update event, (%v)", err)
+		return err
+	}
+	return nil
 }

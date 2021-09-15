@@ -17,8 +17,6 @@ package AddLabelModal
 import (
 	"context"
 	"errors"
-	"strconv"
-	"strings"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -61,16 +59,14 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 		if err != nil {
 			return err
 		}
+		alm.State.Visible = false
 	}
-	delete(*gs, "nodes")
 	return alm.SetComponentValue(c)
 }
 
 // SetComponentValue mapping properties to Component
 func (alm *AddLabelModal) SetComponentValue(c *cptype.Component) error {
-	var (
-		err error
-	)
+	var err error
 	if err = common.Transfer(alm.State, &c.State); err != nil {
 		return err
 	}
@@ -93,10 +89,6 @@ func (alm *AddLabelModal) getProps() {
 			ComponentProps: ComponentProps{
 				Options: []Option{
 					{
-						Name:  alm.SDK.I18n("platform"),
-						Value: "platform",
-					},
-					{
 						Name:  alm.SDK.I18n("env"),
 						Value: "environment",
 					},
@@ -115,20 +107,6 @@ func (alm *AddLabelModal) getProps() {
 					{
 						Name:  alm.SDK.I18n("custom"),
 						Value: "custom",
-					},
-				},
-			},
-		},
-		{
-			Key:            "platform",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "platform", Value: "platform=true"}}},
-			Label:          alm.SDK.I18n("label"),
-			Component:      "select",
-			Required:       true,
-			RemoveWhen: [][]RemoveWhen{
-				{
-					{
-						Field: "labelGroup", Operator: "!=", Value: "platform",
 					},
 				},
 			},
@@ -195,8 +173,8 @@ func (alm *AddLabelModal) getProps() {
 			Component: "input",
 			Required:  true,
 			Rules: Rules{
-				Msg:     alm.SDK.I18n("begin and end with character and number,include") + "( . / - _ )" + alm.SDK.I18n("e.g.") + "erda.com/label_example",
-				Pattern: "/^[a-zA-Z0-9][a-zA-Z0-9_\\/\\.-]*[a-zA-Z0-9]$/",
+				Msg:     "",
+				Pattern: "pattern: '/^[.a-z\\u4e00-\\u9fa5A-Z0-9_-\\s]*$/'",
 			},
 			RemoveWhen: [][]RemoveWhen{
 				{
@@ -209,11 +187,11 @@ func (alm *AddLabelModal) getProps() {
 		{
 			Component: "input",
 			Key:       "label_custom_value",
-			Label:     "标签value",
+			Label:     alm.SDK.I18n("label-value"),
 			Required:  true,
 			Rules: Rules{
-				Msg:     alm.SDK.I18n("begin and end with character and number,include") + "( . / - _ )" + alm.SDK.I18n("e.g.") + "erda.com/label_example",
-				Pattern: "/^[a-zA-Z0-9][a-zA-Z0-9_\\/\\.-]*[a-zA-Z0-9]$/",
+				Msg:     "",
+				Pattern: "/^[.a-z\\u4e00-\\u9fa5A-Z0-9_-\\s]*$/",
 			},
 			RemoveWhen: [][]RemoveWhen{
 				{
@@ -230,23 +208,6 @@ func (alm *AddLabelModal) getProps() {
 	}
 }
 
-func (alm *AddLabelModal) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := alm.CtxBdl.GetProject(uint64(num))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
-}
-
 func (alm *AddLabelModal) GetOperations() {
 	alm.Operations = map[string]Operations{
 		"submit": {
@@ -259,7 +220,7 @@ func (alm *AddLabelModal) GetOperations() {
 func (alm *AddLabelModal) GetState() {
 	alm.State = State{
 		Visible:  false,
-		FormData: nil,
+		FormData: map[string]string{},
 	}
 }
 

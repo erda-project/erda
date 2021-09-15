@@ -93,7 +93,7 @@ func TestInvoke_WithLogServicePattern_Should_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_env_id":  "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id":     "n4e4d034460114086b2a2b203312f5522",
 			"msp_log_attach": "",
 		},
 		log:    logger,
@@ -147,7 +147,7 @@ func TestInvoke_WithNoneExistsFilterKey_Should_Not_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_env_id":   "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id":      "n4e4d034460114086b2a2b203312f5522",
 			"_not_exist_key_": "",
 		},
 		log:    logger,
@@ -201,7 +201,7 @@ func TestInvoke_WithNoneMatchFilterKey_Should_Not_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_env_id":  "_not_exists_",
+			"msp_env_id":     "_not_exists_",
 			"msp_log_attach": "",
 		},
 		log:    logger,

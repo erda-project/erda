@@ -6,10 +6,149 @@
   "scopeId": "global",
   "viewConfig": [
     {
-      "w": 11,
-      "h": 9,
+      "h": 10,
+      "w": 24,
       "x": 0,
       "y": 0,
+      "i": "view-lVTYdASX",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filterServiceName": "{{serviceName}}",
+            "layer": "db",
+            "search": "{{search}}",
+            "serviceId": "{{serviceId}}",
+            "sort": "{{sort}}",
+            "start": "{{startTime}}",
+            "terminusKey": "{{terminusKey}}"
+          },
+          "url": "/api/apm/topology/translation/db"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "valueDimensions": [
+              {
+                "alias": "SQL 事务",
+                "i18n": {
+                  "alias": {
+                    "en": "SQL",
+                    "zh": "SQL 事务"
+                  }
+                },
+                "copy": true,
+                "width": 300,
+                "key": "operation",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "数据库类型",
+                "i18n": {
+                  "alias": {
+                    "en": "Database Type",
+                    "zh": "数据库类型"
+                  }
+                },
+                "key": "db_type",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "数据库实例",
+                "i18n": {
+                  "alias": {
+                    "en": "Database Instance",
+                    "zh": "数据库实例"
+                  }
+                },
+                "key": "db_instance",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "数据库地址",
+                "i18n": {
+                  "alias": {
+                    "en": "Database Address",
+                    "zh": "数据库地址"
+                  }
+                },
+                "key": "db_host",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "调用次数",
+                "width": 300,
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "调用次数"
+                  }
+                },
+                "key": "call_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "慢调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Slow Request Count",
+                    "zh": "慢调用次数"
+                  }
+                },
+                "key": "slow_elapsed_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "平均延迟",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay",
+                    "zh": "平均延迟"
+                  }
+                },
+                "key": "avg_elapsed",
+                "resultType": "string",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "searchTranslation",
+              "value": "operation"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "数据库事务",
+        "i18n": {
+          "title": {
+            "en": "Databases Translation",
+            "zh": "数据库事务"
+          }
+        }
+      }
+    },
+    {
+      "h": 11,
+      "w": 12,
+      "x": 0,
+      "y": 10,
       "i": "view-1XA1pzWR",
       "view": {
         "api": {
@@ -29,9 +168,6 @@
                 "alias": "valueSR6vrde7",
                 "expr": "round_float(sum(elapsed_count::field), 2)"
               }
-            ],
-            "where": [
-              "db_statement::tag=~/.*{{subSearch}}.*/"
             ]
           },
           "extraData": null,
@@ -42,11 +178,10 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
+            "include_db_statement": "{{subSearch}}",
             "filter_source_service_id": "{{serviceId}}",
-            "filter_terminus_key": "{{terminusKey}}",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "serviceName": "{{serviceName}}",
             "start": "{{startTime}}",
             "type": "_"
           },
@@ -56,8 +191,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_db",
-              "application_db_request"
+              "application_db"
             ],
             "typeDimensions": [
               {
@@ -113,10 +247,10 @@
       }
     },
     {
-      "w": 13,
-      "h": 9,
-      "x": 11,
-      "y": 0,
+      "h": 11,
+      "w": 12,
+      "x": 12,
+      "y": 10,
       "i": "view-J4SwjHDP",
       "view": {
         "api": {
@@ -136,9 +270,6 @@
                 "alias": "valueCxbcWuWT",
                 "expr": "round_float(avg(elapsed_mean::field), 2)"
               }
-            ],
-            "where": [
-              "db_statement::tag=~/.*{{subSearch}}.*/"
             ]
           },
           "extraData": null,
@@ -149,11 +280,10 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
+            "include_db_statement": "{{subSearch}}",
             "filter_source_service_id": "{{serviceId}}",
-            "filter_terminus_key": "{{terminusKey}}",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "serviceName": "{{serviceName}}",
             "start": "{{startTime}}",
             "type": "_"
           },
@@ -163,8 +293,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_db",
-              "application_db_request"
+              "application_db"
             ],
             "typeDimensions": [
               {
@@ -225,11 +354,11 @@
       }
     },
     {
-      "w": 24,
-      "h": 10,
+      "h": 9,
+      "w": 14,
       "x": 0,
-      "y": 9,
-      "i": "view-lVTYdASX",
+      "y": 21,
+      "i": "view-FlQBcOqT",
       "view": {
         "api": {
           "body": null,
@@ -238,112 +367,39 @@
           "method": "get",
           "query": {
             "end": "{{endTime}}",
-            "filterServiceName": "{{serviceName}}",
-            "layer": "db",
-            "search": "{{search}}",
-            "serviceId": "{{serviceId}}",
-            "sort": "{{sort}}",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_source_service_id": "{{serviceId}}",
+            "include_db_statement": "{{subSearch}}",
+            "format": "chartv2",
+            "q": "SELECT db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_db_slow GROUP BY db_statement::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
+            "ql": "influxql",
             "start": "{{startTime}}",
-            "terminusKey": "{{terminusKey}}"
+            "type": "_"
           },
-          "url": "/api/apm/topology/translation/db"
+          "url": "/api/tmc/metrics-query"
         },
         "chartType": "table",
         "config": {
           "dataSourceConfig": {
-            "valueDimensions": [
-              {
-                "alias": "SQL",
-                "i18n": {
-                  "alias": {
-                    "en": "SQL",
-                    "zh": "SQL"
-                  }
-                },
-                "key": "operation",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "数据库类型",
-                "i18n": {
-                  "alias": {
-                    "en": "Database Type",
-                    "zh": "数据库类型"
-                  }
-                },
-                "key": "db_type",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "数据库实例",
-                "i18n": {
-                  "alias": {
-                    "en": "Database Instance",
-                    "zh": "数据库实例"
-                  }
-                },
-                "key": "db_instance",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "数据库地址",
-                "i18n": {
-                  "alias": {
-                    "en": "Database Instance",
-                    "zh": "数据库实例"
-                  }
-                },
-                "key": "db_host",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "调用次数",
-                "i18n": {
-                  "alias": {
-                    "en": "Request Count",
-                    "zh": "调用次数"
-                  }
-                },
-                "key": "call_count",
-                "resultType": "number",
-                "type": "field"
-              },
-              {
-                "alias": "慢调用次数",
-                "i18n": {
-                  "alias": {
-                    "en": "Slow Request Count",
-                    "zh": "慢调用次数"
-                  }
-                },
-                "key": "slow_elapsed_count",
-                "resultType": "number",
-                "type": "field"
-              },
-              {
-                "alias": "平均延迟",
-                "i18n": {
-                  "alias": {
-                    "en": "Avg Time Delay",
-                    "zh": "平均延迟"
-                  }
-                },
-                "key": "avg_elapsed",
-                "resultType": "string",
-                "type": "field"
-              }
-            ]
+            "isSqlMode": true,
+            "sql": {
+              "from": "application_db_slow",
+              "fromSource": [
+                "application_db_slow"
+              ],
+              "groupBy": "db_statement::tag",
+              "limit": 50,
+              "orderBy": "",
+              "select": "db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
+            }
           },
           "optionProps": {
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "searchTranslation",
-              "value": "operation"
+              "name": "traceSlowTranslation",
+              "value": "Statement"
             }
           }
         },
@@ -351,11 +407,74 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "数据库调用",
+        "title": "慢事务追踪 Top50",
         "i18n": {
           "title": {
-            "en": "Databases Request",
-            "zh": "数据库调用"
+            "en": "Slow Translation Tracing Top50",
+            "zh": "慢事务追踪 Top50"
+          }
+        }
+      }
+    },
+    {
+      "h": 9,
+      "w": 10,
+      "x": 14,
+      "y": 21,
+      "i": "view-sCRTdIQb",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_source_service_id": "{{serviceId}}",
+            "include_db_statement": "{{subSearch}}",
+            "format": "chartv2",
+            "q": "SELECT db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_db_error GROUP BY db_statement::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
+            "ql": "influxql",
+            "serviceName": "{{serviceName}}",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "isSqlMode": true,
+            "sql": {
+              "from": "application_db_error",
+              "fromSource": [
+                "application_db_error"
+              ],
+              "groupBy": "db_statement::tag",
+              "limit": 50,
+              "select": "db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
+            }
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "traceSlowTranslation",
+              "value": "Statement"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "错误事务追踪 Top50",
+        "i18n": {
+          "title": {
+            "en": "Error Translation Tracing Top50",
+            "zh": "错误事务追踪 Top50"
           }
         }
       }

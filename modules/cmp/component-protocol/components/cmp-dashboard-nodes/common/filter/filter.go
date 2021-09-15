@@ -40,10 +40,11 @@ var DefaultLabels = []string{"dice/workspace-dev=true", "dice/workspace-test=tru
 func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	fields := []Field{
 		{
-			Key:     "enterprise",
-			Label:   f.SDK.I18n("enterprise"),
-			Type:    "select",
-			Options: []Option{},
+			Key:      "organization",
+			Multiple: true,
+			Label:    f.SDK.I18n("organization-label"),
+			Type:     "select",
+			Options:  []Option{},
 		},
 	}
 	var custom []string
@@ -86,9 +87,10 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	}
 	fields = append(fields, []Field{
 		{
-			Key:   "env",
-			Label: f.SDK.I18n("env"),
-			Type:  "select",
+			Key:      "env",
+			Label:    f.SDK.I18n("env-label"),
+			Multiple: true,
+			Type:     "select",
 			Options: []Option{
 				{Label: f.SDK.I18n("dev"), Value: "dice/workspace-dev"},
 				{Label: f.SDK.I18n("test"), Value: "dice/workspace-test=true"},
@@ -97,9 +99,10 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			},
 		},
 		{
-			Key:   "service",
-			Label: f.SDK.I18n("service"),
-			Type:  "select",
+			Key:      "service",
+			Label:    f.SDK.I18n("service-label"),
+			Multiple: true,
+			Type:     "select",
 			Options: []Option{
 				{Label: f.SDK.I18n("stateful-service"), Value: "dice/stateful-service=true"},
 				{Label: f.SDK.I18n("stateless-service"), Value: "dice/stateless-service=true"},
@@ -107,24 +110,26 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			},
 		},
 		{
-			Key:   "job",
-			Label: f.SDK.I18n("job"),
-			Type:  "select",
+			Key:      "job-label",
+			Label:    f.SDK.I18n("job-label"),
+			Multiple: true,
+			Type:     "select",
 			Options: []Option{
 				{Label: f.SDK.I18n("cicd-job"), Value: "dice/job=true"},
 				{Label: f.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"},
 			},
 		},
 		{
-			Key:   "other",
-			Label: f.SDK.I18n("other"),
-			Type:  "select",
+			Key:      "other-label",
+			Label:    f.SDK.I18n("other-label"),
+			Multiple: true,
+			Type:     "dropdown-select",
 			Options: append([]Option{
 				{Label: f.SDK.I18n("lb"), Value: "dice/lb"},
 				{Label: f.SDK.I18n("platform"), Value: "dice/platform"},
 			}, customOps...),
 		},
-		{Key: "Q", Type: "input", Placeholder: "请输入"},
+		{Key: "Q", Type: "input", Placeholder: f.SDK.I18n("input node Name or IP")},
 	}...,
 	)
 	p := Props{
@@ -134,7 +139,8 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	return p
 }
 
-type Values map[string]string
+type Values map[string]interface{}
+
 type State struct {
 	Values      Values `json:"values"`
 	ClusterName string `json:"clusterName"`
@@ -151,6 +157,7 @@ type Operation struct {
 }
 
 type Field struct {
+	Multiple    bool     `json:"multiple"`
 	Label       string   `json:"label"`
 	Type        string   `json:"type"`
 	Options     []Option `json:"options"`

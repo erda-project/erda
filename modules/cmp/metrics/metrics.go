@@ -39,8 +39,8 @@ const (
 	// usage rate , distribution rate , usage percent of distribution
 	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip ORDER BY time DESC LIMIT 1`
 	NodeMemoryUsageSelectStatement = `SELECT mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  ORDER BY time DESC LIMIT 1`
-	PodCpuUsageSelectStatement     = `SELECT round_float(sum(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name podsandbox != true ORDER BY time DESC LIMIT 1`
-	PodMemoryUsageSelectStatement  = `SELECT round_float(sum(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and podsandbox != true ORDER BY time DESC LIMIT 1`
+	PodCpuUsageSelectStatement     = `SELECT round_float(cpu_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true ORDER BY time DESC LIMIT 1`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(mem_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true ORDER BY time DESC LIMIT 1`
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -49,7 +49,9 @@ const (
 	Node = "node"
 )
 
-var NilValueError = errors.New("metrics nothing found")
+var (
+	ResourceNotSupport = errors.New("resource type not support")
+)
 
 type Metric struct {
 	Metricq pb.MetricServiceServer
@@ -128,18 +130,22 @@ func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsR
 		data []apistructs.MetricsData
 		err  error
 	)
-	reqs := ToInfluxReq(req)
+	reqs, err := ToInfluxReq(req)
+	if err != nil {
+		return mkResponse(nil, nil), err
+	}
 	for _, queryReq := range reqs {
 		d := apistructs.MetricsData{}
-		key := cache.GenerateKey([]string{queryReq.Params["hostname"].String(), req.ClusterName, string(req.ResourceType)})
+		key := cache.GenerateKey([]string{queryReq.Params["host_ip"].String(), req.ClusterName, req.ResourceType})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
-			return httpserver.ErrResp(http.StatusInternalServerError, "Internal Error", err.Error())
+			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
 			if resp.Results[0].Series[0].Rows == nil {
-				return httpserver.ErrResp(http.StatusServiceUnavailable, "Internal Error", NilValueError.Error())
+				logrus.Errorf("internal error when query %v", queryReq)
+			} else {
+				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 			}
-			d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 		}
 		data = append(data, d)
 	}
@@ -147,7 +153,7 @@ func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsR
 		Header: apistructs.Header{Success: true},
 		Data:   data,
 	}
-	return mkResponse(res, nil)
+	return mkResponse(res, nil), nil
 }
 
 func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRequest) (httpserver.Responser, error) {
@@ -156,21 +162,24 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 		data []apistructs.MetricsData
 		err  error
 	)
-
-	reqs := ToInfluxReq(req)
+	reqs, err := ToInfluxReq(req)
+	if err != nil {
+		return mkResponse(nil, nil), err
+	}
 	for _, queryReq := range reqs {
 		d := apistructs.MetricsData{}
 		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ResourceType})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
-			return httpserver.ErrResp(http.StatusInternalServerError, "Internal Error", err.Error())
+			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
 			if resp.Results[0].Series[0].Rows == nil {
-				return httpserver.ErrResp(http.StatusServiceUnavailable, "Internal Error", NilValueError.Error())
+				logrus.Errorf("internal error when query %v", queryReq)
+			} else {
+				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+				d.Request = 0
+				d.Total = 0
 			}
-			d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
-			d.Request = 0
-			d.Total = 0
 		}
 		data = append(data, d)
 	}
@@ -178,14 +187,14 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 		Header: apistructs.Header{Success: true},
 		Data:   data,
 	}
-	return mkResponse(res, nil)
+	return mkResponse(res, nil), nil
 }
 
-func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequest {
+func ToInfluxReq(req *apistructs.MetricsRequest) ([]*pb.QueryWithInfluxFormatRequest, error) {
 	queryReqs := make([]*pb.QueryWithInfluxFormatRequest, 0)
 	//start, end, _ := getTimeRange("hour", 1, false)
 	if req.ResourceKind == Node {
-		for _, ip := range req.IP {
+		for _, nreq := range req.NodeRequests {
 			queryReq := &pb.QueryWithInfluxFormatRequest{}
 			switch req.ResourceType {
 			case Cpu:
@@ -193,16 +202,16 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			case Memory:
 				queryReq.Statement = NodeMemoryUsageSelectStatement
 			default:
-				return nil
+				return nil, ResourceNotSupport
 			}
 			queryReq.Params = map[string]*structpb.Value{
 				"cluster_name": structpb.NewStringValue(req.ClusterName),
-				"host_ip":      structpb.NewStringValue(ip),
+				"host_ip":      structpb.NewStringValue(nreq.IP),
 			}
 			queryReqs = append(queryReqs, queryReq)
 		}
 	} else {
-		for _, name := range req.Names {
+		for _, preq := range req.PodRequests {
 			queryReq := &pb.QueryWithInfluxFormatRequest{}
 			switch req.ResourceType {
 			case Cpu:
@@ -210,21 +219,22 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			case Memory:
 				queryReq.Statement = PodMemoryUsageSelectStatement
 			default:
-				return nil
+				return nil, ResourceNotSupport
 			}
 			queryReq.Params = map[string]*structpb.Value{
-				"pod_name": structpb.NewStringValue(name),
+				"pod_name":      structpb.NewStringValue(preq.PodName),
+				"pod_namespace": structpb.NewStringValue(preq.Namespace),
 			}
 			queryReqs = append(queryReqs, queryReq)
 		}
 	}
-	return queryReqs
+	return queryReqs, nil
 }
 
-func mkResponse(content interface{}, err ierror.IAPIError) (httpserver.Responser, error) {
+func mkResponse(content interface{}, err ierror.IAPIError) httpserver.Responser {
 	return httpserver.HTTPResponse{
 		Status:  http.StatusOK,
 		Content: content,
 		Error:   err,
-	}, nil
+	}
 }

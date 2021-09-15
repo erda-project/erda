@@ -6,13 +6,21 @@ hierarchy:
   root: page
   structure:
     page:
+      - filterContainer
+      - chartContainer
+      - workloadTable
+    filterContainer:
       - filter
+    chartContainer:
       - workloadTitle
       - workloadChart
-      - workloadTable
 
 components:
   page:
+    type: Container
+  filterContainer:
+    type: Container
+  chartContainer:
     type: Container
   workloadTitle:
     type: Title
@@ -26,6 +34,8 @@ components:
 rendering:
   __DefaultRendering__:
     - name: page
+    - name: filterContainer
+    - name: chartContainer
     - name: filter
       state:
         - name: "clusterName"
@@ -34,6 +44,8 @@ rendering:
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ filter.values }}"
     - name: workloadTitle
       state:
         - name: "values"

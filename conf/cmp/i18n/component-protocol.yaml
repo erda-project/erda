@@ -9,6 +9,7 @@ zh:
  labels: 标签
  annotations: 注释
  project: 项目名称
+ core: 核
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: 上次触发时间
@@ -18,6 +19,7 @@ zh:
  source: 事件源
  message: 事件信息
  count: 累计次数
+ ago: 前
 
  # cmp-dashboard-events-list.filter
  workspace-dev: 开发环境
@@ -31,6 +33,7 @@ zh:
  others: 其他
  Normal: 普通
  Warning: 警告
+ eventSearchPlaceHolder: 搜索事件内容
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU 请求值
@@ -69,20 +72,22 @@ zh:
 
  # cmp-dashboard-nodes
  node-list: 节点列表
- env: 环境
+ organization-label: 组织标签
+ service-label: 服务标签
+ env-label: 环境标签
+ job-label: 任务标签
+ other-label: 其他标签
+ custom-label: 自定义标签
  platform: 平台组件
- service: 服务
  cicd-job: CICD任务
  bigdata-job: 大数据任务
  lb: 负载均衡
- job: 任务
- other: 其他
  os: 系统
  nodeIp: IP
  Allocated: 已分配
  Cannot-Allocate: 不可分配
  Free-Allocate: 剩余分配
- cpu-analysis: Cpu 分析
+ cpu-analysis: CPU 分析
  mem-analysis: 内存分析
  pod-analysis: Pod 分析
  nodeInfo: 节点信息
@@ -125,13 +130,11 @@ zh:
  memUsed: Mem 使用率
  use: mem 使用率
  Terminating: 终止
- OOMKilled: 内存溢出
+ OOMKilled: 内存溢出被杀
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
- memDistribution: 内存分配率
  distributionRate: 分配使用率
- memDistributionRate: 内存分配使用率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -153,7 +156,7 @@ zh:
  workload: 工作负载
  Memory Chart: 内存
  Pod Chart: Pods
- podSearchPlaceHolder: 搜索 pod 名称或 IP
+ podSearchPlaceHolder: 搜索 Pod 名称或 IP
  podInfoTitle: Pod 详情
  podIP: Pod IP
  log: 查看日志
@@ -161,7 +164,6 @@ zh:
  location-cluster-service: 集群级服务
  stateless-service: 无状态服务
  stateful-service: 有状态服务
- SchedulingDisabled: 冻结
  label-value: 标签值
  begin and end with character and number,include: 以字母或数字开头或结尾，可以包含
  e.g.: 例如
@@ -176,6 +178,10 @@ zh:
  running: 运行中
  waiting: 等待
  terminated: 终止
+ usedRate: 使用率
+ cores: 核
+ taint: 污点
+ input node Name or IP: 请输入节点名称或IP
 
 en:
  # general
@@ -188,6 +194,7 @@ en:
  labels: Labels
  annotations: Annotations
  project: Project Name
+ core: cores
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: Last Seen
@@ -197,12 +204,13 @@ en:
  source: Source
  message: Message
  count: Count
+ ago: ago
 
  # cmp-dashboard-events-list.filter
  workspace-dev: Workspace-Dev
  workspace-test: Workspace-Test
  workspace-staging: Workspace-Staging
- workspace-production: Workspace-Production
+ workspace-prod: Workspace-Production
  addons: Addons
  pipelines: Pipelines
  default: Default
@@ -210,14 +218,15 @@ en:
  others: Others
  Normal: Normal
  Warning: Warning
+ eventSearchPlaceHolder: Search Events
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests
  cpuLimits: CPU Limits
  cpuPercent: CPU Percent
- memoryRequests: Memory Requests
- memoryLimits: Memory Limits
- memoryPercent: Memory Percent
+ memoryRequests: Mem Requests
+ memoryLimits: Mem Limits
+ memoryPercent: Mem Percent
  ready: Ready
 
  # cmp-dashboard-workload-detail.podsTableTitle
@@ -272,6 +281,7 @@ en:
  requests: Requests
  limits: Limits
  usage: Utilization rate
+ usedRate: Usage
  restartCount: Restart Times
  category: category
  podSearchPlaceHolder: filter by pod name or IP
@@ -284,9 +294,8 @@ en:
  addLabel: Add Label
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
- distributionRate: Distribution Rate
- memDistribution: Mem Distribution
- memDistributionRate: Mem Distribution Rate
+ distribution: Reserved
+ distributionRate: Reserve Usage
  kernelVersion: Kernel Version
  kubeProxyVersion: Kubectl Proxy Version
  kubeletVersion: Kubelet Version
@@ -311,4 +320,12 @@ en:
  events: Events
  running: Running
  waiting: Waiting
+ role: Role
+ ta: Tag
+ taint: Taint
  terminated: Terminated
+ organization-label: Organization Label
+ service-label: Service Label
+ env-label: Enviorment Label
+ job-label: Job Label
+ other-label: Other Label

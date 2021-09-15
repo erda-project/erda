@@ -17,7 +17,6 @@ package AddLabelModal
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -40,7 +39,7 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 		return err
 	}
 	alm.getProps()
-	alm.GetOperations()
+	alm.getOperations()
 	clusterNameIter := alm.SDK.InParams["clusterName"]
 	if clusterNameIter == nil {
 		return errors.New("clusterName not found")
@@ -55,22 +54,33 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 			Name:        alm.State.FormData["recordId"],
 			ClusterName: clusterNameIter.(string),
 		}
-		labelKey := alm.State.FormData["label_custom_key"]
-		labelValue := alm.State.FormData["label_custom_value"]
+		labelValue := ""
+		labelKey := alm.State.FormData["labelGroup"]
+		if labelKey == "custom" {
+			labelKey = alm.State.FormData["label_custom_key"]
+			labelValue = alm.State.FormData["label_custom_value"]
+		} else {
+			labelValue = alm.State.FormData[labelKey]
+			splits := strings.Split(labelValue, "=")
+			labelKey = splits[0]
+			if len(splits) == 1 {
+				labelValue = ""
+			} else {
+				labelValue = splits[1]
+			}
+		}
 		err := alm.CtxBdl.LabelNode(req, map[string]string{labelKey: labelValue})
 		if err != nil {
 			return err
 		}
+		alm.State.Visible = false
 	}
-	delete(*gs, "nodes")
 	return alm.SetComponentValue(c)
 }
 
 // SetComponentValue mapping properties to Component
 func (alm *AddLabelModal) SetComponentValue(c *cptype.Component) error {
-	var (
-		err error
-	)
+	var err error
 	if err = common.Transfer(alm.State, &c.State); err != nil {
 		return err
 	}
@@ -93,42 +103,24 @@ func (alm *AddLabelModal) getProps() {
 			ComponentProps: ComponentProps{
 				Options: []Option{
 					{
-						Name:  alm.SDK.I18n("platform"),
-						Value: "platform",
-					},
-					{
-						Name:  alm.SDK.I18n("env"),
+						Name:  alm.SDK.I18n("env-label"),
 						Value: "environment",
 					},
 					{
-						Name:  alm.SDK.I18n("service"),
+						Name:  alm.SDK.I18n("service-label"),
 						Value: "service",
 					},
 					{
-						Name:  alm.SDK.I18n("job"),
+						Name:  alm.SDK.I18n("job-label"),
 						Value: "job",
 					},
 					{
-						Name:  alm.SDK.I18n("other"),
+						Name:  alm.SDK.I18n("other-label"),
 						Value: "other",
 					},
 					{
-						Name:  alm.SDK.I18n("custom"),
+						Name:  alm.SDK.I18n("custom-label"),
 						Value: "custom",
-					},
-				},
-			},
-		},
-		{
-			Key:            "platform",
-			ComponentProps: ComponentProps{Options: []Option{{Name: "platform", Value: "platform=true"}}},
-			Label:          alm.SDK.I18n("label"),
-			Component:      "select",
-			Required:       true,
-			RemoveWhen: [][]RemoveWhen{
-				{
-					{
-						Field: "labelGroup", Operator: "!=", Value: "platform",
 					},
 				},
 			},
@@ -163,7 +155,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "job",
-			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("cicd-job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,
@@ -230,24 +222,7 @@ func (alm *AddLabelModal) getProps() {
 	}
 }
 
-func (alm *AddLabelModal) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := alm.CtxBdl.GetProject(uint64(num))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
-}
-
-func (alm *AddLabelModal) GetOperations() {
+func (alm *AddLabelModal) getOperations() {
 	alm.Operations = map[string]Operations{
 		"submit": {
 			Key:    "submit",
@@ -259,7 +234,7 @@ func (alm *AddLabelModal) GetOperations() {
 func (alm *AddLabelModal) GetState() {
 	alm.State = State{
 		Visible:  false,
-		FormData: nil,
+		FormData: map[string]string{},
 	}
 }
 

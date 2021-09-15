@@ -14,6 +14,17 @@
 
 package gittarutil
 
+import (
+	"testing"
+
+	"bou.ke/monkey"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
+)
+
 //import (
 //	"fmt"
 //	"testing"
@@ -26,3 +37,12 @@ package gittarutil
 //	require.NoError(t, err)
 //	fmt.Printf("%+v\n", commit)
 //}
+
+func TestGetCommit(t *testing.T) {
+	monkey.Patch(httpclientutil.DoJson, func(r *httpclient.Request, o interface{}) error {
+		return errors.New("the userID is empty")
+	})
+	repo := NewRepo("gittar", "/repo")
+	_, err := repo.GetCommit("commitID", "")
+	assert.Error(t, err)
+}

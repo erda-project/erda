@@ -16,6 +16,8 @@ package table
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -130,9 +132,10 @@ type Command struct {
 }
 
 type CommandState struct {
-	Params   Params   `json:"params,omitempty"`
-	Visible  bool     `json:"visible,omitempty"`
-	FormData FormData `json:"formData,omitempty"`
+	Params   Params                 `json:"params,omitempty"`
+	Visible  bool                   `json:"visible,omitempty"`
+	FormData FormData               `json:"formData,omitempty"`
+	Query    map[string]interface{} `json:"query,omitempty"`
 }
 type Params struct {
 	NodeId string `json:"nodeId,omitempty"`
@@ -242,7 +245,7 @@ func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData, resource
 }
 
 func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
-	level := []string{"K", "M", "G", "T"}
+	level := []string{"", "K", "M", "G", "T"}
 	i := 0
 	switch resourceType {
 	case Memory:
@@ -250,17 +253,23 @@ func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
 			a /= 1024
 			b /= 1024
 		}
-		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i]) + "i"
+		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i])
+	case Cpu:
+		for a > 1000 && b > 1000 && i < 4 {
+			a /= 1000
+			b /= 1000
+		}
+		return fmt.Sprintf("%.3f/%.3f", a, b)
 	default:
 		for ; a > 1000 && b > 1000 && i < 4; i++ {
 			a /= 1000
 			b /= 1000
 		}
-		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i])
+		return fmt.Sprintf("%d%s/%d%s", int64(a), level[i], int64(b), level[i])
 	}
 }
 
-// SetComponentValue mapping CpuInfoTable properties to Component
+// SetComponentValue mapping properties to Component
 func (t *Table) SetComponentValue(c *cptype.Component) error {
 	var err error
 	if err = common.Transfer(t.State, &c.State); err != nil {
@@ -456,24 +465,22 @@ func (t *Table) GetNodeLabels(labels data.Object) []label.Label {
 }
 
 func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
-	//ls := []string{
-	//	"dice/workspace-dev", "dice/workspace-test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
-	//}
+
 	groups := make(map[string]string)
-	groups["dice/workspace-dev=true"] = t.SDK.I18n("env")
-	groups["dice/workspace-test=true"] = t.SDK.I18n("env")
-	groups["dice/workspace-staging=true"] = t.SDK.I18n("env")
-	groups["dice/workspace-prod=true"] = t.SDK.I18n("env")
+	groups["dice/workspace-dev=true"] = t.SDK.I18n("env-label")
+	groups["dice/workspace-test=true"] = t.SDK.I18n("env-label")
+	groups["dice/workspace-staging=true"] = t.SDK.I18n("env-label")
+	groups["dice/workspace-prod=true"] = t.SDK.I18n("env-label")
 
-	groups["dice/stateful-service=true"] = t.SDK.I18n("service")
-	groups["dice/stateless-service=true"] = t.SDK.I18n("service")
-	groups["dice/location-cluster-service=true"] = t.SDK.I18n("service")
+	groups["dice/stateful-service=true"] = t.SDK.I18n("service-label")
+	groups["dice/stateless-service=true"] = t.SDK.I18n("service-label")
+	groups["dice/location-cluster-service=true"] = t.SDK.I18n("service-label")
 
-	groups["dice/job=true"] = t.SDK.I18n("job")
-	groups["dice/bigdata-job=true"] = t.SDK.I18n("job")
+	groups["dice/job=true"] = t.SDK.I18n("job-label")
+	groups["dice/bigdata-job=true"] = t.SDK.I18n("job-label")
 
-	groups["dice/lb=true"] = t.SDK.I18n("other")
-	groups["dice/platform=true"] = t.SDK.I18n("other")
+	groups["dice/lb=true"] = t.SDK.I18n("other-label")
+	groups["dice/platform=true"] = t.SDK.I18n("other-label")
 
 	if group, ok := groups[label]; ok {
 		idx := strings.Index(label, "=true")
@@ -482,14 +489,14 @@ func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
 
 	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
 		idx := strings.Index(label, "=true")
-		return t.SDK.I18n("enterprise"), t.SDK.I18n(label[5:idx])
+		return t.SDK.I18n("organization-label"), t.SDK.I18n(label[5:idx])
 	}
 	otherDisplayName := label
 	if label == "dice/lb=true" || label == "dice/platform=true" {
 		idx := strings.Index(label, "=true")
 		otherDisplayName = t.SDK.I18n(label[5:idx])
 	}
-	return t.SDK.I18n("other"), otherDisplayName
+	return t.SDK.I18n("other-label"), otherDisplayName
 }
 
 func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
@@ -537,6 +544,7 @@ func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
 				Target: "cmpClustersNodeDetail",
 				Command: CommandState{
 					Params: Params{NodeId: id, NodeIP: ip},
+					Query:  map[string]interface{}{"nodeIP": ip},
 				},
 				JumpOut: true,
 			},
@@ -555,13 +563,22 @@ func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
 }
 
 func (t *Table) GetOperate(id string) Operate {
+	obj := map[string]interface{}{
+		"node": []string{
+			id,
+		},
+	}
+	data, _ := json.Marshal(obj)
+	encode := base64.StdEncoding.EncodeToString(data)
 	return Operate{
 		RenderType: "tableOperation",
 		Operations: map[string]Operation{
 			"gotoPod": {Key: "gotoPod", Command: Command{
 				Key: "goto",
 				Command: CommandState{
-					Params: Params{NodeId: id},
+					Query: map[string]interface{}{
+						"filter__urlQuery": encode,
+					},
 				},
 				JumpOut: true,
 				Target:  "cmpClustersPods",
