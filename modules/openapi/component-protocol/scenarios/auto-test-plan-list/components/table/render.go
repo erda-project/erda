@@ -34,13 +34,14 @@ func RenderCreator() protocol.CompRender {
 
 type TableItem struct {
 	//Assignee    map[string]string `json:"assignee"`
-	Id          uint64                 `json:"id"`
-	Name        string                 `json:"name"`
-	Owners      map[string]interface{} `json:"owners"`
-	TestSpace   string                 `json:"testSpace"`
-	Operate     Operate                `json:"operate"`
-	PassRate    PassRate               `json:"passRate"`
-	ExecuteTime string                 `json:"executeTime"`
+	Id            uint64                 `json:"id"`
+	Name          string                 `json:"name"`
+	Owners        map[string]interface{} `json:"owners"`
+	TestSpace     string                 `json:"testSpace"`
+	Operate       Operate                `json:"operate"`
+	ExecuteApiNum string                 `json:"executeApiNum"`
+	PassRate      PassRate               `json:"passRate"`
+	ExecuteTime   string                 `json:"executeTime"`
 }
 
 type PassRate struct {
@@ -188,6 +189,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 				RenderType: "tableOperation",
 				Operations: map[string]interface{}{},
 			},
+			ExecuteApiNum: strconv.FormatInt(data.ExecuteApiNum, 10),
 			PassRate: PassRate{
 				RenderType: "progress",
 				Value:      fmt.Sprintf("%.f", data.PassRate),
@@ -247,10 +249,13 @@ func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Comp
 		return err
 	}
 
-	if sortData.Field == "passRate" {
+	switch sortData.Field {
+	case "passRate":
 		sortData.Field = "pass_rate"
-	} else if sortData.Field == "executeTime" {
+	case "executeTime":
 		sortData.Field = "execute_time"
+	case "executeApiNum":
+		sortData.Field = "execute_api_num"
 	}
 
 	req.OrderBy = sortData.Field

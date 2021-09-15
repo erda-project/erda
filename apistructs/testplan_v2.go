@@ -24,21 +24,22 @@ import (
 // TODO: change name to AutoTestPlan
 // TestPlanV2 testplan
 type TestPlanV2 struct {
-	ID          uint64            `json:"id"`
-	Name        string            `json:"name"`
-	Desc        string            `json:"desc"`
-	ProjectID   uint64            `json:"project"`
-	SpaceID     uint64            `json:"spaceID"`
-	SpaceName   string            `json:"spaceName"`
-	Creator     string            `json:"creator"`
-	Owners      []string          `json:"owners"`
-	Updater     string            `json:"updater"`
-	Steps       []*TestPlanV2Step `json:"steps"`
-	CreateAt    *time.Time        `json:"createAt"`
-	UpdateAt    *time.Time        `json:"updateAt"`
-	IsArchived  bool              `json:"isArchived"`
-	PassRate    float64           `json:"passRate"`
-	ExecuteTime *time.Time        `json:"executeTime"`
+	ID            uint64            `json:"id"`
+	Name          string            `json:"name"`
+	Desc          string            `json:"desc"`
+	ProjectID     uint64            `json:"project"`
+	SpaceID       uint64            `json:"spaceID"`
+	SpaceName     string            `json:"spaceName"`
+	Creator       string            `json:"creator"`
+	Owners        []string          `json:"owners"`
+	Updater       string            `json:"updater"`
+	Steps         []*TestPlanV2Step `json:"steps"`
+	CreateAt      *time.Time        `json:"createAt"`
+	UpdateAt      *time.Time        `json:"updateAt"`
+	ExecuteApiNum int64             `json:"executeApiNum"`
+	IsArchived    bool              `json:"isArchived"`
+	PassRate      float64           `json:"passRate"`
+	ExecuteTime   *time.Time        `json:"executeTime"`
 }
 
 // TestPlanV2CreateRequest testplan v2 create request
