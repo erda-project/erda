@@ -41,6 +41,7 @@
                     "zh": "事务名称"
                   }
                 },
+                "copy": true,
                 "key": "operation",
                 "resultType": "string",
                 "type": "field"

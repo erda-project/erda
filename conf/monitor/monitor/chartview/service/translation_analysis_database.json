@@ -41,6 +41,7 @@
                     "zh": "SQL 事务"
                   }
                 },
+                "copy": true,
                 "width": 300,
                 "key": "operation",
                 "resultType": "string",

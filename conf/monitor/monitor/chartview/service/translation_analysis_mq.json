@@ -42,6 +42,7 @@
                     "zh": "Topic"
                   }
                 },
+                "copy": true,
                 "key": "operation",
                 "resultType": "string",
                 "type": "field"
