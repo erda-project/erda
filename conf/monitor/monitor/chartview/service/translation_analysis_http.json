@@ -6,6 +6,119 @@
   "scopeId": "global",
   "viewConfig": [
     {
+      "h": 10,
+      "w": 24,
+      "x": 0,
+      "y": 0,
+      "i": "view-lVTYdASX",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filterServiceName": "{{serviceName}}",
+            "layer": "http",
+            "search": "{{search}}",
+            "serviceId": "{{serviceId}}",
+            "sort": "{{sort}}",
+            "start": "{{startTime}}",
+            "terminusKey": "{{terminusKey}}"
+          },
+          "url": "/api/apm/topology/translation"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "valueDimensions": [
+              {
+                "alias": "事务名称",
+                "i18n": {
+                  "alias": {
+                    "en": "Translation Name",
+                    "zh": "事务名称"
+                  }
+                },
+                "copy": true,
+                "key": "translation_name",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Called Count",
+                    "zh": "调用次数"
+                  }
+                },
+                "key": "elapsed_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "错误次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Error Count",
+                    "zh": "错误次数"
+                  }
+                },
+                "key": "error_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "慢调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Slow Called Count",
+                    "zh": "慢调用次数"
+                  }
+                },
+                "key": "slow_elapsed_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "平均时延",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay",
+                    "zh": "平均时延"
+                  }
+                },
+                "key": "avg_elapsed",
+                "resultType": "string",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "searchTranslation",
+              "value": "translation_name"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "HTTP 事务",
+        "i18n": {
+          "title": {
+            "en": "HTTP Translation",
+            "zh": "HTTP 事务"
+          }
+        }
+      }
+    },
+    {
       "h": 11,
       "w": 12,
       "x": 0,
@@ -29,9 +142,6 @@
                 "alias": "valuensYW3soM",
                 "expr": "round_float(sum(elapsed_count::field), 2)"
               }
-            ],
-            "where": [
-              "http_path::tag=~/.*{{subSearch}}.*/"
             ]
           },
           "extraData": null,
@@ -43,10 +153,9 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "filter_terminus_key": "{{terminusKey}}",
+            "include_http_path": "{{subSearch}}",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "serviceName": "{{serviceName}}",
             "start": "{{startTime}}",
             "type": "_"
           },
@@ -56,8 +165,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_http",
-              "application_http_request"
+              "application_http"
             ],
             "typeDimensions": [
               {
@@ -139,9 +247,6 @@
                 "alias": "valueZjrFmhZg",
                 "expr": "round_float(avg(elapsed_mean::field), 2)"
               }
-            ],
-            "where": [
-              "http_path::tag=~/.*{{subSearch}}.*/"
             ]
           },
           "extraData": null,
@@ -153,10 +258,9 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "filter_terminus_key": "{{terminusKey}}",
+            "include_http_path": "{{subSearch}}",
             "format": "chartv2",
             "ql": "influxql:ast",
-            "serviceName": "{{serviceName}}",
             "start": "{{startTime}}",
             "type": "_"
           },
@@ -166,8 +270,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_http",
-              "application_http_request"
+              "application_http"
             ],
             "typeDimensions": [
               {
@@ -228,118 +331,6 @@
       }
     },
     {
-      "h": 10,
-      "w": 24,
-      "x": 0,
-      "y": 0,
-      "i": "view-lVTYdASX",
-      "view": {
-        "api": {
-          "body": null,
-          "extraData": null,
-          "header": null,
-          "method": "get",
-          "query": {
-            "end": "{{endTime}}",
-            "filterServiceName": "{{serviceName}}",
-            "layer": "http",
-            "search": "{{search}}",
-            "serviceId": "{{serviceId}}",
-            "sort": "{{sort}}",
-            "start": "{{startTime}}",
-            "terminusKey": "{{terminusKey}}"
-          },
-          "url": "/api/apm/topology/translation"
-        },
-        "chartType": "table",
-        "config": {
-          "dataSourceConfig": {
-            "valueDimensions": [
-              {
-                "alias": "事务名称",
-                "i18n": {
-                  "alias": {
-                    "en": "Translation Name",
-                    "zh": "事务名称"
-                  }
-                },
-                "key": "translation_name",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "调用次数",
-                "i18n": {
-                  "alias": {
-                    "en": "Called Count",
-                    "zh": "调用次数"
-                  }
-                },
-                "key": "elapsed_count",
-                "resultType": "number",
-                "type": "field"
-              },
-              {
-                "alias": "错误次数",
-                "i18n": {
-                  "alias": {
-                    "en": "Error Count",
-                    "zh": "错误次数"
-                  }
-                },
-                "key": "error_count",
-                "resultType": "number",
-                "type": "field"
-              },
-              {
-                "alias": "慢调用次数",
-                "i18n": {
-                  "alias": {
-                    "en": "Slow Called Count",
-                    "zh": "慢调用次数"
-                  }
-                },
-                "key": "slow_elapsed_count",
-                "resultType": "number",
-                "type": "field"
-              },
-              {
-                "alias": "平均时延",
-                "i18n": {
-                  "alias": {
-                    "en": "Avg Time Delay",
-                    "zh": "平均时延"
-                  }
-                },
-                "key": "avg_elapsed",
-                "resultType": "string",
-                "type": "field"
-              }
-            ]
-          },
-          "optionProps": {
-            "isMoreThanOneDay": true,
-            "moreThanOneDayFormat": "M/D",
-            "rowClick": {
-              "name": "searchTranslation",
-              "value": "translation_name"
-            }
-          }
-        },
-        "controls": null,
-        "dataSourceType": "api",
-        "description": "",
-        "staticData": {},
-        "title": "HTTP 事务",
-        "i18n": {
-          "title": {
-            "en": "HTTP Translation",
-            "zh": "HTTP 事务"
-          }
-        }
-      }
-    },
-    {
       "h": 9,
       "w": 14,
       "x": 0,
@@ -356,9 +347,9 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "filter_terminus_key": "{{terminusKey}}",
+            "include_http_path": "{{subSearch}}",
             "format": "chartv2",
-            "q": "SELECT http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_http WHERE http_path::tag=~/.*{{subSearch}}.*/ AND target_service_name::tag=~/.*{{serviceName}}.*/ GROUP BY http_path::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
+            "q": "SELECT http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_http_slow GROUP BY http_path::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50",
             "ql": "influxql",
             "start": "{{startTime}}",
             "type": "_"
@@ -372,16 +363,12 @@
             "sql": {
               "from": "application_http_slow",
               "fromSource": [
-                "application_http",
                 "application_http_slow"
               ],
               "groupBy": "http_path::tag",
               "limit": 50,
               "orderBy": "",
-              "select": "http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时",
-              "where": [
-                "http_path::tag=~/.*{{subSearch}}.*/"
-              ]
+              "select": "http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
             }
           },
           "optionProps": {
@@ -423,9 +410,9 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "filter_terminus_key": "{{terminusKey}}",
+            "include_http_path": "{{subSearch}}",
             "format": "chartv2",
-            "q": "SELECT http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_http_error WHERE http_path::tag=~/.*{{subSearch}}.*/ AND target_service_name::tag=~/.*{{serviceName}}.*/ GROUP BY http_path::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
+            "q": "SELECT http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_http_error GROUP BY http_path::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
             "ql": "influxql",
             "serviceName": "{{serviceName}}",
             "start": "{{startTime}}",
@@ -440,15 +427,11 @@
             "sql": {
               "from": "application_http_error",
               "fromSource": [
-                "application_http",
                 "application_http_error"
               ],
               "groupBy": "http_path::tag",
               "limit": 50,
-              "select": "http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间",
-              "where": [
-                "http_path::tag=~/.*{{subSearch}}.*/"
-              ]
+              "select": "http_path::tag as URL,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
             }
           },
           "optionProps": {
