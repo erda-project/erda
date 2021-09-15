@@ -33,25 +33,25 @@ func init() {
 	})
 }
 
-func (c *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+func (w *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
-	if err := c.GenComponentState(component); err != nil {
+	if err := w.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadChart component state, %v", err)
 	}
-	if err := c.SetComponentValue(ctx); err != nil {
+	if err := w.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("faield to set workloadChart component value, %v", err)
 	}
 	return nil
 }
 
-func (c *ComponentWorkloadChart) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	cont, err := json.Marshal(component.State)
+	cont, err := json.Marshal(c.State)
 	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", component.State, err)
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
 		return err
 	}
 	err = json.Unmarshal(cont, &state)
@@ -59,51 +59,51 @@ func (c *ComponentWorkloadChart) GenComponentState(component *cptype.Component) 
 		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
 		return err
 	}
-	c.State = state
+	w.State = state
 	return nil
 }
 
-func (c *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
-	c.Props.Option.Tooltip.Trigger = "axis"
-	c.Props.Option.Tooltip.AxisPointer.Type = "shadow"
-	c.Props.Option.Grid = Grid{
+func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
+	w.Props.Option.Tooltip.Trigger = "axis"
+	w.Props.Option.Tooltip.AxisPointer.Type = "shadow"
+	w.Props.Option.Grid = Grid{
 		Left:         "3%",
 		Right:        "4%",
 		Bottom:       "3%",
 		Top:          "15%",
 		ContainLabel: true,
 	}
-	c.Props.Option.Color = []string{
+	w.Props.Option.Color = []string{
 		"green", "red", "steelBlue", "maroon",
 	}
-	c.Props.Option.Legend.Data = []string{
+	w.Props.Option.Legend.Data = []string{
 		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Error"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),
 	}
-	c.Props.Option.XAxis.Type = "value"
-	c.Props.Option.YAxis.Type = "category"
-	c.Props.Option.YAxis.Data = []string{
+	w.Props.Option.XAxis.Type = "value"
+	w.Props.Option.YAxis.Type = "category"
+	w.Props.Option.YAxis.Data = []string{
 		"CronJobs", "Jobs", "DaemonSets", "StatefulSets", "Deployments",
 	}
 
 	// deployment
-	activeDeploy := c.State.Values.DeploymentsCount.Active
-	errorDeploy := c.State.Values.DeploymentsCount.Error
+	activeDeploy := w.State.Values.DeploymentsCount.Active
+	errorDeploy := w.State.Values.DeploymentsCount.Error
 
 	// daemonSet
-	activeDs := c.State.Values.DaemonSetCount.Active
-	errorDs := c.State.Values.DaemonSetCount.Error
+	activeDs := w.State.Values.DaemonSetCount.Active
+	errorDs := w.State.Values.DaemonSetCount.Error
 
 	// statefulSet
-	activeSs := c.State.Values.StatefulSetCount.Active
-	errorSs := c.State.Values.StatefulSetCount.Error
+	activeSs := w.State.Values.StatefulSetCount.Active
+	errorSs := w.State.Values.StatefulSetCount.Error
 
 	// job
-	activeJob := c.State.Values.JobCount.Active
-	succeededJob := c.State.Values.JobCount.Succeeded
-	failedJob := c.State.Values.JobCount.Failed
+	activeJob := w.State.Values.JobCount.Active
+	succeededJob := w.State.Values.JobCount.Succeeded
+	failedJob := w.State.Values.JobCount.Failed
 
 	// cronjob
-	activeCronJob := c.State.Values.CronJobCount.Active
+	activeCronJob := w.State.Values.CronJobCount.Active
 
 	activeSeries := Series{
 		Name:     cputil.I18n(ctx, "Active"),
@@ -145,7 +145,7 @@ func (c *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		},
 	}
 
-	c.Props.Option.Series = []Series{
+	w.Props.Option.Series = []Series{
 		activeSeries, errorSeries, succeededSeries, failedSeries,
 	}
 	return nil

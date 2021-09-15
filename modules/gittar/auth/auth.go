@@ -196,52 +196,41 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	var gitRepository = &gitmodule.Repository{}
 	var err error
 	var userInfo *ucauth.UserInfo
-	//skip authentication
-	host := c.Host()
-	for _, skipUrl := range conf.SkipAuthUrls() {
-		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
-			logrus.Debugf("skip authenticate host: %s", host)
-			gitRepository, err = openRepository(c, repo)
-			if err != nil {
-				c.AbortWithStatus(500, err)
-				return
-			}
-			c.Set("repository", gitRepository)
 
-			userIdStr := c.GetHeader(httputil.UserHeader)
-			if userIdStr == "" {
-				c.AbortWithStatus(500, errors.New("the userID is empty"))
-				return
-			}
-
-			userInfoDto, err := uc.FindUserById(userIdStr)
-			if err != nil {
-				c.AbortWithStatus(500, err)
-				return
-			}
-			logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
-			//校验通过缓存5分钟结果
-			//校验失败每次都会请求
-			_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
-			if validateError != nil {
-				logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
-				c.AbortWithStatus(403, validateError)
-				return
-			}
-			c.Set("repository", gitRepository)
-			//c.Set("lock", repoLock.Lock)
-
-			c.Set("user", &models.User{
-				Name:     userInfoDto.Username,
-				NickName: userInfoDto.NickName,
-				Email:    userInfoDto.Email,
-				Id:       userIdStr,
-			})
-			c.Next()
+	userIdStr := c.GetHeader(httputil.UserHeader)
+	if userIdStr != "" {
+		logrus.Infof("userIdStr: %s", userIdStr)
+		gitRepository, err = openRepository(c, repo)
+		if err != nil {
+			c.AbortWithStatus(500, err)
 			return
 		}
-	}
+		c.Set("repository", gitRepository)
+		userInfoDto, err := uc.FindUserById(userIdStr)
+		if err != nil {
+			c.AbortWithStatus(500, err)
+			return
+		}
+		logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
 
+		// if success, caches the results for 5 minutes
+		_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
+		if validateError != nil {
+			logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
+			c.AbortWithStatus(403, validateError)
+			return
+		}
+
+		c.Set("user", &models.User{
+			Name:     userInfoDto.Username,
+			NickName: userInfoDto.NickName,
+			Email:    userInfoDto.Email,
+			Id:       userIdStr,
+		})
+		c.Next()
+		return
+	}
+	logrus.Infof("basic auth,url: %s", c.HttpRequest().URL.String())
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)
 	if err == nil {
 		_, validateError := ValidaUserRepo(c, string(userInfo.ID), repo)

@@ -50,8 +50,7 @@ const (
 )
 
 var (
-	NilValueError     = errors.New("metrics nothing found")
-	MetricsQueryError = errors.New("metrics nothing found")
+	ResourceNotSupport = errors.New("resource type not support")
 )
 
 type Metric struct {
@@ -131,7 +130,10 @@ func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsR
 		data []apistructs.MetricsData
 		err  error
 	)
-	reqs := ToInfluxReq(req)
+	reqs, err := ToInfluxReq(req)
+	if err != nil {
+		return mkResponse(nil, nil), err
+	}
 	for _, queryReq := range reqs {
 		d := apistructs.MetricsData{}
 		key := cache.GenerateKey([]string{queryReq.Params["host_ip"].String(), req.ClusterName, req.ResourceType})
@@ -160,7 +162,10 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 		data []apistructs.MetricsData
 		err  error
 	)
-	reqs := ToInfluxReq(req)
+	reqs, err := ToInfluxReq(req)
+	if err != nil {
+		return mkResponse(nil, nil), err
+	}
 	for _, queryReq := range reqs {
 		d := apistructs.MetricsData{}
 		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ResourceType})
@@ -185,7 +190,7 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 	return mkResponse(res, nil), nil
 }
 
-func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequest {
+func ToInfluxReq(req *apistructs.MetricsRequest) ([]*pb.QueryWithInfluxFormatRequest, error) {
 	queryReqs := make([]*pb.QueryWithInfluxFormatRequest, 0)
 	//start, end, _ := getTimeRange("hour", 1, false)
 	if req.ResourceKind == Node {
@@ -197,7 +202,7 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			case Memory:
 				queryReq.Statement = NodeMemoryUsageSelectStatement
 			default:
-				return nil
+				return nil, ResourceNotSupport
 			}
 			queryReq.Params = map[string]*structpb.Value{
 				"cluster_name": structpb.NewStringValue(req.ClusterName),
@@ -214,7 +219,7 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			case Memory:
 				queryReq.Statement = PodMemoryUsageSelectStatement
 			default:
-				return nil
+				return nil, ResourceNotSupport
 			}
 			queryReq.Params = map[string]*structpb.Value{
 				"pod_name":      structpb.NewStringValue(preq.PodName),
@@ -223,7 +228,7 @@ func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequ
 			queryReqs = append(queryReqs, queryReq)
 		}
 	}
-	return queryReqs
+	return queryReqs, nil
 }
 
 func mkResponse(content interface{}, err ierror.IAPIError) httpserver.Responser {

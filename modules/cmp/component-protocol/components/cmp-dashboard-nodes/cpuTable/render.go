@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
@@ -107,13 +108,13 @@ func (ct *CpuInfoTable) getProps() {
 		"rowKey": "id",
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
-			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 340},
+			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 320},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
-			{DataIndex: "Role", Title: ct.SDK.I18n("role"), Sortable: true, Width: 120},
+			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true, Width: 120},
-			{DataIndex: "Distribution", Title: "CPU" + ct.SDK.I18n("distribution"), Sortable: true, Width: 120},
-			{DataIndex: "Usage", Title: "CPU" + ct.SDK.I18n("usage"), Sortable: true, Width: 120},
-			{DataIndex: "UsageRate", Title: "CPU" + ct.SDK.I18n("distributionRate"), Sortable: true, Width: 120},
+			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Width: 130},
+			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Width: 130},
+			{DataIndex: "UsageRate", Title: ct.SDK.I18n("distributionRate"), Sortable: true, Width: 140},
 			{DataIndex: "Operate", Title: ct.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,

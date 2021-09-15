@@ -139,6 +139,9 @@ func (p *provider) Initialize() error {
 	// cron task to git gc all repository
 	go gc.ScheduledExecuteClean()
 
+	// start hook task consumer
+	models.Init(dbClient)
+
 	return e.Start(":" + conf.ListenPort())
 }
 

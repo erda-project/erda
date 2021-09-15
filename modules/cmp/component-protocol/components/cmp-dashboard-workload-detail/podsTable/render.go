@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
+	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -78,55 +79,55 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.sdk = sdk
 }
 
-func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
-	var state State
-	data, err := json.Marshal(component.State)
+	var tableState State
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &tableState); err != nil {
 		return err
 	}
-	p.State = state
+	p.State = tableState
 	return nil
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	queryData, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
+	urlQuery, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decodeData, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
 	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	if err := json.Unmarshal(decodeData, &query); err != nil {
 		return err
 	}
 	p.State.PageNo = int(query["pageNo"].(float64))
 	p.State.PageSize = int(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field = sorter["field"].(string)
-	p.State.Sorter.Order = sorter["order"].(string)
+	sorterData := query["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field = sorterData["field"].(string)
+	p.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = p.State.PageNo
-	query["pageSize"] = p.State.PageSize
-	query["sorterData"] = p.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = p.State.PageNo
+	urlQuery["pageSize"] = p.State.PageSize
+	urlQuery["sorterData"] = p.State.Sorter
+	data, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	p.State.PodsTableURLQuery = encode
+	encodeData := base64.StdEncoding.EncodeToString(data)
+	p.State.PodsTableURLQuery = encodeData
 	return nil
 }
 
@@ -185,6 +186,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ResourceType: metrics.Memory,
 	}
 
+	tempCPULimits := make([]*resource.Quantity, 0)
+	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
 	for _, obj := range list {
 		labels := obj.Map("metadata", "labels")
@@ -222,6 +225,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
+		cpuRequestStr := cmpcputil.ResourceToString(p.sdk, float64(cpuRequests.MilliValue()), resource.DecimalSI)
+		if cpuRequests.MilliValue() == 0 {
+			cpuRequestStr = "-"
+		}
+		cpuLimitsStr := cmpcputil.ResourceToString(p.sdk, float64(cpuLimits.MilliValue()), resource.DecimalSI)
+		if cpuLimits.MilliValue() == 0 {
+			cpuLimitsStr = "-"
+		}
+		memRequestsStr := cmpcputil.ResourceToString(p.sdk, float64(memRequests.Value()), resource.BinarySI)
+		if memRequests.Value() == 0 {
+			memRequestsStr = "-"
+		}
+		memLimitsStr := cmpcputil.ResourceToString(p.sdk, float64(memLimits.Value()), resource.BinarySI)
+		if memLimits.Value() == 0 {
+			memLimitsStr = "-"
+		}
+
+		tempCPULimits = append(tempCPULimits, cpuLimits)
+		tempMemLimits = append(tempMemLimits, memLimits)
+
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
 			ID:     id,
@@ -245,14 +268,18 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:      namespace,
-			IP:             fields[5],
-			CPURequests:    cpuRequests.String(),
-			CPULimits:      cpuLimits.String(),
-			MemoryRequests: memRequests.String(),
-			MemoryLimits:   memLimits.String(),
-			Ready:          fields[1],
-			NodeName:       fields[6],
+			Namespace:         namespace,
+			IP:                fields[5],
+			CPURequests:       cpuRequestStr,
+			CPURequestsNum:    cpuRequests.MilliValue(),
+			CPULimits:         cpuLimitsStr,
+			CPULimitsNum:      cpuLimits.MilliValue(),
+			MemoryRequests:    memRequestsStr,
+			MemoryRequestsNum: memRequests.Value(),
+			MemoryLimits:      memLimitsStr,
+			MemoryLimitsNum:   memLimits.Value(),
+			Ready:             fields[1],
+			NodeName:          fields[6],
 		})
 	}
 
@@ -267,13 +294,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 		memMetrics = make([]apistructs.MetricsData, len(items), len(items))
 	}
 
-	for i, item := range items {
-		cpuLimits, _ := resource.ParseQuantity(item.CPULimits)
-		memLimits, _ := resource.ParseQuantity(item.MemoryLimits)
+	for i := range items {
+		cpuLimits := tempCPULimits[i]
+		memLimits := tempMemLimits[i]
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
 		usedCPUPercent := cpuMetrics[i].Used
-		cpuStatus, cpuValue, cpuTip = parseResPercent(usedCPUPercent, &cpuLimits, "cpu")
+		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		items[i].CPUPercent = Percent{
 			RenderType: "progress",
 			Value:      cpuValue,
@@ -283,7 +310,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
 		usedMemPercent := memMetrics[i].Used
-		memStatus, memValue, memTip = parseResPercent(usedMemPercent, &memLimits, "mem")
+		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		items[i].MemoryPercent = Percent{
 			RenderType: "progress",
 			Value:      memValue,
@@ -330,9 +357,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "cpuRequests":
 				return func(i int, j int) bool {
-					cpuI, _ := resource.ParseQuantity(items[i].CPURequests)
-					cpuJ, _ := resource.ParseQuantity(items[j].CPURequests)
-					less := cpuI.Cmp(cpuJ) < 0
+					less := items[i].CPURequestsNum < items[j].CPURequestsNum
 					if ascend {
 						return less
 					}
@@ -350,9 +375,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "cpuLimits":
 				return func(i int, j int) bool {
-					cpuI, _ := resource.ParseQuantity(items[i].CPULimits)
-					cpuJ, _ := resource.ParseQuantity(items[j].CPULimits)
-					less := cpuI.Cmp(cpuJ) < 0
+					less := items[i].CPULimitsNum < items[j].CPULimitsNum
 					if ascend {
 						return less
 					}
@@ -360,9 +383,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "memoryRequests":
 				return func(i int, j int) bool {
-					memI, _ := resource.ParseQuantity(items[i].MemoryRequests)
-					memJ, _ := resource.ParseQuantity(items[j].MemoryRequests)
-					less := memI.Cmp(memJ) < 0
+					less := items[i].MemoryRequestsNum < items[j].MemoryRequestsNum
 					if ascend {
 						return less
 					}
@@ -380,9 +401,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "memoryLimits":
 				return func(i int, j int) bool {
-					memI, _ := resource.ParseQuantity(items[i].MemoryLimits)
-					memJ, _ := resource.ParseQuantity(items[j].MemoryLimits)
-					less := memI.Cmp(memJ) < 0
+					less := items[i].MemoryLimitsNum < items[j].MemoryLimitsNum
 					if ascend {
 						return less
 					}
@@ -423,20 +442,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 	return nil
 }
 
-func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string) (string, string, string) {
+func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
 	var totRes int64
-	if kind == "cpu" {
+	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
 	} else {
 		totRes = totQty.Value()
 	}
 	usedRes := float64(totRes) * usedPercent / 100
-	usedQtyString := ""
-	if kind == "cpu" {
-		usedQtyString = fmt.Sprintf("%.3f", usedRes/1000)
-	} else {
-		usedQtyString = convertUnit(usedRes)
-	}
+	usedQtyString := cmpcputil.ResourceToString(p.sdk, usedRes, format)
+
 	status := ""
 	if usedPercent <= 80 {
 		status = "success"
@@ -445,23 +460,19 @@ func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string
 	} else {
 		status = "error"
 	}
-	tip := fmt.Sprintf("%s/%s", usedQtyString, totQty.String())
+
+	tip := ""
+	if format == resource.DecimalSI {
+		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
+	} else {
+		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
+	}
 	value := fmt.Sprintf("%.2f", usedPercent)
-	if usedRes < 1e-4 {
+	if usedRes < 1e-8 {
 		tip = "N/A"
 		value = "N/A"
 	}
 	return status, value, tip
-}
-
-func convertUnit(bytes float64) string {
-	units := []string{"B", "Ki", "Mi", "Gi"}
-	i := 0
-	for bytes >= 1<<10 && i < len(units)-1 {
-		bytes /= 1 << 10
-		i++
-	}
-	return fmt.Sprintf("%.3f%s", bytes, units[i])
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
@@ -497,13 +508,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "cpuRequests",
 			Title:     cputil.I18n(ctx, "cpuRequests"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "cpuLimits",
 			Title:     cputil.I18n(ctx, "cpuLimits"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
@@ -515,13 +526,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "memoryRequests",
 			Title:     cputil.I18n(ctx, "memoryRequests"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "memoryLimits",
 			Title:     cputil.I18n(ctx, "memoryLimits"),
-			Width:     80,
+			Width:     120,
 			Sorter:    true,
 		},
 		{
@@ -561,12 +572,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 }
 
 func matchSelector(selector, labels map[string]interface{}) bool {
-	for key, v := range selector {
+	for k, v := range selector {
 		value, ok := v.(string)
 		if !ok {
 			return false
 		}
-		labelV, ok := labels[key]
+		labelV, ok := labels[k]
 		if !ok {
 			return false
 		}
@@ -593,12 +604,12 @@ func (p *ComponentPodsTable) parsePodStatus(state string) Status {
 	}
 }
 
-func parseResource(str string, format resource.Format) *resource.Quantity {
-	if str == "" {
+func parseResource(resStr string, format resource.Format) *resource.Quantity {
+	if resStr == "" {
 		return resource.NewQuantity(0, format)
 	}
-	res, _ := resource.ParseQuantity(str)
-	return &res
+	result, _ := resource.ParseQuantity(resStr)
+	return &result
 }
 
 func getRange(length, pageNo, pageSize int) (int, int) {

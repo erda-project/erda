@@ -33,6 +33,17 @@ rendering:
       state:
         - name: "addTest"
           value: "{{ addButton.addTest }}"
+
+  __DefaultRendering__:
+    - name: formModal
+    - name: addButton
+    - name: filter
+    - name: table
+      state:
+        - name: "name"
+          value: "{{ filter.name }}"
+        - name: "archive"
+          value: "{{ filter.archive }}"
 # 组件
 #TODO: add i18n
 components:
@@ -90,6 +101,10 @@ components:
           dataIndex: "testSpace"
         - title: "负责人"
           dataIndex: "owners"
+        - title: "最近执行接口总数"
+          dataIndex: "executeApiNum"
+          width: 180
+          sorter: true
         - title: "最近执行通过率"
           dataIndex: "passRate"
           width: 180

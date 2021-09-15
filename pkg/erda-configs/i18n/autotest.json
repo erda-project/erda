@@ -31,7 +31,7 @@
     "wb.content.autotest.scene.datetime_hour": "随机1小时前带时间的格式 2006-01-02 15:04:05",
 
     "wb.content.autotest.space.add": "新建空间",
-    "wb.content.autotest.space.no.permission.notify": "您暂无权限",
+    "wb.content.autotest.space.no.permission.notify": "无操作权限，请联系项目所有者/项目经理开通操作权限",
     "wb.content.autotest.space.no.edit.permission.notify": "请联系项目所有者和项目经理进行编辑",
     "wb.content.autotest.space.no.copy.permission.notify": "请联系项目所有者和项目经理进行复制",
     "wb.content.autotest.space.import": "导入",
@@ -91,7 +91,7 @@
     "wb.content.autotest.scene.datetime_hour": "random format with time 1 hour before like 2006-01-02 15:04:05",
 
     "wb.content.autotest.space.add": "Create Space",
-    "wb.content.autotest.space.no.permission.notify": "You have no permission",
+    "wb.content.autotest.space.no.permission.notify": "No operation permission, please contact the project owner/project manager to open the operation permission",
     "wb.content.autotest.space.no.edit.permission.notify": "Please contact the project owner and project manager to edit",
     "wb.content.autotest.space.no.copy.permission.notify": "Please contact the project owner and project manager to copy",
     "wb.content.autotest.space.import": "Import",
