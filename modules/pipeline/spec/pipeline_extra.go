@@ -64,7 +64,7 @@ func (*PipelineExtra) TableName() string {
 
 type PipelineExtraInfo struct {
 	Namespace               string                       `json:"namespace"`
-	NotPipelineControlledNs bool                         `json:"NotPipelineControlledNs"`
+	NotPipelineControlledNs bool                         `json:"notPipelineControlledNs"`
 	DiceWorkspace           apistructs.DiceWorkspace     `json:"diceWorkspace,omitempty"`
 	PipelineYmlSource       apistructs.PipelineYmlSource `json:"pipelineYmlSource,omitempty"`
 	SubmitUser              *apistructs.PipelineUser     `json:"submitUser,omitempty"`
