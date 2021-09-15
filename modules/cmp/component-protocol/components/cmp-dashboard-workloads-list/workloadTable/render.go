@@ -114,12 +114,12 @@ func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
 	w.sdk = sdk
 }
 
-func (w *ComponentWorkloadTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}

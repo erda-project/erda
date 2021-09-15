@@ -34,13 +34,13 @@ type ComponentPodsTable struct {
 
 type State struct {
 	ClusterName       string         `json:"clusterName,omitempty"`
+	CountValues       map[string]int `json:"countValues"`
 	PageNo            int            `json:"pageNo"`
 	PageSize          int            `json:"pageSize"`
 	Sorter            Sorter         `json:"sorterData,omitempty"`
 	Total             int            `json:"total"`
-	PodsTableURLQuery string         `json:"podsTable__urlQuery,omitempty"`
 	Values            Values         `json:"values,omitempty"`
-	CountValues       map[string]int `json:"countValues"`
+	PodsTableURLQuery string         `json:"podsTable__urlQuery,omitempty"`
 	ActiveKey         string         `json:"activeKey,omitempty"`
 }
 
@@ -62,19 +62,23 @@ type Data struct {
 }
 
 type Item struct {
-	ID             string  `json:"id,omitempty"`
-	Status         Status  `json:"status,omitempty"`
-	Name           Link    `json:"name,omitempty"`
-	Namespace      string  `json:"namespace,omitempty"`
-	IP             string  `json:"ip,omitempty"`
-	CPURequests    string  `json:"cpuRequests,omitempty"`
-	CPUPercent     Percent `json:"cpuPercent,omitempty"`
-	CPULimits      string  `json:"cpuLimits,omitempty"`
-	MemoryRequests string  `json:"memoryRequests,omitempty"`
-	MemoryPercent  Percent `json:"memoryPercent,omitempty"`
-	MemoryLimits   string  `json:"memoryLimits,omitempty"`
-	Ready          string  `json:"ready,omitempty"`
-	Node           string  `json:"node,omitempty"`
+	ID                string  `json:"id,omitempty"`
+	Status            Status  `json:"status,omitempty"`
+	Name              Link    `json:"name,omitempty"`
+	Namespace         string  `json:"namespace,omitempty"`
+	IP                string  `json:"ip,omitempty"`
+	CPURequests       string  `json:"cpuRequests,omitempty"`
+	CPURequestsNum    int64   `json:"CPURequestsNum,omitempty"`
+	CPUPercent        Percent `json:"cpuPercent,omitempty"`
+	CPULimits         string  `json:"cpuLimits,omitempty"`
+	CPULimitsNum      int64   `json:"CPULimitsNum,omitempty"`
+	MemoryRequests    string  `json:"memoryRequests,omitempty"`
+	MemoryRequestsNum int64   `json:"MemoryRequestsNum,omitempty"`
+	MemoryPercent     Percent `json:"memoryPercent,omitempty"`
+	MemoryLimits      string  `json:"memoryLimits,omitempty"`
+	MemoryLimitsNum   int64   `json:"MemoryLimitsNum,omitempty"`
+	Ready             string  `json:"ready,omitempty"`
+	Node              string  `json:"node,omitempty"`
 }
 
 type Status struct {

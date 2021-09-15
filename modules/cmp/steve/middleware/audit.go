@@ -117,8 +117,9 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			},
 		}
 
-		ctx := make(map[string]interface{})
-
+		ctx := map[string]interface{}{
+			auditClusterName: clusterName,
+		}
 		if vars["kubectl-shell"] == "true" {
 			auditReq.TemplateName = auditKubectlShell
 			var cmds []string
@@ -198,15 +199,11 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 				return
 			}
 
-			ctx[auditClusterName] = clusterName
 			ctx[auditResourceName] = name
 			ctx[auditNamespace] = namespace
 			ctx[auditResourceType] = typ
-			auditReq.Context = ctx
 		}
-		if len(ctx) == 0 {
-			return
-		}
+		auditReq.Context = ctx
 		if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
 			logrus.Errorf("faild to audit in steve audit, %v", err)
 		}

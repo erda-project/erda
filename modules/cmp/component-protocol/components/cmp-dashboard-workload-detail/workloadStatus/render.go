@@ -54,12 +54,12 @@ func (s *ComponentWorkloadStatus) SetCtxBundle(ctx context.Context) {
 	s.sdk = sdk
 }
 
-func (s *ComponentWorkloadStatus) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (s *ComponentWorkloadStatus) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}

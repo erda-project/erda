@@ -54,19 +54,19 @@ func (i *ComponentWorkloadInfo) InitComponent(ctx context.Context) {
 	i.sdk = sdk
 }
 
-func (i *ComponentWorkloadInfo) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (i *ComponentWorkloadInfo) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
-	var state State
-	data, err := json.Marshal(component.State)
+	var infoState State
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(data, &infoState); err != nil {
 		return err
 	}
-	i.State = state
+	i.State = infoState
 	return nil
 }
 

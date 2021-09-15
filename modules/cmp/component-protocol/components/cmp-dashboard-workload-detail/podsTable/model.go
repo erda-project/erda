@@ -52,19 +52,23 @@ type Data struct {
 }
 
 type Item struct {
-	ID             string  `json:"id,omitempty"`
-	Status         Status  `json:"status,omitempty"`
-	Name           Link    `json:"name,omitempty"`
-	Namespace      string  `json:"namespace,omitempty"`
-	IP             string  `json:"ip,omitempty"`
-	CPURequests    string  `json:"cpuRequests,omitempty"`
-	CPUPercent     Percent `json:"cpuPercent,omitempty"`
-	CPULimits      string  `json:"cpuLimits,omitempty"`
-	MemoryRequests string  `json:"memoryRequests,omitempty"`
-	MemoryPercent  Percent `json:"memoryPercent,omitempty"`
-	MemoryLimits   string  `json:"memoryLimits,omitempty"`
-	Ready          string  `json:"ready,omitempty"`
-	NodeName       string  `json:"nodeName,omitempty"`
+	ID                string  `json:"id,omitempty"`
+	Status            Status  `json:"status,omitempty"`
+	Name              Link    `json:"name,omitempty"`
+	Namespace         string  `json:"namespace,omitempty"`
+	IP                string  `json:"ip,omitempty"`
+	CPURequests       string  `json:"cpuRequests,omitempty"`
+	CPURequestsNum    int64   `json:"CPURequestsNum,omitempty"`
+	CPUPercent        Percent `json:"cpuPercent,omitempty"`
+	CPULimits         string  `json:"cpuLimits,omitempty"`
+	CPULimitsNum      int64   `json:"CPULimitsNum,omitempty"`
+	MemoryRequests    string  `json:"memoryRequests,omitempty"`
+	MemoryRequestsNum int64   `json:"MemoryRequestsNum,omitempty"`
+	MemoryPercent     Percent `json:"memoryPercent,omitempty"`
+	MemoryLimits      string  `json:"memoryLimits,omitempty"`
+	MemoryLimitsNum   int64   `json:"MemoryLimitsNum,omitempty"`
+	Ready             string  `json:"ready,omitempty"`
+	NodeName          string  `json:"nodeName,omitempty"`
 }
 
 type Status struct {
