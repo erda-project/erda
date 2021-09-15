@@ -37,14 +37,15 @@ func (svc *Service) CreateTestPlanV2(req apistructs.TestPlanV2CreateRequest) (ui
 
 	// create test plan
 	testPlanV2 := &dao.TestPlanV2{
-		Name:        req.Name,
-		Desc:        req.Desc,
-		CreatorID:   req.UserID,
-		UpdaterID:   req.UserID,
-		SpaceID:     req.SpaceID,
-		ProjectID:   req.ProjectID,
-		ExecuteTime: nil,
-		PassRate:    float64(0),
+		Name:          req.Name,
+		Desc:          req.Desc,
+		CreatorID:     req.UserID,
+		UpdaterID:     req.UserID,
+		SpaceID:       req.SpaceID,
+		ProjectID:     req.ProjectID,
+		ExecuteTime:   nil,
+		PassRate:      float64(0),
+		ExecuteApiNum: 0,
 	}
 
 	if err := svc.db.CreateTestPlanV2(testPlanV2); err != nil {
