@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
-	trace "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -44,8 +43,8 @@ type interceptorImpl struct {
 
 func (i *interceptorImpl) TagOverwrite(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		spans := ctx.Value(CTX_SPANS).([]*trace.Span)
-		if spans != nil {
+		spans, ok := Spans(ctx)
+		if ok {
 			for _, span := range spans {
 				for k, v := range span.Attributes {
 					if idx := strings.Index(k, "."); idx > -1 {

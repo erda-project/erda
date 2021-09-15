@@ -54,7 +54,7 @@ func injectCtx(next interceptor.Handler) interceptor.Handler {
 		header.Set(common.HEADER_MSP_AK_ID, req.Header.Get(common.HEADER_MSP_AK_ID))
 		header.Set(common.HEADER_MSP_AK_SECRET, req.Header.Get(common.HEADER_MSP_AK_SECRET))
 		if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
-			ctx = context.WithValue(ctx, common.CTX_SPANS, data.Spans)
+			ctx = common.WithSpans(ctx, data.Spans)
 		}
 		return next(ctx, entity)
 	}

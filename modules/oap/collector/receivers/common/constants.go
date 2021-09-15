@@ -14,6 +14,12 @@
 
 package common
 
+import (
+	"context"
+
+	trace "github.com/erda-project/erda-proto-go/oap/trace/pb"
+)
+
 var (
 	TAG_SERVICE_NAME  = "service_name"
 	TAG_SERVICE_ID    = "service_id"
@@ -30,7 +36,20 @@ var (
 	CTX_MSP_ENV_ID    = CTX_PREFIX + TAG_MSP_ENV_ID
 	CTX_MSP_AK_ID     = CTX_PREFIX + TAG_MSP_AK_ID
 	CTX_MSP_AK_SECRET = CTX_PREFIX + TAG_MSP_AK_SECRET
-	CTX_SPANS         = CTX_PREFIX + "spans"
 
 	SCOPE_MSP_ENV = "msp_env"
 )
+
+type spanKey struct{}
+
+func WithSpans(ctx context.Context, spans []*trace.Span) context.Context {
+	return context.WithValue(ctx, spanKey{}, spans)
+}
+
+func Spans(ctx context.Context) ([]*trace.Span, bool) {
+	val, ok := ctx.Value(spanKey{}).([]*trace.Span)
+	if !ok {
+		return nil, false
+	}
+	return val, true
+}
