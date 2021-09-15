@@ -19,13 +19,24 @@ import (
 )
 
 var (
-	logBytesCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "log_bytes",
-		Help: "the size of consumed log",
-	},
+	logBytesCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "log_bytes",
+			Subsystem: "log_storage",
+			Help:      "the size of consumed log",
+		},
 		[]string{levelKey, srcKey, srcComponentTypeKey, srcComponentNameKey, srcClusterNameKey, srcOrgNameKey, srcProjectIDKey, srcProjectNameKey, srcApplicationIDKey, srcApplicationNameKey, srcWorkspaceKey})
+
+	logInvalidCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "log_invalid_count",
+			Subsystem: "log_storage",
+			Help:      "the count of invalid log since started",
+		},
+		[]string{diceOrgNameKey},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(logBytesCounter)
+	prometheus.MustRegister(logBytesCounter, logInvalidCounter)
 }

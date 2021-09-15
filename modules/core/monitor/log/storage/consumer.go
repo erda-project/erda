@@ -33,6 +33,10 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return err
 	}
 	p.processLog(log)
+	if !p.validate(log) {
+		logInvalidCounter.WithLabelValues(log.Tags[diceOrgNameKey]).Inc()
+		return nil
+	}
 
 	cacheKey := log.Source + "_" + log.ID
 	if !p.cache.Has(cacheKey) {
@@ -48,6 +52,14 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 
 	count(log)
 	return p.output.Write(log)
+}
+
+func (p *provider) validate(log *logmodule.Log) bool {
+	orgName, ok := log.Tags[diceOrgNameKey]
+	if ok {
+		return p.schema.ValidateOrg(orgName)
+	}
+	return true
 }
 
 func (p *provider) processLog(log *logmodule.Log) {
