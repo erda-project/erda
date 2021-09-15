@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
@@ -106,11 +107,16 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		}
 	}
 
+	t := ctx.SDK.Pipeline.TimeEnd.Sub(*ctx.SDK.Pipeline.TimeBegin)
+	executeDuration := strconv.FormatInt(int64(t.Hours()), 10) + ":" + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05")
+	if t.Hours() < 10 {
+		executeDuration = "0" + executeDuration
+	}
 	var req = testplanpb.Content{
-		TestPlanID:     testPlanID,
-		ExecuteTime:    ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
-		ApiTotalNum:    int64(apiTotalNum),
-		ExecuteMinutes: ctx.SDK.Pipeline.TimeEnd.Sub(*ctx.SDK.Pipeline.TimeBegin).Minutes(),
+		TestPlanID:      testPlanID,
+		ExecuteTime:     timestamppb.New(*ctx.SDK.Pipeline.TimeBegin),
+		ApiTotalNum:     int64(apiTotalNum),
+		ExecuteDuration: executeDuration,
 	}
 
 	if apiTotalNum == 0 {
