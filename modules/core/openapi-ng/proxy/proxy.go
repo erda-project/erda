@@ -153,6 +153,7 @@ func buildPathToSegments(path string) (segs []*pathSegment) {
 				})
 			}
 			i++
+		loop:
 			for begin := i; i < n; i++ {
 				switch chars[i] {
 				case '}':
@@ -161,7 +162,7 @@ func buildPathToSegments(path string) (segs []*pathSegment) {
 						name: string(chars[begin:i]),
 					})
 					start = i + 1
-					break
+					break loop
 				case '=':
 					segs = append(segs, &pathSegment{
 						typ:  pathField,
@@ -170,7 +171,7 @@ func buildPathToSegments(path string) (segs []*pathSegment) {
 					for ; i < n && chars[i] != '}'; i++ {
 					}
 					start = i + 1
-					break
+					break loop
 				}
 			}
 		}
