@@ -130,6 +130,7 @@ build_image()  {
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         --build-arg "EXTENSION_ZIP_ADDRS=${EXTENSION_ZIP_ADDRS}" \
+        --build-arg GOPROXY="${GOPROXY}" \
         -f "${DOCKERFILE}" .
 }
 
