@@ -1,6 +1,6 @@
 {
-  "id": "translation_analysis_database",
-  "name": "translation_analysis_database",
+  "id": "translation_analysis_mq",
+  "name": "translation_analysis_mq",
   "desc": "",
   "scope": "micro_service",
   "scopeId": "global",
@@ -20,10 +20,11 @@
           "query": {
             "end": "{{endTime}}",
             "filterServiceName": "{{serviceName}}",
-            "layer": "db",
-            "search": "{{search}}",
+            "layer": "mq",
+            "search": "{{topic}}",
             "serviceId": "{{serviceId}}",
             "sort": "{{sort}}",
+            "type": "{{type}}",
             "start": "{{startTime}}",
             "terminusKey": "{{terminusKey}}"
           },
@@ -34,58 +35,57 @@
           "dataSourceConfig": {
             "valueDimensions": [
               {
-                "alias": "SQL 事务",
+                "alias": "Topic",
                 "i18n": {
                   "alias": {
-                    "en": "SQL",
-                    "zh": "SQL 事务"
+                    "en": "Topic",
+                    "zh": "Topic"
                   }
                 },
                 "copy": true,
-                "width": 300,
                 "key": "operation",
                 "resultType": "string",
                 "type": "field"
               },
               {
-                "alias": "数据库类型",
+                "alias": "调用类型",
                 "i18n": {
                   "alias": {
-                    "en": "Database Type",
-                    "zh": "数据库类型"
+                    "en": "Call Type",
+                    "zh": "调用类型"
                   }
                 },
-                "key": "db_type",
+                "key": "type",
                 "resultType": "string",
                 "type": "field"
               },
               {
-                "alias": "数据库实例",
+                "alias": "MQ 类型",
                 "i18n": {
                   "alias": {
-                    "en": "Database Instance",
-                    "zh": "数据库实例"
+                    "en": "MQ Type",
+                    "zh": "MQ 类型"
                   }
                 },
-                "key": "db_instance",
+                "key": "component",
                 "resultType": "string",
                 "type": "field"
               },
               {
-                "alias": "数据库地址",
+                "alias": "服务地址",
+                "width": 300,
                 "i18n": {
                   "alias": {
-                    "en": "Database Address",
-                    "zh": "数据库地址"
+                    "en": "Service Address",
+                    "zh": "服务地址"
                   }
                 },
-                "key": "db_host",
+                "key": "host",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "调用次数",
-                "width": 300,
                 "i18n": {
                   "alias": {
                     "en": "Request Count",
@@ -135,11 +135,11 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "数据库事务",
+        "title": "MQ 事务",
         "i18n": {
           "title": {
-            "en": "Databases Translation",
-            "zh": "数据库事务"
+            "en": "MQ Translation",
+            "zh": "MQ 事务"
           }
         }
       }
@@ -154,7 +154,7 @@
         "api": {
           "body": {
             "from": [
-              "application_db"
+              "application_mq"
             ],
             "groupby": [
               "time()"
@@ -178,8 +178,10 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "include_db_statement": "{{subSearch}}",
-            "filter_source_service_id": "{{serviceId}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -191,7 +193,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_db"
+              "application_mq"
             ],
             "typeDimensions": [
               {
@@ -221,7 +223,7 @@
                     "zh": "请求次数"
                   }
                 },
-                "field": "application_db-elapsed_count::field",
+                "field": "application_mq-elapsed_count::field",
                 "key": "valueSR6vrde7",
                 "resultType": "number",
                 "type": "field"
@@ -256,7 +258,7 @@
         "api": {
           "body": {
             "from": [
-              "application_db"
+              "application_mq"
             ],
             "groupby": [
               "time()"
@@ -280,8 +282,10 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "include_db_statement": "{{subSearch}}",
-            "filter_source_service_id": "{{serviceId}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -293,7 +297,7 @@
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
-              "application_db"
+              "application_mq"
             ],
             "typeDimensions": [
               {
@@ -323,7 +327,7 @@
                     "zh": "平均响应时间"
                   }
                 },
-                "field": "application_db-elapsed_mean::field",
+                "field": "application_mq-elapsed_mean::field",
                 "key": "valueCxbcWuWT",
                 "resultType": "number",
                 "type": "field",
@@ -369,10 +373,12 @@
             "end": "{{endTime}}",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "filter_source_service_id": "{{serviceId}}",
-            "include_db_statement": "{{subSearch}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
-            "q": "SELECT db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_db_slow GROUP BY db_statement::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
+            "q": "SELECT message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_mq_slow GROUP BY message_bus_destination::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
             "ql": "influxql",
             "start": "{{startTime}}",
             "type": "_"
@@ -384,14 +390,14 @@
           "dataSourceConfig": {
             "isSqlMode": true,
             "sql": {
-              "from": "application_db_slow",
+              "from": "application_mq_slow",
               "fromSource": [
-                "application_db_slow"
+                "application_mq_slow"
               ],
-              "groupBy": "db_statement::tag",
+              "groupBy": "message_bus_destination::tag",
               "limit": 50,
               "orderBy": "",
-              "select": "db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
+              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
             }
           },
           "optionProps": {
@@ -399,7 +405,7 @@
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
-              "value": "Statement"
+              "value": "Topic"
             }
           }
         },
@@ -432,12 +438,13 @@
             "end": "{{endTime}}",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "filter_source_service_id": "{{serviceId}}",
-            "include_db_statement": "{{subSearch}}",
+            "or_eq_source_service_id": "{{serviceId}}",
+            "or_eq_target_service_id": "{{serviceId}}",
+            "include_message_bus_destination": "{{subSearch}}",
+            "filter_span_kind": "{{type}}",
             "format": "chartv2",
-            "q": "SELECT db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_db_error GROUP BY db_statement::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
+            "q": "SELECT message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_mq_error GROUP BY message_bus_destination::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
             "ql": "influxql",
-            "serviceName": "{{serviceName}}",
             "start": "{{startTime}}",
             "type": "_"
           },
@@ -448,13 +455,13 @@
           "dataSourceConfig": {
             "isSqlMode": true,
             "sql": {
-              "from": "application_db_error",
+              "from": "application_mq_error",
               "fromSource": [
-                "application_db_error"
+                "application_mq_error"
               ],
-              "groupBy": "db_statement::tag",
+              "groupBy": "message_bus_destination::tag",
               "limit": 50,
-              "select": "db_statement::tag as Statement,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
+              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
             }
           },
           "optionProps": {
@@ -462,7 +469,7 @@
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
-              "value": "Statement"
+              "value": "Topic"
             }
           }
         },
