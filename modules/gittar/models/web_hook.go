@@ -120,11 +120,7 @@ func (svc *Service) CreateHookTask(task *WebHookTask) error {
 
 }
 
-func init() {
-	db, err := OpenDB()
-	if err != nil {
-		panic(err)
-	}
+func Init(db *DBClient) {
 	for i := 0; i < 5; i += 1 {
 		go StartHookTaskConsumer(db)
 	}
