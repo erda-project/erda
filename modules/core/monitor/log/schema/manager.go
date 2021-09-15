@@ -42,6 +42,7 @@ type LogSchema interface {
 	Name() string
 	RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface)
 	CreateDefault() error
+	ValidateOrg(orgName string) bool
 }
 
 type CassandraSchema struct {
@@ -49,6 +50,8 @@ type CassandraSchema struct {
 	cass           cassandra.Interface
 	defaultSession *cassandra.Session
 	lastOrgList    []string
+	currentOrgList []string
+	currentOrgMap  map[string]struct{}
 	mutexKey       string
 }
 
@@ -76,7 +79,15 @@ func NewCassandraSchema(cass cassandra.Interface, l logs.Logger, ops ...Option) 
 		op(cs)
 	}
 
+	if err := cs.updateMetadata(); err != nil {
+		return nil, fmt.Errorf("updateMetadata error: %w", err)
+	}
 	return cs, nil
+}
+
+func (cs *CassandraSchema) ValidateOrg(orgName string) bool {
+	_, ok := cs.currentOrgMap[orgName]
+	return ok
 }
 
 func (cs *CassandraSchema) Name() string {
@@ -84,6 +95,8 @@ func (cs *CassandraSchema) Name() string {
 }
 
 func (cs *CassandraSchema) RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface) {
+	go cs.syncMetadata(ctx, interval)
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	mu, err := muInf.New(ctx, cs.mutexKey)
@@ -117,24 +130,50 @@ func (cs *CassandraSchema) RunDaemon(ctx context.Context, interval time.Duration
 
 		select {
 		case <-ticker.C:
-			continue
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (cs *CassandraSchema) compareOrUpdate() error {
+func (cs *CassandraSchema) updateMetadata() error {
 	orgs, err := cs.listOrgNames()
 	if err != nil {
 		return err
 	}
-	if reflect.DeepEqual(orgs, cs.lastOrgList) {
+	cs.currentOrgList = orgs
+	m := make(map[string]struct{}, len(orgs))
+	for _, item := range orgs {
+		m[item] = struct{}{}
+	}
+	cs.currentOrgMap = m
+	return nil
+}
+
+func (cs *CassandraSchema) syncMetadata(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		err := cs.updateMetadata()
+		if err != nil {
+			cs.Logger.Errorf("syncMetadata failed: %s", err)
+		}
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
+
+	}
+}
+
+func (cs *CassandraSchema) compareOrUpdate() error {
+	if reflect.DeepEqual(cs.currentOrgList, cs.lastOrgList) {
 		return nil
 	}
-	cs.lastOrgList = orgs
+	cs.lastOrgList = cs.currentOrgList
 
-	for _, org := range orgs {
+	for _, org := range cs.currentOrgList {
 		keyspace := KeyspaceWithOrgName(org)
 		keyspaceExisted, tableExisted := cs.existedCheck(keyspace)
 		if !keyspaceExisted {

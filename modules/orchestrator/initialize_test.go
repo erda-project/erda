@@ -12,16 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actionagent
+package orchestrator
 
-func (agent *Agent) PreStop() {
-	// TODO invoke /opt/action/pre-stop
+import (
+	"context"
+	"testing"
+	"time"
 
-	go agent.stopWatchFiles()
+	"github.com/golang/mock/gomock"
+)
 
-	// 打包目录并上传
-	agent.uploadDir()
+func Test_initCron(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
 
-	// agent cancel context to stop other running things
-	agent.Cancel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	runner := NewMockSharedCronjobRunner(ctrl)
+	// call sync addon twice, 1 for first call 2 for loop call
+	runner.EXPECT().SyncAddons().Times(2)
+	runner.EXPECT().SyncProjects().Times(2)
+
+	initCron(runner, ctx)
 }

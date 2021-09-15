@@ -15,44 +15,13 @@
 package actionagent
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
-	"github.com/alecthomas/assert"
+	"github.com/stretchr/testify/assert"
 )
-
-//func TestWatchFiles(t *testing.T) {
-//	logrus.SetLevel(logrus.DebugLevel)
-//	logrus.Debug("begin watch files")
-//
-//	fw, err := filewatch.New()
-//	assert.NoError(t, err)
-//	ctx, cancel := context.WithCancel(context.Background())
-//	agent := Agent{
-//		EasyUse: EasyUse{
-//			EnablePushLog2Collector: true,
-//			CollectorAddr:           "collector.default.svc.cluster.local:7076",
-//			TaskLogID:               "agent-push-1",
-//
-//			RunMultiStdoutFilePath: "/tmp/stdout",
-//			RunMultiStderrFilePath: "/tmp/stderr",
-//		},
-//		Ctx:         ctx,
-//		Cancel:      cancel,
-//		FileWatcher: fw,
-//	}
-//
-//	go agent.watchFiles()
-//
-//	// mock logic done
-//	time.Sleep(time.Millisecond * 10) // very fast action done
-//
-//	// teardown
-//	agent.PreStop()
-//
-//	time.Sleep(time.Second * 1)
-//}
 
 func TestSlice(t *testing.T) {
 	f := func(flogs *[]string, line string) {
@@ -92,4 +61,20 @@ func TestDesensitizeLine(t *testing.T) {
 		assert.Equal(t, v.want, v.line)
 	}
 
+}
+
+func TestAgent_BadWatchFiles(t *testing.T) {
+	badAgent := Agent{}
+	badAgent.watchFiles()
+	assert.True(t, len(badAgent.Errs) > 0)
+}
+
+func TestAgent_watchFiles(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	agent := Agent{
+		Ctx:    ctx,
+		Cancel: cancel,
+	}
+	agent.watchFiles()
+	t.Logf("no error here")
 }
