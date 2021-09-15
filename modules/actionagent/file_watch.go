@@ -31,8 +31,12 @@ import (
 )
 
 func (agent *Agent) watchFiles() {
+	if agent.Ctx == nil || agent.Cancel == nil {
+		agent.AppendError(fmt.Errorf("init watchFiles need a cancelable context"))
+		return
+	}
 
-	watcher, err := filewatch.New()
+	watcher, err := filewatch.New(agent.Ctx)
 	if err != nil {
 		agent.AppendError(err)
 		return

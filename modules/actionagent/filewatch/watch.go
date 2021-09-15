@@ -15,6 +15,7 @@ package filewatch
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"log"
@@ -41,6 +42,7 @@ type TailHandlerWithIO struct {
 }
 
 type Watcher struct {
+	ctx                context.Context
 	fullFileHandlerMap map[string]FullHandler
 	fullFsWatcher      *fsnotify.Watcher
 	errs               []error
@@ -51,8 +53,8 @@ const logPrefix = "[Platform Log] [file watcher]"
 
 var logger = log.New(os.Stderr, logPrefix+" ", 0)
 
-func New() (*Watcher, error) {
-	w := Watcher{fullFileHandlerMap: make(map[string]FullHandler), GracefulDoneC: make(chan struct{})}
+func New(ctx context.Context) (*Watcher, error) {
+	w := Watcher{ctx: ctx, fullFileHandlerMap: make(map[string]FullHandler), GracefulDoneC: make(chan struct{})}
 
 	watcher, err := fsnotify.NewWatcher()
 	w.fullFsWatcher = watcher
@@ -114,6 +116,8 @@ func (w *Watcher) Close() {
 	case <-w.GracefulDoneC:
 		logrus.Debugf("%s close file watcher success", logPrefix)
 		close(w.GracefulDoneC)
+	case <-w.ctx.Done():
+		logrus.Debugf("%s close file watcher success (action done)", logPrefix)
 	}
 
 	if w.fullFsWatcher != nil {

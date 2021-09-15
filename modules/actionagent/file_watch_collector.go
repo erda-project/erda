@@ -103,6 +103,7 @@ func (agent *Agent) asyncPushCollectorLog() {
 		receivedNum++
 		if receivedNum == 2 {
 			agent.FileWatcher.GracefulDoneC <- struct{}{}
+			break
 		}
 	}
 }
