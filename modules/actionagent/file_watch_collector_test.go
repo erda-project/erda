@@ -14,14 +14,28 @@
 
 package actionagent
 
-func (agent *Agent) PreStop() {
-	// TODO invoke /opt/action/pre-stop
+import (
+	"context"
+	"testing"
+	"time"
 
-	go agent.stopWatchFiles()
+	"github.com/sirupsen/logrus"
 
-	// 打包目录并上传
-	agent.uploadDir()
+	"github.com/erda-project/erda/modules/actionagent/filewatch"
+)
 
-	// agent cancel context to stop other running things
-	agent.Cancel()
+func TestAgent_asyncPushCollectorLog(t *testing.T) {
+	logrus.SetLevel(logrus.DebugLevel)
+	ctx, cancel := context.WithCancel(context.Background())
+	agent := Agent{
+		Ctx: ctx,
+		Cancel: cancel,
+		FileWatcher: &filewatch.Watcher{GracefulDoneC: make(chan struct{})},
+	}
+	go func() {
+		time.Sleep(time.Second)
+		cancel()
+		<- agent.FileWatcher.GracefulDoneC
+	}()
+	agent.asyncPushCollectorLog()
 }
