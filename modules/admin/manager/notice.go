@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -48,6 +49,21 @@ func (am *AdminManager) CreateNotice(contenxt context.Context, req *http.Request
 		return nil, errors.Errorf("invalid param, orgId is invalid")
 	}
 
+	// check permission
+	checkResp, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.NoticeResource,
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !checkResp.Access {
+		return nil, apierrors.ErrCreateNotice.AccessDenied()
+	}
+
 	resp, err := am.bundle.CreateNoticeRequest(userID, orgID, req.Body)
 	if err != nil {
 		return apierrors.ErrCreateNotice.InternalError(err).ToResp(), nil
@@ -71,6 +87,21 @@ func (am *AdminManager) UpdateNotice(contenxt context.Context, req *http.Request
 	id, err := strconv.ParseUint(resources["id"], 10, 64)
 	if err != nil {
 		return apierrors.ErrUpdateNotice.InvalidParameter(err).ToResp(), nil
+	}
+
+	// check permission
+	checkResp, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.NoticeResource,
+		Action:   apistructs.UpdateAction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !checkResp.Access {
+		return nil, apierrors.ErrUpdateNotice.AccessDenied()
 	}
 
 	resp, err := am.bundle.UpdateNotice(id, orgID, userID, req.Body)
@@ -97,6 +128,21 @@ func (am *AdminManager) PublishNotice(contenxt context.Context, req *http.Reques
 		return apierrors.ErrPublishNotice.InvalidParameter(err).ToResp(), nil
 	}
 
+	// check permission
+	checkResp, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.NoticeResource,
+		Action:   apistructs.UpdateAction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !checkResp.Access {
+		return nil, apierrors.ErrPublishNotice.AccessDenied()
+	}
+
 	err = am.bundle.PublishORUnPublishNotice(orgID, id, userID, "publish")
 	if err != nil {
 		return apierrors.ErrPublishNotice.InternalError(err).ToResp(), nil
@@ -118,12 +164,27 @@ func (am *AdminManager) UnpublishNotice(contenxt context.Context, req *http.Requ
 
 	id, err := strconv.ParseUint(resources["id"], 10, 64)
 	if err != nil {
-		return apierrors.ErrPublishNotice.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrUnpublishNotice.InvalidParameter(err).ToResp(), nil
+	}
+
+	// check permission
+	checkResp, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.NoticeResource,
+		Action:   apistructs.UpdateAction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !checkResp.Access {
+		return nil, apierrors.ErrUnpublishNotice.AccessDenied()
 	}
 
 	err = am.bundle.PublishORUnPublishNotice(orgID, id, userID, "unpublish")
 	if err != nil {
-		return apierrors.ErrPublishNotice.InternalError(err).ToResp(), nil
+		return apierrors.ErrUnpublishNotice.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(nil)
 }
@@ -144,6 +205,22 @@ func (am *AdminManager) DeleteNotice(contenxt context.Context, req *http.Request
 	if err != nil {
 		return apierrors.ErrDeleteNotice.InvalidParameter(err).ToResp(), nil
 	}
+
+	// check permission
+	checkResp, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.NoticeResource,
+		Action:   apistructs.DeleteAction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !checkResp.Access {
+		return nil, apierrors.ErrDeleteNotice.AccessDenied()
+	}
+
 	resp, err := am.bundle.DeleteNotice(id, orgID, userID)
 	if err != nil {
 		return apierrors.ErrDeleteNotice.InternalError(err).ToResp(), nil
@@ -163,6 +240,21 @@ func (am *AdminManager) ListNotice(contenxt context.Context, req *http.Request, 
 	orgID, err := GetOrgID(req)
 	if err != nil {
 		return nil, errors.Errorf("invalid param, orgId is invalid")
+	}
+
+	// check permission
+	checkResp, err := am.bundle.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.NoticeResource,
+		Action:   apistructs.ListAction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !checkResp.Access {
+		return nil, apierrors.ErrListNotice.AccessDenied()
 	}
 
 	resp, err := am.bundle.ListNoticeByOrgID(orgID, userID, req.URL.Query())
