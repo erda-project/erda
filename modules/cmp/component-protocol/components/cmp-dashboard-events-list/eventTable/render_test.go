@@ -28,11 +28,11 @@ import (
 
 func getTestURLQuery() (State, string) {
 	v := State{
-		PageNo:   1,
-		PageSize: 20,
+		PageNo:   2,
+		PageSize: 10,
 		Sorter: Sorter{
-			Field: "test",
-			Order: "ascend",
+			Field: "test1",
+			Order: "descend",
 		},
 	}
 	m := map[string]interface{}{
@@ -77,17 +77,17 @@ func TestComponentEventTable_EncodeURLQuery(t *testing.T) {
 func TestComponentEventTable_GenComponentState(t *testing.T) {
 	component := &cptype.Component{
 		State: map[string]interface{}{
-			"clusterName": "test",
-			"pageNo":      1,
-			"pageSize":    20,
+			"clusterName": "test1",
+			"pageNo":      2,
+			"pageSize":    10,
 			"sorterData": Sorter{
-				Field: "test",
-				Order: "ascend",
+				Field: "test1",
+				Order: "descend",
 			},
 			"total": 100,
 			"filterValues": FilterValues{
-				Namespace: []string{"test"},
-				Type:      []string{"test"},
+				Namespace: []string{"test1"},
+				Type:      []string{"test1"},
 			},
 		},
 	}
