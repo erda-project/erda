@@ -21,6 +21,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bluele/gcache"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/gocql/gocql"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
@@ -172,5 +173,26 @@ func mockProvider() *provider {
 	p.ttl = mockMysqlStore()
 	p.Mysql = newMockMysql()
 	p.Log = logrusx.New()
+	p.schema = &mockLogSchema{}
 	return p
+}
+
+type mockLogSchema struct {
+	validateOrgTriggered bool
+}
+
+func (m *mockLogSchema) Name() string {
+	return ""
+}
+
+func (m *mockLogSchema) RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface) {
+	return
+}
+
+func (m *mockLogSchema) CreateDefault() error {
+	return nil
+}
+
+func (m *mockLogSchema) ValidateOrg(orgName string) bool {
+	return !m.validateOrgTriggered
 }
