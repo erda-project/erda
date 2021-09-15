@@ -136,7 +136,7 @@ func (b *Bundle) UnCordonNode(req *apistructs.SteveRequest) error {
 
 	spec := map[string]interface{}{
 		"spec": map[string]interface{}{
-			"unschedulable": nil,
+			"unschedulable": false,
 		},
 	}
 	req.Obj = &spec

@@ -138,7 +138,7 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			}
 			switch req.Method {
 			case http.MethodPatch:
-				if isInternal && strutil.Equal(typ, "nodes", true) {
+				if isInternal && strutil.Equal(typ, "node", true) {
 					var rb reqBody
 					if err := json.Unmarshal(body, &rb); err != nil {
 						logrus.Errorf("failed to unmarshal in steve audit")
@@ -166,8 +166,8 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 
 					// audit for cordon/uncordon node
 					if rb.Spec != nil && rb.Spec["unschedulable"] != nil {
-						v, _ := rb.Spec["unschedulable"].(bool)
-						if v {
+						v, ok := rb.Spec["unschedulable"].(bool)
+						if ok && v {
 							auditReq.Audit.TemplateName = auditCordonNode
 						} else {
 							auditReq.Audit.TemplateName = auditUncordonNode
@@ -263,7 +263,7 @@ type cmdWithTimestamp struct {
 func (w *wrapConn) Read(p []byte) (n int, err error) {
 	n, err = w.Conn.Read(p)
 	data := websocket.DecodeFrame(p)
-	if len(data) <= 1 {
+	if len(data) <= 1 || data[0] != '0' {
 		return
 	}
 	decoded, _ := base64.StdEncoding.DecodeString(string(data[1:]))
@@ -272,10 +272,17 @@ func (w *wrapConn) Read(p []byte) (n int, err error) {
 	}
 
 	w.buf = append(w.buf, decoded...)
-	cmds := strings.Split(string(w.buf), "\n")
+
+	// splits by \n and \r
+	splits := strings.Split(string(w.buf), "\r")
+	cmds := make([]string, 0)
+	for _, str := range splits {
+		cmds = append(cmds, strings.Split(str, "\n")...)
+	}
+
 	w.buf = nil
 	length := len(cmds)
-	if decoded[len(decoded)-1] != '\n' {
+	if decoded[len(decoded)-1] != '\r' && decoded[len(decoded)-1] != '\n' {
 		w.buf = append(w.buf, cmds[length-1]...)
 		length--
 	}
