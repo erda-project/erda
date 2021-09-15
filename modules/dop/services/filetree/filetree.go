@@ -741,12 +741,21 @@ func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID ui
 	appID := labels[apistructs.LabelAppID]
 	projectID := labels[apistructs.LabelProjectID]
 	branch := labels[apistructs.LabelBranch]
-	names := strings.Split(pipelineDetail.YmlName, branch)
-	ymlName := pipelineDetail.YmlName
-	if len(names) >= 2 {
-		ymlName = names[1]
+
+	var ymlName string
+	// the name starting with dice-deploy-release is the pipeline deployed by the deployment center，
+	// Users do not have an address to see the details of the pipeline, and can only simulate to the pipeline.yml of the corresponding branch first，
+	// todo remove the code when developing other pipeline detail interfaces later
+	if strings.HasPrefix(pipelineDetail.YmlName, "dice-deploy-release") {
+		ymlName = "pipeline.yml"
+	} else {
+		names := strings.Split(pipelineDetail.YmlName, branch)
+		ymlName = pipelineDetail.YmlName
+		if len(names) >= 2 {
+			ymlName = names[1]
+		}
+		ymlName = strings.TrimPrefix(ymlName, "/")
 	}
-	ymlName = strings.TrimPrefix(ymlName, "/")
 
 	inode := fmt.Sprintf("%s/%s/tree/%s/%s", projectID, appID, branch, ymlName)
 	base64Inode := base64.URLEncoding.EncodeToString([]byte(inode))
