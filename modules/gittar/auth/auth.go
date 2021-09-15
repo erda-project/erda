@@ -197,19 +197,15 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	var err error
 	var userInfo *ucauth.UserInfo
 
-	if !isGitProtocolRequest(c) {
+	userIdStr := c.GetHeader(httputil.UserHeader)
+	if userIdStr != "" {
+		logrus.Infof("userIdStr: %s", userIdStr)
 		gitRepository, err = openRepository(c, repo)
 		if err != nil {
 			c.AbortWithStatus(500, err)
 			return
 		}
 		c.Set("repository", gitRepository)
-
-		userIdStr := c.GetHeader(httputil.UserHeader)
-		if userIdStr == "" {
-			c.AbortWithStatus(500, errors.New("the userID is empty"))
-			return
-		}
 		userInfoDto, err := uc.FindUserById(userIdStr)
 		if err != nil {
 			c.AbortWithStatus(500, err)
@@ -234,7 +230,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		c.Next()
 		return
 	}
-
+	logrus.Infof("basic auth,url: %s", c.HttpRequest().URL.String())
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)
 	if err == nil {
 		_, validateError := ValidaUserRepo(c, string(userInfo.ID), repo)
@@ -455,12 +451,4 @@ func getOrgIDV3(c *webcontext.Context, orgName string) (int64, error) {
 		return 0, err
 	}
 	return orgID, nil
-}
-
-// isGitProtocolRequest if request like git clone,git push... return true
-func isGitProtocolRequest(c *webcontext.Context) bool {
-	if c.GetHeader("Git-Protocol") != "" {
-		return true
-	}
-	return false
 }
