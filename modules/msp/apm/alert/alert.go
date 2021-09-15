@@ -24,6 +24,7 @@ import (
 
 const MicroServiceScope = "micro_service"
 const CUSTOM_ALERT_TYPE = "micro_service_customize"
+const StatusPage = "status_page"
 
 const (
 	Domain              = "alert_domain"
