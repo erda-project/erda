@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -179,13 +180,15 @@ func (t *ComponentEventTable) RenderList() error {
 			logrus.Errorf("failed to parse count for event %s, %v", fields[9], err)
 			continue
 		}
+		lastSeen := fmt.Sprintf("%s %s", fields[0], t.sdk.I18n("ago"))
 		lastSeenTimestamp, err := strfmt.ParseDuration(fields[0])
 		if err != nil {
-			logrus.Errorf("failed to parse timestamp for event %s, %v", fields[9], err)
-			continue
+			lastSeenTimestamp = math.MaxInt64
+			lastSeen = t.sdk.I18n("unknown")
 		}
+
 		items = append(items, Item{
-			LastSeen:          fmt.Sprintf("%s %s", fields[0], t.sdk.I18n("ago")),
+			LastSeen:          lastSeen,
 			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
 			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],

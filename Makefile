@@ -36,8 +36,7 @@ VERSION_OPS := -ldflags "\
 # build env
 # GOPROXY ?= https://goproxy.cn/
 # GOPRIVATE ?= ""
-# GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
-GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
+GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
 
 .PHONY: build-version clean tidy
 build-all: build-version submodule tidy
@@ -191,3 +190,4 @@ cli-linux:
 upload-cli: cli cli-linux
 	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
 	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
+

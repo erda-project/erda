@@ -79,9 +79,9 @@ func (c Chart) setData(nodes []data.Object, resourceName string) []DataItem {
 
 	allocatableStr, unAllocatableStr, capacityStr := GetScaleValue(allocatableQuantity, unAllocatableQuantity, capacityQuantity)
 	if resourceName == CPU {
-		allocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("core"), allocatableQuantityValue/1000)
-		capacityStr = fmt.Sprintf("%.1f"+c.SDK.I18n("core"), capacityQuantityValue/1000)
-		unAllocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("core"), unAllocatableQuantityValue/1000)
+		allocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("cores"), allocatableQuantityValue/1000)
+		capacityStr = fmt.Sprintf("%.1f"+c.SDK.I18n("cores"), capacityQuantityValue/1000)
+		unAllocatableStr = fmt.Sprintf("%.1f"+c.SDK.I18n("cores"), unAllocatableQuantityValue/1000)
 	}
 
 	var di []DataItem
