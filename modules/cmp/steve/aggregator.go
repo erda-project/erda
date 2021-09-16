@@ -23,6 +23,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -283,6 +284,42 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	group.server.ServeHTTP(rw, req)
+}
+
+func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) {
+	s, ok := a.servers.Load(clusterName)
+	if !ok {
+		cluster, err := a.bdl.GetCluster(clusterName)
+		if err != nil {
+			apiErr, _ := err.(*errorresp.APIError)
+			if apiErr.HttpCode() != http.StatusNotFound {
+				logrus.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error())
+				apiOp.WriteError(apistructs.NewSteveError(apistructs.ServerError, "Internal server error"))
+				return
+			}
+			apiOp.WriteError(apistructs.NewSteveError(apistructs.NotFound, fmt.Sprintf("cluster %s not found", clusterName)))
+			return
+		}
+
+		if cluster.Type != "k8s" {
+			apiOp.WriteError(apistructs.NewSteveError(apistructs.BadRequest, fmt.Sprintf("cluster %s is not a k8s cluster", clusterName)))
+			return
+		}
+
+		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
+		a.Add(cluster)
+		if s, ok = a.servers.Load(cluster.Name); !ok {
+			apiOp.WriteError(apistructs.NewSteveError(apistructs.ServerError, "Internal server error"))
+		}
+	}
+
+	group, _ := s.(*group)
+	if !group.ready {
+		apiOp.WriteError(apistructs.NewSteveError(apistructs.ServerError,
+			fmt.Sprintf("k8s API for cluster %s is not ready, please wait", clusterName)))
+		return
+	}
+	group.server.APIServer.Handle(apiOp)
 }
 
 func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
@@ -46,7 +47,7 @@ import (
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
-func initialize(ctx context.Context) error {
+func (p *provider) initialize(ctx context.Context) error {
 	conf.Load()
 
 	// set log formatter
@@ -67,7 +68,7 @@ func initialize(ctx context.Context) error {
 	dumpstack.Open()
 	logrus.Infoln(version.String())
 
-	server, err := do(ctx)
+	server, err := p.do(ctx)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func initialize(ctx context.Context) error {
 	return server.ListenAndServe()
 }
 
-func do(ctx context.Context) (*httpserver.Server, error) {
+func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	var redisCli *redis.Client
 
 	db := dbclient.Open(dbengine.MustOpen())
@@ -143,6 +144,8 @@ func do(ctx context.Context) (*httpserver.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	p.SteveAggregator = ep.SteveAggregator
 
 	if conf.EnableEss() {
 		initServices(ep)
@@ -227,4 +230,12 @@ func registerWebHook(bdl *bundle.Bundle) {
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register pipeline tasks event, (%v)", err)
 	}
+}
+
+type SteveServer interface {
+	Serve(clusterName string, apiOp *types.APIRequest)
+}
+
+func (p *provider) Serve(clusterName string, apiOp *types.APIRequest) {
+	p.SteveAggregator.Serve(clusterName, apiOp)
 }
