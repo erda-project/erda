@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/pkg/common/apis"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/conf/monitor/monitor"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
