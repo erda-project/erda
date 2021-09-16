@@ -249,3 +249,61 @@ func TestSortByStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestTable_GetScaleValue(t1 *testing.T) {
+	type args struct {
+		a            float64
+		b            float64
+		resourceType TableType
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test",
+			args: args{
+				a:            1024,
+				b:            102400000,
+				resourceType: "text",
+			},
+			want: "1K/102400K",
+		},
+		{
+			name: "test1",
+			args: args{
+				a:            1024,
+				b:            1024,
+				resourceType: "text",
+			},
+			want: "1K/1K",
+		},
+		{
+			name: "test2",
+			args: args{
+				a:            2047,
+				b:            1024,
+				resourceType: Memory,
+			},
+			want: "2.0K/1.0K",
+		},
+		{
+			name: "test3",
+			args: args{
+				a:            1024,
+				b:            1024,
+				resourceType: Cpu,
+			},
+			want: "1.024/1.024",
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{}
+			if got := t.GetScaleValue(tt.args.a, tt.args.b, tt.args.resourceType); got != tt.want {
+				t1.Errorf("GetScaleValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

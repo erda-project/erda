@@ -31,6 +31,7 @@ type InfoMapTable struct {
 }
 
 type Pair struct {
+	Id    string `json:"id"`
 	Label Label  `json:"label"`
 	Value string `json:"value"`
 }
@@ -45,6 +46,7 @@ type StyleConfig struct {
 }
 
 type Props struct {
+	RowKey     string   `json:"rowKey"`
 	Bordered   bool     `json:"bordered"`
 	ShowHeader bool     `json:"showHeader"`
 	Pagination bool     `json:"pagination"`

@@ -61,7 +61,7 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	}
 	nf.Props = nf.GetFilterProps(labels)
 	switch event.Operation {
-	case common.CMPDashboardFilterOperationKey:
+	case common.CMPDashboardFilterOperationKey, common.CMPDashboardTableTabs, cptype.RenderingOperation:
 		if err := common.Transfer(c.State, &nf.State); err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ func isEmptyFilter(values filter.Values) bool {
 func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	var nodes []data.Object
 	labels := make([]string, 0)
-	nodeNameFilter := ""
+	nodeNameFilterName := ""
 	if isEmptyFilter(values) {
 		nodes = nodeList
 	} else {
@@ -106,13 +106,13 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 				labels = append(labels, ss...)
 			} else {
 				vs := v.(string)
-				nodeNameFilter = vs
+				nodeNameFilterName = vs
 			}
 		}
 		// Filter by node name
-		if nodeNameFilter != "" {
+		if nodeNameFilterName != "" {
 			for _, node := range nodeList {
-				if strings.Contains(node.String("metadata", "name"), nodeNameFilter) || strings.Contains(node.String("id"), nodeNameFilter) {
+				if strings.Contains(node.String("metadata", "name"), nodeNameFilterName) || strings.Contains(node.StringSlice("metadata", "fields")[5], nodeNameFilterName) {
 					nodes = append(nodes, node)
 				}
 			}
