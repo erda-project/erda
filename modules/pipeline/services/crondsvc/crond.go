@@ -150,9 +150,6 @@ func (s *CrondSvc) ReloadCrond(ctx context.Context, pipelineCronFunc func(uint64
 		select {
 		case <-ctx.Done():
 			s.crond.Stop()
-			return
-		default:
-
 		}
 	}()
 
