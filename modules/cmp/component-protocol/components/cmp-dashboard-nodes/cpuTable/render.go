@@ -111,7 +111,7 @@ func (ct *CpuInfoTable) getProps() {
 			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 320},
 			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Width: 130},
 			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Width: 130},
-			{DataIndex: "UsageRate", Title: ct.SDK.I18n("distributionRate"), Sortable: true, Width: 140},
+			{DataIndex: "UnusedRate", Title: ct.SDK.I18n("unusedRate"), Sortable: true, Width: 140, TitleTip: ct.SDK.I18n("CPU Unused Rate")},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true, Width: 120},
@@ -165,7 +165,7 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	resp[0].Request = float64(requestQuantity.Value()) / 1000
 	distribution = ct.GetDistributionValue(resp[0], table.Cpu)
 	usage = ct.GetUsageValue(resp[0], table.Cpu)
-	dr = ct.GetDistributionRate(resp[0], table.Cpu)
+	dr = ct.GetUnusedRate(resp[0], table.Cpu)
 	role := c.StringSlice("metadata", "fields")[2]
 	ip := c.StringSlice("metadata", "fields")[5]
 	if role == "<none>" {
@@ -201,7 +201,7 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Status:     table.GetDistributionStatus(usage.Percent),
 			Tip:        usage.Text,
 		},
-		UsageRate: table.Distribution{
+		UnusedRate: table.Distribution{
 			RenderType: "progress",
 			Value:      dr.Percent,
 			Status:     table.GetDistributionStatus(dr.Percent),

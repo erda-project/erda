@@ -134,7 +134,7 @@ zh:
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
- distributionRate: 分配使用率
+ unusedRate: 未使用率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -192,6 +192,9 @@ zh:
  DiskPressure: 磁盘压力状态
  PIDPressure: 进程压力状态
  input node Name or IP: 请输入节点名称或IP
+ Pod Unused Rate: Pod 未使用率
+ CPU Unused Rate: CPU 未使用率
+ Memory Unused Rate: 内存未使用率
 
 en:
  # general
@@ -305,7 +308,7 @@ en:
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
  distribution: Reserved
- distributionRate: Reserve Usage
+ unusedRate: Unused
  kernelVersion: Kernel Version
  kubeProxyVersion: Kubectl Proxy Version
  kubeletVersion: Kubelet Version
