@@ -260,16 +260,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	}
 }
 
-func GetInnerUser(c *webcontext.Context) (*models.User, error) {
-	username, password, ok := c.BasicAuth()
-	if ok {
-		if username == conf.GitInnerUserName() && password == conf.GitInnerUserPassword() {
-			return models.NewInnerUser(), nil
-		}
-	}
-	return nil, errors.New("not inner user")
-}
-
 type AuthResp struct {
 	Permission *apistructs.ScopeRole
 	Repo       *models.Repo
