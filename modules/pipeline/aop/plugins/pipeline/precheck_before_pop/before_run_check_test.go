@@ -23,6 +23,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -223,6 +224,37 @@ lifecycle:
 			matchOtherLabel: "otherLabel1",
 			httpBeforeCheckRun: HttpBeforeCheckRun{
 				PipelineID: 0,
+			},
+		},
+
+		{
+			CheckResult: CheckRunResult{
+				CheckResult: CheckResultEnd,
+			},
+			haveError:       false,
+			matchOtherLabel: "",
+			httpBeforeCheckRun: HttpBeforeCheckRun{
+				PipelineID: 10001,
+			},
+			mockPipelineWithTasks: &spec.PipelineWithTasks{
+				Pipeline: &spec.Pipeline{
+					PipelineBase: spec.PipelineBase{
+						ID:              10001,
+						PipelineSource:  "FDP",
+						PipelineYmlName: "230",
+						Status:          apistructs.PipelineStatusStopByUser,
+					},
+					PipelineExtra: spec.PipelineExtra{
+						PipelineYml: `
+version: 1.1
+lifecycle:
+  - hook: "` + HookType + `1"
+    labels: 
+       "otherLabel1": 123
+`,
+					},
+				},
+				Tasks: []*spec.PipelineTask{},
 			},
 		},
 	}

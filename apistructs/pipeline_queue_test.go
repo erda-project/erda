@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 func TestPipelineQueueCreateRequest_Validate(t *testing.T) {
@@ -390,4 +392,13 @@ func TestScheduleStrategyInsidePipelineQueue_String(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsEndStatus(t *testing.T) {
+	result := PipelineQueueValidateResult{
+		IsEnd: true,
+	}
+	assert.Equal(t, true, result.IsEndStatus())
+	result.IsEnd = false
+	assert.Equal(t, false, result.IsEndStatus())
 }

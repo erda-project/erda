@@ -26,6 +26,7 @@ import (
 
 const CheckResultSuccess = "success"
 const CheckResultFailed = "failed"
+const CheckResultEnd = "end"
 const HookType = "before-run-check"
 
 type HttpBeforeCheckRun struct {
@@ -82,6 +83,13 @@ func (beforeCheckRun HttpBeforeCheckRun) CheckRun() (result *CheckRunResult, err
 	pipelineWithTasks, err := beforeCheckRun.DBClient.GetPipelineWithTasks(beforeCheckRun.PipelineID)
 	if err != nil {
 		return nil, err
+	}
+
+	// if pipeline is end status return end result
+	if pipelineWithTasks.Pipeline.Status.IsEndStatus() {
+		return &CheckRunResult{
+			CheckResult: CheckResultEnd,
+		}, nil
 	}
 
 	yml, err := pipelineyml.New(
