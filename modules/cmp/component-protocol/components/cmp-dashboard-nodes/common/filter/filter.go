@@ -47,23 +47,19 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			Options:  []Option{},
 		},
 	}
-	var custom []string
+	var customs []string
 	var enterprise []string
 	for l := range labels {
 		if strings.HasPrefix(l, "dice/org-") && strings.HasSuffix(l, "=true") {
 			enterprise = append(enterprise, l)
-
 			continue
 		}
-		i := 0
 		for _, dl := range DefaultLabels {
 			if dl == l {
 				break
 			}
 		}
-		if i == len(DefaultLabels) {
-			custom = append(custom, l)
-		}
+		customs = append(customs, l)
 	}
 	sort.Slice(enterprise, func(i, j int) bool {
 		return enterprise[i] < enterprise[j]
@@ -75,11 +71,11 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			Value: l,
 		})
 	}
-	sort.Slice(custom, func(i, j int) bool {
-		return custom[i] < custom[j]
+	sort.Slice(customs, func(i, j int) bool {
+		return customs[i] < customs[j]
 	})
 	var customOps []Option
-	for _, l := range custom {
+	for _, l := range customs {
 		customOps = append(customOps, Option{
 			Label: l,
 			Value: l,
