@@ -63,7 +63,7 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		clusters, err := a.bdl.ListClusters("k8s", scopeID)
+		clusters, err := a.listClusterByType(scopeID, "k8s", "edas")
 		if err != nil {
 			logrus.Errorf("failed to list cluster %s in steve authenticate, %v", clusterName, err)
 			resp.WriteHeader(http.StatusInternalServerError)
@@ -139,6 +139,18 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 		req = req.WithContext(ctx)
 		next.ServeHTTP(resp, req)
 	})
+}
+
+func (a *Authenticator) listClusterByType(orgID uint64, types ...string) ([]apistructs.ClusterInfo, error) {
+	var result []apistructs.ClusterInfo
+	for _, typ := range types {
+		clusters, err := a.bdl.ListClusters(typ, orgID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, clusters...)
+	}
+	return result, nil
 }
 
 func parseVars(req *http.Request) map[string]string {

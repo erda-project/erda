@@ -237,6 +237,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
+			ID:     id,
 			Status: status,
 			Name: Link{
 				RenderType: "linkText",
