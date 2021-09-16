@@ -84,10 +84,10 @@ func RangeOpenAPIs(pkgPrefix string, handler func(serviceName, method, path stri
 					continue
 				}
 				methodOption, _ := proto.GetExtension(method.Options(), common.E_Openapi).(*common.OpenAPIOption)
-				opt := getOpenAPIOption(serviceOption, methodOption)
-				if opt == nil {
+				if methodOption == nil {
 					continue
 				}
+				opt := getOpenAPIOption(serviceOption, methodOption)
 				rule, ok := proto.GetExtension(method.Options(), annotations.E_Http).(*annotations.HttpRule)
 				if rule != nil && ok {
 					for _, bind := range rule.AdditionalBindings {
