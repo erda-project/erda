@@ -615,8 +615,8 @@ func (f *multivariateAggFunction) Handle(aggs elastic.Aggregations) (interface{}
 	return val, nil
 }
 
-// PainlessFuntion todo .
-type PainlessFuntion struct {
+// PainlessFunction todo .
+type PainlessFunction struct {
 	Name         string
 	Objective    bool
 	ObjectType   string
@@ -624,11 +624,11 @@ type PainlessFuntion struct {
 	Convert      func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error)
 }
 
-// PainlessFuntions .
-var PainlessFuntions map[string]*PainlessFuntion
+// PainlessFunctions .
+var PainlessFunctions map[string]*PainlessFunction
 
 func init() {
-	PainlessFuntions = map[string]*PainlessFuntion{
+	PainlessFunctions = map[string]*PainlessFunction{
 		"substring": {Name: "substring", Objective: true, ObjectType: "string", DefaultValue: "''"},
 		"tostring":  {Name: "toString", Objective: true, ObjectType: "object", DefaultValue: "''"},
 		"if": {
