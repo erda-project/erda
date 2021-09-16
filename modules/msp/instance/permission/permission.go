@@ -81,6 +81,9 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 		return "", errors.NewNotFoundError(group)
 	}
 	for _, tenant := range tenants {
+		if tenant.Engine != "monitor" {
+			continue
+		}
 		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
 		if err != nil {
 			return "", errors.NewDatabaseError(err)
