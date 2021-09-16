@@ -15,7 +15,7 @@
 package pygrator
 
 const BaseRequirements = `Django==3.2.4
-mysqlclient==2.0.3
+mysql-connector-python==8.0.26
 pytz==2021.1
 sqlparse==0.4.1
 `

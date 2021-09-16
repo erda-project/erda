@@ -76,7 +76,7 @@ func New(parameters Parameters) (mig *Migrator, err error) {
 	mig = new(Migrator)
 	mig.Parameters = parameters
 	mig.dbSettings = &pygrator.Settings{
-		Engine:   pygrator.DjangoMySQLEngine,
+		Engine:   pygrator.MySQLConnectorEngine,
 		User:     mig.MySQLParameters().Username,
 		Password: mig.MySQLParameters().Password,
 		Host:     mig.MySQLParameters().Host,
@@ -85,7 +85,7 @@ func New(parameters Parameters) (mig *Migrator, err error) {
 		TimeZone: pygrator.TimeZoneAsiaShanghai,
 	}
 	mig.sandboxSettings = &pygrator.Settings{
-		Engine:   pygrator.DjangoMySQLEngine,
+		Engine:   pygrator.MySQLConnectorEngine,
 		User:     mig.SandboxParameters().Username,
 		Password: mig.SandboxParameters().Password,
 		Host:     mig.SandboxParameters().Host,

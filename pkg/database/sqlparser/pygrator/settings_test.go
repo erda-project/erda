@@ -22,7 +22,7 @@ import (
 )
 
 var settings = pygrator.Settings{
-	Engine:   pygrator.DjangoMySQLEngine,
+	Engine:   pygrator.MySQLConnectorEngine,
 	User:     "root",
 	Password: "12345678",
 	Host:     "localhost",

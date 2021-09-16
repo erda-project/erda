@@ -50,7 +50,7 @@ apps.populate(django_settings.INSTALLED_APPS)
 `
 
 const (
-	DjangoMySQLEngine    = "django.db.backends.mysql"
+	MySQLConnectorEngine = "mysql.connector.django"
 	TimeZoneAsiaShanghai = "Asia/Shanghai"
 )
 
@@ -88,7 +88,7 @@ func ParseDSN(dsn string) (*Settings, error) {
 		return nil, errors.Wrap(err, "failed to parse port")
 	}
 	return &Settings{
-		Engine:   DjangoMySQLEngine,
+		Engine:   MySQLConnectorEngine,
 		User:     cfg.User,
 		Password: cfg.Passwd,
 		Host:     host,
