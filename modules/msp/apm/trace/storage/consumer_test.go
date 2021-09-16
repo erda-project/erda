@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/pkg/monitor"
 )
 
 // TestMetricToSpan .
@@ -147,7 +148,7 @@ func TestToInt64(t *testing.T) {
 
 // TestToSpan .
 func TestToSpan(t *testing.T) {
-	span := Span{
+	span := monitor.Span{
 		TraceID:       "test-trace-id",
 		StartTime:     time.Now().Add(-1).UnixNano(),
 		SpanID:        "test-span-id",
