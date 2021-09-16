@@ -66,7 +66,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.msp.credential.accessKeyService" || ctx.Type() == pb.AccessKeyServiceServerType() || ctx.Type() == pb.AccessKeyServiceHandlerType():
+	case ctx.Service() == "erda.msp.credential.AccessKeyService" || ctx.Type() == pb.AccessKeyServiceServerType() || ctx.Type() == pb.AccessKeyServiceHandlerType():
 		return p.AccessKeyService
 	}
 	return p
