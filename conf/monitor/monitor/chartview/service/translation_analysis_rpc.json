@@ -37,12 +37,12 @@
                 "alias": "事务名称",
                 "i18n": {
                   "alias": {
-                    "en": "Translation Name",
+                    "en": "Transaction Name",
                     "zh": "事务名称"
                   }
                 },
                 "copy": true,
-                "key": "translation_name",
+                "key": "Transaction_name",
                 "resultType": "string",
                 "type": "field"
               },
@@ -100,8 +100,8 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "searchTranslation",
-              "value": "translation_name"
+              "name": "searchTransaction",
+              "value": "Transaction_name"
             }
           }
         },
@@ -112,7 +112,7 @@
         "title": "RPC 事务",
         "i18n": {
           "title": {
-            "en": "RPC Translation",
+            "en": "RPC Transaction",
             "zh": "RPC 事务"
           }
         }
@@ -375,7 +375,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "traceSlowTranslation",
+              "name": "traceSlowTransaction",
               "value": "Method"
             }
           }
@@ -387,7 +387,7 @@
         "title": "慢事务追踪 Top50",
         "i18n": {
           "title": {
-            "en": "Slow Translation Tracing Top50",
+            "en": "Slow Transaction Tracing Top50",
             "zh": "慢事务追踪 Top50"
           }
         }
@@ -437,7 +437,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "traceSlowTranslation",
+              "name": "traceSlowTransaction",
               "value": "Method"
             }
           }
@@ -449,7 +449,7 @@
         "title": "错误事务追踪Top50",
         "i18n": {
           "title": {
-            "en": "Error Translation Tracing Top50",
+            "en": "Error Transaction Tracing Top50",
             "zh": "错误事务追踪 Top50"
           }
         }
