@@ -105,7 +105,7 @@ func (pt *PodInfoTable) getProps() {
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 320},
-			{DataIndex: "UsageRate", Title: pt.SDK.I18n("usedRate"), Sortable: true},
+			{DataIndex: "UsageRate", Title: pt.SDK.I18n("usedRate"), Sortable: true, Width: 140},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Sortable: true, Width: 120},

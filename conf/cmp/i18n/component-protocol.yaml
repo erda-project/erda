@@ -344,3 +344,5 @@ en:
  MemoryPressure:
  DiskPressure:
  PIDPressure:
+ cpu-size: CPU Cores
+ memory-size: Memeory Size
