@@ -136,7 +136,7 @@
             "valueDimensions":
             [
               {
-                "aggregation": "sum",
+                "aggregation": "avg",
                 "alias": "CPU使用率",
                 "i18n": {
                   "alias": {
@@ -188,7 +188,7 @@
               },
               {
                 "alias": "valueODppjgDJ",
-                "expr": "round_float(sum(cpu_usage_percent::field), 2)"
+                "expr": "round_float(avg(cpu_usage_percent::field), 2)"
               }
             ],
             "where":
@@ -346,7 +346,7 @@
             "valueDimensions":
             [
               {
-                "aggregation": "sum",
+                "aggregation": "avg",
                 "alias": "Mem Usage Percent",
                 "i18n": {
                   "alias": {
@@ -396,7 +396,7 @@
               },
               {
                 "alias": "valuee0jRZAOK",
-                "expr": "round_float(sum(mem_usage_percent::field), 2)"
+                "expr": "round_float(avg(mem_usage_percent::field), 2)"
               }
             ],
             "where":
