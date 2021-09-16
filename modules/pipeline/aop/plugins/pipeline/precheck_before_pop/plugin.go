@@ -47,11 +47,17 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return err
 	}
 
-	if result.CheckResult == CheckResultSuccess {
+	switch result.CheckResult {
+	case CheckResultSuccess:
 		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
 			Success: true,
 		})
-	} else {
+		// TODO end status specify for cancel, move this judge to etcd listen
+	case CheckResultEnd:
+		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
+			IsEnd: true,
+		})
+	default:
 		var validResult = apistructs.PipelineQueueValidateResult{Success: false}
 		if result.RetryOption.IntervalSecond > 0 || result.RetryOption.IntervalMillisecond > 0 {
 			validResult.RetryOption = &apistructs.QueueValidateRetryOption{
@@ -63,6 +69,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, validResult)
 	}
+
 	return nil
 }
 
