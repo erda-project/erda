@@ -134,7 +134,7 @@ zh:
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
- unusedRate: 未使用率
+ unusedRate: 闲置率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -192,9 +192,6 @@ zh:
  DiskPressure: 磁盘压力状态
  PIDPressure: 进程压力状态
  input node Name or IP: 请输入节点名称或IP
- Pod Unused Rate: Pod 闲置率
- CPU Unused Rate: CPU 闲置率
- Memory Unused Rate: 内存闲置率
  The proportion of allocated resources that are not used: 已分配资源中未使用的比例
 
 en:
