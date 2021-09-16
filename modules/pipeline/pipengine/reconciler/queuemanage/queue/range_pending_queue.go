@@ -122,6 +122,11 @@ func (q *defaultQueue) RangePendingQueue() {
 			stopRange = false
 			return
 		}
+		// if result status is end, do nothing and pop item
+		if checkResult.IsEndStatus() {
+			stopRange = q.doPop(item)
+			return
+		}
 		// check result
 		if checkResult.IsFailed() {
 			// not retry if retryOption is nil
