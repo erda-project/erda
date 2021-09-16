@@ -568,8 +568,8 @@
                 "type": "field",
                 "unit":
                 {
-                  "type": "TRAFFIC",
-                  "unit": "B/S"
+                  "type": "CAPACITY",
+                  "unit": "B"
                 }
               }
             ]
@@ -781,8 +781,8 @@
                 "type": "field",
                 "unit":
                 {
-                  "type": "TRAFFIC",
-                  "unit": "B/S"
+                  "type": "CAPACITY",
+                  "unit": "B"
                 }
               }
             ]
