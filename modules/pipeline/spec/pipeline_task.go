@@ -62,7 +62,7 @@ func (*PipelineTask) TableName() string {
 
 type PipelineTaskExtra struct {
 	Namespace               string                     `json:"namespace,omitempty"`
-	NotPipelineControlledNs bool                       `json:"NotPipelineControlledNs,omitempty"`
+	NotPipelineControlledNs bool                       `json:"notPipelineControlledNs,omitempty"`
 	ExecutorName            PipelineTaskExecutorName   `json:"executorName,omitempty"`
 	ClusterName             string                     `json:"clusterName,omitempty"`
 	AllowFailure            bool                       `json:"allowFailure,omitempty"`

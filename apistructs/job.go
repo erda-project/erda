@@ -68,7 +68,7 @@ type Job struct {
 type JobFromUser struct {
 	Name                    string                 `json:"name"`
 	Namespace               string                 `json:"namespace"`               // the default namespace is "default"
-	NotPipelineControlledNs bool                   `json:"NotPipelineControlledNs"` // if NotPipelineControlledNs is true, resource gc should be attention don't delete namespace
+	NotPipelineControlledNs bool                   `json:"notPipelineControlledNs"` // if notPipelineControlledNs is true, resource gc should be attention don't delete namespace
 	ID                      string                 `json:"id,omitempty"`            // if Job has owner, e.g. jobflow, it's ID can be specified.
 	CallBackUrls            []string               `json:"callbackurls,omitempty"`
 	Image                   string                 `json:"image,omitempty"`
