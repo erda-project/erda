@@ -55,6 +55,7 @@ rendering:
     - name: page
     - name: tableTabs
     - name: nodeFilter
+    - name: tableTabsContainer
     - name: cpuTable
     - name: podTable
     - name: memTable
@@ -62,15 +63,29 @@ rendering:
     - name: cpuChart
     - name: memChart
     - name: podChart
-    - name: tableTabsContainer
     - name: addLabelModal
     - name: cleanData
 
   tableTabs:
     - name: nodeFilter
     - name: cpuTable
+      state:
+        - name: "values"
+          value: "{{ nodeFilter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
     - name: podTable
+      state:
+        - name: "values"
+          value: "{{ nodeFilter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
     - name: memTable
+      state:
+        - name: "values"
+          value: "{{ nodeFilter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
     - name: addLabelModal
     - name: cleanData
 
@@ -102,6 +117,7 @@ rendering:
     - name: cleanData
 
   addLabelModal:
+    - name: nodeFilter
     - name: cpuTable
       state:
         - name: "values"

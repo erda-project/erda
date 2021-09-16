@@ -111,9 +111,9 @@ zh:
  danger: 危险
  custom: 自定义
  containerRuntimeVersion: 容器运行时版本
- kernelVersion: kernel 版本
- kubeProxyVersion: kubectl 代理版本
- kubeletVersion: kubelet 版本
+ kernelVersion: Kernel 版本
+ kubeProxyVersion: Kubectl 代理版本
+ kubeletVersion: Kubelet 版本
  machineID: 机器 ID
  operatingSystem: 操作系统
  systemUUID: 系统 UUID
@@ -181,6 +181,16 @@ zh:
  usedRate: 使用率
  cores: 核
  taint: 污点
+ none:  无
+ NotReady: 未就绪
+ cpu-size: CPU 核数
+ memory-size: 内存大小
+ cordon confirm:  确认冻结？
+ uncordon confirm:  确认解冻？
+ NetworkUnavailable: 网络配置状态
+ MemoryPressure: 内存压力状态
+ DiskPressure: 磁盘压力状态
+ PIDPressure: 进程压力状态
  input node Name or IP: 请输入节点名称或IP
 
 en:
@@ -329,3 +339,8 @@ en:
  env-label: Enviorment Label
  job-label: Job Label
  other-label: Other Label
+ # value empty required, do not delete
+ NetworkUnavailable:
+ MemoryPressure:
+ DiskPressure:
+ PIDPressure:

@@ -16,6 +16,7 @@ package podTable
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
@@ -55,6 +57,21 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		switch event.Operation {
 		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
+		case common.CMPDashboardRemoveLabel:
+			metaName := event.OperationData["fillMeta"].(string)
+			label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
+			labelKey := strings.Split(label, "=")[0]
+			nodeId := event.OperationData["meta"].(map[string]interface{})["recordId"].(string)
+			req := apistructs.SteveRequest{}
+			req.ClusterName = pt.SDK.InParams["clusterName"].(string)
+			req.OrgID = pt.SDK.Identity.OrgID
+			req.UserID = pt.SDK.Identity.UserID
+			req.Type = apistructs.K8SNode
+			req.Name = nodeId
+			err = pt.CtxBdl.UnlabelNode(&req, []string{labelKey})
+			if err != nil {
+				return err
+			}
 		case common.CMPDashboardUncordonNode:
 			err := pt.UncordonNode(pt.State.SelectedRowKeys)
 			if err != nil {
@@ -88,10 +105,10 @@ func (pt *PodInfoTable) getProps() {
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 320},
+			{DataIndex: "UsageRate", Title: pt.SDK.I18n("usedRate"), Sortable: true},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
-			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Width: 120},
-			{DataIndex: "UsageRate", Title: pt.SDK.I18n("usedRate"), Sortable: true},
+			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Sortable: true, Width: 120},
 			{DataIndex: "Operate", Title: pt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
@@ -123,6 +140,14 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 	if role == "<none>" {
 		role = "worker"
 	}
+	batchOperations := make([]string, 0)
+	if !strings.Contains(role, "master") {
+		if strings.Contains(status.Value, pt.SDK.I18n("SchedulingDisabled")) {
+			batchOperations = []string{"uncordon"}
+		} else {
+			batchOperations = []string{"cordon"}
+		}
+	}
 	ri := &table.RowItem{
 		ID:      node.String("id"),
 		IP:      ip,
@@ -140,7 +165,7 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 			Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
 		},
 		Operate:         pt.GetOperate(node.String("id")),
-		BatchOperations: []string{"cordon", "uncordon"},
+		BatchOperations: batchOperations,
 	}
 	return ri, nil
 }

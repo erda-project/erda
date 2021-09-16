@@ -16,6 +16,7 @@ package memTable
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -58,20 +59,19 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
 		case common.CMPDashboardRemoveLabel:
-			if event.Operation == common.CMPDashboardRemoveLabel {
-				metaName := event.OperationData["fillMeta"].(string)
-				label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
-				nodeId := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["recordId"].(string)
-				req := apistructs.SteveRequest{}
-				req.ClusterName = mt.SDK.InParams["clusterName"].(string)
-				req.OrgID = mt.SDK.Identity.OrgID
-				req.UserID = mt.SDK.Identity.UserID
-				req.Type = apistructs.K8SNode
-				req.Name = nodeId
-				err = mt.CtxBdl.UnlabelNode(&req, []string{label})
-				if err != nil {
-					return err
-				}
+			metaName := event.OperationData["fillMeta"].(string)
+			label := event.OperationData["meta"].(map[string]interface{})[metaName].(map[string]interface{})["label"].(string)
+			labelKey := strings.Split(label, "=")[0]
+			nodeId := event.OperationData["meta"].(map[string]interface{})["recordId"].(string)
+			req := apistructs.SteveRequest{}
+			req.ClusterName = mt.SDK.InParams["clusterName"].(string)
+			req.OrgID = mt.SDK.Identity.OrgID
+			req.UserID = mt.SDK.Identity.UserID
+			req.Type = apistructs.K8SNode
+			req.Name = nodeId
+			err = mt.CtxBdl.UnlabelNode(&req, []string{labelKey})
+			if err != nil {
+				return err
 			}
 		case common.CMPDashboardUncordonNode:
 			err := mt.UncordonNode(mt.State.SelectedRowKeys)
@@ -136,6 +136,14 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	if role == "<none>" {
 		role = "worker"
 	}
+	batchOperations := make([]string, 0)
+	if !strings.Contains(role, "master") {
+		if strings.Contains(status.Value, mt.SDK.I18n("SchedulingDisabled")) {
+			batchOperations = []string{"uncordon"}
+		} else {
+			batchOperations = []string{"cordon"}
+		}
+	}
 	ri := &table.RowItem{
 		ID:      c.String("id"),
 		IP:      ip,
@@ -165,7 +173,7 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Tip:        dr.Text,
 		},
 		Operate:         mt.GetOperate(c.String("id")),
-		BatchOperations: []string{"cordon", "uncordon"},
+		BatchOperations: batchOperations,
 	}
 	return ri, nil
 }
@@ -176,12 +184,12 @@ func (mt *MemInfoTable) getProps() {
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true, Width: 320},
-			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
-			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
-			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Width: 120},
 			{DataIndex: "Distribution", Title: mt.SDK.I18n("distribution"), Sortable: true, Width: 130},
 			{DataIndex: "Usage", Title: mt.SDK.I18n("usedRate"), Sortable: true, Width: 130},
 			{DataIndex: "UsageRate", Title: mt.SDK.I18n("distributionRate"), Sortable: true, Width: 140},
+			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
+			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
+			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Sortable: true, Width: 120},
 			{DataIndex: "Operate", Title: mt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,

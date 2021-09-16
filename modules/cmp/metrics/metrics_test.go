@@ -115,7 +115,7 @@ func TestToInfluxReq(t *testing.T) {
 			want: []*pb.QueryWithInfluxFormatRequest{
 				{
 					Statement: NodeMemoryUsageSelectStatement,
-					Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName),"host_ip":structpb.NewStringValue(ip)},
+					Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName), "host_ip": structpb.NewStringValue(ip)},
 				},
 			},
 		},
@@ -129,7 +129,7 @@ func TestToInfluxReq(t *testing.T) {
 					ResourceType: Cpu,
 					ResourceKind: Pod,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc",Namespace: namespace}},
+					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc", Namespace: namespace}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{
@@ -142,8 +142,8 @@ func TestToInfluxReq(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got,_ := ToInfluxReq(tt.args.req); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("test failed, edcode result is not expected got=%v,want=%v",got,tt.want)
+			if got, _ := ToInfluxReq(tt.args.req); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("test failed, edcode result is not expected got=%v,want=%v", got, tt.want)
 			}
 		})
 	}

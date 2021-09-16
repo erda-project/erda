@@ -143,6 +143,11 @@ func (infoDetail *InfoDetail) getTags(node data.Object) []Field {
 			Group: g,
 		})
 	}
+	if len(tag) == 0 {
+		tag = append(tag, Field{
+			Label: fmt.Sprintf(infoDetail.SDK.I18n("none")),
+		})
+	}
 	return tag
 }
 
@@ -153,14 +158,30 @@ func (infoDetail *InfoDetail) getAnnotations(node data.Object) []Field {
 			Label: fmt.Sprintf("%s:%s", k, v),
 		})
 	}
+	if len(desc) == 0 {
+		desc = append(desc, Field{
+			Label: fmt.Sprintf(infoDetail.SDK.I18n("none")),
+		})
+	}
 	return desc
 }
 
 func (infoDetail *InfoDetail) getTaints(node data.Object) []Field {
 	desc := make([]Field, 0)
 	for _, v := range node.Slice("spec", "taints") {
+		var l string
+		if v.String("value") == "" {
+			l = fmt.Sprintf("%s:%s", v.String("key"), v.String("effect"))
+		} else {
+			l = fmt.Sprintf("%s=%s:%s", v.String("key"), v.String("value"), v.String("effect"))
+		}
 		desc = append(desc, Field{
-			Label: fmt.Sprintf("%s=%s:%s", v.String("key"), v.String("value"), v.String("effect")),
+			Label: l,
+		})
+	}
+	if len(desc) == 0 {
+		desc = append(desc, Field{
+			Label: fmt.Sprintf(infoDetail.SDK.I18n("none")),
 		})
 	}
 	return desc

@@ -32,8 +32,8 @@ type StatusBadge struct {
 }
 
 type Bar struct {
-	Text   string `json:"text"`
-	Status string `json:"status"`
-	withBg bool   `json:"with_bg"`
-	Tip    string `json:"tip,omitempty"`
+	Text    string `json:"text"`
+	Status  string `json:"status"`
+	WhiteBg bool   `json:"whiteBg"`
+	Tip     string `json:"tip,omitempty"`
 }

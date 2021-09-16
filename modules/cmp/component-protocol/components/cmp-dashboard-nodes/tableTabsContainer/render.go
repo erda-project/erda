@@ -18,12 +18,13 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (t *TableTabsContainer) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+func (t *TableTabsContainer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	t.getProps()
 	err := common.Transfer(t.Props, &c.Props)
 	if err != nil {
 		return err
@@ -31,11 +32,15 @@ func (t *TableTabsContainer) Render(ctx context.Context, c *apistructs.Component
 	return nil
 }
 
+func (t *TableTabsContainer) getProps() {
+	t.Props = Props{
+		WhiteBg: true,
+	}
+}
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "tableTabsContainer", func() servicehub.Provider {
 		return &TableTabsContainer{
-			Type:  "Container",
-			Props: Props{WhiteBg: true},
+			Type: "Container",
 		}
 	})
 }
