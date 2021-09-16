@@ -136,6 +136,7 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			if typ == "" {
 				return
 			}
+			ctx[auditResourceName] = name
 			switch req.Method {
 			case http.MethodPatch:
 				if isInternal && strutil.Equal(typ, "node", true) {
@@ -177,8 +178,12 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 				}
 				fallthrough
 			case http.MethodPut:
+				ctx[auditNamespace] = namespace
+				ctx[auditResourceType] = typ
 				auditReq.Audit.TemplateName = auditUpdateResource
 			case http.MethodPost:
+				ctx[auditNamespace] = namespace
+				ctx[auditResourceType] = typ
 				auditReq.Audit.TemplateName = auditCreateResource
 				var rb reqBody
 				if err := json.Unmarshal(body, &rb); err != nil {
@@ -194,14 +199,12 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 					namespace = ns
 				}
 			case http.MethodDelete:
+				ctx[auditNamespace] = namespace
+				ctx[auditResourceType] = typ
 				auditReq.Audit.TemplateName = auditDeleteResource
 			default:
 				return
 			}
-
-			ctx[auditResourceName] = name
-			ctx[auditNamespace] = namespace
-			ctx[auditResourceType] = typ
 		}
 		auditReq.Context = ctx
 		if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
