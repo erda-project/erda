@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
+	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 )
 
@@ -820,6 +821,194 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			_, want := s.composeTraceQueryConditions(tt.args.req)
 			if want != tt.want {
 				t.Errorf("composeTraceQueryConditions() got1 = %v, want %v", want, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getSpanProcessAnalysisDashboard(t *testing.T) {
+	type args struct {
+		metricType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{metricType: "jvm_memory"}, "span_process_analysis_java"},
+		{"case2", args{metricType: "nodejs_memory"}, "span_process_analysis_nodejs"},
+		{"case3", args{metricType: "xxx"}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getSpanProcessAnalysisDashboard(tt.args.metricType); got != tt.want {
+				t.Errorf("getSpanProcessAnalysisDashboard() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_traceService_getSpanCallAnalysis(t *testing.T) {
+	type fields struct {
+		p                     *provider
+		i18n                  i18n.Translator
+		traceRequestHistoryDB *db.TraceRequestHistoryDB
+	}
+	type args struct {
+		ctx context.Context
+		req *pb.GetSpanDashboardsRequest
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{"case1", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "http_client"}}, "span_call_analysis_http_client"},
+		{"case2", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "http_server"}}, "span_call_analysis_http_client"},
+		{"case3", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "rpc_client"}}, "span_call_analysis_rpc_client"},
+		{"case4", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "rpc_server"}}, "span_call_analysis_rpc_server"},
+		{"case5", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "mq_producer"}}, "span_call_analysis_mq_producer"},
+		{"case6", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "mq_consumer"}}, "span_call_analysis_mq_consumer"},
+		{"case7", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "cache_client"}}, "span_call_analysis_cache_client"},
+		{"case8", fields{}, args{req: &pb.GetSpanDashboardsRequest{Type: "invoke_local"}}, "span_call_analysis_invoke_local"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     tt.fields.p,
+				i18n:                  tt.fields.i18n,
+				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
+			}
+			got, err := s.getSpanCallAnalysis(tt.args.ctx, tt.args.req)
+			if (err != nil) && got.DashboardID != tt.want {
+				t.Errorf("getSpanCallAnalysis() error = %v, wantErr %v", err, tt.want)
+				return
+			}
+		})
+	}
+}
+
+func Test_traceService_handleSpanResponse(t *testing.T) {
+	spans := []*pb.Span{
+		{
+			Id:            "34035630-b97a-4f6e-b9e8-a1ca6ec32127",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Producer/Sync/apm-demo-topic-sync-parallel",
+			StartTime:     1631515503925000000,
+			EndTime:       1631515503927000000,
+			ParentSpanId:  "5f3fd322-e4bd-4117-8449-5027cf49ef56",
+		},
+		{
+			Id:            "fc494cf9-2811-453f-bd9e-99b1d865b7c2",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Producer/Async/apm-demo-topic-async-parallel",
+			StartTime:     1631515503928000000,
+			EndTime:       1631515503932000000,
+			ParentSpanId:  "5f3fd322-e4bd-4117-8449-5027cf49ef56",
+		},
+		{
+			Id:            "14eaee91-8064-41e7-9bcb-f9e69f92d1df",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Producer/Sync/apm-demo-topic-sync-order",
+			StartTime:     1631515503927000000,
+			EndTime:       1631515503928000000,
+			ParentSpanId:  "5f3fd322-e4bd-4117-8449-5027cf49ef56",
+		},
+		{
+			Id:            "173e9b4f-8cc9-4d26-9914-637d8a12ba83",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Consumer/apm-demo-topic",
+			StartTime:     1631515503934000000,
+			EndTime:       1631515503934000000,
+			ParentSpanId:  "9548c236-90b0-48ac-8fb5-75100c76e129",
+		},
+		{
+			Id:            "fe925605-78a9-409d-a506-2c6c8aecdfc2",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Consumer/apm-demo-topic-sync-parallel",
+			StartTime:     1631515503930000000,
+			EndTime:       1631515503930000000,
+			ParentSpanId:  "34035630-b97a-4f6e-b9e8-a1ca6ec32127",
+		},
+		{
+			Id:            "97a6d79b-c7d8-4818-83de-47fad413dcf4",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Producer/Async/apm-demo-topic-async-order",
+			StartTime:     1631515503929000000,
+			EndTime:       1631515503938000000,
+			ParentSpanId:  "5f3fd322-e4bd-4117-8449-5027cf49ef56",
+		},
+		{
+			Id:            "9548c236-90b0-48ac-8fb5-75100c76e129",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Producer/Sync/apm-demo-topic",
+			StartTime:     1631515503923000000,
+			EndTime:       1631515503925000000,
+			ParentSpanId:  "5f3fd322-e4bd-4117-8449-5027cf49ef56",
+		}, {
+
+			Id:            "5f3fd322-e4bd-4117-8449-5027cf49ef56",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "GET http://ss-api.test.terminus.io/api/rocketmq/send",
+			StartTime:     1631515503922000000,
+			EndTime:       1631515503929000000,
+			ParentSpanId:  "",
+		},
+		{
+			Id:            "7aa7a7fc-9756-4b3a-b0b2-ecac8230242f",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Consumer/apm-demo-topic-async-order",
+			StartTime:     1631515503940000000,
+			EndTime:       1631515503940000000,
+			ParentSpanId:  "97a6d79b-c7d8-4818-83de-47fad413dcf4",
+		},
+		{
+			Id:            "564acae7-f22f-40ed-9049-a5c6a62d59d2",
+			TraceId:       "95606e4b-92da-4f9e-8f64-4e241e30157f",
+			OperationName: "RocketMQ/Consumer/apm-demo-topic-async-parallel",
+			StartTime:     1631515503935000000,
+			EndTime:       1631515503935000000,
+			ParentSpanId:  "fc494cf9-2811-453f-bd9e-99b1d865b7c2",
+		},
+	}
+
+	tree := map[string]*pb.Span{}
+	for _, v := range spans {
+		tree[v.Id] = v
+	}
+	type fields struct {
+		p                     *provider
+		i18n                  i18n.Translator
+		traceRequestHistoryDB *db.TraceRequestHistoryDB
+	}
+	type args struct {
+		spanTree query.SpanTree
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *pb.GetSpansResponse
+	}{
+		{"case1", fields{}, args{spanTree: tree}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     tt.fields.p,
+				i18n:                  tt.fields.i18n,
+				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
+			}
+			got, _ := s.handleSpanResponse(tt.args.spanTree)
+			if got.ServiceCount != 1 {
+				t.Errorf("handleSpanResponse() got = %v, want %v", got.ServiceCount, 1)
+			}
+
+			for _, span := range got.Spans {
+				if span.SelfDuration < 0 || span.Duration < 0 {
+					t.Errorf("duration (%v) or selfDuration (%v) < 0", span.Duration, span.SelfDuration)
+				}
 			}
 		})
 	}
