@@ -13,6 +13,11 @@
       "i": "d12",
       "view": {
         "title": "集群资源概况",
+        "i18n": {
+          "title": {
+            "en": "Overview of cluster resources"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "static",
@@ -181,6 +186,11 @@
       "i": "d21",
       "view": {
         "title": "项目资源概况",
+        "i18n": {
+          "title": {
+            "en": "Project resource overview"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "static",
@@ -354,6 +364,11 @@
       "i": "d31",
       "view": {
         "title": "集群机器概况",
+        "i18n": {
+          "title": {
+            "en": "Overview of cluster machines"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -384,6 +399,11 @@
       "i": "d41",
       "view": {
         "title": "每日CPU分配",
+        "i18n": {
+          "title": {
+            "en": "Daily CPU allocation"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -417,6 +437,11 @@
       "i": "d51",
       "view": {
         "title": "每日内存分配",
+        "i18n": {
+          "title": {
+            "en": "Daily memory allocation"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -450,6 +475,11 @@
       "i": "d61",
       "view": {
         "title": "机器每日CPU最大使用率",
+        "i18n": {
+          "title": {
+            "en": "Maximum daily CPU usage of the machine"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -483,6 +513,11 @@
       "i": "d71",
       "view": {
         "title": "机器CPU使用率告警次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Machine CPU usage alarm times TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -518,6 +553,11 @@
       "view": {
         "title": "机器每日磁盘最大使用率",
         "description": "不包含网盘使用率",
+        "i18n": {
+          "title": {
+            "en": "Maximum daily disk usage of the machine"
+          }
+        },
         "chartType": "chart:line",
         "dataSourceType": "static",
         "staticData": null,
@@ -551,6 +591,11 @@
       "view": {
         "title": "机器磁盘使用率告警次数 TOP10",
         "description": "不包含网盘使用率告警次数",
+        "i18n": {
+          "title": {
+            "en": "The number of machine disk usage alarms TOP10"
+          }
+        },
         "chartType": "table",
         "dataSourceType": "static",
         "staticData": null,
@@ -584,6 +629,11 @@
       "i": "d111",
       "view": {
         "title": "异常机器数",
+        "i18n": {
+          "title": {
+            "en": "Number of abnormal machines"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -619,6 +669,11 @@
       "i": "d121",
       "view": {
         "title": "机器异常持续时间",
+        "i18n": {
+          "title": {
+            "en": "Machine abnormality duration"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -654,6 +709,11 @@
       "i": "d131",
       "view": {
         "title": "告警类别分析",
+        "i18n": {
+          "title": {
+            "en": "Alarm category analysis"
+          }
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "static",
@@ -683,6 +743,11 @@
       "i": "d141",
       "view": {
         "title": "告警趋势",
+        "i18n": {
+          "title": {
+            "en": "Alert trend"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -718,6 +783,11 @@
       "i": "d151",
       "view": {
         "title": "中间件告警趋势",
+        "i18n": {
+          "title": {
+            "en": "Middleware alert trend"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -753,6 +823,11 @@
       "i": "d161",
       "view": {
         "title": "kubernetes告警量趋势",
+        "i18n": {
+          "title": {
+            "en": "Kubernetes alarm volume trend"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
@@ -790,6 +865,11 @@
       "view": {
         "title": "应用JVM告警次数 TOP10",
         "description": "以堆内存告警次数排序",
+        "i18n": {
+          "title": {
+            "en": "Application JVM alarm times TOP10"
+          }
+        },
         "chartType": "table",
         "dataSourceType": "static",
         "staticData": null,
@@ -831,6 +911,11 @@
       "i": "d181",
       "view": {
         "title": "应用慢事务次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Number of Application slow transaction TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -867,6 +952,11 @@
       "i": "d191",
       "view": {
         "title": "应用错误次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Number of application errors TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -903,6 +993,11 @@
       "i": "d201",
       "view": {
         "title": "应用慢SQL次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "The number of slow SQL applications TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -939,6 +1034,11 @@
       "i": "d211",
       "view": {
         "title": "应用http请求错误次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Number of application http request error TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -975,6 +1075,11 @@
       "i": "d221",
       "view": {
         "title": "服务和Addon OOM次数",
+        "i18n": {
+          "title": {
+            "en": "Service and Addon OOM times"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "static",
@@ -1014,6 +1119,11 @@
       "view": {
         "title": "项目OOM次数 Top10",
         "description": "根据服务OOM次数排序",
+        "i18n": {
+          "title": {
+            "en": "Project OOM times Top10"
+          }
+        },
         "chartType": "table",
         "dataSourceType": "static",
         "staticData": null,
@@ -1049,6 +1159,11 @@
       "i": "d241",
       "view": {
         "title": "API网关流量",
+        "i18n": {
+          "title": {
+            "en": "API gateway traffic"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "static",
