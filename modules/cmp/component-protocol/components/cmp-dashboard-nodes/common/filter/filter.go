@@ -54,12 +54,16 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 			enterprise = append(enterprise, l)
 			continue
 		}
+		exist := false
 		for _, dl := range DefaultLabels {
 			if dl == l {
+				exist = true
 				break
 			}
 		}
-		customs = append(customs, l)
+		if !exist {
+			customs = append(customs, l)
+		}
 	}
 	sort.Slice(enterprise, func(i, j int) bool {
 		return enterprise[i] < enterprise[j]

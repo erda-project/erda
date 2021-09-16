@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -68,6 +69,7 @@ type Columns struct {
 	Width     int    `json:"width,omitempty"`
 	Sortable  bool   `json:"sorter,omitempty"`
 	Fixed     string `json:"fixed,omitempty"`
+	TitleTip  string `json:"titleTip"`
 }
 
 type Meta struct {
@@ -97,7 +99,7 @@ type RowItem struct {
 	//
 	Distribution Distribution `json:"Distribution,omitempty"`
 	Usage        Distribution `json:"Usage,omitempty"`
-	UsageRate    Distribution `json:"UsageRate,omitempty"`
+	UnusedRate   Distribution `json:"UnusedRate,omitempty"`
 	Operate      Operate      `json:"Operate,omitempty"`
 	// batchOperations for json
 	BatchOperations []string `json:"batchOperations,omitempty"`
@@ -243,10 +245,11 @@ func (t *Table) GetDistributionValue(metricsData apistructs.MetricsData, resourc
 	}
 }
 
-func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetUnusedRate(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
+	unused := math.Max(metricsData.Request-metricsData.Used, 0.0)
 	return DistributionValue{
-		Text:    t.GetScaleValue(metricsData.Used, metricsData.Request, resourceType),
-		Percent: common.GetPercent(metricsData.Used, metricsData.Request),
+		Text:    t.GetScaleValue(unused, metricsData.Request, resourceType),
+		Percent: common.GetPercent(unused, metricsData.Request),
 	}
 }
 

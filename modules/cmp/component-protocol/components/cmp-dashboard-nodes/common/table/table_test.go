@@ -15,7 +15,10 @@
 package table
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestSortByNode(t *testing.T) {
@@ -148,28 +151,28 @@ func TestSortByDistribution(t *testing.T) {
 			name: "testUsageRate",
 			args: args{
 				data: []RowItem{{
-					UsageRate: Distribution{
+					UnusedRate: Distribution{
 						RenderType: "",
 						Value:      "30",
 						Status:     "",
 						Tip:        "",
 					},
 				}, {
-					UsageRate: Distribution{
+					UnusedRate: Distribution{
 						RenderType: "",
 						Value:      "10",
 						Status:     "",
 						Tip:        "",
 					},
 				}, {
-					UsageRate: Distribution{
+					UnusedRate: Distribution{
 						RenderType: "",
 						Value:      "20",
 						Status:     "",
 						Tip:        "",
 					},
 				}},
-				sortColumn: "UsageRate",
+				sortColumn: "UnusedRate",
 				asc:        false,
 			},
 		},
@@ -303,6 +306,51 @@ func TestTable_GetScaleValue(t1 *testing.T) {
 			t := &Table{}
 			if got := t.GetScaleValue(tt.args.a, tt.args.b, tt.args.resourceType); got != tt.want {
 				t1.Errorf("GetScaleValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTable_GetUnusedRate(t1 *testing.T) {
+	type fields struct {
+	}
+	type args struct {
+		metricsData  apistructs.MetricsData
+		resourceType TableType
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   DistributionValue
+	}{
+		// TODO: Add test cases.
+		{
+			name:   "text",
+			fields: fields{},
+			args: args{
+				metricsData: apistructs.MetricsData{Used: 1, Request: 1.2,
+					Total: 10},
+				resourceType: Cpu,
+			},
+			want: DistributionValue{"0.200/1.200", "16.7"},
+		},
+		{
+			name:   "text",
+			fields: fields{},
+			args: args{
+				metricsData: apistructs.MetricsData{Used: 1, Request: 1.2,
+					Total: 10},
+				resourceType: Memory,
+			},
+			want: DistributionValue{"0.2/1.2", "16.7"},
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{}
+			if got := t.GetUnusedRate(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("GetUnusedRate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
