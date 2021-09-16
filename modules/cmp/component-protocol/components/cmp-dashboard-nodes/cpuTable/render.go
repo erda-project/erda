@@ -109,12 +109,12 @@ func (ct *CpuInfoTable) getProps() {
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 320},
-			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
-			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
-			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true, Width: 120},
 			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Width: 130},
 			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Width: 130},
 			{DataIndex: "UsageRate", Title: ct.SDK.I18n("distributionRate"), Sortable: true, Width: 140},
+			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
+			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
+			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true, Width: 120},
 			{DataIndex: "Operate", Title: ct.SDK.I18n("operate"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
@@ -171,6 +171,14 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	if role == "<none>" {
 		role = "worker"
 	}
+	batchOperations := make([]string, 0)
+	if !strings.Contains(role, "master") {
+		if strings.Contains(status.Value, ct.SDK.I18n("SchedulingDisabled")) {
+			batchOperations = []string{"uncordon"}
+		} else {
+			batchOperations = []string{"cordon"}
+		}
+	}
 	ri := &table.RowItem{
 		ID:      c.String("id"),
 		IP:      ip,
@@ -200,7 +208,7 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Tip:        dr.Text,
 		},
 		Operate:         ct.GetOperate(c.String("id")),
-		BatchOperations: []string{"cordon", "uncordon"},
+		BatchOperations: batchOperations,
 	}
 	return ri, nil
 }
