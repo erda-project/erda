@@ -149,7 +149,11 @@
                 "field": "docker_container_summary-cpu_usage_percent::field",
                 "key": "valueODppjgDJ",
                 "resultType": "number",
-                "type": "field"
+                "type": "field",
+                "unit": {
+                  "type": "PERCENT",
+                  "unit": "%"
+                }
               }
             ]
           },
@@ -357,7 +361,11 @@
                 "field": "docker_container_summary-mem_usage_percent::field",
                 "key": "valuee0jRZAOK",
                 "resultType": "number",
-                "type": "field"
+                "type": "field",
+                "unit": {
+                  "type": "PERCENT",
+                  "unit": "%"
+                }
               }
             ]
           },
