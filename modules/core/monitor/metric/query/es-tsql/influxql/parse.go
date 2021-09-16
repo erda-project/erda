@@ -900,7 +900,7 @@ func getLiteralFuncValue(ctx *Context, call *influxql.Call) (interface{}, bool, 
 }
 
 func getPainlessFuntion(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, bool, error) {
-	fn, ok := PainlessFuntions[call.Name]
+	fn, ok := PainlessFunctions[call.Name]
 	if !ok {
 		return "", false, nil
 	}
