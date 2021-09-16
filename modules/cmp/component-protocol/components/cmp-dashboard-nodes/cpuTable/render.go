@@ -111,7 +111,7 @@ func (ct *CpuInfoTable) getProps() {
 			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 320},
 			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Width: 130},
 			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Width: 130},
-			{DataIndex: "UnusedRate", Title: ct.SDK.I18n("unusedRate"), Sortable: true, Width: 140, TitleTip: ct.SDK.I18n("CPU Unused Rate")},
+			{DataIndex: "UnusedRate", Title: ct.SDK.I18n("unusedRate"), Sortable: true, Width: 140, TitleTip: ct.SDK.I18n("The proportion of allocated resources that are not used")},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true, Width: 120},
