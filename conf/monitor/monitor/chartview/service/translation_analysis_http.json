@@ -37,12 +37,12 @@
                 "alias": "事务名称",
                 "i18n": {
                   "alias": {
-                    "en": "Translation Name",
+                    "en": "Transaction Name",
                     "zh": "事务名称"
                   }
                 },
                 "copy": true,
-                "key": "translation_name",
+                "key": "transaction_name",
                 "resultType": "string",
                 "type": "field"
               },
@@ -100,8 +100,8 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "searchTranslation",
-              "value": "translation_name"
+              "name": "searchTransaction",
+              "value": "transaction_name"
             }
           }
         },
@@ -112,7 +112,7 @@
         "title": "HTTP 事务",
         "i18n": {
           "title": {
-            "en": "HTTP Translation",
+            "en": "HTTP Transaction",
             "zh": "HTTP 事务"
           }
         }
@@ -216,7 +216,7 @@
         "staticData": {},
         "title": "服务请求",
         "i18n": {
-          "alias": {
+          "title": {
             "en": "Service Request",
             "zh": "服务请求"
           }
@@ -375,7 +375,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "traceSlowTranslation",
+              "name": "traceSlowTransaction",
               "value": "URL"
             }
           }
@@ -387,7 +387,7 @@
         "title": "慢事务追踪 Top50",
         "i18n": {
           "title": {
-            "en": "Slow Translation Tracing Top50",
+            "en": "Slow Transaction Tracing Top50",
             "zh": "慢事务追踪 Top50"
           }
         }
@@ -438,7 +438,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "traceSlowTranslation",
+              "name": "traceSlowTransaction",
               "value": "URL"
             }
           }
@@ -450,7 +450,7 @@
         "title": "错误事务追踪 Top50",
         "i18n": {
           "title": {
-            "en": "Error Translation Tracing Top50",
+            "en": "Error Transaction Tracing Top50",
             "zh": "错误事务追踪 Top50"
           }
         }
