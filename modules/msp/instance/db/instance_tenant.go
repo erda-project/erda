@@ -56,7 +56,7 @@ func (db *InstanceTenantDB) GetByTenantGroup(group string) ([]*InstanceTenant, e
 	}
 	var list []*InstanceTenant
 	if err := db.query().
-		Where("tenant_group=?", group).Find(&list).Error; err != nil {
+		Where("tenant_group=?", group).Order("update_time DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
