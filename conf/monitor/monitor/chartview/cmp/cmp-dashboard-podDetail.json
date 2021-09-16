@@ -435,7 +435,7 @@
         "title": "Pod Read Bytes",
         "i18n": {
           "title": {
-            "zh": "Pod 磁盘读取速率",
+            "zh": "Pod 磁盘读取字节数",
             "en": "Pod Read Bytes"
           }
         },
@@ -558,7 +558,7 @@
                 "alias": "磁盘读取字节数",
                 "i18n": {
                   "alias": {
-                    "zh": "Pod 磁盘读取速率",
+                    "zh": "Pod 磁盘读取字节数",
                     "en": "Pod Read Bytes"
                   }
                 },
@@ -648,7 +648,7 @@
         "title": "Pod Write Bytes",
         "i18n":{
           "title": {
-            "zh": "Pod 磁盘写入速率",
+            "zh": "Pod 磁盘写入字节数",
             "en": "Pod Write Bytes"
           }
         },
