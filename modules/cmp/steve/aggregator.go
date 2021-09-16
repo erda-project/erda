@@ -53,7 +53,7 @@ func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
 		ctx: ctx,
 		bdl: bdl,
 	}
-	a.init(bdl)
+	a.init()
 	go a.watchClusters(ctx)
 	return a
 }
@@ -64,9 +64,9 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.Tick(time.Hour):
-			clusters, err := a.bdl.ListClusters("k8s")
+			clusters, err := a.listClusterByType("k8s", "edas")
 			if err != nil {
-				logrus.Errorf("failed to list clusters when watch: %v", err)
+				logrus.Errorf("failed to list k8s clusters when watch: %v", err)
 				continue
 			}
 			exists := make(map[string]struct{})
@@ -94,8 +94,20 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 	}
 }
 
-func (a *Aggregator) init(bdl *bundle.Bundle) {
-	clusters, err := bdl.ListClusters("k8s")
+func (a *Aggregator) listClusterByType(types ...string) ([]apistructs.ClusterInfo, error) {
+	var result []apistructs.ClusterInfo
+	for _, typ := range types {
+		clusters, err := a.bdl.ListClustersWithType(typ)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, clusters...)
+	}
+	return result, nil
+}
+
+func (a *Aggregator) init() {
+	clusters, err := a.listClusterByType("k8s", "edas")
 	if err != nil {
 		logrus.Errorf("failed to list clusters, %v", err)
 		return
@@ -111,7 +123,7 @@ func (a *Aggregator) init(bdl *bundle.Bundle) {
 
 // Add starts a steve server for k8s cluster with clusterName and add it into aggregator
 func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) {
-	if clusterInfo.Type != "k8s" {
+	if clusterInfo.Type != "k8s" && clusterInfo.Type != "edas" {
 		return
 	}
 
@@ -248,10 +260,10 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		if cluster.Type != "k8s" {
+		if cluster.Type != "k8s" && cluster.Type != "edas" {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write(apistructs.NewSteveError(apistructs.BadRequest,
-				fmt.Sprintf("cluster %s is not a k8s cluster", clusterName)).JSON())
+				fmt.Sprintf("cluster %s is not a k8s or edas cluster", clusterName)).JSON())
 			return
 		}
 
@@ -267,7 +279,7 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if !group.ready {
 		rw.WriteHeader(http.StatusInternalServerError)
 		rw.Write(apistructs.NewSteveError(apistructs.ServerError,
-			fmt.Sprintf("k8s API for cluster %s is not ready, please wait", clusterName)).JSON())
+			fmt.Sprintf("API for cluster %s is not ready, please wait", clusterName)).JSON())
 		return
 	}
 	group.server.ServeHTTP(rw, req)
