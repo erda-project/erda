@@ -54,11 +54,10 @@ func (p *provider) intRoute(r httpserver.Router) error {
 
 	// api version one
 	// authenticate with access keys
-	signAuth := p.authSignedRequest()
 	groupV1 := "/api/v1"
 	{
-		r.POST(groupV1+"/collect/:metric", p.collectMetric, signAuth)
-		r.POST(groupV1+"/collect/logs/:source", p.collectLogs, signAuth)
+		r.POST(groupV1+"/collect/:metric", p.collectMetric)
+		r.POST(groupV1+"/collect/logs/:source", p.collectLogs)
 	}
 	return nil
 }
