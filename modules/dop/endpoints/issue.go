@@ -25,6 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -334,6 +335,8 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrUpdateIssue.NotLogin().ToResp(), nil
 	}
 	updateReq.IdentityInfo = identityInfo
+	// i18n lang
+	updateReq.Lang = i18n.Language(r)
 	// 事件详情
 	issueModel, err := e.db.GetIssue(int64(id))
 	if err != nil {

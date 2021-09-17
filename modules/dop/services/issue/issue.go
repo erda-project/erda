@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -41,6 +42,7 @@ type Issue struct {
 	bdl    *bundle.Bundle
 	stream *issuestream.IssueStream
 	uc     *ucauth.UCClient
+	tran   i18n.Translator
 }
 
 // Option 定义 Issue 配置选项
@@ -80,6 +82,12 @@ func WithIssueStream(stream *issuestream.IssueStream) Option {
 func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(issue *Issue) {
 		issue.uc = uc
+	}
+}
+
+func WithTranslator(tran i18n.Translator) Option {
+	return func(issue *Issue) {
+		issue.tran = tran
 	}
 }
 
@@ -925,17 +933,12 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			streamReq.StreamType = apistructs.ISTChangeAssignee
 			streamReq.StreamParams = apistructs.ISTParam{CurrentAssignee: users[0].Nick, NewAssignee: users[1].Nick}
 		case "iteration_id":
-			// 迭代
-			currentIteration, err := svc.db.GetIteration(uint64(v[0].(int64)))
+			streamType, params, err := svc.handleIssueStreamChangeIteration(updateReq.Lang, v[0].(int64), v[1].(int64))
 			if err != nil {
 				return err
 			}
-			newIteration, err := svc.db.GetIteration(uint64(v[1].(int64)))
-			if err != nil {
-				return err
-			}
-			streamReq.StreamType = apistructs.ISTChangeIteration
-			streamReq.StreamParams = apistructs.ISTParam{CurrentIteration: currentIteration.Title, NewIteration: newIteration.Title}
+			streamReq.StreamType = streamType
+			streamReq.StreamParams = params
 		case "man_hour":
 			// 工时
 			var currentManHour, newManHour apistructs.IssueManHour

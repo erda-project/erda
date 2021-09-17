@@ -54,6 +54,7 @@ type provider struct {
 
 	Protocol   componentprotocol.Interface
 	Tran       i18n.Translator  `translator:"component-protocol"`
+	IssueTan   i18n.Translator  `translator:"issue-manage"`
 	DB         *gorm.DB         `autowired:"mysql-client"`
 	ETCD       etcd.Interface   // autowired
 	EtcdClient *clientv3.Client // autowired

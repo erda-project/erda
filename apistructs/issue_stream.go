@@ -33,25 +33,27 @@ type IssueStreamType string
 
 // issue 事件流类型
 const (
-	ISTCreate               IssueStreamType = "Create" // 创建事件
-	ISTComment              IssueStreamType = "Comment"
-	ISTRelateMR             IssueStreamType = "RelateMR" // 关联 MR
-	ISTAssign               IssueStreamType = "Assign"
-	ISTTransferState        IssueStreamType = "TransferState" // 状态迁移
-	ISTChangeTitle          IssueStreamType = "ChangeTitle"
-	ISTChangePlanStartedAt  IssueStreamType = "ChangePlanStartedAt"  // 更新计划开始时间
-	ISTChangePlanFinishedAt IssueStreamType = "ChangePlanFinishedAt" // 更新计划结束时间
-	ISTChangeAssignee       IssueStreamType = "ChangeAssignee"       // 更新处理人
-	ISTChangeIteration      IssueStreamType = "ChangeIteration"      // 更新迭代
-	ISTChangeManHour        IssueStreamType = "ChangeManHour"        // 更新工时信息
-	ISTChangeOwner          IssueStreamType = "ChangeOwner"          // 更新责任人
-	ISTChangeTaskType       IssueStreamType = "ChangeTaskType"       // 更新任务类型/引用源
-	ISTChangeBugStage       IssueStreamType = "ChangeBugStage"       // 更新引用源
-	ISTChangePriority       IssueStreamType = "ChangePriority"       // 更新优先级
-	ISTChangeComplexity     IssueStreamType = "ChangeComplexity"     // 更新复杂度
-	ISTChangeSeverity       IssueStreamType = "ChangeSeverity"       // 更新严重度
-	ISTChangeContent        IssueStreamType = "ChangeContent"        // 更新内容
-	ISTChangeLabel          IssueStreamType = "ChangeLabel"          // 更新标签
+	ISTCreate                        IssueStreamType = "Create" // 创建事件
+	ISTComment                       IssueStreamType = "Comment"
+	ISTRelateMR                      IssueStreamType = "RelateMR" // 关联 MR
+	ISTAssign                        IssueStreamType = "Assign"
+	ISTTransferState                 IssueStreamType = "TransferState" // 状态迁移
+	ISTChangeTitle                   IssueStreamType = "ChangeTitle"
+	ISTChangePlanStartedAt           IssueStreamType = "ChangePlanStartedAt"           // 更新计划开始时间
+	ISTChangePlanFinishedAt          IssueStreamType = "ChangePlanFinishedAt"          // 更新计划结束时间
+	ISTChangeAssignee                IssueStreamType = "ChangeAssignee"                // 更新处理人
+	ISTChangeIteration               IssueStreamType = "ChangeIteration"               // 更新迭代
+	ISTChangeIterationFromUnassigned IssueStreamType = "ChangeIterationFromUnassigned" // change iteration from unassigned iteration
+	ISTChangeIterationToUnassigned   IssueStreamType = "ChangeIterationToUnassigned"   // change iteration to unassigned iteration
+	ISTChangeManHour                 IssueStreamType = "ChangeManHour"                 // 更新工时信息
+	ISTChangeOwner                   IssueStreamType = "ChangeOwner"                   // 更新责任人
+	ISTChangeTaskType                IssueStreamType = "ChangeTaskType"                // 更新任务类型/引用源
+	ISTChangeBugStage                IssueStreamType = "ChangeBugStage"                // 更新引用源
+	ISTChangePriority                IssueStreamType = "ChangePriority"                // 更新优先级
+	ISTChangeComplexity              IssueStreamType = "ChangeComplexity"              // 更新复杂度
+	ISTChangeSeverity                IssueStreamType = "ChangeSeverity"                // 更新严重度
+	ISTChangeContent                 IssueStreamType = "ChangeContent"                 // 更新内容
+	ISTChangeLabel                   IssueStreamType = "ChangeLabel"                   // 更新标签
 )
 
 // GetEventAction get event action by issue stream type
