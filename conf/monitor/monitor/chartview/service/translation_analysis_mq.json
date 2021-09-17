@@ -461,7 +461,7 @@
               ],
               "groupBy": "message_bus_destination::tag",
               "limit": 50,
-              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间",
+              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
             }
           },
           "optionProps": {

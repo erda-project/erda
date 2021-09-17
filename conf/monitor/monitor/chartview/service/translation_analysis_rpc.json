@@ -42,7 +42,7 @@
                   }
                 },
                 "copy": true,
-                "key": "Transaction_name",
+                "key": "translation_name",
                 "resultType": "string",
                 "type": "field"
               },
@@ -101,7 +101,7 @@
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "searchTransaction",
-              "value": "Transaction_name"
+              "value": "translation_name"
             }
           }
         },
