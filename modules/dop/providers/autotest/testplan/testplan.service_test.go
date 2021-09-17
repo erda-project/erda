@@ -15,17 +15,15 @@
 package testplan
 
 import (
-	context "context"
-	reflect "reflect"
-	testing "testing"
-	"time"
+	"context"
+	"reflect"
+	"testing"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
@@ -151,7 +149,7 @@ func Test_processEvent(t *testing.T) {
 
 	err := p.processEvent(&pb.Content{
 		TestPlanID:      1,
-		ExecuteTime:     timestamppb.New(time.Now()),
+		ExecuteTime:     "2006-01-02 15:04:05",
 		PassRate:        10.123,
 		ExecuteDuration: "10:10:10",
 		ApiTotalNum:     100,
