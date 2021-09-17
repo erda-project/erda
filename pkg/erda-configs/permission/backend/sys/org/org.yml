@@ -243,7 +243,7 @@
   scope: org
   resource: notice
   action: DELETE
-- role: Manager,Dev,Ops,Support,DataManager,DataEngineer,Reporter,PublisherManager,PublisherMember,Guest,EdgeOps
+- role: Manager,Dev,Ops,Support,DataManager,DataEngineer,Reporter,PublisherManager,PublisherMember,Guest,EdgeOps,Auditor
   scope: org
   resource: notice
   action: LIST
