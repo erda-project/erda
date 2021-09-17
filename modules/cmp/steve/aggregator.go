@@ -301,6 +301,7 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 		AuthMiddleware: emptyMiddleware,
 		Router:         RoutesWrapper(prefix),
 		URLPrefix:      prefix,
+		ClusterName:    clusterInfo.Name,
 	})
 	if err != nil {
 		cancel()
