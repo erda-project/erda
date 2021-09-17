@@ -580,7 +580,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// }
 
 	// create stream and send issue update event
-	if err := svc.CreateStream(ctx, req, issueStreamFields); err != nil {
+	if err := svc.CreateStream(req, issueStreamFields); err != nil {
 		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
 	}
 
@@ -933,25 +933,12 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			streamReq.StreamType = apistructs.ISTChangeAssignee
 			streamReq.StreamParams = apistructs.ISTParam{CurrentAssignee: users[0].Nick, NewAssignee: users[1].Nick}
 		case "iteration_id":
-			// 迭代
-			currentIterationID, newIterationID := v[0].(int64), v[1].(int64)
-			unassignedIteration := &dao.Iteration{Title: svc.tran.Text(updateReq.Lang, "unassigned iteration")}
-			currentIteration, newIteration := unassignedIteration, unassignedIteration
-			var err error
-			if currentIterationID != apistructs.UnassignedIterationID {
-				currentIteration, err = svc.db.GetIteration(uint64(currentIterationID))
-				if err != nil {
-					return err
-				}
+			streamType, params, err := svc.handleIssueStreamChangeIteration(updateReq.Lang, v[0].(int64), v[1].(int64))
+			if err != nil {
+				return err
 			}
-			if newIterationID != apistructs.UnassignedIterationID {
-				newIteration, err = svc.db.GetIteration(uint64(newIterationID))
-				if err != nil {
-					return err
-				}
-			}
-			streamReq.StreamType = apistructs.ISTChangeIteration
-			streamReq.StreamParams = apistructs.ISTParam{CurrentIteration: currentIteration.Title, NewIteration: newIteration.Title}
+			streamReq.StreamType = streamType
+			streamReq.StreamParams = params
 		case "man_hour":
 			// 工时
 			var currentManHour, newManHour apistructs.IssueManHour
