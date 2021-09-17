@@ -17,11 +17,11 @@ package accesskey
 import (
 	context "context"
 
-	"github.com/erda-project/erda/pkg/secret"
-	"github.com/erda-project/erda/pkg/secret/token"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda/pkg/secret"
+	"github.com/erda-project/erda/pkg/secret/token"
 )
 
 type accessKeyService struct {

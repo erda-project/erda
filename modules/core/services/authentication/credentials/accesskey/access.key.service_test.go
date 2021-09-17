@@ -19,10 +19,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/secret"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+	"github.com/erda-project/erda/pkg/secret"
 )
 
 var mockKeyPair = secret.AkSkPair{
