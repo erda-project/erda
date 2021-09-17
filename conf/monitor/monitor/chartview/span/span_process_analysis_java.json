@@ -1,6 +1,8 @@
 {
   "id": "span_process_analysis_java",
   "name": "span_process_analysis_java",
+  "scope": "micro_service",
+  "scopeId": "global",
   "desc": "",
   "viewConfig": [
     {
