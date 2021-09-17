@@ -15,9 +15,7 @@
 package issuestream
 
 import (
-	"bytes"
 	"strconv"
-	"text/template"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -127,7 +125,7 @@ func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistru
 		if v.StreamType == apistructs.ISTRelateMR {
 			is.MRInfo = v.StreamParams.MRInfo
 		} else {
-			content, err := GetDefaultContent(v.StreamType, v.StreamParams)
+			content, err := getDefaultContent(v.StreamType, v.StreamParams)
 			if err != nil {
 				return nil, err
 			}
@@ -144,30 +142,10 @@ func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistru
 	return resp, nil
 }
 
-// GetDefaultContent 获取渲染后的事件流内容
-func GetDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam) (string, error) {
-	locale := "zh"
-	ct, err := apistructs.GetIssueStreamTemplate(locale, ist)
-	if err != nil {
-		return "", err
-	}
-	tpl, err := template.New("c").Parse(ct)
-	if err != nil {
-		return "", err
-	}
-
-	var content bytes.Buffer
-	if err := tpl.Execute(&content, param.Localize(locale)); err != nil {
-		return "", err
-	}
-
-	return content.String(), nil
-}
-
 // CreateIssueEvent create issue event
 func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType,
 	streamParams apistructs.ISTParam) error {
-	content, err := GetDefaultContent(streamType, streamParams)
+	content, err := getDefaultContentForMsgSending(streamType, streamParams)
 	if err != nil {
 		logrus.Errorf("get issue %d content error: %v, content will be empty", issueID, err)
 	}

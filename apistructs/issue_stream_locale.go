@@ -25,7 +25,7 @@ import (
 var IssueTemplate = map[string]map[IssueStreamType]string{
 	"zh": {
 		ISTCreate:                        `该事件由 {{.UserName}} 创建`,
-		ISTComment:                       `添加了备注: {{.Comment}}`,
+		ISTComment:                       `{{.Comment}}`,
 		ISTRelateMR:                      `mrInfo: {{.MRInfo}}`,
 		ISTAssign:                        `该事件分派给 "{{.UserName}}" 处理`,
 		ISTTransferState:                 `该事件状态自 "{{.CurrentState}}" 迁移至 "{{.NewState}}"`,
@@ -48,7 +48,7 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 	},
 	`en`: {
 		ISTCreate:                        `{{.UserName}} created`,
-		ISTComment:                       `added a comment: {{.Comment}}`,
+		ISTComment:                       `{{.Comment}}`,
 		ISTRelateMR:                      `mrInfo: {{.MRInfo}}`,
 		ISTAssign:                        `assigned to "{{.UserName}}"`,
 		ISTTransferState:                 `transfer state from "{{.CurrentState}}" to "{{.NewState}}"`,
@@ -60,6 +60,16 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 		ISTChangeIterationFromUnassigned: `adjust Iteration from "unassigned" to "{{.NewIteration}}"`,
 		ISTChangeIterationToUnassigned:   `adjust Iteration from "{{.CurrentIteration}}" to "unassigned"`,
 		ISTChangeManHour:                 `adjust man-hour from【EstimateTime: {{.CurrentEstimateTime}}, ElapsedTime: {{.CurrentElapsedTime}}, RemainingTime: {{.CurrentRemainingTime}}, StartTime: {{.CurrentStartTime}}, WorkContent: {{.CurrentWorkContent}}】to【EstimateTime: {{.NewEstimateTime}}, ElapsedTime: {{.NewElapsedTime}}, RemainingTime: {{.NewRemainingTime}}, StartTime: {{.NewStartTime}}, WorkContent: {{.NewWorkContent}}】`,
+	},
+}
+
+// IssueTemplateOverrideForMsgSending override IssueTemplate for better event message sending
+var IssueTemplateOverrideForMsgSending = map[string]map[IssueStreamType]string{
+	"zh": {
+		ISTComment: `添加了备注: {{.Comment}}`,
+	},
+	"en": {
+		ISTComment: `added a comment: {{.Comment}}`,
 	},
 }
 
@@ -145,19 +155,6 @@ func (p *ISTParam) Scan(value interface{}) error {
 		return err
 	}
 	return nil
-}
-
-// GetIssueStreamTemplate 获取事件流模板
-func GetIssueStreamTemplate(locale string, ist IssueStreamType) (string, error) {
-	if locale != "zh" && locale != "en" {
-		return "", errors.Errorf("invalid locale %v", locale)
-	}
-
-	v, ok := IssueTemplate[locale][ist]
-	if !ok {
-		return "", errors.Errorf("issue stream template not found")
-	}
-	return v, nil
 }
 
 func (p *ISTParam) Localize(locale string) *ISTParam {
