@@ -926,13 +926,24 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			streamReq.StreamParams = apistructs.ISTParam{CurrentAssignee: users[0].Nick, NewAssignee: users[1].Nick}
 		case "iteration_id":
 			// 迭代
-			currentIteration, err := svc.db.GetIteration(uint64(v[0].(int64)))
-			if err != nil {
-				return err
+			currentIterationID, newIterationID := v[0].(int64), v[1].(int64)
+			currentIteration, newIteration := &dao.Iteration{}, &dao.Iteration{}
+			var err error
+			if currentIterationID == apistructs.UnassignedIterationID {
+				currentIteration.Title = apistructs.UnassignedIterationName
+			} else {
+				currentIteration, err = svc.db.GetIteration(uint64(currentIterationID))
+				if err != nil {
+					return err
+				}
 			}
-			newIteration, err := svc.db.GetIteration(uint64(v[1].(int64)))
-			if err != nil {
-				return err
+			if newIterationID == apistructs.UnassignedIterationID {
+				newIteration.Title = apistructs.UnassignedIterationName
+			} else {
+				newIteration, err = svc.db.GetIteration(uint64(newIterationID))
+				if err != nil {
+					return err
+				}
 			}
 			streamReq.StreamType = apistructs.ISTChangeIteration
 			streamReq.StreamParams = apistructs.ISTParam{CurrentIteration: currentIteration.Title, NewIteration: newIteration.Title}

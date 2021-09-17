@@ -17,6 +17,7 @@ package apistructs
 import "time"
 
 const UnassignedIterationID = -1
+const UnassignedIterationName = "unassigned"
 
 // IterationCreateRequest 创建迭代请求
 type IterationCreateRequest struct {
