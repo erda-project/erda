@@ -387,6 +387,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithBundle(bdl.Bdl),
 		issue.WithIssueStream(issueStream),
 		issue.WithUCClient(uc),
+		issue.WithIssueRelated(issueRelated),
 		issue.WithTranslator(p.IssueTan),
 	)
 

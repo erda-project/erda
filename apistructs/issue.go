@@ -61,6 +61,8 @@ type Issue struct {
 	FinishTime *time.Time `json:"finishTime"`
 
 	TestPlanCaseRels []TestPlanCaseRel `json:"testPlanCaseRels"`
+	relatingIssueIDs []uint64
+	relatedIssueIDs  []uint64
 }
 
 // GetStage 获取任务状态或者Bug阶段
@@ -79,6 +81,50 @@ func (s Issue) ConvertToIssueUpdateReq() IssueUpdateRequest {
 	cont, _ := json.Marshal(s)
 	_ = json.Unmarshal(cont, &req)
 	return req
+}
+
+// SetRelatingIssueIDs set RelatingIssueIDs from excel
+func (s *Issue) SetRelatingIssueIDs(ids string) error {
+	if ids == "" {
+		return nil
+	}
+	idStrs := strings.Split(ids, ",")
+	relatingIssueIDs := make([]uint64, 0)
+	for _, id := range idStrs {
+		issueID, err := strconv.Atoi(id)
+		if err != nil {
+			return err
+		}
+		relatingIssueIDs = append(relatingIssueIDs, uint64(issueID))
+	}
+	s.relatingIssueIDs = relatingIssueIDs
+	return nil
+}
+
+// SetRelatedIssueIDs set RelatedIssueIDs from excel
+func (s *Issue) SetRelatedIssueIDs(ids string) error {
+	if ids == "" {
+		return nil
+	}
+	idStrs := strings.Split(ids, ",")
+	relatedIssueIDs := make([]uint64, 0)
+	for _, id := range idStrs {
+		issueID, err := strconv.Atoi(id)
+		if err != nil {
+			return err
+		}
+		relatedIssueIDs = append(relatedIssueIDs, uint64(issueID))
+	}
+	s.relatedIssueIDs = relatedIssueIDs
+	return nil
+}
+
+func (s *Issue) GetRelatingIssueIDs() []uint64 {
+	return s.relatingIssueIDs
+}
+
+func (s *Issue) GetRelatedIssueIDs() []uint64 {
+	return s.relatedIssueIDs
 }
 
 // IssueType 事件类型
