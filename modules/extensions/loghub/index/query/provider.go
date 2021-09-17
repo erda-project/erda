@@ -15,6 +15,7 @@
 package query
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -33,8 +34,10 @@ import (
 )
 
 type config struct {
-	Timeout     time.Duration `file:"timeout" default:"60s"`
-	QueryBackES bool          `file:"query_back_es" default:"false"`
+	Timeout              time.Duration `file:"timeout" default:"60s"`
+	QueryBackES          bool          `file:"query_back_es" default:"false"`
+	IndexPreload         bool          `file:"index_preload" default:"false" env:"LOG_INDEX_PRELOAD"`
+	IndexPreloadInterval time.Duration `file:"index_preload_interval" default:"60s" env:"LOG_INDEX_PRELOAD_INTERVAL"`
 }
 
 type provider struct {
@@ -46,6 +49,11 @@ type provider struct {
 	db         *db.DB
 	bdl        *bundle.Bundle
 	t          i18n.Translator
+
+	// 索引加载列表
+	reload     chan struct{}
+	indices    atomic.Value // map[string]map[string][]*IndexEntry
+	timeRanges map[string]map[string]*timeRange
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -70,6 +78,31 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return p.intRoutes(routes)
 }
 
+func (p *provider) Start() error {
+	go func() {
+		if !p.C.IndexPreload {
+			return
+		}
+		tick := time.Tick(p.C.IndexPreloadInterval)
+		for {
+			p.reloadAllIndices()
+			select {
+			case <-tick:
+			case _, ok := <-p.reload:
+				if !ok {
+					return
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+func (p *provider) Close() error {
+	close(p.reload)
+	return nil
+}
+
 func init() {
 	servicehub.Register("logs-index-query", &servicehub.Spec{
 		Services:     []string{"logs-index-query"},
@@ -77,7 +110,10 @@ func init() {
 		Description:  "logs query",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
-			return &provider{}
+			return &provider{
+				timeRanges: make(map[string]map[string]*timeRange),
+				reload:     make(chan struct{}),
+			}
 		},
 	})
 }
