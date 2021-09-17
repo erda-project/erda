@@ -44,11 +44,11 @@ func DefaultSchemas(baseSchema *types.APISchemas) {
 	apiroot.Register(baseSchema, []string{"v1"}, "proxy:/apis")
 }
 
-func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
+func DefaultSchemaTemplates(ctx context.Context, clusterName string, cf *client.Factory,
 	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup, k8sInterface kubernetes.Interface) []schema.Template {
 	nodeFormatter := fm.NewNodeFormatter(ctx, k8sInterface)
 	return []schema.Template{
-		DefaultTemplate(ctx, cf, asl),
+		DefaultTemplate(ctx, clusterName, cf, asl),
 		apigroups.Template(discovery),
 		{
 			ID:        "configmap",
@@ -69,9 +69,9 @@ func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
 	}
 }
 
-func DefaultTemplate(ctx context.Context, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
+func DefaultTemplate(ctx context.Context, clusterName string, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
 	return schema.Template{
-		Store:     cmpproxy.NewProxyStore(ctx, clientGetter, asl),
+		Store:     cmpproxy.NewProxyStore(ctx, clusterName, clientGetter, asl),
 		Formatter: formatter(),
 	}
 }
