@@ -55,7 +55,8 @@ func (tr *TaskRun) handleTaskLoop() error {
 	params := pexpr_params.GenerateParamsFromTask(tr.P.ID, tr.Task.ID, tr.Task.Status)
 	result, err := pexpr.Eval(expr, params)
 	if err != nil {
-		return fmt.Errorf("loop break expr %s evaluate failed, err: %v", expr, err)
+		rlog.Errorf("loop break expr %s evaluate failed, err: %v", expr, err)
+		result = false
 	}
 	// Meet the exit conditions, exit the loop
 	if t, ok := result.(bool); ok && t {
