@@ -85,7 +85,8 @@ func (s *accessKeyService) CreateAccessKey(ctx context.Context, req *pb.CreateAc
 		CreatedAt:   timestamppb.New(obj.CreatedAt),
 		Scope:       obj.Scope,
 		ScopeId:     obj.ScopeId,
-		Token:       obj.AccessKey,
+		// take AccessKey as token when you just want use a simple token to authenticate
+		Token: obj.AccessKey,
 	}}, nil
 }
 
