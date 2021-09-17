@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/conf/monitor/monitor"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -82,19 +83,33 @@ func (s *dataViewService) ListSystemViews(ctx context.Context, req *pb.ListSyste
 		if err != nil {
 			continue
 		}
-		if view["scope"].(string) == req.Scope || view["scopeId"].(string) == req.ScopeID {
+		scope, scopeId := getScopeScopeID(view)
+
+		if scope == req.Scope || scopeId == req.ScopeID {
 			marshal, err := json.Marshal(view)
 			if err != nil {
 				return nil, errors.NewInternalServerError(err)
 			}
 			view := pb.View{}
 			err = json.Unmarshal(marshal, &view)
+			view.Name = s.p.Tran.Text(apis.Language(ctx), view.Name)
 			vs = append(vs, &view)
 		}
 	}
 	vlist.List = vs
 	vlist.Total = int64(len(vs))
 	return &pb.ListSystemViewsResponse{Data: vlist}, nil
+}
+
+func getScopeScopeID(view map[string]interface{}) (string, string) {
+	scope, scopeId := "", ""
+	if v, ok := view["scope"].(string); ok {
+		scope = v
+	}
+	if v, ok := view["scopeId"].(string); ok {
+		scopeId = v
+	}
+	return scope, scopeId
 }
 
 func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemViewRequest) (*pb.GetSystemViewResponse, error) {
@@ -110,6 +125,7 @@ func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemVi
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	view.Name = s.p.Tran.Text(apis.Language(ctx), view.Name)
 	return &pb.GetSystemViewResponse{Data: &view}, nil
 }
 
