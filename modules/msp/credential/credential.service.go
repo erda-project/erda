@@ -19,8 +19,8 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
-
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
+
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -50,7 +50,7 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 	}
 	result := &pb.QueryAccessKeysResponse{
 		Data: &pb.QueryAccessKeysData{
-			List: make([]*akpb.AccessKeysItem, 0),
+			List: make([]*pb.QueryAccessKeys, 0),
 		},
 	}
 	err = json.Unmarshal(data, &result.Data.List)
@@ -98,7 +98,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateAccessKeyResponse{
-		Data: accessKey.Data,
+		Data: accessKey.Data.Token,
 	}
 	return result, nil
 }
