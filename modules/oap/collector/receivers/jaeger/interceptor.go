@@ -93,13 +93,13 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 	for _, tSpan := range batch.Spans {
 		span := &tracing.Span{
 			TraceID:           extractTraceID(tSpan),
-			SpanID:            reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10)),
-			StratTimeUnixNano: uint64(tSpan.StartTime),
+			SpanID:            strconv.FormatInt(tSpan.SpanId, 10),
+			StartTimeUnixNano: uint64(tSpan.StartTime),
 			EndTimeUnixNano:   uint64(tSpan.StartTime + tSpan.Duration),
 			Name:              tSpan.OperationName,
 		}
 		if tSpan.ParentSpanId != 0 {
-			span.ParentSpanID = reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10))
+			span.ParentSpanID = strconv.FormatInt(tSpan.SpanId, 10)
 		}
 		span.Attributes = make(map[string]string)
 		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
@@ -111,11 +111,11 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 	return spans
 }
 
-func extractTraceID(tSpan *jaeger.Span) []byte {
+func extractTraceID(tSpan *jaeger.Span) string {
 	if tSpan.TraceIdHigh == 0 {
-		return reflectx.StringToBytes(fmt.Sprintf("%016x", tSpan.TraceIdLow))
+		return fmt.Sprintf("%016x", tSpan.TraceIdLow)
 	}
-	return reflectx.StringToBytes(fmt.Sprintf("%016x%016x", tSpan.TraceIdHigh, tSpan.TraceIdLow))
+	return fmt.Sprintf("%016x%016x", tSpan.TraceIdHigh, tSpan.TraceIdLow)
 }
 
 func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
