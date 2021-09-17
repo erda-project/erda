@@ -57,15 +57,16 @@ type Store struct {
 	clientGetter proxy.ClientGetter
 }
 
-func NewProxyStore(ctx context.Context, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
+func NewProxyStore(ctx context.Context, clusterName string, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
 	return &errorStore{
 		Store: &cacheStore{
 			Store: &Store{
 				clientGetter: clientGetter,
 			},
-			ctx:   ctx,
-			cache: cache.FreeCache,
-			asl:   asl,
+			ctx:         ctx,
+			asl:         asl,
+			cache:       cache.FreeCache,
+			clusterName: clusterName,
 		},
 	}
 }

@@ -51,6 +51,7 @@ type Server struct {
 	APIServer       *apiserver.Server
 	ClusterRegistry string
 	URLPrefix       string
+	ClusterName     string
 
 	authMiddleware      auth.Middleware
 	controllers         *steveserver.Controllers
@@ -74,6 +75,7 @@ type Options struct {
 	AggregationSecretName      string
 	ClusterRegistry            string
 	URLPrefix                  string
+	ClusterName                string
 }
 
 // New create a steve server
@@ -101,6 +103,7 @@ func New(ctx context.Context, restConfig *rest.Config, opts *Options) (*Server, 
 		aggregationSecretName:      opts.AggregationSecretName,
 		ClusterRegistry:            opts.ClusterRegistry,
 		URLPrefix:                  opts.URLPrefix,
+		ClusterName:                opts.ClusterName,
 	}
 
 	if err := setup(ctx, server); err != nil {
@@ -164,7 +167,7 @@ func setup(ctx context.Context, server *Server) error {
 		return err
 	}
 
-	for _, template := range DefaultSchemaTemplates(ctx, cf, server.controllers.K8s.Discovery(), asl, k8sInterface) {
+	for _, template := range DefaultSchemaTemplates(ctx, server.ClusterName, cf, server.controllers.K8s.Discovery(), asl, k8sInterface) {
 		sf.AddTemplate(template)
 	}
 
