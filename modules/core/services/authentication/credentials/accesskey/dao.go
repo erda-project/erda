@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/secret"
-	"github.com/erda-project/erda/pkg/secret/token"
 )
 
 type Dao interface {
@@ -62,11 +61,7 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 		where["scope_id"] = req.ScopeId
 	}
 	if req.Token != "" {
-		if pair := token.DecodeToAkskPair(req.Token); pair != nil {
-			where["access_key"] = pair.AccessKeyID
-		} else {
-			return nil, 0, errors.NewNotFoundError("invalid token")
-		}
+		where["access_key"] = req.Token
 	}
 
 	var count int64
