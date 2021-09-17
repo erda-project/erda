@@ -35,20 +35,23 @@ import (
 type cacheStore struct {
 	types.Store
 
-	ctx   context.Context
-	asl   accesscontrol.AccessSetLookup
-	cache *cache.Cache
+	ctx         context.Context
+	asl         accesscontrol.AccessSetLookup
+	cache       *cache.Cache
+	clusterName string
 }
 
 type cacheKey struct {
-	gvk       string
-	namespace string
+	gvk         string
+	namespace   string
+	clusterName string
 }
 
 func (k *cacheKey) getKey() string {
 	d := sha256.New()
 	d.Write([]byte(k.gvk))
 	d.Write([]byte(k.namespace))
+	d.Write([]byte(k.clusterName))
 	return hex.EncodeToString(d.Sum(nil))
 }
 
@@ -58,16 +61,18 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 	gvk := attributes.GVK(schema)
 	key := cacheKey{
-		gvk:       gvk.String(),
-		namespace: apiOp.Namespace,
+		gvk:         gvk.String(),
+		namespace:   apiOp.Namespace,
+		clusterName: c.clusterName,
 	}
 
 	values, _, err := c.cache.Get(key.getKey())
 	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
 			key := cacheKey{
-				gvk:       gvk.String(),
-				namespace: "",
+				gvk:         gvk.String(),
+				namespace:   "",
+				clusterName: c.clusterName,
 			}
 			allNsValues, expired, err := c.cache.Get(key.getKey())
 			if allNsValues != nil && err == nil && !expired {
@@ -123,8 +128,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, data types.APIObject) (types.APIObject, error) {
 	gvk := attributes.GVK(schema)
 	key := cacheKey{
-		gvk:       gvk.String(),
-		namespace: apiOp.Namespace,
+		gvk:         gvk.String(),
+		namespace:   apiOp.Namespace,
+		clusterName: c.clusterName,
 	}
 	c.cache.Remove(key.getKey())
 	return c.Store.Create(apiOp, schema, data)
@@ -143,8 +149,9 @@ func (c *cacheStore) Update(apiOp *types.APIRequest, schema *types.APISchema, da
 func (c *cacheStore) Delete(apiOp *types.APIRequest, schema *types.APISchema, id string) (types.APIObject, error) {
 	gvk := attributes.GVK(schema)
 	key := cacheKey{
-		gvk:       gvk.String(),
-		namespace: apiOp.Namespace,
+		gvk:         gvk.String(),
+		namespace:   apiOp.Namespace,
+		clusterName: c.clusterName,
 	}
 	c.cache.Remove(key.getKey())
 	return c.Store.Delete(apiOp, schema, id)
