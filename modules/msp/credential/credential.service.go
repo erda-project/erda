@@ -19,8 +19,8 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
-	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 
+	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
