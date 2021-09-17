@@ -404,7 +404,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "traceSlowTransaction",
+              "name": "traceSlowTranslation",
               "value": "Topic"
             }
           }
@@ -468,7 +468,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "traceSlowTransaction",
+              "name": "traceSlowTranslation",
               "value": "Topic"
             }
           }
