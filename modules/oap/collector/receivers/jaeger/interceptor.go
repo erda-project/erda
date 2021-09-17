@@ -94,7 +94,7 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 		span := &tracing.Span{
 			TraceID:           extractTraceID(tSpan),
 			SpanID:            reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10)),
-			StratTimeUnixNano: uint64(tSpan.StartTime),
+			StartTimeUnixNano: uint64(tSpan.StartTime),
 			EndTimeUnixNano:   uint64(tSpan.StartTime + tSpan.Duration),
 			Name:              tSpan.OperationName,
 		}
