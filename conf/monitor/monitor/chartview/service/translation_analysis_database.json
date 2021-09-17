@@ -138,7 +138,7 @@
         "title": "数据库事务",
         "i18n": {
           "title": {
-            "en": "Databases Translation",
+            "en": "Databases Transaction",
             "zh": "数据库事务"
           }
         }
@@ -410,7 +410,7 @@
         "title": "慢事务追踪 Top50",
         "i18n": {
           "title": {
-            "en": "Slow Translation Tracing Top50",
+            "en": "Slow Transaction Tracing Top50",
             "zh": "慢事务追踪 Top50"
           }
         }
@@ -473,7 +473,7 @@
         "title": "错误事务追踪 Top50",
         "i18n": {
           "title": {
-            "en": "Error Translation Tracing Top50",
+            "en": "Error Transaction Tracing Top50",
             "zh": "错误事务追踪 Top50"
           }
         }
