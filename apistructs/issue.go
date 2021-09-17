@@ -61,6 +61,7 @@ type Issue struct {
 	FinishTime *time.Time `json:"finishTime"`
 
 	TestPlanCaseRels []TestPlanCaseRel `json:"testPlanCaseRels"`
+	relatedIssueIDs  []uint64
 }
 
 // GetStage 获取任务状态或者Bug阶段
@@ -79,6 +80,28 @@ func (s Issue) ConvertToIssueUpdateReq() IssueUpdateRequest {
 	cont, _ := json.Marshal(s)
 	_ = json.Unmarshal(cont, &req)
 	return req
+}
+
+// SetRelatedIssueIDs set RelatedIssueIDs from excel
+func (s *Issue) SetRelatedIssueIDs(ids string) error {
+	if ids == "" {
+		return nil
+	}
+	idStrs := strings.Split(ids, ",")
+	relatedIssueIDs := make([]uint64, 0)
+	for _, id := range idStrs {
+		issueID, err := strconv.Atoi(id)
+		if err != nil {
+			return err
+		}
+		relatedIssueIDs = append(relatedIssueIDs, uint64(issueID))
+	}
+	s.relatedIssueIDs = relatedIssueIDs
+	return nil
+}
+
+func (s *Issue) GetRelatedIssueIDs() []uint64 {
+	return s.relatedIssueIDs
 }
 
 // IssueType 事件类型
