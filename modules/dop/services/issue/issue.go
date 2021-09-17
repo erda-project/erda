@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -41,6 +42,7 @@ type Issue struct {
 	bdl    *bundle.Bundle
 	stream *issuestream.IssueStream
 	uc     *ucauth.UCClient
+	tran   i18n.Translator
 }
 
 // Option 定义 Issue 配置选项
@@ -80,6 +82,12 @@ func WithIssueStream(stream *issuestream.IssueStream) Option {
 func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(issue *Issue) {
 		issue.uc = uc
+	}
+}
+
+func WithTranslator(tran i18n.Translator) Option {
+	return func(issue *Issue) {
+		issue.tran = tran
 	}
 }
 
@@ -572,7 +580,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// }
 
 	// create stream and send issue update event
-	if err := svc.CreateStream(req, issueStreamFields); err != nil {
+	if err := svc.CreateStream(ctx, req, issueStreamFields); err != nil {
 		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
 	}
 
@@ -927,19 +935,16 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 		case "iteration_id":
 			// 迭代
 			currentIterationID, newIterationID := v[0].(int64), v[1].(int64)
-			currentIteration, newIteration := &dao.Iteration{}, &dao.Iteration{}
+			unassignedIteration := &dao.Iteration{Title: svc.tran.Text(updateReq.Lang, "unassigned iteration")}
+			currentIteration, newIteration := unassignedIteration, unassignedIteration
 			var err error
-			if currentIterationID == apistructs.UnassignedIterationID {
-				currentIteration.Title = apistructs.UnassignedIterationName
-			} else {
+			if currentIterationID != apistructs.UnassignedIterationID {
 				currentIteration, err = svc.db.GetIteration(uint64(currentIterationID))
 				if err != nil {
 					return err
 				}
 			}
-			if newIterationID == apistructs.UnassignedIterationID {
-				newIteration.Title = apistructs.UnassignedIterationName
-			} else {
+			if newIterationID != apistructs.UnassignedIterationID {
 				newIteration, err = svc.db.GetIteration(uint64(newIterationID))
 				if err != nil {
 					return err
