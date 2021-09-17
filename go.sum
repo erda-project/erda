@@ -453,12 +453,18 @@ github.com/erda-project/erda-infra v0.0.0-20210916043803-3d23fdfef26c/go.mod h1:
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-proto-go v0.0.0-20210820073528-bcd612c2efb7/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
+github.com/erda-project/erda-proto-go v0.0.0-20210917073421-6332783a7ded h1:PpEJ78gb6WG9o8MxCr8tU15TgxIxmDEh9jiPR6K1rKY=
+github.com/erda-project/erda-proto-go v0.0.0-20210917073421-6332783a7ded/go.mod h1:l2AY7V/D+y7n0n2Vd/giV2ma3WrxSBMN6NKeU16q1tk=
 github.com/erda-project/erda-proto-go v0.0.0-20210917110845-8a6c93589862 h1:wXsujIrB5PziihyTXMY/zMKnQ+icJmg5H66BkKKE3n8=
 github.com/erda-project/erda-proto-go v0.0.0-20210917110845-8a6c93589862/go.mod h1:l2AY7V/D+y7n0n2Vd/giV2ma3WrxSBMN6NKeU16q1tk=
 github.com/erda-project/erda-proto-go v0.0.0-20210917115457-936f93d8bd8f h1:tICEKpt1bgTSKOB6qqbI9LGQ3t/i9Cw0hZqFr7p7Pnc=
 github.com/erda-project/erda-proto-go v0.0.0-20210917115457-936f93d8bd8f/go.mod h1:l2AY7V/D+y7n0n2Vd/giV2ma3WrxSBMN6NKeU16q1tk=
 github.com/erda-project/erda-proto-go v0.0.0-20210917132234-e998e08b01c7 h1:jruD3xNBaTuZttVWM6EaNqy0BlC6ztTEMu8n3N5b0Wk=
 github.com/erda-project/erda-proto-go v0.0.0-20210917132234-e998e08b01c7/go.mod h1:l2AY7V/D+y7n0n2Vd/giV2ma3WrxSBMN6NKeU16q1tk=
+github.com/erda-project/erda-proto-go v0.0.0-20210918052647-45dbc4c4c207 h1:3Y8E2nAusTvdhG0OPrFE/sfdXgrLeE6CciFdYpFLG6M=
+github.com/erda-project/erda-proto-go v0.0.0-20210918052647-45dbc4c4c207/go.mod h1:l2AY7V/D+y7n0n2Vd/giV2ma3WrxSBMN6NKeU16q1tk=
+github.com/erda-project/erda-proto-go v1.2.0 h1:dVqEL7w8NkvU454BNeJ5gCfEKvNd9iAsfn/fTPD1bUI=
+github.com/erda-project/erda-proto-go v1.2.0/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2 h1:5QKXIq0yTPulGqXzEQx96fLK6HDCb8xC1H6kOjj4hsk=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
@@ -1996,6 +2002,8 @@ golang.org/x/net v0.0.0-20210428140749-89ef3d95e781/go.mod h1:OJAsFXCWl8Ukc7SiCT
 golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 h1:/6y1LfuqNuQdHAm0jjtPtgRcxIxjVZgm5OTu8/QhZvk=
 golang.org/x/net v0.0.0-20210916014120-12bc252f5db8/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/net v0.0.0-20210917221730-978cfadd31cf h1:R150MpwJIv1MpS0N/pc+NhTM8ajzvlmxlY5OYsrevXQ=
+golang.org/x/net v0.0.0-20210917221730-978cfadd31cf/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/oauth2 v0.0.0-20180603041954-1e0a3fa8ba9a/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
@@ -2122,6 +2130,8 @@ golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20210819135213-f52c844e1c1c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 h1:7ZDGnxgHAMw7thfC5bEos0RDAccZKxioiWBhfIe+tvw=
 golang.org/x/sys v0.0.0-20210915083310-ed5796bab164/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20210917161153-d61c044b1678 h1:J27LZFQBFoihqXoegpscI10HpjZ7B5WQLLKL2FZXQKw=
+golang.org/x/sys v0.0.0-20210917161153-d61c044b1678/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201117132131-f5c789dd3221/go.mod h1:Nr5EML6q2oocZ2LXRh80K7BxOlk5/8JxuGnuhpl+muw=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d h1:SZxvLBoTP5yHO3Frd4z4vrF+DBX9vMVanchswa69toE=
@@ -2342,6 +2352,8 @@ google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c/go.mod h1:UODoCrxH
 google.golang.org/genproto v0.0.0-20210820002220-43fce44e7af1/go.mod h1:eFjDcFEctNawg4eG61bRv87N7iHBWyVhJu7u1kqDUXY=
 google.golang.org/genproto v0.0.0-20210916144049-3192f974c780 h1:RE6jTVCXBKZ7U9atSg8N3bsjRvvUujhEPspbEhdyy8s=
 google.golang.org/genproto v0.0.0-20210916144049-3192f974c780/go.mod h1:eFjDcFEctNawg4eG61bRv87N7iHBWyVhJu7u1kqDUXY=
+google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4 h1:ysnBoUyeL/H6RCvNRhWHjKoDEmguI+mPU+qHgK8qv/w=
+google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4/go.mod h1:eFjDcFEctNawg4eG61bRv87N7iHBWyVhJu7u1kqDUXY=
 google.golang.org/grpc v1.26.0 h1:2dTRdpdFEEhJYQD8EMLB61nnrzSCTbG38PhqdhvOltg=
 google.golang.org/grpc v1.26.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
