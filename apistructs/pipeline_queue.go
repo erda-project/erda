@@ -260,6 +260,7 @@ func (req *PipelineQueueUpdateRequest) Validate() error {
 type PipelineQueueValidateResult struct {
 	Success     bool                      `json:"success"`
 	Reason      string                    `json:"reason"`
+	IsEnd       bool                      `json:"isEnd"`
 	RetryOption *QueueValidateRetryOption `json:"retryOption"`
 }
 
@@ -273,4 +274,8 @@ func (r PipelineQueueValidateResult) IsSuccess() bool {
 }
 func (r PipelineQueueValidateResult) IsFailed() bool {
 	return !r.Success
+}
+
+func (r PipelineQueueValidateResult) IsEndStatus() bool {
+	return r.IsEnd
 }
