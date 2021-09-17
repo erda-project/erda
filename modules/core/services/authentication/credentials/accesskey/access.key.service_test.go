@@ -19,10 +19,16 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/erda-project/erda/pkg/secret"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
+
+var mockKeyPair = secret.AkSkPair{
+	AccessKeyID: "IQ9E2Buhd8z2h7njPaxeGxq8",
+	SecretKey:   "0O2Hn0TrTrRwrds1q0un0p9AvX4JB8V6",
+}
 
 func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 	type fields struct {
@@ -50,13 +56,14 @@ func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 				Data: []*pb.AccessKeysItem{
 					{
 						Id:          "aaa",
-						AccessKey:   "xxx",
-						SecretKey:   "yyy",
+						AccessKey:   mockKeyPair.AccessKeyID,
+						SecretKey:   mockKeyPair.SecretKey,
 						Status:      pb.StatusEnum_ACTIVATE,
 						SubjectType: pb.SubjectTypeEnum_MICRO_SERVICE,
 						Subject:     "1",
 						Description: "xxx",
 						CreatedAt:   timestamppb.New(_mockTime),
+						Token:       "IQ9E2Buhd8z2h7njPaxeGxq80O2Hn0TrTrRwrds1q0un0p9AvX4JB8V6",
 					},
 				},
 			},
@@ -117,13 +124,14 @@ func Test_accessKeyService_GetAccessKey(t *testing.T) {
 			want: &pb.GetAccessKeyResponse{
 				Data: &pb.AccessKeysItem{
 					Id:          "aaa",
-					AccessKey:   "xxx",
-					SecretKey:   "yyy",
+					AccessKey:   mockKeyPair.AccessKeyID,
+					SecretKey:   mockKeyPair.SecretKey,
 					Status:      pb.StatusEnum_ACTIVATE,
 					SubjectType: pb.SubjectTypeEnum_MICRO_SERVICE,
 					Subject:     "1",
 					Description: "xxx",
 					CreatedAt:   timestamppb.New(_mockTime),
+					Token:       "IQ9E2Buhd8z2h7njPaxeGxq80O2Hn0TrTrRwrds1q0un0p9AvX4JB8V6",
 				},
 			},
 			wantErr: false,
@@ -183,13 +191,14 @@ func Test_accessKeyService_CreateAccessKeys(t *testing.T) {
 			want: &pb.CreateAccessKeyResponse{
 				Data: &pb.AccessKeysItem{
 					Id:          "aaa",
-					AccessKey:   "xxx",
-					SecretKey:   "yyy",
+					AccessKey:   mockKeyPair.AccessKeyID,
+					SecretKey:   mockKeyPair.SecretKey,
 					Status:      pb.StatusEnum_ACTIVATE,
 					SubjectType: pb.SubjectTypeEnum_MICRO_SERVICE,
 					Subject:     "1",
 					Description: "xxx",
 					CreatedAt:   timestamppb.New(_mockTime),
+					Token:       "IQ9E2Buhd8z2h7njPaxeGxq80O2Hn0TrTrRwrds1q0un0p9AvX4JB8V6",
 				},
 			},
 			wantErr: false,

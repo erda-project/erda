@@ -32,8 +32,8 @@ var (
 	_mockTime      = time.Date(2021, 8, 18, 0, 0, 0, 0, time.UTC)
 	_mockAccessKey = AccessKey{
 		ID:          "aaa",
-		AccessKey:   "xxx",
-		SecretKey:   "yyy",
+		AccessKey:   mockKeyPair.AccessKeyID,
+		SecretKey:   mockKeyPair.SecretKey,
 		Status:      pb.StatusEnum_ACTIVATE,
 		SubjectType: pb.SubjectTypeEnum_MICRO_SERVICE,
 		Subject:     "1",

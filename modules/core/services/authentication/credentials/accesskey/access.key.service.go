@@ -17,6 +17,8 @@ package accesskey
 import (
 	context "context"
 
+	"github.com/erda-project/erda/pkg/secret"
+	"github.com/erda-project/erda/pkg/secret/token"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
@@ -44,6 +46,7 @@ func (s *accessKeyService) QueryAccessKeys(ctx context.Context, req *pb.QueryAcc
 			CreatedAt:   timestamppb.New(obj.CreatedAt),
 			Scope:       obj.Scope,
 			ScopeId:     obj.ScopeId,
+			Token:       token.EncodeFromAkskPair(&secret.AkSkPair{AccessKeyID: obj.AccessKey, SecretKey: obj.SecretKey}),
 		}
 	}
 	return &pb.QueryAccessKeysResponse{Data: res, Total: total}, nil
@@ -64,6 +67,7 @@ func (s *accessKeyService) GetAccessKey(ctx context.Context, req *pb.GetAccessKe
 		Subject:     obj.Subject,
 		Description: obj.Description,
 		CreatedAt:   timestamppb.New(obj.CreatedAt),
+		Token:       token.EncodeFromAkskPair(&secret.AkSkPair{AccessKeyID: obj.AccessKey, SecretKey: obj.SecretKey}),
 	}}, nil
 }
 
@@ -83,6 +87,7 @@ func (s *accessKeyService) CreateAccessKey(ctx context.Context, req *pb.CreateAc
 		CreatedAt:   timestamppb.New(obj.CreatedAt),
 		Scope:       obj.Scope,
 		ScopeId:     obj.ScopeId,
+		Token:       token.EncodeFromAkskPair(&secret.AkSkPair{AccessKeyID: obj.AccessKey, SecretKey: obj.SecretKey}),
 	}}, nil
 }
 
