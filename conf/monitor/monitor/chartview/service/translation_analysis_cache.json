@@ -113,7 +113,7 @@
             "isMoreThanOneDay": true,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
-              "name": "searchTransaction",
+              "name": "searchTranslation",
               "value": "operation"
             }
           }
