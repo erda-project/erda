@@ -80,6 +80,7 @@ func (t *ComponentEventTable) InitComponent(ctx context.Context) {
 	t.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	t.sdk = sdk
+	t.ctx = ctx
 }
 
 func (t *ComponentEventTable) GenComponentState(component *cptype.Component) error {
@@ -150,14 +151,14 @@ func (t *ComponentEventTable) RenderList() error {
 		ClusterName: t.State.ClusterName,
 	}
 
-	obj, err := t.bdl.ListSteveResource(&req)
+	list, err := t.SteveServer.ListSteveResource(t.ctx, &req)
 	if err != nil {
 		return err
 	}
-	list := obj.Slice("data")
 
 	var items []Item
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		if t.State.FilterValues.Namespace != nil && !contain(t.State.FilterValues.Namespace, obj.String("metadata", "namespace")) {
 			continue
 		}

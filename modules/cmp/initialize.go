@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
@@ -230,12 +229,4 @@ func registerWebHook(bdl *bundle.Bundle) {
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register pipeline tasks event, (%v)", err)
 	}
-}
-
-type SteveServer interface {
-	Serve(clusterName string, apiOp *types.APIRequest)
-}
-
-func (p *provider) Serve(clusterName string, apiOp *types.APIRequest) {
-	p.SteveAggregator.Serve(clusterName, apiOp)
 }
