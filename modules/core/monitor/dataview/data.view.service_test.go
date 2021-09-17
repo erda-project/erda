@@ -421,3 +421,46 @@ func Test_dataViewService_DeleteCustomView(t *testing.T) {
 		})
 	}
 }
+
+func Test_getScopeScopeID(t *testing.T) {
+	type args struct {
+		view map[string]interface{}
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 string
+	}{
+		{
+			name: "normal",
+			args: args{
+				view: map[string]interface{}{
+					"scope":   "org",
+					"scopeId": "xxx",
+				},
+			},
+			want:  "org",
+			want1: "xxx",
+		},
+		{
+			name: "no found",
+			args: args{
+				view: map[string]interface{}{},
+			},
+			want:  "",
+			want1: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := getScopeScopeID(tt.args.view)
+			if got != tt.want {
+				t.Errorf("getScopeScopeID() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("getScopeScopeID() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -39,6 +40,7 @@ type provider struct {
 	Register        transport.Register `autowired:"service-register" optional:"true"`
 	DB              *gorm.DB           `autowired:"mysql-client"`
 	dataViewService *dataViewService
+	Tran            i18n.Translator `translator:"charts"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

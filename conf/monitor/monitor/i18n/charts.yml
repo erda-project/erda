@@ -318,6 +318,8 @@ en:
     "操作系统": "OS"
     "网页加载完成": "Page Load Completed"
     "堆内存使用": "Heap Memory Usage"
+    "运维日报模版": "O & M daily report template"
+    "运维周报模版": "O & M weekly report template"
 
 zh:
     "REQUIREMENT": "需求"

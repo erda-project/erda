@@ -13,6 +13,11 @@
       "i": "d11",
       "view": {
         "title": "异常机器",
+        "i18n": {
+          "title": {
+            "en": "Abnormal machine"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "static",
@@ -43,6 +48,11 @@
       "i": "d12",
       "view": {
         "title": "异常服务",
+        "i18n": {
+          "title": {
+            "en": "Abnormal service"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "static",
@@ -73,6 +83,11 @@
       "i": "d13",
       "view": {
         "title": "异常Addons",
+        "i18n": {
+          "title": {
+            "en": "Abnormal Addons"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "static",
@@ -103,6 +118,11 @@
       "i": "d21",
       "view": {
         "title": "告警类别分析",
+        "i18n": {
+          "title": {
+            "en": "Alarm category analysis"
+          }
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "static",
@@ -133,6 +153,11 @@
       "i": "d31",
       "view": {
         "title": "机器异常持续时间",
+        "i18n": {
+          "title": {
+            "en": "Machine abnormality duration"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "static",
@@ -164,6 +189,11 @@
       "i": "d41",
       "view": {
         "title": "机器平均负载 Top10",
+        "i18n": {
+          "title": {
+            "en": "Average machine load Top10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -196,6 +226,11 @@
       "i": "d51",
       "view": {
         "title": "机器磁盘使用 Top10",
+        "i18n": {
+          "title": {
+            "en": "Machine disk usage Top10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -228,6 +263,11 @@
       "i": "d61",
       "view": {
         "title": "服务OOM次数 Top10",
+        "i18n": {
+          "title": {
+            "en": "Top 10 service OOM times"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -266,6 +306,11 @@
       "i": "d71",
       "view": {
         "title": "应用JVM告警次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Application JVM alarm times TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -308,6 +353,11 @@
       "i": "d81",
       "view": {
         "title": "应用CPU告警次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Application CPU alarm times TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -346,6 +396,11 @@
       "i": "d91",
       "view": {
         "title": "应用错误次数 Top10",
+        "i18n": {
+          "title": {
+            "en": "Number of application errors Top10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -382,6 +437,11 @@
       "i": "d101",
       "view": {
         "title": "应用慢事务次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Application slow transaction times TOP10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
@@ -418,6 +478,11 @@
       "i": "d111",
       "view": {
         "title": "应用SQL慢查询次数 TOP10",
+        "i18n": {
+          "title": {
+            "en": "Application SQL slow query times Top10"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "static",
