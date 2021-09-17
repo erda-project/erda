@@ -11,6 +11,8 @@ en:
   time: "Time"
   request_id: "Request Id"
   avg_elapsed: "Avg Elapsed"
+  producer: "producer"
+  consumer: "consumer"
 zh:
   application: "应用名称"
   service: "服务名称"
@@ -24,3 +26,5 @@ zh:
   time: "时间"
   request_id: "请求 Id"
   avg_elapsed: "平均耗时"
+  producer: "生产者"
+  consumer: "消费者"
