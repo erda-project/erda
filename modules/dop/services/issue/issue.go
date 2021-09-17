@@ -909,15 +909,9 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 		case "content":
 			// 不显示修改详情
 			streamReq.StreamType = apistructs.ISTChangeContent
-			streamReq.StreamParams = apistructs.ISTParam{
-				CurrentContent: v[0].(string),
-				NewContent:     v[1].(string)}
 		case "label":
 			// 不显示修改详情
 			streamReq.StreamType = apistructs.ISTChangeLabel
-			streamReq.StreamParams = apistructs.ISTParam{
-				CurrentLabel: "1",
-				NewLabel:     "2"}
 		case "assignee":
 			userIds := make([]string, 0, len(v))
 			for _, uid := range v {
