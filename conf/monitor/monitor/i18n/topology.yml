@@ -8,6 +8,9 @@ en:
   application_cache_service_request: "Cache Request"
   application_db_service_request:    "Database Request"
   application_mq_service_request:    "MQ Request"
+  time: "Time"
+  request_id: "Request Id"
+  avg_elapsed: "Avg Elapsed"
 zh:
   application: "应用名称"
   service: "服务名称"
@@ -18,3 +21,6 @@ zh:
   application_cache_service_request: "缓存请求"
   application_db_service_request:    "数据库请求"
   application_mq_service_request:    "MQ 请求"
+  time: "时间"
+  request_id: "请求 Id"
+  avg_elapsed: "平均耗时"
