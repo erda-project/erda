@@ -25,7 +25,8 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/modules/extensions/loghub/index/query/db"
+	mspDb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -38,9 +39,11 @@ const (
 // ESClient .
 type ESClient struct {
 	*elastic.Client
+	Cluster    string
 	URLs       string
 	LogVersion string
 	Indices    []string
+	Entrys     []*IndexEntry
 }
 
 func (c *ESClient) printSearchSource(searchSource *elastic.SearchSource) (string, error) {
@@ -52,6 +55,14 @@ func (c *ESClient) printSearchSource(searchSource *elastic.SearchSource) (string
 	body = c.URLs + "\n" + strings.Join(c.Indices, ",") + "\n" + body
 	fmt.Println(body)
 	return body, nil
+}
+
+func (p *provider) getAllESClients() []*ESClient {
+	list, err := p.db.LogDeployment.List()
+	if err != nil {
+		return nil
+	}
+	return p.getESClientsFromLogAnalyticsByLogDeployment("", list...)
 }
 
 func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
@@ -110,13 +121,24 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(orgID int64, addon stri
 	if err != nil {
 		return nil
 	}
+	return p.getESClientsFromLogAnalyticsByLogDeployment(addon, list...)
+}
+
+func (p *provider) getESClientsFromLogAnalyticsByLogDeployment(addon string, logDeployments ...*db.LogDeployment) []*ESClient {
 	type ESConfig struct {
 		Security bool   `json:"securityEnable"`
 		Username string `json:"securityUsername"`
 		Password string `json:"securityPassword"`
 	}
+	var indices map[string]map[string][]*IndexEntry
+	if p.C.IndexPreload {
+		v := p.indices.Load()
+		if v != nil {
+			indices = v.(map[string]map[string][]*IndexEntry)
+		}
+	}
 	var clients []*ESClient
-	for _, d := range list {
+	for _, d := range logDeployments {
 		if len(d.ESURL) <= 0 {
 			continue
 		}
@@ -137,7 +159,7 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(orgID int64, addon stri
 				}
 				for _, instance := range sameGroupLogInstances {
 					logKey := instance.LogKey
-					if instance.LogType == string(db.LogTypeLogService) {
+					if instance.LogType == string(mspDb.LogTypeLogService) {
 						var instanceConfig = struct {
 							MspEnvID string `json:"MSP_ENV_ID"`
 						}{}
@@ -176,7 +198,7 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(orgID int64, addon stri
 		}
 
 		orgId := d.OrgID
-		if d.LogType == string(db.LogTypeLogAnalytics) {
+		if d.LogType == string(mspDb.LogTypeLogAnalytics) {
 			// omit the orgId alias, if deployed by log-analytics addon，specially for old versions, there's no orgId alias
 			orgId = ""
 		}
@@ -187,16 +209,27 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(orgID int64, addon stri
 			continue
 		}
 		d.CollectorURL = strings.TrimSpace(d.CollectorURL)
-		if len(d.CollectorURL) > 0 || d.LogType == string(db.LogTypeLogService) {
-			clients = append(clients, &ESClient{
+		if len(d.CollectorURL) > 0 || d.LogType == string(mspDb.LogTypeLogService) {
+			c := &ESClient{
 				Client:     client,
+				Cluster:    d.ClusterName,
 				LogVersion: LogVersion2,
 				URLs:       d.ESURL,
 				Indices:    getLogIndices("rlogs-", orgId, addons...),
-			})
+			}
+			clients = append(clients, c)
+
+			if p.C.IndexPreload && indices != nil && len(addons) > 0 {
+				if indexAddons, ok := indices[d.ClusterName]; ok {
+					for _, addon := range addons {
+						c.Entrys = append(c.Entrys, indexAddons[addon]...)
+					}
+				}
+			}
 		} else {
 			clients = append(clients, &ESClient{
 				Client:     client,
+				Cluster:    d.ClusterName,
 				LogVersion: LogVersion1,
 				URLs:       d.ESURL,
 				Indices:    getLogIndices("spotlogs-", orgId, addons...),

@@ -29,8 +29,8 @@ func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {
 	end := req.End * int64(time.Millisecond)
 	boolQuery = boolQuery.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lte(end))
 	if len(req.Query) > 0 {
-		byts, _ := json.Marshal(req.Query)
-		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery("content:" + string(byts)))
+		//byts, _ := json.Marshal(req.Query)
+		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery("content:" + req.Query))
 	}
 	return boolQuery
 }
@@ -90,7 +90,7 @@ func (c *ESClient) statisticLogsV2(req *LogStatisticRequest, timeout time.Durati
 	if req.Debug {
 		c.printSearchSource(searchSource)
 	}
-	resp, err := c.doRequest(searchSource, timeout)
+	resp, err := c.doRequest(&req.LogRequest, searchSource, timeout)
 	if err != nil {
 		return nil, err
 	}
