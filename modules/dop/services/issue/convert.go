@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -156,7 +157,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 	}
 
 	var manHour apistructs.IssueManHour
-	json.Unmarshal([]byte(model.ManHour), &manHour)
+	_ = json.Unmarshal([]byte(model.ManHour), &manHour)
 
 	var bugStage, taskType = "", ""
 	if model.Type == apistructs.IssueTypeTask {
@@ -195,7 +196,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 
 func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[issueStage]string) ([][]string, error) {
 	// 默认字段列名
-	r := [][]string{{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间"}}
+	r := [][]string{{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联"}}
 	// 自定义字段列名
 	for _, pro := range property {
 		r[0] = append(r[0], pro.DisplayName)
@@ -260,6 +261,16 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			Type:  i.Type,
 			Value: i.GetStage(),
 		}
+
+		_, relatedIssueIDs, err := svc.issueRelated.GetIssueRelationsByIssueIDs(uint64(i.ID))
+		if err != nil {
+			return nil, err
+		}
+		relatedIssueIDStrs := make([]string, 0)
+		for _, id := range relatedIssueIDs {
+			relatedIssueIDStrs = append(relatedIssueIDStrs, strconv.FormatUint(id, 10))
+		}
+
 		r = append(r, append([]string{
 			strconv.FormatInt(i.ID, 10),
 			i.Title,
@@ -295,18 +306,13 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 				apistructs.IssueTypeBug:         "缺陷",
 				apistructs.IssueTypeEpic:        "史诗",
 			}[i.Type],
-		},
-			[]string{
-				planFinishedAt,
-				i.CreatedAt.Format("2006-01-02 15:04:05"),
-			}...),
-		)
+			planFinishedAt,
+			i.CreatedAt.Format("2006-01-02 15:04:05"),
+			strings.Join(relatedIssueIDStrs, ","),
+		}))
 		relations := propertyMap[i.ID]
 		// 获取每个自定义字段的值
 		for _, pro := range property {
-			if err != nil {
-				return nil, err
-			}
 			// 根据字段类型将数据放入表格
 			if pro.PropertyType.IsOptions() == false {
 				for _, rel := range relations {
@@ -369,7 +375,7 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 		stateMap[s.Name] = int64(s.ID)
 	}
 	// 获取迭代信息
-	iterations, err := svc.db.FindIterations(uint64(req.ProjectID))
+	iterations, err := svc.db.FindIterations(req.ProjectID)
 	if err != nil {
 		return nil, nil, nil, nil, nil, 0, err
 	}
@@ -398,7 +404,16 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 		issue := apistructs.Issue{
 			Title:     row[1],
 			Content:   row[2],
-			ProjectID: uint64(req.ProjectID),
+			ProjectID: req.ProjectID,
+		}
+		if row[0] != "" {
+			issueID, err := strconv.Atoi(row[0])
+			if err != nil {
+				falseExcel = append(falseExcel, i+1)
+				falseReason = append(falseReason, fmt.Sprintf("failed to convert id: %s, err: %v", row[0], err))
+				continue
+			}
+			issue.ID = int64(issueID)
 		}
 		if stateMap[row[3]] != 0 {
 			issue.State = stateMap[row[3]]
@@ -434,14 +449,20 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			issue.PlanFinishedAt = &finishedTime
 		}
 
-		// firstLine[15]是创建时间，跳过
+		// firstLine[15]is created time, jump over
+		// row[16] RelatedIssueIDs
+		if err := issue.SetRelatedIssueIDs(row[16]); err != nil {
+			falseExcel = append(falseExcel, i+1)
+			falseReason = append(falseReason, fmt.Sprintf("failed to convert related issue ids: %s, err: %v", row[17], err))
+			continue
+		}
 		// 获取自定义字段
 		relation := apistructs.IssuePropertyRelationCreateRequest{
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		for indexx, line := range row[16:] {
-			index := indexx + 16
+		for indexx, line := range row[17:] {
+			index := indexx + 17
 			// 获取字段名对应的字段
 			instance := apistructs.IssuePropertyInstance{
 				IssuePropertyIndex: propertyNameMap[rows[0][index]],
