@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 type Issue struct {
@@ -853,6 +855,8 @@ type IssueUpdateRequest struct {
 	ID uint64 `json:"-"`
 	// internal use, get from *http.Request
 	IdentityInfo
+	// Lang used for i18n
+	Lang i18n.LanguageCodes
 }
 
 // IsEmpty 判断更新请求里的字段是否均为空
