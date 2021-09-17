@@ -126,7 +126,6 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 
 		if len(errs) > 0 {
 			result = errors.Errorf("failed to %s task, err: %s", itr.Op(), strutil.Join(errs, "\n", true))
-
 		}
 
 		// if result only contain platform error, task will retry, so don't set status changed
