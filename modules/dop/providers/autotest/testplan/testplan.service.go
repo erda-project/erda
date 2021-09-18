@@ -48,10 +48,11 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 	if req.Content.TestPlanID == 0 {
 		return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
 	}
+
 	go func() {
-		err := s.processEvent(req.Content)
+		err := s.ProcessEvent(req.Content)
 		if err != nil {
-			logrus.Errorf("failed to processEvent, err: %s", err.Error())
+			logrus.Errorf("failed to ProcessEvent, err: %s", err.Error())
 		}
 	}()
 
@@ -65,7 +66,7 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 	return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, nil
 }
 
-func (s *TestPlanService) processEvent(req *pb.Content) error {
+func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
 	eventName := "autotest-plan-execute"
 
 	testPlan, err := s.autoTestSvc.GetTestPlanV2(req.TestPlanID, apistructs.IdentityInfo{
