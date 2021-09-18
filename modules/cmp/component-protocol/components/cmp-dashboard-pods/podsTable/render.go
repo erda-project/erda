@@ -444,8 +444,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		sort.Slice(items, cmpWrapper(p.State.Sorter.Field, p.State.Sorter.Order))
 	}
 
-	l, r := getRange(len(items), p.State.PageNo, p.State.PageSize)
-	p.Data.List = items[l:r]
+	p.Data.List = items
 	p.State.Total = len(items)
 	return nil
 }
@@ -571,14 +570,6 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		}...)
 	}
 	p.Operations = map[string]interface{}{
-		"changePageNo": Operation{
-			Key:    "changePageNo",
-			Reload: true,
-		},
-		"changePageSize": Operation{
-			Key:    "changePageSize",
-			Reload: true,
-		},
 		"changeSort": Operation{
 			Key:    "changeSort",
 			Reload: true,

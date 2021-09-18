@@ -193,13 +193,13 @@ func (t *ComponentEventTable) RenderList() error {
 		lastSeen := fmt.Sprintf("%s %s", fields[0], t.sdk.I18n("ago"))
 		lastSeenTimestamp, err := strfmt.ParseDuration(fields[0])
 		if err != nil {
-			lastSeenTimestamp = math.MaxInt64
+			lastSeenTimestamp = math.MaxInt32
 			lastSeen = t.sdk.I18n("unknown")
 		}
 
 		items = append(items, Item{
 			LastSeen:          lastSeen,
-			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
+			LastSeenTimestamp: lastSeenTimestamp.Milliseconds(),
 			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],
 			Object:            fields[3],
@@ -296,8 +296,7 @@ func (t *ComponentEventTable) RenderList() error {
 		slice.Sort(items, cmpWrapper(t.State.Sorter.Field, t.State.Sorter.Order))
 	}
 
-	l, r := getRange(len(items), int(t.State.PageNo), int(t.State.PageSize))
-	t.Data.List = items[l:r]
+	t.Data.List = items
 	t.State.Total = uint64(len(items))
 	return nil
 }
@@ -363,14 +362,6 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 		},
 	}
 	t.Operations = make(map[string]interface{})
-	t.Operations[apistructs.OnChangePageNoOperation.String()] = Operation{
-		Key:    apistructs.OnChangePageNoOperation.String(),
-		Reload: true,
-	}
-	t.Operations[apistructs.OnChangePageSizeOperation.String()] = Operation{
-		Key:    apistructs.OnChangePageSizeOperation.String(),
-		Reload: true,
-	}
 	t.Operations[apistructs.OnChangeSortOperation.String()] = Operation{
 		Key:    apistructs.OnChangeSortOperation.String(),
 		Reload: true,

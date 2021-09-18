@@ -722,8 +722,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 		slice.Sort(items, cmpWrapper(w.State.Sorter.Field, w.State.Sorter.Order))
 	}
 
-	l, r := getRange(len(items), int(w.State.PageNo), int(w.State.PageSize))
-	w.Data.List = items[l:r]
+	w.Data.List = items
 	w.State.Total = uint64(len(items))
 	return nil
 }
@@ -845,14 +844,6 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 
 	w.Operations = make(map[string]interface{})
 	w.Operations = map[string]interface{}{
-		apistructs.OnChangePageNoOperation.String(): Operation{
-			Key:    apistructs.ChangePageNoOperation.String(),
-			Reload: true,
-		},
-		apistructs.OnChangePageSizeOperation.String(): Operation{
-			Key:    apistructs.OnChangePageSizeOperation.String(),
-			Reload: true,
-		},
 		apistructs.OnChangeSortOperation.String(): Operation{
 			Key:    apistructs.OnChangeSortOperation.String(),
 			Reload: true,
