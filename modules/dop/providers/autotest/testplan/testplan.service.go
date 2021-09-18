@@ -48,10 +48,12 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 	if req.Content.TestPlanID == 0 {
 		return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
 	}
-	err := s.processEvent(req.Content)
-	if err != nil {
-		return nil, apierrors.ErrUpdateTestPlan.InternalError(err)
-	}
+	go func() {
+		err := s.processEvent(req.Content)
+		if err != nil {
+			logrus.Errorf("failed to processEvent, err: %s", err.Error())
+		}
+	}()
 
 	fields := make(map[string]interface{}, 0)
 	fields["pass_rate"] = req.Content.PassRate
