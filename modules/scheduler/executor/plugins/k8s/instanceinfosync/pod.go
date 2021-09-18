@@ -16,6 +16,7 @@ package instanceinfosync
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -323,11 +324,17 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			memOrigin = 0
 		}
 		memOrigin = int(memOriginInt)
-		image = pod.Spec.Containers[0].Image
+
+		var container *corev1.Container
+		container = getContainerByServiceName(pod.Spec.Containers, serviceName)
+		if container == nil {
+			continue
+		}
+		image = container.Image
 
 		k8snamespace = pod.Namespace
 		k8spodname = pod.Name
-		k8scontainername = pod.Spec.Containers[0].Name
+		k8scontainername = container.Name
 
 		// The namespace and name of the servicegroup are written into ENV, so that they cannot be obtained directly from the pod information.
 		// the namespace and name are derived from other ENVs in the Pod.
@@ -428,7 +435,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			currentMessage             string
 		)
 
-		mainContainer := getMainContainerStatus(pod.Status.ContainerStatuses)
+		mainContainer := getMainContainerStatus(pod.Status.ContainerStatuses, container.Name)
 		terminatedContainer := mainContainer.LastTerminationState.Terminated
 		if terminatedContainer != nil {
 			prevContainerID = strutil.TrimPrefixes(terminatedContainer.ContainerID, "docker://")
@@ -671,12 +678,32 @@ func servicetype(addonid, pipelineid string) string {
 	return "stateless-service"
 }
 
-func getMainContainerStatus(containers []corev1.ContainerStatus) corev1.ContainerStatus {
+func getContainerByServiceName(containers []corev1.Container, serviceName string) *corev1.Container {
+
+	if serviceName == "" {
+		return &containers[0]
+	}
 	for _, c := range containers {
 		if c.Name == "istio-proxy" {
 			continue
 		}
-		return c
+		for _, e := range c.Env {
+			if strings.Contains(strings.ToLower(e.Value), strings.ToLower(serviceName)) {
+				return &c
+			}
+		}
+	}
+	return &containers[0]
+}
+
+func getMainContainerStatus(containers []corev1.ContainerStatus, containerName string) corev1.ContainerStatus {
+	for _, c := range containers {
+		if c.Name == "istio-proxy" {
+			continue
+		}
+		if c.Name == containerName {
+			return c
+		}
 	}
 	return containers[0]
 }
