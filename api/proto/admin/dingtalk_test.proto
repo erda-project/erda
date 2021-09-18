@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package erda.admin;
+option go_package = "github.com/erda-project/erda-proto-go/admin/pb";
+import "google/api/annotations.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+
+service DingTalkTestService {
+  rpc SendTestMessage (DingTalkTestRequest)  returns (DingTalkTestResponse) {
+    option (google.api.http) = {
+      post: "/api/admin/notify/dingtalk-test"
+    };
+  }
+}
+
+message DingTalkTestRequest {
+  string  webhook = 1 [(validator.field) = {string_not_empty: true}];
+  string  secret = 2 [(validator.field) = {string_not_empty: true}];
+}
+
+message DingTalkTestResponse {
+  bool    success = 1;
+  string  error = 2;
+}

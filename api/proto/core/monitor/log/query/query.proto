@@ -1,0 +1,88 @@
+syntax = "proto3";
+package erda.core.monitor.log.query;
+option go_package = "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb";
+import "google/api/annotations.proto";
+
+service LogQueryService {
+    // +private
+    rpc GetLog (GetLogRequest) returns (GetLogResponse) {
+        option (google.api.http) = {
+            get: "/api/logs",
+        };
+    }
+
+    // for runtime log
+    rpc GetLogByRuntime (GetLogByRuntimeRequest) returns (GetLogByRuntimeResponse) {
+        option (google.api.http) = {
+            get: "/api/runtime/logs",
+        };
+    }
+
+    // for organization log
+    rpc GetLogByOrganization (GetLogByOrganizationRequest) returns (GetLogByOrganizationResponse) {
+        option (google.api.http) = {
+            get: "/api/orgCenter/logs",
+        };
+    }
+
+}
+
+message LogItem {
+    string id = 1;
+    string source = 2;
+    string stream = 3;
+    string timeBucket = 4;
+    string timestamp = 5;
+    string offset = 6;
+    string content = 7;
+    string level = 8;
+    string requestId = 9;
+    string pattern = 10;
+}
+
+message GetLogRequest {
+    string id = 1;
+    string source = 2; // job or container
+    string stream = 3;
+    string requestId = 4;
+    int64 start = 5;
+    int64 end = 6;
+    int64 count = 7;
+    string pattern = 8;
+}
+
+message GetLogByRuntimeRequest {
+    string id = 1;
+    string source = 2; // job or container
+    string stream = 3;
+    string requestId = 4;
+    int64 start = 5;
+    int64 end = 6;
+    int64 count = 7;
+    string applicationId = 8;
+    string pattern = 9;
+}
+
+message GetLogByOrganizationRequest {
+    string id = 1;
+    string source = 2; // job or container
+    string stream = 3;
+    string requestId = 4;
+    int64 start = 5;
+    int64 end = 6;
+    int64 count = 7;
+    string clusterName = 8;
+    string pattern = 9;
+}
+
+message GetLogResponse {
+    repeated LogItem lines = 1;
+}
+
+message GetLogByRuntimeResponse {
+    repeated LogItem lines = 1;
+}
+
+message GetLogByOrganizationResponse {
+    repeated LogItem lines = 1;
+}

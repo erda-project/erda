@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+package erda.core.monitor.dataview;
+option go_package = "github.com/erda-project/erda-proto-go/core/monitor/dataview/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/protobuf/descriptor.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "common/openapi.proto";
+
+service DataViewService {
+  option (erda.common.openapi_service) = {
+    service: "monitor",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc ListSystemViews (ListSystemViewsRequest) returns (ListSystemViewsResponse)  {
+    option (google.api.http) = {
+      get: "/api/dashboard/system/blocks?scopeId={scopeID}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/system/blocks",
+    };
+  }
+  rpc GetSystemView (GetSystemViewRequest) returns (GetSystemViewResponse)  {
+    option (google.api.http) = {
+      get: "/api/dashboard/system/blocks/{id}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/system/blocks/{id}",
+    };
+  }
+
+  rpc ListCustomViews (ListCustomViewsRequest) returns (ListCustomViewsResponse) {
+    option (google.api.http) = {
+      get: "/api/dashboard/blocks?scopeId={scopeID}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks",
+    };
+  }
+  rpc GetCustomView (GetCustomViewRequest) returns (GetCustomViewResponse) {
+    option (google.api.http) = {
+      get: "/api/dashboard/blocks/{id}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks/{id}",
+    };
+  }
+  rpc CreateCustomView (CreateCustomViewRequest) returns (CreateCustomViewResponse) {
+    option (google.api.http) = {
+      post: "/api/dashboard/blocks",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks",
+    };
+  }
+  rpc UpdateCustomView (UpdateCustomViewRequest) returns (UpdateCustomViewResponse) {
+    option (google.api.http) = {
+      put: "/api/dashboard/blocks/{id}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks/{id}",
+    };
+  }
+  rpc DeleteCustomView (DeleteCustomViewRequest) returns (DeleteCustomViewResponse) {
+    option (google.api.http) = {
+      delete: "/api/dashboard/blocks/{id}"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/dashboard/blocks/{id}",
+    };
+  }
+
+}
+
+// ListSystemViews
+message ListSystemViewsRequest {
+  string scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string scopeID = 2 [(validator.field) = {string_not_empty: true}];
+}
+
+message ListSystemViewsResponse {
+  ViewList data = 1;
+}
+
+// GetSystemView
+message GetSystemViewRequest {
+  string id = 1 [(validator.field) = {string_not_empty: true}];
+}
+
+message GetSystemViewResponse {
+  View data = 1;
+}
+
+// ListCustomViews
+message ListCustomViewsRequest {
+  string scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string scopeID = 2 [(validator.field) = {string_not_empty: true}];
+}
+
+message ListCustomViewsResponse {
+  ViewList data = 1;
+}
+
+// GetCustomView
+message GetCustomViewRequest {
+  string id = 1 [(validator.field) = {string_not_empty: true}];
+}
+
+message GetCustomViewResponse {
+  View data = 1;
+}
+
+// CreateCustomView
+message CreateCustomViewRequest {
+  string            id      = 1;
+  string            scope   = 2 [(validator.field) = {string_not_empty: true}];
+  string            scopeID = 3 [(validator.field) = {string_not_empty: true}, json_name = "scopeId"];
+  string            version = 4;
+  string            name    = 5 [(validator.field) = {string_not_empty: true}];
+  string            desc    = 6;
+  repeated Block    blocks  = 7 [json_name = "viewConfig"];
+  repeated DataItem data    = 8 [json_name = "dataConfig"];
+}
+
+message CreateCustomViewResponse {
+  View data = 1;
+}
+
+// UpdateCustomView
+message UpdateCustomViewRequest {
+  string            id     = 1 [(validator.field) = {string_not_empty: true}];
+  string            name   = 2;
+  string            desc   = 3;
+  repeated Block    blocks = 4 [json_name = "viewConfig"];
+  repeated DataItem data   = 5 [json_name = "dataConfig"];
+}
+
+message UpdateCustomViewResponse {
+  bool data = 1;
+}
+
+// DeleteCustomView
+message DeleteCustomViewRequest {
+  string id = 1 [(validator.field) = {string_not_empty: true}];
+}
+
+message DeleteCustomViewResponse {
+  bool data = 1;
+}
+
+// common
+message ViewList {
+  int64         total = 1;
+  repeated View list  = 2;
+}
+
+message View {
+  string         id        = 1;
+  string         scope     = 2;
+  string         scopeID   = 3 [json_name = "scopeId"];
+  string         version   = 4;
+  string         name      = 5;
+  string         desc      = 6;
+  repeated Block blocks    = 7 [json_name = "viewConfig"];
+  int64          createdAt = 9;
+  int64          updatedAt = 10;
+}
+
+message Block {
+  int64  w     = 1;
+  int64  h     = 2;
+  int64  x     = 3;
+  int64  y     = 4;
+  string i     = 5;
+  Chart  chart = 6 [json_name = "view"];
+}
+
+message Chart {
+  string                title          = 1;
+  string                description    = 2;
+  string                chartType      = 3;
+  string                dataSourceType = 4;
+  google.protobuf.Value staticData     = 5;
+  google.protobuf.Value config         = 6;
+  google.protobuf.Value api            = 7;
+  google.protobuf.Value controls       = 8;
+  google.protobuf.Value i18n           = 9;
+}
+
+message DataItem {
+  string                i          = 1;
+  google.protobuf.Value staticData = 2;
+}

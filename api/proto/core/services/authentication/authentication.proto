@@ -1,0 +1,7 @@
+syntax = "proto3";
+package erda.core.services.authentication;
+option go_package = "github.com/erda-project/erda-proto-go/core/services/authentication/pb";
+
+service AuthenticationService {
+    // todo
+}
