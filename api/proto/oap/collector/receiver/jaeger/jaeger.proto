@@ -14,8 +14,6 @@ import "oap/common/common.proto";
 
 message PostSpansRequest {
     repeated erda.oap.trace.Span spans = 1;
-
-    erda.oap.common.Principal principal = 2;
 }
 
 service JaegerService {
