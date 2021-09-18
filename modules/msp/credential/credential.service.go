@@ -29,6 +29,8 @@ type accessKeyService struct {
 	p *provider
 }
 
+const MSP_SCOPE = "msp_env"
+
 func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
 	req := &akpb.QueryAccessKeysRequest{
 		Status:      request.Status,
@@ -37,7 +39,7 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 		AccessKey:   request.AccessKey,
 		PageNo:      request.PageNo,
 		PageSize:    request.PageSize,
-		Scope:       request.Scope,
+		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
 	}
 	accessKeyList, err := a.p.AccessKeyService.QueryAccessKeys(ctx, req)
@@ -90,7 +92,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		SubjectType: request.SubjectType,
 		Subject:     request.Subject,
 		Description: request.Description,
-		Scope:       request.Scope,
+		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
