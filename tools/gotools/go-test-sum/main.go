@@ -91,7 +91,6 @@ func testAllPackages(base string) error {
 		}
 		if info.IsDir() {
 			name := info.Name()
-			fmt.Println(name)
 			if name != "." {
 				// Skip directories like ".git".
 				if strings.HasPrefix(name, ".") {
