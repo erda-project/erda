@@ -77,6 +77,6 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 		Strategy: "javaagent",
 	})
 	if err != nil {
-		t.Errorf("shoult not err")
+		t.Errorf("shoult not err: %s", err)
 	}
 }
