@@ -74,7 +74,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		ContainLabel: true,
 	}
 	w.Props.Option.Color = []string{
-		"green", "red", "steelBlue", "maroon",
+		"green", "red", "steelblue", "maroon",
 	}
 	w.Props.Option.Legend.Data = []string{
 		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Error"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),

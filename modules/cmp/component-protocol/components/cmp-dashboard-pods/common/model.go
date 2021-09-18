@@ -54,7 +54,7 @@ var (
 		"orange":        "#F7A76B",
 		"red":           "#DE5757",
 		"brown":         "#A98C72",
-		"steelBlue":     "#4E6097",
+		"steelblue":     "#4E6097",
 		"yellow":        "#F7C36B",
 		"lightgreen":    "#8DB36C",
 		"darkcyan":      "#498E9E",

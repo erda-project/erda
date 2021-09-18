@@ -75,7 +75,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 		} else if active != "" && active != "0" {
 			return "Active", "green", nil
 		} else {
-			return "Succeeded", "steelBlue", nil
+			return "Succeeded", "steelblue", nil
 		}
 	case "CronJob":
 		return "Active", "green", nil
