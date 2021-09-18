@@ -11,7 +11,7 @@ import "oap/common/common.proto";
 //   of the observability analysis platform.
 message Event {
 
-    bytes eventID = 1; 
+    string eventID = 1; 
 
     // The severity text (also known as level). The original string representation as
     // it is known at the source. [Optional].

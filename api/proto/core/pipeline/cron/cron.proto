@@ -39,7 +39,7 @@ service CronService {
   }
   rpc CronGet (CronGetRequest) returns (CronGetResponse) {
     option (google.api.http) = {
-      post: "/api/pipeline-crons/{cronID}",
+      get: "/api/pipeline-crons/{cronID}",
     };
   }
   rpc CronUpdate (CronUpdateRequest) returns (CronUpdateResponse) {

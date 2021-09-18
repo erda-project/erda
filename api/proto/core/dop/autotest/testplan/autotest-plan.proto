@@ -3,6 +3,7 @@ syntax = "proto3";
 package erda.core.dop.autotest.testplan;
 option go_package = "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb";
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 
 service TestPlanService {
   rpc UpdateTestPlanByHook (TestPlanUpdateByHookRequest) returns (TestPlanUpdateByHookResponse)  {
@@ -28,8 +29,9 @@ message Content {
   uint64 testPlanID = 1;
   string executeTime = 2;
   double passRate = 3;
-  double executeMinutes = 4;
-  int64 apiTotalNum = 5;
+  int64 apiTotalNum = 4;
+  // time duration of the test plan execution
+  string executeDuration = 5;
 }
 
 message TestPlanUpdateByHookResponse {

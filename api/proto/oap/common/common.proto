@@ -7,7 +7,7 @@ option go_package = "github.com/erda-project/erda-proto-go/oap/common/pb";
 message Relation {
 
     // Related trace id . optional
-    bytes traceID = 1;
+    string traceID = 1;
 
     // Related resource id . Optional
     string resID = 2;

@@ -28,5 +28,5 @@ message Log {
 
     // Multi data points
     // The data point can be the original value or the aggregated value 
-    bytes content  = 6;
+    string content  = 6;
 }
