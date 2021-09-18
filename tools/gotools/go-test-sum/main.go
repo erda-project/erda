@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -91,14 +90,17 @@ func testAllPackages(base string) error {
 			return err
 		}
 		if info.IsDir() {
-			// Skip directories like ".git".
-			if name := info.Name(); name != "." && strings.HasPrefix(name, ".") {
-				return filepath.SkipDir
-			}
-
-			// Skip directories wasn't included in the base package, i.e. proto-go
-			if module, err := readBasePathFromDir(filepath.Join(path, info.Name())); err == nil && !strings.HasPrefix(module, base+"/") {
-				return filepath.SkipDir
+			name := info.Name()
+			fmt.Println(name)
+			if name != "." {
+				// Skip directories like ".git".
+				if strings.HasPrefix(name, ".") {
+					return filepath.SkipDir
+				}
+				// Skip directories wasn't included in the base package, i.e. proto-go
+				if module, err := readBasePathFromDir(path); err == nil && !strings.HasPrefix(module, base+"/") {
+					return filepath.SkipDir
+				}
 			}
 
 			// parse package
@@ -327,7 +329,7 @@ func readBasePath() (string, error) {
 }
 
 func readBasePathFromDir(dir string) (string, error) {
-	mod, err := ioutil.ReadFile(path.Join(dir, "go.mod"))
+	mod, err := ioutil.ReadFile(filepath.Join(dir, "go.mod"))
 	if err != nil {
 		return "", err
 	}
