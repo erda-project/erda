@@ -195,7 +195,7 @@ func setItemForCheckRealDiceYml(p *spec.Pipeline, itemForCheck *prechecktype.Ite
 		diceYmlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).
 			FetchFile(p.GetCommitID(), realDiceYmlName, userID)
 		if err != nil {
-			worn = err
+			logrus.Errorf("get workspace %v dice_yml error %v", workspace, err)
 			return
 		}
 
@@ -214,7 +214,6 @@ func setItemForCheckRealDiceYml(p *spec.Pipeline, itemForCheck *prechecktype.Ite
 			worn = err
 			return
 		}
-
 		itemForCheck.Files["dice.yml"] = yml
 	})
 
