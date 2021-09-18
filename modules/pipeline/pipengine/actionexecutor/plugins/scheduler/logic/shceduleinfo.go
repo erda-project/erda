@@ -32,9 +32,15 @@ func GetScheduleInfo(cluster apistructs.ClusterInfo, executorName, executorKind 
 	if cluster.SchedConfig != nil {
 		enableTag = cluster.SchedConfig.EnableTag
 	}
+	// TODO migrate enableWorkspace, cluster-manager should control this param
+	enableWorkspace := true
+	if cluster.SchedConfig != nil && cluster.SchedConfig.EnableWorkspace != nil {
+		enableWorkspace = *cluster.SchedConfig.EnableWorkspace
+	}
 	configs := executorconfig.ExecutorWholeConfigs{
 		BasicConfig: map[string]string{
-			"ENABLETAG": strconv.FormatBool(enableTag),
+			"ENABLETAG":        strconv.FormatBool(enableTag),
+			"ENABLE_WORKSPACE": strconv.FormatBool(enableWorkspace),
 		},
 	}
 	scheduleInfo2, scheduleInfo, _, err := schedulepolicy.LabelFilterChain(&configs, executorName, strutil.ToUpper(executorKind), job)
