@@ -16,7 +16,6 @@ package cache
 
 import (
 	"container/heap"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	"github.com/cespare/xxhash"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/vmihailenco/msgpack/v5"
 	"modernc.org/mathutil"
 )
 
@@ -554,7 +554,7 @@ func GenerateKey(keys []string) string {
 }
 
 func MarshalValue(o interface{}) (Values, error) {
-	d, err := json.Marshal(o)
+	d, err := msgpack.Marshal(o)
 	if err != nil {
 		return nil, err
 	}

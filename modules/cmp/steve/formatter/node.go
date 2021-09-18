@@ -16,12 +16,12 @@ package formatter
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
+	"github.com/vmihailenco/msgpack/v5"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -103,7 +103,7 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 	}()
 
 	var allocatedRes res
-	if err = json.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {
+	if err = msgpack.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {
 		logrus.Errorf("failed to unmarshal allocatedResource, %v", err)
 	}
 	parsedRes["allocated"] = &allocatedRes

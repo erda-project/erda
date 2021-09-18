@@ -18,7 +18,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"time"
 
 	"github.com/rancher/apiserver/pkg/apierror"
@@ -28,6 +27,8 @@ import (
 	"github.com/rancher/wrangler/pkg/schemas/validation"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apiserver/pkg/endpoints/request"
+
+	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
 )
@@ -77,7 +78,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			allNsValues, expired, err := c.cache.Get(key.getKey())
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
-				if err = json.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
+				if err = msgpack.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
 					return getByNamespace(list, apiOp.Namespace), nil
 				}
 			}
@@ -118,7 +119,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}()
 
 	var list types.APIObjectList
-	if err = json.Unmarshal(values[0].Value().([]byte), &list); err != nil {
+	if err = msgpack.Unmarshal(values[0].Value().([]byte), &list); err != nil {
 		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
 		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 	}
