@@ -25,7 +25,7 @@ type AccessItemCollection map[string]*akpb.AccessKeysItem
 
 type Validator interface {
 	// Validate +Validate
-	Validate(scope string, scopeId string, accessKeyId string, accessKeySecret string) bool
+	Validate(scope string, scopeId string, token string) bool
 }
 
 type accessKeyValidator struct {
@@ -57,19 +57,19 @@ func (v *accessKeyValidator) syncFullAccessKeys(ctx context.Context) error {
 		pageNumber++
 	}
 	v.Lock()
+	defer v.Unlock()
 	for k := range v.collection {
 		delete(v.collection, k)
 	}
 	for _, item := range results {
 		v.collection[item.AccessKey] = item
 	}
-	v.Unlock()
 	return nil
 }
 
-func (v *accessKeyValidator) Validate(scope string, scopeId string, accessKeyId string, accessKeySecret string) bool {
+func (v *accessKeyValidator) Validate(scope string, scopeId string, token string) bool {
 	v.RLock()
 	defer v.RUnlock()
-	item, ok := v.collection[accessKeyId]
-	return ok && item.AccessKey == accessKeyId && item.SecretKey == accessKeySecret && item.ScopeId == scopeId && item.Scope == scope
+	item, ok := v.collection[token]
+	return ok && item.AccessKey == token && item.ScopeId == scopeId && item.Scope == scope
 }

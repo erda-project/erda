@@ -64,7 +64,9 @@ func (p *provider) SyncAKItemTask(ctx context.Context) error {
 		select {
 		case <-tick.C:
 			if err := p.accessKeyValidator.syncFullAccessKeys(ctx); err != nil {
-				p.Log.Errorf("SyncAKItem Task failed. err: %s", err)
+				p.Log.Errorf("Sync accessKeys task failed. err: %s", err)
+			} else {
+				p.Log.Info("Sync accessKeys task completed")
 			}
 		case <-ctx.Done():
 			return nil
