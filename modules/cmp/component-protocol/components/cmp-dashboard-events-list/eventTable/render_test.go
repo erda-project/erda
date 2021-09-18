@@ -188,10 +188,4 @@ func TestComponentEventTable_SetComponentValue(t *testing.T) {
 	if _, ok := cet.Operations[apistructs.OnChangeSortOperation.String()]; !ok {
 		t.Errorf("test failed, .Operations is unexpected, %s is not existed", apistructs.OnChangeSortOperation.String())
 	}
-	if _, ok := cet.Operations[apistructs.OnChangePageNoOperation.String()]; !ok {
-		t.Errorf("test failed, .Operations is unexpected, %s is not existed", apistructs.OnChangePageNoOperation.String())
-	}
-	if _, ok := cet.Operations[apistructs.OnChangePageSizeOperation.String()]; !ok {
-		t.Errorf("test failed, .Operations is unexpected, %s is not existed", apistructs.OnChangePageSizeOperation.String())
-	}
 }
