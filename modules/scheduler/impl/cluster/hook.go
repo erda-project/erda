@@ -399,6 +399,7 @@ func (c *ClusterImpl) createEdasExecutor(clusterEvent *apistructs.ClusterEvent) 
 			"REGADDR":         clusterEvent.Content.SchedConfig.RegAddr,
 		},
 	}
+
 	svcPath := strutil.Concat(clusterPrefix, clusterEvent.Content.Name, clusterEdasSuffix)
 	if err := create(c.js, svcPath, serviceCfg); err != nil {
 		logrus.Errorf("failed to create edas service executor, cluster: %s", clusterEvent.Content.Name)
@@ -493,7 +494,6 @@ func patchEdasConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error 
 		local.Options["CLUSTERID"] = request.SchedConfig.ClusterID
 		local.Options["REGIONID"] = request.SchedConfig.RegionID
 		local.Options["LOGICALREGIONID"] = request.SchedConfig.LogicalRegionID
-		local.Options["REGADDR"] = request.SchedConfig.RegAddr
 	}
 	return nil
 }
