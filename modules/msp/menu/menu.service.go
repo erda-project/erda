@@ -39,10 +39,11 @@ type menuService struct {
 }
 
 var NotExist = map[string]bool{
-	"LogAnalyze":     true,
-	"APIGateway":     true,
-	"RegisterCenter": true,
-	"ConfigCenter":   true,
+	"LogAnalyze":      true,
+	"APIGateway":      true,
+	"RegisterCenter":  true,
+	"ConfigCenter":    true,
+	"AlarmManagement": true,
 }
 
 type componentInfo struct {
