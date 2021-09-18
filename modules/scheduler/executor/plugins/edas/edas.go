@@ -1584,10 +1584,10 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 	// FIXME: hacking for registry
 	// e.g. registry.marathon.l4lb.thisdcos.directory:5000  docker-registry.registry.marathon.mesos:5000
 	body := strings.Split(s.Image, ":5000")
-	if len(body) <= 1 {
-		svcSpec.Image = s.Image
-	} else {
+	if len(body) > 1 && e.regAddr != "" {
 		svcSpec.Image = e.regAddr + body[1]
+	} else {
+		svcSpec.Image = s.Image
 	}
 
 	//For clusters with unlimitCPU turned on, the processing of less than 1 core is unlimited, and the default limit is 1C
