@@ -84,15 +84,6 @@ type SteveServer interface {
 	UnCordonNode(context.Context, *apistructs.SteveRequest) error
 }
 
-func newAPIRequest(req *http.Request, resp *Response) *types.APIRequest {
-	scg := &StatusCodeGetter{Response: resp}
-	return &types.APIRequest{
-		ResponseWriter: resp,
-		Request:        req,
-		Response:       scg,
-	}
-}
-
 func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
 		return types.APIObject{}, errors.New("clusterName, name and type fields are required")
@@ -122,13 +113,24 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	}
 
 	resp := &Response{}
-	apiOp := newAPIRequest(r, resp)
+	apiOp := &types.APIRequest{
+		Name:           req.Name,
+		Type:           string(req.Type),
+		Method:         http.MethodGet,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &StatusCodeGetter{resp},
+	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return types.APIObject{}, err
 	}
 
 	obj, ok := resp.ResponseData.(types.APIObject)
 	if !ok {
+		if resp.ResponseData == nil {
+			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
@@ -168,13 +170,24 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 	}
 
 	resp := &Response{}
-	apiOp := newAPIRequest(r, resp)
+	apiOp := &types.APIRequest{
+		Name:           req.Name,
+		Type:           string(req.Type),
+		Method:         http.MethodGet,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &StatusCodeGetter{resp},
+	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return nil, err
 	}
 
 	objList, ok := resp.ResponseData.(types.APIObjectList)
 	if !ok {
+		if resp.ResponseData == nil {
+			return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 	return objList.Objects, nil
@@ -216,13 +229,24 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	resp := &Response{}
-	apiOp := newAPIRequest(r, resp)
+	apiOp := &types.APIRequest{
+		Name:           req.Name,
+		Type:           string(req.Type),
+		Method:         http.MethodPut,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &StatusCodeGetter{resp},
+	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return types.APIObject{}, err
 	}
 
 	obj, ok := resp.ResponseData.(types.APIObject)
 	if !ok {
+		if resp.ResponseData == nil {
+			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
@@ -270,13 +294,23 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	resp := &Response{}
-	apiOp := newAPIRequest(r, resp)
+	apiOp := &types.APIRequest{
+		Type:           string(req.Type),
+		Method:         http.MethodPost,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &StatusCodeGetter{resp},
+	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return types.APIObject{}, err
 	}
 
 	obj, ok := resp.ResponseData.(types.APIObject)
 	if !ok {
+		if resp.ResponseData == nil {
+			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
@@ -324,13 +358,23 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	resp := &Response{}
-	apiOp := newAPIRequest(r, resp)
+	apiOp := &types.APIRequest{
+		Type:           string(req.Type),
+		Method:         http.MethodDelete,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &StatusCodeGetter{resp},
+	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return err
 	}
 
 	obj, ok := resp.ResponseData.(types.APIObject)
 	if !ok {
+		if resp.ResponseData == nil {
+			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
@@ -378,13 +422,23 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 	}
 
 	resp := &Response{}
-	apiOp := newAPIRequest(r, resp)
+	apiOp := &types.APIRequest{
+		Type:           string(req.Type),
+		Method:         http.MethodPatch,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &StatusCodeGetter{resp},
+	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return err
 	}
 
 	obj, ok := resp.ResponseData.(types.APIObject)
 	if !ok {
+		if resp.ResponseData == nil {
+			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 

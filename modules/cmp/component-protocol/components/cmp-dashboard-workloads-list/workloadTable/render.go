@@ -30,10 +30,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -41,6 +40,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "workloadTable", func() servicehub.Provider {
 		return &ComponentWorkloadTable{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (w *ComponentWorkloadTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return w.DefaultProvider.Init(ctx)
 }
 
 func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -108,10 +118,10 @@ func (w *ComponentWorkloadTable) EncodeURLQuery() error {
 }
 
 func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	w.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	w.sdk = sdk
+	w.ctx = ctx
+	w.server = steveServer
 }
 
 func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
@@ -147,13 +157,13 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	var activeDeploy, errorDeploy int
 	if _, ok := kinds[filter.DeploymentType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SDeployment
-		obj, err := w.bdl.ListSteveResource(&req)
+		list, err := w.server.ListSteveResource(w.ctx, &req)
 		if err != nil {
 			return err
 		}
-		list := obj.Slice("data")
 
-		for _, obj := range list {
+		for _, item := range list {
+			obj := item.Data()
 			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
 				continue
 			}
@@ -227,13 +237,13 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	var activeDs, errorDs int
 	if _, ok := kinds[filter.DaemonSetType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SDaemonSet
-		obj, err := w.bdl.ListSteveResource(&req)
+		list, err := w.server.ListSteveResource(w.ctx, &req)
 		if err != nil {
 			return err
 		}
-		list := obj.Slice("data")
 
-		for _, obj := range list {
+		for _, item := range list {
+			obj := item.Data()
 			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
 				continue
 			}
@@ -309,13 +319,13 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	var activeSs, errorSs int
 	if _, ok := kinds[filter.StatefulSetType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SStatefulSet
-		obj, err := w.bdl.ListSteveResource(&req)
+		list, err := w.server.ListSteveResource(w.ctx, &req)
 		if err != nil {
 			return err
 		}
-		list := obj.Slice("data")
 
-		for _, obj := range list {
+		for _, item := range list {
+			obj := item.Data()
 			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
 				continue
 			}
@@ -387,13 +397,13 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	var activeJob, succeededJob, failedJob int
 	if _, ok := kinds[filter.JobType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SJob
-		obj, err := w.bdl.ListSteveResource(&req)
+		list, err := w.server.ListSteveResource(w.ctx, &req)
 		if err != nil {
 			return err
 		}
-		list := obj.Slice("data")
 
-		for _, obj := range list {
+		for _, item := range list {
+			obj := item.Data()
 			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
 				continue
 			}
@@ -468,13 +478,13 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	var activeCronJob int
 	if _, ok := kinds[filter.CronJobType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SCronJob
-		obj, err := w.bdl.ListSteveResource(&req)
+		list, err := w.server.ListSteveResource(w.ctx, &req)
 		if err != nil {
 			return err
 		}
-		list := obj.Slice("data")
 
-		for _, obj := range list {
+		for _, item := range list {
+			obj := item.Data()
 			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
 				continue
 			}

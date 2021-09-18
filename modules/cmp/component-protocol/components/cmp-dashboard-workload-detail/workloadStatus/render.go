@@ -23,9 +23,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	cputil2 "github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -35,9 +34,20 @@ func init() {
 	})
 }
 
+var steveServer cmp.SteveServer
+
+func (s *ComponentWorkloadStatus) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return s.DefaultProvider.Init(ctx)
+}
+
 func (s *ComponentWorkloadStatus) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
-	s.SetCtxBundle(ctx)
+	s.InitComponent(ctx)
 	if err := s.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadStatue component state, %v", err)
 	}
@@ -47,11 +57,11 @@ func (s *ComponentWorkloadStatus) Render(ctx context.Context, component *cptype.
 	return nil
 }
 
-func (s *ComponentWorkloadStatus) SetCtxBundle(ctx context.Context) {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	s.bdl = bdl
+func (s *ComponentWorkloadStatus) InitComponent(ctx context.Context) {
 	sdk := cputil2.SDK(ctx)
 	s.sdk = sdk
+	s.ctx = ctx
+	s.server = steveServer
 }
 
 func (s *ComponentWorkloadStatus) GenComponentState(c *cptype.Component) error {
@@ -87,10 +97,11 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 		Namespace:   namespace,
 	}
 
-	obj, err := s.bdl.GetSteveResource(&req)
+	resp, err := s.server.GetSteveResource(s.ctx, &req)
 	if err != nil {
 		return err
 	}
+	obj := resp.Data()
 
 	status, color, err := cputil.ParseWorkloadStatus(obj)
 	if err != nil {

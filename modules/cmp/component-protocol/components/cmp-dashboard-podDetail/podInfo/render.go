@@ -27,16 +27,27 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+
+func (podInfo *PodInfo) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return podInfo.DefaultProvider.Init(ctx)
+}
 
 func (podInfo *PodInfo) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := podInfo.GenComponentState(c); err != nil {
 		return err
 	}
-	podInfo.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	podInfo.server = steveServer
+	podInfo.ctx = ctx
 	podInfo.SDK = cputil.SDK(ctx)
 
 	splits := strings.Split(podInfo.State.PodID, "_")
@@ -55,10 +66,11 @@ func (podInfo *PodInfo) Render(ctx context.Context, c *cptype.Component, s cptyp
 		Name:        name,
 		Namespace:   namespace,
 	}
-	obj, err := podInfo.CtxBdl.GetSteveResource(req)
+	resp, err := podInfo.server.GetSteveResource(ctx, req)
 	if err != nil {
 		return err
 	}
+	obj := resp.Data()
 	fields := obj.StringSlice("metadata", "fields")
 	if len(fields) != 9 {
 		return fmt.Errorf("pod %s/%s has invalid length of fields", namespace, name)
@@ -182,10 +194,11 @@ func (podInfo *PodInfo) getWorkloadID(pod data.Object) (string, error) {
 			Namespace:   namespace,
 		}
 
-		obj, err := podInfo.CtxBdl.GetSteveResource(req)
+		resp, err := podInfo.server.GetSteveResource(podInfo.ctx, req)
 		if err != nil {
 			return "", err
 		}
+		obj := resp.Data()
 
 		ownerReferences := obj.Slice("metadata", "ownerReferences")
 		if len(ownerReferences) == 0 {

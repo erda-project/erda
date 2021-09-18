@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -37,6 +38,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-pods", "filter", func() servicehub.Provider {
 		return &ComponentFilter{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (f *ComponentFilter) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return f.DefaultProvider.Init(ctx)
 }
 
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -68,6 +80,8 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 	f.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	f.sdk = sdk
+	f.ctx = ctx
+	f.server = steveServer
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
@@ -115,11 +129,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		ClusterName: f.State.ClusterName,
 	}
 
-	data, err := f.bdl.ListSteveResource(&req)
+	list, err := f.server.ListSteveResource(f.ctx, &req)
 	if err != nil {
 		return err
 	}
-	list := data.Slice("data")
 
 	devNs := Option{
 		Label: cputil.I18n(ctx, "workspace-dev"),
@@ -158,7 +171,8 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Value: "others",
 	}
 
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		name := obj.String("metadata", "name")
 		option := Option{
 			Label: name,
@@ -316,13 +330,13 @@ func (f *ComponentFilter) getNodes() ([]string, error) {
 		Type:        apistructs.K8SNode,
 		ClusterName: f.sdk.InParams["clusterName"].(string),
 	}
-	nodes, err := f.bdl.ListSteveResource(&req)
+	list, err := f.server.ListSteveResource(f.ctx, &req)
 	if err != nil {
 		return nil, err
 	}
 	var res []string
-	list := nodes.Slice("data")
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		res = append(res, obj.String("metadata", "name"))
 	}
 	return res, nil

@@ -22,21 +22,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+var steveServer cmp.SteveServer
+
+func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return t.DefaultProvider.Init(ctx)
+}
+
 func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, globalStateData *cptype.GlobalStateData) error {
-	if err := t.SetCtxBundle(ctx); err != nil {
+	if err := t.InitComponent(ctx); err != nil {
 		return fmt.Errorf("failed to set eventTable component ctx bundle, %v", err)
 	}
 	if err := t.GenComponentState(component); err != nil {
@@ -49,12 +58,9 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 	return nil
 }
 
-func (t *ComponentEventTable) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	if bdl == nil {
-		return errors.New("context bundle can not be empty")
-	}
-	t.ctxBdl = bdl
+func (t *ComponentEventTable) InitComponent(ctx context.Context) error {
+	t.ctx = ctx
+	t.server = steveServer
 	t.SDK = cputil.SDK(ctx)
 	return nil
 }
@@ -96,14 +102,14 @@ func (t *ComponentEventTable) RenderList() error {
 		Namespace:   namespace,
 	}
 
-	obj, err := t.ctxBdl.ListSteveResource(&req)
+	list, err := t.server.ListSteveResource(t.ctx, &req)
 	if err != nil {
 		return err
 	}
-	list := obj.Slice("data")
 
 	var items []Item
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 10 {
 			logrus.Errorf("length of event fields is invalid: %d", len(fields))

@@ -30,10 +30,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -41,6 +40,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-events-list", "eventTable", func() servicehub.Provider {
 		return &ComponentEventTable{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return t.DefaultProvider.Init(ctx)
 }
 
 func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -76,11 +86,10 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 }
 
 func (t *ComponentEventTable) InitComponent(ctx context.Context) {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	t.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	t.sdk = sdk
 	t.ctx = ctx
+	t.server = steveServer
 }
 
 func (t *ComponentEventTable) GenComponentState(component *cptype.Component) error {
@@ -151,7 +160,7 @@ func (t *ComponentEventTable) RenderList() error {
 		ClusterName: t.State.ClusterName,
 	}
 
-	list, err := t.SteveServer.ListSteveResource(t.ctx, &req)
+	list, err := t.server.ListSteveResource(t.ctx, &req)
 	if err != nil {
 		return err
 	}

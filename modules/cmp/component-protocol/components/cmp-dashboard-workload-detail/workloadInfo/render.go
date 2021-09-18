@@ -23,9 +23,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -33,6 +32,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-workload-detail", "workloadInfo", func() servicehub.Provider {
 		return &ComponentWorkloadInfo{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (i *ComponentWorkloadInfo) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return i.DefaultProvider.Init(ctx)
 }
 
 func (i *ComponentWorkloadInfo) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -48,10 +58,10 @@ func (i *ComponentWorkloadInfo) Render(ctx context.Context, component *cptype.Co
 }
 
 func (i *ComponentWorkloadInfo) InitComponent(ctx context.Context) {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	i.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	i.sdk = sdk
+	i.ctx = ctx
+	i.server = steveServer
 }
 
 func (i *ComponentWorkloadInfo) GenComponentState(c *cptype.Component) error {
@@ -86,10 +96,11 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 		Name:        name,
 		Namespace:   namespace,
 	}
-	obj, err := i.bdl.GetSteveResource(&req)
+	resp, err := i.server.GetSteveResource(i.ctx, &req)
 	if err != nil {
 		return err
 	}
+	obj := resp.Data()
 
 	age, images, err := cmpcputil.GetWorkloadAgeAndImage(obj)
 	if err != nil {
