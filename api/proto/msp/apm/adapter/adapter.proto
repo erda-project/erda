@@ -16,7 +16,7 @@ service InstrumentationLibraryService {
     }
   };
   rpc GetInstrumentationLibrary (GetInstrumentationLibraryRequest) returns (GetInstrumentationLibraryResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/msp/apm/instrumentation-library",
     };
     option (erda.common.openapi) = {
@@ -25,7 +25,7 @@ service InstrumentationLibraryService {
   }
 
   rpc GetInstrumentationLibraryDocs (GetInstrumentationLibraryDocsRequest) returns (GetInstrumentationLibraryDocsResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/msp/apm/instrumentation-library/config-docs",
     };
     option (erda.common.openapi) = {
@@ -45,6 +45,7 @@ message GetInstrumentationLibraryResponse{
 message GetInstrumentationLibraryDocsRequest {
   string language = 1;
   string strategy = 2;
+  string scopeId  = 3;
 }
 
 message GetInstrumentationLibraryDocsResponse{

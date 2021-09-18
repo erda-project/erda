@@ -52,7 +52,6 @@ modules/openapi/api/swagger_all.json
 modules/openapi/api/generate/collectEvents.go
 modules/openapi/api/events_all.json
 modules/openapi/component-protocol/generate/auto_register/auto_register.go
-modules/openapi-ng/services/apis.go
 # cli
 tools/cli/generated_cmd
 tools/cli/command/generate/collectCMDs.go

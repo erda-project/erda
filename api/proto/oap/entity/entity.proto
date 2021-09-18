@@ -18,7 +18,7 @@ message EntityRow {
 
     string table = 2;
 
-    bytes rowID = 3; 
+    string rowID = 3; 
 
     map<string, google.protobuf.Value> rowData = 4;
 
