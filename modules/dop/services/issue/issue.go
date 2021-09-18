@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/issuerelated"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -36,10 +37,11 @@ import (
 
 // Issue 事件操作封装
 type Issue struct {
-	db     *dao.DBClient
-	bdl    *bundle.Bundle
-	stream *issuestream.IssueStream
-	uc     *ucauth.UCClient
+	db           *dao.DBClient
+	bdl          *bundle.Bundle
+	stream       *issuestream.IssueStream
+	uc           *ucauth.UCClient
+	issueRelated *issuerelated.IssueRelated
 }
 
 // Option 定义 Issue 配置选项
@@ -72,6 +74,13 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithIssueStream(stream *issuestream.IssueStream) Option {
 	return func(issue *Issue) {
 		issue.stream = stream
+	}
+}
+
+// WithIssueRelated set issue related svc
+func WithIssueRelated(issueRelated *issuerelated.IssueRelated) Option {
+	return func(issue *Issue) {
+		issue.issueRelated = issueRelated
 	}
 }
 
