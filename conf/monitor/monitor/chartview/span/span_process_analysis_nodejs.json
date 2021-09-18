@@ -441,11 +441,11 @@
               },
               {
                 "alias": "valuevcb3aWnu",
-                "expr": "round_float(diffps(blk_reads_bytes::field), 2)"
+                "expr": "round_float(diffps(blk_read_bytes::field), 2)"
               },
               {
                 "alias": "value5hQ0Ce2S",
-                "expr": "round_float(diffps(blk_writes_bytes::field), 2)"
+                "expr": "round_float(diffps(blk_write_bytes::field), 2)"
               }
             ]
           },
