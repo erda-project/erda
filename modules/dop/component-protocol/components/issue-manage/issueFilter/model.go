@@ -332,6 +332,7 @@ func convertAllConditions(ctx context.Context, stateMap map[apistructs.IssueType
 	for i, v := range stateMap {
 		child := convertConditions(v)
 		opt := filter.PropConditionOption{
+			Icon:     "ISSUE_ICON.issue." + i.String(),
 			Label:    cputil.I18n(ctx, strings.ToLower(i.String())),
 			Value:    i.String(),
 			Children: child,
