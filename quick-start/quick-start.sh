@@ -109,6 +109,16 @@ execute_sudo() {
   fi
 }
 
+check_docker_version() {
+  DOCKER_VERSION=$(docker -v | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+")
+  if [[ -n $DOCKER_VERSION ]]; then
+    IFS="." read -r DOCKER_MAJOR_VERSION DOCKER_MINIOR_VERSION DOCKER_BUILD_VERSION <<< "$DOCKER_VERSION"
+    if ((DOCKER_MAJOR_VERSION < 20 || DOCKER_MAJOR_VERSION == 20 && DOCKER_MINIOR_VERSION < 10)); then
+      abort "Docker version 20.10.0 or later required"
+    fi
+  fi
+}
+
 # USER isn't always set so provide a fall back for the installer and subprocesses.
 if [[ -z "${USER-}" ]]; then
   USER="$(chomp "$(id -un)")"
@@ -139,6 +149,8 @@ You must install Docker before installing Erda.
 EOABORT
 )"
 fi
+
+check_docker_version
 
 if ! command -v docker-compose >/dev/null; then
     abort "$(cat <<EOABORT
