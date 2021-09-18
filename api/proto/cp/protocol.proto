@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package erda.cp;
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/cp/pb";
+
+service CPService {
+  rpc Render (RenderRequest) returns (RenderResponse) {
+    option (google.api.http) = {
+      post: "/api/component-protocol/actions/render",
+    };
+  }
+}
+
+// component-protocol definition.
+message ComponentProtocol {
+  // version is protocol version.
+  string version = 1;
+
+  // scenario used to distinguish concrete scenario.
+  string scenario = 2;
+
+  // globalState stores global states for all components.
+  map<string, google.protobuf.Value> globalState = 3 [json_name = "state"];
+
+  // hierarchy represents components' hierarchy.
+  Hierarchy hierarchy = 4;
+
+  // components contains all rendered components.
+  map<string, Component> components = 5;
+
+  // rendering represents components rendering definitions.
+  map<string, google.protobuf.ListValue> rendering = 6;
+}
+
+// Hierarchy represents components' hierarchy.
+message Hierarchy {
+  // root component, required.
+  string root = 1;
+
+  // structure means concrete structure of components.
+  // value may be list or map.
+  map<string, google.protobuf.Value> structure = 2;
+}
+
+// Component defines a component.
+message Component {
+  // type of the component.
+  string type = 1;
+
+  // name of the component.
+  string name = 2;
+
+  // props is component's fixed properties, such as: table columns definition.
+  google.protobuf.Value props = 3;
+
+  // state is component's flexible properties, such as: table pageNo/pageSize.
+  map<string, google.protobuf.Value> state = 4;
+
+  // data is component's business data.
+  map<string, google.protobuf.Value> data = 5;
+
+  // operations of the component.
+  map<string, google.protobuf.Value> operations = 6;
+}
+
+// Scenario represents protocol scenario.
+message Scenario {
+  // scenarioKey is the key of scenario.
+  // Required.
+  string scenarioKey = 1;
+
+  // scenarioType is the type of scenario.
+  // Optional.
+  string scenarioType = 2;
+}
+
+// ComponentEvent .
+message ComponentEvent {
+  // component name.
+  string component = 1;
+
+  // operation key.
+  string operation = 2;
+
+  // operationData contains operation details.
+  map<string, google.protobuf.Value> operationData = 3;
+}
+
+// DebugOptions is debug options.
+message DebugOptions {
+  // componentKey .
+  string componentKey = 1;
+}
+
+// RenderRequest is protocol render request.
+message RenderRequest {
+  // scenario of this render.
+  Scenario scenario = 1;
+
+  // event of this render.
+  // Optional.
+  ComponentEvent event = 2;
+
+  // inParams contains passed in params from request caller.
+  map<string, google.protobuf.Value> inParams = 3;
+
+  // protocol represent protocol detail.
+  // First time render is empty.
+  // Optional.
+  ComponentProtocol protocol = 4;
+
+  // debugOptions contains options for debug.
+  DebugOptions debugOptions = 5;
+}
+
+// RenderResponse
+message RenderResponse {
+  // scenario of this render.
+  Scenario scenario = 1;
+
+  // protocol means rendered protocol detail.
+  ComponentProtocol protocol = 2;
+}
+
