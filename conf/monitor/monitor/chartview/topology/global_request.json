@@ -345,7 +345,7 @@
         "staticData": {},
         "title": "服务异常 TOP 3",
         "i18n": {
-          "alias": {
+          "title": {
             "en": "Service Exception TOP 3",
             "zh": "服务异常 TOP 3"
           }

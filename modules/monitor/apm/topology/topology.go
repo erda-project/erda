@@ -2159,6 +2159,7 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	if params.Limit > 1000 {
 		params.Limit = 1000
 	}
+	lang := api.Language(r)
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2185,13 +2186,18 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 		detailMap["avgElapsed"] = detail[2]
 		data = append(data, detailMap)
 	}
+	result := handleSlowTranslationTraceResult(topology, lang, data)
+	return api.Success(result)
+}
+
+func handleSlowTranslationTraceResult(topology *provider, lang i18n.LanguageCodes, data []map[string]interface{}) map[string]interface{} {
 	result := map[string]interface{}{
 		"cols": []map[string]interface{}{
-			{"title": "请求ID", "index": "requestId"},
-			{"title": "时间", "index": "time"},
-			{"title": "耗时(ms)", "index": "avgElapsed"},
+			{"title": topology.t.Text(lang, "request_id"), "index": "requestId"},
+			{"title": topology.t.Text(lang, "time"), "index": "time"},
+			{"title": topology.t.Text(lang, "avg_elapsed"), "index": "avgElapsed"},
 		},
 		"data": data,
 	}
-	return api.Success(result)
+	return result
 }
