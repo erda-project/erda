@@ -86,6 +86,7 @@ func Test_convertAllConditions(t *testing.T) {
 			},
 			want: []filter.PropConditionOption{
 				{
+					Icon:  "ISSUE_ICON.issue.REQUIREMENT",
 					Label: "REQUIREMENT",
 					Value: "REQUIREMENT",
 					Children: []filter.PropConditionOption{

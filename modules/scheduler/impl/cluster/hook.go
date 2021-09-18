@@ -42,10 +42,6 @@ var (
 	ErrClusterAddrNotSet = errors.New("cluster addr not set")
 )
 
-const (
-	REGISTRY_ADDR = "addon-registry.default.svc.cluster.local:5000"
-)
-
 // Hook receive clusterevent， reference `apistructs.ClusterEvent`
 func (c *ClusterImpl) Hook(clusterEvent *apistructs.ClusterEvent) error {
 	if !strutil.Equal(clusterEvent.Content.Type, clusterTypeDcos, true) {
@@ -400,7 +396,7 @@ func (c *ClusterImpl) createEdasExecutor(clusterEvent *apistructs.ClusterEvent) 
 			"CLUSTERID":       clusterEvent.Content.SchedConfig.ClusterID,
 			"REGIONID":        clusterEvent.Content.SchedConfig.RegionID,
 			"LOGICALREGIONID": clusterEvent.Content.SchedConfig.LogicalRegionID,
-			"REGADDR":         REGISTRY_ADDR,
+			"REGADDR":         clusterEvent.Content.SchedConfig.RegAddr,
 		},
 	}
 	svcPath := strutil.Concat(clusterPrefix, clusterEvent.Content.Name, clusterEdasSuffix)
@@ -497,9 +493,6 @@ func patchEdasConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error 
 		local.Options["CLUSTERID"] = request.SchedConfig.ClusterID
 		local.Options["REGIONID"] = request.SchedConfig.RegionID
 		local.Options["LOGICALREGIONID"] = request.SchedConfig.LogicalRegionID
-		if local.Options["REGADDR"] == "" {
-			local.Options["REGADDR"] = REGISTRY_ADDR
-		}
 	}
 	return nil
 }

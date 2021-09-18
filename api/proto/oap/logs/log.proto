@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package erda.oap.logs;
+
+option go_package = "github.com/erda-project/erda-proto-go/oap/logs/pb";
+
+import "google/protobuf/struct.proto";
+import "oap/common/common.proto";
+
+// The logging data model 
+//   of the observability analysis platform.
+message Log {
+
+    fixed64 timeUnixNano = 1;
+
+    // log source , like contaoner_log, job_log, deploy_log, app_log .
+    string name = 2;
+
+    // The severity text (also known as log level). The original string representation as
+    // it is known at the source. [Optional].
+    string severity = 3;
+
+    // Store trace and resource pointer
+    oap.common.Relation relations = 4;
+
+    // Including label, attributes and resource 
+    map<string, string> attributes = 5;
+
+    // Multi data points
+    // The data point can be the original value or the aggregated value 
+    string content  = 6;
+}

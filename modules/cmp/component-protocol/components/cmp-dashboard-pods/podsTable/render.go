@@ -573,7 +573,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 }
 
 var PodStatusToColor = map[string]string{
-	"Completed":         "steelBlue",
+	"Completed":         "steelblue",
 	"ContainerCreating": "orange",
 	"CrashLoopBackOff":  "red",
 	"Error":             "maroon",

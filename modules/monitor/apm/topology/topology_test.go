@@ -408,3 +408,44 @@ func Test_provider_composeMqTranslationCondition(t *testing.T) {
 		})
 	}
 }
+
+type translator struct {
+	common map[string]map[string]string
+	dic    map[string]map[string]string
+}
+
+func (t *translator) Text(lang i18n.LanguageCodes, key string) string {
+	return key
+}
+
+func (t *translator) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return key
+}
+
+func (t *translator) Get(lang i18n.LanguageCodes, key, def string) string {
+	return def
+}
+
+func Test_handleSlowTranslationTraceResult(t *testing.T) {
+
+	type args struct {
+		topology *provider
+		lang     i18n.LanguageCodes
+		data     []map[string]interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{"case1", args{topology: &provider{t: &translator{}}, lang: i18n.LanguageCodes{{Code: "zh", Quality: 0.9}}}},
+		{"case2", args{topology: &provider{t: &translator{}}, lang: i18n.LanguageCodes{{Code: "en", Quality: 0.9}}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := handleSlowTranslationTraceResult(tt.args.topology, tt.args.lang, tt.args.data)
+			if got == nil {
+				t.Errorf("handleSlowTranslationTraceResult() = %v", got)
+			}
+		})
+	}
+}
