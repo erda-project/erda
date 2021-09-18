@@ -51,7 +51,7 @@ var (
 )
 
 const testNoTestFilesPackage = true
-const testAllPackagesTrigger = 200
+const testAllPackagesTrigger = 0.2
 
 func init() {
 	home, err := homedir.Dir()
@@ -213,7 +213,7 @@ func testAllPackages(base string) error {
 				}
 				needTestPackages += countNeedTestPackages(sum, pkgSum, incoming)
 			}
-			if needTestPackages > testAllPackagesTrigger {
+			if needTestPackages > int(float64(len(pkgSum))*testAllPackagesTrigger) {
 				fmt.Println("too many package to test, all packages will be tested")
 				_, err := runTest("./...")
 				if err != nil {
