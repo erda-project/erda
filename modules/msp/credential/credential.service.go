@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"encoding/json"
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
@@ -46,18 +45,19 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err := json.Marshal(accessKeyList.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	akList := make([]*pb.QueryAccessKeys, 0)
+	for _, v := range accessKeyList.Data {
+		ak := &pb.QueryAccessKeys{
+			Id:        v.Id,
+			Token:     v.AccessKey,
+			CreatedAt: v.CreatedAt,
+		}
+		akList = append(akList, ak)
 	}
 	result := &pb.QueryAccessKeysResponse{
 		Data: &pb.QueryAccessKeysData{
-			List: make([]*pb.QueryAccessKeys, 0),
+			List: akList,
 		},
-	}
-	err = json.Unmarshal(data, &result.Data.List)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.Total = accessKeyList.Total
 	return result, nil
@@ -100,7 +100,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateAccessKeyResponse{
-		Data: accessKey.Data.Token,
+		Data: accessKey.Data.AccessKey,
 	}
 	return result, nil
 }
