@@ -91,9 +91,9 @@ erda.msp.member:
 
 erda.msp.apm.adapter:
   library:
-    - ${CONFIG_PATH}/adapter/instrumentationlibrary.yaml
+    - ${CONFIG_PATH}/instrumentationlibrary/instrumentationlibrary.yaml
   configFile:
-    - ${CONFIG_PATH}/adapter/config.yaml
+    - ${CONFIG_PATH}/instrumentationlibrary/config.yaml
 
 # checker
 erda.msp.apm.checker: # checkers apis
