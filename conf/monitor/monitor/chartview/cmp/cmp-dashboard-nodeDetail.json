@@ -606,6 +606,9 @@
             "yAxis": [
               {
                 "name": ""
+              },
+              {
+                "name": ""
               }
             ]
           }
@@ -666,7 +669,7 @@
         "title": "Network IO Rate",
         "i18n": {
           "title": {
-            "zh": "网路 IO 速率",
+            "zh": "网络 IO 速率",
             "en": "Network IO Rate"
           }
         },
@@ -796,6 +799,9 @@
           },
           "option": {
             "yAxis": [
+              {
+                "name": ""
+              },
               {
                 "name": ""
               }
