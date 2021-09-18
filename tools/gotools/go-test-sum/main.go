@@ -97,7 +97,7 @@ func testAllPackages(base string) error {
 			}
 
 			// Skip directories wasn't included in the base package, i.e. proto-go
-			if module, err := readBasePathFromDir(filepath.Join(path, info.Name())); err == nil && !strings.HasPrefix(module, base + "/") {
+			if module, err := readBasePathFromDir(filepath.Join(path, info.Name())); err == nil && !strings.HasPrefix(module, base+"/") {
 				return filepath.SkipDir
 			}
 
