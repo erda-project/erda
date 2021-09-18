@@ -161,7 +161,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Succeeded" || color != "steelBlue" {
+	if status != "Succeeded" || color != "steelblue" {
 		t.Errorf("test failed, job status is unexpected")
 	}
 

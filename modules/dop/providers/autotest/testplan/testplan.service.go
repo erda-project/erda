@@ -55,7 +55,7 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 
 	fields := make(map[string]interface{}, 0)
 	fields["pass_rate"] = req.Content.PassRate
-	fields["execute_time"] = req.Content.ExecuteTime.AsTime()
+	fields["execute_time"] = req.Content.ExecuteTime
 	fields["execute_api_num"] = req.Content.ApiTotalNum
 	if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
 		return nil, err
