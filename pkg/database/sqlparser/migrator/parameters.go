@@ -55,6 +55,9 @@ type DSNParameters struct {
 
 func (c DSNParameters) Format(database bool) (dsn string) {
 	dsnPat := "%s:%s@tcp(%s:%v)/%s"
+	if c.Password == "" {
+		dsnPat = "%s%s@tcp(%s:%v)/%s"
+	}
 	if database {
 		dsn = fmt.Sprintf(dsnPat, c.Username, c.Password, c.Host, c.Port, c.Database)
 	} else {

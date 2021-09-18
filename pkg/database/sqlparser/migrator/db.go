@@ -140,16 +140,18 @@ func (mig *Migrator) initConnToDB(dsn string, timeout time.Duration, initF func(
 	}()
 
 	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
+		loopLog := logrus.WithField("DSN", dsn).WithField("left time", timeout.Seconds()-time.Since(now).Seconds())
 		open, err = sql.Open("mysql", dsn)
 		if err != nil {
-			logrus.WithError(err).WithField("DSN", dsn).WithField("left time", timeout.Seconds()-time.Since(now).Seconds()).
-				Warnln("failed to connect to the MySQL Server, it will try again in 3 seconds")
+			loopLog.WithError(err).Warnln("failed to connect to the MySQL Server, it will try again in 3 seconds")
 			continue
 		}
-		if err := open.Ping(); err != nil {
+		if err = open.Ping(); err != nil {
+			loopLog.WithError(err).Warnln("failed to Ping the MySQL Server, it will try again in 3 seconds")
 			continue
 		}
 		if err = initF(open); err != nil {
+			loopLog.WithError(err).Errorln("failed to do initiation on the database")
 			return err
 		}
 
