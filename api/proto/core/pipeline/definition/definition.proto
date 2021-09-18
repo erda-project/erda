@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package erda.core.pipeline.definition;
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb";
+
+service DefinitionService {
+  rpc Process (PipelineDefinitionProcessRequest) returns (PipelineDefinitionProcessResponse) {
+    option (google.api.http) = {
+      post: "/api/pipeline-definitions/actions/process",
+    };
+  }
+
+  rpc Version (PipelineDefinitionProcessVersionRequest) returns (PipelineDefinitionProcessVersionResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions/actions/version",
+    };
+  }
+}
+
+message PipelineDefinitionProcessRequest {
+    // pipeline yml source
+    string pipelineSource = 1;
+    // pipeline yml name
+    string pipelineYmlName = 2;
+    // pipeline yml content
+    string pipelineYml = 3;
+    // snippetConfig means definition can be quoted by snippet
+    google.protobuf.Value snippetConfig = 4;
+    // versionLock means db optimistic lock
+    uint64 versionLock = 5;
+    // isDelete
+    // - if = true send With pipelineSource and pipelineYmlName to request
+    bool isDelete = 6;
+    // pipelineCreateRequest means definition can autoRun
+    google.protobuf.Value pipelineCreateRequest = 7;
+}
+
+message PipelineDefinitionProcessResponse {
+    uint64 id = 1;
+    string pipelineSource = 2;
+    string pipelineYmlName = 3;
+    string pipelineYml = 4;
+    uint64 versionLock = 5;
+}
+
+message PipelineDefinitionProcessVersionRequest {
+    // pipeline yml source
+    string pipelineSource = 1;
+    // pipeline yml name
+    string pipelineYmlName = 2;
+}
+
+message PipelineDefinitionProcessVersionResponse {
+    uint64 versionLock = 1;
+}
+
