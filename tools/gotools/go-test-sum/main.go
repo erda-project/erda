@@ -92,16 +92,13 @@ func testAllPackages(base string) error {
 		}
 		if info.IsDir() {
 			// Skip directories like ".git".
-			if name := info.Name(); name != "." {
-				// Skip directories like ".git".
-				if strings.HasPrefix(name, ".") {
-					return filepath.SkipDir
-				}
+			if name := info.Name(); name != "." && strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
 
-				// Skip directories wasn't included in the base package, i.e. proto-go
-				if module, err := readBasePathFromDir(filepath.Join(path, info.Name())); err == nil && !strings.HasPrefix(module, base) {
-					return filepath.SkipDir
-				}
+			// Skip directories wasn't included in the base package, i.e. proto-go
+			if module, err := readBasePathFromDir(filepath.Join(path, info.Name())); err == nil && !strings.HasPrefix(module, base + "/") {
+				return filepath.SkipDir
 			}
 
 			// parse package
