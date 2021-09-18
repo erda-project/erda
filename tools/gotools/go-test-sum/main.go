@@ -51,6 +51,7 @@ var (
 )
 
 const testNoTestFilesPackage = true
+const testAllPackagesTrigger = 200
 
 func init() {
 	home, err := homedir.Dir()
@@ -200,7 +201,7 @@ func testAllPackages(base string) error {
 				return err
 			}
 		} else {
-			coverage := make(map[string][]*cover.Profile)
+			var needTestPackages int
 			for pkg, sum := range pkgSum {
 				if sum.tested {
 					continue
@@ -210,27 +211,47 @@ func testAllPackages(base string) error {
 					sum.testTime = pre.testTime
 					continue
 				}
-				err := recursiveTest(sum, pkgSum, incoming, coverage)
+				needTestPackages += countNeedTestPackages(sum, pkgSum, incoming)
+			}
+			if needTestPackages > testAllPackagesTrigger {
+				fmt.Println("too many package to test, all packages will be tested")
+				_, err := runTest("./...")
 				if err != nil {
 					return err
 				}
-			}
-			var newProfiles []*cover.Profile
-			for _, p := range profiles {
-				dir := filepath.Dir(p.FileName)
-				if _, ok := coverage[dir]; !ok {
-					newProfiles = append(newProfiles, p)
+			} else {
+				coverage := make(map[string][]*cover.Profile)
+				for pkg, sum := range pkgSum {
+					if sum.tested {
+						continue
+					}
+					pre, ok := preSum[pkg]
+					if ok && pre.hash == sum.hash {
+						sum.testTime = pre.testTime
+						continue
+					}
+					err := recursiveTest(sum, pkgSum, incoming, coverage)
+					if err != nil {
+						return err
+					}
 				}
-			}
-			for _, ps := range coverage {
-				newProfiles = append(newProfiles, ps...)
-			}
+				var newProfiles []*cover.Profile
+				for _, p := range profiles {
+					dir := filepath.Dir(p.FileName)
+					if _, ok := coverage[dir]; !ok {
+						newProfiles = append(newProfiles, p)
+					}
+				}
+				for _, ps := range coverage {
+					newProfiles = append(newProfiles, ps...)
+				}
 
-			err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
-			if err != nil {
-				return err
+				err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
+				if err != nil {
+					return err
+				}
+				os.Rename("coverage.txt.tmp", "coverage.txt")
 			}
-			os.Rename("coverage.txt.tmp", "coverage.txt")
 		}
 		absCachedCoverageFilePath, _ := filepath.Abs(cachedCoverage)
 		absCoverageFilePath, _ := filepath.Abs("coverage.txt")
@@ -274,6 +295,7 @@ type testSumItem struct {
 	testTime time.Time
 	info     *packageInfo
 	tested   bool
+	checked  bool
 }
 
 func readTestSum() map[string]*testSumItem {
@@ -399,4 +421,21 @@ func recursiveTest(entry *testSumItem, pkgSum map[string]*testSumItem, incoming 
 		}
 	}
 	return nil
+}
+
+func countNeedTestPackages(entry *testSumItem, pkgSum map[string]*testSumItem, incoming map[string]map[string]struct{}) (testPackages int) {
+	if entry.checked {
+		return 0
+	}
+	entry.checked = true
+	if testNoTestFilesPackage || entry.info.hasTestFile {
+		testPackages++
+	}
+	for pkg := range incoming[entry.pkg] {
+		t := pkgSum[pkg]
+		if t != nil {
+			testPackages += countNeedTestPackages(t, pkgSum, incoming)
+		}
+	}
+	return testPackages
 }
