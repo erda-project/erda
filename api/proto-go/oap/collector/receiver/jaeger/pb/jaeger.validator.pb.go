@@ -30,10 +30,5 @@ func (this *PostSpansRequest) Validate() error {
 			}
 		}
 	}
-	if this.Principal != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Principal); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Principal", err)
-		}
-	}
 	return nil
 }

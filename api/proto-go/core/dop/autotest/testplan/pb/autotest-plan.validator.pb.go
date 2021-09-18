@@ -27,11 +27,6 @@ func (this *TestPlanUpdateByHookRequest) Validate() error {
 	return nil
 }
 func (this *Content) Validate() error {
-	if this.ExecuteTime != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ExecuteTime); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("ExecuteTime", err)
-		}
-	}
 	return nil
 }
 func (this *TestPlanUpdateByHookResponse) Validate() error {

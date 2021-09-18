@@ -8,7 +8,6 @@ import (
 	strconv "strconv"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -53,33 +52,7 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
-				if m.Content.ExecuteTime == nil {
-					m.Content.ExecuteTime = &timestamppb.Timestamp{}
-				}
-			case "content.executeTime.seconds":
-				if m.Content == nil {
-					m.Content = &Content{}
-				}
-				if m.Content.ExecuteTime == nil {
-					m.Content.ExecuteTime = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Content.ExecuteTime.Seconds = val
-			case "content.executeTime.nanos":
-				if m.Content == nil {
-					m.Content = &Content{}
-				}
-				if m.Content.ExecuteTime == nil {
-					m.Content.ExecuteTime = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Content.ExecuteTime.Nanos = int32(val)
+				m.Content.ExecuteTime = vals[0]
 			case "content.passRate":
 				if m.Content == nil {
 					m.Content = &Content{}
@@ -121,27 +94,7 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 				}
 				m.TestPlanID = val
 			case "executeTime":
-				if m.ExecuteTime == nil {
-					m.ExecuteTime = &timestamppb.Timestamp{}
-				}
-			case "executeTime.seconds":
-				if m.ExecuteTime == nil {
-					m.ExecuteTime = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.ExecuteTime.Seconds = val
-			case "executeTime.nanos":
-				if m.ExecuteTime == nil {
-					m.ExecuteTime = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.ExecuteTime.Nanos = int32(val)
+				m.ExecuteTime = vals[0]
 			case "passRate":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {

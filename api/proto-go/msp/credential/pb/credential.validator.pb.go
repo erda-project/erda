@@ -25,11 +25,6 @@ func (this *CreateAccessKeyRequest) Validate() error {
 	return nil
 }
 func (this *CreateAccessKeyResponse) Validate() error {
-	if this.Data != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
-		}
-	}
 	return nil
 }
 func (this *DeleteAccessKeyRequest) Validate() error {
@@ -72,6 +67,14 @@ func (this *QueryAccessKeysData) Validate() error {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
 				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
 			}
+		}
+	}
+	return nil
+}
+func (this *QueryAccessKeys) Validate() error {
+	if this.CreatedAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CreatedAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)
 		}
 	}
 	return nil

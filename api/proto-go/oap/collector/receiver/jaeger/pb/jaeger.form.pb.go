@@ -7,7 +7,6 @@ import (
 	url "net/url"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
-	pb "github.com/erda-project/erda-proto-go/oap/common/pb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -16,30 +15,5 @@ var _ urlenc.URLValuesUnmarshaler = (*PostSpansRequest)(nil)
 
 // PostSpansRequest implement urlenc.URLValuesUnmarshaler.
 func (m *PostSpansRequest) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "principal":
-				if m.Principal == nil {
-					m.Principal = &pb.Principal{}
-				}
-			case "principal.identity":
-				if m.Principal == nil {
-					m.Principal = &pb.Principal{}
-				}
-				m.Principal.Identity = vals[0]
-			case "principal.accessKey":
-				if m.Principal == nil {
-					m.Principal = &pb.Principal{}
-				}
-				m.Principal.AccessKey = vals[0]
-			case "principal.accessSecret":
-				if m.Principal == nil {
-					m.Principal = &pb.Principal{}
-				}
-				m.Principal.AccessSecret = vals[0]
-			}
-		}
-	}
 	return nil
 }

@@ -4,7 +4,6 @@
 package pb
 
 import (
-	base64 "encoding/base64"
 	url "net/url"
 	strconv "strconv"
 
@@ -25,11 +24,7 @@ func (m *EntityRow) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "table":
 				m.Table = vals[0]
 			case "rowID":
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.RowID = val
+				m.RowID = vals[0]
 			case "createTimeUnixNano":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {

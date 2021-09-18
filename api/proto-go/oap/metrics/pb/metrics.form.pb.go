@@ -4,7 +4,6 @@
 package pb
 
 import (
-	base64 "encoding/base64"
 	url "net/url"
 	strconv "strconv"
 
@@ -37,11 +36,7 @@ func (m *Metric) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Relations == nil {
 					m.Relations = &pb.Relation{}
 				}
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.Relations.TraceID = val
+				m.Relations.TraceID = vals[0]
 			case "relations.resID":
 				if m.Relations == nil {
 					m.Relations = &pb.Relation{}

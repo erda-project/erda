@@ -4,7 +4,6 @@
 package pb
 
 import (
-	base64 "encoding/base64"
 	url "net/url"
 	strconv "strconv"
 
@@ -22,29 +21,17 @@ func (m *Span) UnmarshalURLValues(prefix string, values url.Values) error {
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "traceID":
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.TraceID = val
+				m.TraceID = vals[0]
 			case "spanID":
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.SpanID = val
+				m.SpanID = vals[0]
 			case "parentSpanID":
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.ParentSpanID = val
-			case "stratTimeUnixNano":
+				m.ParentSpanID = vals[0]
+			case "startTimeUnixNano":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.StratTimeUnixNano = val
+				m.StartTimeUnixNano = val
 			case "endTimeUnixNano":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
@@ -61,11 +48,7 @@ func (m *Span) UnmarshalURLValues(prefix string, values url.Values) error {
 				if m.Relations == nil {
 					m.Relations = &pb.Relation{}
 				}
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.Relations.TraceID = val
+				m.Relations.TraceID = vals[0]
 			case "relations.resID":
 				if m.Relations == nil {
 					m.Relations = &pb.Relation{}

@@ -4,7 +4,6 @@
 package pb
 
 import (
-	base64 "encoding/base64"
 	url "net/url"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
@@ -21,11 +20,7 @@ func (m *Relation) UnmarshalURLValues(prefix string, values url.Values) error {
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "traceID":
-				val, err := base64.StdEncoding.DecodeString(vals[0])
-				if err != nil {
-					return err
-				}
-				m.TraceID = val
+				m.TraceID = vals[0]
 			case "resID":
 				m.ResID = vals[0]
 			case "resType":

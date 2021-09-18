@@ -26,6 +26,7 @@ var _ urlenc.URLValuesUnmarshaler = (*DownloadAccessKeyFileResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryAccessKeysRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryAccessKeysResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryAccessKeysData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*QueryAccessKeys)(nil)
 
 // CreateAccessKeyRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateAccessKeyRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -53,83 +54,7 @@ func (m *CreateAccessKeyResponse) UnmarshalURLValues(prefix string, values url.V
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "data":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-			case "data.id":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.Id = vals[0]
-			case "data.accessKey":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.AccessKey = vals[0]
-			case "data.secretKey":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.SecretKey = vals[0]
-			case "data.status":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-			case "data.subjectType":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-			case "data.subject":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.Subject = vals[0]
-			case "data.description":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.Description = vals[0]
-			case "data.createdAt":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-			case "data.createdAt.seconds":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Seconds = val
-			case "data.createdAt.nanos":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Nanos = int32(val)
-			case "data.scope":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.Scope = vals[0]
-			case "data.scopeId":
-				if m.Data == nil {
-					m.Data = &pb.AccessKeysItem{}
-				}
-				m.Data.ScopeId = vals[0]
+				m.Data = vals[0]
 			}
 		}
 	}
@@ -250,6 +175,11 @@ func (m *GetAccessKeyResponse) UnmarshalURLValues(prefix string, values url.Valu
 					m.Data = &pb.AccessKeysItem{}
 				}
 				m.Data.ScopeId = vals[0]
+			case "data.token":
+				if m.Data == nil {
+					m.Data = &pb.AccessKeysItem{}
+				}
+				m.Data.Token = vals[0]
 			}
 		}
 	}
@@ -354,6 +284,43 @@ func (m *QueryAccessKeysData) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// QueryAccessKeys implement urlenc.URLValuesUnmarshaler.
+func (m *QueryAccessKeys) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				m.Id = vals[0]
+			case "token":
+				m.Token = vals[0]
+			case "createdAt":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+			case "createdAt.seconds":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Seconds = val
+			case "createdAt.nanos":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Nanos = int32(val)
 			}
 		}
 	}
