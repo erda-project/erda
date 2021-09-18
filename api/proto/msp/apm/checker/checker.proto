@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package erda.msp.apm.checker;
+option go_package = "github.com/erda-project/erda-proto-go/msp/apm/checker/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+
+service CheckerService {
+
+  rpc CreateChecker (CreateCheckerRequest) returns (CreateCheckerResponse)  {
+    option (google.api.http) = {
+      post: "/api/msp/checkers/{scope}/{scopeID}",
+    };
+  }
+
+  rpc UpdateChecker (UpdateCheckerRequest) returns (UpdateCheckerResponse)  {
+    option (google.api.http) = {
+      put: "/api/msp/checkers/{scope}/{scopeID}/{id}",
+    };
+  }
+
+  rpc DeleteChecker (UpdateCheckerRequest) returns (UpdateCheckerResponse)  {
+    option (google.api.http) = {
+      delete: "/api/msp/checkers/{scope}/{scopeID}/{id}",
+    };
+  }
+
+  rpc ListCheckers (ListCheckersRequest) returns (ListCheckersResponse)  {
+    option (google.api.http) = {
+      get: "/api/msp/checkers/{scope}/{scopeID}",
+    };
+  }
+
+  rpc DescribeCheckers (DescribeCheckersRequest) returns (DescribeCheckersResponse)  {
+    option (google.api.http) = {
+      get: "/api/msp/checker-descriptions/{scope}/{scopeID}",
+    };
+  }
+
+  rpc DescribeChecker (DescribeCheckerRequest) returns (DescribeCheckerResponse)  {
+    option (google.api.http) = {
+      get: "/api/msp/checker-descriptions/{scope}/{scopeID}/{id}",
+    };
+  }
+
+}
+
+// CreateChecker
+message CreateCheckerRequest {
+  string  scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string  scopeID = 2 [(validator.field) = {string_not_empty: true}];
+  Checker data    = 3 [(validator.field) = {msg_exists : true}];
+}
+
+message CreateCheckerResponse {
+  int64 data = 1;
+}
+
+// UpdateChecker
+message UpdateCheckerRequest {
+  string  scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string  scopeID = 2 [(validator.field) = {string_not_empty: true}];
+  string  id      = 3;
+  Checker data    = 4;
+}
+
+message UpdateCheckerResponse {
+  bool data = 1;
+}
+
+// DeleteChecker
+message DeleteCheckerRequest {
+  string scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string scopeID = 2 [(validator.field) = {string_not_empty: true}];
+  int64  id      = 3;
+}
+
+message DeleteCheckerResponse {
+  bool data = 1;
+}
+
+// ListCheckers
+message ListCheckersRequest {
+  string scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string scopeID = 2 [(validator.field) = {string_not_empty: true}];
+}
+
+message ListCheckersResponse {}
+
+// DescribeCheckers
+message DescribeCheckersRequest {
+  string scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string scopeID = 2 [(validator.field) = {string_not_empty: true}];
+}
+
+message DescribeCheckersResponse {}
+
+// DescribeChecker
+message DescribeCheckerRequest {
+  string scope   = 1 [(validator.field) = {string_not_empty: true}];
+  string scopeID = 2 [(validator.field) = {string_not_empty: true}];
+  int64  id      = 3  [(validator.field) = {int_gt: 0}];
+}
+
+message DescribeCheckerResponse {}
+
+// common 
+message Checker {
+  int64               id     = 1;
+  string              name   = 2 [(validator.field) = {string_not_empty : true}];
+  string              type   = 3 [(validator.field) = {string_not_empty : true}];
+  map<string, string> config = 5;
+  map<string, string> tags   = 6;
+}
