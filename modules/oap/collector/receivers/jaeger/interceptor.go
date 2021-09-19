@@ -98,7 +98,7 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 			Name:              tSpan.OperationName,
 		}
 		if tSpan.ParentSpanId != 0 {
-			span.ParentSpanID = strconv.FormatInt(tSpan.SpanId, 10)
+			span.ParentSpanID = strconv.FormatInt(tSpan.ParentSpanId, 10)
 		}
 		span.Attributes = make(map[string]string)
 		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
