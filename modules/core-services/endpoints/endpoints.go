@@ -33,12 +33,12 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/manual_review"
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
 	"github.com/erda-project/erda/modules/core-services/services/member"
-	"github.com/erda-project/erda/modules/core-services/services/migration"
 	"github.com/erda-project/erda/modules/core-services/services/notice"
 	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -72,7 +72,7 @@ type Endpoints struct {
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
 	fileSvc            *filesvc.FileService
-	migration          *migration.Migration
+	user               *user.User
 }
 
 type Option func(*Endpoints)
@@ -246,9 +246,9 @@ func WithFileSvc(svc *filesvc.FileService) Option {
 	}
 }
 
-func WithMigrationSvc(svc *migration.Migration) Option {
+func WithUserSvc(svc *user.User) Option {
 	return func(e *Endpoints) {
-		e.migration = svc
+		e.user = svc
 	}
 }
 
@@ -262,12 +262,8 @@ func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 	return e.bdl.GetLocaleByRequest(request)
 }
 
-func (e *Endpoints) MigrationSvc() *migration.Migration {
-	return e.migration
-}
-
-func (e *Endpoints) UcSvc() *ucauth.UCClient {
-	return e.uc
+func (e *Endpoints) UserSvc() *user.User {
+	return e.user
 }
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.

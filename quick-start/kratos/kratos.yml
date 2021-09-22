@@ -47,6 +47,7 @@ selfservice:
 
     registration:
       lifespan: 10m
+      # not using it, default value for config source validation, can be replaced by env
       ui_url: http://one.erda.local/uc/auth/registration 
       after:
         password:

@@ -12,49 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package migration
+package user
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
-type Migration struct {
+type User struct {
 	db *dao.DBClient
 	uc *ucauth.UCClient
 }
 
-// Option 定义 Org 对象的配置选项
-type Option func(*Migration)
+type Option func(*User)
 
-// New 新建 Org 实例，通过 Org 实例操作企业资源
-func New(options ...Option) *Migration {
-	o := &Migration{}
+func New(options ...Option) *User {
+	o := &User{}
 	for _, op := range options {
 		op(o)
 	}
 	return o
 }
 
-// WithDBClient 配置 db client
 func WithDBClient(db *dao.DBClient) Option {
-	return func(o *Migration) {
+	return func(o *User) {
 		o.db = db
 	}
 }
 
-// WithUCClient 配置 uc client
 func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(o *Migration) {
+	return func(o *User) {
 		o.uc = uc
 	}
 }
 
-func (m *Migration) MigrateUser() error {
+func (m *User) MigrateUser() error {
 	users, err := m.db.GetUcUserList()
 	if err != nil {
 		return err
@@ -81,4 +79,22 @@ func (m *Migration) MigrateUser() error {
 		logrus.Infof("migrate user %v to krataos user %v successfully", u.ID, uuid)
 	}
 	return nil
+}
+
+func (m *User) UcUserMigration() {
+	if !conf.OryEnabled() {
+		return
+	}
+	ticker := time.NewTicker(time.Second * 10)
+	for {
+		select {
+		case <-ticker.C:
+			if m.uc.MigrationReady() {
+				if err := m.MigrateUser(); err != nil {
+					logrus.Errorf("fail to migrate user, %v", err)
+				}
+				return
+			}
+		}
+	}
 }

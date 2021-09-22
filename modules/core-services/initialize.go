@@ -40,12 +40,12 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/manual_review"
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
 	"github.com/erda-project/erda/modules/core-services/services/member"
-	"github.com/erda-project/erda/modules/core-services/services/migration"
 	"github.com/erda-project/erda/modules/core-services/services/notice"
 	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/modules/core-services/utils"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -75,7 +75,7 @@ func (p *provider) Initialize() error {
 		bundle.WithCollector(),
 	)
 
-	go UcUserMigration(ep)
+	go ep.UserSvc().UcUserMigration()
 
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(ep.Routes())
@@ -86,24 +86,6 @@ func (p *provider) Initialize() error {
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	return server.ListenAndServe()
-}
-
-func UcUserMigration(ep *endpoints.Endpoints) {
-	if !conf.OryEnabled() {
-		return
-	}
-	ticker := time.NewTicker(time.Second * 10)
-	for {
-		select {
-		case <-ticker.C:
-			if ep.UcSvc().MigrationReady() {
-				if err := ep.MigrationSvc().MigrateUser(); err != nil {
-					logrus.Errorf("fail to migrate user, %v", err)
-				}
-				return
-			}
-		}
-	}
 }
 
 // 初始化 Endpoints
@@ -275,9 +257,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		filesvc.WithEtcdClient(etcdStore),
 	)
 
-	migration := migration.New(
-		migration.WithDBClient(db),
-		migration.WithUCClient(uc),
+	user := user.New(
+		user.WithDBClient(db),
+		user.WithUCClient(uc),
 	)
 
 	// queryStringDecoder
@@ -309,7 +291,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
 		endpoints.WithFileSvc(fileSvc),
-		endpoints.WithMigrationSvc(migration),
+		endpoints.WithUserSvc(user),
 	)
 
 	return ep, nil
