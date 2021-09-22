@@ -175,35 +175,38 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 	defer monkey.UnpatchAll()
 	logsss := NewMockLogger(ctrl)
 	logsss.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes().Do(fmt.Errorf("err"))
+
+	pdb := &gorm.DB{}
+	pdb.SetLogger(&pLog{})
 	monkey.Patch((*db.DB).Begin, func(_ *db.DB) *db.DB {
 		return &db.DB{
-			DB: &gorm.DB{},
+			DB: pdb,
 			CustomizeAlert: db.CustomizeAlertDB{
-				&gorm.DB{},
+				pdb,
 			},
 			CustomizeAlertRule: db.CustomizeAlertRuleDB{
-				&gorm.DB{},
+				pdb,
 			},
 			CustomizeAlertNotifyTemplate: db.CustomizeAlertNotifyTemplateDB{
-				&gorm.DB{},
+				pdb,
 			},
 			Alert: db.AlertDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertExpression: db.AlertExpressionDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertNotify: db.AlertNotifyDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertNotifyTemplate: db.AlertNotifyTemplateDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertRule: db.AlertRuleDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertRecord: db.AlertRecordDB{
-				&gorm.DB{},
+				pdb,
 			},
 		}
 	})
@@ -459,33 +462,33 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 		metricq: NewMockQueryer(ctrl),
 		t:       NewMockTranslator(ctrl),
 		db: &db.DB{
-			DB: &gorm.DB{},
+			DB: pdb,
 			CustomizeAlert: db.CustomizeAlertDB{
-				&gorm.DB{},
+				pdb,
 			},
 			CustomizeAlertRule: db.CustomizeAlertRuleDB{
-				&gorm.DB{},
+				pdb,
 			},
 			CustomizeAlertNotifyTemplate: db.CustomizeAlertNotifyTemplateDB{
-				&gorm.DB{},
+				pdb,
 			},
 			Alert: db.AlertDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertExpression: db.AlertExpressionDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertNotify: db.AlertNotifyDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertNotifyTemplate: db.AlertNotifyTemplateDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertRule: db.AlertRuleDB{
-				&gorm.DB{},
+				pdb,
 			},
 			AlertRecord: db.AlertRecordDB{
-				&gorm.DB{},
+				pdb,
 			},
 		},
 		cql:                         &cql.Cql{},
@@ -497,17 +500,6 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 		microServiceOtherFilterTags: nil,
 		silencePolicies:             nil,
 	}
-
-	ada.db.SetLogger(&pLog{})
-	ada.db.CustomizeAlert.SetLogger(&pLog{})
-	ada.db.CustomizeAlertRule.SetLogger(&pLog{})
-	ada.db.CustomizeAlertNotifyTemplate.SetLogger(&pLog{})
-	ada.db.Alert.SetLogger(&pLog{})
-	ada.db.AlertExpression.SetLogger(&pLog{})
-	ada.db.AlertNotify.SetLogger(&pLog{})
-	ada.db.AlertNotifyTemplate.SetLogger(&pLog{})
-	ada.db.AlertRule.SetLogger(&pLog{})
-	ada.db.AlertRecord.SetLogger(&pLog{})
 
 	err := ada.UpdateAlert(20, &pb.Alert{
 		Id:           20,
