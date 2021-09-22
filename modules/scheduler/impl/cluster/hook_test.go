@@ -17,7 +17,12 @@ package cluster
 import (
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 func TestSetDefaultClusterConfig(t *testing.T) {
@@ -60,4 +65,62 @@ func TestSetDefaultClusterConfig(t *testing.T) {
 	assert.Equal(t, "true", c3.Options["ENABLETAG"])
 	assert.Equal(t, "true", c3.Options["ENABLE_ORG"])
 	assert.Equal(t, "true", c3.Options["ENABLE_WORKSPACE"])
+}
+
+func TestCreateEdasExecutor(t *testing.T) {
+	cl := ClusterImpl{
+		js: nil,
+	}
+	ce := apistructs.ClusterEvent{
+		Content: apistructs.ClusterInfo{
+			ID:             0,
+			Name:           "fake-cluster",
+			DisplayName:    "fake-cluster",
+			Type:           "fake-cluster",
+			CloudVendor:    "fake-cluster",
+			Logo:           "fake-cluster",
+			Description:    "fake-cluster",
+			WildcardDomain: "fake-cluster",
+			SchedConfig: &apistructs.ClusterSchedConfig{
+				MasterURL:                "fake-cluster",
+				AuthType:                 "fake-cluster",
+				AuthUsername:             "fake-cluster",
+				AuthPassword:             "fake-cluster",
+				CACrt:                    "fake-cluster",
+				ClientCrt:                "fake-cluster",
+				ClientKey:                "fake-cluster",
+				EnableTag:                false,
+				EdasConsoleAddr:          "fake-cluster",
+				AccessKey:                "fake-cluster",
+				AccessSecret:             "fake-cluster",
+				ClusterID:                "fake-cluster",
+				RegionID:                 "fake-cluster",
+				LogicalRegionID:          "fake-cluster",
+				K8sAddr:                  "fake-cluster",
+				RegAddr:                  "fake-cluster:5000",
+				CPUSubscribeRatio:        "fake-cluster",
+				DevCPUSubscribeRatio:     "fake-cluster",
+				TestCPUSubscribeRatio:    "fake-cluster",
+				StagingCPUSubscribeRatio: "fake-cluster",
+			},
+			OpsConfig:    nil,
+			System:       nil,
+			ManageConfig: nil,
+		},
+	}
+	generateExecutorByClusterPatch := monkey.Patch(clusterutil.GenerateExecutorByCluster, func(cluster, executorType string) string {
+		return "fake-cluster"
+	})
+	createEdasExectorPatch := monkey.Patch(createEdasExector, func(js jsonstore.JsonStore, key string, c string) error {
+		return nil
+	})
+	createPatch := monkey.Patch(create, func(js jsonstore.JsonStore, key string, c ClusterInfo) error {
+		return nil
+	})
+	defer createEdasExectorPatch.Unpatch()
+	defer generateExecutorByClusterPatch.Unpatch()
+	defer createPatch.Unpatch()
+
+	err := cl.createEdasExecutor(&ce)
+	assert.Equal(t, err, nil)
 }
