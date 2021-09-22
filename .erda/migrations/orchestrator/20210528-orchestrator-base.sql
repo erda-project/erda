@@ -80,7 +80,7 @@ CREATE TABLE `ps_v2_deployments`
     KEY                   `idx_runtime_id` (`runtime_id`),
     KEY                   `idx_status` (`status`),
     KEY                   `idx_operator` (`operator`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='部署单';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='部署单';
 
 CREATE TABLE `ps_v2_domains`
 (
@@ -94,7 +94,7 @@ CREATE TABLE `ps_v2_domains`
     `use_https`     tinyint(1) DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `unique_domain_key` (`domain`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Dice 域名表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT DYNAMIC COMMENT='Dice 域名表';
 
 CREATE TABLE `ps_v2_pre_builds`
 (
