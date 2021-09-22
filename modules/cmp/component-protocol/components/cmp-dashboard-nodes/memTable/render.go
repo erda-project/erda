@@ -74,15 +74,13 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 				return err
 			}
 		case common.CMPDashboardUncordonNode:
-			err := mt.UncordonNode(mt.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
+			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardUncordonNode
+			return nil
 		case common.CMPDashboardCordonNode:
-			err := mt.CordonNode(mt.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
+			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardCordonNode
+			return nil
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}

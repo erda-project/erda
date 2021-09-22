@@ -27,6 +27,7 @@ component-protocol.components.cmp-dashboard-nodes.charts:
 component-protocol.components.cmp-dashboard-nodes.cleanData:
 component-protocol.components.cmp-dashboard-nodes.tableTabsContainer:
 component-protocol.components.cmp-dashboard-nodes.addLabelModal:
+component-protocol.components.cmp-dashboard-nodes.batchOperationTipModal:
 component-protocol.components.cmp-dashboard-nodes.tableTabs:
 component-protocol.components.cmp-dashboard-nodes.cpuTable:
 component-protocol.components.cmp-dashboard-nodes.memTable:
@@ -80,6 +81,6 @@ erda.core.monitor.metric-client:
 
 http-server:
   addr: ":9028"
-  allow_cors : true
+  allow_cors: true
 #grpc-server:
 #  addr: ":9029"
