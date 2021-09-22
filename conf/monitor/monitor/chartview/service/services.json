@@ -56,8 +56,8 @@
                 "alias": "请求错误数",
                 "i18n": {
                   "alias": {
-                    "en": "Request Count",
-                    "zh": "请求次数"
+                    "en": "Request Error Count",
+                    "zh": "请求错误数"
                   }
                 },
                 "key": "req_error_count",
