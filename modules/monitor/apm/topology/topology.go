@@ -382,14 +382,14 @@ func init() {
 
 	TargetServiceNodeType = &NodeType{
 		Type:         TargetServiceNode,
-		GroupByField: &GroupByField{Name: apm.TagsTargetApplicationId, SubField: &GroupByField{Name: apm.TagsTargetRuntimeName, SubField: &GroupByField{Name: apm.TagsTargetServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsTargetServiceId, SubField: &GroupByField{Name: apm.TagsTargetServiceName}},
 		SourceFields: []string{apm.TagsTargetApplicationId, apm.TagsTargetRuntimeName, apm.TagsTargetServiceName, apm.TagsTargetServiceId, apm.TagsTargetApplicationName, apm.TagsTargetRuntimeId},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation:  ServiceNodeAggregation,
 	}
 	SourceServiceNodeType = &NodeType{
 		Type:         SourceServiceNode,
-		GroupByField: &GroupByField{Name: apm.TagsSourceApplicationId, SubField: &GroupByField{Name: apm.TagsSourceRuntimeName, SubField: &GroupByField{Name: apm.TagsSourceServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsSourceServiceId, SubField: &GroupByField{Name: apm.TagsSourceServiceName}},
 		SourceFields: []string{apm.TagsSourceApplicationId, apm.TagsSourceRuntimeName, apm.TagsSourceServiceName, apm.TagsSourceServiceId, apm.TagsSourceApplicationName, apm.TagsSourceRuntimeId},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsSourceAddonType)),
 		Aggregation:  ServiceNodeAggregation,
@@ -434,13 +434,13 @@ func init() {
 	}
 	TargetMQServiceNodeType = &NodeType{
 		Type:         TargetMQServiceNode,
-		GroupByField: &GroupByField{Name: apm.TagsTargetApplicationId, SubField: &GroupByField{Name: apm.TagsTargetRuntimeName, SubField: &GroupByField{Name: apm.TagsTargetServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsTargetServiceId, SubField: &GroupByField{Name: apm.TagsTargetServiceName}},
 		SourceFields: []string{apm.TagsTargetApplicationId, apm.TagsTargetRuntimeName, apm.TagsTargetServiceName, apm.TagsTargetServiceId, apm.TagsTargetApplicationName, apm.TagsTargetRuntimeId},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 	}
 	OtherNodeType = &NodeType{
 		Type:         OtherNode,
-		GroupByField: &GroupByField{Name: apm.TagsApplicationId, SubField: &GroupByField{Name: apm.TagsRuntimeName, SubField: &GroupByField{Name: apm.TagsServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsServiceId, SubField: &GroupByField{Name: apm.TagsServiceName}},
 		SourceFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
 		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsApplicationId)),
 	}
@@ -1744,7 +1744,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.TargetRuntimeId
 		node.RuntimeName = tags.TargetRuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	case SourceServiceNode:
 		node.Type = TypeService
 		node.ApplicationId = tags.SourceApplicationId
@@ -1754,7 +1754,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.SourceRuntimeId
 		node.RuntimeName = tags.SourceRuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	case TargetAddonNode:
 		if strings.ToLower(tags.Component) == strings.ToLower("Http") {
 			node.Type = TypeElasticsearch
@@ -1788,7 +1788,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.TargetRuntimeId
 		node.RuntimeName = tags.TargetRuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	case TargetOtherNode:
 		if strings.ToLower(tags.Component) == strings.ToLower("Http") && strings.HasPrefix(tags.Host, "terminus-elasticsearch") {
 			node.Type = TypeElasticsearch
@@ -1806,7 +1806,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.RuntimeId
 		node.RuntimeName = tags.RuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	}
 	node.DashboardId = getDashboardId(node.Type)
 	return &node
