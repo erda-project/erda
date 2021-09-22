@@ -139,8 +139,9 @@ func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, da
 func (c *cacheStore) Update(apiOp *types.APIRequest, schema *types.APISchema, data types.APIObject, id string) (types.APIObject, error) {
 	gvk := attributes.GVK(schema)
 	key := cacheKey{
-		gvk:       gvk.String(),
-		namespace: apiOp.Namespace,
+		gvk:         gvk.String(),
+		namespace:   apiOp.Namespace,
+		clusterName: c.clusterName,
 	}
 	c.cache.Remove(key.getKey())
 	return c.Store.Update(apiOp, schema, data, id)

@@ -24,6 +24,7 @@ import (
 
 func (cl Clean) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	delete(*gs, "nodes")
+	delete(*gs, "SelectedRowKeys")
 	cl.State = map[string]interface{}{}
 	c.State = cl.State
 	return nil
