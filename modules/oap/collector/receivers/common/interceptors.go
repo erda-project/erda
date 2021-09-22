@@ -51,10 +51,14 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						delete(span.Attributes, k)
 					}
 				}
-				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
 				if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
 					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_MSP_ENV_ID]
 				}
+				if _, ok := span.Attributes[TAG_IP]; ok {
+					span.Attributes[TAG_SERVICE_INSTANCE_IP] = span.Attributes[TAG_IP]
+					delete(span.Attributes, TAG_IP)
+				}
+				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
 			}
 		}
 		return next(ctx, req)
