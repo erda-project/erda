@@ -117,7 +117,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
 			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-			if item.EnName == "EnvironmentSet" || item.EnName == "ServiceObservation" {
+			if item.EnName == "EnvironmentSet" || item.EnName == "AppMonitor" {
 				fmt.Println(item.EnName, isK8s)
 				for _, child := range item.Children {
 					child.Params = item.Params
