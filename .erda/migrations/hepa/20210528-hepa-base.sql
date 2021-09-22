@@ -128,7 +128,7 @@ CREATE TABLE `tb_gateway_domain`
     KEY                  `idx_package` (`package_id`,`is_deleted`),
     KEY                  `idx_cluster_domain` (`cluster_name`,`domain`,`is_deleted`),
     KEY                  `idx_cluster` (`is_deleted`,`cluster_name`,`domain`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='域名管理';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='域名管理';
 
 CREATE TABLE `tb_gateway_ingress_policy`
 (

@@ -238,7 +238,7 @@ CREATE TABLE `dice_release`
     PRIMARY KEY (`release_id`),
     KEY                `idx_release_name` (`release_name`),
     KEY                `idx_org_id` (`org_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Dice 版本表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='Dice 版本表';
 
 CREATE TABLE `ps_images`
 (
@@ -251,5 +251,5 @@ CREATE TABLE `ps_images`
     `image`      varchar(255) NOT NULL,
     PRIMARY KEY (`id`),
     KEY          `idx_release_id` (`release_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Dice 镜像表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='Dice 镜像表';
 

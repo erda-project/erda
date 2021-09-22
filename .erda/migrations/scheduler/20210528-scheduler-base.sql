@@ -49,7 +49,7 @@ CREATE TABLE `s_instance_info`
     KEY                     `idx_s_instance_info_cluster` (`cluster`),
     KEY                     `idx_s_instance_info_project_name` (`project_name`),
     KEY                     `idx_s_instance_info_task_id` (`task_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='实例信息';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='实例信息';
 
 CREATE TABLE `s_pod_info`
 (

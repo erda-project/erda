@@ -6,4 +6,4 @@ CREATE TABLE `erda_issue_subscriber` (
   `user_id` varchar(255) NOT NULL COMMENT 'subscriber',
   PRIMARY KEY (`id`),
   KEY `idx_issue_id_user_id` (`issue_id`,`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='subscribe for issue';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT DYNAMIC COMMENT='subscribe for issue';
