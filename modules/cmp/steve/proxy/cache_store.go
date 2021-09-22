@@ -78,8 +78,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
 				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
-					list = getByNamespace(list, apiOp.Namespace)
-					return format(list), nil
+					return getByNamespace(list, apiOp.Namespace), nil
 				}
 			}
 		}
@@ -123,7 +122,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
 		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 	}
-	return format(list), nil
+	return list, nil
 }
 
 func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, data types.APIObject) (types.APIObject, error) {
@@ -183,17 +182,4 @@ func getByNamespace(list types.APIObjectList, namespace string) types.APIObjectL
 		}
 	}
 	return res
-}
-
-func format(list types.APIObjectList) types.APIObjectList {
-	for i := range list.Objects {
-		item := list.Objects[i].Data()
-		obj := item.Map("Object")
-		for k, v := range obj {
-			item.Set(k, v)
-		}
-		delete(item, "Object")
-		list.Objects[i].Object = item
-	}
-	return list
 }
