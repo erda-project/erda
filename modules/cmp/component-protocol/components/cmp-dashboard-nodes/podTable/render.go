@@ -72,15 +72,13 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 				return err
 			}
 		case common.CMPDashboardUncordonNode:
-			err := pt.UncordonNode(pt.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
+			(*gs)["SelectedRowKeys"] = pt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardUncordonNode
+			return nil
 		case common.CMPDashboardCordonNode:
-			err := pt.CordonNode(pt.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
+			(*gs)["SelectedRowKeys"] = pt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardCordonNode
+			return nil
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}

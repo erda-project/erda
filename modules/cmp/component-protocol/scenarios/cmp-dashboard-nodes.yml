@@ -9,6 +9,7 @@ hierarchy:
       - tableTabsContainer
       - addLabelModal
       - cleanData
+      - batchOperationTipModal
     tableTabsContainer:
       - tableTabs
     tableTabs:
@@ -28,6 +29,8 @@ components:
     type: TiledFilter
   charts:
     type: RowContainer
+  batchOperationTipModal:
+    type: Modal
   tableTabsContainer:
     type: Container
   addLabelModal:
@@ -56,6 +59,7 @@ rendering:
     - name: tableTabs
     - name: nodeFilter
     - name: tableTabsContainer
+    - name: batchOperationTipModal
     - name: cpuTable
     - name: podTable
     - name: memTable
@@ -89,6 +93,23 @@ rendering:
     - name: addLabelModal
     - name: cleanData
 
+  cpuTable:
+    - name: batchOperationTipModal
+    - name: cleanData
+
+  memTable:
+    - name: batchOperationTipModal
+    - name: cleanData
+
+  podTable:
+    - name: batchOperationTipModal
+    - name: cleanData
+
+  batchOperationTipModal:
+    - name: cpuTable
+    - name: memTable
+    - name: podTable
+    - name: cleanData
 
   nodeFilter:
     - name: cpuTable
