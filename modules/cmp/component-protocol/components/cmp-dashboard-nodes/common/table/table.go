@@ -438,16 +438,14 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 			Reload: true,
 		},
 		"cordon": {
-			Key:     "cordon",
-			Reload:  true,
-			Confirm: t.SDK.I18n("cordon confirm"),
-			Text:    t.SDK.I18n("cordon"),
+			Key:    "cordon",
+			Reload: true,
+			Text:   t.SDK.I18n("cordon"),
 		},
 		"uncordon": {
-			Key:     "uncordon",
-			Confirm: t.SDK.I18n("uncordon confirm"),
-			Text:    t.SDK.I18n("uncordon"),
-			Reload:  true,
+			Key:    "uncordon",
+			Text:   t.SDK.I18n("uncordon"),
+			Reload: true,
 		},
 	}
 	res := map[string]interface{}{}

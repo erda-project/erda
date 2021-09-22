@@ -582,7 +582,11 @@
                 "field": "diskio-write_rate::field",
                 "key": "valueI5H6xYdH",
                 "resultType": "number",
-                "type": "field"
+                "type": "field",
+                "unit":{
+                  "type":"TRAFFIC",
+                  "unit":"B/S"
+                }
               },
               {
                 "alias": "读速率",
@@ -595,7 +599,11 @@
                 "field": "diskio-read_rate::field",
                 "key": "value02MlFDkE",
                 "resultType": "number",
-                "type": "field"
+                "type": "field",
+                "unit":{
+                  "type":"TRAFFIC",
+                  "unit":"B/S"
+                }
               }
             ]
           },
