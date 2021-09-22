@@ -38,8 +38,8 @@ type ComponentIngressUpdateRequest struct {
 }
 
 type IngressRoute struct {
-	Domain string
-	Path   string
+	Domain string `json:"domain"`
+	Path   string `json:"path"`
 }
 
 type RouteOptions struct {
