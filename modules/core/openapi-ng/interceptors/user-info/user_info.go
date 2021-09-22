@@ -49,6 +49,11 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.uc = ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		p.uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		db, err := ucauth.NewDB()
+		if err != nil {
+			return err
+		}
+		p.uc.SetDBClient(db)
 	}
 	return nil
 }

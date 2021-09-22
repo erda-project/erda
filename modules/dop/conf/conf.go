@@ -49,8 +49,7 @@ type Conf struct {
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
-	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 
 	CentralNexusPublicURL string `env:"NEXUS_PUBLIC_URL" required:"true"`
 	CentralNexusAddr      string `env:"NEXUS_ADDR" required:"true"`

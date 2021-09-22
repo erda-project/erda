@@ -79,3 +79,18 @@ func (client *DBClient) BulkInsert(objects interface{}, excludeColumns ...string
 	}
 	return gormbulk.BulkInsert(client.DB, structSlice, BULK_INSERT_CHUNK_SIZE, excludeColumns...)
 }
+
+func (db *DBClient) Transaction(f func(tx *gorm.DB) error) error {
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	if err := f(tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}

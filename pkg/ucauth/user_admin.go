@@ -21,9 +21,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -36,6 +40,7 @@ type User struct {
 	AvatarURL string `json:"avatar_url"`
 	Phone     string `json:"phone_number"`
 	Email     string `json:"email"`
+	State     string `json:"state"`
 }
 
 type UcUser struct {
@@ -47,12 +52,22 @@ type UcUser struct {
 	Email     string `json:"email"`
 }
 
-// UCClient UC客户端
+type UserIDModel struct {
+	ID     string
+	UserID string
+}
+
+// UCClient UC客户端\
 type UCClient struct {
 	baseURL     string
 	isOry       bool
 	client      *httpclient.HTTPClient
 	ucTokenAuth *UCTokenAuth
+	db          *gorm.DB
+}
+
+func (c *UCClient) SetDBClient(db *gorm.DB) {
+	c.db = db
 }
 
 // NewUCClient 初始化UC客户端
@@ -95,7 +110,11 @@ func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 		return nil, nil
 	}
 	if c.oryEnabled() {
-		return getUserByIDs(c.oryKratosPrivateAddr(), ids)
+		userIDs, err := c.ConvertUserIDs(ids)
+		if err != nil {
+			return nil, err
+		}
+		return getUserByIDs(c.oryKratosPrivateAddr(), userIDs)
 	}
 	parts := make([]string, len(ids))
 	for _, id := range ids {
@@ -106,6 +125,52 @@ func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 	// 保证返回的用户顺序为 id 列表顺序
 
 	return c.findUsersByQuery(query, ids...)
+}
+
+const DIALECT = "mysql"
+
+const BULK_INSERT_CHUNK_SIZE = 3000
+
+func NewDB() (*gorm.DB, error) {
+	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=%s",
+		conf.MySQLUsername(), conf.MySQLPassword(), conf.MySQLHost(), conf.MySQLPort(), conf.MySQLDatabase(), conf.MySQLLoc())
+
+	logrus.Infof("Initialize db with %s, url: %s", DIALECT, url)
+
+	db, err := gorm.Open(DIALECT, url)
+	if err != nil {
+		return nil, err
+	}
+	if conf.Debug() {
+		db.LogMode(true)
+	}
+	// connection pool
+	db.DB().SetMaxIdleConns(10)
+	db.DB().SetMaxOpenConns(50)
+	db.DB().SetConnMaxLifetime(time.Hour)
+
+	return db, nil
+}
+
+func (c *UCClient) ConvertUserIDs(ids []string) ([]string, error) {
+	var users []UserIDModel
+	if err := c.db.Table("kratos_uc_userid_mapping").Select("user_id").Where("id in (?)", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return filterUserIDs(ids, users), nil
+}
+
+func filterUserIDs(ids []string, users []UserIDModel) []string {
+	userIDs := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if len(id) > 11 {
+			userIDs = append(userIDs, id)
+		}
+	}
+	for _, u := range users {
+		userIDs = append(userIDs, u.UserID)
+	}
+	return userIDs
 }
 
 // FindUsersByKey 根据key查找用户，key可匹配用户名/邮箱/手机号

@@ -26,6 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -79,6 +80,7 @@ type UCUserAuth struct {
 	RedirectURI  string
 	ClientID     string
 	ClientSecret string
+	bdl          *bundle.Bundle
 }
 
 const OryCompatibleClientId = "kratos"
@@ -93,7 +95,8 @@ func (a *UCUserAuth) oryKratosAddr() string {
 }
 
 func NewUCUserAuth(UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret string) *UCUserAuth {
-	return &UCUserAuth{UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret}
+	bdl := bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
+	return &UCUserAuth{UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret, bdl}
 }
 
 // 返回用户中心的登陆URL, 也就是浏览器请求的地址
@@ -177,7 +180,18 @@ func (a *UCUserAuth) PwdAuth(username, password string) (OAuthToken, error) {
 func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
 	if a.oryEnabled() {
 		// sessionID as token
-		return whoami(a.oryKratosAddr(), oauthToken.AccessToken)
+		userInfo, err := whoami(a.oryKratosAddr(), oauthToken.AccessToken)
+		if err != nil {
+			return userInfo, err
+		}
+		ucUserID, err := a.bdl.GetUcUserID(string(userInfo.ID))
+		if err != nil {
+			return userInfo, err
+		}
+		if ucUserID != "" {
+			userInfo.ID = USERID(ucUserID)
+		}
+		return userInfo, err
 	}
 	bearer := "Bearer " + oauthToken.AccessToken
 	var me bytes.Buffer

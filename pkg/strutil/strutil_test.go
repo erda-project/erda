@@ -173,3 +173,39 @@ func TestReverseSlice(t *testing.T) {
 	assert.Equal(t, "s2", ss[1])
 	assert.Equal(t, "s1", ss[2])
 }
+
+func TestContainsOrEmpty(t *testing.T) {
+	type args struct {
+		source string
+		target string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "empty",
+			args: args{
+				source: "user",
+				target: "",
+			},
+			want: true,
+		},
+		{
+			name: "match",
+			args: args{
+				source: "user",
+				target: "to",
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ContainsOrEmpty(tt.args.source, tt.args.target); got != tt.want {
+				t.Errorf("ContainsOrEmpty() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

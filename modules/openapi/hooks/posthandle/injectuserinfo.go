@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
@@ -92,6 +94,12 @@ func GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInf
 		uc = ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 		if conf.OryEnabled() {
 			uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+			db, err := ucauth.NewDB()
+			if err != nil {
+				logrus.Errorf("fail to initial db err: %v", err)
+				return
+			}
+			uc.SetDBClient(db)
 		}
 	})
 

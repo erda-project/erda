@@ -30,12 +30,12 @@ import (
 
 func HandlePagingUsers(req *apistructs.UserPagingRequest, token OAuthToken) (*userPaging, error) {
 	if token.TokenType == OryCompatibleClientId {
-		users, err := getUserPage(token.AccessToken, req.PageNo, req.PageSize)
+		users, total, err := getUserList(token.AccessToken, req)
 		if err != nil {
 			return nil, err
 		}
 		var p userPaging
-		p.Total = 1000
+		p.Total = total
 		for _, u := range users {
 			p.Data = append(p.Data, userToUserInPaging(u))
 		}

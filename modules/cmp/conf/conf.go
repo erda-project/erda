@@ -39,8 +39,7 @@ type Conf struct {
 	UCClientSecret     string        `env:"UC_CLIENT_SECRET"`
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
-	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 
 	// size of steve server cache, default 1Gi
 	CacheSize int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`

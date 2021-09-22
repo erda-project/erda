@@ -131,6 +131,11 @@ type UserListResponse struct {
 	Data UserListResponseData `json:"data"`
 }
 
+type UserIDResponse struct {
+	Header
+	Data string `json:"data"`
+}
+
 // UserListResponseData 用户批量查询响应数据
 type UserListResponseData struct {
 	Users []UserInfo `json:"users"`
