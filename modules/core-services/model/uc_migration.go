@@ -12,26 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package orykratos
+package model
 
-import (
-	"net/http"
-
-	"github.com/erda-project/erda/modules/core/openapi-ng/common"
-)
-
-func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
-	common.ResponseJSON(rw, &struct {
-		URL string `json:"url"`
-	}{
-		URL: "/uc/login",
-	})
+type User struct {
+	BaseModel
+	Avatar   string
+	Username string
+	Nickname string
+	Mobile   string
+	Email    string
+	Password string
 }
 
-func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
-	common.ResponseJSON(rw, &struct {
-		URL string `json:"url"`
-	}{
-		URL: "/uc/login",
-	})
+type Config struct {
+	HashedPassword string `json:"hashed_password"`
+}
+
+type UserIDMapping struct {
+	ID     string
+	UserID string
 }

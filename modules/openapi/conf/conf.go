@@ -58,11 +58,19 @@ type Conf struct {
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
-	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
+	OryKratosAddr        string `default:"kratos-public" env:"ORY_KRATOS_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 
 	// Allow people who are not admin to create org
 	CreateOrgEnabled bool `default:"false" env:"CREATE_ORG_ENABLED"`
+
+	MySQLHost     string `env:"MYSQL_HOST"`
+	MySQLPort     string `env:"MYSQL_PORT"`
+	MySQLUsername string `env:"MYSQL_USERNAME"`
+	MySQLPassword string `env:"MYSQL_PASSWORD"`
+	MySQLDatabase string `env:"MYSQL_DATABASE"`
+	MySQLLoc      string `env:"MYSQL_LOC" default:"Local"`
+	Debug         bool   `env:"DEBUG" default:"false"`
 }
 
 var cfg Conf
@@ -168,7 +176,7 @@ func OryKratosPrivateAddr() string {
 }
 
 func OryLoginURL() string {
-	return "/uc/auth/login"
+	return "/uc/login"
 }
 
 func OryLogoutURL() string {
@@ -203,7 +211,35 @@ func CreateOrgEnabled() bool {
 	return cfg.CreateOrgEnabled
 }
 
-// GetDomain get a domian by request host
+func MySQLHost() string {
+	return cfg.MySQLHost
+}
+
+func MySQLPort() string {
+	return cfg.MySQLPort
+}
+
+func MySQLUsername() string {
+	return cfg.MySQLUsername
+}
+
+func MySQLPassword() string {
+	return cfg.MySQLPassword
+}
+
+func MySQLDatabase() string {
+	return cfg.MySQLDatabase
+}
+
+func MySQLLoc() string {
+	return cfg.MySQLLoc
+}
+
+func Debug() bool {
+	return cfg.Debug
+}
+
+// GetDomain get a domain by request host
 func GetDomain(host, confDomain string) (string, error) {
 	if strings.Contains(host, ":") {
 		host = strings.SplitN(host, ":", -1)[0]

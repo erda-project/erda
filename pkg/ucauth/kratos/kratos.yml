@@ -1,16 +1,17 @@
-version: v0.4.6-alpha.1
+version: v0.7.1-alpha.1
 
 dsn: memory
 
 serve:
   public:
-    base_url: /.ory/kratos/public
+    base_url:  /api/uc
     cors:
       enabled: true
   admin:
-    base_url: http://kratos:4434/
+    base_url: http://kratos-admin:4434/
 
 selfservice:
+  # we are not using it, default value for config source validation, can be replaced by env SELFSERVICE_DEFAULT_BROWSER_RETURN_URL.
   default_browser_return_url: http://one.erda.local
   whitelisted_return_urls:
     - http://127.0.0.1:4455
@@ -21,19 +22,19 @@ selfservice:
 
   flows:
     error:
-      ui_url: /uc/error
+      ui_url: http://one.erda.local/uc/error
 
     settings:
-      ui_url: /uc/settings
+      ui_url: http://one.erda.local/uc/settings
       privileged_session_max_age: 15m
 
     recovery:
       enabled: true
-      ui_url: /uc/recovery
+      ui_url: http://one.erda.local/uc/recovery
 
     verification:
       enabled: true
-      ui_url: /uc/verify
+      ui_url: http://one.erda.local/uc/verify
       after:
         default_browser_return_url: /
 
@@ -42,13 +43,13 @@ selfservice:
         default_browser_return_url: /
 
     login:
-      ui_url: http://one.erda.local/uc/auth/login
+      ui_url: http://one.erda.local/uc/login
       lifespan: 10m
 
     registration:
       lifespan: 10m
-      # not using it, default value for config source validation, can be replaced by env
-      ui_url: http://one.erda.local/uc/auth/registration 
+      ui_url: http://one.erda.local/uc/registration 
+      # issue session after registration
       after:
         password:
           hooks:
