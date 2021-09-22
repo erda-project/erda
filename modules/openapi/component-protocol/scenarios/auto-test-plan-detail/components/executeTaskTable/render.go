@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -215,6 +216,12 @@ func getProps() map[string]interface{} {
 				Ellipsis:  true,
 			},
 			{
+				Title:     "执行时间",
+				DataIndex: "time",
+				Width:     85,
+				Ellipsis:  true,
+			},
+			{
 				Title:     "接口路径",
 				DataIndex: "path",
 			},
@@ -323,6 +330,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(apistructs.StepAPIType(task.Type)),
 					"path":     "",
+					"time":     a.getCostTime(task),
 				}
 				lists = append(lists, list)
 				ret--
@@ -398,6 +406,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(res.Type),
 					"path":     path,
+					"time":     a.getCostTime(task),
 				}
 
 				if task.SnippetPipelineID != nil && (res.Type == apistructs.StepTypeScene ||
@@ -432,6 +441,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(apistructs.AutotestSceneSet),
 					"path":     "",
+					"time":     a.getCostTime(task),
 				}
 				if task.SnippetPipelineDetail != nil {
 					list["tasksNum"] = task.SnippetPipelineDetail.DirectSnippetTasksNum
@@ -464,6 +474,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(apistructs.AutotestScene),
 					"path":     "",
+					"time":     a.getCostTime(task),
 				}
 				if task.SnippetPipelineDetail != nil {
 					list["tasksNum"] = task.SnippetPipelineDetail.DirectSnippetTasksNum
@@ -486,6 +497,28 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 	a.Data["list"] = lists
 	a.Operations = getOperations(clickableKeys)
 	return nil
+}
+
+// getCostTime the format of time is "00:00:00"
+// id is not end status or err return "-"
+// if task is snippet return the costTime of pipeline_bases,
+// if not return pipeline_tasks's
+func (a *ExecuteTaskTable) getCostTime(task apistructs.PipelineTaskDTO) string {
+	if !task.Status.IsEndStatus() {
+		return "-"
+	}
+	if !task.IsSnippet {
+		return time.Unix(task.CostTimeSec, 0).In(time.UTC).Format("15:04:05")
+	}
+	if task.SnippetPipelineID == nil {
+		return "-"
+	}
+
+	rsp, err := a.CtxBdl.Bdl.GetPipeline(*task.SnippetPipelineID)
+	if err != nil {
+		return "-"
+	}
+	return time.Unix(rsp.CostTimeSec, 0).In(time.UTC).Format("15:04:05")
 }
 
 func (a *ExecuteTaskTable) marshal(c *apistructs.Component) error {

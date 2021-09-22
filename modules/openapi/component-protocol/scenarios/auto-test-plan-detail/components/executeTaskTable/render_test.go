@@ -16,11 +16,14 @@ package executeTaskTable
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -43,4 +46,60 @@ func Test_handlerListOperation(t *testing.T) {
 		},
 	}
 	assert.NoError(t, err)
+}
+
+func TestGetCostTime(t *testing.T) {
+	var Bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(Bdl), "GetPipeline", func(*bundle.Bundle, uint64) (*apistructs.PipelineDetailDTO, error) {
+		return &apistructs.PipelineDetailDTO{
+			PipelineDTO: apistructs.PipelineDTO{
+				CostTimeSec: 59*60 + 59,
+			},
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	tt := []struct {
+		task apistructs.PipelineTaskDTO
+		want string
+	}{
+		{
+			apistructs.PipelineTaskDTO{
+				Status: apistructs.PipelineStatusRunning,
+			},
+			"-",
+		},
+		{
+			apistructs.PipelineTaskDTO{
+				Status:      apistructs.PipelineStatusSuccess,
+				IsSnippet:   false,
+				CostTimeSec: 59,
+			},
+			"00:00:59",
+		},
+		{
+			apistructs.PipelineTaskDTO{
+				Status:      apistructs.PipelineStatusSuccess,
+				IsSnippet:   false,
+				CostTimeSec: 3600,
+			},
+			"01:00:00",
+		},
+		{
+			apistructs.PipelineTaskDTO{
+				Status:            apistructs.PipelineStatusSuccess,
+				IsSnippet:         true,
+				SnippetPipelineID: new(uint64),
+			},
+			"00:59:59",
+		},
+	}
+	r := ExecuteTaskTable{
+		CtxBdl: protocol.ContextBundle{
+			Bdl: bundle.New(),
+		},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, r.getCostTime(v.task))
+	}
 }
