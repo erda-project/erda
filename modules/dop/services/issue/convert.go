@@ -196,7 +196,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 
 func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[issueStage]string) ([][]string, error) {
 	// 默认字段列名
-	r := [][]string{{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联"}}
+	r := [][]string{{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联", "预估时间"}}
 	// 自定义字段列名
 	for _, pro := range property {
 		r[0] = append(r[0], pro.DisplayName)
@@ -309,6 +309,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			planFinishedAt,
 			i.CreatedAt.Format("2006-01-02 15:04:05"),
 			strings.Join(relatedIssueIDStrs, ","),
+			i.ManHour.GetFormartTime("EstimateTime"),
 		}))
 		relations := propertyMap[i.ID]
 		// 获取每个自定义字段的值
@@ -456,13 +457,15 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			falseReason = append(falseReason, fmt.Sprintf("failed to convert related issue ids: %s, err: %v", row[17], err))
 			continue
 		}
+		// row[17] EstimateTime, jump over
+
 		// 获取自定义字段
 		relation := apistructs.IssuePropertyRelationCreateRequest{
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		for indexx, line := range row[17:] {
-			index := indexx + 17
+		for indexx, line := range row[18:] {
+			index := indexx + 18
 			// 获取字段名对应的字段
 			instance := apistructs.IssuePropertyInstance{
 				IssuePropertyIndex: propertyNameMap[rows[0][index]],
