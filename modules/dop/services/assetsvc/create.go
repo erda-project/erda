@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -49,13 +50,14 @@ const (
 	InsTypeExternal = "external"
 )
 
-func accessDetailPath(id uint64) string {
-	accessID := strconv.FormatUint(id, 10)
-	return fmt.Sprintf("/workBench/apiManage/access-manage/detail/%s", accessID)
+func accessDetailPath(orgName string, accessPrimary uint64) string {
+	id := strconv.FormatUint(accessPrimary, 10)
+	return filepath.Join("/", orgName, "/workBench/apiManage/access-manage/detail", id)
 }
 
-func myClientsPath(clientPrimary uint64) string {
-	return "/workBench/apiManage/client/" + strconv.FormatUint(clientPrimary, 10)
+func myClientsPath(orgName string, clientPrimary uint64) string {
+	id := strconv.FormatUint(clientPrimary, 10)
+	return filepath.Join("/", orgName, "/workBench/apiManage/client", id)
 }
 
 // CreateAPIAsset 创建 API 资料

@@ -144,16 +144,16 @@ func (svc *Service) contractMsgToManager(orgID uint64, contractUserID string, as
 		do = "已自动通过, 无须处理"
 	}
 
+	org, err := bdl.Bdl.GetOrg(orgID)
+	if err != nil {
+		logrus.Errorf("failed to GetOrg, err: %v", err)
+		return
+	}
+
 	go func() {
-		org, err := bdl.Bdl.GetOrg(orgID)
-		if err != nil {
-			logrus.Errorf("failed to GetOrg, err: %v", err)
-			return
-		}
-		orgName := org.Name
 		wildDomain := conf.WildDomain()
-		host := fmt.Sprintf("%s-org.%s", orgName, wildDomain)
-		pathName := accessDetailPath(access.ID)
+		host := fmt.Sprintf("%s-org.%s", org.Name, wildDomain)
+		pathName := accessDetailPath(org.Name, access.ID)
 		forwardURL := path.Join(host, pathName)
 		params := map[string]string{
 			"requestItem": string(item),
@@ -178,7 +178,7 @@ func (svc *Service) contractMsgToManager(orgID uint64, contractUserID string, as
 			"requestItem": string(item),
 			"userName":    username,
 			"assetName":   access.AssetName,
-			"path":        accessDetailPath(access.ID),
+			"path":        accessDetailPath(org.Name, access.ID),
 			"do":          do,
 		}
 		if err := svc.MboxNotify(
@@ -196,17 +196,16 @@ func (svc *Service) contractMsgToManager(orgID uint64, contractUserID string, as
 
 // 异步发送站内信和邮件, 通知调用申请人
 func (svc *Service) contractMsgToUser(orgID uint64, contractUserID, assetName string, client *apistructs.ClientModel, result ApprovalResult) {
+	org, err := bdl.Bdl.GetOrg(orgID)
+	if err != nil {
+		logrus.Errorf("failed to GetOrg, err: %v", err)
+		return
+	}
 
 	go func() {
-		org, err := bdl.Bdl.GetOrg(orgID)
-		if err != nil {
-			logrus.Errorf("failed to GetOrg, err: %v", err)
-			return
-		}
-		orgName := org.Name
 		wildDomain := conf.WildDomain()
-		host := fmt.Sprintf("%s-org.%s", orgName, wildDomain)
-		pathName := myClientsPath(client.ID)
+		host := fmt.Sprintf("%s-org.%s", org.Name, wildDomain)
+		pathName := myClientsPath(org.Name, client.ID)
 		forwardURL := path.Join(host, pathName)
 		if err := svc.EmailNotify(
 			contractProveTitle,
@@ -237,7 +236,7 @@ func (svc *Service) contractMsgToUser(orgID uint64, contractUserID, assetName st
 				"clientDisplayName": client.DisplayName,
 				"clientName":        client.Name,
 				"clientID":          client.ClientID,
-				"path":              myClientsPath(client.ID),
+				"path":              myClientsPath(org.Name, client.ID),
 			},
 			"zh-CN",
 			orgID,
