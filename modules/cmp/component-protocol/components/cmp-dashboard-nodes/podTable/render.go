@@ -27,12 +27,24 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+
+func (pt *PodInfoTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return pt.DefaultProvider.Init(ctx)
+}
 
 func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	err := common.Transfer(c.State, &pt.State)
@@ -67,7 +79,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			req.UserID = pt.SDK.Identity.UserID
 			req.Type = apistructs.K8SNode
 			req.Name = nodeId
-			err = pt.CtxBdl.UnlabelNode(&req, []string{labelKey})
+			err = steveServer.UnlabelNode(pt.Ctx, &req, []string{labelKey})
 			if err != nil {
 				return err
 			}

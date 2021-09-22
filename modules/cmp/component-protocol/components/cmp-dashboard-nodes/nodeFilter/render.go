@@ -25,11 +25,23 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+
+func (nf *NodeFilter) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return nf.DefaultProvider.Init(ctx)
+}
 
 func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
@@ -48,11 +60,14 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 		return common.ClusterNotFoundErr
 	}
 
-	resp, err := nf.CtxBdl.ListSteveResource(nodeReq)
+	resp, err := steveServer.ListSteveResource(ctx, nodeReq)
 	if err != nil {
 		return err
 	}
-	nodeList := resp.Slice("data")
+	var nodeList []data.Object
+	for _, item := range resp {
+		nodeList = append(nodeList, item.Data())
+	}
 	labels := make(map[string]struct{})
 	for _, node := range nodeList {
 		for k, v := range node.Map("metadata", "labels") {

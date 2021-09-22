@@ -30,9 +30,11 @@ import (
 	"github.com/spf13/cast"
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
@@ -195,6 +197,17 @@ type GetRowItem interface {
 	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
 }
 
+var steveServer cmp.SteveServer
+
+func (t *Table) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		panic("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return t.DefaultProvider.Init(ctx)
+}
+
 func (t *Table) GetUsageValue(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
 		Text:    t.GetScaleValue(metricsData.Used, metricsData.Total, resourceType),
@@ -221,7 +234,8 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 		RenderType: "textWithBadge",
 	}
 	strs := make([]string, 0)
-	for _, s := range strings.Split(node.StringSlice("metadata", "fields")[1], ",") {
+	fields := node.StringSlice("metadata", "fields")
+	for _, s := range strings.Split(fields[1], ",") {
 		strs = append(strs, t.SDK.I18n(s))
 	}
 	for _, conf := range node.Slice("status", "conditions") {
@@ -368,11 +382,13 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 		} else {
 			return nil, common.ClusterNotFoundErr
 		}
-		resp, err := t.CtxBdl.ListSteveResource(nodeReq)
+		resp, err := steveServer.ListSteveResource(t.Ctx, nodeReq)
 		if err != nil {
 			return nil, err
 		}
-		nodes = resp.Slice("data")
+		for _, item := range resp {
+			nodes = append(nodes, item.Data())
+		}
 		nodes = nodeFilter.DoFilter(nodes, t.State.Values)
 	} else {
 		nodes = (*gs)["nodes"].([]data.Object)
@@ -389,7 +405,7 @@ func (t *Table) CordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := t.CtxBdl.CordonNode(req)
+		err := steveServer.CordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}
@@ -406,7 +422,7 @@ func (t *Table) UncordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := t.CtxBdl.UnCordonNode(req)
+		err := steveServer.UnCordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}
