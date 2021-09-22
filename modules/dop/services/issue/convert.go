@@ -317,6 +317,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			planFinishedAt,
 			i.CreatedAt.Format("2006-01-02 15:04:05"),
 			strings.Join(relatedIssueIDStrs, ","),
+			i.ManHour.GetFormartTime("EstimateTime"),
 		}))
 		relations := propertyMap[i.ID]
 		// 获取每个自定义字段的值
@@ -464,13 +465,15 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			falseReason = append(falseReason, fmt.Sprintf("failed to convert related issue ids: %s, err: %v", row[17], err))
 			continue
 		}
+		// row[17] EstimateTime, jump over
+
 		// 获取自定义字段
 		relation := apistructs.IssuePropertyRelationCreateRequest{
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		for indexx, line := range row[17:] {
-			index := indexx + 17
+		for indexx, line := range row[18:] {
+			index := indexx + 18
 			// 获取字段名对应的字段
 			instance := apistructs.IssuePropertyInstance{
 				IssuePropertyIndex: propertyNameMap[rows[0][index]],
