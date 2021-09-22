@@ -357,7 +357,7 @@ CREATE TABLE `dice_config_namespace`
     `is_deleted`     varchar(1)   NOT NULL DEFAULT 'N' COMMENT '逻辑删除',
     PRIMARY KEY (`id`),
     KEY              `idx_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='配置项namespace';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='配置项namespace';
 
 CREATE TABLE `dice_config_namespace_relation`
 (
