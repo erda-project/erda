@@ -20,7 +20,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/log/schema"
@@ -45,7 +44,10 @@ var bdl = bundle.New(bundle.WithDOP())
 // store log with cassandra
 type cassandraStorageLog struct {
 	metricQ metricq.Queryer
-	logger  logs.Logger
+}
+
+func newCassandraStorageLog(metricQ metricq.Queryer) storageMetric {
+	return &cassandraStorageLog{metricQ: metricQ}
 }
 
 type keyspaceUsage struct {
@@ -63,20 +65,19 @@ func (c *cassandraStorageLog) UsageSummaryOrg() (map[string]uint64, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret := make(map[string]uint64, len(data))
+	return c.calculateUsage(orgMap, data), nil
+}
+
+func (c *cassandraStorageLog) calculateUsage(orgMap map[string]string, data []*keyspaceUsage) map[string]uint64 {
+	res := make(map[string]uint64, len(data))
 	for _, item := range data {
 		orgName, ok := orgMap[item.keyspace]
 		if !ok {
-			c.logger.Debugf("unable to find orgName of keyspace<%s>", item.keyspace)
 			continue
 		}
-		ret[orgName] += item.usageBytes
+		res[orgName] += item.usageBytes
 	}
-	return ret, nil
-}
-
-func newCassandraStorageLog(metricQ metricq.Queryer) storageMetric {
-	return &cassandraStorageLog{metricQ: metricQ}
+	return res
 }
 
 func (c *cassandraStorageLog) orgKeyspaceMap() (map[string]string, error) {
