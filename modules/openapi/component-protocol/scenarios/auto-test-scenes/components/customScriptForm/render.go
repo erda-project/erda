@@ -1,0 +1,151 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package customScriptForm
+
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+)
+
+const (
+	defaultCustomScriptImage = "registry.erda.cloud/erda-actions/custom-script-action:20210519-01d2811"
+)
+
+type ComponentAction struct{}
+
+type Data struct {
+	Name     string   `json:"name"`
+	Image    string   `json:"image"`
+	Commands []string `json:"commands"`
+}
+
+func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	v, err := json.Marshal(c.State["stepId"])
+	if err != nil {
+		return err
+	}
+	var stepID int
+	err = json.Unmarshal(v, &stepID)
+	if err != nil {
+		return nil
+	}
+	if stepID <= 0 {
+		return nil
+	}
+	switch event.Operation {
+	case "submit":
+		formDataJson, err := json.Marshal(c.State["formData"])
+		if err != nil {
+			return err
+		}
+		data := Data{}
+		if err := json.Unmarshal(formDataJson, &data); err != nil {
+			return err
+		}
+
+		var value apistructs.AutoTestRunCustom
+		value.Image = data.Image
+		value.Commands = data.Commands
+		valueByte, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		var req apistructs.AutotestSceneRequest
+		req.Name = data.Name
+		req.ID = uint64(stepID)
+		req.Value = string(valueByte)
+		req.UserID = bdl.Identity.UserID
+		_, err = bdl.Bdl.UpdateAutoTestSceneStep(req)
+		if err != nil {
+			return err
+		}
+		c.State["drawVisible"] = false
+	case "cancel":
+		c.State["drawVisible"] = false
+	case apistructs.InitializeOperation, apistructs.RenderingOperation:
+		req := apistructs.AutotestGetSceneStepReq{
+			ID:     uint64(stepID),
+			UserID: bdl.Identity.UserID,
+		}
+		step, err := bdl.Bdl.GetAutoTestSceneStep(req)
+		if err != nil {
+			return err
+		}
+		var (
+			image    string
+			commands []string
+		)
+		if step.Value == "" {
+			image = defaultCustomScriptImage
+			commands = []string{}
+		} else {
+			var value apistructs.AutoTestRunCustom
+			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
+				return err
+			}
+			image = value.Image
+			commands = value.Commands
+		}
+		c.State["formData"] = Data{
+			Name:     step.Name,
+			Image:    image,
+			Commands: commands,
+		}
+		c.State["drawVisible"] = true
+		c.Props = map[string]interface{}{
+			"fields": []map[string]interface{}{
+				{
+					"label":          "名称",
+					"component":      "input",
+					"required":       true,
+					"key":            "name",
+					"componentProps": map[string]interface{}{"placeholder": "请输入名称"},
+				},
+				{
+					"label":          "镜像",
+					"component":      "input",
+					"required":       true,
+					"key":            "image",
+					"componentProps": map[string]interface{}{"placeholder": "请输入镜像"},
+				},
+				{
+					"label":     "命令",
+					"component": "inputArray",
+					"required":  true,
+					"key":       "commands",
+				},
+			},
+		}
+		c.Operations = map[string]interface{}{
+			"submit": map[string]interface{}{
+				"key":    "submit",
+				"reload": true,
+			},
+			"cancel": map[string]interface{}{
+				"reload": true,
+				"key":    "cancel",
+			},
+		}
+	}
+	return nil
+}
+
+func RenderCreator() protocol.CompRender {
+	return &ComponentAction{}
+}
