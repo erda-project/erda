@@ -123,6 +123,12 @@ type listLoginTypeResult struct {
 }
 
 func handleListLoginMethod(token ucauth.OAuthToken) (*listLoginTypeResult, error) {
+	// TODO: password oidc
+	if token.TokenType == ucauth.OryCompatibleClientId {
+		return &listLoginTypeResult{
+			RegistryType: []string{"email"},
+		}, nil
+	}
 	var resp struct {
 		Success bool                 `json:"success"`
 		Result  *listLoginTypeResult `json:"result"`
