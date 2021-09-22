@@ -193,6 +193,10 @@ zh:
  PIDPressure: 进程压力状态
  input node Name or IP: 请输入节点名称或IP
  The proportion of allocated resources that are not used: 已分配资源中未使用的比例
+ status update success: 状态修改成功
+ Cordon following nodes: 冻结以下节点：
+ Uncordon following nodes: 解冻以下节点：
+
 
 en:
  # general
