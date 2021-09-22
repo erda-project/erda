@@ -206,21 +206,19 @@ func (s *Scripts) AlterPermissionLint() error {
 			continue
 		}
 
-		tableNames := make(map[string]bool, 0)
+		tableNames := make(map[string]bool)
 		for _, script := range module.Scripts {
+			ref := &referencer{tableNames: tableNames, err: nil}
 			for _, ddl := range script.DDLNodes() {
-				switch stmt := ddl.(type) {
-				case *ast.CreateTableStmt:
-					tableName := stmt.Table.Name.String()
-					tableNames[tableName] = true
-				case *ast.AlterTableStmt:
-					tableName := stmt.Table.Name.String()
-					if _, ok := tableNames[tableName]; !ok {
-						return errors.Errorf("the table you tried to alter is not exists, may it not created in this module directory. filename: %s, text:\n%s",
-							filepath.Join(s.Dirname, moduleName, script.GetName()), ddl.Text())
-					}
-				default:
-					continue
+				if ddl.Accept(ref); ref.err != nil {
+					return errors.Wrapf(ref.err, "filename: %s, text: %s",
+						filepath.Join(s.Dirname, moduleName, script.GetName()), ddl.Text())
+				}
+			}
+			for _, dml := range script.DMLNodes() {
+				if dml.Accept(ref); ref.err != nil {
+					return errors.Wrapf(ref.err, "filename: %s, text: %s",
+						filepath.Join(s.Dirname, moduleName, script.GetName()), dml.Text())
 				}
 			}
 		}
@@ -349,4 +347,38 @@ func (s *Scripts) FreshBaselineModules(db *gorm.DB) map[string]*Module {
 		}
 	}
 	return modules
+}
+
+type referencer struct {
+	tableNames map[string]bool
+	err        error
+}
+
+func (r *referencer) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.CreateTableStmt:
+		r.tableNames[stmt.Table.Name.String()] = true
+		return in, true
+	case *ast.TableName:
+		// if the referenced table name is not in the tableNames, error happened
+		if _, ok := r.tableNames[stmt.Name.String()]; !ok {
+			r.err = errors.Errorf("the table you referenced is not exists, may it not created in this module directory")
+		}
+		return in, true
+	default:
+		return in, false
+	}
+}
+
+func (r *referencer) Leave(in ast.Node) (out ast.Node, visitNext bool) {
+	if r.err != nil {
+		return in, false
+	}
+	if _, ok := in.(*ast.TableName); ok {
+		return in, false
+	}
+	if _, ok := in.(*ast.CreateTableStmt); ok {
+		return in, false
+	}
+	return in, true
 }

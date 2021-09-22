@@ -104,20 +104,24 @@ func TestNewScripts2(t *testing.T) {
 }
 
 func TestScripts_AlterPermissionLint(t *testing.T) {
-	var p = parameter{
-		workdir:      "..",
-		migrationDir: "testdata/alter_permission_test_data",
-	}
-
-	scripts, err := migrator.NewScripts(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// assert: if AlterPermissionLint returns err == nil, test fails
-	if err = scripts.AlterPermissionLint(); err == nil {
-		t.Fatal(err)
-	} else {
-		t.Log(err)
+	for _, migDir := range []string{
+		"testdata/alter_permission_test_data",
+		"testdata/alter_permission_test_data2",
+		"testdata/alter_permission_test_data3",
+	} {
+		var p = parameter{
+			workdir:      "..",
+			migrationDir: migDir,
+		}
+		scripts, err := migrator.NewScripts(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// assert: if AlterPermissionLint returns err == nil, test fails
+		if err = scripts.AlterPermissionLint(); err == nil {
+			t.Fatal(err)
+		} else {
+			t.Log(err)
+		}
 	}
 }
