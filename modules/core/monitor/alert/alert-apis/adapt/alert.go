@@ -696,6 +696,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *pb.Alert) (err error) {
 		}
 		alert.Attributes[k] = value
 	}
+	alert.Enable = dbAlert.Enable
 	dbAlert = ToDBAlertModel(alert)
 	if err := tx.Alert.Update(dbAlert); err != nil {
 		return err

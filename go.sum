@@ -453,8 +453,6 @@ github.com/erda-project/erda-infra v0.0.0-20210916043803-3d23fdfef26c/go.mod h1:
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-proto-go v0.0.0-20210820073528-bcd612c2efb7/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
-github.com/erda-project/erda-proto-go v0.0.0-20210917132234-e998e08b01c7 h1:jruD3xNBaTuZttVWM6EaNqy0BlC6ztTEMu8n3N5b0Wk=
-github.com/erda-project/erda-proto-go v0.0.0-20210917132234-e998e08b01c7/go.mod h1:l2AY7V/D+y7n0n2Vd/giV2ma3WrxSBMN6NKeU16q1tk=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2 h1:5QKXIq0yTPulGqXzEQx96fLK6HDCb8xC1H6kOjj4hsk=
 github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
