@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/accesscontrol"
@@ -27,8 +28,6 @@ import (
 	"github.com/rancher/wrangler/pkg/schemas/validation"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apiserver/pkg/endpoints/request"
-
-	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
 )
@@ -78,7 +77,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			allNsValues, expired, err := c.cache.Get(key.getKey())
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
-				if err = msgpack.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
+				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
 					list = getByNamespace(list, apiOp.Namespace)
 					return format(list), nil
 				}
@@ -120,7 +119,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}()
 
 	var list types.APIObjectList
-	if err = msgpack.Unmarshal(values[0].Value().([]byte), &list); err != nil {
+	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
 		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
 		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 	}

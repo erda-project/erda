@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash"
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vmihailenco/msgpack/v5"
 	"modernc.org/mathutil"
 )
 
@@ -554,7 +554,7 @@ func GenerateKey(keys []string) string {
 }
 
 func MarshalValue(o interface{}) (Values, error) {
-	d, err := msgpack.Marshal(o)
+	d, err := jsi.Marshal(o)
 	if err != nil {
 		return nil, err
 	}

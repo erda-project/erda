@@ -19,9 +19,9 @@ import (
 	"net/http"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vmihailenco/msgpack/v5"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -102,7 +102,7 @@ func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInflu
 
 	if v, expired, err = cache.FreeCache.Get(key); v != nil {
 		logrus.Infof("%s hit cache, try return cache value directly", key)
-		err = msgpack.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
+		err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
 		if err != nil {
 			logrus.Errorf("unmarshal failed")
 		}
