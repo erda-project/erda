@@ -49,8 +49,8 @@ const (
 	OperateEq           = "eq"
 	OperateIn           = "in"
 	OperatorTypeOne     = "one"
-	DashboardPathFormat = "/microService/%s/%s/%s/monitor/%s/custom-dashboard"
-	RecordPathFormat    = "/microService/%s/%s/%s/monitor/%s/alarm-record"
+	DashboardPathFormat = "/microService/%s/%s/%s/alarm-management/%s/custom-dashboard"
+	RecordPathFormat    = "/microService/%s/%s/%s/alarm-management/%s/alarm-record"
 
 	NotifyTemplateSample = `【服务HTTP慢事务异常告警】
 
