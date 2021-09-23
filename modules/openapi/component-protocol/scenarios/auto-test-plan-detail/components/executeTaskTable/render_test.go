@@ -16,10 +16,8 @@ package executeTaskTable
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -49,16 +47,6 @@ func Test_handlerListOperation(t *testing.T) {
 }
 
 func TestGetCostTime(t *testing.T) {
-	var Bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(Bdl), "GetPipeline", func(*bundle.Bundle, uint64) (*apistructs.PipelineDetailDTO, error) {
-		return &apistructs.PipelineDetailDTO{
-			PipelineDTO: apistructs.PipelineDTO{
-				CostTimeSec: 59*60 + 59,
-			},
-		}, nil
-	})
-	defer monkey.UnpatchAll()
-
 	tt := []struct {
 		task apistructs.PipelineTaskDTO
 		want string
@@ -87,9 +75,9 @@ func TestGetCostTime(t *testing.T) {
 		},
 		{
 			apistructs.PipelineTaskDTO{
-				Status:            apistructs.PipelineStatusSuccess,
-				IsSnippet:         true,
-				SnippetPipelineID: new(uint64),
+				Status:      apistructs.PipelineStatusSuccess,
+				IsSnippet:   true,
+				CostTimeSec: 59*60 + 59,
 			},
 			"00:59:59",
 		},

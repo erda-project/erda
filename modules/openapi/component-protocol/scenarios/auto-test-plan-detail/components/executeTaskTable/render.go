@@ -501,24 +501,11 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 
 // getCostTime the format of time is "00:00:00"
 // id is not end status or err return "-"
-// if task is snippet return the costTime of pipeline_bases,
-// if not return pipeline_tasks's
 func (a *ExecuteTaskTable) getCostTime(task apistructs.PipelineTaskDTO) string {
 	if !task.Status.IsEndStatus() {
 		return "-"
 	}
-	if !task.IsSnippet {
-		return time.Unix(task.CostTimeSec, 0).In(time.UTC).Format("15:04:05")
-	}
-	if task.SnippetPipelineID == nil {
-		return "-"
-	}
-
-	rsp, err := a.CtxBdl.Bdl.GetPipeline(*task.SnippetPipelineID)
-	if err != nil {
-		return "-"
-	}
-	return time.Unix(rsp.CostTimeSec, 0).In(time.UTC).Format("15:04:05")
+	return time.Unix(task.CostTimeSec, 0).In(time.UTC).Format("15:04:05")
 }
 
 func (a *ExecuteTaskTable) marshal(c *apistructs.Component) error {
