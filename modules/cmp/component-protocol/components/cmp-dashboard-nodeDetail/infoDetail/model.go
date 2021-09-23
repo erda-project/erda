@@ -39,15 +39,15 @@ type State struct {
 }
 
 type Data struct {
-	Survive          string  `json:"survive"`
-	NodeIP           string  `json:"nodeIP"`
-	Version          string  `json:"version"`
-	Os               string  `json:"os"`
-	ContainerRuntime string  `json:"containerRuntime"`
-	PodNum           string  `json:"podNum"`
-	Tags             []Field `json:"tag"`
-	Annotation       []Field `json:"annotation"`
-	Taints           []Field `json:"taint"`
+	Survive                 string  `json:"survive"`
+	NodeIP                  string  `json:"nodeIP"`
+	Version                 string  `json:"version"`
+	Os                      string  `json:"os"`
+	ContainerRuntimeVersion string  `json:"containerRuntimeVersion"`
+	PodNum                  string  `json:"podNum"`
+	Tags                    []Field `json:"tag"`
+	Annotation              []Field `json:"annotation"`
+	Taints                  []Field `json:"taint"`
 }
 
 type Props struct {

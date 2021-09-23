@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/rancher/wrangler/pkg/data"
 
@@ -64,28 +63,16 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	d := Data{}
 	d.Os = node.String("status", "nodeInfo", "osImage")
 	d.Version = node.String("status", "nodeInfo", "kubeletVersion")
-	d.ContainerRuntime = node.StringSlice("metadata", "fields")[9]
+	d.ContainerRuntimeVersion = node.StringSlice("metadata", "fields")[9]
 	d.NodeIP = infoDetail.getIp(node)
 	d.PodNum = node.String("status", "capacity", "pods")
 	d.Tags = infoDetail.getTags(node)
 	d.Annotation = infoDetail.getAnnotations(node)
 	d.Taints = infoDetail.getTaints(node)
-	t, err := infoDetail.parseTime(node)
-	if err != nil {
-		return err
-	}
-	d.Survive = t
+	d.Survive = node.StringSlice("metadata", "fields")[3]
 	c.Props = infoDetail.Props
 	c.Data = map[string]interface{}{"data": d}
 	return nil
-}
-
-func (infoDetail *InfoDetail) parseTime(node data.Object) (string, error) {
-	t, err := time.Parse("2006-01-02T15:04:05Z", node.String("metadata", "creationTimestamp"))
-	if err != nil {
-		return "", err
-	}
-	return time.Now().Sub(t).String(), nil
 }
 
 func (infoDetail *InfoDetail) getIp(node data.Object) string {
@@ -195,7 +182,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 			{Label: infoDetail.SDK.I18n("nodeIP"), ValueKey: "nodeIP"},
 			{Label: infoDetail.SDK.I18n("version"), ValueKey: "version"},
 			{Label: infoDetail.SDK.I18n("os"), ValueKey: "os"},
-			{Label: infoDetail.SDK.I18n("containerRuntime"), ValueKey: "containerRuntime"},
+			{Label: infoDetail.SDK.I18n("containerRuntimeVersion"), ValueKey: "containerRuntimeVersion"},
 			{Label: infoDetail.SDK.I18n("podNum"), ValueKey: "podNum"},
 			{Label: infoDetail.SDK.I18n("tag"), ValueKey: "tag", RenderType: "tagsRow", SpaceNum: 2, Operations: map[string]Operation{
 				"add": {

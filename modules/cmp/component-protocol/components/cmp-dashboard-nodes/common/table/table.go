@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cznic/mathutil"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -300,12 +299,12 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		asc        bool
 		items      []RowItem
 	)
-	if t.State.PageNo == 0 {
-		t.State.PageNo = DefaultPageNo
-	}
-	if t.State.PageSize == 0 {
-		t.State.PageSize = DefaultPageSize
-	}
+	//if t.State.PageNo == 0 {
+	//	t.State.PageNo = DefaultPageNo
+	//}
+	//if t.State.PageSize == 0 {
+	//	t.State.PageSize = DefaultPageSize
+	//}
 	if t.State.Sorter.Field != "" {
 		sortColumn = t.State.Sorter.Field
 		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
@@ -331,11 +330,12 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		}
 	}
 
-	t.State.Total = len(nodes)
-	start := (t.State.PageNo - 1) * t.State.PageSize
-	end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Total)
+	//t.State.Total = len(nodes)
+	//start := (t.State.PageNo - 1) * t.State.PageSize
+	//end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Total)
 
-	component.Data = map[string]interface{}{"list": items[start:end]}
+	//component.Data = map[string]interface{}{"list": items[start:end]}
+	component.Data = map[string]interface{}{"list": items}
 	return nil
 }
 
@@ -425,14 +425,14 @@ func (t *Table) GetNodeAddress(addrs []v1.NodeAddress) string {
 
 func (t *Table) GetTableOperation() map[string]interface{} {
 	ops := map[string]Operation{
-		"changePageNo": {
-			Key:    "changePageNo",
-			Reload: true,
-		},
-		"changePageSize": {
-			Key:    "changePageSize",
-			Reload: true,
-		},
+		//"changePageNo": {
+		//	Key:    "changePageNo",
+		//	Reload: true,
+		//},
+		//"changePageSize": {
+		//	Key:    "changePageSize",
+		//	Reload: true,
+		//},
 		"changeSort": {
 			Key:    "changeSort",
 			Reload: true,
@@ -612,9 +612,9 @@ func SortByString(data []RowItem, sortColumn string, asc bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, asc bool) {
+func SortByNode(data []RowItem, _ string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if asc {
+		if ascend {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -646,9 +646,9 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 }
 
 type State struct {
-	PageNo          int           `json:"pageNo,omitempty"`
-	PageSize        int           `json:"pageSize,omitempty"`
-	Total           int           `json:"total,omitempty"`
+	//PageNo          int           `json:"pageNo,omitempty"`
+	//PageSize        int           `json:"pageSize,omitempty"`
+	//Total           int           `json:"total,omitempty"`
 	SelectedRowKeys []string      `json:"selectedRowKeys,omitempty"`
 	Sorter          Sorter        `json:"sorterData,omitempty"`
 	Values          filter.Values `json:"values"`
