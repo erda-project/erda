@@ -175,6 +175,7 @@ type Field struct {
 
 type Tag struct {
 	Component             string `json:"component,omitempty"`
+	DBType                string `json:"db_type,omitempty"`
 	Host                  string `json:"host,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
@@ -410,8 +411,8 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup},
+		GroupByField: &GroupByField{Name: apm.TagsDBType, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType},
 		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
 			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
 		Aggregation: NodeAggregation,
@@ -1506,40 +1507,6 @@ func (topology *provider) GetTopology(param Vo) []*Node {
 	return nodes
 }
 
-// FilterNodeByTags
-func (topology *provider) FilterNodeByTags(tags []string, nodes []*Node) []*Node {
-	if tags != nil && len(tags) > 0 {
-		for _, v := range tags {
-			tagInfo := strings.Split(v, ":")
-			tag := tagInfo[0]
-			value := tagInfo[1]
-			switch tag {
-			case ApplicationSearchTag.Tag:
-				for i, node := range nodes {
-					if strings.ToLower(node.Name) == strings.ToLower(TypeGateway) {
-						continue
-					}
-					for _, parentNode := range node.Parents {
-						if node.ApplicationName != value && parentNode.ApplicationName != value {
-							nodes = append(nodes[:i], nodes[i+1:]...)
-							i--
-						}
-					}
-
-				}
-			case ServiceSearchTag.Tag:
-				for i, node := range nodes {
-					if node.ServiceName != value {
-						nodes = append(nodes[:i], nodes[i+1:]...)
-						i--
-					}
-				}
-			}
-		}
-	}
-	return nodes
-}
-
 func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	var aggregationConditions *AggregationCondition
 	var relations []*NodeRelation
@@ -1774,6 +1741,9 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 	case TargetComponentNode:
 		node.Type = tags.Component
 		node.Name = tags.Host
+		if tags.DBType != "" {
+			node.Type = tags.DBType
+		}
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case SourceMQNode:
 		node.Type = tags.Component
