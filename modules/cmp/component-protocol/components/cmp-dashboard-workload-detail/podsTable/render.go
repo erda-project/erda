@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -172,6 +173,9 @@ func (p *ComponentPodsTable) RenderTable() error {
 	obj := resp.Data()
 
 	labelSelectors := obj.Map("spec", "selector", "matchLabels")
+	if kind == string(apistructs.K8SCronJob) {
+		labelSelectors = obj.Map("spec", "jobTemplate", "spec", "template", "metadata", "labels")
+	}
 
 	podReq := apistructs.SteveRequest{
 		UserID:      userID,
@@ -209,6 +213,17 @@ func (p *ComponentPodsTable) RenderTable() error {
 		labels := obj.Map("metadata", "labels")
 		if !matchSelector(labelSelectors, labels) {
 			continue
+		}
+
+		if kind == string(apistructs.K8SCronJob) {
+			ok, err := p.isOwnedByTargetCronJob(obj, name)
+			if err != nil {
+				logrus.Errorf("failed to check whether pod is owned by target cron job %s, %v", name, err)
+				continue
+			}
+			if !ok {
+				continue
+			}
 		}
 
 		name := obj.String("metadata", "name")
@@ -455,6 +470,43 @@ func (p *ComponentPodsTable) RenderTable() error {
 	p.Data.List = items
 	p.State.Total = len(items)
 	return nil
+}
+
+func (p *ComponentPodsTable) isOwnedByTargetCronJob(pod data.Object, cronJobName string) (bool, error) {
+	podOwners := pod.Slice("metadata", "ownerReferences")
+	if len(podOwners) == 0 {
+		return false, nil
+	}
+	podOwner := podOwners[0]
+	if podOwner.String("kind") != "Job" {
+		return false, nil
+	}
+
+	req := &apistructs.SteveRequest{
+		UserID:      p.sdk.Identity.UserID,
+		OrgID:       p.sdk.Identity.OrgID,
+		Type:        apistructs.K8SJob,
+		ClusterName: p.State.ClusterName,
+		Name:        podOwner.String("name"),
+		Namespace:   pod.String("metadata", "namespace"),
+	}
+
+	job, err := p.server.GetSteveResource(p.ctx, req)
+	if err != nil {
+		return false, err
+	}
+	obj := job.Data()
+
+	jobOwners := obj.Slice("metadata", "ownerReferences")
+	if len(jobOwners) == 0 {
+		return false, nil
+	}
+
+	jobOwner := jobOwners[0]
+	if jobOwner.String("kind") == "CronJob" && jobOwner.String("name") == cronJobName {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
