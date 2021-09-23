@@ -327,9 +327,6 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 		case "LogAnalyze":
 			loghub = item
 		}
-		if monitor != nil && loghub != nil {
-			break
-		}
 	}
 	if monitor != nil {
 		for _, item := range setParams {
