@@ -16,8 +16,10 @@ package steve
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/sirupsen/logrus"
 )
 
 type Response struct {
@@ -32,7 +34,9 @@ func (rw *Response) Write(apiOp *types.APIRequest, code int, obj types.APIObject
 
 func (rw *Response) WriteList(apiOp *types.APIRequest, code int, obj types.APIObjectList) {
 	rw.StatusCode = code
+	logrus.Infof("[DEBUG] start convert list at %s", time.Now().Format(time.StampNano))
 	rw.ResponseData = convertList(apiOp, obj)
+	logrus.Infof("[DEBUG] end convert list at %s", time.Now().Format(time.StampNano))
 }
 
 func newCollection(apiOp *types.APIRequest, list types.APIObjectList) *types.GenericCollection {
