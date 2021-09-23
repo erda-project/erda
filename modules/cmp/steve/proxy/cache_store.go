@@ -66,7 +66,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		clusterName: c.clusterName,
 	}
 
+	logrus.Infof("[DEBUG] start get cache at %s", time.Now().Format(time.StampNano))
 	values, _, err := c.cache.Get(key.getKey())
+	logrus.Infof("[DEBUG] end get cache at %s", time.Now().Format(time.StampNano))
 	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
 			key := cacheKey{
@@ -77,24 +79,35 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			allNsValues, expired, err := c.cache.Get(key.getKey())
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
+				logrus.Infof("[DEBUG] start jsi unmarshal data from cache at %s", time.Now().Format(time.StampNano))
 				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
-					return getByNamespace(list, apiOp.Namespace), nil
+					logrus.Infof("[DEBUG] end jsi unmarshal data from cache at %s", time.Now().Format(time.StampNano))
+					logrus.Infof("[DEBUG] start get by namespace at %s", time.Now().Format(time.StampNano))
+					list := getByNamespace(list, apiOp.Namespace)
+					logrus.Infof("[DEBUG] end get by namespace at %s", time.Now().Format(time.StampNano))
+					return list, nil
 				}
 			}
 		}
 
+		logrus.Infof("[DEBUG] start list at %s", time.Now().Format(time.StampNano))
 		list, err := c.Store.List(apiOp, schema)
 		if err != nil {
 			return types.APIObjectList{}, err
 		}
+		logrus.Infof("[DEBUG] end list at %s", time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG] start marshal for cache at %s", time.Now().Format(time.StampNano))
 		vals, err := cache.MarshalValue(list)
+		logrus.Infof("[DEBUG] end marshal for cache at %s", time.Now().Format(time.StampNano))
 		if err != nil {
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 		}
+		logrus.Infof("[DEBUG] start set cache at %s", time.Now().Format(time.StampNano))
 		if err = c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30); err != nil {
 			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
 		}
+		logrus.Infof("[DEBUG] end set cache at %s", time.Now().Format(time.StampNano))
 		return list, nil
 	}
 
