@@ -18,6 +18,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -27,12 +28,24 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+
+func (pt *PodInfoTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return pt.DefaultProvider.Init(ctx)
+}
 
 func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	err := common.Transfer(c.State, &pt.State)
@@ -43,6 +56,8 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	pt.Operations = pt.GetTableOperation()
 	pt.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	pt.Table.TableComponent = pt
+	pt.Ctx = ctx
+	pt.Server = steveServer
 	pt.getProps()
 	activeKey := (*gs)["activeKey"].(string)
 	// Tab name not equal this component name
@@ -54,7 +69,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	if event.Operation != cptype.InitializeOperation {
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
+		//case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
 		case common.CMPDashboardRemoveLabel:
 			metaName := event.OperationData["fillMeta"].(string)
@@ -67,7 +82,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			req.UserID = pt.SDK.Identity.UserID
 			req.Type = apistructs.K8SNode
 			req.Name = nodeId
-			err = pt.CtxBdl.UnlabelNode(&req, []string{labelKey})
+			err = pt.Server.UnlabelNode(pt.Ctx, &req, []string{labelKey})
 			if err != nil {
 				return err
 			}
@@ -146,13 +161,13 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 		}
 	}
 	ri := &table.RowItem{
-		ID:      node.String("id"),
+		ID:      node.String("metadata", "name"),
 		IP:      ip,
 		Version: node.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    pt.GetRenders(node.String("id"), ip, node.Map("metadata", "labels")),
+			Renders:    pt.GetRenders(node.String("metadata", "name"), ip, node.Map("metadata", "labels")),
 		},
 		Status: *status,
 		UnusedRate: table.Distribution{
@@ -161,7 +176,7 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 			Status:     table.GetDistributionStatus(ur.Percent),
 			Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
 		},
-		Operate:         pt.GetOperate(node.String("id")),
+		Operate:         pt.GetOperate(node.String("metadata", "name")),
 		BatchOperations: batchOperations,
 	}
 	return ri, nil
