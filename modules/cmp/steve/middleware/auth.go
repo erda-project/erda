@@ -45,11 +45,11 @@ func NewAuthenticator(bdl *bundle.Bundle) *Authenticator {
 // AuthMiddleware authenticate for steve server by bundle.
 func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		vars := parseVars(req)
-		ctx := context.WithValue(req.Context(), varsKey, vars)
+		muxVars := parseVars(req)
+		ctx := context.WithValue(req.Context(), varsKey, muxVars)
 		req = req.WithContext(ctx)
-		clusterName := vars["clusterName"]
-		typ := vars["type"]
+		clusterName := muxVars["clusterName"]
+		typ := muxVars["type"]
 
 		userID := req.Header.Get("User-ID")
 		orgID := req.Header.Get("Org-ID")

@@ -127,7 +127,10 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 				cmd := fmt.Sprintf("%s: %s", cwt.start.Format(time.RFC3339), cwt.cmd)
 				cmds = append(cmds, cmd)
 			}
-			res := strings.Join(cmds, "\n")
+			if len(cmds) == 0 {
+				return
+			}
+			res := fmt.Sprintf("\n%s", strings.Join(cmds, "\n"))
 			if len(res) > maxAuditLength {
 				res = res[:maxAuditLength] + "..."
 			}
