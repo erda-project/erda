@@ -16,14 +16,18 @@ package reconciler
 
 import (
 	"context"
+	"time"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
+	"github.com/erda-project/erda/pkg/retry"
 )
 
-// loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
-	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
-
+func (r *Reconciler) beforeListen(ctx context.Context) error {
+	// init before listen
+	if err := retry.DoWithInterval(func() error { return r.loadQueueManger(ctx) }, 3, time.Second*10); err != nil {
+		return err
+	}
+	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
+		return err
+	}
 	return nil
 }
