@@ -295,6 +295,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		})
 	}
 
+	logrus.Infof("[DEBUG] start get metrics at %s", time.Now().Format(time.StampNano))
 	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
 	if err != nil || len(cpuMetrics) == 0 {
 		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
@@ -305,6 +306,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		logrus.Errorf("failed to get memory metrics for pods, %v", err)
 		memMetrics = make([]apistructs.MetricsData, len(items), len(items))
 	}
+	logrus.Infof("[DEBUG] end get metrics at %s", time.Now().Format(time.StampNano))
 
 	for i := range items {
 		cpuLimits := tempCPULimits[i]
