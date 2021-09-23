@@ -43,9 +43,9 @@ type State struct {
 }
 
 type Values struct {
-	Type      []string `json:"type,omitempty"`
 	Namespace []string `json:"namespace,omitempty"`
 	Search    string   `json:"search,omitempty"`
+	Type      []string `json:"type,omitempty"`
 }
 
 type Condition struct {

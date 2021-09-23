@@ -21,9 +21,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rancher/apiserver/pkg/types"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
 )
 
 func getTestURLQuery() (State, string) {
@@ -110,6 +114,57 @@ func TestComponentEventTable_GenComponentState(t *testing.T) {
 	fmt.Println(string(dst))
 	if string(src) != string(dst) {
 		t.Error("test failed, generate result is unexpected")
+	}
+}
+
+type MockSteveServer struct {
+	cmp.SteveServer
+}
+
+func (m *MockSteveServer) ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error) {
+	return []types.APIObject{
+		{
+			Type: "testType",
+			ID:   "test",
+			Object: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"fields": []interface{}{
+						"1m",
+						"Normal",
+						"Scheduled",
+						"pod/test-0",
+						"",
+						"default",
+						"Success",
+						"1m",
+						1,
+						"test",
+					},
+				},
+			},
+		},
+	}, nil
+}
+
+func TestComponentEventTable_RenderList(t *testing.T) {
+	cet := ComponentEventTable{
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+			Identity: &pb.IdentityInfo{
+				UserID: "1",
+				OrgID:  "1",
+			},
+		},
+		server: &MockSteveServer{},
+		State: State{
+			Sorter: Sorter{
+				Field: "testField",
+				Order: "ascend",
+			},
+		},
+	}
+	if err := cet.RenderList(); err != nil {
+		t.Errorf("test failed, %v", err)
 	}
 }
 
