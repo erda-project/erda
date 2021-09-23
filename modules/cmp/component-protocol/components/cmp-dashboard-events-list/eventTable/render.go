@@ -24,16 +24,16 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
+	"github.com/pkg/errors"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -41,6 +41,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-events-list", "eventTable", func() servicehub.Provider {
 		return &ComponentEventTable{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return t.DefaultProvider.Init(ctx)
 }
 
 func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -76,10 +87,10 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 }
 
 func (t *ComponentEventTable) InitComponent(ctx context.Context) {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	t.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	t.sdk = sdk
+	t.ctx = ctx
+	t.server = steveServer
 }
 
 func (t *ComponentEventTable) GenComponentState(component *cptype.Component) error {
@@ -150,14 +161,14 @@ func (t *ComponentEventTable) RenderList() error {
 		ClusterName: t.State.ClusterName,
 	}
 
-	obj, err := t.bdl.ListSteveResource(&req)
+	list, err := t.server.ListSteveResource(t.ctx, &req)
 	if err != nil {
 		return err
 	}
-	list := obj.Slice("data")
 
 	var items []Item
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		if t.State.FilterValues.Namespace != nil && !contain(t.State.FilterValues.Namespace, obj.String("metadata", "namespace")) {
 			continue
 		}
@@ -183,13 +194,13 @@ func (t *ComponentEventTable) RenderList() error {
 		lastSeen := fmt.Sprintf("%s %s", fields[0], t.sdk.I18n("ago"))
 		lastSeenTimestamp, err := strfmt.ParseDuration(fields[0])
 		if err != nil {
-			lastSeenTimestamp = math.MaxInt64
+			lastSeenTimestamp = math.MaxInt32
 			lastSeen = t.sdk.I18n("unknown")
 		}
 
 		items = append(items, Item{
 			LastSeen:          lastSeen,
-			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
+			LastSeenTimestamp: lastSeenTimestamp.Milliseconds(),
 			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],
 			Object:            fields[3],
@@ -286,8 +297,7 @@ func (t *ComponentEventTable) RenderList() error {
 		slice.Sort(items, cmpWrapper(t.State.Sorter.Field, t.State.Sorter.Order))
 	}
 
-	l, r := getRange(len(items), int(t.State.PageNo), int(t.State.PageSize))
-	t.Data.List = items[l:r]
+	t.Data.List = items
 	t.State.Total = uint64(len(items))
 	return nil
 }
@@ -353,14 +363,6 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 		},
 	}
 	t.Operations = make(map[string]interface{})
-	t.Operations[apistructs.OnChangePageNoOperation.String()] = Operation{
-		Key:    apistructs.OnChangePageNoOperation.String(),
-		Reload: true,
-	}
-	t.Operations[apistructs.OnChangePageSizeOperation.String()] = Operation{
-		Key:    apistructs.OnChangePageSizeOperation.String(),
-		Reload: true,
-	}
 	t.Operations[apistructs.OnChangeSortOperation.String()] = Operation{
 		Key:    apistructs.OnChangeSortOperation.String(),
 		Reload: true,

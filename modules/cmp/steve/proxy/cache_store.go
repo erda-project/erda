@@ -18,9 +18,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/accesscontrol"
@@ -77,7 +77,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			allNsValues, expired, err := c.cache.Get(key.getKey())
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
-				if err = json.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
+				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
 					return getByNamespace(list, apiOp.Namespace), nil
 				}
 			}
@@ -92,7 +92,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 		}
-		c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30)
+		if err = c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+		}
 		return list, nil
 	}
 
@@ -114,11 +116,13 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return
 		}
-		c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30)
+		if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+		}
 	}()
 
 	var list types.APIObjectList
-	if err = json.Unmarshal(values[0].Value().([]byte), &list); err != nil {
+	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
 		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
 		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 	}
@@ -132,7 +136,9 @@ func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, da
 		namespace:   apiOp.Namespace,
 		clusterName: c.clusterName,
 	}
-	c.cache.Remove(key.getKey())
+	if _, err := c.cache.Remove(key.getKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+	}
 	return c.Store.Create(apiOp, schema, data)
 }
 
@@ -143,7 +149,9 @@ func (c *cacheStore) Update(apiOp *types.APIRequest, schema *types.APISchema, da
 		namespace:   apiOp.Namespace,
 		clusterName: c.clusterName,
 	}
-	c.cache.Remove(key.getKey())
+	if _, err := c.cache.Remove(key.getKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+	}
 	return c.Store.Update(apiOp, schema, data, id)
 }
 
@@ -154,7 +162,9 @@ func (c *cacheStore) Delete(apiOp *types.APIRequest, schema *types.APISchema, id
 		namespace:   apiOp.Namespace,
 		clusterName: c.clusterName,
 	}
-	c.cache.Remove(key.getKey())
+	if _, err := c.cache.Remove(key.getKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+	}
 	return c.Store.Delete(apiOp, schema, id)
 }
 

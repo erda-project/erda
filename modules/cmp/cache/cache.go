@@ -16,7 +16,6 @@ package cache
 
 import (
 	"container/heap"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -24,6 +23,7 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash"
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"modernc.org/mathutil"
@@ -554,7 +554,7 @@ func GenerateKey(keys []string) string {
 }
 
 func MarshalValue(o interface{}) (Values, error) {
-	d, err := json.Marshal(o)
+	d, err := jsi.Marshal(o)
 	if err != nil {
 		return nil, err
 	}
