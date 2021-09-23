@@ -92,7 +92,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 		}
-		c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30)
+		if err = c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+		}
 		return list, nil
 	}
 
@@ -114,7 +116,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return
 		}
-		c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30)
+		if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+		}
 	}()
 
 	var list types.APIObjectList
@@ -132,7 +136,9 @@ func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, da
 		namespace:   apiOp.Namespace,
 		clusterName: c.clusterName,
 	}
-	c.cache.Remove(key.getKey())
+	if _, err := c.cache.Remove(key.getKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+	}
 	return c.Store.Create(apiOp, schema, data)
 }
 
@@ -143,7 +149,9 @@ func (c *cacheStore) Update(apiOp *types.APIRequest, schema *types.APISchema, da
 		namespace:   apiOp.Namespace,
 		clusterName: c.clusterName,
 	}
-	c.cache.Remove(key.getKey())
+	if _, err := c.cache.Remove(key.getKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+	}
 	return c.Store.Update(apiOp, schema, data, id)
 }
 
@@ -154,7 +162,9 @@ func (c *cacheStore) Delete(apiOp *types.APIRequest, schema *types.APISchema, id
 		namespace:   apiOp.Namespace,
 		clusterName: c.clusterName,
 	}
-	c.cache.Remove(key.getKey())
+	if _, err := c.cache.Remove(key.getKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+	}
 	return c.Store.Delete(apiOp, schema, id)
 }
 
