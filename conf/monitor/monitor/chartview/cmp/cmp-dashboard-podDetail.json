@@ -406,11 +406,11 @@
       "y": 9,
       "i": "view-jLdXS0f5",
       "view": {
-        "title": "Pod Read Bytes",
+        "title": "Pod Disk IO",
         "i18n": {
           "title": {
-            "zh": "Pod 磁盘读字节数",
-            "en": "Pod Disk Read Bytes"
+            "zh": "Pod 磁盘读写字节数",
+            "en": "Pod Disk Read/Write Bytes"
           }
         },
         "description": "",
@@ -520,15 +520,33 @@
             "valueDimensions": [
               {
                 "aggregation": "sum",
-                "alias": "Pod Disk Output Bytes",
+                "alias": "磁盘读取字节数",
                 "i18n": {
                   "title": {
                     "zh": "Pod 磁盘读字节数",
-                    "en": "Pod Disk Output Bytes"
+                    "en": "Pod Disk Read Bytes"
                   }
                 },
                 "field": "docker_container_summary-blk_read_bytes::field",
-                "key": "valuel1zBrf4M",
+                "key": "valueBIzQwLfx",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "CAPACITY",
+                  "unit": "B"
+                }
+              },
+              {
+                "aggregation": "sum",
+                "alias": "磁盘写入字节数",
+                "i18n": {
+                  "title": {
+                    "zh": "Pod 磁盘写字节数",
+                    "en": "Pod Disk Write Bytes"
+                  }
+                },
+                "field": "docker_container_summary-blk_write_bytes::field",
+                "key": "valueEl8TIM1a",
                 "resultType": "number",
                 "type": "field",
                 "unit": {
@@ -543,6 +561,9 @@
           },
           "option": {
             "yAxis": [
+              {
+                "name": ""
+              },
               {
                 "name": ""
               }
@@ -573,8 +594,12 @@
                 "expr": "pod_name::tag"
               },
               {
-                "alias": "valuel1zBrf4M",
+                "alias": "valueBIzQwLfx",
                 "expr": "round_float(sum(blk_read_bytes::field), 2)"
+              },
+              {
+                "alias": "valueEl8TIM1a",
+                "expr": "round_float(sum(blk_write_bytes::field), 2)"
               }
             ],
             "where": [
@@ -604,11 +629,11 @@
       "y": 9,
       "i": "view-dVHW28yb",
       "view": {
-        "title": "Pod Write Bytes",
+        "title": "Pod Network IO",
         "i18n": {
           "title": {
-            "zh": "Pod 磁盘写字节数",
-            "en": "Pod Disk Write Bytes"
+            "zh": "Pod 网络收发字节数",
+            "en": "Pod Network Received/Transmitted bytes"
           }
         },
         "description": "",
@@ -624,19 +649,19 @@
             "isSqlMode": false,
             "resultFilters": [
               {
-                "alias": "Pod Namespace",
+                "alias": "Pod Name",
+                "field": "docker_container_summary-pod_name::tag",
                 "i18n": {
                   "title": {
-                    "zh": "Pod 命名空间",
-                    "en": "Pod Namespace"
+                    "zh": "Pod 名称",
+                    "en": "Pod Name"
                   }
                 },
-                "field": "docker_container_summary-pod_namespace::tag",
                 "filter": {
                   "operation": "=",
-                  "value": "{{namespace}}"
+                  "value": "{{podName}}"
                 },
-                "key": "filterb66pIvp0",
+                "key": "filterhDGReMpM",
                 "resultType": "string",
                 "type": "filter"
               },
@@ -658,19 +683,19 @@
                 "type": "filter"
               },
               {
-                "alias": "Pod Name",
+                "alias": "Pod Namespace",
                 "i18n": {
                   "title": {
-                    "zh": "Pod 名称",
-                    "en": "Pod Name"
+                    "zh": "Pod 命名空间",
+                    "en": "Pod Namespace"
                   }
                 },
-                "field": "docker_container_summary-pod_name::tag",
+                "field": "docker_container_summary-pod_namespace::tag",
                 "filter": {
                   "operation": "=",
-                  "value": "{{podName}}"
+                  "value": "{{namespace}}"
                 },
-                "key": "filterhDGReMpM",
+                "key": "filterb66pIvp0",
                 "resultType": "string",
                 "type": "filter"
               }
@@ -717,15 +742,33 @@
             "valueDimensions": [
               {
                 "aggregation": "sum",
-                "alias": "Pod Disk Input Bytes",
+                "alias": "Received Bytes",
                 "i18n": {
-                  "title": {
-                    "zh": "Pod 磁盘写字节数",
-                    "en": "Pod Disk Input Bytes"
+                  "alias": {
+                    "zh": "Pod 网络接收字节数",
+                    "en": "Pod Network Received Bytes"
                   }
                 },
-                "field": "docker_container_summary-blk_write_bytes::field",
-                "key": "valuemtp5GDlx",
+                "field": "docker_container_summary-rx_bytes::field",
+                "key": "valueU9qop1U7",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "CAPACITY",
+                  "unit": "B"
+                }
+              },
+              {
+                "aggregation": "sum",
+                "alias": "Transmitted Bytes",
+                "i18n": {
+                  "alias": {
+                    "zh": "Pod 网络传输字节数",
+                    "en": "Pod Network Transmitted Bytes"
+                  }
+                },
+                "field": "docker_container_summary-tx_bytes::field",
+                "key": "value9z9ayiEX",
                 "resultType": "number",
                 "type": "field",
                 "unit": {
@@ -740,6 +783,9 @@
           },
           "option": {
             "yAxis": [
+              {
+                "name": ""
+              },
               {
                 "name": ""
               }
@@ -770,8 +816,12 @@
                 "expr": "pod_name::tag"
               },
               {
-                "alias": "valuemtp5GDlx",
-                "expr": "round_float(sum(blk_write_bytes::field), 2)"
+                "alias": "valueU9qop1U7",
+                "expr": "round_float(sum(rx_bytes::field), 2)"
+              },
+              {
+                "alias": "value9z9ayiEX",
+                "expr": "round_float(sum(tx_bytes::field), 2)"
               }
             ],
             "where": [
