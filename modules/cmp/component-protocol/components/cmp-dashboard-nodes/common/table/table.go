@@ -30,7 +30,6 @@ import (
 	"github.com/spf13/cast"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -48,6 +47,7 @@ type Table struct {
 	CtxBdl     *bundle.Bundle
 	SDK        *cptype.SDK
 	Ctx        context.Context
+	Server     cmp.SteveServer
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
@@ -195,17 +195,6 @@ type LabelsValue struct {
 
 type GetRowItem interface {
 	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
-}
-
-var steveServer cmp.SteveServer
-
-func (t *Table) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
-	if !ok {
-		panic("failed to init component, cmp service in ctx is not a steveServer")
-	}
-	steveServer = server
-	return t.DefaultProvider.Init(ctx)
 }
 
 func (t *Table) GetUsageValue(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
@@ -382,7 +371,7 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 		} else {
 			return nil, common.ClusterNotFoundErr
 		}
-		resp, err := steveServer.ListSteveResource(t.Ctx, nodeReq)
+		resp, err := t.Server.ListSteveResource(t.Ctx, nodeReq)
 		if err != nil {
 			return nil, err
 		}
@@ -405,7 +394,7 @@ func (t *Table) CordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := steveServer.CordonNode(t.Ctx, req)
+		err := t.Server.CordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}
@@ -422,7 +411,7 @@ func (t *Table) UncordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := steveServer.UnCordonNode(t.Ctx, req)
+		err := t.Server.UnCordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}

@@ -409,8 +409,8 @@
         "title": "Pod Read Bytes",
         "i18n": {
           "title": {
-            "zh": "Pod 读字节数",
-            "en": "Pod Read Bytes"
+            "zh": "Pod 磁盘读字节数",
+            "en": "Pod Disk Read Bytes"
           }
         },
         "description": "",
@@ -520,11 +520,11 @@
             "valueDimensions": [
               {
                 "aggregation": "sum",
-                "alias": "Disk Output Bytes",
+                "alias": "Pod Disk Output Bytes",
                 "i18n": {
                   "title": {
-                    "zh": "磁盘写出字节数",
-                    "en": "Disk Output Bytes"
+                    "zh": "Pod 磁盘读字节数",
+                    "en": "Pod Disk Output Bytes"
                   }
                 },
                 "field": "docker_container_summary-blk_read_bytes::field",
@@ -607,8 +607,8 @@
         "title": "Pod Write Bytes",
         "i18n": {
           "title": {
-            "zh": "Pod 写字节数",
-            "en": "Pod Write Bytes"
+            "zh": "Pod 磁盘写字节数",
+            "en": "Pod Disk Write Bytes"
           }
         },
         "description": "",
@@ -717,11 +717,11 @@
             "valueDimensions": [
               {
                 "aggregation": "sum",
-                "alias": "Disk Input Bytes",
+                "alias": "Pod Disk Input Bytes",
                 "i18n": {
                   "title": {
-                    "zh": "磁盘写入字节数",
-                    "en": "Disk Input Bytes"
+                    "zh": "Pod 磁盘写字节数",
+                    "en": "Pod Disk Input Bytes"
                   }
                 },
                 "field": "docker_container_summary-blk_write_bytes::field",

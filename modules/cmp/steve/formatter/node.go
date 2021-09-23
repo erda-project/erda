@@ -64,14 +64,20 @@ func NewNodeFormatter(ctx context.Context, k8sInterface kubernetes.Interface) *N
 func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.RawResource) {
 	allocatableRes := parseRes(resource, "allocatable")
 	capacityRes := parseRes(resource, "capacity")
-	unallocatableRes := &res{
-		CPU:    capacityRes.CPU - allocatableRes.CPU,
-		Memory: capacityRes.Memory - allocatableRes.Memory,
-		Pods:   capacityRes.Pods - capacityRes.Pods,
+	unallocatableRes := map[string]interface{}{
+		"CPU":    capacityRes.CPU - allocatableRes.CPU,
+		"Memory": capacityRes.Memory - allocatableRes.Memory,
+		"Pods":   capacityRes.Pods - capacityRes.Pods,
 	}
-	parsedRes := map[string]*res{
+	parsedRes := map[string]interface{}{
 		"unallocatable": unallocatableRes,
-		"capacity":      capacityRes,
+		"capacity": map[string]interface{}{
+			"CPU":       capacityRes.CPU,
+			"Memory":    capacityRes.Memory,
+			"Pods":      capacityRes.Pods,
+			"CPUStr":    capacityRes.CPUStr,
+			"MemoryStr": capacityRes.MemoryStr,
+		},
 	}
 
 	nodeName := resource.ID
@@ -102,15 +108,15 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
 	}()
 
-	var allocatedRes res
+	allocatedRes := map[string]interface{}{}
 	if err = jsi.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {
 		logrus.Errorf("failed to unmarshal allocatedResource, %v", err)
 	}
-	parsedRes["allocated"] = &allocatedRes
+	parsedRes["allocated"] = allocatedRes
 	data.SetNested(parsedRes, "extra", "parsedResource")
 }
 
-func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (*res, error) {
+func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (map[string]interface{}, error) {
 	fieldSelector := fmt.Sprintf("spec.nodeName=%s,status.phase!=Failed,status.phase!=Succeeded", nodeName)
 	pods, err := n.podClient.List(ctx, v1.ListOptions{
 		FieldSelector: fieldSelector,
@@ -133,12 +139,12 @@ func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string
 			}
 		}
 	}
-	return &res{
-		CPU:       cpu.MilliValue(),
-		CPUStr:    cpu.String(),
-		Memory:    mem.Value(),
-		MemoryStr: mem.String(),
-		Pods:      int64(len(pods.Items)),
+	return map[string]interface{}{
+		"CPU":       cpu.MilliValue(),
+		"CPUStr":    cpu.String(),
+		"Memory":    mem.Value(),
+		"MemoryStr": mem.String(),
+		"Pods":      int64(len(pods.Items)),
 	}, nil
 }
 

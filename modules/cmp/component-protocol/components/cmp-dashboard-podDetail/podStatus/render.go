@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -36,7 +37,7 @@ var steveServer cmp.SteveServer
 func (podStatus *PodStatus) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
-		panic("failed to init component, cmp service in ctx is not a steveServer")
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
 	return podStatus.DefaultProvider.Init(ctx)

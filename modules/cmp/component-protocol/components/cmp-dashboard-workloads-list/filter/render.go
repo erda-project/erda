@@ -18,11 +18,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -46,7 +47,7 @@ var steveServer cmp.SteveServer
 func (f *ComponentFilter) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
-		panic("failed to init component, cmp service in ctx is not a steveServer")
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
 	return f.DefaultProvider.Init(ctx)

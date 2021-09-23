@@ -18,6 +18,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -42,7 +43,7 @@ var steveServer cmp.SteveServer
 func (ct *CpuInfoTable) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
-		panic("failed to init component, cmp service in ctx is not a steveServer")
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
 	return ct.DefaultProvider.Init(ctx)
@@ -56,6 +57,8 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	ct.SDK = cputil.SDK(ctx)
 	ct.Operations = ct.GetTableOperation()
 	ct.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	ct.Ctx = ctx
+	ct.Table.Server = steveServer
 	ct.getProps()
 	ct.TableComponent = ct
 	activeKey := (*gs)["activeKey"].(string)
@@ -81,7 +84,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			req.UserID = ct.SDK.Identity.UserID
 			req.Type = apistructs.K8SNode
 			req.Name = nodeId
-			err = steveServer.UnlabelNode(ct.Ctx, &req, []string{labelKey})
+			err = ct.Server.UnlabelNode(ct.Ctx, &req, []string{labelKey})
 			if err != nil {
 				return err
 			}
@@ -187,13 +190,13 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		}
 	}
 	ri := &table.RowItem{
-		ID:      c.String("id"),
+		ID:      c.String("metadata", "name"),
 		IP:      ip,
 		Version: c.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    ct.GetRenders(c.String("id"), ip, c.Map("metadata", "labels")),
+			Renders:    ct.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
 		},
 		Status: *status,
 		Distribution: table.Distribution{
@@ -214,7 +217,7 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Status:     table.GetDistributionStatus(dr.Percent),
 			Tip:        dr.Text,
 		},
-		Operate:         ct.GetOperate(c.String("id")),
+		Operate:         ct.GetOperate(c.String("metadata", "name")),
 		BatchOperations: batchOperations,
 	}
 	return ri, nil

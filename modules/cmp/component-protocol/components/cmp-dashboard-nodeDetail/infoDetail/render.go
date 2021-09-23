@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -36,7 +37,7 @@ var steveServer cmp.SteveServer
 func (infoDetail *InfoDetail) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
-		panic("failed to init component, cmp service in ctx is not a steveServer")
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
 	return infoDetail.DefaultProvider.Init(ctx)

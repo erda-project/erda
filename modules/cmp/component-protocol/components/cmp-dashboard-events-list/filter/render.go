@@ -48,7 +48,7 @@ var steveServer cmp.SteveServer
 func (f *ComponentFilter) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
-		panic("failed to init component, cmp service in ctx is not a steveServer")
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
 	return f.DefaultProvider.Init(ctx)

@@ -39,38 +39,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Response struct {
-	StatusCode   int
-	ResponseData interface{}
-}
-
-func (rw *Response) Write(_ *types.APIRequest, code int, obj types.APIObject) {
-	rw.StatusCode = code
-	rw.ResponseData = obj
-}
-
-func (rw *Response) WriteList(_ *types.APIRequest, code int, obj types.APIObjectList) {
-	rw.StatusCode = code
-	rw.ResponseData = obj
-}
-
-type StatusCodeGetter struct {
-	Response *Response
-}
-
-func (scg *StatusCodeGetter) Header() http.Header {
-	header := make(map[string][]string)
-	return header
-}
-
-func (scg *StatusCodeGetter) Write([]byte) (int, error) {
-	return 0, nil
-}
-
-func (scg *StatusCodeGetter) WriteHeader(code int) {
-	scg.Response.StatusCode = code
-}
-
 type SteveServer interface {
 	GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
 	ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error)
@@ -112,7 +80,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 		return types.APIObject{}, err
 	}
 
-	resp := &Response{}
+	resp := &steve.Response{}
 	apiOp := &types.APIRequest{
 		Name:           req.Name,
 		Type:           string(req.Type),
@@ -120,13 +88,13 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
-		Response:       &StatusCodeGetter{resp},
+		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return types.APIObject{}, err
 	}
 
-	obj, ok := resp.ResponseData.(types.APIObject)
+	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
 			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
@@ -134,6 +102,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
+	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
 		return types.APIObject{}, errors.New(objData.String("message"))
@@ -169,7 +138,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		return nil, err
 	}
 
-	resp := &Response{}
+	resp := &steve.Response{}
 	apiOp := &types.APIRequest{
 		Name:           req.Name,
 		Type:           string(req.Type),
@@ -177,20 +146,25 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
-		Response:       &StatusCodeGetter{resp},
+		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return nil, err
 	}
 
-	objList, ok := resp.ResponseData.(types.APIObjectList)
+	collection, ok := resp.ResponseData.(*types.GenericCollection)
 	if !ok {
 		if resp.ResponseData == nil {
 			return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 		}
 		return nil, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
-	return objList.Objects, nil
+
+	var objects []types.APIObject
+	for _, obj := range collection.Data {
+		objects = append(objects, obj.APIObject)
+	}
+	return objects, nil
 }
 
 func newReadCloser(obj interface{}) (io.ReadCloser, error) {
@@ -228,7 +202,7 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, err
 	}
 
-	resp := &Response{}
+	resp := &steve.Response{}
 	apiOp := &types.APIRequest{
 		Name:           req.Name,
 		Type:           string(req.Type),
@@ -236,13 +210,13 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
-		Response:       &StatusCodeGetter{resp},
+		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return types.APIObject{}, err
 	}
 
-	obj, ok := resp.ResponseData.(types.APIObject)
+	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
 			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
@@ -250,6 +224,7 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
+	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
 		return types.APIObject{}, errors.New(objData.String("message"))
@@ -293,20 +268,20 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, err
 	}
 
-	resp := &Response{}
+	resp := &steve.Response{}
 	apiOp := &types.APIRequest{
 		Type:           string(req.Type),
 		Method:         http.MethodPost,
 		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
-		Response:       &StatusCodeGetter{resp},
+		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return types.APIObject{}, err
 	}
 
-	obj, ok := resp.ResponseData.(types.APIObject)
+	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
 			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
@@ -314,6 +289,7 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
+	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
 		return types.APIObject{}, errors.New(objData.String("message"))
@@ -357,20 +333,21 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		return err
 	}
 
-	resp := &Response{}
+	resp := &steve.Response{}
 	apiOp := &types.APIRequest{
+		Name:           req.Name,
 		Type:           string(req.Type),
 		Method:         http.MethodDelete,
 		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
-		Response:       &StatusCodeGetter{resp},
+		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return err
 	}
 
-	obj, ok := resp.ResponseData.(types.APIObject)
+	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
 			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
@@ -378,6 +355,7 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
+	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
 		return errors.New(objData.String("message"))
@@ -421,20 +399,21 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		return err
 	}
 
-	resp := &Response{}
+	resp := &steve.Response{}
 	apiOp := &types.APIRequest{
+		Name:           req.Name,
 		Type:           string(req.Type),
 		Method:         http.MethodPatch,
 		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
-		Response:       &StatusCodeGetter{resp},
+		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return err
 	}
 
-	obj, ok := resp.ResponseData.(types.APIObject)
+	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
 			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
@@ -442,6 +421,7 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
 	}
 
+	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
 		return errors.New(objData.String("message"))

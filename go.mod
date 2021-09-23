@@ -125,7 +125,6 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
-	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
