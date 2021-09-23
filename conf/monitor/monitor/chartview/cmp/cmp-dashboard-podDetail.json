@@ -522,7 +522,7 @@
                 "aggregation": "sum",
                 "alias": "磁盘读取字节数",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "Pod 磁盘读字节数",
                     "en": "Pod Disk Read Bytes"
                   }
@@ -540,7 +540,7 @@
                 "aggregation": "sum",
                 "alias": "磁盘写入字节数",
                 "i18n": {
-                  "title": {
+                  "alias": {
                     "zh": "Pod 磁盘写字节数",
                     "en": "Pod Disk Write Bytes"
                   }
