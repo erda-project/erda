@@ -597,7 +597,7 @@ func (t *Table) GetOperate(id string) Operate {
 				JumpOut: true,
 				Target:  "cmpClustersPods",
 			},
-				Text:   t.SDK.I18n("查看") + "pods",
+				Text:   t.SDK.I18n("show") + " pods",
 				Reload: false,
 			},
 		},
@@ -617,9 +617,9 @@ func SortByString(data []RowItem, sortColumn string, asc bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, ascend bool) {
+func SortByNode(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if ascend {
+		if asc {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
