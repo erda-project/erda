@@ -109,7 +109,7 @@ const (
 	TypeMysql          = "Mysql"
 	TypeRedis          = "Redis"
 	TypeRocketMQ       = "RocketMQ"
-	TypeHttp           = "Http"
+	TypeExternal       = "ExternalService"
 	TypeDubbo          = "Dubbo"
 	TypeSidecar        = "SideCar"
 	TypeGateway        = "APIGateway"
@@ -177,6 +177,8 @@ type Tag struct {
 	Component             string `json:"component,omitempty"`
 	DBType                string `json:"db_type,omitempty"`
 	Host                  string `json:"host,omitempty"`
+	PeerAddress           string `json:"peer_address,omitempty"`
+	PeerServiceScope      string `json:"peer_service_scope,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
 	SourceWorkspace       string `json:"source_workspace,omitempty"`
@@ -257,7 +259,7 @@ var IndexPrefix = []string{
 
 var NodeTypes = []string{
 	TypeService, TypeMysql, TypeRedis,
-	TypeHttp, TypeDubbo, TypeSidecar,
+	TypeExternal, TypeDubbo, TypeSidecar,
 	TypeGateway, TypeRegisterCenter, TypeConfigCenter,
 	TypeNoticeCenter, TypeElasticsearch,
 }
@@ -419,8 +421,8 @@ func init() {
 	}
 	TargetOtherNodeType = &NodeType{
 		Type:         TargetOtherNode,
-		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		GroupByField: &GroupByField{Name: apm.TagsPeerAddress, SubField: &GroupByField{Name: apm.TagsPeerServiceScope}},
+		SourceFields: []string{apm.TagsPeerServiceScope, apm.TagsPeerAddress},
 		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
 			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
 		Aggregation: NodeAggregation,
@@ -1678,7 +1680,7 @@ func getDashboardId(nodeType string) string {
 		return processAnalysisJava
 	case strings.ToLower(NodeJsProcessType):
 		return processAnalysisNodejs
-	case strings.ToLower(TypeHttp):
+	case strings.ToLower(TypeExternal):
 		return topologyNodeOther
 	default:
 		return ""
@@ -1765,7 +1767,10 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		} else {
 			node.Type = tags.Component
 		}
-		node.Name = tags.Host
+		if tags.PeerServiceScope == "external" {
+			node.Type = TypeExternal
+		}
+		node.Name = tags.PeerAddress
 		node.Id = encodeTypeToKey(node.Name + apm.Sep1 + node.Type)
 	case OtherNode:
 		node.Type = TypeService
