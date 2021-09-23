@@ -117,7 +117,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
 			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-			if item.EnName == "EnvironmentSet" || item.EnName == "AppMonitor" {
+			if item.EnName == "EnvironmentSet" {
 				for _, child := range item.Children {
 					child.Params = item.Params
 					// 反转exists字段，隐藏引导页，显示功能子菜单
