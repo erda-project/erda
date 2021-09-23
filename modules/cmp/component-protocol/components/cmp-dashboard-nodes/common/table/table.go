@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
@@ -45,6 +46,7 @@ type Table struct {
 	CtxBdl     *bundle.Bundle
 	SDK        *cptype.SDK
 	Ctx        context.Context
+	Server     cmp.SteveServer
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
@@ -220,7 +222,8 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 		RenderType: "textWithBadge",
 	}
 	strs := make([]string, 0)
-	for _, s := range strings.Split(node.StringSlice("metadata", "fields")[1], ",") {
+	fields := node.StringSlice("metadata", "fields")
+	for _, s := range strings.Split(fields[1], ",") {
 		strs = append(strs, t.SDK.I18n(s))
 	}
 	for _, conf := range node.Slice("status", "conditions") {
@@ -368,11 +371,13 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 		} else {
 			return nil, common.ClusterNotFoundErr
 		}
-		resp, err := t.CtxBdl.ListSteveResource(nodeReq)
+		resp, err := t.Server.ListSteveResource(t.Ctx, nodeReq)
 		if err != nil {
 			return nil, err
 		}
-		nodes = resp.Slice("data")
+		for _, item := range resp {
+			nodes = append(nodes, item.Data())
+		}
 		nodes = nodeFilter.DoFilter(nodes, t.State.Values)
 	} else {
 		nodes = (*gs)["nodes"].([]data.Object)
@@ -389,7 +394,7 @@ func (t *Table) CordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := t.CtxBdl.CordonNode(req)
+		err := t.Server.CordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}
@@ -406,7 +411,7 @@ func (t *Table) UncordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := t.CtxBdl.UnCordonNode(req)
+		err := t.Server.UnCordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}

@@ -15,12 +15,80 @@
 package workloadStatus
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/rancher/apiserver/pkg/types"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
 )
+
+type MockSteveServer struct {
+	cmp.SteveServer
+}
+
+func (m *MockSteveServer) GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error) {
+	return types.APIObject{
+		Object: map[string]interface{}{
+			"kind": "Deployment",
+			"metadata": map[string]interface{}{
+				"fields": []interface{}{
+					"test",
+					"1/1",
+					1,
+					1,
+					"1d",
+					"test",
+					"test-image",
+					"",
+				},
+				"labels": map[string]string{
+					"key1": "value1",
+				},
+				"annotations": map[string]string{
+					"key2": "value2",
+				},
+			},
+		},
+	}, nil
+}
+
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
+func TestComponentWorkloadStatus_SetComponentValue(t *testing.T) {
+	i := ComponentWorkloadStatus{
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+			Identity: &pb.IdentityInfo{
+				UserID: "1",
+				OrgID:  "1",
+			},
+		},
+		server: &MockSteveServer{},
+		State: State{
+			WorkloadID: "apps.deployments_default_test",
+		},
+	}
+	if err := i.SetComponentValue(); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+}
 
 func TestComponentWorkloadStatus_GenComponentState(t *testing.T) {
 	component := &cptype.Component{

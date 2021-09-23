@@ -15,16 +15,19 @@
 package eventTable
 
 import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"context"
 
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp"
+
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentEventTable struct {
 	base.DefaultProvider
-	sdk *cptype.SDK
-	bdl *bundle.Bundle
+	sdk    *cptype.SDK
+	ctx    context.Context
+	server cmp.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`

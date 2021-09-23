@@ -18,15 +18,17 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -38,6 +40,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "filter", func() servicehub.Provider {
 		return &ComponentFilter{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (f *ComponentFilter) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return f.DefaultProvider.Init(ctx)
 }
 
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -67,6 +80,8 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 	f.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	f.sdk = sdk
+	f.ctx = ctx
+	f.server = steveServer
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
@@ -114,11 +129,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		ClusterName: f.State.ClusterName,
 	}
 
-	data, err := f.bdl.ListSteveResource(&req)
+	list, err := f.server.ListSteveResource(f.ctx, &req)
 	if err != nil {
 		return err
 	}
-	list := data.Slice("data")
 
 	devNs := Option{
 		Label: cputil.I18n(ctx, "workspace-dev"),
@@ -157,7 +171,8 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Value: "others",
 	}
 
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		name := obj.String("metadata", "name")
 		option := Option{
 			Label: name,

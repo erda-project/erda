@@ -360,6 +360,11 @@ func TestCacheStoreMethods(t *testing.T) {
 		t.Error(err)
 	}
 
+	_, err = cs.List(apiOp, schema)
+	if err != nil {
+		t.Error(err)
+	}
+
 	gvk := attributes.GVK(schema)
 	key := cacheKey{
 		gvk:       gvk.String(),

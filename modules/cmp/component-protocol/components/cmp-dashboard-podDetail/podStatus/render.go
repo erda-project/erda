@@ -20,24 +20,34 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+
+func (podStatus *PodStatus) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return podStatus.DefaultProvider.Init(ctx)
+}
 
 func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := podStatus.GenComponentState(c); err != nil {
 		return err
 	}
 	sdk := cputil.SDK(ctx)
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
 	userID := sdk.Identity.UserID
 	orgID := sdk.Identity.OrgID
@@ -57,10 +67,11 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 		Namespace:   namespace,
 	}
 
-	obj, err := bdl.GetSteveResource(req)
+	resp, err := steveServer.GetSteveResource(ctx, req)
 	if err != nil {
 		return err
 	}
+	obj := resp.Data()
 
 	fields := obj.StringSlice("metadata", "fields")
 	if len(fields) != 9 {

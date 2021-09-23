@@ -17,6 +17,7 @@ package steve
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -34,6 +35,8 @@ import (
 	"github.com/rancher/steve/pkg/schema"
 	steveserver "github.com/rancher/steve/pkg/server"
 	"github.com/rancher/steve/pkg/server/router"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/client-go/rest"
 )
 
@@ -228,4 +231,19 @@ func (c *Server) ListenAndServe(ctx context.Context, httpsPort, httpPort int, op
 
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func (c *Server) Handle(apiOp *types.APIRequest) error {
+	user, ok := request.UserFrom(apiOp.Request.Context())
+	if !ok {
+		return fmt.Errorf("user can not be empty in apiRequest")
+	}
+	schemas, err := c.SchemaFactory.Schemas(user)
+	if err != nil {
+		logrus.Errorf("handle failed, %v", err)
+		return err
+	}
+	apiOp.Schemas = schemas
+	c.APIServer.Handle(apiOp)
+	return nil
 }

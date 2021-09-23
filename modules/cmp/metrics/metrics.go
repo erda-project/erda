@@ -16,10 +16,10 @@ package metrics
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -102,7 +102,7 @@ func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInflu
 
 	if v, expired, err = cache.FreeCache.Get(key); v != nil {
 		logrus.Infof("%s hit cache, try return cache value directly", key)
-		err = json.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
+		err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
 		if err != nil {
 			logrus.Errorf("unmarshal failed")
 		}

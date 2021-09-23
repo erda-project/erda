@@ -21,22 +21,32 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+
+func (containerTable *ContainerTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return containerTable.DefaultProvider.Init(ctx)
+}
 
 func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := containerTable.GenComponentState(c); err != nil {
 		return err
 	}
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	sdk := cputil.SDK(ctx)
 
 	userID := sdk.Identity.UserID
@@ -57,10 +67,11 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		Namespace:   namespace,
 	}
 
-	obj, err := bdl.GetSteveResource(req)
+	resp, err := steveServer.GetSteveResource(ctx, req)
 	if err != nil {
 		return err
 	}
+	obj := resp.Data()
 
 	var data []Data
 	containerStatuses := obj.Slice("status", "containerStatuses")

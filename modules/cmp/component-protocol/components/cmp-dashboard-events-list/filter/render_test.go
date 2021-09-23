@@ -14,7 +14,110 @@
 
 package filter
 
-import "testing"
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"testing"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+)
+
+func TestComponentFilter_GenComponentState(t *testing.T) {
+	component := &cptype.Component{
+		State: map[string]interface{}{
+			"clusterName": "test",
+			"values": Values{
+				Type: []string{
+					"Normal",
+				},
+				Namespace: []string{
+					"default",
+				},
+				Search: "test",
+			},
+		},
+	}
+	src, err := json.Marshal(component.State)
+	if err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+
+	p := &ComponentFilter{}
+	if err := p.GenComponentState(component); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+
+	dst, err := json.Marshal(p.State)
+	if err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+
+	fmt.Println(string(src))
+	fmt.Println(string(dst))
+	if string(src) != string(dst) {
+		t.Error("test failed, generate result is unexpected")
+	}
+}
+
+func getTestURLQuery() (Values, string) {
+	v := Values{
+		Type:      []string{"Normal"},
+		Namespace: []string{"default"},
+		Search:    "test",
+	}
+	m := map[string]interface{}{
+		"type":      v.Type,
+		"namespace": v.Namespace,
+		"search":    v.Search,
+	}
+	data, _ := json.Marshal(m)
+	encode := base64.StdEncoding.EncodeToString(data)
+	return v, encode
+}
+
+func isEqual(arr1, arr2 []string) bool {
+	if len(arr1) != len(arr2) {
+		return false
+	}
+	for i := range arr1 {
+		if arr1[i] != arr2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestComponentFilter_DecodeURLQuery(t *testing.T) {
+	values, res := getTestURLQuery()
+	table := &ComponentFilter{
+		sdk: &cptype.SDK{
+			InParams: map[string]interface{}{
+				"filter__urlQuery": res,
+			},
+		},
+	}
+	if err := table.DecodeURLQuery(); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+	if !isEqual(values.Type, table.State.Values.Type) || !isEqual(values.Namespace, table.State.Values.Namespace) ||
+		values.Search != table.State.Values.Search {
+		t.Errorf("test failed, edcode result is not expected")
+	}
+}
+
+func TestComponentFilter_EncodeURLQuery(t *testing.T) {
+	values, res := getTestURLQuery()
+	table := &ComponentFilter{State: State{
+		Values: values,
+	}}
+	if err := table.EncodeURLQuery(); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+	if res != table.State.FilterURLQuery {
+		t.Error("test failed, encode url query result is unexpected")
+	}
+}
 
 func TestHasSuffix(t *testing.T) {
 	if _, ok := hasSuffix("project-1-dev"); !ok {
