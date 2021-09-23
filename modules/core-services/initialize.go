@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/modules/core-services/utils"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -73,6 +74,8 @@ func (p *provider) Initialize() error {
 		bundle.WithEventBox(),
 		bundle.WithCollector(),
 	)
+
+	go ep.UserSvc().UcUserMigration()
 
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(ep.Routes())
@@ -143,6 +146,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		uc.SetDBClient(db.DB)
 	}
 
 	// init bundle
@@ -253,6 +257,11 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		filesvc.WithEtcdClient(etcdStore),
 	)
 
+	user := user.New(
+		user.WithDBClient(db),
+		user.WithUCClient(uc),
+	)
+
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
@@ -282,6 +291,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
 		endpoints.WithFileSvc(fileSvc),
+		endpoints.WithUserSvc(user),
 	)
 
 	return ep, nil

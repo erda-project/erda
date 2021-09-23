@@ -42,6 +42,7 @@ var once sync.Once
 
 // 获取 dice 自己的token
 func GetDiceClientToken() (ucauth.OAuthToken, error) {
+	// TODO kratos will not use it
 	if conf.OryEnabled() {
 		return ucauth.OAuthToken{
 			AccessToken: conf.OryKratosPrivateAddr(),
