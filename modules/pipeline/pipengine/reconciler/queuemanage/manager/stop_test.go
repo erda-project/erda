@@ -12,18 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package manager
 
 import (
 	"context"
+	"testing"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 )
 
-// loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
-	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
+func Test_defaultManager_Stop(t *testing.T) {
+	// nil mgr
+	var mgr types.QueueManager = (*defaultManager)(nil)
+	mgr.Stop()
 
-	return nil
+	// mgr with multiple stop channels
+	ctx := context.Background()
+	mgr = New(ctx)
+	mgr.(*defaultManager).queueStopChanByID["id1"] = make(chan struct{})
+	mgr.(*defaultManager).queueStopChanByID["id2"] = make(chan struct{})
+	for _, stopCh := range mgr.(*defaultManager).queueStopChanByID {
+		go func(ch chan struct{}) {
+			<-ch
+		}(stopCh)
+	}
+	// no blocking
+	mgr.Stop()
 }
