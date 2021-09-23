@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -161,10 +162,12 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ClusterName: p.State.ClusterName,
 	}
 
+	logrus.Infof("[DEBUG] start list pods at %s", time.Now().Format(time.StampNano))
 	list, err := p.server.ListSteveResource(p.ctx, &podReq)
 	if err != nil {
 		return err
 	}
+	logrus.Infof("[DEBUG] end list pods at %s", time.Now().Format(time.StampNano))
 
 	cpuReq := apistructs.MetricsRequest{
 		UserID:       userID,
