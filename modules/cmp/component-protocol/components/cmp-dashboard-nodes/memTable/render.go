@@ -56,7 +56,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	if event.Operation != cptype.InitializeOperation {
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
+		//case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
 		case common.CMPDashboardRemoveLabel:
 			metaName := event.OperationData["fillMeta"].(string)
