@@ -15,7 +15,11 @@
 package manager
 
 import (
+	"context"
 	"sync"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
@@ -34,7 +38,7 @@ type defaultManager struct {
 }
 
 // New return a new queue manager.
-func New(ops ...Option) types.QueueManager {
+func New(ctx context.Context, ops ...Option) types.QueueManager {
 	var mgr defaultManager
 
 	mgr.queueByID = make(map[string]types.Queue)
@@ -46,6 +50,17 @@ func New(ops ...Option) types.QueueManager {
 	for _, op := range ops {
 		op(&mgr)
 	}
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			begin := time.Now()
+			logrus.Infof("queueManager: begin stop")
+			mgr.Stop()
+			end := time.Now()
+			logrus.Infof("queueManager: end stop, cost: %s", end.Sub(begin).String())
+		}
+	}()
 
 	return &mgr
 }

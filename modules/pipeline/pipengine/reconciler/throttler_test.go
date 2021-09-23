@@ -16,33 +16,37 @@ package reconciler
 
 import (
 	"context"
-	"reflect"
+	"encoding/json"
 	"testing"
+	"time"
 
-	"bou.ke/monkey"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
+type mockThrottler struct{}
+
+func (m *mockThrottler) Name() string                                                     { return "" }
+func (m *mockThrottler) AddQueue(name string, window int64)                               { return }
+func (m *mockThrottler) AddKeyToQueues(key string, reqs []throttler.AddKeyToQueueRequest) { return }
+func (m *mockThrottler) PopPending(key string) (bool, []throttler.PopDetail)              { return true, nil }
+func (m *mockThrottler) PopProcessing(key string) (bool, []throttler.PopDetail)           { return true, nil }
+func (m *mockThrottler) Export() json.RawMessage                                          { return nil }
+func (m *mockThrottler) Import(message json.RawMessage) error                             { return nil }
+
+type js struct{ jsonstore.JsonStoreImpl }
+
+func (j *js) Put(ctx context.Context, key string, object interface{}) error {
+	time.Sleep(time.Second * 2) // larger than ctx timeout
+	return nil
+}
+
 func TestContinueBackupThrottler(t *testing.T) {
-	//js := &jsonstore.JsonStoreImpl{}
-	//pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(js), "Put", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string, object interface{}) error {
-	//	return nil
-	//})
-	//defer pm1.Unpatch()
-	//
-	//tl := throttler.NewNamedThrottler("default", nil)
-	//r := &Reconciler{js: js, TaskThrottler: tl}
-	//t.Run("ContinueBackupThrottler", func(t *testing.T) {
-	//	ctx, cancel := context.WithCancel(context.Background())
-	//	r.ContinueBackupThrottler(ctx)
-	//	time.Sleep(1 * time.Second)
-	//	cancel()
-	//})
-	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "ContinueBackupThrottler", func(r *Reconciler, ctx context.Context) {
-		return
-	})
-	defer pm1.Unpatch()
-	t.Run("ContinueBackupThrottler", func(t *testing.T) {
-		r.ContinueBackupThrottler(context.Background())
-	})
+	th := &mockThrottler{}
+	j := &js{}
+	r := &Reconciler{TaskThrottler: th, js: j}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r.continueBackupThrottler(ctx)
+	// non blocking
 }

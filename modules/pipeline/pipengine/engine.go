@@ -75,7 +75,6 @@ func (engine *Engine) OnceDo(
 
 func (engine *Engine) StartReconciler(ctx context.Context) {
 	go engine.reconciler.Listen(ctx)
-	go engine.reconciler.ContinueBackupThrottler(ctx)
 
 	// 开始 Listen 后再开始加载已经在处理中的流水线，否则组件还未准备好，包括 eventManger(阻塞)
 	go func() {
