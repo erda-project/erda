@@ -52,7 +52,7 @@ type componentInfo struct {
 }
 
 var ComponentInfo = map[string]*componentInfo{
-	"AlarmManagement": {
+	"AppMonitor": {
 		enName: "AppMonitor",
 		cnName: "应用监控",
 	},
