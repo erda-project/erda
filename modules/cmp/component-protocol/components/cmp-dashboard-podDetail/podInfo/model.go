@@ -15,15 +15,18 @@
 package PodInfo
 
 import (
+	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type PodInfo struct {
 	base.DefaultProvider
-	CtxBdl *bundle.Bundle
 	SDK    *cptype.SDK
+	server cmp.SteveServer
+	ctx    context.Context
 
 	Type  string          `json:"type"`
 	Data  map[string]Data `json:"data,omitempty"`

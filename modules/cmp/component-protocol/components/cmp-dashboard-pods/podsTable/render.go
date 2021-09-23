@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -41,6 +43,17 @@ func init() {
 	base.InitProviderWithCreator("cmp-dashboard-pods", "podsTable", func() servicehub.Provider {
 		return &ComponentPodsTable{}
 	})
+}
+
+var steveServer cmp.SteveServer
+
+func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return p.DefaultProvider.Init(ctx)
 }
 
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
@@ -81,6 +94,8 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	p.sdk = sdk
+	p.ctx = ctx
+	p.server = steveServer
 }
 
 func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
@@ -146,11 +161,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ClusterName: p.State.ClusterName,
 	}
 
-	obj, err := p.bdl.ListSteveResource(&podReq)
+	list, err := p.server.ListSteveResource(p.ctx, &podReq)
 	if err != nil {
 		return err
 	}
-	list := obj.Slice("data")
 
 	cpuReq := apistructs.MetricsRequest{
 		UserID:       userID,
@@ -171,7 +185,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 	tempCPULimits := make([]*resource.Quantity, 0)
 	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
-	for _, obj := range list {
+	for _, item := range list {
+		obj := item.Data()
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
 		fields := obj.StringSlice("metadata", "fields")
@@ -430,8 +445,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		sort.Slice(items, cmpWrapper(p.State.Sorter.Field, p.State.Sorter.Order))
 	}
 
-	l, r := getRange(len(items), p.State.PageNo, p.State.PageSize)
-	p.Data.List = items[l:r]
+	p.Data.List = items
 	p.State.Total = len(items)
 	return nil
 }
@@ -557,14 +571,6 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		}...)
 	}
 	p.Operations = map[string]interface{}{
-		"changePageNo": Operation{
-			Key:    "changePageNo",
-			Reload: true,
-		},
-		"changePageSize": Operation{
-			Key:    "changePageSize",
-			Reload: true,
-		},
 		"changeSort": Operation{
 			Key:    "changeSort",
 			Reload: true,
