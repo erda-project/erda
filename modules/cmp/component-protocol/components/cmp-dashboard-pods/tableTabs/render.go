@@ -43,7 +43,15 @@ func (tableTabs *TableTabs) Render(ctx context.Context, c *cptype.Component, s c
 			Reload: true,
 		},
 	}
+	tableTabs.Transfer(c)
 	return nil
+}
+
+func (tableTabs *TableTabs) Transfer(component *cptype.Component) {
+	component.Props = tableTabs.Props
+	component.Operations = map[string]interface{}{
+		"onChange": tableTabs.Operations.OnChange,
+	}
 }
 
 func init() {

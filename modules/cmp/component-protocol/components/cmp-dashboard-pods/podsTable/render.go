@@ -97,6 +97,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
 	logrus.Errorf("@@@[DEBUG] end render pods table at %s", time.Now().Format(time.StampNano))
+	p.Transfer(component)
 	return nil
 }
 
@@ -593,6 +594,23 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
+func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
+	component.Props = p.Props
+	component.Data = map[string]interface{}{"list": p.Data.List}
+	component.State = map[string]interface{}{
+		"clusterName":         p.State.ClusterName,
+		"countValues":         p.State.CountValues,
+		"pageNo":              p.State.PageNo,
+		"pageSize":            p.State.PageSize,
+		"sorterData":          p.State.Sorter,
+		"total":               p.State.Total,
+		"values":              p.State.Values,
+		"podsTable__urlQuery": p.State.PodsTableURLQuery,
+		"activeKey":           p.State.ActiveKey,
+	}
+	component.Operations = p.Operations
+}
+
 var PodStatusToColor = map[string]string{
 	"Completed":         "steelblue",
 	"ContainerCreating": "orange",
@@ -641,16 +659,4 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 	}
 	res, _ := resource.ParseQuantity(str)
 	return &res
-}
-
-func getRange(length, pageNo, pageSize int) (int, int) {
-	l := (pageNo - 1) * pageSize
-	if l >= length || l < 0 {
-		l = 0
-	}
-	r := l + pageSize
-	if r > length || r < 0 {
-		r = length
-	}
-	return l, r
 }

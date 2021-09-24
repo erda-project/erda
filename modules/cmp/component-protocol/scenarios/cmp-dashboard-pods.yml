@@ -1,5 +1,3 @@
-version: 0.1
-
 scenario: cmp-dashboard-pods
 
 hierarchy:

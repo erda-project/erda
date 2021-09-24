@@ -51,6 +51,7 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 	sort.Slice(pd.Data.Lists, func(i, j int) bool {
 		return pd.Data.Lists[i].Value > pd.Data.Lists[j].Value
 	})
+	pd.Transfer(c)
 	return nil
 }
 
@@ -66,6 +67,13 @@ func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt
 		Label: fmt.Sprintf("%s %d", cputil.I18n(ctx, state), cnt),
 	}
 	return status
+}
+
+func (pd *PodDistribution) Transfer(component *cptype.Component) {
+	component.Data = map[string]interface{}{
+		"total": pd.Data.Total,
+		"list":  pd.Data.Lists,
+	}
 }
 
 func init() {

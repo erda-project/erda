@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -38,10 +39,12 @@ const (
 
 func modifyProxyResponse(proxyConfig types.ProxyConfig) func(*http.Response) error {
 	return func(resp *http.Response) error {
+		logrus.Infof("[DEBUG] start wrap erda style resp at %s", time.Now().Format(time.StampNano))
 		if err := wrapErdaStyleResponse(proxyConfig, resp); err != nil {
 			logrus.Errorf("failed to wrap erda style response when modify proxied response of component-protocol: %v", err)
 			return err
 		}
+		logrus.Infof("[DEBUG] end wrap erda style resp at %s", time.Now().Format(time.StampNano))
 		return nil
 	}
 }

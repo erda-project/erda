@@ -45,7 +45,12 @@ func (podTitle *PodTitle) Render(ctx context.Context, c *cptype.Component, s cpt
 		total += count
 	}
 	podTitle.Props.Title = fmt.Sprintf("%s: %d", cputil.I18n(ctx, "podNum"), total)
+	podTitle.Transfer(c)
 	return nil
+}
+
+func (podTitle *PodTitle) Transfer(component *cptype.Component) {
+	component.Props = podTitle.Props
 }
 
 func init() {
