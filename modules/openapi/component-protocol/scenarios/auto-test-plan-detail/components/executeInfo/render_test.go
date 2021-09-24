@@ -49,3 +49,19 @@ func Test_convertReportToConfig(t *testing.T) {
 		}}
 	assert.Equal(t, want, c)
 }
+
+func TestGetApiConfigName(t *testing.T) {
+	m := apistructs.PipelineReport{}
+	bt := `{"id":123,"pipelineID":123,"type":"auto-test-plan","meta":{"AUTOTEST_DISPLAY_NAME":"执行参数-custom","data":"{\"domain\":\"domain\",\"header\":{\"Cookie\":\"cookie\",\"cluster-id\":\"2\",\"cluster-name\":\"name\",\"org\":\"erda\",\"project-id\":\"13\"},\"global\":{\"111\":{\"name\":\"111\",\"type\":\"string\",\"value\":\"111\",\"desc\":\"111\"}}}"},"creatorID":"","updaterID":"","createdAt":"2021-09-03T17:25:48+08:00","updatedAt":"2021-09-03T17:25:48+08:00"}`
+	err := json.Unmarshal([]byte(bt), &m)
+	assert.NoError(t, err)
+	executeEnv := getApiConfigName(m)
+	assert.Equal(t, "执行参数-custom", executeEnv)
+
+	m1 := apistructs.PipelineReport{}
+	emptyMeta := `{"id":123,"pipelineID":123,"type":"auto-test-plan","creatorID":"","updaterID":"","createdAt":"2021-09-03T17:25:48+08:00","updatedAt":"2021-09-03T17:25:48+08:00"}`
+	err = json.Unmarshal([]byte(emptyMeta), &m1)
+	assert.NoError(t, err)
+	executeEnv = getApiConfigName(m1)
+	assert.Equal(t, "", executeEnv)
+}

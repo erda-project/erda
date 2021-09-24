@@ -50,6 +50,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 	meta := make(apistructs.PipelineReportMeta)
 	meta["data"] = ctx.SDK.Pipeline.Snapshot.Secrets[autotest.CmsCfgKeyAPIGlobalConfig]
+	// add cfg display name to auto-test-execute-config report
+	meta[autotest.CmsCfgKeyDisplayName] = ctx.SDK.Pipeline.Snapshot.Secrets[autotest.CmsCfgKeyDisplayName]
 
 	// report
 	_, err := ctx.SDK.Report.Create(apistructs.PipelineReportCreateRequest{
