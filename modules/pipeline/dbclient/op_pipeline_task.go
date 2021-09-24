@@ -189,6 +189,7 @@ func (client *Client) UpdatePipelineTaskStatus(id uint64, status apistructs.Pipe
 	return err
 }
 
+// UpdatePipelineTaskTime update the costTime,timeBegin and timeEnd of pipeline task
 func (client *Client) UpdatePipelineTaskTime(p *spec.Pipeline, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
