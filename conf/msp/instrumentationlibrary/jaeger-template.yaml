@@ -1,0 +1,44 @@
+- instrumentationlibrary: Jaeger
+  templates:
+    - language: Java
+      template: |
+        #### 获取接入点和鉴权信息
+
+        - 接入点：{{endpoint}}
+        - 环境ID：{{msp_env_id}}
+        - Token: 在此页面创建和获取
+
+        #### 配置鉴权信息
+
+        您可以在 HTTP/HTTPS 协议的 Header 中或者 Jaeger 协议的 Tag 字段中配置鉴权信息，具体字段及详细说明如下所示
+        - msp.env.id : 微服务项目环境ID
+        - msp.env.token : 微服务环境鉴权Token，在此页面创建和获取
+
+        #### 通过 Jaeger Java Client 上报数据
+
+        1. 引入 jaeger-client 依赖
+
+        ```
+        <dependency>
+            <groupId>io.jaegertracing</groupId>
+            <artifactId>jaeger-client</artifactId>
+            <version>1.6.0</version>
+        </dependency>
+        ```
+
+        2. 配置环境变量
+
+        ```
+        export JAEGER_SERVICE_NAME=your_service_name
+        export JAEGER_ENDPOINT={{endpoint}}
+        export JAEGER_TAGS=msp.env.id={{msp_env_id}},msp.env.token=your_token
+        ```
+
+        3. 配置 jaeger，创建 Tracer 对象。示例如下：
+
+        ```
+        Tracer tracer = Configuration.fromEnv().getTracer();
+        Span span = tracer.buildSpan("first_span").start();
+        span.setTag("myTag", "myTag");
+        span.finish();
+        ```
