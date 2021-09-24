@@ -210,7 +210,7 @@ func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
 }
 
 func TrimCharacterSetFromRawCreateTableSQL(sql string) string {
-	return regexp.MustCompile(`(?i)(?:DEFAULT)* CHARACTER SET = \w+`).ReplaceAllString(sql, "")
+	return regexp.MustCompile(`(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*\w+`).ReplaceAllString(sql, "")
 }
 
 // ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
