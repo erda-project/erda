@@ -68,12 +68,12 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 
 // parseExecuteTime parse string to time, if err return nil
 func parseExecuteTime(value string) *time.Time {
-	t, err := time.Parse("2006-01-02 15:04:05", value)
+	logrus.Info("wxj time", value)
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.UTC)
 	if err != nil {
 		logrus.Errorf("failed to parse ExecuteTime,err: %s", err.Error())
 		return nil
 	}
-	t = t.In(time.UTC)
 	return &t
 }
 
