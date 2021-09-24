@@ -58,12 +58,22 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 
 	fields := make(map[string]interface{}, 0)
 	fields["pass_rate"] = req.Content.PassRate
-	fields["execute_time"] = req.Content.ExecuteTime
+	fields["execute_time"] = parseExecuteTime(req.Content.ExecuteTime)
 	fields["execute_api_num"] = req.Content.ApiTotalNum
 	if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
 		return nil, err
 	}
 	return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, nil
+}
+
+// parseExecuteTime parse string to time, if err return nil
+func parseExecuteTime(value string) *time.Time {
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.Local)
+	if err != nil {
+		logrus.Errorf("failed to parse ExecuteTime,err: %s", err.Error())
+		return nil
+	}
+	return &t
 }
 
 func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
