@@ -18,6 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/wrangler/pkg/data"
 )
 
 // Transfer transfer a to b with json, kind of b must be pointer
@@ -102,4 +105,12 @@ func ResetNumberBase(a, b float64) (float64, float64) {
 		b /= 10
 	}
 	return a, b
+}
+
+func ToDataList(object []types.APIObject) []data.Object {
+	objs := make([]data.Object, 0)
+	for _, obj := range object {
+		objs = append(objs, obj.Data())
+	}
+	return objs
 }

@@ -27,11 +27,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/cmp/steve"
-
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -47,17 +46,19 @@ type provider struct {
 	SteveAggregator *steve.Aggregator
 }
 
+type Provider interface {
+	SteveServer
+	metrics.Interface
+}
+
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
-	newCtx := context.WithValue(ctx, "metrics", p.Metrics)
+	p.Metrics = &metrics.Metric{Metricq: p.Server}
 	logrus.Info("cmp provider is running...")
-	return p.initialize(newCtx)
+	return p.initialize(ctx)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Metrics = &metrics.Metric{
-		Metricq: p.Server,
-	}
 	p.Protocol.SetI18nTran(p.Tran)
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bundle.New(
 		bundle.WithAllAvailableClients(),
