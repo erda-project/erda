@@ -17,12 +17,15 @@ package adapter
 import (
 	"context"
 	"fmt"
-
-	config2 "github.com/recallsong/go-utils/config"
-
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/template"
+)
+
+var (
+	endpoints = map[string]string{
+		"Jaeger": "/api/jaeger/traces",
+	}
 )
 
 type adapterService struct {
@@ -33,38 +36,43 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 	result := &pb.GetInstrumentationLibraryResponse{
 		Data: make([]*pb.InstrumentationLibrary, 0),
 	}
-	for k, v := range s.p.libraryMap {
-		libraryList := &pb.InstrumentationLibrary{
-			Strategy: k,
+	for _, v := range s.p.libraries {
+		if !v.Enabled {
+			continue
 		}
 		languages := make([]*pb.Language, 0)
-		languageList, ok := v.([]interface{})
-		if !ok {
-			return nil, errors.NewInternalServerError(fmt.Errorf("instrumentation library language is invalidate,language is %v", v))
-		}
-		for _, v := range languageList {
-			language := &pb.Language{
-				Language: v.(string),
+		for _, l := range v.Languages {
+			if !l.Enabled {
+				continue
 			}
-			languages = append(languages, language)
+			languages = append(languages, &pb.Language{
+				Language: l.Name,
+			})
 		}
-		libraryList.Languages = languages
-		result.Data = append(result.Data, libraryList)
+		library := &pb.InstrumentationLibrary{
+			Strategy:  v.InstrumentationLibrary,
+			Languages: languages,
+		}
+		result.Data = append(result.Data, library)
 	}
 	return result, nil
 }
 
 func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, request *pb.GetInstrumentationLibraryDocsRequest) (*pb.GetInstrumentationLibraryDocsResponse, error) {
-	data, err := config2.LoadFile(s.p.configFile)
-	renderMap := map[string]string{
-		"language": request.Language,
-		"strategy": request.Strategy,
+	if templates, ok := s.p.templates[request.Strategy]; ok {
+		for _, t := range templates.Templates {
+			if t.Language != request.Language {
+				continue
+			}
+			renderMap := map[string]string{
+				"msp_env_id": request.ScopeId,
+				"endpoint":   s.p.Cfg.CollectorUrl + endpoints[request.Strategy],
+			}
+			result := template.Render(t.Template, renderMap)
+			return &pb.GetInstrumentationLibraryDocsResponse{
+				Data: result,
+			}, nil
+		}
 	}
-	configFile := template.Render(string(data), renderMap)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	return &pb.GetInstrumentationLibraryDocsResponse{
-		Data: configFile,
-	}, nil
+	return nil, errors.NewInternalServerError(fmt.Errorf("not fount doc for strategy %s language %s", request.Strategy, request.Language))
 }
