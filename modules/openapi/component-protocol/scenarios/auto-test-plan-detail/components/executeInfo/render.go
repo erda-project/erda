@@ -17,12 +17,14 @@ package executeInfo
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/services/autotest"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
@@ -188,7 +190,7 @@ Label:
 		return err
 	}
 	i.State.EnvData = config
-	i.Data["executeEnv"] = "执行参数"
+	i.Data["executeEnv"] = getApiConfigName(env)
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{
@@ -309,4 +311,23 @@ func convertReportToConfig(env apistructs.PipelineReport) (apistructs.AutoTestAP
 	err = json.Unmarshal([]byte(str), &config)
 
 	return config, nil
+}
+
+func getApiConfigName(env apistructs.PipelineReport) string {
+	if env.ID == 0 {
+		return ""
+	}
+	envByte, err := json.Marshal(env)
+	if err != nil {
+		return ""
+	}
+	configData := apistructs.PipelineReport{}
+	err = json.Unmarshal(envByte, &configData)
+	if err != nil {
+		return ""
+	}
+	if envName, ok := configData.Meta[autotest.CmsCfgKeyDisplayName]; ok {
+		return fmt.Sprintf("%v", envName)
+	}
+	return ""
 }
