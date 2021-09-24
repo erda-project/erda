@@ -65,6 +65,10 @@ type cpErrResponse struct {
 
 // wrapErdaStyleResponse wrap response by erda response.
 func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (wErr error) {
+	if resp.Header.Get("nowrap") == "true" {
+		logrus.Info("resp has nowrap header, skip wrap erda style response")
+		return
+	}
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
