@@ -31,19 +31,18 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Table struct {
 	TableComponent GetRowItem
 	base.DefaultProvider
-	CtxBdl     *bundle.Bundle
 	SDK        *cptype.SDK
 	Ctx        context.Context
 	Server     cmp.SteveServer
@@ -196,7 +195,7 @@ type GetRowItem interface {
 	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
 }
 
-func (t *Table) GetUsageValue(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetUsageValue(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
 		Text:    t.GetScaleValue(metricsData.Used, metricsData.Total, resourceType),
 		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
@@ -240,14 +239,14 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	return ss, nil
 }
 
-func (t *Table) GetDistributionValue(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetDistributionValue(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
 		Text:    t.GetScaleValue(metricsData.Request, metricsData.Total, resourceType),
 		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
 	}
 }
 
-func (t *Table) GetUnusedRate(metricsData apistructs.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetUnusedRate(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
 	unused := math.Max(metricsData.Request-metricsData.Used, 0.0)
 	return DistributionValue{
 		Text:    t.GetScaleValue(unused, metricsData.Request, resourceType),
@@ -358,7 +357,7 @@ func (t *Table) SetData(nodes []data.Object, tableType TableType) ([]RowItem, er
 	return list, nil
 }
 
-func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
+func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]data.Object, error) {
 	var nodes []data.Object
 	if (*gs)["nodes"] == nil {
 		// Get all nodes by cluster name
@@ -385,7 +384,7 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 	return nodes, nil
 }
 
-func (t *Table) CordonNode(nodeNames []string) error {
+func (t *Table) CordonNode(ctx context.Context, nodeNames []string) error {
 	for _, name := range nodeNames {
 		req := &apistructs.SteveRequest{
 			UserID:      t.SDK.Identity.UserID,
@@ -402,7 +401,7 @@ func (t *Table) CordonNode(nodeNames []string) error {
 	return nil
 }
 
-func (t *Table) UncordonNode(nodeNames []string) error {
+func (t *Table) UncordonNode(ctx context.Context, nodeNames []string) error {
 	for _, name := range nodeNames {
 		req := &apistructs.SteveRequest{
 			UserID:      t.SDK.Identity.UserID,
@@ -582,8 +581,8 @@ func (t *Table) GetOperate(id string) Operate {
 			id,
 		},
 	}
-	data, _ := json.Marshal(obj)
-	encode := base64.StdEncoding.EncodeToString(data)
+	bytes, _ := json.Marshal(obj)
+	encode := base64.StdEncoding.EncodeToString(bytes)
 	return Operate{
 		RenderType: "tableOperation",
 		Operations: map[string]Operation{
@@ -605,11 +604,11 @@ func (t *Table) GetOperate(id string) Operate {
 }
 
 // SortByString sort by string value
-func SortByString(data []RowItem, sortColumn string, asc bool) {
+func SortByString(data []RowItem, sortColumn string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
-		if asc {
+		if ascend {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
@@ -617,9 +616,9 @@ func SortByString(data []RowItem, sortColumn string, asc bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, asc bool) {
+func SortByNode(data []RowItem, _ string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if asc {
+		if ascend {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -627,13 +626,13 @@ func SortByNode(data []RowItem, _ string, asc bool) {
 }
 
 // SortByDistribution sort by percent
-func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
+func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
-		if asc {
+		if ascend {
 			return aValue < bValue
 		}
 		return aValue > bValue
