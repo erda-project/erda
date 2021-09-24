@@ -164,8 +164,8 @@ func NewDB() (*gorm.DB, error) {
 }
 
 func (c *UCClient) ConvertUserIDs(ids []string) ([]string, map[string]string, error) {
-	var users []UserIDModel
-	if err := c.db.Table("kratos_uc_userid_mapping").Where("id in (?)", ids).Find(&users).Error; err != nil {
+	users, err := c.GetUserIDMapping(ids)
+	if err != nil {
 		return nil, nil, err
 	}
 	ucKratosMap := make(map[string]string)
@@ -175,6 +175,14 @@ func (c *UCClient) ConvertUserIDs(ids []string) ([]string, map[string]string, er
 		kratosUcMap[u.UserID] = u.ID
 	}
 	return filterUserIDs(ids, ucKratosMap), kratosUcMap, nil
+}
+
+func (c *UCClient) GetUserIDMapping(ids []string) ([]UserIDModel, error) {
+	var users []UserIDModel
+	if err := c.db.Table("kratos_uc_userid_mapping").Where("id in (?)", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func filterUserIDs(ids []string, users map[string]string) []string {
