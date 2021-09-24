@@ -23,6 +23,8 @@ import (
 	"github.com/pingcap/parser/format"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
 )
 
 // ReverseDDLWithSnapshot reverses a DDL.
@@ -141,6 +143,7 @@ func ShowCreateTable(tx *gorm.DB, tableName string) (create string, err error) {
 	if err = tx.Row().Scan(&tableName, &create); err != nil {
 		return "", err
 	}
+	create = snapshot.TrimCharacterSetFromRawCreateTableSQL(create)
 	return create, nil
 }
 

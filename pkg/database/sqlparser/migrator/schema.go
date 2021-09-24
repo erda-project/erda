@@ -17,9 +17,10 @@ package migrator
 import (
 	"fmt"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
 )
 
 // Schema is the set of TableDefinitions.
@@ -109,7 +110,7 @@ func (s *Schema) EqualWith(db *gorm.DB) *Equal {
 				reason: fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw),
 			}
 		}
-		node, err := parser.New().ParseOneStmt(create, "", "")
+		node, err := snapshot.ParseCreateTableStmt(create)
 		if err != nil {
 			return &Equal{
 				equal:  false,

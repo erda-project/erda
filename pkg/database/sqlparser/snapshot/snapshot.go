@@ -212,3 +212,17 @@ func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
 func TrimCharacterSetFromRawCreateTableSQL(sql string) string {
 	return regexp.MustCompile(`(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*\w+`).ReplaceAllString(sql, "")
 }
+
+// ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
+func ParseCreateTableStmt(create string) (*ast.CreateTableStmt, error) {
+	create = TrimCharacterSetFromRawCreateTableSQL(create)
+	node, err := parser.New().ParseOneStmt(create, "", "")
+	if err != nil {
+		return nil, err
+	}
+	createTableStmt, ok := node.(*ast.CreateTableStmt)
+	if !ok {
+		return nil, errors.Errorf("the text is not CreateTableStmt, text: %s", create)
+	}
+	return createTableStmt, nil
+}

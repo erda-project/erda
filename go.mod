@@ -27,7 +27,6 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/coreos/etcd v3.3.25+incompatible
-	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
