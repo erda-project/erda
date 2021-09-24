@@ -110,7 +110,7 @@ zh:
  error: 错误
  danger: 危险
  custom: 自定义
- containerRuntimeVersion: 容器运行时版本
+ containerRuntimeVersion: 容器运行环境
  kernelVersion: Kernel 版本
  kubeProxyVersion: Kubectl 代理版本
  kubeletVersion: Kubelet 版本
@@ -169,7 +169,6 @@ zh:
  e.g.: 例如
  Cpu Chart: CPU
  annotation: 注释
- containerRuntime: 容器运行时
  placeholderFilterByNodeName: 按节点名称过滤
  cpuUsage: CPU 使用率
  SchedulingDisabled: 冻结
@@ -193,6 +192,11 @@ zh:
  PIDPressure: 进程压力状态
  input node Name or IP: 请输入节点名称或IP
  The proportion of allocated resources that are not used: 已分配资源中未使用的比例
+ status update success: 状态修改成功
+ Cordon following nodes: 冻结以下节点：
+ Uncordon following nodes: 解冻以下节点：
+ show: 查看
+
 
 en:
  # general
@@ -323,7 +327,6 @@ en:
  systemUUID: System UUID
  use: Usage
  annotation: Annotation
- containerRuntime: Container Runtime
  placeholderFilterByNodeName: filter by node name
  cpuUsage: CPU Usage
  architecture: Architecture
@@ -340,10 +343,5 @@ en:
  env-label: Enviorment Label
  job-label: Job Label
  other-label: Other Label
- # value empty required, do not delete
- NetworkUnavailable:
- MemoryPressure:
- DiskPressure:
- PIDPressure:
  cpu-size: CPU Cores
  memory-size: Memeory Size

@@ -51,15 +51,29 @@ type Severity struct {
 	Disabled    bool                   `json:"disabled"`
 	DisabledTip string                 `json:"disabledTip"`
 }
-type Tag struct {
-	Color string `json:"color"`
-	Tag   string `json:"tag"`
+
+type Title TableColumnMultiple
+
+type TableColumnMultiple struct {
+	RenderType string          `json:"renderType,omitempty"`
+	Renders    [][]interface{} `json:"renders,omitempty"`
 }
-type Title struct {
-	PrefixIcon string `json:"prefixIcon,omitempty"`
-	Value      string `json:"value,omitempty"`
-	Tags       []Tag  `json:"tags"`
+
+type TableColumnTextWithIcon struct {
 	RenderType string `json:"renderType,omitempty"`
+	Value      string `json:"value,omitempty"`
+	PrefixIcon string `json:"prefixIcon,omitempty"`
+}
+
+type TableColumnTagsRow struct {
+	RenderType string                  `json:"renderType,omitempty"`
+	Value      []TableColumnTagsRowTag `json:"value,omitempty"`
+	ShowCount  int                     `json:"showCount,omitempty"`
+}
+
+type TableColumnTagsRowTag struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
 }
 
 type State struct {
@@ -505,6 +519,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		closedAtCol +
 		`],
     "rowKey": "id",
+	"scroll": {"x": 1200},
 	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
 	var propsI interface{}
@@ -543,14 +558,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 			break
 		}
 	}
-	tags := []Tag{}
-	for _, datalabel := range data.Labels {
-		for _, label := range ca.labels {
-			if datalabel == label.Name {
-				tags = append(tags, Tag{Color: label.Color, Tag: label.Name})
-			}
-		}
-	}
+	titleColumn := ca.getTitleColumn(data)
 	progress := Progress{
 		RenderType: "progress",
 		Value:      "",
@@ -744,14 +752,39 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 				true: "无权限",
 			}[ca.isGuest],
 		},
-		Title: Title{
-			PrefixIcon: getPrefixIcon(string(data.Type)),
-			Value:      data.Title,
-			Tags:       tags,
-			RenderType: "textWithTags",
-		},
+		Title:    titleColumn,
 		Deadline: deadline,
 		ClosedAt: closedAt,
+	}
+}
+
+func (ca *ComponentAction) getTitleColumn(issue *apistructs.Issue) Title {
+	var tags []TableColumnTagsRowTag
+	for _, label := range issue.Labels {
+		for _, labelDef := range ca.labels {
+			if label == labelDef.Name {
+				tags = append(tags, TableColumnTagsRowTag{Color: labelDef.Color, Label: labelDef.Name})
+			}
+		}
+	}
+	return Title{
+		RenderType: "multiple",
+		Renders: [][]interface{}{
+			{
+				TableColumnTextWithIcon{
+					RenderType: "textWithIcon",
+					Value:      issue.Title,
+					PrefixIcon: getPrefixIcon(string(issue.Type)),
+				},
+			},
+			{
+				TableColumnTagsRow{
+					RenderType: "tagsRow",
+					Value:      tags,
+					ShowCount:  5,
+				},
+			},
+		},
 	}
 }
 

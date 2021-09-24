@@ -56,7 +56,7 @@ func (r *Reconciler) fulfillParentSnippetTask(p *spec.Pipeline) error {
 		return err
 	}
 	// update the costTime,timeBegin,timeEnd of pipeline task
-	if err := r.dbClient.UpdatePipelineTaskTime(*p.ParentTaskID, p.CostTimeSec, *p.TimeBegin, *p.TimeEnd); err != nil {
+	if err := r.dbClient.UpdatePipelineTaskTime(p); err != nil {
 		return err
 	}
 	return nil

@@ -620,3 +620,7 @@ func FlatErrors(errs []error, sep string) error {
 	}
 	return fmt.Errorf("%s", Join(errMsgs, sep, true))
 }
+
+func ContainsOrEmpty(source, target string) bool {
+	return target == "" || strings.Contains(source, target)
+}

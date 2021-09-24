@@ -31,6 +31,11 @@ import (
 
 // Listen watch incoming pipelines which need to be scheduled from etcd.
 func (r *Reconciler) Listen(ctx context.Context) {
+
+	if err := r.beforeListen(ctx); err != nil {
+		panic(fmt.Errorf("failed to start listen, failed to do beforeListen, err: %v", err))
+	}
+
 	rlog.Infof("start listen")
 	for {
 		select {

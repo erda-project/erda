@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
@@ -51,10 +52,21 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						delete(span.Attributes, k)
 					}
 				}
-				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
 				if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
 					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_MSP_ENV_ID]
 				}
+				if _, ok := span.Attributes[TAG_IP]; ok {
+					span.Attributes[TAG_SERVICE_INSTANCE_IP] = span.Attributes[TAG_IP]
+					delete(span.Attributes, TAG_IP)
+				}
+				if _, ok := span.Attributes[TAG_HTTP_PATH]; !ok {
+					if _, ok := span.Attributes[TAG_HTTP_URL]; ok {
+						if u, err := url.Parse(span.Attributes[TAG_HTTP_URL]); err == nil {
+							span.Attributes[TAG_HTTP_PATH] = u.Path
+						}
+					}
+				}
+				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
 			}
 		}
 		return next(ctx, req)

@@ -189,12 +189,24 @@ func (client *Client) UpdatePipelineTaskStatus(id uint64, status apistructs.Pipe
 	return err
 }
 
-func (client *Client) UpdatePipelineTaskTime(id uint64, costTime int64, timeBegin, timeEnd time.Time, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineTaskTime(p *spec.Pipeline, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(id).Cols("cost_time_sec", "time_begin", "time_end").
-		Update(&spec.PipelineTask{CostTimeSec: costTime, TimeBegin: timeBegin, TimeEnd: timeEnd})
+	if p.TimeBegin == nil || p.TimeBegin.IsZero() {
+		p.TimeBegin = p.TimeCreated
+	}
+	if p.TimeEnd == nil || p.TimeEnd.IsZero() {
+		p.TimeEnd = p.TimeUpdated
+	}
+	timeBegin, timeEnd := *p.TimeBegin, *p.TimeEnd
+
+	costTimeSec := p.CostTimeSec
+	if costTimeSec == -1 {
+		costTimeSec = int64(timeEnd.Sub(timeBegin).Seconds())
+	}
+	_, err := session.ID(p.ParentTaskID).Cols("cost_time_sec", "time_begin", "time_end").
+		Update(&spec.PipelineTask{CostTimeSec: costTimeSec, TimeBegin: timeBegin, TimeEnd: timeEnd})
 	return err
 }
 

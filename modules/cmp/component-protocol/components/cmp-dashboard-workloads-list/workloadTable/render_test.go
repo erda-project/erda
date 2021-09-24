@@ -20,9 +20,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rancher/apiserver/pkg/types"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
-
+	"github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
 )
 
@@ -89,6 +93,126 @@ func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 	}
 }
 
+type MockSteveServer struct {
+	cmp.SteveServer
+}
+
+func (m *MockSteveServer) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
+	switch req.Type {
+	case apistructs.K8SDeployment:
+		return []types.APIObject{
+			{
+				Object: map[string]interface{}{
+					"kind": "Deployment",
+					"metadata": map[string]interface{}{
+						"name":      "deploy-test",
+						"namespace": "default",
+						"fields": []interface{}{
+							"deploy-test",
+							"1/1",
+							1,
+							1,
+							"1d",
+							"deploy-test",
+							"deploy-image",
+							"",
+						},
+					},
+				},
+			},
+		}, nil
+	case apistructs.K8SDaemonSet:
+		return []types.APIObject{
+			{
+				Object: map[string]interface{}{
+					"kind": "DaemonSet",
+					"metadata": map[string]interface{}{
+						"name":      "daemonSet-test",
+						"namespace": "default",
+						"fields": []interface{}{
+							"daemonSet-test",
+							1,
+							1,
+							1,
+							1,
+							1,
+							"<none>",
+							"1d",
+							"daemonSet-test",
+							"daemonSet-image",
+							"",
+						},
+					},
+				},
+			},
+		}, nil
+	case apistructs.K8SStatefulSet:
+		return []types.APIObject{
+			{
+				Object: map[string]interface{}{
+					"kind": "StatefulSet",
+					"metadata": map[string]interface{}{
+						"name":      "statefulSet-test",
+						"namespace": "default",
+						"fields": []interface{}{
+							"daemonSet-test",
+							"1/1",
+							"1d",
+							"daemonSet-test",
+							"daemonSet-image",
+						},
+					},
+				},
+			},
+		}, nil
+	case apistructs.K8SJob:
+		return []types.APIObject{
+			{
+				Object: map[string]interface{}{
+					"kind": "Job",
+					"metadata": map[string]interface{}{
+						"name":      "job-test",
+						"namespace": "default",
+						"fields": []interface{}{
+							"job-test",
+							"1/1",
+							"10s",
+							"1d",
+							"job-test",
+							"job-image",
+							"",
+						},
+					},
+				},
+			},
+		}, nil
+	case apistructs.K8SCronJob:
+		return []types.APIObject{
+			{
+				Object: map[string]interface{}{
+					"kind": "CronJob",
+					"metadata": map[string]interface{}{
+						"name":      "cronJob-test",
+						"namespace": "default",
+						"fields": []interface{}{
+							"cronJob-test",
+							"0 * * * *",
+							"False",
+							0,
+							"1m",
+							"1d",
+							"k8s",
+							"cronJob-image",
+							"<none>",
+						},
+					},
+				},
+			},
+		}, nil
+	}
+	return []types.APIObject{}, nil
+}
+
 type MockTran struct {
 	i18n.Translator
 }
@@ -99,6 +223,22 @@ func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 
 func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	return ""
+}
+
+func TestComponentWorkloadTable_RenderTable(t *testing.T) {
+	w := ComponentWorkloadTable{
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+			Identity: &pb.IdentityInfo{
+				UserID: "1",
+				OrgID:  "1",
+			},
+		},
+		server: &MockSteveServer{},
+	}
+	if err := w.RenderTable(); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
 }
 
 func TestComponentWorkloadTable_SetComponentValue(t *testing.T) {

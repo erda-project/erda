@@ -24,7 +24,7 @@ func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: "/uc/auth/login",
+		URL: "/uc/login",
 	})
 }
 
@@ -32,6 +32,6 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: "/.ory/kratos/public/self-service/browser/flows/logout",
+		URL: "/uc/login",
 	})
 }

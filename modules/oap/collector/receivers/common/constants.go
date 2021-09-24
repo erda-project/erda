@@ -21,11 +21,15 @@ import (
 )
 
 var (
-	TAG_SERVICE_NAME  = "service_name"
-	TAG_SERVICE_ID    = "service_id"
-	TAG_MSP_ENV_ID    = "msp_env_id"
-	TAG_MSP_ENV_TOKEN = "msp_env_token"
-	TAG_TERMINUS_KEY  = "terminus_key"
+	TAG_SERVICE_NAME        = "service_name"
+	TAG_SERVICE_ID          = "service_id"
+	TAG_SERVICE_INSTANCE_IP = "service_instance_ip"
+	TAG_MSP_ENV_ID          = "msp_env_id"
+	TAG_MSP_ENV_TOKEN       = "msp_env_token"
+	TAG_TERMINUS_KEY        = "terminus_key"
+	TAG_IP                  = "ip"
+	TAG_HTTP_PATH           = "http_path"
+	TAG_HTTP_URL            = "http_url"
 
 	HEADER_MSP_ENV_ID    = "x-msp-env-id"
 	HEADER_MSP_ENV_TOKEN = "x-msp-env-token"

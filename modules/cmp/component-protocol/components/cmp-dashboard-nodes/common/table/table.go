@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cznic/mathutil"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -33,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
@@ -46,6 +46,7 @@ type Table struct {
 	CtxBdl     *bundle.Bundle
 	SDK        *cptype.SDK
 	Ctx        context.Context
+	Server     cmp.SteveServer
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
@@ -221,7 +222,8 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 		RenderType: "textWithBadge",
 	}
 	strs := make([]string, 0)
-	for _, s := range strings.Split(node.StringSlice("metadata", "fields")[1], ",") {
+	fields := node.StringSlice("metadata", "fields")
+	for _, s := range strings.Split(fields[1], ",") {
 		strs = append(strs, t.SDK.I18n(s))
 	}
 	for _, conf := range node.Slice("status", "conditions") {
@@ -300,12 +302,12 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		asc        bool
 		items      []RowItem
 	)
-	if t.State.PageNo == 0 {
-		t.State.PageNo = DefaultPageNo
-	}
-	if t.State.PageSize == 0 {
-		t.State.PageSize = DefaultPageSize
-	}
+	//if t.State.PageNo == 0 {
+	//	t.State.PageNo = DefaultPageNo
+	//}
+	//if t.State.PageSize == 0 {
+	//	t.State.PageSize = DefaultPageSize
+	//}
 	if t.State.Sorter.Field != "" {
 		sortColumn = t.State.Sorter.Field
 		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
@@ -331,11 +333,12 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		}
 	}
 
-	t.State.Total = len(nodes)
-	start := (t.State.PageNo - 1) * t.State.PageSize
-	end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Total)
+	//t.State.Total = len(nodes)
+	//start := (t.State.PageNo - 1) * t.State.PageSize
+	//end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Total)
 
-	component.Data = map[string]interface{}{"list": items[start:end]}
+	//component.Data = map[string]interface{}{"list": items[start:end]}
+	component.Data = map[string]interface{}{"list": items}
 	return nil
 }
 
@@ -368,11 +371,13 @@ func (t *Table) GetNodes(gs *cptype.GlobalStateData) ([]data.Object, error) {
 		} else {
 			return nil, common.ClusterNotFoundErr
 		}
-		resp, err := t.CtxBdl.ListSteveResource(nodeReq)
+		resp, err := t.Server.ListSteveResource(t.Ctx, nodeReq)
 		if err != nil {
 			return nil, err
 		}
-		nodes = resp.Slice("data")
+		for _, item := range resp {
+			nodes = append(nodes, item.Data())
+		}
 		nodes = nodeFilter.DoFilter(nodes, t.State.Values)
 	} else {
 		nodes = (*gs)["nodes"].([]data.Object)
@@ -389,7 +394,7 @@ func (t *Table) CordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := t.CtxBdl.CordonNode(req)
+		err := t.Server.CordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}
@@ -406,7 +411,7 @@ func (t *Table) UncordonNode(nodeNames []string) error {
 			ClusterName: t.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := t.CtxBdl.UnCordonNode(req)
+		err := t.Server.UnCordonNode(t.Ctx, req)
 		if err != nil {
 			return err
 		}
@@ -425,29 +430,27 @@ func (t *Table) GetNodeAddress(addrs []v1.NodeAddress) string {
 
 func (t *Table) GetTableOperation() map[string]interface{} {
 	ops := map[string]Operation{
-		"changePageNo": {
-			Key:    "changePageNo",
-			Reload: true,
-		},
-		"changePageSize": {
-			Key:    "changePageSize",
-			Reload: true,
-		},
+		//"changePageNo": {
+		//	Key:    "changePageNo",
+		//	Reload: true,
+		//},
+		//"changePageSize": {
+		//	Key:    "changePageSize",
+		//	Reload: true,
+		//},
 		"changeSort": {
 			Key:    "changeSort",
 			Reload: true,
 		},
 		"cordon": {
-			Key:     "cordon",
-			Reload:  true,
-			Confirm: t.SDK.I18n("cordon confirm"),
-			Text:    t.SDK.I18n("cordon"),
+			Key:    "cordon",
+			Reload: true,
+			Text:   t.SDK.I18n("cordon"),
 		},
 		"uncordon": {
-			Key:     "uncordon",
-			Confirm: t.SDK.I18n("uncordon confirm"),
-			Text:    t.SDK.I18n("uncordon"),
-			Reload:  true,
+			Key:    "uncordon",
+			Text:   t.SDK.I18n("uncordon"),
+			Reload: true,
 		},
 	}
 	res := map[string]interface{}{}
@@ -594,7 +597,7 @@ func (t *Table) GetOperate(id string) Operate {
 				JumpOut: true,
 				Target:  "cmpClustersPods",
 			},
-				Text:   t.SDK.I18n("查看") + "pods",
+				Text:   t.SDK.I18n("show") + " pods",
 				Reload: false,
 			},
 		},
@@ -648,9 +651,9 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 }
 
 type State struct {
-	PageNo          int           `json:"pageNo,omitempty"`
-	PageSize        int           `json:"pageSize,omitempty"`
-	Total           int           `json:"total,omitempty"`
+	//PageNo          int           `json:"pageNo,omitempty"`
+	//PageSize        int           `json:"pageSize,omitempty"`
+	//Total           int           `json:"total,omitempty"`
 	SelectedRowKeys []string      `json:"selectedRowKeys,omitempty"`
 	Sorter          Sorter        `json:"sorterData,omitempty"`
 	Values          filter.Values `json:"values"`
