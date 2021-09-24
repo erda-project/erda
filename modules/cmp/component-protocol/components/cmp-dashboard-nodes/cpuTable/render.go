@@ -26,11 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
@@ -38,14 +35,22 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp.SteveServer
+var (
+	steveServer cmp.SteveServer
+	mServer     metrics.Interface
+)
 
 func (ct *CpuInfoTable) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
+	mserver, ok := ctx.Service("cmp").(metrics.Interface)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a metrics server")
+	}
 	steveServer = server
+	mServer = mserver
 	return ct.DefaultProvider.Init(ctx)
 }
 
@@ -56,11 +61,11 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	ct.SDK = cputil.SDK(ctx)
 	ct.Operations = ct.GetTableOperation()
-	ct.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	ct.Ctx = ctx
 	ct.Table.Server = steveServer
 	ct.getProps()
 	ct.TableComponent = ct
+	ct.Ctx = ctx
 	activeKey := (*gs)["activeKey"].(string)
 	// Tab name not equal this component name
 	if activeKey != tableTabs.CPU_TAB {
@@ -84,11 +89,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			req.UserID = ct.SDK.Identity.UserID
 			req.Type = apistructs.K8SNode
 			req.Name = nodeId
-			err = ct.Server.UnlabelNode(ct.Ctx, &req, []string{labelKey})
-			if err != nil {
-				return err
-			}
-		case common.CMPDashboardUncordonNode:
+			err = steveServer.UnlabelNode(ctx, &req, []string{labelKey})
 			(*gs)["SelectedRowKeys"] = ct.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardUncordonNode
 			return nil
@@ -100,7 +101,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
 	}
-	nodes, err := ct.GetNodes(gs)
+	nodes, err := ct.GetNodes(ctx, gs)
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,8 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 
 func (ct *CpuInfoTable) getProps() {
 	props := map[string]interface{}{
-		"rowKey": "id",
+		"rowKey":         "id",
+		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 320},
@@ -141,7 +143,7 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		err                     error
 		status                  *table.SteveStatus
 		distribution, dr, usage table.DistributionValue
-		resp                    []apistructs.MetricsData
+		resp                    []metrics.MetricsData
 		nodeLabels              []string
 	)
 	nodeLabelsData := c.Map("metadata", "labels")
@@ -151,9 +153,9 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 	if status, err = ct.GetItemStatus(c); err != nil {
 		return nil, err
 	}
-	req := apistructs.MetricsRequest{
+	req := &metrics.MetricsRequest{
 		ClusterName: ct.SDK.InParams["clusterName"].(string),
-		NodeRequests: []apistructs.MetricsNodeRequest{{
+		NodeRequests: []metrics.MetricsNodeRequest{{
 			IP: c.StringSlice("metadata", "fields")[5],
 		}},
 		ResourceType: metrics.Cpu,
@@ -162,9 +164,9 @@ func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		UserID:       ct.SDK.Identity.UserID,
 	}
 
-	if resp, err = ct.CtxBdl.GetMetrics(req); err != nil || resp == nil {
+	if resp, err = mServer.NodeMetrics(ct.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
-		resp = []apistructs.MetricsData{{Used: 0}}
+		resp = []metrics.MetricsData{{Used: 0}}
 	}
 	//request := c.Map("status", "allocatable").String("cpu")
 	limitStr := c.Map("extra", "parsedResource", "capacity").String("CPU")
