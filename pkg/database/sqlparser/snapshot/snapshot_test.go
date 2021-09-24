@@ -146,3 +146,13 @@ func TestTrimCharacterSetFromRawCreateTableSQL(t *testing.T) {
 		t.Log(sql)
 	}
 }
+
+func TestParseCreateTableStmt(t *testing.T) {
+	for i, sql := range []string{sqlWithUtf32_1, sqlWithUtf32_2, sqlWithUtf8mb3} {
+		stmt, err := snapshot.ParseCreateTableStmt(sql)
+		if err != nil {
+			t.Fatalf("failed to ParseCreateTableStmt: [%v]: %s: %v", i, sql, err)
+		}
+		t.Log("raw text:", sql, "\nparsed text:", stmt.Text())
+	}
+}

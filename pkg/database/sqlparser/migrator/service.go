@@ -20,9 +20,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
 )
 
 // Module is the list of Script
@@ -56,7 +57,7 @@ func (m *Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
 				reason: fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw),
 			}
 		}
-		node, err := parser.New().ParseOneStmt(create, "", "")
+		node, err := snapshot.ParseCreateTableStmt(create)
 		if err != nil {
 			return &Equal{
 				equal:  false,
