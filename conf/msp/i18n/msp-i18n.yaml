@@ -35,10 +35,10 @@ zh:
   workspace_default: "默认"
   project_type_dop: "DevOps 项目"
   project_type_msp: "微服务治理项目"
-  span_count_desc: Span 数量倒序
-  span_count_asc: Span 数量正序
-  trace_duration_desc: 追踪持续时间倒序
-  trace_duration_asc: 追踪持续时间正序
+  span_count_desc: Span 数量降序
+  span_count_asc: Span 数量升序
+  trace_duration_desc: 追踪持续时间降序
+  trace_duration_asc: 追踪持续时间升序
   trace_time_desc: 追踪发生时间倒序
   trace_time_asc: 追踪发生时间正序
   service_name: 服务名
