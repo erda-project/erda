@@ -101,7 +101,7 @@ func Test_processEvent(t *testing.T) {
 }
 
 func TestParseExecuteTime(t *testing.T) {
-	ti := time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC)
+	ti := time.Date(2006, 1, 2, 15, 4, 5, 0, time.Local)
 
 	tt := []struct {
 		value string
