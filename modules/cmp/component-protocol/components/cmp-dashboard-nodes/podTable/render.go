@@ -27,12 +27,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -54,7 +52,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	pt.SDK = cputil.SDK(ctx)
 	pt.Operations = pt.GetTableOperation()
-	pt.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	pt.Ctx = ctx
 	pt.Table.TableComponent = pt
 	pt.Ctx = ctx
 	pt.Server = steveServer
@@ -98,7 +96,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
 	}
-	nodes, err := pt.GetNodes(gs)
+	nodes, err := pt.GetNodes(ctx, gs)
 	if err != nil {
 		return err
 	}
@@ -113,7 +111,8 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 
 func (pt *PodInfoTable) getProps() {
 	p := map[string]interface{}{
-		"rowKey": "id",
+		"rowKey":         "id",
+		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 320},

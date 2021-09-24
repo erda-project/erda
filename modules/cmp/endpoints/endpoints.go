@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/mns"
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -41,7 +40,6 @@ type Endpoints struct {
 	nodes           *nodes.Nodes
 	labels          *labels.Labels
 	clusters        *clusters.Clusters
-	metrics         *metrics.Metric
 	orgResource     *org_resource.OrgResource
 	Mns             *mns.Mns
 	Ess             *ess.Ess
@@ -70,7 +68,6 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.CachedJS = cachedJS
-	e.metrics = ctx.Value("metrics").(*metrics.Metric)
 	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
 	return e
 }
@@ -216,8 +213,5 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// task list
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: i18nPrinter(e.ListOrgRunningTasks)},
 		{Path: "/api/tasks", Method: http.MethodPost, Handler: i18nPrinter(e.DealTaskEvent)},
-
-		// metrics
-		{Path: "/api/metrics", Method: http.MethodPost, Handler: i18nPrinter(e.MetricsQuery)},
 	}
 }

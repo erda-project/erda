@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/mock"
 )
@@ -91,7 +90,7 @@ func TestToInfluxReq(t *testing.T) {
 	namespace := "default"
 	ip := "1.1.1.1"
 	type args struct {
-		req *apistructs.MetricsRequest
+		req *MetricsRequest
 	}
 	tests := []struct {
 		name string
@@ -102,14 +101,14 @@ func TestToInfluxReq(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				&apistructs.MetricsRequest{
+				&MetricsRequest{
 					UserID:       "1",
 					OrgID:        "2",
 					ClusterName:  clusterName,
 					ResourceType: Memory,
 					ResourceKind: Node,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					NodeRequests: []apistructs.MetricsNodeRequest{{IP: "1.1.1.1"}},
+					NodeRequests: []MetricsNodeRequest{{IP: "1.1.1.1"}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{
@@ -122,14 +121,14 @@ func TestToInfluxReq(t *testing.T) {
 		{
 			name: "test2",
 			args: args{
-				&apistructs.MetricsRequest{
+				&MetricsRequest{
 					UserID:       "1",
 					OrgID:        "2",
 					ClusterName:  clusterName,
 					ResourceType: Cpu,
 					ResourceKind: Pod,
 					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
-					PodRequests: []apistructs.MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc", Namespace: namespace}},
+					PodRequests: []MetricsPodRequest{{PodName: "telegraf-app-00e2f41199-z92wc", Namespace: namespace}},
 				},
 			},
 			want: []*pb.QueryWithInfluxFormatRequest{

@@ -47,14 +47,23 @@ func init() {
 	})
 }
 
-var steveServer cmp.SteveServer
+var (
+	steveServer cmp.SteveServer
+	mServer     metrics.Interface
+)
 
 func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
 	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
+	mserver, ok := ctx.Service("cmp").(metrics.Interface)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a metrics server")
+	}
+
 	steveServer = server
+	mServer = mserver
 	return p.DefaultProvider.Init(ctx)
 }
 
@@ -190,14 +199,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 		return err
 	}
 
-	cpuReq := apistructs.MetricsRequest{
+	cpuReq := metrics.MetricsRequest{
 		UserID:       userID,
 		OrgID:        orgID,
 		ClusterName:  p.State.ClusterName,
 		ResourceKind: metrics.Pod,
 		ResourceType: metrics.Cpu,
 	}
-	memReq := apistructs.MetricsRequest{
+	memReq := metrics.MetricsRequest{
 		UserID:       userID,
 		OrgID:        orgID,
 		ClusterName:  p.State.ClusterName,
@@ -228,11 +237,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
-		cpuReq.PodRequests = append(cpuReq.PodRequests, apistructs.MetricsPodRequest{
+		cpuReq.PodRequests = append(cpuReq.PodRequests, metrics.MetricsPodRequest{
 			PodName:   name,
 			Namespace: namespace,
 		})
-		memReq.PodRequests = append(memReq.PodRequests, apistructs.MetricsPodRequest{
+		memReq.PodRequests = append(memReq.PodRequests, metrics.MetricsPodRequest{
 			PodName:   name,
 			Namespace: namespace,
 		})
@@ -314,15 +323,15 @@ func (p *ComponentPodsTable) RenderTable() error {
 		})
 	}
 
-	cpuMetrics, err := p.bdl.GetMetrics(cpuReq)
+	cpuMetrics, err := mServer.PodMetrics(p.ctx, &cpuReq)
 	if err != nil || len(cpuMetrics) == 0 {
 		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
-		cpuMetrics = make([]apistructs.MetricsData, len(items), len(items))
+		cpuMetrics = make([]metrics.MetricsData, len(items), len(items))
 	}
-	memMetrics, err := p.bdl.GetMetrics(memReq)
+	memMetrics, err := mServer.PodMetrics(p.ctx, &memReq)
 	if err != nil || len(memMetrics) == 0 {
 		logrus.Errorf("failed to get mem metrics for pods, %v", err)
-		memMetrics = make([]apistructs.MetricsData, len(items), len(items))
+		memMetrics = make([]metrics.MetricsData, len(items), len(items))
 	}
 
 	for i := range items {
