@@ -194,6 +194,49 @@ func TestCancel(t *testing.T) {
 	assert.Equal(t, uuid, task.Extra.UUID)
 }
 
+func TestInspect(t *testing.T) {
+	s = &Sched{
+		taskManager: taskManager,
+	}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetTaskExecutor", func(_ *Sched, executorType string, clusterName string, task *spec.PipelineTask) (bool, types.TaskExecutor, error) {
+		return false, &k8sjob.K8sJob{}, nil
+	})
+	defer m.Unpatch()
+
+	p := monkey.PatchInstanceMethod(reflect.TypeOf(&k8sjob.K8sJob{}), "Inspect", func(_ *k8sjob.K8sJob, ctx context.Context, task *spec.PipelineTask) (data apistructs.TaskInspect, err error) {
+		return apistructs.TaskInspect{}, nil
+	})
+	defer p.Unpatch()
+
+	ctx := context.Background()
+	task := &spec.PipelineTask{
+		Extra: spec.PipelineTaskExtra{
+			Namespace: "pipeline-1",
+			UUID:      "pipeline-123456",
+			LoopOptions: &apistructs.PipelineTaskLoopOptions{
+				LoopedTimes: 3,
+			},
+		},
+	}
+	_, err := s.Inspect(ctx, task)
+	assert.Equal(t, nil, err)
+}
+
+func TestPrintActionInfo(t *testing.T) {
+	task := &spec.PipelineTask{
+		PipelineID: 1,
+		ID:         1,
+		Name:       "custom-script",
+		Extra: spec.PipelineTaskExtra{
+			Namespace:   "pipeline-1",
+			UUID:        "task-1",
+			ClusterName: "terminus-dev",
+		},
+	}
+	msg := printActionInfo(task)
+	assert.Equal(t, "pipelineID: 1, id: 1, name: custom-script, namespace: pipeline-1, schedulerJobID: task-1, clusterName: terminus-dev", msg)
+}
+
 //import (
 //	"context"
 //	"encoding/json"
