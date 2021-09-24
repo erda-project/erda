@@ -1,20 +1,47 @@
-Java Agent:
-  - Java
-Apache SkyWalking:
-  - Java
-  - Golang
-  - PHP
-  - .NET Core
-  - Node.js
-Jageger:
-  - Java
-  - Golang
-  - PHP
-  - .NET Core
-  - Node.js
-OpenTelemetry:
-  - Java
-  - Golang
-  - PHP
-  - .NET Core
-  - Node.js
+- instrumentationlibrary: Jaeger
+  enabled: true
+  languages:
+    - name: Java
+      enabled: true
+    - name: Golang
+      enabled: false
+    - name: PHP
+      enabled: false
+    - name: .NET Core
+      enabled: false
+    - name: Node.js
+      enabled: false
+
+- instrumentationlibrary: Apache SkyWalking
+  enabled: false
+  languages:
+    - name: Java
+      enabled: false
+    - name: Golang
+      enabled: false
+    - name: PHP
+      enabled: false
+    - name: .NET Core
+      enabled: false
+    - name: Node.js
+      enabled: false
+
+- instrumentationlibrary: OpenTelemetry
+  enabled: false
+  languages:
+    - name: Java
+      enabled: false
+    - name: Golang
+      enabled: false
+    - name: PHP
+      enabled: false
+    - name: .NET Core
+      enabled: false
+    - name: Node.js
+      enabled: false
+
+- instrumentationlibrary: Java Agent
+  enabled: false
+  languages:
+    - name: Java
+      enabled: false
