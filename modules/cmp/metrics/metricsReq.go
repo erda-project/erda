@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package metrics
 
 type MetricsRequest struct {
 	UserID       string
@@ -31,11 +31,6 @@ type MetricsPodRequest struct {
 
 type MetricsNodeRequest struct {
 	IP string
-}
-
-type MetricsResponse struct {
-	Header
-	Data []MetricsData `json:"data"`
 }
 
 type MetricsData struct {

@@ -24,9 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/common"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -176,7 +176,7 @@ type RowItem struct {
 	Ready       string       `json:"ready"`
 }
 
-func (t *Table) GetUsageValue(metricsData apistructs.MetricsData) *DistributionValue {
+func (t *Table) GetUsageValue(metricsData metrics.MetricsData) *DistributionValue {
 	return &DistributionValue{
 		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Used, metricsData.Total),
 		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
@@ -201,7 +201,7 @@ func getColor(percent float64) string {
 	return common.ColorMap["green"]
 }
 
-func (t *Table) GetDistributionRate(metricsData apistructs.MetricsData) *DistributionValue {
+func (t *Table) GetDistributionRate(metricsData metrics.MetricsData) *DistributionValue {
 	return &DistributionValue{
 		Text:    fmt.Sprintf("%f/%f", metricsData.Used, metricsData.Request),
 		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
