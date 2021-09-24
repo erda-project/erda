@@ -52,7 +52,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	}
 	status := dbclient.StatusTypeSuccess
 	detail := ""
-	if !fakecluster {
+	if !fakecluster && !req.Force {
 		// Check project whether to use cluster
 		projectRefer := precheckResp{}
 		resp, err := httpclient.New().Get(discover.CoreServices()).
@@ -135,5 +135,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 		Status:      status,
 		Detail:      string(detail),
 	})
+
+	logrus.Infof("detail: %v", detail)
 	return recordID, nil
 }
