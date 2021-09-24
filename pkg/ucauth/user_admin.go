@@ -240,7 +240,18 @@ func userPagingListMapper(user *userPaging) []User {
 // GetUser 获取用户详情
 func (c *UCClient) GetUser(userID string) (*User, error) {
 	if c.oryEnabled() {
-		return getUserByID(c.oryKratosPrivateAddr(), userID)
+		userIDs, userMap, err := c.ConvertUserIDs([]string{userID})
+		if err != nil || len(userIDs) == 0 {
+			return nil, err
+		}
+		user, err := getUserByID(c.oryKratosPrivateAddr(), userIDs[0])
+		if err != nil {
+			return nil, err
+		}
+		if userID, ok := userMap[user.ID]; ok {
+			user.ID = userID
+		}
+		return user, nil
 	}
 	var (
 		user *User
