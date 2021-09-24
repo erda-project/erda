@@ -88,7 +88,7 @@ func RunMigrateMkPyPkg(ctx *command.Context, host string, port int, username, pa
 		DeveloperScript: developerScript,
 		Requirements:    nil,
 		Settings: pygrator.Settings{
-			Engine:   pygrator.DjangoMySQLEngine,
+			Engine:   pygrator.MySQLConnectorEngine,
 			User:     username,
 			Password: password,
 			Host:     host,

@@ -33,6 +33,18 @@ const sqlWithConstraintCheck = "CREATE TABLE `migration_records` (`version` VARC
 const (
 	sqlWithUtf32_1 = "CREATE TABLE `migration_records` (`version` VARCHAR(10) NOT NULL COMMENT '服务版本号-',`module` VARCHAR(50) NOT NULL COMMENT '服务名',`version_b` VARCHAR(10) NOT NULL COMMENT '服务 B 版本号',`done` VARCHAR(1) NOT NULL DEFAULT '0',`create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP() COMMENT '创建时间',PRIMARY KEY(`version`, `module`, `version_b`),CONSTRAINT `migration_records_chk_1` CHECK(((`done`='0') OR (`done`='1'))) ENFORCED) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF32"
 	sqlWithUtf32_2 = "CREATE TABLE `migration_records` (`version` VARCHAR(10) NOT NULL COMMENT '服务版本号-',`module` VARCHAR(50) NOT NULL COMMENT '服务名',`version_b` VARCHAR(10) NOT NULL COMMENT '服务 B 版本号',`done` VARCHAR(1) NOT NULL DEFAULT '0',`create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP() COMMENT '创建时间',PRIMARY KEY(`version`, `module`, `version_b`),CONSTRAINT `migration_records_chk_1` CHECK(((`done`='0') OR (`done`='1'))) ENFORCED) ENGINE = InnoDB character SET = UTF32"
+	sqlWithUtf8mb3 = `
+CREATE TABLE ci_v3_build_caches (
+  id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  name varchar(200) DEFAULT NULL COMMENT '缓存名',
+  cluster_name varchar(200) DEFAULT NULL COMMENT '集群名',
+  last_pull_at datetime DEFAULT NULL COMMENT '缓存最近一次被拉取的时间',
+  created_at datetime DEFAULT NULL COMMENT '创建时间',
+  updated_at datetime DEFAULT NULL COMMENT '更新时间',
+  deleted_at datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb3 COMMENT='buildpack action 使用的构建缓存';
+`
 )
 
 func TestTrimCollate(t *testing.T) {
@@ -135,13 +147,13 @@ func TestTrimConstraintCheckFromCreateTable(t *testing.T) {
 }
 
 func TestTrimCharacterSetFromRawCreateTableSQL(t *testing.T) {
-	for _, sql := range []string{sqlWithUtf32_1, sqlWithUtf32_2} {
+	for _, sql := range []string{sqlWithUtf32_1, sqlWithUtf32_2, sqlWithUtf8mb3} {
 		sql := snapshot.TrimCharacterSetFromRawCreateTableSQL(sql)
 		if strings.Contains(strings.ToLower(sql), "utf32") {
 			t.Fatal("failed to trim character from sql")
 		}
 		if _, err := parser.New().ParseOneStmt(sql, "", ""); err != nil {
-			t.Fatal(err)
+			t.Fatalf("err: %v, sql: %s", err, sql)
 		}
 		t.Log(sql)
 	}
