@@ -17,7 +17,6 @@ package migrator
 import (
 	"fmt"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"gorm.io/gorm"
 
@@ -111,8 +110,7 @@ func (s *Schema) EqualWith(db *gorm.DB) *Equal {
 				reason: fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw),
 			}
 		}
-		create = snapshot.TrimCharacterSetFromRawCreateTableSQL(create)
-		node, err := parser.New().ParseOneStmt(create, "", "")
+		node, err := snapshot.ParseCreateTableStmt(create)
 		if err != nil {
 			return &Equal{
 				equal:  false,
