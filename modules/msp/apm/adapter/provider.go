@@ -27,8 +27,9 @@ import (
 )
 
 type config struct {
-	Library    []string `json:"library"`
-	ConfigFile []string `json:"configFile"`
+	CollectorUrl string   `file:"collector_url"`
+	LibraryFiles []string `file:"libraryFiles"`
+	ConfigFiles  []string `file:"configFiles"`
 }
 
 // +provider
@@ -37,26 +38,41 @@ type provider struct {
 	Log            logs.Logger
 	Register       transport.Register
 	adapterService *adapterService
-	libraryMap     map[string]interface{}
-	configFile     string
+	libraries      []*InstrumentationLibrary
+	templates      map[string]*InstrumentationLibraryTemplate
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.adapterService = &adapterService{p}
-	p.libraryMap = make(map[string]interface{})
-	for _, file := range p.Cfg.Library {
-		//reconfig.LoadToMap(file, p.libraryMap)
+	p.libraries = make([]*InstrumentationLibrary, 0)
+	p.templates = make(map[string]*InstrumentationLibraryTemplate)
+	for _, file := range p.Cfg.LibraryFiles {
 		f, err := ioutil.ReadFile(file)
 		if err != nil {
 			return err
 		}
-		err = yaml.Unmarshal(f, &p.libraryMap)
+		libs := make([]*InstrumentationLibrary, 0)
+		err = yaml.Unmarshal(f, &libs)
 		if err != nil {
 			return err
 		}
+		p.libraries = append(p.libraries, libs...)
 	}
-	p.configFile = p.Cfg.ConfigFile[0]
+	for _, file := range p.Cfg.ConfigFiles {
+		f, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		templates := make([]*InstrumentationLibraryTemplate, 0)
+		err = yaml.Unmarshal(f, &templates)
+		if err != nil {
+			return err
+		}
+		for _, template := range templates {
+			p.templates[template.InstrumentationLibrary] = template
+		}
+	}
 	if p.Register != nil {
+		p.adapterService = &adapterService{p}
 		pb.RegisterInstrumentationLibraryServiceImp(p.Register, p.adapterService, apis.Options())
 	}
 	return nil
