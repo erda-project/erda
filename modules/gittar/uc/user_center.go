@@ -17,6 +17,7 @@ package uc
 import (
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -65,6 +66,11 @@ func GetToken(forceRefresh bool) (string, error) {
 	return tokenValue.AccessToken, nil
 }
 
+var (
+	once sync.Once
+	uc   *ucauth.UCClient
+)
+
 func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 	cacheUser, exist := userCache.Get(id)
 	if exist {
@@ -74,7 +80,17 @@ func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 		return nil, nil
 	}
 	if conf.OryEnabled() {
-		uc := ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		once.Do(func() {
+			uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+			db, err := ucauth.NewDB()
+			if err != nil {
+				logrus.Errorf("fail to initial db err: %v", err)
+				return
+			}
+			logrus.Infof("gittar uc client set up")
+			uc.SetDBClient(db)
+		})
+
 		user, err := uc.GetUser(id)
 		if err != nil {
 			return nil, err
