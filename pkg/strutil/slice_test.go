@@ -54,4 +54,7 @@ func TestReverseSlice(t *testing.T) {
 			t.Fatal(i, case_, "fails")
 		}
 	}
+
+	strutil.ReverseSlice([2]int{0, 2})
+	strutil.ReverseSlice("a")
 }

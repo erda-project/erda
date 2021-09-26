@@ -20,6 +20,9 @@ import (
 
 // ReverseSlice reverses the slice s in place with any type
 func ReverseSlice(s interface{}) {
+	if reflect.TypeOf(s).Kind() != reflect.Slice {
+		return
+	}
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
