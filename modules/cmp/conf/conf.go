@@ -35,11 +35,6 @@ type Conf struct {
 	RedisSentinelAddrs string        `default:"" env:"REDIS_SENTINELS_ADDR"`
 	RedisAddr          string        `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
 	RedisPwd           string        `default:"anywhere" env:"REDIS_PASSWORD"`
-	UCClientID         string        `env:"UC_CLIENT_ID"`
-	UCClientSecret     string        `env:"UC_CLIENT_SECRET"`
-	// ory/kratos config
-	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
 
 	// size of steve server cache, default 1Gi
 	CacheSize int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`
@@ -111,32 +106,6 @@ func RedisAddr() string {
 // RedisPwd 返回 redis 密码
 func RedisPwd() string {
 	return cfg.RedisPwd
-}
-
-// UCClientID 返回 UCClientID 选项.
-func UCClientID() string {
-	return cfg.UCClientID
-}
-
-// UCClientSecret 返回 UCClientSecret 选项.
-func UCClientSecret() string {
-	return cfg.UCClientSecret
-}
-
-func OryEnabled() bool {
-	return cfg.OryEnabled
-}
-
-func OryKratosPrivateAddr() string {
-	return cfg.OryKratosPrivateAddr
-}
-
-func OryCompatibleClientID() string {
-	return "kratos"
-}
-
-func OryCompatibleClientSecret() string {
-	return ""
 }
 
 func CacheSize() int64 {

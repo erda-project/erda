@@ -110,11 +110,22 @@ func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 		return nil, nil
 	}
 	if c.oryEnabled() {
-		userIDs, err := c.ConvertUserIDs(ids)
+		// get ordered uuid list
+		userIDs, userMap, err := c.ConvertUserIDs(ids)
 		if err != nil {
 			return nil, err
 		}
-		return getUserByIDs(c.oryKratosPrivateAddr(), userIDs)
+		users, err := getUserByIDs(c.oryKratosPrivateAddr(), userIDs)
+		if err != nil {
+			return nil, err
+		}
+		// revert uuid to id for old uc users
+		for i, u := range users {
+			if userID, ok := userMap[u.ID]; ok {
+				users[i].ID = userID
+			}
+		}
+		return users, nil
 	}
 	parts := make([]string, len(ids))
 	for _, id := range ids {
@@ -152,23 +163,36 @@ func NewDB() (*gorm.DB, error) {
 	return db, nil
 }
 
-func (c *UCClient) ConvertUserIDs(ids []string) ([]string, error) {
-	var users []UserIDModel
-	if err := c.db.Table("kratos_uc_userid_mapping").Select("user_id").Where("id in (?)", ids).Find(&users).Error; err != nil {
-		return nil, err
+func (c *UCClient) ConvertUserIDs(ids []string) ([]string, map[string]string, error) {
+	users, err := c.GetUserIDMapping(ids)
+	if err != nil {
+		return nil, nil, err
 	}
-	return filterUserIDs(ids, users), nil
+	ucKratosMap := make(map[string]string)
+	kratosUcMap := make(map[string]string)
+	for _, u := range users {
+		ucKratosMap[u.ID] = u.UserID
+		kratosUcMap[u.UserID] = u.ID
+	}
+	return filterUserIDs(ids, ucKratosMap), kratosUcMap, nil
 }
 
-func filterUserIDs(ids []string, users []UserIDModel) []string {
+func (c *UCClient) GetUserIDMapping(ids []string) ([]UserIDModel, error) {
+	var users []UserIDModel
+	if err := c.db.Table("kratos_uc_userid_mapping").Where("id in (?)", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func filterUserIDs(ids []string, users map[string]string) []string {
 	userIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
-		if len(id) > 11 {
+		if userID, ok := users[id]; ok {
+			userIDs = append(userIDs, userID)
+		} else {
 			userIDs = append(userIDs, id)
 		}
-	}
-	for _, u := range users {
-		userIDs = append(userIDs, u.UserID)
 	}
 	return userIDs
 }
@@ -216,7 +240,18 @@ func userPagingListMapper(user *userPaging) []User {
 // GetUser 获取用户详情
 func (c *UCClient) GetUser(userID string) (*User, error) {
 	if c.oryEnabled() {
-		return getUserByID(c.oryKratosPrivateAddr(), userID)
+		userIDs, userMap, err := c.ConvertUserIDs([]string{userID})
+		if err != nil || len(userIDs) == 0 {
+			return nil, err
+		}
+		user, err := getUserByID(c.oryKratosPrivateAddr(), userIDs[0])
+		if err != nil {
+			return nil, err
+		}
+		if userID, ok := userMap[user.ID]; ok {
+			user.ID = userID
+		}
+		return user, nil
 	}
 	var (
 		user *User
