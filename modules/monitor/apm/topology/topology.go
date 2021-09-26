@@ -348,6 +348,7 @@ var (
 	TargetComponentNodeType *NodeType
 	TargetOtherNodeType     *NodeType
 	SourceMQNodeType        *NodeType
+	TargetMQNodeType        *NodeType
 	TargetMQServiceNodeType *NodeType
 	OtherNodeType           *NodeType
 
@@ -368,6 +369,7 @@ const (
 	TargetComponentNode = "TargetComponentNode"
 	TargetOtherNode     = "TargetOtherNode"
 	SourceMQNode        = "SourceMQNode"
+	TargetMQNode        = "TargetMQNode"
 	TargetMQServiceNode = "TargetMQServiceNode"
 	OtherNode           = "OtherNode"
 )
@@ -413,7 +415,7 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsDBType, SubField: &GroupByField{Name: apm.TagsHost}},
+		GroupByField: &GroupByField{Name: apm.TagsHost, SubField: &GroupByField{Name: apm.TagsDBType}},
 		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType},
 		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
 			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
@@ -429,6 +431,14 @@ func init() {
 	}
 	SourceMQNodeType = &NodeType{
 		Type:         SourceMQNode,
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
+			MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation: NodeAggregation,
+	}
+	TargetMQNodeType = &NodeType{
+		Type:         TargetMQNode,
 		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
 		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
 		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
@@ -463,6 +473,7 @@ func init() {
 			// SourceMQService  -> TargetMQService
 			// SourceService    -> TargetComponent
 			{Source: []*NodeType{SourceMQNodeType}, Target: TargetMQServiceNodeType},
+			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetMQNodeType},
 			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetComponentNodeType},
 		},
 		ServiceNodeIndexType: {
@@ -1748,6 +1759,10 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		}
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case SourceMQNode:
+		node.Type = tags.Component
+		node.Name = tags.Host
+		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
+	case TargetMQNode:
 		node.Type = tags.Component
 		node.Name = tags.Host
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
