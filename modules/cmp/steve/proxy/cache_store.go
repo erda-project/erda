@@ -135,10 +135,12 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}()
 
 	var list types.APIObjectList
+	logrus.Infof("[DEBUG] start unmarshal data from cache at %s", time.Now().Format(time.StampNano))
 	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
 		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
 		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 	}
+	logrus.Infof("[DEBUG] end unmarshal data from cache at %s", time.Now().Format(time.StampNano))
 	return list, nil
 }
 

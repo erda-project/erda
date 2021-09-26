@@ -94,6 +94,7 @@ func (podInfo *PodInfo) Render(ctx context.Context, c *cptype.Component, s cptyp
 	podInfo.Data = map[string]Data{
 		"data": data,
 	}
+	podInfo.Transfer(c)
 	return nil
 }
 
@@ -117,9 +118,22 @@ func (podInfo *PodInfo) GenComponentState(component *cptype.Component) error {
 	return nil
 }
 
+func (podInfo *PodInfo) Transfer(component *cptype.Component) {
+	component.Props = podInfo.Props
+	component.Data = map[string]interface{}{}
+	for k, v := range podInfo.Data {
+		component.Data[k] = v
+	}
+	component.State = map[string]interface{}{
+		"clusterName": podInfo.State.ClusterName,
+		"podId":       podInfo.State.PodID,
+	}
+}
+
 func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 	return Props{
-		ColumnNum: 4,
+		IsLoadMore: true,
+		ColumnNum:  4,
 		Fields: []Field{
 			{Label: podInfo.SDK.I18n("namespace"), ValueKey: "namespace"},
 			{Label: podInfo.SDK.I18n("age"), ValueKey: "age"},

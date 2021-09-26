@@ -58,6 +58,7 @@ func (statusBadge *StatusBadge) Render(ctx context.Context, c *cptype.Component,
 	}
 	c.Data = map[string]interface{}{"list": bars}
 	c.Type = statusBadge.Type
+	c.Props = map[string]interface{}{"isLoadMore": true}
 	return nil
 }
 

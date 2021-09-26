@@ -116,6 +116,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 
 func (ct *CpuInfoTable) getProps() {
 	props := map[string]interface{}{
+		"isLoadMore":     true,
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{

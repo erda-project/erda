@@ -24,7 +24,7 @@ import (
 )
 
 func (containerTitle *ContainerTitle) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	containerTitle.Props.Title = cputil.I18n(ctx, "container")
+	c.Props = Props{Title: cputil.I18n(ctx, "container")}
 	return nil
 }
 

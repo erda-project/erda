@@ -86,6 +86,8 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 	podStatus.Data.Labels.Color = color
 	podStatus.Data.Labels.Label = cputil.I18n(ctx, status)
 	podStatus.Props.Size = "default"
+	podStatus.Props.IsLoadMore = true
+	podStatus.Transfer(c)
 	return nil
 }
 
@@ -107,6 +109,17 @@ func (podStatus *PodStatus) GenComponentState(component *cptype.Component) error
 	}
 	podStatus.State = state
 	return nil
+}
+
+func (podStatus *PodStatus) Transfer(component *cptype.Component) {
+	component.Props = podStatus.Props
+	component.Data = map[string]interface{}{
+		"labels": podStatus.Data.Labels,
+	}
+	component.State = map[string]interface{}{
+		"clusterName": podStatus.State.ClusterName,
+		"podId":       podStatus.State.PodID,
+	}
 }
 
 func init() {

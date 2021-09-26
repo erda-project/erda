@@ -129,6 +129,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		"list": data,
 	}
 
+	containerTable.Props.IsLoadMore = true
 	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
 	containerTable.Props.Scroll.X = 1000
@@ -165,6 +166,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Fixed:     "right",
 		},
 	}
+	containerTable.Transfer(c)
 	return nil
 }
 
@@ -188,6 +190,17 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 	return nil
 }
 
+func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
+	component.Props = containerTable.Props
+	component.Data = map[string]interface{}{}
+	for k, v := range containerTable.Data {
+		component.Data[k] = v
+	}
+	component.State = map[string]interface{}{
+		"clusterName": containerTable.State.ClusterName,
+		"podId":       containerTable.State.PodID,
+	}
+}
 func parseContainerStatus(ctx context.Context, state string) Status {
 	color := ""
 	switch state {

@@ -83,6 +83,7 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 		return fmt.Errorf("failed to encode url query for eventTable component, %v", err)
 	}
 	t.SetComponentValue(ctx)
+	t.Transfer(component)
 	return nil
 }
 
@@ -304,6 +305,7 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
+		IsLoadMore:      true,
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		Columns: []Column{
 			{
@@ -367,6 +369,21 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 		Key:    apistructs.OnChangeSortOperation.String(),
 		Reload: true,
 	}
+}
+
+func (t *ComponentEventTable) Transfer(c *cptype.Component) {
+	c.Props = t.Props
+	c.Data = map[string]interface{}{"list": t.Data.List}
+	c.State = map[string]interface{}{
+		"clusterName":          t.State.ClusterName,
+		"filterValues":         t.State.FilterValues,
+		"pageNo":               t.State.PageNo,
+		"pageSize":             t.State.PageSize,
+		"sorterData":           t.State.Sorter,
+		"total":                t.State.Total,
+		"eventTable__urlQuery": t.State.EventTableUQLQuery,
+	}
+	c.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

@@ -67,6 +67,7 @@ func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
 
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	logrus.Errorf("@@@[DEBUG] start render pods table at %s", time.Now().Format(time.StampNano))
 	p.InitComponent(ctx)
 	if err := p.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen podsTable component state, %v", err)
@@ -95,6 +96,8 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	if err := p.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
+	logrus.Errorf("@@@[DEBUG] end render pods table at %s", time.Now().Format(time.StampNano))
+	p.Transfer(component)
 	return nil
 }
 
@@ -497,6 +500,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
+	p.Props.IsLoadMore = true
 	p.Props.RowKey = "id"
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
@@ -591,6 +595,23 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
+func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
+	component.Props = p.Props
+	component.Data = map[string]interface{}{"list": p.Data.List}
+	component.State = map[string]interface{}{
+		"clusterName":         p.State.ClusterName,
+		"countValues":         p.State.CountValues,
+		"pageNo":              p.State.PageNo,
+		"pageSize":            p.State.PageSize,
+		"sorterData":          p.State.Sorter,
+		"total":               p.State.Total,
+		"values":              p.State.Values,
+		"podsTable__urlQuery": p.State.PodsTableURLQuery,
+		"activeKey":           p.State.ActiveKey,
+	}
+	component.Operations = p.Operations
+}
+
 var PodStatusToColor = map[string]string{
 	"Completed":         "steelblue",
 	"ContainerCreating": "orange",
@@ -639,16 +660,4 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 	}
 	res, _ := resource.ParseQuantity(str)
 	return &res
-}
-
-func getRange(length, pageNo, pageSize int) (int, int) {
-	l := (pageNo - 1) * pageSize
-	if l >= length || l < 0 {
-		l = 0
-	}
-	r := l + pageSize
-	if r > length || r < 0 {
-		r = length
-	}
-	return l, r
 }

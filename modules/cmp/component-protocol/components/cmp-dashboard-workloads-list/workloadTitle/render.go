@@ -61,6 +61,13 @@ func (w *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
+func (w *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
+	component.Props = w.Props
+	component.State = map[string]interface{}{
+		"values": w.State.Values,
+	}
+}
+
 func addCount(count Count) int {
 	return count.Active + count.Error + count.Succeeded + count.Failed
 }

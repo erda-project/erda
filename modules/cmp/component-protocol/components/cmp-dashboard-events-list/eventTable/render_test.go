@@ -244,3 +244,76 @@ func TestComponentEventTable_SetComponentValue(t *testing.T) {
 		t.Errorf("test failed, .Operations is unexpected, %s is not existed", apistructs.OnChangeSortOperation.String())
 	}
 }
+
+func TestComponentEventTable_Transfer(t *testing.T) {
+	component := ComponentEventTable{
+		Type: "",
+		State: State{
+			ClusterName: "testCluster",
+			FilterValues: FilterValues{
+				Namespace: []string{"default"},
+				Type:      []string{"Normal"},
+				Search:    "test",
+			},
+			PageNo:   1,
+			PageSize: 20,
+			Sorter: Sorter{
+				Field: "test",
+				Order: "ascend",
+			},
+			Total:              10,
+			EventTableUQLQuery: "testQuery",
+		},
+		Props: Props{
+			IsLoadMore:      true,
+			PageSizeOptions: []string{"10"},
+			Columns: []Column{
+				{
+					DataIndex: "test",
+					Title:     "test",
+					Width:     120,
+					Sorter:    true,
+				},
+			},
+		},
+		Data: Data{
+			List: []Item{
+				{
+					LastSeen:          "1s",
+					LastSeenTimestamp: 1,
+					Type:              "Normal",
+					Reason:            "test",
+					Object:            "test",
+					Source:            "test",
+					Message:           "test",
+					Count:             "10",
+					CountNum:          10,
+					Name:              "test",
+					Namespace:         "default",
+				},
+			},
+		},
+		Operations: map[string]interface{}{
+			"testOp": Operation{
+				Key:    "testOp",
+				Reload: true,
+			},
+		},
+	}
+
+	expectedData, err := json.Marshal(component)
+	if err != nil {
+		t.Error(err)
+	}
+
+	result := &cptype.Component{}
+	component.Transfer(result)
+	resultData, err := json.Marshal(result)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(expectedData) != string(resultData) {
+		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	}
+}

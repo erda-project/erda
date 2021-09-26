@@ -79,6 +79,7 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 		return fmt.Errorf("failed to gen url query for workloadTable component, %v", err)
 	}
 	w.SetComponentValue(ctx)
+	w.Transfer(component)
 	return nil
 }
 
@@ -731,6 +732,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	w.Props.RowKey = "id"
 	w.Props.PageSizeOptions = []string{"10", "20", "50", "100"}
+	w.Props.IsLoadMore = true
 
 	statusColumn := Column{
 		DataIndex: "status",
@@ -849,6 +851,23 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 			Key:    apistructs.OnChangeSortOperation.String(),
 			Reload: true,
 		},
+	}
+}
+
+func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
+	component.Props = w.Props
+	component.Data = map[string]interface{}{
+		"list": w.Data.List,
+	}
+	component.State = map[string]interface{}{
+		"clusterName":             w.State.ClusterName,
+		"countValues":             w.State.CountValues,
+		"pageNo":                  w.State.PageNo,
+		"pageSize":                w.State.PageSize,
+		"sorterData":              w.State.Sorter,
+		"total":                   w.State.Total,
+		"values":                  w.State.Values,
+		"workloadTable__urlQuery": w.State.WorkloadTableURLQuery,
 	}
 }
 

@@ -16,6 +16,8 @@ package tableTabs
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -24,6 +26,9 @@ import (
 )
 
 func (tableTabs *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := tableTabs.GenComponentState(c); err != nil {
+		return fmt.Errorf("failed to gen tableTabs component state, %v", err)
+	}
 	if event.Operation == cptype.InitializeOperation {
 		tableTabs.State.ActiveKey = "cpu"
 	}
@@ -43,7 +48,34 @@ func (tableTabs *TableTabs) Render(ctx context.Context, c *cptype.Component, s c
 			Reload: true,
 		},
 	}
+	tableTabs.Transfer(c)
 	return nil
+}
+
+func (tableTabs *TableTabs) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
+		return nil
+	}
+	var state State
+	data, err := json.Marshal(component.State)
+	if err != nil {
+		return err
+	}
+	if err = json.Unmarshal(data, &state); err != nil {
+		return err
+	}
+	tableTabs.State = state
+	return nil
+}
+
+func (tableTabs *TableTabs) Transfer(component *cptype.Component) {
+	component.Props = tableTabs.Props
+	component.State = map[string]interface{}{
+		"activeKey": tableTabs.State.ActiveKey,
+	}
+	component.Operations = map[string]interface{}{
+		"onChange": tableTabs.Operations.OnChange,
+	}
 }
 
 func init() {

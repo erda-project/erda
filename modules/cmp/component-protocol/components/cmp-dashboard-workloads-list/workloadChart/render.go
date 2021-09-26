@@ -41,6 +41,7 @@ func (w *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.C
 	if err := w.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("faield to set workloadChart component value, %v", err)
 	}
+	w.Transfer(component)
 	return nil
 }
 
@@ -149,4 +150,11 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		activeSeries, errorSeries, succeededSeries, failedSeries,
 	}
 	return nil
+}
+
+func (w *ComponentWorkloadChart) Transfer(component *cptype.Component) {
+	component.Props = w.Props
+	component.State = map[string]interface{}{
+		"values": w.State.Values,
+	}
 }

@@ -92,6 +92,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
 	p.SetComponentValue(ctx)
+	p.Transfer(component)
 	return nil
 }
 
@@ -552,6 +553,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
+	p.Props.IsLoadMore = true
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}
@@ -637,6 +639,23 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Reload: true,
 		},
 	}
+}
+
+func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
+	component.Props = p.Props
+	component.State = map[string]interface{}{
+		"clusterName":       p.State.ClusterName,
+		"workloadId":        p.State.WorkloadID,
+		"pageNo":            p.State.PageNo,
+		"pageSize":          p.State.PageSize,
+		"sorterData":        p.State.Sorter,
+		"total":             p.State.Total,
+		"podsTableURLQuery": p.State.PodsTableURLQuery,
+	}
+	component.Data = map[string]interface{}{
+		"list": p.Data.List,
+	}
+	component.Operations = p.Operations
 }
 
 func matchSelector(selector, labels map[string]interface{}) bool {

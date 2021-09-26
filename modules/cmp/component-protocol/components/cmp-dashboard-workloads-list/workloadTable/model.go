@@ -130,6 +130,7 @@ type CommandState struct {
 }
 
 type Props struct {
+	IsLoadMore      bool     `json:"isLoadMore,omitempty"`
 	PageSizeOptions []string `json:"pageSizeOptions,omitempty"`
 	Columns         []Column `json:"columns,omitempty"`
 	RowKey          string   `json:"rowKey,omitempty"`

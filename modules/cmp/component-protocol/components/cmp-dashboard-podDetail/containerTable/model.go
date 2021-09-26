@@ -21,9 +21,9 @@ import (
 type ContainerTable struct {
 	base.DefaultProvider
 
-	Type  string            `json:"type"`
-	Data  map[string][]Data `json:"data"`
+	Type  string            `json:"type,omitempty"`
 	Props Props             `json:"props"`
+	Data  map[string][]Data `json:"data"`
 	State State             `json:"state,omitempty"`
 }
 
@@ -46,6 +46,7 @@ type Scroll struct {
 }
 
 type Props struct {
+	IsLoadMore bool     `json:"isLoadMore,omitempty"`
 	RowKey     string   `json:"rowKey"`
 	Pagination bool     `json:"pagination"`
 	Scroll     Scroll   `json:"scroll"`

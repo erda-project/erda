@@ -136,3 +136,56 @@ func TestHasSuffix(t *testing.T) {
 		t.Errorf("test failed, \"project-5-custom\" does not have project suffix, actul do")
 	}
 }
+
+func TestComponentFilter_Transfer(t *testing.T) {
+	component := ComponentFilter{
+		Type: "",
+		State: State{
+			ClusterName: "testCluster",
+			Conditions: []Condition{
+				{
+					HaveFilter:  true,
+					Key:         "test",
+					Placeholder: "test",
+					Label:       "test",
+					Type:        "test",
+					Fixed:       true,
+					Options: []Option{
+						{
+							Label: "test",
+							Value: "test",
+						},
+					},
+				},
+			},
+			Values: Values{
+				Namespace: []string{"default"},
+				Search:    "test",
+				Type:      []string{"Normal"},
+			},
+			FilterURLQuery: "test",
+		},
+		Operations: map[string]interface{}{
+			"testOp": Operation{
+				Key:    "testOp",
+				Reload: true,
+			},
+		},
+	}
+
+	expectedData, err := json.Marshal(component)
+	if err != nil {
+		t.Error(err)
+	}
+
+	result := &cptype.Component{}
+	component.Transfer(result)
+	resultData, err := json.Marshal(result)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(expectedData) != string(resultData) {
+		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	}
+}

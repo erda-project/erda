@@ -35,7 +35,8 @@ type ComponentWorkloadStatus struct {
 }
 
 type Props struct {
-	Size string `json:"size,omitempty"`
+	IsLoadMore bool   `json:"isLoadMore,omitempty"`
+	Size       string `json:"size,omitempty"`
 }
 
 type Data struct {
