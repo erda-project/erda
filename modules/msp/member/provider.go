@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -30,6 +31,7 @@ type provider struct {
 	Register      transport.Register
 	memberService *memberService
 	bdl           *bundle.Bundle
+	ProjectServer projectpb.ProjectServiceServer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
