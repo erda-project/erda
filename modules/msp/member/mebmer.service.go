@@ -17,10 +17,10 @@ package member
 import (
 	"context"
 	"encoding/json"
-	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"strconv"
 
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
