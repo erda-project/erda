@@ -249,24 +249,24 @@ func (e *Endpoints) DeleteTestPlanV2Step(ctx context.Context, r *http.Request, v
 	return httpserver.OkResp("succ")
 }
 
-// UpdateTestPlanV2Step Update the test plan step
+// MoveTestPlanV2Step move the test plan step
 func (e *Endpoints) MoveTestPlanV2Step(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrUpdateTestPlanStep.NotLogin().ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.NotLogin().ToResp(), nil
 	}
 
 	testPlanID, err := getTestPlanID(vars)
 	if err != nil {
-		return apierrors.ErrUpdateTestPlanStep.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.InvalidParameter(err).ToResp(), nil
 	}
 
-	var req apistructs.TestPlanV2StepUpdateRequest
+	var req apistructs.TestPlanV2StepMoveRequest
 	if r.ContentLength == 0 {
-		return apierrors.ErrUpdateTestPlanStep.MissingParameter("request body").ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.MissingParameter("request body").ToResp(), nil
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return apierrors.ErrUpdateTestPlanStep.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.InvalidParameter(err).ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
 	req.TestPlanID = testPlanID

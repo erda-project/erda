@@ -68,7 +68,7 @@ func (b *Bundle) DeleteTestPlansV2Step(req apistructs.TestPlanV2StepDeleteReques
 }
 
 // MoveTestPlansV2Step 移动测试计划步骤
-func (b *Bundle) MoveTestPlansV2Step(req apistructs.TestPlanV2StepUpdateRequest) error {
+func (b *Bundle) MoveTestPlansV2Step(req apistructs.TestPlanV2StepMoveRequest) error {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return err

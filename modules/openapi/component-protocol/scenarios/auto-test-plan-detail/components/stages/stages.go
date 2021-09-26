@@ -70,6 +70,12 @@ func (i *ComponentStageForm) RenderListStageForm() error {
 			Reload: true,
 		},
 	}
+	omg := OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:    apistructs.AutoTestSceneStepMoveGroupOperationKey.String(),
+			Reload: true,
+		},
+	}
 	ocl := OperationInfo{
 		OperationBaseInfo: OperationBaseInfo{
 			Key:      "clickItem",
@@ -79,6 +85,7 @@ func (i *ComponentStageForm) RenderListStageForm() error {
 		Meta: OpMetaInfo{},
 	}
 	i.Operations["moveItem"] = omi
+	i.Operations["moveGroup"] = omg
 	i.Operations["clickItem"] = ocl
 
 	return nil
@@ -89,10 +96,19 @@ func (i *ComponentStageForm) RenderCreateStagesForm(opsData interface{}) error {
 	if err != nil {
 		return err
 	}
+	preStep, err := i.ctxBdl.Bdl.GetTestPlanV2Step(meta.ID)
+	if err != nil {
+		return err
+	}
+	groupID := preStep.GroupID
+	if groupID == 0 {
+		groupID = preStep.ID
+	}
 
 	_, err = i.ctxBdl.Bdl.CreateTestPlansV2Step(apistructs.TestPlanV2StepAddRequest{
 		PreID:      meta.ID,
 		TestPlanID: i.State.TestPlanId,
+		GroupID:    groupID,
 		IdentityInfo: apistructs.IdentityInfo{
 			UserID: i.ctxBdl.Identity.UserID,
 		},
@@ -122,14 +138,15 @@ func (i *ComponentStageForm) RenderDeleteStagesForm(opsData interface{}) error {
 	return nil
 }
 
-func (i *ComponentStageForm) RenderMoveStagesForm() (err error) {
+func (i *ComponentStageForm) RenderMoveStagesForm(isGroup bool) (err error) {
 	var (
 		step *apistructs.TestPlanV2Step
-		req  apistructs.TestPlanV2StepUpdateRequest
+		req  apistructs.TestPlanV2StepMoveRequest
 	)
 	req.UserID = i.ctxBdl.Identity.UserID
 	req.TestPlanID = i.State.TestPlanId
 	req.StepID = i.State.DragParams.DragKey
+	req.IsGroup = isGroup
 	if i.State.DragParams.Position == -1 {
 		step, err = i.ctxBdl.Bdl.GetTestPlanV2Step(i.State.DragParams.DropKey)
 		if err != nil {

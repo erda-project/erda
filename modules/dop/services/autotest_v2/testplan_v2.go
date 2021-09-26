@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -268,20 +269,12 @@ func (svc *Service) AddTestPlanV2Step(req *apistructs.TestPlanV2StepAddRequest) 
 		}
 	}
 
-	// Check the sceneset is exists
+	// Check the sceneSet is exists
 	if err := svc.db.CheckSceneSetIsExists(req.SceneSetID); err != nil {
 		return 0, err
 	}
 
-	if err := svc.db.AddTestPlanV2Step(req); err != nil {
-		return 0, err
-	}
-
-	newStep, err := svc.db.GetTestPlanV2StepByPreID(req.PreID)
-	if err != nil {
-		return 0, err
-	}
-	return newStep.ID, nil
+	return svc.db.AddTestPlanV2Step(req)
 }
 
 // DeleteTestPlanV2Step Delete a step in the test plan
@@ -304,15 +297,15 @@ func (svc *Service) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDeleteReq
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrUpdateTestPlan.AccessDenied()
+			return apierrors.ErrDeleteTestPlan.AccessDenied()
 		}
 	}
 
 	return svc.db.DeleteTestPlanV2Step(req)
 }
 
-// UpdateTestPlanV2Step Update a step in the test plan
-func (svc *Service) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepUpdateRequest) error {
+// MoveTestPlanV2Step move a step in the test plan
+func (svc *Service) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveRequest) error {
 	testPlan, err := svc.db.GetTestPlanV2ByID(req.TestPlanID)
 	if err != nil {
 		return err
@@ -345,7 +338,6 @@ func (svc *Service) UpdateTestPlanV2Step(req *apistructs.TestPlanV2StepUpdateReq
 	if err != nil {
 		return err
 	}
-	step.ID = req.StepID
 	step.SceneSetID = req.ScenesSetId
 
 	plan, err := svc.db.GetTestPlanV2ByID(step.PlanID)
@@ -418,7 +410,6 @@ func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, mo
 }
 
 func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestPlansRequest) (*apistructs.PipelineDTO, error) {
-
 	testPlan, err := svc.GetTestPlanV2(req.TestPlan.ID, req.IdentityInfo)
 	if err != nil {
 		return nil, err
@@ -427,35 +418,42 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 	var spec pipelineyml.Spec
 	spec.Version = "1.1"
 	var stagesValue []*pipelineyml.Stage
-	for _, v := range testPlan.Steps {
-		if v.SceneSetID <= 0 {
-			continue
-		}
+
+	// get steps group by groupID
+	stepGroupMap, groupIDs := getStepMapByGroupID(testPlan.Steps)
+
+	for _, groupID := range groupIDs {
 		var specStage pipelineyml.Stage
-		sceneSetJson, err := json.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-		specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
-			pipelineyml.Snippet: {
-				Alias: pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
-				Type:  pipelineyml.Snippet,
-				Labels: map[string]string{
-					apistructs.AutotestSceneSet: base64.StdEncoding.EncodeToString(sceneSetJson),
-					apistructs.AutotestType:     apistructs.AutotestSceneSet,
-				},
-				If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
-				SnippetConfig: &pipelineyml.SnippetConfig{
-					Name:   strconv.Itoa(int(v.SceneSetID)),
-					Source: apistructs.PipelineSourceAutoTest.String(),
+		for _, v := range stepGroupMap[groupID] {
+			if v.SceneSetID <= 0 {
+				continue
+			}
+			sceneSetJson, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			action := map[pipelineyml.ActionType]*pipelineyml.Action{
+				pipelineyml.Snippet: {
+					Alias: pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
+					Type:  pipelineyml.Snippet,
 					Labels: map[string]string{
-						apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
-						apistructs.LabelSceneSetID:       strconv.Itoa(int(v.SceneSetID)),
-						apistructs.LabelSpaceID:          strconv.Itoa(int(testPlan.SpaceID)),
+						apistructs.AutotestSceneSet: base64.StdEncoding.EncodeToString(sceneSetJson),
+						apistructs.AutotestType:     apistructs.AutotestSceneSet,
+					},
+					If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
+					SnippetConfig: &pipelineyml.SnippetConfig{
+						Name:   strconv.Itoa(int(v.SceneSetID)),
+						Source: apistructs.PipelineSourceAutoTest.String(),
+						Labels: map[string]string{
+							apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
+							apistructs.LabelSceneSetID:       strconv.Itoa(int(v.SceneSetID)),
+							apistructs.LabelSpaceID:          strconv.Itoa(int(testPlan.SpaceID)),
+						},
 					},
 				},
-			},
-		})
+			}
+			specStage.Actions = append(specStage.Actions, action)
+		}
 		stagesValue = append(stagesValue, &specStage)
 	}
 	spec.Stages = stagesValue
@@ -492,6 +490,31 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 	}
 
 	return pipelineDTO, nil
+}
+
+// getStepMapByGroupID get step group by groupID
+func getStepMapByGroupID(steps []*apistructs.TestPlanV2Step) (map[uint64][]*apistructs.TestPlanV2Step, []uint64) {
+	// stepGroupMap key: groupID, if groupID is 0, set id as groupID
+	stepGroupMap := make(map[uint64][]*apistructs.TestPlanV2Step, 0)
+	groupIDs := make([]uint64, 0) // order to sort
+	for _, v := range steps {
+		if v.SceneSetID <= 0 {
+			continue
+		}
+		if v.GroupID == 0 {
+			v.GroupID = v.ID
+		}
+		if _, ok := stepGroupMap[v.GroupID]; ok {
+			stepGroupMap[v.GroupID] = append(stepGroupMap[v.GroupID], v)
+		} else {
+			stepGroupMap[v.GroupID] = []*apistructs.TestPlanV2Step{v}
+			groupIDs = append(groupIDs, v.GroupID)
+		}
+	}
+	sort.Slice(groupIDs, func(i, j int) bool {
+		return false
+	})
+	return stepGroupMap, groupIDs
 }
 
 func (svc *Service) GetTestClusterNameBySpaceID(spaceID uint64) (string, error) {

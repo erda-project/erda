@@ -184,6 +184,7 @@ type TestPlanV2Step struct {
 	SceneSetName string `json:"sceneSetName"`
 	PreID        uint64 `json:"preID"`
 	PlanID       uint64 `json:"planID"`
+	GroupID      uint64 `json:"groupID"`
 	ID           uint64 `json:"id"`
 }
 
@@ -192,6 +193,7 @@ type TestPlanV2StepAddRequest struct {
 	SceneSetID uint64 `json:"sceneSetID"`
 	PreID      uint64 `json:"preID"`
 	TestPlanID uint64 `json:"-"`
+	GroupID    uint64 `json:"groupID"`
 
 	IdentityInfo
 }
@@ -227,4 +229,15 @@ type TestPlanV2StepUpdateRequest struct {
 type TestPlanV2StepUpdateResp struct {
 	Header
 	Data string `json:"data"`
+}
+
+// TestPlanV2StepMoveRequest move a step in the test plan request
+type TestPlanV2StepMoveRequest struct {
+	StepID      uint64 `json:"stepID"`
+	PreID       uint64 `json:"preID"`
+	ScenesSetId uint64 `json:"scenesSetId"`
+	TestPlanID  uint64 `json:"-"`
+	IsGroup     bool   `json:"isGroup"` // if move with group
+
+	IdentityInfo
 }

@@ -153,7 +153,16 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 			return err
 		}
 	case apistructs.AutoTestSceneStepMoveItemOperationKey:
-		err = i.RenderMoveStagesForm()
+		err = i.RenderMoveStagesForm(false)
+		if err != nil {
+			return err
+		}
+		err = i.RenderListStageForm()
+		if err != nil {
+			return err
+		}
+	case apistructs.AutoTestSceneStepMoveGroupOperationKey:
+		err = i.RenderMoveStagesForm(true)
 		if err != nil {
 			return err
 		}
