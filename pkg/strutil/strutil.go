@@ -602,16 +602,6 @@ func ParseVersion(version string) string {
 	return string(vo)
 }
 
-// ReverseSlice 反转 slice
-//
-// ReverseSlice([]string{"s1", "s2", "s3"} => []string{"s3", "s2", "s1}
-func ReverseSlice(ss []string) {
-	last := len(ss) - 1
-	for i := 0; i < len(ss)/2; i++ {
-		ss[i], ss[last-i] = ss[last-i], ss[i]
-	}
-}
-
 // FlatErrors 将 errors 打平为一个 error
 func FlatErrors(errs []error, sep string) error {
 	var errMsgs []string

@@ -12,42 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ddlreverser_test
+package type_conversion
 
 import (
-	"testing"
-
-	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
+	"fmt"
+	"strconv"
 )
 
-func TestReverseSlice(t *testing.T) {
-	var cases = [][]int{
-		{1},
-		{2, 3},
-		{4, 9, 2},
-	}
-	var results = [][]int{
-		{1},
-		{3, 2},
-		{2, 9, 4},
+func InterfaceToUint64(value interface{}) (uint64, error) {
+	if value == nil {
+		return 0, fmt.Errorf("can not parse value")
 	}
 
-	equal := func(a, b []int) bool {
-		if len(a) != len(b) {
-			return false
+	switch value.(type) {
+	case int:
+		return uint64(value.(int)), nil
+	case float64:
+		return uint64(value.(float64)), nil
+	case string:
+		intValue, err := strconv.ParseInt(value.(string), 10, 64)
+		if err != nil {
+			return 0, err
 		}
-		for i, v := range a {
-			if v != b[i] {
-				return false
-			}
-		}
-		return true
+		return uint64(intValue), nil
 	}
-
-	for i, case_ := range cases {
-		ddlreverser.ReverseSlice(case_)
-		if !equal(case_, results[i]) {
-			t.Fatal(i, case_, "fails")
-		}
-	}
+	return 0, fmt.Errorf("can not parse value")
 }

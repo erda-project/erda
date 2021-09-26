@@ -61,17 +61,6 @@ func Test_getUserList(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "invalid input",
-			args: args{
-				req: &apistructs.UserPagingRequest{
-					PageNo: 0,
-				},
-			},
-			want:    nil,
-			want1:   0,
-			wantErr: true,
-		},
-		{
 			name: "search",
 			args: args{
 				req: &apistructs.UserPagingRequest{

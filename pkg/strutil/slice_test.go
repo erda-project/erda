@@ -12,16 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ddlreverser
+package strutil_test
 
 import (
-	"reflect"
+	"testing"
+
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func ReverseSlice(s interface{}) {
-	n := reflect.ValueOf(s).Len()
-	swap := reflect.Swapper(s)
-	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
-		swap(i, j)
+func TestReverseSlice(t *testing.T) {
+	var cases = [][]int{
+		nil,
+		{},
+		{1},
+		{2, 3},
+		{4, 9, 2},
 	}
+	var results = [][]int{
+		nil,
+		{},
+		{1},
+		{3, 2},
+		{2, 9, 4},
+	}
+
+	equal := func(a, b []int) bool {
+		if len(a) != len(b) {
+			return false
+		}
+		for i, v := range a {
+			if v != b[i] {
+				return false
+			}
+		}
+		return true
+	}
+
+	for i, case_ := range cases {
+		strutil.ReverseSlice(case_)
+		if !equal(case_, results[i]) {
+			t.Fatal(i, case_, "fails")
+		}
+	}
+
+	strutil.ReverseSlice([2]int{0, 2})
+	strutil.ReverseSlice("a")
 }
