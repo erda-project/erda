@@ -21,9 +21,9 @@ import (
 type ContainerTable struct {
 	base.DefaultProvider
 
-	Type  string            `json:"type"`
-	Data  map[string][]Data `json:"data"`
+	Type  string            `json:"type,omitempty"`
 	Props Props             `json:"props"`
+	Data  map[string][]Data `json:"data"`
 	State State             `json:"state,omitempty"`
 }
 
