@@ -19,7 +19,6 @@ import (
 	"crypto/md5" // #nosec G501
 	"encoding/hex"
 	"fmt"
-	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
