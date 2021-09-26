@@ -53,7 +53,7 @@ const (
 	OldRightPlaceholder = "}"
 )
 
-var MockString = []string{"string", "integer", "float", "boolean", "upper", "lower", "mobile", "digital_letters", "letters", "character", "timestamp",
+var MockString = []string{"string", "integer", "integer_length", "float", "boolean", "upper", "lower", "mobile", "digital_letters", "letters", "character", "timestamp",
 	"timestamp_hour", "timestamp_after_hour", "timestamp_day", "timestamp_after_day", "timestamp_ms", "timestamp_ms_hour", "timestamp_ms_after_hour",
 	"timestamp_ms_day", "timestamp_ms_after_day", "timestamp_ns", "timestamp_ns_hour", "timestamp_ns_after_hour", "timestamp_ns_day",
 	"timestamp_ns_after_day", "date", "date_day", "datetime", "datetime_hour"}

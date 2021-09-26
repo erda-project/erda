@@ -15,6 +15,7 @@ package mock
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -57,6 +58,19 @@ func randInteger() int {
 	intStr := randString(Integer)
 	num, _ := strconv.Atoi(intStr)
 	return num
+}
+
+func randIntegerByLength(length string) int {
+	lenInt, err := strconv.ParseInt(length, 10, 32)
+	if err != nil || lenInt <= 0 || lenInt > 18 {
+		return randInteger()
+	}
+
+	return rangeIn(int(math.Pow10(int(lenInt-1))), int(math.Pow10(int(lenInt)))-1)
+}
+
+func rangeIn(low, hi int) int {
+	return low + rand.Intn(hi-low)
 }
 
 func randMobile() string {
@@ -161,6 +175,11 @@ func mockValue(mockType string) interface{} {
 		return randBool()
 	case Mobile:
 		return randMobile()
+	default:
+		if strings.HasPrefix(mockType, fmt.Sprintf("%v_", Integer)) {
+			length := strings.Replace(mockType, fmt.Sprintf("%v_", Integer), "", 1)
+			return randIntegerByLength(length)
+		}
 	}
 
 	time := getTime(mockType)
