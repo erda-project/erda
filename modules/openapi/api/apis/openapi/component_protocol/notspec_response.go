@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda-proto-go/cp/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
@@ -65,10 +64,12 @@ type cpErrResponse struct {
 
 // wrapErdaStyleResponse wrap response by erda response.
 func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (wErr error) {
-	if resp.Header.Get("nowrap") == "true" {
-		logrus.Info("resp has nowrap header, skip wrap erda style response")
+	if resp.Header.Get("X-NEED-USER-INFO") != "true" {
+		logrus.Info("resp doesn't have need user info header, skip inject user info")
+		resp.Header.Set("Content-Type", "application/json")
 		return
 	}
+	logrus.Infof("[DEBUG] get Header: %v", resp.Header)
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -83,47 +84,37 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 
 	// construct erda style response
 	var erdaResp response
-	if resp.StatusCode/100 != 2 {
-		var cpErrResp cpErrResponse
-		if err := json.Unmarshal(content, &cpErrResp); err != nil {
-			panic(err)
-		}
-		erdaResp = response{
-			Success: false,
-			Err: apistructs.ErrorResponse{
-				Code: proxyErrorCode + ": " + strutil.String(cpErrResp.Code),
-				Msg:  cpErrResp.Err,
-			},
-		}
-	} else {
-		var renderResp pb.RenderResponse
-		if err := json.Unmarshal(content, &renderResp); err != nil {
-			panic(err)
-		}
-		erdaResp = response{
-			Success: true,
-			Data:    &renderResp,
-			Err:     apistructs.ErrorResponse{},
-		}
-		// whether need inject user info
-		if renderResp.Protocol != nil && len(renderResp.Protocol.GlobalState) > 0 {
-			userIDsValue, ok := renderResp.Protocol.GlobalState[cptype.GlobalInnerKeyUserIDs.String()]
-			if ok {
-				var userIDs []string
-				if err := cputil.ObjJSONTransfer(userIDsValue, &userIDs); err != nil {
-					panic(err)
-				}
-				userIDs = strutil.DedupSlice(userIDs, true)
-				userInfos, err := posthandle.GetUsers(userIDs, true)
-				if err != nil {
-					return err
-				}
-				// inject to response body
-				erdaResp.UserIDs = userIDs
-				erdaResp.UserInfo = userInfos
-			}
-		}
+	if err := json.Unmarshal(content, &erdaResp); err != nil {
+		panic(err)
 	}
+	renderResponse, ok := erdaResp.Data.(map[string]interface{})
+	if !ok {
+		panic("resp is not map[string]interface{} type")
+	}
+	protocol, ok := renderResponse["protocol"].(map[string]interface{})
+	if !ok {
+		panic("protocol is not map[string]interface{}")
+	}
+
+	globalState := protocol["globalState"].(map[string]interface{})
+
+	userIDsValue, ok := globalState[cptype.GlobalInnerKeyUserIDs.String()]
+	if !ok {
+		return nil
+	}
+
+	var userIDs []string
+	if err := cputil.ObjJSONTransfer(userIDsValue, &userIDs); err != nil {
+		panic(err)
+	}
+	userIDs = strutil.DedupSlice(userIDs, true)
+	userInfos, err := posthandle.GetUsers(userIDs, true)
+	if err != nil {
+		return err
+	}
+	// inject to response body
+	erdaResp.UserIDs = userIDs
+	erdaResp.UserInfo = userInfos
 
 	// update response body
 	newErdaBody, err := json.Marshal(erdaResp)

@@ -170,7 +170,7 @@ require (
 )
 
 replace (
-	github.com/erda-project/erda-infra => github.com/craigmchen/erda-infra v0.0.0-20210924111546-ea44c4da83e7
+	github.com/erda-project/erda-infra => github.com/craigmchen/erda-infra v0.0.0-20210926073907-5b02c982daea
 	github.com/erda-project/erda-proto-go v0.0.0 => ./api/proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2

@@ -68,7 +68,6 @@ func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	logrus.Errorf("@@@[DEBUG] start render pods table at %s", time.Now().Format(time.StampNano))
-	cmpcputil.SetNoWrapData(gs)
 	p.InitComponent(ctx)
 	if err := p.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen podsTable component state, %v", err)
