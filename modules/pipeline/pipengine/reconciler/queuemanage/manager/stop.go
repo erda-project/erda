@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package manager
 
-import (
-	"context"
-
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
-)
-
-// loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
-	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
-
-	return nil
+func (mgr *defaultManager) Stop() {
+	if mgr == nil {
+		return
+	}
+	for _, stopCh := range mgr.queueStopChanByID {
+		go func(ch chan struct{}) {
+			defer func() { recover() }()
+			ch <- struct{}{}
+		}(stopCh)
+	}
+	return
 }

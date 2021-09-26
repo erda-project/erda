@@ -17,6 +17,7 @@ package testplan
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
@@ -97,4 +98,23 @@ func Test_processEvent(t *testing.T) {
 		ApiTotalNum:     100,
 	})
 	assert.NoError(t, err)
+}
+
+func TestParseExecuteTime(t *testing.T) {
+	ti := time.Date(2006, 1, 2, 15, 4, 5, 0, time.Local)
+
+	tt := []struct {
+		value string
+		want  *time.Time
+	}{
+		{"2006-01-02 15:04:05",
+			&ti,
+		},
+		{"2006-01-02",
+			nil,
+		},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, parseExecuteTime(v.value))
+	}
 }

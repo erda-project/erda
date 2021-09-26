@@ -39,22 +39,22 @@ import (
 
 const (
 	// audit template name
-	auditCordonNode     = "cordonNode"
-	auditUncordonNode   = "uncordonNode"
-	auditLabelNode      = "labelNode"
-	auditUnLabelNode    = "unLabelNode"
-	auditUpdateResource = "updateK8SResource"
-	auditCreateResource = "createK8SResource"
-	auditDeleteResource = "deleteK8SResource"
-	auditKubectlShell   = "kubectlShell"
+	AuditCordonNode     = "cordonNode"
+	AuditUncordonNode   = "uncordonNode"
+	AuditLabelNode      = "labelNode"
+	AuditUnLabelNode    = "unLabelNode"
+	AuditUpdateResource = "updateK8SResource"
+	AuditCreateResource = "createK8SResource"
+	AuditDeleteResource = "deleteK8SResource"
+	AuditKubectlShell   = "kubectlShell"
 
 	// audit template params
-	auditClusterName  = "clusterName"
-	auditNamespace    = "namespace"
-	auditResourceType = "resourceType"
-	auditResourceName = "name"
-	auditTargetLabel  = "targetLabel"
-	auditCommands     = "commands"
+	AuditClusterName  = "clusterName"
+	AuditNamespace    = "namespace"
+	AuditResourceType = "resourceType"
+	AuditResourceName = "name"
+	AuditTargetLabel  = "targetLabel"
+	AuditCommands     = "commands"
 
 	maxAuditLength = 40000
 )
@@ -118,25 +118,28 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		}
 
 		ctx := map[string]interface{}{
-			auditClusterName: clusterName,
+			AuditClusterName: clusterName,
 		}
 		if vars["kubectl-shell"] == "true" {
-			auditReq.TemplateName = auditKubectlShell
+			auditReq.TemplateName = AuditKubectlShell
 			var cmds []string
 			for _, cwt := range writer.wc.cmds {
 				cmd := fmt.Sprintf("%s: %s", cwt.start.Format(time.RFC3339), cwt.cmd)
 				cmds = append(cmds, cmd)
 			}
-			res := strings.Join(cmds, "\n")
+			if len(cmds) == 0 {
+				return
+			}
+			res := fmt.Sprintf("\n%s", strings.Join(cmds, "\n"))
 			if len(res) > maxAuditLength {
 				res = res[:maxAuditLength] + "..."
 			}
-			ctx[auditCommands] = res
+			ctx[AuditCommands] = res
 		} else {
 			if typ == "" {
 				return
 			}
-			ctx[auditResourceName] = name
+			ctx[AuditResourceName] = name
 			switch req.Method {
 			case http.MethodPatch:
 				if isInternal && strutil.Equal(typ, "node", true) {
@@ -156,11 +159,11 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 						for k, v = range labels {
 						} // there can only be one piece of k/v
 						if v == nil {
-							auditReq.Audit.TemplateName = auditUnLabelNode
-							ctx[auditTargetLabel] = k
+							auditReq.Audit.TemplateName = AuditUnLabelNode
+							ctx[AuditTargetLabel] = k
 						} else {
-							auditReq.Audit.TemplateName = auditLabelNode
-							ctx[auditTargetLabel] = fmt.Sprintf("%s=%s", k, v.(string))
+							auditReq.Audit.TemplateName = AuditLabelNode
+							ctx[AuditTargetLabel] = fmt.Sprintf("%s=%s", k, v.(string))
 						}
 						break
 					}
@@ -169,22 +172,19 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 					if rb.Spec != nil && rb.Spec["unschedulable"] != nil {
 						v, ok := rb.Spec["unschedulable"].(bool)
 						if ok && v {
-							auditReq.Audit.TemplateName = auditCordonNode
+							auditReq.Audit.TemplateName = AuditCordonNode
 						} else {
-							auditReq.Audit.TemplateName = auditUncordonNode
+							auditReq.Audit.TemplateName = AuditUncordonNode
 						}
 					}
 					break
 				}
 				fallthrough
 			case http.MethodPut:
-				ctx[auditNamespace] = namespace
-				ctx[auditResourceType] = typ
-				auditReq.Audit.TemplateName = auditUpdateResource
+				ctx[AuditNamespace] = namespace
+				ctx[AuditResourceType] = typ
+				auditReq.Audit.TemplateName = AuditUpdateResource
 			case http.MethodPost:
-				ctx[auditNamespace] = namespace
-				ctx[auditResourceType] = typ
-				auditReq.Audit.TemplateName = auditCreateResource
 				var rb reqBody
 				if err := json.Unmarshal(body, &rb); err != nil {
 					logrus.Errorf("failed to unmarshal in steve audit")
@@ -198,10 +198,14 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 				if ns, ok := data.(string); ok && namespace != "" {
 					namespace = ns
 				}
+				ctx[AuditNamespace] = namespace
+				ctx[AuditResourceName] = name
+				ctx[AuditResourceType] = typ
+				auditReq.Audit.TemplateName = AuditCreateResource
 			case http.MethodDelete:
-				ctx[auditNamespace] = namespace
-				ctx[auditResourceType] = typ
-				auditReq.Audit.TemplateName = auditDeleteResource
+				ctx[AuditNamespace] = namespace
+				ctx[AuditResourceType] = typ
+				auditReq.Audit.TemplateName = AuditDeleteResource
 			default:
 				return
 			}

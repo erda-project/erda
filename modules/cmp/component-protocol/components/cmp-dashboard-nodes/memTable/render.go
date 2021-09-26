@@ -18,6 +18,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -25,16 +26,32 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var steveServer cmp.SteveServer
+var mServer metrics.Interface
+
+func (mt *MemInfoTable) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	mserver, ok := ctx.Service("cmp").(metrics.Interface)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a metrics server")
+	}
+	steveServer = server
+	mServer = mserver
+	return mt.DefaultProvider.Init(ctx)
+}
 
 func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	err := common.Transfer(c.State, &mt.State)
@@ -43,8 +60,10 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	}
 	mt.SDK = cputil.SDK(ctx)
 	mt.Operations = mt.GetTableOperation()
-	mt.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	mt.Ctx = ctx
 	mt.Table.TableComponent = mt
+	mt.Ctx = ctx
+	mt.Server = steveServer
 	mt.getProps()
 	activeKey := (*gs)["activeKey"].(string)
 	// Tab name not equal this component name
@@ -69,10 +88,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			req.UserID = mt.SDK.Identity.UserID
 			req.Type = apistructs.K8SNode
 			req.Name = nodeId
-			err = mt.CtxBdl.UnlabelNode(&req, []string{labelKey})
-			if err != nil {
-				return err
-			}
+			err = mt.Server.UnlabelNode(mt.Ctx, &req, []string{labelKey})
 		case common.CMPDashboardUncordonNode:
 			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardUncordonNode
@@ -85,7 +101,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
 	}
-	nodes, err := mt.GetNodes(gs)
+	nodes, err := mt.GetNodes(ctx, gs)
 	if err != nil {
 		return err
 	}
@@ -103,22 +119,22 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		err                     error
 		status                  *table.SteveStatus
 		distribution, dr, usage table.DistributionValue
-		resp                    []apistructs.MetricsData
+		resp                    []metrics.MetricsData
 	)
 	if status, err = mt.GetItemStatus(c); err != nil {
 		return nil, err
 	}
-	req := apistructs.MetricsRequest{
+	req := &metrics.MetricsRequest{
 		ClusterName:  mt.SDK.InParams["clusterName"].(string),
-		NodeRequests: []apistructs.MetricsNodeRequest{{IP: c.StringSlice("metadata", "fields")[5]}},
+		NodeRequests: []metrics.MetricsNodeRequest{{IP: c.StringSlice("metadata", "fields")[5]}},
 		ResourceType: metrics.Memory,
 		ResourceKind: metrics.Node,
 		OrgID:        mt.SDK.Identity.OrgID,
 		UserID:       mt.SDK.Identity.UserID,
 	}
-	if resp, err = mt.CtxBdl.GetMetrics(req); err != nil || resp == nil {
+	if resp, err = mServer.NodeMetrics(mt.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
-		resp = []apistructs.MetricsData{{Used: 0}}
+		resp = make([]metrics.MetricsData, 1)
 	}
 	limitStr := c.Map("extra", "parsedResource", "capacity").String("Memory")
 	limitQuantity, _ := resource.ParseQuantity(limitStr)
@@ -143,13 +159,13 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 		}
 	}
 	ri := &table.RowItem{
-		ID:      c.String("id"),
+		ID:      c.String("metadata", "name"),
 		IP:      ip,
 		Version: c.String("status", "nodeInfo", "kubeletVersion"),
 		Role:    role,
 		Node: table.Node{
 			RenderType: "multiple",
-			Renders:    mt.GetRenders(c.String("id"), ip, c.Map("metadata", "labels")),
+			Renders:    mt.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
 		},
 		Status: *status,
 		Distribution: table.Distribution{
@@ -170,7 +186,7 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 			Status:     table.GetDistributionStatus(dr.Percent),
 			Tip:        dr.Text,
 		},
-		Operate:         mt.GetOperate(c.String("id")),
+		Operate:         mt.GetOperate(c.String("metadata", "name")),
 		BatchOperations: batchOperations,
 	}
 	return ri, nil
@@ -178,7 +194,8 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 
 func (mt *MemInfoTable) getProps() {
 	mt.Props = map[string]interface{}{
-		"rowKey": "id",
+		"rowKey":         "id",
+		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true, Width: 320},

@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ddlreverser
+package adapter
 
-import (
-	"reflect"
-)
+type InstrumentationLibrary struct {
+	InstrumentationLibrary string      `yaml:"instrumentationlibrary"`
+	Enabled                bool        `yaml:"enabled"`
+	Languages              []*Language `yaml:"languages"`
+}
 
-func ReverseSlice(s interface{}) {
-	n := reflect.ValueOf(s).Len()
-	swap := reflect.Swapper(s)
-	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
-		swap(i, j)
-	}
+type Language struct {
+	Name    string `yaml:"name"`
+	Enabled bool   `yaml:"enabled"`
+}
+
+type InstrumentationLibraryTemplate struct {
+	InstrumentationLibrary string      `yaml:"instrumentationlibrary"`
+	Templates              []*Template `yaml:"templates"`
+}
+
+type Template struct {
+	Language string `yaml:"language"`
+	Template string `yaml:"template"`
 }

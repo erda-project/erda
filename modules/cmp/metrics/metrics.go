@@ -16,16 +16,15 @@ package metrics
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/ierror"
@@ -80,12 +79,18 @@ func (m MetricError) Ctx() interface{} {
 	return m.ctx
 }
 
+type Interface interface {
+	NodeMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error)
+	PodMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error)
+}
+
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
 
-	if err != nil || v == nil {
+	if err != nil {
 		return nil, err
 	}
+
 	values, err := cache.MarshalValue(v)
 	cache.FreeCache.Set(key, values, time.Now().UnixNano()+int64(time.Second*30))
 	return v, nil
@@ -101,19 +106,19 @@ func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInflu
 	)
 
 	if v, expired, err = cache.FreeCache.Get(key); v != nil {
-		logrus.Infof("%s hit cache, try return cache value directly", key)
-		err = json.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
+		logrus.Infof("%s hit cache, return cache value directly", key)
+		err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
 		if err != nil {
 			logrus.Errorf("unmarshal failed")
 		}
 		if expired {
-			logrus.Infof("cache expired")
+			logrus.Infof("cache expired, try fetch metrics asynchronized")
 			go func(ctx context.Context, key string, queryReq *pb.QueryWithInfluxFormatRequest) {
 				m.query(ctx, key, queryReq)
 			}(ctx, key, req)
 		}
 	} else {
-		logrus.Infof("not hit cache, try fetch metrics")
+		logrus.Infof("not hit cache, try fetch metrics synchronized")
 		resp, err = m.query(ctx, key, req)
 		if err != nil {
 			logrus.Error(err)
@@ -123,58 +128,54 @@ func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInflu
 	return resp, nil
 }
 
-// QueryNodeResource query cpu and memory metrics from es database, return immediately if cache hit.
-func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsRequest) (httpserver.Responser, error) {
+// NodeMetrics query cpu and memory metrics from es database, return immediately if cache hit.
+func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error) {
 	var (
 		resp *pb.QueryWithInfluxFormatResponse
-		data []apistructs.MetricsData
+		data []MetricsData
 		err  error
 	)
 	reqs, err := ToInfluxReq(req)
 	if err != nil {
-		return mkResponse(nil, nil), err
+		return nil, err
 	}
 	for _, queryReq := range reqs {
-		d := apistructs.MetricsData{}
+		d := MetricsData{}
 		key := cache.GenerateKey([]string{queryReq.Params["host_ip"].String(), req.ClusterName, req.ResourceType})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
 			if resp.Results[0].Series[0].Rows == nil {
-				logrus.Errorf("internal error when query %v", queryReq)
+				logrus.Warnf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 			}
 		}
 		data = append(data, d)
 	}
-	res := &apistructs.MetricsResponse{
-		Header: apistructs.Header{Success: true},
-		Data:   data,
-	}
-	return mkResponse(res, nil), nil
+	return data, nil
 }
 
-func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRequest) (httpserver.Responser, error) {
+func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error) {
 	var (
 		resp *pb.QueryWithInfluxFormatResponse
-		data []apistructs.MetricsData
+		data []MetricsData
 		err  error
 	)
 	reqs, err := ToInfluxReq(req)
 	if err != nil {
-		return mkResponse(nil, nil), err
+		return nil, err
 	}
 	for _, queryReq := range reqs {
-		d := apistructs.MetricsData{}
+		d := MetricsData{}
 		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ResourceType})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
 			if resp.Results[0].Series[0].Rows == nil {
-				logrus.Errorf("internal error when query %v", queryReq)
+				logrus.Errorf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 				d.Request = 0
@@ -183,16 +184,11 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 		}
 		data = append(data, d)
 	}
-	res := &apistructs.MetricsResponse{
-		Header: apistructs.Header{Success: true},
-		Data:   data,
-	}
-	return mkResponse(res, nil), nil
+	return data, nil
 }
 
-func ToInfluxReq(req *apistructs.MetricsRequest) ([]*pb.QueryWithInfluxFormatRequest, error) {
+func ToInfluxReq(req *MetricsRequest) ([]*pb.QueryWithInfluxFormatRequest, error) {
 	queryReqs := make([]*pb.QueryWithInfluxFormatRequest, 0)
-	//start, end, _ := getTimeRange("hour", 1, false)
 	if req.ResourceKind == Node {
 		for _, nreq := range req.NodeRequests {
 			queryReq := &pb.QueryWithInfluxFormatRequest{}

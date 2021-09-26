@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package cmp
 
 import (
 	"context"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 )
 
-// loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
-	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
+func (p *provider) NodeMetrics(ctx context.Context, req *metrics.MetricsRequest) ([]metrics.MetricsData, error) {
+	return p.Metrics.NodeMetrics(ctx, req)
+}
 
-	return nil
+func (p *provider) PodMetrics(ctx context.Context, req *metrics.MetricsRequest) ([]metrics.MetricsData, error) {
+	return p.Metrics.PodMetrics(ctx, req)
+
 }

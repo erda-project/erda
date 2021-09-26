@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package strutil
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
+	"reflect"
 )
 
-// loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
-	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
-
-	return nil
+// ReverseSlice reverses the slice s in place with any type
+func ReverseSlice(s interface{}) {
+	if reflect.TypeOf(s).Kind() != reflect.Slice {
+		return
+	}
+	n := reflect.ValueOf(s).Len()
+	swap := reflect.Swapper(s)
+	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
+		swap(i, j)
+	}
 }

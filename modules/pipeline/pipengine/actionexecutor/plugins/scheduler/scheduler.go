@@ -197,7 +197,7 @@ func (s *Sched) Create(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !shouldDispatch {
-		logrus.Infof("task executor %s execute create", taskExecutor.Name())
+		logrus.Infof("task executor %s execute create, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		return nil, nil
 	}
 
@@ -268,7 +268,7 @@ func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data inte
 		return nil, err
 	}
 	if !shouldDispatch {
-		logrus.Infof("task executor %s execute start", taskExecutor.Name())
+		logrus.Infof("task executor %s execute start, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		return taskExecutor.Create(ctx, action)
 	}
 
@@ -322,7 +322,7 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 		return apistructs.PipelineStatusDesc{}, err
 	}
 	if !shouldDispatch {
-		logrus.Infof("task executor %s execute status", taskExecutor.Name())
+		logrus.Infof("task executor %s execute status, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		result, err = taskExecutor.Status(ctx, action)
 		if err != nil {
 			return apistructs.PipelineStatusDesc{}, err
@@ -366,7 +366,7 @@ func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (apistru
 		return apistructs.TaskInspect{}, err
 	}
 	if !shouldDispatch {
-		logrus.Infof("task executor %s execute inspect", taskExecutor.Name())
+		logrus.Infof("task executor %s execute inspect, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		return taskExecutor.Inspect(ctx, action)
 	}
 	return apistructs.TaskInspect{}, errors.New("scheduler(job) not support inspect operation")
@@ -386,7 +386,7 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !shouldDispatch {
-		logrus.Infof("task executor %s execute cancel", taskExecutor.Name())
+		logrus.Infof("task executor %s execute cancel, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		// TODO move all makeJobID to framework
 		// now move makeJobID to framework may change task uuid in database
 		// Restore the task uuid after remove, because gc will make the job id, but cancel don't make the job id
@@ -434,7 +434,7 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 		// TODO move all makeJobID to framework
 		// now move makeJobID to framework may change task uuid in database
 		action.Extra.UUID = task_uuid.MakeJobID(action)
-		logrus.Infof("task executor %s execute remove", taskExecutor.Name())
+		logrus.Infof("task executor %s execute remove, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		return taskExecutor.Remove(ctx, action)
 	}
 
@@ -481,7 +481,7 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 		return nil, err
 	}
 	if !shouldDispatch {
-		logrus.Infof("task executor %s execute batch delete", taskExecutor.Name())
+		logrus.Infof("task executor %s execute batch delete, actionInfo: %s", taskExecutor.Name(), printActionInfo(action))
 		return taskExecutor.BatchDelete(ctx, actions)
 	}
 

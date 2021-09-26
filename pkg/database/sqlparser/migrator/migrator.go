@@ -21,14 +21,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
 	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // installing type
@@ -253,7 +252,7 @@ func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
 		return nil
 	}
 	if reverseSlice {
-		ddlreverser.ReverseSlice(reversing)
+		strutil.ReverseSlice(reversing)
 	}
 	for _, s := range mig.reversing {
 		if err := mig.DB().Exec(s).Error; err != nil {
@@ -421,7 +420,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 			}
 
 			// record it
-			ddlreverser.ReverseSlice(script.Reversing)
+			strutil.ReverseSlice(script.Reversing)
 			record := HistoryModel{
 				ID:           0,
 				CreatedAt:    now,
@@ -432,7 +431,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 				InstalledBy:  "",
 				InstalledOn:  "",
 				LanguageType: string(script.Type),
-				Reversed:     strings.Join(script.Reversing, "\n"),
+				Reversed:     "",
 			}
 			if err := mig.DB().Create(&record).Error; err != nil {
 				return errors.Wrapf(err, "internal error: failed to record migration")
@@ -527,19 +526,6 @@ func (mig *Migrator) installSQL(s *Script, exec *gorm.DB, begin func() (tx *gorm
 
 func (mig *Migrator) installDDLBlock(s *Script, i int, exec *gorm.DB) (err error) {
 	for _, node := range s.Blocks[i].Nodes() {
-		var (
-			reverse string
-			ok      bool
-		)
-		reverse, ok, err := ddlreverser.ReverseDDLWithSnapshot(exec, node.(ast.DDLNode))
-		if err != nil {
-			return errors.Wrapf(err, "failed to generate reversed DDL: %+v",
-				map[string]string{"scritpName": s.GetName(), "SQL": node.Text()})
-		}
-		if ok {
-			s.Reversing = append(s.Reversing, reverse)
-		}
-
 		if err = exec.Exec(node.Text()).Error; err != nil {
 			return errors.Wrapf(err, "failed to do schema migration: %+v",
 				map[string]string{"scriptName": s.GetName(), "SQL": node.Text()})
@@ -629,7 +615,7 @@ func recordModules(db *gorm.DB, modules map[string]*Module) error {
 				InstalledBy:  "",
 				InstalledOn:  "",
 				LanguageType: string(module.Scripts[i].Type),
-				Reversed:     ddlreverser.ReverseCreateTableStmts(module.Scripts[i]),
+				Reversed:     "",
 			}
 			if err := db.Create(&record).Error; err != nil {
 				return errors.Wrapf(err, "failed to record module, module name: %s, script name: %s",
