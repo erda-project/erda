@@ -417,17 +417,15 @@ func init() {
 		Type:         TargetComponentNode,
 		GroupByField: &GroupByField{Name: apm.TagsHost, SubField: &GroupByField{Name: apm.TagsDBType}},
 		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType},
-		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
-			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
-		Aggregation: NodeAggregation,
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation:  NodeAggregation,
 	}
 	TargetOtherNodeType = &NodeType{
 		Type:         TargetOtherNode,
 		GroupByField: &GroupByField{Name: apm.TagsHttpUrl, SubField: &GroupByField{Name: apm.TagsPeerServiceScope}},
 		SourceFields: []string{apm.TagsPeerServiceScope, apm.TagsHttpUrl},
-		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
-			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
-		Aggregation: NodeAggregation,
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation:  NodeAggregation,
 	}
 	SourceMQNodeType = &NodeType{
 		Type:         SourceMQNode,
@@ -455,7 +453,6 @@ func init() {
 		Type:         OtherNode,
 		GroupByField: &GroupByField{Name: apm.TagsServiceId, SubField: &GroupByField{Name: apm.TagsServiceName}},
 		SourceFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
-		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsApplicationId)),
 	}
 
 	NodeRelations = map[string][]*NodeRelation{
