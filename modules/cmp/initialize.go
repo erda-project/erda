@@ -43,7 +43,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func (p *provider) initialize(ctx context.Context) error {
@@ -108,13 +107,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		return nil, err
 	}
 
-	// init uc client
-	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		uc.SetDBClient(db.DB)
-	}
-
 	// init Bundle
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(
@@ -134,7 +126,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 
 	o := org_resource.New(
 		org_resource.WithDBClient(db),
-		org_resource.WithUCClient(uc),
 		org_resource.WithBundle(bdl),
 		org_resource.WithRedisClient(redisCli),
 	)

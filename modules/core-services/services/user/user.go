@@ -15,6 +15,7 @@
 package user
 
 import (
+	"net/mail"
 	"strconv"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -52,12 +54,19 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 	}
 }
 
+var innerUser = []string{"dice", "admin", "gittar", "tmc", "eventbox", "cdp", "pipeline", "fdp", "system", "support"}
+
+const innerUserEmailDomain = "@dice.terminus.io"
+
 func (m *User) MigrateUser() error {
 	users, err := m.db.GetUcUserList()
 	if err != nil {
 		return err
 	}
 	for _, u := range users {
+		if _, err := mail.ParseAddress(u.Email); err != nil && strutil.Exist(innerUser, u.Username) {
+			u.Email = u.Username + innerUserEmailDomain
+		}
 		req := ucauth.OryKratosCreateIdentitiyRequest{
 			SchemaID: "default",
 			Traits: ucauth.OryKratosIdentityTraits{
@@ -68,6 +77,7 @@ func (m *User) MigrateUser() error {
 				Avatar: u.Avatar,
 			},
 		}
+
 		uuid, err := m.uc.UserMigration(req)
 		if err != nil {
 			logrus.Errorf("fail to migrate user: %v, err: %v", u.ID, err)
