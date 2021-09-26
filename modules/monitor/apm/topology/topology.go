@@ -453,6 +453,7 @@ func init() {
 		Type:         OtherNode,
 		GroupByField: &GroupByField{Name: apm.TagsServiceId, SubField: &GroupByField{Name: apm.TagsServiceName}},
 		SourceFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
+		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsServiceId)),
 	}
 
 	NodeRelations = map[string][]*NodeRelation{
