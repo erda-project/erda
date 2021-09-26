@@ -21,8 +21,13 @@ import (
 type PodDistribution struct {
 	base.DefaultProvider
 
-	Data Data   `json:"data"`
-	Type string `json:"type"`
+	Props Props  `json:"props"`
+	Data  Data   `json:"data"`
+	Type  string `json:"type"`
+}
+
+type Props struct {
+	IsLoadMore bool `json:"isLoadMore,omitempty"`
 }
 
 type Data struct {

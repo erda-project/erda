@@ -16,8 +16,11 @@ package workloadTitle
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -33,10 +36,12 @@ func init() {
 
 func (t *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
-	workloadID := t.State.WorkloadID
-	splits := strings.Split(workloadID, "_")
+	if err := t.GenComponentState(component); err != nil {
+		return errors.Errorf("failed to gen workloadTitle state, %v", err)
+	}
+	splits := strings.Split(t.State.WorkloadID, "_")
 	if len(splits) != 3 {
-		return fmt.Errorf("invalid workload id: %s", workloadID)
+		return fmt.Errorf("invalid workload id: %s", t.State.WorkloadID)
 	}
 	kind, name := splits[0], splits[2]
 	typ := ""
@@ -56,5 +61,29 @@ func (t *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.C
 	}
 
 	t.Props.Title = fmt.Sprintf("%s: %s", typ, name)
+	t.Transfer(component)
 	return nil
+}
+
+func (t *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
+		return nil
+	}
+	var state State
+	data, err := json.Marshal(c.State)
+	if err != nil {
+		return err
+	}
+	if err = json.Unmarshal(data, &state); err != nil {
+		return err
+	}
+	t.State = state
+	return nil
+}
+
+func (t *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
+	component.Props = t.Props
+	component.State = map[string]interface{}{
+		"workloadId": t.State.WorkloadID,
+	}
 }

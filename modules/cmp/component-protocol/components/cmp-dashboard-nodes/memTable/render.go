@@ -194,6 +194,7 @@ func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*t
 
 func (mt *MemInfoTable) getProps() {
 	mt.Props = map[string]interface{}{
+		"isLoadMore":     true,
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{

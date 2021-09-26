@@ -23,10 +23,12 @@ import (
 )
 
 func (tc *TableContainer) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	c.Props = Props{WhiteBg: true}
 	return nil
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-pods", "tableContainer", func() servicehub.Provider {
-		return &TableContainer{Type: "Container", Props: Props{WhiteBg: true}}
+		return &TableContainer{}
 	})
 }

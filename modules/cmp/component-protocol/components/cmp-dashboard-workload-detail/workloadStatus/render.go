@@ -56,6 +56,7 @@ func (s *ComponentWorkloadStatus) Render(ctx context.Context, component *cptype.
 	if err := s.SetComponentValue(); err != nil {
 		return fmt.Errorf("failed to set workoadStatus component value, %v", err)
 	}
+	s.Transfer(component)
 	return nil
 }
 
@@ -112,5 +113,17 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	s.Data.Labels.Label = s.sdk.I18n(status)
 	s.Data.Labels.Color = color
 	s.Props.Size = "default"
+	s.Props.IsLoadMore = true
 	return nil
+}
+
+func (s *ComponentWorkloadStatus) Transfer(component *cptype.Component) {
+	component.Props = s.Props
+	component.Data = map[string]interface{}{
+		"labels": s.Data.Labels,
+	}
+	component.State = map[string]interface{}{
+		"clusterName": s.State.ClusterName,
+		"workloadId":  s.State.WorkloadID,
+	}
 }
