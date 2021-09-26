@@ -16,8 +16,10 @@ package formatter
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
+	"github.com/rancher/apiserver/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,13 +101,57 @@ func TestGetNodeAllocatedRes(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if res.CPU != 1100 {
-		t.Errorf("test failed, expected cpm 1100, actual %d", res.CPU)
+	cpu := res["CPU"].(int64)
+	mem := res["Memory"].(int64)
+	pods := res["Pods"].(int64)
+	if cpu != 1100 {
+		t.Errorf("test failed, expected cpu 1100, actual %d", cpu)
 	}
-	if res.Memory != 1598029824 {
-		t.Errorf("test failed, expected 1598029824, actual %d", res.Memory)
+	if mem != 1598029824 {
+		t.Errorf("test failed, expected 1598029824, actual %d", mem)
 	}
-	if res.Pods != 2 {
-		t.Errorf("test failed, expected Pods 200, actual %d", res.Pods)
+	if pods != 2 {
+		t.Errorf("test failed, expected Pods 200, actual %d", pods)
 	}
+}
+
+func TestNodeFormatter_Formatter(t *testing.T) {
+	res := &types.RawResource{
+		APIObject: types.APIObject{
+			Object: map[string]interface{}{
+				"status": map[string]interface{}{
+					"allocatable": map[string]interface{}{
+						"cpu":    "8",
+						"memory": "16Gi",
+						"pods":   "200",
+					},
+					"capacity": map[string]interface{}{
+						"cpu":    "8",
+						"memory": "16Gi",
+						"pods":   "200",
+					},
+				},
+			},
+		},
+	}
+
+	podCache, err := cache.New(1<<20, 1<<10)
+	if err != nil {
+		t.Errorf("test failed, failed to create cache, %v", err)
+	}
+
+	n := &NodeFormatter{
+		podClient: &podInterface{},
+		podsCache: podCache,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		t.Errorf("test failed, failed to create a http request, %v", err)
+	}
+	request := &types.APIRequest{
+		Request: req,
+	}
+	n.Formatter(request, res)
+	n.Formatter(request, res)
 }

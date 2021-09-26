@@ -16,21 +16,31 @@ package AddLabelModal
 
 import (
 	"context"
-	"errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+var steveServer cmp.SteveServer
+
+func (alm *AddLabelModal) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return alm.DefaultProvider.Init(ctx)
+}
+
 func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	alm.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	alm.Ctx = ctx
 	alm.SDK = cputil.SDK(ctx)
 	alm.GetState()
@@ -69,7 +79,7 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 				labelValue = splits[1]
 			}
 		}
-		err := alm.CtxBdl.LabelNode(req, map[string]string{labelKey: labelValue})
+		err := steveServer.LabelNode(alm.Ctx, req, map[string]string{labelKey: labelValue})
 		if err != nil {
 			return err
 		}

@@ -17,6 +17,7 @@ package steve
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -34,6 +35,8 @@ import (
 	"github.com/rancher/steve/pkg/schema"
 	steveserver "github.com/rancher/steve/pkg/server"
 	"github.com/rancher/steve/pkg/server/router"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/client-go/rest"
 )
 
@@ -51,6 +54,7 @@ type Server struct {
 	APIServer       *apiserver.Server
 	ClusterRegistry string
 	URLPrefix       string
+	ClusterName     string
 
 	authMiddleware      auth.Middleware
 	controllers         *steveserver.Controllers
@@ -74,6 +78,7 @@ type Options struct {
 	AggregationSecretName      string
 	ClusterRegistry            string
 	URLPrefix                  string
+	ClusterName                string
 }
 
 // New create a steve server
@@ -101,6 +106,7 @@ func New(ctx context.Context, restConfig *rest.Config, opts *Options) (*Server, 
 		aggregationSecretName:      opts.AggregationSecretName,
 		ClusterRegistry:            opts.ClusterRegistry,
 		URLPrefix:                  opts.URLPrefix,
+		ClusterName:                opts.ClusterName,
 	}
 
 	if err := setup(ctx, server); err != nil {
@@ -164,7 +170,7 @@ func setup(ctx context.Context, server *Server) error {
 		return err
 	}
 
-	for _, template := range DefaultSchemaTemplates(ctx, cf, server.controllers.K8s.Discovery(), asl, k8sInterface) {
+	for _, template := range DefaultSchemaTemplates(ctx, server.ClusterName, cf, server.controllers.K8s.Discovery(), asl, k8sInterface) {
 		sf.AddTemplate(template)
 	}
 
@@ -225,4 +231,19 @@ func (c *Server) ListenAndServe(ctx context.Context, httpsPort, httpPort int, op
 
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func (c *Server) Handle(apiOp *types.APIRequest) error {
+	user, ok := request.UserFrom(apiOp.Request.Context())
+	if !ok {
+		return fmt.Errorf("user can not be empty in apiRequest")
+	}
+	schemas, err := c.SchemaFactory.Schemas(user)
+	if err != nil {
+		logrus.Errorf("handle failed, %v", err)
+		return err
+	}
+	apiOp.Schemas = schemas
+	c.APIServer.Handle(apiOp)
+	return nil
 }

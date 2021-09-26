@@ -1,0 +1,208 @@
+syntax = "proto3";
+
+package erda.msp.apm.checker;
+option go_package = "github.com/erda-project/erda-proto-go/msp/apm/checker/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "common/openapi.proto";
+
+service CheckerV1Service {
+  option (erda.common.openapi_service) = {
+    service: "msp",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  rpc CreateCheckerV1 (CreateCheckerV1Request) returns (CreateCheckerV1Response)  {
+    option (google.api.http) = {
+      post: "/api/v1/msp/checkers/projects/{data.projectID}/metrics",
+      body: "data",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/projects/{data.projectID}/metrics"
+    };
+  }
+  rpc UpdateCheckerV1 (UpdateCheckerV1Request) returns (UpdateCheckerV1Response)  {
+    option (google.api.http) = {
+      post: "/api/v1/msp/checkers/metrics/{id}",
+      body: "data",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/metrics/{id}"
+    };
+  }
+  rpc DeleteCheckerV1 (DeleteCheckerV1Request) returns (DeleteCheckerV1Response) {
+    option (google.api.http) = {
+      delete: "/api/v1/msp/checkers/metrics/{id}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/metrics/{id}"
+    };
+  }
+  rpc GetCheckerV1 (GetCheckerV1Request) returns (GetCheckerV1Response) {
+    option (google.api.http) = {
+      get: "/api/v1/msp/checkers/metrics/{id}",
+    };
+  }
+  
+  rpc DescribeCheckersV1 (DescribeCheckersV1Request) returns (DescribeCheckersV1Response)  {
+    option (google.api.http) = {
+      get: "/api/v1/msp/checkers/projects/{projectID}/dashboard",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/projects/{projectID}/dashboard"
+    };
+  }
+
+  rpc DescribeCheckerV1 (DescribeCheckerV1Request) returns (DescribeCheckerV1Response)  {
+    option (google.api.http) = {
+      get: "/api/v1/msp/checkers/metrics/{id}/dashboard",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/metrics/{id}/dashboard"
+    };
+  }
+
+  rpc GetCheckerStatusV1 (GetCheckerStatusV1Request) returns (GetCheckerStatusV1Response)  {
+    option (google.api.http) = {
+      get: "/api/v1/msp/checkers/metrics/{id}/status",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/metrics/{id}/status"
+    };
+  }
+
+  // +depracated
+  rpc GetCheckerIssuesV1 (GetCheckerIssuesV1Request) returns (GetCheckerIssuesV1Response)  {
+    option (google.api.http) = {
+      get: "/api/v1/msp/checkers/metrics/{id}/issues",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/metrics/{id}/issues"
+    };
+  }
+
+}
+
+// CreateCheckerV1
+message CreateCheckerV1Request {
+  CheckerV1 data      = 1 [(validator.field) = {msg_exists : true}];
+}
+
+message CreateCheckerV1Response {
+  int64 data = 1;
+}
+
+// UpdateCheckerV1
+message UpdateCheckerV1Request {
+  int64     id   = 1 [(validator.field) = {int_gt: 0}];
+  CheckerV1 data = 2 [(validator.field) = {msg_exists : true}];
+}
+
+message UpdateCheckerV1Response {
+  int64 data = 1;
+}
+
+// DeleteCheckerV1
+message DeleteCheckerV1Request {
+  int64 id = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message DeleteCheckerV1Response {
+  CheckerV1 data = 1;
+}
+
+// GetCheckerV1
+message GetCheckerV1Request {
+  int64 id = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message GetCheckerV1Response {
+  CheckerV1 data = 1;
+}
+
+// DescribeCheckersV1
+message DescribeCheckersV1Request {
+  int64  projectID  = 1 [(validator.field) = {int_gt: 0}];
+  string env        = 2 [(validator.field) = {string_not_empty : true}];
+}
+
+message DescribeCheckersV1Response {
+  DescribeResultV1 data = 1;
+}
+
+// DescribeCheckerV1
+message DescribeCheckerV1Request {
+  int64  id     = 1 [(validator.field) = {int_gt: 0}];
+  string period = 2;
+}
+
+message DescribeCheckerV1Response {
+  DescribeResultV1 data = 1;
+}
+
+// GetCheckerStatusV1
+message GetCheckerStatusV1Request {
+  int64 id = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message GetCheckerStatusV1Response {
+  CheckerStatusV1 data = 1;
+}
+
+message CheckerStatusV1 {
+  repeated int64  time   = 1;
+  repeated string status = 2;
+}
+
+// GetCheckerIssuesV1
+message GetCheckerIssuesV1Request {
+  int64 id = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message GetCheckerIssuesV1Response {
+  repeated google.protobuf.Value data = 1;
+}
+
+// common
+message CheckerV1 {
+  string name       = 1 [(validator.field) = {string_not_empty : true}];
+  string mode       = 2 [(validator.field) = {string_not_empty : true}];
+  string url        = 3 [(validator.field) = {string_not_empty : true}];
+  int64  projectID  = 4;
+  string env        = 5;
+}
+
+message DescribeResultV1 {
+  int64                      downCount = 1;
+  map<int64, DescribeItemV1> metrics   = 2;
+}
+
+message DescribeItemV1 {
+  string         name         = 1;
+  string         mode         = 2;
+  string         url          = 3;
+
+  string         status       = 4;
+  string         uptime       = 5;
+  string         downtime     = 6;
+  string         downDuration = 7;
+  double         latency      = 8;
+  string         requestId    = 9;
+
+  double         apdex        = 10;
+  double         avg          = 11;
+  double         max          = 12;
+  double         min          = 13;
+
+  CheckerChartV1 chart        = 14;
+}
+
+message CheckerChartV1 {
+  repeated double latency = 1;
+  repeated int64  time    = 2;
+  repeated string status  = 3;
+}

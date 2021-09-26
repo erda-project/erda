@@ -177,7 +177,7 @@ func (b *Bundle) GetTestPlanV2(testPlanID uint64) (*apistructs.TestPlanV2GetResp
 	return &getResp, nil
 }
 
-// GetTestPlanV2 获取测试计划步骤
+// GetTestPlanV2Step 获取测试计划步骤
 func (b *Bundle) GetTestPlanV2Step(stepID uint64) (*apistructs.TestPlanV2Step, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
@@ -199,7 +199,7 @@ func (b *Bundle) GetTestPlanV2Step(stepID uint64) (*apistructs.TestPlanV2Step, e
 	return &getResp.Data, nil
 }
 
-// GetTestPlanV2 获取测试计划步骤
+// UpdateTestPlanV2Step 获取测试计划步骤
 func (b *Bundle) UpdateTestPlanV2Step(req apistructs.TestPlanV2StepUpdateRequest) error {
 	host, err := b.urls.DOP()
 	if err != nil {

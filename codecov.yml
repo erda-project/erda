@@ -41,3 +41,4 @@ ignore:
   - "modules/*/dbclient"
   - "modules/*/dao"
   - "bundle"
+  - "api/proto-go"

@@ -45,6 +45,7 @@ const (
 	TagsSourceAddonGroup      = Tags + Sep4 + "source_addon_group"
 	TagsSourceTerminusKey     = Tags + Sep4 + "source_terminus_key"
 	TagsComponent             = Tags + Sep4 + "component"
+	TagsDBType                = Tags + Sep4 + "db_type"
 	TagsHost                  = Tags + Sep4 + "host"
 	TagsApplicationId         = Tags + Sep4 + "application_id"
 	TagsApplicationName       = Tags + Sep4 + "application_name"

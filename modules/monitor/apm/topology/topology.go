@@ -175,6 +175,7 @@ type Field struct {
 
 type Tag struct {
 	Component             string `json:"component,omitempty"`
+	DBType                string `json:"db_type,omitempty"`
 	Host                  string `json:"host,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
@@ -382,14 +383,14 @@ func init() {
 
 	TargetServiceNodeType = &NodeType{
 		Type:         TargetServiceNode,
-		GroupByField: &GroupByField{Name: apm.TagsTargetApplicationId, SubField: &GroupByField{Name: apm.TagsTargetRuntimeName, SubField: &GroupByField{Name: apm.TagsTargetServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsTargetServiceId, SubField: &GroupByField{Name: apm.TagsTargetServiceName}},
 		SourceFields: []string{apm.TagsTargetApplicationId, apm.TagsTargetRuntimeName, apm.TagsTargetServiceName, apm.TagsTargetServiceId, apm.TagsTargetApplicationName, apm.TagsTargetRuntimeId},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation:  ServiceNodeAggregation,
 	}
 	SourceServiceNodeType = &NodeType{
 		Type:         SourceServiceNode,
-		GroupByField: &GroupByField{Name: apm.TagsSourceApplicationId, SubField: &GroupByField{Name: apm.TagsSourceRuntimeName, SubField: &GroupByField{Name: apm.TagsSourceServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsSourceServiceId, SubField: &GroupByField{Name: apm.TagsSourceServiceName}},
 		SourceFields: []string{apm.TagsSourceApplicationId, apm.TagsSourceRuntimeName, apm.TagsSourceServiceName, apm.TagsSourceServiceId, apm.TagsSourceApplicationName, apm.TagsSourceRuntimeId},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsSourceAddonType)),
 		Aggregation:  ServiceNodeAggregation,
@@ -410,8 +411,8 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup},
+		GroupByField: &GroupByField{Name: apm.TagsDBType, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType},
 		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
 			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
 		Aggregation: NodeAggregation,
@@ -434,13 +435,13 @@ func init() {
 	}
 	TargetMQServiceNodeType = &NodeType{
 		Type:         TargetMQServiceNode,
-		GroupByField: &GroupByField{Name: apm.TagsTargetApplicationId, SubField: &GroupByField{Name: apm.TagsTargetRuntimeName, SubField: &GroupByField{Name: apm.TagsTargetServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsTargetServiceId, SubField: &GroupByField{Name: apm.TagsTargetServiceName}},
 		SourceFields: []string{apm.TagsTargetApplicationId, apm.TagsTargetRuntimeName, apm.TagsTargetServiceName, apm.TagsTargetServiceId, apm.TagsTargetApplicationName, apm.TagsTargetRuntimeId},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 	}
 	OtherNodeType = &NodeType{
 		Type:         OtherNode,
-		GroupByField: &GroupByField{Name: apm.TagsApplicationId, SubField: &GroupByField{Name: apm.TagsRuntimeName, SubField: &GroupByField{Name: apm.TagsServiceName}}},
+		GroupByField: &GroupByField{Name: apm.TagsServiceId, SubField: &GroupByField{Name: apm.TagsServiceName}},
 		SourceFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
 		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsApplicationId)),
 	}
@@ -1506,40 +1507,6 @@ func (topology *provider) GetTopology(param Vo) []*Node {
 	return nodes
 }
 
-// FilterNodeByTags
-func (topology *provider) FilterNodeByTags(tags []string, nodes []*Node) []*Node {
-	if tags != nil && len(tags) > 0 {
-		for _, v := range tags {
-			tagInfo := strings.Split(v, ":")
-			tag := tagInfo[0]
-			value := tagInfo[1]
-			switch tag {
-			case ApplicationSearchTag.Tag:
-				for i, node := range nodes {
-					if strings.ToLower(node.Name) == strings.ToLower(TypeGateway) {
-						continue
-					}
-					for _, parentNode := range node.Parents {
-						if node.ApplicationName != value && parentNode.ApplicationName != value {
-							nodes = append(nodes[:i], nodes[i+1:]...)
-							i--
-						}
-					}
-
-				}
-			case ServiceSearchTag.Tag:
-				for i, node := range nodes {
-					if node.ServiceName != value {
-						nodes = append(nodes[:i], nodes[i+1:]...)
-						i--
-					}
-				}
-			}
-		}
-	}
-	return nodes
-}
-
 func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	var aggregationConditions *AggregationCondition
 	var relations []*NodeRelation
@@ -1744,7 +1711,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.TargetRuntimeId
 		node.RuntimeName = tags.TargetRuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	case SourceServiceNode:
 		node.Type = TypeService
 		node.ApplicationId = tags.SourceApplicationId
@@ -1754,7 +1721,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.SourceRuntimeId
 		node.RuntimeName = tags.SourceRuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	case TargetAddonNode:
 		if strings.ToLower(tags.Component) == strings.ToLower("Http") {
 			node.Type = TypeElasticsearch
@@ -1774,6 +1741,9 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 	case TargetComponentNode:
 		node.Type = tags.Component
 		node.Name = tags.Host
+		if tags.DBType != "" {
+			node.Type = tags.DBType
+		}
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case SourceMQNode:
 		node.Type = tags.Component
@@ -1788,7 +1758,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.TargetRuntimeId
 		node.RuntimeName = tags.TargetRuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	case TargetOtherNode:
 		if strings.ToLower(tags.Component) == strings.ToLower("Http") && strings.HasPrefix(tags.Host, "terminus-elasticsearch") {
 			node.Type = TypeElasticsearch
@@ -1806,7 +1776,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Name = node.ServiceName
 		node.RuntimeId = tags.RuntimeId
 		node.RuntimeName = tags.RuntimeName
-		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	}
 	node.DashboardId = getDashboardId(node.Type)
 	return &node
@@ -2159,6 +2129,7 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	if params.Limit > 1000 {
 		params.Limit = 1000
 	}
+	lang := api.Language(r)
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2185,13 +2156,18 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 		detailMap["avgElapsed"] = detail[2]
 		data = append(data, detailMap)
 	}
+	result := handleSlowTranslationTraceResult(topology, lang, data)
+	return api.Success(result)
+}
+
+func handleSlowTranslationTraceResult(topology *provider, lang i18n.LanguageCodes, data []map[string]interface{}) map[string]interface{} {
 	result := map[string]interface{}{
 		"cols": []map[string]interface{}{
-			{"title": "请求ID", "index": "requestId"},
-			{"title": "时间", "index": "time"},
-			{"title": "耗时(ms)", "index": "avgElapsed"},
+			{"title": topology.t.Text(lang, "request_id"), "index": "requestId"},
+			{"title": topology.t.Text(lang, "time"), "index": "time"},
+			{"title": topology.t.Text(lang, "avg_elapsed"), "index": "avgElapsed"},
 		},
 		"data": data,
 	}
-	return api.Success(result)
+	return result
 }

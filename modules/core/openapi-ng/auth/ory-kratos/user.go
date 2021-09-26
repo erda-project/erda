@@ -15,10 +15,10 @@
 package orykratos
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
+	"context"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/modules/core/openapi-ng"
 	"github.com/erda-project/erda/modules/core/openapi-ng/common"
@@ -35,25 +35,29 @@ func (p *provider) addUserInfoAPI(router openapi.Interface) {
 
 func (p *provider) GetUserInfo(rw http.ResponseWriter, r *http.Request) {
 	sessionID := p.getSession(r)
-
+	if len(sessionID) > 0 {
+		r = r.WithContext(context.WithValue(r.Context(), "session", sessionID))
+	}
 	info, err := p.getUserInfo(sessionID)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadGateway)
+		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
+
 	common.ResponseJSON(rw, &struct {
 		Success bool        `json:"success"`
 		Data    interface{} `json:"data"`
 	}{
 		Success: true,
 		Data: map[string]interface{}{
-			"id":     info.ID,
-			"name":   info.UserName,
-			"nick":   info.NickName,
-			"avatar": info.AvatarUrl,
-			"phone":  info.Phone,
-			"email":  info.Email,
-			"token":  info.Token,
+			"id":       info.ID,
+			"name":     info.UserName,
+			"nick":     info.NickName,
+			"avatar":   info.AvatarUrl,
+			"phone":    info.Phone,
+			"email":    info.Email,
+			"token":    info.Token,
+			"userType": "new",
 		},
 	})
 }
@@ -67,7 +71,7 @@ func (p *provider) getSession(r *http.Request) string {
 }
 
 func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
-	var buf bytes.Buffer
+	var s OryKratosSession
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.OryKratosAddr).
 		Cookie(&http.Cookie{
@@ -75,18 +79,23 @@ func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
 			Value: sessionID,
 		}).
 		Path("/sessions/whoami").
-		Do().Body(&buf)
+		Do().JSON(&s)
 	if err != nil {
 		return nil, err
 	}
 	if !r.IsOK() {
-		return nil, fmt.Errorf("bad session")
+		return nil, errors.Errorf("get kratos user info error, statusCode: %d", r.StatusCode())
 	}
-	var i OryKratosSession
-	if err := json.Unmarshal(buf.Bytes(), &i); err != nil {
+
+	info := identityToUserInfo(s.Identity)
+	ucUserID, err := p.bundle.GetUcUserID(string(info.ID))
+	if err != nil {
 		return nil, err
 	}
-	return identityToUserInfo(i.Identity), nil
+	if ucUserID != "" {
+		info.ID = ucauth.USERID(ucUserID)
+	}
+	return info, nil
 }
 
 type OryKratosSession struct {
@@ -102,8 +111,10 @@ type OryKratosIdentity struct {
 }
 
 type OryKratosIdentityTraits struct {
-	Email string                      `json:"email"`
-	Name  OryKratosIdentityTraitsName `json:"name"`
+	Email string `json:"email"`
+	Name  string `json:"username"`
+	Nick  string `json:"nickname"`
+	Phone string `json:"phone"`
 }
 
 type OryKratosIdentityTraitsName struct {
@@ -119,8 +130,10 @@ func nameConversion(name OryKratosIdentityTraitsName) string {
 func identityToUser(i OryKratosIdentity) ucauth.User {
 	return ucauth.User{
 		ID:    string(i.ID),
-		Nick:  nameConversion(i.Traits.Name),
+		Name:  i.Traits.Name,
+		Nick:  i.Traits.Nick,
 		Email: i.Traits.Email,
+		Phone: i.Traits.Phone,
 	}
 }
 

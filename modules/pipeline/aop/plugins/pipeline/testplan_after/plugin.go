@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	testplanpb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
@@ -114,7 +113,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 	var req = testplanpb.Content{
 		TestPlanID:      testPlanID,
-		ExecuteTime:     timestamppb.New(*ctx.SDK.Pipeline.TimeBegin),
+		ExecuteTime:     ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
 		ApiTotalNum:     int64(apiTotalNum),
 		ExecuteDuration: executeDuration,
 	}
@@ -154,7 +153,9 @@ func filterPipelineTask(allTasks []*spec.PipelineTask) ([]*spec.PipelineTask, []
 			continue
 		}
 		if task.Type == apistructs.ActionTypeSnippet {
-			snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			if task.SnippetPipelineID != nil {
+				snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			}
 			continue
 		}
 	}

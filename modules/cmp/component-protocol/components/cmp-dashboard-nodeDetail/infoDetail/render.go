@@ -18,22 +18,31 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+var steveServer cmp.SteveServer
+
+func (infoDetail *InfoDetail) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return infoDetail.DefaultProvider.Init(ctx)
+}
+
 func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	infoDetail.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	infoDetail.Ctx = ctx
 	infoDetail.SDK = cputil.SDK(ctx)
 	if event.Operation == common.CMPDashboardRemoveLabel {
@@ -47,15 +56,15 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 		req.Type = apistructs.K8SNode
 		req.Name = recordId
 		labelKey := strings.Split(label, ":")[0]
-		err := infoDetail.CtxBdl.UnlabelNode(&req, []string{labelKey})
+		err := steveServer.UnlabelNode(ctx, &req, []string{labelKey})
 		if err != nil {
 			return err
 		}
-		resp, err := infoDetail.CtxBdl.GetSteveResource(&req)
+		resp, err := steveServer.GetSteveResource(ctx, &req)
 		if err != nil {
 			return err
 		}
-		(*gs)["node"] = resp
+		(*gs)["node"] = resp.Data()
 	}
 	var node data.Object
 	node = (*gs)["node"].(data.Object)
@@ -64,28 +73,16 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	d := Data{}
 	d.Os = node.String("status", "nodeInfo", "osImage")
 	d.Version = node.String("status", "nodeInfo", "kubeletVersion")
-	d.ContainerRuntime = node.StringSlice("metadata", "fields")[9]
+	d.ContainerRuntimeVersion = node.StringSlice("metadata", "fields")[9]
 	d.NodeIP = infoDetail.getIp(node)
 	d.PodNum = node.String("status", "capacity", "pods")
 	d.Tags = infoDetail.getTags(node)
 	d.Annotation = infoDetail.getAnnotations(node)
 	d.Taints = infoDetail.getTaints(node)
-	t, err := infoDetail.parseTime(node)
-	if err != nil {
-		return err
-	}
-	d.Survive = t
+	d.Survive = node.StringSlice("metadata", "fields")[3]
 	c.Props = infoDetail.Props
 	c.Data = map[string]interface{}{"data": d}
 	return nil
-}
-
-func (infoDetail *InfoDetail) parseTime(node data.Object) (string, error) {
-	t, err := time.Parse("2006-01-02T15:04:05Z", node.String("metadata", "creationTimestamp"))
-	if err != nil {
-		return "", err
-	}
-	return time.Now().Sub(t).String(), nil
 }
 
 func (infoDetail *InfoDetail) getIp(node data.Object) string {
@@ -195,7 +192,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 			{Label: infoDetail.SDK.I18n("nodeIP"), ValueKey: "nodeIP"},
 			{Label: infoDetail.SDK.I18n("version"), ValueKey: "version"},
 			{Label: infoDetail.SDK.I18n("os"), ValueKey: "os"},
-			{Label: infoDetail.SDK.I18n("containerRuntime"), ValueKey: "containerRuntime"},
+			{Label: infoDetail.SDK.I18n("containerRuntimeVersion"), ValueKey: "containerRuntimeVersion"},
 			{Label: infoDetail.SDK.I18n("podNum"), ValueKey: "podNum"},
 			{Label: infoDetail.SDK.I18n("tag"), ValueKey: "tag", RenderType: "tagsRow", SpaceNum: 2, Operations: map[string]Operation{
 				"add": {
@@ -206,7 +203,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 						Target: "addLabelModal",
 						CommandState: CommandState{
 							Visible:  true,
-							FormData: FormData{RecordId: node.String("id")},
+							FormData: FormData{RecordId: node.String("metadata", "name")},
 						},
 					},
 				},
@@ -215,7 +212,7 @@ func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 					Reload:   true,
 					FillMeta: "dlabel",
 					Meta: map[string]interface{}{
-						"recordId": node.String("id"),
+						"recordId": node.String("metadata", "name"),
 						"dlabel":   Field{Label: ""},
 					},
 				}}},

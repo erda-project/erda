@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -71,6 +72,7 @@ type Endpoints struct {
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
 	fileSvc            *filesvc.FileService
+	user               *user.User
 }
 
 type Option func(*Endpoints)
@@ -244,6 +246,12 @@ func WithFileSvc(svc *filesvc.FileService) Option {
 	}
 }
 
+func WithUserSvc(svc *user.User) Option {
+	return func(e *Endpoints) {
+		e.user = svc
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
@@ -252,6 +260,10 @@ func (e *Endpoints) DBClient() *dao.DBClient {
 // GetLocale 获取本地化资源
 func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 	return e.bdl.GetLocaleByRequest(request)
+}
+
+func (e *Endpoints) UserSvc() *user.User {
+	return e.user
 }
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
@@ -433,5 +445,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
+		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
 	}
 }

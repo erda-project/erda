@@ -15,13 +15,15 @@
 package reconciler
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
 )
 
 // loadQueueManger
-func (r *Reconciler) loadQueueManger() error {
+func (r *Reconciler) loadQueueManger(ctx context.Context) error {
 	// init queue manager
-	r.QueueManager = manager.New(manager.WithDBClient(r.dbClient))
+	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
 
 	return nil
 }

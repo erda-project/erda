@@ -145,7 +145,7 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 		return
 	}
 	i.Props = visible
-	i.Props["groupDraggable"] = false
+	i.Props["groupDraggable"] = true
 	switch event.Operation {
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
 		err = i.RenderListStageForm()
@@ -153,7 +153,7 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 			return err
 		}
 	case apistructs.AutoTestSceneStepMoveItemOperationKey:
-		err = i.RenderMoveStagesForm(false)
+		err = i.RenderItemMoveStagesForm()
 		if err != nil {
 			return err
 		}
@@ -162,7 +162,7 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 			return err
 		}
 	case apistructs.AutoTestSceneStepMoveGroupOperationKey:
-		err = i.RenderMoveStagesForm(true)
+		err = i.RenderGroupMoveStagesForm()
 		if err != nil {
 			return err
 		}

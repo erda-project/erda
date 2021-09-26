@@ -51,6 +51,7 @@ var (
 )
 
 const testNoTestFilesPackage = true
+const testAllPackagesTrigger = 0.2
 
 func init() {
 	home, err := homedir.Dir()
@@ -90,10 +91,18 @@ func testAllPackages(base string) error {
 			return err
 		}
 		if info.IsDir() {
-			// Skip directories like ".git".
-			if name := info.Name(); name != "." && strings.HasPrefix(name, ".") {
-				return filepath.SkipDir
+			name := info.Name()
+			if name != "." {
+				// Skip directories like ".git".
+				if strings.HasPrefix(name, ".") {
+					return filepath.SkipDir
+				}
+				// Skip directories wasn't included in the base package, i.e. proto-go
+				if module, err := readBasePathFromDir(path); err == nil && !strings.HasPrefix(module, base+"/") {
+					return filepath.SkipDir
+				}
 			}
+
 			// parse package
 			pkgs, err := parser.ParseDir(fset, path, nil, parser.ImportsOnly)
 			if err != nil {
@@ -192,7 +201,7 @@ func testAllPackages(base string) error {
 				return err
 			}
 		} else {
-			coverage := make(map[string][]*cover.Profile)
+			var needTestPackages int
 			for pkg, sum := range pkgSum {
 				if sum.tested {
 					continue
@@ -202,27 +211,47 @@ func testAllPackages(base string) error {
 					sum.testTime = pre.testTime
 					continue
 				}
-				err := recursiveTest(sum, pkgSum, incoming, coverage)
+				needTestPackages += countNeedTestPackages(sum, pkgSum, incoming)
+			}
+			if needTestPackages > int(float64(len(pkgSum))*testAllPackagesTrigger) {
+				fmt.Println("too many package to test, all packages will be tested")
+				_, err := runTest("./...")
 				if err != nil {
 					return err
 				}
-			}
-			var newProfiles []*cover.Profile
-			for _, p := range profiles {
-				dir := filepath.Dir(p.FileName)
-				if _, ok := coverage[dir]; !ok {
-					newProfiles = append(newProfiles, p)
+			} else {
+				coverage := make(map[string][]*cover.Profile)
+				for pkg, sum := range pkgSum {
+					if sum.tested {
+						continue
+					}
+					pre, ok := preSum[pkg]
+					if ok && pre.hash == sum.hash {
+						sum.testTime = pre.testTime
+						continue
+					}
+					err := recursiveTest(sum, pkgSum, incoming, coverage)
+					if err != nil {
+						return err
+					}
 				}
-			}
-			for _, ps := range coverage {
-				newProfiles = append(newProfiles, ps...)
-			}
+				var newProfiles []*cover.Profile
+				for _, p := range profiles {
+					dir := filepath.Dir(p.FileName)
+					if _, ok := coverage[dir]; !ok {
+						newProfiles = append(newProfiles, p)
+					}
+				}
+				for _, ps := range coverage {
+					newProfiles = append(newProfiles, ps...)
+				}
 
-			err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
-			if err != nil {
-				return err
+				err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
+				if err != nil {
+					return err
+				}
+				os.Rename("coverage.txt.tmp", "coverage.txt")
 			}
-			os.Rename("coverage.txt.tmp", "coverage.txt")
 		}
 		absCachedCoverageFilePath, _ := filepath.Abs(cachedCoverage)
 		absCoverageFilePath, _ := filepath.Abs("coverage.txt")
@@ -266,6 +295,7 @@ type testSumItem struct {
 	testTime time.Time
 	info     *packageInfo
 	tested   bool
+	checked  bool
 }
 
 func readTestSum() map[string]*testSumItem {
@@ -316,7 +346,11 @@ func writeTestSum(testSum map[string]*testSumItem) error {
 }
 
 func readBasePath() (string, error) {
-	mod, err := ioutil.ReadFile("go.mod")
+	return readBasePathFromDir(".")
+}
+
+func readBasePathFromDir(dir string) (string, error) {
+	mod, err := ioutil.ReadFile(filepath.Join(dir, "go.mod"))
 	if err != nil {
 		return "", err
 	}
@@ -353,6 +387,7 @@ func runTest(file string) (profiles []*cover.Profile, err error) {
 		}()
 	}
 	args := append([]string{"test", "-tags=musl", "-work", "-cpu=2", "-timeout=30s", "-failfast", "-race", "-coverprofile=" + coverage, "-covermode=atomic"})
+	args = append(args, []string{"-ldflags", "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn"}...)
 	args = append(args, file)
 	fmt.Printf("exec: go %s\n", strings.Join(args, " "))
 	cmd := exec.Command("go", args...)
@@ -386,4 +421,21 @@ func recursiveTest(entry *testSumItem, pkgSum map[string]*testSumItem, incoming 
 		}
 	}
 	return nil
+}
+
+func countNeedTestPackages(entry *testSumItem, pkgSum map[string]*testSumItem, incoming map[string]map[string]struct{}) (testPackages int) {
+	if entry.checked {
+		return 0
+	}
+	entry.checked = true
+	if testNoTestFilesPackage || entry.info.hasTestFile {
+		testPackages++
+	}
+	for pkg := range incoming[entry.pkg] {
+		t := pkgSum[pkg]
+		if t != nil {
+			testPackages += countNeedTestPackages(t, pkgSum, incoming)
+		}
+	}
+	return testPackages
 }

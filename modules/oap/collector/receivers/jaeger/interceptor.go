@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/recallsong/go-utils/reflectx"
@@ -42,8 +43,7 @@ var (
 	}
 
 	JAEGER_MSP_ENV_ID    = "msp.env.id"
-	JAEGER_MSP_AK_ID     = "msp.ak.id"
-	JAEGER_MSP_AK_SECRET = "msp.ak.secret"
+	JAEGER_MSP_ENV_TOKEN = "msp.env.token"
 )
 
 func injectCtx(next interceptor.Handler) interceptor.Handler {
@@ -51,8 +51,7 @@ func injectCtx(next interceptor.Handler) interceptor.Handler {
 		header := transport.ContextHeader(ctx)
 		req := transhttp.ContextRequest(ctx)
 		header.Set(common.HEADER_MSP_ENV_ID, req.Header.Get(common.HEADER_MSP_ENV_ID))
-		header.Set(common.HEADER_MSP_AK_ID, req.Header.Get(common.HEADER_MSP_AK_ID))
-		header.Set(common.HEADER_MSP_AK_SECRET, req.Header.Get(common.HEADER_MSP_AK_SECRET))
+		header.Set(common.HEADER_MSP_ENV_TOKEN, req.Header.Get(common.HEADER_MSP_ENV_TOKEN))
 		if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
 			ctx = common.WithSpans(ctx, data.Spans)
 		}
@@ -93,13 +92,13 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 	for _, tSpan := range batch.Spans {
 		span := &tracing.Span{
 			TraceID:           extractTraceID(tSpan),
-			SpanID:            reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10)),
-			StratTimeUnixNano: uint64(tSpan.StartTime),
-			EndTimeUnixNano:   uint64(tSpan.StartTime + tSpan.Duration),
+			SpanID:            strconv.FormatInt(tSpan.SpanId, 10),
+			StartTimeUnixNano: uint64(tSpan.StartTime) * uint64(time.Microsecond),
+			EndTimeUnixNano:   uint64(tSpan.StartTime+tSpan.Duration) * uint64(time.Microsecond),
 			Name:              tSpan.OperationName,
 		}
 		if tSpan.ParentSpanId != 0 {
-			span.ParentSpanID = reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10))
+			span.ParentSpanID = strconv.FormatInt(tSpan.ParentSpanId, 10)
 		}
 		span.Attributes = make(map[string]string)
 		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
@@ -111,11 +110,11 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 	return spans
 }
 
-func extractTraceID(tSpan *jaeger.Span) []byte {
+func extractTraceID(tSpan *jaeger.Span) string {
 	if tSpan.TraceIdHigh == 0 {
-		return reflectx.StringToBytes(fmt.Sprintf("%016x", tSpan.TraceIdLow))
+		return fmt.Sprintf("%016x", tSpan.TraceIdLow)
 	}
-	return reflectx.StringToBytes(fmt.Sprintf("%016x%016x", tSpan.TraceIdHigh, tSpan.TraceIdLow))
+	return fmt.Sprintf("%016x%016x", tSpan.TraceIdHigh, tSpan.TraceIdLow)
 }
 
 func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
@@ -127,14 +126,9 @@ func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
 					r.Header.Set(common.HEADER_MSP_ENV_ID, extractTagValue(tag))
 				}
 			}
-			if tag.Key == common.TAG_MSP_AK_ID || tag.Key == JAEGER_MSP_AK_ID {
-				if val := r.Header.Get(common.HEADER_MSP_AK_ID); val == "" {
-					r.Header.Set(common.HEADER_MSP_AK_ID, extractTagValue(tag))
-				}
-			}
-			if tag.Key == common.TAG_MSP_AK_SECRET || tag.Key == JAEGER_MSP_AK_SECRET {
-				if val := r.Header.Get(common.HEADER_MSP_AK_SECRET); val == "" {
-					r.Header.Set(common.HEADER_MSP_AK_SECRET, extractTagValue(tag))
+			if tag.Key == common.TAG_MSP_ENV_TOKEN || tag.Key == JAEGER_MSP_ENV_TOKEN {
+				if val := r.Header.Get(common.HEADER_MSP_ENV_TOKEN); val == "" {
+					r.Header.Set(common.HEADER_MSP_ENV_TOKEN, extractTagValue(tag))
 				}
 			}
 		}

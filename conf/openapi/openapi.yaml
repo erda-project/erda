@@ -42,7 +42,7 @@ openapi-auth:
 openapi-auth-ory-kratos:
   _enable: ${ORY_ENABLED:false}
   weight: 100
-  ory_kratos_addr: "${ORY_KRATOS_ADDR:kratos:4433}"
+  ory_kratos_addr: "${ORY_KRATOS_ADDR:kratos-public}"
 openapi-auth-uc:
   _enable: ${UC_ENABLED:true}
   weight: 100

@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
@@ -25,23 +26,22 @@ import (
 )
 
 var (
-	INVALID_MSP_ENV_ID        = errors.New("invalid msp.env.id field")
-	INVALID_MSP_ACCESS_KEY    = errors.New("invalid msp.access.key field")
-	INVALID_MSP_ACCESS_SECRET = errors.New("invalid msp.access.secret field")
-	AUTHENTICATION_FAILED     = errors.New("authentication failed, please use the correct accessKey and accessKeySecret")
+	INVALID_MSP_ENV_ID    = errors.New("invalid msp.env.id tag")
+	INVALID_MSP_ENV_TOKEN = errors.New("invalid msp.env.token tag")
+	AUTHENTICATION_FAILED = errors.New("authentication failed, please use the correct accessKey and accessKeySecret")
 )
 
 type Interceptors interface {
 	Authentication(next interceptor.Handler) interceptor.Handler
 
-	TagOverwrite(next interceptor.Handler) interceptor.Handler
+	SpanTagOverwrite(next interceptor.Handler) interceptor.Handler
 }
 
 type interceptorImpl struct {
 	validator authentication.Validator
 }
 
-func (i *interceptorImpl) TagOverwrite(next interceptor.Handler) interceptor.Handler {
+func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		spans, ok := Spans(ctx)
 		if ok {
@@ -52,11 +52,21 @@ func (i *interceptorImpl) TagOverwrite(next interceptor.Handler) interceptor.Han
 						delete(span.Attributes, k)
 					}
 				}
-				delete(span.Attributes, TAG_MSP_AK_ID)
-				delete(span.Attributes, TAG_MSP_AK_SECRET)
 				if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
 					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_MSP_ENV_ID]
 				}
+				if _, ok := span.Attributes[TAG_IP]; ok {
+					span.Attributes[TAG_SERVICE_INSTANCE_IP] = span.Attributes[TAG_IP]
+					delete(span.Attributes, TAG_IP)
+				}
+				if _, ok := span.Attributes[TAG_HTTP_PATH]; !ok {
+					if _, ok := span.Attributes[TAG_HTTP_URL]; ok {
+						if u, err := url.Parse(span.Attributes[TAG_HTTP_URL]); err == nil {
+							span.Attributes[TAG_HTTP_PATH] = u.Path
+						}
+					}
+				}
+				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
 			}
 		}
 		return next(ctx, req)
@@ -66,20 +76,16 @@ func (i *interceptorImpl) TagOverwrite(next interceptor.Handler) interceptor.Han
 func (i *interceptorImpl) Authentication(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		envId := apis.GetHeader(ctx, HEADER_MSP_ENV_ID)
-		akId := apis.GetHeader(ctx, HEADER_MSP_AK_ID)
-		akSecret := apis.GetHeader(ctx, HEADER_MSP_AK_SECRET)
+		token := apis.GetHeader(ctx, HEADER_MSP_ENV_TOKEN)
 
 		if envId == "" {
 			return nil, INVALID_MSP_ENV_ID
 		}
-		if akId == "" {
-			return nil, INVALID_MSP_ACCESS_KEY
-		}
-		if akSecret == "" {
-			return nil, INVALID_MSP_ACCESS_SECRET
+		if token == "" {
+			return nil, INVALID_MSP_ENV_TOKEN
 		}
 
-		if !i.validator.Validate(SCOPE_MSP_ENV, envId, akId, akSecret) {
+		if !i.validator.Validate(SCOPE_MSP_ENV, envId, token) {
 			return nil, AUTHENTICATION_FAILED
 		}
 

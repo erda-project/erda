@@ -23,6 +23,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -42,16 +43,16 @@ type group struct {
 }
 
 type Aggregator struct {
-	ctx     context.Context
-	bdl     *bundle.Bundle
+	Ctx     context.Context
+	Bdl     *bundle.Bundle
 	servers sync.Map
 }
 
 // NewAggregator new an aggregator with steve servers for all current clusters
 func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
 	a := &Aggregator{
-		ctx: ctx,
-		bdl: bdl,
+		Ctx: ctx,
+		Bdl: bdl,
 	}
 	a.init()
 	go a.watchClusters(ctx)
@@ -97,7 +98,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 func (a *Aggregator) listClusterByType(types ...string) ([]apistructs.ClusterInfo, error) {
 	var result []apistructs.ClusterInfo
 	for _, typ := range types {
-		clusters, err := a.bdl.ListClustersWithType(typ)
+		clusters, err := a.Bdl.ListClustersWithType(typ)
 		if err != nil {
 			return nil, err
 		}
@@ -169,21 +170,21 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 
 	for _, sa := range predefinedServiceAccount {
 		saClient := client.ClientSet.CoreV1().ServiceAccounts(sa.Namespace)
-		if _, err = saClient.Create(a.ctx, sa, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+		if _, err = saClient.Create(a.Ctx, sa, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
 	crClient := client.ClientSet.RbacV1().ClusterRoles()
 	for _, cr := range predefinedClusterRole {
-		if _, err = crClient.Create(a.ctx, cr, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+		if _, err = crClient.Create(a.Ctx, cr, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
 	crbClient := client.ClientSet.RbacV1().ClusterRoleBindings()
 	for _, crb := range predefinedClusterRoleBinding {
-		if _, err = crbClient.Create(a.ctx, crb, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+		if _, err = crbClient.Create(a.Ctx, crb, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		}
 	}
@@ -197,18 +198,18 @@ func (a *Aggregator) insureSystemNamespace(client *k8sclient.K8sClient) error {
 			Name: "erda-system",
 		},
 	}
-	newNs, err := nsClient.Create(a.ctx, system, metav1.CreateOptions{})
+	newNs, err := nsClient.Create(a.Ctx, system, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
 
 	for newNs.Status.Phase != v1.NamespaceActive {
-		newNs, err = nsClient.Get(a.ctx, "erda-system", metav1.GetOptions{})
+		newNs, err = nsClient.Get(a.Ctx, "erda-system", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		select {
-		case <-a.ctx.Done():
+		case <-a.Ctx.Done():
 			return errors.New("failed to watch system namespace, context canceled")
 		case <-time.After(time.Second):
 			logrus.Infof("creating erda system namespace...")
@@ -245,7 +246,7 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	s, ok := a.servers.Load(clusterName)
 	if !ok {
-		cluster, err := a.bdl.GetCluster(clusterName)
+		cluster, err := a.Bdl.GetCluster(clusterName)
 		if err != nil {
 			apiErr, _ := err.(*errorresp.APIError)
 			if apiErr.HttpCode() != http.StatusNotFound {
@@ -272,6 +273,7 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if s, ok = a.servers.Load(cluster.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
+			return
 		}
 	}
 
@@ -285,6 +287,36 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	group.server.ServeHTTP(rw, req)
 }
 
+func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
+	s, ok := a.servers.Load(clusterName)
+	if !ok {
+		cluster, err := a.Bdl.GetCluster(clusterName)
+		if err != nil {
+			apiErr, _ := err.(*errorresp.APIError)
+			if apiErr.HttpCode() != http.StatusNotFound {
+				return fmt.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error())
+			}
+			return fmt.Errorf("cluster %s not found", clusterName)
+		}
+
+		if cluster.Type != "k8s" {
+			return fmt.Errorf("cluster %s is not a k8s cluster", clusterName)
+		}
+
+		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
+		a.Add(cluster)
+		if s, ok = a.servers.Load(cluster.Name); !ok {
+			return fmt.Errorf("failed to start steve server for cluster %s", cluster.Name)
+		}
+	}
+
+	group, _ := s.(*group)
+	if !group.ready {
+		return fmt.Errorf("k8s API for cluster %s is not ready, please wait", clusterName)
+	}
+	return group.server.Handle(apiOp)
+}
+
 func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
 	if clusterInfo.ManageConfig == nil {
 		return nil, nil, fmt.Errorf("manageConfig of cluster %s is null", clusterInfo.Name)
@@ -295,12 +327,13 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 		return nil, nil, err
 	}
 
-	ctx, cancel := context.WithCancel(a.ctx)
+	ctx, cancel := context.WithCancel(a.Ctx)
 	prefix := GetURLPrefix(clusterInfo.Name)
 	server, err := New(ctx, restConfig, &Options{
 		AuthMiddleware: emptyMiddleware,
 		Router:         RoutesWrapper(prefix),
 		URLPrefix:      prefix,
+		ClusterName:    clusterInfo.Name,
 	})
 	if err != nil {
 		cancel()

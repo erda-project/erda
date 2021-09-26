@@ -16,6 +16,7 @@ package cmp_dashboard_nodes
 
 import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/addLabelModal"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/batchOperationTipModal"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/charts"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/cleanData"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/cpuChart"

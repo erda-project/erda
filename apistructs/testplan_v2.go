@@ -233,11 +233,13 @@ type TestPlanV2StepUpdateResp struct {
 
 // TestPlanV2StepMoveRequest move a step in the test plan request
 type TestPlanV2StepMoveRequest struct {
-	StepID      uint64 `json:"stepID"`
-	PreID       uint64 `json:"preID"`
-	ScenesSetId uint64 `json:"scenesSetId"`
-	TestPlanID  uint64 `json:"-"`
-	IsGroup     bool   `json:"isGroup"` // if move with group
+	StepID       uint64 `json:"stepID"`
+	LastStepID   uint64 `json:"lastStepID"`
+	PreID        uint64 `json:"preID"`
+	ScenesSetId  uint64 `json:"scenesSetId"`
+	TestPlanID   uint64 `json:"-"`
+	TargetStepID uint64 `json:"targetStepID"`
+	IsGroup      bool   `json:"isGroup"` // if move with group
 
 	IdentityInfo
 }

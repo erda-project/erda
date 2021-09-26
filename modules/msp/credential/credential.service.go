@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"encoding/json"
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
@@ -29,6 +28,8 @@ type accessKeyService struct {
 	p *provider
 }
 
+const MSP_SCOPE = "msp_env"
+
 func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
 	req := &akpb.QueryAccessKeysRequest{
 		Status:      request.Status,
@@ -37,25 +38,26 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 		AccessKey:   request.AccessKey,
 		PageNo:      request.PageNo,
 		PageSize:    request.PageSize,
-		Scope:       request.Scope,
+		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
 	}
 	accessKeyList, err := a.p.AccessKeyService.QueryAccessKeys(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err := json.Marshal(accessKeyList.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	akList := make([]*pb.QueryAccessKeys, 0)
+	for _, v := range accessKeyList.Data {
+		ak := &pb.QueryAccessKeys{
+			Id:        v.Id,
+			Token:     v.AccessKey,
+			CreatedAt: v.CreatedAt,
+		}
+		akList = append(akList, ak)
 	}
 	result := &pb.QueryAccessKeysResponse{
 		Data: &pb.QueryAccessKeysData{
-			List: make([]*akpb.AccessKeysItem, 0),
+			List: akList,
 		},
-	}
-	err = json.Unmarshal(data, &result.Data.List)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.Total = accessKeyList.Total
 	return result, nil
@@ -90,7 +92,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		SubjectType: request.SubjectType,
 		Subject:     request.Subject,
 		Description: request.Description,
-		Scope:       request.Scope,
+		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
@@ -98,7 +100,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateAccessKeyResponse{
-		Data: accessKey.Data,
+		Data: accessKey.Data.AccessKey,
 	}
 	return result, nil
 }

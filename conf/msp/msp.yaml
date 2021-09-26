@@ -90,10 +90,11 @@ erda.msp.registercenter:
 erda.msp.member:
 
 erda.msp.apm.adapter:
-  library:
-    - ${CONFIG_PATH}/adapter/instrumentationlibrary.yaml
-  configFile:
-    - ${CONFIG_PATH}/adapter/config.yaml
+  collector_url: ${COLLECTOR_PUBLIC_URL:https://collector.erda.cloud}
+  libraryFiles:
+    - ${CONFIG_PATH}/instrumentationlibrary/instrumentationlibrary.yaml
+  configFiles:
+    - ${CONFIG_PATH}/instrumentationlibrary/jaeger-template.yaml
 
 # checker
 erda.msp.apm.checker: # checkers apis

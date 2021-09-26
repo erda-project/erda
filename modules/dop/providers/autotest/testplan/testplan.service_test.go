@@ -15,78 +15,18 @@
 package testplan
 
 import (
-	context "context"
-	reflect "reflect"
-	testing "testing"
+	"reflect"
+	"testing"
 	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
+	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 )
-
-func Test_TestPlanService_UpdateTestPlanV2ByHook(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.TestPlanUpdateByHookRequest
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.TestPlanUpdateByHookResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.core.dop.autotest.testplan.TestPlanService",
-		//			`
-		//erda.core.dop.autotest.testplan:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.TestPlanUpdateByHookRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.TestPlanUpdateByHookResponse{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.TestPlanServiceServer)
-			got, err := srv.UpdateTestPlanByHook(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("TestPlanService.UpdateTestPlanV2ByHook() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("TestPlanService.UpdateTestPlanV2ByHook() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
 
 func Test_convertTime(t *testing.T) {
 	time, err := convertUTCTime("2020-01-02 04:00:00")
@@ -110,6 +50,7 @@ func Test_processEvent(t *testing.T) {
 				ProjectID: 1,
 			}, nil
 		})
+	defer monkey.UnpatchAll()
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryNotifiesBySource",
 		func(b *bundle.Bundle, orgID string, sourceType, sourceID, itemName, label string, clusterNames ...string) ([]*apistructs.NotifyDetail, error) {
 			return []*apistructs.NotifyDetail{
@@ -149,12 +90,31 @@ func Test_processEvent(t *testing.T) {
 			}, nil
 		})
 
-	err := p.processEvent(&pb.Content{
+	err := p.ProcessEvent(&pb.Content{
 		TestPlanID:      1,
-		ExecuteTime:     timestamppb.New(time.Now()),
+		ExecuteTime:     "2006-01-02 15:04:05",
 		PassRate:        10.123,
 		ExecuteDuration: "10:10:10",
 		ApiTotalNum:     100,
 	})
 	assert.NoError(t, err)
+}
+
+func TestParseExecuteTime(t *testing.T) {
+	ti := time.Date(2006, 1, 2, 15, 4, 5, 0, time.Local)
+
+	tt := []struct {
+		value string
+		want  *time.Time
+	}{
+		{"2006-01-02 15:04:05",
+			&ti,
+		},
+		{"2006-01-02",
+			nil,
+		},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, parseExecuteTime(v.value))
+	}
 }

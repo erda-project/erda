@@ -33,17 +33,18 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 	//register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
-			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
-			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+			LibraryFiles: []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFiles:  []string{"./../../../../conf/msp/adapter/jaeger-template.yaml"},
 		},
 		Log:            logger,
 		Register:       nil,
 		adapterService: &adapterService{},
-		libraryMap: map[string]interface{}{
-			"Java Agent":        []interface{}{"Java"},
-			"Apache SkyWalking": []interface{}{"Java"},
+		libraries: []*InstrumentationLibrary{
+			&InstrumentationLibrary{InstrumentationLibrary: "Jaeger", Languages: []*Language{&Language{Name: "Java", Enabled: true}}},
 		},
-		configFile: "./../../../../conf/msp/adapter/config.yaml",
+		templates: map[string]*InstrumentationLibraryTemplate{
+			"Jaeger": &InstrumentationLibraryTemplate{InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: ""}}},
+		},
 	}
 	pro.adapterService.p = pro
 	_, err := pro.adapterService.GetInstrumentationLibrary(context.Background(), &pb.GetInstrumentationLibraryRequest{})
@@ -59,24 +60,25 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 	//register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
-			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
-			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+			LibraryFiles: []string{"./../../../../conf/msp/instrumentationlibrary/instrumentationlibrary.yaml"},
+			ConfigFiles:  []string{"./../../../../conf/msp/instrumentationlibrary/config.yaml"},
 		},
 		Log:            logger,
 		Register:       nil,
 		adapterService: &adapterService{},
-		libraryMap: map[string]interface{}{
-			"Java Agent":        []interface{}{"Java"},
-			"Apache SkyWalking": []interface{}{"Java"},
+		libraries: []*InstrumentationLibrary{
+			{InstrumentationLibrary: "Jaeger", Languages: []*Language{&Language{Name: "Java", Enabled: true}}},
 		},
-		configFile: "./../../../../conf/msp/adapter/config.yaml",
+		templates: map[string]*InstrumentationLibraryTemplate{
+			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: ""}}},
+		},
 	}
 	pro.adapterService.p = pro
 	_, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
-		Language: "java",
-		Strategy: "javaagent",
+		Language: "Java",
+		Strategy: "Jaeger",
 	})
 	if err != nil {
-		t.Errorf("shoult not err")
+		t.Errorf("shoult not err: %s", err)
 	}
 }

@@ -78,43 +78,48 @@ func (client *DBClient) AddTestPlanV2Step(req *apistructs.TestPlanV2StepAddReque
 	err := client.Transaction(func(tx *gorm.DB) error {
 		var preStep, nextStep TestPlanV2Step
 		newStep := TestPlanV2Step{PreID: req.PreID, SceneSetID: req.SceneSetID, PlanID: req.TestPlanID, GroupID: req.GroupID}
-		// req.PreID != 0 check the pre step is exist
+		// Check the pre step is exist
 		if req.PreID != 0 && tx.Where("id = ?", req.PreID).First(&preStep).Error != nil {
 			return errors.Errorf("the pre step is not found: %d", req.PreID)
 		}
-		// Find the next step
-		if err := tx.Where("pre_id = ?", req.PreID).Where("plan_id = ?", req.TestPlanID).First(&nextStep).Error; err != nil {
-			if gorm.IsRecordNotFoundError(err) {
-				// Insert to the end or beginning
-				return tx.Create(&newStep).Error
-			}
-			return err
-		}
-		// Insert new step
-		if err := tx.Create(&newStep).Error; err != nil {
-			return err
-		}
-		newStepID = newStep.ID
-
-		// if req.GroupID is 0, set stepID as groupID
-		if req.GroupID == 0 {
-			newStep.GroupID = newStepID
-			if err := tx.Save(&nextStep).Error; err != nil {
-				return err
-			}
-		}
-
-		// if the groupID of preStep is 0, set its id as groupID
-		if preStep.GroupID == 0 && req.GroupID != 0 {
+		// If the groupID of preStep is 0, set its id as groupID
+		if req.PreID != 0 && preStep.GroupID == 0 && req.GroupID != 0 {
 			preStep.GroupID = preStep.ID
 			if err := tx.Save(&preStep).Error; err != nil {
 				return err
 			}
 		}
 
+		// Find the next step
+		hasNextStep := true
+		if err := tx.Where("pre_id = ?", req.PreID).Where("plan_id = ?", req.TestPlanID).First(&nextStep).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				hasNextStep = false
+			} else {
+				return err
+			}
+		}
+
+		// Insert new step
+		if err := tx.Create(&newStep).Error; err != nil {
+			return err
+		}
+		newStepID = newStep.ID
+
+		// If req.GroupID is 0, set stepID as groupID
+		if req.GroupID == 0 {
+			newStep.GroupID = newStepID
+			if err := tx.Save(&newStep).Error; err != nil {
+				return err
+			}
+		}
+
 		// Update the order of next step
-		nextStep.PreID = newStepID
-		return tx.Save(&nextStep).Error
+		if hasNextStep {
+			nextStep.PreID = newStepID
+			return tx.Save(&nextStep).Error
+		}
+		return nil
 	})
 
 	return newStepID, err
@@ -125,7 +130,10 @@ func (client *DBClient) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDelet
 	return client.Transaction(func(tx *gorm.DB) (err error) {
 		var step, nextStep TestPlanV2Step
 		defer func() error {
-			return updateStepGroup(tx, req.StepID, step.GroupID)
+			if err == nil {
+				return updateStepGroup(tx, step.GroupID)
+			}
+			return nil
 		}()
 
 		// Get the step
@@ -136,7 +144,8 @@ func (client *DBClient) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDelet
 		if err = tx.Where("pre_id = ?", req.StepID).Where("plan_id = ?", req.TestPlanID).First(&nextStep).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				// Delete the last step
-				return tx.Delete(&step).Error
+				err = tx.Delete(&step).Error
+				return err
 			}
 			return err
 
@@ -147,7 +156,8 @@ func (client *DBClient) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDelet
 			return err
 		}
 
-		return tx.Delete(&step).Error
+		err = tx.Delete(&step).Error
+		return err
 	})
 }
 
@@ -155,12 +165,12 @@ func (client *DBClient) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDelet
 func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveRequest) error {
 	return client.Transaction(func(tx *gorm.DB) (err error) {
 		var oldGroupID, newGroupID uint64
+		// update step groupID in the group if isGroup is false
 		defer func() error {
-			// update group in the group if isGroup is false
-			if err != nil && !req.IsGroup {
+			if err == nil && !req.IsGroup {
 				groupIDs := []uint64{oldGroupID, newGroupID}
 				groupIDs = strutil.DedupUint64Slice(groupIDs, true)
-				return updateStepGroup(tx, req.StepID, groupIDs...)
+				return updateStepGroup(tx, groupIDs...)
 			}
 			return nil
 		}()
@@ -170,19 +180,22 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 		)
 
 		firstStepIDInGroup := req.StepID
+		lastStepIDInGroup := req.LastStepID
 		// get the first step in the group
 		if err = tx.Where("id = ?", firstStepIDInGroup).First(&step).Error; err != nil {
 			return err
 		}
 		oldGroupID = step.GroupID
 
-		// get the last step in the group
-		lastStepIDInGroup, err := getLastStepIDInGroup(tx, req, step.GroupID)
-		if err != nil {
-			return err
+		// the order of the linked list has not changed
+		if req.PreID == step.PreID || req.PreID == step.ID {
+			if req.IsGroup {
+				return nil
+			}
+			goto LABEL2
 		}
 
-		// Get the old next step
+		// Get the old next step and update its preID if exists
 		if err = tx.Where("pre_id = ?", lastStepIDInGroup).
 			Where("plan_id = ?", req.TestPlanID).First(&oldNextStep).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
@@ -191,14 +204,12 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 			}
 			return err
 		}
-		// Update oldNextStep
 		oldNextStep.PreID = step.PreID
 		if err = tx.Save(&oldNextStep).Error; err != nil {
 			return err
 		}
 
-	LABEL1:
-		// Get the new next step
+	LABEL1: // get the new next step and update its preID if exists
 		step.PreID = req.PreID
 		if err = tx.Where("pre_id = ?", req.PreID).Where("plan_id = ?", req.TestPlanID).First(&newNextStep).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
@@ -207,58 +218,49 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 			}
 			return err
 		}
-		// Update newNextStep
-		newNextStep.PreID = req.StepID
+		newNextStep.PreID = lastStepIDInGroup
 		if err = tx.Save(&newNextStep).Error; err != nil {
 			return err
 		}
 
-	LABEL2:
+	LABEL2: // update the preID of the step, and update the groupID of the step if needed
 		if !req.IsGroup {
-			var preStep TestPlanV2Step
-			if err = tx.Where("id = ?", req.PreID).First(&preStep).Error; err != nil {
-				return err
-			}
-			// if the groupID of  preStep is 0, set its id as GroupID
-			if preStep.GroupID == 0 {
-				preStep.GroupID = preStep.ID
-				if err = tx.Save(&preStep).Error; err != nil {
+			if req.TargetStepID == 0 {
+				newGroupID = 0
+			} else { // else find the groupID of targetStep
+				var targetStep TestPlanV2Step
+				if err = tx.Where("id = ?", req.TargetStepID).First(&targetStep).Error; err != nil {
 					return err
 				}
+				newGroupID = targetStep.GroupID
+				// if the groupID of targetStep is 0, set its id as groupID
+				if newGroupID == 0 {
+					targetStep.GroupID = targetStep.ID
+					newGroupID = targetStep.ID
+					if err = tx.Save(&targetStep).Error; err != nil {
+						return err
+					}
+				}
 			}
-			step.GroupID, newGroupID = preStep.GroupID, preStep.GroupID
+			step.GroupID = newGroupID
 		}
-		return tx.Save(&step).Error
+		err = tx.Save(&step).Error
+		return err
 	})
 }
 
-// getLastStepIDInGroup get last stepID in the group
-func getLastStepIDInGroup(tx *gorm.DB, req *apistructs.TestPlanV2StepMoveRequest, groupID uint64) (uint64, error) {
-	if !req.IsGroup {
-		return req.StepID, nil
-	} else {
-		var stepGroup []TestPlanV2Step
-		if err := tx.Where("group_id = ?", groupID).
-			Order("pre_id").
-			Find(&stepGroup).Error; err != nil {
-			return 0, err
-		}
-		return stepGroup[len(stepGroup)-1].ID, nil
-	}
-}
-
-// updateStepGroup update step group
-func updateStepGroup(tx *gorm.DB, stepID uint64, groupIDs ...uint64) error {
+// updateStepGroup update step group, set min SetID in the group as groupID
+func updateStepGroup(tx *gorm.DB, groupIDs ...uint64) error {
 	for _, v := range groupIDs {
 		if v == 0 {
 			continue
 		}
+
 		var stepGroup []TestPlanV2Step
-		if err := tx.Where("group_id = ?", v).Order("pre_id").Find(&stepGroup).Error; err != nil {
+		if err := tx.Where("group_id = ?", v).Order("id").Find(&stepGroup).Error; err != nil {
 			return err
 		}
-
-		if len(stepGroup) > 0 && stepID < stepGroup[0].ID {
+		if len(stepGroup) > 0 {
 			if err := tx.Model(&TestPlanV2Step{}).Where("group_id = ?", v).Update("group_id", stepGroup[0].ID).Error; err != nil {
 				return err
 			}
@@ -280,7 +282,7 @@ func (client *DBClient) GetStepByTestPlanID(testPlanID uint64, needSort bool) ([
 	)
 	if err := client.Table("dice_autotest_plan_step").Select("dice_autotest_plan_step.id, dice_autotest_plan_step.created_at, "+
 		"dice_autotest_plan_step.updated_at, dice_autotest_plan_step.plan_id, dice_autotest_plan_step.pre_id, "+
-		"dice_autotest_plan_step.scene_set_id, dice_autotest_scene_set.name").
+		"dice_autotest_plan_step.scene_set_id, dice_autotest_scene_set.name,dice_autotest_plan_step.group_id").
 		Joins("left join dice_autotest_scene_set on dice_autotest_plan_step.scene_set_id = dice_autotest_scene_set.id").
 		Where("dice_autotest_plan_step.plan_id = ?", testPlanID).Limit(1000).Scan(&steps).Count(&count).Error; err != nil {
 		return nil, 0, err

@@ -31,11 +31,10 @@ func makeThrottlerBackupKey(name string) string {
 }
 
 // loadThrottler 从存储中加载 throttler
-func (r *Reconciler) loadThrottler() error {
+func (r *Reconciler) loadThrottler(ctx context.Context) error {
 	// init throttler
 	r.TaskThrottler = throttler.NewNamedThrottler("default", nil)
 
-	ctx := context.Background()
 	var backup json.RawMessage
 	if err := r.js.Get(ctx, makeThrottlerBackupKey(r.TaskThrottler.Name()), &backup); err != nil {
 		if err == jsonstore.NotFoundErr {
@@ -50,13 +49,15 @@ func (r *Reconciler) loadThrottler() error {
 	// 加载失败可忽略，任务目前没有存队列信息，无法恢复，原来在队列中的任务 popPending 都会返回可弹出，不影响新的任务
 	logrus.Warnf("reconciler: failed to load throttler, ignore, import err: %v", err)
 	// load from database
+
+	r.continueBackupThrottler(ctx)
 	return nil
 }
 
 const logPrefixContinueBackupThrottler = "[throttler backup]"
 
-// ContinueBackupThrottler 持续备份 throttler
-func (r *Reconciler) ContinueBackupThrottler(ctx context.Context) {
+// continueBackupThrottler 持续备份 throttler
+func (r *Reconciler) continueBackupThrottler(ctx context.Context) {
 	done := make(chan struct{})
 	errDone := make(chan error)
 

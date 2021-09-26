@@ -15,7 +15,14 @@
 package table
 
 import (
+	"context"
+	"reflect"
 	"testing"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func TestSortByNode(t *testing.T) {
@@ -148,28 +155,28 @@ func TestSortByDistribution(t *testing.T) {
 			name: "testUsageRate",
 			args: args{
 				data: []RowItem{{
-					UsageRate: Distribution{
+					UnusedRate: Distribution{
 						RenderType: "",
 						Value:      "30",
 						Status:     "",
 						Tip:        "",
 					},
 				}, {
-					UsageRate: Distribution{
+					UnusedRate: Distribution{
 						RenderType: "",
 						Value:      "10",
 						Status:     "",
 						Tip:        "",
 					},
 				}, {
-					UsageRate: Distribution{
+					UnusedRate: Distribution{
 						RenderType: "",
 						Value:      "20",
 						Status:     "",
 						Tip:        "",
 					},
 				}},
-				sortColumn: "UsageRate",
+				sortColumn: "UnusedRate",
 				asc:        false,
 			},
 		},
@@ -303,6 +310,139 @@ func TestTable_GetScaleValue(t1 *testing.T) {
 			t := &Table{}
 			if got := t.GetScaleValue(tt.args.a, tt.args.b, tt.args.resourceType); got != tt.want {
 				t1.Errorf("GetScaleValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTable_GetUnusedRate(t1 *testing.T) {
+	type fields struct {
+	}
+	type args struct {
+		metricsData  metrics.MetricsData
+		resourceType TableType
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   DistributionValue
+	}{
+		// TODO: Add test cases.
+		{
+			name:   "text",
+			fields: fields{},
+			args: args{
+				metricsData: metrics.MetricsData{Used: 1, Request: 1.2,
+					Total: 10},
+				resourceType: Cpu,
+			},
+			want: DistributionValue{"0.200/1.200", "16.7"},
+		},
+		{
+			name:   "text",
+			fields: fields{},
+			args: args{
+				metricsData: metrics.MetricsData{Used: 1, Request: 1.2,
+					Total: 10},
+				resourceType: Memory,
+			},
+			want: DistributionValue{"0.2/1.2", "16.7"},
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{}
+			if got := t.GetUnusedRate(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("GetUnusedRate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTable_GetDistributionValue(t1 *testing.T) {
+	type fields struct {
+		TableComponent  GetRowItem
+		DefaultProvider base.DefaultProvider
+		SDK             *cptype.SDK
+		Ctx             context.Context
+		Server          cmp.SteveServer
+		Type            string
+		Props           map[string]interface{}
+		Operations      map[string]interface{}
+		State           State
+	}
+	type args struct {
+		metricsData  metrics.MetricsData
+		resourceType TableType
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   DistributionValue
+	}{
+		{
+			name: "1",
+			args: args{
+				metricsData:  metrics.MetricsData{1, 2, 3},
+				resourceType: Pod,
+			},
+			want: DistributionValue{
+				Text:    "2/3",
+				Percent: "66.7",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{}
+			if got := t.GetDistributionValue(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("GetDistributionValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTable_GetUsageValue(t1 *testing.T) {
+	type fields struct {
+		TableComponent  GetRowItem
+		DefaultProvider base.DefaultProvider
+		SDK             *cptype.SDK
+		Ctx             context.Context
+		Server          cmp.SteveServer
+		Type            string
+		Props           map[string]interface{}
+		Operations      map[string]interface{}
+		State           State
+	}
+	type args struct {
+		metricsData  metrics.MetricsData
+		resourceType TableType
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   DistributionValue
+	}{
+		{
+			name: "1",
+			args: args{
+				metricsData:  metrics.MetricsData{1, 2, 3},
+				resourceType: Pod,
+			},
+			want: DistributionValue{
+				Text:    "1/3",
+				Percent: "33.3",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{}
+			if got := t.GetUsageValue(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("GetUsageValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -95,12 +95,6 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		extMarketSvc:    extMarketSvc,
 		pipelineSvcFunc: pipelineSvcFunc,
 	}
-	if err := r.loadThrottler(); err != nil {
-		return nil, err
-	}
-	if err := r.loadQueueManger(); err != nil {
-		return nil, err
-	}
 	return &r, nil
 }
 

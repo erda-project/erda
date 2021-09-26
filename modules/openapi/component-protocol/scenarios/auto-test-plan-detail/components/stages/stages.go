@@ -15,14 +15,22 @@
 package stages
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
-func RenderStage(index int, step apistructs.TestPlanV2Step) (StageData, error) {
+func RenderStage(step apistructs.TestPlanV2Step) (StageData, error) {
+	groupID := int(step.GroupID)
+	if groupID == 0 {
+		groupID = int(step.ID)
+	}
 	pd := StageData{
-		Title:      "场景集: " + step.SceneSetName,
+		Title:      fmt.Sprintf("#%d 场景集: %s", step.ID, step.SceneSetName),
 		ID:         step.ID,
-		GroupID:    index,
+		GroupID:    groupID,
 		Operations: make(map[string]interface{}),
 	}
 	o := CreateOperation{}
@@ -52,8 +60,8 @@ func (i *ComponentStageForm) RenderListStageForm() error {
 		return err
 	}
 	var list []StageData
-	for i, v := range rsp.Data.Steps {
-		stageData, err := RenderStage(i, *v)
+	for _, v := range rsp.Data.Steps {
+		stageData, err := RenderStage(*v)
 		if err != nil {
 			return err
 		}
@@ -138,33 +146,98 @@ func (i *ComponentStageForm) RenderDeleteStagesForm(opsData interface{}) error {
 	return nil
 }
 
-func (i *ComponentStageForm) RenderMoveStagesForm(isGroup bool) (err error) {
+func (i *ComponentStageForm) RenderGroupMoveStagesForm() (err error) {
 	var (
-		step *apistructs.TestPlanV2Step
-		req  apistructs.TestPlanV2StepMoveRequest
+		req apistructs.TestPlanV2StepMoveRequest
+	)
+	//	dragGroupKey := uint64(i.State.DragParams.DragGroupKey)
+	//	dropGroupKey := uint64(i.State.DragParams.DropGroupKey)
+
+	req.UserID = i.ctxBdl.Identity.UserID
+	req.TestPlanID = i.State.TestPlanId
+	req.IsGroup = true
+
+	testPlanDrag, err := i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
+	if err != nil {
+		return err
+	}
+	if len(testPlanDrag.Data.Steps) <= 0 {
+		return errors.New("the dragGroupKey is not exists")
+	}
+	req.StepID = testPlanDrag.Data.Steps[0].ID
+	req.LastStepID = testPlanDrag.Data.Steps[len(testPlanDrag.Data.Steps)-1].ID
+
+	switch i.State.DragParams.Position {
+	case 0: // inside target
+		return nil
+	case -1: // in front of the target
+		testPlanDrop, err := i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
+		if err != nil {
+			return err
+		}
+		if len(testPlanDrop.Data.Steps) <= 0 {
+			return errors.New("the dropGroupKey is not exists")
+		}
+		req.PreID = testPlanDrop.Data.Steps[0].PreID
+	case 1: // behind the target
+		testPlanDrop, err := i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
+		if err != nil {
+			return err
+		}
+		if len(testPlanDrop.Data.Steps) <= 0 {
+			return errors.New("the dropGroupKey is not exists")
+		}
+		req.PreID = testPlanDrop.Data.Steps[len(testPlanDrop.Data.Steps)-1].ID
+
+	default:
+		return errors.New("unknown position")
+	}
+	return i.ctxBdl.Bdl.MoveTestPlansV2Step(req)
+}
+
+func (i *ComponentStageForm) RenderItemMoveStagesForm() (err error) {
+	var (
+		step     *apistructs.TestPlanV2Step
+		req      apistructs.TestPlanV2StepMoveRequest
+		testPlan *apistructs.TestPlanV2GetResponse
 	)
 	req.UserID = i.ctxBdl.Identity.UserID
 	req.TestPlanID = i.State.TestPlanId
-	req.StepID = i.State.DragParams.DragKey
-	req.IsGroup = isGroup
-	if i.State.DragParams.Position == -1 {
-		step, err = i.ctxBdl.Bdl.GetTestPlanV2Step(i.State.DragParams.DropKey)
-		if err != nil {
-			return
-		}
-		if step.PreID == i.State.DragParams.DragKey {
-			return
-		}
-		req.PreID = step.PreID
+	req.StepID = uint64(i.State.DragParams.DragKey)
+	req.LastStepID = uint64(i.State.DragParams.DragKey)
+	req.IsGroup = false
+	if i.State.DragParams.DropKey == -1 {
+		req.TargetStepID = 0
 	} else {
-		step, err = i.ctxBdl.Bdl.GetTestPlanV2Step(i.State.DragParams.DragKey)
+		req.TargetStepID = uint64(i.State.DragParams.DropKey)
+	}
+
+	// find preID
+	if i.State.DragParams.DropKey == -1 { // move to the end and be independent group
+		testPlan, err = i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
 		if err != nil {
-			return
+			return err
 		}
-		if step.PreID == i.State.DragParams.DropKey {
-			return
+		req.PreID = testPlan.Data.Steps[len(testPlan.Data.Steps)-1].ID
+	} else {
+		switch i.State.DragParams.Position {
+		case 0: // inside target
+			return nil
+		case 1: // behind the target
+			step, err = i.ctxBdl.Bdl.GetTestPlanV2Step(uint64(i.State.DragParams.DragKey))
+			if err != nil {
+				return
+			}
+			req.PreID = uint64(i.State.DragParams.DropKey)
+		case -1: // in front of the target
+			step, err = i.ctxBdl.Bdl.GetTestPlanV2Step(uint64(i.State.DragParams.DropKey))
+			if err != nil {
+				return
+			}
+			req.PreID = step.PreID
+		default:
+			return errors.New("unknown position")
 		}
-		req.PreID = i.State.DragParams.DropKey
 	}
 	return i.ctxBdl.Bdl.MoveTestPlansV2Step(req)
 }

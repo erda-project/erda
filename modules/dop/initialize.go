@@ -326,6 +326,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		uc.SetDBClient(db.DB)
 	}
 
 	// init ticket service
@@ -387,6 +388,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithBundle(bdl.Bdl),
 		issue.WithIssueStream(issueStream),
 		issue.WithUCClient(uc),
+		issue.WithTranslator(p.IssueTan),
 	)
 
 	issueState := issuestate.New(

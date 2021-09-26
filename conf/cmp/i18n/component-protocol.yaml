@@ -110,7 +110,7 @@ zh:
  error: 错误
  danger: 危险
  custom: 自定义
- containerRuntimeVersion: 容器运行时版本
+ containerRuntimeVersion: 容器运行环境
  kernelVersion: Kernel 版本
  kubeProxyVersion: Kubectl 代理版本
  kubeletVersion: Kubelet 版本
@@ -134,7 +134,7 @@ zh:
  addLabel: 添加标签
  nodeDetail: 节点详情
  distribution: 分配率
- distributionRate: 分配使用率
+ unusedRate: 闲置率
  dev: 开发环境
  test: 测试环境
  prod: 生产环境
@@ -169,7 +169,6 @@ zh:
  e.g.: 例如
  Cpu Chart: CPU
  annotation: 注释
- containerRuntime: 容器运行时
  placeholderFilterByNodeName: 按节点名称过滤
  cpuUsage: CPU 使用率
  SchedulingDisabled: 冻结
@@ -192,6 +191,12 @@ zh:
  DiskPressure: 磁盘压力状态
  PIDPressure: 进程压力状态
  input node Name or IP: 请输入节点名称或IP
+ The proportion of allocated resources that are not used: 已分配资源中未使用的比例
+ status update success: 状态修改成功
+ Cordon following nodes: 冻结以下节点：
+ Uncordon following nodes: 解冻以下节点：
+ show: 查看
+
 
 en:
  # general
@@ -305,7 +310,7 @@ en:
  bootID: Boot ID
  containerRuntimeVersion: Container Running Version
  distribution: Reserved
- distributionRate: Reserve Usage
+ unusedRate: Unused
  kernelVersion: Kernel Version
  kubeProxyVersion: Kubectl Proxy Version
  kubeletVersion: Kubelet Version
@@ -322,7 +327,6 @@ en:
  systemUUID: System UUID
  use: Usage
  annotation: Annotation
- containerRuntime: Container Runtime
  placeholderFilterByNodeName: filter by node name
  cpuUsage: CPU Usage
  architecture: Architecture
@@ -339,8 +343,5 @@ en:
  env-label: Enviorment Label
  job-label: Job Label
  other-label: Other Label
- # value empty required, do not delete
- NetworkUnavailable:
- MemoryPressure:
- DiskPressure:
- PIDPressure:
+ cpu-size: CPU Cores
+ memory-size: Memeory Size
