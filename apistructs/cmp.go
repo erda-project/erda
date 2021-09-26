@@ -154,7 +154,7 @@ type OrgClusterInfoBasicData struct {
 type OfflineEdgeClusterRequest struct {
 	OrgID       uint64 `json:"orgID"`
 	ClusterName string `json:"clusterName"`
-	Force       bool `json:"force"`
+	Force       bool   `json:"force"`
 }
 
 type OfflineEdgeClusterResponse struct {
