@@ -184,7 +184,7 @@ func Test_getDashboardId(t *testing.T) {
 		{name: TypeMysql, args: args{TypeMysql}, want: "topology_node_db"},
 		{name: TypeRedis, args: args{TypeRedis}, want: "topology_node_cache"},
 		{name: TypeRocketMQ, args: args{TypeRocketMQ}, want: "topology_node_mq"},
-		{name: TypeHttp, args: args{TypeHttp}, want: "topology_node_other"},
+		{name: TypeExternal, args: args{TypeExternal}, want: "topology_node_other"},
 		{name: JavaProcessType, args: args{JavaProcessType}, want: "process_analysis_java"},
 		{name: NodeJsProcessType, args: args{NodeJsProcessType}, want: "process_analysis_nodejs"},
 		{name: "not", args: args{"not"}, want: ""},
