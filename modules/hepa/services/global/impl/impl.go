@@ -313,8 +313,12 @@ func md5V(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+func encodeTenantGroup(projectId, env, clusterName, tenantGroupKey string) string {
+	return md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + tenantGroupKey)
+}
+
 func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) (string, error) {
-	tenantGroup := md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+	tenantGroup := encodeTenantGroup(projectId, env, clusterName, config.ServerConf.TenantGroupKey)
 	tenantID, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String(), tenantGroup)
 	if err != nil {
 		log.Errorf("error happened: %+v", err)

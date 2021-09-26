@@ -1322,7 +1322,10 @@ func (impl GatewayDomainServiceImpl) GetOrgDomainInfo(reqDto *gw.ManageDomainReq
 			dto.Link = link
 		case orm.DT_PACKAGE:
 			dto.Type = gw.GatewayDomain
-			link.TenantGroup, _ = (*impl.globalBiz).GenTenantGroup(dao.ProjectId, dao.Workspace, dao.ClusterName)
+			link.TenantGroup, err = (*impl.globalBiz).GenTenantGroup(dao.ProjectId, dao.Workspace, dao.ClusterName)
+			if err != nil {
+				return
+			}
 			dto.Link = link
 		default:
 			dto.Type = gw.OtherDomain
