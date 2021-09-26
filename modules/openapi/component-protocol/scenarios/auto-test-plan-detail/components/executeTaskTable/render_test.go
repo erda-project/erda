@@ -81,6 +81,14 @@ func TestGetCostTime(t *testing.T) {
 			},
 			"00:59:59",
 		},
+		{
+			apistructs.PipelineTaskDTO{
+				Status:      apistructs.PipelineStatusSuccess,
+				IsSnippet:   true,
+				CostTimeSec: -1,
+			},
+			"-",
+		},
 	}
 	r := ExecuteTaskTable{
 		CtxBdl: protocol.ContextBundle{
