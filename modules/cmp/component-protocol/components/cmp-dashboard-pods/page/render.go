@@ -23,10 +23,12 @@ import (
 )
 
 func (page *Page) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	c.Props = Props{SpaceSize: "middle"}
 	return nil
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-pods", "page", func() servicehub.Provider {
-		return &Page{Type: "Container", Props: Props{SpaceSize: "middle"}}
+		return &Page{}
 	})
 }

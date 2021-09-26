@@ -38,6 +38,7 @@ func (podTitle *PodTitle) Render(ctx context.Context, c *cptype.Component, s cpt
 	}
 	name := splits[1]
 	podTitle.Props.Title = fmt.Sprintf("Pod: %s", name)
+	podTitle.Transfer(c)
 	return nil
 }
 
@@ -59,6 +60,13 @@ func (podTitle *PodTitle) GenComponentState(component *cptype.Component) error {
 	}
 	podTitle.State = state
 	return nil
+}
+
+func (podTitle *PodTitle) Transfer(component *cptype.Component) {
+	component.Props = podTitle.Props
+	component.State = map[string]interface{}{
+		"podId": podTitle.State.PodID,
+	}
 }
 
 func init() {

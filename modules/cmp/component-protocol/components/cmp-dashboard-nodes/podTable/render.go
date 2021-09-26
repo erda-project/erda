@@ -111,6 +111,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 
 func (pt *PodInfoTable) getProps() {
 	p := map[string]interface{}{
+		"isLoadMore":     true,
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{

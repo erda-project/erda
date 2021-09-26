@@ -155,3 +155,8 @@ func setPrec(f float64, prec int) float64 {
 	f = float64(int64(f*pow)) / pow
 	return f
 }
+
+// SetNoWrapData add "nowrap" = true in globalStateData so that openapi will not wrap the response to erda style.
+func SetNoWrapData(gs *cptype.GlobalStateData) {
+	(*gs)["nowrap"] = true
+}
