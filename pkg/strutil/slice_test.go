@@ -12,21 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ddlreverser_test
+package strutil_test
 
 import (
 	"testing"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TestReverseSlice(t *testing.T) {
 	var cases = [][]int{
+		nil,
+		{},
 		{1},
 		{2, 3},
 		{4, 9, 2},
 	}
 	var results = [][]int{
+		nil,
+		{},
 		{1},
 		{3, 2},
 		{2, 9, 4},
@@ -45,9 +49,12 @@ func TestReverseSlice(t *testing.T) {
 	}
 
 	for i, case_ := range cases {
-		ddlreverser.ReverseSlice(case_)
+		strutil.ReverseSlice(case_)
 		if !equal(case_, results[i]) {
 			t.Fatal(i, case_, "fails")
 		}
 	}
+
+	strutil.ReverseSlice([2]int{0, 2})
+	strutil.ReverseSlice("a")
 }
