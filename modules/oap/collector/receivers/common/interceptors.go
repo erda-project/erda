@@ -66,6 +66,12 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						}
 					}
 				}
+				if _, ok := span.Attributes[TAG_SERVICE_INSTANCE_ID]; !ok {
+					if _, ok := span.Attributes[TAG_CLIENT_UUID]; ok {
+						span.Attributes[TAG_SERVICE_INSTANCE_ID] = span.Attributes[TAG_CLIENT_UUID]
+					}
+				}
+
 				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
 			}
 		}
