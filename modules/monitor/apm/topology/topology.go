@@ -177,7 +177,7 @@ type Tag struct {
 	Component             string `json:"component,omitempty"`
 	DBType                string `json:"db_type,omitempty"`
 	Host                  string `json:"host,omitempty"`
-	PeerAddress           string `json:"peer_address,omitempty"`
+	HttpUrl               string `json:"http_url,omitempty"`
 	PeerServiceScope      string `json:"peer_service_scope,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
@@ -423,8 +423,8 @@ func init() {
 	}
 	TargetOtherNodeType = &NodeType{
 		Type:         TargetOtherNode,
-		GroupByField: &GroupByField{Name: apm.TagsPeerAddress, SubField: &GroupByField{Name: apm.TagsPeerServiceScope}},
-		SourceFields: []string{apm.TagsPeerServiceScope, apm.TagsPeerAddress},
+		GroupByField: &GroupByField{Name: apm.TagsHttpUrl, SubField: &GroupByField{Name: apm.TagsPeerServiceScope}},
+		SourceFields: []string{apm.TagsPeerServiceScope, apm.TagsHttpUrl},
 		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
 			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
 		Aggregation: NodeAggregation,
@@ -1785,7 +1785,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		if tags.PeerServiceScope == "external" {
 			node.Type = TypeExternal
 		}
-		node.Name = tags.PeerAddress
+		node.Name = tags.HttpUrl
 		node.Id = encodeTypeToKey(node.Name + apm.Sep1 + node.Type)
 	case OtherNode:
 		node.Type = TypeService

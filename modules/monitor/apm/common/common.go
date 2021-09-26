@@ -47,7 +47,7 @@ const (
 	TagsComponent             = Tags + Sep4 + "component"
 	TagsDBType                = Tags + Sep4 + "db_type"
 	TagsHost                  = Tags + Sep4 + "host"
-	TagsPeerAddress           = Tags + Sep4 + "peer_address"
+	TagsHttpUrl               = Tags + Sep4 + "http_url"
 	TagsPeerServiceScope      = Tags + Sep4 + "peer_service_scope"
 	TagsApplicationId         = Tags + Sep4 + "application_id"
 	TagsApplicationName       = Tags + Sep4 + "application_name"
