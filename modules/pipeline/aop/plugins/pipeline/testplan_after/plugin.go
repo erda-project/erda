@@ -153,7 +153,9 @@ func filterPipelineTask(allTasks []*spec.PipelineTask) ([]*spec.PipelineTask, []
 			continue
 		}
 		if task.Type == apistructs.ActionTypeSnippet {
-			snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			if task.SnippetPipelineID != nil {
+				snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			}
 			continue
 		}
 	}
