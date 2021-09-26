@@ -2,6 +2,7 @@
   "zh-CN": {
     "wb.content.autotest.scene.string": "随机一个字符串 abc",
     "wb.content.autotest.scene.integer": "随机一个整型 10000",
+    "wb.content.autotest.scene.integer_n": "随机一个定长整型数据，例如：integer_1 代表随机 [0-9]，integer_2 代表随机 [10-99]",
     "wb.content.autotest.scene.float": "随机一个浮点类型 10000.1",
     "wb.content.autotest.scene.boolean": "随机一个布尔类型 true",
     "wb.content.autotest.scene.upper": "随机一个大写字符串 ABC",
@@ -62,6 +63,7 @@
   "en-US": {
     "wb.content.autotest.scene.string": "random string like abc",
     "wb.content.autotest.scene.integer": "random integer like 10000",
+    "wb.content.autotest.scene.integer_n": "random a fixed-length integer data, for example: integer_1 represents random [0-9], integer_2 represents random [10-99]",
     "wb.content.autotest.scene.float": "random float like 10000.1",
     "wb.content.autotest.scene.boolean": "random boolean like true",
     "wb.content.autotest.scene.upper": "random upper string like ABC",
