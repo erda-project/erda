@@ -25,9 +25,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
 	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // installing type
@@ -252,7 +252,7 @@ func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
 		return nil
 	}
 	if reverseSlice {
-		ddlreverser.ReverseSlice(reversing)
+		strutil.ReverseSlice(reversing)
 	}
 	for _, s := range mig.reversing {
 		if err := mig.DB().Exec(s).Error; err != nil {
@@ -420,7 +420,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 			}
 
 			// record it
-			ddlreverser.ReverseSlice(script.Reversing)
+			strutil.ReverseSlice(script.Reversing)
 			record := HistoryModel{
 				ID:           0,
 				CreatedAt:    now,
