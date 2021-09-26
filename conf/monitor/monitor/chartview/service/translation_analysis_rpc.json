@@ -97,7 +97,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "searchTranslation",
@@ -206,7 +206,7 @@
           "optionProps": {
             "isConnectNulls": false,
             "isLabel": false,
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "YYYY/MM/DD"
           }
         },
@@ -312,7 +312,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "YYYY/MM/DD",
             "noAreaColor": true
           }
@@ -372,7 +372,7 @@
             }
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
@@ -434,7 +434,7 @@
             }
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
