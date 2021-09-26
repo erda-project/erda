@@ -23,10 +23,12 @@ import (
 )
 
 func (fc *FilterContainer) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	c.Props = Props{WhiteBg: true}
 	return nil
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "filterContainer", func() servicehub.Provider {
-		return &FilterContainer{Type: "Container", Props: Props{WhiteBg: true}}
+		return &FilterContainer{}
 	})
 }

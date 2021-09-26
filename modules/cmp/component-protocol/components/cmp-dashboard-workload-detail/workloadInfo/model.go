@@ -52,8 +52,9 @@ type Tag struct {
 }
 
 type Props struct {
-	ColumnNum int     `json:"columnNum"`
-	Fields    []Field `json:"fields,omitempty"`
+	IsLoadMore bool    `json:"isLoadMore,omitempty"`
+	ColumnNum  int     `json:"columnNum"`
+	Fields     []Field `json:"fields,omitempty"`
 }
 
 type Field struct {

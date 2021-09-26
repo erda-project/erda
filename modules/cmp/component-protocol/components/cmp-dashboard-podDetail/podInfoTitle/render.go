@@ -24,10 +24,13 @@ import (
 )
 
 func (podInfoTitle *PodInfoTitle) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	podInfoTitle.Props.Title = cputil.I18n(ctx, "podInfoTitle")
-	podInfoTitle.Props.Size = "small"
+	c.Props = Props{
+		Title: cputil.I18n(ctx, "podInfoTitle"),
+		Size:  "small",
+	}
 	return nil
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-podDetail", "podInfoTitle", func() servicehub.Provider {
 		return &PodInfoTitle{}

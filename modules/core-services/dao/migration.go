@@ -30,7 +30,7 @@ const noPass = "no pass"
 func (client *DBClient) GetUcUserList() ([]model.User, error) {
 	var users []model.User
 	sql := client.Table("uc_user").Joins(joinMap)
-	if err := sql.Where("password != ? AND password IS NOT NULL AND kratos_uc_userid_mapping.id IS NULL", noPass).Find(&users).Error; err != nil {
+	if err := sql.Where("password IS NOT NULL AND kratos_uc_userid_mapping.id IS NULL").Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
