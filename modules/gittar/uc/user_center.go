@@ -17,9 +17,9 @@ package uc
 import (
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -41,6 +41,14 @@ type Token struct {
 var tokenValue *Token
 
 var userCache = cache.New(12*time.Hour, 1*time.Hour)
+
+var uc *ucauth.UCClient
+
+func InitilaizeUcClient(db *gorm.DB) {
+	uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+	uc.SetDBClient(db)
+	logrus.Infof("gittar uc client set up")
+}
 
 func GetToken(forceRefresh bool) (string, error) {
 	if tokenValue == nil || tokenValue.ExpiresAt < time.Now().Unix() || forceRefresh {
@@ -66,11 +74,6 @@ func GetToken(forceRefresh bool) (string, error) {
 	return tokenValue.AccessToken, nil
 }
 
-var (
-	once sync.Once
-	uc   *ucauth.UCClient
-)
-
 func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 	cacheUser, exist := userCache.Get(id)
 	if exist {
@@ -80,17 +83,6 @@ func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 		return nil, nil
 	}
 	if conf.OryEnabled() {
-		once.Do(func() {
-			uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-			db, err := ucauth.NewDB()
-			if err != nil {
-				logrus.Errorf("fail to initial db err: %v", err)
-				return
-			}
-			logrus.Infof("gittar uc client set up")
-			uc.SetDBClient(db)
-		})
-
 		user, err := uc.GetUser(id)
 		if err != nil {
 			return nil, err
