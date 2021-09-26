@@ -19,6 +19,7 @@ import (
 	"crypto/md5" // #nosec G501
 	"encoding/hex"
 	"fmt"
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"strconv"
 	"strings"
 	"sync"
@@ -312,8 +313,14 @@ func md5V(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) string {
-	return md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) (string, error) {
+	tenantGroup := md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+	tenantID, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String(), tenantGroup)
+	if err != nil {
+		log.Errorf("error happened: %+v", err)
+		return "", err
+	}
+	return tenantID, nil
 }
 
 func (impl *GatewayGlobalServiceImpl) GetTenantGroup(projectId, env string) (res string, err error) {
@@ -335,7 +342,10 @@ func (impl *GatewayGlobalServiceImpl) GetTenantGroup(projectId, env string) (res
 	}
 	tenantGroup := info.TenantGroup
 	if tenantGroup == "" {
-		tenantGroup = impl.GenTenantGroup(projectId, env, info.Az)
+		tenantGroup, err = impl.GenTenantGroup(projectId, env, info.Az)
+		if err != nil {
+			return
+		}
 	}
 	res = tenantGroup
 	return
