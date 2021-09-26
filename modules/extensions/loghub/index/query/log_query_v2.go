@@ -30,7 +30,7 @@ func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {
 	boolQuery = boolQuery.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lte(end))
 	if len(req.Query) > 0 {
 		//byts, _ := json.Marshal(req.Query)
-		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery("content:" + req.Query))
+		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery(req.Query).DefaultField("content").DefaultOperator("AND"))
 	}
 	return boolQuery
 }
@@ -62,7 +62,7 @@ func (c *ESClient) searchLogsV2(req *LogSearchRequest, timeout time.Duration) (*
 		}
 		c.setModule(&log)
 		log.Timestamp = log.Timestamp / int64(time.Millisecond)
-		resp.Data = append(resp.Data, &log)
+		resp.Data = append(resp.Data, &LogItem{Source: &log, Highlight: map[string][]string(hit.Highlight)})
 	}
 	return resp, nil
 }
