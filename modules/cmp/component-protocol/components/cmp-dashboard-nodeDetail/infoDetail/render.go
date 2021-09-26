@@ -186,7 +186,8 @@ func (infoDetail *InfoDetail) getTaints(node data.Object) []Field {
 
 func (infoDetail *InfoDetail) getProps(node data.Object) Props {
 	return Props{
-		ColumnNum: 4,
+		IsLoadMore: true,
+		ColumnNum:  4,
 		Fields: []Field{
 			{Label: infoDetail.SDK.I18n("survive"), ValueKey: "survive"},
 			{Label: infoDetail.SDK.I18n("nodeIP"), ValueKey: "nodeIP"},

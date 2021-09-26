@@ -38,8 +38,8 @@ type ComponentFilter struct {
 type State struct {
 	ClusterName    string      `json:"clusterName,omitempty"`
 	Conditions     []Condition `json:"conditions,omitempty"`
-	Values         Values      `json:"values,omitempty"`
 	FilterURLQuery string      `json:"filter__urlQuery,omitempty"`
+	Values         Values      `json:"values,omitempty"`
 }
 
 type Values struct {
