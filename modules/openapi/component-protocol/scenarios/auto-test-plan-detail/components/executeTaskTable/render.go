@@ -505,6 +505,9 @@ func (a *ExecuteTaskTable) getCostTime(task apistructs.PipelineTaskDTO) string {
 	if !task.Status.IsEndStatus() {
 		return "-"
 	}
+	if task.CostTimeSec < 0 {
+		return "-"
+	}
 	return time.Unix(task.CostTimeSec, 0).In(time.UTC).Format("15:04:05")
 }
 
