@@ -39,8 +39,8 @@ zh:
   span_count_asc: Span 数量升序
   trace_duration_desc: 追踪持续时间降序
   trace_duration_asc: 追踪持续时间升序
-  trace_time_desc: 追踪发生时间倒序
-  trace_time_asc: 追踪发生时间正序
+  trace_time_desc: 追踪发生时间降序
+  trace_time_asc: 追踪发生时间升序
   service_name: 服务名
   trace_id: 追踪 ID
   dubbo_method: Dubbo Method
