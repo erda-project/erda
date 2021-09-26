@@ -31,7 +31,9 @@ func init() {
 
 func (p *ComponentPodsTableTitle) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
-	p.Props.Title = cputil.I18n(ctx, "workloadPods")
-	p.Props.Size = "small"
+	component.Props = Props{
+		Title: cputil.I18n(ctx, "workloadPods"),
+		Size:  "small",
+	}
 	return nil
 }

@@ -51,6 +51,7 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 	sort.Slice(pd.Data.Lists, func(i, j int) bool {
 		return pd.Data.Lists[i].Value > pd.Data.Lists[j].Value
 	})
+	pd.Props.IsLoadMore = true
 	pd.Transfer(c)
 	return nil
 }

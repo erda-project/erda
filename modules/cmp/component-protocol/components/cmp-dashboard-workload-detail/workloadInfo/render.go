@@ -56,6 +56,7 @@ func (i *ComponentWorkloadInfo) Render(ctx context.Context, component *cptype.Co
 	if err := i.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set workloadInfo component value, %v", err)
 	}
+	i.Transfer(component)
 	return nil
 }
 
@@ -128,6 +129,7 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 	}
 	i.Data.Data = data
 
+	i.Props.IsLoadMore = true
 	i.Props.ColumnNum = 4
 	i.Props.Fields = []Field{
 		{
@@ -157,4 +159,15 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 		},
 	}
 	return nil
+}
+
+func (i *ComponentWorkloadInfo) Transfer(component *cptype.Component) {
+	component.Props = i.Props
+	component.Data = map[string]interface{}{
+		"data": i.Data.Data,
+	}
+	component.State = map[string]interface{}{
+		"clusterName": i.State.ClusterName,
+		"workloadId":  i.State.WorkloadID,
+	}
 }

@@ -72,6 +72,7 @@ func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Componen
 	if err := f.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to gen filter component url query, %v", err)
 	}
+	f.Transfer(component)
 	return nil
 }
 
@@ -311,6 +312,16 @@ func (f *ComponentFilter) EncodeURLQuery() error {
 	encodeData := base64.StdEncoding.EncodeToString(jsonData)
 	f.State.FilterURLQuery = encodeData
 	return nil
+}
+
+func (f *ComponentFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
+		"clusterName":      f.State.ClusterName,
+		"conditions":       f.State.Conditions,
+		"values":           f.State.Values,
+		"filter__urlQuery": f.State.FilterURLQuery,
+	}
+	component.Operations = f.Operations
 }
 
 func hasSuffix(name string) (string, bool) {

@@ -35,8 +35,9 @@ type PodInfo struct {
 }
 
 type Props struct {
-	ColumnNum int     `json:"columnNum"`
-	Fields    []Field `json:"fields"`
+	IsLoadMore bool    `json:"isLoadMore,omitempty"`
+	ColumnNum  int     `json:"columnNum"`
+	Fields     []Field `json:"fields"`
 }
 
 type Data struct {

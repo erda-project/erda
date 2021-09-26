@@ -69,7 +69,6 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 		resp.Header.Set("Content-Type", "application/json")
 		return
 	}
-	logrus.Infof("[DEBUG] get Header: %v", resp.Header)
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
