@@ -116,8 +116,8 @@ func (p *provider) logStatistic(r *http.Request, params struct {
 func (p *provider) logSearch(r *http.Request, params struct {
 	Start       int64  `query:"start" validate:"gte=1"`
 	End         int64  `query:"end" validate:"gte=1"`
-	Page        int64  `query:"page" validate:"gte=1"`
-	Size        int64  `query:"size"`
+	Page        int64  `query:"pageNo" validate:"gte=1"`
+	Size        int64  `query:"pageSize"`
 	Query       string `query:"query"`
 	Sort        string `query:"sort"`
 	Debug       bool   `query:"debug"`
