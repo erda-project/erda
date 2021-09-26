@@ -1,4 +1,4 @@
-version: v0.4.6-alpha.1
+version: v0.7.1-alpha.1
 
 dsn: memory
 
@@ -21,19 +21,19 @@ selfservice:
 
   flows:
     error:
-      ui_url: /uc/error
+      ui_url: http://one.erda.local/uc/error
 
     settings:
-      ui_url: /uc/settings
+      ui_url: http://one.erda.local/uc/settings
       privileged_session_max_age: 15m
 
     recovery:
       enabled: true
-      ui_url: /uc/recovery
+      ui_url: http://one.erda.local/uc/recovery
 
     verification:
       enabled: true
-      ui_url: /uc/verify
+      ui_url: http://one.erda.local/uc/verify
       after:
         default_browser_return_url: /
 
@@ -42,13 +42,12 @@ selfservice:
         default_browser_return_url: /
 
     login:
-      ui_url: http://one.erda.local/uc/auth/login
+      ui_url: http://one.erda.local/uc/login
       lifespan: 10m
 
     registration:
       lifespan: 10m
-      # not using it, default value for config source validation, can be replaced by env
-      ui_url: http://one.erda.local/uc/auth/registration 
+      ui_url: http://one.erda.local/uc/registration 
       after:
         password:
           hooks:
