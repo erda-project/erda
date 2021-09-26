@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/pkg/gc"
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/gittar/profiling"
+	"github.com/erda-project/erda/modules/gittar/uc"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -73,6 +74,8 @@ func (p *provider) Initialize() error {
 	if err != nil {
 		panic(err)
 	}
+	uc.InitializeUcClient(dbClient.DBEngine.DB)
+
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)
 	webcontext.WithUCAuth(ucUserAuth)

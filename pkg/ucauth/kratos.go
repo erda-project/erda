@@ -111,7 +111,7 @@ func CreateUser(req OryKratosRegistrationRequest) error {
 		return err
 	}
 	if !r.IsOK() {
-		return fmt.Errorf("bad session")
+		return fmt.Errorf("failed to create user, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
 	}
 
 	var register OryKratosRegistrationResponse
@@ -125,7 +125,7 @@ func CreateUser(req OryKratosRegistrationRequest) error {
 		return err
 	}
 	if !r.IsOK() {
-		return fmt.Errorf("bad session")
+		return fmt.Errorf("failed to create user, statusCode: %d, %v", r.StatusCode(), string(r.Body()))
 	}
 	return nil
 }

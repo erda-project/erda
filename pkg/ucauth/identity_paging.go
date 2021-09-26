@@ -47,8 +47,11 @@ func getIdentityPage(kratosPrivateAddr string, page, perPage int) ([]*OryKratosI
 }
 
 func getUserList(kratosPrivateAddr string, req *apistructs.UserPagingRequest) ([]User, int, error) {
-	if req.PageNo < 1 || req.PageSize < 1 {
-		return nil, 0, fmt.Errorf("invalid pagination parameter")
+	if req.PageNo < 1 {
+		req.PageNo = 1
+	}
+	if req.PageSize < 1 {
+		req.PageSize = 20
 	}
 	var identities []*OryKratosIdentity
 	cnt := 0
