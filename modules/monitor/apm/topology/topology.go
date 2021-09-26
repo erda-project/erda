@@ -109,7 +109,7 @@ const (
 	TypeMysql          = "Mysql"
 	TypeRedis          = "Redis"
 	TypeRocketMQ       = "RocketMQ"
-	TypeHttp           = "Http"
+	TypeExternal       = "ExternalService"
 	TypeDubbo          = "Dubbo"
 	TypeSidecar        = "SideCar"
 	TypeGateway        = "APIGateway"
@@ -177,6 +177,8 @@ type Tag struct {
 	Component             string `json:"component,omitempty"`
 	DBType                string `json:"db_type,omitempty"`
 	Host                  string `json:"host,omitempty"`
+	HttpUrl               string `json:"http_url,omitempty"`
+	PeerServiceScope      string `json:"peer_service_scope,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
 	SourceWorkspace       string `json:"source_workspace,omitempty"`
@@ -257,7 +259,7 @@ var IndexPrefix = []string{
 
 var NodeTypes = []string{
 	TypeService, TypeMysql, TypeRedis,
-	TypeHttp, TypeDubbo, TypeSidecar,
+	TypeExternal, TypeDubbo, TypeSidecar,
 	TypeGateway, TypeRegisterCenter, TypeConfigCenter,
 	TypeNoticeCenter, TypeElasticsearch,
 }
@@ -346,6 +348,7 @@ var (
 	TargetComponentNodeType *NodeType
 	TargetOtherNodeType     *NodeType
 	SourceMQNodeType        *NodeType
+	TargetMQNodeType        *NodeType
 	TargetMQServiceNodeType *NodeType
 	OtherNodeType           *NodeType
 
@@ -366,6 +369,7 @@ const (
 	TargetComponentNode = "TargetComponentNode"
 	TargetOtherNode     = "TargetOtherNode"
 	SourceMQNode        = "SourceMQNode"
+	TargetMQNode        = "TargetMQNode"
 	TargetMQServiceNode = "TargetMQServiceNode"
 	OtherNode           = "OtherNode"
 )
@@ -411,22 +415,28 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsDBType, SubField: &GroupByField{Name: apm.TagsHost}},
+		GroupByField: &GroupByField{Name: apm.TagsHost, SubField: &GroupByField{Name: apm.TagsDBType}},
 		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType},
-		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
-			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
-		Aggregation: NodeAggregation,
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation:  NodeAggregation,
 	}
 	TargetOtherNodeType = &NodeType{
 		Type:         TargetOtherNode,
-		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
-		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
-			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
-		Aggregation: NodeAggregation,
+		GroupByField: &GroupByField{Name: apm.TagsHttpUrl, SubField: &GroupByField{Name: apm.TagsPeerServiceScope}},
+		SourceFields: []string{apm.TagsPeerServiceScope, apm.TagsHttpUrl},
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation:  NodeAggregation,
 	}
 	SourceMQNodeType = &NodeType{
 		Type:         SourceMQNode,
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
+			MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation: NodeAggregation,
+	}
+	TargetMQNodeType = &NodeType{
+		Type:         TargetMQNode,
 		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
 		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
 		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
@@ -443,7 +453,7 @@ func init() {
 		Type:         OtherNode,
 		GroupByField: &GroupByField{Name: apm.TagsServiceId, SubField: &GroupByField{Name: apm.TagsServiceName}},
 		SourceFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
-		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsApplicationId)),
+		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsServiceId)),
 	}
 
 	NodeRelations = map[string][]*NodeRelation{
@@ -461,6 +471,7 @@ func init() {
 			// SourceMQService  -> TargetMQService
 			// SourceService    -> TargetComponent
 			{Source: []*NodeType{SourceMQNodeType}, Target: TargetMQServiceNodeType},
+			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetMQNodeType},
 			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetComponentNodeType},
 		},
 		ServiceNodeIndexType: {
@@ -1678,7 +1689,7 @@ func getDashboardId(nodeType string) string {
 		return processAnalysisJava
 	case strings.ToLower(NodeJsProcessType):
 		return processAnalysisNodejs
-	case strings.ToLower(TypeHttp):
+	case strings.ToLower(TypeExternal):
 		return topologyNodeOther
 	default:
 		return ""
@@ -1749,6 +1760,10 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Type = tags.Component
 		node.Name = tags.Host
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
+	case TargetMQNode:
+		node.Type = tags.Component
+		node.Name = tags.Host
+		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case TargetMQServiceNode:
 		node.Type = TypeService
 		node.ApplicationId = tags.TargetApplicationId
@@ -1765,7 +1780,10 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		} else {
 			node.Type = tags.Component
 		}
-		node.Name = tags.Host
+		if tags.PeerServiceScope == "external" {
+			node.Type = TypeExternal
+		}
+		node.Name = tags.HttpUrl
 		node.Id = encodeTypeToKey(node.Name + apm.Sep1 + node.Type)
 	case OtherNode:
 		node.Type = TypeService
