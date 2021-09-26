@@ -97,6 +97,7 @@ func (infoMapTable *InfoMapTable) reScale(v float64) string {
 
 func (infoMapTable *InfoMapTable) getProps() Props {
 	return Props{
+		IsLoadMore: true,
 		RowKey:     "id",
 		Bordered:   true,
 		ShowHeader: false,

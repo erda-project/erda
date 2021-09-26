@@ -16,6 +16,7 @@ package eventTable
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -102,5 +103,58 @@ func TestComponentEventTable_SetComponentValue(t *testing.T) {
 	}
 	if _, ok := cet.Operations[apistructs.OnChangePageSizeOperation.String()]; !ok {
 		t.Errorf("test failed, .Operations is unexpected, %s is not existed", apistructs.OnChangePageSizeOperation.String())
+	}
+}
+
+func TestComponentEventTable_Transfer(t *testing.T) {
+	component := &ComponentEventTable{
+		Data: Data{List: []Item{
+			{
+				ID:                "1",
+				LastSeen:          "1s",
+				LastSeenTimestamp: 1,
+				Type:              "test",
+				Reason:            "test",
+				Message:           "test",
+			},
+		}},
+		State: State{
+			ClusterName: "testCluster",
+			PodID:       "testID",
+		},
+		Props: Props{
+			IsLoadMore: true,
+			RowKey:     "id",
+			Pagination: true,
+			Columns: []Column{
+				{
+					DataIndex: "test",
+					Title:     "test",
+					Width:     120,
+				},
+			},
+		},
+		Operations: map[string]interface{}{
+			"testOp": Operation{
+				Key:    "test",
+				Reload: true,
+			},
+		},
+	}
+
+	expectedData, err := json.Marshal(component)
+	if err != nil {
+		t.Error(err)
+	}
+
+	result := &cptype.Component{}
+	component.Transfer(result)
+	resultData, err := json.Marshal(result)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(expectedData) != string(resultData) {
+		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
 	}
 }

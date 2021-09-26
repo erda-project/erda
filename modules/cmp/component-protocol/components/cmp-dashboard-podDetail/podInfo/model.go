@@ -24,19 +24,20 @@ import (
 
 type PodInfo struct {
 	base.DefaultProvider
-	SDK    *cptype.SDK
+	SDK    *cptype.SDK `json:"-"`
 	server cmp.SteveServer
 	ctx    context.Context
 
-	Type  string          `json:"type"`
-	Data  map[string]Data `json:"data,omitempty"`
+	Type  string          `json:"type,omitempty"`
 	Props Props           `json:"props"`
+	Data  map[string]Data `json:"data,omitempty"`
 	State State           `json:"state,omitempty"`
 }
 
 type Props struct {
-	ColumnNum int     `json:"columnNum"`
-	Fields    []Field `json:"fields"`
+	IsLoadMore bool    `json:"isLoadMore,omitempty"`
+	ColumnNum  int     `json:"columnNum"`
+	Fields     []Field `json:"fields"`
 }
 
 type Data struct {
