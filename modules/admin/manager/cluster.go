@@ -73,17 +73,28 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		}
 
 		for _, cluster := range clusters {
-			if cluster.ManageConfig != nil {
-				cluster.ManageConfig = &apistructs.ManageConfig{
-					CredentialSource: cluster.ManageConfig.CredentialSource,
-					Address:          cluster.ManageConfig.Address,
-				}
-			}
 			for _, relate := range clusterRelation {
 				if relate.ClusterID == uint64(cluster.ID) && relate.OrgID == orgID {
 					cluster.IsRelation = "Y"
 					newClusters = append(newClusters, cluster)
 				}
+			}
+		}
+	}
+
+	// remove sensitive info
+	for i, cluster := range newClusters {
+		if newClusters[i].SchedConfig != nil {
+			newClusters[i].SchedConfig.RemoveSensitiveInfo()
+		}
+		newClusters[i].OpsConfig = nil
+		if newClusters[i].System != nil {
+			newClusters[i].System.RemoveSensitiveInfo()
+		}
+		if newClusters[i].ManageConfig != nil {
+			newClusters[i].ManageConfig = &apistructs.ManageConfig{
+				CredentialSource: cluster.ManageConfig.CredentialSource,
+				Address:          cluster.ManageConfig.Address,
 			}
 		}
 	}
