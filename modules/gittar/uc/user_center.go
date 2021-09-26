@@ -44,7 +44,7 @@ var userCache = cache.New(12*time.Hour, 1*time.Hour)
 
 var uc *ucauth.UCClient
 
-func InitilaizeUcClient(db *gorm.DB) {
+func InitializeUcClient(db *gorm.DB) {
 	uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 	uc.SetDBClient(db)
 	logrus.Infof("gittar uc client set up")

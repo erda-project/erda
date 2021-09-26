@@ -74,7 +74,7 @@ func (p *provider) Initialize() error {
 	if err != nil {
 		panic(err)
 	}
-	uc.InitilaizeUcClient(dbClient.DBEngine.DB)
+	uc.InitializeUcClient(dbClient.DBEngine.DB)
 
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)
