@@ -17,13 +17,12 @@ package formModal
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 	auto_test_plan_list "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list"
 )
 
@@ -41,8 +40,7 @@ type FormModalData struct {
 
 func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	projectIDStr := fmt.Sprintf("%v", bdl.InParams["projectId"])
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
 	if err != nil {
 		return err
 	}
