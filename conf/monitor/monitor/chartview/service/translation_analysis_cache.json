@@ -110,7 +110,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "searchTranslation",
@@ -152,7 +152,7 @@
         },
         "config": {
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "YYYY/MM/DD"
           },
           "dataSourceConfig": {
@@ -324,7 +324,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "YYYY/MM/DD",
             "noAreaColor": true
           }
@@ -384,7 +384,7 @@
             }
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
@@ -446,7 +446,7 @@
             }
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
