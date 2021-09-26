@@ -34,6 +34,13 @@ type Tag struct {
 	Value string `json:"value"`
 }
 
+// LogField .
+type LogField struct {
+	FieldName          string `json:"fieldName"`
+	SupportAggregation bool   `json:"supportAggregation"`
+	Display            bool   `json:"display"`
+}
+
 // LogRequest .
 type LogRequest struct {
 	OrgID       int64
@@ -50,8 +57,10 @@ type LogRequest struct {
 // LogSearchRequest .
 type LogSearchRequest struct {
 	LogRequest
-	Size int64
-	Sort string
+	Page      int64
+	Size      int64
+	Sort      string
+	Highlight bool
 }
 
 // LogStatisticRequest .
@@ -61,11 +70,16 @@ type LogStatisticRequest struct {
 	Points   int64
 }
 
+type LogItem struct {
+	Source    *logs.Log           `json:"source"`
+	Highlight map[string][]string `json:"highlight"`
+}
+
 // LogQueryResponse .
 type LogQueryResponse struct {
 	Expends map[string]interface{} `json:"expends"`
 	Total   int64                  `json:"total"`
-	Data    []*logs.Log            `json:"data"`
+	Data    []*LogItem             `json:"data"`
 }
 
 // LogStatisticResponse .
@@ -167,7 +181,15 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 			searchSource.Sort(key, ascending)
 		}
 	}
-	searchSource.Size(int(req.Size))
+	if req.Highlight {
+		searchSource.Highlight(elastic.NewHighlight().
+			PreTags("").
+			PostTags("").
+			FragmentSize(1).
+			RequireFieldMatch(true).
+			Field("*"))
+	}
+	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(req.Size))
 	return searchSource
 }
 
@@ -246,7 +268,10 @@ func (p *provider) SearchLogs(req *LogSearchRequest) (interface{}, error) {
 		}
 		results = append(results, result)
 	}
-	return mergeLogSearch(int(req.Size), results), nil
+	// multiple result set appear only at org-level search scenario
+	// as we are going to remove the entry from cloud management page
+	// it's okay to ignore the page size limitation
+	return mergeLogSearch(0, results), nil
 }
 
 func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
@@ -260,8 +285,8 @@ func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
 		resp.Total += result.Total
 	}
 	var count int
-	for count < limit {
-		var min *logs.Log
+	for limit == 0 || count < limit {
+		var min *LogItem
 		var idx int
 		for i, result := range results {
 			if len(result.Data) <= 0 {
@@ -273,7 +298,7 @@ func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
 				idx = i
 				continue
 			}
-			if first.Timestamp < min.Timestamp || (first.Timestamp == min.Timestamp && first.Offset < min.Offset) {
+			if first.Source.Timestamp < min.Source.Timestamp || (first.Source.Timestamp == min.Source.Timestamp && first.Source.Offset < min.Source.Offset) {
 				min = first
 				idx = i
 				continue
@@ -324,4 +349,32 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 	}
 	first.Results[0].Data[0].Count.Data = list
 	return first
+}
+
+func (p *provider) ListDefaultFields() []*LogField {
+	return []*LogField{
+		&LogField{FieldName: "source", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "id", SupportAggregation: false, Display: true},
+		&LogField{FieldName: "stream", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "content", SupportAggregation: false, Display: true},
+		&LogField{FieldName: "offset", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "timestamp", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "uniId", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.origin", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_cluster_name", SupportAggregation: true, Display: false},
+		&LogField{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_project_name", SupportAggregation: true, Display: false},
+		&LogField{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true},
+		&LogField{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false},
+		&LogField{FieldName: "tags.dice_workspace", SupportAggregation: true, Display: true},
+		&LogField{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true},
+		&LogField{FieldName: "tags.pod_namespace", SupportAggregation: true, Display: true},
+		&LogField{FieldName: "tags.pod_name", SupportAggregation: true, Display: true},
+		&LogField{FieldName: "tags.container_name", SupportAggregation: true, Display: true},
+		&LogField{FieldName: "tags.request-id", SupportAggregation: false, Display: true},
+	}
 }

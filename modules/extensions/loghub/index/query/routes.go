@@ -30,6 +30,8 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/micro_service/:addon/logs/search", p.logSearch)
 	routes.GET("/api/micro_service/logs/tags/tree", p.logMSTagsTree)
 
+	routes.GET("/api/micro_service/logs/fields", p.logFields)
+
 	// 企业日志查询
 	routes.GET("/api/org/logs/statistic/histogram", p.logStatistic)
 	routes.GET("/api/org/logs/search", p.logSearch)
@@ -114,12 +116,14 @@ func (p *provider) logStatistic(r *http.Request, params struct {
 func (p *provider) logSearch(r *http.Request, params struct {
 	Start       int64  `query:"start" validate:"gte=1"`
 	End         int64  `query:"end" validate:"gte=1"`
+	Page        int64  `query:"page" validate:"gte=1"`
 	Size        int64  `query:"size"`
 	Query       string `query:"query"`
 	Sort        string `query:"sort"`
 	Debug       bool   `query:"debug"`
 	Addon       string `param:"addon"`
 	ClusterName string `query:"clusterName"`
+	Highlight   bool   `query:"highlight"`
 }) interface{} {
 	orgID := api.OrgID(r)
 	orgid, err := strconv.ParseInt(orgID, 10, 64)
@@ -146,8 +150,10 @@ func (p *provider) logSearch(r *http.Request, params struct {
 			Debug:       params.Debug,
 			Lang:        api.Language(r),
 		},
-		Size: params.Size,
-		Sort: params.Sort,
+		Page:      params.Page,
+		Size:      params.Size,
+		Sort:      params.Sort,
+		Highlight: params.Highlight,
 	})
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -164,4 +170,8 @@ func (p *provider) orgLogTagsTree(r *http.Request) interface{} {
 
 func (p *provider) inspectIndices(r *http.Request) interface{} {
 	return api.Success(p.indices.Load())
+}
+
+func (p *provider) logFields() interface{} {
+	return api.Success(p.ListDefaultFields())
 }

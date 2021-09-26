@@ -16,6 +16,7 @@ package query
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
@@ -27,108 +28,145 @@ func Example_mergeLogSearch() {
 	results := []*LogQueryResponse{
 		{
 			Total: 11,
-			Data: []*logs.Log{
+			Data: []*LogItem{
 				{
-					Content:   "1",
-					Timestamp: 1,
+					Source: &logs.Log{
+						Content:   "1",
+						Timestamp: 1,
+					},
 				},
 				{
-					Content:   "3",
-					Timestamp: 3,
-					Offset:    1,
+					Source: &logs.Log{
+						Content:   "3",
+						Timestamp: 3,
+						Offset:    1,
+					},
 				},
 				{
-					Content:   "3",
-					Timestamp: 3,
-					Offset:    2,
+					Source: &logs.Log{
+						Content:   "3",
+						Timestamp: 3,
+						Offset:    2,
+					},
 				},
 				{
-					Content:   "5",
-					Timestamp: 5,
-					Offset:    1,
+					Source: &logs.Log{
+						Content:   "5",
+						Timestamp: 5,
+						Offset:    1,
+					},
 				},
 				{
-					Content:   "5",
-					Timestamp: 5,
-					Offset:    2,
+					Source: &logs.Log{
+						Content:   "5",
+						Timestamp: 5,
+						Offset:    2,
+					},
 				},
 				{
-					Content:   "6",
-					Timestamp: 6,
+					Source: &logs.Log{
+						Content:   "6",
+						Timestamp: 6,
+					},
 				},
 				{
-					Content:   "7",
-					Timestamp: 7,
+					Source: &logs.Log{
+						Content:   "7",
+						Timestamp: 7,
+					},
 				},
 				{
-					Content:   "8",
-					Timestamp: 8,
+					Source: &logs.Log{
+						Content:   "8",
+						Timestamp: 8,
+					},
+				},
+				{},
+				{
+					Source: &logs.Log{
+						Content:   "10",
+						Timestamp: 10,
+					},
 				},
 				{
-					Content:   "9",
-					Timestamp: 9,
-				},
-				{
-					Content:   "10",
-					Timestamp: 10,
-				},
-				{
-					Content:   "11",
-					Timestamp: 11,
+					Source: &logs.Log{
+						Content:   "11",
+						Timestamp: 11,
+					},
 				},
 			},
 		},
 		{
 			Total: 10,
-			Data: []*logs.Log{
+			Data: []*LogItem{
 				{
-					Content:   "2",
-					Timestamp: 2,
+					Source: &logs.Log{
+						Content:   "2",
+						Timestamp: 2,
+					},
 				},
 				{
-					Content:   "3",
-					Timestamp: 3,
-					Offset:    3,
+					Source: &logs.Log{
+						Content:   "3",
+						Timestamp: 3,
+						Offset:    3,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    1,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    1,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    2,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    2,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    3,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    3,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    4,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    4,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    5,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    5,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    6,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    6,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    7,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    7,
+					},
 				},
 				{
-					Content:   "4",
-					Timestamp: 4,
-					Offset:    7,
+					Source: &logs.Log{
+						Content:   "4",
+						Timestamp: 4,
+						Offset:    7,
+					},
 				},
 			},
 		},
@@ -136,4 +174,13 @@ func Example_mergeLogSearch() {
 	result := mergeLogSearch(limit, results)
 	fmt.Println(jsonx.MarshalAndIndent(result), len(result.Data))
 
+}
+
+func TestListDefaultFields_Should_Success(t *testing.T) {
+	p := &provider{}
+
+	result := p.ListDefaultFields()
+	if len(result) == 0 {
+		t.Errorf("should not return empty slice")
+	}
 }
