@@ -123,7 +123,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "searchTranslation",
@@ -395,7 +395,7 @@
             }
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
@@ -458,7 +458,7 @@
             }
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "traceSlowTranslation",
