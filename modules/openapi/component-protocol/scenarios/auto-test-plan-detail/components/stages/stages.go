@@ -150,49 +150,81 @@ func (i *ComponentStageForm) RenderGroupMoveStagesForm() (err error) {
 	var (
 		req apistructs.TestPlanV2StepMoveRequest
 	)
-	//	dragGroupKey := uint64(i.State.DragParams.DragGroupKey)
-	//	dropGroupKey := uint64(i.State.DragParams.DropGroupKey)
+	dragGroupKey := uint64(i.State.DragParams.DragGroupKey)
+	dropGroupKey := uint64(i.State.DragParams.DropGroupKey)
 
 	req.UserID = i.ctxBdl.Identity.UserID
 	req.TestPlanID = i.State.TestPlanId
 	req.IsGroup = true
 
-	testPlanDrag, err := i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
+	stepDragGroup, err := i.ctxBdl.Bdl.ListTestPlanV2Step(i.State.TestPlanId, dragGroupKey)
 	if err != nil {
 		return err
 	}
-	if len(testPlanDrag.Data.Steps) <= 0 {
+	if len(stepDragGroup) <= 0 {
 		return errors.New("the dragGroupKey is not exists")
 	}
-	req.StepID = testPlanDrag.Data.Steps[0].ID
-	req.LastStepID = testPlanDrag.Data.Steps[len(testPlanDrag.Data.Steps)-1].ID
+	firstStepDrag, lastStepDrag := findFirstLastStepIDInGroup(stepDragGroup)
+	req.StepID = firstStepDrag.ID
+	req.LastStepID = lastStepDrag.ID
 
 	switch i.State.DragParams.Position {
 	case 0: // inside target
 		return nil
 	case -1: // in front of the target
-		testPlanDrop, err := i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
+		stepDropGroup, err := i.ctxBdl.Bdl.ListTestPlanV2Step(i.State.TestPlanId, dropGroupKey)
 		if err != nil {
 			return err
 		}
-		if len(testPlanDrop.Data.Steps) <= 0 {
+		if len(stepDropGroup) <= 0 {
 			return errors.New("the dropGroupKey is not exists")
 		}
-		req.PreID = testPlanDrop.Data.Steps[0].PreID
+		firstStepDrop, _ := findFirstLastStepIDInGroup(stepDropGroup)
+		req.PreID = firstStepDrop.PreID
+		req.TargetStepID = firstStepDrop.ID
+		if req.PreID == req.LastStepID {
+			return nil
+		}
 	case 1: // behind the target
-		testPlanDrop, err := i.ctxBdl.Bdl.GetTestPlanV2(i.State.TestPlanId)
+		stepDropGroup, err := i.ctxBdl.Bdl.ListTestPlanV2Step(i.State.TestPlanId, dropGroupKey)
 		if err != nil {
 			return err
 		}
-		if len(testPlanDrop.Data.Steps) <= 0 {
+		if len(stepDropGroup) <= 0 {
 			return errors.New("the dropGroupKey is not exists")
 		}
-		req.PreID = testPlanDrop.Data.Steps[len(testPlanDrop.Data.Steps)-1].ID
-
+		_, lastStepDrop := findFirstLastStepIDInGroup(stepDropGroup)
+		req.PreID = lastStepDrop.ID
+		req.TargetStepID = lastStepDrop.ID
+		if req.PreID == req.StepID {
+			return nil
+		}
 	default:
 		return errors.New("unknown position")
 	}
 	return i.ctxBdl.Bdl.MoveTestPlansV2Step(req)
+}
+
+func findFirstLastStepIDInGroup(steps []*apistructs.TestPlanV2Step) (firstStep, lastStep *apistructs.TestPlanV2Step) {
+	stepIDMap := make(map[uint64]*apistructs.TestPlanV2Step, len(steps))
+	preIDMap := make(map[uint64]*apistructs.TestPlanV2Step, len(steps))
+	for _, v := range steps {
+		stepIDMap[v.ID] = v
+		preIDMap[v.PreID] = v
+	}
+	for k := range preIDMap {
+		if _, ok := stepIDMap[k]; !ok {
+			firstStep = preIDMap[k]
+			break
+		}
+	}
+	for k := range stepIDMap {
+		if _, ok := preIDMap[k]; !ok {
+			lastStep = stepIDMap[k]
+			break
+		}
+	}
+	return
 }
 
 func (i *ComponentStageForm) RenderItemMoveStagesForm() (err error) {
