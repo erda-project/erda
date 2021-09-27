@@ -50,9 +50,6 @@ type Conf struct {
 	OpenAPIDomain         string `env:"OPENAPI_PUBLIC_ADDR"` // Deprecated: after cli refactored
 	AvatarStorageURL      string `env:"AVATAR_STORAGE_URL"`  // file:///avatars or oss://appkey:appsecret@endpoint/bucket
 	LicenseKey            string `env:"LICENSE_KEY"`
-	AuditCleanCron        string `env:"AUDIT_CLEAN_CRON" default:"0 0 3 * * ?"`   // 审计软删除任务执行周期
-	AuditArchiveCron      string `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"` // 审计归档任务执行周期
-	SysAuditCleanIterval  int    `env:"SYS_AUDIT_CLEAN_ITERVAL" default:"-7"`     // 系统审计清除周期
 	RedisMasterName       string `default:"my-master" env:"REDIS_MASTER_NAME"`
 	RedisSentinelAddrs    string `default:"" env:"REDIS_SENTINELS_ADDR"`
 	RedisAddr             string `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
@@ -94,6 +91,12 @@ type Conf struct {
 	// File types can carry active content, separated by comma, can add more types like jsp
 	FileTypesCanCarryActiveContent string `env:"FILETYPES_CAN_CARRY_ACTIVE_CONTENT" default:"html,js,xml,htm"`
 	// --- 文件管理 end ---
+
+	// audit
+	AuditCleanCron           string `env:"AUDIT_CLEAN_CRON" default:"0 0 3 * * ?"`     // audit soft delete cron
+	AuditArchiveCron         string `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"`   // audit archive cron
+	SysAuditCleanInterval    int    `env:"SYS_AUDIT_CLEAN_INTERVAL" default:"-7"`      // sys audit clean interval
+	OrgAuditMaxRetentionDays uint64 `env:"ORG_AUDIT_MAX_RETENTION_DAYS" default:"180"` // org level audit max retention days
 }
 
 var (
@@ -348,9 +351,9 @@ func AuditArchiveCron() string {
 	return cfg.AuditArchiveCron
 }
 
-// SysAuditCleanIterval 返回 sys scope 审计事件软删除周期
-func SysAuditCleanIterval() int {
-	return cfg.SysAuditCleanIterval
+// SysAuditCleanInterval 返回 sys scope 审计事件软删除周期
+func SysAuditCleanInterval() int {
+	return cfg.SysAuditCleanInterval
 }
 
 // RedisMasterName 返回redis master name
@@ -454,4 +457,8 @@ func FileTypeCarryActiveContentAllowed() bool {
 
 func FileTypesCanCarryActiveContent() []string {
 	return strutil.Split(cfg.FileTypesCanCarryActiveContent, ",")
+}
+
+func OrgAuditMaxRetentionDays() uint64 {
+	return cfg.OrgAuditMaxRetentionDays
 }

@@ -363,6 +363,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 				Sorter:    true,
 			},
 		},
+		SortDirections: []string{"descend", "ascend"},
 	}
 	t.Operations = make(map[string]interface{})
 	t.Operations[apistructs.OnChangeSortOperation.String()] = Operation{

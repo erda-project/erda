@@ -123,7 +123,7 @@
             ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
+            "isMoreThanOneDay": false,
             "moreThanOneDayFormat": "M/D",
             "rowClick": {
               "name": "searchTranslation",
@@ -159,6 +159,9 @@
             "groupby": [
               "time()"
             ],
+            "where": [
+              "{{condition}}"
+            ],
             "select": [
               {
                 "alias": "typegq99wZs2",
@@ -178,10 +181,7 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "or_eq_source_service_id": "{{serviceId}}",
-            "or_eq_target_service_id": "{{serviceId}}",
             "include_message_bus_destination": "{{subSearch}}",
-            "filter_span_kind": "{{type}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -263,6 +263,9 @@
             "groupby": [
               "time()"
             ],
+            "where": [
+              "{{condition}}"
+            ],
             "select": [
               {
                 "alias": "typeQuPvs7M2",
@@ -282,10 +285,7 @@
             "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "or_eq_source_service_id": "{{serviceId}}",
-            "or_eq_target_service_id": "{{serviceId}}",
             "include_message_bus_destination": "{{subSearch}}",
-            "filter_span_kind": "{{type}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -362,50 +362,126 @@
       "w": 14,
       "x": 0,
       "y": 21,
-      "i": "view-FlQBcOqT",
+      "i": "view-mq-slow",
       "view": {
         "api": {
-          "body": null,
           "extraData": null,
           "header": null,
-          "method": "get",
+          "method": "post",
           "query": {
             "end": "{{endTime}}",
+            "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "or_eq_source_service_id": "{{serviceId}}",
-            "or_eq_target_service_id": "{{serviceId}}",
             "include_message_bus_destination": "{{subSearch}}",
-            "filter_span_kind": "{{type}}",
             "format": "chartv2",
-            "q": "SELECT message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(max(elapsed_max::field),'',2) as 最大耗时,format_duration(min(elapsed_min::field),'',2) as 最小耗时 FROM application_mq_slow GROUP BY message_bus_destination::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
-            "ql": "influxql",
+            "ql": "influxql:ast",
             "start": "{{startTime}}",
             "type": "_"
           },
-          "url": "/api/tmc/metrics-query"
+          "url": "/api/tmc/metrics-query",
+          "body": {
+            "from": [
+              "application_mq_slow"
+            ],
+            "groupby": [
+              "message_bus_destination::tag"
+            ],
+            "orderby": [
+              {
+                "dir": "DESC",
+                "expr": "avg(elapsed_mean::field)"
+              }
+            ],
+            "limit": 50,
+            "where": [
+              "{{condition}}"
+            ],
+            "select": [
+              {
+                "alias": "message_bus_destination",
+                "expr": "message_bus_destination::tag"
+              },
+              {
+                "alias": "time",
+                "expr": "format_time(timestamp,'2006-01-02 15:04:05')"
+              },
+              {
+                "alias": "max_duration",
+                "expr": "format_duration(max(elapsed_max::field),'',2)"
+              },
+              {
+                "alias": "min_duration",
+                "expr": "format_duration(min(elapsed_min::field),'',2)"
+              }
+            ]
+          }
         },
         "chartType": "table",
         "config": {
           "dataSourceConfig": {
-            "isSqlMode": true,
-            "sql": {
-              "from": "application_mq_slow",
-              "fromSource": [
-                "application_mq_slow"
-              ],
-              "groupBy": "message_bus_destination::tag",
-              "limit": 50,
-              "orderBy": "",
-              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
-            }
+            "activedMetricGroups": [
+              "application_mq_slow"
+            ],
+            "typeDimensions": [
+            ],
+            "valueDimensions": [
+              {
+                "alias": "Topic",
+                "i18n": {
+                  "alias": {
+                    "en": "Topic",
+                    "zh": "Topic"
+                  }
+                },
+                "key": "message_bus_destination",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Time",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
+                "key": "time",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "最大耗时",
+                "i18n": {
+                  "alias": {
+                    "en": "Max Duration",
+                    "zh": "最大耗时"
+                  }
+                },
+                "key": "max_duration",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "最小耗时",
+                "i18n": {
+                  "alias": {
+                    "en": "Min Duration",
+                    "zh": "最小耗时"
+                  }
+                },
+                "key": "min_duration",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
-            "moreThanOneDayFormat": "M/D",
+            "isMoreThanOneDay": false,
+            "moreThanOneDayFormat": "YYYY/MM/DD",
             "rowClick": {
               "name": "traceSlowTranslation",
-              "value": "Topic"
+              "value": "message_bus_destination"
             }
           }
         },
@@ -427,49 +503,94 @@
       "w": 10,
       "x": 14,
       "y": 21,
-      "i": "view-sCRTdIQb",
+      "i": "view-mq-error",
       "view": {
         "api": {
-          "body": null,
           "extraData": null,
           "header": null,
-          "method": "get",
+          "method": "post",
           "query": {
             "end": "{{endTime}}",
+            "epoch": "ms",
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
-            "or_eq_source_service_id": "{{serviceId}}",
-            "or_eq_target_service_id": "{{serviceId}}",
             "include_message_bus_destination": "{{subSearch}}",
-            "filter_span_kind": "{{type}}",
             "format": "chartv2",
-            "q": "SELECT message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_mq_error GROUP BY message_bus_destination::tag ORDER BY max(timestamp) DESC LIMIT 50 ",
-            "ql": "influxql",
+            "ql": "influxql:ast",
             "start": "{{startTime}}",
             "type": "_"
           },
-          "url": "/api/tmc/metrics-query"
+          "url": "/api/tmc/metrics-query",
+          "body": {
+            "from": [
+              "application_mq_error"
+            ],
+            "groupby": [
+              "message_bus_destination::tag"
+            ],
+            "orderby": [
+              {
+                "dir": "DESC",
+                "expr": "max(timestamp)"
+              }
+            ],
+            "limit": 50,
+            "where": [
+              "{{condition}}"
+            ],
+            "select": [
+              {
+                "alias": "message_bus_destination",
+                "expr": "message_bus_destination::tag"
+              },
+              {
+                "alias": "time",
+                "expr": "format_time(timestamp,'2006-01-02 15:04:05')"
+              }
+            ]
+          }
         },
         "chartType": "table",
         "config": {
           "dataSourceConfig": {
-            "isSqlMode": true,
-            "sql": {
-              "from": "application_mq_error",
-              "fromSource": [
-                "application_mq_error"
-              ],
-              "groupBy": "message_bus_destination::tag",
-              "limit": 50,
-              "select": "message_bus_destination::tag as Topic,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
-            }
+            "activedMetricGroups": [
+              "application_mq_error"
+            ],
+            "typeDimensions": [
+            ],
+            "valueDimensions": [
+              {
+                "alias": "Topic",
+                "i18n": {
+                  "alias": {
+                    "en": "Topic",
+                    "zh": "Topic"
+                  }
+                },
+                "key": "message_bus_destination",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Time",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
+                "key": "time",
+                "resultType": "string",
+                "type": "field"
+              }
+            ]
           },
           "optionProps": {
-            "isMoreThanOneDay": true,
-            "moreThanOneDayFormat": "M/D",
+            "isMoreThanOneDay": false,
+            "moreThanOneDayFormat": "YYYY/MM/DD",
             "rowClick": {
               "name": "traceSlowTranslation",
-              "value": "Topic"
+              "value": "message_bus_destination"
             }
           }
         },

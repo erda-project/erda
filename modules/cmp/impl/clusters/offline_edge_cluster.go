@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type precheckResp struct {
@@ -52,7 +53,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	}
 	status := dbclient.StatusTypeSuccess
 	detail := ""
-	if !fakecluster {
+	if !fakecluster && !req.Force {
 		// Check project whether to use cluster
 		projectRefer := precheckResp{}
 		resp, err := httpclient.New().Get(discover.CoreServices()).
@@ -107,33 +108,33 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			return recordID, err
 		}
 
-		deletecluster := cmdbDeleteClusterResp{}
-		resp, err := httpclient.New().Delete(discover.ClusterManager()).
-			Header("Internal-Client", "cmp").
-			Path(fmt.Sprintf("/api/clusters/%s", req.ClusterName)).
-			Do().JSON(&deletecluster)
+		err = c.bdl.DeleteCluster(req.ClusterName, map[string][]string{httputil.InternalHeader: {"cmp"}})
 		if err != nil {
-			errstr := fmt.Sprintf("failed to call cluster-manager /api/clusters/%s : %v", req.ClusterName, err)
+			errstr := fmt.Sprintf("failed to delete cluster %s : %v", req.ClusterName, err)
 			logrus.Errorf(errstr)
-			err := errors.New(errstr)
-			return recordID, err
-		}
-		if !resp.IsOK() || !deletecluster.Success {
-			errstr := fmt.Sprintf("call cluster-manager /api/clusters/%s, statuscode: %d, resp: %+v",
-				req.ClusterName, resp.StatusCode(), deletecluster)
-			logrus.Errorf(errstr)
-			err := errors.New(errstr)
+			err = errors.New(errstr)
 			return recordID, err
 		}
 	}
 
-	recordID, err = c.db.RecordsWriter().Create(&dbclient.Record{
+	recordID, err = updateDeleteRecord(c.db, dbclient.Record{
 		RecordType:  dbclient.RecordTypeOfflineEdgeCluster,
 		UserID:      userid,
 		OrgID:       orgid,
 		ClusterName: req.ClusterName,
 		Status:      status,
-		Detail:      string(detail),
+		Detail:      detail,
 	})
+
+	if err != nil {
+		// ignore record update error
+		logrus.Errorf("update cluster delete record failed, cluster: %s, error: %v", req.ClusterName, err)
+	}
+
+	logrus.Infof("detail: %v", detail)
 	return recordID, nil
+}
+
+func updateDeleteRecord(db *dbclient.DBClient, record dbclient.Record) (recordID uint64, err error) {
+	return db.RecordsWriter().Create(&record)
 }
