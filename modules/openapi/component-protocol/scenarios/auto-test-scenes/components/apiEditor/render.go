@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
@@ -107,7 +108,11 @@ func (ae *ApiEditor) Render(ctx context.Context, c *apistructs.Component, scenar
 	}
 	ae.State.SceneId = sceneID
 
-	projecrIDStr := fmt.Sprintf("%v", bdl.InParams["projectId"])
+	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
+	if err != nil {
+		return err
+	}
+	projecrIDStr := strconv.FormatUint(projectID, 10)
 
 	// 获取小试一把信息
 	if _, ok := c.State["isFirstIn"]; ok {
