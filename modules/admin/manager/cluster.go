@@ -83,23 +83,30 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 	}
 
 	// remove sensitive info
-	for i, cluster := range newClusters {
-		if newClusters[i].SchedConfig != nil {
-			newClusters[i].SchedConfig.RemoveSensitiveInfo()
-		}
-		newClusters[i].OpsConfig = nil
-		if newClusters[i].System != nil {
-			newClusters[i].System.RemoveSensitiveInfo()
-		}
-		if newClusters[i].ManageConfig != nil {
-			newClusters[i].ManageConfig = &apistructs.ManageConfig{
-				CredentialSource: cluster.ManageConfig.CredentialSource,
-				Address:          cluster.ManageConfig.Address,
-			}
-		}
+	for i := range newClusters {
+		removeSensitiveInfo(&newClusters[i])
 	}
 
 	return httpserver.OkResp(newClusters)
+}
+
+func removeSensitiveInfo(cluster *apistructs.ClusterInfo) {
+	if cluster == nil {
+		return
+	}
+	if cluster.SchedConfig != nil {
+		cluster.SchedConfig.RemoveSensitiveInfo()
+	}
+	cluster.OpsConfig = nil
+	if cluster.System != nil {
+		cluster.System.RemoveSensitiveInfo()
+	}
+	if cluster.ManageConfig != nil {
+		cluster.ManageConfig = &apistructs.ManageConfig{
+			CredentialSource: cluster.ManageConfig.CredentialSource,
+			Address:          cluster.ManageConfig.Address,
+		}
+	}
 }
 
 func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
