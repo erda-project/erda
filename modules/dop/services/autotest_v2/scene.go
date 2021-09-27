@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -787,11 +788,14 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 		if err != nil {
 			return nil, err
 		}
+		if value.WaitTime <= 0 {
+			return nil, errors.Errorf("Invalid wait time sec: %d", value.WaitTime)
+		}
 
-		action.Type = "custom-script"
+		action.Type = "wait"
 		action.Version = "1.0"
-		action.Commands = []string{
-			"sleep " + strconv.Itoa(value.WaitTime) + "s",
+		action.Params = map[string]interface{}{
+			"wait_time": value.WaitTime,
 		}
 	case apistructs.StepTypeConfigSheet:
 		var value apistructs.AutoTestRunConfigSheet

@@ -35,7 +35,7 @@ type AutoTestRunStep struct {
 }
 
 type AutoTestRunWait struct {
-	WaitTime int `json:"waitTime"`
+	WaitTime int `json:"waitTime" env:"ACTION_WAIT_TIME"`
 }
 
 type AutoTestRunConfigSheet struct {
