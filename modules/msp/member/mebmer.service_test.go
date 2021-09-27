@@ -24,12 +24,14 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-////go:generate mockgen -destination=./credential_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./member_register_test.go -package member github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./projectServer_test.go -package member github.com/erda-project/erda-proto-go/msp/tenant/project/pb ProjectServiceServer
 func Test_memberService_ListMember(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -117,33 +119,55 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	register := NewMockRegister(ctrl)
+	pService := NewMockProjectServiceServer(ctrl)
+	defer monkey.UnpatchAll()
 	pro := &provider{
 		Cfg:           &config{},
 		Register:      register,
 		memberService: &memberService{},
 		bdl:           &bundle.Bundle{},
+		ProjectServer: pService,
 	}
-	var bdl *bundle.Bundle
-	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListMemberRoles",
-		func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
-			return &apistructs.RoleList{
-				List: []apistructs.RoleInfo{
-					{
-						Role: "xxse",
-						Name: "dfdf",
-					},
-				},
-				Total: 1,
-			}, nil
-		})
-	monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+
+	pService.EXPECT().GetProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&projectpb.GetProjectResponse{
+		Data: &projectpb.Project{
+			Id:           "10",
+			Name:         "sqw-xm",
+			Type:         "DOP",
+			Relationship: nil,
+			CreateTime:   1632461946000000000,
+			UpdateTime:   1632461946000000000,
+			IsDeleted:    false,
+			DisplayName:  "sqw-xm",
+			DisplayType:  "DOP",
+		},
+	}, nil)
+	monkey.Patch(apis.GetOrgID, func(_ context.Context) string {
 		return "1"
+	})
+	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
+		return &apistructs.RoleList{
+			List: []apistructs.RoleInfo{
+				{
+					Role: "Owner",
+					Name: "项目所有者",
+				},
+				{
+					Role: "",
+					Name: "",
+				},
+				{
+					Role: "Lead",
+					Name: "研发主管",
+				},
+			},
+			Total: 8,
+		}, nil
 	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMemberRoles(context.Background(), &pb.ListMemberRolesRequest{
 		ScopeType: "project",
-		ScopeID:   12,
+		ScopeId:   10,
 	})
 	if err != nil {
 		fmt.Println(err)

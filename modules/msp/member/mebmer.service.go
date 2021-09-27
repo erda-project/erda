@@ -17,8 +17,10 @@ package member
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -29,6 +31,44 @@ type memberService struct {
 }
 
 func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemberRolesRequest) (*pb.ListMemberRolesResponse, error) {
+	project, err := m.p.ProjectServer.GetProject(ctx, &projectpb.GetProjectRequest{
+		ProjectID: strconv.Itoa(int(request.ScopeId)),
+	})
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.Atoi(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if project.Data.Type == "DOP" {
+		roleList, err := m.p.bdl.ListMemberRoles(apistructs.ListScopeManagersByScopeIDRequest{
+			ScopeType: apistructs.ScopeType(request.ScopeType),
+			ScopeID:   request.ScopeId,
+		}, int64(orgId))
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		roleListResult := &pb.ListMemberRolesResponse{
+			Data: &pb.RoleList{
+				List:  make([]*pb.RoleInfo, 0),
+				Total: int64(roleList.Total),
+			},
+		}
+		for _, v := range roleList.List {
+			if v.Role == "" && v.Name == "" {
+				roleListResult.Data.Total--
+				continue
+			}
+			role := &pb.RoleInfo{
+				Role: v.Role,
+				Name: v.Name,
+			}
+			roleListResult.Data.List = append(roleListResult.Data.List, role)
+		}
+		return roleListResult, nil
+	}
 	return &pb.ListMemberRolesResponse{
 		Data: &pb.RoleList{
 			List: []*pb.RoleInfo{
