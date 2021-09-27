@@ -27,6 +27,7 @@ func init() {
 	bundleOpts := []bundle.Option{
 		bundle.WithOrchestrator(),
 		bundle.WithCMP(),
+		bundle.WithMSP(),
 		bundle.WithScheduler(),
 		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
