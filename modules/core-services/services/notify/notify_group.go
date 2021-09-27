@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -160,14 +162,35 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 			for _, r := range target.Values {
 				roles = append(roles, r.Receiver)
 			}
-			_, members, err := o.db.GetMembersByParam(&apistructs.MemberListRequest{
-				ScopeType: apistructs.ScopeType(group.ScopeType),
-				ScopeID:   scopeID,
-				Roles:     roles,
-				Q:         "",
-				PageNo:    1,
-				PageSize:  1000,
-			})
+			var members []model.Member
+			if strings.Contains(group.ScopeType, apistructs.MSPScope) {
+				label := make(map[string]string)
+				err = json.Unmarshal([]byte(group.Label), &label)
+				if err != nil {
+					return nil, err
+				}
+				scopeID, err := strconv.ParseInt(label[apistructs.MSPMemberScopeId], 10, 32)
+				if err != nil {
+					return nil, err
+				}
+				_, members, err = o.db.GetMembersByParam(&apistructs.MemberListRequest{
+					ScopeType: apistructs.ScopeType(label[apistructs.MSPMemberScope]),
+					ScopeID:   scopeID,
+					Roles:     roles,
+					Q:         "",
+					PageNo:    1,
+					PageSize:  1000,
+				})
+			} else {
+				_, members, err = o.db.GetMembersByParam(&apistructs.MemberListRequest{
+					ScopeType: apistructs.ScopeType(group.ScopeType),
+					ScopeID:   scopeID,
+					Roles:     roles,
+					Q:         "",
+					PageNo:    1,
+					PageSize:  1000,
+				})
+			}
 			if err != nil {
 				return nil, err
 			}

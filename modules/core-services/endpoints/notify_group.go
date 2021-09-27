@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -59,6 +60,19 @@ func (e *Endpoints) CreateNotifyGroup(ctx context.Context, r *http.Request, vars
 
 	notifyGroupCreateReq.Creator = r.Header.Get("User-Id")
 	notifyGroupCreateReq.OrgID = orgID
+
+	if strings.Contains(notifyGroupCreateReq.ScopeType, apistructs.MSPScope) {
+		label := map[string]string{
+			"member_scopeID":   notifyGroupCreateReq.ScopeID,
+			"member_scopeType": string(apistructs.ProjectScope),
+		}
+		data, err := json.Marshal(label)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		notifyGroupCreateReq.Label = string(data)
+	}
+
 	notifyGroupID, err := e.notifyGroup.Create(locale, &notifyGroupCreateReq)
 
 	if err != nil {
