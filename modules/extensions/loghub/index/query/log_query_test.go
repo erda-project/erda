@@ -188,22 +188,22 @@ func TestListDefaultFields_Should_Success(t *testing.T) {
 func Test_concatBucketSlices(t *testing.T) {
 	limit := 10
 	slices := [][]*BucketAgg{
-		[]*BucketAgg{
-			&BucketAgg{Key: "4", Count: 5},
-			&BucketAgg{Key: "1", Count: 2},
-			&BucketAgg{Key: "3", Count: 2},
+		{
+			{Key: "4", Count: 5},
+			{Key: "1", Count: 2},
+			{Key: "3", Count: 2},
 		},
-		[]*BucketAgg{
-			&BucketAgg{Key: "2", Count: 11},
-			&BucketAgg{Key: "3", Count: 4},
+		{
+			{Key: "2", Count: 11},
+			{Key: "3", Count: 4},
 		},
 	}
 
 	want := []*BucketAgg{
-		&BucketAgg{Key: "2", Count: 11},
-		&BucketAgg{Key: "3", Count: 6},
-		&BucketAgg{Key: "4", Count: 5},
-		&BucketAgg{Key: "1", Count: 2},
+		{Key: "2", Count: 11},
+		{Key: "3", Count: 6},
+		{Key: "4", Count: 5},
+		{Key: "1", Count: 2},
 	}
 
 	result := concatBucketSlices(limit, slices...)
