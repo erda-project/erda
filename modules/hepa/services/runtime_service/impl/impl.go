@@ -99,7 +99,12 @@ func diffServices(reqServices []gw.ServiceDetailDto, existServices []orm.Gateway
 			addOrUpdates = append(addOrUpdates, runtimeService{service, nil})
 		}
 	}
-	dels = existServices
+	for _, service := range existServices {
+		// skip those already deleted services
+		if service.InnerAddress != "" {
+			dels = append(dels, service)
+		}
+	}
 	return
 }
 
