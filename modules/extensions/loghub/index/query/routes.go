@@ -29,8 +29,8 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/micro_service/:addon/logs/statistic/histogram", p.logStatistic)
 	routes.GET("/api/micro_service/:addon/logs/search", p.logSearch)
 	routes.GET("/api/micro_service/logs/tags/tree", p.logMSTagsTree)
-
 	routes.GET("/api/micro_service/logs/fields", p.logFields)
+	routes.GET("/api/micro_service/logs/fields/aggregation", p.logFieldsAggregation)
 
 	// 企业日志查询
 	routes.GET("/api/org/logs/statistic/histogram", p.logStatistic)
@@ -113,6 +113,52 @@ func (p *provider) logStatistic(r *http.Request, params struct {
 	return api.Success(data)
 }
 
+func (p *provider) logFieldsAggregation(r *http.Request, params struct {
+	Start       int64  `query:"start" validate:"gte=1"`
+	End         int64  `query:"end" validate:"gte=1"`
+	Query       string `query:"query"`
+	Debug       bool   `query:"debug"`
+	Addon       string `param:"addon"`
+	ClusterName string `query:"clusterName"`
+	AggFields   string `query:"aggFields"`
+	TermsSize   int64  `query:"termsSize"`
+}) interface{} {
+	orgID := api.OrgID(r)
+	orgid, err := strconv.ParseInt(orgID, 10, 64)
+	if err != nil {
+		return api.Errors.InvalidParameter("invalid Org-ID")
+	}
+	err = p.checkTime(params.Start, params.End)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+	filters := p.buildLogFilters(r)
+	aggFields := strings.Split(params.AggFields, ",")
+	termsSize := params.TermsSize
+	if termsSize == 0 {
+		termsSize = 20
+	}
+	data, err := p.AggregateLogFields(&LogFieldsAggregationRequest{
+		LogRequest: LogRequest{
+			OrgID:       orgid,
+			ClusterName: params.ClusterName,
+			Addon:       params.Addon,
+			Start:       params.Start,
+			End:         params.End,
+			Filters:     filters,
+			Query:       params.Query,
+			Debug:       params.Debug,
+			Lang:        api.Language(r),
+		},
+		AggFields: aggFields,
+		TermsSize: int(termsSize),
+	})
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(data)
+}
+
 func (p *provider) logSearch(r *http.Request, params struct {
 	Start       int64  `query:"start" validate:"gte=1"`
 	End         int64  `query:"end" validate:"gte=1"`
@@ -131,7 +177,7 @@ func (p *provider) logSearch(r *http.Request, params struct {
 		return api.Errors.InvalidParameter("invalid Org-ID")
 	}
 	if params.Size <= 0 {
-		params.Size = 50
+		params.Size = 10
 	}
 	err = p.checkTime(params.Start, params.End)
 	if err != nil {

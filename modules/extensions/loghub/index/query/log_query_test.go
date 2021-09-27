@@ -184,3 +184,37 @@ func TestListDefaultFields_Should_Success(t *testing.T) {
 		t.Errorf("should not return empty slice")
 	}
 }
+
+func Test_concatBucketSlices(t *testing.T) {
+	limit := 10
+	slices := [][]*BucketAgg{
+		[]*BucketAgg{
+			&BucketAgg{Key: "4", Count: 5},
+			&BucketAgg{Key: "1", Count: 2},
+			&BucketAgg{Key: "3", Count: 2},
+		},
+		[]*BucketAgg{
+			&BucketAgg{Key: "2", Count: 11},
+			&BucketAgg{Key: "3", Count: 4},
+		},
+	}
+
+	want := []*BucketAgg{
+		&BucketAgg{Key: "2", Count: 11},
+		&BucketAgg{Key: "3", Count: 6},
+		&BucketAgg{Key: "4", Count: 5},
+		&BucketAgg{Key: "1", Count: 2},
+	}
+
+	result := concatBucketSlices(limit, slices...)
+
+	if len(result) != len(want) {
+		t.Errorf("same key should merged")
+	}
+
+	for i, agg := range result {
+		if agg.Key != want[i].Key || agg.Count != want[i].Count {
+			t.Errorf("expect key: %s count: %d, but got key: %s count: %d", want[i].Key, want[i].Count, agg.Key, agg.Count)
+		}
+	}
+}
