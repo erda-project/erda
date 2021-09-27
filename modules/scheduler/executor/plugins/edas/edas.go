@@ -2283,7 +2283,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 				spec.Instances = destService.Scale
 				err = e.deployApp(appID, spec)
 				if err != nil {
-					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
+					errMsg := fmt.Sprintf("deployment application err: %v", err)
 					logrus.Errorf(errMsg)
 					errString <- errMsg
 				}
