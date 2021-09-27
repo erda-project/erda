@@ -68,6 +68,21 @@ func (p *provider) getLogItems(r *RequestCtx) ([]*pb.LogItem, error) {
 	if r.Count == 0 {
 		return nil, nil
 	}
+	if r.PatternMode() {
+		logs, err := p.searchBaseLog(
+			p.getTableNameWithFilters(map[string]interface{}{
+				"source": r.Source,
+				"id":     r.ID,
+			}),
+			r,
+		)
+		if err != nil {
+			return nil, err
+		}
+		sort.Sort(Logs(logs))
+		return logs, nil
+	}
+
 	logs, err := p.queryBaseLog(
 		p.getTableNameWithFilters(map[string]interface{}{
 			"source": r.Source,
@@ -82,9 +97,6 @@ func (p *provider) getLogItems(r *RequestCtx) ([]*pb.LogItem, error) {
 	)
 	if err != nil {
 		return nil, err
-	}
-	if r.PatternMode() {
-		logs = filterWithRegexp(logs, r)
 	}
 	sort.Sort(Logs(logs))
 	return logs, nil
@@ -149,6 +161,37 @@ func (p *provider) queryRequestLog(table, requestID string) ([]*pb.LogItem, erro
 	return logs, nil
 }
 
+func (p *provider) searchBaseLog(table string, r *RequestCtx) ([]*pb.LogItem, error) {
+	limit, start, end, orderBy := r.Count, r.Start, r.End, qb.ASC
+	if limit < 0 {
+		limit = -limit
+	}
+	startBucket, endBucket := truncateDate(start), truncateDate(end)
+	logs := make([]*pb.LogItem, 0, limit)
+	for startBucket <= endBucket {
+		slogs, err := p.queryBaseLogInBucket(table, r.Source, r.ID, r.Stream, startBucket, start+1, end, orderBy, 0)
+		if err != nil {
+			return nil, err
+		}
+		list, err := convertToLogList(slogs)
+		if err != nil {
+			return nil, err
+		}
+
+		if r.PatternMode() {
+			list = filterWithRegexp(list, r)
+		}
+		logs = append(logs, list...)
+		if len(logs) >= int(limit) {
+			logs = logs[0:limit]
+			break
+		}
+		startBucket += time.Hour.Nanoseconds() * 24
+		start = startBucket
+	}
+	return logs, nil
+}
+
 func (p *provider) queryBaseLog(table, source, id, stream string, start, end, count int64) ([]*pb.LogItem, error) {
 	orderBy, limit := qb.ASC, uint(count)
 	if count < 0 {
@@ -163,9 +206,9 @@ func (p *provider) queryBaseLog(table, source, id, stream string, start, end, co
 		}
 		var bucket int64
 		if orderBy == qb.ASC {
-			bucket = trncateDate(start)
+			bucket = truncateDate(start)
 		} else {
-			bucket = trncateDate(end)
+			bucket = truncateDate(end)
 		}
 		slogs, err := p.queryBaseLogInBucket(table, source, id, stream, bucket, start+1, end, orderBy, limit)
 		if err != nil {
@@ -200,7 +243,7 @@ func (p *provider) walkSavedLogs(table, source, id, stream string, start, end in
 		} else {
 			end = start + timespan
 		}
-		bucket := trncateDate(start)
+		bucket := truncateDate(start)
 		list, err := p.queryBaseLogInBucket(table, source, id, stream, bucket, start, end, qb.ASC, 0)
 		if err != nil {
 			return err
@@ -222,17 +265,20 @@ func (p *provider) queryBaseLogInBucket(
 	order qb.Order, limit uint,
 ) ([]*SavedLog, error) {
 	var logs []*SavedLog
+	builder := qb.Select(table).
+		Where(
+			qb.Eq("source"),
+			qb.Eq("id"),
+			qb.Eq("stream"),
+			qb.Eq("time_bucket"),
+			qb.GtOrEqNamed("timestamp", "start"),
+			qb.LtNamed("timestamp", "end")).
+		OrderBy("timestamp", order).OrderBy("offset", order)
+	if limit > 0 {
+		builder = builder.Limit(limit)
+	}
 	if err := p.cqlQuery.Query(
-		qb.Select(table).
-			Where(
-				qb.Eq("source"),
-				qb.Eq("id"),
-				qb.Eq("stream"),
-				qb.Eq("time_bucket"),
-				qb.GtOrEqNamed("timestamp", "start"),
-				qb.LtNamed("timestamp", "end")).
-			OrderBy("timestamp", order).OrderBy("offset", order).
-			Limit(limit),
+		builder,
 		qb.M{
 			"source":      source,
 			"id":          id,
@@ -245,21 +291,11 @@ func (p *provider) queryBaseLogInBucket(
 	); err != nil {
 		return nil, fmt.Errorf("retrive %s failed: %w", table, err)
 	}
-
-	// todo. for back forward compatibility, prepare remove in version 3.21
-	if table == schema.DefaultBaseLogTable {
-		return logs, nil
-	}
-	oldLogs, err := p.queryBaseLogInBucket(schema.DefaultBaseLogTable, source, id, stream, bucket, start, end, order, limit)
-	if err != nil {
-		return nil, err
-	}
-	logs = append(logs, oldLogs...)
 	return logs, nil
 }
 
 func convertToLogList(list []*SavedLog) ([]*pb.LogItem, error) {
-	var logs []*pb.LogItem
+	logs := make([]*pb.LogItem, 0, len(list))
 	for _, log := range list {
 		data, err := wrapLogData(log)
 		if err != nil {
@@ -270,7 +306,7 @@ func convertToLogList(list []*SavedLog) ([]*pb.LogItem, error) {
 	return logs, nil
 }
 
-func trncateDate(unixNano int64) int64 {
+func truncateDate(unixNano int64) int64 {
 	const day = time.Hour * 24
 	return unixNano - unixNano%int64(day)
 }

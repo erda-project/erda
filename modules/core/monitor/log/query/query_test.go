@@ -326,10 +326,35 @@ func (m *mockCqlQuery) Query(builder *qb.SelectBuilder, binding qb.M, dest inter
 			},
 		}
 		reflect.ValueOf(dest).Elem().Set(reflect.ValueOf(tmp))
+	case "SELECT * FROM spot_org_1.base_log WHERE source=? AND id=? AND stream=? AND time_bucket=? AND timestamp>=? AND timestamp<? ORDER BY timestamp ASC,offset ASC ":
+		tmp := []*SavedLog{
+			{
+				ID:         "aaa",
+				Source:     "container",
+				Stream:     "stdout",
+				TimeBucket: 1604880000000000000,
+				Timestamp:  1604880001000000000,
+				Offset:     11,
+				Content:    gzipString("hello world"),
+				Level:      "INFO",
+				RequestID:  "",
+			},
+			{
+				ID:         "aaa",
+				Source:     "container",
+				Stream:     "stdout",
+				TimeBucket: 1604880000000000000,
+				Timestamp:  1604880002000000000,
+				Offset:     11,
+				Content:    gzipString("goodbye world"),
+				Level:      "INFO",
+				RequestID:  "",
+			},
+		}
+		reflect.ValueOf(dest).Elem().Set(reflect.ValueOf(tmp))
 	case "SELECT * FROM spot_prod.base_log WHERE request_id=? ",
 		"SELECT * FROM spot_prod.base_log WHERE source=? AND id=? AND stream=? AND time_bucket=? AND timestamp>=? AND timestamp<? ORDER BY timestamp DESC,offset DESC LIMIT 200 ":
 	default:
-		fmt.Println("=== " + stmt)
 	}
 	if m.errorTrigger {
 		return fmt.Errorf("error triggered")
