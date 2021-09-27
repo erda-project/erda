@@ -116,3 +116,33 @@ func Test_diffDomains(t *testing.T) {
 		})
 	}
 }
+
+func TestRuntimeData_checkValid(t *testing.T) {
+	type fields struct {
+		ReleaseId             string
+		ServiceGroupNamespace string
+		ServiceGroupName      string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		{"case1", fields{ReleaseId: "qwer", ServiceGroupNamespace: "asdf", ServiceGroupName: "zxcv"}, false},
+		{"case2", fields{ReleaseId: "", ServiceGroupNamespace: "asdf", ServiceGroupName: "zxcv"}, true},
+		{"case3", fields{ReleaseId: "qwer", ServiceGroupNamespace: "", ServiceGroupName: "zxcv"}, true},
+		{"case4", fields{ReleaseId: "qwer", ServiceGroupNamespace: "asdf", ServiceGroupName: ""}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := RuntimeData{
+				ReleaseId:             tt.fields.ReleaseId,
+				ServiceGroupNamespace: tt.fields.ServiceGroupNamespace,
+				ServiceGroupName:      tt.fields.ServiceGroupName,
+			}
+			if err := data.checkValid(); (err != nil) != tt.wantErr {
+				t.Errorf("checkValid() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
