@@ -54,10 +54,11 @@ type Item struct {
 }
 
 type Props struct {
-	IsLoadMore bool     `json:"isLoadMore,omitempty"`
-	RowKey     string   `json:"rowKey,omitempty''"`
-	Pagination bool     `json:"pagination"`
-	Columns    []Column `json:"columns"`
+	IsLoadMore     bool     `json:"isLoadMore,omitempty"`
+	RowKey         string   `json:"rowKey,omitempty''"`
+	Pagination     bool     `json:"pagination"`
+	Columns        []Column `json:"columns"`
+	SortDirections []string `json:"sortDirections,omitempty"`
 }
 
 type Column struct {
