@@ -16,11 +16,12 @@ package impl
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/erda-project/erda/modules/hepa/repository/service"
 	"github.com/erda-project/erda/modules/hepa/services/endpoint_api"
 	"github.com/erda-project/erda/modules/hepa/services/global"
-	"reflect"
-	"testing"
 )
 
 func Test_encodeTenantGroup(t *testing.T) {
