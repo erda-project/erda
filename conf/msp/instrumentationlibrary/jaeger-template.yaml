@@ -14,31 +14,28 @@
         - msp.env.id : 微服务项目环境ID
         - msp.env.token : 微服务环境鉴权Token，在此页面创建和获取
 
-        #### 通过 Jaeger Java Client 上报数据
+        #### 通过 Jaeger SpringCloud Starter 上报数据
 
-        1. 引入 jaeger-client 依赖
+        1. 引入 opentracing-spring-jaeger-cloud-starter 依赖
 
-        ```
+        ``` maven
         <dependency>
-            <groupId>io.jaegertracing</groupId>
-            <artifactId>jaeger-client</artifactId>
-            <version>1.6.0</version>
+            <groupId>io.opentracing.contrib</groupId>
+            <artifactId>opentracing-spring-jaeger-cloud-starter</artifactId>
+            <version>3.3.1</version>
         </dependency>
         ```
 
-        2. 配置环境变量
+        2. 在 application.yml 中配置 Jaeger
 
-        ```
-        export JAEGER_SERVICE_NAME=your_service_name
-        export JAEGER_ENDPOINT={{endpoint}}
-        export JAEGER_TAGS=msp.env.id={{msp_env_id}},msp.env.token=your_token
-        ```
-
-        3. 配置 jaeger，创建 Tracer 对象。示例如下：
-
-        ```
-        Tracer tracer = Configuration.fromEnv().getTracer();
-        Span span = tracer.buildSpan("first_span").start();
-        span.setTag("myTag", "myTag");
-        span.finish();
+        ``` yaml
+        opentracing:
+          jaeger:
+            service-name: <your_service_name>
+            http-sender:
+              url: {{endpoint}}
+            log-spans: true
+            tags:
+              msp.env.id: {{msp_env_id}}
+              msp.env.token: <your_token>
         ```
