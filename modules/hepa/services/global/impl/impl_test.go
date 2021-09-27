@@ -15,6 +15,11 @@
 package impl
 
 import (
+	"context"
+	"github.com/erda-project/erda/modules/hepa/repository/service"
+	"github.com/erda-project/erda/modules/hepa/services/endpoint_api"
+	"github.com/erda-project/erda/modules/hepa/services/global"
+	"reflect"
 	"testing"
 )
 
@@ -38,6 +43,39 @@ func Test_encodeTenantGroup(t *testing.T) {
 			got := encodeTenantGroup(tt.args.projectId, tt.args.env, tt.args.clusterName, tt.args.tenantGroupKey)
 			if got == "" {
 				t.Errorf("encodeTenantGroup() = %v", got)
+			}
+		})
+	}
+}
+
+func TestGatewayGlobalServiceImpl_Clone(t *testing.T) {
+	type fields struct {
+		azDb       service.GatewayAzInfoService
+		kongDb     service.GatewayKongInfoService
+		packageBiz *endpoint_api.GatewayOpenapiService
+		reqCtx     context.Context
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   global.GatewayGlobalService
+	}{
+		{"case1", fields{azDb: nil, kongDb: nil, packageBiz: nil, reqCtx: nil}, args{}, &GatewayGlobalServiceImpl{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			impl := GatewayGlobalServiceImpl{
+				azDb:       tt.fields.azDb,
+				kongDb:     tt.fields.kongDb,
+				packageBiz: tt.fields.packageBiz,
+				reqCtx:     tt.fields.reqCtx,
+			}
+			if got := impl.Clone(tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Clone() = %v, want %v", got, tt.want)
 			}
 		})
 	}
