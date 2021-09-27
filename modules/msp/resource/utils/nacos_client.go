@@ -16,8 +16,16 @@ package utils
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/erda-project/erda/pkg/http/httpclient"
+)
+
+type authType int
+
+const (
+	AccessToken = authType(0)
+	Bearer      = authType(1)
 )
 
 func NewNacosClient(clusterName, addr, user, password string) *NacosClient {
@@ -26,6 +34,7 @@ func NewNacosClient(clusterName, addr, user, password string) *NacosClient {
 		user:        user,
 		password:    password,
 		clusterName: clusterName,
+		tokenType:   AccessToken,
 	}
 }
 
@@ -35,6 +44,7 @@ type NacosClient struct {
 	user        string
 	password    string
 	accessToken string
+	tokenType   authType
 }
 
 func (c *NacosClient) Login() (string, error) {
@@ -55,6 +65,14 @@ func (c *NacosClient) Login() (string, error) {
 
 	c.accessToken = fmt.Sprint(accessToken)
 
+	tokenParts := strings.Split(c.accessToken, " ")
+	if len(tokenParts) == 2 && tokenParts[0] == "Bearer" {
+		c.tokenType = Bearer
+		c.accessToken = tokenParts[1]
+	}
+
+	fmt.Printf("nacos login token: %s, type: %d \n", c.accessToken, c.tokenType)
+
 	return c.accessToken, nil
 }
 
@@ -71,8 +89,13 @@ func (c *NacosClient) GetNamespaceId(namespaceName string) (string, error) {
 			Namespace         string
 		}
 	}
-	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
-		TokenAuth(c.accessToken).Get(c.addr).Path(path).Do().JSON(&result)
+	hc := httpclient.New(httpclient.WithClusterDialer(c.clusterName))
+	if c.tokenType == Bearer {
+		hc = hc.BearerTokenAuth(c.accessToken)
+	} else {
+		hc = hc.TokenAuth(c.accessToken)
+	}
+	resp, err := hc.Get(c.addr).Path(path).Do().JSON(&result)
 	if err != nil {
 		return "", err
 	}
@@ -96,8 +119,13 @@ func (c *NacosClient) CreateNamespace(namespaceName string) (string, error) {
 	}
 
 	path := "/nacos/v1/console/namespaces" + "?namespaceName=" + namespaceName + "&namespaceDesc=" + namespaceName + "&customNamespaceId=" + namespaceName
-	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
-		TokenAuth(c.accessToken).Post(c.addr).Path(path).Do().DiscardBody()
+	hc := httpclient.New(httpclient.WithClusterDialer(c.clusterName))
+	if c.tokenType == Bearer {
+		hc = hc.BearerTokenAuth(c.accessToken)
+	} else {
+		hc = hc.TokenAuth(c.accessToken)
+	}
+	resp, err := hc.Post(c.addr).Path(path).Do().DiscardBody()
 	if err != nil {
 		return "", err
 	}
@@ -114,8 +142,13 @@ func (c *NacosClient) SaveConfig(tenantName string, groupName string, dataId str
 	}
 
 	path := "/nacos/v1/cs/configs?dataId=" + dataId + "&group=" + groupName + "&content=" + url.QueryEscape(content) + "&tenant=" + tenantName
-	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).TokenAuth(c.accessToken).
-		Post(c.addr).Path(path).Do().DiscardBody()
+	hc := httpclient.New(httpclient.WithClusterDialer(c.clusterName))
+	if c.tokenType == Bearer {
+		hc = hc.BearerTokenAuth(c.accessToken)
+	} else {
+		hc = hc.TokenAuth(c.accessToken)
+	}
+	resp, err := hc.Post(c.addr).Path(path).Do().DiscardBody()
 	if err != nil {
 		return err
 	}
@@ -131,8 +164,13 @@ func (c *NacosClient) DeleteConfig(tenantName string, groupName string) error {
 	}
 
 	path := "/nacos/v1/cs/configs?dataId=application.yml&group=" + groupName + "&tenant=" + tenantName
-	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
-		TokenAuth(c.accessToken).Delete(c.addr).Path(path).Do().DiscardBody()
+	hc := httpclient.New(httpclient.WithClusterDialer(c.clusterName))
+	if c.tokenType == Bearer {
+		hc = hc.BearerTokenAuth(c.accessToken)
+	} else {
+		hc = hc.TokenAuth(c.accessToken)
+	}
+	resp, err := hc.Delete(c.addr).Path(path).Do().DiscardBody()
 	if err != nil {
 		return err
 	}
