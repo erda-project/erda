@@ -370,12 +370,12 @@ func (m *ListMemberRolesRequest) UnmarshalURLValues(prefix string, values url.Va
 			switch prefix + key {
 			case "scopeType":
 				m.ScopeType = vals[0]
-			case "scopeID":
+			case "scopeId":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.ScopeID = val
+				m.ScopeId = val
 			}
 		}
 	}
