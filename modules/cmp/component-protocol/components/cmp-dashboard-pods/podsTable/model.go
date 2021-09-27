@@ -132,6 +132,7 @@ type Props struct {
 	PageSizeOptions []string               `json:"pageSizeOptions,omitempty"`
 	Columns         []Column               `json:"columns,omitempty"`
 	Operations      map[string]interface{} `json:"operations,omitempty"`
+	SortDirections  []string               `json:"sortDirections,omitempty"`
 }
 
 type Column struct {

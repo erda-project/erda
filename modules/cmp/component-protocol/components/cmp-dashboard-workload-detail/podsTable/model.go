@@ -127,6 +127,7 @@ type Props struct {
 	Columns         []Column               `json:"columns,omitempty"`
 	RowKey          string                 `json:"rowKey,omitempty"`
 	Operations      map[string]interface{} `json:"operations,omitempty"`
+	SortDirections  []string               `json:"sortDirections,omitempty"`
 }
 
 type Column struct {

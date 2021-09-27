@@ -129,6 +129,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		"list": data,
 	}
 
+	containerTable.Props.SortDirections = []string{"descend", "ascend"}
 	containerTable.Props.IsLoadMore = true
 	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
