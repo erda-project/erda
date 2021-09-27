@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -152,6 +153,8 @@ func (p *provider) do() error {
 		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
 		CreatePipelineGraph:                     pipelineSvc.CreatePipelineGraph,
 	}
+	// init CallbackActionFunc
+	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
 	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
 	clusterinfo.Initialize(bdl)
