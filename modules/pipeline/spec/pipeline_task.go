@@ -21,6 +21,10 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
+const (
+	CtxExecutorChKey = "executor-chan"
+)
+
 type PipelineTask struct {
 	ID         uint64 `json:"id" xorm:"pk autoincr"`
 	PipelineID uint64 `json:"pipelineID"`
@@ -138,7 +142,8 @@ var (
 	PipelineTaskExecutorKindScheduler PipelineTaskExecutorKind = "SCHEDULER"
 	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
 	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
-	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest}
+	PipelineTaskExecutorKindWait      PipelineTaskExecutorKind = "WAIT"
+	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait}
 )
 
 func (that PipelineTaskExecutorKind) Check() bool {
@@ -160,7 +165,8 @@ var (
 	PipelineTaskExecutorNameEmpty            PipelineTaskExecutorName = ""
 	PipelineTaskExecutorNameSchedulerDefault PipelineTaskExecutorName = "scheduler"
 	PipelineTaskExecutorNameAPITestDefault   PipelineTaskExecutorName = "api-test"
-	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault}
+	PipelineTaskExecutorNameWaitDefault      PipelineTaskExecutorName = "wait"
+	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault}
 )
 
 func (that PipelineTaskExecutorName) Check() bool {
