@@ -327,6 +327,35 @@ func (e *Endpoints) GetTestPlanV2Step(ctx context.Context, r *http.Request, vars
 	return httpserver.OkResp(step)
 }
 
+// ListTestPlanV2Step list TestPlan step
+func (e *Endpoints) ListTestPlanV2Step(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListTestPlanStep.NotLogin().ToResp(), nil
+	}
+
+	testPlanID, err := strconv.ParseUint(vars["testPlanID"], 10, 64)
+	if err != nil {
+		return errorresp.ErrResp(errors.New("testPlanID id parse failed"))
+	}
+
+	var groupID uint64
+	groupIDStr := r.URL.Query().Get("groupID")
+	if groupIDStr != "" {
+		groupID, err = strconv.ParseUint(groupIDStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrGetTestPlan.InvalidParameter(err).ToResp(), nil
+		}
+	}
+
+	steps, err := e.autotestV2.ListTestPlanV2Step(testPlanID, groupID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(steps)
+}
+
 func getTestPlanID(vars map[string]string) (uint64, error) {
 	testplanIDStr := vars["testPlanID"]
 	testplanID, err := strconv.ParseUint(testplanIDStr, 10, 64)

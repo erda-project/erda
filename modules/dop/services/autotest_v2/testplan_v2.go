@@ -379,6 +379,21 @@ func (svc *Service) GetTestPlanV2Step(ID uint64) (*apistructs.TestPlanV2Step, er
 	return step.Convert2DTO(), nil
 }
 
+// ListTestPlanV2Step list testPlan step
+func (svc *Service) ListTestPlanV2Step(testPlanID, groupID uint64) ([]*apistructs.TestPlanV2Step, error) {
+	steps, err := svc.db.ListTestPlanV2Step(testPlanID, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	var stepDtos []*apistructs.TestPlanV2Step
+	for _, v := range steps {
+		stepDtos = append(stepDtos, v.Convert2DTO())
+	}
+
+	return stepDtos, nil
+}
+
 // getChangedFields get changed fields
 func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, model *dao.TestPlanV2) (map[string]interface{}, error) {
 	fields := make(map[string]interface{}, 0)

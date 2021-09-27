@@ -171,6 +171,12 @@ type TestPlanV2StepGetResponse struct {
 	Data TestPlanV2Step `json:"data"`
 }
 
+// TestPlanV2StepListResponse testplan get response
+type TestPlanV2StepListResponse struct {
+	Header
+	Data []*TestPlanV2Step `json:"data"`
+}
+
 // TestPlanV2PagingResponseData testplan query response data
 type TestPlanV2PagingResponseData struct {
 	Total   int           `json:"total"`

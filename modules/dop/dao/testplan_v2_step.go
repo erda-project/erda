@@ -72,6 +72,15 @@ func (client *DBClient) GetTestPlanV2Step(ID uint64) (*TestPlanV2StepJoin, error
 	return &step, nil
 }
 
+// ListTestPlanV2Step list testPlan step
+func (client *DBClient) ListTestPlanV2Step(testPlanID, groupID uint64) ([]TestPlanV2StepJoin, error) {
+	var step []TestPlanV2StepJoin
+	err := client.Where("plan_id = ?", testPlanID).
+		Where("group_id = ? OR id = ?", groupID, groupID).
+		Find(&step).Error
+	return step, err
+}
+
 // AddTestPlanV2Step Insert a step in the test plan
 func (client *DBClient) AddTestPlanV2Step(req *apistructs.TestPlanV2StepAddRequest) (uint64, error) {
 	var newStepID uint64
