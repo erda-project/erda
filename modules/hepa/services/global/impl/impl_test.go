@@ -29,7 +29,9 @@ func Test_encodeTenantGroup(t *testing.T) {
 		name string
 		args args
 	}{
-		{"case1", args{projectId: "1", env: "DEV", clusterName: "test", tenantGroupKey: "test"}},
+		{"case1", args{projectId: "1", env: "DEV", clusterName: "dev", tenantGroupKey: "dev"}},
+		{"case2", args{projectId: "2", env: "TEST", clusterName: "test", tenantGroupKey: "test"}},
+		{"case2", args{projectId: "", env: "", clusterName: "", tenantGroupKey: ""}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
