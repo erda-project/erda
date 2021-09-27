@@ -196,6 +196,15 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 		if err := i.RenderListStageForm(); err != nil {
 			return err
 		}
+	case apistructs.AutoTestSceneStepSplitOperationKey:
+		err = i.RenderSplitStagesForm(event.OperationData)
+		if err != nil {
+			return err
+		}
+		err = i.RenderListStageForm()
+		if err != nil {
+			return err
+		}
 	}
 	i.RenderProtocol(c, gs)
 	return

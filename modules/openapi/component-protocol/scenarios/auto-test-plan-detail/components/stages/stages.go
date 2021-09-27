@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func RenderStage(step apistructs.TestPlanV2Step) (StageData, error) {
+func (i *ComponentStageForm) RenderStage(step apistructs.TestPlanV2Step) (StageData, error) {
 	groupID := int(step.GroupID)
 	if groupID == 0 {
 		groupID = int(step.ID)
@@ -51,6 +51,29 @@ func RenderStage(step apistructs.TestPlanV2Step) (StageData, error) {
 	oc.Meta.ID = step.ID
 	pd.Operations["delete"] = oc
 
+	os := OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Icon:     "split",
+			Key:      apistructs.AutoTestSceneStepSplitOperationKey.String(),
+			HoverTip: "改为串行",
+			Disabled: true,
+			Reload:   true,
+		},
+	}
+	os.Meta.ID = step.ID
+	m := map[string]interface{}{
+		"groupID": groupID,
+	}
+	os.Meta.Data = m
+	stepGroup, err := i.ctxBdl.Bdl.ListTestPlanV2Step(step.PlanID, uint64(groupID))
+	if err != nil {
+		return StageData{}, err
+	}
+	if len(stepGroup) > 1 {
+		os.Disabled = false
+	}
+	pd.Operations["split"] = os
+
 	return pd, nil
 }
 
@@ -61,7 +84,7 @@ func (i *ComponentStageForm) RenderListStageForm() error {
 	}
 	var list []StageData
 	for _, v := range rsp.Data.Steps {
-		stageData, err := RenderStage(*v)
+		stageData, err := i.RenderStage(*v)
 		if err != nil {
 			return err
 		}
@@ -271,5 +294,32 @@ func (i *ComponentStageForm) RenderItemMoveStagesForm() (err error) {
 			return errors.New("unknown position")
 		}
 	}
+	return i.ctxBdl.Bdl.MoveTestPlansV2Step(req)
+}
+
+func (i *ComponentStageForm) RenderSplitStagesForm(opsData interface{}) (err error) {
+	meta, err := GetOpsInfo(opsData)
+	if err != nil {
+		return err
+	}
+
+	var req apistructs.TestPlanV2StepMoveRequest
+
+	req.UserID = i.ctxBdl.Identity.UserID
+	req.TestPlanID = i.State.TestPlanId
+	req.StepID = meta.ID
+	req.LastStepID = meta.ID
+	req.IsGroup = false
+	req.TargetStepID = 0
+
+	stepGroup, err := i.ctxBdl.Bdl.ListTestPlanV2Step(i.State.TestPlanId, uint64(meta.Data["groupID"].(float64)))
+	if err != nil {
+		return err
+	}
+	if len(stepGroup) <= 0 {
+		return errors.New("the groupID is not exists")
+	}
+	_, lastStep := findFirstLastStepIDInGroup(stepGroup)
+	req.PreID = lastStep.ID
 	return i.ctxBdl.Bdl.MoveTestPlansV2Step(req)
 }

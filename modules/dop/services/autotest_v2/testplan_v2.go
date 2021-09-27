@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -526,9 +525,6 @@ func getStepMapByGroupID(steps []*apistructs.TestPlanV2Step) (map[uint64][]*apis
 			groupIDs = append(groupIDs, v.GroupID)
 		}
 	}
-	sort.Slice(groupIDs, func(i, j int) bool {
-		return false
-	})
 	return stepGroupMap, groupIDs
 }
 
