@@ -149,6 +149,7 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -346,6 +347,7 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -562,9 +564,11 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               },
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -784,9 +788,11 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               },
               {
+                "show": true,
                 "name": ""
               }
             ]
