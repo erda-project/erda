@@ -1,16 +1,15 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package wait
 
@@ -86,13 +85,14 @@ func (w *Wait) Start(ctx context.Context, task *spec.PipelineTask) (interface{},
 		}
 		logrus.Warnf("scheduler: action created, continue to start, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 	}
+
 	if started {
-		logrus.Warnf("scheduler: action already started, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
+		logrus.Warnf("wait: action already started, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 		return nil, nil
 	}
 
-	executorCh := ctx.Value(spec.CtxExecutorChKey).(chan interface{})
-	if executorCh == nil {
+	executorDoneCh := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan interface{})
+	if executorDoneCh == nil {
 		return nil, errors.Errorf("wait: failed to get exector channel, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 	}
 
@@ -108,7 +108,7 @@ func (w *Wait) Start(ctx context.Context, task *spec.PipelineTask) (interface{},
 			logrus.Warnf("wait received stop timer signal, canceled, reason: %s", ctx.Err())
 			return
 		case <-timer.C:
-			executorCh <- apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}
+			executorDoneCh <- apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}
 			return
 		}
 	}()
@@ -181,10 +181,14 @@ func (w *Wait) getWaitSec(task *spec.PipelineTask) (int, error) {
 
 	var cfg apistructs.AutoTestRunWait
 	if err := envconf.Load(&cfg, envs); err != nil {
-		return 0, errors.Errorf("Failed to get wati time, err: %v", err)
+		return 0, errors.Errorf("failed to get wati time, err: %v", err)
 	}
-	if cfg.WaitTime <= 0 {
-		return 0, errors.Errorf("Invalid wait time: %d", cfg.WaitTime)
+	// TODO delete waitTime
+	if cfg.WaitTime > 0 {
+		cfg.WaitTimeSec = cfg.WaitTime
 	}
-	return cfg.WaitTime, nil
+	if cfg.WaitTimeSec <= 0 {
+		return 0, errors.Errorf("invalid wait time: %d", cfg.WaitTime)
+	}
+	return cfg.WaitTimeSec, nil
 }
