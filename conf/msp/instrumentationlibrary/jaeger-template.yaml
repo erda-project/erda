@@ -95,3 +95,54 @@
           });
           ```
 
+    - language: C++
+        template: |
+          #### Step1:获取接入点和鉴权信息
+
+          - 接入点：{{endpoint}}
+          - 环境ID：{{msp_env_id}}
+          - Token: 在此页面创建和获取
+
+          #### Step2:组装配置文件
+
+          ```yaml
+          disabled: false
+          reporter:
+            logSpans: true
+            endpoint: <接入点地址>
+          sampler:
+            type: const
+            param: 1
+          tags:
+            msp.env.id: <环境id>
+            msp.env.token: <鉴权Token>
+          ```
+
+          #### Step3:引入依赖
+
+          ```
+          #include <yaml-cpp/yaml.h>
+          #include <jaegertracing/Tracer.h>
+          ```
+
+          #### Step4:注册全局Tracer
+          ```
+          void setUpTracer(const char* configFilePath)
+          {
+              auto configYAML = YAML::LoadFile(configFilePath);
+              auto config = jaegertracing::Config::parse(configYAML);
+              auto tracer = jaegertracing::Tracer::make(
+                  "<服务名>", config, jaegertracing::logging::consoleLogger());
+              opentracing::Tracer::InitGlobal(
+                  std::static_pointer_cast<opentracing::Tracer>(tracer));
+          }
+
+          int main(int argc, char* argv[])
+          {
+            setUpTracer("<配置文件路径>");
+
+            // Not stricly necessary to close tracer, but might flush any buffered
+            // spans. See more details in opentracing::Tracer::Close() documentation.
+            opentracing::Tracer::Global()->Close();
+          }
+          ```
