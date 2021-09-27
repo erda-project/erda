@@ -25,7 +25,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
-	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -68,7 +67,7 @@ func (e *Endpoints) CreateNotifyGroup(ctx context.Context, r *http.Request, vars
 		}
 		data, err := json.Marshal(label)
 		if err != nil {
-			return nil, errors.NewInternalServerError(err)
+			return apierrors.ErrCreateNotifyGroup.InternalError(err).ToResp(), nil
 		}
 		notifyGroupCreateReq.Label = string(data)
 	}
