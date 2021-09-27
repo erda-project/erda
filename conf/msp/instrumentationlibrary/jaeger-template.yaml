@@ -39,3 +39,59 @@
               msp.env.id: {{msp_env_id}}
               msp.env.token: <your_token>
         ```
+    - language: C#
+        template: |
+          #### Step1:获取接入点和鉴权信息
+
+          - 接入点：{{endpoint}}
+          - 环境ID：{{msp_env_id}}
+          - Token: 在此页面创建和获取
+
+          #### Step2:引入依赖
+
+          ```
+          <PackageReference Include="Jaeger" Version="1.0.2"/>
+          ```
+
+          #### Step3:注册全局Tracer
+
+          ```
+          // Use "OpenTracing.Contrib.NetCore" to automatically generate spans for ASP.NET Core, Entity Framework Core, ...
+          // See https://github.com/opentracing-contrib/csharp-netcore for details.
+          services.AddOpenTracing();
+
+          // Adds the Jaeger Tracer.
+          services.AddSingleton<ITracer>(serviceProvider =>{
+
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+            var senderResolver = new SenderResolver(loggerFactory).RegisterSenderFactory<ThriftSenderFactory>();
+            var senderConfiguration = new Configuration.SenderConfiguration(loggerFactory)
+                                          .WithSenderResolver(senderResolver)
+                                          .WithEndpoint("<接入点地址>");
+
+            var reporterConfiguration = new Configuration.ReporterConfiguration(loggerFactory)
+                                            .WithSender(senderConfiguration)
+                                            .WithLogSpans(true);
+
+            var samplerConfiguration = new Configuration.SamplerConfiguration(loggerFactory)
+                                            .WithType("const")
+                                            .WithParam(1);
+
+            var tracerTagMaps = new Dictionary<string, string>();
+            tracerTagMaps["msp.env.id"] = "<环境id>";
+            tracerTagMaps["msp.env.token"] = "<鉴权Token>";
+
+            var tracer = new Configuration("<服务名>", loggerFactory)
+                              .WithSampler(samplerConfiguration)
+                              .WithReporter(reporterConfiguration)
+                              .WithTracerTags(tracerTagMaps)
+                              .GetTracer();
+
+            // Allows code that can't use DI to also access the tracer.
+            GlobalTracer.Register(tracer);
+
+            return tracer;
+          });
+          ```
+
