@@ -17,6 +17,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -68,6 +69,26 @@ type LogStatisticRequest struct {
 	LogRequest
 	Interval int64
 	Points   int64
+}
+
+type LogFieldsAggregationRequest struct {
+	LogRequest
+	AggFields []string
+	TermsSize int
+}
+
+type LogFieldsAggregationResponse struct {
+	Total     int64                      `json:"total"`
+	AggFields map[string]*LogFieldBucket `json:"aggFields"`
+}
+
+type LogFieldBucket struct {
+	Buckets []*BucketAgg `json:"buckets"`
+}
+
+type BucketAgg struct {
+	Count int64  `json:"count"`
+	Key   string `json:"key"`
 }
 
 type LogItem struct {
@@ -349,6 +370,71 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 	}
 	first.Results[0].Data[0].Count.Data = list
 	return first
+}
+
+func (p *provider) AggregateLogFields(req *LogFieldsAggregationRequest) (interface{}, error) {
+	clients := p.getESClients(req.OrgID, &req.LogRequest)
+	var results []*LogFieldsAggregationResponse
+	for _, client := range clients {
+		result, err := client.aggregateFields(req, p.C.Timeout)
+		if err != nil {
+			continue
+		}
+		results = append(results, result)
+	}
+
+	return mergeFieldsAggregationResults(req.TermsSize, results), nil
+}
+
+func mergeFieldsAggregationResults(termsSize int, results []*LogFieldsAggregationResponse) *LogFieldsAggregationResponse {
+	if len(results) == 0 {
+		return nil
+	}
+	if len(results) == 1 {
+		return results[0]
+	}
+	first := results[0]
+	for _, result := range results[1:] {
+		first.Total += result.Total
+		for key, currAgg := range result.AggFields {
+			if firstAgg, ok := first.AggFields[key]; ok {
+				firstAgg.Buckets = concatBucketSlices(termsSize, firstAgg.Buckets, currAgg.Buckets)
+			} else {
+				first.AggFields[key] = currAgg
+			}
+		}
+	}
+	return first
+}
+
+func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
+	if len(slices) == 0 {
+		return nil
+	}
+	if len(slices) == 1 {
+		return slices[0]
+	}
+
+	m := map[string]int64{}
+	for _, slice := range slices {
+		for _, bucket := range slice {
+			m[bucket.Key] += bucket.Count
+		}
+	}
+
+	list := make([]*BucketAgg, 0, len(m))
+	for key, count := range m {
+		list = append(list, &BucketAgg{Key: key, Count: count})
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Count > list[j].Count
+	})
+
+	if limit <= 0 || len(list) <= limit {
+		return list
+	}
+	return list[:limit-1]
 }
 
 func (p *provider) ListDefaultFields() []*LogField {

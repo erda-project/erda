@@ -115,3 +115,46 @@ func (c *ESClient) statisticLogsV2(req *LogStatisticRequest, timeout time.Durati
 	result.Results[0].Data[0].Count.Data = list
 	return result, nil
 }
+
+func (c *ESClient) aggregateFields(req *LogFieldsAggregationRequest, timeout time.Duration) (*LogFieldsAggregationResponse, error) {
+	boolQuery := c.getBoolQueryV2(&req.LogRequest)
+	searchSource := elastic.NewSearchSource().Query(boolQuery)
+	searchSource.Size(0)
+	for _, field := range req.AggFields {
+		searchSource.Aggregation(field,
+			elastic.NewTermsAggregation().
+				Field(field).
+				Size(req.TermsSize).
+				Missing("null"))
+	}
+	if req.Debug {
+		c.printSearchSource(searchSource)
+	}
+	resp, err := c.doRequest(&req.LogRequest, searchSource, timeout)
+	if err != nil {
+		return nil, err
+	}
+	result := &LogFieldsAggregationResponse{
+		Total:     resp.TotalHits(),
+		AggFields: map[string]*LogFieldBucket{},
+	}
+	if resp.Aggregations == nil {
+		return result, nil
+	}
+	for _, field := range req.AggFields {
+		termsAgg, ok := resp.Aggregations.Terms(field)
+		if !ok {
+			return result, nil
+		}
+		result.AggFields[field] = &LogFieldBucket{
+			Buckets: make([]*BucketAgg, len(termsAgg.Buckets)),
+		}
+		for i, bucket := range termsAgg.Buckets {
+			result.AggFields[field].Buckets[i] = &BucketAgg{
+				Key:   *bucket.KeyAsString,
+				Count: bucket.DocCount,
+			}
+		}
+	}
+	return result, nil
+}
