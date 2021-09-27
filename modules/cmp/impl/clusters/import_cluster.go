@@ -641,7 +641,7 @@ func generateSetValues(ci *apistructs.ClusterInfo) string {
 	if ci.Type == "k8s" {
 		ci.Type = "kubernetes"
 	}
-	return "tags.work=true,tags.master=false," +
+	return "tags.worker=true,tags.master=false," +
 		fmt.Sprintf("global.domain=%s,erda.clusterName=%s,", ci.WildcardDomain, ci.Name) +
 		fmt.Sprintf("erda.clusterConfig.clusterType=%s,", strings.ToLower(ci.Type)) +
 		fmt.Sprintf("erda.masterCluster.domain=%s,erda.masterCluster.protocol=%s", conf.ErdaDomain(), conf.ErdaProtocol())
