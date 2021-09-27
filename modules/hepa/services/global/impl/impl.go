@@ -92,12 +92,6 @@ func NewGatewayGlobalServiceImpl() (e error) {
 	return
 }
 
-func (impl GatewayGlobalServiceImpl) Clone(ctx context.Context) global.GatewayGlobalService {
-	newService := impl
-	newService.reqCtx = ctx
-	return &newService
-}
-
 func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 	var err error
 	dto.Status = gw.DiceHealthOK
@@ -159,6 +153,12 @@ func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 		// }
 	}
 	return
+}
+
+func (impl GatewayGlobalServiceImpl) Clone(ctx context.Context) global.GatewayGlobalService {
+	newService := impl
+	newService.reqCtx = ctx
+	return &newService
 }
 
 func (impl *GatewayGlobalServiceImpl) GetDiceHealth() gw.DiceHealthDto {
