@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
@@ -91,12 +92,6 @@ func NewGatewayGlobalServiceImpl() (e error) {
 	return
 }
 
-func (impl GatewayGlobalServiceImpl) Clone(ctx context.Context) global.GatewayGlobalService {
-	newService := impl
-	newService.reqCtx = ctx
-	return &newService
-}
-
 func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 	var err error
 	dto.Status = gw.DiceHealthOK
@@ -158,6 +153,12 @@ func (impl *GatewayGlobalServiceImpl) checkKongHealth() (dto gw.DiceHealthDto) {
 		// }
 	}
 	return
+}
+
+func (impl GatewayGlobalServiceImpl) Clone(ctx context.Context) global.GatewayGlobalService {
+	newService := impl
+	newService.reqCtx = ctx
+	return &newService
 }
 
 func (impl *GatewayGlobalServiceImpl) GetDiceHealth() gw.DiceHealthDto {
@@ -312,8 +313,18 @@ func md5V(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) string {
-	return md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+func encodeTenantGroup(projectId, env, clusterName, tenantGroupKey string) string {
+	return md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + tenantGroupKey)
+}
+
+func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) (string, error) {
+	tenantGroup := encodeTenantGroup(projectId, env, clusterName, config.ServerConf.TenantGroupKey)
+	tenantID, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String(), tenantGroup)
+	if err != nil {
+		log.Errorf("error happened: %+v", err)
+		return "", err
+	}
+	return tenantID, nil
 }
 
 func (impl *GatewayGlobalServiceImpl) GetTenantGroup(projectId, env string) (res string, err error) {
@@ -335,7 +346,10 @@ func (impl *GatewayGlobalServiceImpl) GetTenantGroup(projectId, env string) (res
 	}
 	tenantGroup := info.TenantGroup
 	if tenantGroup == "" {
-		tenantGroup = impl.GenTenantGroup(projectId, env, info.Az)
+		tenantGroup, err = impl.GenTenantGroup(projectId, env, info.Az)
+		if err != nil {
+			return
+		}
 	}
 	res = tenantGroup
 	return
