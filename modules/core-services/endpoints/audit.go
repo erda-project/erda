@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -350,8 +351,8 @@ func checkAuditCreateRequest(req *apistructs.Audit) error {
 
 func checkSetAuditParam(auditSetReq apistructs.AuditSetCleanCronRequest) (int64, int64, error) {
 	var orgID, interval int64
-	if auditSetReq.Interval < 1 || auditSetReq.Interval > 30 {
-		return orgID, interval, errors.Errorf("invalid request, interval should be between 1 and 30")
+	if auditSetReq.Interval < 1 || auditSetReq.Interval > conf.OrgAuditMaxRetentionDays() {
+		return orgID, interval, errors.Errorf("invalid request, max retention days should be between 1 and %d", conf.OrgAuditMaxRetentionDays())
 	}
 
 	interval, orgID = int64(-auditSetReq.Interval), int64(auditSetReq.OrgID)

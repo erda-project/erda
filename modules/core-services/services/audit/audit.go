@@ -253,7 +253,7 @@ func (a *Audit) cronCleanAudit() {
 		}
 	}
 	// 软删除系统审计事件
-	startAt := time.Now().AddDate(0, 0, conf.SysAuditCleanIterval())
+	startAt := time.Now().AddDate(0, 0, conf.SysAuditCleanInterval())
 	if err := a.db.DeleteAuditsByTimeAndSys(startAt); err != nil {
 		logrus.Errorf(err.Error())
 	}
