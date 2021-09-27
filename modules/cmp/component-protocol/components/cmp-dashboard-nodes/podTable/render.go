@@ -117,7 +117,7 @@ func (pt *PodInfoTable) getProps() {
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Width: 100, Fixed: "left"},
 			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 320},
-			{DataIndex: "UnusedRate", Title: pt.SDK.I18n("unusedRate"), Sortable: true, Width: 140, TitleTip: pt.SDK.I18n("The proportion of allocated resources that are not used")},
+			{DataIndex: "Usage", Title: pt.SDK.I18n("usedRate"), Sortable: true},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Sortable: true, Width: 120},
@@ -170,7 +170,7 @@ func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) 
 			Renders:    pt.GetRenders(node.String("metadata", "name"), ip, node.Map("metadata", "labels")),
 		},
 		Status: *status,
-		UnusedRate: table.Distribution{
+		Usage: table.Distribution{
 			RenderType: "progress",
 			Value:      ur.Percent,
 			Status:     table.GetDistributionStatus(ur.Percent),
