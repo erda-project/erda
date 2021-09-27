@@ -86,13 +86,14 @@ func (w *Wait) Start(ctx context.Context, task *spec.PipelineTask) (interface{},
 		}
 		logrus.Warnf("scheduler: action created, continue to start, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 	}
+
 	if started {
-		logrus.Warnf("scheduler: action already started, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
+		logrus.Warnf("wait: action already started, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 		return nil, nil
 	}
 
-	executorCh := ctx.Value(spec.CtxExecutorChKey).(chan interface{})
-	if executorCh == nil {
+	executorDoneCh := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan interface{})
+	if executorDoneCh == nil {
 		return nil, errors.Errorf("wait: failed to get exector channel, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 	}
 
@@ -108,7 +109,7 @@ func (w *Wait) Start(ctx context.Context, task *spec.PipelineTask) (interface{},
 			logrus.Warnf("wait received stop timer signal, canceled, reason: %s", ctx.Err())
 			return
 		case <-timer.C:
-			executorCh <- apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}
+			executorDoneCh <- apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}
 			return
 		}
 	}()
@@ -181,10 +182,14 @@ func (w *Wait) getWaitSec(task *spec.PipelineTask) (int, error) {
 
 	var cfg apistructs.AutoTestRunWait
 	if err := envconf.Load(&cfg, envs); err != nil {
-		return 0, errors.Errorf("Failed to get wati time, err: %v", err)
+		return 0, errors.Errorf("failed to get wati time, err: %v", err)
 	}
-	if cfg.WaitTime <= 0 {
-		return 0, errors.Errorf("Invalid wait time: %d", cfg.WaitTime)
+	// TODO delete waitTime
+	if cfg.WaitTime > 0 {
+		cfg.WaitTimeSec = cfg.WaitTime
 	}
-	return cfg.WaitTime, nil
+	if cfg.WaitTimeSec <= 0 {
+		return 0, errors.Errorf("invalid wait time: %d", cfg.WaitTime)
+	}
+	return cfg.WaitTimeSec, nil
 }

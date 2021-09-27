@@ -788,14 +788,17 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 		if err != nil {
 			return nil, err
 		}
-		if value.WaitTime <= 0 {
-			return nil, errors.Errorf("Invalid wait time sec: %d", value.WaitTime)
+		if value.WaitTime > 0 {
+			value.WaitTimeSec = value.WaitTime
+		}
+		if value.WaitTimeSec <= 0 {
+			return nil, errors.Errorf("Invalid wait time sec: %d", value.WaitTimeSec)
 		}
 
 		action.Type = "wait"
 		action.Version = "1.0"
 		action.Params = map[string]interface{}{
-			"wait_time": value.WaitTime,
+			"wait_time_sec": value.WaitTimeSec,
 		}
 	case apistructs.StepTypeConfigSheet:
 		var value apistructs.AutoTestRunConfigSheet

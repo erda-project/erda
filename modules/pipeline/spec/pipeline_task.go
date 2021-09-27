@@ -15,6 +15,7 @@
 package spec
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -23,7 +24,7 @@ import (
 )
 
 const (
-	CtxExecutorChKey = "executor-chan"
+	CtxExecutorChKeyPrefix = "executor-done-chan"
 )
 
 type PipelineTask struct {
@@ -267,4 +268,8 @@ func GenDefaultTaskResource() RuntimeResource {
 		Memory: conf.TaskDefaultMEM(),
 		Disk:   0,
 	}
+}
+
+func MakeTaskExecutorCtxKey(task *PipelineTask) string {
+	return fmt.Sprintf("%s-%d", CtxExecutorChKeyPrefix, task.ID)
 }
