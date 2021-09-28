@@ -153,10 +153,6 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 				result.WebHookList = append(result.WebHookList, webhookUrl.Receiver)
 			}
 		case apistructs.RoleNotifyTarget:
-			scopeID, err := strconv.ParseInt(group.ScopeID, 10, 32)
-			if err != nil {
-				return nil, err
-			}
 			var roles []string
 			for _, r := range target.Values {
 				roles = append(roles, r.Receiver)
@@ -181,6 +177,10 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 					PageSize:  1000,
 				})
 			} else {
+				scopeID, err := strconv.ParseInt(group.ScopeID, 10, 32)
+				if err != nil {
+					return nil, err
+				}
 				_, members, err = o.db.GetMembersByParam(&apistructs.MemberListRequest{
 					ScopeType: apistructs.ScopeType(group.ScopeType),
 					ScopeID:   scopeID,
