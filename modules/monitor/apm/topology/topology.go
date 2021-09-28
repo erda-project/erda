@@ -271,8 +271,8 @@ type ServiceDashboard struct {
 	Name            string  `json:"service_name"`
 	ReqCount        int64   `json:"req_count"`
 	ReqErrorCount   int64   `json:"req_error_count"`
-	ART             float64 `json:"avg_req_time"`                   // avg response time
-	RSInstanceCount string  `json:"running_stopped_instance_count"` // running / stopped
+	ART             float64 `json:"avg_req_time"`           // avg response time
+	RSInstanceCount string  `json:"running_instance_count"` // running / stopped
 	RuntimeId       string  `json:"runtime_id"`
 	RuntimeName     string  `json:"runtime_name"`
 	ApplicationId   string  `json:"application_id"`
@@ -1432,7 +1432,7 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
+	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}
