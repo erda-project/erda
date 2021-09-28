@@ -47,7 +47,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		req.CreatorID = bdl.Identity.UserID
 		req.UpdaterID = bdl.Identity.UserID
 		req.UserID = bdl.Identity.UserID
-		req.Value = "{\"waitTime\":1}"
+		req.Value = "{\"waitTimeSec\":1}"
 		stepID, err := bdl.Bdl.CreateAutoTestSceneStep(req)
 		if err != nil {
 			return err
