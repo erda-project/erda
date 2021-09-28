@@ -177,8 +177,7 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 		// update step groupID in the group if isGroup is false
 		defer func() error {
 			if err == nil && !req.IsGroup {
-				groupIDs := []uint64{oldGroupID, newGroupID}
-				groupIDs = strutil.DedupUint64Slice(groupIDs, true)
+				groupIDs := strutil.DedupUint64Slice([]uint64{oldGroupID, newGroupID}, true)
 				return updateStepGroup(tx, groupIDs...)
 			}
 			return nil

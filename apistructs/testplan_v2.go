@@ -245,7 +245,7 @@ type TestPlanV2StepMoveRequest struct {
 	ScenesSetId  uint64 `json:"scenesSetId"`
 	TestPlanID   uint64 `json:"-"`
 	TargetStepID uint64 `json:"targetStepID"`
-	IsGroup      bool   `json:"isGroup"` // if move with group
+	IsGroup      bool   `json:"isGroup"` // true: means move with group
 
 	IdentityInfo
 }

@@ -510,7 +510,7 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 func getStepMapByGroupID(steps []*apistructs.TestPlanV2Step) (map[uint64][]*apistructs.TestPlanV2Step, []uint64) {
 	// stepGroupMap key: groupID, if groupID is 0, set id as groupID
 	stepGroupMap := make(map[uint64][]*apistructs.TestPlanV2Step, 0)
-	groupIDs := make([]uint64, 0) // order to sort
+	groupIDs := make([]uint64, 0) // make sure the order remains the same
 	for _, v := range steps {
 		if v.SceneSetID <= 0 {
 			continue
