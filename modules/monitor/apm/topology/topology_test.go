@@ -465,8 +465,9 @@ func Test_selectLayer(t *testing.T) {
 		wantErr bool
 	}{
 		{"case1", args{params: translation{Layer: "xxx"}, where: bytes.Buffer{}}, "", true},
-		{"case2", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", false},
-		{"case3", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", false},
+		{"case2", args{params: translation{Layer: ""}, where: bytes.Buffer{}}, "", true},
+		{"case3", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", false},
+		{"case4", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
