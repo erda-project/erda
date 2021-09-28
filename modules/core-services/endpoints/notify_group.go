@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -42,6 +43,7 @@ func (e *Endpoints) CreateNotifyGroup(ctx context.Context, r *http.Request, vars
 	}
 
 	var notifyGroupCreateReq apistructs.CreateNotifyGroupRequest
+	fmt.Printf("hhhhhhh%+v", notifyGroupCreateReq)
 	if err := json.NewDecoder(r.Body).Decode(&notifyGroupCreateReq); err != nil {
 		return apierrors.ErrCreateNotifyGroup.InvalidParameter("can't decode body").ToResp(), nil
 	}
