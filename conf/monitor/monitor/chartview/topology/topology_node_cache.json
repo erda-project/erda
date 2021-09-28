@@ -31,7 +31,7 @@
               }
             ],
             "where": [
-              "host::tag='{{host}}'"
+              "peer_address::tag='{{host}}'"
             ]
           },
           "extraData": null,
@@ -57,14 +57,13 @@
             ],
             "resultFilters": [
               {
-                "alias": "主机",
+                "alias": "地址",
                 "i18n": {
                   "alias": {
-                    "en": "Host",
-                    "zh": "主机"
+                    "en": "Address",
+                    "zh": "地址"
                   }
                 },
-                "field": "application_cache_service-host::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{host}}"
@@ -97,7 +96,6 @@
                     "zh": "请求次数"
                   }
                 },
-                "field": "application_cache_service-count_sum::field",
                 "key": "valueYaLkGKG1",
                 "resultType": "number",
                 "type": "field"
@@ -151,7 +149,7 @@
               }
             ],
             "where": [
-              "host::tag='{{host}}'"
+              "peer_address::tag='{{host}}'"
             ]
           },
           "extraData": null,
@@ -177,14 +175,13 @@
             ],
             "resultFilters": [
               {
-                "alias": "主机",
+                "alias": "地址",
                 "i18n": {
                   "alias": {
-                    "en": "Host",
-                    "zh": "主机"
+                    "en": "Address",
+                    "zh": "地址"
                   }
                 },
-                "field": "application_cache_service-host::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{host}}"

@@ -31,7 +31,7 @@
               }
             ],
             "where": [
-              "host::tag='{{host}}'"
+              "peer_address::tag='{{host}}'"
             ]
           },
           "extraData": null,
@@ -57,14 +57,13 @@
             ],
             "resultFilters": [
               {
-                "alias": "主机",
+                "alias": "地址",
                 "i18n": {
                   "alias": {
-                    "en": "Host",
-                    "zh": "主机"
+                    "en": "Address",
+                    "zh": "地址"
                   }
                 },
-                "field": "application_mq_service-host::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{host}}"
@@ -151,7 +150,7 @@
               }
             ],
             "where": [
-              "host::tag='{{host}}'"
+              "peer_address::tag='{{host}}'"
             ]
           },
           "extraData": null,
@@ -177,14 +176,13 @@
             ],
             "resultFilters": [
               {
-                "alias": "主机",
+                "alias": "地址",
                 "i18n": {
                   "alias": {
-                    "en": "Host",
-                    "zh": "主机"
+                    "en": "Address",
+                    "zh": "地址"
                   }
                 },
-                "field": "application_mq_service-host::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{host}}"

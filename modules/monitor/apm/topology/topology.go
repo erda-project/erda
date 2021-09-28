@@ -179,6 +179,8 @@ type Tag struct {
 	Host                  string `json:"host,omitempty"`
 	HttpUrl               string `json:"http_url,omitempty"`
 	PeerServiceScope      string `json:"peer_service_scope,omitempty"`
+	PeerAddress           string `json:"peer_address,omitempty"`
+	PeerService           string `json:"peer_service,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
 	SourceWorkspace       string `json:"source_workspace,omitempty"`
@@ -415,8 +417,8 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsHost, SubField: &GroupByField{Name: apm.TagsDBType}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType},
+		GroupByField: &GroupByField{Name: apm.TagsPeerAddress, SubField: &GroupByField{Name: apm.TagsDBType}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType, apm.TagsPeerAddress},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation:  NodeAggregation,
 	}
@@ -429,16 +431,16 @@ func init() {
 	}
 	SourceMQNodeType = &NodeType{
 		Type:         SourceMQNode,
-		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsPeerAddress}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsPeerAddress},
 		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
 			MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation: NodeAggregation,
 	}
 	TargetMQNodeType = &NodeType{
 		Type:         TargetMQNode,
-		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsPeerAddress}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsPeerAddress},
 		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
 			MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation: NodeAggregation,
@@ -468,7 +470,8 @@ func init() {
 		},
 		MQDBCacheIndexType: {
 			// Topology Relation (Component: Mysql Redis MQ)
-			// SourceMQService  -> TargetMQService
+			// SourceMQService  -> TargetMQService (consumer)
+			// SourceService  -> TargetMQ (producer)
 			// SourceService    -> TargetComponent
 			{Source: []*NodeType{SourceMQNodeType}, Target: TargetMQServiceNodeType},
 			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetMQNodeType},
@@ -1751,18 +1754,18 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Id = encodeTypeToKey(node.AddonId + apm.Sep1 + node.AddonType)
 	case TargetComponentNode:
 		node.Type = tags.Component
-		node.Name = tags.Host
+		node.Name = tags.PeerAddress
 		if tags.DBType != "" {
 			node.Type = tags.DBType
 		}
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case SourceMQNode:
 		node.Type = tags.Component
-		node.Name = tags.Host
+		node.Name = tags.PeerAddress
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case TargetMQNode:
 		node.Type = tags.Component
-		node.Name = tags.Host
+		node.Name = tags.PeerAddress
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case TargetMQServiceNode:
 		node.Type = TypeService
