@@ -59,19 +59,6 @@ func (e *Endpoints) CreateNotifyGroup(ctx context.Context, r *http.Request, vars
 
 	notifyGroupCreateReq.Creator = r.Header.Get("User-Id")
 	notifyGroupCreateReq.OrgID = orgID
-
-	if strings.Contains(notifyGroupCreateReq.ScopeType, apistructs.MSPScope) {
-		label := map[string]string{
-			"member_scopeID":   notifyGroupCreateReq.ScopeID,
-			"member_scopeType": string(apistructs.ProjectScope),
-		}
-		data, err := json.Marshal(label)
-		if err != nil {
-			return apierrors.ErrCreateNotifyGroup.InternalError(err).ToResp(), nil
-		}
-		notifyGroupCreateReq.Label = string(data)
-	}
-
 	notifyGroupID, err := e.notifyGroup.Create(locale, &notifyGroupCreateReq)
 
 	if err != nil {

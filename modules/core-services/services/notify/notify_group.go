@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -163,7 +162,7 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 				roles = append(roles, r.Receiver)
 			}
 			var members []model.Member
-			if strings.Contains(group.ScopeType, apistructs.MSPScope) {
+			if group.ScopeType == apistructs.MSPScope {
 				label := make(map[string]string)
 				err = json.Unmarshal([]byte(group.Label), &label)
 				if err != nil {
