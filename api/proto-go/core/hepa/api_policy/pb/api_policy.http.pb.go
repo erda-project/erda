@@ -34,7 +34,7 @@ func RegisterApiPolicyServiceHandler(r http.Router, srv ApiPolicyServiceHandler,
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		handler := func(w http1.ResponseWriter, r *http1.Request) {
+		return func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -44,10 +44,6 @@ func RegisterApiPolicyServiceHandler(r http.Router, srv ApiPolicyServiceHandler,
 				h.Error(w, r, err)
 			}
 		}
-		if h.HTTPInterceptor != nil {
-			handler = h.HTTPInterceptor(handler)
-		}
-		return handler
 	}
 
 	add_GetPolicy := func(method, path string, fn func(context.Context, *GetPolicyRequest) (*GetPolicyResponse, error)) {
@@ -81,11 +77,11 @@ func RegisterApiPolicyServiceHandler(r http.Router, srv ApiPolicyServiceHandler,
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["apiId"]; len(vals) > 0 {
-					in.ApiId = vals[0]
-				}
 				if vals := params["packageId"]; len(vals) > 0 {
 					in.PackageId = vals[0]
+				}
+				if vals := params["apiId"]; len(vals) > 0 {
+					in.ApiId = vals[0]
 				}
 				path := r.URL.Path
 				if len(path) > 0 {
@@ -147,11 +143,11 @@ func RegisterApiPolicyServiceHandler(r http.Router, srv ApiPolicyServiceHandler,
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["apiId"]; len(vals) > 0 {
-					in.ApiId = vals[0]
-				}
 				if vals := params["packageId"]; len(vals) > 0 {
 					in.PackageId = vals[0]
+				}
+				if vals := params["apiId"]; len(vals) > 0 {
+					in.ApiId = vals[0]
 				}
 				path := r.URL.Path
 				if len(path) > 0 {

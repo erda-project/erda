@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -385,7 +384,6 @@ func (e *Endpoints) FuzzyQueryNotifiesBySource(ctx context.Context, r *http.Requ
 }
 
 func (e *Endpoints) checkNotifyPermission(r *http.Request, scopeType, scopeID, action string) error {
-	fmt.Printf("xxxxxxxx %s\n", scopeType)
 	if scopeType == apistructs.MSPScope {
 		return nil
 	}

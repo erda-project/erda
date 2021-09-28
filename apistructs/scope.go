@@ -35,7 +35,7 @@ const SupportID string = "2020"
 
 //MSP
 const (
-	MSPScope         string = "msp"
+	MSPScope         string = "msp_env"
 	MSPMemberScope   string = "member_scopeType"
 	MSPMemberScopeId string = "member_scopeID"
 )
