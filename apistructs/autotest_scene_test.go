@@ -12,11 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actionexecutor
+package apistructs
 
 import (
-	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/apitest"
-	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/demo"
-	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler"
-	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/wait"
+	"encoding/json"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/envconf"
 )
+
+func TestAutoTestRunWait(t *testing.T) {
+	jsonStr := `{"waitTimeSec": 2}`
+	envMap := map[string]string{
+		"ACTION_WAIT_TIME_SEC": "2",
+	}
+
+	var (
+		jsonWait AutoTestRunWait
+		envWait  AutoTestRunWait
+	)
+	err := json.Unmarshal([]byte(jsonStr), &jsonWait)
+	assert.NoError(t, err)
+	err = envconf.Load(&envWait, envMap)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, jsonWait.WaitTimeSec)
+	assert.Equal(t, 2, envWait.WaitTimeSec)
+}

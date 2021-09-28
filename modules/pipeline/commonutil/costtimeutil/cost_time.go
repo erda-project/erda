@@ -15,6 +15,7 @@
 package costtimeutil
 
 import (
+	"math"
 	"time"
 
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -33,7 +34,7 @@ func CalculateTaskCostTimeSec(task *spec.PipelineTask) (cost int64) {
 	if task.TimeEnd.IsZero() { // 正在运行中
 		return int64(time.Now().Sub(task.TimeBegin).Seconds())
 	}
-	return int64(task.TimeEnd.Sub(task.TimeBegin).Seconds())
+	return int64(math.Round(float64(task.TimeEnd.UnixNano()-task.TimeBegin.UnixNano()) / (1000 * 1000 * 1000)))
 }
 
 func CalculateTaskQueueTimeSec(task *spec.PipelineTask) (cost int64) {

@@ -71,18 +71,21 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		if err != nil {
 			return err
 		}
-		var waitTime int
+		var waitTimeSec int
 		if step.Value == "" {
-			waitTime = 0
+			waitTimeSec = 0
 		} else {
 			var value apistructs.AutoTestRunWait
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
 				return err
 			}
-			waitTime = value.WaitTime
+			if value.WaitTime > 0 {
+				value.WaitTimeSec = value.WaitTime
+			}
+			waitTimeSec = value.WaitTimeSec
 		}
 		c.State["formData"] = map[string]interface{}{
-			"waitTime": waitTime,
+			"waitTimeSec": waitTimeSec,
 		}
 		c.State["drawVisible"] = true
 		c.Props = map[string]interface{}{
@@ -91,7 +94,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 					"label":          "等待时间(s)",
 					"component":      "inputNumber",
 					"required":       true,
-					"key":            "waitTime",
+					"key":            "waitTimeSec",
 					"componentProps": map[string]interface{}{"min": 1},
 				},
 			},

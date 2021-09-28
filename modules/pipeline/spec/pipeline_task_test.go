@@ -126,3 +126,9 @@ func TestPipelineTaskExecutorKind_Check(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeTaskExecutorCtxKey(t *testing.T) {
+	task := &PipelineTask{ID: 1}
+	ctxKey := MakeTaskExecutorCtxKey(task)
+	assert.Equal(t, ctxKey, "executor-done-chan-1")
+}
