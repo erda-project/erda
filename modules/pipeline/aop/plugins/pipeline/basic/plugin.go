@@ -35,6 +35,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 	// make report content
 	var content apistructs.PipelineBasicReport
+	content.ID = pipeline.ID
+	content.Status = pipeline.Status
 	content.PipelineSource = pipeline.PipelineSource
 	content.PipelineYmlName = pipeline.PipelineYmlName
 	content.ClusterName = pipeline.ClusterName
@@ -49,6 +51,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 	for _, task := range tasks {
 		taskReport := apistructs.TaskReportInfo{
+			ID:               task.ID,
+			Status:           task.Status,
 			Name:             task.Name,
 			ActionType:       task.Type,
 			ActionVersion:    task.Extra.Action.Version,

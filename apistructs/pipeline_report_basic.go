@@ -17,6 +17,8 @@ package apistructs
 import "time"
 
 type PipelineBasicReport struct {
+	ID               uint64         `json:"id"`
+	Status           PipelineStatus `json:"status"`
 	PipelineSource   PipelineSource `json:"pipelineSource"`
 	PipelineYmlName  string         `json:"pipelineYmlName"`
 	ClusterName      string         `json:"clusterName"`
@@ -29,6 +31,8 @@ type PipelineBasicReport struct {
 }
 
 type TaskReportInfo struct {
+	ID               uint64                   `json:"id"`
+	Status           PipelineStatus           `json:"status"`
 	Name             string                   `json:"name"`
 	ActionType       string                   `json:"actionType"`
 	ActionVersion    string                   `json:"actionVersion"`
