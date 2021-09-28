@@ -85,7 +85,7 @@
                     "zh": "运行实例数"
                   }
                 },
-                "key": "running_stopped_instance_count",
+                "key": "running_instance_count",
                 "resultType": "string",
                 "type": "field"
               }
