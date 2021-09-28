@@ -30,12 +30,21 @@ var defaultAPITestActionExecutor = spec.PipelineConfig{
 	},
 }
 
+var defaultWaitActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindWait),
+		Name:    spec.PipelineTaskExecutorNameWaitDefault.String(),
+		Options: nil,
+	},
+}
+
 func (client *Client) ListPipelineConfigsOfActionExecutor() (configs []spec.PipelineConfig, cfgChan chan spec.ActionExecutorConfig, err error) {
 	if err := client.Find(&configs, spec.PipelineConfig{Type: spec.PipelineConfigTypeActionExecutor}); err != nil {
 		return nil, nil, err
 	}
 	// add default api-test action executor
-	configs = append(configs, defaultAPITestActionExecutor)
+	configs = append(configs, defaultAPITestActionExecutor, defaultWaitActionExecutor)
 	cfgChan = make(chan spec.ActionExecutorConfig, 100)
 	for _, c := range configs {
 		var r spec.ActionExecutorConfig
