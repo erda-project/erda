@@ -20,8 +20,9 @@ import (
 )
 
 type AutoTestRunCustom struct {
-	Commands []string `json:"commands"`
-	Image    string   `json:"image"`
+	LanguageType string   `json:"languageType"`
+	Commands     []string `json:"commands"`
+	Image        string   `json:"image"`
 }
 
 type AutoTestRunScene struct {

@@ -63,11 +63,12 @@ type State struct {
 	AutotestSceneRequest apistructs.AutotestSceneRequest `json:"autotestSceneRequest"`
 	DragParams           DragParams                      `json:"dragParams"`
 
-	StepId                uint64 `json:"stepId"`
-	ShowApiEditorDrawer   bool   `json:"showApiEditorDrawer"`
-	ShowConfigSheetDrawer bool   `json:"showConfigSheetDrawer"`
-	ShowWaitEditorDrawer  bool   `json:"showWaitEditorDrawer"`
-	ShowNestedSceneDrawer bool   `json:"showNestedSceneDrawer"`
+	StepId                 uint64 `json:"stepId"`
+	ShowApiEditorDrawer    bool   `json:"showApiEditorDrawer"`
+	ShowConfigSheetDrawer  bool   `json:"showConfigSheetDrawer"`
+	ShowWaitEditorDrawer   bool   `json:"showWaitEditorDrawer"`
+	ShowNestedSceneDrawer  bool   `json:"showNestedSceneDrawer"`
+	ShowCustomEditorDrawer bool   `json:"showCustomEditorDrawer"`
 
 	SceneId     uint64 `json:"sceneId"`
 	IsClickItem bool   `json:"isClickItem"`
