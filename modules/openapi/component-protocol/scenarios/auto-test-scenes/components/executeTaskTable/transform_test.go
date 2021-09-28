@@ -51,4 +51,22 @@ func TestSetData(t *testing.T) {
 	}
 	err := table.setData(&p)
 	assert.Equal(t, nil, err)
+
+	waiP := apistructs.PipelineDetailDTO{
+		PipelineStages: []apistructs.PipelineStageDetailDTO{
+			{
+				PipelineTasks: []apistructs.PipelineTaskDTO{
+					{
+						Labels: map[string]string{
+							apistructs.AutotestSceneStep: "eyJpZCI6MTI2NTQsInR5cGUiOiJXQUlUIiwibWV0aG9kIjoiIiwidmFsdWUiOiJ7XG4gICAgXCJ3YWl0VGltZVwiOiAxMFxufSIsIm5hbWUiOiLnrYnlvoXku7vliqEiLCJwcmVJRCI6MCwicHJlVHlwZSI6IlNlcmlhbCIsInNjZW5lSUQiOjE2MTAsInNwYWNlSUQiOjEsImNyZWF0b3JJRCI6IiIsInVwZGF0ZXJJRCI6IiIsIkNoaWxkcmVuIjpudWxsLCJhcGlTcGVjSUQiOjB9",
+							apistructs.AutotestType:      apistructs.AutotestSceneStep,
+						},
+						ID: 2,
+					},
+				},
+			},
+		},
+	}
+	err = table.setData(&waiP)
+	assert.Equal(t, nil, err)
 }
