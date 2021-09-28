@@ -451,7 +451,7 @@ func Test_handleSlowTranslationTraceResult(t *testing.T) {
 	}
 }
 
-func Test_selectLayer(t *testing.T) {
+func Test_handlerTranslationConditions(t *testing.T) {
 	type args struct {
 		params translation
 		param  map[string]interface{}
