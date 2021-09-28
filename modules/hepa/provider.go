@@ -62,6 +62,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			code = http.StatusInternalServerError
 			body = []byte("")
 		}
+		resp.Header().Set("Content-Type", "application/json; charset=utf-8")
 		resp.WriteHeader(code)
 		resp.Write(body)
 	}, permission.Intercepter(
