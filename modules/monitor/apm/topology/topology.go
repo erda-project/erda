@@ -271,8 +271,8 @@ type ServiceDashboard struct {
 	Name            string  `json:"service_name"`
 	ReqCount        int64   `json:"req_count"`
 	ReqErrorCount   int64   `json:"req_error_count"`
-	ART             float64 `json:"avg_req_time"`                   // avg response time
-	RSInstanceCount string  `json:"running_stopped_instance_count"` // running / stopped
+	ART             float64 `json:"avg_req_time"`           // avg response time
+	RSInstanceCount string  `json:"running_instance_count"` // running / stopped
 	RuntimeId       string  `json:"runtime_id"`
 	RuntimeName     string  `json:"runtime_name"`
 	ApplicationId   string  `json:"application_id"`
@@ -1432,7 +1432,7 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
+	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}
@@ -1838,40 +1838,20 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
 	var where bytes.Buffer
-	var orderby string
-	var field string
+
 	param := map[string]interface{}{
 		"terminusKey":       params.TerminusKey,
 		"filterServiceName": params.FilterServiceName,
 		"serviceId":         params.ServiceId,
 	}
-	switch params.Layer {
-	case "http":
-		field = "http_path::tag"
-		if params.Search != "" {
-			param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
-			where.WriteString(" AND http_path::tag=~$field")
-		}
-	case "rpc":
-		field = "dubbo_method::tag"
-		if params.Search != "" {
-			param["field"] = map[string]interface{}{
-				"regex": ".*" + params.Search + ".*",
-			}
-			where.WriteString(" AND dubbo_method::tag=~$field")
-		}
-	default:
-		return api.Errors.InvalidParameter(errors.New("not support layer name"))
+	field, orderBy, err := handlerTranslationConditions(params, param, where)
+	if err != nil {
+		return api.Errors.Internal(err)
 	}
-	if params.Sort == 0 {
-		orderby = " ORDER BY count(error::tag) DESC"
-	}
-	if params.Sort == 1 {
-		orderby = " ORDER BY sum(elapsed_count::field) DESC"
-	}
+
 	sql := fmt.Sprintf("SELECT %s,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM application_%s WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName "+
-		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderby)
+		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderBy)
 	source, err := topology.metricq.Query(
 		metricq.InfluxQL,
 		sql,
@@ -1919,6 +1899,37 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	}
 	result["data"] = data
 	return api.Success(result)
+}
+
+func handlerTranslationConditions(params translation, param map[string]interface{}, where bytes.Buffer) (string, string, error) {
+	var orderBy string
+	var field string
+	switch params.Layer {
+	case "http":
+		field = "http_path::tag"
+		if params.Search != "" {
+			param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+			where.WriteString(" AND http_path::tag=~$field")
+		}
+	case "rpc":
+		field = "peer_service::tag"
+		if params.Search != "" {
+			param["field"] = map[string]interface{}{
+				"regex": ".*" + params.Search + ".*",
+			}
+			where.WriteString(" AND peer_service::tag=~$field")
+		}
+	default:
+		return "", "", errors.New("not support layer name")
+	}
+
+	if params.Sort == 0 {
+		orderBy = " ORDER BY count(error::tag) DESC"
+	}
+	if params.Sort == 1 {
+		orderBy = " ORDER BY sum(elapsed_count::field) DESC"
+	}
+	return field, orderBy, nil
 }
 
 // db/cache
