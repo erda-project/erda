@@ -1845,23 +1845,9 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 		"filterServiceName": params.FilterServiceName,
 		"serviceId":         params.ServiceId,
 	}
-	switch params.Layer {
-	case "http":
-		field = "http_path::tag"
-		if params.Search != "" {
-			param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
-			where.WriteString(" AND http_path::tag=~$field")
-		}
-	case "rpc":
-		field = "dubbo_method::tag"
-		if params.Search != "" {
-			param["field"] = map[string]interface{}{
-				"regex": ".*" + params.Search + ".*",
-			}
-			where.WriteString(" AND dubbo_method::tag=~$field")
-		}
-	default:
-		return api.Errors.InvalidParameter(errors.New("not support layer name"))
+	field, err := selectLayer(params, field, param, where)
+	if err != nil {
+		return api.Errors.Internal(err)
 	}
 	if params.Sort == 0 {
 		orderby = " ORDER BY count(error::tag) DESC"
@@ -1919,6 +1905,28 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	}
 	result["data"] = data
 	return api.Success(result)
+}
+
+func selectLayer(params translation, field string, param map[string]interface{}, where bytes.Buffer) (string, error) {
+	switch params.Layer {
+	case "http":
+		field = "http_path::tag"
+		if params.Search != "" {
+			param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+			where.WriteString(" AND http_path::tag=~$field")
+		}
+	case "rpc":
+		field = "peer_service::tag"
+		if params.Search != "" {
+			param["field"] = map[string]interface{}{
+				"regex": ".*" + params.Search + ".*",
+			}
+			where.WriteString(" AND peer_service::tag=~$field")
+		}
+	default:
+		return "", errors.New("not support layer name")
+	}
+	return field, nil
 }
 
 // db/cache

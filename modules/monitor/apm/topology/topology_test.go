@@ -15,6 +15,7 @@
 package topology
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -445,6 +446,37 @@ func Test_handleSlowTranslationTraceResult(t *testing.T) {
 			got := handleSlowTranslationTraceResult(tt.args.topology, tt.args.lang, tt.args.data)
 			if got == nil {
 				t.Errorf("handleSlowTranslationTraceResult() = %v", got)
+			}
+		})
+	}
+}
+
+func Test_selectLayer(t *testing.T) {
+	type args struct {
+		params translation
+		field  string
+		param  map[string]interface{}
+		where  bytes.Buffer
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{"case1", args{params: translation{Layer: "xxx"}, where: bytes.Buffer{}}, "", true},
+		{"case2", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", false},
+		{"case3", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := selectLayer(tt.args.params, tt.args.field, tt.args.param, tt.args.where)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("selectLayer() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("selectLayer() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
