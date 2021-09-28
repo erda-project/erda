@@ -47,9 +47,11 @@ hierarchy:
       - addApiButton
       - addConfigSheetButton
       - addWaitButton
+      - addCustomScriptButton
       - apiEditorDrawer
       - waitEditorDrawer
       - configSheetDrawer
+      - customScriptDrawer
       - nestedSceneDrawer
     fileExecute:
       - executeHead
@@ -63,6 +65,8 @@ hierarchy:
       content: apiEditorContainer
     waitEditorDrawer:
       content: waitEditor
+    customScriptDrawer:
+      content: customScriptForm
     configSheetDrawer:
       content:
         - configSheetSelect
@@ -100,6 +104,8 @@ components:
   cancelExecuteButton:
     type: Button
   waitEditor:
+    type: Form
+  customScriptForm:
     type: Form
   configSheetSelect:
     type: TreeSelect
@@ -232,12 +238,21 @@ components:
     type: Button
   addApiButton:
     type: Button
+  addCustomScriptButton:
+    type: Button
   waitEditorDrawer:
     type: Drawer
     state:
       visible: false
     props:
       title: "等待信息"
+      size: "l"
+  customScriptDrawer:
+    type: Drawer
+    state:
+      visible: false
+    props:
+      title: "自定义脚本"
       size: "l"
   nestedSceneDrawer:
     type: Drawer
@@ -360,6 +375,10 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
+    - name: addCustomScriptButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
     - name: folderDetail
       state:
         - name: "sceneId"
@@ -453,6 +472,10 @@ rendering:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
     - name: addWaitButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addCustomScriptButton
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
@@ -573,6 +596,17 @@ rendering:
       state:
         - name: "stepId"
           value: "{{ addWaitButton.createStepID }}"
+  addCustomScriptButton:
+    - name: fileInfo
+    - name: stages
+    - name: customScriptDrawer
+      state:
+        - name: "visible"
+          value: "{{ addCustomScriptButton.showCustomEditorDrawer }}"
+    - name: customScriptForm
+      state:
+        - name: "stepId"
+          value: "{{ addCustomScriptButton.createStepID }}"
   stages:
     - name: fileInfo
     - name: apiEditorDrawer
@@ -616,6 +650,14 @@ rendering:
       state:
         - name: "stepId"
           value: "{{ stages.stepId }}"
+    - name: customScriptDrawer
+      state:
+        - name: "visible"
+          value: "{{ stages.showCustomEditorDrawer }}"
+    - name: customScriptForm
+      state:
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
     - name: nestedSceneDrawer
       state:
         - name: "visible"
@@ -639,6 +681,13 @@ rendering:
       state:
         - name: "visible"
           value: "{{ waitEditor.drawVisible }}"
+    - name: stages
+  customScriptForm:
+    - name: fileInfo
+    - name: customScriptDrawer
+      state:
+        - name: "visible"
+          value: "{{ customScriptForm.drawVisible }}"
     - name: stages
   marketProto:
     - name: fileInfo
@@ -896,6 +945,10 @@ rendering:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
     - name: addWaitButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addCustomScriptButton
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
