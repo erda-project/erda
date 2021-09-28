@@ -75,6 +75,7 @@ func (i *ComponentStageForm) RenderProtocol(c *apistructs.Component, g *apistruc
 	c.State["showConfigSheetDrawer"] = i.State.ShowConfigSheetDrawer
 	c.State["showWaitEditorDrawer"] = i.State.ShowWaitEditorDrawer
 	c.State["showNestedSceneDrawer"] = i.State.ShowNestedSceneDrawer
+	c.State["showCustomEditorDrawer"] = i.State.ShowCustomEditorDrawer
 	c.State["stepId"] = i.State.StepId
 	c.State["configSheetId"] = ""
 	c.State["isClickItem"] = i.State.IsClickItem
@@ -145,6 +146,7 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 	i.State.ShowConfigSheetDrawer = false
 	i.State.ShowWaitEditorDrawer = false
 	i.State.ShowNestedSceneDrawer = false
+	i.State.ShowCustomEditorDrawer = false
 	i.State.IsClickItem = false
 
 	visible := make(map[string]interface{})
@@ -226,6 +228,8 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 			i.State.ShowConfigSheetDrawer = true
 		} else if step.Type == apistructs.StepTypeScene {
 			i.State.ShowNestedSceneDrawer = true
+		} else if step.Type == apistructs.StepTypeCustomScript {
+			i.State.ShowCustomEditorDrawer = true
 		}
 		i.State.StepId = step.ID
 		i.State.IsClickItem = true
