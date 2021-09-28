@@ -197,7 +197,7 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 		oldGroupID = step.GroupID
 
 		// the order of the linked list has not changed
-		if req.PreID == step.PreID || req.PreID == step.ID {
+		if req.PreID == step.PreID || req.PreID == lastStepIDInGroup {
 			if req.IsGroup {
 				return nil
 			}
@@ -258,7 +258,7 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 	})
 }
 
-// updateStepGroup update step group, set min SetID in the group as groupID
+// updateStepGroup update step group, set min setID in the group as groupID
 func updateStepGroup(tx *gorm.DB, groupIDs ...uint64) error {
 	for _, v := range groupIDs {
 		if v == 0 {
