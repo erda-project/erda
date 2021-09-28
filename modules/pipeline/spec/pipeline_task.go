@@ -14,11 +14,16 @@
 package spec
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+)
+
+const (
+	CtxExecutorChKeyPrefix = "executor-done-chan"
 )
 
 type PipelineTask struct {
@@ -138,7 +143,8 @@ var (
 	PipelineTaskExecutorKindScheduler PipelineTaskExecutorKind = "SCHEDULER"
 	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
 	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
-	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest}
+	PipelineTaskExecutorKindWait      PipelineTaskExecutorKind = "WAIT"
+	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait}
 )
 
 func (that PipelineTaskExecutorKind) Check() bool {
@@ -160,7 +166,8 @@ var (
 	PipelineTaskExecutorNameEmpty            PipelineTaskExecutorName = ""
 	PipelineTaskExecutorNameSchedulerDefault PipelineTaskExecutorName = "scheduler"
 	PipelineTaskExecutorNameAPITestDefault   PipelineTaskExecutorName = "api-test"
-	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault}
+	PipelineTaskExecutorNameWaitDefault      PipelineTaskExecutorName = "wait"
+	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault}
 )
 
 func (that PipelineTaskExecutorName) Check() bool {
@@ -259,4 +266,8 @@ func GenDefaultTaskResource() RuntimeResource {
 		Memory: conf.TaskDefaultMEM(),
 		Disk:   0,
 	}
+}
+
+func MakeTaskExecutorCtxKey(task *PipelineTask) string {
+	return fmt.Sprintf("%s-%d", CtxExecutorChKeyPrefix, task.ID)
 }

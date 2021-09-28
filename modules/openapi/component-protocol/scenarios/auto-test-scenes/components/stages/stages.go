@@ -39,7 +39,10 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
 				return StageData{}, err
 			}
-			title = title + "等待 " + strconv.Itoa(value.WaitTime) + " 秒"
+			if value.WaitTime > 0 {
+				value.WaitTimeSec = value.WaitTime
+			}
+			title = title + "等待 " + strconv.Itoa(value.WaitTimeSec) + " 秒"
 		}
 	} else if step.Type == apistructs.StepTypeAPI {
 		if step.Value == "" {
