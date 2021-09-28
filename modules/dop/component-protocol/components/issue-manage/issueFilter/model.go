@@ -75,6 +75,7 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 			},
 			QuickAdd: filter.QuickAdd{
 				OperationKey: OperationKeySaveFilter,
+				Placeholder:  cputil.I18n(ctx, "save-filter-bookmark-placeholder"),
 				Show:         false,
 			},
 			QuickDelete: filter.QuickDelete{

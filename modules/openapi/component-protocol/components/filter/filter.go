@@ -54,6 +54,7 @@ type QuickSelect struct {
 
 type QuickAdd struct {
 	OperationKey OperationKey `json:"operationKey,omitempty"`
+	Placeholder  string       `json:"placeholder,omitempty"`
 	Show         bool         `json:"show"`
 }
 
