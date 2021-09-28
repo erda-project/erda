@@ -58,7 +58,7 @@ services:
     deployments:
       labels:
         GROUP: "devops"
-      replicas: 1
+      replicas: ${replicas:1}
     envs:
       DEBUG: "true"
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
@@ -350,7 +350,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "devops"
     expose:
@@ -565,7 +565,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -598,7 +598,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 2
+      replicas: ${replicas:1}
       labels:
         GROUP: "devops"
     health_check:
