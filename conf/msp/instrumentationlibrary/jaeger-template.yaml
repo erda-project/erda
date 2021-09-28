@@ -47,13 +47,13 @@
           - 环境ID：{{msp_env_id}}
           - Token: 在此页面创建和获取
 
-          #### Step1:引入依赖
+          #### 引入依赖
 
           ```shell
           dotnet add package Jaeger --version 1.0.3
           ```
 
-          #### Step2:注册全局Tracer
+          #### 注册全局Tracer
 
           ```
           // Use "OpenTracing.Contrib.NetCore" to automatically generate spans for ASP.NET Core, Entity Framework Core, ...
@@ -68,7 +68,7 @@
             var senderResolver = new SenderResolver(loggerFactory).RegisterSenderFactory<ThriftSenderFactory>();
             var senderConfiguration = new Configuration.SenderConfiguration(loggerFactory)
                                           .WithSenderResolver(senderResolver)
-                                          .WithEndpoint("https://collector.hkci.terminus.io/api/jaeger/traces");
+                                          .WithEndpoint("{{endpoint}}");
 
             var reporterConfiguration = new Configuration.ReporterConfiguration(loggerFactory)
                                             .WithSender(senderConfiguration)
@@ -79,7 +79,7 @@
                                             .WithParam(1);
 
             var tracerTagMaps = new Dictionary<string, string>();
-            tracerTagMaps["msp.env.id"] = "3f9cef7440ad0938630dc4825ddcc4fa";
+            tracerTagMaps["msp.env.id"] = "{{msp_env_id}}";
             tracerTagMaps["msp.env.token"] = "<鉴权Token>";
 
             var tracer = new Configuration("<服务名>", loggerFactory)
