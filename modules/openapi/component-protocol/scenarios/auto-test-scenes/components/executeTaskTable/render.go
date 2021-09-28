@@ -106,10 +106,11 @@ type RowData struct {
 }
 
 type AutoTestRunStep struct {
-	ApiSpec  map[string]interface{} `json:"apiSpec"`
-	WaitTime int64                  `json:"waitTime"`
-	Commands []string               `json:"commands"`
-	Image    string                 `json:"image"`
+	ApiSpec     map[string]interface{} `json:"apiSpec"`
+	WaitTime    int64                  `json:"waitTime"`
+	Commands    []string               `json:"commands"`
+	Image       string                 `json:"image"`
+	WaitTimeSec int64                  `json:"waitTimeSec"`
 }
 
 func (a *ExecuteTaskTable) Import(c *apistructs.Component) error {
@@ -370,7 +371,10 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						}
 					}
 					if res.Type == apistructs.StepTypeWait {
-						res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTime, 10) + "s"
+						if value.WaitTime > 0 {
+							value.WaitTimeSec = value.WaitTime
+						}
+						res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
 					}
 				} else {
 					res.Name = task.Name
