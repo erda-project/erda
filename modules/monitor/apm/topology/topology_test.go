@@ -454,30 +454,35 @@ func Test_handleSlowTranslationTraceResult(t *testing.T) {
 func Test_selectLayer(t *testing.T) {
 	type args struct {
 		params translation
-		field  string
 		param  map[string]interface{}
 		where  bytes.Buffer
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
+		name        string
+		args        args
+		wantField   string
+		wantOrderBy string
+		wantErr     bool
 	}{
-		{"case1", args{params: translation{Layer: "xxx"}, where: bytes.Buffer{}}, "", true},
-		{"case2", args{params: translation{Layer: ""}, where: bytes.Buffer{}}, "", true},
-		{"case3", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", false},
-		{"case4", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", false},
+		{"case1", args{params: translation{Layer: "xxx"}, where: bytes.Buffer{}}, "", "", true},
+		{"case2", args{params: translation{Layer: ""}, where: bytes.Buffer{}}, "", "", true},
+		{"case3", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case4", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case5", args{params: translation{Layer: "http", Sort: 0}, where: bytes.Buffer{}}, "http_path::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case6", args{params: translation{Layer: "rpc", Sort: 1}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY sum(elapsed_count::field) DESC", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := selectLayer(tt.args.params, tt.args.field, tt.args.param, tt.args.where)
+			gotField, gotOrderBy, err := handlerTranslationConditions(tt.args.params, tt.args.param, tt.args.where)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("selectLayer() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("handlerTranslationConditions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("selectLayer() got = %v, want %v", got, tt.want)
+			if gotField != tt.wantField {
+				t.Errorf("handlerTranslationConditions() got = %v, want %v", gotField, tt.wantField)
+			}
+			if gotOrderBy != tt.wantOrderBy {
+				t.Errorf("handlerTranslationConditions() got = %v, want %v", gotOrderBy, tt.wantOrderBy)
 			}
 		})
 	}

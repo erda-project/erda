@@ -1838,26 +1838,20 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
 	var where bytes.Buffer
-	var orderby string
-	var field string
+
 	param := map[string]interface{}{
 		"terminusKey":       params.TerminusKey,
 		"filterServiceName": params.FilterServiceName,
 		"serviceId":         params.ServiceId,
 	}
-	field, err := selectLayer(params, field, param, where)
+	field, orderBy, err := handlerTranslationConditions(params, param, where)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	if params.Sort == 0 {
-		orderby = " ORDER BY count(error::tag) DESC"
-	}
-	if params.Sort == 1 {
-		orderby = " ORDER BY sum(elapsed_count::field) DESC"
-	}
+
 	sql := fmt.Sprintf("SELECT %s,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM application_%s WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName "+
-		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderby)
+		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderBy)
 	source, err := topology.metricq.Query(
 		metricq.InfluxQL,
 		sql,
@@ -1907,7 +1901,9 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	return api.Success(result)
 }
 
-func selectLayer(params translation, field string, param map[string]interface{}, where bytes.Buffer) (string, error) {
+func handlerTranslationConditions(params translation, param map[string]interface{}, where bytes.Buffer) (string, string, error) {
+	var orderBy string
+	var field string
 	switch params.Layer {
 	case "http":
 		field = "http_path::tag"
@@ -1924,9 +1920,16 @@ func selectLayer(params translation, field string, param map[string]interface{},
 			where.WriteString(" AND peer_service::tag=~$field")
 		}
 	default:
-		return "", errors.New("not support layer name")
+		return "", "", errors.New("not support layer name")
 	}
-	return field, nil
+
+	if params.Sort == 0 {
+		orderBy = " ORDER BY count(error::tag) DESC"
+	}
+	if params.Sort == 1 {
+		orderBy = " ORDER BY sum(elapsed_count::field) DESC"
+	}
+	return field, orderBy, nil
 }
 
 // db/cache
