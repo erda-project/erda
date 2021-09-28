@@ -39,7 +39,7 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -49,6 +49,10 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetLimits := func(method, path string, fn func(context.Context, *GetLimitsRequest) (*GetLimitsResponse, error)) {
@@ -79,6 +83,9 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 					}
 				}
 				params := r.URL.Query()
+				if vals := params["consumerId"]; len(vals) > 0 {
+					in.ConsumerId = vals[0]
+				}
 				if vals := params["packageId"]; len(vals) > 0 {
 					in.PackageId = vals[0]
 				}
@@ -95,9 +102,6 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 						return nil, err
 					}
 					in.PageSize = val
-				}
-				if vals := params["consumerId"]; len(vals) > 0 {
-					in.ConsumerId = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -136,11 +140,11 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["projectId"]; len(vals) > 0 {
-					in.ProjectId = vals[0]
-				}
 				if vals := params["env"]; len(vals) > 0 {
 					in.Env = vals[0]
+				}
+				if vals := params["projectId"]; len(vals) > 0 {
+					in.ProjectId = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {

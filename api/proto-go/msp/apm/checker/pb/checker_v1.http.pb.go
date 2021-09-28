@@ -48,7 +48,7 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -58,6 +58,10 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_CreateCheckerV1 := func(method, path string, fn func(context.Context, *CreateCheckerV1Request) (*CreateCheckerV1Response, error)) {

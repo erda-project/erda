@@ -52,7 +52,7 @@ func RegisterNotifyServiceHandler(r http.Router, srv NotifyServiceHandler, opts 
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -62,6 +62,10 @@ func RegisterNotifyServiceHandler(r http.Router, srv NotifyServiceHandler, opts 
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetAllNotifyTemplates := func(method, path string, fn func(context.Context, *GetAllNotifyTemplatesRequest) (*GetAllNotifyTemplatesResponse, error)) {

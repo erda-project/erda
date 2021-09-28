@@ -33,7 +33,7 @@ func RegisterExceptionServiceHandler(r http.Router, srv ExceptionServiceHandler,
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -43,6 +43,10 @@ func RegisterExceptionServiceHandler(r http.Router, srv ExceptionServiceHandler,
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetExceptions := func(method, path string, fn func(context.Context, *GetExceptionsRequest) (*GetExceptionsResponse, error)) {

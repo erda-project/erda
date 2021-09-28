@@ -64,7 +64,7 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -74,6 +74,10 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetEndpointsName := func(method, path string, fn func(context.Context, *GetEndpointsNameRequest) (*GetEndpointsNameResponse, error)) {
@@ -104,11 +108,11 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["projectId"]; len(vals) > 0 {
-					in.ProjectId = vals[0]
-				}
 				if vals := params["env"]; len(vals) > 0 {
 					in.Env = vals[0]
+				}
+				if vals := params["projectId"]; len(vals) > 0 {
+					in.ProjectId = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -147,24 +151,8 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["pageSize"]; len(vals) > 0 {
-					val, err := strconv.ParseInt(vals[0], 10, 64)
-					if err != nil {
-						return nil, err
-					}
-					in.PageSize = val
-				}
-				if vals := params["sortField"]; len(vals) > 0 {
-					in.SortField = vals[0]
-				}
-				if vals := params["sortType"]; len(vals) > 0 {
-					in.SortType = vals[0]
-				}
 				if vals := params["domain"]; len(vals) > 0 {
 					in.Domain = vals[0]
-				}
-				if vals := params["projectId"]; len(vals) > 0 {
-					in.ProjectId = vals[0]
 				}
 				if vals := params["env"]; len(vals) > 0 {
 					in.Env = vals[0]
@@ -175,6 +163,22 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 						return nil, err
 					}
 					in.PageNo = val
+				}
+				if vals := params["pageSize"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.PageSize = val
+				}
+				if vals := params["projectId"]; len(vals) > 0 {
+					in.ProjectId = vals[0]
+				}
+				if vals := params["sortField"]; len(vals) > 0 {
+					in.SortField = vals[0]
+				}
+				if vals := params["sortType"]; len(vals) > 0 {
+					in.SortType = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -272,11 +276,11 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["projectId"]; len(vals) > 0 {
-					in.ProjectId = vals[0]
-				}
 				if vals := params["env"]; len(vals) > 0 {
 					in.Env = vals[0]
+				}
+				if vals := params["projectId"]; len(vals) > 0 {
+					in.ProjectId = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -436,11 +440,20 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 					}
 				}
 				params := r.URL.Query()
+				if vals := params["apiPath"]; len(vals) > 0 {
+					in.ApiPath = vals[0]
+				}
+				if vals := params["diceApp"]; len(vals) > 0 {
+					in.DiceApp = vals[0]
+				}
 				if vals := params["diceService"]; len(vals) > 0 {
 					in.DiceService = vals[0]
 				}
-				if vals := params["sortType"]; len(vals) > 0 {
-					in.SortType = vals[0]
+				if vals := params["method"]; len(vals) > 0 {
+					in.Method = vals[0]
+				}
+				if vals := params["origin"]; len(vals) > 0 {
+					in.Origin = vals[0]
 				}
 				if vals := params["pageNo"]; len(vals) > 0 {
 					val, err := strconv.ParseInt(vals[0], 10, 64)
@@ -449,27 +462,18 @@ func RegisterEndpointApiServiceHandler(r http.Router, srv EndpointApiServiceHand
 					}
 					in.PageNo = val
 				}
-				if vals := params["origin"]; len(vals) > 0 {
-					in.Origin = vals[0]
-				}
-				if vals := params["apiPath"]; len(vals) > 0 {
-					in.ApiPath = vals[0]
-				}
-				if vals := params["method"]; len(vals) > 0 {
-					in.Method = vals[0]
-				}
-				if vals := params["diceApp"]; len(vals) > 0 {
-					in.DiceApp = vals[0]
-				}
-				if vals := params["sortField"]; len(vals) > 0 {
-					in.SortField = vals[0]
-				}
 				if vals := params["pageSize"]; len(vals) > 0 {
 					val, err := strconv.ParseInt(vals[0], 10, 64)
 					if err != nil {
 						return nil, err
 					}
 					in.PageSize = val
+				}
+				if vals := params["sortField"]; len(vals) > 0 {
+					in.SortField = vals[0]
+				}
+				if vals := params["sortType"]; len(vals) > 0 {
+					in.SortType = vals[0]
 				}
 				path := r.URL.Path
 				if len(path) > 0 {

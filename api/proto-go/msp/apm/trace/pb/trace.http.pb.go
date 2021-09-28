@@ -48,7 +48,7 @@ func RegisterTraceServiceHandler(r http.Router, srv TraceServiceHandler, opts ..
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -58,6 +58,10 @@ func RegisterTraceServiceHandler(r http.Router, srv TraceServiceHandler, opts ..
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetSpans := func(method, path string, fn func(context.Context, *GetSpansRequest) (*GetSpansResponse, error)) {
@@ -151,11 +155,11 @@ func RegisterTraceServiceHandler(r http.Router, srv TraceServiceHandler, opts ..
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["tenantId"]; len(vals) > 0 {
-					in.TenantID = vals[0]
-				}
 				if vals := params["serviceInstanceId"]; len(vals) > 0 {
 					in.ServiceInstanceID = vals[0]
+				}
+				if vals := params["tenantId"]; len(vals) > 0 {
+					in.TenantID = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {

@@ -29,7 +29,7 @@ func RegisterCPServiceHandler(r http.Router, srv CPServiceHandler, opts ...http.
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -39,6 +39,10 @@ func RegisterCPServiceHandler(r http.Router, srv CPServiceHandler, opts ...http.
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_Render := func(method, path string, fn func(context.Context, *RenderRequest) (*RenderResponse, error)) {

@@ -35,7 +35,7 @@ func RegisterReportServiceHandler(r http.Router, srv ReportServiceHandler, opts 
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -45,6 +45,10 @@ func RegisterReportServiceHandler(r http.Router, srv ReportServiceHandler, opts 
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_QueryPipelineReportSet := func(method, path string, fn func(context.Context, *PipelineReportSetQueryRequest) (*PipelineReportSetQueryResponse, error)) {
@@ -142,14 +146,14 @@ func RegisterReportServiceHandler(r http.Router, srv ReportServiceHandler, opts 
 					}
 				}
 				params := r.URL.Query()
-				if vals := params["type"]; len(vals) > 0 {
-					in.Types = vals
-				}
 				if vals := params["mustMatchLabel"]; len(vals) > 0 {
 					in.MustMatchLabelsQueryParams = vals
 				}
 				if vals := params["source"]; len(vals) > 0 {
 					in.Sources = vals
+				}
+				if vals := params["type"]; len(vals) > 0 {
+					in.Types = vals
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
