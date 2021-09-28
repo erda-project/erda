@@ -164,6 +164,8 @@ func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupD
 				if err != nil {
 					return nil, err
 				}
+				fmt.Printf("label map is %v", label)
+				fmt.Println("label project is ", label[apistructs.MSPMemberScopeId])
 				scopeID, err := strconv.ParseInt(label[apistructs.MSPMemberScopeId], 10, 32)
 				if err != nil {
 					return nil, err
