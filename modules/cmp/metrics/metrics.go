@@ -17,6 +17,8 @@ package metrics
 import (
 	"context"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	jsi "github.com/json-iterator/go"
@@ -32,6 +34,16 @@ import (
 )
 
 type ResourceType string
+
+var queryQueue chan struct{}
+
+func init() {
+	queueSize := 5
+	if size, err := strconv.Atoi(os.Getenv("METRICS_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	queryQueue = make(chan struct{}, queueSize)
+}
 
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
@@ -85,12 +97,12 @@ type Interface interface {
 }
 
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
+	queryQueue <- struct{}{}
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
-
 	if err != nil {
 		return nil, err
 	}
-
+	<-queryQueue
 	values, err := cache.MarshalValue(v)
 	cache.FreeCache.Set(key, values, time.Now().UnixNano()+int64(time.Second*30))
 	return v, nil
