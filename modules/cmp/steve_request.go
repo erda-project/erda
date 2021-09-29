@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +25,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -34,6 +34,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -61,7 +62,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to authenticate, %v", err)
+		return types.APIObject{}, err
 	}
 	if req.Type == apistructs.K8SNode {
 		user = &apiuser.DefaultInfo{
@@ -77,7 +78,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
 	if err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -97,29 +98,29 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, errors.New(objData.String("message"))
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 	return obj, nil
 }
 
 func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" {
-		return nil, errors.New("clusterName and type fields are required")
+		return nil, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to authenticate, %v", err)
+		return nil, err
 	}
 	if req.Type == apistructs.K8SNode {
 		user = &apiuser.DefaultInfo{
@@ -135,7 +136,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -151,16 +152,16 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 
 	logrus.Infof("[DEBUG] start request steve aggregator at %s", time.Now().Format(time.StampNano))
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return nil, err
+		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	logrus.Infof("[DEBUG] end request steve aggregator at %s", time.Now().Format(time.StampNano))
 
 	collection, ok := resp.ResponseData.(*types.GenericCollection)
 	if !ok {
 		if resp.ResponseData == nil {
-			return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return nil, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return nil, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	var objects []types.APIObject
@@ -181,28 +182,28 @@ func newReadCloser(obj interface{}) (io.ReadCloser, error) {
 
 func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return types.APIObject{}, errors.New("clusterName, name and type fields are required")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
 	}
 	if !isObjInvalid(req.Obj) {
-		return types.APIObject{}, errors.New("obj in req is invalid")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("obj in req is invalid"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to authenticate, %v", err)
+		return types.APIObject{}, err
 	}
 
 	body, err := newReadCloser(req.Obj)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to get body, %v", err)
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.Errorf("failed to get body, %v", err))
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodPut, path, body)
 	if err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -216,21 +217,21 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, errors.New(objData.String("message"))
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
 	auditCtx := map[string]interface{}{
@@ -247,28 +248,28 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 
 func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" {
-		return types.APIObject{}, errors.New("clusterName and type fields are required")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
 	}
 	if !isObjInvalid(req.Obj) {
-		return types.APIObject{}, errors.New("obj in req is invalid")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("obj in req is invalid"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type))
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to authenticate, %v", err)
+		return types.APIObject{}, err
 	}
 
 	body, err := newReadCloser(req.Obj)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to get body, %v", err)
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to get body, %v", err))
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodPost, path, body)
 	if err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -281,21 +282,21 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, errors.New(objData.String("message"))
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
 	reqObj, err := data.Convert(req.Obj)
@@ -320,20 +321,20 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 
 func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName, name and type fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return fmt.Errorf("failed to authenticate, %v", err)
+		return err
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodDelete, path, nil)
 	if err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -347,21 +348,21 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return errors.New(objData.String("message"))
+		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
 	auditCtx := map[string]interface{}{
@@ -378,28 +379,28 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 
 func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName, name and type fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
 	}
 	if !isObjInvalid(req.Obj) {
-		return errors.New("obj in req is invalid")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("obj in req is invalid"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1/node", req.Name)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return fmt.Errorf("failed to authenticate, %v", err)
+		return err
 	}
 
 	body, err := newReadCloser(req.Obj)
 	if err != nil {
-		return fmt.Errorf("failed to get body, %v", err)
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("failed to get body, %v", err))
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodPatch, path, body)
 	if err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -413,32 +414,32 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return errors.New(objData.String("message"))
+		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 	return nil
 }
 
 func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	if labels == nil || len(labels) == 0 {
-		return errors.New("labels are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("labels are required"))
 	}
 
 	metadata := map[string]interface{}{
@@ -469,11 +470,11 @@ func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, 
 
 func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	if len(labels) == 0 {
-		return errors.New("labels are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("labels are required"))
 	}
 
 	toUnlabel := make(map[string]interface{})
@@ -504,7 +505,7 @@ func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest
 
 func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	spec := map[string]interface{}{
@@ -530,7 +531,7 @@ func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest)
 
 func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	spec := map[string]interface{}{
@@ -557,7 +558,7 @@ func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveReques
 func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error) {
 	scopeID, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid org id %s, %v", orgID, err)
+		return nil, apierrors.ErrInvoke.InvalidParameter(fmt.Sprintf("invalid org id %s, %v", orgID, err))
 	}
 
 	clusters, err := p.listClusterByType(scopeID, "k8s", "edas")
@@ -573,7 +574,7 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		}
 	}
 	if !found {
-		return nil, fmt.Errorf("cluster %s not found in org %s", clusterName, orgID)
+		return nil, apierrors.ErrInvoke.InvalidParameter(fmt.Sprintf("cluster %s not found in org %s", clusterName, orgID))
 	}
 
 	r := &apistructs.ScopeRoleAccessRequest{
@@ -587,7 +588,7 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		return nil, err
 	}
 	if !rsp.Access {
-		return nil, errors.New("access denied")
+		return nil, apierrors.ErrInvoke.AccessDenied()
 	}
 
 	name := fmt.Sprintf("erda-user-%s", userID)
@@ -605,7 +606,7 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 	}
 
 	if len(user.Groups) == 0 {
-		return nil, errors.New("access denied")
+		return nil, apierrors.ErrInvoke.AccessDenied()
 	}
 
 	return user, nil
@@ -613,12 +614,12 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 
 func (p *provider) Audit(userID, orgID, templateName string, ctx map[string]interface{}) error {
 	if ctx == nil || len(ctx) == 0 {
-		return errors.New("template context can not be empty")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("template context can not be empty"))
 	}
 
 	scopeID, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
-		return fmt.Errorf("invalid org id %s, %v", orgID, err)
+		return apierrors.ErrInvoke.InvalidParameter(fmt.Errorf("invalid org id %s, %v", orgID, err))
 	}
 
 	now := strconv.FormatInt(time.Now().Unix(), 10)
