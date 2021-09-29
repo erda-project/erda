@@ -84,21 +84,21 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	urlQuery, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	base64Decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	newQuery := make(map[string]interface{})
+	if err := json.Unmarshal(base64Decoded, &newQuery); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(query["pageNo"].(float64))
-	w.State.PageSize = uint64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
+	w.State.PageNo = uint64(newQuery["pageNo"].(float64))
+	w.State.PageSize = uint64(newQuery["pageSize"].(float64))
+	sorter := newQuery["sorterData"].(map[string]interface{})
 	w.State.Sorter.Field = sorter["field"].(string)
 	w.State.Sorter.Order = sorter["order"].(string)
 	return nil
@@ -109,12 +109,12 @@ func (w *ComponentWorkloadTable) EncodeURLQuery() error {
 	query["pageNo"] = w.State.PageNo
 	query["pageSize"] = w.State.PageSize
 	query["sorterData"] = w.State.Sorter
-	data, err := json.Marshal(query)
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
+	encode := base64.StdEncoding.EncodeToString(jsonData)
 	w.State.WorkloadTableURLQuery = encode
 	return nil
 }
@@ -131,11 +131,11 @@ func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	w.State = state
@@ -146,7 +146,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	userID := w.sdk.Identity.UserID
 	orgID := w.sdk.Identity.OrgID
 
-	req := apistructs.SteveRequest{
+	steveRequest := apistructs.SteveRequest{
 		UserID:      userID,
 		OrgID:       orgID,
 		ClusterName: w.State.ClusterName,
@@ -158,8 +158,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// deployment
 	var activeDeploy, errorDeploy int
 	if _, ok := kinds[filter.DeploymentType]; ok || len(kinds) == 0 {
-		req.Type = apistructs.K8SDeployment
-		list, err := w.server.ListSteveResource(w.ctx, &req)
+		steveRequest.Type = apistructs.K8SDeployment
+		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}
@@ -238,8 +238,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// daemonSet
 	var activeDs, errorDs int
 	if _, ok := kinds[filter.DaemonSetType]; ok || len(kinds) == 0 {
-		req.Type = apistructs.K8SDaemonSet
-		list, err := w.server.ListSteveResource(w.ctx, &req)
+		steveRequest.Type = apistructs.K8SDaemonSet
+		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}
@@ -320,8 +320,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// statefulSet
 	var activeSs, errorSs int
 	if _, ok := kinds[filter.StatefulSetType]; ok || len(kinds) == 0 {
-		req.Type = apistructs.K8SStatefulSet
-		list, err := w.server.ListSteveResource(w.ctx, &req)
+		steveRequest.Type = apistructs.K8SStatefulSet
+		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}
@@ -398,8 +398,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// job
 	var activeJob, succeededJob, failedJob int
 	if _, ok := kinds[filter.JobType]; ok || len(kinds) == 0 {
-		req.Type = apistructs.K8SJob
-		list, err := w.server.ListSteveResource(w.ctx, &req)
+		steveRequest.Type = apistructs.K8SJob
+		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}
@@ -479,8 +479,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// cronjob
 	var activeCronJob int
 	if _, ok := kinds[filter.CronJobType]; ok || len(kinds) == 0 {
-		req.Type = apistructs.K8SCronJob
-		list, err := w.server.ListSteveResource(w.ctx, &req)
+		steveRequest.Type = apistructs.K8SCronJob
+		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}

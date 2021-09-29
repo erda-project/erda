@@ -144,6 +144,7 @@
             ]
           },
           "optionProps": {
+            "showAllTooltip": true,
             "isMoreThanOneDay": false
           },
           "option": {
@@ -342,6 +343,7 @@
             ]
           },
           "optionProps": {
+            "showAllTooltip": true,
             "isMoreThanOneDay": false
           },
           "option": {
@@ -559,6 +561,7 @@
             ]
           },
           "optionProps": {
+            "showAllTooltip": true,
             "isMoreThanOneDay": false
           },
           "option": {
@@ -783,6 +786,7 @@
             ]
           },
           "optionProps": {
+            "showAllTooltip": true,
             "isMoreThanOneDay": false
           },
           "option": {
