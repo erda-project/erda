@@ -389,6 +389,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithIssueStream(issueStream),
 		issue.WithUCClient(uc),
 		issue.WithTranslator(p.IssueTan),
+		issue.WithIssueRelated(issueRelated),
 	)
 
 	issueState := issuestate.New(
