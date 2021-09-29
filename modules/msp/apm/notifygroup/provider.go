@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package member
+package notifygroup
 
 import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/msp/member/pb"
-	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
@@ -31,44 +30,43 @@ type config struct {
 }
 
 type provider struct {
-	Cfg           *config
-	Register      transport.Register
-	memberService *memberService
-	bdl           *bundle.Bundle
-	ProjectServer projectpb.ProjectServiceServer
-	DB            *gorm.DB `autowired:"mysql-client"`
-	instanceDB    *instancedb.InstanceTenantDB
-	mspTenantDB   *db.MSPTenantDB
+	Cfg                *config
+	Register           transport.Register
+	notifyGroupService *notifyGroupService
+	bdl                *bundle.Bundle
+	DB                 *gorm.DB `autowired:"mysql-client"`
+	instanceDB         *instancedb.InstanceTenantDB
+	mspTenantDB        *db.MSPTenantDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.memberService = &memberService{p}
+	p.notifyGroupService = &notifyGroupService{p}
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
-	if p.Register != nil {
-		pb.RegisterMemberServiceImp(p.Register, p.memberService, apis.Options())
-	}
 	p.instanceDB = &instancedb.InstanceTenantDB{DB: p.DB}
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
+	if p.Register != nil {
+		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options())
+	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.msp.member.MemberService" || ctx.Type() == pb.MemberServiceServerType() || ctx.Type() == pb.MemberServiceHandlerType():
-		return p.memberService
+	case ctx.Service() == "erda.msp.apm.notifygroup.NotifyGroupService" || ctx.Type() == pb.NotifyGroupServiceServerType() || ctx.Type() == pb.NotifyGroupServiceHandlerType():
+		return p.notifyGroupService
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.msp.member", &servicehub.Spec{
+	servicehub.Register("erda.msp.apm.notifygroup", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
-		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},
 		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},
+		Types: pb.Types(),
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

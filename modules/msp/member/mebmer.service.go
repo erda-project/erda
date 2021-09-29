@@ -31,8 +31,29 @@ type memberService struct {
 }
 
 func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemberRolesRequest) (*pb.ListMemberRolesResponse, error) {
+	var projectId string
+	instance, err := m.p.mspTenantDB.QueryTenant(request.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if instance == nil {
+		tenant, err := m.p.instanceDB.GetInstanceByTenantGroup(request.ScopeId)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		option := make(map[string]string)
+		if tenant != nil {
+			err = json.Unmarshal([]byte(tenant.Options), &option)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			projectId = option["projectId"]
+		}
+	} else {
+		projectId = instance.RelatedProjectId
+	}
 	project, err := m.p.ProjectServer.GetProject(ctx, &projectpb.GetProjectRequest{
-		ProjectID: strconv.Itoa(int(request.ScopeId)),
+		ProjectID: projectId,
 	})
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -43,9 +64,13 @@ func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemb
 		return nil, errors.NewInternalServerError(err)
 	}
 	if project.Data.Type == "DOP" {
+		scopeId, err := strconv.Atoi(projectId)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
 		roleList, err := m.p.bdl.ListMemberRoles(apistructs.ListScopeManagersByScopeIDRequest{
 			ScopeType: apistructs.ScopeType(request.ScopeType),
-			ScopeID:   request.ScopeId,
+			ScopeID:   int64(scopeId),
 		}, int64(orgId))
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)

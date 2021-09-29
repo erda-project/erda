@@ -109,6 +109,7 @@ type NotifyGroup struct {
 	Targets   []NotifyTarget `json:"targets"`
 	CreatedAt time.Time      `json:"createdAt"`
 	Creator   string         `json:"creator"`
+	Label     string         `json:"label"`
 }
 
 // NotifyGroupDetail 通知组详情信息

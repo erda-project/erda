@@ -34,7 +34,11 @@ const (
 const SupportID string = "2020"
 
 //MSP
-const MSPScope string = "msp"
+const (
+	MSPScope         string = "msp_env"
+	MSPMemberScope   string = "member_scopeType"
+	MSPMemberScopeId string = "member_scopeID"
+)
 
 // Publisher 类型
 const (

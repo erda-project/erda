@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
@@ -27,6 +28,8 @@ import (
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	db2 "github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -145,6 +148,23 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 	monkey.Patch(apis.GetOrgID, func(_ context.Context) string {
 		return "1"
 	})
+	monkey.Patch((*db.MSPTenantDB).QueryTenant, func(_ *db.MSPTenantDB, _ string) (*db.MSPTenant, error) {
+		return nil, nil
+	})
+	monkey.Patch((*db2.InstanceTenantDB).GetInstanceByTenantGroup, func(_ *db2.InstanceTenantDB, _ string) (*db2.InstanceTenant, error) {
+		return &db2.InstanceTenant{
+			ID:          "1",
+			InstanceID:  "",
+			Config:      "",
+			Options:     `{"projectId":"3"}`,
+			TenantGroup: "",
+			Engine:      "",
+			Az:          "",
+			CreateTime:  time.Time{},
+			UpdateTime:  time.Time{},
+			IsDeleted:   "",
+		}, nil
+	})
 	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
 		return &apistructs.RoleList{
 			List: []apistructs.RoleInfo{
@@ -167,7 +187,7 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMemberRoles(context.Background(), &pb.ListMemberRolesRequest{
 		ScopeType: "project",
-		ScopeId:   10,
+		ScopeId:   "fc1f8c074e46a9df505a15c1a94d62cc",
 	})
 	if err != nil {
 		fmt.Println(err)

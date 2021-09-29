@@ -50,6 +50,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/expression/pb"
+	_ "github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/configcenter/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/credential/pb"

@@ -64,6 +64,7 @@ func (notifyGroup *NotifyGroup) ToApiData() *apistructs.NotifyGroup {
 		Targets:   targets,
 		CreatedAt: notifyGroup.CreatedAt,
 		Creator:   notifyGroup.Creator,
+		Label:     notifyGroup.Label,
 	}
 	return data
 }

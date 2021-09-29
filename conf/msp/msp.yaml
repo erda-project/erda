@@ -88,6 +88,7 @@ erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
 erda.msp.member:
+erda.msp.apm.notifygroup:
 
 erda.msp.apm.adapter:
   collector_url: ${COLLECTOR_PUBLIC_URL:https://collector.erda.cloud}
