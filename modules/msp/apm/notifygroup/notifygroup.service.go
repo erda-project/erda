@@ -17,7 +17,6 @@ package notifygroup
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
@@ -92,21 +91,20 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
 	orgId := apis.GetOrgID(ctx)
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	queryReq := &apistructs.QueryNotifyGroupRequest{}
-	err = json.Unmarshal(data, queryReq)
-	fmt.Printf("%+v", queryReq)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	queryReq := &apistructs.QueryNotifyGroupRequest{
+		PageNo:      request.PageNo,
+		PageSize:    request.PageSize,
+		ScopeType:   request.ScopeType,
+		ScopeID:     request.ScopeId,
+		Label:       request.Label,
+		ClusterName: request.ClusterName,
+		Names:       request.Names,
 	}
 	resp, err := n.p.bdl.QueryNotifyGroup(orgId, queryReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err = json.Marshal(resp.List)
+	data, err := json.Marshal(resp.List)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
