@@ -136,12 +136,12 @@ func (t *ComponentEventTable) DecodeURLQuery() error {
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	queryData := make(map[string]interface{})
-	queryData["pageNo"] = int(t.State.PageNo)
-	queryData["pageSize"] = int(t.State.PageSize)
-	queryData["sorterData"] = t.State.Sorter
+	query := make(map[string]interface{})
+	query["pageNo"] = int(t.State.PageNo)
+	query["pageSize"] = int(t.State.PageSize)
+	query["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(queryData)
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
