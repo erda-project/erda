@@ -15,10 +15,11 @@
 package project
 
 import (
-	"bou.ke/monkey"
 	context "context"
 	reflect "reflect"
 	testing "testing"
+
+	"bou.ke/monkey"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
