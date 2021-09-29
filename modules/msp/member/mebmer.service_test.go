@@ -73,10 +73,13 @@ func Test_memberService_ListMember(t *testing.T) {
 		func(_ *bundle.Bundle, _ apistructs.MemberListRequest) (*apistructs.MemberList, error) {
 			return listMembersAndTotalData, nil
 		})
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) string {
+		return "4"
+	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMember(context.Background(), &pb.ListMemberRequest{
 		ScopeType: "project",
-		ScopeId:   15,
+		ScopeId:   "c393550824b3d50aa758fee4593d6e31",
 		PageNo:    1,
 		PageSize:  1,
 	})
@@ -98,6 +101,9 @@ func Test_memberService_DeleteMember(t *testing.T) {
 	}
 	var bdl *bundle.Bundle
 	defer monkey.UnpatchAll()
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) string {
+		return "4"
+	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteMember",
 		func(_ *bundle.Bundle, _ apistructs.MemberRemoveRequest) error {
 			return nil
@@ -214,6 +220,9 @@ func Test_memberService_CreateOrUpdateMember(t *testing.T) {
 		func(_ *bundle.Bundle, _ apistructs.MemberAddRequest, _ string) error {
 			return nil
 		})
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) string {
+		return "4"
+	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.CreateOrUpdateMember(context.Background(), &pb.CreateOrUpdateMemberRequest{
 		Scope: &pb.Scope{

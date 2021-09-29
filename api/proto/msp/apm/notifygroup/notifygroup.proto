@@ -105,7 +105,7 @@ message QueryNotifyGroupRequest {
   int64           pageNo      = 1;
   int64           pageSize    = 2;
   string          scopeType   = 3;
-  string          scopeID     = 4;
+  string          scopeId     = 4;
   string          label       = 5;
   string          clusterName = 6;
   repeated string names       = 7;
@@ -125,8 +125,8 @@ message GetNotifyGroupRequest {
 }
 
 message GetNotifyGroupResponse {
-  NotifyGroup           data     = 1;
-  repeated string       userIDs  = 2;
+  NotifyGroup     data    = 1;
+  repeated string userIDs = 2;
 }
 
 message UserInfo {

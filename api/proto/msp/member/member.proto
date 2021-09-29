@@ -82,7 +82,7 @@ message ScopeResource {
 
 message ListMemberRequest {
   string          scopeType = 1;
-  int64           scopeId   = 2;
+  string          scopeId   = 2;
   int64           pageNo    = 3;
   int64           pageSize  = 4;
   string          q         = 5;
