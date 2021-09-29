@@ -73,8 +73,6 @@ func (b *Bundle) QueryNotifyGroup(orgID string, request *apistructs.QueryNotifyG
 	hc := b.hc
 	var getResp apistructs.QueryNotifyGroupResponse
 	resp, err := hc.Get(host).Path("/api/notify-groups").
-		Param("pageNo", strconv.Itoa(int(request.PageNo))).
-		Param("pageSize", strconv.Itoa(int(request.PageSize))).
 		Param("scopeType", request.ScopeType).
 		Param("scopeId", request.ScopeID).
 		Param("label", request.Label).

@@ -82,7 +82,7 @@ func (p Projects) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p Projects) Less(i, j int) bool { return p[i].CreateTime > p[j].CreateTime }
 
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	projects, err := s.getProjects(ctx, req.ProjectId)
+	projects, err := s.GetProjectList(ctx, req.ProjectId)
 	if err != nil {
 		return &pb.GetProjectsResponse{Data: nil}, err
 	}
@@ -98,25 +98,31 @@ var workspaces = []string{
 	tenantpb.Workspace_DEFAULT.String(),
 }
 
-func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (Projects, error) {
+func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string) (Projects, error) {
 	var projects Projects
 
 	// request orch for history project
-	orchProjects, err := s.getHistoryProjects(ctx, projectIDs, projects)
+	orchProjects, err := s.GetHistoryProjects(ctx, projectIDs, projects)
 	if err != nil {
 		return nil, err
 	}
 	for _, project := range orchProjects {
-		pbProject := s.covertHistoryProjectToMSPProject(ctx, project)
+		pbProject := s.CovertHistoryProjectToMSPProject(ctx, project)
+		if pbProject.Relationship == nil || len(pbProject.Relationship) == 0 {
+			continue
+		}
 		projects = append(projects, pbProject)
 	}
 
 	for _, id := range projectIDs {
-		project, err := s.getProject(apis.Language(ctx), id)
+		project, err := s.GetProjectInfo(apis.Language(ctx), id)
 		if err != nil {
 			return nil, err
 		}
 		if project == nil {
+			continue
+		}
+		if project.Relationship == nil || len(project.Relationship) == 0 {
 			continue
 		}
 
@@ -131,7 +137,7 @@ func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (
 	return projects, nil
 }
 
-func (s *projectService) getHistoryProjects(ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
+func (s *projectService) GetHistoryProjects(ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
 	params := url.Values{}
 	for _, id := range projectIDs {
 		params.Add("projectId", id)
@@ -145,7 +151,7 @@ func (s *projectService) getHistoryProjects(ctx context.Context, projectIDs []st
 	return orchProjects, err
 }
 
-func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) *pb.Project {
+func (s *projectService) CovertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) *pb.Project {
 	pbProject := pb.Project{}
 	pbProject.Id = project.ProjectID
 	pbProject.Name = project.ProjectName
@@ -238,7 +244,7 @@ func (s *projectService) UpdateProject(ctx context.Context, req *pb.UpdateProjec
 	return &pb.UpdateProjectResponse{Data: pbProject}, nil
 }
 
-func (s *projectService) getProject(lang i18n.LanguageCodes, id string) (*pb.Project, error) {
+func (s *projectService) GetProjectInfo(lang i18n.LanguageCodes, id string) (*pb.Project, error) {
 	projectDB, err := s.MSPProjectDB.Query(id)
 	if err != nil {
 		return nil, err
@@ -271,7 +277,7 @@ func (s *projectService) getProject(lang i18n.LanguageCodes, id string) (*pb.Pro
 }
 
 func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectRequest) (*pb.GetProjectResponse, error) {
-	project, err := s.getProject(apis.Language(ctx), req.ProjectID)
+	project, err := s.GetProjectInfo(apis.Language(ctx), req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +293,7 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 			return nil, err
 		}
 		historyMicroserviceProject := orchProjects[0]
-		mspProject := s.covertHistoryProjectToMSPProject(ctx, historyMicroserviceProject)
+		mspProject := s.CovertHistoryProjectToMSPProject(ctx, historyMicroserviceProject)
 		project = mspProject
 	}
 
@@ -322,7 +328,7 @@ func (s *projectService) DeleteProject(ctx context.Context, req *pb.DeleteProjec
 }
 
 func (s *projectService) GetProjectOverview(ctx context.Context, req *pb.GetProjectOverviewRequest) (*pb.GetProjectOverviewResponse, error) {
-	projects, err := s.getProjects(ctx, req.ProjectId)
+	projects, err := s.GetProjectList(ctx, req.ProjectId)
 	predata := pb.ProjectOverviewList{}
 	var data []*pb.ProjectOverview
 	pv := pb.ProjectOverview{}
