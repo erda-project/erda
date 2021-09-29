@@ -102,6 +102,15 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 	logrus.Infof("request body: %+v", projectUpdateReq)
 
+	oldProject, err := e.project.Get(projectID)
+	if err != nil {
+		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
+	}
+
+	// confirm project is located at the org in header
+	if uint64(orgID) != oldProject.OrgID {
+		return apierrors.ErrUpdateProject.AccessDenied().ToResp(), nil
+	}
 	// 操作鉴权
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
@@ -124,10 +133,6 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 		}
 	}
 
-	oldProject, err := e.project.Get(projectID)
-	if err != nil {
-		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
-	}
 	if oldProject.IsPublic != projectUpdateReq.IsPublic {
 		// 只有项目所有者可以更改项目public状态,二次鉴权
 		req := apistructs.PermissionCheckRequest{
