@@ -208,7 +208,7 @@ func (b *Bundle) ListTestPlanV2Step(testPlanID, groupID uint64) ([]*apistructs.T
 	hc := b.hc
 
 	var getResp apistructs.TestPlanV2StepListResponse
-	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/autotests/testplans-steps/%d/actions/by-groupID", testPlanID)).
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/autotests/testplans/%d/steps/actions/list-by-group-id", testPlanID)).
 		Param("groupID", strconv.FormatUint(groupID, 10)).
 		Header(httputil.InternalHeader, "bundle").Do().JSON(&getResp)
 

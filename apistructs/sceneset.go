@@ -27,8 +27,8 @@ const (
 	SceneSetsAutotestExecType = "sceneSets"
 	SceneAutotestExecType     = "scene"
 
-	nameMaxLength int = 50
-	descMaxLength int = 255
+	SceneSetNameMaxLength int = 50
+	SceneSetDescMaxLength int = 255
 )
 
 type SceneSet struct {
@@ -63,10 +63,10 @@ type SceneSetRequest struct {
 }
 
 func (req *SceneSetRequest) Validate() error {
-	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(nameMaxLength)); err != nil {
+	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(SceneSetNameMaxLength)); err != nil {
 		return err
 	}
-	if err := strutil.Validate(req.Description, strutil.MaxRuneCountValidator(descMaxLength)); err != nil {
+	if err := strutil.Validate(req.Description, strutil.MaxRuneCountValidator(SceneSetDescMaxLength)); err != nil {
 		return err
 	}
 	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {

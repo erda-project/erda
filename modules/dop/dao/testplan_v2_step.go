@@ -138,11 +138,10 @@ func (client *DBClient) AddTestPlanV2Step(req *apistructs.TestPlanV2StepAddReque
 func (client *DBClient) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDeleteRequest) error {
 	return client.Transaction(func(tx *gorm.DB) (err error) {
 		var step, nextStep TestPlanV2Step
-		defer func() error {
+		defer func() {
 			if err == nil {
-				return updateStepGroup(tx, step.GroupID)
+				err = updateStepGroup(tx, step.GroupID)
 			}
-			return nil
 		}()
 
 		// Get the step
@@ -175,12 +174,11 @@ func (client *DBClient) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepMoveReq
 	return client.Transaction(func(tx *gorm.DB) (err error) {
 		var oldGroupID, newGroupID uint64
 		// update step groupID in the group if isGroup is false
-		defer func() error {
+		defer func() {
 			if err == nil && !req.IsGroup {
 				groupIDs := strutil.DedupUint64Slice([]uint64{oldGroupID, newGroupID}, true)
-				return updateStepGroup(tx, groupIDs...)
+				err = updateStepGroup(tx, groupIDs...)
 			}
-			return nil
 		}()
 
 		var (
