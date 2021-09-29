@@ -42,6 +42,7 @@ func (w *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.C
 
 	w.Props.Title = fmt.Sprintf("%s: %d", cputil.I18n(ctx, "totalWorkload"), count)
 	w.Props.Size = "small"
+	w.Transfer(component)
 	return nil
 }
 

@@ -31,6 +31,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	apierrors2 "github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
@@ -294,25 +295,25 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 		if err != nil {
 			apiErr, _ := err.(*errorresp.APIError)
 			if apiErr.HttpCode() != http.StatusNotFound {
-				return fmt.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error())
+				return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error()))
 			}
-			return fmt.Errorf("cluster %s not found", clusterName)
+			return apierrors2.ErrInvoke.InvalidParameter(errors.Errorf("cluster %s not found", clusterName))
 		}
 
-		if cluster.Type != "k8s" {
-			return fmt.Errorf("cluster %s is not a k8s cluster", clusterName)
+		if cluster.Type != "k8s" && cluster.Type != "edas" {
+			return apierrors2.ErrInvoke.InvalidParameter(errors.Errorf("cluster %s is not a k8s or edas cluster", clusterName))
 		}
 
 		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
 		a.Add(cluster)
 		if s, ok = a.servers.Load(cluster.Name); !ok {
-			return fmt.Errorf("failed to start steve server for cluster %s", cluster.Name)
+			return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to start steve server for cluster %s", cluster.Name))
 		}
 	}
 
 	group, _ := s.(*group)
 	if !group.ready {
-		return fmt.Errorf("k8s API for cluster %s is not ready, please wait", clusterName)
+		return apierrors2.ErrInvoke.InternalError(errors.Errorf("k8s API for cluster %s is not ready, please wait", clusterName))
 	}
 	return group.server.Handle(apiOp)
 }
