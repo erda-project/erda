@@ -302,6 +302,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 								Params: map[string]string{
 									"podId": id,
 								},
+								Query: map[string]string{
+									"namespace": namespace,
+									"podName":   name,
+								},
 							},
 							JumpOut: true,
 						},
