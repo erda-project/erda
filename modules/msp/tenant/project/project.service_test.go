@@ -15,9 +15,15 @@
 package project
 
 import (
+	"bou.ke/monkey"
 	context "context"
 	reflect "reflect"
 	testing "testing"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/apis"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
@@ -72,11 +78,11 @@ func Test_projectService_GetProjects(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ProjectServiceServer)
 			got, err := srv.GetProjects(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("projectService.GetProjects() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("projectService.GetProjectList() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("projectService.GetProjects() = %v, want %v", got, tt.wantResp)
+				t.Errorf("projectService.GetProjectList() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -413,6 +419,102 @@ func Test_projectService_DeleteProject(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("DeleteProject() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_projectService_GetProjectList(t *testing.T) {
+	type fields struct {
+		p            *provider
+		MSPProjectDB *db.MSPProjectDB
+		MSPTenantDB  *db.MSPTenantDB
+		MonitorDB    *monitor.MonitorDB
+	}
+	type args struct {
+		ctx        context.Context
+		projectIDs []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    Projects
+		wantErr bool
+	}{
+		{"case1", fields{}, args{ctx: nil, projectIDs: []string{"1", "2"}}, nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var s *projectService
+			monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetHistoryProjects", func(s *projectService, ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
+				var data []apistructs.MicroServiceProjectResponseData
+				project := apistructs.MicroServiceProjectResponseData{
+					ProjectID:    "1",
+					ProjectName:  "test project 1",
+					LogoURL:      "http://localhost:8080",
+					Envs:         []string{},
+					TenantGroups: []string{},
+					Workspaces:   map[string]string{},
+				}
+				project2 := apistructs.MicroServiceProjectResponseData{
+					ProjectID:    "2",
+					ProjectName:  "test project 2",
+					LogoURL:      "http://localhost:8080",
+					Envs:         []string{},
+					TenantGroups: []string{},
+					Workspaces:   map[string]string{},
+				}
+
+				data = append(data, project)
+				data = append(data, project2)
+				return data, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetProjectInfo", func(s *projectService, lang i18n.LanguageCodes, id string) (*pb.Project, error) {
+				project := &pb.Project{
+					Id:           id,
+					Name:         "test project " + id,
+					Type:         "MSP",
+					Relationship: []*pb.TenantRelationship{},
+					IsDeleted:    false,
+					DisplayName:  "test project " + id,
+					DisplayType:  "MSP",
+				}
+				return project, nil
+			})
+			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+				return nil
+			})
+			monkey.PatchInstanceMethod(reflect.TypeOf(s), "CovertHistoryProjectToMSPProject", func(s *projectService, ctx context.Context, project apistructs.MicroServiceProjectResponseData) *pb.Project {
+				pbProject := pb.Project{}
+				pbProject.Id = project.ProjectID
+				pbProject.Name = project.ProjectName
+				pbProject.DisplayName = project.ProjectName
+				pbProject.CreateTime = project.CreateTime.UnixNano()
+				pbProject.Type = tenantpb.Type_DOP.String()
+
+				var rss []*pb.TenantRelationship
+				for i, env := range project.Envs {
+					if env == "" {
+						continue
+					}
+					rs := pb.TenantRelationship{}
+					rs.Workspace = env
+					rs.TenantID = project.TenantGroups[i]
+					rss = append(rss, &rs)
+				}
+				pbProject.Relationship = rss
+				return &pbProject
+			})
+
+			got, err := s.GetProjectList(tt.args.ctx, tt.args.projectIDs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetProjectList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetProjectList() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
