@@ -244,8 +244,8 @@ func (m *QueryNotifyGroupRequest) UnmarshalURLValues(prefix string, values url.V
 				m.PageSize = val
 			case "scopeType":
 				m.ScopeType = vals[0]
-			case "scopeID":
-				m.ScopeID = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
 			case "label":
 				m.Label = vals[0]
 			case "clusterName":
