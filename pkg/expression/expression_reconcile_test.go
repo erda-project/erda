@@ -95,3 +95,59 @@ func TestQuote(t *testing.T) {
 	qs := Quote(s)
 	assert.Equal(t, false, s == qs)
 }
+
+func TestDecodeOutputKey(t *testing.T) {
+	type args struct {
+		express string
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 bool
+	}{
+		{
+			name: "test_nil",
+			args: args{
+				express: "",
+			},
+			want:  "",
+			want1: false,
+		},
+		{
+			name: "test_other_express",
+			args: args{
+				express: "${{ configs.aaa }}",
+			},
+			want:  "${{ configs.aaa }}",
+			want1: false,
+		},
+		{
+			name: "test_true_express",
+			args: args{
+				express: "${{ outputs.aaa.bbb }}",
+			},
+			want:  "bbb",
+			want1: true,
+		},
+		{
+			name: "test_error_express",
+			args: args{
+				express: "${{ outputs.bbb }}",
+			},
+			want:  "${{ outputs.bbb }}",
+			want1: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := DecodeOutputKey(tt.args.express)
+			if got != tt.want {
+				t.Errorf("DecodeOutputKey() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("DecodeOutputKey() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

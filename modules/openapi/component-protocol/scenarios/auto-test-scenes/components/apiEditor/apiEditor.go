@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 )
 
 // Save 保存
@@ -57,7 +58,7 @@ func (ae *ApiEditor) Save(c *apistructs.Component) error {
 		if err != nil {
 			return err
 		}
-		var apiSpec APISpec
+		var apiSpec step.APISpec
 		if err := json.Unmarshal(apiInfoBytes, &apiSpec); err != nil {
 			return err
 		}

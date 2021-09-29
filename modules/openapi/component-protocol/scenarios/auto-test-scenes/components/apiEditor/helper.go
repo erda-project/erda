@@ -16,13 +16,11 @@ package apiEditor
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
@@ -375,14 +373,8 @@ func genMockInput(bdl protocol.ContextBundle) Input {
 	return mockInput
 }
 
-// APISpec step.value 的json解析
-type APISpec struct {
-	APIInfo apistructs.APIInfoV2         `json:"apiSpec"`
-	Loop    *apistructs.PipelineTaskLoop `json:"loop"`
-}
-
-func genEmptyAPISpecStr() (APISpec, string) {
-	var emptySpec APISpec
+func genEmptyAPISpecStr() (step.APISpec, string) {
+	var emptySpec step.APISpec
 	emptySpec.APIInfo.Method = "GET"
 	emptySpecBytes, err := json.Marshal(&emptySpec)
 	if err != nil {
@@ -398,33 +390,3 @@ const (
 var (
 	emptySpec, emptySpecStr = genEmptyAPISpecStr()
 )
-
-// GetStepOutPut get output parameter by autotest steps
-func GetStepOutPut(steps []apistructs.AutoTestSceneStep) (map[string]map[string]string, error) {
-	var value APISpec
-	outputs := make(map[string]map[string]string, 0)
-	for _, step := range steps {
-		if step.Type == apistructs.StepTypeAPI {
-			if step.Value == "" {
-				step.Value = "{}"
-			}
-			err := json.Unmarshal([]byte(step.Value), &value)
-			if err != nil {
-				return nil, err
-			}
-			if len(value.APIInfo.OutParams) == 0 {
-				continue
-			}
-
-			stepIDStr := strconv.Itoa(int(step.ID))
-			stepKey := "#" + stepIDStr + "-" + step.Name
-
-			outputs[stepKey] = make(map[string]string, 0)
-			for _, v := range value.APIInfo.OutParams {
-				outputs[stepKey][v.Key] = fmt.Sprintf("%s outputs.%s.%s %s", expression.LeftPlaceholder,
-					stepIDStr, v.Key, expression.RightPlaceholder)
-			}
-		}
-	}
-	return outputs, nil
-}
