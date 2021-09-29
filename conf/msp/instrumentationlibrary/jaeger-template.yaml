@@ -109,7 +109,7 @@
 
         2. 注册全局Tracer
 
-        ``` C#
+        ``` csharp
         // Use "OpenTracing.Contrib.NetCore" to automatically generate spans for ASP.NET Core, Entity Framework Core, ...
         // See https://github.com/opentracing-contrib/csharp-netcore for details.
         services.AddOpenTracing();
