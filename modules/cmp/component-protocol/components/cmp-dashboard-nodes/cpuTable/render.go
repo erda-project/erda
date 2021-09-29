@@ -90,6 +90,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			req.Type = apistructs.K8SNode
 			req.Name = nodeId
 			err = steveServer.UnlabelNode(ctx, &req, []string{labelKey})
+		case common.CMPDashboardUncordonNode:
 			(*gs)["SelectedRowKeys"] = ct.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardUncordonNode
 			return nil
