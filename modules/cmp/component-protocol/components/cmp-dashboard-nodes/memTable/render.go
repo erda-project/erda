@@ -92,11 +92,9 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		case common.CMPDashboardUncordonNode:
 			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardUncordonNode
-			return nil
 		case common.CMPDashboardCordonNode:
 			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardCordonNode
-			return nil
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}

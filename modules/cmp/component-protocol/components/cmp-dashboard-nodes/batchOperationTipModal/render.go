@@ -53,6 +53,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 		}
 		return nil
 	case cptype.RenderingOperation:
+		bot.State.Visible = false
 		operationKey := (*gs)["OperationKey"]
 		if operationKey == nil {
 			break
@@ -94,14 +95,13 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 		switch ops.Meta.Type {
 		case common.CMPDashboardCordonNode:
 			err := bot.CordonNode(selectRowKeys)
-
 			if err != nil {
-				bot.SetComponent(c)
+				return bot.SetComponent(c)
 			}
 		case common.CMPDashboardUncordonNode:
 			err := bot.UncordonNode(selectRowKeys)
 			if err != nil {
-				bot.SetComponent(c)
+				return bot.SetComponent(c)
 			}
 		}
 	}
