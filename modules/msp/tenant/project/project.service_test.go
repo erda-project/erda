@@ -20,15 +20,14 @@ import (
 	reflect "reflect"
 	testing "testing"
 
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/common/apis"
-
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func Test_projectService_GetProjects(t *testing.T) {
