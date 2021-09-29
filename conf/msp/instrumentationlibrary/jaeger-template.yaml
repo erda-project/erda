@@ -39,58 +39,112 @@
               msp.env.id: {{msp_env_id}}
               msp.env.token: <your_token>
         ```
-    - language: C#
-        template: |
-          #### 获取接入点和鉴权信息
+        
+    - language: Node.js
+      template: |
+        #### 获取接入点和鉴权信息
 
-          - 接入点：{{endpoint}}
-          - 环境ID：{{msp_env_id}}
-          - Token: 在此页面创建和获取
+        - 接入点：{{endpoint}}
+        - 环境ID：{{msp_env_id}}
+        - Token: 在此页面创建和获取
 
-          #### 引入依赖
+        #### 配置鉴权信息
 
-          ```shell
-          dotnet add package Jaeger --version 1.0.3
-          ```
+        您可以在 HTTP/HTTPS 协议的 Header 中或者 Jaeger 协议的 Tag 字段中配置鉴权信息，具体字段及详细说明如下所示
+        - msp.env.id : 微服务项目环境ID
+        - msp.env.token : 微服务环境鉴权Token，在此页面创建和获取
 
-          #### 注册全局Tracer
+        #### 通过 jaeger-client-node 上报数据
 
-          ```
-          // Use "OpenTracing.Contrib.NetCore" to automatically generate spans for ASP.NET Core, Entity Framework Core, ...
-          // See https://github.com/opentracing-contrib/csharp-netcore for details.
-          services.AddOpenTracing();
+        1. 引入 jaeger-client 依赖
 
-          // Adds the Jaeger Tracer.
-          services.AddSingleton<ITracer>(serviceProvider =>{
+        ``` nodejs
+        npm install --save jaeger-client
+        ```
 
-            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        2. 配置 Tracer
 
-            var senderResolver = new SenderResolver(loggerFactory).RegisterSenderFactory<ThriftSenderFactory>();
-            var senderConfiguration = new Configuration.SenderConfiguration(loggerFactory)
+        ``` nodejs
+        const {initTracer} = require("jaeger-client");
+
+        const config = {
+            serviceName: <your_service_name>,
+            reporter: {
+                // Provide the traces endpoint; this forces the client to connect directly to the Collector and send
+                // spans over HTTP
+                collectorEndpoint: {{endpoint}},
+            },
+        };
+        const options = {
+            tags: {
+                'msp.env.id': {{msp_env_id}},
+                'msp.env.token': <your_token>,
+            }
+        };
+
+        const tracer = initTracer(config, options);
+        ```
+
+    - language: .NET Core
+      template: |
+        #### 获取接入点和鉴权信息
+
+        - 接入点：{{endpoint}}
+        - 环境ID：{{msp_env_id}}
+        - Token: 在此页面创建和获取
+
+        #### 配置鉴权信息
+
+        您可以在 HTTP/HTTPS 协议的 Header 中或者 Jaeger 协议的 Tag 字段中配置鉴权信息，具体字段及详细说明如下所示
+        - msp.env.id : 微服务项目环境ID
+        - msp.env.token : 微服务环境鉴权Token，在此页面创建和获取
+        
+        #### 通过 jaeger-client-csharp 上报数据
+
+        1. 引入依赖
+
+        ``` shell
+        dotnet add package Jaeger --version 1.0.3
+        ```
+
+        2. 注册全局Tracer
+
+        ``` C#
+        // Use "OpenTracing.Contrib.NetCore" to automatically generate spans for ASP.NET Core, Entity Framework Core, ...
+        // See https://github.com/opentracing-contrib/csharp-netcore for details.
+        services.AddOpenTracing();
+
+        // Adds the Jaeger Tracer.
+        services.AddSingleton<ITracer>(serviceProvider =>{
+
+          var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+          var senderResolver = new SenderResolver(loggerFactory).RegisterSenderFactory<ThriftSenderFactory>();
+          var senderConfiguration = new Configuration.SenderConfiguration(loggerFactory)
                                           .WithSenderResolver(senderResolver)
                                           .WithEndpoint("{{endpoint}}");
 
-            var reporterConfiguration = new Configuration.ReporterConfiguration(loggerFactory)
+          var reporterConfiguration = new Configuration.ReporterConfiguration(loggerFactory)
                                             .WithSender(senderConfiguration)
                                             .WithLogSpans(true);
 
-            var samplerConfiguration = new Configuration.SamplerConfiguration(loggerFactory)
+          var samplerConfiguration = new Configuration.SamplerConfiguration(loggerFactory)
                                             .WithType("const")
                                             .WithParam(1);
 
-            var tracerTagMaps = new Dictionary<string, string>();
-            tracerTagMaps["msp.env.id"] = "{{msp_env_id}}";
-            tracerTagMaps["msp.env.token"] = "<鉴权Token>";
+          var tracerTagMaps = new Dictionary<string, string>();
+          tracerTagMaps["msp.env.id"] = "{{msp_env_id}}";
+          tracerTagMaps["msp.env.token"] = "<鉴权Token>";
 
-            var tracer = new Configuration("<服务名>", loggerFactory)
+          var tracer = new Configuration("<服务名>", loggerFactory)
                               .WithSampler(samplerConfiguration)
                               .WithReporter(reporterConfiguration)
                               .WithTracerTags(tracerTagMaps)
                               .GetTracer();
 
-            // Allows code that can't use DI to also access the tracer.
-            GlobalTracer.Register(tracer);
+          // Allows code that can't use DI to also access the tracer.
+          GlobalTracer.Register(tracer);
 
-            return tracer;
-          });
-          ```
+          return tracer;
+        });
+        ```
