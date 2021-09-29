@@ -4,9 +4,9 @@ CREATE TABLE `erda_cmp_kube_config` (
     `cluster_name` varchar(253) NOT NULL COMMENT 'Cluster Name',
     `user_id` bigint(20) NOT NULL COMMENT 'User ID',
     `token` varchar(255) NOT NULL COMMENT 'User token in kube config',
-    `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Created time',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
     PRIMARY KEY (`id`),
-    UNIQUE KEY (`name`, `cluster_name`, `user_id`),
-    UNIQUE KEY (`token`)
+    UNIQUE KEY `uk_name` (`name`, `cluster_name`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='store user kube config';
 

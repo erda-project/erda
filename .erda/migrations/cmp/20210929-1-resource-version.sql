@@ -7,6 +7,8 @@ CREATE TABLE `erda_cmp_resource_version` (
     `user_id` bigint(20) NOT NULL COMMENT 'User ID',
     `annotation` varchar(255) NOT NULL COMMENT 'Describe changes of update',
     `detail` text NOT NULL COMMENT 'The complete yaml description of the resource',
-    `last_version_detail` text COMMENT 'The complete yaml description of the previous version of the resource',
+    `last_version_detail` text NOT NULL COMMENT 'The complete yaml description of the previous version of the resource',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='store history resource version';
