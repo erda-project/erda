@@ -85,7 +85,7 @@
         const tracer = initTracer(config, options);
         ```
 
-    - language: .NET Core(C#)
+    - language: .NET Core
       template: |
         #### 获取接入点和鉴权信息
 
