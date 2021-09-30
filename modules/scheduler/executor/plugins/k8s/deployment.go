@@ -49,18 +49,7 @@ func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistruct
 		return errors.Errorf("failed to generate deployment struct, name: %s, (%v)", service.Name, err)
 	}
 
-	err = k.deploy.Create(deployment)
-	if err != nil {
-		return errors.Errorf("failed to create deployment, name: %s, (%v)", service.Name, err)
-	}
-	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
-		return nil
-	}
-	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
-	if err != nil {
-		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
-	}
-	return nil
+	return k.deploy.Create(deployment)
 }
 
 func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, deployments map[string]appsv1.Deployment) (apistructs.StatusDesc, error) {
@@ -116,19 +105,8 @@ func (k *Kubernetes) getDeployment(namespace, name string) (*appsv1.Deployment, 
 	return k.deploy.Get(namespace, name)
 }
 
-func (k *Kubernetes) putDeployment(deployment *appsv1.Deployment, service *apistructs.Service) error {
-	err := k.deploy.Put(deployment)
-	if err != nil {
-		return errors.Errorf("failed to update deployment, name: %s, (%v)", service.Name, err)
-	}
-	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
-		return nil
-	}
-	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
-	if err != nil {
-		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
-	}
-	return nil
+func (k *Kubernetes) putDeployment(deployment *appsv1.Deployment) error {
+	return k.deploy.Put(deployment)
 }
 
 func (k *Kubernetes) deleteDeployment(namespace, name string) error {

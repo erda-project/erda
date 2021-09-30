@@ -17,7 +17,6 @@ package addon
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -44,7 +43,6 @@ type K8SUtil interface {
 }
 
 type DeploymentUtil interface {
-	Patch(namespace, deployName, containerName string, snippet v1.Container) error
 	Create(*appsv1.Deployment) error
 	Get(namespace, name string) (*appsv1.Deployment, error)
 	List(namespace string, labelSelector map[string]string) (appsv1.DeploymentList, error)

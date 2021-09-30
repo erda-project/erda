@@ -28,7 +28,6 @@ type FieldnameValidateVisitor struct {
 	currentService     map[interface{}]interface{}
 	currentServiceName string
 	collectErrors      ValidateError
-	k8sSnippet         *K8SSnippet
 }
 
 func NewFieldnameValidateVisitor(raw []byte) (DiceYmlVisitor, error) {
@@ -82,8 +81,8 @@ func (o *FieldnameValidateVisitor) VisitService(v DiceYmlVisitor, obj *Service) 
 	for k := range o.currentService {
 		switch i := k.(type) {
 		case string:
-			if !contain(i, []string{"image", "image_username", "image_password", "cmd", "labels", "ports", "envs", "hosts", "resources", "volumes", "deployments", "depends_on", "expose", "health_check", "binds", "sidecars", "init", "traffic_security", "endpoints", "mesh_enable", "k8s_snippet"}) {
-				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName}, i)] = fmt.Errorf("[%s] field '%s' not one of [image, image_username, image_password, cmd, ports, envs, hosts, labels, resources, volumes, deployments, depends_on, expose, health_check, binds, sidecars，init, traffic_security, endpoints, mesh_enable, k8s_snippet]", o.currentServiceName, i)
+			if !contain(i, []string{"image", "cmd", "labels", "ports", "envs", "hosts", "resources", "volumes", "deployments", "depends_on", "expose", "health_check", "binds", "sidecars", "init", "traffic_security", "endpoints", "mesh_enable"}) {
+				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName}, i)] = fmt.Errorf("[%s] field '%s' not one of [image, cmd, ports, envs, hosts, labels, resources, volumes, deployments, depends_on, expose, health_check, binds, sidecars，init, traffic_security, endpoints, mesh_enable]", o.currentServiceName, i)
 			}
 		default:
 			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s] %v not string type", o.currentServiceName, k)
@@ -212,44 +211,6 @@ func (o *FieldnameValidateVisitor) VisitExecCheck(v DiceYmlVisitor, obj *ExecChe
 			}
 		default:
 			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s]/[health_check]/[exec] %v not string type", o.currentServiceName, k)
-		}
-	}
-}
-
-func (o *FieldnameValidateVisitor) VisitK8SSnippet(v DiceYmlVisitor, obj *K8SSnippet) {
-	res, ok := o.currentService["k8s_snippet"].(map[interface{}]interface{})
-	if !ok {
-		return
-	}
-	for k := range res {
-		switch i := k.(type) {
-		case string:
-			if !contain(i, []string{"container"}) {
-				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName, "k8s_snippet"}, i)] = fmt.Errorf(`[%s]/[k8s_snippet] field '%s' not one of [ container ]`, o.currentServiceName, i)
-			}
-		default:
-			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s]/[k8s_snippet] %v not string type", o.currentServiceName, k)
-		}
-	}
-}
-
-func (o *FieldnameValidateVisitor) VisitContainerSnippet(v DiceYmlVisitor, obj *ContainerSnippet) {
-	snippet, ok := o.currentService["k8s_snippet"].(map[interface{}]interface{})
-	if !ok {
-		return
-	}
-	res, ok := snippet["container"].(map[interface{}]interface{})
-	if !ok {
-		return
-	}
-	for k := range res {
-		switch i := k.(type) {
-		case string:
-			if !contain(i, []string{"workingDir", "envFrom", "env", "livenessProbe", "readinessProbe", "startupProbe", "lifeCycle", "terminationMessagePath", "terminationMessagePolicy", "imagePullPolicy", "securityContext", "stdin", "stdinOnce", "tty"}) {
-				o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentServiceName, "k8s_snippet", "container"}, i)] = fmt.Errorf(`[%s]/[k8s_snippet]/[container] field '%s' is not supported, only support this container fields ["workingDir", "envFrom", "env", "livenessProbe", "readinessProbe", "startupProbe", "lifeCycle", "terminationMessagePath", "terminationMessagePolicy", "imagePullPolicy", "securityContext", "stdin", "stdinOnce", "tty"]`, o.currentServiceName, i)
-			}
-		default:
-			o.collectErrors[yamlHeaderRegex("_"+strconv.Itoa(len(o.collectErrors)))] = fmt.Errorf("[%s]/[k8s_snippet]/[container] %v not string type", o.currentServiceName, k)
 		}
 	}
 }
