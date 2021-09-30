@@ -33,7 +33,6 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
@@ -161,7 +160,12 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		if resp.ResponseData == nil {
 			return nil, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
+		rawResource, ok := resp.ResponseData.(*types.RawResource)
+		if !ok {
+			return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
+		}
+		obj := rawResource.APIObject.Data()
+		return nil, apierrors.ErrInvoke.InternalError(errors.New(obj.String("message")))
 	}
 
 	var objects []types.APIObject
@@ -597,12 +601,11 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		UID:  name,
 	}
 	for _, role := range rsp.Roles {
-		if role == bundle.RoleOrgManager {
-			user.Groups = append(user.Groups, steve.OrgManagerGroup)
+		group, ok := steve.RoleToGroup[role]
+		if !ok {
+			continue
 		}
-		if role == bundle.RoleOrgSupport {
-			user.Groups = append(user.Groups, steve.OrgSupportGroup)
-		}
+		user.Groups = append(user.Groups, group)
 	}
 
 	if len(user.Groups) == 0 {
