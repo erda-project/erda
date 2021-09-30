@@ -62,7 +62,7 @@ var (
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
-var FreeCache, _ = New(1<<30, 1<<24)
+var FreeCache, _ = New(2<<30, 1<<27)
 
 // Cache implement concurrent safe cache with LRU and ttl strategy.
 type Cache struct {
@@ -186,7 +186,7 @@ func (s *store) write(id int) error {
 
 	needSize, _ := newPair.getEntrySize()
 	if ps.maxSize < needSize {
-		s.log.Errorf("evict cache size,try next")
+		s.log.Errorf("exceed cache size ,seg size = %v, value size = %v, try next", ps.maxSize, needSize)
 		return EvictError
 	}
 	usage := ps.used
