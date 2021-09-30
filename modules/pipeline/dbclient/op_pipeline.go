@@ -52,6 +52,13 @@ func (client *Client) CreatePipeline(p *spec.Pipeline, ops ...SessionOption) err
 	return nil
 }
 
+type dbError struct{ msg string }
+
+func (e dbError) Error() string        { return e.msg }
+func (e dbError) Is(target error) bool { return target != nil && target.Error() == e.msg }
+
+var NotFoundBaseError = dbError{msg: "not found base"}
+
 // GetPipeline: base + extra + labels
 func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pipeline, error) {
 	session := client.NewSession(ops...)
@@ -63,7 +70,7 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 		return spec.Pipeline{}, err
 	}
 	if !found {
-		return spec.Pipeline{}, errors.New("not found base")
+		return spec.Pipeline{}, NotFoundBaseError
 	}
 	// extra
 	extra, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)

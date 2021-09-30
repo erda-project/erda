@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -151,6 +153,13 @@ func (r *Reconciler) createSnippetPipeline(task *spec.PipelineTask, p *spec.Pipe
 }
 
 func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipeline) (resultTask *spec.PipelineTask, err error) {
+	defer func() {
+		if err != nil && errors.Is(dbclient.NotFoundBaseError, err) {
+			if err := r.dbClient.UpdatePipelineTaskStatus(task.ID, apistructs.PipelineStatusError); err != nil {
+				rlog.TErrorf(p.ID, task.ID, "failed to update snippet task status to Error when not found base, err: %v", err)
+			}
+		}
+	}()
 	var snippetPipeline *spec.Pipeline
 	if task.SnippetPipelineID != nil && *task.SnippetPipelineID > 0 {
 		snippetPipelineValue, err := r.dbClient.GetPipeline(task.SnippetPipelineID)
