@@ -83,12 +83,13 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 
 	cond := apistructs.TestPlanV2PagingRequest{ProjectID: projectID, PageNo: 1, PageSize: auto_test_plan_list.DefaultTablePageSize}
 	cond.UserID = bdl.Identity.UserID
+	if _, ok := c.State["pageNo"]; ok {
+		cond.PageNo = uint64(c.State["pageNo"].(float64))
+	}
 
 	switch event.Operation.String() {
-	case "changePageNo":
-		if _, ok := c.State["pageNo"]; ok {
-			cond.PageNo = uint64(c.State["pageNo"].(float64))
-		}
+	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		cond.PageNo = 1
 	case "edit":
 		var operationData OperationData
 		odBytes, err := json.Marshal(event.OperationData)
