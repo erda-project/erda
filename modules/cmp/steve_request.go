@@ -161,7 +161,12 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		if resp.ResponseData == nil {
 			return nil, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
+		rawResource, ok := resp.ResponseData.(*types.RawResource)
+		if !ok {
+			return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
+		}
+		obj := rawResource.APIObject.Data()
+		return nil, apierrors.ErrInvoke.InternalError(errors.New(obj.String("message")))
 	}
 
 	var objects []types.APIObject

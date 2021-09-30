@@ -40,14 +40,19 @@ var (
 )
 
 func init() {
-	UserGroups = make(map[string]UserGroupInfo)
-	UserGroups[OrgManagerGroup] = UserGroupInfo{
-		ServiceAccountName:      "erda-org-manager",
-		ServiceAccountNamespace: systemNamespace,
-	}
-	UserGroups[OrgSupportGroup] = UserGroupInfo{
-		ServiceAccountName:      "erda-org-support",
-		ServiceAccountNamespace: systemNamespace,
+	UserGroups = map[string]UserGroupInfo{
+		OrgManagerGroup: {
+			ServiceAccountName:      "erda-org-manager",
+			ServiceAccountNamespace: systemNamespace,
+		},
+		OrgOpsGroup: {
+			ServiceAccountName:      "erda-org-ops",
+			ServiceAccountNamespace: systemNamespace,
+		},
+		OrgSupportGroup: {
+			ServiceAccountName:      "erda-org-support",
+			ServiceAccountNamespace: systemNamespace,
+		},
 	}
 }
 
@@ -151,6 +156,7 @@ type UserGroupType string
 
 const (
 	OrgManagerGroup = "erda-org-manager"
+	OrgOpsGroup     = "erda-org-ops"
 	OrgSupportGroup = "erda-org-support"
 )
 
@@ -166,6 +172,12 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: erda-org-manager
+  namespace: {{.}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: erda-org-ops
   namespace: {{.}}
 ---
 apiVersion: v1
@@ -218,6 +230,21 @@ subjects:
   name: erda-org-support
 - kind: ServiceAccount
   name: erda-org-support
+  namespace: {{.}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: erda-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: Group
+  name: erda-org-ops
+- kind: ServiceAccount
+  name: erda-org-ops
   namespace: {{.}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1

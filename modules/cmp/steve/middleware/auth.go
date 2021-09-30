@@ -113,6 +113,9 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 			if role == bundle.RoleOrgManager {
 				user.Groups = append(user.Groups, steve.OrgManagerGroup)
 			}
+			if role == bundle.RoleOrgOps {
+				user.Groups = append(user.Groups, steve.OrgOpsGroup)
+			}
 			if role == bundle.RoleOrgSupport {
 				user.Groups = append(user.Groups, steve.OrgSupportGroup)
 			}
