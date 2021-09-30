@@ -17,6 +17,8 @@ package formatter
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	jsi "github.com/json-iterator/go"
@@ -28,8 +30,18 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/steve/queue"
+	"github.com/erda-project/erda/modules/cmp/queue"
 )
+
+var queryQueue *queue.QueryQueue
+
+func init() {
+	queueSize := 10
+	if size, err := strconv.Atoi(os.Getenv("NODE_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	queryQueue = queue.NewQueryQueue(queueSize)
+}
 
 type NodeFormatter struct {
 	ctx       context.Context
@@ -108,7 +120,7 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 				return
 			}
 			val, _ := cache.MarshalValue(allocatedRes)
-			n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+			n.podsCache.Set(key.getKey(), val, 5*time.Minute.Nanoseconds())
 		}()
 	}
 	allocatedRes := map[string]interface{}{}
@@ -121,11 +133,14 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 
 func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (map[string]interface{}, error) {
 	fieldSelector := fmt.Sprintf("spec.nodeName=%s,status.phase!=Failed,status.phase!=Succeeded", nodeName)
-	queue.Acquire(queue.Length()/2 + 1)
+	clusterName := n.ctx.Value("clusterName").(string)
+	logrus.Infof("[DEBUG] start list pods")
+	queryQueue.Acquire(clusterName, 1)
 	pods, err := n.podClient.List(ctx, v1.ListOptions{
 		FieldSelector: fieldSelector,
 	})
-	queue.Release(queue.Length()/2 + 1)
+	queryQueue.Release(clusterName, 1)
+	logrus.Infof("[DEBUG] end list pods")
 	if err != nil {
 		return nil, err
 	}

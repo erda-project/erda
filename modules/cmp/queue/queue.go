@@ -14,34 +14,44 @@
 
 package queue
 
-import (
-	"os"
-	"strconv"
-)
+import "sync"
 
-var queryQueue chan struct{}
-var queueSize int
-
-func init() {
-	queueSize = 5
-	if size, err := strconv.Atoi(os.Getenv("STEVE_QUEUE_SIZE")); err == nil && size > queueSize {
-		queueSize = size
-	}
-	queryQueue = make(chan struct{}, queueSize)
+type QueryQueue struct {
+	queue map[string]chan struct{}
+	size  int
+	mtx   sync.Mutex
 }
 
-func Acquire(delta int) {
+func NewQueryQueue(size int) *QueryQueue {
+	if size <= 0 {
+		size = 1
+	}
+	return &QueryQueue{
+		queue: map[string]chan struct{}{},
+		size:  size,
+	}
+}
+
+func (p *QueryQueue) Acquire(key string, delta int) {
+	var ch chan struct{}
+	var ok bool
+	p.mtx.Lock()
+	if ch, ok = p.queue[key]; !ok {
+		ch = make(chan struct{}, p.size)
+		p.queue[key] = ch
+	}
+	p.mtx.Unlock()
+
 	for i := 0; i < delta; i++ {
-		queryQueue <- struct{}{}
+		ch <- struct{}{}
 	}
 }
 
-func Release(delta int) {
+func (p *QueryQueue) Release(key string, delta int) {
+	p.mtx.Lock()
+	ch := p.queue[key]
+	p.mtx.Unlock()
 	for i := 0; i < delta; i++ {
-		<-queryQueue
+		<-ch
 	}
-}
-
-func Length() int {
-	return queueSize
 }

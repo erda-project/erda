@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/queue"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/ierror"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -35,14 +36,14 @@ import (
 
 type ResourceType string
 
-var queryQueue chan struct{}
+var queryQueue *queue.QueryQueue
 
 func init() {
-	queueSize := 50
+	queueSize := 100
 	if size, err := strconv.Atoi(os.Getenv("METRICS_QUEUE_SIZE")); err == nil && size > queueSize {
 		queueSize = size
 	}
-	queryQueue = make(chan struct{}, queueSize)
+	queryQueue = queue.NewQueryQueue(queueSize)
 }
 
 const (
@@ -97,9 +98,11 @@ type Interface interface {
 }
 
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
-	queryQueue <- struct{}{}
+	logrus.Infof("[DEBUG] start query influx")
+	queryQueue.Acquire("default", 1)
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
-	<-queryQueue
+	queryQueue.Release("default", 1)
+	logrus.Infof("[DEBUG] end query influx")
 	if err != nil {
 		logrus.Errorf("query influx failed, req:%+v, err:%+v", req, err)
 		v = &pb.QueryWithInfluxFormatResponse{

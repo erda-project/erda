@@ -18,6 +18,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"os"
+	"strconv"
 	"time"
 
 	jsi "github.com/json-iterator/go"
@@ -30,8 +32,18 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/steve/queue"
+	"github.com/erda-project/erda/modules/cmp/queue"
 )
+
+var queryQueue *queue.QueryQueue
+
+func init() {
+	queueSize := 10
+	if size, err := strconv.Atoi(os.Getenv("LIST_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	queryQueue = queue.NewQueryQueue(queueSize)
+}
 
 type cacheStore struct {
 	types.Store
@@ -92,9 +104,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		}
 
 		logrus.Infof("[DEBUG] start list at %s", time.Now().Format(time.StampNano))
-		queue.Acquire(1)
+		queryQueue.Acquire(c.clusterName, 1)
 		list, err := c.Store.List(apiOp, schema)
-		queue.Release(1)
+		queryQueue.Release(c.clusterName, 1)
 		if err != nil {
 			return types.APIObjectList{}, err
 		}
