@@ -17,6 +17,8 @@ package monitoring
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -51,7 +53,7 @@ func newEsStorageMetric(metricQ metricq.Queryer) storageMetric {
 }
 
 // 1. get all indices info
-// 2. get doc count with group
+// 2. get doc count with group within recent duration
 // 3. get disk usage by math
 func (es *esStorageMetric) UsageSummaryOrg() (map[string]uint64, error) {
 	info, err := es.indicesInfo()
@@ -60,36 +62,43 @@ func (es *esStorageMetric) UsageSummaryOrg() (map[string]uint64, error) {
 	}
 
 	type ele struct {
-		item     *metricIndex
-		labelMap map[string]uint64
+		mIndex *metricIndex
+		orgMap map[string]uint64
 	}
 	ch := make(chan *ele)
+	block := make(chan struct{}, 5)
 
 	var wg sync.WaitGroup
 	wg.Add(len(info))
 	for m, item := range info {
 		go func(mName string, mIndex *metricIndex) {
-			defer wg.Done()
+			defer func() {
+				<-block
+				wg.Done()
+			}()
+
+			block <- struct{}{}
 			labelMap, err := es.docCount("org_name::tag", mName)
 			if err != nil {
 				return
 			}
 			ch <- &ele{
-				item:     mIndex,
-				labelMap: labelMap,
+				mIndex: mIndex,
+				orgMap: labelMap,
 			}
 		}(m, item)
 	}
 	go func() {
 		wg.Wait()
 		close(ch)
+		close(block)
 	}()
 
 	// map<org_name>bytes
 	usageMap := make(map[string]uint64)
 	for data := range ch {
-		for k, v := range data.labelMap {
-			usage := v * data.item.sizeBytes / data.item.docCount
+		for k, v := range data.orgMap {
+			usage := v * data.mIndex.sizeBytes / data.mIndex.docCount
 			usageMap[k] += usage
 		}
 	}
@@ -154,21 +163,39 @@ type record struct {
 
 func (es *esStorageMetric) docCount(contField, metricName string) (map[string]uint64, error) {
 	stmt := fmt.Sprintf(tsqlMetric, contField, contField, metricName, contField)
-	rs, err := es.metricQ.Query(metricq.InfluxQL, stmt, nil, nil)
-	if err != nil {
-		return nil, err
-	}
+
 	ret := make(map[string]uint64)
-	for _, row := range rs.Rows {
-		lable, ok := row[1].(string)
-		if !ok {
-			continue
+	for end := time.Now(); ; {
+		start := end.Add(-6 * time.Hour)
+		rs, err := es.metricQ.Query(metricq.InfluxQL, stmt, nil, timeRange(start, end))
+		if err != nil {
+			return nil, err
 		}
-		cnt, ok := row[0].(float64)
-		if !ok {
-			continue
+		// arrived at most start of time range
+		if len(rs.Rows) == 0 {
+			break
 		}
-		ret[lable] = uint64(cnt)
+		end = start
+
+		for _, row := range rs.Rows {
+			lable, ok := row[1].(string)
+			if !ok {
+				continue
+			}
+			cnt, ok := row[0].(float64)
+			if !ok {
+				continue
+			}
+			ret[lable] = uint64(cnt)
+		}
 	}
+
 	return ret, nil
+}
+
+func timeRange(start, end time.Time) url.Values {
+	options := url.Values{}
+	options.Set("start", strconv.Itoa(int(start.UnixNano())/1000000))
+	options.Set("end", strconv.Itoa(int(end.UnixNano())/1000000))
+	return options
 }

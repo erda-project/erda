@@ -61,12 +61,12 @@ log-store:
         parallelism: ${CASSANDRA_PARALLELISM:3}
         batch:
           size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: "10s"
+          timeout: ${CASSANDRA_BATCH_TIMEOUT:10s}
         retry: -1  # block forever. kafka will handle the issue of stream block
       session_config:
         keyspace:
           name: "spot_prod"
-          auto: true # 自动创建 keyspace
+          auto: ${LOG_STORE_CASSANDRA_SESSION_KEYSPACE_AUTO:true} # 自动创建 keyspace
           replication:
             class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
             factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
@@ -164,7 +164,7 @@ trace-storage:
         parallelism: ${CASSANDRA_PARALLELISM:3}
         batch:
           size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: "3s"
+          timeout: ${TRACE_STORE_CASSANDRA_BATCH_TIMEOUT:10s}
         retry: 2
       session_config:
         keyspace:
