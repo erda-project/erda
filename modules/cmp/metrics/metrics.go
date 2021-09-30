@@ -38,7 +38,7 @@ type ResourceType string
 var queryQueue chan struct{}
 
 func init() {
-	queueSize := 5
+	queueSize := 50
 	if size, err := strconv.Atoi(os.Getenv("METRICS_QUEUE_SIZE")); err == nil && size > queueSize {
 		queueSize = size
 	}
@@ -48,10 +48,10 @@ func init() {
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
-	NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip and time > now() -1h`
-	NodeMemoryUsageSelectStatement = `SELECT last(mem_used::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  and time > now() -1h`
-	PodCpuUsageSelectStatement     = `SELECT round_float(last(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -1h`
-	PodMemoryUsageSelectStatement  = `SELECT round_float(last(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -1h`
+	NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip and time > now() -300s`
+	NodeMemoryUsageSelectStatement = `SELECT last(mem_used::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  and time > now() -300s`
+	PodCpuUsageSelectStatement     = `SELECT round_float(last(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -300s`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(last(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -300s`
 
 	Memory = "memory"
 	Cpu    = "cpu"
