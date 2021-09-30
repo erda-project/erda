@@ -230,14 +230,10 @@ func (m memberService) ScopeRoleAccess(ctx context.Context, request *pb.ScopeRol
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := pb.ScopeRoleAccessResponse{
-		Access:                   false,
-		Roles:                    make([]string, 0),
-		PermissionList:           make([]*pb.ScopeResource, 0),
-		ResourceRoleList:         make([]*pb.ScopeResource, 0),
-		Exist:                    false,
-		ContactsWhenNoPermission: make([]string, 0),
+		Data:    &pb.ScopeRoleData{},
+		UserIDs: list.ContactsWhenNoPermission,
 	}
-	err = json.Unmarshal(data, &result)
+	err = json.Unmarshal(data, &result.Data)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

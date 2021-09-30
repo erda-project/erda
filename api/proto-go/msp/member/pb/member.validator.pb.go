@@ -30,6 +30,14 @@ func (this *Scope) Validate() error {
 	return nil
 }
 func (this *ScopeRoleAccessResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *ScopeRoleData) Validate() error {
 	for _, item := range this.PermissionList {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
