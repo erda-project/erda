@@ -110,12 +110,11 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 			UID:  name,
 		}
 		for _, role := range rsp.Roles {
-			if role == bundle.RoleOrgManager {
-				user.Groups = append(user.Groups, steve.OrgManagerGroup)
+			group, ok := steve.RoleToGroup[role]
+			if !ok {
+				continue
 			}
-			if role == bundle.RoleOrgSupport {
-				user.Groups = append(user.Groups, steve.OrgSupportGroup)
-			}
+			user.Groups = append(user.Groups, group)
 		}
 
 		if len(user.Groups) == 0 {

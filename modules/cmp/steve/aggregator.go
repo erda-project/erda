@@ -171,6 +171,9 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 
 	for _, sa := range predefinedServiceAccount {
 		saClient := client.ClientSet.CoreV1().ServiceAccounts(sa.Namespace)
+		if err = saClient.Delete(a.Ctx, sa.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+			return err
+		}
 		if _, err = saClient.Create(a.Ctx, sa, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		}
@@ -178,6 +181,9 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 
 	crClient := client.ClientSet.RbacV1().ClusterRoles()
 	for _, cr := range predefinedClusterRole {
+		if err = crClient.Delete(a.Ctx, cr.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+			return err
+		}
 		if _, err = crClient.Create(a.Ctx, cr, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		}
@@ -185,6 +191,9 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 
 	crbClient := client.ClientSet.RbacV1().ClusterRoleBindings()
 	for _, crb := range predefinedClusterRoleBinding {
+		if err = crbClient.Delete(a.Ctx, crb.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+			return err
+		}
 		if _, err = crbClient.Create(a.Ctx, crb, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		}
