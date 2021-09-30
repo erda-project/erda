@@ -52,6 +52,7 @@ type PropColumn struct {
 	Title     string `json:"title"`
 	DataIndex string `json:"dataIndex"`
 	Width     int    `json:"width"`
+	Fixed     string `json:"fixed"`
 }
 
 type State struct{}
