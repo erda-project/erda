@@ -121,11 +121,11 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 
 func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (map[string]interface{}, error) {
 	fieldSelector := fmt.Sprintf("spec.nodeName=%s,status.phase!=Failed,status.phase!=Succeeded", nodeName)
-	queue.Acquire(queue.Length() - 1)
+	queue.Acquire(queue.Length()/2 + 1)
 	pods, err := n.podClient.List(ctx, v1.ListOptions{
 		FieldSelector: fieldSelector,
 	})
-	queue.Release(queue.Length() - 1)
+	queue.Release(queue.Length()/2 + 1)
 	if err != nil {
 		return nil, err
 	}
