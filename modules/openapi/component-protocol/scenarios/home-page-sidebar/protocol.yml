@@ -49,6 +49,7 @@ components:
     props:
       whiteBg: true
       fullHeight: true
+      scrollAuto: true
   myOrganization:
     type: Container
   createOrgBtnWrapper:
