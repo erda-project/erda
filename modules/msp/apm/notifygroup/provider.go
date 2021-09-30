@@ -15,13 +15,13 @@
 package notifygroup
 
 import (
-	db2 "github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	"github.com/erda-project/erda/bundle"
+	db2 "github.com/erda-project/erda/modules/monitor/common/db"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"

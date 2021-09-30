@@ -18,8 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"strconv"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
@@ -51,31 +52,6 @@ func (m memberService) GetProjectIdByScopeId(scopeId string) (string, error) {
 	}
 	return projectId, nil
 }
-
-//func (m memberService) GetProjectIdByScopeId(scopeId string) string {
-//	projectId := ""
-//	instance, err := m.p.mspTenantDB.QueryTenant(scopeId)
-//	if err != nil {
-//		return ""
-//	}
-//	if instance == nil {
-//		tenant, err := m.p.instanceDB.GetInstanceByTenantGroup(scopeId)
-//		if err != nil {
-//			return ""
-//		}
-//		option := make(map[string]string)
-//		if tenant != nil {
-//			err = json.Unmarshal([]byte(tenant.Options), &option)
-//			if err != nil {
-//				return ""
-//			}
-//			projectId = option["projectId"]
-//		}
-//	} else {
-//		projectId = instance.RelatedProjectId
-//	}
-//	return projectId
-//}
 
 func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemberRolesRequest) (*pb.ListMemberRolesResponse, error) {
 	projectId, err := m.GetProjectIdByScopeId(request.ScopeId)
