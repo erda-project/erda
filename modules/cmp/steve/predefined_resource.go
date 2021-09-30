@@ -242,24 +242,14 @@ roleRef:
   name: cluster-admin
 subjects:
 - kind: Group
-  name: erda-org-ops
+  name: erda-org-manager
 - kind: ServiceAccount
-  name: erda-org-ops
+  name: erda-org-manager
   namespace: {{.}}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: erda-admin
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
 - kind: Group
-  name: erda-org-manager
+  name: erda-org-ops
 - kind: ServiceAccount
-  name: erda-org-manager
+  name: erda-org-ops
   namespace: {{.}}
 `
 )
