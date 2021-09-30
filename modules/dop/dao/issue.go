@@ -658,6 +658,9 @@ func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchR
 	if len(req.ProjectIDs) > 0 {
 		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
 	}
+	if len(req.Type) > 0 {
+		sql = sql.Where("type IN (?)", req.Type)
+	}
 	offset := (req.PageNo - 1) * req.PageSize
 	var res []IssueExpiryStatus
 	if err := sql.Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
@@ -670,6 +673,9 @@ func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([
 	var res []Issue
 	sql := client.Table("dice_issues").Joins(joinState)
 	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ? AND assignee = ? AND dice_issue_state.belong IN (?)", req.ProjectID, req.Assignees, req.StateBelongs)
+	if len(req.Type) > 0 {
+		sql = sql.Where("type IN (?)", req.Type)
+	}
 	if req.OrderBy != "" {
 		if req.Asc {
 			sql = sql.Order(fmt.Sprintf("%s", req.OrderBy))
