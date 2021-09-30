@@ -20,9 +20,10 @@ import (
 )
 
 var queryQueue chan struct{}
+var queueSize int
 
 func init() {
-	queueSize := 5
+	queueSize = 5
 	if size, err := strconv.Atoi(os.Getenv("STEVE_QUEUE_SIZE")); err == nil && size > queueSize {
 		queueSize = size
 	}
