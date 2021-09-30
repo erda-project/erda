@@ -48,10 +48,10 @@ func init() {
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
-	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip ORDER BY time DESC LIMIT 1`
-	NodeMemoryUsageSelectStatement = `SELECT mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  ORDER BY time DESC LIMIT 1`
-	PodCpuUsageSelectStatement     = `SELECT round_float(cpu_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true ORDER BY time DESC LIMIT 1`
-	PodMemoryUsageSelectStatement  = `SELECT round_float(mem_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true ORDER BY time DESC LIMIT 1`
+	NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip and time > now() -1h`
+	NodeMemoryUsageSelectStatement = `SELECT last(mem_used::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  and time > now() -1h`
+	PodCpuUsageSelectStatement     = `SELECT round_float(last(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -1h`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(last(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -1h`
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -109,16 +109,16 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 }
 
 // DoQuery returns influxdb data
-func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
+func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	var (
 		expired bool
 		v       cache.Values
 		err     error
 		resp    = &pb.QueryWithInfluxFormatResponse{}
 	)
-
-	if v, expired, err = cache.FreeCache.Get(key); v != nil {
-		logrus.Infof("%s hit cache, return cache value directly", key)
+	logrus.Infof("start get metrics of %s", cacheKey)
+	if v, expired, err = cache.FreeCache.Get(cacheKey); v != nil {
+		logrus.Infof("%s hit cache, return cache value directly", cacheKey)
 		err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
 		if err != nil {
 			logrus.Errorf("unmarshal failed")
@@ -127,11 +127,11 @@ func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInflu
 			logrus.Infof("cache expired, try fetch metrics asynchronized")
 			go func(ctx context.Context, key string, queryReq *pb.QueryWithInfluxFormatRequest) {
 				m.query(ctx, key, queryReq)
-			}(ctx, key, req)
+			}(ctx, cacheKey, req)
 		}
 	} else {
-		logrus.Infof("not hit cache, try fetch metrics synchronized")
-		resp, err = m.query(ctx, key, req)
+		logrus.Infof("%s not hit cache, try fetch metrics synchronized", cacheKey)
+		resp, err = m.query(ctx, cacheKey, req)
 		if err != nil {
 			logrus.Error(err)
 			return nil, err
