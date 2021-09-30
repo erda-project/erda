@@ -569,9 +569,10 @@ func (obj *Service) Accept(v DiceYmlVisitor) {
 	obj.Deployments.Accept(v)
 	obj.HealthCheck.Accept(v)
 	obj.Binds.Accept(v)
-	if obj.K8SSnippet != nil {
-		obj.K8SSnippet.Accept(v)
+	if obj.K8SSnippet == nil {
+		obj.K8SSnippet = new(K8SSnippet)
 	}
+	obj.K8SSnippet.Accept(v)
 }
 func (obj *Services) Accept(v DiceYmlVisitor) {
 	v.VisitServices(v, obj)
@@ -623,9 +624,10 @@ func (obj *Binds) Accept(v DiceYmlVisitor) {
 
 func (obj *K8SSnippet) Accept(v DiceYmlVisitor) {
 	v.VisitK8SSnippet(v, obj)
-	if obj.Container != nil {
-		obj.Container.Accept(v)
+	if obj.Container == nil {
+		obj.Container = new(ContainerSnippet)
 	}
+	obj.Container.Accept(v)
 }
 
 func (obj *ContainerSnippet) Accept(v DiceYmlVisitor) {
