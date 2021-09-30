@@ -27,9 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/api_register"
-	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/buildpack"
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/release"
-	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/diceymlchecker"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -173,11 +171,11 @@ var initOnce = &sync.Once{}
 func initialize() {
 	initOnce.Do(func() {
 		// diceyml prechecker
-		diceymlPreCheckers = append(diceymlPreCheckers, diceymlchecker.New())
+		//diceymlPreCheckers = append(diceymlPreCheckers, diceymlchecker.New())
 
 		// action prechecker map
 		actionPreCheckers := []prechecktype.ActionPreChecker{
-			buildpack.New(),
+			//buildpack.New(),
 			release.New(),
 			api_register.New(),
 		}
