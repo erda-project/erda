@@ -10,10 +10,10 @@
 </tr>
 <tr>
   <td valign="top">
-    <a href="#v130">1.3.0</a><br/>
+    <b><a href="#v130">1.3.0</a></b><br/>
   </td>
   <td valign="top">
-    <b><a href="#v121">1.2.1</a></b><br/>
+    <a href="#v121">1.2.1</a><br/>
     <a href="#v120">1.2.0</a><br/>
   </td>
   <td valign="top">
