@@ -5,8 +5,8 @@ scenario: "auto-test-plan-list"
 hierarchy:
   root: "autoTestPlan"
   structure:
-    autoTestPlan: ["filter", "table", "topHead", "formModal"]
-    topHead: ["addButton"]
+    autoTestPlan: [ "filter", "table", "topHead", "formModal" ]
+    topHead: [ "addButton" ]
 
 rendering:
   formModal:
@@ -95,27 +95,31 @@ components:
       columns:
         - title: "计划id"
           dataIndex: "id"
+          width: 90
         - title: "计划名"
           dataIndex: "name"
         - title: "测试空间"
           dataIndex: "testSpace"
+          width: 150
         - title: "负责人"
           dataIndex: "owners"
+          width: 80
         - title: "最近执行接口总数"
           dataIndex: "executeApiNum"
-          width: 180
+          width: 150
           sorter: true
         - title: "最近执行通过率"
           dataIndex: "passRate"
-          width: 180
+          width: 150
           sorter: true
         - title: "最近执行时间"
           dataIndex: "executeTime"
-          width: 180
+          width: 160
           sorter: true
         - title: "操作"
           dataIndex: "operate"
-          width: 150
+          width: 120
+          fixed: "right"
   topHead:
     type: "RowContainer"
     props:

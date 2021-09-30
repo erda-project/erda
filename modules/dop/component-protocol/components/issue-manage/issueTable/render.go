@@ -483,7 +483,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		{
 			"dataIndex": "id",
 			"title": "ID",
-			"width": 90
+			"width": 80
         },
         {
             "dataIndex": "title",
@@ -492,22 +492,22 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		progressCol +
 		severityCol +
 		`{
-            "width": 100,
+            "width": 90,
             "dataIndex": "complexity",
             "title": "` + cputil.I18n(ctx, "complexity") + `"
         },
         {
-            "width": 100,
+            "width": 90,
             "dataIndex": "priority",
             "title": "` + cputil.I18n(ctx, "priority") + `"
         },
         {
-            "width": 110,
+            "width": 100,
             "dataIndex": "state",
             "title": "` + cputil.I18n(ctx, "state") + `"
         },
         {
-            "width": 120,
+            "width": 110,
             "dataIndex": "assignee",
             "title": "` + cputil.I18n(ctx, "assignee") + `"
         },
@@ -519,7 +519,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		closedAtCol +
 		`],
     "rowKey": "id",
-	"scroll": {"x": 1200},
+	"scroll": {"x": 1150},
 	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
 	var propsI interface{}
