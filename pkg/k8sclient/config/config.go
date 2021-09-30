@@ -70,14 +70,14 @@ func GetRestConfig(c *apistructs.ManageConfig) (*rest.Config, error) {
 	rc := &rest.Config{
 		Host:    c.Address,
 		APIPath: "/apis",
-		QPS:     100,
+		QPS:     1000,
 		Burst:   100,
 		ContentConfig: rest.ContentConfig{
 			NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
 		},
 		TLSClientConfig: rest.TLSClientConfig{},
 		UserAgent:       rest.DefaultKubernetesUserAgent(),
-		RateLimiter:     flowcontrol.NewTokenBucketRateLimiter(100, 100),
+		RateLimiter:     flowcontrol.NewTokenBucketRateLimiter(1000, 100),
 	}
 
 	// If ca data is empty, the certificate is not validated

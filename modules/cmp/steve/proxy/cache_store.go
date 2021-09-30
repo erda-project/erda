@@ -92,9 +92,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		}
 
 		logrus.Infof("[DEBUG] start list at %s", time.Now().Format(time.StampNano))
-		queue.Acquire()
+		queue.Acquire(1)
 		list, err := c.Store.List(apiOp, schema)
-		queue.Release()
+		queue.Release(1)
 		if err != nil {
 			return types.APIObjectList{}, err
 		}
