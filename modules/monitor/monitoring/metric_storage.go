@@ -186,7 +186,7 @@ func (es *esStorageMetric) docCount(contField, metricName string) (map[string]ui
 			if !ok {
 				continue
 			}
-			ret[lable] = uint64(cnt)
+			ret[lable] += uint64(cnt)
 		}
 	}
 
