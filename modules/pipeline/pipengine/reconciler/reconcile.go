@@ -46,6 +46,11 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 	if err != nil {
 		return err
 	}
+	if p.Status.IsEndStatus() {
+		rlog.PWarnf(pipelineID, "pipeline is already end status (%s), invoke ctx.done directly", p.Status)
+		ctx.Done()
+		return nil
+	}
 
 	tasks, err := r.YmlTaskMergeDBTasks(&p)
 	if err != nil {
@@ -70,25 +75,25 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 		wg.Add(1)
 		go func(i int) {
 			var err error
-			var task *spec.PipelineTask
-			task, err = r.saveTask(schedulableTasks[i], &p)
-			if err != nil {
-				logrus.Errorf("[alert] reconciler: pipelineID: %d, task %v reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
-				return
-			}
-
 			defer func() {
 				if r := recover(); r != nil {
 					debug.PrintStack()
 					err = errors.Errorf("%v", r)
 				}
 				if err != nil {
-					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %v reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
+					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
 				}
 				r.processingTasks.Delete(buildTaskDagName(p.ID, schedulableTasks[i].Name))
 				err = r.reconcile(ctx, pipelineID)
 				wg.Done()
 			}()
+
+			var task *spec.PipelineTask
+			task, err = r.saveTask(schedulableTasks[i], &p)
+			if err != nil {
+				logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q failed to save task: %v", p.ID, schedulableTasks[i].Name, err)
+				return
+			}
 
 			if task.IsSnippet {
 				task, err = r.reconcileSnippetTask(task, &p)
