@@ -99,10 +99,10 @@ type Interface interface {
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	queryQueue <- struct{}{}
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
+	<-queryQueue
 	if err != nil {
 		return nil, err
 	}
-	<-queryQueue
 	values, err := cache.MarshalValue(v)
 	cache.FreeCache.Set(key, values, time.Now().UnixNano()+int64(time.Second*30))
 	return v, nil
