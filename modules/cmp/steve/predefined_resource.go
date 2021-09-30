@@ -25,6 +25,8 @@ import (
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+
+	"github.com/erda-project/erda/bundle"
 )
 
 var (
@@ -36,18 +38,29 @@ var (
 	diceSystemEnv   = "DICE_NAMESPACE"
 	systemNamespace = getSystemNamespace()
 
-	UserGroups map[string]UserGroupInfo
+	UserGroups  map[string]UserGroupInfo
+	RoleToGroup map[string]string
 )
 
 func init() {
-	UserGroups = make(map[string]UserGroupInfo)
-	UserGroups[OrgManagerGroup] = UserGroupInfo{
-		ServiceAccountName:      "erda-org-manager",
-		ServiceAccountNamespace: systemNamespace,
+	UserGroups = map[string]UserGroupInfo{
+		OrgManagerGroup: {
+			ServiceAccountName:      "erda-org-manager",
+			ServiceAccountNamespace: systemNamespace,
+		},
+		OrgOpsGroup: {
+			ServiceAccountName:      "erda-org-ops",
+			ServiceAccountNamespace: systemNamespace,
+		},
+		OrgSupportGroup: {
+			ServiceAccountName:      "erda-org-support",
+			ServiceAccountNamespace: systemNamespace,
+		},
 	}
-	UserGroups[OrgSupportGroup] = UserGroupInfo{
-		ServiceAccountName:      "erda-org-support",
-		ServiceAccountNamespace: systemNamespace,
+	RoleToGroup = map[string]string{
+		bundle.RoleOrgManager: OrgManagerGroup,
+		bundle.RoleOrgOps:     OrgOpsGroup,
+		bundle.RoleOrgSupport: OrgSupportGroup,
 	}
 }
 
@@ -151,6 +164,7 @@ type UserGroupType string
 
 const (
 	OrgManagerGroup = "erda-org-manager"
+	OrgOpsGroup     = "erda-org-ops"
 	OrgSupportGroup = "erda-org-support"
 )
 
@@ -166,6 +180,12 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: erda-org-manager
+  namespace: {{.}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: erda-org-ops
   namespace: {{.}}
 ---
 apiVersion: v1
@@ -233,6 +253,11 @@ subjects:
   name: erda-org-manager
 - kind: ServiceAccount
   name: erda-org-manager
+  namespace: {{.}}
+- kind: Group
+  name: erda-org-ops
+- kind: ServiceAccount
+  name: erda-org-ops
   namespace: {{.}}
 `
 )
