@@ -92,7 +92,7 @@ func TestGetNodeAllocatedRes(t *testing.T) {
 	}
 
 	nodeFormatter := &NodeFormatter{
-		ctx:       context.Background(),
+		ctx:       context.WithValue(context.Background(), "clusterName", "test"),
 		podClient: &podInterface{},
 		podsCache: cache,
 	}
@@ -141,6 +141,7 @@ func TestNodeFormatter_Formatter(t *testing.T) {
 	}
 
 	n := &NodeFormatter{
+		ctx:       context.WithValue(context.Background(), "clusterName", "test"),
 		podClient: &podInterface{},
 		podsCache: podCache,
 	}
