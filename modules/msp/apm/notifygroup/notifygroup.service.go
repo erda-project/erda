@@ -17,7 +17,10 @@ package notifygroup
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -29,27 +32,33 @@ type notifyGroupService struct {
 	p *provider
 }
 
+func (n *notifyGroupService) GetProjectIdByScopeId(scopeId string) (string, error) {
+	projectId := ""
+	var err error
+	projectId, err = n.p.monitorDB.SelectProjectIdByTk(scopeId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			instance, err := n.p.mspTenantDB.QueryTenant(scopeId)
+			if err != nil {
+				return "", err
+			}
+			if instance != nil {
+				projectId = instance.RelatedProjectId
+			}
+		} else {
+			return projectId, err
+		}
+	}
+	return projectId, nil
+}
+
 func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.CreateNotifyGroupRequest) (*pb.CreateNotifyGroupResponse, error) {
-	var projectId string
-	instance, err := n.p.mspTenantDB.QueryTenant(request.ScopeId)
+	projectId, err := n.GetProjectIdByScopeId(request.ScopeId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if instance == nil {
-		tenant, err := n.p.instanceDB.GetInstanceByTenantGroup(request.ScopeId)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		option := make(map[string]string)
-		if tenant != nil {
-			err = json.Unmarshal([]byte(tenant.Options), &option)
-			if err != nil {
-				return nil, errors.NewInternalServerError(err)
-			}
-			projectId = option["projectId"]
-		}
-	} else {
-		projectId = instance.RelatedProjectId
+	if projectId == "" {
+		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.ScopeId))
 	}
 	userId := apis.GetUserID(ctx)
 	orgId := apis.GetOrgID(ctx)

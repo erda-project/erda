@@ -73,8 +73,8 @@ func Test_memberService_ListMember(t *testing.T) {
 		func(_ *bundle.Bundle, _ apistructs.MemberListRequest) (*apistructs.MemberList, error) {
 			return listMembersAndTotalData, nil
 		})
-	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) string {
-		return "4"
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
 	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMember(context.Background(), &pb.ListMemberRequest{
@@ -101,8 +101,8 @@ func Test_memberService_DeleteMember(t *testing.T) {
 	}
 	var bdl *bundle.Bundle
 	defer monkey.UnpatchAll()
-	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) string {
-		return "4"
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteMember",
 		func(_ *bundle.Bundle, _ apistructs.MemberRemoveRequest) error {
@@ -190,6 +190,9 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 			Total: 8,
 		}, nil
 	})
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
+	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMemberRoles(context.Background(), &pb.ListMemberRolesRequest{
 		ScopeType: "project",
@@ -220,8 +223,8 @@ func Test_memberService_CreateOrUpdateMember(t *testing.T) {
 		func(_ *bundle.Bundle, _ apistructs.MemberAddRequest, _ string) error {
 			return nil
 		})
-	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) string {
-		return "4"
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
 	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.CreateOrUpdateMember(context.Background(), &pb.CreateOrUpdateMemberRequest{
