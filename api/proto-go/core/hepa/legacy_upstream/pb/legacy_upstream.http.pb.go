@@ -5,11 +5,10 @@ package pb
 
 import (
 	context "context"
-	http1 "net/http"
-
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	http1 "net/http"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -31,7 +30,7 @@ func RegisterUpstreamServiceHandler(r http.Router, srv UpstreamServiceHandler, o
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		handler := func(w http1.ResponseWriter, r *http1.Request) {
+		return func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -41,10 +40,6 @@ func RegisterUpstreamServiceHandler(r http.Router, srv UpstreamServiceHandler, o
 				h.Error(w, r, err)
 			}
 		}
-		if h.HTTPInterceptor != nil {
-			handler = h.HTTPInterceptor(handler)
-		}
-		return handler
 	}
 
 	add_Register := func(method, path string, fn func(context.Context, *RegisterRequest) (*RegisterResponse, error)) {
