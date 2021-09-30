@@ -29,7 +29,7 @@ type config struct {
 }
 
 type syncInterval struct {
-	Metric time.Duration `file:"metric" default:"5m"`
+	Metric time.Duration `file:"metric" default:"1h"`
 	Log    time.Duration `file:"log" default:"5m"`
 }
 
