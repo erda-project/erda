@@ -5,14 +5,13 @@ package pb
 
 import (
 	context "context"
-	http1 "net/http"
-	strings "strings"
-
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
 	httprule "github.com/erda-project/erda-infra/pkg/transport/http/httprule"
 	runtime "github.com/erda-project/erda-infra/pkg/transport/http/runtime"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	http1 "net/http"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -27,7 +26,7 @@ type GlobalServiceHandler interface {
 	GetTenantGroup(context.Context, *GetTenantGroupRequest) (*GetTenantGroupResponse, error)
 	// POST /api/gateway/tenants
 	CreateTenant(context.Context, *CreateTenantRequest) (*CreateTenantResponse, error)
-	// GET /api/gateway/gateway-features/{clusterName}
+	// GET /api/gateway/openapi/gateway-features/{clusterName}
 	GetFeatures(context.Context, *GetFeaturesRequest) (*GetFeaturesResponse, error)
 }
 
@@ -38,7 +37,7 @@ func RegisterGlobalServiceHandler(r http.Router, srv GlobalServiceHandler, opts 
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		handler := func(w http1.ResponseWriter, r *http1.Request) {
+		return func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -48,10 +47,6 @@ func RegisterGlobalServiceHandler(r http.Router, srv GlobalServiceHandler, opts 
 				h.Error(w, r, err)
 			}
 		}
-		if h.HTTPInterceptor != nil {
-			handler = h.HTTPInterceptor(handler)
-		}
-		return handler
 	}
 
 	add_GetHealth := func(method, path string, fn func(context.Context, *GetHealthRequest) (*GetHealthResponse, error)) {
@@ -231,5 +226,5 @@ func RegisterGlobalServiceHandler(r http.Router, srv GlobalServiceHandler, opts 
 	add_GetHealth("GET", "/_api/health", srv.GetHealth)
 	add_GetTenantGroup("GET", "/api/gateway/tenant-group", srv.GetTenantGroup)
 	add_CreateTenant("POST", "/api/gateway/tenants", srv.CreateTenant)
-	add_GetFeatures("GET", "/api/gateway/gateway-features/{clusterName}", srv.GetFeatures)
+	add_GetFeatures("GET", "/api/gateway/openapi/gateway-features/{clusterName}", srv.GetFeatures)
 }
