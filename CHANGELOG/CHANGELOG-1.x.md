@@ -2,11 +2,16 @@
 
 <table>
 <tr>
-  <th title="Current">1.2<sup>Current</sup></th>
+  
+  <th title="Current">1.3<sup>Current</sup></th>
+  <th title="Current">1.2</th>
   <th title="Current">1.1</th>
   <th title="Current">1.0</th>
 </tr>
 <tr>
+  <td valign="top">
+    <a href="#v130">1.3.0</a><br/>
+  </td>
   <td valign="top">
     <b><a href="#v121">1.2.1</a></b><br/>
     <a href="#v120">1.2.0</a><br/>
@@ -22,11 +27,66 @@
 </tr>
 </table>
 
-# v1.2.1
+# v1.3.0
+
+`2021-09-30`
+
+### New Features
+
+* Cloud management module add k8s dashboard。[#1542](https://github.com/erda-project/erda/pull/1542) [#1585](https://github.com/erda-project/erda/pull/1582) [#1703](https://github.com/erda-project/erda/pull/1703)
+* Add admin role and system-auditor role.[#1031](https://github.com/erda-project/erda-ui/pull/1031)
+* Projects collaborate with item creators and handlers to increase the ability to modify item types.[#1347](https://github.com/erda-project/erda-ui/pull/1347) [#2090](https://github.com/erda-project/erda/pull/2090)
+* Adjust audit log max retention days to 180 days.[#2142](https://github.com/erda-project/erda/pull/2142)
+* Support read all unread mbox with one click.[#1593](https://github.com/erda-project/erda/pull/1593)
+* Add execute-time and pass-rate in autotest-plan table component.[#1684](https://github.com/erda-project/erda/pull/1684)
+* Add audit for runtime deploy operate.[#1653](https://github.com/erda-project/erda/pull/1653)
+* Add application filter in authorize modal.[#1371](https://github.com/erda-project/erda-ui/pull/1371)
+* Pipeline actions support multi containers monitor.[#1585](https://github.com/erda-project/erda/pull/1585) [#1777](https://github.com/erda-project/erda/pull/1777)
+* Improvement of the Api-Design module.[#1632](https://github.com/erda-project/erda/pull/1632) [#1575](https://github.com/erda-project/erda/pull/1575)
+* Improvment on security of gittar access.[#1607](https://github.com/erda-project/erda/pull/1607) [#1663](https://github.com/erda-project/erda/pull/1663)
+* Improvement on MicroService module, support opentracing integration.[#1829](https://github.com/erda-project/erda/pull/1829)
+* MicroService module support member management.[#1659](https://github.com/erda-project/erda/pull/1659)
+* Improvement on request-tracing feature.[#1553](https://github.com/erda-project/erda/pull/1553)
+* Add inspection for MQ requests.[#1676](https://github.com/erda-project/erda/pull/1676)
+* Improvement on Log Query, support AND, OR operator.[#1960](https://github.com/erda-project/erda/pull/1960)
+* Add new log analytics addon.[#1547](https://github.com/erda-project/erda/pull/1547)
+* Change log max lines limit to 5000.[#1348](https://github.com/erda-project/erda-ui/pull/1348)
+
 
 ### Bug Fixes
 
+* Fix the bug that non-exist branch page loop request error.[#1090](https://github.com/erda-project/erda-ui/pull/1090)
+* Fix the bug that action form edit struct-array error.[#1132](https://github.com/erda-project/erda-ui/pull/1132)
+* Fix the bug that project-pipeline pageNo change error.[#1211](https://github.com/erda-project/erda-ui/pull/1211)
+* Fix the bug that node information arrangement style bug of clusters management nodes detail.[#1322](https://github.com/erda-project/erda-ui/pull/1322)
+* Fix the bug that scene sets would display Chinese in English mode.[#1330](https://github.com/erda-project/erda-ui/pull/1330)
+* Fix the issue that add default value for enumerated custom fields when quick create issue.[#1351](https://github.com/erda-project/erda-ui/pull/1351)
+* Fix the bug that Ellipsis tooltip error.[#1353](https://github.com/erda-project/erda-ui/pull/1353)
+* Fix the bug that api-design missing url params when click left menu.[#1375](https://github.com/erda-project/erda-ui/pull/1375)
+* Fix the issue that add placeholder for contractive-filter / adjust backlog filter item.[#1384](https://github.com/erda-project/erda-ui/pull/1384)
+* Fix the bugs of Form validation on the API design page and the display bug of the response params example.[#1395](https://github.com/erda-project/erda-ui/pull/1395)
+* Modify the error message returned。[#1709](https://github.com/erda-project/erda/pull/1709)
+* Fix the issue that autotest step input param do not support '.'.[#2065](https://github.com/erda-project/erda/pull/2065)
+* Fix the bug that menu of AppMonitor display error.[#2077](https://github.com/erda-project/erda/pull/2077) [#2084](https://github.com/erda-project/erda/pull/2084)
+* Fix the issue that get execute env from report env.[#2088](https://github.com/erda-project/erda/pull/2088)
+* Modify micro_service dop role-list.[#2135](https://github.com/erda-project/erda/pull/2135)
+* Support cms for pipeline with cron enabled.[#1741](https://github.com/erda-project/erda/pull/1741)
+
+### Refactor
+
+* Refactor the uc component, support intergrate with kratos.[#1460](https://github.com/erda-project/erda/pull/1460)
+* Fix single point problem of core components.
+* Refactor the OpenApi，support declare grpc api expose to OpenApi.[#1584](https://github.com/erda-project/erda/pull/1584)
+* Add etcd distributed lock.[#1548](https://github.com/erda-project/erda/pull/1548)
+* Refactor api of the Hepa to grpc.[#1744](https://github.com/erda-project/erda/pull/1744)
+* Gittar remove skipAuth.[#1856](https://github.com/erda-project/erda/pull/1856)
+* Rename worker cluster tag.[#2124](https://github.com/erda-project/erda/pull/2124)
+
+# v1.2.1
+
 `2021-08-23`
+
+### Bug Fixes
 
 * Fix the issue of table style for manual test case. [#953](https://github.com/erda-project/erda-ui/pull/953)
 * Fix the bug that occured when switching the source type for the first time after resetting the form while adding tags. [#957](https://github.com/erda-project/erda-ui/pull/957)
