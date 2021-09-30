@@ -25,6 +25,8 @@ import (
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+
+	"github.com/erda-project/erda/bundle"
 )
 
 var (
@@ -36,7 +38,8 @@ var (
 	diceSystemEnv   = "DICE_NAMESPACE"
 	systemNamespace = getSystemNamespace()
 
-	UserGroups map[string]UserGroupInfo
+	UserGroups  map[string]UserGroupInfo
+	RoleToGroup map[string]string
 )
 
 func init() {
@@ -53,6 +56,11 @@ func init() {
 			ServiceAccountName:      "erda-org-support",
 			ServiceAccountNamespace: systemNamespace,
 		},
+	}
+	RoleToGroup = map[string]string{
+		bundle.RoleOrgManager: OrgManagerGroup,
+		bundle.RoleOrgOps:     OrgOpsGroup,
+		bundle.RoleOrgSupport: OrgSupportGroup,
 	}
 }
 

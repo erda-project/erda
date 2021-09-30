@@ -33,7 +33,6 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
@@ -602,12 +601,11 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		UID:  name,
 	}
 	for _, role := range rsp.Roles {
-		if role == bundle.RoleOrgManager {
-			user.Groups = append(user.Groups, steve.OrgManagerGroup)
+		group, ok := steve.RoleToGroup[role]
+		if !ok {
+			continue
 		}
-		if role == bundle.RoleOrgSupport {
-			user.Groups = append(user.Groups, steve.OrgSupportGroup)
-		}
+		user.Groups = append(user.Groups, group)
 	}
 
 	if len(user.Groups) == 0 {
