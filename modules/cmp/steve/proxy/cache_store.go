@@ -30,6 +30,7 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/steve/queue"
 )
 
 type cacheStore struct {
@@ -91,7 +92,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		}
 
 		logrus.Infof("[DEBUG] start list at %s", time.Now().Format(time.StampNano))
+		queue.Acquire()
 		list, err := c.Store.List(apiOp, schema)
+		queue.Release()
 		if err != nil {
 			return types.APIObjectList{}, err
 		}

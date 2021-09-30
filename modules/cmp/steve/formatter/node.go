@@ -28,6 +28,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/steve/queue"
 )
 
 type NodeFormatter struct {
@@ -120,9 +121,11 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 
 func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (map[string]interface{}, error) {
 	fieldSelector := fmt.Sprintf("spec.nodeName=%s,status.phase!=Failed,status.phase!=Succeeded", nodeName)
+	queue.Acquire()
 	pods, err := n.podClient.List(ctx, v1.ListOptions{
 		FieldSelector: fieldSelector,
 	})
+	queue.Release()
 	if err != nil {
 		return nil, err
 	}
