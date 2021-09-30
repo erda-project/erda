@@ -101,7 +101,10 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
 	<-queryQueue
 	if err != nil {
-		return nil, err
+		logrus.Errorf("query influx failed, req:%+v, err:%+v", req, err)
+		v = &pb.QueryWithInfluxFormatResponse{
+			Results: []*pb.Result{},
+		}
 	}
 	values, err := cache.MarshalValue(v)
 	cache.FreeCache.Set(key, values, time.Now().UnixNano()+int64(time.Second*30))
@@ -158,7 +161,7 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) ([]Metric
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
-			if resp.Results[0].Series[0].Rows == nil {
+			if len(resp.Results) == 0 || resp.Results[0].Series[0].Rows == nil {
 				logrus.Warnf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
@@ -186,7 +189,7 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
-			if resp.Results[0].Series[0].Rows == nil {
+			if len(resp.Results) == 0 || resp.Results[0].Series[0].Rows == nil {
 				logrus.Errorf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()

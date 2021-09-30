@@ -67,7 +67,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	logrus.Infof("[DEBUG] start get cache at %s", time.Now().Format(time.StampNano))
-	values, _, err := c.cache.Get(key.getKey())
+	values, lexpired, err := c.cache.Get(key.getKey())
 	logrus.Infof("[DEBUG] end get cache at %s", time.Now().Format(time.StampNano))
 	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
@@ -111,28 +111,31 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		return list, nil
 	}
 
-	go func() {
-		user, ok := request.UserFrom(apiOp.Context())
-		if !ok {
-			logrus.Errorf("user not found in context when steve auth")
-			return
-		}
-		ctx := request.WithUser(c.ctx, user)
-		newOp := apiOp.WithContext(ctx)
-		list, err := c.Store.List(newOp, schema)
-		if err != nil {
-			logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
-			return
-		}
-		data, err := cache.MarshalValue(list)
-		if err != nil {
-			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
-			return
-		}
-		if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
-			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
-		}
-	}()
+	if lexpired {
+		logrus.Infof("list data is expired, need update, key:%s", key.getKey())
+		go func() {
+			user, ok := request.UserFrom(apiOp.Context())
+			if !ok {
+				logrus.Errorf("user not found in context when steve auth")
+				return
+			}
+			ctx := request.WithUser(c.ctx, user)
+			newOp := apiOp.WithContext(ctx)
+			list, err := c.Store.List(newOp, schema)
+			if err != nil {
+				logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
+				return
+			}
+			data, err := cache.MarshalValue(list)
+			if err != nil {
+				logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
+				return
+			}
+			if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
+				logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+			}
+		}()
+	}
 
 	var list types.APIObjectList
 	logrus.Infof("[DEBUG] start unmarshal data from cache at %s", time.Now().Format(time.StampNano))

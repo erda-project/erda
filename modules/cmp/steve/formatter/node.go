@@ -83,7 +83,7 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 	nodeName := resource.ID
 	key := &cacheKey{nodeName}
 	data := resource.APIObject.Data()
-	value, _, err := n.podsCache.Get(key.getKey())
+	value, expired, err := n.podsCache.Get(key.getKey())
 	if value == nil || err != nil {
 		allocatedRes, err := n.getNodeAllocatedRes(request.Context(), nodeName)
 		if err != nil {
@@ -98,16 +98,18 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 		return
 	}
 
-	go func() {
-		allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
-		if err != nil {
-			logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
-			return
-		}
-		val, _ := cache.MarshalValue(allocatedRes)
-		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
-	}()
-
+	if expired {
+		logrus.Infof("pods data expired, need update, key:%s", key.getKey())
+		go func() {
+			allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
+			if err != nil {
+				logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
+				return
+			}
+			val, _ := cache.MarshalValue(allocatedRes)
+			n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+		}()
+	}
 	allocatedRes := map[string]interface{}{}
 	if err = jsi.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {
 		logrus.Errorf("failed to unmarshal allocatedResource, %v", err)
