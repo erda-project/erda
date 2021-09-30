@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/bundle"
+	db2 "github.com/erda-project/erda/modules/monitor/common/db"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -39,6 +40,7 @@ type provider struct {
 	DB            *gorm.DB `autowired:"mysql-client"`
 	instanceDB    *instancedb.InstanceTenantDB
 	mspTenantDB   *db.MSPTenantDB
+	monitorDB     *db2.MonitorDb
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -49,6 +51,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.instanceDB = &instancedb.InstanceTenantDB{DB: p.DB}
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
+	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	return nil
 }
 
