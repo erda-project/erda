@@ -66,6 +66,11 @@ message Scope {
 }
 
 message ScopeRoleAccessResponse {
+  ScopeRoleData   data    = 1;
+  repeated string userIDs = 2;
+}
+
+message ScopeRoleData {
   bool                   access                   = 1;
   repeated string        roles                    = 2;
   repeated ScopeResource permissionList           = 3;

@@ -19,6 +19,8 @@ var _ json.Marshaler = (*Scope)(nil)
 var _ json.Unmarshaler = (*Scope)(nil)
 var _ json.Marshaler = (*ScopeRoleAccessResponse)(nil)
 var _ json.Unmarshaler = (*ScopeRoleAccessResponse)(nil)
+var _ json.Marshaler = (*ScopeRoleData)(nil)
+var _ json.Unmarshaler = (*ScopeRoleData)(nil)
 var _ json.Marshaler = (*ScopeResource)(nil)
 var _ json.Unmarshaler = (*ScopeResource)(nil)
 var _ json.Marshaler = (*ListMemberRequest)(nil)
@@ -97,6 +99,24 @@ func (m *ScopeRoleAccessResponse) MarshalJSON() ([]byte, error) {
 
 // ScopeRoleAccessResponse implement json.Marshaler.
 func (m *ScopeRoleAccessResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ScopeRoleData implement json.Marshaler.
+func (m *ScopeRoleData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ScopeRoleData implement json.Marshaler.
+func (m *ScopeRoleData) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
