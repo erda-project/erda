@@ -48,10 +48,13 @@ var (
 
 func injectCtx(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, entity interface{}) (interface{}, error) {
-		header := transport.ContextHeader(ctx)
 		req := transhttp.ContextRequest(ctx)
+		req.Header.Set("Accept", "application/json")
+
+		header := transport.ContextHeader(ctx)
 		header.Set(common.HEADER_MSP_ENV_ID, req.Header.Get(common.HEADER_MSP_ENV_ID))
 		header.Set(common.HEADER_MSP_ENV_TOKEN, req.Header.Get(common.HEADER_MSP_ENV_TOKEN))
+
 		if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
 			ctx = common.WithSpans(ctx, data.Spans)
 		}
