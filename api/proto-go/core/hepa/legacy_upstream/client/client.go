@@ -5,7 +5,6 @@ package client
 
 import (
 	context "context"
-
 	grpc "github.com/erda-project/erda-infra/pkg/transport/grpc"
 	pb "github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 	grpc1 "google.golang.org/grpc"
