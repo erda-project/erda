@@ -15,6 +15,7 @@ import (
 var _ urlenc.URLValuesUnmarshaler = (*ScopeRoleAccessRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Scope)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ScopeRoleAccessResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ScopeRoleData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ScopeResource)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMemberRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMemberResponse)(nil)
@@ -72,6 +73,51 @@ func (m *Scope) UnmarshalURLValues(prefix string, values url.Values) error {
 
 // ScopeRoleAccessResponse implement urlenc.URLValuesUnmarshaler.
 func (m *ScopeRoleAccessResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+			case "data.access":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.Access = val
+			case "data.roles":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				m.Data.Roles = vals
+			case "data.exist":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.Exist = val
+			case "data.contactsWhenNoPermission":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				m.Data.ContactsWhenNoPermission = vals
+			case "userIDs":
+				m.UserIDs = vals
+			}
+		}
+	}
+	return nil
+}
+
+// ScopeRoleData implement urlenc.URLValuesUnmarshaler.
+func (m *ScopeRoleData) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
