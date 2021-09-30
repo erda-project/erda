@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/olivere/elastic"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
@@ -113,6 +114,10 @@ func (es *esStorageMetric) indicesInfo() (map[string]*metricIndex, error) {
 	if err != nil {
 		return nil, err
 	}
+	return getMetricIdxMap(resp), nil
+}
+
+func getMetricIdxMap(resp elastic.CatIndicesResponse) map[string]*metricIndex {
 	metricIdxMap := make(map[string]*metricIndex, len(resp))
 	for _, indice := range resp {
 		m := getMetricName(indice.Index)
@@ -138,7 +143,7 @@ func (es *esStorageMetric) indicesInfo() (map[string]*metricIndex, error) {
 			info.sizeBytes += bytes
 		}
 	}
-	return metricIdxMap, nil
+	return metricIdxMap
 }
 
 func getMetricName(index string) string {
