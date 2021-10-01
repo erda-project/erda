@@ -64,7 +64,7 @@ erda.core.monitor.metric.index-loader:
   request_timeout: "30s"
   index_prefix: "spot"
   query_index_time_range: true
-  index_reload_interval: "2m"
+  index_reload_interval: "1m"
 
 erda.core.monitor.metric.index-manager:
   request_timeout: "1m"
