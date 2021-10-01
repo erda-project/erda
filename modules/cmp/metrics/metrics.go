@@ -102,7 +102,7 @@ var emptyValue = "x"
 func isEmptyResponse(resp *pb.QueryWithInfluxFormatResponse) bool {
 	if resp == nil || len(resp.Results) == 0 ||
 		len(resp.Results[0].Series) == 0 || len(resp.Results[0].Series[0].Rows) == 0 ||
-		len(resp.Results[0].Series[0].Rows[0].Values) == 0 {
+		len(resp.Results[0].Series[0].Rows[0].Values) == 0 || resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue() == 0 {
 		return true
 	}
 	return false
@@ -153,7 +153,7 @@ func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWith
 		if len(vbytes) > len(emptyValue) {
 			err = jsi.Unmarshal(vbytes, resp)
 			if err != nil {
-				logrus.Errorf("unmarshal failed")
+				logrus.Errorf("unmarshal failed, v:%s, err:%+v", vbytes, err)
 			}
 		} else {
 			logrus.Infof("use the empty metrics value")
