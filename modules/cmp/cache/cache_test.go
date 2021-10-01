@@ -337,7 +337,7 @@ func TestCache_Write(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for k, v := range tt.args.pairs {
-				if err := cache.Set(k, v, time.Now().UnixNano()); (err != nil) != tt.wantErr {
+				if err := cache.Set(k, v, time.Second.Nanoseconds()); (err != nil) != tt.wantErr {
 					t.Errorf("WriteMulti() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}

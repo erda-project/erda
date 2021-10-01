@@ -110,7 +110,15 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 		}
 	}
 	values, err := cache.MarshalValue(v)
-	cache.FreeCache.Set(key, values, time.Now().UnixNano()+int64(time.Second*30))
+	if err != nil {
+		logrus.Errorf("marshal value failed, v:%+v, err:%+v", v, err)
+		return nil, err
+	}
+	err = cache.FreeCache.Set(key, values, 30*time.Second.Nanoseconds())
+	if err != nil {
+		logurs.Errorf("update cache failed, key:%s, err:%+v", key, err)
+		return nil, err
+	}
 	return v, nil
 }
 
@@ -139,7 +147,6 @@ func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWith
 		logrus.Infof("%s not hit cache, try fetch metrics synchronized", cacheKey)
 		resp, err = m.query(ctx, cacheKey, req)
 		if err != nil {
-			logrus.Error(err)
 			return nil, err
 		}
 	}
@@ -187,7 +194,7 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 	}
 	for _, queryReq := range reqs {
 		d := MetricsData{}
-		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ResourceType})
+		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ClusterName, req.ResourceType})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)

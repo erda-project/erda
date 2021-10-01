@@ -104,7 +104,10 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 			return
 		}
 		val, _ := cache.MarshalValue(allocatedRes)
-		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+		err = n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+		if err != nil {
+			logrus.Errorf("failed to update cache, key:%s", key.getKey())
+		}
 
 		parsedRes["allocated"] = allocatedRes
 		data.SetNested(parsedRes, "extra", "parsedResource")
@@ -120,7 +123,10 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 				return
 			}
 			val, _ := cache.MarshalValue(allocatedRes)
-			n.podsCache.Set(key.getKey(), val, 5*time.Minute.Nanoseconds())
+			err = n.podsCache.Set(key.getKey(), val, 5*time.Minute.Nanoseconds())
+			if err != nil {
+				logrus.Errorf("failed to update cache, key:%s", key.getKey())
+			}
 		}()
 	}
 	allocatedRes := map[string]interface{}{}
