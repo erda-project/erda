@@ -20,11 +20,12 @@ import (
 	"sort"
 	"strings"
 
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/encoding/md5x"
 	"github.com/recallsong/go-utils/lang/size"
+
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 )
 
 // MergeGroup .
