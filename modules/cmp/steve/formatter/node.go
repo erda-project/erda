@@ -116,18 +116,26 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 
 	if expired {
 		logrus.Infof("pods data expired, need update, key:%s", key.getKey())
-		go func() {
-			allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
-			if err != nil {
-				logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
-				return
+		if !cache.ExpireFreshQueue.IsFull() {
+			task := &queue.Task{
+				Key: key.getKey(),
+				Do: func() {
+					allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
+					if err != nil {
+						logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
+						return
+					}
+					val, _ := cache.MarshalValue(allocatedRes)
+					err = n.podsCache.Set(key.getKey(), val, 5*time.Minute.Nanoseconds())
+					if err != nil {
+						logrus.Errorf("failed to update cache, key:%s", key.getKey())
+					}
+				},
 			}
-			val, _ := cache.MarshalValue(allocatedRes)
-			err = n.podsCache.Set(key.getKey(), val, 5*time.Minute.Nanoseconds())
-			if err != nil {
-				logrus.Errorf("failed to update cache, key:%s", key.getKey())
-			}
-		}()
+			cache.ExpireFreshQueue.Enqueue(task)
+		} else {
+			logrus.Warnf("queue size is full, task is ignored, key:%s", key.getKey())
+		}
 	}
 	allocatedRes := map[string]interface{}{}
 	if err = jsi.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {

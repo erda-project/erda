@@ -128,28 +128,36 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 
 	if lexpired {
 		logrus.Infof("list data is expired, need update, key:%s", key.getKey())
-		go func() {
-			user, ok := request.UserFrom(apiOp.Context())
-			if !ok {
-				logrus.Errorf("user not found in context when steve auth")
-				return
+		if !cache.ExpireFreshQueue.IsFull() {
+			task := &queue.Task{
+				Key: key.getKey(),
+				Do: func() {
+					user, ok := request.UserFrom(apiOp.Context())
+					if !ok {
+						logrus.Errorf("user not found in context when steve auth")
+						return
+					}
+					ctx := request.WithUser(c.ctx, user)
+					newOp := apiOp.WithContext(ctx)
+					list, err := c.Store.List(newOp, schema)
+					if err != nil {
+						logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
+						return
+					}
+					data, err := cache.MarshalValue(list)
+					if err != nil {
+						logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
+						return
+					}
+					if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
+						logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+					}
+				},
 			}
-			ctx := request.WithUser(c.ctx, user)
-			newOp := apiOp.WithContext(ctx)
-			list, err := c.Store.List(newOp, schema)
-			if err != nil {
-				logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
-				return
-			}
-			data, err := cache.MarshalValue(list)
-			if err != nil {
-				logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
-				return
-			}
-			if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
-				logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
-			}
-		}()
+			cache.ExpireFreshQueue.Enqueue(task)
+		} else {
+			logrus.Warnf("queue size is full, task is ignored, key:%s", key.getKey())
+		}
 	}
 
 	var list types.APIObjectList

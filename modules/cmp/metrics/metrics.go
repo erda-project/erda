@@ -130,7 +130,7 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 			return nil, err
 		}
 	}
-	err = cache.FreeCache.Set(key, values, 30*time.Second.Nanoseconds())
+	err = cache.FreeCache.Set(key, values, 5*time.Minute.Nanoseconds())
 	if err != nil {
 		logrus.Errorf("update cache failed, key:%s, err:%+v", key, err)
 		return nil, err
@@ -161,9 +161,17 @@ func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWith
 		}
 		if expired {
 			logrus.Infof("cache expired, try fetch metrics asynchronized, cacheKey:%s", cacheKey)
-			go func(ctx context.Context, key string, queryReq *pb.QueryWithInfluxFormatRequest) {
-				m.query(ctx, key, queryReq)
-			}(ctx, cacheKey, req)
+			if !cache.ExpireFreshQueue.IsFull() {
+				task := &queue.Task{
+					Key: cacheKey,
+					Do: func() {
+						m.query(ctx, cacheKey, req)
+					},
+				}
+				cache.ExpireFreshQueue.Enqueue(task)
+			} else {
+				logrus.Warnf("queue size is full, task is ignored, key:%s", cacheKey)
+			}
 		}
 		logrus.Infof("%s hit cache, return cache value directly", cacheKey)
 	} else {
