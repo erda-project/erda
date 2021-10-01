@@ -99,6 +99,15 @@ type Interface interface {
 
 var emptyValue = "x"
 
+func isEmptyResponse(resp *pb.QueryWithInfluxFormatResponse) bool {
+	if resp == nil || len(resp.Results) == 0 ||
+		len(resp.Results[0].Series) == 0 || len(resp.Results[0].Series[0].Rows) == 0 ||
+		len(resp.Results[0].Series[0].Rows[0].Values) == 0 {
+		return true
+	}
+	return false
+}
+
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	logrus.Infof("[DEBUG] start query influx")
 	queryQueue.Acquire("default", 1)
@@ -106,7 +115,7 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 	queryQueue.Release("default", 1)
 	logrus.Infof("[DEBUG] end query influx")
 	var values cache.Values
-	if err != nil || len(v.Results) == 0 {
+	if err != nil || v == nil || len(v.Results) == 0 || len(v.Results[0].Series) == 0 || len(v.Results[0].Series[0].Rows) == 0 {
 		logrus.Errorf("query influx failed, req:%+v, err:%+v", req, err)
 		values, err = cache.MarshalValue(emptyValue)
 		if err != nil {
@@ -183,7 +192,7 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) ([]Metric
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
-			if len(resp.Results) == 0 || resp.Results[0].Series[0].Rows == nil {
+			if isEmptyResponse(resp) {
 				logrus.Warnf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
@@ -211,7 +220,7 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
-			if len(resp.Results) == 0 || resp.Results[0].Series[0].Rows == nil {
+			if isEmptyResponse(resp) {
 				logrus.Errorf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
