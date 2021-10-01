@@ -116,7 +116,7 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 	}
 	err = cache.FreeCache.Set(key, values, 30*time.Second.Nanoseconds())
 	if err != nil {
-		logurs.Errorf("update cache failed, key:%s, err:%+v", key, err)
+		logrus.Errorf("update cache failed, key:%s, err:%+v", key, err)
 		return nil, err
 	}
 	return v, nil
