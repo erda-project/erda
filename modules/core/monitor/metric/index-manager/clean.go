@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"time"
 
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/olivere/elastic"
+
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 )
 
 func (p *provider) runCleanIndices(ctx context.Context) {
