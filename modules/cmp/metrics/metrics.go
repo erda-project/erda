@@ -97,22 +97,29 @@ type Interface interface {
 	PodMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error)
 }
 
+var emptyValue = "x"
+
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	logrus.Infof("[DEBUG] start query influx")
 	queryQueue.Acquire("default", 1)
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
 	queryQueue.Release("default", 1)
 	logrus.Infof("[DEBUG] end query influx")
+	var values cache.Values
 	if err != nil {
 		logrus.Errorf("query influx failed, req:%+v, err:%+v", req, err)
-		v = &pb.QueryWithInfluxFormatResponse{
-			Results: []*pb.Result{},
+		values, err = cache.MarshalValue(emptyValue)
+		if err != nil {
+			logrus.Errorf("marshal emtpy value failed, err: %+v", err)
+			return nil, err
 		}
-	}
-	values, err := cache.MarshalValue(v)
-	if err != nil {
-		logrus.Errorf("marshal value failed, v:%+v, err:%+v", v, err)
-		return nil, err
+		v = &pb.QueryWithInfluxFormatResponse{}
+	} else {
+		values, err = cache.MarshalValue(v)
+		if err != nil {
+			logrus.Errorf("marshal value failed, v:%+v, err:%+v", v, err)
+			return nil, err
+		}
 	}
 	err = cache.FreeCache.Set(key, values, 30*time.Second.Nanoseconds())
 	if err != nil {
@@ -133,9 +140,14 @@ func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWith
 	logrus.Infof("start get metrics of %s", cacheKey)
 	if v, expired, err = cache.FreeCache.Get(cacheKey); v != nil {
 		logrus.Infof("%s hit cache, return cache value directly", cacheKey)
-		err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
-		if err != nil {
-			logrus.Errorf("unmarshal failed")
+		vbytes := v[0].(cache.ByteSliceValue).Value().([]byte)
+		if len(vbytes) > len(emptyValue) {
+			err = jsi.Unmarshal(vbytes, resp)
+			if err != nil {
+				logrus.Errorf("unmarshal failed")
+			}
+		} else {
+			logrus.Infof("use the empty metrics value")
 		}
 		if expired {
 			logrus.Infof("cache expired, try fetch metrics asynchronized")
