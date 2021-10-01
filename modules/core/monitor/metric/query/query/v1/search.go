@@ -25,21 +25,21 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 )
 
 type queryer struct {
-	index  indexmanager.Index
+	index  indexloader.Interface
 	charts *chartmeta.Manager
 	meta   *metricmeta.Manager
 	t      i18n.Translator
 }
 
 // New .
-func New(index indexmanager.Index, charts *chartmeta.Manager, meta *metricmeta.Manager, t i18n.Translator) Queryer {
+func New(index indexloader.Interface, charts *chartmeta.Manager, meta *metricmeta.Manager, t i18n.Translator) Queryer {
 	return &queryer{
 		index:  index,
 		charts: charts,

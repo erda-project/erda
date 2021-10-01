@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
@@ -49,10 +49,10 @@ type config struct {
 type provider struct {
 	C          *config
 	L          logs.Logger
-	Meta       *metricmeta.Manager `autowired:"erda.core.monitor.metric.meta"`
-	Index      indexmanager.Index  `autowired:"erda.core.monitor.metric.index"`
-	DB         *gorm.DB            `autowired:"mysql-client"`
-	ChartTrans i18n.Translator     `autowired:"i18n" translator:"charts"`
+	Meta       *metricmeta.Manager   `autowired:"erda.core.monitor.metric.meta"`
+	Index      indexloader.Interface `autowired:"erda.core.monitor.metric.index-loader"`
+	DB         *gorm.DB              `autowired:"mysql-client"`
+	ChartTrans i18n.Translator       `autowired:"i18n" translator:"charts"`
 	q          *metricq
 }
 
