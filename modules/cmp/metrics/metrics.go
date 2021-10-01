@@ -106,7 +106,7 @@ func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxF
 	queryQueue.Release("default", 1)
 	logrus.Infof("[DEBUG] end query influx")
 	var values cache.Values
-	if err != nil {
+	if err != nil || len(v.Results) == 0 {
 		logrus.Errorf("query influx failed, req:%+v, err:%+v", req, err)
 		values, err = cache.MarshalValue(emptyValue)
 		if err != nil {
