@@ -97,7 +97,7 @@ type Interface interface {
 	PodMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error)
 }
 
-var emptyValue = "x"
+var emptyValue = ""
 
 func isEmptyResponse(resp *pb.QueryWithInfluxFormatResponse) bool {
 	if resp == nil || len(resp.Results) == 0 ||
@@ -148,28 +148,31 @@ func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWith
 	)
 	logrus.Infof("start get metrics of %s", cacheKey)
 	if v, expired, err = cache.FreeCache.Get(cacheKey); v != nil {
-		logrus.Infof("%s hit cache, return cache value directly", cacheKey)
 		vbytes := v[0].(cache.ByteSliceValue).Value().([]byte)
-		if len(vbytes) > len(emptyValue) {
+		if len(vbytes) > len([]byte(`""`)) {
+			logrus.Infof("get metrics of %s: start marshal", cacheKey)
 			err = jsi.Unmarshal(vbytes, resp)
 			if err != nil {
 				logrus.Errorf("unmarshal failed, v:%s, err:%+v", vbytes, err)
 			}
+			logrus.Infof("get metrics of %s: end marshal", cacheKey)
 		} else {
-			logrus.Infof("use the empty metrics value")
+			logrus.Infof("get metrics of %s: use the empty metrics value", cacheKey)
 		}
 		if expired {
-			logrus.Infof("cache expired, try fetch metrics asynchronized")
+			logrus.Infof("cache expired, try fetch metrics asynchronized, cacheKey:%s", cacheKey)
 			go func(ctx context.Context, key string, queryReq *pb.QueryWithInfluxFormatRequest) {
 				m.query(ctx, key, queryReq)
 			}(ctx, cacheKey, req)
 		}
+		logrus.Infof("%s hit cache, return cache value directly", cacheKey)
 	} else {
-		logrus.Infof("%s not hit cache, try fetch metrics synchronized", cacheKey)
+		logrus.Infof("%s not hit cache, start fetch metrics synchronized", cacheKey)
 		resp, err = m.query(ctx, cacheKey, req)
 		if err != nil {
 			return nil, err
 		}
+		logrus.Infof("%s not hit cache, end fetch metrics synchronized", cacheKey)
 	}
 	return resp, nil
 }
@@ -216,6 +219,7 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 	for _, queryReq := range reqs {
 		d := MetricsData{}
 		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ClusterName, req.ResourceType})
+		logrus.Infof("[DEBUG] start query metrics of %s", key)
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
@@ -229,6 +233,7 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 			}
 		}
 		data = append(data, d)
+		logrus.Infof("[DEBUG] end query metrics of %s", key)
 	}
 	return data, nil
 }
