@@ -27,7 +27,7 @@ import (
 	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index-manager"
 )
 
-const serviceIndexManager = "erda.core.monitor.metric.index"
+const serviceIndexManager = "erda.core.monitor.metric.index-manager"
 
 type config struct {
 	Inputs struct {
