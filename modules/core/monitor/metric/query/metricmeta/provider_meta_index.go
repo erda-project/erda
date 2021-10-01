@@ -28,16 +28,16 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 )
 
 // MetaIndexGroupProvider .
 type MetaIndexGroupProvider struct {
-	index indexmanager.Index
+	index indexloader.Interface
 }
 
 // NewMetaIndexGroupProvider .
-func NewMetaIndexGroupProvider(index indexmanager.Index) (*MetaIndexGroupProvider, error) {
+func NewMetaIndexGroupProvider(index indexloader.Interface) (*MetaIndexGroupProvider, error) {
 	return &MetaIndexGroupProvider{index}, nil
 }
 
@@ -120,12 +120,12 @@ func (p *MetaIndexGroupProvider) getDynamicGroupsMetrics(group string, ms map[st
 
 // MetaIndexMetricMetaProvider .
 type MetaIndexMetricMetaProvider struct {
-	index indexmanager.Index
+	index indexloader.Interface
 	log   logs.Logger
 }
 
 // NewMetaIndexMetricMetaProvider .
-func NewMetaIndexMetricMetaProvider(index indexmanager.Index, log logs.Logger) (*MetaIndexMetricMetaProvider, error) {
+func NewMetaIndexMetricMetaProvider(index indexloader.Interface, log logs.Logger) (*MetaIndexMetricMetaProvider, error) {
 	return &MetaIndexMetricMetaProvider{
 		index: index,
 		log:   log,

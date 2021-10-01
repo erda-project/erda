@@ -19,59 +19,59 @@ import (
 	"fmt"
 	"time"
 
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/olivere/elastic"
 )
 
-func (m *IndexManager) startClean() error {
-	if int64(m.cfg.IndexCleanInterval) <= 0 {
-		return fmt.Errorf("invalid IndexCleanInterval: %v", m.cfg.IndexCleanInterval)
-	}
-	go func() {
-		m.waitAndGetIndices()                                                          // Let the indices load first
-		time.Sleep(1*time.Second + time.Duration(random.Int63n(9)*int64(time.Second))) // Try to avoid multiple instances at the same time
-		m.log.Infof("enable indices clean, interval: %v", m.cfg.IndexCleanInterval)
-		tick := time.Tick(m.cfg.IndexCleanInterval)
-		for {
-			m.CleanIndices(func(*IndexEntry) bool { return true })
-			select {
-			case <-tick:
-			case req, ok := <-m.clearCh:
-				if !ok {
-					return
-				}
-				m.deleteIndices(req.list)
-				if req.waitCh != nil {
-					close(req.waitCh)
-				}
-			case <-m.closeCh:
-				return
+func (p *provider) runCleanIndices(ctx context.Context) {
+	p.Loader.WaitAndGetIndices(ctx)
+	p.Log.Infof("enable indices clean with interval(%v)", p.Cfg.IndexCleanInterval)
+	timer := time.NewTimer(10 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			err := p.CleanIndices(ctx, func(*indexloader.IndexEntry) bool { return true })
+			if err != nil {
+				p.Log.Errorf("failed to CleanIndices: %s", err)
 			}
+		case req := <-p.clearCh:
+			p.deleteIndices(req.list)
+			if req.waitCh != nil {
+				close(req.waitCh)
+			}
+		case <-ctx.Done():
+			return
 		}
-	}()
-	return nil
+		timer.Reset(p.Cfg.IndexCleanInterval)
+	}
 }
 
 // CleanIndices .
-func (m *IndexManager) CleanIndices(filter IndexMatcher) error {
-	v := m.indices.Load()
-	if v == nil {
+func (p *provider) CleanIndices(ctx context.Context, filter IndexMatcher) error {
+	indices := p.Loader.AllIndices()
+	if len(indices) <= 0 {
 		return nil
 	}
-	mc := m.getMetricConfig()
+	mc := p.getMetricConfig(ctx)
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
 	now := time.Now()
 	var removeList []string
-	indices := v.(map[string]*indexGroup)
 	for _, mg := range indices {
 		for _, ng := range mg.Groups {
 			for _, entry := range ng.List {
-				if filter(entry) && m.needToDelete(entry, mc, now) {
+				if filter(entry) && p.needToDelete(entry, mc, now) {
 					// atomic.StoreInt32(&entry.Deleted, 1)
 					removeList = append(removeList, entry.Index)
 				}
 			}
 			for _, kg := range ng.Groups {
 				for _, entry := range kg.List {
-					if filter(entry) && m.needToDelete(entry, mc, now) {
+					if filter(entry) && p.needToDelete(entry, mc, now) {
 						// atomic.StoreInt32(&entry.Deleted, 1)
 						removeList = append(removeList, entry.Index)
 					}
@@ -80,16 +80,16 @@ func (m *IndexManager) CleanIndices(filter IndexMatcher) error {
 		}
 	}
 	if len(removeList) > 0 {
-		err := m.deleteIndices(removeList)
+		err := p.deleteIndices(removeList)
 		if err != nil {
 			return err
 		}
-		m.toReloadIndices(false)
+		p.Loader.ReloadIndices()
 	}
 	return nil
 }
 
-func (m *IndexManager) needToDelete(entry *IndexEntry, mc *metricConfig, now time.Time) bool {
+func (p *provider) needToDelete(entry *indexloader.IndexEntry, mc *metricConfig, now time.Time) bool {
 	if entry.MaxT.IsZero() || (entry.Num > 0 && entry.Active) {
 		return false
 	}
@@ -105,23 +105,23 @@ func (m *IndexManager) needToDelete(entry *IndexEntry, mc *metricConfig, now tim
 			return false
 		}
 	}
-	if int64(m.cfg.IndexTTL) <= 0 {
+	if int64(p.Cfg.IndexTTL) <= 0 {
 		return false
 	}
-	return now.After(entry.MaxT.Add(m.cfg.IndexTTL))
+	return now.After(entry.MaxT.Add(p.Cfg.IndexTTL))
 }
 
-func (m *IndexManager) deleteIndices(removeList []string) error {
-	const size = 10 // Delete too much at once and the request will be rejected
+func (p *provider) deleteIndices(removeList []string) error {
+	const size = 10 // delete too much at once and the request will be rejected
 	for len(removeList) >= size {
-		err := m.deleteIndex(removeList[:size])
+		err := p.deleteIndex(removeList[:size])
 		if err != nil {
 			return err
 		}
 		removeList = removeList[size:]
 	}
 	if len(removeList) > 0 {
-		err := m.deleteIndex(removeList)
+		err := p.deleteIndex(removeList)
 		if err != nil {
 			return err
 		}
@@ -129,10 +129,10 @@ func (m *IndexManager) deleteIndices(removeList []string) error {
 	return nil
 }
 
-func (m *IndexManager) deleteIndex(indices []string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), m.cfg.RequestTimeout)
+func (p *provider) deleteIndex(indices []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), p.Cfg.RequestTimeout)
 	defer cancel()
-	resp, err := m.client.DeleteIndex(indices...).Do(ctx)
+	resp, err := p.ES.Client().DeleteIndex(indices...).Do(ctx)
 	if err != nil {
 		if e, ok := err.(*elastic.Error); ok {
 			if e.Status == 404 {
@@ -144,6 +144,6 @@ func (m *IndexManager) deleteIndex(indices []string) error {
 	if !resp.Acknowledged {
 		return fmt.Errorf("delete indices Acknowledged=false")
 	}
-	m.log.Infof("clean indices %d, %v", len(indices), indices)
+	p.Log.Infof("clean indices %d, %v", len(indices), indices)
 	return nil
 }

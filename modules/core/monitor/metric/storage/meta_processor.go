@@ -25,7 +25,7 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index-manager"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/arrays"
 )
@@ -40,13 +40,13 @@ type metaProcessor struct {
 	metaCache map[string]*metricMetaCache
 
 	es      writer.Writer
-	index   indexmanager.Index
+	index   indexmanager.Interface
 	counter *prometheus.Counter
 
 	r *rand.Rand
 }
 
-func createMetaProcess(es writer.Writer, index indexmanager.Index, counter *prometheus.Counter) *metaProcessor {
+func createMetaProcess(es writer.Writer, index indexmanager.Interface, counter *prometheus.Counter) *metaProcessor {
 	p := &metaProcessor{
 		metrics:   make(chan *metric.Metric, 64),
 		metaCache: make(map[string]*metricMetaCache),

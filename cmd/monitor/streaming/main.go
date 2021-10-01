@@ -22,6 +22,8 @@ import (
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-record"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/storage"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/index-manager"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
 	_ "github.com/erda-project/erda/modules/msp/apm/browser"

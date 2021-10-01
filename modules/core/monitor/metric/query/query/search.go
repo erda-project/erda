@@ -25,17 +25,17 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql/formats"
 )
 
 type queryer struct {
-	index indexmanager.Index
+	index indexloader.Interface
 }
 
 // New .
-func New(index indexmanager.Index) Queryer {
+func New(index indexloader.Interface) Queryer {
 	return &queryer{
 		index: index,
 	}
