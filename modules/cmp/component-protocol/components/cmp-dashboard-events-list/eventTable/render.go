@@ -99,13 +99,13 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 		return nil
 	}
 
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	err = json.Unmarshal(jsonData, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -115,16 +115,16 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	data, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(data)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
 	t.State.PageNo = uint64(query["pageNo"].(float64))
@@ -136,12 +136,12 @@ func (t *ComponentEventTable) DecodeURLQuery() error {
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	queryData := make(map[string]interface{})
-	queryData["pageNo"] = int(t.State.PageNo)
-	queryData["pageSize"] = int(t.State.PageSize)
-	queryData["sorterData"] = t.State.Sorter
+	query := make(map[string]interface{})
+	query["pageNo"] = int(t.State.PageNo)
+	query["pageSize"] = int(t.State.PageSize)
+	query["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(queryData)
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
