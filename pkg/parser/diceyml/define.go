@@ -341,6 +341,10 @@ func (e *EnvMap) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (v *Volume) UnmarshalJSON(data []byte) error {
+	return yamlv3.Unmarshal(data, v)
+}
+
 /*
 volumes:
   - name~storage:/container/path
