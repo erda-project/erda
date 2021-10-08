@@ -451,7 +451,6 @@ func unmarshalSelector(selector *Selector, unmarshal func(interface{}) error) er
 		return err
 	}
 	s = strutil.Trim(s)
-	fmt.Println("s:", s)
 	matches := selectorNotExpr.FindStringSubmatch(s)
 	if matches != nil && len(matches) > 1 && matches[1] != "" {
 		selector.Not = true
