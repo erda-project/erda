@@ -209,15 +209,15 @@ LABEL:
 	cfgChildren0 := make([]Input, 0, 0)
 	for _, cfg := range cfgs {
 		// Header 是自动带上去的
-		// cfgChildren1, cfgChildren2, cfgChildren3 := make([]Input, 0, 0), make([]Input, 0, 0), make([]Input, 0, 0)
+		// cfgChildren1, cfgChildren2, cfgChildren3 := make([]SpotInput, 0, 0), make([]SpotInput, 0, 0), make([]SpotInput, 0, 0)
 		cfgChildren1, cfgChildren3 := make([]Input, 0, 0), make([]Input, 0, 0)
 		// for k := range cfg.APIConfig.Header {
-		// 	cfgChildren2 = append(cfgChildren2, Input{Label: k, Value: "{{" + k + "}}", IsLeaf: true})
+		// 	cfgChildren2 = append(cfgChildren2, SpotInput{Label: k, Value: "{{" + k + "}}", IsLeaf: true})
 		// }
 		for _, v := range cfg.APIConfig.Global {
 			cfgChildren3 = append(cfgChildren3, Input{Label: v.Name, Value: expression.GenAutotestConfigParams(v.Name), IsLeaf: true})
 		}
-		// cfgChildren1 = append(cfgChildren1, Input{Label: "Header", Value: "Header", IsLeaf: false, Children: cfgChildren2})
+		// cfgChildren1 = append(cfgChildren1, SpotInput{Label: "Header", Value: "Header", IsLeaf: false, Children: cfgChildren2})
 		cfgChildren1 = append(cfgChildren1, Input{Label: "Global", Value: "Global", IsLeaf: false, Children: cfgChildren3})
 		cfgChildren0 = append(cfgChildren0, Input{Label: cfg.DisplayName, Value: cfg.DisplayName, IsLeaf: false, Children: cfgChildren1})
 	}

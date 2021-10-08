@@ -44,7 +44,7 @@ func TestNewManualTimeSetterLinter(t *testing.T) {
 	for name, data := range m {
 		linter := sqllint.New(linters.NewManualTimeSetterLinter)
 		if err := linter.Input(data, name); err != nil {
-			t.Fatalf("failed to Input: %s", name)
+			t.Fatalf("failed to SpotInput: %s", name)
 		}
 		if errs := linter.Errors(); len(errs) == 0 {
 			t.Fatalf("failed to lint: %s", name)
@@ -54,7 +54,7 @@ func TestNewManualTimeSetterLinter(t *testing.T) {
 	for name, data := range skips {
 		linter := sqllint.New(linters.NewManualTimeSetterLinter)
 		if err := linter.Input(data, name); err != nil {
-			t.Fatalf("failed to Input: %s", err)
+			t.Fatalf("failed to SpotInput: %s", err)
 		}
 		if errs := linter.Errors(); len(errs) > 0 {
 			t.Fatalf("failed to lint: %s", name)

@@ -29,7 +29,7 @@ func TestNewCompleteInsertLinter(t *testing.T) {
 	)
 	linter := sqllint.New(linters.NewCompleteInsertLinter)
 	if err := linter.Input([]byte(insert), "insert"); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
+		t.Fatalf("failed to SpotInput data to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
@@ -39,7 +39,7 @@ func TestNewCompleteInsertLinter(t *testing.T) {
 
 	linter = sqllint.New(linters.NewCompleteInsertLinter)
 	if err := linter.Input([]byte(completeInsert), "completeInsert"); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
+		t.Fatalf("failed to SpotInput data to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) != 0 {
 		t.Logf("%+v", errs)
@@ -48,7 +48,7 @@ func TestNewCompleteInsertLinter(t *testing.T) {
 
 	linter = sqllint.New(linters.NewCompleteInsertLinter)
 	if err := linter.Input([]byte(skip), "skip"); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
+		t.Fatalf("failed to SpotInput data to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) > 0 {
 		t.Log(errs)
