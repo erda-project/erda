@@ -15,10 +15,12 @@
 package query
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
@@ -31,6 +33,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/micro_service/logs/tags/tree", p.logMSTagsTree)
 	routes.GET("/api/micro_service/logs/fields", p.logFields)
 	routes.GET("/api/micro_service/logs/fields/aggregation", p.logFieldsAggregation)
+	routes.GET("/api/micro_service/:addon/logs/download", p.logDownload)
 
 	// 企业日志查询
 	routes.GET("/api/org/logs/statistic/histogram", p.logStatistic)
@@ -157,6 +160,84 @@ func (p *provider) logFieldsAggregation(r *http.Request, params struct {
 		return api.Errors.Internal(err)
 	}
 	return api.Success(data)
+}
+
+func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params struct {
+	Start       int64    `query:"start" validate:"gte=1"`
+	End         int64    `query:"end" validate:"gte=1"`
+	Query       string   `query:"query"`
+	Sort        []string `query:"sort"`
+	Debug       bool     `query:"debug"`
+	Addon       string   `param:"addon"`
+	ClusterName string   `query:"clusterName"`
+	Size        int      `query:"pageSize"`
+	MaxReturn   int64    `param:"maxReturn"`
+}) interface{} {
+	orgID := api.OrgID(r)
+	orgid, err := strconv.ParseInt(orgID, 10, 64)
+	if err != nil {
+		return api.Errors.InvalidParameter("invalid Org-ID")
+	}
+
+	err = p.checkTime(params.Start, params.End)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+
+	if params.MaxReturn <= 0 {
+		params.MaxReturn = 100000
+	}
+	if params.Size <= 0 {
+		params.Size = 1000
+	}
+
+	fileName := strings.Join(
+		[]string{
+			time.Now().Format("20060102150405.000"),
+			strconv.FormatInt(params.Start, 10),
+			strconv.FormatInt(params.End, 10),
+		},
+		"_") + ".log"
+
+	flusher := w.(http.Flusher)
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("charset", "utf-8")
+	w.Header().Set("Content-Disposition", "attachment;filename="+fileName)
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	filters := p.buildLogFilters(r)
+	err = p.DownloadLogs(&LogDownloadRequest{
+		LogRequest: LogRequest{
+			OrgID:       orgid,
+			ClusterName: params.ClusterName,
+			Addon:       params.Addon,
+			Start:       params.Start,
+			End:         params.End,
+			Filters:     filters,
+			Query:       params.Query,
+			Debug:       params.Debug,
+			Lang:        api.Language(r),
+		},
+		Sort:      params.Sort,
+		Size:      params.Size,
+		MaxReturn: params.MaxReturn,
+	}, func(batchLogs []*json.RawMessage) error {
+		for _, item := range batchLogs {
+			_, err = w.Write(*item)
+			if err != nil {
+				return err
+			}
+			w.Write([]byte("\n"))
+		}
+		flusher.Flush()
+		return nil
+	})
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return nil
 }
 
 func (p *provider) logSearch(r *http.Request, params struct {

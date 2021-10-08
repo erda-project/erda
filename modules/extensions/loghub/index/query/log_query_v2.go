@@ -158,3 +158,46 @@ func (c *ESClient) aggregateFields(req *LogFieldsAggregationRequest, timeout tim
 	}
 	return result, nil
 }
+
+func (c *ESClient) downloadLogs(req *LogDownloadRequest, callback func(batchLogs []*json.RawMessage) error) error {
+	boolQuery := c.getBoolQueryV2(&req.LogRequest)
+	searchSource := c.getScrollSearchSource(req, boolQuery)
+	if len(req.Sort) <= 0 {
+		searchSource.Sort("timestamp", true).Sort("offset", true)
+	}
+	if req.Debug {
+		c.printSearchSource(searchSource)
+	}
+
+	scrollRequestTimeout := 60 * time.Second
+	scrollKeepTime := "1m"
+	resp, err := c.doScroll(&req.LogRequest, searchSource, scrollRequestTimeout, scrollKeepTime)
+	if err != nil {
+		return err
+	}
+
+	scrollId := resp.ScrollId
+	defer c.clearScroll(&scrollId, scrollRequestTimeout)
+
+	for resp.Hits != nil && len(resp.Hits.Hits) > 0 {
+		hits := make([]*json.RawMessage, len(resp.Hits.Hits))
+		for i, hit := range resp.Hits.Hits {
+			hits[i] = hit.Source
+		}
+		err = callback(hits)
+		if err != nil {
+			return err
+		}
+
+		if len(hits) < req.Size {
+			return nil
+		}
+
+		resp, err = c.scrollNext(scrollId, scrollRequestTimeout, scrollKeepTime)
+		if err != nil {
+			return err
+		}
+		scrollId = resp.ScrollId
+	}
+	return nil
+}

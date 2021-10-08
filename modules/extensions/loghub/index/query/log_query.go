@@ -16,6 +16,7 @@ package query
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -53,6 +54,13 @@ type LogRequest struct {
 	Query       string
 	Debug       bool
 	Lang        i18n.LanguageCodes
+}
+
+type LogDownloadRequest struct {
+	LogRequest
+	Sort      []string
+	Size      int
+	MaxReturn int64
 }
 
 // LogSearchRequest .
@@ -188,21 +196,7 @@ func (c *ESClient) getTagsBoolQuery(req *LogRequest) *elastic.BoolQuery {
 func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.BoolQuery) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource().Query(boolQuery)
 	if len(req.Sort) > 0 {
-		for _, sort := range req.Sort {
-			if len(sort) == 0 {
-				continue
-			}
-			ascending := true
-			parts := strings.SplitN(sort, " ", 2)
-			if len(parts) > 1 && "desc" == strings.ToLower(strings.TrimSpace(parts[1])) {
-				ascending = false
-			}
-			key := strings.TrimSpace(parts[0])
-			if c.LogVersion == LogVersion1 && key == "timestamp" {
-				key = "@timestamp"
-			}
-			searchSource.Sort(key, ascending)
-		}
+		c.getSort(searchSource, req.Sort)
 	}
 	if req.Highlight {
 		searchSource.Highlight(elastic.NewHighlight().
@@ -216,7 +210,35 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 	return searchSource
 }
 
-func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+func (c *ESClient) getScrollSearchSource(req *LogDownloadRequest, boolQuery *elastic.BoolQuery) *elastic.SearchSource {
+	searchSource := elastic.NewSearchSource().Query(boolQuery)
+	if len(req.Sort) > 0 {
+		c.getSort(searchSource, req.Sort)
+	}
+	searchSource.Size(req.Size)
+	return searchSource
+}
+
+func (c *ESClient) getSort(searchSource *elastic.SearchSource, sorts []string) *elastic.SearchSource {
+	for _, sort := range sorts {
+		if len(sort) == 0 {
+			continue
+		}
+		ascending := true
+		parts := strings.SplitN(sort, " ", 2)
+		if len(parts) > 1 && "desc" == strings.ToLower(strings.TrimSpace(parts[1])) {
+			ascending = false
+		}
+		key := strings.TrimSpace(parts[0])
+		if c.LogVersion == LogVersion1 && key == "timestamp" {
+			key = "@timestamp"
+		}
+		searchSource.Sort(key, ascending)
+	}
+	return searchSource
+}
+
+func (c *ESClient) filterIndices(req *LogRequest) []string {
 	var indices []string
 	if len(req.Addon) > 0 {
 		start := req.Start * int64(time.Millisecond)
@@ -231,6 +253,11 @@ func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource
 			fmt.Println(start, end, indices)
 		}
 	}
+	return indices
+}
+
+func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+	indices := c.filterIndices(req)
 	if len(indices) <= 0 {
 		indices = c.Indices
 	}
@@ -246,7 +273,63 @@ func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource
 		}
 		return nil, fmt.Errorf("fail to request es: %s", err)
 	}
+
 	return resp, nil
+}
+
+func (c *ESClient) doScroll(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration, scrollKeepTime string) (*elastic.SearchResult, error) {
+	indices := c.filterIndices(req)
+	if len(indices) <= 0 {
+		indices = c.Indices
+	}
+	context, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.Client.Scroll(indices...).
+		IgnoreUnavailable(true).
+		AllowNoIndices(true).
+		SearchSource(searchSource).
+		Scroll(scrollKeepTime).Do(context)
+	if err != nil || (resp != nil && resp.Error != nil) {
+		if resp != nil && resp.Error != nil {
+			return nil, fmt.Errorf("fail to request es: %s", jsonx.MarshalAndIndent(resp.Error))
+		}
+		return nil, fmt.Errorf("fail to request es: %s", err)
+	}
+
+	return resp, nil
+}
+
+func (c *ESClient) scrollNext(scrollId string, timeout time.Duration, scrollKeepTime string) (*elastic.SearchResult, error) {
+	context, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.Client.Scroll().
+		IgnoreUnavailable(true).
+		AllowNoIndices(true).
+		ScrollId(scrollId).
+		Scroll(scrollKeepTime).Do(context)
+	if err != nil || (resp != nil && resp.Error != nil) {
+		if resp != nil && resp.Error != nil {
+			return nil, fmt.Errorf("fail to request es: %s", jsonx.MarshalAndIndent(resp.Error))
+		}
+		return nil, fmt.Errorf("fail to request es: %s", err)
+	}
+
+	return resp, nil
+}
+
+func (c *ESClient) clearScroll(scrollId *string, timeout time.Duration) error {
+	context, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.Client.ClearScroll(*scrollId).Do(context)
+	if resp != nil && !resp.Succeeded {
+		return fmt.Errorf("fail to clear scrollId: %s", *scrollId)
+	}
+
+	if err != nil {
+		return fmt.Errorf("fail to clear scrollId: %s, err: %s", *scrollId, err)
+	}
+
+	return nil
 }
 
 func (c *ESClient) doSearchLogs(req *LogSearchRequest, searchSource *elastic.SearchSource, timeout time.Duration) (int64, []*elastic.SearchHit, error) {
@@ -278,6 +361,34 @@ func (c *ESClient) setModule(log *logs.Log) {
 			}
 		}
 	}
+}
+
+func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*json.RawMessage) error) error {
+	clients := p.getESClients(req.OrgID, &req.LogRequest)
+	var count int64
+	var shouldStopIterate bool
+	for _, client := range clients {
+		err := client.downloadLogs(req, func(batchLogs []*json.RawMessage) error {
+			result := callback(batchLogs)
+			if result != nil {
+				shouldStopIterate = true
+				return result
+			}
+			count += int64(len(batchLogs))
+			if req.MaxReturn > 0 && count > req.MaxReturn {
+				shouldStopIterate = true
+				return fmt.Errorf("exceed max return count")
+			}
+			return nil
+		})
+		if shouldStopIterate {
+			break
+		}
+		if err != nil {
+			continue
+		}
+	}
+	return nil
 }
 
 // SearchLogs .
