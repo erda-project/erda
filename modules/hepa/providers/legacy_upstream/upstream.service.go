@@ -18,6 +18,7 @@ import (
 	context "context"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	pb "github.com/erda-project/erda-proto-go/core/hepa/legacy_upstream/pb"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
@@ -36,7 +37,21 @@ func (s *upstreamService) Register(ctx context.Context, req *pb.RegisterRequest)
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
 		return
 	}
-	result, err := service.UpstreamRegister(dto.FromUpstream(req.Upstream))
+	reqDto := dto.FromUpstream(req.Upstream)
+	if !reqDto.Init() {
+		logrus.Errorf("invalid dto:%+v", reqDto)
+		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
+		return
+	}
+	for i := 0; i < len(reqDto.ApiList); i++ {
+		apiDto := &reqDto.ApiList[i]
+		if !apiDto.Init() {
+			logrus.Errorf("invalid api:%+v", *apiDto)
+			err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
+			return
+		}
+	}
+	result, err := service.UpstreamRegister(reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
@@ -53,7 +68,21 @@ func (s *upstreamService) AsyncRegister(ctx context.Context, req *pb.AsyncRegist
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
 		return
 	}
-	result, err := service.UpstreamRegisterAsync(dto.FromUpstream(req.Upstream))
+	reqDto := dto.FromUpstream(req.Upstream)
+	if !reqDto.Init() {
+		logrus.Errorf("invalid dto:%+v", reqDto)
+		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
+		return
+	}
+	for i := 0; i < len(reqDto.ApiList); i++ {
+		apiDto := &reqDto.ApiList[i]
+		if !apiDto.Init() {
+			logrus.Errorf("invalid api:%+v", *apiDto)
+			err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "invalid request")
+			return
+		}
+	}
+	result, err := service.UpstreamRegisterAsync(reqDto)
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
