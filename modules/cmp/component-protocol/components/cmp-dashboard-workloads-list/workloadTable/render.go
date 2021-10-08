@@ -870,6 +870,7 @@ func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
 		"values":                  w.State.Values,
 		"workloadTable__urlQuery": w.State.WorkloadTableURLQuery,
 	}
+	component.Operations = w.Operations
 }
 
 func getWorkloadKindMap(kinds []string) map[string]struct{} {
