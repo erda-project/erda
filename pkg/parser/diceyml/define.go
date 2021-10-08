@@ -21,9 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	yamlv3 "gopkg.in/yaml.v3"
 	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/erda-project/erda/pkg/strutil"
@@ -142,7 +140,7 @@ type Service struct {
 	K8SSnippet      *K8SSnippet              `yaml:"k8s_snippet,omitempty" json:"k8s_snippet,omitempty"`
 }
 
-type ContainerSnippet v1.Container
+type ContainerSnippet apiv1.Container
 
 type K8SSnippet struct {
 	Container *ContainerSnippet `yaml:"container,omitempty" json:"container,omitempty"`
@@ -157,20 +155,20 @@ type ServicePort struct {
 }
 
 type MarshalableContainerSnippet struct {
-	WorkingDir               string                      `json:"workingDir,omitempty" yaml:"workingDir,omitempty"`
-	EnvFrom                  []v1.EnvFromSource          `json:"envFrom,omitempty" yaml:"envFrom,omitempty"`
-	Env                      []v1.EnvVar                 `json:"env,omitempty" yaml:"env,omitempty"`
-	LivenessProbe            *v1.Probe                   `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
-	ReadinessProbe           *v1.Probe                   `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
-	StartupProbe             *v1.Probe                   `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
-	Lifecycle                *v1.Lifecycle               `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
-	TerminationMessagePath   string                      `json:"terminationMessagePath,omitempty" yaml:"terminationMessagePath,omitempty"`
-	TerminationMessagePolicy v1.TerminationMessagePolicy `json:"terminationMessagePolicy,omitempty" yaml:"terminationMessagePolicy,omitempty"`
-	ImagePullPolicy          v1.PullPolicy               `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
-	SecurityContext          *v1.SecurityContext         `json:"securityContext,omitempty" yaml:"securityContext,omitempty"`
-	Stdin                    bool                        `json:"stdin,omitempty" yaml:"stdin,omitempty"`
-	StdinOnce                bool                        `json:"stdinOnce,omitempty" yaml:"stdinOnce,omitempty"`
-	TTY                      bool                        `json:"tty,omitempty" yaml:"tty,omitempty"`
+	WorkingDir               string                         `json:"workingDir,omitempty" yaml:"workingDir,omitempty"`
+	EnvFrom                  []apiv1.EnvFromSource          `json:"envFrom,omitempty" yaml:"envFrom,omitempty"`
+	Env                      []apiv1.EnvVar                 `json:"env,omitempty" yaml:"env,omitempty"`
+	LivenessProbe            *apiv1.Probe                   `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
+	ReadinessProbe           *apiv1.Probe                   `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
+	StartupProbe             *apiv1.Probe                   `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
+	Lifecycle                *apiv1.Lifecycle               `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
+	TerminationMessagePath   string                         `json:"terminationMessagePath,omitempty" yaml:"terminationMessagePath,omitempty"`
+	TerminationMessagePolicy apiv1.TerminationMessagePolicy `json:"terminationMessagePolicy,omitempty" yaml:"terminationMessagePolicy,omitempty"`
+	ImagePullPolicy          apiv1.PullPolicy               `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	SecurityContext          *apiv1.SecurityContext         `json:"securityContext,omitempty" yaml:"securityContext,omitempty"`
+	Stdin                    bool                           `json:"stdin,omitempty" yaml:"stdin,omitempty"`
+	StdinOnce                bool                           `json:"stdinOnce,omitempty" yaml:"stdinOnce,omitempty"`
+	TTY                      bool                           `json:"tty,omitempty" yaml:"tty,omitempty"`
 }
 
 func (cs *ContainerSnippet) ConvertToMarshalable() *MarshalableContainerSnippet {
@@ -342,7 +340,9 @@ func (e *EnvMap) UnmarshalJSON(b []byte) error {
 }
 
 func (v *Volume) UnmarshalJSON(data []byte) error {
-	return yamlv3.Unmarshal(data, v)
+	return unmarshalVolume(v, string(data), func(i interface{}) error {
+		return yaml.Unmarshal(data, i)
+	})
 }
 
 /*
@@ -354,6 +354,11 @@ volumes:
   - data-volume~nas:/home/admin/data
 */
 func (v *Volume) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	return unmarshalVolume(v, s, unmarshal)
+}
+
+func unmarshalVolume(v *Volume, s string, unmarshal func(interface{}) error) error {
 	volobj := struct {
 		ID *string `json:"id"`
 		// nfs, local
@@ -366,15 +371,14 @@ func (v *Volume) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		v.Path = volobj.Path
 		return nil
 	}
-	var vsstr string
-	if err := unmarshal(&vsstr); err != nil {
+	if err := unmarshal(&s); err != nil {
 		return err
 	}
-	splitted := strings.SplitN(vsstr, ":", 2)
+	splitted := strings.SplitN(s, ":", 2)
 	var newv Volume
 	switch len(splitted) {
 	case 0:
-		return fmt.Errorf("illegal volume path: %v", vsstr)
+		return fmt.Errorf("illegal volume path: %v", s)
 	case 1:
 		if splitted[0] == "" {
 			return fmt.Errorf("illegal empty volume path")
@@ -407,12 +411,14 @@ func (v *Volume) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // 	return r, nil
 // }
 
-func (s *Selector) UnmarshalJSON(data []byte) error {
-	return yamlv3.Unmarshal(data, s)
+func (sl *Selector) UnmarshalJSON(data []byte) error {
+	return unmarshalSelector(sl, string(data), func(i interface{}) error {
+		return yaml.Unmarshal(data, i)
+	})
 }
 
-func (s Selector) MarshalJSON() ([]byte, error) {
-	data, err := s.MarshalYAML()
+func (sl Selector) MarshalJSON() ([]byte, error) {
+	data, err := marshalSelector(sl)
 	if err != nil {
 		return nil, err
 	}
@@ -421,32 +427,40 @@ func (s Selector) MarshalJSON() ([]byte, error) {
 
 func (sl *Selector) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var slstr string
-	if err := unmarshal(&slstr); err != nil {
-		return err
-	}
-	slstr = strutil.Trim(slstr)
-	matches := selectorNotExpr.FindStringSubmatch(slstr)
-	if matches != nil && len(matches) > 1 && matches[1] != "" {
-		sl.Not = true
-		sl.Values = []string{matches[1]}
-		return nil
-	}
-	if selectorOrExpr.MatchString(slstr) {
-		identifies := strutil.Split(slstr, "OR", true)
-		sl.Values = strutil.TrimSlice(identifies)
-		return nil
-	}
-	return fmt.Errorf("failed to unmarshal {Selector}: %s", slstr)
+	return unmarshalSelector(sl, slstr, unmarshal)
 }
 
 func (sl Selector) MarshalYAML() (interface{}, error) {
-	if sl.Not && len(sl.Values) > 0 {
-		return strutil.Concat("NOT ", sl.Values[0]), nil
+	return marshalSelector(sl)
+}
+
+func unmarshalSelector(selector *Selector, s string, unmarshal func(interface{}) error) error {
+	if err := unmarshal(&s); err != nil {
+		return err
 	}
-	if sl.Not {
+	s = strutil.Trim(s)
+	matches := selectorNotExpr.FindStringSubmatch(s)
+	if matches != nil && len(matches) > 1 && matches[1] != "" {
+		selector.Not = true
+		selector.Values = []string{matches[1]}
+		return nil
+	}
+	if selectorOrExpr.MatchString(s) {
+		identifies := strutil.Split(s, "OR", true)
+		selector.Values = strutil.TrimSlice(identifies)
+		return nil
+	}
+	return fmt.Errorf("failed to unmarshal {Selector}: %s", s)
+}
+
+func marshalSelector(selector Selector) (interface{}, error) {
+	if selector.Not && len(selector.Values) > 0 {
+		return strutil.Concat("NOT ", selector.Values[0]), nil
+	}
+	if selector.Not {
 		return nil, fmt.Errorf("failed to marshal {Selector}")
 	}
-	return strutil.Join(sl.Values, " OR ", true), nil
+	return strutil.Join(selector.Values, " OR ", true), nil
 }
 
 func (bs Binds) MarshalJSON() ([]byte, error) {
