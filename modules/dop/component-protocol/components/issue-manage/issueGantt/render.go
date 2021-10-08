@@ -121,7 +121,7 @@ func (g *Gantt) RenderOnFilter(ctx context.Context, c *cptype.Component) error {
 		logrus.Errorf("generate data failed, request:%v, err:%v", req, err)
 		return err
 	}
-	//g.setStateTotal(rsp.Data.Total)
+	g.setStateTotal(rsp.Data.Total)
 	return nil
 }
 
@@ -198,7 +198,7 @@ func (g *Gantt) Export(c *cptype.Component, gs *cptype.GlobalStateData) error {
 		return err
 	}
 	// set url query state
-	err = g.setStateToUrlQuery(c)
+	err = g.SetStateToUrlQuery(c)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,8 @@ func getStateUrlQueryKey() string {
 	return fmt.Sprintf("%s__urlQuery", CompName)
 }
 
-func (g Gantt) setStateToUrlQuery(c *cptype.Component) error {
+func (g Gantt) SetStateToUrlQuery(c *cptype.Component) error {
+	g.State.Total = 0
 	b, err := json.Marshal(g.State)
 	if err != nil {
 		return err
