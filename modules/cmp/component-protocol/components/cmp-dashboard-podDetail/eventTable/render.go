@@ -56,6 +56,7 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 		return err
 	}
 	t.SetComponentValue(ctx)
+	t.Transfer(component)
 	return nil
 }
 
@@ -190,16 +191,16 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(component *cptype.Component) {
-	component.Props = t.Props
-	component.Data = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(c *cptype.Component) {
+	c.Props = t.Props
+	c.Data = map[string]interface{}{
 		"list": t.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": t.State.ClusterName,
 		"podId":       t.State.PodID,
 	}
-	component.Operations = t.Operations
+	c.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {
