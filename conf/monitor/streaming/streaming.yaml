@@ -93,7 +93,7 @@ metrics-storage:
   _enable: ${METRIC_ENABLE:true}
   inputs:
     metric:
-      topics: "${METRIC_TOPICS:spot-metrics}"
+      topics: "${METRIC_TOPICS:spot-metrics,msp-tracing-metrics}"
       group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
       parallelism: ${METRIC_CONSUMERS:3}
     creating_index_metric:
@@ -154,10 +154,14 @@ erda.core.monitor.metric.index:
 
 trace-storage:
   _enable: ${TRACE_ENABLE:true}
-  input:
-    topics: "${TRACE_TOPICS:spot-trace}"
+  spot_input:
+    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${TRACE_CONSUMERS:3}
+    parallelism: ${SPOT_TRACE_CONSUMERS:3}
+  oap_input:
+    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${OAP_TRACE_CONSUMERS:3}
   output:
     cassandra:
       writer_config:
@@ -176,7 +180,7 @@ trace-storage:
       gc_grace_seconds: 86400
       ttl: ${TRACE_TTL:168h}
     kafka:
-      topic: "${METRIC_TOPICS:spot-metrics}"
+      topic: "${SPOT_TRACE_TOPICS:spot-trace}"
       parallelism: ${KAFKA_PARALLELISM:3}
       batch:
         size:  ${KAFKA_BATCH_SIZE:50}
