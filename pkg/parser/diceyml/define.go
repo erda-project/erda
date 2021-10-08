@@ -412,12 +412,7 @@ func (s Selector) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var i = new(interface{})
-	if err = yamlv3.Unmarshal([]byte(data.(string)), i); err != nil {
-		return nil, err
-	}
-	return json.Marshal(i)
+	return []byte(strconv.Quote(data.(string))), nil
 }
 
 func (sl *Selector) UnmarshalYAML(unmarshal func(interface{}) error) error {

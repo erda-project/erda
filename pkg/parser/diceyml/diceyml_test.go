@@ -119,6 +119,22 @@ addons:
 envs: {}
 `
 
+const yml4 = `version: "2.0"
+services:
+  nginx:
+    image: registry.cn-hangzhou.aliyuncs.com/dice/dop:1.16-jacoco-server
+    resources:
+      cpu: 5
+      mem: 4000
+    volumes:
+        - storage: nfs
+          path: /app/cover
+    deployments:
+      replicas: 1
+    ports:
+      - port: 8801
+        expose: true`
+
 const wrongSnippetYml = `version: 2.0
 services:
   web:
@@ -204,11 +220,17 @@ func TestDiceYmlInsertJobImage(t *testing.T) {
 //}
 
 func TestNew(t *testing.T) {
-	y, err := New([]byte(yml3), true)
+	for _, text := range []string{yml3, yml4} {
+		testNew(t, text)
+	}
+}
+
+func testNew(t *testing.T, text string) {
+	y, err := New([]byte(text), true)
 	if err != nil {
 		t.Fatalf("failed to New DiceYml: %v", err)
 	}
-	t.Logf("%+v, %s", y, string(y.data))
+	t.Logf("%+v, %s", y.obj, string(y.data))
 
 	data, err := y.YAML()
 	if err != nil {
