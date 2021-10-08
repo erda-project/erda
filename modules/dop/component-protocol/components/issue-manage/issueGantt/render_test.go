@@ -23,6 +23,7 @@ import (
 
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueGantt/gantt"
@@ -170,5 +171,27 @@ func TestGenData(t *testing.T) {
 		if i > 0 {
 			assert.Equal(t, res[i-1], res[i])
 		}
+	}
+}
+
+func TestSetStateToUrlQuery(t *testing.T) {
+	state := gantt.State{
+		Total:               11,
+		PageNo:              1,
+		PageSize:            10,
+		IssueViewGroupValue: "foo",
+		IssueType:           "bar",
+	}
+	var g Gantt
+	g.State = state
+	c := &cptype.Component{
+		State: make(map[string]interface{}),
+	}
+	if err := g.SetStateToUrlQuery(c); err != nil {
+		t.Error("fail")
+	}
+	// {"pageNo":1,"pageSize":10,"issueViewGroupValue":"foo","IssueType":"bar"}
+	if c.State["issueGantt__urlQuery"] != "eyJwYWdlTm8iOjEsInBhZ2VTaXplIjoxMCwiaXNzdWVWaWV3R3JvdXBWYWx1ZSI6ImZvbyIsIklzc3VlVHlwZSI6ImJhciJ9" {
+		t.Error("fail")
 	}
 }
