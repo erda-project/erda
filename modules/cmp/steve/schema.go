@@ -46,6 +46,7 @@ func DefaultSchemas(baseSchema *types.APISchemas) {
 
 func DefaultSchemaTemplates(ctx context.Context, clusterName string, cf *client.Factory,
 	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup, k8sInterface kubernetes.Interface) []schema.Template {
+	ctx = context.WithValue(ctx, "clusterName", clusterName)
 	nodeFormatter := fm.NewNodeFormatter(ctx, k8sInterface)
 	return []schema.Template{
 		DefaultTemplate(ctx, clusterName, cf, asl),

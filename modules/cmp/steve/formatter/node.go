@@ -17,6 +17,8 @@ package formatter
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	jsi "github.com/json-iterator/go"
@@ -28,7 +30,18 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/queue"
 )
+
+var queryQueue *queue.QueryQueue
+
+func init() {
+	queueSize := 10
+	if size, err := strconv.Atoi(os.Getenv("NODE_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	queryQueue = queue.NewQueryQueue(queueSize)
+}
 
 type NodeFormatter struct {
 	ctx       context.Context
@@ -83,7 +96,7 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 	nodeName := resource.ID
 	key := &cacheKey{nodeName}
 	data := resource.APIObject.Data()
-	value, _, err := n.podsCache.Get(key.getKey())
+	value, expired, err := n.podsCache.Get(key.getKey())
 	if value == nil || err != nil {
 		allocatedRes, err := n.getNodeAllocatedRes(request.Context(), nodeName)
 		if err != nil {
@@ -91,23 +104,39 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 			return
 		}
 		val, _ := cache.MarshalValue(allocatedRes)
-		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+		err = n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+		if err != nil {
+			logrus.Errorf("failed to update cache, key:%s", key.getKey())
+		}
 
 		parsedRes["allocated"] = allocatedRes
 		data.SetNested(parsedRes, "extra", "parsedResource")
 		return
 	}
 
-	go func() {
-		allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
-		if err != nil {
-			logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
-			return
+	if expired {
+		logrus.Infof("pods data expired, need update, key:%s", key.getKey())
+		if !cache.ExpireFreshQueue.IsFull() {
+			task := &queue.Task{
+				Key: key.getKey(),
+				Do: func() {
+					allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
+					if err != nil {
+						logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
+						return
+					}
+					val, _ := cache.MarshalValue(allocatedRes)
+					err = n.podsCache.Set(key.getKey(), val, 5*time.Minute.Nanoseconds())
+					if err != nil {
+						logrus.Errorf("failed to update cache, key:%s", key.getKey())
+					}
+				},
+			}
+			cache.ExpireFreshQueue.Enqueue(task)
+		} else {
+			logrus.Warnf("queue size is full, task is ignored, key:%s", key.getKey())
 		}
-		val, _ := cache.MarshalValue(allocatedRes)
-		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
-	}()
-
+	}
 	allocatedRes := map[string]interface{}{}
 	if err = jsi.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {
 		logrus.Errorf("failed to unmarshal allocatedResource, %v", err)
@@ -118,9 +147,14 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 
 func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (map[string]interface{}, error) {
 	fieldSelector := fmt.Sprintf("spec.nodeName=%s,status.phase!=Failed,status.phase!=Succeeded", nodeName)
+	clusterName := n.ctx.Value("clusterName").(string)
+	logrus.Infof("[DEBUG] start list pods")
+	queryQueue.Acquire(clusterName, 1)
 	pods, err := n.podClient.List(ctx, v1.ListOptions{
 		FieldSelector: fieldSelector,
 	})
+	queryQueue.Release(clusterName, 1)
+	logrus.Infof("[DEBUG] end list pods")
 	if err != nil {
 		return nil, err
 	}
