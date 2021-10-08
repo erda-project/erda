@@ -48,7 +48,7 @@ create table t0 (
 
 	linter := sqllint.New(linters.NewExplicitCollationLinter)
 	if err := linter.Input([]byte(sqlA), "sqlA"); err != nil {
-		t.Fatalf("failed to SpotInput sqlA to linter: %v", err)
+		t.Fatalf("failed to Input sqlA to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
@@ -58,7 +58,7 @@ create table t0 (
 
 	linter = sqllint.New(linters.NewExplicitCollationLinter)
 	if err := linter.Input([]byte(sqlB), "sqlB"); err != nil {
-		t.Fatalf("failed to SpotInput sqlB to linter: %v", err)
+		t.Fatalf("failed to Input sqlB to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
@@ -68,7 +68,7 @@ create table t0 (
 
 	linter = sqllint.New(linters.NewExplicitCollationLinter)
 	if err := linter.Input([]byte(sqlC), "sqlC"); err != nil {
-		t.Fatalf("failed to SpotInput sqlC to linter: %v", err)
+		t.Fatalf("failed to Input sqlC to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
@@ -78,7 +78,7 @@ create table t0 (
 
 	linter = sqllint.New(linters.NewExplicitCollationLinter)
 	if err := linter.Input([]byte(sqlD), "sqlD"); err != nil {
-		t.Fatalf("failed to SpotInput sqlC to linter: %v", err)
+		t.Fatalf("failed to Input sqlC to linter: %v", err)
 	}
 	if errs := linter.Errors(); len(errs) != 0 {
 		t.Fatalf("failed to lint, there should be no errors, but errors: %+v", errs)
