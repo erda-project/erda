@@ -121,7 +121,7 @@ func (p *provider) oapSpanConsumer(key []byte, value []byte, topic *string, time
 		return err
 	}
 
-	mSpan := monitor.Span{
+	mSpan := &monitor.Span{
 		OperationName: sSpan.Name,
 		StartTime:     int64(sSpan.StartTimeUnixNano),
 		EndTime:       int64(sSpan.EndTimeUnixNano),
