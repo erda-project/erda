@@ -149,3 +149,61 @@
         });
         ```
 
+
+    - language: Golang
+      template: |
+        #### 获取接入点和鉴权信息
+
+        - 接入点：{{endpoint}}
+        - 环境ID：{{msp_env_id}}
+        - Token: 在此页面创建和获取
+
+        #### 配置鉴权信息
+
+        您可以在 HTTP/HTTPS 协议的 Header 中或者 Jaeger 协议的 Tag 字段中配置鉴权信息，具体字段及详细说明如下所示
+        - msp.env.id : 微服务项目环境ID
+        - msp.env.token : 微服务环境鉴权Token，在此页面创建和获取
+
+        #### 通过 jaeger-client-go 上报数据
+
+        1. 引入 jaeger-client-go 依赖
+
+        ```golang
+        import(
+        	  "github.com/opentracing/opentracing-go"
+            "github.com/uber/jaeger-client-go"
+            jaegercfg "github.com/uber/jaeger-client-go/config"
+        )
+        ```
+
+        2. 配置 Tracer
+        ```golang
+        cfg := jaegercfg.Configuration{
+        	Sampler: &jaegercfg.SamplerConfig{
+        		Type:  jaeger.SamplerTypeConst,
+        		Param: 1,
+        	},
+        	Reporter: &jaegercfg.ReporterConfig{
+        		LogSpans: true,
+        		CollectorEndpoint: "{{endpoint}}",
+        	},
+        	Tags: []opentracing.Tag{
+        		{
+        			Key: "msp.env.id",
+        			Value: "{{msp_env_id}}",
+        		},
+        		{
+        			Key: "msp.env.token",
+        			Value: "<your_token>",
+        		},
+        	},
+        }
+        closer,err := cfg.InitGlobalTracer("<your_service_name>",jaegercfg.Logger(jaeger.StdLogger))
+        if err != nil {
+        	panic(err)
+        }
+        defer closer.Close()
+        t := opentracing.GlobalTracer()
+        span := t.StartSpan("<your_operationName>")
+        defer span.Finish()
+        ```
