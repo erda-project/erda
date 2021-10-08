@@ -160,16 +160,16 @@ func (p *provider) logFieldsAggregation(r *http.Request, params struct {
 }
 
 func (p *provider) logSearch(r *http.Request, params struct {
-	Start       int64  `query:"start" validate:"gte=1"`
-	End         int64  `query:"end" validate:"gte=1"`
-	Page        int64  `query:"pageNo" validate:"gte=1"`
-	Size        int64  `query:"pageSize"`
-	Query       string `query:"query"`
-	Sort        string `query:"sort"`
-	Debug       bool   `query:"debug"`
-	Addon       string `param:"addon"`
-	ClusterName string `query:"clusterName"`
-	Highlight   bool   `query:"highlight"`
+	Start       int64    `query:"start" validate:"gte=1"`
+	End         int64    `query:"end" validate:"gte=1"`
+	Page        int64    `query:"pageNo" validate:"gte=1"`
+	Size        int64    `query:"pageSize"`
+	Query       string   `query:"query"`
+	Sort        []string `query:"sort"`
+	Debug       bool     `query:"debug"`
+	Addon       string   `param:"addon"`
+	ClusterName string   `query:"clusterName"`
+	Highlight   bool     `query:"highlight"`
 }) interface{} {
 	orgID := api.OrgID(r)
 	orgid, err := strconv.ParseInt(orgID, 10, 64)

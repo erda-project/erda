@@ -60,7 +60,7 @@ type LogSearchRequest struct {
 	LogRequest
 	Page      int64
 	Size      int64
-	Sort      string
+	Sort      []string
 	Highlight bool
 }
 
@@ -188,8 +188,10 @@ func (c *ESClient) getTagsBoolQuery(req *LogRequest) *elastic.BoolQuery {
 func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.BoolQuery) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource().Query(boolQuery)
 	if len(req.Sort) > 0 {
-		sorts := strings.Split(req.Sort, ",")
-		for _, sort := range sorts {
+		for _, sort := range req.Sort {
+			if len(sort) == 0 {
+				continue
+			}
 			ascending := true
 			parts := strings.SplitN(sort, " ", 2)
 			if len(parts) > 1 && "desc" == strings.ToLower(strings.TrimSpace(parts[1])) {
