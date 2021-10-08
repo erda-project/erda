@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var jobyml = `version: 2.0
+const jobyml = `version: 2.0
 jobs:
   job1:
     cmd: ls
@@ -33,7 +33,7 @@ jobs:
       env2: v2
 `
 
-var yml = `version: 2.0
+const yml = `version: 2.0
 
 version: 2
 envs:
@@ -97,7 +97,29 @@ values:
   
 `
 
-var wrongSnippetYml = `version: 2.0
+const yml3 = `
+version: '2.0'
+services:
+  go-demo:
+    ports:
+      - port: 5000
+        expose: true
+    resources:
+      cpu: 0.5
+      mem: 500
+    deployments:
+      replicas: 1
+      selectors:
+        location: go-demo
+addons:
+  fdf:
+    plan: mysql:basic
+    options:
+      version: 5.7.29
+envs: {}
+`
+
+const wrongSnippetYml = `version: 2.0
 services:
   web:
     ports:
@@ -180,3 +202,23 @@ func TestDiceYmlInsertJobImage(t *testing.T) {
 //	assert.Equal(t, 2, d.Obj().Services["web"].Deployments.Replicas)
 //	assert.Equal(t, "rds:basic", d.Obj().AddOns["xxx"].Plan)
 //}
+
+func TestNew(t *testing.T) {
+	y, err := New([]byte(yml3), true)
+	if err != nil {
+		t.Fatalf("failed to New DiceYml: %v", err)
+	}
+	t.Logf("%+v, %s", y, string(y.data))
+
+	data, err := y.YAML()
+	if err != nil {
+		t.Fatalf("failed to y.YAML: %v", err)
+	}
+	t.Logf("Yaml: %s", data)
+
+	data, err = y.JSON()
+	if err != nil {
+		t.Fatalf("failed to y.JSON: %v", err)
+	}
+	t.Logf("Json: %s", data)
+}

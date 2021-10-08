@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	yamlv3 "gopkg.in/yaml.v3"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
@@ -401,6 +402,23 @@ func (v *Volume) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // 	r += v.Path
 // 	return r, nil
 // }
+
+func (s *Selector) UnmarshalJSON(data []byte) error {
+	return yamlv3.Unmarshal(data, s)
+}
+
+func (s Selector) MarshalJSON() ([]byte, error) {
+	data, err := s.MarshalYAML()
+	if err != nil {
+		return nil, err
+	}
+
+	var i = new(interface{})
+	if err = yamlv3.Unmarshal([]byte(data.(string)), i); err != nil {
+		return nil, err
+	}
+	return json.Marshal(i)
+}
 
 func (sl *Selector) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var slstr string
