@@ -1028,7 +1028,7 @@ func TestNew(t *testing.T) {
 func testNew(t *testing.T, i int, text string) {
 	y, err := New([]byte(text), true)
 	if err != nil {
-		t.Fatalf("failed to New DiceYml: %v", err)
+		t.Fatalf("[%v] failed to New DiceYml: %v", i, err)
 	}
 	t.Logf("[%v] %+v, %s", i, y.obj, string(y.data))
 

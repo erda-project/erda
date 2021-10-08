@@ -340,8 +340,14 @@ func (e *EnvMap) UnmarshalJSON(b []byte) error {
 }
 
 func (v *Volume) UnmarshalJSON(data []byte) error {
-	return unmarshalVolume(v, string(data), func(i interface{}) error {
-		return yaml.Unmarshal(data, i)
+	return unmarshalVolume(v, func(i interface{}) (err error) {
+		if s, ok := i.(*string); ok {
+			if *s, err = strconv.Unquote(string(data)); err != nil {
+				*s = string(data)
+			}
+			return nil
+		}
+		return json.Unmarshal(data, i)
 	})
 }
 
@@ -354,11 +360,11 @@ volumes:
   - data-volume~nas:/home/admin/data
 */
 func (v *Volume) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var s string
-	return unmarshalVolume(v, s, unmarshal)
+	return unmarshalVolume(v, unmarshal)
 }
 
-func unmarshalVolume(v *Volume, s string, unmarshal func(interface{}) error) error {
+func unmarshalVolume(v *Volume, unmarshal func(interface{}) error) error {
+	var s string
 	volobj := struct {
 		ID *string `json:"id"`
 		// nfs, local
@@ -412,8 +418,14 @@ func unmarshalVolume(v *Volume, s string, unmarshal func(interface{}) error) err
 // }
 
 func (sl *Selector) UnmarshalJSON(data []byte) error {
-	return unmarshalSelector(sl, string(data), func(i interface{}) error {
-		return yaml.Unmarshal(data, i)
+	return unmarshalSelector(sl, func(i interface{}) (err error) {
+		if s, ok := i.(*string); ok {
+			if *s, err = strconv.Unquote(string(data)); err != nil {
+				*s = string(data)
+			}
+			return nil
+		}
+		return json.Unmarshal(data, i)
 	})
 }
 
@@ -426,19 +438,20 @@ func (sl Selector) MarshalJSON() ([]byte, error) {
 }
 
 func (sl *Selector) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var slstr string
-	return unmarshalSelector(sl, slstr, unmarshal)
+	return unmarshalSelector(sl, unmarshal)
 }
 
 func (sl Selector) MarshalYAML() (interface{}, error) {
 	return marshalSelector(sl)
 }
 
-func unmarshalSelector(selector *Selector, s string, unmarshal func(interface{}) error) error {
+func unmarshalSelector(selector *Selector, unmarshal func(interface{}) error) error {
+	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
 	s = strutil.Trim(s)
+	fmt.Println("s:", s)
 	matches := selectorNotExpr.FindStringSubmatch(s)
 	if matches != nil && len(matches) > 1 && matches[1] != "" {
 		selector.Not = true
