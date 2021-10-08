@@ -24,6 +24,7 @@ import (
 	"github.com/gocql/gocql"
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/pkg/monitor"
 )
@@ -93,7 +94,8 @@ func (p *provider) getStatement(data interface{}) (string, []interface{}, error)
 	}, nil
 }
 
-func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
+func (p *provider) spotSpanConsumer(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	// write spot span to cassandra
 	metric := &metrics.Metric{}
 	if err := json.Unmarshal(value, metric); err != nil {
 		return err
@@ -102,13 +104,34 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	if err != nil {
 		return err
 	}
-	metric = toSpan(span)
-	err = p.output.kafka.Write(metric)
+	//metric = toSpan(span)
+	//err = p.output.kafka.Write(metric)
 	if err != nil {
 		p.Log.Errorf("fail to push kafka: %s", err)
 		return err
 	}
 	return p.output.cassandra.Write(span)
+}
+
+func (p *provider) oapSpanConsumer(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	// write oap sSpan (eg. jaeger \ skywalking \ opentelemetry ) to cassandra
+
+	sSpan := &oap.Span{}
+	if err := json.Unmarshal(value, sSpan); err != nil {
+		return err
+	}
+
+	mSpan := monitor.Span{
+		OperationName: sSpan.Name,
+		StartTime:     int64(sSpan.StartTimeUnixNano),
+		EndTime:       int64(sSpan.EndTimeUnixNano),
+		TraceID:       sSpan.TraceID,
+		SpanID:        sSpan.SpanID,
+		ParentSpanID:  sSpan.ParentSpanID,
+		Tags:          sSpan.Attributes,
+	}
+
+	return p.output.cassandra.Write(mSpan)
 }
 
 // metricToSpan .
@@ -197,24 +220,24 @@ func toInt64(obj interface{}) (int64, error) {
 }
 
 // toSpan . Span data is generated from various language agents.
-func toSpan(span *monitor.Span) *metrics.Metric {
-	metric := &metrics.Metric{
-		Name: "span",
-		Tags: map[string]string{
-			"_lt":            "transient",
-			"trace_id":       span.TraceID,
-			"span_id":        span.SpanID,
-			"parent_span_id": span.ParentSpanID,
-			"operation_name": span.OperationName,
-		},
-		Fields: map[string]interface{}{
-			"start_time": span.StartTime,
-			"end_time":   span.EndTime,
-		},
-		Timestamp: span.StartTime,
-	}
-	for k, v := range span.Tags {
-		metric.Tags[k] = v
-	}
-	return metric
-}
+//func toSpan(span *monitor.Span) *metrics.Metric {
+//	metric := &metrics.Metric{
+//		Name: "span",
+//		Tags: map[string]string{
+//			"_lt":            "transient",
+//			"trace_id":       span.TraceID,
+//			"span_id":        span.SpanID,
+//			"parent_span_id": span.ParentSpanID,
+//			"operation_name": span.OperationName,
+//		},
+//		Fields: map[string]interface{}{
+//			"start_time": span.StartTime,
+//			"end_time":   span.EndTime,
+//		},
+//		Timestamp: span.StartTime,
+//	}
+//	for k, v := range span.Tags {
+//		metric.Tags[k] = v
+//	}
+//	return metric
+//}

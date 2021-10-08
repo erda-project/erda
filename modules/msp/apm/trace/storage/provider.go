@@ -26,15 +26,16 @@ import (
 )
 
 type config struct {
-	Input  kafka.ConsumerConfig `file:"input"`
-	Output struct {
+	SpotInput kafka.ConsumerConfig `file:"spot_input"`
+	OapInput  kafka.ConsumerConfig `file:"oap_input"`
+	Output    struct {
 		Cassandra struct {
 			cassandra.WriterConfig  `file:"writer_config"`
 			cassandra.SessionConfig `file:"session_config"`
 			GCGraceSeconds          int           `file:"gc_grace_seconds" default:"86400"`
 			TTL                     time.Duration `file:"ttl" default:"168h"`
 		} `file:"cassandra"`
-		Kafka kafka.ProducerConfig `file:"kafka"`
+		//Kafka kafka.ProducerConfig `file:"kafka"`
 	} `file:"output"`
 }
 
@@ -65,17 +66,20 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.output.cassandra = cassandra.NewBatchWriter(session, &p.Cfg.Output.Cassandra.WriterConfig, p.createTraceStatement)
 
 	p.kafka = ctx.Service("kafka").(kafka.Interface)
-	w, err := p.kafka.NewProducer(&p.Cfg.Output.Kafka)
-	if err != nil {
-		return fmt.Errorf("fail to create kafka producer: %s", err)
-	}
-	p.output.kafka = w
+	//w, err := p.kafka.NewProducer(&p.Cfg.Output.Kafka)
+	//if err != nil {
+	//	return fmt.Errorf("fail to create kafka producer: %s", err)
+	//}
+	//p.output.kafka = w
 	return nil
 }
 
 // Start .
 func (p *provider) Start() error {
-	return p.kafka.NewConsumer(&p.Cfg.Input, p.invoke)
+	if err := p.kafka.NewConsumer(&p.Cfg.SpotInput, p.spotSpanConsumer); err != nil {
+		return err
+	}
+	return p.kafka.NewConsumer(&p.Cfg.OapInput, p.oapSpanConsumer)
 }
 
 func (p *provider) Close() error {

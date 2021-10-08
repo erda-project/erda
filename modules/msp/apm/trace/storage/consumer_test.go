@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/pkg/monitor"
 )
 
 // TestMetricToSpan .
@@ -144,25 +143,4 @@ func TestToInt64(t *testing.T) {
 		log.Fatal(err)
 	}
 	assert.Equal(t, num, int64(10))
-}
-
-// TestToSpan .
-func TestToSpan(t *testing.T) {
-	span := monitor.Span{
-		TraceID:       "test-trace-id",
-		StartTime:     time.Now().Add(-1).UnixNano(),
-		SpanID:        "test-span-id",
-		ParentSpanID:  "test-parent-trance-id",
-		OperationName: "component",
-		EndTime:       time.Now().UnixNano(),
-		Tags:          map[string]string{"test_tag": "test"},
-	}
-	metric := toSpan(&span)
-	if assert.NotNil(t, metric, "not nil") {
-
-		assert.Equal(t, metric.Name, "span")
-		assert.Equal(t, metric.Timestamp, span.StartTime)
-		assert.Equal(t, metric.Tags["_lt"], "transient")
-	}
-	fmt.Println(metric)
 }
