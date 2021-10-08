@@ -35,6 +35,9 @@ zh:
  Warning: 警告
  eventSearchPlaceHolder: 搜索事件内容
 
+ # cmp-dashboard-pods-list.podsTable
+ gotoWorkload: 查看工作负载
+
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU 请求值
  cpuLimits: CPU 限制值
@@ -235,6 +238,9 @@ en:
  Normal: Normal
  Warning: Warning
  eventSearchPlaceHolder: Search Events
+
+ # cmp-dashboard-pods-list.podsTable
+ gotoWorkload: Goto Workload
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests

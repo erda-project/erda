@@ -308,6 +308,28 @@ func (p *ComponentPodsTable) RenderTable() error {
 			MemoryLimitsNum:   memLimits.Value(),
 			Ready:             fields[1],
 			Node:              fields[6],
+			GotoWorkload: Link{
+				RenderType: "linkText",
+				Value:      p.sdk.I18n("gotoWorkload"),
+				Operations: map[string]interface{}{
+					"click": LinkOperation{
+						Command: Command{
+							Key:    "goto",
+							Target: "cmpClustersWorkloadDetail",
+							State: CommandState{
+								Params: map[string]string{
+									"workloadId": "-",
+								},
+								Query: map[string]string{
+									"podId": id,
+								},
+							},
+							JumpOut: true,
+						},
+						Reload: false,
+					},
+				},
+			},
 		})
 	}
 	logrus.Infof("[XDEBUG] end process list")
@@ -613,6 +635,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			},
 		}...)
 	}
+	p.Props.Columns = append(p.Props.Columns, Column{
+		DataIndex: "gotoWorkload",
+		Title:     cputil.I18n(ctx, "operate"),
+		Width:     120,
+		Sorter:    false,
+	})
 	p.Operations = map[string]interface{}{
 		"changeSort": Operation{
 			Key:    "changeSort",
