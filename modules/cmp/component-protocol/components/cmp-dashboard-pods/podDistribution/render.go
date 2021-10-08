@@ -75,6 +75,7 @@ func (pd *PodDistribution) Transfer(component *cptype.Component) {
 		"total": pd.Data.Total,
 		"list":  pd.Data.Lists,
 	}
+	component.Props = pd.Props
 }
 
 func init() {

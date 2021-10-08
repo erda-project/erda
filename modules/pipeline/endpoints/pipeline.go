@@ -261,7 +261,9 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	e.reconciler.QueueManager.PopOutPipelineFromQueue(pipelineID)
+	if e.reconciler.QueueManager != nil {
+		e.reconciler.QueueManager.PopOutPipelineFromQueue(pipelineID)
+	}
 
 	return httpserver.OkResp(nil)
 }

@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/queue"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/ierror"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -35,23 +36,23 @@ import (
 
 type ResourceType string
 
-var queryQueue chan struct{}
+var queryQueue *queue.QueryQueue
 
 func init() {
-	queueSize := 5
+	queueSize := 100
 	if size, err := strconv.Atoi(os.Getenv("METRICS_QUEUE_SIZE")); err == nil && size > queueSize {
 		queueSize = size
 	}
-	queryQueue = make(chan struct{}, queueSize)
+	queryQueue = queue.NewQueryQueue(queueSize)
 }
 
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
-	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip ORDER BY time DESC LIMIT 1`
-	NodeMemoryUsageSelectStatement = `SELECT mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  ORDER BY time DESC LIMIT 1`
-	PodCpuUsageSelectStatement     = `SELECT round_float(cpu_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true ORDER BY time DESC LIMIT 1`
-	PodMemoryUsageSelectStatement  = `SELECT round_float(mem_usage_percent::field, 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true ORDER BY time DESC LIMIT 1`
+	NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip and time > now() -300s`
+	NodeMemoryUsageSelectStatement = `SELECT last(mem_used::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  and time > now() -300s`
+	PodCpuUsageSelectStatement     = `SELECT round_float(last(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -300s`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(last(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -300s`
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -96,46 +97,90 @@ type Interface interface {
 	PodMetrics(ctx context.Context, req *MetricsRequest) ([]MetricsData, error)
 }
 
+var emptyValue = ""
+
+func isEmptyResponse(resp *pb.QueryWithInfluxFormatResponse) bool {
+	if resp == nil || len(resp.Results) == 0 ||
+		len(resp.Results[0].Series) == 0 || len(resp.Results[0].Series[0].Rows) == 0 ||
+		len(resp.Results[0].Series[0].Rows[0].Values) == 0 || resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue() == 0 {
+		return true
+	}
+	return false
+}
+
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
-	queryQueue <- struct{}{}
+	logrus.Infof("[DEBUG] start query influx")
+	queryQueue.Acquire("default", 1)
 	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
+	queryQueue.Release("default", 1)
+	logrus.Infof("[DEBUG] end query influx")
+	var values cache.Values
+	if err != nil || isEmptyResponse(v) {
+		logrus.Errorf("query influx failed, req:%+v, err:%+v", req, err)
+		values, err = cache.MarshalValue(emptyValue)
+		if err != nil {
+			logrus.Errorf("marshal emtpy value failed, err: %+v", err)
+			return nil, err
+		}
+		v = &pb.QueryWithInfluxFormatResponse{}
+	} else {
+		values, err = cache.MarshalValue(v)
+		if err != nil {
+			logrus.Errorf("marshal value failed, v:%+v, err:%+v", v, err)
+			return nil, err
+		}
+	}
+	err = cache.FreeCache.Set(key, values, 5*time.Minute.Nanoseconds())
 	if err != nil {
+		logrus.Errorf("update cache failed, key:%s, err:%+v", key, err)
 		return nil, err
 	}
-	<-queryQueue
-	values, err := cache.MarshalValue(v)
-	cache.FreeCache.Set(key, values, time.Now().UnixNano()+int64(time.Second*30))
 	return v, nil
 }
 
 // DoQuery returns influxdb data
-func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
+func (m *Metric) DoQuery(ctx context.Context, cacheKey string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	var (
 		expired bool
 		v       cache.Values
 		err     error
 		resp    = &pb.QueryWithInfluxFormatResponse{}
 	)
-
-	if v, expired, err = cache.FreeCache.Get(key); v != nil {
-		logrus.Infof("%s hit cache, return cache value directly", key)
-		err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
-		if err != nil {
-			logrus.Errorf("unmarshal failed")
+	logrus.Infof("start get metrics of %s", cacheKey)
+	if v, expired, err = cache.FreeCache.Get(cacheKey); v != nil {
+		vbytes := v[0].(cache.ByteSliceValue).Value().([]byte)
+		if len(vbytes) > len([]byte(`""`)) {
+			logrus.Infof("get metrics of %s: start marshal", cacheKey)
+			err = jsi.Unmarshal(vbytes, resp)
+			if err != nil {
+				logrus.Errorf("unmarshal failed, v:%s, err:%+v", vbytes, err)
+			}
+			logrus.Infof("get metrics of %s: end marshal", cacheKey)
+		} else {
+			logrus.Infof("get metrics of %s: use the empty metrics value", cacheKey)
 		}
 		if expired {
-			logrus.Infof("cache expired, try fetch metrics asynchronized")
-			go func(ctx context.Context, key string, queryReq *pb.QueryWithInfluxFormatRequest) {
-				m.query(ctx, key, queryReq)
-			}(ctx, key, req)
+			logrus.Infof("cache expired, try fetch metrics asynchronized, cacheKey:%s", cacheKey)
+			if !cache.ExpireFreshQueue.IsFull() {
+				task := &queue.Task{
+					Key: cacheKey,
+					Do: func() {
+						m.query(ctx, cacheKey, req)
+					},
+				}
+				cache.ExpireFreshQueue.Enqueue(task)
+			} else {
+				logrus.Warnf("queue size is full, task is ignored, key:%s", cacheKey)
+			}
 		}
+		logrus.Infof("%s hit cache, return cache value directly", cacheKey)
 	} else {
-		logrus.Infof("not hit cache, try fetch metrics synchronized")
-		resp, err = m.query(ctx, key, req)
+		logrus.Infof("%s not hit cache, start fetch metrics synchronized", cacheKey)
+		resp, err = m.query(ctx, cacheKey, req)
 		if err != nil {
-			logrus.Error(err)
 			return nil, err
 		}
+		logrus.Infof("%s not hit cache, end fetch metrics synchronized", cacheKey)
 	}
 	return resp, nil
 }
@@ -158,7 +203,7 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) ([]Metric
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
-			if resp.Results[0].Series[0].Rows == nil {
+			if isEmptyResponse(resp) {
 				logrus.Warnf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
@@ -181,12 +226,13 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 	}
 	for _, queryReq := range reqs {
 		d := MetricsData{}
-		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ResourceType})
+		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ClusterName, req.ResourceType})
+		logrus.Infof("[DEBUG] start query metrics of %s", key)
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
 			logrus.Errorf("internal error when query %v", queryReq)
 		} else {
-			if resp.Results[0].Series[0].Rows == nil {
+			if isEmptyResponse(resp) {
 				logrus.Errorf("result empty when query %v", queryReq)
 			} else {
 				d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
@@ -195,6 +241,7 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) ([]Metrics
 			}
 		}
 		data = append(data, d)
+		logrus.Infof("[DEBUG] end query metrics of %s", key)
 	}
 	return data, nil
 }

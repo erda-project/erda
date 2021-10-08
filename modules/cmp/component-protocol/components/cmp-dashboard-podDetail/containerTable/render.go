@@ -202,6 +202,7 @@ func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
 		"podId":       containerTable.State.PodID,
 	}
 }
+
 func parseContainerStatus(ctx context.Context, state string) Status {
 	color := ""
 	switch state {

@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	"github.com/erda-project/erda/bundle"
+	db2 "github.com/erda-project/erda/modules/monitor/common/db"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -37,6 +38,7 @@ type provider struct {
 	DB                 *gorm.DB `autowired:"mysql-client"`
 	instanceDB         *instancedb.InstanceTenantDB
 	mspTenantDB        *db.MSPTenantDB
+	monitorDB          *db2.MonitorDb
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -44,6 +46,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	p.instanceDB = &instancedb.InstanceTenantDB{DB: p.DB}
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
+	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	if p.Register != nil {
 		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options())
 	}

@@ -99,13 +99,13 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 		return nil
 	}
 
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	err = json.Unmarshal(jsonData, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -115,21 +115,21 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	urlQuery, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	newQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &newQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(newQuery["pageNo"].(float64))
-	t.State.PageSize = uint64(newQuery["pageSize"].(float64))
-	sorter := newQuery["sorterData"].(map[string]interface{})
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
 	t.State.Sorter.Field = sorter["field"].(string)
 	t.State.Sorter.Order = sorter["order"].(string)
 	return nil
@@ -141,12 +141,12 @@ func (t *ComponentEventTable) EncodeURLQuery() error {
 	query["pageSize"] = int(t.State.PageSize)
 	query["sorterData"] = t.State.Sorter
 
-	data, err := json.Marshal(query)
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
+	encode := base64.StdEncoding.EncodeToString(jsonData)
 	t.State.EventTableUQLQuery = encode
 	return nil
 }

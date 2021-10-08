@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -163,6 +164,7 @@ func (p *ComponentPodsTable) EncodeURLQuery() error {
 }
 
 func (p *ComponentPodsTable) RenderTable() error {
+	logrus.Infof("[XDEBUG] start render table")
 	userID := p.sdk.Identity.UserID
 	orgID := p.sdk.Identity.OrgID
 
@@ -173,12 +175,12 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ClusterName: p.State.ClusterName,
 	}
 
-	logrus.Infof("[DEBUG] start list pods at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[XDEBUG] start list pods at %s", time.Now().Format(time.StampNano))
 	list, err := p.server.ListSteveResource(p.ctx, &podReq)
 	if err != nil {
 		return err
 	}
-	logrus.Infof("[DEBUG] end list pods at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[XDEBUG] end list pods at %s", time.Now().Format(time.StampNano))
 
 	cpuReq := metrics.MetricsRequest{
 		UserID:       userID,
@@ -199,6 +201,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 	tempCPULimits := make([]*resource.Quantity, 0)
 	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
+	logrus.Infof("[XDEBUG] start process list")
 	for _, item := range list {
 		obj := item.Data()
 		name := obj.String("metadata", "name")
@@ -305,20 +308,32 @@ func (p *ComponentPodsTable) RenderTable() error {
 			Node:              fields[6],
 		})
 	}
-
-	logrus.Infof("[DEBUG] start get metrics at %s", time.Now().Format(time.StampNano))
-	cpuMetrics, err := mServer.PodMetrics(p.ctx, &cpuReq)
-	if err != nil || len(cpuMetrics) == 0 {
-		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
-		cpuMetrics = make([]metrics.MetricsData, len(items), len(items))
-	}
-	memMetrics, err := mServer.PodMetrics(p.ctx, &memReq)
-	if err != nil || len(memMetrics) == 0 {
-		logrus.Errorf("failed to get memory metrics for pods, %v", err)
-		memMetrics = make([]metrics.MetricsData, len(items), len(items))
-	}
-	logrus.Infof("[DEBUG] end get metrics at %s", time.Now().Format(time.StampNano))
-
+	logrus.Infof("[XDEBUG] end process list")
+	logrus.Infof("[XDEBUG] start get metrics at %s", time.Now().Format(time.StampNano))
+	var cpuMetrics, memMetrics []metrics.MetricsData
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		var gerr error
+		cpuMetrics, gerr = mServer.PodMetrics(p.ctx, &cpuReq)
+		if gerr != nil || len(cpuMetrics) == 0 {
+			logrus.Errorf("failed to get cpu metrics for pods, %v", gerr)
+			cpuMetrics = make([]metrics.MetricsData, len(items), len(items))
+		}
+		wg.Done()
+	}()
+	go func() {
+		var gerr error
+		memMetrics, gerr = mServer.PodMetrics(p.ctx, &memReq)
+		if gerr != nil || len(memMetrics) == 0 {
+			logrus.Errorf("failed to get memory metrics for pods, %v", gerr)
+			memMetrics = make([]metrics.MetricsData, len(items), len(items))
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	logrus.Infof("[XDEBUG] end get metrics at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[XDEBUG] start process items")
 	for i := range items {
 		cpuLimits := tempCPULimits[i]
 		memLimits := tempMemLimits[i]
@@ -343,7 +358,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			Status:     memStatus,
 		}
 	}
-
+	logrus.Infof("[XDEBUG] end process items")
 	if p.State.Sorter.Field != "" {
 		cmpWrapper := func(field, order string) func(int, int) bool {
 			ascend := order == "ascend"
@@ -463,36 +478,44 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 	p.Data.List = items
 	p.State.Total = len(items)
+	logrus.Infof("[XDEBUG] end render table")
 	return nil
 }
 
 func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
 	var totRes int64
+	var usedRes float64
+	status, tip, value := "", "", ""
 	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
+		usedRes = usedPercent / 100
+		percent := usedPercent / float64(totRes) * 1000
+		if percent <= 80 {
+			status = "success"
+		} else if percent < 100 {
+			status = "warning"
+		} else {
+			status = "error"
+		}
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
+			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
+		value = fmt.Sprintf("%.2f", percent)
 	} else {
 		totRes = totQty.Value()
+		usedRes = float64(totRes) * usedPercent / 100
+		if usedPercent <= 80 {
+			status = "success"
+		} else if usedPercent < 100 {
+			status = "warning"
+		} else {
+			status = "error"
+		}
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
+			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
+		value = fmt.Sprintf("%.2f", usedPercent)
 	}
-	usedRes := float64(totRes) * usedPercent / 100
-	usedQtyString := cmpcputil.ResourceToString(p.sdk, usedRes, format)
-
-	status := ""
-	if usedPercent <= 80 {
+	if usedRes < 1e-8 || totQty.IsZero() {
 		status = "success"
-	} else if usedPercent < 100 {
-		status = "warning"
-	} else {
-		status = "error"
-	}
-
-	tip := ""
-	if format == resource.DecimalSI {
-		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-	} else {
-		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
-	}
-	value := fmt.Sprintf("%.2f", usedPercent)
-	if usedRes < 1e-8 {
 		tip = "N/A"
 		value = "N/A"
 	}
