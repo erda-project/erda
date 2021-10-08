@@ -121,7 +121,7 @@ func (g *Gantt) RenderOnFilter(ctx context.Context, c *cptype.Component) error {
 		logrus.Errorf("generate data failed, request:%v, err:%v", req, err)
 		return err
 	}
-	g.setStateTotal(rsp.Data.Total)
+	//g.setStateTotal(rsp.Data.Total)
 	return nil
 }
 
