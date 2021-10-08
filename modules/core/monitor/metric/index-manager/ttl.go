@@ -15,6 +15,7 @@
 package indexmanager
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"time"
@@ -30,8 +31,7 @@ type metricConfig struct {
 	keysTTL map[string]time.Duration
 }
 
-func (m *IndexManager) loadConfig() error {
-	// MonitorConfig .
+func (p *provider) loadConfig() error {
 	type MonitorConfig struct {
 		Names   string `gorm:"column:names"`
 		Filters string `gorm:"column:filters"`
@@ -42,8 +42,8 @@ func (m *IndexManager) loadConfig() error {
 		TTL string `json:"ttl"`
 	}
 	var list []*MonitorConfig
-	if err := m.db.Table("sp_monitor_config").Where("`type`='metric' AND `enable`=1").Find(&list).Error; err != nil {
-		m.log.Errorf("fail to load sp_monitor_config: %s", err)
+	if err := p.DB.Table("sp_monitor_config").Where("`type`='metric' AND `enable`=1").Find(&list).Error; err != nil {
+		p.Log.Errorf("failed to load sp_monitor_config: %s", err)
 		return err
 	}
 	mc := &metricConfig{
@@ -58,16 +58,16 @@ func (m *IndexManager) loadConfig() error {
 		cd := &configData{}
 		err := json.Unmarshal(reflectx.StringToBytes(item.Config), cd)
 		if err != nil || len(cd.TTL) <= 0 {
-			m.log.Errorf("invalid monitor metric config for key=%s: %s", item.Key, err)
+			p.Log.Errorf("invalid monitor metric config for key=%s: %s", item.Key, err)
 			continue
 		}
 		d, err := time.ParseDuration(cd.TTL)
 		if err != nil {
-			m.log.Errorf("invalid monitor metric config for key=%s: %s", item.Key, err)
+			p.Log.Errorf("invalid monitor metric config for key=%s: %s", item.Key, err)
 			continue
 		}
 		if int64(d) <= int64(time.Minute) {
-			m.log.Errorf("too small ttl monitor metric config for key=%s, %s", item.Key, cd.TTL)
+			p.Log.Errorf("too small ttl monitor metric config for key=%s, %s", item.Key, cd.TTL)
 			continue
 		}
 		if int64(mc.keysTTL[item.Key]) < int64(d) {
@@ -80,38 +80,39 @@ func (m *IndexManager) loadConfig() error {
 		var filters []*router.KeyValue
 		err = json.Unmarshal(reflectx.StringToBytes(item.Filters), &filters)
 		if err != nil {
-			m.log.Errorf("invalid monitor metric config filters for key=%s", item.Key)
+			p.Log.Errorf("invalid monitor metric config filters for key=%s", item.Key)
 			continue
 		}
 		for _, name := range strings.Split(item.Names, ",") {
 			mc.matcher.Add(name, filters, item.Key)
 		}
 	}
-	m.iconfig.Store(mc)
-	// mc.matcher.PrintTree(false)
-	m.log.Infof("load metrics ttl config with keys: %d", len(mc.keysTTL))
+	p.iconfig.Store(mc)
+	p.Log.Infof("load metrics ttl config with keys: %d", len(mc.keysTTL))
 	return nil
 }
 
-func (m *IndexManager) getMetricConfig() *metricConfig {
-	if m.cfg.LoadIndexTTLFromDatabase {
-		var v interface{}
+func (p *provider) getMetricConfig(ctx context.Context) *metricConfig {
+	if p.Cfg.LoadIndexTTLFromDatabase {
 		for {
-			v = m.iconfig.Load()
+			v, _ := p.iconfig.Load().(*metricConfig)
 			if v == nil {
-				// Waiting for the load to complete
-				time.Sleep(1 * time.Second)
+				// waiting for the load to complete
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-time.After(1 * time.Second):
+				}
 				continue
 			}
-			break
+			return v
 		}
-		return v.(*metricConfig)
 	}
 	return nil
 }
 
-func (m *IndexManager) getKey(metric *metric.Metric) string {
-	mc := m.getMetricConfig()
+func (p *provider) getKey(metric *metric.Metric) string {
+	mc := p.getMetricConfig(context.Background())
 	if mc != nil {
 		key := mc.matcher.Find(metric.Name, metric.Tags)
 		if key != nil {
@@ -119,4 +120,20 @@ func (m *IndexManager) getKey(metric *metric.Metric) string {
 		}
 	}
 	return ""
+}
+
+func (p *provider) runLoadTTL(ctx context.Context) error {
+	p.Log.Infof("enable indices ttl reload from database, interval: %v", p.Cfg.TTLReloadInterval)
+	timer := time.NewTimer(0)
+	defer timer.Stop()
+	defer p.iconfig.Store((*metricConfig)(nil))
+	for {
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			return nil
+		}
+		p.loadConfig()
+		timer.Reset(p.Cfg.TTLReloadInterval)
+	}
 }

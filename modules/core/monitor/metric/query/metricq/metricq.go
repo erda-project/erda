@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
@@ -67,7 +67,7 @@ var Q Queryer
 
 type metricq struct {
 	query.Queryer
-	index   indexmanager.Index
+	index   indexloader.Interface
 	meta    *metricmeta.Manager
 	handler func(r *http.Request) interface{}
 

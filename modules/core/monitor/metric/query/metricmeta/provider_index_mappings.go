@@ -22,16 +22,16 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 )
 
 // IndexMappingsGroupProvider .
 type IndexMappingsGroupProvider struct {
-	index indexmanager.Index
+	index indexloader.Interface
 }
 
 // NewIndexMappingsGroupProvider .
-func NewIndexMappingsGroupProvider(index indexmanager.Index) (*IndexMappingsGroupProvider, error) {
+func NewIndexMappingsGroupProvider(index indexloader.Interface) (*IndexMappingsGroupProvider, error) {
 	return &IndexMappingsGroupProvider{index}, nil
 }
 
@@ -65,11 +65,11 @@ func (p *IndexMappingsGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n
 
 // IndexMappingsMetricMetaProvider .
 type IndexMappingsMetricMetaProvider struct {
-	index indexmanager.Index
+	index indexloader.Interface
 }
 
 // NewIndexMappingsMetricMetaProvider .
-func NewIndexMappingsMetricMetaProvider(index indexmanager.Index) (*IndexMappingsMetricMetaProvider, error) {
+func NewIndexMappingsMetricMetaProvider(index indexloader.Interface) (*IndexMappingsMetricMetaProvider, error) {
 	return &IndexMappingsMetricMetaProvider{index}, nil
 }
 

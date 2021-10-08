@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 )
 
 // MetaSource .
@@ -40,7 +40,7 @@ type Manager struct {
 	metricProviders []func() MetricMetaProvider
 
 	db         *gorm.DB
-	index      indexmanager.Index
+	index      indexloader.Interface
 	metaPath   string
 	groupFiles []string
 
@@ -49,7 +49,7 @@ type Manager struct {
 }
 
 // NewManager .
-func NewManager(ms []string, db *gorm.DB, index indexmanager.Index, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger) *Manager {
+func NewManager(ms []string, db *gorm.DB, index indexloader.Interface, metaPath string, groupFiles []string, i18n i18n.I18n, log logs.Logger) *Manager {
 	sources := make(map[MetaSource]bool)
 	for _, item := range ms {
 		sources[MetaSource(item)] = true
