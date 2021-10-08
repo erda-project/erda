@@ -17,7 +17,9 @@ package cache
 import (
 	"container/heap"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +29,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"modernc.org/mathutil"
+
+	"github.com/erda-project/erda/modules/cmp/queue"
 )
 
 type (
@@ -61,6 +65,17 @@ var (
 	ValueTypeNotFoundError  = errors.New("cacheValues type not found")
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
+
+var ExpireFreshQueue *queue.TaskQueue
+
+func init() {
+	queueSize := 100
+	if size, err := strconv.Atoi(os.Getenv("TASK_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	ExpireFreshQueue = queue.NewTaskQueue(queueSize)
+	go ExpireFreshQueue.ExecuteLoop(5 * time.Second)
+}
 
 var FreeCache, _ = New(2<<30, 1<<27)
 

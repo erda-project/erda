@@ -529,8 +529,8 @@ services:
     resources:
       cpu: ${request_cpu:2}
       max_cpu: 2
-      mem: ${request_mem:3072}
-      max_mem: 3072
+      mem: ${request_mem:6144}
+      max_mem: 6144
       network:
         mode: "container"
     binds:

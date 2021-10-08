@@ -16,6 +16,8 @@ package metrics
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -143,6 +145,52 @@ func TestToInfluxReq(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := ToInfluxReq(tt.args.req); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("test failed, edcode result is not expected got=%v,want=%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isEmptyResponse(t *testing.T) {
+	type args struct {
+		resp *pb.QueryWithInfluxFormatResponse
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"case1",
+			args{
+				resp: &pb.QueryWithInfluxFormatResponse{
+					Results: []*pb.Result{
+						{
+							Series: []*pb.Serie{
+								{
+									Name:    "host_summary",
+									Columns: []string{"last(cpu_cores_usage::field)"},
+									Rows: []*pb.Row{
+										{
+											Values: []*structpb.Value{
+												{},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ss, err := json.Marshal(tt.args.resp)
+			fmt.Printf("ss: %s, err: %+v, raw: %+v\n", ss, err, tt.args.resp)
+			if got := isEmptyResponse(tt.args.resp); got != tt.want {
+				t.Errorf("isEmptyResponse() = %v, want %v", got, tt.want)
 			}
 		})
 	}
