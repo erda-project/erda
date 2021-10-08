@@ -525,31 +525,38 @@ func (p *ComponentPodsTable) isOwnedByTargetCronJob(pod data.Object, cronJobName
 
 func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
 	var totRes int64
+	var usedRes float64
+	status, tip, value := "", "", ""
 	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
+		usedRes = usedPercent / 100
+		percent := usedPercent / float64(totRes) * 1000
+		if percent <= 80 {
+			status = "success"
+		} else if percent < 100 {
+			status = "warning"
+		} else {
+			status = "error"
+		}
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
+			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
+		value = fmt.Sprintf("%.2f", percent)
 	} else {
 		totRes = totQty.Value()
+		usedRes = float64(totRes) * usedPercent / 100
+		if usedPercent <= 80 {
+			status = "success"
+		} else if usedPercent < 100 {
+			status = "warning"
+		} else {
+			status = "error"
+		}
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
+			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
+		value = fmt.Sprintf("%.2f", usedPercent)
 	}
-	usedRes := float64(totRes) * usedPercent / 100
-	usedQtyString := cmpcputil.ResourceToString(p.sdk, usedRes, format)
-
-	status := ""
-	if usedPercent <= 80 {
+	if usedRes < 1e-8 || totQty.IsZero() {
 		status = "success"
-	} else if usedPercent < 100 {
-		status = "warning"
-	} else {
-		status = "error"
-	}
-
-	tip := ""
-	if format == resource.DecimalSI {
-		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-	} else {
-		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
-	}
-	value := fmt.Sprintf("%.2f", usedPercent)
-	if usedRes < 1e-8 {
 		tip = "N/A"
 		value = "N/A"
 	}

@@ -10,13 +10,13 @@
       "h": 9,
       "x": 0,
       "y": 0,
-      "i": "view-YgQzTkyR",
+      "i": "view-yuNuX4I0",
       "view": {
-        "title": "Pod CPU Usage",
+        "title": "Container CPU Usage Percent",
         "i18n": {
           "title": {
-            "zh": "Pod CPU 使用率",
-            "en": "Pod CPU Usage"
+            "zh": "容器CPU使用率",
+            "en": "Container CPU Usage"
           }
         },
         "description": "",
@@ -33,52 +33,34 @@
             "resultFilters": [
               {
                 "alias": "Pod Name",
-                "i18n": {
-                  "title": {
-                    "zh": "Pod 名称",
-                    "en": "Pod Name"
-                  }
-                },
                 "field": "docker_container_summary-pod_name::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{podName}}"
                 },
-                "key": "filteri61i7tTT",
+                "key": "filterIEg5MxCz",
                 "resultType": "string",
                 "type": "filter"
               },
               {
                 "alias": "Pod Namespace",
-                "i18n": {
-                  "title": {
-                    "zh": "Pod 命名空间",
-                    "en": "Pod Namespace"
-                  }
-                },
                 "field": "docker_container_summary-pod_namespace::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{namespace}}"
                 },
-                "key": "filterCNgY16Hp",
+                "key": "filterSRiwvIpw",
                 "resultType": "string",
                 "type": "filter"
               },
               {
                 "alias": "集群名",
-                "i18n": {
-                  "title": {
-                    "zh": "集群名",
-                    "en": "Cluster Name"
-                  }
-                },
                 "field": "docker_container_summary-cluster_name::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{clusterName}}"
                 },
-                "key": "filterTfzwS1At",
+                "key": "filterqNKAX2nM",
                 "resultType": "string",
                 "type": "filter"
               }
@@ -86,54 +68,32 @@
             "typeDimensions": [
               {
                 "alias": "时间",
-                "i18n": {
-                  "title": {
-                    "zh": "时间",
-                    "en": "time"
-                  }
-                },
-                "key": "typewBBhis4I",
+                "key": "typecQUjZgkJ",
                 "type": "time"
               },
               {
-                "alias": "Pod Namespace",
+                "alias": "容器镜像",
                 "i18n": {
-                  "title": {
-                    "zh": "Pod 命名空间",
-                    "en": "Pod Namespace"
+                  "alias": {
+                    "zh": "容器镜像",
+                    "en": "Container Image"
                   }
                 },
-                "field": "docker_container_summary-pod_namespace::tag",
-                "key": "typeOIDtUBtN",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "Pod Name",
-                "i18n": {
-                  "title": {
-                    "zh": "Pod 名称",
-                    "en": "Pod Name"
-                  }
-                },
-                "field": "docker_container_summary-pod_name::tag",
-                "key": "typezb0my6gj",
+                "field": "docker_container_summary-container_image::tag",
+                "key": "type4LCy9VM7",
                 "resultType": "string",
                 "type": "field"
               }
             ],
             "valueDimensions": [
               {
-                "aggregation": "avg",
-                "alias": "CPU Usage Rate",
+                "alias": "CPU使用率",
                 "i18n": {
-                  "title": {
-                    "zh": "Pod CPU 使用率",
-                    "en": "Pod CPU Rate"
-                  }
+                  "zh": "CPU使用率",
+                  "en": "CPU Usage Percent"
                 },
                 "field": "docker_container_summary-cpu_usage_percent::field",
-                "key": "valuezgzhW6F4",
+                "key": "valuepkhGwNJw",
                 "resultType": "number",
                 "type": "field",
                 "unit": {
@@ -163,25 +123,20 @@
             ],
             "groupby": [
               "time()",
-              "pod_namespace::tag",
-              "pod_name::tag"
+              "container_image::tag"
             ],
             "select": [
               {
-                "alias": "typewBBhis4I",
+                "alias": "typecQUjZgkJ",
                 "expr": "time()"
               },
               {
-                "alias": "typeOIDtUBtN",
-                "expr": "pod_namespace::tag"
+                "alias": "type4LCy9VM7",
+                "expr": "container_image::tag"
               },
               {
-                "alias": "typezb0my6gj",
-                "expr": "pod_name::tag"
-              },
-              {
-                "alias": "valuezgzhW6F4",
-                "expr": "round_float(avg(cpu_usage_percent::field), 2)"
+                "alias": "valuepkhGwNJw",
+                "expr": "round_float(cpu_usage_percent::field, 2)"
               }
             ],
             "where": [
@@ -209,13 +164,13 @@
       "h": 9,
       "x": 12,
       "y": 0,
-      "i": "view-I0Ko82c6",
+      "i": "view-cwggolwG",
       "view": {
-        "title": "Pod Memory Usage",
+        "title": "Container Memory Usage Percent",
         "i18n": {
           "title": {
-            "zh": "Pod 内存使用率",
-            "en": "Pod Memory Usage"
+            "zh": "容器内存使用率",
+            "en": "Container Memory Usage Percent"
           }
         },
         "description": "",
@@ -243,7 +198,7 @@
                   "operation": "=",
                   "value": "{{podName}}"
                 },
-                "key": "filter8zkn6knt",
+                "key": "filterDXdKOuIu",
                 "resultType": "string",
                 "type": "filter"
               },
@@ -260,7 +215,7 @@
                   "operation": "=",
                   "value": "{{namespace}}"
                 },
-                "key": "filterfgKpYOAl",
+                "key": "filterkjRlyPpn",
                 "resultType": "string",
                 "type": "filter"
               },
@@ -277,7 +232,7 @@
                   "operation": "=",
                   "value": "{{clusterName}}"
                 },
-                "key": "filterf6mthRjf",
+                "key": "filterKiLWV4G1",
                 "resultType": "string",
                 "type": "filter"
               }
@@ -285,54 +240,26 @@
             "typeDimensions": [
               {
                 "alias": "时间",
-                "i18n": {
-                  "title": {
-                    "zh": "时间",
-                    "en": "time"
-                  }
-                },
-                "key": "typebBcx9Cpb",
+                "key": "typeUHCctLpx",
                 "type": "time"
               },
               {
-                "alias": "Pod Namespace",
+                "alias": "容器镜像",
                 "i18n": {
-                  "title": {
-                    "zh": "Pod 命名空间",
-                    "en": "Pod Namespace"
-                  }
+                  "zh": "容器镜像",
+                  "en": "Container Image"
                 },
-                "field": "docker_container_summary-pod_namespace::tag",
-                "key": "typeXAlLr6Jo",
-                "resultType": "string",
-                "type": "field"
-              },
-              {
-                "alias": "Pod Name",
-                "i18n": {
-                  "title": {
-                    "zh": "Pod 名称",
-                    "en": "Pod Name"
-                  }
-                },
-                "field": "docker_container_summary-pod_name::tag",
-                "key": "typehdUwMage",
+                "field": "docker_container_summary-container_image::tag",
+                "key": "typek02SCUFZ",
                 "resultType": "string",
                 "type": "field"
               }
             ],
             "valueDimensions": [
               {
-                "aggregation": "avg",
                 "alias": "Mem Usage Percent",
-                "i18n": {
-                  "title": {
-                    "zh": "内存使用率",
-                    "en": "Mem Usage Percent"
-                  }
-                },
                 "field": "docker_container_summary-mem_usage_percent::field",
-                "key": "valuenSjy6RH4",
+                "key": "valuecmGyLrOz",
                 "resultType": "number",
                 "type": "field",
                 "unit": {
@@ -362,25 +289,20 @@
             ],
             "groupby": [
               "time()",
-              "pod_namespace::tag",
-              "pod_name::tag"
+              "container_image::tag"
             ],
             "select": [
               {
-                "alias": "typebBcx9Cpb",
+                "alias": "typeUHCctLpx",
                 "expr": "time()"
               },
               {
-                "alias": "typeXAlLr6Jo",
-                "expr": "pod_namespace::tag"
+                "alias": "typek02SCUFZ",
+                "expr": "container_image::tag"
               },
               {
-                "alias": "typehdUwMage",
-                "expr": "pod_name::tag"
-              },
-              {
-                "alias": "valuenSjy6RH4",
-                "expr": "round_float(avg(mem_usage_percent::field), 2)"
+                "alias": "valuecmGyLrOz",
+                "expr": "round_float(mem_usage_percent::field, 2)"
               }
             ],
             "where": [
