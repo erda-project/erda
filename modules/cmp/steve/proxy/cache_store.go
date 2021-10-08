@@ -18,6 +18,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"os"
+	"strconv"
 	"time"
 
 	jsi "github.com/json-iterator/go"
@@ -30,7 +32,18 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/queue"
 )
+
+var queryQueue *queue.QueryQueue
+
+func init() {
+	queueSize := 10
+	if size, err := strconv.Atoi(os.Getenv("LIST_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	queryQueue = queue.NewQueryQueue(queueSize)
+}
 
 type cacheStore struct {
 	types.Store
@@ -67,7 +80,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	logrus.Infof("[DEBUG] start get cache at %s", time.Now().Format(time.StampNano))
-	values, _, err := c.cache.Get(key.getKey())
+	values, lexpired, err := c.cache.Get(key.getKey())
 	logrus.Infof("[DEBUG] end get cache at %s", time.Now().Format(time.StampNano))
 	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
@@ -91,7 +104,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		}
 
 		logrus.Infof("[DEBUG] start list at %s", time.Now().Format(time.StampNano))
+		queryQueue.Acquire(c.clusterName, 1)
 		list, err := c.Store.List(apiOp, schema)
+		queryQueue.Release(c.clusterName, 1)
 		if err != nil {
 			return types.APIObjectList{}, err
 		}
@@ -111,28 +126,39 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		return list, nil
 	}
 
-	go func() {
-		user, ok := request.UserFrom(apiOp.Context())
-		if !ok {
-			logrus.Errorf("user not found in context when steve auth")
-			return
+	if lexpired {
+		logrus.Infof("list data is expired, need update, key:%s", key.getKey())
+		if !cache.ExpireFreshQueue.IsFull() {
+			task := &queue.Task{
+				Key: key.getKey(),
+				Do: func() {
+					user, ok := request.UserFrom(apiOp.Context())
+					if !ok {
+						logrus.Errorf("user not found in context when steve auth")
+						return
+					}
+					ctx := request.WithUser(c.ctx, user)
+					newOp := apiOp.WithContext(ctx)
+					list, err := c.Store.List(newOp, schema)
+					if err != nil {
+						logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
+						return
+					}
+					data, err := cache.MarshalValue(list)
+					if err != nil {
+						logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
+						return
+					}
+					if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
+						logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
+					}
+				},
+			}
+			cache.ExpireFreshQueue.Enqueue(task)
+		} else {
+			logrus.Warnf("queue size is full, task is ignored, key:%s", key.getKey())
 		}
-		ctx := request.WithUser(c.ctx, user)
-		newOp := apiOp.WithContext(ctx)
-		list, err := c.Store.List(newOp, schema)
-		if err != nil {
-			logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
-			return
-		}
-		data, err := cache.MarshalValue(list)
-		if err != nil {
-			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
-			return
-		}
-		if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
-			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
-		}
-	}()
+	}
 
 	var list types.APIObjectList
 	logrus.Infof("[DEBUG] start unmarshal data from cache at %s", time.Now().Format(time.StampNano))
