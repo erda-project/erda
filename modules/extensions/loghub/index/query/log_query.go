@@ -487,19 +487,25 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 
 func (p *provider) AggregateLogFields(req *LogFieldsAggregationRequest) (interface{}, error) {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
+	if len(clients) == 0 {
+		return nil, fmt.Errorf("failed do aggregations: no backend server")
+	}
 	var results []*LogFieldsAggregationResponse
 	allErrors := map[string]string{}
+	var lastError string
 	for _, client := range clients {
 		result, err := client.aggregateFields(req, p.C.Timeout)
 		if err != nil {
 			allErrors[client.URLs] = err.Error()
+			lastError = err.Error()
 			continue
 		}
 		results = append(results, result)
 	}
 
 	if len(allErrors) == len(clients) {
-		return nil, fmt.Errorf("failed to do aggregations, error: %+v", allErrors)
+		p.L.Errorf("failed to do aggregations, error: %+v", allErrors)
+		return nil, fmt.Errorf("failed to do aggregations: %s", lastError)
 	}
 
 	return mergeFieldsAggregationResults(req.TermsSize, results), nil
