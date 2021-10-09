@@ -475,7 +475,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// issue 管理
 		{Path: "/api/issues", Method: http.MethodPost, Handler: e.CreateIssue},
-		{Path: "z", Method: http.MethodGet, Handler: e.PagingIssues},
+		{Path: "/api/issues", Method: http.MethodGet, Handler: e.PagingIssues},
 		{Path: "/api/issues/{id}", Method: http.MethodGet, Handler: e.GetIssue},
 		{Path: "/api/issues/{id}", Method: http.MethodPut, Handler: e.UpdateIssue},
 		{Path: "/api/issues/{id}", Method: http.MethodDelete, Handler: e.DeleteIssue},
