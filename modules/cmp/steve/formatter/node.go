@@ -70,7 +70,7 @@ func NewNodeFormatter(ctx context.Context, k8sInterface kubernetes.Interface) *N
 	return &NodeFormatter{
 		ctx:       ctx,
 		podClient: k8sInterface.CoreV1().Pods(""),
-		podsCache: cache.FreeCache,
+		podsCache: cache.GetFreeCache(),
 	}
 }
 
