@@ -42,12 +42,6 @@ func (e *Endpoints) StartCodeCoverage(ctx context.Context, r *http.Request, vars
 	}
 	req.IdentityInfo = identityInfo
 
-	if err := e.codeCoverageSvc.JudgeRunningRecordExist(req.ProjectID); err != nil {
-		return apierrors.ErrStartCodeCoverageExecRecord.InternalError(err).ToResp(), nil
-	}
-
-	// check permission
-
 	if err = e.codeCoverageSvc.Start(req); err != nil {
 		return apierrors.ErrStartCodeCoverageExecRecord.InternalError(err).ToResp(), nil
 	}
@@ -71,7 +65,6 @@ func (e *Endpoints) EndCodeCoverage(ctx context.Context, r *http.Request, vars m
 	}
 
 	req.IdentityInfo = identityInfo
-	// check permission
 
 	if err = e.codeCoverageSvc.End(req); err != nil {
 		return apierrors.ErrEndCodeCoverageExecRecord.InternalError(err).ToResp(), nil
@@ -96,7 +89,7 @@ func (e *Endpoints) ReadyCallBack(ctx context.Context, r *http.Request, vars map
 	}
 
 	req.IdentityInfo = identityInfo
-	// check permission
+
 
 	if err = e.codeCoverageSvc.ReadyCallBack(req); err != nil {
 		return apierrors.ErrUpdateCodeCoverageExecRecord.InternalError(err).ToResp(), nil
@@ -145,8 +138,6 @@ func (e *Endpoints) EndCallBack(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrUpdateCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
 	}
 
-	// check permission
-
 	if err = e.codeCoverageSvc.EndCallBack(req); err != nil {
 		return apierrors.ErrUpdateCodeCoverageExecRecord.InternalError(err).ToResp(), nil
 	}
@@ -169,8 +160,6 @@ func (e *Endpoints) ListCodeCoverageRecord(ctx context.Context, r *http.Request,
 	}
 	req.IdentityInfo = identityInfo
 
-	// check permission
-
 	data, err := e.codeCoverageSvc.ListCodeCoverageRecord(req)
 	if err != nil {
 		return apierrors.ErrListCodeCoverageExecRecord.InternalError(err).ToResp(), nil
@@ -191,7 +180,6 @@ func (e *Endpoints) GetCodeCoverageRecord(ctx context.Context, r *http.Request, 
 		return apierrors.ErrGetCodeCoverageExecRecord.InvalidParameter("id").ToResp(), nil
 	}
 
-	// check permission
 	record, err := e.codeCoverageSvc.GetCodeCoverageRecord(id)
 	if err != nil {
 		return apierrors.ErrGetCodeCoverageExecRecord.InternalError(err).ToResp(), nil

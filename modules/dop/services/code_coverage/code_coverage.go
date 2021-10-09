@@ -16,6 +16,7 @@ package code_coverage
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"io/ioutil"
 	"time"
 
@@ -55,6 +56,27 @@ func WithBundle(bdl *bundle.Bundle) Option {
 
 // Start Start record
 func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
+	// check permission
+	if !req.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  req.ProjectID,
+			Resource: "codeCoverage",
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return err
+		}
+		if !access.Access {
+			return apierrors.ErrCreateIssue.AccessDenied()
+		}
+	}
+
+	if err := svc.JudgeRunningRecordExist(req.ProjectID); err != nil {
+		return err
+	}
+
 	now := time.Now()
 	record := dao.CodeCoverageExecRecord{
 		ProjectID:     req.ProjectID,
@@ -78,6 +100,24 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
 		return err
 	}
+
+	// check permission
+	if !req.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  record.ProjectID,
+			Resource: "codeCoverage",
+			Action:   apistructs.UpdateAction,
+		})
+		if err != nil {
+			return err
+		}
+		if !access.Access {
+			return apierrors.ErrCreateIssue.AccessDenied()
+		}
+	}
+
 	if record.Status != apistructs.ReadyStatus {
 		return errors.New("the pre status is not ready")
 	}
