@@ -16,7 +16,12 @@ package head
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 )
 
 type ComponentAction struct {
@@ -24,5 +29,49 @@ type ComponentAction struct {
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 
+	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
+	sdk := cputil.SDK(ctx)
+	projectId := sdk.InParams["projectId"].(uint64)
+
+	var disable = false
+	var disabledTip string
+
+	switch event.Operation.String() {
+	case apistructs.ClickOperation.String():
+
+		err := svc.Start(apistructs.CodeCoverageStartRequest{
+			ProjectID: projectId,
+			IdentityInfo: apistructs.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		disable = true
+		disabledTip = "启动中"
+	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		err := svc.JudgeRunningRecordExist(projectId)
+		if err != nil {
+			disabledTip = err.Error()
+			disable = true
+		}
+	}
+
+	c.Type = "Button"
+	c.Props = map[string]interface{}{
+		"text": "开始",
+		"type": "primary",
+	}
+
+	c.Operations = map[string]interface{}{
+		"click": map[string]interface{}{
+			"key":         "click",
+			"reload":      true,
+			"disabledTip": disabledTip,
+			"disabled":    disable,
+		},
+	}
 	return nil
 }

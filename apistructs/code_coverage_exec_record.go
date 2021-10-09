@@ -21,6 +21,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+type CodeCoverageExecStatus string
+
+const (
+	RunningStatus CodeCoverageExecStatus = "running"
+	ReadyStatus   CodeCoverageExecStatus = "ready"
+	EndingStatus  CodeCoverageExecStatus = "ending"
+	SuccessStatus CodeCoverageExecStatus = "success"
+	FailStatus    CodeCoverageExecStatus = "fail"
+)
+
+var WorkingStatus = []CodeCoverageExecStatus{RunningStatus, ReadyStatus, EndingStatus}
+
+func (c CodeCoverageExecStatus) String() string {
+	return string(c)
+}
+
 type CodeCoverageStartRequest struct {
 	IdentityInfo
 
@@ -54,9 +70,10 @@ func (req *CodeCoverageUpdateRequest) Validate() error {
 type CodeCoverageListRequest struct {
 	IdentityInfo
 
-	ProjectID uint64 `json:"projectID"`
-	PageNo    uint64 `json:"pageNo"`
-	PageSize  uint64 `json:"pageSize"`
+	ProjectID uint64                   `json:"projectID"`
+	PageNo    uint64                   `json:"pageNo"`
+	PageSize  uint64                   `json:"pageSize"`
+	Statuses  []CodeCoverageExecStatus `json:"statuses"`
 }
 
 func (req *CodeCoverageListRequest) Validate() error {
