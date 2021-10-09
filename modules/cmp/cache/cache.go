@@ -64,7 +64,10 @@ var (
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
-var ExpireFreshQueue *queue.TaskQueue
+var (
+	ExpireFreshQueue *queue.TaskQueue
+	globalPairLength = 1024
+)
 
 func init() {
 	queueSize := 100
@@ -75,7 +78,14 @@ func init() {
 	go ExpireFreshQueue.ExecuteLoop(5 * time.Second)
 }
 
-var FreeCache, _ = New(2<<30, 1<<27)
+var freeCache *Cache
+
+func GetFreeCache() *Cache {
+	if freeCache == nil {
+		freeCache, _ = New(1<<31, 1<<27)
+	}
+	return freeCache
+}
 
 // Cache implement concurrent safe cache with LRU and ttl strategy.
 type Cache struct {
@@ -117,7 +127,8 @@ func newPairs(maxSize int64, segNum int) []*segment {
 	// memory can not be totally used
 	pairLen := maxSize >> 4
 	for i := 0; i < segNum; i++ {
-		p := make([]*pair, mathutil.Min(int(pairLen), 1024))
+		globalPairLength = mathutil.Min(int(pairLen), globalPairLength)
+		p := make([]*pair, globalPairLength)
 		for j := range p {
 			p[j] = &pair{}
 		}
@@ -217,6 +228,7 @@ func (s *store) write(id int) error {
 			value:            newPair.value,
 			overdueTimestamp: newPair.overdueTimestamp,
 		})
+		globalPairLength = len(ps.pairs)
 	} else {
 		ps.pairs[idx].key = newPair.key
 		ps.pairs[idx].value = newPair.value
@@ -564,7 +576,7 @@ func (k *keyBuilder) getKeyId(str string, segNum int) int {
 	return int(xxhash.Sum64(k.b[:len(str)]) & uint64(segNum-1))
 }
 
-func GenerateKey(keys []string) string {
+func GenerateKey(keys ...string) string {
 	sort.Slice(keys, func(i, j int) bool {
 		return strings.Compare(keys[i], keys[j]) > 0
 	})

@@ -319,7 +319,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 	type fields struct {
 	}
 	type args struct {
-		metricsData  metrics.MetricsData
+		metricsData  *metrics.MetricsData
 		resourceType TableType
 	}
 	tests := []struct {
@@ -333,7 +333,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			name:   "text",
 			fields: fields{},
 			args: args{
-				metricsData: metrics.MetricsData{Used: 1, Request: 1.2,
+				metricsData: &metrics.MetricsData{Used: 1, Request: 1.2,
 					Total: 10},
 				resourceType: Cpu,
 			},
@@ -343,7 +343,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			name:   "text",
 			fields: fields{},
 			args: args{
-				metricsData: metrics.MetricsData{Used: 1, Request: 1.2,
+				metricsData: &metrics.MetricsData{Used: 1, Request: 1.2,
 					Total: 10},
 				resourceType: Memory,
 			},
@@ -373,7 +373,7 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 		State           State
 	}
 	type args struct {
-		metricsData  metrics.MetricsData
+		metricsData  *metrics.MetricsData
 		resourceType TableType
 	}
 	tests := []struct {
@@ -385,7 +385,7 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 		{
 			name: "1",
 			args: args{
-				metricsData:  metrics.MetricsData{1, 2, 3},
+				metricsData:  &metrics.MetricsData{1, 2, 3},
 				resourceType: Pod,
 			},
 			want: DistributionValue{
@@ -417,7 +417,7 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 		State           State
 	}
 	type args struct {
-		metricsData  metrics.MetricsData
+		metricsData  *metrics.MetricsData
 		resourceType TableType
 	}
 	tests := []struct {
@@ -429,7 +429,7 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 		{
 			name: "1",
 			args: args{
-				metricsData:  metrics.MetricsData{1, 2, 3},
+				metricsData:  &metrics.MetricsData{1, 2, 3},
 				resourceType: Pod,
 			},
 			want: DistributionValue{
