@@ -12,11 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
-
-const (
-	GlobalCtxKeyBundle   = "__bundle__"
-	IssueStateService    = "issueState"
-	IssueFilterBmService = "issueFilterBookmark"
-	CodeCoverageService  = "codeCoverage"
-)
+package bundle
