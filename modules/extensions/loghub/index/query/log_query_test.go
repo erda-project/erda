@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/olivere/elastic"
+
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	logs "github.com/erda-project/erda/modules/core/monitor/log"
@@ -216,5 +218,21 @@ func Test_concatBucketSlices(t *testing.T) {
 		if agg.Key != want[i].Key || agg.Count != want[i].Count {
 			t.Errorf("expect key: %s count: %d, but got key: %s count: %d", want[i].Key, want[i].Count, agg.Key, agg.Count)
 		}
+	}
+}
+
+func Test_getSearchSource_Should_Sort_As_Expect(t *testing.T) {
+	c := &ESClient{}
+	req := &LogSearchRequest{
+		Sort: []string{"timestamp desc", "offset desc"},
+	}
+	result, err := c.getSearchSource(req, elastic.NewBoolQuery()).Source()
+	if err != nil {
+		t.Errorf("should not error getting serialized search source")
+	}
+	data := fmt.Sprintf("%+v", result.(map[string]interface{})["sort"])
+	expect := "[map[timestamp:map[order:desc]] map[offset:map[order:desc]]]"
+	if data != expect {
+		t.Errorf("sort assert failed, expect: %s, but got: %s", expect, data)
 	}
 }
