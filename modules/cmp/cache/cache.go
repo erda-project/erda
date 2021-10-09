@@ -17,7 +17,9 @@ package cache
 import (
 	"container/heap"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +29,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"modernc.org/mathutil"
+
+	"github.com/erda-project/erda/modules/cmp/queue"
 )
 
 type (
@@ -62,7 +66,18 @@ var (
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
-var FreeCache, _ = New(1<<30, 1<<24)
+var ExpireFreshQueue *queue.TaskQueue
+
+func init() {
+	queueSize := 100
+	if size, err := strconv.Atoi(os.Getenv("TASK_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	ExpireFreshQueue = queue.NewTaskQueue(queueSize)
+	go ExpireFreshQueue.ExecuteLoop(5 * time.Second)
+}
+
+var FreeCache, _ = New(2<<30, 1<<27)
 
 // Cache implement concurrent safe cache with LRU and ttl strategy.
 type Cache struct {
@@ -186,7 +201,7 @@ func (s *store) write(id int) error {
 
 	needSize, _ := newPair.getEntrySize()
 	if ps.maxSize < needSize {
-		s.log.Errorf("evict cache size,try next")
+		s.log.Errorf("exceed cache size ,seg size = %v, value size = %v, try next", ps.maxSize, needSize)
 		return EvictError
 	}
 	usage := ps.used

@@ -61,12 +61,12 @@ log-store:
         parallelism: ${CASSANDRA_PARALLELISM:3}
         batch:
           size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: "10s"
+          timeout: ${CASSANDRA_BATCH_TIMEOUT:10s}
         retry: -1  # block forever. kafka will handle the issue of stream block
       session_config:
         keyspace:
           name: "spot_prod"
-          auto: true # 自动创建 keyspace
+          auto: ${LOG_STORE_CASSANDRA_SESSION_KEYSPACE_AUTO:true} # 自动创建 keyspace
           replication:
             class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
             factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
@@ -93,7 +93,7 @@ metrics-storage:
   _enable: ${METRIC_ENABLE:true}
   inputs:
     metric:
-      topics: "${METRIC_TOPICS:spot-metrics}"
+      topics: "${METRIC_TOPICS:spot-metrics,msp-tracing-metrics}"
       group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
       parallelism: ${METRIC_CONSUMERS:3}
     creating_index_metric:
@@ -154,17 +154,21 @@ erda.core.monitor.metric.index:
 
 trace-storage:
   _enable: ${TRACE_ENABLE:true}
-  input:
-    topics: "${TRACE_TOPICS:spot-trace}"
+  spot_input:
+    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${TRACE_CONSUMERS:3}
+    parallelism: ${SPOT_TRACE_CONSUMERS:3}
+  oap_input:
+    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${OAP_TRACE_CONSUMERS:3}
   output:
     cassandra:
       writer_config:
         parallelism: ${CASSANDRA_PARALLELISM:3}
         batch:
           size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: "3s"
+          timeout: ${TRACE_STORE_CASSANDRA_BATCH_TIMEOUT:10s}
         retry: 2
       session_config:
         keyspace:
@@ -176,7 +180,7 @@ trace-storage:
       gc_grace_seconds: 86400
       ttl: ${TRACE_TTL:168h}
     kafka:
-      topic: "${METRIC_TOPICS:spot-metrics}"
+      topic: "${SPOT_TRACE_TOPICS:spot-trace}"
       parallelism: ${KAFKA_PARALLELISM:3}
       batch:
         size:  ${KAFKA_BATCH_SIZE:50}

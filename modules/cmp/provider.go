@@ -18,6 +18,7 @@ package cmp
 import (
 	"context"
 	"embed"
+	"runtime"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -53,6 +54,7 @@ type Provider interface {
 
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
+	runtime.GOMAXPROCS(2)
 	p.Metrics = &metrics.Metric{Metricq: p.Server}
 	logrus.Info("cmp provider is running...")
 	return p.initialize(ctx)

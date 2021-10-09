@@ -23,6 +23,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"modernc.org/mathutil"
+
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
 func TestCache_Init(t *testing.T) {
@@ -337,7 +339,7 @@ func TestCache_Write(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for k, v := range tt.args.pairs {
-				if err := cache.Set(k, v, time.Now().UnixNano()); (err != nil) != tt.wantErr {
+				if err := cache.Set(k, v, time.Second.Nanoseconds()); (err != nil) != tt.wantErr {
 					t.Errorf("WriteMulti() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}
@@ -508,5 +510,40 @@ func TestLRU(t *testing.T) {
 		if v != nil && int(v[0].(IntValue).value) != i {
 			t.Fatalf("bad key: %v", i)
 		}
+	}
+}
+
+func TestMarshalValue(t *testing.T) {
+	type args struct {
+		o interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"case1",
+			args{
+				&pb.QueryWithInfluxFormatResponse{},
+			},
+			false,
+		},
+		{
+			"case1",
+			args{
+				nil,
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := MarshalValue(tt.args.o)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MarshalValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
 	}
 }

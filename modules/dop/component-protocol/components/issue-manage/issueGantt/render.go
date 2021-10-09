@@ -198,7 +198,7 @@ func (g *Gantt) Export(c *cptype.Component, gs *cptype.GlobalStateData) error {
 		return err
 	}
 	// set url query state
-	err = g.setStateToUrlQuery(c)
+	err = g.SetStateToUrlQuery(c)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,8 @@ func getStateUrlQueryKey() string {
 	return fmt.Sprintf("%s__urlQuery", CompName)
 }
 
-func (g Gantt) setStateToUrlQuery(c *cptype.Component) error {
+func (g Gantt) SetStateToUrlQuery(c *cptype.Component) error {
+	g.State.Total = 0
 	b, err := json.Marshal(g.State)
 	if err != nil {
 		return err
