@@ -17,6 +17,7 @@ package head
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -38,7 +39,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
-		data, err := svc.ListCodeCoverageRecode(apistructs.CodeCoverageListRequest{
+		data, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			PageSize:  1,
 			PageNo:    1,
 			ProjectID: projectId,
@@ -92,4 +93,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		},
 	}
 	return nil
+}
+
+func init() {
+	base.InitProvider("code-coverage", "endButton")
 }

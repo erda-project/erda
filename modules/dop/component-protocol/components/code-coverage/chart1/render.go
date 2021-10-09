@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 	"github.com/sirupsen/logrus"
 
@@ -134,4 +135,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 	return nil
+}
+
+func init() {
+	base.InitProvider("code-coverage", "chart1")
 }

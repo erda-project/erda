@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -255,4 +256,8 @@ func (ca *ComponentAction) SetProps() {
           rowKey: 'id',
 	}
 `
+}
+
+func init() {
+	base.InitProvider("code-coverage", "executeHistoryTable")
 }

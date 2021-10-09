@@ -16,6 +16,7 @@ package head
 
 import (
 	"context"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -74,4 +75,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		},
 	}
 	return nil
+}
+
+func init() {
+	base.InitProvider("code-coverage", "startButton")
 }

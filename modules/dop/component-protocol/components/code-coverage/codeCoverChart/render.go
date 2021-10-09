@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -148,7 +149,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		ca.State.RecordID = uint64(recordID)
 	case cptype.InitializeOperation:
-		recordRsp, err := svc.ListCodeCoverageRecode(apistructs.CodeCoverageListRequest{
+		recordRsp, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			ProjectID: uint64(projectID),
 			PageSize:  defaultListSize,
 		})
@@ -162,4 +163,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		ca.Operations = getOperations()
 	}
 	return nil
+}
+
+func init() {
+	base.InitProvider("code-coverage", "codeCoverChart")
 }
