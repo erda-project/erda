@@ -99,13 +99,13 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 		return nil
 	}
 
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(jsonData, &state)
+	err = json.Unmarshal(data, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -115,11 +115,11 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	urlQuery, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
