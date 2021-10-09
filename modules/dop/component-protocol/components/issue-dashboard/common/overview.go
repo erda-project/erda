@@ -13,3 +13,28 @@
 // limitations under the License.
 
 package common
+
+type Overview struct {
+	Props OverviewProps `json:"props,omitempty"`
+}
+
+type OverviewProps struct {
+	RenderType string        `json:"renderType,omitempty"`
+	Value      OverviewValue `json:"value,omitempty"`
+}
+
+type OverviewValue struct {
+	Direction string         `json:"direction,omitempty"`
+	Text      []OverviewText `json:"text,omitempty"`
+}
+
+type OverviewText struct {
+	Text        string      `json:"text,omitempty"`
+	StyleConfig StyleConfig `json:"styleConfig,omitempty"`
+}
+
+type StyleConfig struct {
+	FontSize int    `json:"fontSize,omitempty"`
+	Bold     bool   `json:"bold,omitempty"`
+	Color    string `json:"color,omitempty"`
+}

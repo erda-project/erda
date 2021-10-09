@@ -16,12 +16,20 @@ package issue_stats
 
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/chartGroup1"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/expired"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/filter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/header"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/issueTip"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/issueType"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/month"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/open"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/overview"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/page"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reopen"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/statePieChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/today"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/total"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/trendChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/undefined"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/week"
 )

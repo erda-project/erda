@@ -16,6 +16,15 @@ hierarchy:
     # issueTypeContainer:
     #   - issueType
     #   - issueTip
+    overview:
+      - total
+      - open
+      - expired
+      - today
+      - week
+      - month
+      - undefined
+      - reopen
     header:
       - issueType
       - filter
@@ -42,6 +51,28 @@ components:
     type: ContractiveFilter
   overview:
     type: RowContainer
+    props:
+      border: true
+      whiteBg: true
+      contentSetting: between
+  total:
+    type: Text
+  open:
+    type: Text
+  expired:
+    type: Text
+  today:
+    type: Text
+  week:
+    type: Text
+  month:
+    type: Text
+  undefined:
+    type: Text
+  reopen:
+    type: Text
+  
+  
   trendChart:
     type: Chart
   chartGroup1:
@@ -70,7 +101,17 @@ rendering:
     - name: filter
     - name: issueType
     - name: issueTip
+    
     - name: overview
+    - name: total
+    - name: open
+    - name: expired
+    - name: today
+    - name: week
+    - name: month
+    - name: undefined
+    - name: reopen
+
     - name: trendChart
       state:
         - name: "issueList"
