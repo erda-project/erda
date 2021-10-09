@@ -31,8 +31,8 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/micro_service/:addon/logs/statistic/histogram", p.logStatistic)
 	routes.GET("/api/micro_service/:addon/logs/search", p.logSearch)
 	routes.GET("/api/micro_service/logs/tags/tree", p.logMSTagsTree)
-	routes.GET("/api/micro_service/logs/fields", p.logFields)
-	routes.GET("/api/micro_service/logs/fields/aggregation", p.logFieldsAggregation)
+	routes.GET("/api/micro_service/:addon/logs/fields", p.logFields)
+	routes.GET("/api/micro_service/:addon/logs/fields/aggregation", p.logFieldsAggregation)
 	routes.GET("/api/micro_service/:addon/logs/download", p.logDownload)
 
 	// 企业日志查询
