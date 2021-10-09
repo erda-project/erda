@@ -55,9 +55,10 @@ type Provider interface {
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
-	p.Metrics = &metrics.Metric{Metricq: p.Server}
+	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
-	return p.initialize(ctx)
+	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
+	return p.initialize(ctxNew)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

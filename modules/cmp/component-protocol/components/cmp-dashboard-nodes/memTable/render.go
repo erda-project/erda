@@ -112,82 +112,91 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	return nil
 }
 
-func (mt *MemInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*table.RowItem, error) {
+func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
 		distribution, dr, usage table.DistributionValue
-		resp                    []metrics.MetricsData
+		resp                    map[string]*metrics.MetricsData
+		items                   []table.RowItem
 	)
-	if status, err = mt.GetItemStatus(c); err != nil {
-		return nil, err
-	}
 	req := &metrics.MetricsRequest{
-		ClusterName:  mt.SDK.InParams["clusterName"].(string),
-		NodeRequests: []metrics.MetricsNodeRequest{{IP: c.StringSlice("metadata", "fields")[5]}},
-		ResourceType: metrics.Memory,
-		ResourceKind: metrics.Node,
-		OrgID:        mt.SDK.Identity.OrgID,
-		UserID:       mt.SDK.Identity.UserID,
+		Cluster: mt.SDK.InParams["clusterName"].(string),
+		Type:    metrics.Memory,
+		Kind:    metrics.Node,
+	}
+	for _, node := range nodes {
+		req.NodeRequests = append(req.NodeRequests, metrics.MetricsNodeRequest{
+			MetricsRequest: req,
+			Ip:             node.StringSlice("metadata", "fields")[5],
+		})
 	}
 	if resp, err = mServer.NodeMetrics(mt.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
-		resp = make([]metrics.MetricsData, 1)
+		resp = make(map[string]*metrics.MetricsData)
 	}
-	limitStr := c.Map("extra", "parsedResource", "capacity").String("Memory")
-	limitQuantity, _ := resource.ParseQuantity(limitStr)
-	requestStr := c.Map("extra", "parsedResource", "allocated").String("Memory")
-	requestQuantity, _ := resource.ParseQuantity(requestStr)
-	resp[0].Total = float64(limitQuantity.Value())
-	resp[0].Request = float64(requestQuantity.Value())
-	distribution = mt.GetDistributionValue(resp[0], table.Memory)
-	usage = mt.GetUsageValue(resp[0], table.Memory)
-	dr = mt.GetUnusedRate(resp[0], table.Memory)
-	role := c.StringSlice("metadata", "fields")[2]
-	ip := c.StringSlice("metadata", "fields")[5]
-	if role == "<none>" {
-		role = "worker"
-	}
-	batchOperations := make([]string, 0)
-	if !strings.Contains(role, "master") {
-		if strings.Contains(status.Value, mt.SDK.I18n("SchedulingDisabled")) {
-			batchOperations = []string{"uncordon"}
-		} else {
-			batchOperations = []string{"cordon"}
+	for i, c := range nodes {
+		if status, err = mt.GetItemStatus(c); err != nil {
+			return nil, err
 		}
+
+		limitStr := c.Map("extra", "parsedResource", "capacity").String("Memory")
+		limitQuantity, _ := resource.ParseQuantity(limitStr)
+		requestStr := c.Map("extra", "parsedResource", "allocated").String("Memory")
+		requestQuantity, _ := resource.ParseQuantity(requestStr)
+		key := req.NodeRequests[i].CacheKey()
+		resp[key].Total = float64(limitQuantity.Value())
+		resp[key].Request = float64(requestQuantity.Value())
+		distribution = mt.GetDistributionValue(resp[key], table.Memory)
+		usage = mt.GetUsageValue(resp[key], table.Memory)
+		dr = mt.GetUnusedRate(resp[key], table.Memory)
+		role := c.StringSlice("metadata", "fields")[2]
+		ip := c.StringSlice("metadata", "fields")[5]
+		if role == "<none>" {
+			role = "worker"
+		}
+		batchOperations := make([]string, 0)
+		if !strings.Contains(role, "master") {
+			if strings.Contains(status.Value, mt.SDK.I18n("SchedulingDisabled")) {
+				batchOperations = []string{"uncordon"}
+			} else {
+				batchOperations = []string{"cordon"}
+			}
+		}
+		items = append(items, table.RowItem{
+			ID:      c.String("metadata", "name"),
+			IP:      ip,
+			Version: c.String("status", "nodeInfo", "kubeletVersion"),
+			Role:    role,
+			Node: table.Node{
+				RenderType: "multiple",
+				Renders:    mt.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
+			},
+			Status: *status,
+			Distribution: table.Distribution{
+				RenderType: "progress",
+				Value:      distribution.Percent,
+				Status:     table.GetDistributionStatus(distribution.Percent),
+				Tip:        distribution.Text,
+			},
+			Usage: table.Distribution{
+				RenderType: "progress",
+				Value:      usage.Percent,
+				Status:     table.GetDistributionStatus(usage.Percent),
+				Tip:        usage.Text,
+			},
+			UnusedRate: table.Distribution{
+				RenderType: "progress",
+				Value:      dr.Percent,
+				Status:     table.GetDistributionStatus(dr.Percent),
+				Tip:        dr.Text,
+			},
+			Operate:         mt.GetOperate(c.String("metadata", "name")),
+			BatchOperations: batchOperations,
+		},
+		)
 	}
-	ri := &table.RowItem{
-		ID:      c.String("metadata", "name"),
-		IP:      ip,
-		Version: c.String("status", "nodeInfo", "kubeletVersion"),
-		Role:    role,
-		Node: table.Node{
-			RenderType: "multiple",
-			Renders:    mt.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
-		},
-		Status: *status,
-		Distribution: table.Distribution{
-			RenderType: "progress",
-			Value:      distribution.Percent,
-			Status:     table.GetDistributionStatus(distribution.Percent),
-			Tip:        distribution.Text,
-		},
-		Usage: table.Distribution{
-			RenderType: "progress",
-			Value:      usage.Percent,
-			Status:     table.GetDistributionStatus(usage.Percent),
-			Tip:        usage.Text,
-		},
-		UnusedRate: table.Distribution{
-			RenderType: "progress",
-			Value:      dr.Percent,
-			Status:     table.GetDistributionStatus(dr.Percent),
-			Tip:        dr.Text,
-		},
-		Operate:         mt.GetOperate(c.String("metadata", "name")),
-		BatchOperations: batchOperations,
-	}
-	return ri, nil
+	return items, nil
 }
 
 func (mt *MemInfoTable) getProps() {

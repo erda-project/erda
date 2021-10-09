@@ -319,7 +319,7 @@ func (s *store) Delete(_ *types.APIRequest, _ *types.APISchema, _ string) (types
 
 func TestCacheStoreMethods(t *testing.T) {
 	ctx := context.Background()
-	cache, err := cache.New(256<<10, 256)
+	cache, err := cache.New(256<<20, 256*1024)
 	if err != nil {
 		t.Error(err)
 	}
