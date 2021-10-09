@@ -338,7 +338,7 @@
         "title": "load rate5",
         "i18n": {
           "title": {
-            "zh": "磁盘5分钟平均负载",
+            "zh": "系统5分钟平均负载",
             "en": "load rate5"
           }
         },
