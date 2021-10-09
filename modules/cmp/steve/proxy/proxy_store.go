@@ -65,7 +65,7 @@ func NewProxyStore(ctx context.Context, clusterName string, clientGetter proxy.C
 			},
 			ctx:         ctx,
 			asl:         asl,
-			cache:       cache.FreeCache,
+			cache:       cache.GetFreeCache(),
 			clusterName: clusterName,
 		},
 	}

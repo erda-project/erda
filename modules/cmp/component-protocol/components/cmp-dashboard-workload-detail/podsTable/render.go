@@ -200,19 +200,19 @@ func (p *ComponentPodsTable) RenderTable() error {
 		return err
 	}
 
-	cpuReq := metrics.MetricsRequest{
-		UserID:       userID,
-		OrgID:        orgID,
-		ClusterName:  p.State.ClusterName,
-		ResourceKind: metrics.Pod,
-		ResourceType: metrics.Cpu,
+	cpuReq := &metrics.MetricsRequest{
+		UserId:  userID,
+		OrgId:   orgID,
+		Cluster: p.State.ClusterName,
+		Kind:    metrics.Pod,
+		Type:    metrics.Cpu,
 	}
-	memReq := metrics.MetricsRequest{
-		UserID:       userID,
-		OrgID:        orgID,
-		ClusterName:  p.State.ClusterName,
-		ResourceKind: metrics.Pod,
-		ResourceType: metrics.Memory,
+	memReq := &metrics.MetricsRequest{
+		UserId:  userID,
+		OrgId:   orgID,
+		Cluster: p.State.ClusterName,
+		Kind:    metrics.Pod,
+		Type:    metrics.Memory,
 	}
 
 	tempCPULimits := make([]*resource.Quantity, 0)
@@ -239,12 +239,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
 		cpuReq.PodRequests = append(cpuReq.PodRequests, metrics.MetricsPodRequest{
-			PodName:   name,
-			Namespace: namespace,
+			MetricsRequest: cpuReq,
+			Name:           name,
+			PodNamespace:   namespace,
 		})
 		memReq.PodRequests = append(memReq.PodRequests, metrics.MetricsPodRequest{
-			PodName:   name,
-			Namespace: namespace,
+			MetricsRequest: memReq,
+			Name:           name,
+			PodNamespace:   namespace,
 		})
 
 		fields := obj.StringSlice("metadata", "fields")
@@ -328,15 +330,15 @@ func (p *ComponentPodsTable) RenderTable() error {
 		})
 	}
 
-	cpuMetrics, err := mServer.PodMetrics(p.ctx, &cpuReq)
+	cpuMetrics, err := mServer.PodMetrics(p.ctx, cpuReq)
 	if err != nil || len(cpuMetrics) == 0 {
 		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
-		cpuMetrics = make([]metrics.MetricsData, len(items), len(items))
+		cpuMetrics = make(map[string]*metrics.MetricsData)
 	}
-	memMetrics, err := mServer.PodMetrics(p.ctx, &memReq)
+	memMetrics, err := mServer.PodMetrics(p.ctx, memReq)
 	if err != nil || len(memMetrics) == 0 {
 		logrus.Errorf("failed to get mem metrics for pods, %v", err)
-		memMetrics = make([]metrics.MetricsData, len(items), len(items))
+		memMetrics = make(map[string]*metrics.MetricsData)
 	}
 
 	for i := range items {
@@ -344,7 +346,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		memLimits := tempMemLimits[i]
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[i].Used
+		usedCPUPercent := cpuMetrics[cpuReq.PodRequests[i].CacheKey()].Used
 		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		items[i].CPUPercent = Percent{
 			RenderType: "progress",
@@ -354,7 +356,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[i].Used
+		usedMemPercent := memMetrics[cpuReq.PodRequests[i].CacheKey()].Used
 		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		items[i].MemoryPercent = Percent{
 			RenderType: "progress",

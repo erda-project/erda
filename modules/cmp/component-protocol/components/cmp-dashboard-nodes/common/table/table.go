@@ -192,10 +192,10 @@ type LabelsValue struct {
 }
 
 type GetRowItem interface {
-	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
+	GetRowItems(c []data.Object, resName TableType) ([]RowItem, error)
 }
 
-func (t *Table) GetUsageValue(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetUsageValue(metricsData *metrics.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
 		Text:    t.GetScaleValue(metricsData.Used, metricsData.Total, resourceType),
 		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
@@ -239,14 +239,14 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	return ss, nil
 }
 
-func (t *Table) GetDistributionValue(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetDistributionValue(metricsData *metrics.MetricsData, resourceType TableType) DistributionValue {
 	return DistributionValue{
 		Text:    t.GetScaleValue(metricsData.Request, metricsData.Total, resourceType),
 		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
 	}
 }
 
-func (t *Table) GetUnusedRate(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetUnusedRate(metricsData *metrics.MetricsData, resourceType TableType) DistributionValue {
 	unused := math.Max(metricsData.Request-metricsData.Used, 0.0)
 	return DistributionValue{
 		Text:    t.GetScaleValue(unused, metricsData.Request, resourceType),
@@ -309,7 +309,7 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 	//}
 	if t.State.Sorter.Field != "" {
 		sortColumn = t.State.Sorter.Field
-		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
+		asc = strings.ToLower(t.State.Sorter.Order) == "asc"
 	}
 
 	if items, err = t.SetData(nodes, tableType); err != nil {
@@ -343,18 +343,7 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 
 // SetData assemble rowItem of table
 func (t *Table) SetData(nodes []data.Object, tableType TableType) ([]RowItem, error) {
-	var (
-		list []RowItem
-		ri   *RowItem
-		err  error
-	)
-	for i := 0; i < len(nodes); i++ {
-		if ri, err = t.TableComponent.GetRowItem(nodes[i], tableType); err != nil {
-			return nil, err
-		}
-		list = append(list, *ri)
-	}
-	return list, nil
+	return t.TableComponent.GetRowItems(nodes, tableType)
 }
 
 func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]data.Object, error) {
@@ -604,11 +593,11 @@ func (t *Table) GetOperate(id string) Operate {
 }
 
 // SortByString sort by string value
-func SortByString(data []RowItem, sortColumn string, ascend bool) {
+func SortByString(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
-		if ascend {
+		if asc {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
@@ -616,9 +605,9 @@ func SortByString(data []RowItem, sortColumn string, ascend bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, ascend bool) {
+func SortByNode(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if ascend {
+		if asc {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -626,13 +615,13 @@ func SortByNode(data []RowItem, _ string, ascend bool) {
 }
 
 // SortByDistribution sort by percent
-func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
+func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
-		if ascend {
+		if asc {
 			return aValue < bValue
 		}
 		return aValue > bValue
