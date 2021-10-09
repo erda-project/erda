@@ -21,35 +21,19 @@ import (
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-type CodeCoverageExecStatus string
-
-const (
-	RunningStatus CodeCoverageExecStatus = "running"
-	ReadyStatus   CodeCoverageExecStatus = "ready"
-	EndingStatus  CodeCoverageExecStatus = "ending"
-	SuccessStatus CodeCoverageExecStatus = "success"
-	FailStatus    CodeCoverageExecStatus = "fail"
-)
-
-var WorkingStatus = []CodeCoverageExecStatus{RunningStatus, ReadyStatus, EndingStatus}
-
-func (c CodeCoverageExecStatus) String() string {
-	return string(c)
-}
-
 type CodeCoverageExecRecord struct {
 	dbengine.BaseModel
 
-	ProjectID     uint64                 `json:"project_id"`
-	Status        CodeCoverageExecStatus `json:"status"`
-	Msg           string                 `json:"msg"`
-	Coverage      float64                `json:"coverage"`
-	ReportUrl     string                 `json:"report_url"`
-	ReportContent string                 `json:"report_content"`
-	StartExecutor string                 `json:"start_executor"`
-	EndExecutor   string                 `json:"end_executor"`
-	TimeBegin     *time.Time             `json:"time_begin"`
-	TimeEnd       *time.Time             `json:"time_end"`
+	ProjectID     uint64                            `json:"project_id"`
+	Status        apistructs.CodeCoverageExecStatus `json:"status"`
+	Msg           string                            `json:"msg"`
+	Coverage      float64                           `json:"coverage"`
+	ReportUrl     string                            `json:"report_url"`
+	ReportContent []*apistructs.CodeCoverageNode                           `json:"report_content"`
+	StartExecutor string                            `json:"start_executor"`
+	EndExecutor   string                            `json:"end_executor"`
+	TimeBegin     *time.Time                        `json:"time_begin"`
+	TimeEnd       *time.Time                        `json:"time_end"`
 }
 
 func (CodeCoverageExecRecord) TableName() string {
@@ -77,15 +61,15 @@ func (c *CodeCoverageExecRecord) Covert() *apistructs.CodeCoverageExecRecordDto 
 type CodeCoverageExecRecordShort struct {
 	dbengine.BaseModel
 
-	ProjectID     uint64                 `json:"project_id"`
-	Status        CodeCoverageExecStatus `json:"status"`
-	Msg           string                 `json:"msg"`
-	Coverage      float64                `json:"coverage"`
-	ReportUrl     string                 `json:"report_url"`
-	StartExecutor string                 `json:"start_executor"`
-	EndExecutor   string                 `json:"end_executor"`
-	TimeBegin     *time.Time             `json:"time_begin"`
-	TimeEnd       *time.Time             `json:"time_end"`
+	ProjectID     uint64                            `json:"project_id"`
+	Status        apistructs.CodeCoverageExecStatus `json:"status"`
+	Msg           string                            `json:"msg"`
+	Coverage      float64                           `json:"coverage"`
+	ReportUrl     string                            `json:"report_url"`
+	StartExecutor string                            `json:"start_executor"`
+	EndExecutor   string                            `json:"end_executor"`
+	TimeBegin     *time.Time                        `json:"time_begin"`
+	TimeEnd       *time.Time                        `json:"time_end"`
 }
 
 func (CodeCoverageExecRecordShort) TableName() string {

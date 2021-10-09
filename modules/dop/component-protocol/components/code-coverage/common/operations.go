@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package head
+package common
 
-import (
-	"context"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+import "github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
+const (
+	CoverChartSelectItemOperationKey cptype.OperationKey = "selectChartItem"
 )
-
-type ComponentAction struct {
-}
-
-func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-
-	return nil
-}

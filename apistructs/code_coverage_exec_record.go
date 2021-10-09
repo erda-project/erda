@@ -21,6 +21,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+type CodeCoverageExecStatus string
+
+const (
+	RunningStatus CodeCoverageExecStatus = "running"
+	ReadyStatus   CodeCoverageExecStatus = "ready"
+	EndingStatus  CodeCoverageExecStatus = "ending"
+	SuccessStatus CodeCoverageExecStatus = "success"
+	FailStatus    CodeCoverageExecStatus = "fail"
+)
+
+var WorkingStatus = []CodeCoverageExecStatus{RunningStatus, ReadyStatus, EndingStatus}
+
+func (c CodeCoverageExecStatus) String() string {
+	return string(c)
+}
+
 type CodeCoverageStartRequest struct {
 	IdentityInfo
 
@@ -54,9 +70,10 @@ func (req *CodeCoverageUpdateRequest) Validate() error {
 type CodeCoverageListRequest struct {
 	IdentityInfo
 
-	ProjectID uint64 `json:"projectID"`
-	PageNo    uint64 `json:"pageNo"`
-	PageSize  uint64 `json:"pageSize"`
+	ProjectID uint64                   `json:"projectID"`
+	PageNo    uint64                   `json:"pageNo"`
+	PageSize  uint64                   `json:"pageSize"`
+	Statuses  []CodeCoverageExecStatus `json:"statuses"`
 }
 
 func (req *CodeCoverageListRequest) Validate() error {
@@ -84,17 +101,24 @@ type CodeCoverageExecRecordData struct {
 }
 
 type CodeCoverageExecRecordDto struct {
-	ID            uint64     `json:"id"`
-	ProjectID     uint64     `json:"projectID"`
-	Status        string     `json:"status"`
-	Msg           string     `json:"msg"`
-	Coverage      float64    `json:"coverage"`
-	ReportUrl     string     `json:"reportUrl"`
-	ReportContent string     `json:"reportContent"`
-	StartExecutor string     `json:"startExecutor"`
-	EndExecutor   string     `json:"endExecutor"`
-	TimeBegin     *time.Time `json:"timeBegin"`
-	TimeEnd       *time.Time `json:"timeEnd"`
-	TimeCreated   time.Time  `json:"timeCreated"`
-	TimeUpdated   time.Time  `json:"timeUpdated"`
+	ID            uint64              `json:"id"`
+	ProjectID     uint64              `json:"projectID"`
+	Status        string              `json:"status"`
+	Msg           string              `json:"msg"`
+	Coverage      float64             `json:"coverage"`
+	ReportUrl     string              `json:"reportUrl"`
+	ReportContent []*CodeCoverageNode `json:"reportContent"`
+	StartExecutor string              `json:"startExecutor"`
+	EndExecutor   string              `json:"endExecutor"`
+	TimeBegin     *time.Time          `json:"timeBegin"`
+	TimeEnd       *time.Time          `json:"timeEnd"`
+	TimeCreated   time.Time           `json:"timeCreated"`
+	TimeUpdated   time.Time           `json:"timeUpdated"`
+}
+
+type CodeCoverageNode struct {
+	Value []float64           `json:"value"`
+	Name  string              `json:"name"`
+	Path  string              `json:"path"`
+	Nodes []*CodeCoverageNode `json:"children"`
 }

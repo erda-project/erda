@@ -15,6 +15,7 @@
 package code_coverage
 
 import (
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -57,7 +58,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 	now := time.Now()
 	record := dao.CodeCoverageExecRecord{
 		ProjectID:     req.ProjectID,
-		Status:        dao.RunningStatus,
+		Status:        apistructs.RunningStatus,
 		TimeBegin:     &now,
 		StartExecutor: req.UserID,
 	}
@@ -77,10 +78,10 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
 		return err
 	}
-	if record.Status != dao.ReadyStatus {
+	if record.Status != apistructs.ReadyStatus {
 		return errors.New("the pre status is not ready")
 	}
-	record.Status = dao.EndingStatus
+	record.Status = apistructs.EndingStatus
 	now := time.Now()
 	record.TimeEnd = &now
 	record.EndExecutor = req.UserID
@@ -100,12 +101,12 @@ func (svc *CodeCoverage) ReadyCallBack(req apistructs.CodeCoverageUpdateRequest)
 	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
 		return err
 	}
-	status := dao.CodeCoverageExecStatus(req.Status)
-	if status != dao.ReadyStatus {
+	status := apistructs.CodeCoverageExecStatus(req.Status)
+	if status != apistructs.ReadyStatus {
 		return errors.New("the status is not ready")
 	}
 
-	if record.Status != dao.RunningStatus {
+	if record.Status != apistructs.RunningStatus {
 		return errors.New("the pre status is not running")
 	}
 	record.Status = status
@@ -120,8 +121,8 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
 		return err
 	}
-	status := dao.CodeCoverageExecStatus(req.Status)
-	if status != dao.FailStatus && status != dao.SuccessStatus {
+	status := apistructs.CodeCoverageExecStatus(req.Status)
+	if status != apistructs.FailStatus && status != apistructs.SuccessStatus {
 		return errors.New("the status is not fail or success")
 	}
 
@@ -173,10 +174,16 @@ func (svc *CodeCoverage) ListCodeCoverageRecord(req apistructs.CodeCoverageListR
 		list    []apistructs.CodeCoverageExecRecordDto
 		total   uint64
 	)
+
 	offset := (req.PageNo - 1) * req.PageSize
-	err = svc.db.Model(&dao.CodeCoverageExecRecordShort{}).
-		Where("project_id = ?", req.ProjectID).
-		Order("id DESC").
+	db := svc.db.Model(&dao.CodeCoverageExecRecordShort{}).
+		Where("project_id = ?", req.ProjectID)
+
+	if req.Statuses != nil {
+		db = db.Where("status in ?", req.Statuses)
+	}
+
+	err = db.Order("id DESC").
 		Offset(offset).Limit(req.PageSize).
 		Find(&records).
 		Offset(0).Limit(-1).Count(&total).Error
@@ -204,11 +211,23 @@ func (svc *CodeCoverage) GetCodeCoverageRecord(id uint64) (*apistructs.CodeCover
 // JudgeRunningRecordExist Judge running record exist
 func (svc *CodeCoverage) JudgeRunningRecordExist(projectID uint64) error {
 	var records []dao.CodeCoverageExecRecord
-	if err := svc.db.Where("project_id = ?", projectID).Where("status IN (?)", dao.WorkingStatus).Find(&records).Error; err != nil {
+	if err := svc.db.Where("project_id = ?", projectID).Where("status IN (?)", apistructs.WorkingStatus).Find(&records).Error; err != nil {
 		return err
 	}
 	if len(records) > 0 {
 		return errors.New("there is already running record")
 	}
 	return nil
+}
+
+func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
+	var records []dao.CodeCoverageExecRecord
+	if err := svc.db.Where("project_id = ?", projectID).Where("status IN (?)", apistructs.ReadyStatus).Find(&records).Error; err != nil {
+		return false, err
+	}
+	if len(records) > 0 {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("not find ready status record")
 }
