@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/cdp"
 	"github.com/erda-project/erda/modules/dop/services/certificate"
+	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
@@ -474,7 +475,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// issue 管理
 		{Path: "/api/issues", Method: http.MethodPost, Handler: e.CreateIssue},
-		{Path: "/api/issues", Method: http.MethodGet, Handler: e.PagingIssues},
+		{Path: "z", Method: http.MethodGet, Handler: e.PagingIssues},
 		{Path: "/api/issues/{id}", Method: http.MethodGet, Handler: e.GetIssue},
 		{Path: "/api/issues/{id}", Method: http.MethodPut, Handler: e.UpdateIssue},
 		{Path: "/api/issues/{id}", Method: http.MethodDelete, Handler: e.DeleteIssue},
@@ -575,6 +576,15 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/actions/get-nexus-docker-credential-by-image", Method: http.MethodGet, Handler: e.GetNexusOrgDockerCredentialByImage},
 		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodPost, Handler: e.CreateOrgPublisher},
 		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodGet, Handler: e.CreateOrgPublisher},
+
+		// code coverage
+		{Path: "/api/code-coverage/actions/start", Method: http.MethodPost, Handler: e.StartCodeCoverage},
+		{Path: "/api/code-coverage/actions/end", Method: http.MethodPost, Handler: e.EndCodeCoverage},
+		{Path: "/api/code-coverage/actions/ready-callBack", Method: http.MethodPost, Handler: e.ReadyCallBack},
+		{Path: "/api/code-coverage/actions/end-callBack", Method: http.MethodPost, Handler: e.EndCallBack},
+		{Path: "/api/code-coverage/records/actions/list", Method: http.MethodGet, Handler: e.ListCodeCoverageRecord},
+		{Path: "/api/code-coverage/record/{id}", Method: http.MethodGet, Handler: e.GetCodeCoverageRecord},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -630,28 +640,29 @@ type Endpoints struct {
 	sceneset        *sceneset.Service
 	migrate         *migrate.Service
 
-	store          jsonstore.JsonStore
-	ossClient      *oss.Client
-	etcdStore      *etcd.Store
-	ticket         *ticket.Ticket
-	comment        *comment.Comment
-	branchRule     *branchrule.BranchRule
-	namespace      *namespace.Namespace
-	envConfig      *environment.EnvConfig
-	issue          *issue.Issue
-	issueStream    *issuestream.IssueStream
-	issueRelated   *issuerelated.IssueRelated
-	issueProperty  *issueproperty.IssueProperty
-	issueState     *issuestate.IssueState
-	issuePanel     *issuepanel.IssuePanel
-	workBench      *workbench.Workbench
-	uc             *ucauth.UCClient
-	iteration      *iteration.Iteration
-	publisher      *publisher.Publisher
-	certificate    *certificate.Certificate
-	appCertificate *appcertificate.AppCertificate
-	libReference   *libreference.LibReference
-	org            *org.Org
+	store           jsonstore.JsonStore
+	ossClient       *oss.Client
+	etcdStore       *etcd.Store
+	ticket          *ticket.Ticket
+	comment         *comment.Comment
+	branchRule      *branchrule.BranchRule
+	namespace       *namespace.Namespace
+	envConfig       *environment.EnvConfig
+	issue           *issue.Issue
+	issueStream     *issuestream.IssueStream
+	issueRelated    *issuerelated.IssueRelated
+	issueProperty   *issueproperty.IssueProperty
+	issueState      *issuestate.IssueState
+	issuePanel      *issuepanel.IssuePanel
+	workBench       *workbench.Workbench
+	uc              *ucauth.UCClient
+	iteration       *iteration.Iteration
+	publisher       *publisher.Publisher
+	certificate     *certificate.Certificate
+	appCertificate  *appcertificate.AppCertificate
+	libReference    *libreference.LibReference
+	org             *org.Org
+	codeCoverageSvc *code_coverage.CodeCoverage
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -986,6 +997,12 @@ func WithLibReference(libReference *libreference.LibReference) Option {
 func WithOrg(org *org.Org) Option {
 	return func(e *Endpoints) {
 		e.org = org
+	}
+}
+
+func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
+	return func(e *Endpoints) {
+		e.codeCoverageSvc = svc
 	}
 }
 

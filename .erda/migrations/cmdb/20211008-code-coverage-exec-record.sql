@@ -3,6 +3,7 @@ CREATE TABLE `dice_code_coverage_exec_record`
     `id`             bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
     `project_id`     bigint(20) NOT NULL COMMENT '项目ID',
     `status`         varchar(128) NOT NULL COMMENT 'running,ready,ending,success,fail',
+    `msg`            varchar(255)   DEFAULT NULL COMMENT '错误信息',
     `coverage`       decimal(65, 2) DEFAULT NULL COMMENT '行覆盖率',
     `report_url`     varchar(255)   DEFAULT NULL COMMENT '报告下载地址',
     `report_content` text COMMENT '报告分析内容',

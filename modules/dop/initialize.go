@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/cdp"
 	"github.com/erda-project/erda/modules/dop/services/certificate"
+	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
@@ -475,6 +476,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		org.WithNexusSvc(nexusSvc),
 	)
 
+	codeCvc := code_coverage.New(
+		code_coverage.WithDBClient(db),
+		code_coverage.WithBundle(bdl.Bdl),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -529,6 +535,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithAppCertificate(appCer),
 		endpoints.WithLibReference(libReference),
 		endpoints.WithOrg(o),
+		endpoints.WithCodeCoverageExecRecord(codeCvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)
