@@ -1,11 +1,12 @@
 package code_coverage
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"log"
 	"strconv"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 type CounterType string
@@ -51,13 +52,6 @@ func (c CounterType) GetValueIdx() int {
 	default:
 		return LineIdx
 	}
-}
-
-type Node struct {
-	Value []float64 `json:"value"`
-	Name  string    `json:"name"`
-	Path  string    `json:"path"`
-	Nodes []*Node   `json:"children"`
 }
 
 type Report struct {
@@ -106,7 +100,7 @@ func decimal(value float64) float64 {
 	return value
 }
 
-func setNodeValue(root *Node, counters []Counter) {
+func setNodeValue(root *apistructs.CodeCoverageNode, counters []Counter) {
 	root.Value = make([]float64, 7)
 	for _, c := range counters {
 		v := float64(c.Missed + c.Covered)
@@ -120,25 +114,25 @@ func setNodeValue(root *Node, counters []Counter) {
 	}
 }
 
-func convertReportToTree(r Report) (*Node, float64) {
-	var root = &Node{}
+func convertReportToTree(r Report) ([]*apistructs.CodeCoverageNode, float64) {
+	var root = &apistructs.CodeCoverageNode{}
 	if r.Packages == nil {
-		return root, 0
+		return []*apistructs.CodeCoverageNode{}, 0
 	}
 	setNodeValue(root, r.Counters)
 	coverage := root.Value[LinePercentIdx]
 	for _, p := range r.Packages {
-		pNode := &Node{}
+		pNode := &apistructs.CodeCoverageNode{}
 		setNodeValue(pNode, p.Counters)
 		pNode.Name = p.Name
 		pNode.Path = p.Name
 		for _, c := range p.Classes {
-			cNode := &Node{}
+			cNode := &apistructs.CodeCoverageNode{}
 			setNodeValue(cNode, c.Counters)
 			cNode.Name = c.Name
 			cNode.Path = c.Name
 			for _, m := range c.Methods {
-				mNode := &Node{}
+				mNode := &apistructs.CodeCoverageNode{}
 				mNode.Name = m.Name
 				mNode.Path = fmt.Sprintf("%s/%s", c.Name, m.Name)
 				setNodeValue(mNode, m.Counters)
@@ -148,16 +142,15 @@ func convertReportToTree(r Report) (*Node, float64) {
 		}
 		root.Nodes = append(root.Nodes, pNode)
 	}
-	return root, coverage
+	return []*apistructs.CodeCoverageNode{root}, coverage
 }
 
-func getAnalyzeJson(data []byte) (string, float64) {
+func getAnalyzeJson(data []byte) ([]*apistructs.CodeCoverageNode, float64) {
 	report, err := convertXmlToReport(data)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	root, coverage := convertReportToTree(report)
-	b, _ := json.Marshal(root)
-	return string(b), coverage
+	return root, coverage
 }

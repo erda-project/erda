@@ -84,17 +84,24 @@ type CodeCoverageExecRecordData struct {
 }
 
 type CodeCoverageExecRecordDto struct {
-	ID            uint64     `json:"id"`
-	ProjectID     uint64     `json:"projectID"`
-	Status        string     `json:"status"`
-	Msg           string     `json:"msg"`
-	Coverage      float64    `json:"coverage"`
-	ReportUrl     string     `json:"reportUrl"`
-	ReportContent string     `json:"reportContent"`
-	StartExecutor string     `json:"startExecutor"`
-	EndExecutor   string     `json:"endExecutor"`
-	TimeBegin     *time.Time `json:"timeBegin"`
-	TimeEnd       *time.Time `json:"timeEnd"`
-	TimeCreated   time.Time  `json:"timeCreated"`
-	TimeUpdated   time.Time  `json:"timeUpdated"`
+	ID            uint64              `json:"id"`
+	ProjectID     uint64              `json:"projectID"`
+	Status        string              `json:"status"`
+	Msg           string              `json:"msg"`
+	Coverage      float64             `json:"coverage"`
+	ReportUrl     string              `json:"reportUrl"`
+	ReportContent []*CodeCoverageNode `json:"reportContent"`
+	StartExecutor string              `json:"startExecutor"`
+	EndExecutor   string              `json:"endExecutor"`
+	TimeBegin     *time.Time          `json:"timeBegin"`
+	TimeEnd       *time.Time          `json:"timeEnd"`
+	TimeCreated   time.Time           `json:"timeCreated"`
+	TimeUpdated   time.Time           `json:"timeUpdated"`
+}
+
+type CodeCoverageNode struct {
+	Value []float64           `json:"value"`
+	Name  string              `json:"name"`
+	Path  string              `json:"path"`
+	Nodes []*CodeCoverageNode `json:"children"`
 }

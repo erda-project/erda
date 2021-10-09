@@ -40,16 +40,16 @@ func (c CodeCoverageExecStatus) String() string {
 type CodeCoverageExecRecord struct {
 	dbengine.BaseModel
 
-	ProjectID     uint64                 `json:"project_id"`
-	Status        CodeCoverageExecStatus `json:"status"`
-	Msg           string                 `json:"msg"`
-	Coverage      float64                `json:"coverage"`
-	ReportUrl     string                 `json:"report_url"`
-	ReportContent string                 `json:"report_content"`
-	StartExecutor string                 `json:"start_executor"`
-	EndExecutor   string                 `json:"end_executor"`
-	TimeBegin     *time.Time             `json:"time_begin"`
-	TimeEnd       *time.Time             `json:"time_end"`
+	ProjectID     uint64                         `json:"project_id"`
+	Status        CodeCoverageExecStatus         `json:"status"`
+	Msg           string                         `json:"msg"`
+	Coverage      float64                        `json:"coverage"`
+	ReportUrl     string                         `json:"report_url"`
+	ReportContent []*apistructs.CodeCoverageNode `json:"report_content"`
+	StartExecutor string                         `json:"start_executor"`
+	EndExecutor   string                         `json:"end_executor"`
+	TimeBegin     *time.Time                     `json:"time_begin"`
+	TimeEnd       *time.Time                     `json:"time_end"`
 }
 
 func (CodeCoverageExecRecord) TableName() string {
