@@ -171,7 +171,7 @@ func (e *Endpoints) ListCodeCoverageRecord(ctx context.Context, r *http.Request,
 
 	// check permission
 
-	data, err := e.codeCoverageSvc.ListCodeCoverageRecode(req)
+	data, err := e.codeCoverageSvc.ListCodeCoverageRecord(req)
 	if err != nil {
 		return apierrors.ErrListCodeCoverageExecRecord.InternalError(err).ToResp(), nil
 	}

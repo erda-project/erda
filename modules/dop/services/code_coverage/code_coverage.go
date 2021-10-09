@@ -166,8 +166,8 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	return svc.db.Save(&record).Error
 }
 
-// ListCodeCoverageRecode list code coverage record
-func (svc *CodeCoverage) ListCodeCoverageRecode(req apistructs.CodeCoverageListRequest) (data apistructs.CodeCoverageExecRecordData, err error) {
+// ListCodeCoverageRecord list code coverage record
+func (svc *CodeCoverage) ListCodeCoverageRecord(req apistructs.CodeCoverageListRequest) (data apistructs.CodeCoverageExecRecordData, err error) {
 	var (
 		records []dao.CodeCoverageExecRecordShort
 		list    []apistructs.CodeCoverageExecRecordDto

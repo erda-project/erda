@@ -16,13 +16,243 @@ package head
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 )
 
 type ComponentAction struct {
+	CodeCoverageSvc *code_coverage.CodeCoverage `json:"-"`
+	Type            string                      `json:"type"`
+	Data            Data                        `json:"data"`
+	Props           string                      `json:"props"`
+	State           *State                      `json:"state"`
+	Operations      Operations                  `json:"operations"`
+}
+
+type Data struct {
+	List []ExecuteHistory `json:"list"`
+}
+
+type ExecuteHistory struct {
+	ID        uint64    `json:"id"`
+	Status    Status    `json:"status"`
+	Starter   string    `json:"starter"`
+	StartTime string    `json:"startTime"`
+	Ender     string    `json:"ender"`
+	EndTime   string    `json:"endTime"`
+	CoverRate CoverRate `json:"coverRate"`
+	Operate   Operate   `json:"operate"`
+}
+
+type Status struct {
+	RenderType string `json:"renderType"`
+	Value      string `json:"value"`
+	Status     string `json:"status"`
+}
+
+type CoverRate struct {
+	RenderType string `json:"renderType"`
+	Value      string `json:"value"`
+	Tip        string `json:"tip"`
+	Status     string `json:"status"`
+}
+
+type Operate struct {
+	Operations struct {
+		Download Download `json:"download"`
+	} `json:"operations"`
+	RenderType string `json:"renderType"`
+}
+
+type Download struct {
+	Command  Command `json:"command"`
+	Confirm  string  `json:"confirm"`
+	Key      string  `json:"key"`
+	Reload   bool    `json:"reload"`
+	Text     string  `json:"text"`
+	Disabled bool    `json:"disabled"`
+}
+
+type Command struct {
+	JumpOut bool   `json:"jumpOut"`
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+}
+
+type Operations struct {
+	ChangePageNo ChangePageNo `json:"changePageNo"`
+}
+
+type ChangePageNo struct {
+	Key    string `json:"key"`
+	Reload bool   `json:"reload"`
+}
+
+type State struct {
+	PageNo   uint64 `json:"pageNo"`
+	PageSize uint64 `json:"pageSize"`
+	Total    uint64 `json:"total"`
+}
+
+var statusMap = map[string]string{
+	"running": "进行中",
+	"ready":   "准备中",
+	"ending":  "结束中",
+	"success": "成功",
+	"fail":    "失败",
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 
+	ca.CodeCoverageSvc = ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
+
+	if err := ca.SetState(c); err != nil {
+		return err
+	}
+
+	if err := ca.setData(ctx); err != nil {
+		return err
+	}
+
+	ca.SetOperations()
 	return nil
+}
+
+func (ca *ComponentAction) setData(ctx context.Context) error {
+	sdk := cputil.SDK(ctx)
+	projectIDStr := sdk.InParams["projectId"].(string)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return err
+	}
+	data, err := ca.CodeCoverageSvc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+		IdentityInfo: apistructs.IdentityInfo{
+			UserID: sdk.Identity.GetUserID(),
+		},
+		ProjectID: projectID,
+		PageNo:    ca.State.PageNo,
+		PageSize:  ca.State.PageSize,
+	})
+	if err != nil {
+		return err
+	}
+	ca.State.Total = data.Total
+	list := make([]ExecuteHistory, 0)
+	for _, v := range data.List {
+		disabled := false
+		if v.ReportUrl == "" {
+			disabled = true
+		}
+		list = append(list, ExecuteHistory{
+			ID: v.ID,
+			Status: Status{
+				RenderType: "textWithBadge",
+				Value:      statusMap[v.Status],
+				Status:     v.Status,
+			},
+			Starter:   v.StartExecutor,
+			StartTime: v.TimeBegin.String(),
+			Ender:     v.EndExecutor,
+			EndTime:   v.TimeEnd.String(),
+			CoverRate: CoverRate{
+				RenderType: "progress",
+				Value:      fmt.Sprintf("%v", v.Coverage),
+				Tip:        "",
+				Status:     v.Status,
+			},
+			Operate: Operate{
+				Operations: struct {
+					Download Download `json:"download"`
+				}{Download: Download{
+					Command: Command{
+						JumpOut: true,
+						Key:     "goto",
+						Target:  v.ReportUrl,
+					},
+					Confirm:  "",
+					Key:      "download",
+					Reload:   false,
+					Text:     "下载报告",
+					Disabled: disabled,
+				}},
+				RenderType: "tableOperation",
+			},
+		})
+	}
+	ca.Data.List = list
+	return nil
+}
+
+func (ca *ComponentAction) SetState(c *cptype.Component) error {
+	b, err := json.Marshal(c.State)
+	if err != nil {
+		return err
+	}
+	var state State
+	if err = json.Unmarshal(b, &state); err != nil {
+		return err
+	}
+	ca.State = &state
+	return nil
+}
+
+func (ca *ComponentAction) SetOperations() {
+	ca.Operations = Operations{ChangePageNo: ChangePageNo{
+		Key:    "changePageNo",
+		Reload: true,
+	}}
+}
+
+func (ca *ComponentAction) SetProps() {
+	ca.Props = `
+	{
+          pageSizeOptions: ['10', '20', '50', '100'],
+          columns: [
+            {
+              dataIndex: 'status',
+              title: '状态',
+              width: 80,
+            },
+            {
+              dataIndex: 'starter',
+              title: '统计开始者',
+              width: 100,
+            },
+            {
+              dataIndex: 'startTime',
+              title: '开始时间',
+              width: 140,
+            },
+            {
+              dataIndex: 'ender',
+              title: '统计结束者',
+              width: 100,
+            },
+            {
+              dataIndex: 'endTime',
+              title: '统计结束时间',
+              width: 140,
+            },
+            {
+              dataIndex: 'coverRate',
+              title: '当前行覆盖率',
+              width: 120,
+            },
+            {
+              dataIndex: 'operate',
+              fixed: 'right',
+              title: '操作',
+              width: 100,
+            },
+          ],
+          rowKey: 'id',
+	}
+`
 }
