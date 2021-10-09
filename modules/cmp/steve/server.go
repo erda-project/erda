@@ -165,12 +165,7 @@ func setup(ctx context.Context, server *Server) error {
 
 	DefaultSchemas(server.BaseSchemas)
 
-	k8sInterface, err := cf.AdminK8sInterface()
-	if err != nil {
-		return err
-	}
-
-	for _, template := range DefaultSchemaTemplates(ctx, server.ClusterName, cf, server.controllers.K8s.Discovery(), asl, k8sInterface) {
+	for _, template := range DefaultSchemaTemplates(ctx, server.ClusterName, cf, server.controllers.K8s.Discovery(), asl) {
 		sf.AddTemplate(template)
 	}
 
