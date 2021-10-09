@@ -35,6 +35,7 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
@@ -46,7 +47,7 @@ var (
 	l                     sync.Mutex
 	clients               = map[string]*http.Client{}
 	counter               int64
-	registerTimeout       = 30 * time.Second
+	registerTimeout       = 5 * time.Second
 	registerCheckInterval = 1 * time.Second
 )
 
@@ -74,7 +75,7 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 				return
 			default:
 				if !server.HasSession(clusterKey) {
-					logrus.Infof("session not found, try again [%s]", clusterKey)
+					logrus.Debugf("session not found, try again [%s]", clusterKey)
 					<-time.After(registerCheckInterval)
 					continue
 				}
@@ -126,7 +127,7 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 		// Get cluster info from agent request
 		clusterKey := req.Header.Get("X-Erda-Cluster-Key")
 		if clusterKey == "" {
-			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
+			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Key"))
 			return
 		}
 		info := req.Header.Get("X-Erda-Cluster-Info")
@@ -134,6 +135,12 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
 			return
 		}
+
+		if req.Header.Get("Authorization") == "" {
+			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
+			return
+		}
+
 		var clusterInfo cluster
 		bytes, err := base64.StdEncoding.DecodeString(info)
 		if err != nil {
@@ -159,6 +166,7 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			remotedialer.DefaultErrorWriter(rw, req, 400, err)
 			return
 		}
+		// TODO: register action after authed better.
 		go registerFunc(clusterKey, clusterInfo)
 	}
 
@@ -240,8 +248,13 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func Start(ctx context.Context, cfg *config.Config) error {
-	handler := remotedialer.New(auth.Authorizer, remotedialer.DefaultErrorWriter)
+func Start(ctx context.Context, credential credentialpb.AccessKeyServiceServer, cfg *config.Config) error {
+	authorizer := auth.New(
+		auth.WithCredentialClient(credential),
+		auth.WithConfig(cfg),
+	)
+
+	handler := remotedialer.New(authorizer.Authorizer, remotedialer.DefaultErrorWriter)
 	handler.ClientConnectAuthorizer = func(proto, address string) bool {
 		if strings.HasSuffix(proto, "::tcp") {
 			return true
