@@ -117,14 +117,14 @@ func (p *provider) logStatistic(r *http.Request, params struct {
 }
 
 func (p *provider) logFieldsAggregation(r *http.Request, params struct {
-	Start       int64  `query:"start" validate:"gte=1"`
-	End         int64  `query:"end" validate:"gte=1"`
-	Query       string `query:"query"`
-	Debug       bool   `query:"debug"`
-	Addon       string `param:"addon"`
-	ClusterName string `query:"clusterName"`
-	AggFields   string `query:"aggFields"`
-	TermsSize   int64  `query:"termsSize"`
+	Start       int64    `query:"start" validate:"gte=1"`
+	End         int64    `query:"end" validate:"gte=1"`
+	Query       string   `query:"query"`
+	Debug       bool     `query:"debug"`
+	Addon       string   `param:"addon"`
+	ClusterName string   `query:"clusterName"`
+	AggFields   []string `query:"aggFields"`
+	TermsSize   int64    `query:"termsSize"`
 }) interface{} {
 	orgID := api.OrgID(r)
 	orgid, err := strconv.ParseInt(orgID, 10, 64)
@@ -135,8 +135,10 @@ func (p *provider) logFieldsAggregation(r *http.Request, params struct {
 	if err != nil {
 		return api.Errors.InvalidParameter(err)
 	}
+	if len(params.AggFields) == 0 {
+		api.Errors.InvalidParameter("aggFields should not empty")
+	}
 	filters := p.buildLogFilters(r)
-	aggFields := strings.Split(params.AggFields, ",")
 	termsSize := params.TermsSize
 	if termsSize == 0 {
 		termsSize = 20
@@ -153,7 +155,7 @@ func (p *provider) logFieldsAggregation(r *http.Request, params struct {
 			Debug:       params.Debug,
 			Lang:        api.Language(r),
 		},
-		AggFields: aggFields,
+		AggFields: params.AggFields,
 		TermsSize: int(termsSize),
 	})
 	if err != nil {
