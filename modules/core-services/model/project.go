@@ -38,6 +38,15 @@ type Project struct {
 	EnableNS       bool      `gorm:"column:enable_ns"` // Whether to open the project-level namespace
 	IsPublic       bool      `gorm:"column:is_public"` // Is it a public project
 	Type           string    `gorm:"column:type"`      // project type
+
+	ProdCPUQuota    float64 `gorm:"prod_cpu_quota"`
+	ProdMemQutoa    float64 `gorm:"prod_mem_quota"`
+	StagingCPUQuota float64 `gorm:"staging_cpu_quota"`
+	StagingMemQuota float64 `gorm:"staging_mem_quota"`
+	TestCPUQuota    float64 `gorm:"staging_cpu_quota"`
+	TestMemQuota    float64 `gorm:"test_mem_quota"`
+	DevCPUQuota     float64 `gorm:"dev_cpu_quota"`
+	DevMemQuota     float64 `gorm:"dev_mem_quota"`
 }
 
 // TableName 设置模型对应数据库表名称
