@@ -15,11 +15,13 @@
 package query
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
+	"bou.ke/monkey"
 	"github.com/olivere/elastic"
-
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	logs "github.com/erda-project/erda/modules/core/monitor/log"
@@ -234,5 +236,99 @@ func Test_getSearchSource_Should_Sort_As_Expect(t *testing.T) {
 	expect := "[map[timestamp:map[order:desc]] map[offset:map[order:desc]]]"
 	if data != expect {
 		t.Errorf("sort assert failed, expect: %s, but got: %s", expect, data)
+	}
+}
+
+func Test_aggregateFields_With_ValidParams_Should_Success(t *testing.T) {
+	c := &ESClient{}
+	want := struct {
+		Total     int64
+		AggFields map[string]*LogFieldBucket
+	}{
+		Total: 10,
+		AggFields: map[string]*LogFieldBucket{
+			"tags.dice_application_name": {
+				Buckets: []*BucketAgg{
+					{
+						Key:   "app-1",
+						Count: 10,
+					},
+				},
+			},
+		},
+	}
+
+	defer monkey.Unpatch((*ESClient).doRequest)
+	monkey.Patch((*ESClient).doRequest, func(client *ESClient, req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+
+		type AggregationBucketKeyItem struct {
+			Key         interface{} `json:"key"`
+			KeyAsString *string     `json:"key_as_string"`
+			KeyNumber   json.Number
+			DocCount    int64 `json:"doc_count"`
+		}
+
+		type AggregationBucketKeyItems struct {
+			DocCountErrorUpperBound int64                       `json:"doc_count_error_upper_bound"`
+			SumOfOtherDocCount      int64                       `json:"sum_other_doc_count"`
+			Buckets                 []*AggregationBucketKeyItem `json:"buckets"`
+			Meta                    map[string]interface{}      `json:"meta,omitempty"`
+		}
+
+		aggs := elastic.Aggregations{}
+		for key, bucket := range want.AggFields {
+
+			var buckets []*AggregationBucketKeyItem
+			for _, b := range bucket.Buckets {
+				buckets = append(buckets, &AggregationBucketKeyItem{
+					Key:      b.Key,
+					DocCount: b.Count,
+				})
+			}
+
+			bytes, _ := json.Marshal(AggregationBucketKeyItems{
+				Buckets: buckets,
+			})
+			rawMessage := json.RawMessage(bytes)
+			aggs[key] = &rawMessage
+		}
+
+		return &elastic.SearchResult{
+			Hits: &elastic.SearchHits{
+				TotalHits: want.Total,
+			},
+			Aggregations: aggs,
+		}, nil
+	})
+
+	req := &LogFieldsAggregationRequest{
+		LogRequest: LogRequest{
+			OrgID:       1,
+			ClusterName: "cluster-1",
+			Addon:       "addon-1",
+			Start:       time.Now().Unix(),
+			End:         time.Now().Unix(),
+		},
+		TermsSize: 10,
+		AggFields: []string{"tags.dice_application_name"},
+	}
+
+	result, err := c.aggregateFields(req, time.Minute)
+	if err != nil {
+		t.Errorf("aggregateFields with valid params should not error: %+v", err)
+	}
+
+	if result.Total != want.Total {
+		t.Errorf("total count assert failed, expect :%d, but got: %d", want.Total, result.Total)
+	}
+
+	for key, expectBuckets := range want.AggFields {
+		resultBuckets, ok := result.AggFields[key]
+		if !ok {
+			t.Errorf("assert aggField failed, key [%s] not exists", key)
+		}
+		if len(resultBuckets.Buckets) != len(expectBuckets.Buckets) {
+			t.Errorf("assert aggField failed, bucket len not match")
+		}
 	}
 }
