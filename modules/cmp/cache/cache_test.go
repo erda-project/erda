@@ -58,7 +58,6 @@ func TestCache_DecrementSize(t *testing.T) {
 		},
 		{
 			name: "DecrementTest",
-
 			args: args{
 				100,
 			},
@@ -66,7 +65,6 @@ func TestCache_DecrementSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			err := cache.DecrementSize(tt.args.size)
 			if err != nil {
 
@@ -448,7 +446,7 @@ func TestLRU(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 0; i < 1024; i++ {
-		err := c.Set(fmt.Sprintf("%d", i), Values{IntValue{
+		err = c.Set(fmt.Sprintf("%d", i), Values{IntValue{
 			value: int64(i),
 		}}, int64(i))
 		if err != nil {
@@ -461,7 +459,7 @@ func TestLRU(t *testing.T) {
 
 	for i := 0; i < 128; i++ {
 		if v, _, ok := c.Get(fmt.Sprintf("%d", i+128)); ok != nil || int(v[0].(IntValue).value) != i+128 {
-			t.Fatalf("bad key: %v", i+128)
+			t.Fatalf("bad key: %v,value is %v", i+128, int(v[0].(IntValue).value))
 		}
 	}
 	for i := 128; i < 256; i++ {
@@ -508,7 +506,7 @@ func TestLRU(t *testing.T) {
 	for i := 0; i < 10240; i++ {
 		v, _, _ := c.Get(fmt.Sprintf("%d", i))
 		if v != nil && int(v[0].(IntValue).value) != i {
-			t.Fatalf("bad key: %v", i)
+			t.Fatalf("bad key: %v ,value is %v", i, v)
 		}
 	}
 }
