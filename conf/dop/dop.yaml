@@ -51,3 +51,6 @@ component-protocol.components.issue-manage.issueViewGroup:
 component-protocol.components.issue-manage.topHead:
 
 
+component-protocol.components.issue-dashboard.filter:
+component-protocol.components.issue-dashboard.page:
+component-protocol.components.issue-dashboard.trendChart:

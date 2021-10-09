@@ -1514,3 +1514,11 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 
 	return projectMap, nil
 }
+
+func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
+	return svc.db.GetAllIssuesByProject(req)
+	// if err != nil {
+	// 	return data, nil
+	// }
+	// return data
+}

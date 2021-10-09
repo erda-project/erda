@@ -1011,3 +1011,7 @@ func (e *Endpoints) TestSetService() *testset.Service {
 func (e *Endpoints) IssueStateService() *issuestate.IssueState {
 	return e.issueState
 }
+
+func (e *Endpoints) IssueService() *issue.Issue {
+	return e.issue
+}

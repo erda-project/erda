@@ -1,0 +1,86 @@
+scenario: issue-dashboard
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - header
+      - issueTip
+      - overview
+      - trendChart
+      # - chart2
+      - chartGroup1
+      # - chartGroup2
+      # - chart4
+      # - chart5
+    # issueTypeContainer:
+    #   - issueType
+    #   - issueTip
+    header:
+      - issueType
+      - filter
+    chartGroup1:
+      - statePieChart
+      # - chart1_2
+      # - chart1_3
+    # chartGroup2:
+    #   - chart2_1
+    #   - chart2_2
+
+components:
+  page:
+    type: Container
+    props: 
+      spaceSize: middle
+  header:
+    type: RowContainer
+  issueTip:
+    type: Text
+  issueType:
+    type: Radio
+  filter:
+    type: ContractiveFilter
+  overview:
+    type: RowContainer
+  trendChart:
+    type: Chart
+  chartGroup1:
+    type: Grid
+  statePieChart:
+    type: Chart
+
+rendering:
+  filter:
+    - name: trendChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "iterations"
+          value: "{{ filter.iterations }}"
+    - name: statePieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+
+  __DefaultRendering__:
+    - name: page
+    - name: header
+    - name: filter
+    - name: issueType
+    - name: issueTip
+    - name: overview
+    - name: trendChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "iterations"
+          value: "{{ filter.iterations }}"
+    - name: chartGroup1
+    - name: statePieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"

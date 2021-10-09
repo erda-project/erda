@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package common
 
-const (
-	GlobalCtxKeyBundle   = "__bundle__"
-	IssueStateService    = "issueState"
-	IssueFilterBmService = "issueFilterBookmark"
-	IssueService         = "issue"
-)
+type FrontendConditions struct {
+	IterationIDs []int64  `json:"iteration,omitempty"`
+	AssigneeIDs  []string `json:"member,omitempty"`
+}

@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package overview
 
-const (
-	GlobalCtxKeyBundle   = "__bundle__"
-	IssueStateService    = "issueState"
-	IssueFilterBmService = "issueFilterBookmark"
-	IssueService         = "issue"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+
+func init() {
+	base.InitProvider("issue-dashboard", "overview")
+}
