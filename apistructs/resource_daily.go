@@ -48,7 +48,6 @@ type ClusterResourceDailyModel struct {
 	CreatedAt time.Time `json:"created_at" gorm:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
 
-	ClusterID    uint64  `json:"cluster_id" gorm:"cluster_id"`
 	ClusterName  string  `json:"cluster_name" gorm:"cluster_name"`
 	CPUTotal     float64 `json:"cpu_total" gorm:"cpu_total"`
 	CPURequested float64 `json:"cpu_requested" gorm:"cpu_requested"`
