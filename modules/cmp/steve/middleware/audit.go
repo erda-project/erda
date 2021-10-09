@@ -44,6 +44,7 @@ const (
 	AuditUncordonNode   = "uncordonNode"
 	AuditLabelNode      = "labelNode"
 	AuditUnLabelNode    = "unLabelNode"
+	AuditDrainNode      = "drainNode"
 	AuditUpdateResource = "updateK8SResource"
 	AuditCreateResource = "createK8SResource"
 	AuditDeleteResource = "deleteK8SResource"

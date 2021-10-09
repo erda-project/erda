@@ -29,6 +29,8 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	"k8s.io/api/policy/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
 
@@ -36,6 +38,7 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -463,6 +466,7 @@ func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, 
 	for k, v = range labels {
 	}
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 		middleware.AuditTargetLabel:  fmt.Sprintf("%s=%s", k, v),
 	}
@@ -498,6 +502,7 @@ func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest
 	}
 
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 		middleware.AuditTargetLabel:  labels[0],
 	}
@@ -507,7 +512,7 @@ func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest
 	return nil
 }
 
-func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
+func (p *provider) cordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
@@ -523,8 +528,16 @@ func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest)
 	if err != nil {
 		return err
 	}
+	return err
+}
+
+func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
+	if err := p.cordonNode(ctx, req); err != nil {
+		return err
+	}
 
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 	}
 	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditCordonNode, auditCtx); err != nil {
@@ -551,10 +564,58 @@ func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveReques
 	}
 
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 	}
 	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditUncordonNode, auditCtx); err != nil {
 		logrus.Errorf("failed to audit when update steve resource, %v", err)
+	}
+	return nil
+}
+
+func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) error {
+	if err := p.cordonNode(ctx, req); err != nil {
+		return err
+	}
+
+	podReq := &apistructs.SteveRequest{
+		UserID:      req.UserID,
+		OrgID:       req.OrgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: req.ClusterName,
+	}
+	list, err := p.ListSteveResource(ctx, podReq)
+	if err != nil {
+		return errors.Errorf("failed to list pods, %v", err)
+	}
+
+	client, err := k8sclient.New(req.ClusterName)
+	if err != nil {
+		return errors.Errorf("failed to get k8s client, %v", err)
+	}
+
+	for _, obj := range list {
+		pod := obj.Data()
+		if pod.String("spec", "nodeName") != req.Name {
+			continue
+		}
+		namespace := pod.String("metadata", "namespace")
+		name := pod.String("metadata", "name")
+		if err = client.ClientSet.PolicyV1beta1().Evictions(namespace).Evict(ctx, &v1beta1.Eviction{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}); err != nil {
+			return errors.Errorf("failed to evict pod %s:%s, %v", namespace, name, err)
+		}
+	}
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
+		middleware.AuditResourceName: req.Name,
+	}
+	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditDrainNode, auditCtx); err != nil {
+		logrus.Errorf("failed to audit when drain node, %v", err)
 	}
 	return nil
 }
