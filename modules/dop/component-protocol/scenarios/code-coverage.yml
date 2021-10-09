@@ -1,0 +1,77 @@
+scenario: code-coverage
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - title
+      - tip
+      - buttonGroup
+      - codeCoverChart
+    buttonGroup:
+      - startButton
+      - endButton
+      - executeHistory
+    executeHistory:
+      children: executeHistoryButton
+      content: executeHistoryContent
+    executeHistoryContent:
+#      - executeHistoryFilter
+      - executeHistoryTable
+
+components:
+  page:
+    type: Container
+    props:
+      spaceSize: middle
+  title:
+    type: Title
+    props:
+      title: "代码覆盖率统计计划"
+  buttonGroup:
+    type: RowContainer
+    props:
+      contentSetting: end
+  codeCoverChart:
+    type: Chart
+  startButton:
+    type: Button
+  endButton:
+    type: Button
+  executeHistory:
+    type: Popover
+    props:
+      placement: leftBottom
+      size: xl
+      title: "项目代码覆盖率统计执行记录"
+      trigger: click
+  executeHistoryButton:
+    type: Button
+    props:
+      text: "执行记录"
+      type: "primary"
+  executeHistoryContent:
+    type: Container
+  executeHistoryTable:
+    type: Table
+  tip:
+    type: Alert
+    props:
+      type: warning
+      showIcon: false
+      message: "说明：代码覆盖统计计划是指开启统计和结束统计周期的管理，计划开始后会完全重新统计，在结束之前会持续统计，结束后会生成统计记录和报告"
+
+rendering:
+  startButton:
+    - endButton
+    - codeCoverChart
+    - executeHistoryTable
+  endButton:
+    - startButton
+    - codeCoverChart
+    - executeHistoryTable
+  __DefaultRendering__:
+    - startButton
+    - endButton
+    - codeCoverChart
+    - executeHistoryTable
