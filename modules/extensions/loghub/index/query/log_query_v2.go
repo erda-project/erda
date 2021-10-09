@@ -16,6 +16,7 @@ package query
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -151,7 +152,7 @@ func (c *ESClient) aggregateFields(req *LogFieldsAggregationRequest, timeout tim
 		}
 		for i, bucket := range termsAgg.Buckets {
 			result.AggFields[field].Buckets[i] = &BucketAgg{
-				Key:   *bucket.KeyAsString,
+				Key:   fmt.Sprint(bucket.Key),
 				Count: bucket.DocCount,
 			}
 		}
