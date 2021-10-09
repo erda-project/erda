@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -35,6 +36,7 @@ import (
 const (
 	defaultListSize = 7
 	timeFormat      = "01-02 15:04"
+	goTimeFormat    = "2006-01-02 15:03:04"
 )
 
 type ComponentAction struct {
@@ -50,7 +52,8 @@ type ComponentAction struct {
 }
 
 type State struct {
-	RecordID uint64 `json:"recordID"`
+	TimeRange []int64 `json:"timeRange"`
+	RecordID  uint64  `json:"recordID"`
 }
 
 type Operation struct {
@@ -97,7 +100,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 }
 
 // GenComponentState 获取state
-func (i *ComponentAction) GenComponentState(c *apistructs.Component) error {
+func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -129,6 +132,9 @@ func getOperations() map[string]interface{} {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := ca.GenComponentState(c); err != nil {
+		return err
+	}
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 	ca.svc = svc
@@ -147,10 +153,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		ca.State.RecordID = uint64(recordID)
-	case cptype.InitializeOperation:
-		recordRsp, err := svc.ListCodeCoverageRecode(apistructs.CodeCoverageListRequest{
+	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
+		recordRsp, err := ca.svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			ProjectID: uint64(projectID),
 			PageSize:  defaultListSize,
+			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
+			Asc:       true,
 		})
 		if err != nil {
 			return err
@@ -160,6 +168,32 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
 		ca.Operations = getOperations()
+	case cptype.RenderingOperation:
+		if len(ca.State.TimeRange) < 2 {
+			return fmt.Errorf("invalid time range: %v", ca.State.TimeRange)
+		}
+		start, end := convertTimeRange(ca.State.TimeRange)
+		recordRsp, err := ca.svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+			ProjectID: uint64(projectID),
+			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
+			TimeBegin: start,
+			TimeEnd:   end,
+			Asc:       true,
+		})
+		if err != nil {
+			return err
+		}
+		ca.setProps(recordRsp)
+		if len(recordRsp.List) > 0 {
+			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
+		}
 	}
 	return nil
+}
+
+func convertTimeRange(timeRange []int64) (startTime, endTime string) {
+	start, end := timeRange[0], timeRange[1]
+	startT := time.Unix(start/1000, 0)
+	endT := time.Unix(end, 0)
+	return startT.Format(goTimeFormat), endT.Format(goTimeFormat)
 }

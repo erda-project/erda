@@ -18,4 +18,5 @@ import "github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 
 const (
 	CoverChartSelectItemOperationKey cptype.OperationKey = "selectChartItem"
+	DatePickerChangeTimeOperationKey cptype.OperationKey = "changeTime"
 )

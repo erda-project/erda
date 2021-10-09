@@ -21,6 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
@@ -128,6 +130,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if err := ca.GenComponentState(c); err != nil {
 		return err
 	}
+	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
+	ca.svc = svc
 	ca.Type = "Chart"
 	recordID := ca.State.RecordID
 	if err := ca.setProps(recordID); err != nil {
