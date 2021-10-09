@@ -47,8 +47,6 @@ const (
 	UnsignedType
 	ByteType
 	ByteSliceType
-
-	minCacheSize = 2
 )
 
 var (
@@ -93,7 +91,6 @@ type segment struct {
 	mapping map[string]int
 	maxSize int64
 	used    int64
-	nextIdx int64
 }
 
 func lowBit(x int) int {
@@ -214,9 +211,17 @@ func (s *store) write(id int) error {
 	}
 	usage += needSize
 	idx := ps.Len()
-	ps.pairs[idx].key = newPair.key
-	ps.pairs[idx].value = newPair.value
-	ps.pairs[idx].overdueTimestamp = newPair.overdueTimestamp
+	if idx >= len(ps.pairs) {
+		ps.pairs = append(ps.pairs, &pair{
+			key:              newPair.key,
+			value:            newPair.value,
+			overdueTimestamp: newPair.overdueTimestamp,
+		})
+	} else {
+		ps.pairs[idx].key = newPair.key
+		ps.pairs[idx].value = newPair.value
+		ps.pairs[idx].overdueTimestamp = newPair.overdueTimestamp
+	}
 	ps.mapping[newPair.key] = idx
 	heap.Push(ps, ps.pairs[idx])
 	ps.length++
@@ -259,8 +264,6 @@ func (seg *segment) updatePair(key string, newValues Values, overdueTimestamp in
 	seg.tmp.overdueTimestamp = overdueTimestamp
 	seg.tmp.value = newValues
 	seg.tmp.key = key
-	seg.tmp.idx = seg.nextIdx
-	seg.nextIdx++
 	return nil
 }
 
@@ -455,7 +458,7 @@ func New(size, segSize int64) (*Cache, error) {
 
 // Set write key, cacheValues, overdueTimestamp into cache.
 // whether update or add cache, remove is first.
-func (c *Cache) Set(key string, value Values, overdueTimestamp int64) error {
+func (c *Cache) Set(key string, value Values, duration int64) error {
 	var err error
 	id := c.k.getKeyId(key, c.store.segNum)
 	seg := c.store.segs[id]
@@ -465,7 +468,7 @@ func (c *Cache) Set(key string, value Values, overdueTimestamp int64) error {
 	// 1. remove old cache
 	c.store.remove(id, key)
 	// 2. set data into segment tmp
-	err = seg.updatePair(key, value, time.Now().UnixNano()+overdueTimestamp)
+	err = seg.updatePair(key, value, time.Now().UnixNano()+duration)
 	if err != nil {
 		return err
 	}

@@ -117,6 +117,8 @@ func TestToInfluxReq(t *testing.T) {
 				{
 					Statement: NodeMemoryUsageSelectStatement,
 					Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName), "host_ip": structpb.NewStringValue(ip)},
+					Start:     "before_5m",
+					End:       "now",
 				},
 			},
 		},
@@ -137,6 +139,8 @@ func TestToInfluxReq(t *testing.T) {
 				{
 					Statement: PodCpuUsageSelectStatement,
 					Params:    map[string]*structpb.Value{"pod_namespace": structpb.NewStringValue(namespace), "pod_name": structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")},
+					Start:     "before_5m",
+					End:       "now",
 				},
 			},
 		},

@@ -30,7 +30,7 @@ func (nodeTitle *NodeTitle) Render(ctx context.Context, c *cptype.Component, s c
 	nodeTitle.SDK = cputil.SDK(ctx)
 	node := (*gs)["node"].(data.Object)
 	nodeTitle.Props = Props{
-		Title: nodeTitle.SDK.I18n("node") + ": " + node.String("id"),
+		Title: nodeTitle.SDK.I18n("node") + ": " + node.StringSlice("metadata", "fields")[0],
 	}
 	err := common.Transfer(nodeTitle.Props, &c.Props)
 	if err != nil {

@@ -49,10 +49,10 @@ func init() {
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
-	NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip and time > now() -300s`
-	NodeMemoryUsageSelectStatement = `SELECT last(mem_used::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip  and time > now() -300s`
-	PodCpuUsageSelectStatement     = `SELECT round_float(last(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -300s`
-	PodMemoryUsageSelectStatement  = `SELECT round_float(last(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true and time > now() -300s`
+	NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip`
+	NodeMemoryUsageSelectStatement = `SELECT last(mem_used::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip `
+	PodCpuUsageSelectStatement     = `SELECT round_float(last(cpu_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true`
+	PodMemoryUsageSelectStatement  = `SELECT round_float(last(mem_usage_percent::field), 2) FROM docker_container_summary WHERE pod_name::tag=$pod_name and pod_namespace::tag=$pod_namespace and podsandbox != true`
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -263,6 +263,8 @@ func ToInfluxReq(req *MetricsRequest) ([]*pb.QueryWithInfluxFormatRequest, error
 				"cluster_name": structpb.NewStringValue(req.ClusterName),
 				"host_ip":      structpb.NewStringValue(nreq.IP),
 			}
+			queryReq.Start = "before_5m"
+			queryReq.End = "now"
 			queryReqs = append(queryReqs, queryReq)
 		}
 	} else {
@@ -280,6 +282,8 @@ func ToInfluxReq(req *MetricsRequest) ([]*pb.QueryWithInfluxFormatRequest, error
 				"pod_name":      structpb.NewStringValue(preq.PodName),
 				"pod_namespace": structpb.NewStringValue(preq.Namespace),
 			}
+			queryReq.Start = "before_5m"
+			queryReq.End = "now"
 			queryReqs = append(queryReqs, queryReq)
 		}
 	}
