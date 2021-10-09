@@ -16,7 +16,7 @@ hierarchy:
       children: executeHistoryButton
       content: executeHistoryContent
     executeHistoryContent:
-#      - executeHistoryFilter
+      #      - executeHistoryFilter
       - executeHistoryTable
 
 components:
@@ -63,15 +63,15 @@ components:
 
 rendering:
   startButton:
-    - endButton
-    - codeCoverChart
-    - executeHistoryTable
+    - name: endButton
+    - name: codeCoverChart
+    - name: executeHistoryTable
   endButton:
-    - startButton
-    - codeCoverChart
-    - executeHistoryTable
+    - name: startButton
+    - name: codeCoverChart
+    - name: executeHistoryTable
   __DefaultRendering__:
-    - startButton
-    - endButton
-    - codeCoverChart
-    - executeHistoryTable
+    - name: startButton
+    - name: endButton
+    - name: codeCoverChart
+    - name: executeHistoryTable

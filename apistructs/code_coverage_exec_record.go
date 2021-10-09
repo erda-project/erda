@@ -73,6 +73,8 @@ type CodeCoverageListRequest struct {
 	ProjectID uint64                   `json:"projectID"`
 	PageNo    uint64                   `json:"pageNo"`
 	PageSize  uint64                   `json:"pageSize"`
+	TimeBegin string                   `json:"timeBegin"`
+	TimeEnd   string                   `json:"timeEnd"`
 	Statuses  []CodeCoverageExecStatus `json:"statuses"`
 }
 

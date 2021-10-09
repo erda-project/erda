@@ -182,6 +182,12 @@ func (svc *CodeCoverage) ListCodeCoverageRecord(req apistructs.CodeCoverageListR
 	if req.Statuses != nil {
 		db = db.Where("status in ?", req.Statuses)
 	}
+	if req.TimeBegin != "" {
+		db = db.Where("time_begin >= ?", req.TimeBegin)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("time_end <= ?", req.TimeEnd)
+	}
 
 	err = db.Order("id DESC").
 		Offset(offset).Limit(req.PageSize).
