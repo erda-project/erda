@@ -78,8 +78,8 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 		data = record.ReportContent
 	}
 	c.Props = map[string]interface{}{
-		"requestIgnore": []string{"props"},
-		"title":         "矩阵图",
+		//"requestIgnore": []string{"props"},
+		"title": "矩阵图",
 		"style": map[string]interface{}{
 			"height": 600,
 		},
@@ -145,7 +145,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 }
 
 func init() {
-	base.InitProviderWithCreator("code-coverage", "chart1", func() servicehub.Provider {
+	base.InitProviderWithCreator("code-coverage", "treeMapChart", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
 }

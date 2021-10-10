@@ -199,6 +199,11 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		return errors.New("the record had been cancelled")
 	}
 
+	project, err := svc.bdl.GetProject(record.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	record.Status = status
 	record.Msg = req.Msg
 	// upload report_tar
@@ -232,7 +237,7 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		if err != nil {
 			return err
 		}
-		analyzeJson, coverage := getAnalyzeJson(all)
+		analyzeJson, coverage := getAnalyzeJson(project.ID, project.DisplayName, all)
 		record.ReportContent = analyzeJson
 		record.Coverage = coverage
 	}

@@ -63,7 +63,7 @@ components:
       type: warning
       showIcon: false
       message: "说明：代码覆盖统计计划是指开启统计和结束统计周期的管理，计划开始后会完全重新统计，在结束之前会持续统计，结束后会生成统计记录和报告"
-  chart1:
+  treeMapChart:
     type: Chart
   timeSelector:
     type: DatePicker
@@ -81,12 +81,12 @@ rendering:
       state:
         - name: "value"
           value: "{{ timeSelector.value }}"
-    - name: chart1
+    - name: treeMapChart
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
   codeCoverChart:
-    - name: chart1
+    - name: treeMapChart
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
@@ -99,7 +99,7 @@ rendering:
       state:
         - name: "value"
           value: "{{ timeSelector.value }}"
-    - name: chart1
+    - name: treeMapChart
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
