@@ -45,6 +45,7 @@ const (
 	AuditLabelNode      = "labelNode"
 	AuditUnLabelNode    = "unLabelNode"
 	AuditDrainNode      = "drainNode"
+	AuditOfflineName    = "offlineNode"
 	AuditUpdateResource = "updateK8SResource"
 	AuditCreateResource = "createK8SResource"
 	AuditDeleteResource = "deleteK8SResource"

@@ -98,6 +98,30 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			ops.Meta.Type = common.CMPDashboardUncordonNode
 			bot.Operations["onOk"] = ops
 			bot.Props.Content = bot.SDK.I18n("Uncordon following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
+		case common.CMPDashboardDrainNode:
+			bot.State.Visible = true
+			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
+			bot.State.SelectedRowKeys = selectRowKeys
+			ops := Operation{}
+			err := common.Transfer(bot.Operations["onOk"], &ops)
+			if err != nil {
+				return err
+			}
+			ops.Meta.Type = common.CMPDashboardDrainNode
+			bot.Operations["onOk"] = ops
+			bot.Props.Content = bot.SDK.I18n("Drain following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
+		case common.CMPDashboardOfflineNode:
+			bot.State.Visible = true
+			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
+			bot.State.SelectedRowKeys = selectRowKeys
+			ops := Operation{}
+			err := common.Transfer(bot.Operations["onOk"], &ops)
+			if err != nil {
+				return err
+			}
+			ops.Meta.Type = common.CMPDashboardOfflineNode
+			bot.Operations["onOk"] = ops
+			bot.Props.Content = bot.SDK.I18n("Offline following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
 		}
 	case common.CMPDashboardBatchSubmit:
 		bot.State.Visible = false
@@ -115,6 +139,16 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 		case common.CMPDashboardUncordonNode:
 			err := bot.UncordonNode(selectRowKeys)
+			if err != nil {
+				return bot.SetComponent(c)
+			}
+		case common.CMPDashboardDrainNode:
+			err := bot.DrainNode(selectRowKeys)
+			if err != nil {
+				return bot.SetComponent(c)
+			}
+		case common.CMPDashboardOfflineNode:
+			err := bot.OfflineNode(selectRowKeys)
 			if err != nil {
 				return bot.SetComponent(c)
 			}
@@ -138,8 +172,11 @@ func (bot *BatchOperationTipModal) SetComponent(c *cptype.Component) error {
 	}
 	return nil
 }
-func (bot *BatchOperationTipModal) CordonNode(nodeNames []string) error {
-	for _, name := range nodeNames {
+
+func (bot *BatchOperationTipModal) CordonNode(nodeIDs []string) error {
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		name := splits[0]
 		req := &apistructs.SteveRequest{
 			UserID:      bot.SDK.Identity.UserID,
 			OrgID:       bot.SDK.Identity.OrgID,
@@ -155,8 +192,10 @@ func (bot *BatchOperationTipModal) CordonNode(nodeNames []string) error {
 	return nil
 }
 
-func (bot *BatchOperationTipModal) UncordonNode(nodeNames []string) error {
-	for _, name := range nodeNames {
+func (bot *BatchOperationTipModal) UncordonNode(nodeIDs []string) error {
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		name := splits[0]
 		req := &apistructs.SteveRequest{
 			UserID:      bot.SDK.Identity.UserID,
 			OrgID:       bot.SDK.Identity.OrgID,
@@ -172,6 +211,29 @@ func (bot *BatchOperationTipModal) UncordonNode(nodeNames []string) error {
 	return nil
 }
 
+func (bot *BatchOperationTipModal) DrainNode(nodeIDs []string) error {
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		name := splits[0]
+		req := &apistructs.SteveRequest{
+			UserID:      bot.SDK.Identity.UserID,
+			OrgID:       bot.SDK.Identity.OrgID,
+			Type:        apistructs.K8SNode,
+			ClusterName: bot.SDK.InParams["clusterName"].(string),
+			Name:        name,
+		}
+		if err := steveServer.DrainNode(bot.ctx, req); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (bot *BatchOperationTipModal) OfflineNode(nodeIDs []string) error {
+	return steveServer.OfflineNode(bot.ctx, bot.SDK.Identity.UserID, bot.SDK.Identity.OrgID,
+		bot.SDK.InParams["clusterName"].(string), nodeIDs)
+}
+
 func (bot *BatchOperationTipModal) getProps() {
 	bot.Props = Props{
 		Status:  "warning",
@@ -179,6 +241,7 @@ func (bot *BatchOperationTipModal) getProps() {
 		Title:   bot.SDK.I18n("warning"),
 	}
 }
+
 func (bot *BatchOperationTipModal) getOperations() {
 	bot.Operations = map[string]interface{}{
 		"onOk": Operation{
@@ -189,6 +252,7 @@ func (bot *BatchOperationTipModal) getOperations() {
 		},
 	}
 }
+
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "batchOperationTipModal", func() servicehub.Provider {
 		return &BatchOperationTipModal{Type: "Modal"}

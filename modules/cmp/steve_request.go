@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,6 +39,10 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
+	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -53,6 +58,8 @@ type SteveServer interface {
 	UnlabelNode(context.Context, *apistructs.SteveRequest, []string) error
 	CordonNode(context.Context, *apistructs.SteveRequest) error
 	UnCordonNode(context.Context, *apistructs.SteveRequest) error
+	DrainNode(context.Context, *apistructs.SteveRequest) error
+	OfflineNode(context.Context, string, string, string, []string) error
 }
 
 func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
@@ -440,7 +447,7 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 	return nil
 }
 
-func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
+func (p *provider) labelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
 	if req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
@@ -458,6 +465,13 @@ func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, 
 
 	err := p.PatchNode(ctx, req)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
+	if err := p.labelNode(ctx, req, labels); err != nil {
 		return err
 	}
 
@@ -607,7 +621,8 @@ func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) 
 				Namespace: namespace,
 			},
 		}); err != nil {
-			return errors.Errorf("failed to evict pod %s:%s, %v", namespace, name, err)
+			logrus.Errorf("failed to evict pod %s:%s, %v", namespace, name, err)
+			continue
 		}
 	}
 	auditCtx := map[string]interface{}{
@@ -616,6 +631,63 @@ func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) 
 	}
 	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditDrainNode, auditCtx); err != nil {
 		logrus.Errorf("failed to audit when drain node, %v", err)
+	}
+	return nil
+}
+
+func (p *provider) OfflineNode(ctx context.Context, userID, orgID, clusterName string, nodeIDs []string) error {
+	var names, ips []string
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		if len(splits) != 2 {
+			logrus.Errorf("failed to offline host, invalid id %s", id)
+			continue
+		}
+		name, ip := splits[0], splits[1]
+		names = append(names, name)
+		ips = append(ips, ip)
+
+		req := &apistructs.SteveRequest{
+			UserID:      userID,
+			OrgID:       orgID,
+			Type:        apistructs.K8SNode,
+			ClusterName: clusterName,
+			Name:        name,
+		}
+		if err := p.labelNode(ctx, req, map[string]string{"erda/offline": "true"}); err != nil {
+			logrus.Errorf("failed to label node %s, %v", name, err)
+			continue
+		}
+	}
+
+	host := discover.Monitor()
+	path := "/api/resources/hosts/actions/offline"
+	headers := http.Header{
+		httputil.UserHeader: []string{userID},
+		httputil.OrgHeader:  []string{orgID},
+	}
+	client := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
+	req := map[string]interface{}{
+		"clusterName": clusterName,
+		"hostIPs":     ips,
+	}
+
+	var resp httpapi.Response
+	_, err := client.Post(host).Path(path).Headers(headers).JSONBody(&req).Do().JSON(&resp)
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return errors.New(resp.Err.Msg.(string))
+	}
+
+	nodeNames := strings.Join(names, ",")
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  clusterName,
+		middleware.AuditResourceName: nodeNames,
+	}
+	if err := p.Audit(userID, orgID, middleware.AuditOfflineName, auditCtx); err != nil {
+		logrus.Errorf("failed to audit when offline node, %v", err)
 	}
 	return nil
 }

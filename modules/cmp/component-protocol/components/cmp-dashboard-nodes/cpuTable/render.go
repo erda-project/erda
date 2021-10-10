@@ -196,8 +196,12 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 				batchOperations = []string{"cordon"}
 			}
 		}
+		batchOperations = append(batchOperations, "drain")
+		if !isNodeOffline(c) {
+			batchOperations = append(batchOperations, "offline")
+		}
 		items = append(items, table.RowItem{
-			ID:      c.String("metadata", "name"),
+			ID:      c.String("metadata", "name") + "/" + ip,
 			IP:      ip,
 			Version: c.String("status", "nodeInfo", "kubeletVersion"),
 			Role:    role,
@@ -230,6 +234,12 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		)
 	}
 	return items, nil
+}
+
+func isNodeOffline(node data.Object) bool {
+	labels := node.Map("metadata", "labels")
+	offlineLabel := labels.String("erda/offline")
+	return offlineLabel == "true"
 }
 
 func init() {
