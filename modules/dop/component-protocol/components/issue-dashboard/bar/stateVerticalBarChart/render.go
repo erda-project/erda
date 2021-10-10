@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	bar_util "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -64,11 +65,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	bar := charts.NewBar()
-	bar.Colors = []string{"green", "blue", "orange", "red"}
-	var stacks []string
-	for _, i := range apistructs.IssuePriorityList {
-		stacks = append(stacks, i.GetZhName())
-	}
+	bar.Colors = bar_util.GetPriorityStackColors()
+	stacks := bar_util.GetPriorityStacks()
+	indexer := bar_util.GetPriorityIndexer()
+
 	// x is always stable
 	var xAxis []string
 	for _, i := range f.State.IssueStateList {
@@ -78,9 +78,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Data: xAxis,
 	}
 
-	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, stacks, xAxis, func(issue interface{}) string {
-		return issue.(*dao.IssueItem).Priority.GetZhName()
-	}, func(issue interface{}) string {
+	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, stacks, xAxis, indexer, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{

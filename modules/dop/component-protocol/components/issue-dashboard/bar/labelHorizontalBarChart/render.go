@@ -17,11 +17,15 @@ package labelHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
+	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -31,6 +35,19 @@ import (
 func init() {
 	base.InitProviderWithCreator("issue-dashboard", "labelHorizontalBarChart",
 		func() servicehub.Provider { return &ComponentAction{} })
+}
+
+func (f *ComponentAction) setInParams(ctx context.Context) error {
+	b, err := json.Marshal(cputil.SDK(ctx).InParams)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &f.InParams); err != nil {
+		return err
+	}
+
+	f.InParams.ProjectID, err = strconv.ParseUint(f.InParams.FrontEndProjectID, 10, 64)
+	return err
 }
 
 func (f *ComponentAction) getState(c *cptype.Component) error {
@@ -43,6 +60,11 @@ func (f *ComponentAction) getState(c *cptype.Component) error {
 
 func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 
+	f.issueSvc = ctx.Value(types.IssueService).(*issue_svc.Issue)
+	if err := f.setInParams(ctx); err != nil {
+		return err
+	}
+
 	if err := f.getState(c); err != nil {
 		return err
 	}
@@ -52,37 +74,52 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
-	var bugList []interface{}
+	bugMap := make(map[uint64]*dao.IssueItem)
 	for i := range f.State.IssueList {
-		issue := f.State.IssueList[i]
+		issue := &f.State.IssueList[i]
 		if issue.Type != apistructs.IssueTypeBug {
 			continue
 		}
-		bugList = append(bugList, &issue)
+		bugMap[issue.ID] = issue
+	}
+
+	labels, err := f.issueSvc.GetIssueLabelsByProjectID(f.InParams.ProjectID)
+	if err != nil {
+		return err
+	}
+	var labelList []interface{}
+	for i := range labels {
+		l := &labels[i]
+		labelList = append(labelList, l)
 	}
 
 	bar := charts.NewBar()
 	bar.Colors = []string{"green", "blue", "orange", "red"}
-	var yAxis []string
+	var stacks []string
 	for _, i := range apistructs.IssuePriorityList {
-		yAxis = append(yAxis, i.GetZhName())
-	}
-	bar.YAxisList[0] = opts.YAxis{
-		Type: "category",
-		Data: []string{"1", "2"},
+		stacks = append(stacks, i.GetZhName())
 	}
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
 
-	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, []string{"all"}, nil, func(issue interface{}) string {
-		return "all"
-	}, func(issue interface{}) string {
-		if issue.(*dao.IssueItem).ID % 2 == 0 {
-			return "i1"
-		} else {
-			return "i2"
+	var realY []string
+	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, stacks, nil, func(label interface{}) string {
+		l := label.(*dao.IssueLabel)
+		if l == nil {
+			return ""
 		}
+		bug, ok := bugMap[l.RefID]
+		if !ok {
+			return ""
+		}
+		return bug.Priority.GetZhName()
+	}, func(label interface{}) string {
+		l := label.(*dao.IssueLabel)
+		if l == nil {
+			return ""
+		}
+		return l.Name
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{
 			Name:  name,
@@ -92,6 +129,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			},
 		}
 	}, 500)
+
+	bar.YAxisList[0] = opts.YAxis{
+		Type: "category",
+		Data: realY,
+	}
 
 	props := make(map[string]interface{})
 	props["title"] = "按标签分布（TOP 500）"

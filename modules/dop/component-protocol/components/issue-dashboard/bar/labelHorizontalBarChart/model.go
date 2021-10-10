@@ -20,16 +20,16 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/dop/services/issuestate"
+	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
-	sdk           *cptype.SDK
-	bdl           *bundle.Bundle
-	issueStateSvc *issuestate.IssueState
-	State         State `json:"state,omitempty"`
-	// InParams      InParams `json:"-"`
+	sdk      *cptype.SDK
+	bdl      *bundle.Bundle
+	issueSvc *issue.Issue
+	State    State    `json:"state,omitempty"`
+	InParams InParams `json:"-"`
 	base.DefaultProvider
 }
 
@@ -39,4 +39,9 @@ type State struct {
 	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
 	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
 	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
+}
+
+type InParams struct {
+	FrontEndProjectID string `json:"projectId,omitempty"`
+	ProjectID         uint64
 }
