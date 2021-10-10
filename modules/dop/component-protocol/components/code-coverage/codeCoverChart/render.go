@@ -90,12 +90,12 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		t := r.TimeCreated.Format(timeFormat)
 		timeList = append(timeList, t)
 		p := PointValue{
-			RecordID:   r.ID,
-			SymbolSize: 24,
-			Value:      r.Coverage,
+			RecordID: r.ID,
+			Value:    r.Coverage,
 		}
 		if r.ID == ca.State.RecordID {
 			p.Symbol = "pin"
+			p.SymbolSize = 24
 		}
 		valueLst = append(valueLst, p)
 	}
@@ -107,6 +107,10 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 			"axisLabel": map[string]interface{}{
 				"formatter": "{value}%",
 			},
+		},
+		"tooltip": map[string]interface{}{
+			"formatter": "{b}<br />{a}: {c}%",
+			"trigger":   "axis",
 		},
 		"series": []interface{}{
 			map[string]interface{}{

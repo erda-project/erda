@@ -21,6 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
+
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -79,8 +81,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if err != nil {
 			return err
 		}
-		visible = true
-		downloadUrl = record.ReportUrl
+		if record.ReportStatus == apistructs.SuccessStatus.String() {
+			visible = true
+			downloadUrl = record.ReportUrl
+		}
 	}
 	ca.Operations = map[string]interface{}{
 		"click": map[string]interface{}{
