@@ -62,7 +62,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					StyleConfig: common.StyleConfig{
 						FontSize: 20,
 						Bold:     true,
-						Color:    "text-main",
+						Color:    "red",
 					},
 				},
 				{

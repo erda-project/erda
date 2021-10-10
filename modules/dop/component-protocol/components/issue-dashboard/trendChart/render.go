@@ -168,6 +168,7 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 				XAxis: common.XAxis{
 					Data: dates,
 				},
+				Color: []string{"blue", "green", "red"},
 				Series: []common.Item{
 					{
 						Name: "新增",
