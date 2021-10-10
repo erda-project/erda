@@ -16,7 +16,6 @@ package code_coverage
 
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/cancelButton"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/chart1"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/codeCoverChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/endButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryButton"
@@ -24,4 +23,5 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/startButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/timeSelector"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/tip"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/treeMapChart"
 )
