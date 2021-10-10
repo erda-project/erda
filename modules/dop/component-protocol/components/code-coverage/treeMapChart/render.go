@@ -109,7 +109,7 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					"colorMappingBy":  "value",
 					"visualDimension": 8,
 					"data":            data,
-					"color":           []string{"#800000", "#F7A76B", "#F7C36B", "#6CB38B", "#8FBC8F"},
+					"color":           []string{"maroon", "orange", "yellow", "green", "darkseagreen"},
 					"levels": []interface{}{
 						map[string]interface{}{
 							"colorSaturation": []interface{}{0.3, 0.6},
