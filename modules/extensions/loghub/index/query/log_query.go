@@ -205,6 +205,7 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 			PostTags("").
 			FragmentSize(1).
 			RequireFieldMatch(true).
+			BoundaryScannerType("word").
 			Field("*"))
 	}
 	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(req.Size))
