@@ -53,6 +53,7 @@ type Issue struct {
 
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
+	ReopenCount  int
 }
 
 type ExpireType string
@@ -746,7 +747,9 @@ type IssueItem struct {
 
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
-	Belong       string
+	ReopenCount  int
+
+	Belong string
 }
 
 func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {

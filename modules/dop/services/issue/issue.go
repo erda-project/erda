@@ -564,6 +564,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 				nilTime = nil
 				changedFields["finish_time"] = nilTime
 			}
+
+			if currentBelong.Belong != apistructs.IssueStateBelongReopen && newBelong.Belong == apistructs.IssueStateBelongReopen {
+				changedFields["reopen_count"] = issueModel.ReopenCount + 1
+			}
 		}
 	STREAM:
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}

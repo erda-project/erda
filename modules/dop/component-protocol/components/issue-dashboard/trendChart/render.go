@@ -123,6 +123,8 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 			} else {
 				cMap[closed][1] += 1
 			}
+		} else {
+
 		}
 	}
 

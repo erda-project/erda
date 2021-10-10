@@ -16,6 +16,7 @@ package expired
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -26,6 +27,7 @@ import (
 type ComponentAction struct {
 	base.DefaultProvider
 	common.OverviewProps `json:"props,omitempty"`
+	State                common.StatsState `json:"state,omitempty"`
 }
 
 func init() {
@@ -33,14 +35,30 @@ func init() {
 		func() servicehub.Provider { return &ComponentAction{} })
 }
 
+func (f *ComponentAction) InitFromProtocol(ctx context.Context, c *cptype.Component) error {
+	// component 序列化
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, f); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := f.InitFromProtocol(ctx, c); err != nil {
+		return err
+	}
+
 	f.OverviewProps = common.OverviewProps{
 		RenderType: "linkText",
 		Value: common.OverviewValue{
 			Direction: "col",
 			Text: []common.OverviewText{
 				{
-					Text: "123",
+					Text: f.State.Stats.Expire,
 					StyleConfig: common.StyleConfig{
 						FontSize: 20,
 						Bold:     true,

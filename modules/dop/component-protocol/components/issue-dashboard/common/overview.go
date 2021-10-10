@@ -38,3 +38,17 @@ type StyleConfig struct {
 	Bold     bool   `json:"bold,omitempty"`
 	Color    string `json:"color,omitempty"`
 }
+
+type Stats struct {
+	Open      string `json:"open,omitempty"`
+	Expire    string `json:"expire,omitempty"`
+	Today     string `json:"today,omitempty"`
+	Week      string `json:"week,omitempty"`
+	Month     string `json:"month,omitempty"`
+	Undefined string `json:"undefined,omitempty"`
+	Reopen    string `json:"reopen,omitempty"`
+}
+
+type StatsState struct {
+	Stats Stats `json:"stats,omitempty"`
+}
