@@ -78,7 +78,8 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 		data = record.ReportContent
 	}
 	c.Props = map[string]interface{}{
-		"title": "矩阵图",
+		"requestIgnore": []string{"props"},
+		"title":         "矩阵图",
 		"style": map[string]interface{}{
 			"height": 600,
 		},

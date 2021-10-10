@@ -16,8 +16,11 @@ package timeSelector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -36,7 +39,27 @@ type ComponentAction struct {
 }
 
 type State struct {
-	TimeRange []int64 `json:"timeRange"`
+	Value []int64 `json:"value"`
+}
+
+func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
+		return nil
+	}
+	var state State
+	cont, err := json.Marshal(c.State)
+	if err != nil {
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
+		return err
+	}
+	err = json.Unmarshal(cont, &state)
+	if err != nil {
+		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
+		return err
+	}
+	fmt.Println(state)
+	i.State = state
+	return nil
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
@@ -47,6 +70,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	oneWeekRange := []int64{oneWeekAgo.Unix() * 1000, now.Unix() * 1000}
 	oneMonthRange := []int64{oneMonthAgo.Unix() * 1000, now.Unix() * 1000}
 	ca.Props = map[string]interface{}{
+		"allowClear": false,
 		"type":       "dateRange",
 		"size":       "small",
 		"borderTime": true,
@@ -62,12 +86,15 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		},
 	}
 	switch event.Operation {
+	case cptype.DefaultRenderingKey, cptype.InitializeOperation:
+		ca.State.Value = oneMonthRange
 	case common.DatePickerChangeTimeOperationKey:
-		timeRange := event.OperationData["data"].([]int64)
-		if timeRange == nil || len(timeRange) < 2 {
-			return fmt.Errorf("invalid time range: %v", timeRange)
+		if err := ca.GenComponentState(c); err != nil {
+			return err
 		}
-		ca.State.TimeRange = timeRange
+		if len(ca.State.Value) != 2 {
+			return fmt.Errorf("invalid time range value: %v", ca.State.Value)
+		}
 	}
 	return nil
 }

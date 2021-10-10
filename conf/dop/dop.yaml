@@ -3,6 +3,7 @@ dop:
 service-register:
 http-server:
   addr: "${LISTEN_ADDR::9527}"
+  allow_cors: true
 grpc-server:
   addr: ":9529"
 i18n:

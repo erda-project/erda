@@ -71,7 +71,6 @@ components:
 rendering:
   startButton:
     - name: endButton
-    - name: codeCoverChart
     - name: executeHistoryTable
   endButton:
     - name: startButton
@@ -80,8 +79,8 @@ rendering:
   timeSelector:
     - name: codeCoverChart
       state:
-        - name: "timeRange"
-          value: "{{ timeSelector.timeRange }}"
+        - name: "value"
+          value: "{{ timeSelector.value }}"
     - name: chart1
       state:
         - name: "recordID"
@@ -95,7 +94,11 @@ rendering:
   __DefaultRendering__:
     - name: startButton
     - name: endButton
+    - name: timeSelector
     - name: codeCoverChart
+      state:
+        - name: "value"
+          value: "{{ timeSelector.value }}"
     - name: chart1
       state:
         - name: "recordID"
