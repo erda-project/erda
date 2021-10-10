@@ -160,7 +160,7 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 		TimeEnd: &now,
 	}
 
-	return svc.db.Debug().Model(&dao.CodeCoverageExecRecord{}).
+	return svc.db.Model(&dao.CodeCoverageExecRecord{}).
 		Where("project_id = ?", req.ProjectID).
 		Where("status IN (?)", apistructs.WorkingStatus).Updates(record).Error
 }
@@ -194,6 +194,9 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	status := apistructs.CodeCoverageExecStatus(req.Status)
 	if status != apistructs.FailStatus && status != apistructs.SuccessStatus {
 		return errors.New("the status is not fail or success")
+	}
+	if record.Status == apistructs.CancelStatus {
+		return errors.New("the record had been cancelled")
 	}
 
 	record.Status = status
