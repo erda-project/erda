@@ -92,7 +92,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 
 	jacocoAddress := getJacocoAddr(record.ProjectID)
 	if len(jacocoAddress) <= 0 {
-		return fmt.Errorf("not find project jaccoco address")
+		return fmt.Errorf("not find jaccoco application address")
 	}
 
 	// call jacoco start
