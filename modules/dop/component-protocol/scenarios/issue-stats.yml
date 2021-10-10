@@ -12,6 +12,8 @@ hierarchy:
       - chartGroup1
       - chartGroup2
       - stateVerticalBarChart
+      - labelHorizontalBarChart
+      - assigneeHorizontalBarChart
       # - chart5
     overview:
       - total
@@ -98,6 +100,10 @@ components:
 
   stateVerticalBarChart:
     type: Chart
+  labelHorizontalBarChart:
+    type: Chart
+  assigneeHorizontalBarChart:
+    type: Chart
 
 rendering:
   filter:
@@ -165,6 +171,18 @@ rendering:
         - name: "stats"
           value: "{{ total.stats }}"
     - name: stateVerticalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: labelHorizontalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: assigneeHorizontalBarChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
@@ -263,6 +281,18 @@ rendering:
         - name: "issueList"
           value: "{{ filter.issueList }}"
     - name: stateVerticalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: labelHorizontalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: assigneeHorizontalBarChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"

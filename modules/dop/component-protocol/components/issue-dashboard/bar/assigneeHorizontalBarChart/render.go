@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stateVerticalBarChart
+package assigneeHorizontalBarChart
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "stateVerticalBarChart",
+	base.InitProviderWithCreator("issue-dashboard", "assigneeHorizontalBarChart",
 		func() servicehub.Provider { return &ComponentAction{} })
 }
 
@@ -67,37 +67,32 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	for _, i := range apistructs.IssuePriorityList {
 		yAxis = append(yAxis, i.GetZhName())
 	}
-	bar.Legend.Data = yAxis
-	// x is always stable
-	var xAxis []string
-	for _, i := range f.State.IssueStateList {
-		xAxis = append(xAxis, i.Name)
+	bar.YAxisList[0] = opts.YAxis{
+		Type: "category",
+		Data: yAxis,
 	}
-	bar.SetXAxis(xAxis)
+	bar.XAxisList[0] = opts.XAxis{
+		Type: "value",
+	}
 
-	bar.MultiSeries = common.GroupToVerticalBarData(bugList, yAxis, xAxis, func(issue interface{}) string {
+	bar.MultiSeries = common.GroupToVerticalBarData(bugList, yAxis, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Priority.GetZhName()
 	}, func(issue interface{}) string {
-		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
+		return issue.(*dao.IssueItem).Assignee
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{
 			Name:  name,
-			Data:  data,
 			Stack: "total",
+			Data:  data,
 			Label: &opts.Label{
 				Formatter: "{a}:{c}",
 				Show:      true,
 			},
 		}
-	}, 0)
-	bar.Tooltip.Show = true
-
-	// some weired, guess go-echarts validate before render,
-	// but we only use JSON(), and there maybe a bug of go-echarts.
-	bar.Validate()
+	}, 500)
 
 	props := make(map[string]interface{})
-	props["title"] = "缺陷状态分布" // TODO: change by filter
+	props["title"] = "未完成缺陷按处理人分布（TOP 500）"
 	props["chartType"] = "bar"
 	props["option"] = bar.JSON()
 

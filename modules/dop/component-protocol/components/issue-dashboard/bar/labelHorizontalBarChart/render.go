@@ -17,10 +17,11 @@ package labelHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/go-echarts/go-echarts/v2/opts"
-
 	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -51,20 +52,49 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
+	var bugList []interface{}
+	for i := range f.State.IssueList {
+		issue := f.State.IssueList[i]
+		if issue.Type != apistructs.IssueTypeBug {
+			continue
+		}
+		bugList = append(bugList, &issue)
+	}
+
 	bar := charts.NewBar()
 	bar.Colors = []string{"green", "blue", "orange", "red"}
-	var leg []string
-	for _, i := range f.State.IssueStateList {
-		leg = append(leg, i.Name)
+	var yAxis []string
+	for _, i := range apistructs.IssuePriorityList {
+		yAxis = append(yAxis, i.GetZhName())
 	}
-	bar.Legend.Data = leg
-	bar.AddSeries("缺陷分布", []opts.BarData{
+	bar.YAxisList[0] = opts.YAxis{
+		Type: "category",
+		Data: []string{"1", "2"},
+	}
+	bar.XAxisList[0] = opts.XAxis{
+		Type: "value",
+	}
 
-	}, func(s *charts.SingleSeries) {
-		s.Animation = true
-	})
+	bar.MultiSeries = common.GroupToVerticalBarData(bugList, []string{"all"}, nil, func(issue interface{}) string {
+		return "all"
+	}, func(issue interface{}) string {
+		if issue.(*dao.IssueItem).ID % 2 == 0 {
+			return "i1"
+		} else {
+			return "i2"
+		}
+	}, func(name string, data []*int) charts.SingleSeries {
+		return charts.SingleSeries{
+			Name:  name,
+			Data:  data,
+			Label: &opts.Label{
+				Show:      true,
+			},
+		}
+	}, 500)
+
 	props := make(map[string]interface{})
-	props["title"] = "缺陷状态分布" // TODO: change by filter
+	props["title"] = "按标签分布（TOP 500）"
 	props["chartType"] = "bar"
 	props["option"] = bar.JSON()
 

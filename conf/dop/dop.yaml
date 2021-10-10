@@ -80,3 +80,5 @@ component-protocol.components.issue-dashboard.week:
 component-protocol.components.issue-dashboard.undefined:
 
 component-protocol.components.issue-dashboard.stateVerticalBarChart:
+component-protocol.components.issue-dashboard.labelHorizontalBarChart:
+component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:

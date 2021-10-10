@@ -15,6 +15,8 @@
 package common
 
 import (
+	"sort"
+
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
@@ -57,36 +59,54 @@ func GroupToPieData(issueList []dao.IssueItem, g func(issue *dao.IssueItem) stri
 	return data
 }
 
-func GroupToVerticalBarData(issueList []dao.IssueItem, yAxis []string, xAxis []string, yIdx func(issue *dao.IssueItem) string, xIdx func(issue *dao.IssueItem) string) charts.MultiSeries {
+func GroupToVerticalBarData(issueList []interface{}, stacks []string, xAxis []string,
+	stackIdx func(issue interface{}) string, xIdx func(issue interface{}) string,
+	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) charts.MultiSeries {
 	counter := make(map[string]map[string]int)
+	counterSingle := make(map[string]int)
 
 	for _, i := range issueList {
-		if i.Type != apistructs.IssueTypeBug {
-			continue
-		}
-		y := FixEmptyWord(yIdx(&i))
-		x := FixEmptyWord(xIdx(&i))
+		y := FixEmptyWord(stackIdx(i))
+		x := FixEmptyWord(xIdx(i))
 		if _, ok := counter[y]; !ok {
 			counter[y] = make(map[string]int)
 		}
 		counter[y][x]++
+		counterSingle[x]++
 	}
 
 	var ms charts.MultiSeries
-	for _, y := range yAxis {
-		var rowData []int
-		for _, x := range xAxis {
-			rowData = append(rowData, counter[y][x])
+	xl := len(xAxis)
+	if xl == 0 {
+		// use top instead
+		var sl counterList
+		for k, v := range counterSingle {
+			if v == 0 {
+				continue
+			}
+			sl = append(sl, counterItem{Name: k, Value: v})
 		}
-		ms = append(ms, charts.SingleSeries{
-			Name:  y,
-			Data:  rowData,
-			Stack: "total",
-			Label: &opts.Label{
-				Formatter: "{a}:{c}",
-				Show:      true,
-			},
-		})
+		sort.Sort(sl)
+		last := top
+		xAxis = make([]string, 0)
+		xl = 0 // reset
+		for _, item := range sl {
+			if last <= 0 || item.Value <= 0 {
+				break
+			}
+			xAxis = append(xAxis, item.Name)
+			xl++
+		}
+	}
+	for _, stack := range stacks {
+		rowData := make([]*int, xl)
+		for i, x := range xAxis {
+			v := counter[stack][x]
+			if v > 0 {
+				rowData[i] = &v
+			}
+		}
+		ms = append(ms, seriesConverter(stack, rowData))
 	}
 
 	return ms
@@ -101,3 +121,14 @@ func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.Is
 	}
 	return res
 }
+
+type counterItem struct {
+	Name  string
+	Value int
+}
+
+type counterList []counterItem
+
+func (l counterList) Less(i, j int) bool { return l[i].Value > l[j].Value }
+func (l counterList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l counterList) Len() int           { return len(l) }
