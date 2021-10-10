@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package head
+package treeMapChart
 
 import (
 	"context"
@@ -70,59 +70,64 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 
 func (c *ComponentAction) setProps(recordID uint64) error {
 	var data []*apistructs.CodeCoverageNode
+	title := "报告详情"
 	if recordID != 0 {
 		record, err := c.svc.GetCodeCoverageRecord(recordID)
 		if err != nil {
 			return err
 		}
 		data = record.ReportContent
+		title = fmt.Sprintf("%s %s", record.TimeCreated.Format("2006-01-02 15:03:04"), title)
 	}
 	c.Props = map[string]interface{}{
 		//"requestIgnore": []string{"props"},
-		"title": "矩阵图",
+		"title": title,
 		"style": map[string]interface{}{
 			"height": 600,
 		},
 		"chartType": "treemap",
 		"option": map[string]interface{}{
+			"tooltip": map[string]interface{}{
+				"show":      true,
+				"formatter": "{@parent}: {@[1]} <br /> {@abc}: {@[2]}",
+			},
 			"series": []interface{}{
 				map[string]interface{}{
-					"name": "All",
-					"top":  80,
-					"type": "treemap",
-					"label": map[string]interface{}{
-						"show":      true,
-						"formatter": "{b}",
-					},
-					"itemStyle": map[string]interface{}{
-						"normal": map[string]interface{}{
-							"borderColor": "black",
-						},
-					},
-					"visualMin":       -100,
-					"visualMax":       100,
-					"visualDimension": 3,
+					"name":           "All",
+					"type":           "treemap",
+					"roam":           "move",
+					"leafDepth":      2,
+					"colorMappingBy": "value",
+					"data":           data,
+					"color":          []string{"#800000", "#F7A76B", "#F7C36B", "#6CB38B", "#8FBC8F"},
 					"levels": []interface{}{
 						map[string]interface{}{
+							"colorSaturation": []interface{}{0.3, 0.6},
 							"itemStyle": map[string]interface{}{
-								"borderWidth": 3,
-								"borderColor": "#333",
-								"gapWidth":    3,
+								"borderColor": "#555",
+								"borderWidth": 4,
+								"gapWidth":    4,
 							},
 						},
 						map[string]interface{}{
-							"color": []interface{}{
-								"942e38",
-								"#aaa",
-								"#269f3c",
-							},
-							"colorMappingBy": "value",
+							"colorSaturation": []interface{}{0.3, 0.6},
 							"itemStyle": map[string]interface{}{
-								"gapWidth": 1,
+								"borderColorSaturation": "0.7",
+								"borderWidth":           2,
+								"gapWidth":              2,
 							},
 						},
+						map[string]interface{}{
+							"colorSaturation": []interface{}{0.3, 0.5},
+							"itemStyle": map[string]interface{}{
+								"borderColorSaturation": "0.6",
+								"gapWidth":              1,
+							},
+						},
+						map[string]interface{}{
+							"colorSaturation": []interface{}{0.3, 0.5},
+						},
 					},
-					"data": data,
 				},
 			},
 		},
