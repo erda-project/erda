@@ -9,6 +9,7 @@ hierarchy:
       - tip
       - buttonGroup
       - codeCoverChart
+      - treeMapChart
     buttonGroup:
       - startButton
       - endButton
@@ -21,6 +22,8 @@ hierarchy:
       - executeHistoryTable
     codeCoverChart:
       extraContent: timeSelector
+    treeMapChart:
+      extraContent: downloadButton
 
 components:
   page:
@@ -67,6 +70,8 @@ components:
       message: "说明：代码覆盖统计计划是指开启统计和结束统计周期的管理，计划开始后会完全重新统计，在结束之前会持续统计，结束后会生成统计记录和报告"
   treeMapChart:
     type: Chart
+  downloadButton:
+    type: Button
   timeSelector:
     type: DatePicker
 
@@ -90,8 +95,16 @@ rendering:
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
+    - name: downloadButton
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
   codeCoverChart:
     - name: treeMapChart
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+    - name: downloadButton
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
@@ -106,6 +119,10 @@ rendering:
         - name: "value"
           value: "{{ timeSelector.value }}"
     - name: treeMapChart
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+    - name: downloadButton
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"

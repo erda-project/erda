@@ -17,6 +17,7 @@ package code_coverage
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/cancelButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/codeCoverChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/downloadButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/endButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryTable"

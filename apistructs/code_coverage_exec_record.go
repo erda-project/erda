@@ -120,10 +120,15 @@ type CodeCoverageExecRecordDto struct {
 	TimeUpdated   time.Time           `json:"timeUpdated"`
 }
 
+type ToolTip struct {
+	Formatter string `json:"formatter"`
+}
+
 type CodeCoverageNode struct {
-	Value []float64           `json:"value"`
-	Name  string              `json:"name"`
-	Nodes []*CodeCoverageNode `json:"children"`
+	Value   []float64           `json:"value"`
+	Name    string              `json:"name"`
+	ToolTip ToolTip             `json:"tooltip"`
+	Nodes   []*CodeCoverageNode `json:"children"`
 }
 
 type CodeCoverageCancelRequest struct {

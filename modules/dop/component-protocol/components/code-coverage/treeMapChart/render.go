@@ -24,16 +24,16 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	base.DefaultProvider
 
-	ctxBdl protocol.ContextBundle
+	ctxBdl *bundle.Bundle
 	svc    *code_coverage.CodeCoverage
 
 	Name       string                 `json:"name,omitempty"`
@@ -71,6 +71,7 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 func (c *ComponentAction) setProps(recordID uint64) error {
 	var data []*apistructs.CodeCoverageNode
 	title := "报告详情"
+	projectName := ""
 	if recordID != 0 {
 		record, err := c.svc.GetCodeCoverageRecord(recordID)
 		if err != nil {
@@ -78,6 +79,11 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 		}
 		data = record.ReportContent
 		title = fmt.Sprintf("%s %s", record.TimeCreated.Format("2006-01-02 15:03:04"), title)
+		project, err := c.ctxBdl.GetProject(record.ProjectID)
+		if err != nil {
+			return err
+		}
+		projectName = project.DisplayName
 	}
 	c.Props = map[string]interface{}{
 		//"requestIgnore": []string{"props"},
@@ -87,19 +93,20 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 		},
 		"chartType": "treemap",
 		"option": map[string]interface{}{
-			"tooltip": map[string]interface{}{
-				"show":      true,
-				"formatter": "{@parent}: {@[1]} <br /> {@abc}: {@[2]}",
-			},
+			//"tooltip": map[string]interface{}{
+			//	"show":      true,
+			//	"formatter": "{@parent}: {@[1]} <br /> {@abc}: {@[2]}",
+			//},
 			"series": []interface{}{
 				map[string]interface{}{
-					"name":           "All",
-					"type":           "treemap",
-					"roam":           "move",
-					"leafDepth":      2,
-					"colorMappingBy": "value",
-					"data":           data,
-					"color":          []string{"#800000", "#F7A76B", "#F7C36B", "#6CB38B", "#8FBC8F"},
+					"name":            projectName,
+					"type":            "treemap",
+					"roam":            "move",
+					"leafDepth":       2,
+					"colorMappingBy":  "value",
+					"visualDimension": 9,
+					"data":            data,
+					"color":           []string{"#800000", "#F7A76B", "#F7C36B", "#6CB38B", "#8FBC8F"},
 					"levels": []interface{}{
 						map[string]interface{}{
 							"colorSaturation": []interface{}{0.3, 0.6},
@@ -141,6 +148,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 	ca.svc = svc
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	ca.ctxBdl = bdl
 	ca.Type = "Chart"
 	recordID := ca.State.RecordID
 	if err := ca.setProps(recordID); err != nil {
