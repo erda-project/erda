@@ -82,11 +82,12 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 	record := dao.CodeCoverageExecRecord{
 		ProjectID:     req.ProjectID,
 		Status:        apistructs.RunningStatus,
+		ReportStatus:  apistructs.RunningStatus,
 		TimeBegin:     time.Now(),
 		StartExecutor: req.UserID,
 		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
 	}
-	if err := svc.db.Debug().Create(&record).Error; err != nil {
+	if err := svc.db.Create(&record).Error; err != nil {
 		return err
 	}
 
@@ -161,8 +162,9 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 		}
 	}
 	record := dao.CodeCoverageExecRecord{
-		Status:  apistructs.CancelStatus,
-		TimeEnd: time.Now(),
+		Status:       apistructs.CancelStatus,
+		ReportStatus: apistructs.CancelStatus,
+		TimeEnd:      time.Now(),
 	}
 
 	return svc.db.Model(&dao.CodeCoverageExecRecord{}).
@@ -210,7 +212,6 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	}
 	record.Status = status
 	record.Msg = req.Msg
-	record.ReportUrl = req.ReportTarUrl
 
 	if req.ReportXmlUUID != "" {
 		f, err := svc.bdl.DownloadDiceFile(req.ReportXmlUUID)
@@ -229,6 +230,27 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		record.ReportContent = analyzeJson
 		record.Coverage = coverage
 	}
+
+	return svc.db.Save(&record).Error
+}
+
+// ReportCallBack Record report callBack
+func (svc *CodeCoverage) ReportCallBack(req apistructs.CodeCoverageUpdateRequest) error {
+	var record dao.CodeCoverageExecRecord
+	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
+		return err
+	}
+	reportStatus := apistructs.CodeCoverageExecStatus(req.Status)
+	if reportStatus != apistructs.FailStatus && reportStatus != apistructs.SuccessStatus {
+		return errors.New("the status is not fail or success")
+	}
+	if record.ReportStatus == apistructs.CancelStatus {
+		return nil
+	}
+
+	record.ReportStatus = reportStatus
+	record.ReportMsg = req.Msg
+	record.ReportUrl = req.ReportTarUrl
 
 	return svc.db.Save(&record).Error
 }

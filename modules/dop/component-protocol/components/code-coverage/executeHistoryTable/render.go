@@ -79,12 +79,13 @@ type Operate struct {
 }
 
 type Download struct {
-	Command  Command `json:"command"`
-	Confirm  string  `json:"confirm"`
-	Key      string  `json:"key"`
-	Reload   bool    `json:"reload"`
-	Text     string  `json:"text"`
-	Disabled bool    `json:"disabled"`
+	Command     Command `json:"command"`
+	Confirm     string  `json:"confirm"`
+	Key         string  `json:"key"`
+	Reload      bool    `json:"reload"`
+	Text        string  `json:"text"`
+	Disabled    bool    `json:"disabled"`
+	DisabledTip string  `json:"disabledTip"`
 }
 
 type Command struct {
@@ -110,8 +111,8 @@ type State struct {
 
 var statusMap = map[string]string{
 	"running": "进行中",
-	"ready":   "准备中",
-	"ending":  "结束中",
+	"ready":   "进行中",
+	"ending":  "进行中",
 	"success": "成功",
 	"fail":    "失败",
 	"cancel":  "用户取消",
@@ -158,16 +159,29 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 	list := make([]ExecuteHistory, 0)
 	userIDs := make([]string, 0)
 	for _, v := range data.List {
-		disabled := false
-		if v.ReportUrl == "" {
-			disabled = true
-		}
 		var timeBegin, timeEnd string
 		timeBegin = v.TimeBegin.Format("2006-01-02 15:04:05")
 		if v.TimeEnd.Year() == 1000 {
 			timeEnd = ""
 		} else {
 			timeEnd = v.TimeEnd.Format("2006-01-02 15:04:05")
+		}
+
+		var (
+			reportText     = "下载报告"
+			reportTip      = v.ReportMsg
+			reportDisabled bool
+		)
+		if v.ReportStatus == "running" {
+			reportText = "报告生成中"
+			reportDisabled = true
+		}
+		if v.ReportStatus == "cancel" {
+			reportTip = "用户取消"
+			reportDisabled = true
+		}
+		if v.ReportStatus == "fail" {
+			reportDisabled = true
 		}
 
 		userIDs = append(userIDs, v.StartExecutor, v.EndExecutor)
@@ -198,11 +212,12 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 						Key:     "goto",
 						Target:  v.ReportUrl,
 					},
-					Confirm:  "",
-					Key:      "download",
-					Reload:   false,
-					Text:     "下载报告",
-					Disabled: disabled,
+					Confirm:     "",
+					Key:         "download",
+					Reload:      false,
+					Text:        reportText,
+					Disabled:    reportDisabled,
+					DisabledTip: reportTip,
 				}},
 				RenderType: "tableOperation",
 			},

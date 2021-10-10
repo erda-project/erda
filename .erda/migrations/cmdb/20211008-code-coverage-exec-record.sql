@@ -2,7 +2,8 @@ CREATE TABLE `dice_code_coverage_exec_record`
 (
     `id`             bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
     `project_id`     bigint(20) NOT NULL COMMENT '项目ID',
-    `status`         varchar(128)   NOT NULL COMMENT 'running,ready,ending,success,fail',
+    `status`         varchar(128)   NOT NULL COMMENT 'running,ready,ending,success,fail,cancel',
+    `report_status`  varchar(128)   NOT NULL COMMENT 'running,success,fail,cancel',
     `coverage`       decimal(65, 2) NOT NULL DEFAULT 0.00 COMMENT '行覆盖率',
     `report_url`     varchar(255)   NOT NULL DEFAULT "" COMMENT '报告下载地址',
     `report_content` longtext       NOT NULL COMMENT '报告分析内容',
@@ -13,6 +14,7 @@ CREATE TABLE `dice_code_coverage_exec_record`
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `msg`            varchar(255)   NOT NULL DEFAULT "" COMMENT '日志信息',
+    `report_msg`     varchar(255)   NOT NULL DEFAULT "" COMMENT '报告日志信息',
     PRIMARY KEY (`id`),
     KEY              `idx_project_id` (`project_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COMMENT='代码覆盖率执行记录';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='代码覆盖率执行记录';
