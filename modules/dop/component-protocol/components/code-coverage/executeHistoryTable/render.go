@@ -260,12 +260,12 @@ func (ca *ComponentAction) SetProps() error {
         {
             "dataIndex":"status",
             "title":"状态",
-            "width":80
+            "width":100
         },
         {
             "dataIndex":"coverRate",
             "title":"当前行覆盖率",
-            "width":120
+            "width":100
         },
         {
             "dataIndex":"reason",
@@ -274,22 +274,22 @@ func (ca *ComponentAction) SetProps() error {
         {
             "dataIndex":"starter",
             "title":"统计开始者",
-            "width":100
+            "width":90
         },
         {
             "dataIndex":"startTime",
             "title":"开始时间",
-            "width":140
+            "width":150
         },
         {
             "dataIndex":"ender",
             "title":"统计结束者",
-            "width":100
+            "width":90
         },
         {
             "dataIndex":"endTime",
             "title":"统计结束时间",
-            "width":140
+            "width":150
         },
         {
             "dataIndex":"operate",
