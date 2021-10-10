@@ -15,10 +15,11 @@
 package common
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 func FixEmptyWord(em string) string {
@@ -89,4 +90,14 @@ func GroupToVerticalBarData(issueList []dao.IssueItem, yAxis []string, xAxis []s
 	}
 
 	return ms
+}
+
+func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.IssueItem {
+	res := make([]dao.IssueItem, 0)
+	for i, issue := range issues {
+		if match(i) {
+			res = append(res, issue)
+		}
+	}
+	return res
 }

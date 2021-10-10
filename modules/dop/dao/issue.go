@@ -17,6 +17,7 @@ package dao
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -750,6 +751,12 @@ type IssueItem struct {
 	ReopenCount  int
 
 	Belong string
+}
+
+func (i *IssueItem) FilterPropertyRetriever(condition string) string {
+	r := reflect.ValueOf(i)
+	f := reflect.Indirect(r).FieldByName(condition)
+	return string(f.String())
 }
 
 func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {

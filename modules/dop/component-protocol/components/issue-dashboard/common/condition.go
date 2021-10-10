@@ -30,9 +30,9 @@ type FilterConditions struct {
 }
 
 const (
-	Priority   = "priority"
-	Complexity = "complexity"
-	Severity   = "severity"
+	Priority   = "Priority"
+	Complexity = "Complexity"
+	Severity   = "Severity"
 )
 
 var ConditionMap = map[string][]filter.PropConditionOption{

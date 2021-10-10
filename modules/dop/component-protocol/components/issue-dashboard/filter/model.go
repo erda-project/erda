@@ -45,8 +45,8 @@ type State struct {
 }
 
 type InParams struct {
-	OrgID     uint64 `json:"orgID,omitempty"`
-	ProjectID uint64 `json:"projectID,omitempty"`
+	FrontEndProjectID string `json:"projectId,omitempty"`
+	ProjectID         uint64
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"

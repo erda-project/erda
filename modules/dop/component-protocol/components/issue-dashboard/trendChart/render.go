@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -104,7 +105,12 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 	}
 
 	first, last := [3]int{0, 0, 0}, [3]int{0, 0, 0}
-	for _, i := range f.State.IssueList {
+
+	issues := common.IssueListRetriever(f.State.IssueList, func(i int) bool {
+		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.FilterValues.Type)
+		return f.State.FilterValues.Value == nil || strutil.Exist(f.State.FilterValues.Value, v)
+	})
+	for _, i := range issues {
 		created := time.Date(i.CreatedAt.Year(), i.CreatedAt.Month(), i.CreatedAt.Day(), 0, 0, 0, 0, i.CreatedAt.Location())
 		if created.Before(*iteration.StartedAt) {
 			first[0] += 1

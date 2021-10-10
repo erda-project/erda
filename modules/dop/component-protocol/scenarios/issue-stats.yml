@@ -13,9 +13,6 @@ hierarchy:
       - chartGroup2
       - stateVerticalBarChart
       # - chart5
-    # issueTypeContainer:
-    #   - issueType
-    #   - issueTip
     overview:
       - total
       - open
@@ -174,6 +171,20 @@ rendering:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
 
+  trendChartFilter:
+    - name: filter
+    - name: trendChart
+      state:
+        - name: "filterValues"
+          value: "{{ trendChartFilter.values }}"
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "iterations"
+          value: "{{ filter.iterations }}"
+        
+
   __DefaultRendering__:
     - name: page
     - name: header
@@ -219,6 +230,8 @@ rendering:
     - name: trendChartFilter
     - name: trendChart
       state:
+        - name: "filterValues"
+          value: "{{ trendChartFilter.values }}"
         - name: "issueList"
           value: "{{ filter.issueList }}"
         - name: "values"

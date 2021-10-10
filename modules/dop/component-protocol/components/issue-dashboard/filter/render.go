@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -65,7 +66,8 @@ func (f *ComponentFilter) setInParams(ctx context.Context) error {
 		return err
 	}
 
-	return nil
+	f.InParams.ProjectID, err = strconv.ParseUint(f.InParams.FrontEndProjectID, 10, 64)
+	return err
 }
 
 // func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
@@ -106,12 +108,16 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	// 	return err
 	// }
 
-	switch event.Operation {
-	case cptype.InitializeOperation, cptype.RenderingOperation:
-		if err := f.InitDefaultOperation(ctx, f.State); err != nil {
-			return err
-		}
-	case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
+	// switch event.Operation {
+	// case cptype.InitializeOperation, cptype.RenderingOperation:
+	// 	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
+	// 		return err
+	// 	}
+	// case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
+	// }
+
+	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
+		return err
 	}
 
 	data, err := f.issueSvc.GetAllIssuesByProject(apistructs.IssueListRequest{
