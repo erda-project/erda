@@ -38,7 +38,7 @@ type ComponentAction struct {
 	Type            string                      `json:"type"`
 	Data            Data                        `json:"data"`
 	Props           map[string]interface{}      `json:"props"`
-	State           *State                      `json:"state"`
+	State           State                       `json:"state"`
 	Operations      Operations                  `json:"operations"`
 }
 
@@ -163,16 +163,13 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			disabled = true
 		}
 		var timeBegin, timeEnd string
-		if v.TimeBegin != nil {
-			timeBegin = v.TimeBegin.Format("2006-01-02 15:03:04")
+		timeBegin = v.TimeBegin.Format("2006-01-02 15:04:05")
+		if v.TimeEnd.Year() == 1000 {
+			timeEnd = ""
+		} else {
+			timeEnd = v.TimeEnd.Format("2006-01-02 15:04:05")
 		}
-		if v.TimeEnd != nil {
-			if v.TimeEnd.Year() == 1000 {
-				timeEnd = ""
-			} else {
-				timeEnd = v.TimeEnd.Format("2006-01-02 15:03:04")
-			}
-		}
+
 		userIDs = append(userIDs, v.StartExecutor, v.EndExecutor)
 		list = append(list, ExecuteHistory{
 			ID: v.ID,
@@ -188,7 +185,7 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			EndTime:   timeEnd,
 			CoverRate: CoverRate{
 				RenderType: "progress",
-				Value:      fmt.Sprintf("%v", v.Coverage),
+				Value:      fmt.Sprintf("%.2f", v.Coverage),
 				Tip:        "",
 				Status:     v.Status,
 			},
@@ -225,6 +222,9 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 }
 
 func (ca *ComponentAction) SetState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
+		return nil
+	}
 	b, err := json.Marshal(c.State)
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func (ca *ComponentAction) SetState(c *cptype.Component) error {
 	if err = json.Unmarshal(b, &state); err != nil {
 		return err
 	}
-	ca.State = &state
+	ca.State = state
 	return nil
 }
 

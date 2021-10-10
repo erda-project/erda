@@ -79,14 +79,12 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		return err
 	}
 
-	now := time.Now()
-	end := time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC)
 	record := dao.CodeCoverageExecRecord{
 		ProjectID:     req.ProjectID,
 		Status:        apistructs.RunningStatus,
-		TimeBegin:     &now,
+		TimeBegin:     time.Now(),
 		StartExecutor: req.UserID,
-		TimeEnd:       &end,
+		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
 	}
 	if err := svc.db.Debug().Create(&record).Error; err != nil {
 		return err
@@ -132,8 +130,7 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 		return errors.New("the pre status is not ready")
 	}
 	record.Status = apistructs.EndingStatus
-	now := time.Now()
-	record.TimeEnd = &now
+	record.TimeEnd = time.Now()
 	record.EndExecutor = req.UserID
 	if err := svc.db.Save(&record).Error; err != nil {
 		return err
@@ -163,10 +160,9 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 			return apierrors.ErrCreateIssue.AccessDenied()
 		}
 	}
-	now := time.Now()
 	record := dao.CodeCoverageExecRecord{
 		Status:  apistructs.CancelStatus,
-		TimeEnd: &now,
+		TimeEnd: time.Now(),
 	}
 
 	return svc.db.Model(&dao.CodeCoverageExecRecord{}).

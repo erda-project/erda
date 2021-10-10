@@ -113,8 +113,8 @@ type CodeCoverageExecRecordDto struct {
 	ReportContent []*CodeCoverageNode `json:"reportContent"`
 	StartExecutor string              `json:"startExecutor"`
 	EndExecutor   string              `json:"endExecutor"`
-	TimeBegin     *time.Time          `json:"timeBegin"`
-	TimeEnd       *time.Time          `json:"timeEnd"`
+	TimeBegin     time.Time           `json:"timeBegin"`
+	TimeEnd       time.Time           `json:"timeEnd"`
 	TimeCreated   time.Time           `json:"timeCreated"`
 	TimeUpdated   time.Time           `json:"timeUpdated"`
 }

@@ -34,8 +34,8 @@ type CodeCoverageExecRecord struct {
 	ReportContent CodeCoverageNodes                 `json:"report_content" sql:"TYPE:json"`
 	StartExecutor string                            `json:"start_executor"`
 	EndExecutor   string                            `json:"end_executor"`
-	TimeBegin     *time.Time                        `json:"time_begin"`
-	TimeEnd       *time.Time                        `json:"time_end"`
+	TimeBegin     time.Time                         `json:"time_begin"`
+	TimeEnd       time.Time                         `json:"time_end"`
 }
 
 type CodeCoverageNodes []*apistructs.CodeCoverageNode
@@ -85,8 +85,8 @@ type CodeCoverageExecRecordShort struct {
 	ReportUrl     string                            `json:"report_url"`
 	StartExecutor string                            `json:"start_executor"`
 	EndExecutor   string                            `json:"end_executor"`
-	TimeBegin     *time.Time                        `json:"time_begin"`
-	TimeEnd       *time.Time                        `json:"time_end"`
+	TimeBegin     time.Time                         `json:"time_begin"`
+	TimeEnd       time.Time                         `json:"time_end"`
 }
 
 func (CodeCoverageExecRecordShort) TableName() string {
