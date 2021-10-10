@@ -64,7 +64,11 @@ func (c *ESClient) searchLogsV2(req *LogSearchRequest, timeout time.Duration) (*
 		c.setModule(&log)
 		log.DocId = hit.Id
 		log.Timestamp = log.Timestamp / int64(time.Millisecond)
-		resp.Data = append(resp.Data, &LogItem{Source: &log, Highlight: map[string][]string(hit.Highlight)})
+		item := &LogItem{Source: &log, Highlight: map[string][]string(hit.Highlight)}
+		if item.Highlight != nil {
+			delete(item.Highlight, "tags.dice_org_id")
+		}
+		resp.Data = append(resp.Data, item)
 	}
 	return resp, nil
 }
