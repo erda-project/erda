@@ -566,7 +566,7 @@ func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
 func (p *provider) ListDefaultFields() []*LogField {
 	return []*LogField{
 		{FieldName: "source", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "id", SupportAggregation: false, Display: true, Group: 0},
+		{FieldName: "id", SupportAggregation: false, Display: false, Group: 0},
 		{FieldName: "stream", SupportAggregation: false, Display: false, Group: 0},
 		{FieldName: "content", SupportAggregation: false, Display: true, Group: 0},
 		{FieldName: "uniId", SupportAggregation: false, Display: false, Group: 0},
