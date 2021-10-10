@@ -78,3 +78,5 @@ component-protocol.components.issue-dashboard.month:
 component-protocol.components.issue-dashboard.reopen:
 component-protocol.components.issue-dashboard.week:
 component-protocol.components.issue-dashboard.undefined:
+
+component-protocol.components.issue-dashboard.stateVerticalBarChart:

@@ -15,6 +15,7 @@
 package issue_stats
 
 import (
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/stateVerticalBarChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/chartGroup1"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/chartGroup2"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/expired"

@@ -11,7 +11,7 @@ hierarchy:
       # - chart2
       - chartGroup1
       - chartGroup2
-      # - chart4
+      - stateVerticalBarChart
       # - chart5
     # issueTypeContainer:
     #   - issueType
@@ -99,6 +99,9 @@ components:
   sourcePieChart:
     type: Chart
 
+  stateVerticalBarChart:
+    type: Chart
+
 rendering:
   filter:
     - name: trendChart
@@ -131,7 +134,7 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
-    - name: total 
+    - name: total
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
@@ -164,6 +167,12 @@ rendering:
       state:
         - name: "stats"
           value: "{{ total.stats }}"
+    - name: stateVerticalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
 
   __DefaultRendering__:
     - name: page
@@ -240,3 +249,9 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
+    - name: stateVerticalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
