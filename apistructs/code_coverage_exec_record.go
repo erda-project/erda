@@ -27,6 +27,7 @@ const (
 	RunningStatus CodeCoverageExecStatus = "running"
 	ReadyStatus   CodeCoverageExecStatus = "ready"
 	EndingStatus  CodeCoverageExecStatus = "ending"
+	CancelStatus  CodeCoverageExecStatus = "cancel"
 	SuccessStatus CodeCoverageExecStatus = "success"
 	FailStatus    CodeCoverageExecStatus = "fail"
 )
@@ -123,4 +124,17 @@ type CodeCoverageNode struct {
 	Value []float64           `json:"value"`
 	Name  string              `json:"name"`
 	Nodes []*CodeCoverageNode `json:"children"`
+}
+
+type CodeCoverageCancelRequest struct {
+	IdentityInfo
+
+	ProjectID uint64 `json:"projectID"`
+}
+
+func (req *CodeCoverageCancelRequest) Validate() error {
+	if req.ProjectID == 0 {
+		return errors.New("the projectID is 0")
+	}
+	return nil
 }

@@ -580,6 +580,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// code coverage
 		{Path: "/api/code-coverage/actions/start", Method: http.MethodPost, Handler: e.StartCodeCoverage},
 		{Path: "/api/code-coverage/actions/end", Method: http.MethodPost, Handler: e.EndCodeCoverage},
+		{Path: "/api/code-coverage/actions/cancel", Method: http.MethodPost, Handler: e.CancelCodeCoverage},
 		{Path: "/api/code-coverage/actions/ready-callBack", Method: http.MethodPost, Handler: e.ReadyCallBack},
 		{Path: "/api/code-coverage/actions/end-callBack", Method: http.MethodPost, Handler: e.EndCallBack},
 		{Path: "/api/code-coverage/records/actions/list", Method: http.MethodGet, Handler: e.ListCodeCoverageRecord},
