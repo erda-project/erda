@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	bar_util "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -90,6 +91,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	var labelList []interface{}
 	for i := range labels {
 		l := &labels[i]
+		if _, ok := bugMap[l.RefID]; !ok {
+			continue
+		}
 		labelList = append(labelList, l)
 	}
 
@@ -120,15 +124,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			return ""
 		}
 		return l.Name
-	}, func(name string, data []*int) charts.SingleSeries {
-		return charts.SingleSeries{
-			Name:  name,
-			Data:  data,
-			Label: &opts.Label{
-				Show:      true,
-			},
-		}
-	}, 500)
+	}, bar_util.GetHorizontalStackBarSingleSeriesConverter(), 500)
 
 	bar.YAxisList[0] = opts.YAxis{
 		Type: "category",

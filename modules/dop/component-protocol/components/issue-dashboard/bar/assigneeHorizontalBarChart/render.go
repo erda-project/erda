@@ -53,6 +53,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
+	memberMap := make(map[string]*apistructs.Member)
+	for i := range f.State.Members {
+		m := &f.State.Members[i]
+		memberMap[m.UserID] = m
+	}
+
 	var bugList []interface{}
 	for i := range f.State.IssueList {
 		issue := f.State.IssueList[i]
@@ -89,9 +95,19 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		}
 	}, 500)
 
+	var nameY []string
+	for _, userID := range realY {
+		var name string
+		m, ok := memberMap[userID]
+		if ok && m != nil {
+			name = m.Nick
+		}
+		nameY = append(nameY, name)
+	}
+
 	bar.YAxisList[0] = opts.YAxis{
 		Type: "category",
-		Data: realY,
+		Data: nameY,
 	}
 
 	props := make(map[string]interface{})
