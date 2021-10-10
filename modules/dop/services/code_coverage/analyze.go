@@ -31,8 +31,11 @@ const (
 	ComplexityIdx
 	ClassIdx
 	MethodIdx
+	BranchIdx
 	LinePercentIdx
 	InstructionPercentIdx
+	ClassCoveredPercentIdx
+	LineCoveredIdx
 )
 
 var (
@@ -41,14 +44,28 @@ var (
 	ComplexityCounter  CounterType = "COMPLEXITY"
 	ClassCounter       CounterType = "CLASS"
 	MethodCounter      CounterType = "METHOD"
+	BranchCounter      CounterType = "BRANCH"
+)
+
+var (
+	ProjectFormatter = "总行数： %.0f <br/>覆盖行数: %0.f<br/>行覆盖率: %.2f"
+	PackageFormatter = "%s <br/>总行数: %.0f <br/>覆盖行数: %.0f<br/>行覆盖率: %.2f<br/>class覆盖率: %.2f"
 )
 
 func (c CounterType) IsLineType() bool {
-	return c == MethodCounter
+	return c == LineCounter
 }
 
 func (c CounterType) IsInstructionType() bool {
 	return c == InstructionCounter
+}
+
+func (c CounterType) IsClassType() bool {
+	return c == ClassCounter
+}
+
+func (c CounterType) IsBranchType() bool {
+	return c == BranchCounter
 }
 
 func (c CounterType) GetValueIdx() int {
@@ -63,6 +80,8 @@ func (c CounterType) GetValueIdx() int {
 		return MethodIdx
 	case ClassCounter:
 		return ClassIdx
+	case BranchCounter:
+		return BranchIdx
 	default:
 		return LineIdx
 	}
@@ -117,15 +136,19 @@ func decimal(value float64) float64 {
 }
 
 func setNodeValue(root *apistructs.CodeCoverageNode, counters []Counter) {
-	root.Value = make([]float64, 7)
+	root.Value = make([]float64, 10)
 	for _, c := range counters {
 		v := float64(c.Missed + c.Covered)
 		root.Value[c.Type.GetValueIdx()] = v
 		if c.Type.IsLineType() && v != 0 {
 			root.Value[LinePercentIdx] = decimal((float64(c.Covered) / v) * 100)
+			root.Value[LineCoveredIdx] = decimal(float64(c.Covered))
 		}
 		if c.Type.IsInstructionType() && v != 0 {
 			root.Value[InstructionPercentIdx] = decimal((float64(c.Covered) / v) * 100)
+		}
+		if c.Type.IsClassType() && v != 0 {
+			root.Value[ClassCoveredPercentIdx] = decimal((float64(c.Covered) / v) * 100)
 		}
 	}
 }
@@ -138,10 +161,12 @@ func convertReportToTree(r Report) ([]*apistructs.CodeCoverageNode, float64) {
 	setNodeValue(root, r.Counters)
 	coverage := root.Value[LinePercentIdx]
 	root.Name = r.ProjectName
+	root.ToolTip.Formatter = fmt.Sprintf(ProjectFormatter, root.Value[LineIdx], root.Value[LineCoveredIdx], root.Value[LinePercentIdx])
 	for _, p := range r.Packages {
 		pNode := &apistructs.CodeCoverageNode{}
 		setNodeValue(pNode, p.Counters)
 		pNode.Name = p.Name
+		pNode.ToolTip.Formatter = fmt.Sprintf(PackageFormatter, p.Name, pNode.Value[LineIdx], pNode.Value[LineCoveredIdx], pNode.Value[LinePercentIdx], pNode.Value[ClassCoveredPercentIdx])
 		//for _, c := range p.Classes {
 		//	cNode := &apistructs.CodeCoverageNode{}
 		//	setNodeValue(cNode, c.Counters)

@@ -60,6 +60,7 @@ component-protocol.components.code-coverage.startButton:
 component-protocol.components.code-coverage.timeSelector:
 component-protocol.components.code-coverage.tip:
 component-protocol.components.code-coverage.executeHistoryButton:
+component-protocol.components.code-coverage.downloadButton:
 
 
 
