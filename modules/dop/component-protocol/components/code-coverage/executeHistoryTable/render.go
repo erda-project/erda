@@ -163,7 +163,7 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			disabled = true
 		}
 		var timeBegin, timeEnd string
-		if v.TimeBegin != nil && !v.TimeBegin.IsZero() {
+		if v.TimeBegin != nil {
 			timeBegin = v.TimeBegin.Format("2006-01-02 15:03:04")
 		}
 		if v.TimeEnd != nil {

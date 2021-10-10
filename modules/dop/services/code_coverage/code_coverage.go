@@ -15,6 +15,7 @@
 package code_coverage
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"time"
@@ -90,8 +91,14 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 	if err := svc.db.Debug().Create(&record).Error; err != nil {
 		return err
 	}
+
+	jacocoAddress := getJacocoAddr(record.ProjectID)
+	if len(jacocoAddress) <= 0 {
+		return fmt.Errorf("not find jaccoco application address")
+	}
+
 	// call jacoco start
-	return svc.bdl.JacocoStart(getJacocoAddr(record.ProjectID), &apistructs.JacocoRequest{
+	return svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
 		ProjectID: record.ProjectID,
 		PlanID:    record.ID,
 	})
