@@ -35,9 +35,9 @@ import (
 )
 
 const (
-	defaultListSize = 7
-	timeFormat      = "01-02 15:04"
-	goTimeFormat    = "2006-01-02 15:04:05"
+	defaultMaxSize = 9999
+	timeFormat     = "01-02 15:04"
+	goTimeFormat   = "2006-01-02 15:04:05"
 )
 
 type ComponentAction struct {
@@ -61,10 +61,10 @@ type Meta struct {
 }
 
 type PointValue struct {
-	RecordID   uint64  `json:"recordId"`
-	Value      float64 `json:"value"`
-	SymbolSize int     `json:"symbolSize"`
-	Symbol     string  `json:"symbol"`
+	RecordID   uint64 `json:"recordId"`
+	Value      string `json:"value"`
+	SymbolSize int    `json:"symbolSize"`
+	Symbol     string `json:"symbol"`
 }
 
 type State struct {
@@ -92,7 +92,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		p := PointValue{
 			RecordID:   r.ID,
 			SymbolSize: 24,
-			Value:      r.Coverage,
+			Value:      fmt.Sprintf("%.2f%", r.Coverage),
 		}
 		if r.ID == ca.State.RecordID {
 			p.Symbol = "pin"
@@ -105,7 +105,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		},
 		"yAxis": map[string]interface{}{
 			"axisLabel": map[string]interface{}{
-				"formatter": "{value}%%",
+				"formatter": "{value}%",
 			},
 		},
 		"series": []interface{}{
@@ -191,6 +191,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			TimeEnd:   end,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
+			PageSize:  defaultMaxSize,
 		})
 		if err != nil {
 			return err
@@ -207,6 +208,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			TimeEnd:   end,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
+			PageSize:  defaultMaxSize,
 		})
 		if err != nil {
 			return err
@@ -228,6 +230,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			TimeBegin: start,
 			TimeEnd:   end,
 			Asc:       true,
+			PageSize:  defaultMaxSize,
 		})
 		if err != nil {
 			return err
