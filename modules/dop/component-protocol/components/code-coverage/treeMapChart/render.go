@@ -104,8 +104,10 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 				map[string]interface{}{
 					"name":            projectName,
 					"type":            "treemap",
-					"roam":            "move",
+					"roam":            false,
 					"leafDepth":       2,
+					"width":           "100%",
+					"height":          "100%",
 					"colorMappingBy":  "value",
 					"visualDimension": 8,
 					"data":            data,
@@ -114,24 +116,19 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 						map[string]interface{}{
 							"colorSaturation": []interface{}{0.3, 0.6},
 							"itemStyle": map[string]interface{}{
-								"borderColor": "#555",
-								"borderWidth": 4,
-								"gapWidth":    4,
+								"gapWidth": 4,
 							},
 						},
 						map[string]interface{}{
 							"colorSaturation": []interface{}{0.3, 0.6},
 							"itemStyle": map[string]interface{}{
-								"borderColorSaturation": "0.7",
-								"borderWidth":           2,
-								"gapWidth":              2,
+								"gapWidth": 2,
 							},
 						},
 						map[string]interface{}{
 							"colorSaturation": []interface{}{0.3, 0.5},
 							"itemStyle": map[string]interface{}{
-								"borderColorSaturation": "0.6",
-								"gapWidth":              1,
+								"gapWidth": 1,
 							},
 						},
 						map[string]interface{}{
