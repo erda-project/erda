@@ -41,6 +41,7 @@ type LogField struct {
 	FieldName          string `json:"fieldName"`
 	SupportAggregation bool   `json:"supportAggregation"`
 	Display            bool   `json:"display"`
+	Group              int    `json:"group"`
 }
 
 // LogRequest .
@@ -564,26 +565,26 @@ func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
 
 func (p *provider) ListDefaultFields() []*LogField {
 	return []*LogField{
-		{FieldName: "source", SupportAggregation: false, Display: false},
-		{FieldName: "id", SupportAggregation: false, Display: true},
-		{FieldName: "stream", SupportAggregation: false, Display: false},
-		{FieldName: "content", SupportAggregation: false, Display: true},
-		{FieldName: "uniId", SupportAggregation: false, Display: false},
-		{FieldName: "tags.origin", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_cluster_name", SupportAggregation: true, Display: false},
-		{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_project_name", SupportAggregation: true, Display: false},
-		{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true},
-		{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false},
-		{FieldName: "tags.dice_workspace", SupportAggregation: true, Display: true},
-		{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true},
-		{FieldName: "tags.pod_namespace", SupportAggregation: true, Display: true},
-		{FieldName: "tags.pod_name", SupportAggregation: true, Display: true},
-		{FieldName: "tags.container_name", SupportAggregation: true, Display: true},
-		{FieldName: "tags.request-id", SupportAggregation: false, Display: true},
+		{FieldName: "source", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "id", SupportAggregation: false, Display: true, Group: 0},
+		{FieldName: "stream", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "content", SupportAggregation: false, Display: true, Group: 0},
+		{FieldName: "uniId", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "tags.origin", SupportAggregation: false, Display: false, Group: 1},
+		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false, Group: 1},
+		{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false, Group: 1},
+		{FieldName: "tags.dice_cluster_name", SupportAggregation: true, Display: false, Group: 1},
+		{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false, Group: 2},
+		{FieldName: "tags.dice_project_name", SupportAggregation: true, Display: false, Group: 2},
+		{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false, Group: 3},
+		{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true, Group: 3},
+		{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false, Group: 3},
+		{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false, Group: 3},
+		{FieldName: "tags.dice_workspace", SupportAggregation: true, Display: true, Group: 4},
+		{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.pod_namespace", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.pod_name", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.container_name", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.request-id", SupportAggregation: false, Display: true, Group: 6},
 	}
 }
