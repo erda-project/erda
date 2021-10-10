@@ -75,7 +75,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Type: "value",
 	}
 
-	bar.MultiSeries = common.GroupToVerticalBarData(bugList, []string{"all"}, nil, func(issue interface{}) string {
+	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, []string{"all"}, nil, func(issue interface{}) string {
 		return "all"
 	}, func(issue interface{}) string {
 		if issue.(*dao.IssueItem).ID % 2 == 0 {

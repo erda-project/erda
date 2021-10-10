@@ -67,15 +67,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	for _, i := range apistructs.IssuePriorityList {
 		yAxis = append(yAxis, i.GetZhName())
 	}
-	bar.YAxisList[0] = opts.YAxis{
-		Type: "category",
-		Data: yAxis,
-	}
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
 
-	bar.MultiSeries = common.GroupToVerticalBarData(bugList, yAxis, nil, func(issue interface{}) string {
+	var realY []string
+	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, yAxis, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Priority.GetZhName()
 	}, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
@@ -90,6 +87,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			},
 		}
 	}, 500)
+
+	bar.YAxisList[0] = opts.YAxis{
+		Type: "category",
+		Data: realY,
+	}
 
 	props := make(map[string]interface{})
 	props["title"] = "未完成缺陷按处理人分布（TOP 500）"

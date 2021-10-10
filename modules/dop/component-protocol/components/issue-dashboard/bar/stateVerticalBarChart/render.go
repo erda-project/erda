@@ -75,7 +75,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 	bar.SetXAxis(xAxis)
 
-	bar.MultiSeries = common.GroupToVerticalBarData(bugList, yAxis, xAxis, func(issue interface{}) string {
+	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, yAxis, xAxis, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Priority.GetZhName()
 	}, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
