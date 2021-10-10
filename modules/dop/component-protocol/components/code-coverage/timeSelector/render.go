@@ -65,6 +65,7 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	ca.Type = "DatePicker"
 	now := time.Now()
+	now = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
 	oneWeekAgo := now.AddDate(0, 0, -7)
 	oneMonthAgo := now.AddDate(0, 0, -30)
 	oneWeekRange := []int64{oneWeekAgo.Unix() * 1000, now.Unix() * 1000}
