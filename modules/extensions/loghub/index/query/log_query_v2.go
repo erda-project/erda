@@ -165,7 +165,7 @@ func (c *ESClient) aggregateFields(req *LogFieldsAggregationRequest, timeout tim
 	return result, nil
 }
 
-func (c *ESClient) downloadLogs(req *LogDownloadRequest, callback func(batchLogs []*json.RawMessage) error) error {
+func (c *ESClient) downloadLogs(req *LogDownloadRequest, callback func(batchLogs []*logs.Log) error) error {
 	boolQuery := c.getBoolQueryV2(&req.LogRequest)
 	searchSource := c.getScrollSearchSource(req, boolQuery)
 	if len(req.Sort) <= 0 {
@@ -186,16 +186,25 @@ func (c *ESClient) downloadLogs(req *LogDownloadRequest, callback func(batchLogs
 	defer c.clearScroll(&scrollId, scrollRequestTimeout)
 
 	for resp.Hits != nil && len(resp.Hits.Hits) > 0 {
-		hits := make([]*json.RawMessage, len(resp.Hits.Hits))
+		hits := make([]*logs.Log, len(resp.Hits.Hits))
 		for i, hit := range resp.Hits.Hits {
-			hits[i] = hit.Source
+			var log logs.Log
+			err = json.Unmarshal([]byte(*hit.Source), &log)
+			if err != nil {
+				log = logs.Log{Content: string(*hit.Source)}
+				continue
+			}
+			c.setModule(&log)
+			log.DocId = hit.Id
+			log.Timestamp = log.Timestamp / int64(time.Millisecond)
+			hits[i] = &log
 		}
 		err = callback(hits)
 		if err != nil {
 			return err
 		}
 
-		if len(hits) < req.Size {
+		if len(resp.Hits.Hits) < req.Size {
 			return nil
 		}
 

@@ -16,7 +16,6 @@ package query
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -365,12 +364,12 @@ func (c *ESClient) setModule(log *logs.Log) {
 	}
 }
 
-func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*json.RawMessage) error) error {
+func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*logs.Log) error) error {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
 	var count int64
 	var shouldStopIterate bool
 	for _, client := range clients {
-		err := client.downloadLogs(req, func(batchLogs []*json.RawMessage) error {
+		err := client.downloadLogs(req, func(batchLogs []*logs.Log) error {
 			result := callback(batchLogs)
 			if result != nil {
 				shouldStopIterate = true
