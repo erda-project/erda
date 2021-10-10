@@ -17,7 +17,7 @@ package assigneeHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
-	bar_util "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -69,9 +69,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		bugList = append(bugList, &issue)
 	}
 
-	var hander common.StackHandler
+	var hander stackhandlers.StackHandler
 
-	hander = bar_util.PriorityStackHandler{}
+	hander = stackhandlers.PriorityStackHandler{}
 
 	bar := charts.NewBar()
 	bar.Colors = hander.GetStackColors()

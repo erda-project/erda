@@ -17,13 +17,13 @@ package severityPieChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -46,11 +46,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	handler := stackhandlers.SeverityStackHandler{}
+
 	pie := charts.NewPie()
-	pie.Colors = []string{"red", "orange", "yellow", "lime", "green"}
-	pie.AddSeries("严重程度", common.GroupToPieData(f.State.IssueList, func(issue *dao.IssueItem) string {
-		return issue.Severity.GetZhName()
-	}), func(s *charts.SingleSeries) {
+	pie.Colors = handler.GetStackColors()
+	pie.AddSeries("严重程度", common.GroupToPieData(f.State.IssueList, handler), func(s *charts.SingleSeries) {
 		s.Animation = true
 	})
 	props := make(map[string]interface{})

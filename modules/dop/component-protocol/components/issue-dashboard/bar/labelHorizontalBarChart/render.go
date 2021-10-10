@@ -19,8 +19,9 @@ import (
 	"encoding/json"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	bar_util "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
@@ -95,15 +96,15 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		if !ok {
 			continue
 		}
-		labelList = append(labelList, &bar_util.LabelIssueItem{
+		labelList = append(labelList, &model.LabelIssueItem{
 			LabelRel: l,
 			Bug:      bug,
 		})
 	}
 
-	var hander common.StackHandler
+	var hander stackhandlers.StackHandler
 
-	hander = bar_util.PriorityStackHandler{}
+	hander = stackhandlers.PriorityStackHandler{}
 
 	bar := charts.NewBar()
 	bar.Colors = hander.GetStackColors()
@@ -113,12 +114,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	var realY []string
 	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, hander, nil, func(label interface{}) string {
-		l := label.(*bar_util.LabelIssueItem)
+		l := label.(*model.LabelIssueItem)
 		if l == nil {
 			return ""
 		}
 		return l.LabelRel.Name
-	}, bar_util.GetHorizontalStackBarSingleSeriesConverter(), 500)
+	}, common.GetHorizontalStackBarSingleSeriesConverter(), 500)
 
 	bar.YAxisList[0] = opts.YAxis{
 		Type: "category",

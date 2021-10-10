@@ -17,6 +17,7 @@ package statePieChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 
@@ -51,11 +52,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
+	handler := stackhandlers.StateStackHandler{}
+
 	pie := charts.NewPie()
-	pie.Colors = []string{"red", "orange", "yellow", "lime", "green"}
-	pie.AddSeries("缺陷状态", common.GroupToPieData(f.State.IssueList, func(issue *dao.IssueItem) string {
-		return stateMap[uint64(issue.State)].Name
-	}), func(s *charts.SingleSeries) {
+	pie.Colors = handler.GetStackColors()
+	pie.AddSeries("缺陷状态", common.GroupToPieData(f.State.IssueList, handler), func(s *charts.SingleSeries) {
 		s.Animation = true
 	})
 	props := make(map[string]interface{})

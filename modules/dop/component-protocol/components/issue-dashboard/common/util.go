@@ -21,6 +21,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
 )
 
@@ -31,35 +32,36 @@ func FixEmptyWord(em string) string {
 	return em
 }
 
-func GroupToPieData(issueList []dao.IssueItem, g func(issue *dao.IssueItem) string) []opts.PieData {
+func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackHandler) []opts.PieData {
 	counter := make(map[string]int)
+	indexer := stackHandler.GetIndexer()
 
 	for _, i := range issueList {
 		if i.Type != apistructs.IssueTypeBug {
 			continue
 		}
-		counter[FixEmptyWord(g(&i))]++
+		counter[FixEmptyWord(indexer(&i))]++
 	}
 
 	var data []opts.PieData
-	for k, v := range counter {
-		if v == 0 {
+	for _, stack := range stackHandler.GetStacks() {
+		cnt := counter[stack]
+		if cnt <= 0 {
 			continue
 		}
 		data = append(data, opts.PieData{
-			Name:  k,
-			Value: v,
+			Name:  stack,
+			Value: cnt,
 			Label: &opts.Label{
 				Formatter: PieChartFormat,
 				Show:      true,
 			},
 		})
 	}
-
 	return data
 }
 
-func GroupToVerticalBarData(itemList []interface{}, stackHandler StackHandler, xAxis []string,
+func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.StackHandler, xAxis []string,
 	xIdx func(issue interface{}) string,
 	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string) {
 	counter := make(map[string]map[string]int)
@@ -115,10 +117,24 @@ func GroupToVerticalBarData(itemList []interface{}, stackHandler StackHandler, x
 	return ms, xAxis
 }
 
-type StackHandler interface {
-	GetStacks() []string
-	GetStackColors() []string
-	GetIndexer() func(issue interface{}) string
+func GetAssigneeIndexer() func(issue interface{}) string {
+	return func(issue interface{}) string {
+		return issue.(*dao.IssueItem).Assignee
+	}
+}
+
+func GetHorizontalStackBarSingleSeriesConverter() func(name string, data []*int) charts.SingleSeries {
+	return func(name string, data []*int) charts.SingleSeries {
+		return charts.SingleSeries{
+			Name:  name,
+			Stack: "total",
+			Data:  data,
+			Label: &opts.Label{
+				Formatter: "{a}:{c}",
+				Show:      true,
+			},
+		}
+	}
 }
 
 func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.IssueItem {
