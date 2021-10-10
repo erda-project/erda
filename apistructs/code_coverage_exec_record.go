@@ -107,7 +107,9 @@ type CodeCoverageExecRecordDto struct {
 	ID            uint64              `json:"id"`
 	ProjectID     uint64              `json:"projectID"`
 	Status        string              `json:"status"`
+	ReportStatus  string              `json:"reportStatus"`
 	Msg           string              `json:"msg"`
+	ReportMsg     string              `json:"reportMsg"`
 	Coverage      float64             `json:"coverage"`
 	ReportUrl     string              `json:"reportUrl"`
 	ReportContent []*CodeCoverageNode `json:"reportContent"`

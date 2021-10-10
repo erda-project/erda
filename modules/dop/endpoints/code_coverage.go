@@ -143,6 +143,28 @@ func (e *Endpoints) EndCallBack(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp("success")
 }
 
+// ReportCallBack Record report callBack
+func (e *Endpoints) ReportCallBack(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateCodeCoverageExecRecord.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.CodeCoverageUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpdateCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+	if err = req.Validate(); err != nil {
+		return apierrors.ErrUpdateCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err = e.codeCoverageSvc.ReportCallBack(req); err != nil {
+		return apierrors.ErrUpdateCodeCoverageExecRecord.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp("success")
+}
+
 // ListCodeCoverageRecord list code coverage record
 func (e *Endpoints) ListCodeCoverageRecord(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)

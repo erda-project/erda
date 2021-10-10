@@ -28,7 +28,9 @@ type CodeCoverageExecRecord struct {
 
 	ProjectID     uint64                            `json:"project_id"`
 	Status        apistructs.CodeCoverageExecStatus `json:"status"`
+	ReportStatus  apistructs.CodeCoverageExecStatus `json:"report_status"`
 	Msg           string                            `json:"msg"`
+	ReportMsg     string                            `json:"report_msg"`
 	Coverage      float64                           `json:"coverage"`
 	ReportUrl     string                            `json:"report_url"`
 	ReportContent CodeCoverageNodes                 `json:"report_content" sql:"TYPE:json"`
@@ -80,7 +82,9 @@ type CodeCoverageExecRecordShort struct {
 
 	ProjectID     uint64                            `json:"project_id"`
 	Status        apistructs.CodeCoverageExecStatus `json:"status"`
+	ReportStatus  apistructs.CodeCoverageExecStatus `json:"report_status"`
 	Msg           string                            `json:"msg"`
+	ReportMsg     string                            `json:"report_msg"`
 	Coverage      float64                           `json:"coverage"`
 	ReportUrl     string                            `json:"report_url"`
 	StartExecutor string                            `json:"start_executor"`
@@ -98,7 +102,9 @@ func (c *CodeCoverageExecRecordShort) Covert() apistructs.CodeCoverageExecRecord
 		ID:            c.ID,
 		ProjectID:     c.ProjectID,
 		Status:        c.Status.String(),
+		ReportStatus:  c.ReportStatus.String(),
 		Msg:           c.Msg,
+		ReportMsg:     c.ReportMsg,
 		Coverage:      c.Coverage,
 		ReportUrl:     c.ReportUrl,
 		StartExecutor: c.StartExecutor,
