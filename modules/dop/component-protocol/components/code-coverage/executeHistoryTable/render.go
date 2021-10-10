@@ -172,15 +172,15 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			reportTip      = v.ReportMsg
 			reportDisabled bool
 		)
-		if v.ReportStatus == "running" {
+		if v.ReportStatus == apistructs.RunningStatus.String() {
 			reportText = "报告生成中"
 			reportDisabled = true
 		}
-		if v.ReportStatus == "cancel" {
+		if v.ReportStatus == apistructs.CancelStatus.String() {
 			reportTip = "用户取消"
 			reportDisabled = true
 		}
-		if v.ReportStatus == "fail" {
+		if v.ReportStatus == apistructs.FailStatus.String() {
 			reportDisabled = true
 		}
 
