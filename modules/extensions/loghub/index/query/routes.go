@@ -70,7 +70,7 @@ func (p *provider) checkTime(start, end int64) error {
 	if end <= start {
 		return fmt.Errorf("end must after start")
 	}
-	if end-start > 7*24*60*60*1000 {
+	if end-start > 6*31*24*60*60*1000 {
 		return fmt.Errorf("too large time span")
 	}
 	return nil
