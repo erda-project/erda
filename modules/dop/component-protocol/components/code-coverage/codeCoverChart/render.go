@@ -35,9 +35,9 @@ import (
 )
 
 const (
-	defaultListSize = 7
-	timeFormat      = "01-02 15:04"
-	goTimeFormat    = "2006-01-02 15:04:05"
+	defaultMaxSize = 9999
+	timeFormat     = "01-02 15:04"
+	goTimeFormat   = "2006-01-02 15:04:05"
 )
 
 type ComponentAction struct {
@@ -105,7 +105,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		},
 		"yAxis": map[string]interface{}{
 			"axisLabel": map[string]interface{}{
-				"formatter": "{value}%%",
+				"formatter": "{value}%",
 			},
 		},
 		"series": []interface{}{
@@ -191,6 +191,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			TimeEnd:   end,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
+			PageSize:  defaultMaxSize,
 		})
 		if err != nil {
 			return err
@@ -207,6 +208,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			TimeEnd:   end,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
+			PageSize:  defaultMaxSize,
 		})
 		if err != nil {
 			return err
@@ -228,6 +230,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			TimeBegin: start,
 			TimeEnd:   end,
 			Asc:       true,
+			PageSize:  defaultMaxSize,
 		})
 		if err != nil {
 			return err
