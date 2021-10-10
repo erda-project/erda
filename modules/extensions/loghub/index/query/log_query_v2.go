@@ -62,6 +62,7 @@ func (c *ESClient) searchLogsV2(req *LogSearchRequest, timeout time.Duration) (*
 			continue
 		}
 		c.setModule(&log)
+		log.DocId = hit.Id
 		log.Timestamp = log.Timestamp / int64(time.Millisecond)
 		resp.Data = append(resp.Data, &LogItem{Source: &log, Highlight: map[string][]string(hit.Highlight)})
 	}

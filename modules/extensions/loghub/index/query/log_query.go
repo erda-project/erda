@@ -568,8 +568,6 @@ func (p *provider) ListDefaultFields() []*LogField {
 		{FieldName: "id", SupportAggregation: false, Display: true},
 		{FieldName: "stream", SupportAggregation: false, Display: false},
 		{FieldName: "content", SupportAggregation: false, Display: true},
-		{FieldName: "offset", SupportAggregation: false, Display: false},
-		{FieldName: "timestamp", SupportAggregation: false, Display: false},
 		{FieldName: "uniId", SupportAggregation: false, Display: false},
 		{FieldName: "tags.origin", SupportAggregation: false, Display: false},
 		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false},
