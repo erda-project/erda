@@ -185,16 +185,16 @@
         		Param: 1,
         	},
         	Reporter: &jaegercfg.ReporterConfig{
-        		LogSpans: true,
-        		CollectorEndpoint: "{{endpoint}}",
+        		LogSpans:          true,
+          		CollectorEndpoint: "{{endpoint}}",
         	},
         	Tags: []opentracing.Tag{
         		{
-        			Key: "msp.env.id",
+        			Key:   "msp.env.id",
         			Value: "{{msp_env_id}}",
         		},
         		{
-        			Key: "msp.env.token",
+        			Key:   "msp.env.token",
         			Value: "<your_token>",
         		},
         	},
