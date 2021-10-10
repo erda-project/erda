@@ -196,7 +196,7 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		return errors.New("the status is not fail or success")
 	}
 	if record.Status == apistructs.CancelStatus {
-		return errors.New("the record had been cancelled")
+		return nil
 	}
 
 	project, err := svc.bdl.GetProject(record.ProjectID)
