@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
-	"github.com/erda-project/erda/pkg/strutil"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -29,6 +27,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ComponentAction struct {

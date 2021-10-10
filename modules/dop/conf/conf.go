@@ -16,9 +16,10 @@ package conf
 
 import (
 	"encoding/json"
+	"strings"
+
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
-	"strings"
 )
 
 // Conf define envs
