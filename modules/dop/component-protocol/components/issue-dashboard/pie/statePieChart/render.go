@@ -64,5 +64,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props["option"] = pie.JSON()
 
 	c.Props = props
+	c.State = nil
 	return nil
 }

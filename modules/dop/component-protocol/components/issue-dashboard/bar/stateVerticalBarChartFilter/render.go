@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package trendChartFilter
+package stateVerticalBarChartFilter
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "trendChartFilter",
+	base.InitProviderWithCreator("issue-dashboard", "stateVerticalBarChartFilter",
 		func() servicehub.Provider { return &ComponentFilter{} })
 }
 
@@ -67,14 +67,6 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if err := f.InitFromProtocol(ctx, c); err != nil {
 		return err
 	}
-
-	// switch event.Operation {
-	// case cptype.InitializeOperation, cptype.RenderingOperation:
-	// 	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
-	// 		return err
-	// 	}
-	// case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
-	// }
 
 	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
 		return err

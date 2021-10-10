@@ -20,8 +20,9 @@ import (
 )
 
 type FrontendConditions struct {
-	IterationIDs []int64  `json:"iteration,omitempty"`
-	AssigneeIDs  []string `json:"member,omitempty"`
+	IterationIDs int64 `json:"iteration,omitempty"`
+	// IterationIDs []int64  `json:"iteration,omitempty"`
+	AssigneeIDs []string `json:"member,omitempty"`
 }
 
 type FilterConditions struct {

@@ -72,7 +72,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	f.ChartDataRetriever(f.State.Iterations[0])
+	if f.State.Iterations != nil {
+		f.ChartDataRetriever(f.State.Iterations[0])
+	}
 	f.State.IssueList = nil
 	return f.SetToProtocolComponent(c)
 }

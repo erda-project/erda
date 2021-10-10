@@ -39,6 +39,11 @@ hierarchy:
     chartGroup2:
       - severityPieChart
       - sourcePieChart
+    stateVerticalBarChart:
+      extraContent:
+        stateVerticalBarChartExtra
+    stateVerticalBarChartExtra:
+      - stateVerticalBarChartFilter
 
 components:
   page:
@@ -100,6 +105,11 @@ components:
 
   stateVerticalBarChart:
     type: Chart
+  stateVerticalBarChartExtra:
+    type: RowContainer
+  stateVerticalBarChartFilter:
+    type: ContractiveFilter
+
   labelHorizontalBarChart:
     type: Chart
   assigneeHorizontalBarChart:
@@ -281,6 +291,9 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
+
+    - name: stateVerticalBarChartExtra
+    - name: stateVerticalBarChartFilter
     - name: stateVerticalBarChart
       state:
         - name: "issueList"

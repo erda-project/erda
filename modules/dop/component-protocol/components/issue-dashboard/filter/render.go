@@ -19,12 +19,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -104,20 +106,18 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if err := f.InitFromProtocol(ctx, c); err != nil {
 		return err
 	}
-	// if err := f.GenComponentState(c); err != nil {
-	// 	return err
-	// }
 
-	// switch event.Operation {
-	// case cptype.InitializeOperation, cptype.RenderingOperation:
-	// 	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
-	// 		return err
-	// 	}
-	// case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
-	// }
-
-	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
+	iterations, iterationOptions, err := f.getPropIterationsOptions()
+	if err != nil {
 		return err
+	}
+
+	switch event.Operation {
+	case cptype.InitializeOperation, cptype.RenderingOperation:
+		if err := f.InitDefaultOperation(ctx, iterations); err != nil {
+			return err
+		}
+	case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
 	}
 
 	data, err := f.issueSvc.GetAllIssuesByProject(apistructs.IssueListRequest{
@@ -125,13 +125,44 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			apistructs.IssueTypeBug,
 		},
 		ProjectID:    f.InParams.ProjectID,
-		IterationIDs: f.State.Values.IterationIDs,
+		IterationIDs: []int64{f.State.Values.IterationIDs},
 		Assignees:    f.State.Values.AssigneeIDs,
 		// StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
 	})
 	if err != nil {
 		return err
 	}
+
+	projectMemberOptions, err := f.getProjectMemberOptions()
+	if err != nil {
+		return err
+	}
+
+	f.State.Conditions = []filter.PropCondition{
+		{
+			EmptyText: "全部",
+			Fixed:     true,
+			Key:       "iteration",
+			Label:     "迭代",
+			Options:   iterationOptions,
+			Type:      filter.PropConditionTypeSelect,
+			Required:  true,
+			CustomProps: map[string]interface{}{
+				"mode": "single",
+			},
+		},
+		{
+			EmptyText: "全部",
+			Fixed:     true,
+			Key:       "member",
+			Label:     "成员",
+			Options:   projectMemberOptions,
+			Type:      filter.PropConditionTypeSelect,
+		},
+	}
+
+	// TODO select multiple iteration
+	f.State.Iterations = []apistructs.Iteration{iterations[f.State.Values.IterationIDs]}
 
 	// todo modify data format
 	f.State.IssueList = data
@@ -150,36 +181,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State) error {
-	iterations, iterationOptions, err := f.getPropIterationsOptions()
-	if err != nil {
-		return err
-	}
-
-	projectMemberOptions, err := f.getProjectMemberOptions()
-	if err != nil {
-		return err
-	}
-
-	f.State.Conditions = []filter.PropCondition{
-		{
-			EmptyText: "全部",
-			Fixed:     true,
-			Key:       "iteration",
-			Label:     "迭代",
-			Options:   iterationOptions,
-			Type:      filter.PropConditionTypeSelect,
-		},
-		{
-			EmptyText: "全部",
-			Fixed:     true,
-			Key:       "member",
-			Label:     "成员",
-			Options:   projectMemberOptions,
-			Type:      filter.PropConditionTypeSelect,
-		},
-	}
-
+func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, iterations map[int64]apistructs.Iteration) error {
 	f.Props = filter.Props{
 		Delay: 1000,
 	}
@@ -190,15 +192,27 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 		},
 	}
 	if f.State.Base64UrlQueryParams != "" {
-
-	} else { // todo default value
-		f.State.Values.IterationIDs = []int64{iterationOptions[0].Value.(int64)}
-		// f.State.Values.AssigneeIDs = []string{"2"}
+		b, err := base64.StdEncoding.DecodeString(f.State.Base64UrlQueryParams)
+		if err != nil {
+			return err
+		}
+		f.State.Values = common.FrontendConditions{}
+		if err := json.Unmarshal(b, &f.State.Values); err != nil {
+			return err
+		}
+	} else {
+		f.State.Values.IterationIDs = defaultIterationRetriever(iterations)
 	}
-
-	// TODO select iteration
-	f.State.Iterations = iterations
 	return nil
+}
+
+func defaultIterationRetriever(iterations map[int64]apistructs.Iteration) int64 {
+	for i, iteration := range iterations {
+		if !time.Now().Before(*iteration.StartedAt) && !time.Now().After(*iteration.FinishedAt) {
+			return i
+		}
+	}
+	return 0
 }
 
 func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
@@ -209,20 +223,22 @@ func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
 	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
-func (f *ComponentFilter) getPropIterationsOptions() ([]apistructs.Iteration, []filter.PropConditionOption, error) {
+func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Iteration, []filter.PropConditionOption, error) {
 	f.sdk.Identity.OrgID = "1"
 	iterations, err := f.bdl.ListProjectIterations(apistructs.IterationPagingRequest{PageNo: 1, PageSize: 1000, ProjectID: f.InParams.ProjectID, WithoutIssueSummary: true}, f.sdk.Identity.OrgID)
 	if err != nil {
 		return nil, nil, err
 	}
 	var options []filter.PropConditionOption
+	iterationMap := make(map[int64]apistructs.Iteration)
 	for _, iteration := range iterations {
 		options = append(options, filter.PropConditionOption{
 			Label: iteration.Title,
 			Value: iteration.ID,
 		})
+		iterationMap[iteration.ID] = iteration
 	}
-	return iterations, options, nil
+	return iterationMap, options, nil
 }
 
 func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOption, error) {
