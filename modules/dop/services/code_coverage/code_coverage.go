@@ -15,7 +15,9 @@
 package code_coverage
 
 import (
+	"github.com/erda-project/erda/modules/dop/conf"
 	"io/ioutil"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -87,7 +89,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		return err
 	}
 	// call jacoco start
-	return svc.bdl.JacocoStart(&apistructs.JacocoRequest{
+	return svc.bdl.JacocoStart(getJacocoAddr(record.ProjectID), &apistructs.JacocoRequest{
 		ProjectID: record.ProjectID,
 		PlanID:    record.ID,
 	})
@@ -128,7 +130,7 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 		return err
 	}
 	// call jacoco end
-	return svc.bdl.JacocoEnd(&apistructs.JacocoRequest{
+	return svc.bdl.JacocoEnd(getJacocoAddr(record.ProjectID), &apistructs.JacocoRequest{
 		ProjectID: record.ProjectID,
 		PlanID:    record.ID,
 	})
@@ -286,4 +288,8 @@ func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func getJacocoAddr(projectID uint64) string {
+	return conf.JacocoAddr()[strconv.FormatUint(projectID, 10)]
 }

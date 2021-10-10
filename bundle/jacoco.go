@@ -18,15 +18,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func getJacocoAddr() string {
-	return "http://30.43.49.4:8801"
-}
-
-func (b *Bundle) JacocoStart(req *apistructs.JacocoRequest) error {
-	host := getJacocoAddr()
+func (b *Bundle) JacocoStart(addr string, req *apistructs.JacocoRequest) error {
 	hc := b.hc
 	var jacocoResp apistructs.JacocoResponse
-	resp, err := hc.Post(host).
+	resp, err := hc.Post(addr).
 		Path("/api/jacoco/actions/start").JSONBody(req).
 		Do().JSON(&jacocoResp)
 	if err != nil {
@@ -38,11 +33,10 @@ func (b *Bundle) JacocoStart(req *apistructs.JacocoRequest) error {
 	return nil
 }
 
-func (b *Bundle) JacocoEnd(req *apistructs.JacocoRequest) error {
-	host := getJacocoAddr()
+func (b *Bundle) JacocoEnd(addr string, req *apistructs.JacocoRequest) error {
 	hc := b.hc
 	var jacocoResp apistructs.JacocoResponse
-	resp, err := hc.Post(host).
+	resp, err := hc.Post(addr).
 		Path("/api/jacoco/actions/end").JSONBody(req).
 		Do().JSON(&jacocoResp)
 	if err != nil {
