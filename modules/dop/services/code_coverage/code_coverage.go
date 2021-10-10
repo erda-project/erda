@@ -212,6 +212,9 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	}
 	record.Status = status
 	record.Msg = req.Msg
+	if status == apistructs.FailStatus {
+		record.ReportStatus = apistructs.FailStatus
+	}
 
 	if req.ReportXmlUUID != "" {
 		f, err := svc.bdl.DownloadDiceFile(req.ReportXmlUUID)
