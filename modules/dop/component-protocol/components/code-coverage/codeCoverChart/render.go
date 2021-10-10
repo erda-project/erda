@@ -215,6 +215,6 @@ func init() {
 func convertTimeRange(timeRange []int64) (startTime, endTime string) {
 	start, end := timeRange[0], timeRange[1]
 	startT := time.Unix(start/1000, 0)
-	endT := time.Unix(end, 0)
+	endT := time.Unix(end/1000, 0)
 	return startT.Format(goTimeFormat), endT.Format(goTimeFormat)
 }
