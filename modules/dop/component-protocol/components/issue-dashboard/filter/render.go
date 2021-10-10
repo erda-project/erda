@@ -121,7 +121,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		ProjectID:    f.InParams.ProjectID,
 		IterationIDs: f.State.Values.IterationIDs,
 		Assignees:    f.State.Values.AssigneeIDs,
-		StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
+		// StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
 	})
 	if err != nil {
 		return err

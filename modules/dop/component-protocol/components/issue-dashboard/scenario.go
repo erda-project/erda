@@ -35,6 +35,8 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/today"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/total"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/trendChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/trendChartExtra"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/trendChartFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/undefined"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/week"
 )

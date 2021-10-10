@@ -28,6 +28,11 @@ hierarchy:
     header:
       - issueType
       - filter
+    trendChart:
+      extraContent:
+        trendChartExtra
+    trendChartExtra:
+      - trendChartFilter
     chartGroup1:
       - statePieChart
       - complexityPieChart
@@ -75,6 +80,10 @@ components:
   
   trendChart:
     type: Chart
+  trendChartExtra:
+    type: RowContainer
+  trendChartFilter:
+    type: ContractiveFilter
   chartGroup1:
     type: Grid
   chartGroup2:
@@ -122,6 +131,39 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
+    - name: total 
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+  total:
+    - name: open
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: expired
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: today
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: month
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: week
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: open
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: undefined
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
 
   __DefaultRendering__:
     - name: page
@@ -129,17 +171,43 @@ rendering:
     - name: filter
     - name: issueType
     - name: issueTip
-    
+
     - name: overview
     - name: total
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
     - name: open
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: expired
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: today
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: week
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: month
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: undefined
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: reopen
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
 
+    - name: trendChartExtra
+    - name: trendChartFilter
     - name: trendChart
       state:
         - name: "issueList"

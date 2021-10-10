@@ -755,7 +755,10 @@ type IssueItem struct {
 func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {
 	var res []IssueItem
 	sql := client.Table("dice_issues").Joins(joinState)
-	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ? AND dice_issue_state.belong IN (?)", req.ProjectID, req.StateBelongs)
+	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ?", req.ProjectID)
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
+	}
 	if len(req.Assignees) > 0 {
 		sql = sql.Where("assignee in (?)", req.Assignees)
 	}

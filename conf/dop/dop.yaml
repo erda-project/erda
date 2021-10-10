@@ -56,6 +56,8 @@ component-protocol.components.issue-manage.topHead:
 component-protocol.components.issue-dashboard.filter:
 component-protocol.components.issue-dashboard.page:
 component-protocol.components.issue-dashboard.trendChart:
+component-protocol.components.issue-dashboard.trendChartExtra:
+component-protocol.components.issue-dashboard.trendChartFilter:
 component-protocol.components.issue-dashboard.chartGroup1:
 component-protocol.components.issue-dashboard.chartGroup2:
 component-protocol.components.issue-dashboard.statePieChart:

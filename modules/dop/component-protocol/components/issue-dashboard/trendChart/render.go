@@ -123,12 +123,15 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 			} else {
 				cMap[closed][1] += 1
 			}
-		} else {
-
 		}
 	}
 
 	newIssue, closedIssue, unClosedIssue := make([]int, 0), make([]int, 0), make([]int, 0)
+	dates = append(dates, "更早")
+	newIssue = append(newIssue, first[0])
+	closedIssue = append(closedIssue, first[1])
+	first[2] = first[0] - first[1]
+	unClosedIssue = append(unClosedIssue, first[2])
 	for rd := rangeDate(*iteration.StartedAt, *iteration.FinishedAt); ; {
 		date := rd()
 		if date.IsZero() {
@@ -139,10 +142,15 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 		dates = append(dates, x)
 		newIssue = append(newIssue, cMap[date][0])
 		closedIssue = append(closedIssue, cMap[date][1])
-		unClosedIssue = append(unClosedIssue, cMap[date][2])
+		unclose := unClosedIssue[len(unClosedIssue)-1] + cMap[date][0] - cMap[date][1]
+		unClosedIssue = append(unClosedIssue, unclose)
 	}
 
-	//todo add first last
+	dates = append(dates, "未来")
+	newIssue = append(newIssue, last[0])
+	closedIssue = append(closedIssue, last[1])
+	last[2] = unClosedIssue[len(unClosedIssue)-1] + last[0] - last[1]
+	unClosedIssue = append(unClosedIssue, last[2])
 
 	f.Chart = common.Chart{
 		Props: common.Props{
