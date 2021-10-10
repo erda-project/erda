@@ -11,7 +11,7 @@ CREATE TABLE `dice_code_coverage_exec_record`
     `time_begin`     datetime     NOT NULL COMMENT '开始时间',
     `time_end`       datetime       DEFAULT NULL COMMENT '结束时间',
     `created_at`     datetime       DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at`     datetime       DEFAULT NULL COMMENT '更新时间',
+    `updated_at`     datetime       DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     `msg`            varchar(255)   DEFAULT NULL COMMENT '错误日志信息',
     PRIMARY KEY (`id`),
     KEY              `idx_project_id` (`project_id`) USING BTREE
