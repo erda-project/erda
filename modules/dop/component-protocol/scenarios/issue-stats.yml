@@ -10,7 +10,7 @@ hierarchy:
       - trendChart
       # - chart2
       - chartGroup1
-      # - chartGroup2
+      - chartGroup2
       # - chart4
       # - chart5
     # issueTypeContainer:
@@ -30,11 +30,11 @@ hierarchy:
       - filter
     chartGroup1:
       - statePieChart
-      # - chart1_2
-      # - chart1_3
-    # chartGroup2:
-    #   - chart2_1
-    #   - chart2_2
+      - complexityPieChart
+      - priorityPieChart
+    chartGroup2:
+      - severityPieChart
+      - sourcePieChart
 
 components:
   page:
@@ -77,7 +77,17 @@ components:
     type: Chart
   chartGroup1:
     type: Grid
+  chartGroup2:
+    type: Grid
   statePieChart:
+    type: Chart
+  complexityPieChart:
+    type: Chart
+  priorityPieChart:
+    type: Chart
+  severityPieChart:
+    type: Chart
+  sourcePieChart:
     type: Chart
 
 rendering:
@@ -91,6 +101,24 @@ rendering:
         - name: "iterations"
           value: "{{ filter.iterations }}"
     - name: statePieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: complexityPieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+    - name: priorityPieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+    - name: severityPieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+    - name: sourcePieChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
@@ -121,7 +149,26 @@ rendering:
         - name: "iterations"
           value: "{{ filter.iterations }}"
     - name: chartGroup1
+    - name: chartGroup2
     - name: statePieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: complexityPieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+    - name: priorityPieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+    - name: severityPieChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+    - name: sourcePieChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"

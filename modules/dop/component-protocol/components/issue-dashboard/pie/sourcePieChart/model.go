@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+package sourcePieChart
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -20,33 +20,22 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
-type ComponentFilter struct {
-	sdk      *cptype.SDK
-	bdl      *bundle.Bundle
-	issueSvc *issue.Issue
-	filter.CommonFilter
-	State    State    `json:"state,omitempty"`
-	InParams InParams `json:"-"`
+type ComponentAction struct {
+	sdk           *cptype.SDK
+	bdl           *bundle.Bundle
+	issueStateSvc *issuestate.IssueState
+	State         State `json:"state,omitempty"`
+	// InParams      InParams `json:"-"`
 	base.DefaultProvider
 }
 
 type State struct {
-	Conditions           []filter.PropCondition    `json:"conditions,omitempty"`
 	Values               common.FrontendConditions `json:"values,omitempty"`
 	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
 	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
-	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
 	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
 }
-
-type InParams struct {
-	OrgID     uint64 `json:"orgID,omitempty"`
-	ProjectID uint64 `json:"projectID,omitempty"`
-}
-
-const OperationKeyFilter filter.OperationKey = "filter"

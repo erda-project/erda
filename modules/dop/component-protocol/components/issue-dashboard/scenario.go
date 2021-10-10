@@ -16,6 +16,7 @@ package issue_stats
 
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/chartGroup1"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/chartGroup2"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/expired"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/filter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/header"
@@ -25,8 +26,12 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/open"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/overview"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/page"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/complexityPieChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/priorityPieChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/severityPieChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/sourcePieChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/statePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reopen"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/statePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/today"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/total"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/trendChart"

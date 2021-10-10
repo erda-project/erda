@@ -30,7 +30,6 @@ type ComponentAction struct {
 	issueStateSvc *issuestate.IssueState
 	State         State `json:"state,omitempty"`
 	// InParams      InParams `json:"-"`
-	common.PieChart
 	base.DefaultProvider
 }
 
@@ -38,5 +37,6 @@ type State struct {
 	Values               common.FrontendConditions `json:"values,omitempty"`
 	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
 	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
+	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
 	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
 }

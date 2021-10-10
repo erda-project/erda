@@ -129,6 +129,13 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 
 	// todo modify data format
 	f.State.IssueList = data
+
+	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, apistructs.IssueTypeBug)
+	if err != nil {
+		return err
+	}
+	f.State.IssueStateList = states
+
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {
 		return err

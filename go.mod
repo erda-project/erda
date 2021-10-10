@@ -32,7 +32,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/erda-project/erda-infra v0.0.0-20210929051340-db59524a164a
+	github.com/erda-project/erda-infra v0.0.0-20210929085513-aaf78ecd92ac
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
@@ -44,6 +44,7 @@ require (
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.7.0
+	github.com/go-echarts/go-echarts/v2 v2.2.4 // indirect
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-openapi/strfmt v0.19.5
