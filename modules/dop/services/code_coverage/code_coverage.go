@@ -226,7 +226,10 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		if err != nil {
 			return err
 		}
-		analyzeJson, coverage := getAnalyzeJson(project.ID, project.DisplayName, all)
+		analyzeJson, coverage, err := getAnalyzeJson(project.ID, project.DisplayName, all)
+		if err != nil {
+			return err
+		}
 		record.ReportContent = analyzeJson
 		record.Coverage = coverage
 	}

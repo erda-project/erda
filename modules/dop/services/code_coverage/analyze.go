@@ -17,7 +17,6 @@ package code_coverage
 import (
 	"encoding/xml"
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -184,14 +183,14 @@ func convertReportToTree(r Report) ([]*apistructs.CodeCoverageNode, float64) {
 	return []*apistructs.CodeCoverageNode{root}, coverage
 }
 
-func getAnalyzeJson(projectID uint64, projectName string, data []byte) ([]*apistructs.CodeCoverageNode, float64) {
+func getAnalyzeJson(projectID uint64, projectName string, data []byte) ([]*apistructs.CodeCoverageNode, float64, error) {
 	report, err := convertXmlToReport(data)
 	report.ProjectID = projectID
 	report.ProjectName = projectName
 	if err != nil {
-		log.Fatal(err)
+		return nil, 0, err
 	}
 
 	root, coverage := convertReportToTree(report)
-	return root, coverage
+	return root, coverage, nil
 }
