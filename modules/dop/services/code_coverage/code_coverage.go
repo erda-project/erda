@@ -79,13 +79,15 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 	}
 
 	now := time.Now()
+	end := time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC)
 	record := dao.CodeCoverageExecRecord{
 		ProjectID:     req.ProjectID,
 		Status:        apistructs.RunningStatus,
 		TimeBegin:     &now,
 		StartExecutor: req.UserID,
+		TimeEnd:       &end,
 	}
-	if err := svc.db.Create(&record).Error; err != nil {
+	if err := svc.db.Debug().Create(&record).Error; err != nil {
 		return err
 	}
 	// call jacoco start
