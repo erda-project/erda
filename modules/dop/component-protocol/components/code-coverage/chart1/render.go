@@ -18,17 +18,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
+	base.DefaultProvider
+
 	ctxBdl protocol.ContextBundle
 	svc    *code_coverage.CodeCoverage
 
@@ -129,6 +133,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if err := ca.GenComponentState(c); err != nil {
 		return err
 	}
+	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
+	ca.svc = svc
 	ca.Type = "Chart"
 	recordID := ca.State.RecordID
 	if err := ca.setProps(recordID); err != nil {
@@ -138,5 +144,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 }
 
 func init() {
-	base.InitProvider("code-coverage", "chart1")
+	base.InitProviderWithCreator("code-coverage", "chart1", func() servicehub.Provider {
+		return &ComponentAction{}
+	})
 }

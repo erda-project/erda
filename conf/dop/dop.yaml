@@ -50,4 +50,17 @@ component-protocol.components.issue-manage.issueTable:
 component-protocol.components.issue-manage.issueViewGroup:
 component-protocol.components.issue-manage.topHead:
 
+component-protocol.components.code-coverage.chart1:
+component-protocol.components.code-coverage.codeCoverChart:
+component-protocol.components.code-coverage.endButton:
+component-protocol.components.code-coverage.executeHistoryTable:
+component-protocol.components.code-coverage.startButton:
+component-protocol.components.code-coverage.timeSelector:
+component-protocol.components.code-coverage.tip:
+component-protocol.components.code-coverage.executeHistoryButton:
+
+
+
+
+
 

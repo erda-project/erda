@@ -17,22 +17,30 @@ package head
 import (
 	"context"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"strconv"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type ComponentAction struct{}
+type ComponentAction struct {
+	base.DefaultProvider
+}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 
 	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 	sdk := cputil.SDK(ctx)
-	projectId := sdk.InParams["projectId"].(uint64)
+	projectIDStr := sdk.InParams["projectId"].(string)
+	projectId, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return err
+	}
 
 	var disable = false
 	var disabledTip string
@@ -75,7 +83,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			disabledTip = err.Error()
 			disable = true
 		}
-		disable = ok
+		disable = !ok
 	}
 
 	c.Type = "Button"
@@ -96,5 +104,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 }
 
 func init() {
-	base.InitProvider("code-coverage", "endButton")
+	base.InitProviderWithCreator("code-coverage", "endButton", func() servicehub.Provider {
+		return &ComponentAction{}
+	})
 }

@@ -90,7 +90,6 @@ func (e *Endpoints) ReadyCallBack(ctx context.Context, r *http.Request, vars map
 
 	req.IdentityInfo = identityInfo
 
-
 	if err = e.codeCoverageSvc.ReadyCallBack(req); err != nil {
 		return apierrors.ErrUpdateCodeCoverageExecRecord.InternalError(err).ToResp(), nil
 	}

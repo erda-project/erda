@@ -18,27 +18,31 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/common"
-
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 const (
 	defaultListSize = 7
 	timeFormat      = "01-02 15:04"
+	goTimeFormat    = "2006-01-02 15:03:04"
 )
 
 type ComponentAction struct {
+	base.DefaultProvider
+
 	ctxBdl protocol.ContextBundle
 	svc    *code_coverage.CodeCoverage
 
@@ -51,7 +55,8 @@ type ComponentAction struct {
 }
 
 type State struct {
-	RecordID uint64 `json:"recordID"`
+	TimeRange []int64 `json:"timeRange"`
+	RecordID  uint64  `json:"recordID"`
 }
 
 type Operation struct {
@@ -63,10 +68,11 @@ type Operation struct {
 
 func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) {
 	ca.Type = "Chart"
+	ca.Props = make(map[string]interface{})
 	ca.Props["title"] = "项目代码覆盖率趋势"
 	ca.Props["chartType"] = "line"
-	timeList := []string{}
-	valueLst := []interface{}{}
+	var timeList []string
+	var valueLst []interface{}
 	for _, r := range data.List {
 		t := r.TimeCreated.Format(timeFormat)
 		timeList = append(timeList, t)
@@ -98,7 +104,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 }
 
 // GenComponentState 获取state
-func (i *ComponentAction) GenComponentState(c *apistructs.Component) error {
+func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -130,12 +136,14 @@ func getOperations() map[string]interface{} {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if err := ca.GenComponentState(c); err != nil {
+		return err
+	}
 	svc := ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 	ca.svc = svc
-	ca.ctxBdl = bdl
-	projectIDStr := bdl.InParams["project_id"]
-	projectID, err := strconv.ParseInt(fmt.Sprintf("%v", projectIDStr), 10, 64)
+	sdk := cputil.SDK(ctx)
+	projectIDStr := sdk.InParams["projectId"].(string)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 	if err != nil {
 		return err
 	}
@@ -150,8 +158,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		ca.State.RecordID = uint64(recordID)
 	case cptype.InitializeOperation:
 		recordRsp, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
-			ProjectID: uint64(projectID),
+			ProjectID: projectID,
 			PageSize:  defaultListSize,
+			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
+			Asc:       true,
 		})
 		if err != nil {
 			return err
@@ -161,10 +171,38 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
 		ca.Operations = getOperations()
+	case cptype.RenderingOperation:
+		if len(ca.State.TimeRange) < 2 {
+			return fmt.Errorf("invalid time range: %v", ca.State.TimeRange)
+		}
+		start, end := convertTimeRange(ca.State.TimeRange)
+		recordRsp, err := ca.svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+			ProjectID: uint64(projectID),
+			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
+			TimeBegin: start,
+			TimeEnd:   end,
+			Asc:       true,
+		})
+		if err != nil {
+			return err
+		}
+		ca.setProps(recordRsp)
+		if len(recordRsp.List) > 0 {
+			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
+		}
 	}
 	return nil
 }
 
 func init() {
-	base.InitProvider("code-coverage", "codeCoverChart")
+	base.InitProviderWithCreator("code-coverage", "codeCoverChart", func() servicehub.Provider {
+		return &ComponentAction{}
+	})
+}
+
+func convertTimeRange(timeRange []int64) (startTime, endTime string) {
+	start, end := timeRange[0], timeRange[1]
+	startT := time.Unix(start/1000, 0)
+	endT := time.Unix(end, 0)
+	return startT.Format(goTimeFormat), endT.Format(goTimeFormat)
 }

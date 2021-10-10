@@ -16,13 +16,9 @@ package common
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 const (
 	CoverChartSelectItemOperationKey cptype.OperationKey = "selectChartItem"
+	DatePickerChangeTimeOperationKey cptype.OperationKey = "changeTime"
 )
-
-func init() {
-	base.InitProvider("code-coverage", "common")
-}

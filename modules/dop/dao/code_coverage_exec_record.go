@@ -15,6 +15,8 @@
 package dao
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -29,11 +31,26 @@ type CodeCoverageExecRecord struct {
 	Msg           string                            `json:"msg"`
 	Coverage      float64                           `json:"coverage"`
 	ReportUrl     string                            `json:"report_url"`
-	ReportContent []*apistructs.CodeCoverageNode                           `json:"report_content"`
+	ReportContent CodeCoverageNodes                 `json:"report_content" sql:"TYPE:json"`
 	StartExecutor string                            `json:"start_executor"`
 	EndExecutor   string                            `json:"end_executor"`
 	TimeBegin     *time.Time                        `json:"time_begin"`
 	TimeEnd       *time.Time                        `json:"time_end"`
+}
+
+type CodeCoverageNodes []*apistructs.CodeCoverageNode
+
+func (c CodeCoverageNodes) Value() (driver.Value, error) {
+	b, err := json.Marshal(c)
+	return string(b), err
+}
+
+func (c *CodeCoverageNodes) Scan(input interface{}) error {
+	bytes := input.([]byte)
+	if len(bytes) == 0 {
+		return nil
+	}
+	return json.Unmarshal(bytes, c)
 }
 
 func (CodeCoverageExecRecord) TableName() string {

@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config_manage
+package tip
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-var CONFIG_MANAGE_MULTI_NS_CONFIG_GET = apis.ApiSpec{
-	Path:        "/api/configmanage/multinamespace/configs",
-	BackendPath: "/api/config/actions/list-multinamespace-configs",
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 获取多个命名空间的所有配置",
+func init() {
+	base.InitProvider("code-coverage", "executeHistoryButton")
 }

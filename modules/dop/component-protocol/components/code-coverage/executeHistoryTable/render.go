@@ -18,21 +18,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"strconv"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
+	base.DefaultProvider
+
 	CodeCoverageSvc *code_coverage.CodeCoverage `json:"-"`
 	Type            string                      `json:"type"`
 	Data            Data                        `json:"data"`
-	Props           string                      `json:"props"`
+	Props           map[string]interface{}      `json:"props"`
 	State           *State                      `json:"state"`
 	Operations      Operations                  `json:"operations"`
 }
@@ -123,6 +126,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	ca.SetOperations()
+	if err := ca.SetProps(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -158,10 +164,10 @@ func (ca *ComponentAction) setData(ctx context.Context) error {
 				Value:      statusMap[v.Status],
 				Status:     v.Status,
 			},
-			Starter:   v.StartExecutor,
-			StartTime: v.TimeBegin.String(),
-			Ender:     v.EndExecutor,
-			EndTime:   v.TimeEnd.String(),
+			Starter: v.StartExecutor,
+			//StartTime: v.TimeBegin.String(),
+			Ender: v.EndExecutor,
+			//EndTime:   v.TimeEnd.String(),
 			CoverRate: CoverRate{
 				RenderType: "progress",
 				Value:      fmt.Sprintf("%v", v.Coverage),
@@ -211,53 +217,62 @@ func (ca *ComponentAction) SetOperations() {
 	}}
 }
 
-func (ca *ComponentAction) SetProps() {
-	ca.Props = `
+func (ca *ComponentAction) SetProps() error {
+	props := `
 	{
-          pageSizeOptions: ['10', '20', '50', '100'],
-          columns: [
-            {
-              dataIndex: 'status',
-              title: '状态',
-              width: 80,
-            },
-            {
-              dataIndex: 'starter',
-              title: '统计开始者',
-              width: 100,
-            },
-            {
-              dataIndex: 'startTime',
-              title: '开始时间',
-              width: 140,
-            },
-            {
-              dataIndex: 'ender',
-              title: '统计结束者',
-              width: 100,
-            },
-            {
-              dataIndex: 'endTime',
-              title: '统计结束时间',
-              width: 140,
-            },
-            {
-              dataIndex: 'coverRate',
-              title: '当前行覆盖率',
-              width: 120,
-            },
-            {
-              dataIndex: 'operate',
-              fixed: 'right',
-              title: '操作',
-              width: 100,
-            },
-          ],
-          rowKey: 'id',
-	}
+    "pageSizeOptions":[
+        "10",
+        "20",
+        "50",
+        "100"
+    ],
+    "columns":[
+        {
+            "dataIndex":"status",
+            "title":"状态",
+            "width":80
+        },
+        {
+            "dataIndex":"starter",
+            "title":"统计开始者",
+            "width":100
+        },
+        {
+            "dataIndex":"startTime",
+            "title":"开始时间",
+            "width":140
+        },
+        {
+            "dataIndex":"ender",
+            "title":"统计结束者",
+            "width":100
+        },
+        {
+            "dataIndex":"endTime",
+            "title":"统计结束时间",
+            "width":140
+        },
+        {
+            "dataIndex":"coverRate",
+            "title":"当前行覆盖率",
+            "width":120
+        },
+        {
+            "dataIndex":"operate",
+            "fixed":"right",
+            "title":"操作",
+            "width":100
+        }
+    ],
+    "rowKey":"id"
+}
 `
+	ca.Props = make(map[string]interface{})
+	return json.Unmarshal([]byte(props), &ca.Props)
 }
 
 func init() {
-	base.InitProvider("code-coverage", "executeHistoryTable")
+	base.InitProviderWithCreator("code-coverage", "executeHistoryTable", func() servicehub.Provider {
+		return &ComponentAction{}
+	})
 }

@@ -17,8 +17,10 @@ package code_coverage
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/chart1"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/codeCoverChart"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/common"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/endButton"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryTable"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/startButton"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/timeSelector"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/tip"
 )

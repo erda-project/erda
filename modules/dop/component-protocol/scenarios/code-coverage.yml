@@ -1,3 +1,4 @@
+version: 1.0
 scenario: code-coverage
 
 hierarchy:
@@ -18,6 +19,8 @@ hierarchy:
     executeHistoryContent:
       #      - executeHistoryFilter
       - executeHistoryTable
+    codeCoverChart:
+      extraContent: timeSelector
 
 components:
   page:
@@ -60,6 +63,10 @@ components:
       type: warning
       showIcon: false
       message: "说明：代码覆盖统计计划是指开启统计和结束统计周期的管理，计划开始后会完全重新统计，在结束之前会持续统计，结束后会生成统计记录和报告"
+  chart1:
+    type: Chart
+  timeSelector:
+    type: DatePicker
 
 rendering:
   startButton:
@@ -70,8 +77,27 @@ rendering:
     - name: startButton
     - name: codeCoverChart
     - name: executeHistoryTable
+  timeSelector:
+    - name: codeCoverChart
+      state:
+        - name: "timeRange"
+          value: "{{ timeSelector.timeRange }}"
+    - name: chart1
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+  codeCoverChart:
+    - name: chart1
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+
   __DefaultRendering__:
     - name: startButton
     - name: endButton
     - name: codeCoverChart
+    - name: chart1
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
     - name: executeHistoryTable

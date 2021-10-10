@@ -15,8 +15,6 @@
 package code_coverage
 
 import (
-	"fmt"
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"io/ioutil"
 	"time"
 
@@ -25,6 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
 )
 
 type CodeCoverage struct {
@@ -214,13 +213,19 @@ func (svc *CodeCoverage) ListCodeCoverageRecord(req apistructs.CodeCoverageListR
 		list    []apistructs.CodeCoverageExecRecordDto
 		total   uint64
 	)
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
 
 	offset := (req.PageNo - 1) * req.PageSize
-	db := svc.db.Model(&dao.CodeCoverageExecRecordShort{}).
+	db := svc.db.Debug().Model(&dao.CodeCoverageExecRecordShort{}).
 		Where("project_id = ?", req.ProjectID)
 
 	if req.Statuses != nil {
-		db = db.Where("status in ?", req.Statuses)
+		db = db.Where("status in (?)", req.Statuses)
 	}
 	if req.TimeBegin != "" {
 		db = db.Where("time_begin >= ?", req.TimeBegin)
@@ -280,5 +285,5 @@ func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
 		return true, nil
 	}
 
-	return false, fmt.Errorf("not find ready status record")
+	return false, nil
 }

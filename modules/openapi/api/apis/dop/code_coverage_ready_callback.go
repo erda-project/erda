@@ -20,14 +20,14 @@ import (
 )
 
 var CODE_COVERAGE_READY_CALLBACK = apis.ApiSpec{
-	Path:         "/api/code-coverage/actions/ready-callBack",
-	BackendPath:  "/api/code-coverage/actions/ready-callBack",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       "POST",
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.CodeCoverageUpdateRequest{},
-	IsOpenAPI:    true,
-	Doc:          "summary: ready callback",
+	Path:        "/api/code-coverage/actions/ready-callBack",
+	BackendPath: "/api/code-coverage/actions/ready-callBack",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.CodeCoverageUpdateRequest{},
+	IsOpenAPI:   true,
+	Doc:         "summary: ready callback",
 }
