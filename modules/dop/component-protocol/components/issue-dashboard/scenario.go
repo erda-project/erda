@@ -16,7 +16,11 @@ package issue_stats
 
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/assigneeHorizontalBarChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/assigneeHorizontalBarChartExtra"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/assigneeHorizontalBarChartFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/labelHorizontalBarChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/labelHorizontalBarChartExtra"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/labelHorizontalBarChartFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/stateVerticalBarChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/stateVerticalBarChartExtra"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar/stateVerticalBarChartFilter"

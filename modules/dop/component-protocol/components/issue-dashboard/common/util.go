@@ -147,6 +147,16 @@ func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.Is
 	return res
 }
 
+func IssueListFilter(issues []dao.IssueItem, match func(i int) bool) []interface{} {
+	res := make([]interface{}, 0)
+	for i, issue := range issues {
+		if match(i) {
+			res = append(res, &issue)
+		}
+	}
+	return res
+}
+
 type counterItem struct {
 	Name  string
 	Value int

@@ -12,21 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stateVerticalBarChart
+package assigneeHorizontalBarChartFilter
 
 import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
-type ComponentAction struct {
+type ComponentFilter struct {
+	sdk *cptype.SDK
+	filter.CommonFilter
 	State State `json:"state,omitempty"`
 	base.DefaultProvider
 }
 
 type State struct {
-	Values         common.FilterConditions `json:"values,omitempty"`
-	IssueList      []dao.IssueItem         `json:"issueList,omitempty"`
-	IssueStateList []dao.IssueState        `json:"issueStateList,omitempty"`
+	Conditions         []filter.PropCondition  `json:"conditions,omitempty"`
+	Values             common.FilterConditions `json:"values,omitempty"`
+	FrontendChangedKey string                  `json:"changedKey,omitempty"`
 }
+
+const OperationKeyFilter filter.OperationKey = "filter"

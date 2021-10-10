@@ -750,6 +750,7 @@ type IssueItem struct {
 	ExpiryStatus ExpireType
 	ReopenCount  int
 
+	Name   string
 	Belong string
 }
 
@@ -775,7 +776,7 @@ func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) (
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
 	}
-	if err := sql.Select("dice_issues.*, dice_issue_state.belong").Find(&res).Error; err != nil {
+	if err := sql.Select("dice_issues.*, dice_issue_state.name, dice_issue_state.belong").Find(&res).Error; err != nil {
 		return nil, err
 	}
 	return res, nil

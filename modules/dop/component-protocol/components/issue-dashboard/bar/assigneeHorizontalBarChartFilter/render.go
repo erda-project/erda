@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stateVerticalBarChartFilter
+package assigneeHorizontalBarChartFilter
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "stateVerticalBarChartFilter",
+	base.InitProviderWithCreator("issue-dashboard", "assigneeHorizontalBarChartFilter",
 		func() servicehub.Provider { return &ComponentFilter{} })
 }
 

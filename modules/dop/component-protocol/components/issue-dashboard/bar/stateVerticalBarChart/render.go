@@ -17,6 +17,7 @@ package stateVerticalBarChart
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -24,10 +25,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -55,14 +56,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[s.ID] = &s
 	}
 
-	var bugList []interface{}
-	for i := range f.State.IssueList {
-		issue := f.State.IssueList[i]
-		if issue.Type != apistructs.IssueTypeBug {
-			continue
-		}
-		bugList = append(bugList, &issue)
-	}
+	bugList := common.IssueListFilter(f.State.IssueList, func(i int) bool {
+		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
+		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
+	})
 
 	var hander stackhandlers.StackHandler
 
