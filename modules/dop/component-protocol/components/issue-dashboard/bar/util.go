@@ -60,3 +60,63 @@ func GetHorizontalStackBarSingleSeriesConverter() func(name string, data []*int)
 		}
 	}
 }
+
+type ComplexityStackHandler struct {
+}
+
+func (h ComplexityStackHandler) GetStacks() []string {
+	var stacks []string
+	for _, i := range []apistructs.IssueComplexity{
+		apistructs.IssueComplexityHard,
+		apistructs.IssueComplexityNormal,
+		apistructs.IssueComplexityEasy,
+	} {
+		stacks = append(stacks, i.GetZhName())
+	}
+	return stacks
+}
+
+func (h ComplexityStackHandler) GetStackColors() []string {
+	return []string{"green", "blue", "orange", "red"}
+}
+
+func (h ComplexityStackHandler) GetIndexer() func(issue interface{}) string {
+	return func(issue interface{}) string {
+		switch issue.(type) {
+		case *dao.IssueItem:
+			return issue.(*dao.IssueItem).Complexity.GetZhName()
+		case *LabelIssueItem:
+			return issue.(*LabelIssueItem).Bug.Complexity.GetZhName()
+		default:
+			return ""
+		}
+	}
+}
+
+type SeverityStackHandler struct {
+}
+
+func (h SeverityStackHandler) GetStacks() []string {
+	var stacks []string
+	for _, i := range apistructs.IssueSeveritys {
+		stacks = append(stacks, i.GetZhName())
+	}
+	return stacks
+}
+
+func (h SeverityStackHandler) GetStackColors() []string {
+	return []string{"green", "blue", "orange", "red"}
+}
+
+func (h SeverityStackHandler) GetIndexer() func(issue interface{}) string {
+	return func(issue interface{}) string {
+		switch issue.(type) {
+		case *dao.IssueItem:
+			return issue.(*dao.IssueItem).Severity.GetZhName()
+		case *LabelIssueItem:
+			return issue.(*LabelIssueItem).Bug.Severity.GetZhName()
+		default:
+			return ""
+		}
+	}
+}
