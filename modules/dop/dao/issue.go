@@ -780,3 +780,23 @@ func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) (
 	}
 	return res, nil
 }
+
+type IssueLabel struct {
+	dbengine.BaseModel
+	LabelID uint64                      // 标签 id
+	RefType apistructs.ProjectLabelType // 标签作用类型, eg: issue
+	RefID   uint64                      // 标签关联目标 id
+	Name    string                      // 标签名称
+	Type    apistructs.ProjectLabelType // 标签作用类型
+}
+
+var joinLabel = "LEFT JOIN dice_labels ON dice_label_relations.label_id = dice_labels.id"
+
+func (client *DBClient) GetIssueLabelsByProjectID(projectID uint64) ([]IssueLabel, error) {
+	var res []IssueLabel
+	sql := client.Table("dice_label_relations").Joins(joinLabel).Where("project_id = ?", projectID)
+	if err := sql.Select("dice_label_relations.*, dice_labels.name, dice_labels.type").Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
+}

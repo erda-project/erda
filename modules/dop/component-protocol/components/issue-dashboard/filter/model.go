@@ -42,6 +42,7 @@ type State struct {
 	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
 	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
 	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
+	Members              []apistructs.Member       `json:"members,omitempty"`
 }
 
 type InParams struct {

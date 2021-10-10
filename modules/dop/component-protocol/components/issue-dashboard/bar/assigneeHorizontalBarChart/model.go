@@ -34,9 +34,8 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values               common.FrontendConditions `json:"values,omitempty"`
-	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
-	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
-	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
+	Values         common.FrontendConditions `json:"values,omitempty"`
+	IssueList      []dao.IssueItem           `json:"issueList,omitempty"`
+	IssueStateList []dao.IssueState          `json:"issueStateList,omitempty"`
+	Members        []apistructs.Member       `json:"members,omitempty"`
 }

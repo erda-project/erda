@@ -1530,3 +1530,7 @@ func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.
 func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
 	return svc.db.GetIssuesStatesByProjectID(projectID, issueType)
 }
+
+func (svc *Issue) GetIssueLabelsByProjectID(projectID uint64) ([]dao.IssueLabel, error) {
+	return svc.db.GetIssueLabelsByProjectID(projectID)
+}

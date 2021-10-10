@@ -251,6 +251,7 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOptio
 	if err != nil {
 		return nil, err
 	}
+	f.State.Members = members
 	var results []filter.PropConditionOption
 	for _, member := range members {
 		results = append(results, filter.PropConditionOption{

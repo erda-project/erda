@@ -169,6 +169,8 @@ rendering:
           value: "{{ filter.issueList }}"
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
+        - name: "members"
+          value: "{{ filter.members }}"
 
   total:
     - name: open
@@ -312,3 +314,5 @@ rendering:
           value: "{{ filter.issueList }}"
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
+        - name: "members"
+          value: "{{ filter.members }}"
