@@ -125,16 +125,13 @@ func convertReportToTree(r Report) ([]*apistructs.CodeCoverageNode, float64) {
 		pNode := &apistructs.CodeCoverageNode{}
 		setNodeValue(pNode, p.Counters)
 		pNode.Name = p.Name
-		pNode.Path = p.Name
 		for _, c := range p.Classes {
 			cNode := &apistructs.CodeCoverageNode{}
 			setNodeValue(cNode, c.Counters)
 			cNode.Name = c.Name
-			cNode.Path = c.Name
 			for _, m := range c.Methods {
 				mNode := &apistructs.CodeCoverageNode{}
 				mNode.Name = m.Name
-				mNode.Path = fmt.Sprintf("%s/%s", c.Name, m.Name)
 				setNodeValue(mNode, m.Counters)
 				cNode.Nodes = append(cNode.Nodes, mNode)
 			}

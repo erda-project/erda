@@ -55,8 +55,8 @@ type ComponentAction struct {
 }
 
 type State struct {
-	TimeRange []int64 `json:"timeRange"`
-	RecordID  uint64  `json:"recordID"`
+	Value    []int64 `json:"value"`
+	RecordID uint64  `json:"recordID"`
 }
 
 type Operation struct {
@@ -135,6 +135,13 @@ func getOperations() map[string]interface{} {
 	}
 }
 
+func (ca *ComponentAction) setDefaultTimeRange() {
+	now := time.Now()
+	oneMonthAgo := now.AddDate(0, 0, -30)
+	oneMonthRange := []int64{oneMonthAgo.Unix() * 1000, now.Unix() * 1000}
+	ca.State.Value = oneMonthRange
+}
+
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := ca.GenComponentState(c); err != nil {
 		return err
@@ -156,10 +163,15 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		ca.State.RecordID = uint64(recordID)
-	case cptype.InitializeOperation:
+	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
+		if len(ca.State.Value) < 2 {
+			ca.setDefaultTimeRange()
+		}
+		start, end := convertTimeRange(ca.State.Value)
 		recordRsp, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			ProjectID: projectID,
-			PageSize:  defaultListSize,
+			TimeBegin: start,
+			TimeEnd:   end,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
 		})
@@ -172,10 +184,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		ca.Operations = getOperations()
 	case cptype.RenderingOperation:
-		if len(ca.State.TimeRange) < 2 {
-			return fmt.Errorf("invalid time range: %v", ca.State.TimeRange)
+		if len(ca.State.Value) < 2 {
+			ca.setDefaultTimeRange()
 		}
-		start, end := convertTimeRange(ca.State.TimeRange)
+		start, end := convertTimeRange(ca.State.Value)
 		recordRsp, err := ca.svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			ProjectID: uint64(projectID),
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
@@ -203,6 +215,6 @@ func init() {
 func convertTimeRange(timeRange []int64) (startTime, endTime string) {
 	start, end := timeRange[0], timeRange[1]
 	startT := time.Unix(start/1000, 0)
-	endT := time.Unix(end, 0)
+	endT := time.Unix(end/1000, 0)
 	return startT.Format(goTimeFormat), endT.Format(goTimeFormat)
 }

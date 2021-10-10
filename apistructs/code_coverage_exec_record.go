@@ -122,6 +122,5 @@ type CodeCoverageExecRecordDto struct {
 type CodeCoverageNode struct {
 	Value []float64           `json:"value"`
 	Name  string              `json:"name"`
-	Path  string              `json:"path"`
 	Nodes []*CodeCoverageNode `json:"children"`
 }
