@@ -17,17 +17,18 @@ package labelHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
-	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -76,8 +77,13 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
+	bugList := common.IssueListFilter(f.State.IssueList, func(i int) bool {
+		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
+		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
+	})
+
 	bugMap := make(map[uint64]*dao.IssueItem)
-	for i := range f.State.IssueList {
+	for i := range bugList {
 		issue := &f.State.IssueList[i]
 		if issue.Type != apistructs.IssueTypeBug {
 			continue
@@ -102,18 +108,15 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		})
 	}
 
-	var hander stackhandlers.StackHandler
-
-	hander = stackhandlers.PriorityStackHandler{}
-
+	handler := common.StackRetriever(f.State.Values.Type)
 	bar := charts.NewBar()
-	bar.Colors = hander.GetStackColors()
+	bar.Colors = handler.GetStackColors()
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
 
 	var realY []string
-	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, hander, nil, func(label interface{}) string {
+	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, handler, nil, func(label interface{}) string {
 		l := label.(*model.LabelIssueItem)
 		if l == nil {
 			return ""

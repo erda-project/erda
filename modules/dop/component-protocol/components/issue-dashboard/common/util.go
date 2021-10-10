@@ -149,9 +149,9 @@ func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.Is
 
 func IssueListFilter(issues []dao.IssueItem, match func(i int) bool) []interface{} {
 	res := make([]interface{}, 0)
-	for i, issue := range issues {
+	for i := range issues {
 		if match(i) {
-			res = append(res, &issue)
+			res = append(res, &issues[i])
 		}
 	}
 	return res
@@ -167,3 +167,16 @@ type counterList []counterItem
 func (l counterList) Less(i, j int) bool { return l[i].Value > l[j].Value }
 func (l counterList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 func (l counterList) Len() int           { return len(l) }
+
+func StackRetriever(t string) stackhandlers.StackHandler {
+	var handler stackhandlers.StackHandler
+	switch t {
+	case Priority:
+		handler = stackhandlers.PriorityStackHandler{}
+	case Complexity:
+		handler = stackhandlers.ComplexityStackHandler{}
+	case Severity:
+		handler = stackhandlers.SeverityStackHandler{}
+	}
+	return handler
+}

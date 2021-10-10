@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
-
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
@@ -61,12 +59,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 
-	var hander stackhandlers.StackHandler
-
-	hander = stackhandlers.PriorityStackHandler{}
-
+	handler := common.StackRetriever(f.State.Values.Type)
 	bar := charts.NewBar()
-	bar.Colors = hander.GetStackColors()
+	bar.Colors = handler.GetStackColors()
 
 	// x is always stable
 	var xAxis []string
@@ -77,7 +72,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Data: xAxis,
 	}
 
-	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, hander, xAxis, func(issue interface{}) string {
+	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, handler, xAxis, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{
@@ -98,5 +93,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props["option"] = bar.JSON()
 
 	c.Props = props
+	c.State = nil
 	return nil
 }

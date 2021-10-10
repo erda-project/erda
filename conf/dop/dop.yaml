@@ -84,4 +84,9 @@ component-protocol.components.issue-dashboard.stateVerticalBarChartExtra:
 component-protocol.components.issue-dashboard.stateVerticalBarChartFilter:
 
 component-protocol.components.issue-dashboard.labelHorizontalBarChart:
+component-protocol.components.issue-dashboard.labelHorizontalBarChartExtra:
+component-protocol.components.issue-dashboard.labelHorizontalBarChartFilter:
+
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:
+component-protocol.components.issue-dashboard.assigneeHorizontalBarChartExtra:
+component-protocol.components.issue-dashboard.assigneeHorizontalBarChartFilter:

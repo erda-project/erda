@@ -34,8 +34,8 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values         common.FrontendConditions `json:"values,omitempty"`
-	IssueList      []dao.IssueItem           `json:"issueList,omitempty"`
-	IssueStateList []dao.IssueState          `json:"issueStateList,omitempty"`
-	Members        []apistructs.Member       `json:"members,omitempty"`
+	Values         common.FilterConditions `json:"values,omitempty"`
+	IssueList      []dao.IssueItem         `json:"issueList,omitempty"`
+	IssueStateList []dao.IssueState        `json:"issueStateList,omitempty"`
+	Members        []apistructs.Member     `json:"members,omitempty"`
 }

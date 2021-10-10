@@ -17,7 +17,6 @@ package assigneeHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -60,27 +60,20 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		memberMap[m.UserID] = m
 	}
 
-	var bugList []interface{}
-	for i := range f.State.IssueList {
-		issue := f.State.IssueList[i]
-		if issue.Type != apistructs.IssueTypeBug {
-			continue
-		}
-		bugList = append(bugList, &issue)
-	}
+	bugList := common.IssueListFilter(f.State.IssueList, func(i int) bool {
+		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
+		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
+	})
 
-	var hander stackhandlers.StackHandler
-
-	hander = stackhandlers.PriorityStackHandler{}
-
+	handler := common.StackRetriever(f.State.Values.Type)
 	bar := charts.NewBar()
-	bar.Colors = hander.GetStackColors()
+	bar.Colors = handler.GetStackColors()
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
 
 	var realY []string
-	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, hander, nil, func(issue interface{}) string {
+	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, handler, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{
@@ -115,5 +108,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props["option"] = bar.JSON()
 
 	c.Props = props
+	c.State = nil
 	return nil
 }
