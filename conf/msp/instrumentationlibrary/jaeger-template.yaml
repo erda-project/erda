@@ -199,7 +199,7 @@
         		},
         	},
         }
-        closer,err := cfg.InitGlobalTracer("<your_service_name>",jaegercfg.Logger(jaeger.StdLogger))
+        closer, err := cfg.InitGlobalTracer("<your_service_name>", jaegercfg.Logger(jaeger.StdLogger))
         if err != nil {
         	panic(err)
         }
