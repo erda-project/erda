@@ -167,7 +167,11 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			timeBegin = v.TimeBegin.Format("2006-01-02 15:03:04")
 		}
 		if v.TimeEnd != nil {
-			timeEnd = v.TimeEnd.Format("2006-01-02 15:03:04")
+			if v.TimeEnd.Year() == 1000 {
+				timeEnd = ""
+			} else {
+				timeEnd = v.TimeEnd.Format("2006-01-02 15:03:04")
+			}
 		}
 		userIDs = append(userIDs, v.StartExecutor, v.EndExecutor)
 		list = append(list, ExecuteHistory{
