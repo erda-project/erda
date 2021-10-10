@@ -141,6 +141,25 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
+    - name: stateVerticalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: labelHorizontalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+    - name: assigneeHorizontalBarChart
+      state:
+        - name: "issueList"
+          value: "{{ filter.issueList }}"
+        - name: "issueStateList"
+          value: "{{ filter.issueStateList }}"
+
   total:
     - name: open
       state:
@@ -170,24 +189,6 @@ rendering:
       state:
         - name: "stats"
           value: "{{ total.stats }}"
-    - name: stateVerticalBarChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-    - name: labelHorizontalBarChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-    - name: assigneeHorizontalBarChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
 
   trendChartFilter:
     - name: filter

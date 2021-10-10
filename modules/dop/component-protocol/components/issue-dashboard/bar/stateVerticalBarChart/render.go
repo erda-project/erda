@@ -47,9 +47,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	stateMap := make(map[uint64]dao.IssueState)
-	for _, i := range f.State.IssueStateList {
-		stateMap[i.ID] = i
+	stateMap := make(map[uint64]*dao.IssueState)
+	for i := range f.State.IssueStateList {
+		s := f.State.IssueStateList[i]
+		stateMap[s.ID] = &s
 	}
 
 	var bugList []interface{}
@@ -63,19 +64,20 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	bar := charts.NewBar()
 	bar.Colors = []string{"green", "blue", "orange", "red"}
-	var yAxis []string
+	var stacks []string
 	for _, i := range apistructs.IssuePriorityList {
-		yAxis = append(yAxis, i.GetZhName())
+		stacks = append(stacks, i.GetZhName())
 	}
-	bar.Legend.Data = yAxis
 	// x is always stable
 	var xAxis []string
 	for _, i := range f.State.IssueStateList {
 		xAxis = append(xAxis, i.Name)
 	}
-	bar.SetXAxis(xAxis)
+	bar.XAxisList[0] = opts.XAxis{
+		Data: xAxis,
+	}
 
-	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, yAxis, xAxis, func(issue interface{}) string {
+	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, stacks, xAxis, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Priority.GetZhName()
 	}, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
@@ -91,10 +93,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		}
 	}, 0)
 	bar.Tooltip.Show = true
-
-	// some weired, guess go-echarts validate before render,
-	// but we only use JSON(), and there maybe a bug of go-echarts.
-	bar.Validate()
 
 	props := make(map[string]interface{})
 	props["title"] = "缺陷状态分布" // TODO: change by filter
