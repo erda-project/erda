@@ -55,9 +55,11 @@ func (c CounterType) GetValueIdx() int {
 }
 
 type Report struct {
-	XMLName  xml.Name  `xml:"report"`
-	Packages []Package `xml:"package"`
-	Counters []Counter `xml:"counter"`
+	ProjectID   uint64    `json:"projectID"`
+	ProjectName string    `json:"projectName"`
+	XMLName     xml.Name  `xml:"report"`
+	Packages    []Package `xml:"package"`
+	Counters    []Counter `xml:"counter"`
 }
 
 type Counter struct {
@@ -121,29 +123,32 @@ func convertReportToTree(r Report) ([]*apistructs.CodeCoverageNode, float64) {
 	}
 	setNodeValue(root, r.Counters)
 	coverage := root.Value[LinePercentIdx]
+	root.Name = r.ProjectName
 	for _, p := range r.Packages {
 		pNode := &apistructs.CodeCoverageNode{}
 		setNodeValue(pNode, p.Counters)
 		pNode.Name = p.Name
-		for _, c := range p.Classes {
-			cNode := &apistructs.CodeCoverageNode{}
-			setNodeValue(cNode, c.Counters)
-			cNode.Name = c.Name
-			for _, m := range c.Methods {
-				mNode := &apistructs.CodeCoverageNode{}
-				mNode.Name = m.Name
-				setNodeValue(mNode, m.Counters)
-				cNode.Nodes = append(cNode.Nodes, mNode)
-			}
-			pNode.Nodes = append(pNode.Nodes, cNode)
-		}
+		//for _, c := range p.Classes {
+		//	cNode := &apistructs.CodeCoverageNode{}
+		//	setNodeValue(cNode, c.Counters)
+		//	cNode.Name = c.Name
+		//	for _, m := range c.Methods {
+		//		mNode := &apistructs.CodeCoverageNode{}
+		//		mNode.Name = m.Name
+		//		setNodeValue(mNode, m.Counters)
+		//		cNode.Nodes = append(cNode.Nodes, mNode)
+		//	}
+		//	pNode.Nodes = append(pNode.Nodes, cNode)
+		//}
 		root.Nodes = append(root.Nodes, pNode)
 	}
 	return []*apistructs.CodeCoverageNode{root}, coverage
 }
 
-func getAnalyzeJson(data []byte) ([]*apistructs.CodeCoverageNode, float64) {
+func getAnalyzeJson(projectID uint64, projectName string, data []byte) ([]*apistructs.CodeCoverageNode, float64) {
 	report, err := convertXmlToReport(data)
+	report.ProjectID = projectID
+	report.ProjectName = projectName
 	if err != nil {
 		log.Fatal(err)
 	}

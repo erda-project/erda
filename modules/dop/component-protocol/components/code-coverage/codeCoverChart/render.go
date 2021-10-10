@@ -54,6 +54,19 @@ type ComponentAction struct {
 	Data       map[string]interface{}
 }
 
+type Meta struct {
+	Data struct {
+		Data PointValue `json:"data"`
+	} `json:"data"`
+}
+
+type PointValue struct {
+	RecordID   uint64  `json:"recordId"`
+	Value      float64 `json:"value"`
+	SymbolSize int     `json:"symbolSize"`
+	Symbol     string  `json:"symbol"`
+}
+
 type State struct {
 	Value    []int64 `json:"value"`
 	RecordID uint64  `json:"recordID"`
@@ -72,14 +85,15 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 	ca.Props["title"] = "项目代码覆盖率趋势"
 	ca.Props["chartType"] = "line"
 	var timeList []string
-	var valueLst []interface{}
+	var valueLst []PointValue
 	for _, r := range data.List {
 		t := r.TimeCreated.Format(timeFormat)
 		timeList = append(timeList, t)
-		valueLst = append(valueLst, map[string]interface{}{
-			"value":      r.Coverage,
-			"symbolSize": 24,
-			"symbol":     "pin",
+		valueLst = append(valueLst, PointValue{
+			RecordID:   r.ID,
+			SymbolSize: 24,
+			Symbol:     "pin",
+			Value:      r.Coverage,
 		})
 	}
 	ca.Props["option"] = map[string]interface{}{
@@ -157,12 +171,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	switch event.Operation {
 	case common.CoverChartSelectItemOperationKey:
-		recordIDStr := event.OperationData["data"]
-		recordID, err := strconv.ParseInt(fmt.Sprintf("%v", recordIDStr), 10, 64)
-		if err != nil {
+		var m Meta
+		metaData := event.OperationData["meta"]
+		metaByt, _ := json.Marshal(metaData)
+		if err := json.Unmarshal(metaByt, &m); err != nil {
 			return err
 		}
-		ca.State.RecordID = uint64(recordID)
+		ca.State.RecordID = m.Data.Data.RecordID
 	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
 		if len(ca.State.Value) < 2 {
 			ca.setDefaultTimeRange()
