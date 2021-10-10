@@ -64,10 +64,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		bugList = append(bugList, &issue)
 	}
 
+	var hander common.StackHandler
+
+	hander = bar_util.PriorityStackHandler{}
+
 	bar := charts.NewBar()
-	bar.Colors = bar_util.GetPriorityStackColors()
-	stacks := bar_util.GetPriorityStacks()
-	indexer := bar_util.GetPriorityIndexer()
+	bar.Colors = hander.GetStackColors()
 
 	// x is always stable
 	var xAxis []string
@@ -78,7 +80,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Data: xAxis,
 	}
 
-	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, stacks, xAxis, indexer, func(issue interface{}) string {
+	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, hander, xAxis, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{

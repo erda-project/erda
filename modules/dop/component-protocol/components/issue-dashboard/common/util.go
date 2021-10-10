@@ -59,14 +59,16 @@ func GroupToPieData(issueList []dao.IssueItem, g func(issue *dao.IssueItem) stri
 	return data
 }
 
-func GroupToVerticalBarData(issueList []interface{}, stacks []string, xAxis []string,
-	stackIdx func(issue interface{}) string, xIdx func(issue interface{}) string,
+func GroupToVerticalBarData(itemList []interface{}, stackHandler StackHandler, xAxis []string,
+	xIdx func(issue interface{}) string,
 	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string) {
 	counter := make(map[string]map[string]int)
 	counterSingle := make(map[string]int)
 
-	for _, i := range issueList {
-		y := FixEmptyWord(stackIdx(i))
+	stackIndexer := stackHandler.GetIndexer()
+
+	for _, i := range itemList {
+		y := FixEmptyWord(stackIndexer(i))
 		x := FixEmptyWord(xIdx(i))
 		if _, ok := counter[y]; !ok {
 			counter[y] = make(map[string]int)
@@ -99,7 +101,7 @@ func GroupToVerticalBarData(issueList []interface{}, stacks []string, xAxis []st
 			last--
 		}
 	}
-	for _, stack := range stacks {
+	for _, stack := range stackHandler.GetStacks() {
 		rowData := make([]*int, xl)
 		for i, x := range xAxis {
 			v := counter[stack][x]
@@ -111,6 +113,12 @@ func GroupToVerticalBarData(issueList []interface{}, stacks []string, xAxis []st
 	}
 
 	return ms, xAxis
+}
+
+type StackHandler interface {
+	GetStacks() []string
+	GetStackColors() []string
+	GetIndexer() func(issue interface{}) string
 }
 
 func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.IssueItem {

@@ -97,28 +97,20 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		labelList = append(labelList, l)
 	}
 
-	bar := charts.NewBar()
-	bar.Colors = []string{"green", "blue", "orange", "red"}
-	var stacks []string
-	for _, i := range apistructs.IssuePriorityList {
-		stacks = append(stacks, i.GetZhName())
+	var hander common.StackHandler
+
+	hander = bar_util.LabelPriorityStackHandler{
+		BugMap: bugMap,
 	}
+
+	bar := charts.NewBar()
+	bar.Colors = hander.GetStackColors()
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
 
 	var realY []string
-	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, stacks, nil, func(label interface{}) string {
-		l := label.(*dao.IssueLabel)
-		if l == nil {
-			return ""
-		}
-		bug, ok := bugMap[l.RefID]
-		if !ok {
-			return ""
-		}
-		return bug.Priority.GetZhName()
-	}, func(label interface{}) string {
+	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, hander, nil, func(label interface{}) string {
 		l := label.(*dao.IssueLabel)
 		if l == nil {
 			return ""

@@ -7,7 +7,10 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
-func GetPriorityStacks() []string {
+type PriorityStackHandler struct {
+}
+
+func (h PriorityStackHandler) GetStacks() []string {
 	var stacks []string
 	for _, i := range apistructs.IssuePriorityList {
 		stacks = append(stacks, i.GetZhName())
@@ -15,13 +18,44 @@ func GetPriorityStacks() []string {
 	return stacks
 }
 
-func GetPriorityStackColors() []string {
+func (h PriorityStackHandler) GetStackColors() []string {
 	return []string{"green", "blue", "orange", "red"}
 }
 
-func GetPriorityIndexer() func(issue interface{}) string {
+func (h PriorityStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Priority.GetZhName()
+	}
+}
+
+
+type LabelPriorityStackHandler struct {
+	BugMap map[uint64]*dao.IssueItem
+}
+
+func (h LabelPriorityStackHandler) GetStacks() []string {
+	var stacks []string
+	for _, i := range apistructs.IssuePriorityList {
+		stacks = append(stacks, i.GetZhName())
+	}
+	return stacks
+}
+
+func (h LabelPriorityStackHandler) GetStackColors() []string {
+	return []string{"green", "blue", "orange", "red"}
+}
+
+func (h LabelPriorityStackHandler) GetIndexer() func(issue interface{}) string {
+	return func(label interface{}) string {
+		l := label.(*dao.IssueLabel)
+		if l == nil {
+			return ""
+		}
+		bug, ok := h.BugMap[l.RefID]
+		if !ok {
+			return ""
+		}
+		return bug.Priority.GetZhName()
 	}
 }
 

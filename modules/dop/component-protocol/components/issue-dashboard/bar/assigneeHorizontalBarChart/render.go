@@ -17,6 +17,7 @@ package assigneeHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	bar_util "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/bar"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -68,20 +69,18 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		bugList = append(bugList, &issue)
 	}
 
+	var hander common.StackHandler
+
+	hander = bar_util.PriorityStackHandler{}
+
 	bar := charts.NewBar()
-	bar.Colors = []string{"green", "blue", "orange", "red"}
-	var yAxis []string
-	for _, i := range apistructs.IssuePriorityList {
-		yAxis = append(yAxis, i.GetZhName())
-	}
+	bar.Colors = hander.GetStackColors()
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
 
 	var realY []string
-	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, yAxis, nil, func(issue interface{}) string {
-		return issue.(*dao.IssueItem).Priority.GetZhName()
-	}, func(issue interface{}) string {
+	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, hander, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
 	}, func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{
