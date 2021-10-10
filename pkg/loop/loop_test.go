@@ -72,7 +72,7 @@ func TestWithContext(t *testing.T) {
 	assert := require.New(t)
 	assert.Equal(0, executed)
 
-	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Millisecond)
+	ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
 	l = New(WithContext(ctx), WithInterval(10*time.Millisecond), WithMaxTimes(3))
