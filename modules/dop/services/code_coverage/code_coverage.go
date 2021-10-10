@@ -164,6 +164,10 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	if status != apistructs.FailStatus && status != apistructs.SuccessStatus {
 		return errors.New("the status is not fail or success")
 	}
+	project, err := svc.bdl.GetProject(record.ProjectID)
+	if err != nil {
+		return err
+	}
 
 	record.Status = status
 	record.Msg = req.Msg
@@ -198,7 +202,7 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		if err != nil {
 			return err
 		}
-		analyzeJson, coverage := getAnalyzeJson(all)
+		analyzeJson, coverage := getAnalyzeJson(project.ID, project.DisplayName, all)
 		record.ReportContent = analyzeJson
 		record.Coverage = coverage
 	}

@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
+	"github.com/erda-project/erda/pkg/strutil"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -47,6 +49,7 @@ type Data struct {
 type ExecuteHistory struct {
 	ID        uint64    `json:"id"`
 	Status    Status    `json:"status"`
+	Reason    string    `json:"reason"`
 	Starter   string    `json:"starter"`
 	StartTime string    `json:"startTime"`
 	Ender     string    `json:"ender"`
@@ -121,7 +124,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
-	if err := ca.setData(ctx); err != nil {
+	if err := ca.setData(ctx, gs); err != nil {
 		return err
 	}
 
@@ -132,7 +135,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	return nil
 }
 
-func (ca *ComponentAction) setData(ctx context.Context) error {
+func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
 	projectIDStr := sdk.InParams["projectId"].(string)
 	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
@@ -152,11 +155,20 @@ func (ca *ComponentAction) setData(ctx context.Context) error {
 	}
 	ca.State.Total = data.Total
 	list := make([]ExecuteHistory, 0)
+	userIDs := make([]string, 0)
 	for _, v := range data.List {
 		disabled := false
 		if v.ReportUrl == "" {
 			disabled = true
 		}
+		var timeBegin, timeEnd string
+		if v.TimeBegin != nil {
+			timeBegin = v.TimeBegin.Format("2006-01-02 15:03:04")
+		}
+		if v.TimeEnd != nil {
+			timeEnd = v.TimeEnd.Format("2006-01-02 15:03:04")
+		}
+		userIDs = append(userIDs, v.StartExecutor, v.EndExecutor)
 		list = append(list, ExecuteHistory{
 			ID: v.ID,
 			Status: Status{
@@ -164,10 +176,11 @@ func (ca *ComponentAction) setData(ctx context.Context) error {
 				Value:      statusMap[v.Status],
 				Status:     v.Status,
 			},
-			Starter: v.StartExecutor,
-			//StartTime: v.TimeBegin.String(),
-			Ender: v.EndExecutor,
-			//EndTime:   v.TimeEnd.String(),
+			Reason:    v.Msg,
+			Starter:   v.StartExecutor,
+			StartTime: timeBegin,
+			Ender:     v.EndExecutor,
+			EndTime:   timeEnd,
 			CoverRate: CoverRate{
 				RenderType: "progress",
 				Value:      fmt.Sprintf("%v", v.Coverage),
@@ -192,6 +205,15 @@ func (ca *ComponentAction) setData(ctx context.Context) error {
 				RenderType: "tableOperation",
 			},
 		})
+	}
+	userIDs = strutil.DedupSlice(userIDs, true)
+	uInfo, err := posthandle.GetUsers(userIDs, false)
+	if err != nil {
+		return err
+	}
+	for i := range list {
+		list[i].Starter = uInfo[list[i].Starter].Name
+		list[i].Ender = uInfo[list[i].Ender].Name
 	}
 	ca.Data.List = list
 	return nil
@@ -226,11 +248,23 @@ func (ca *ComponentAction) SetProps() error {
         "50",
         "100"
     ],
+    "scroll":{
+        "x":1000
+    },
     "columns":[
         {
             "dataIndex":"status",
             "title":"状态",
             "width":80
+        },
+        {
+            "dataIndex":"coverRate",
+            "title":"当前行覆盖率",
+            "width":120
+        },
+        {
+            "dataIndex":"reason",
+            "title":"原因"
         },
         {
             "dataIndex":"starter",
@@ -251,11 +285,6 @@ func (ca *ComponentAction) SetProps() error {
             "dataIndex":"endTime",
             "title":"统计结束时间",
             "width":140
-        },
-        {
-            "dataIndex":"coverRate",
-            "title":"当前行覆盖率",
-            "width":120
         },
         {
             "dataIndex":"operate",
