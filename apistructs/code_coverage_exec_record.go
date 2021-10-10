@@ -15,7 +15,6 @@
 package apistructs
 
 import (
-	"mime/multipart"
 	"time"
 
 	"github.com/pkg/errors"
@@ -54,11 +53,11 @@ func (req *CodeCoverageStartRequest) Validate() error {
 type CodeCoverageUpdateRequest struct {
 	IdentityInfo
 
-	ID        uint64                `query:"id" schema:"id"`
-	Status    string                `query:"status" schema:"status"`
-	Msg       string                `query:"msg" schema:"msg"`
-	ReportXml *multipart.FileHeader `query:"reportXml" schema:"reportXml"`
-	ReportTar *multipart.FileHeader `query:"reportTar" schema:"reportTar"`
+	ID            uint64 `json:"id"`
+	Status        string `json:"status"`
+	Msg           string `json:"msg"`
+	ReportXmlUUID string `json:"reportXmlUUID"`
+	ReportTarUrl  string `json:"reportTarUrl"`
 }
 
 func (req *CodeCoverageUpdateRequest) Validate() error {

@@ -212,32 +212,12 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	if err != nil {
 		return err
 	}
-
 	record.Status = status
 	record.Msg = req.Msg
-	// upload report_tar
-	if req.ReportTar != nil {
-		f, err := req.ReportTar.Open()
-		if err != nil {
-			return err
-		}
-		uploadReq := apistructs.FileUploadRequest{
-			FileNameWithExt: req.ReportTar.Filename,
-			ByteSize:        req.ReportTar.Size,
-			FileReader:      f,
-			From:            "code-coverage",
-			IsPublic:        true,
-			ExpiredAt:       nil,
-		}
-		file, err := svc.bdl.UploadFile(uploadReq)
-		if err != nil {
-			return err
-		}
-		record.ReportUrl = file.DownloadURL
-	}
-	// deal report_xml
-	if req.ReportXml != nil {
-		f, err := req.ReportXml.Open()
+	record.ReportUrl = req.ReportTarUrl
+
+	if req.ReportXmlUUID != "" {
+		f, err := svc.bdl.DownloadDiceFile(req.ReportXmlUUID)
 		if err != nil {
 			return err
 		}

@@ -128,35 +128,11 @@ func (e *Endpoints) EndCallBack(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrUpdateCodeCoverageExecRecord.NotLogin().ToResp(), nil
 	}
 
-	if err := r.ParseMultipartForm(32 * 1024 * 1024); err != nil {
-		return apierrors.ErrUploadFile.InvalidParameter(err).ToResp(), nil
+	var req apistructs.CodeCoverageUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpdateCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
 	}
-	var id uint64
-	if len(r.MultipartForm.Value["id"]) != 0 {
-		idStr := r.MultipartForm.Value["id"][0]
-		id, err = strconv.ParseUint(idStr, 10, 64)
-		if err != nil {
-			return apierrors.ErrUploadFile.InvalidParameter(err).ToResp(), nil
-		}
-	}
-
-	req := apistructs.CodeCoverageUpdateRequest{
-		IdentityInfo: identityInfo,
-		ID:           id,
-	}
-	if len(r.MultipartForm.Value["status"]) != 0 {
-		req.Status = r.MultipartForm.Value["status"][0]
-	}
-	if len(r.MultipartForm.Value["msg"]) != 0 {
-		req.Msg = r.MultipartForm.Value["msg"][0]
-	}
-	if len(r.MultipartForm.File["reportXml"]) != 0 {
-		req.ReportXml = r.MultipartForm.File["reportXml"][0]
-	}
-	if len(r.MultipartForm.File["reportTar"]) != 0 {
-		req.ReportTar = r.MultipartForm.File["reportTar"][0]
-	}
-
+	req.IdentityInfo = identityInfo
 	if err = req.Validate(); err != nil {
 		return apierrors.ErrUpdateCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
 	}
