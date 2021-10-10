@@ -91,17 +91,19 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	var labelList []interface{}
 	for i := range labels {
 		l := &labels[i]
-		if _, ok := bugMap[l.RefID]; !ok {
+		bug, ok := bugMap[l.RefID]
+		if !ok {
 			continue
 		}
-		labelList = append(labelList, l)
+		labelList = append(labelList, &bar_util.LabelIssueItem{
+			LabelRel: l,
+			Bug:      bug,
+		})
 	}
 
 	var hander common.StackHandler
 
-	hander = bar_util.LabelPriorityStackHandler{
-		BugMap: bugMap,
-	}
+	hander = bar_util.PriorityStackHandler{}
 
 	bar := charts.NewBar()
 	bar.Colors = hander.GetStackColors()
@@ -111,11 +113,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	var realY []string
 	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, hander, nil, func(label interface{}) string {
-		l := label.(*dao.IssueLabel)
+		l := label.(*bar_util.LabelIssueItem)
 		if l == nil {
 			return ""
 		}
-		return l.Name
+		return l.LabelRel.Name
 	}, bar_util.GetHorizontalStackBarSingleSeriesConverter(), 500)
 
 	bar.YAxisList[0] = opts.YAxis{

@@ -1,11 +1,17 @@
 package bar
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
+
+type LabelIssueItem struct {
+	LabelRel *dao.IssueLabel
+	Bug      *dao.IssueItem
+}
 
 type PriorityStackHandler struct {
 }
@@ -24,38 +30,14 @@ func (h PriorityStackHandler) GetStackColors() []string {
 
 func (h PriorityStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
-		return issue.(*dao.IssueItem).Priority.GetZhName()
-	}
-}
-
-
-type LabelPriorityStackHandler struct {
-	BugMap map[uint64]*dao.IssueItem
-}
-
-func (h LabelPriorityStackHandler) GetStacks() []string {
-	var stacks []string
-	for _, i := range apistructs.IssuePriorityList {
-		stacks = append(stacks, i.GetZhName())
-	}
-	return stacks
-}
-
-func (h LabelPriorityStackHandler) GetStackColors() []string {
-	return []string{"green", "blue", "orange", "red"}
-}
-
-func (h LabelPriorityStackHandler) GetIndexer() func(issue interface{}) string {
-	return func(label interface{}) string {
-		l := label.(*dao.IssueLabel)
-		if l == nil {
+		switch issue.(type) {
+		case *dao.IssueItem:
+			return issue.(*dao.IssueItem).Priority.GetZhName()
+		case *LabelIssueItem:
+			return issue.(*LabelIssueItem).Bug.Priority.GetZhName()
+		default:
 			return ""
 		}
-		bug, ok := h.BugMap[l.RefID]
-		if !ok {
-			return ""
-		}
-		return bug.Priority.GetZhName()
 	}
 }
 
