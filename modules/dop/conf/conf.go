@@ -15,6 +15,7 @@
 package conf
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/erda-project/erda/pkg/envconf"
@@ -72,6 +73,8 @@ type Conf struct {
 
 	ProjectStatsCacheCron       string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
+
+	JacocoAddr string `env:"JACOCO_ADDR"`
 }
 
 var cfg Conf
@@ -249,4 +252,9 @@ func TestFileRecordPurgeCycleDay() int {
 
 func UpdateIssueExpiryStatusCron() string {
 	return cfg.UpdateIssueExpiryStatusCron
+}
+
+func JacocoAddr() (jacocoAddr map[string]string) {
+	_ = json.Unmarshal([]byte(cfg.JacocoAddr), &jacocoAddr)
+	return jacocoAddr
 }

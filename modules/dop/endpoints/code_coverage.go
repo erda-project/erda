@@ -73,6 +73,30 @@ func (e *Endpoints) EndCodeCoverage(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp("success")
 }
 
+// CancelCodeCoverage cancel all exec of project
+func (e *Endpoints) CancelCodeCoverage(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCreateIssue.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.CodeCoverageCancelRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrEndCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
+	}
+	if err = req.Validate(); err != nil {
+		return apierrors.ErrEndCodeCoverageExecRecord.InvalidParameter(err).ToResp(), nil
+	}
+
+	req.IdentityInfo = identityInfo
+
+	if err = e.codeCoverageSvc.Cancel(req); err != nil {
+		return apierrors.ErrEndCodeCoverageExecRecord.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp("success")
+}
+
 // ReadyCallBack Record ready callBack
 func (e *Endpoints) ReadyCallBack(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
