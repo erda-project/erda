@@ -128,7 +128,7 @@ func (e *Endpoints) EndCallBack(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrUpdateCodeCoverageExecRecord.NotLogin().ToResp(), nil
 	}
 
-	if err := r.ParseMultipartForm(10 * 1024 * 1024); err != nil {
+	if err := r.ParseMultipartForm(32 * 1024 * 1024); err != nil {
 		return apierrors.ErrUploadFile.InvalidParameter(err).ToResp(), nil
 	}
 	var id uint64

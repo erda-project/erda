@@ -225,7 +225,7 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 			FileNameWithExt: req.ReportTar.Filename,
 			ByteSize:        req.ReportTar.Size,
 			FileReader:      f,
-			From:            "Autotest space",
+			From:            "code-coverage",
 			IsPublic:        true,
 			ExpiredAt:       nil,
 		}
