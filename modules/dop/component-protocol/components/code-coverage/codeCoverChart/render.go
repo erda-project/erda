@@ -194,6 +194,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		ca.setProps(recordRsp)
+		ca.State.RecordID = 0
 		if len(recordRsp.List) > 0 {
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
@@ -214,6 +215,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		ca.setProps(recordRsp)
+		ca.State.RecordID = 0
 		if len(recordRsp.List) > 0 {
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}

@@ -107,7 +107,7 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					"roam":            "move",
 					"leafDepth":       2,
 					"colorMappingBy":  "value",
-					"visualDimension": 9,
+					"visualDimension": 8,
 					"data":            data,
 					"color":           []string{"#800000", "#F7A76B", "#F7C36B", "#6CB38B", "#8FBC8F"},
 					"levels": []interface{}{
