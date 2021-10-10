@@ -89,12 +89,15 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 	for _, r := range data.List {
 		t := r.TimeCreated.Format(timeFormat)
 		timeList = append(timeList, t)
-		valueLst = append(valueLst, PointValue{
+		p := PointValue{
 			RecordID:   r.ID,
 			SymbolSize: 24,
-			Symbol:     "pin",
 			Value:      r.Coverage,
-		})
+		}
+		if r.ID == ca.State.RecordID {
+			p.Symbol = "pin"
+		}
+		valueLst = append(valueLst, p)
 	}
 	ca.Props["option"] = map[string]interface{}{
 		"xAxis": map[string]interface{}{
@@ -102,12 +105,12 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		},
 		"yAxis": map[string]interface{}{
 			"axisLabel": map[string]interface{}{
-				"formatter": "{value}%",
+				"formatter": "{value}%%",
 			},
 		},
 		"series": []interface{}{
 			map[string]interface{}{
-				"name": "覆盖率趋势图",
+				"name": "行覆盖率",
 				"data": valueLst,
 				"areaStyle": map[string]interface{}{
 					"opacity": 0.1,
@@ -178,7 +181,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		ca.State.RecordID = m.Data.Data.RecordID
-	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
 		if len(ca.State.Value) < 2 {
 			ca.setDefaultTimeRange()
 		}
@@ -194,10 +196,26 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		ca.setProps(recordRsp)
+	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
+		if len(ca.State.Value) < 2 {
+			ca.setDefaultTimeRange()
+		}
+		start, end := convertTimeRange(ca.State.Value)
+		recordRsp, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+			ProjectID: projectID,
+			TimeBegin: start,
+			TimeEnd:   end,
+			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
+			Asc:       true,
+		})
+		if err != nil {
+			return err
+		}
 		ca.State.RecordID = 0
 		if len(recordRsp.List) > 0 {
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
+		ca.setProps(recordRsp)
 		ca.Operations = getOperations()
 	case cptype.RenderingOperation:
 		if len(ca.State.Value) < 2 {
@@ -214,11 +232,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if err != nil {
 			return err
 		}
-		ca.setProps(recordRsp)
 		ca.State.RecordID = 0
 		if len(recordRsp.List) > 0 {
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
+		ca.setProps(recordRsp)
 	}
 	return nil
 }
