@@ -16,10 +16,9 @@ package conf
 
 import (
 	"encoding/json"
-	"strings"
-
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
+	"strings"
 )
 
 // Conf define envs
@@ -74,7 +73,8 @@ type Conf struct {
 	ProjectStatsCacheCron       string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
 
-	JacocoAddr string `env:"JACOCO_ADDR"`
+	JacocoAddr    string `env:"JACOCO_ADDR"`
+	jacocoAddrMap map[string]string
 }
 
 var cfg Conf
@@ -82,6 +82,14 @@ var cfg Conf
 // Load loads envs
 func Load() {
 	envconf.MustLoad(&cfg)
+
+	if len(cfg.JacocoAddr) <= 0 {
+		return
+	}
+	err := json.Unmarshal([]byte(cfg.JacocoAddr), &cfg.jacocoAddrMap)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Debug() bool {
@@ -254,7 +262,6 @@ func UpdateIssueExpiryStatusCron() string {
 	return cfg.UpdateIssueExpiryStatusCron
 }
 
-func JacocoAddr() (jacocoAddr map[string]string) {
-	_ = json.Unmarshal([]byte(cfg.JacocoAddr), &jacocoAddr)
-	return jacocoAddr
+func JacocoAddr() map[string]string {
+	return cfg.jacocoAddrMap
 }

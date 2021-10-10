@@ -114,6 +114,7 @@ var statusMap = map[string]string{
 	"ending":  "结束中",
 	"success": "成功",
 	"fail":    "失败",
+	"cancel":  "用户取消",
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {

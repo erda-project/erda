@@ -12,12 +12,12 @@ hierarchy:
     buttonGroup:
       - startButton
       - endButton
+      - cancelButton
       - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryContent
     executeHistoryContent:
-      #      - executeHistoryFilter
       - executeHistoryTable
     codeCoverChart:
       extraContent: timeSelector
@@ -38,6 +38,8 @@ components:
   codeCoverChart:
     type: Chart
   startButton:
+    type: Button
+  cancelButton:
     type: Button
   endButton:
     type: Button
@@ -69,12 +71,15 @@ components:
     type: DatePicker
 
 rendering:
+  cancelButton:
+    - name: endButton
+    - name: startButton
+    - name: executeHistoryTable
   startButton:
     - name: endButton
     - name: executeHistoryTable
   endButton:
     - name: startButton
-    - name: codeCoverChart
     - name: executeHistoryTable
   timeSelector:
     - name: codeCoverChart
@@ -94,6 +99,7 @@ rendering:
   __DefaultRendering__:
     - name: startButton
     - name: endButton
+    - name: cancelButton
     - name: timeSelector
     - name: codeCoverChart
       state:

@@ -15,6 +15,7 @@
 package code_coverage
 
 import (
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/cancelButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/chart1"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/codeCoverChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/endButton"
