@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CODE_COVERAGE_READY_ENDBACK = apis.ApiSpec{
+var CODE_COVERAGE_END_CALLBACK = apis.ApiSpec{
 	Path:        "/api/code-coverage/actions/end-callBack",
 	BackendPath: "/api/code-coverage/actions/end-callBack",
 	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
@@ -29,5 +29,5 @@ var CODE_COVERAGE_READY_ENDBACK = apis.ApiSpec{
 	CheckToken:  true,
 	RequestType: apistructs.CodeCoverageUpdateRequest{},
 	IsOpenAPI:   true,
-	Doc:         "summary: ready callback",
+	Doc:         "summary: end callback",
 }
