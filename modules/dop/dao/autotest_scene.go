@@ -77,6 +77,18 @@ func (db *DBClient) GetAutotestScene(id uint64) (*AutoTestScene, error) {
 	return &scene, nil
 }
 
+func (db *DBClient) GetAutotestSceneTx(id uint64, tx *gorm.DB) (*AutoTestScene, error) {
+	var scene AutoTestScene
+	if tx == nil {
+		tx = db.DB
+	}
+	err := tx.Where("id = ?", id).Find(&scene).Error
+	if err != nil {
+		return nil, err
+	}
+	return &scene, nil
+}
+
 func (db *DBClient) GetAutotestSceneByPreID(preID uint64) (*AutoTestScene, error) {
 	var scene AutoTestScene
 	err := db.Where("pre_id = ?", preID).Find(&scene).Error
@@ -116,6 +128,25 @@ func (db *DBClient) ListAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	//err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&scenes).
 	//	Offset(0).Limit(-1).Count(&total).Error
 	sql := db.Table("dice_autotest_scene").Where("set_id = ?", req.SetID)
+	err := sql.Find(&scenes).Offset(0).Limit(-1).Count(&total).Error
+	if err != nil {
+		return 0, nil, err
+	}
+	return uint64(total), scenes, nil
+}
+
+func (db *DBClient) ListAutotestSceneTx(req apistructs.AutotestSceneRequest, tx *gorm.DB) (uint64, []AutoTestScene, error) {
+	var (
+		scenes []AutoTestScene
+		total  int64
+	)
+	//sql := db.Table("dice_autotest_scene").Where("set_id = ?", req.SetID)
+	//err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&scenes).
+	//	Offset(0).Limit(-1).Count(&total).Error
+	if tx == nil {
+		tx = db.DB
+	}
+	sql := tx.Table("dice_autotest_scene").Where("set_id = ?", req.SetID)
 	err := sql.Find(&scenes).Offset(0).Limit(-1).Count(&total).Error
 	if err != nil {
 		return 0, nil, err
@@ -187,8 +218,8 @@ func (db *DBClient) DeleteAutoTestScene(id uint64) (err error) {
 }
 
 // like linklist change to node index
-func (db *DBClient) MoveAutoTestScene(id, newPreID, newSetID uint64) (err error) {
-	return db.Transaction(func(tx *gorm.DB) error {
+func (db *DBClient) MoveAutoTestScene(id, newPreID, newSetID uint64, tx *gorm.DB) (err error) {
+	return func() error {
 		var scene, next, oldNext AutoTestScene
 		// get scene
 		if err := tx.Where("id = ?", id).Find(&scene).Error; err != nil {
@@ -253,7 +284,7 @@ func (db *DBClient) MoveAutoTestScene(id, newPreID, newSetID uint64) (err error)
 		}()
 
 		return nil
-	})
+	}()
 }
 
 // check sceneSet linked list not have same pre_id
