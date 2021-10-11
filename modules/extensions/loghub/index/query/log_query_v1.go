@@ -100,7 +100,7 @@ func (c *ESClient) searchLogsV1(req *LogSearchRequest, timeout time.Duration) (*
 		}
 		log := logv1.ToLog()
 		c.setModule(log)
-		resp.Data = append(resp.Data, log)
+		resp.Data = append(resp.Data, &LogItem{Source: log})
 	}
 	return resp, nil
 }

@@ -19,8 +19,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	logs "github.com/erda-project/erda/modules/core/monitor/log"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -29,6 +31,9 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/micro_service/:addon/logs/statistic/histogram", p.logStatistic)
 	routes.GET("/api/micro_service/:addon/logs/search", p.logSearch)
 	routes.GET("/api/micro_service/logs/tags/tree", p.logMSTagsTree)
+	routes.GET("/api/micro_service/:addon/logs/fields", p.logFields)
+	routes.GET("/api/micro_service/:addon/logs/fields/aggregation", p.logFieldsAggregation)
+	routes.GET("/api/micro_service/:addon/logs/download", p.logDownload)
 
 	// 企业日志查询
 	routes.GET("/api/org/logs/statistic/histogram", p.logStatistic)
@@ -65,7 +70,7 @@ func (p *provider) checkTime(start, end int64) error {
 	if end <= start {
 		return fmt.Errorf("end must after start")
 	}
-	if end-start > 7*24*60*60*1000 {
+	if end-start > 6*31*24*60*60*1000 {
 		return fmt.Errorf("too large time span")
 	}
 	return nil
@@ -111,15 +116,143 @@ func (p *provider) logStatistic(r *http.Request, params struct {
 	return api.Success(data)
 }
 
+func (p *provider) logFieldsAggregation(r *http.Request, params struct {
+	Start       int64    `query:"start" validate:"gte=1"`
+	End         int64    `query:"end" validate:"gte=1"`
+	Query       string   `query:"query"`
+	Debug       bool     `query:"debug"`
+	Addon       string   `param:"addon"`
+	ClusterName string   `query:"clusterName"`
+	AggFields   []string `query:"aggFields"`
+	TermsSize   int64    `query:"termsSize"`
+}) interface{} {
+	orgID := api.OrgID(r)
+	orgid, err := strconv.ParseInt(orgID, 10, 64)
+	if err != nil {
+		return api.Errors.InvalidParameter("invalid Org-ID")
+	}
+	err = p.checkTime(params.Start, params.End)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+	if len(params.AggFields) == 0 {
+		api.Errors.InvalidParameter("aggFields should not empty")
+	}
+	filters := p.buildLogFilters(r)
+	termsSize := params.TermsSize
+	if termsSize == 0 {
+		termsSize = 20
+	}
+	data, err := p.AggregateLogFields(&LogFieldsAggregationRequest{
+		LogRequest: LogRequest{
+			OrgID:       orgid,
+			ClusterName: params.ClusterName,
+			Addon:       params.Addon,
+			Start:       params.Start,
+			End:         params.End,
+			Filters:     filters,
+			Query:       params.Query,
+			Debug:       params.Debug,
+			Lang:        api.Language(r),
+		},
+		AggFields: params.AggFields,
+		TermsSize: int(termsSize),
+	})
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(data)
+}
+
+func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params struct {
+	Start       int64    `query:"start" validate:"gte=1"`
+	End         int64    `query:"end" validate:"gte=1"`
+	Query       string   `query:"query"`
+	Sort        []string `query:"sort"`
+	Debug       bool     `query:"debug"`
+	Addon       string   `param:"addon"`
+	ClusterName string   `query:"clusterName"`
+	Size        int      `query:"pageSize"`
+	MaxReturn   int64    `param:"maxReturn"`
+}) interface{} {
+	orgID := api.OrgID(r)
+	orgid, err := strconv.ParseInt(orgID, 10, 64)
+	if err != nil {
+		return api.Errors.InvalidParameter("invalid Org-ID")
+	}
+
+	err = p.checkTime(params.Start, params.End)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+
+	if params.MaxReturn <= 0 {
+		params.MaxReturn = 100000
+	}
+	if params.Size <= 0 {
+		params.Size = 1000
+	}
+
+	fileName := strings.Join(
+		[]string{
+			time.Now().Format("20060102150405.000"),
+			strconv.FormatInt(params.Start, 10),
+			strconv.FormatInt(params.End, 10),
+		},
+		"_") + ".log"
+
+	flusher := w.(http.Flusher)
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("charset", "utf-8")
+	w.Header().Set("Content-Disposition", "attachment;filename="+fileName)
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	filters := p.buildLogFilters(r)
+	err = p.DownloadLogs(&LogDownloadRequest{
+		LogRequest: LogRequest{
+			OrgID:       orgid,
+			ClusterName: params.ClusterName,
+			Addon:       params.Addon,
+			Start:       params.Start,
+			End:         params.End,
+			Filters:     filters,
+			Query:       params.Query,
+			Debug:       params.Debug,
+			Lang:        api.Language(r),
+		},
+		Sort:      params.Sort,
+		Size:      params.Size,
+		MaxReturn: params.MaxReturn,
+	}, func(batchLogs []*logs.Log) error {
+		for _, item := range batchLogs {
+			_, err = w.Write([]byte(item.Content))
+			if err != nil {
+				return err
+			}
+			w.Write([]byte("\n"))
+		}
+		flusher.Flush()
+		return nil
+	})
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return nil
+}
+
 func (p *provider) logSearch(r *http.Request, params struct {
-	Start       int64  `query:"start" validate:"gte=1"`
-	End         int64  `query:"end" validate:"gte=1"`
-	Size        int64  `query:"size"`
-	Query       string `query:"query"`
-	Sort        string `query:"sort"`
-	Debug       bool   `query:"debug"`
-	Addon       string `param:"addon"`
-	ClusterName string `query:"clusterName"`
+	Start       int64    `query:"start" validate:"gte=1"`
+	End         int64    `query:"end" validate:"gte=1"`
+	Page        int64    `query:"pageNo" validate:"gte=1"`
+	Size        int64    `query:"pageSize"`
+	Query       string   `query:"query"`
+	Sort        []string `query:"sort"`
+	Debug       bool     `query:"debug"`
+	Addon       string   `param:"addon"`
+	ClusterName string   `query:"clusterName"`
+	Highlight   bool     `query:"highlight"`
 }) interface{} {
 	orgID := api.OrgID(r)
 	orgid, err := strconv.ParseInt(orgID, 10, 64)
@@ -127,7 +260,7 @@ func (p *provider) logSearch(r *http.Request, params struct {
 		return api.Errors.InvalidParameter("invalid Org-ID")
 	}
 	if params.Size <= 0 {
-		params.Size = 50
+		params.Size = 10
 	}
 	err = p.checkTime(params.Start, params.End)
 	if err != nil {
@@ -146,8 +279,10 @@ func (p *provider) logSearch(r *http.Request, params struct {
 			Debug:       params.Debug,
 			Lang:        api.Language(r),
 		},
-		Size: params.Size,
-		Sort: params.Sort,
+		Page:      params.Page,
+		Size:      params.Size,
+		Sort:      params.Sort,
+		Highlight: params.Highlight,
 	})
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -164,4 +299,8 @@ func (p *provider) orgLogTagsTree(r *http.Request) interface{} {
 
 func (p *provider) inspectIndices(r *http.Request) interface{} {
 	return api.Success(p.indices.Load())
+}
+
+func (p *provider) logFields() interface{} {
+	return api.Success(p.ListDefaultFields())
 }
