@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package log
+package monitor
 
-// Log .
-type Log struct {
-	DocId     string            `json:"_id"`
-	Source    string            `json:"source"`
-	ID        string            `json:"id"`
-	Stream    string            `json:"stream"`
-	Content   string            `json:"content"`
-	Offset    int64             `json:"offset"`
-	Timestamp int64             `json:"timestamp"`
-	Tags      map[string]string `json:"tags"`
-}
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-// LogMeta .
-type LogMeta struct {
-	Source string            `json:"source"`
-	ID     string            `json:"id"`
-	Tags   map[string]string `json:"tags"`
+var MONITOR_ADDON_LOGS_DOWNLOAD = apis.ApiSpec{
+	Path:        "/api/log-analytics/<addon>/download",
+	BackendPath: "/api/micro_service/<addon>/logs/download",
+	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 日志下载接口",
 }
