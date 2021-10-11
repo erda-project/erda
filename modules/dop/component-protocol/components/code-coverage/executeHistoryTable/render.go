@@ -112,7 +112,7 @@ type State struct {
 var statusMap = map[string]string{
 	"running": "进行中",
 	"ready":   "进行中",
-	"ending":  "进行中",
+	"ending":  "明细生成中",
 	"success": "成功",
 	"fail":    "失败",
 	"cancel":  "用户取消",

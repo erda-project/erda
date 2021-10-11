@@ -62,8 +62,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	c.Operations = map[string]interface{}{
 		"click": map[string]interface{}{
-			"key":    "click",
-			"reload": true,
+			"key":     "click",
+			"reload":  true,
+			"confirm": "强制取消将会导致明细和报告都不会生成!",
 		},
 	}
 	return nil
