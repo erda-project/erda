@@ -47,8 +47,8 @@ var (
 )
 
 var (
-	ProjectFormatter = "总行数： %.0f <br/>覆盖行数: %0.f<br/>行覆盖率: %.2f%"
-	PackageFormatter = "%s <br/>总行数: %.0f <br/>覆盖行数: %.0f%%<br/>行覆盖率: %.2f<br/>class覆盖率: %.2f%"
+	ProjectFormatter = "总行数： %.0f <br/>覆盖行数: %0.f<br/>行覆盖率: %.2f%%"
+	PackageFormatter = "%s <br/>总行数: %.0f <br/>覆盖行数: %.0f<br/>行覆盖率: %.2f%%<br/>class覆盖率: %.2f%%"
 )
 
 func (c CounterType) IsLineType() bool {
