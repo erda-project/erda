@@ -73,3 +73,18 @@ func TestIssueState_GetIssueStatesMap(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(res))
 }
+
+func TestInitProjectState(t *testing.T) {
+	is := New()
+	db := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "CreateIssuesState", func(*dao.DBClient, *dao.IssueState) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateIssueStateRelations", func(*dao.DBClient, int64, apistructs.IssueType, []dao.IssueStateRelation) error {
+		return nil
+	})
+	defer monkey.UnpatchAll()
+	if is.InitProjectState(1) != nil {
+		t.Error("fail")
+	}
+}

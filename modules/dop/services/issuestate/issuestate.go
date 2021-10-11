@@ -307,9 +307,9 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 			relations[i].IssueType = apistructs.IssueTypeTask
 		} else if i < 16 {
 			relations[i].IssueType = apistructs.IssueTypeEpic
-		} else if i < 40 {
+		} else if i < 34 {
 			relations[i].IssueType = apistructs.IssueTypeBug
-		} else if i < 52 {
+		} else if i < 46 {
 			relations[i].IssueType = apistructs.IssueTypeTicket
 		}
 	}
