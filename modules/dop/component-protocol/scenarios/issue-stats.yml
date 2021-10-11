@@ -308,7 +308,6 @@ rendering:
           value: "{{ filter.members }}"
         - name: "stages"
           value: "{{ filter.stages }}"
-        
 
   __DefaultRendering__:
     - name: page

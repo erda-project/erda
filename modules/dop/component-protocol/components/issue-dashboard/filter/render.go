@@ -107,8 +107,6 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	f.sdk.Identity.OrgID = "1"
-
 	iterations, iterationOptions, err := f.getPropIterationsOptions()
 	if err != nil {
 		return err
