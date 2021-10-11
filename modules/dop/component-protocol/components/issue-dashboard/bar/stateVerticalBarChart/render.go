@@ -74,17 +74,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, handler, xAxis, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
-	}, func(name string, data []*int) charts.SingleSeries {
-		return charts.SingleSeries{
-			Name:  name,
-			Data:  data,
-			Stack: "total",
-			Label: &opts.Label{
-				Formatter: "{a}:{c}",
-				Show:      true,
-			},
-		}
-	}, 0)
+	}, common.GetStackBarSingleSeriesConverter(), 0)
 	bar.Tooltip.Show = true
 
 	props := make(map[string]interface{})

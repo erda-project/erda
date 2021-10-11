@@ -23,25 +23,32 @@ import (
 type PriorityStackHandler struct {
 }
 
-func (h PriorityStackHandler) GetStacks() []string {
-	var stacks []string
+func NewPriorityStackHandler() *PriorityStackHandler {
+	return &PriorityStackHandler{}
+}
+
+func (h *PriorityStackHandler) GetStacks() []Stack {
+	var stacks []Stack
 	for _, i := range apistructs.IssuePriorityList {
-		stacks = append(stacks, i.GetZhName())
+		stacks = append(stacks, Stack{
+			Name:  i.GetZhName(),
+			Value: string(i),
+		})
 	}
 	return stacks
 }
 
-func (h PriorityStackHandler) GetStackColors() []string {
+func (h *PriorityStackHandler) GetStackColors() []string {
 	return []string{"maroon", "red", "yellow", "green"}
 }
 
-func (h PriorityStackHandler) GetIndexer() func(issue interface{}) string {
+func (h *PriorityStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		switch issue.(type) {
 		case *dao.IssueItem:
-			return issue.(*dao.IssueItem).Priority.GetZhName()
+			return string(issue.(*dao.IssueItem).Priority)
 		case *model.LabelIssueItem:
-			return issue.(*model.LabelIssueItem).Bug.Priority.GetZhName()
+			return string(issue.(*model.LabelIssueItem).Bug.Priority)
 		default:
 			return ""
 		}

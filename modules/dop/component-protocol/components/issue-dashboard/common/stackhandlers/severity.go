@@ -23,25 +23,32 @@ import (
 type SeverityStackHandler struct {
 }
 
-func (h SeverityStackHandler) GetStacks() []string {
-	var stacks []string
+func NewSeverityStackHandler() *SeverityStackHandler {
+	return &SeverityStackHandler{}
+}
+
+func (h *SeverityStackHandler) GetStacks() []Stack {
+	var stacks []Stack
 	for _, i := range apistructs.IssueSeveritys {
-		stacks = append(stacks, i.GetZhName())
+		stacks = append(stacks, Stack{
+			Name:  i.GetZhName(),
+			Value: string(i),
+		})
 	}
 	return stacks
 }
 
-func (h SeverityStackHandler) GetStackColors() []string {
+func (h *SeverityStackHandler) GetStackColors() []string {
 	return []string{"maroon", "red", "yellow", "darkseagreen", "green"}
 }
 
-func (h SeverityStackHandler) GetIndexer() func(issue interface{}) string {
+func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		switch issue.(type) {
 		case *dao.IssueItem:
-			return issue.(*dao.IssueItem).Severity.GetZhName()
+			return string(issue.(*dao.IssueItem).Severity)
 		case *model.LabelIssueItem:
-			return issue.(*model.LabelIssueItem).Bug.Severity.GetZhName()
+			return string(issue.(*model.LabelIssueItem).Bug.Severity)
 		default:
 			return ""
 		}

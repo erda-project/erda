@@ -75,17 +75,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	var realY []string
 	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, handler, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
-	}, func(name string, data []*int) charts.SingleSeries {
-		return charts.SingleSeries{
-			Name:  name,
-			Stack: "total",
-			Data:  data,
-			Label: &opts.Label{
-				Formatter: "{a}:{c}",
-				Show:      true,
-			},
-		}
-	}, 500)
+	}, common.GetStackBarSingleSeriesConverter(), 500)
 
 	var nameY []string
 	for _, userID := range realY {

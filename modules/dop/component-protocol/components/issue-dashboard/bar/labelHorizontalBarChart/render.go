@@ -122,7 +122,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			return ""
 		}
 		return l.LabelRel.Name
-	}, common.GetHorizontalStackBarSingleSeriesConverter(), 500)
+	}, common.GetStackBarSingleSeriesConverter(), 500)
 
 	bar.YAxisList[0] = opts.YAxis{
 		Type: "category",

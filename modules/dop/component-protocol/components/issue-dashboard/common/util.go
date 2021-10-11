@@ -45,12 +45,12 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 
 	var data []opts.PieData
 	for _, stack := range stackHandler.GetStacks() {
-		cnt := counter[stack]
-		if cnt <= 0 {
-			continue
-		}
+		cnt := counter[stack.Value]
+		//if cnt <= 0 {
+		//	continue
+		//}
 		data = append(data, opts.PieData{
-			Name:  stack,
+			Name:  stack.Name,
 			Value: cnt,
 			Label: &opts.Label{
 				Formatter: PieChartFormat,
@@ -102,16 +102,20 @@ func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.S
 			xl++
 			last--
 		}
+		// reverse for top
+		for i, j := 0, len(xAxis)-1; i < j; i, j = i+1, j-1 {
+			xAxis[i], xAxis[j] = xAxis[j], xAxis[i]
+		}
 	}
 	for _, stack := range stackHandler.GetStacks() {
 		rowData := make([]*int, xl)
 		for i, x := range xAxis {
-			v := counter[stack][x]
+			v := counter[stack.Value][x]
 			if v > 0 {
 				rowData[i] = &v
 			}
 		}
-		ms = append(ms, seriesConverter(stack, rowData))
+		ms = append(ms, seriesConverter(stack.Name, rowData))
 	}
 
 	return ms, xAxis
@@ -123,7 +127,7 @@ func GetAssigneeIndexer() func(issue interface{}) string {
 	}
 }
 
-func GetHorizontalStackBarSingleSeriesConverter() func(name string, data []*int) charts.SingleSeries {
+func GetStackBarSingleSeriesConverter() func(name string, data []*int) charts.SingleSeries {
 	return func(name string, data []*int) charts.SingleSeries {
 		return charts.SingleSeries{
 			Name:  name,
@@ -172,11 +176,11 @@ func StackRetriever(t string) stackhandlers.StackHandler {
 	var handler stackhandlers.StackHandler
 	switch t {
 	case Priority:
-		handler = stackhandlers.PriorityStackHandler{}
+		handler = stackhandlers.NewPriorityStackHandler()
 	case Complexity:
-		handler = stackhandlers.ComplexityStackHandler{}
+		handler = stackhandlers.NewComplexityStackHandler()
 	case Severity:
-		handler = stackhandlers.SeverityStackHandler{}
+		handler = stackhandlers.NewSeverityStackHandler()
 	}
 	return handler
 }

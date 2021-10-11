@@ -46,7 +46,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	handler := stackhandlers.SourceStackHandler{}
+	handler := stackhandlers.NewSourceStackHandler()
 
 	pie := charts.NewPie()
 	pie.Colors = []string{"red", "orange", "yellow", "lime", "green"}

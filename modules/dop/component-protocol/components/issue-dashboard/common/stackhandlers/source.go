@@ -9,27 +9,34 @@ import (
 type SourceStackHandler struct {
 }
 
-func (h SourceStackHandler) GetStacks() []string {
-	var stacks []string
+func NewSourceStackHandler() *SourceStackHandler {
+	return &SourceStackHandler{}
+}
+
+func (h *SourceStackHandler) GetStacks() []Stack {
+	var stacks []Stack
 	for _, i := range []apistructs.IssueComplexity{
 		apistructs.IssueComplexityHard,
 		apistructs.IssueComplexityNormal,
 		apistructs.IssueComplexityEasy,
 	} {
-		stacks = append(stacks, i.GetZhName())
+		stacks = append(stacks, Stack{
+			Name:  "",
+			Value: i.GetZhName(),
+		}) // TODO
 	}
 	return stacks
 }
 
-func (h SourceStackHandler) GetStackColors() []string {
+func (h *SourceStackHandler) GetStackColors() []string {
 	return []string{"red", "yellow", "green"}
 }
 
-func (h SourceStackHandler) GetIndexer() func(issue interface{}) string {
+func (h *SourceStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		switch issue.(type) {
 		case *dao.IssueItem:
-			return issue.(*dao.IssueItem).Complexity.GetZhName()
+			return issue.(*dao.IssueItem).Complexity.GetZhName() // TODO
 		case *model.LabelIssueItem:
 			return issue.(*model.LabelIssueItem).Bug.Complexity.GetZhName()
 		default:

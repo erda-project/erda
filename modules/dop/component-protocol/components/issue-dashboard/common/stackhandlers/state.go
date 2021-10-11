@@ -1,41 +1,68 @@
 package stackhandlers
 
 import (
+	"fmt"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 type StateStackHandler struct {
+	IssueStateList []dao.IssueState
 }
 
-var colorMap = map[apistructs.IssueState][]string {
-
+func NewStateStackHandler(issueStateList []dao.IssueState) *StateStackHandler {
+	return &StateStackHandler{
+		IssueStateList: issueStateList,
+	}
 }
 
-func (h StateStackHandler) GetStacks() []string {
-	var stacks []string
-	for _, i := range []apistructs.IssueComplexity{
-		apistructs.IssueComplexityHard,
-		apistructs.IssueComplexityNormal,
-		apistructs.IssueComplexityEasy,
-	} {
-		stacks = append(stacks, i.GetZhName())
+var colorMap = map[apistructs.IssueStateBelong][]string{
+	// 待处理
+	apistructs.IssueStateBelongOpen: {"yellow"},
+	// 进行中
+	apistructs.IssueStateBelongWorking: {"blue", "steelblue", "darkslategray", "darkslateblue"},
+	// 已解决
+	apistructs.IssueStateBelongResloved: {"green"},
+	// 已完成
+	apistructs.IssueStateBelongDone: {"green"},
+	// 重新打开
+	apistructs.IssueStateBelongReopen: {"red"},
+	// 无需修复
+	apistructs.IssueStateBelongWontfix: {"orange", "grey"},
+	// 已关闭
+	apistructs.IssueStateBelongClosed: {"darkseagreen"},
+}
+
+func (h *StateStackHandler) GetStacks() []Stack {
+	var stacks []Stack
+	for _, i := range h.IssueStateList {
+		stacks = append(stacks, Stack{
+			Name:  i.Name,
+			Value: fmt.Sprintf("%d", i.ID),
+		})
 	}
 	return stacks
 }
 
-func (h StateStackHandler) GetStackColors() []string {
-	return []string{"yellow", "blue", "darkseagreen"}
+func (h *StateStackHandler) GetStackColors() []string {
+	var colors []string
+	belongCounter := make(map[apistructs.IssueStateBelong]int)
+	for _, i := range h.IssueStateList {
+		color := colorMap[i.Belong][belongCounter[i.Belong] % len(colorMap[i.Belong])]
+		colors = append(colors, color)
+		belongCounter[i.Belong]++
+	}
+	return colors
 }
 
-func (h StateStackHandler) GetIndexer() func(issue interface{}) string {
+func (h *StateStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		switch issue.(type) {
 		case *dao.IssueItem:
-			return issue.(*dao.IssueItem).Complexity.GetZhName()
+			return fmt.Sprintf("%d", issue.(*dao.IssueItem).State)
 		case *model.LabelIssueItem:
-			return issue.(*model.LabelIssueItem).Bug.Complexity.GetZhName()
+			return fmt.Sprintf("%d", issue.(*model.LabelIssueItem).Bug.State)
 		default:
 			return ""
 		}

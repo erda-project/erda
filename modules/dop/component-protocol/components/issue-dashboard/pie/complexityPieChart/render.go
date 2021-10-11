@@ -46,7 +46,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	handler := stackhandlers.ComplexityStackHandler{}
+	handler := stackhandlers.NewComplexityStackHandler()
 
 	pie := charts.NewPie()
 	pie.Colors = handler.GetStackColors()

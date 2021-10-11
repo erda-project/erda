@@ -52,7 +52,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
-	handler := stackhandlers.StateStackHandler{}
+	handler := stackhandlers.NewStateStackHandler(f.State.IssueStateList)
 
 	pie := charts.NewPie()
 	pie.Colors = handler.GetStackColors()

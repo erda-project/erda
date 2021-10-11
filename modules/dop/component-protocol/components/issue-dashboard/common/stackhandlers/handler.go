@@ -15,7 +15,13 @@
 package stackhandlers
 
 type StackHandler interface {
-	GetStacks() []string
+	GetStacks() []Stack
 	GetStackColors() []string
 	GetIndexer() func(issue interface{}) string
+}
+
+type Stack struct {
+	Name  string
+	Value string
+	Color string
 }
