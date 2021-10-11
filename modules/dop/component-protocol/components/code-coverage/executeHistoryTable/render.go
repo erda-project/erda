@@ -284,7 +284,7 @@ func (ca *ComponentAction) SetProps() error {
         },
         {
             "dataIndex":"reason",
-            "title":"原因"
+            "title":"日志"
         },
         {
             "dataIndex":"starter",
