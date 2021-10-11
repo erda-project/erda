@@ -190,6 +190,8 @@ func TestCache_Write(t *testing.T) {
 	type args struct {
 		pairs map[string]Values
 	}
+	bytes := make([]byte, 1024*1024)
+	rand.Read(bytes)
 	tests := []struct {
 		name string
 
@@ -325,8 +327,8 @@ func TestCache_Write(t *testing.T) {
 				pairs: map[string]Values{
 
 					"metricsStr": {
-						StringValue{
-							value: string(make([]byte, 1024*1024)),
+						ByteSliceValue{
+							value: bytes,
 						},
 					},
 				},

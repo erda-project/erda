@@ -295,6 +295,7 @@ func (p *pair) getEntrySize() (int64, error) {
 		if size := v.Size(); size < 0 {
 			return -1, ValueNotSupportError
 		}
+		usage += v.Size()
 	}
 	return usage, nil
 }
