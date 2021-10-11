@@ -73,12 +73,6 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		}
 
 		for _, cluster := range clusters {
-			if cluster.ManageConfig != nil {
-				cluster.ManageConfig = &apistructs.ManageConfig{
-					CredentialSource: cluster.ManageConfig.CredentialSource,
-					Address:          cluster.ManageConfig.Address,
-				}
-			}
 			for _, relate := range clusterRelation {
 				if relate.ClusterID == uint64(cluster.ID) && relate.OrgID == orgID {
 					cluster.IsRelation = "Y"
@@ -88,7 +82,31 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		}
 	}
 
+	// remove sensitive info
+	for i := range newClusters {
+		removeSensitiveInfo(&newClusters[i])
+	}
+
 	return httpserver.OkResp(newClusters)
+}
+
+func removeSensitiveInfo(cluster *apistructs.ClusterInfo) {
+	if cluster == nil {
+		return
+	}
+	if cluster.SchedConfig != nil {
+		cluster.SchedConfig.RemoveSensitiveInfo()
+	}
+	cluster.OpsConfig = nil
+	if cluster.System != nil {
+		cluster.System.RemoveSensitiveInfo()
+	}
+	if cluster.ManageConfig != nil {
+		cluster.ManageConfig = &apistructs.ManageConfig{
+			CredentialSource: cluster.ManageConfig.CredentialSource,
+			Address:          cluster.ManageConfig.Address,
+		}
+	}
 }
 
 func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
