@@ -162,6 +162,17 @@ type ClusterSchedConfig struct {
 	StagingCPUSubscribeRatio string `json:"stagingCPUSubscribeRatio"`
 }
 
+func (csc *ClusterSchedConfig) RemoveSensitiveInfo() {
+	csc.AuthType = ""
+	csc.AuthUsername = ""
+	csc.AuthPassword = ""
+	csc.CACrt = ""
+	csc.ClientKey = ""
+	csc.ClientCrt = ""
+	csc.AccessKey = ""
+	csc.AccessSecret = ""
+}
+
 // OpsConfig 集群ops配置初始化
 type OpsConfig struct {
 	Status            string            `json:"status"` // creating, created, offline
