@@ -34,8 +34,8 @@ import (
 )
 
 type CodeCoverage struct {
-	db  CodeCoverageDBer
-	bdl CodeCoverageBDLer
+	db        CodeCoverageDBer
+	bdl       CodeCoverageBDLer
 	envConfig *environment.EnvConfig
 }
 
@@ -332,7 +332,7 @@ func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
 	return false, nil
 }
 
-func getJacocoAddr(projectID uint64) string {
+func GetJacocoAddr(projectID uint64) string {
 	return conf.JacocoAddr()[strconv.FormatUint(projectID, 10)]
 }
 
@@ -420,4 +420,5 @@ type CodeCoverageBDLer interface {
 	JacocoEnd(addr string, req *apistructs.JacocoRequest) error
 	DownloadDiceFile(uuid string) (io.ReadCloser, error)
 	GetProject(id uint64) (*apistructs.ProjectDTO, error)
+	GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error)
 }

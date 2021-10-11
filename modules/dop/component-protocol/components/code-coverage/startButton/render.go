@@ -59,11 +59,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		disable = true
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		err := svc.JudgeRunningRecordExist(projectId)
-		if err != nil {
-			disable = true
-		}
-
 		orgIDInt, err := strconv.ParseInt(sdk.Identity.OrgID, 10, 64)
 		if err != nil {
 			return err
@@ -80,6 +75,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		c.State["judgeApplication"] = judgeApplication
 		c.State["judgeApplicationMessage"] = message
+
+		if !disable {
+			err := svc.JudgeRunningRecordExist(projectId)
+			if err != nil {
+				disable = true
+			}
+		}
 	}
 
 	c.Type = "Button"

@@ -77,12 +77,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		disable = true
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		ok, err := svc.JudgeCanEnd(projectId)
-		if err != nil {
-			disable = true
-		}
-		disable = !ok
-
 		judgeApplication := c.State["judgeApplication"]
 		judgeApplicationMessage := c.State["judgeApplicationMessage"]
 		if judgeApplication != nil {
@@ -93,6 +87,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			if disable && message != "" {
 				disableTip = message
 			}
+		}
+
+		if !disable {
+			ok, err := svc.JudgeCanEnd(projectId)
+			if err != nil {
+				disable = true
+			}
+			disable = !ok
 		}
 	}
 
