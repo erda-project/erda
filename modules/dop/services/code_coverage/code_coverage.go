@@ -71,7 +71,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrCreateIssue.AccessDenied()
+			return apierrors.ErrStartCodeCoverageExecRecord.AccessDenied()
 		}
 	}
 
@@ -123,7 +123,7 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrCreateIssue.AccessDenied()
+			return apierrors.ErrEndCodeCoverageExecRecord.AccessDenied()
 		}
 	}
 
@@ -162,7 +162,7 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrCreateIssue.AccessDenied()
+			return apierrors.ErrCancelCodeCoverageExecRecord.AccessDenied()
 		}
 	}
 	record := dao.CodeCoverageExecRecord{
