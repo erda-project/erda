@@ -15,10 +15,11 @@
 package gshelper
 
 import (
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/mitchellh/mapstructure"
 )
 
 type GSHelper struct {
