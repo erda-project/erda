@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"strconv"
 	"time"
 
@@ -197,6 +198,13 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 	f.State.Stages = stages
+
+	helper := gshelper.NewGSHelper(gs)
+	helper.SetIterations(f.State.Iterations)
+	helper.SetMembers(f.State.Members)
+	helper.SetIssueList(f.State.IssueList)
+	helper.SetIssueStateList(f.State.IssueStateList)
+	helper.SetIssueStageList(f.State.Stages)
 
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {

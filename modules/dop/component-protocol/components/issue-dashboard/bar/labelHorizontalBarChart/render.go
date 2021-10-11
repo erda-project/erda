@@ -17,6 +17,7 @@ package labelHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"strconv"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -71,9 +72,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	helper := gshelper.NewGSHelper(gs)
+
+	issueList := helper.GetIssueList()
 	bugMap := make(map[uint64]*dao.IssueItem)
-	for i := range f.State.IssueList {
-		issue := f.State.IssueList[i]
+	for i := range issueList {
+		issue := issueList[i]
 		bugMap[issue.ID] = &issue
 	}
 
@@ -95,11 +99,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	handler := stackhandlers.NewStackRetriever(
-		stackhandlers.WithIssueStateList(f.State.IssueStateList),
-		stackhandlers.WithIssueStageList(f.State.Stages),
+		stackhandlers.WithIssueStateList(helper.GetIssueStateList()),
+		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 
-	series, colors, realY := common.GroupToVerticalBarData(labelList, f.State.Values.Value, handler, nil, func(label interface{}) string {
+	series, colors, realY := common.GroupToBarData(labelList, f.State.Values.Value, handler, nil, func(label interface{}) string {
 		l := label.(*model.LabelIssueItem)
 		if l == nil {
 			return ""

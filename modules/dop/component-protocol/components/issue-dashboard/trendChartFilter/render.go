@@ -90,10 +90,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	if f.State.FrontendChangedKey == "type" {
 		f.State.Values.Value = nil
 	}
-	handler := stackhandlers.NewStackRetriever(
-		stackhandlers.WithIssueStateList(nil),
-		stackhandlers.WithIssueStageList(nil),
-	).GetRetriever(f.State.Values.Type)
+	handler := stackhandlers.NewStackRetriever().GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
 		{
 			EmptyText: "全部",

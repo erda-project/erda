@@ -17,6 +17,7 @@ package priorityPieChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 
@@ -46,9 +47,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	helper := gshelper.NewGSHelper(gs)
+
 	handler := stackhandlers.NewPriorityStackHandler()
 
-	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
+	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
 
 	pie := charts.NewPie()
 	pie.Colors = colors

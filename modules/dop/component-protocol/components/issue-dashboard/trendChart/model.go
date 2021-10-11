@@ -16,7 +16,6 @@ package trendChart
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -32,11 +31,12 @@ type ComponentAction struct {
 	// InParams      InParams `json:"-"`
 	common.Chart
 	base.DefaultProvider
+
+	// local vars
+	IssueList []dao.IssueItem `json:"-"`
 }
 
 type State struct {
 	Values               common.FilterConditions `json:"values,omitempty"`
 	Base64UrlQueryParams string                  `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem         `json:"issueList,omitempty"`
-	Iterations           []apistructs.Iteration  `json:"iterations,omitempty"`
 }

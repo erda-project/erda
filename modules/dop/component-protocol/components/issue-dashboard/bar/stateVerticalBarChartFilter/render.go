@@ -17,6 +17,7 @@ package stateVerticalBarChartFilter
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
@@ -64,22 +65,23 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
+	if err := f.InitDefaultOperation(ctx, f.State, gs); err != nil {
 		return err
 	}
 
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State) error {
+func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State, gs *cptype.GlobalStateData) error {
 	if f.State.Values.Type == "" {
 		f.State.Values.Type = stackhandlers.Priority
 	}
 	if f.State.FrontendChangedKey == "type" {
 		f.State.Values.Value = nil
 	}
+	helper := gshelper.NewGSHelper(gs)
 	handler := stackhandlers.NewStackRetriever(
-		stackhandlers.WithIssueStageList(f.State.Stages),
+		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
 		{

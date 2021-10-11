@@ -1,0 +1,103 @@
+package gshelper
+
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/mitchellh/mapstructure"
+)
+
+type GSHelper struct {
+	gs *cptype.GlobalStateData
+}
+
+func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
+	return &GSHelper{gs: gs}
+}
+
+func (h *GSHelper) SetIterations(l []apistructs.Iteration) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["Iterations"] = l
+}
+
+func (h *GSHelper) GetIterations() []apistructs.Iteration {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.Iteration, 0)
+	_ = assign((*h.gs)["Iterations"], &res)
+	return res
+}
+
+func (h *GSHelper) SetMembers(l []apistructs.Member) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["Members"] = l
+}
+
+func (h *GSHelper) GetMembers() []apistructs.Member {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.Member, 0)
+	_ = assign((*h.gs)["Members"], &res)
+	return res
+}
+
+func (h *GSHelper) SetIssueList(l []dao.IssueItem) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["IssueList"] = l
+}
+
+func (h *GSHelper) GetIssueList() []dao.IssueItem {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]dao.IssueItem, 0)
+	_ = assign((*h.gs)["IssueList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetIssueStateList(l []dao.IssueState) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["IssueStateList"] = l
+}
+
+func (h *GSHelper) GetIssueStateList() []dao.IssueState {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]dao.IssueState, 0)
+	_ = assign((*h.gs)["IssueStateList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetIssueStageList(l []apistructs.IssueStage) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["IssueStageList"] = l
+}
+
+func (h *GSHelper) GetIssueStageList() []apistructs.IssueStage {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.IssueStage, 0)
+	_ = assign((*h.gs)["IssueStageList"], &res)
+	return res
+}
+
+func assign(src, dst interface{}) error {
+	if src == nil || dst == nil {
+		return nil
+	}
+	return mapstructure.Decode(src, dst)
+}
