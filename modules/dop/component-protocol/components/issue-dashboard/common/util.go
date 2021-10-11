@@ -177,14 +177,14 @@ func (l counterList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 func (l counterList) Len() int           { return len(l) }
 
 func StackRetriever(t string) stackhandlers.StackHandler {
-	var handler stackhandlers.StackHandler
 	switch t {
 	case Priority:
-		handler = stackhandlers.NewPriorityStackHandler()
+		return stackhandlers.NewPriorityStackHandler()
 	case Complexity:
-		handler = stackhandlers.NewComplexityStackHandler()
+		return stackhandlers.NewComplexityStackHandler()
 	case Severity:
-		handler = stackhandlers.NewSeverityStackHandler()
+		return stackhandlers.NewSeverityStackHandler()
+	default:
+		return stackhandlers.NewEmptyStackHandler()
 	}
-	return handler
 }
