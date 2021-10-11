@@ -50,11 +50,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	stateMap := make(map[uint64]dao.IssueState)
-	for _, i := range f.State.IssueStateList {
-		stateMap[i.ID] = i
-	}
-
 	memberMap := make(map[string]*apistructs.Member)
 	for i := range f.State.Members {
 		m := &f.State.Members[i]

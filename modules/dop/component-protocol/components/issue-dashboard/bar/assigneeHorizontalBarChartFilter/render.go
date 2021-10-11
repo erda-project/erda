@@ -78,7 +78,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 		f.State.Values.Value = nil
 	}
 	handler := stackhandlers.NewStackRetriever(
-		stackhandlers.WithIssueStateList(nil),
+		stackhandlers.WithIssueStateList(f.State.IssueStateList),
 		stackhandlers.WithIssueStageList(nil),
 	).GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{

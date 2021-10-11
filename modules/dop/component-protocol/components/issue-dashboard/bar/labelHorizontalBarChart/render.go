@@ -72,11 +72,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	stateMap := make(map[uint64]dao.IssueState)
-	for _, i := range f.State.IssueStateList {
-		stateMap[i.ID] = i
-	}
-
 	bugList := common.IssueListRetriever(f.State.IssueList, func(i int) bool {
 		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
