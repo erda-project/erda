@@ -112,7 +112,7 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					"width":           "100%",
 					"height":          "100%",
 					"colorMappingBy":  "value",
-					"visualDimension": 8,
+					"visualDimension": 9,
 					"visualMin":       0,
 					"visualMax":       100,
 					"data":            data,

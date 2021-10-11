@@ -98,7 +98,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		StartExecutor: req.UserID,
 		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
 	}
-	tx := svc.db.TxBegin()
+	tx := svc.db.Begin()
 	if err := tx.Create(&record).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -398,7 +398,7 @@ func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID
 	}
 
 	if !findJacocoAgentEnv {
-		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env"
+		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env and restart"
 	}
 
 	return true, nil, ""

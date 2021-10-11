@@ -109,13 +109,22 @@ type State struct {
 	Total    uint64 `json:"total"`
 }
 
-var statusMap = map[string]string{
+var statusValueMap = map[string]string{
 	"running": "进行中",
 	"ready":   "进行中",
 	"ending":  "明细生成中",
 	"success": "成功",
 	"fail":    "失败",
 	"cancel":  "用户取消",
+}
+
+var statusMap = map[string]string{
+	"running": "processing",
+	"ready":   "processing",
+	"ending":  "processing",
+	"success": "success",
+	"fail":    "error",
+	"cancel":  "default",
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
@@ -189,8 +198,8 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			ID: v.ID,
 			Status: Status{
 				RenderType: "textWithBadge",
-				Value:      statusMap[v.Status],
-				Status:     v.Status,
+				Value:      statusValueMap[v.Status],
+				Status:     statusMap[v.Status],
 			},
 			Reason:    v.Msg,
 			Starter:   v.StartExecutor,

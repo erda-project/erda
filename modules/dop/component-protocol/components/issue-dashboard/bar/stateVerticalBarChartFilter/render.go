@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
@@ -77,9 +78,9 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State,
 	if f.State.FrontendChangedKey == "type" {
 		f.State.Values.Value = nil
 	}
-	//helper := gshelper.NewGSHelper(gs)
+	helper := gshelper.NewGSHelper(gs)
 	handler := stackhandlers.NewStackRetriever(
-		stackhandlers.WithIssueStageList(f.State.IssueStageList),
+		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
 		{

@@ -35,17 +35,17 @@ type ComponentFilter struct {
 	base.DefaultProvider
 
 	// local vars
-	IssueList  []dao.IssueItem        `json:"-"`
-	Iterations []apistructs.Iteration `json:"iterations"`
-	Members    []apistructs.Member    `json:"-"`
+	Iterations     []apistructs.Iteration  `json:"-"`
+	Members        []apistructs.Member     `json:"-"`
+	IssueList      []dao.IssueItem         `json:"-"`
+	IssueStateList []dao.IssueState        `json:"-"`
+	Stages         []apistructs.IssueStage `json:"-"`
 }
 
 type State struct {
 	Conditions           []filter.PropCondition    `json:"conditions,omitempty"`
 	Values               common.FrontendConditions `json:"values,omitempty"`
 	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
-	IssueStateList       []dao.IssueState          `json:"issueStateList"`
-	Stages               []apistructs.IssueStage   `json:"stages"`
 }
 
 type InParams struct {
