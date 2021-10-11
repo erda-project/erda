@@ -112,7 +112,7 @@ type State struct {
 var statusMap = map[string]string{
 	"running": "进行中",
 	"ready":   "进行中",
-	"ending":  "进行中",
+	"ending":  "明细生成中",
 	"success": "成功",
 	"fail":    "失败",
 	"cancel":  "用户取消",
@@ -172,15 +172,15 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 			reportTip      = v.ReportMsg
 			reportDisabled bool
 		)
-		if v.ReportStatus == "running" {
+		if v.ReportStatus == apistructs.RunningStatus.String() {
 			reportText = "报告生成中"
 			reportDisabled = true
 		}
-		if v.ReportStatus == "cancel" {
+		if v.ReportStatus == apistructs.CancelStatus.String() {
 			reportTip = "用户取消"
 			reportDisabled = true
 		}
-		if v.ReportStatus == "fail" {
+		if v.ReportStatus == apistructs.FailStatus.String() {
 			reportDisabled = true
 		}
 
