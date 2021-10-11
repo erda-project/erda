@@ -84,6 +84,7 @@ type Item struct {
 	MemoryLimitsNum   int64   `json:"MemoryLimitsNum,omitempty"`
 	Ready             string  `json:"ready,omitempty"`
 	Node              string  `json:"node,omitempty"`
+	GotoWorkload      Link    `json:"gotoWorkload,omitempty"`
 }
 
 type Status struct {

@@ -308,6 +308,28 @@ func (p *ComponentPodsTable) RenderTable() error {
 			MemoryLimitsNum:   memLimits.Value(),
 			Ready:             fields[1],
 			Node:              fields[6],
+			GotoWorkload: Link{
+				RenderType: "linkText",
+				Value:      p.sdk.I18n("gotoWorkload"),
+				Operations: map[string]interface{}{
+					"click": LinkOperation{
+						Command: Command{
+							Key:    "goto",
+							Target: "cmpClustersWorkloadDetail",
+							State: CommandState{
+								Params: map[string]string{
+									"workloadId": "-",
+								},
+								Query: map[string]string{
+									"podId": id,
+								},
+							},
+							JumpOut: true,
+						},
+						Reload: false,
+					},
+				},
+			},
 		})
 	}
 	logrus.Infof("[XDEBUG] end process list")
@@ -341,7 +363,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 		memLimits := tempMemLimits[i]
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[cpuReq.PodRequests[i].CacheKey()].Used
+		metricsData, ok := cpuMetrics[cpuReq.PodRequests[i].CacheKey()]
+		usedCPUPercent := 0.0
+		if ok {
+			usedCPUPercent = metricsData.Used
+		}
 		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		items[i].CPUPercent = Percent{
 			RenderType: "progress",
@@ -351,7 +377,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[memReq.PodRequests[i].CacheKey()].Used
+		metricsData, ok = memMetrics[memReq.PodRequests[i].CacheKey()]
+		usedMemPercent := 0.0
+		if ok {
+			usedMemPercent = metricsData.Used
+		}
 		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		items[i].MemoryPercent = Percent{
 			RenderType: "progress",
@@ -613,6 +643,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			},
 		}...)
 	}
+	p.Props.Columns = append(p.Props.Columns, Column{
+		DataIndex: "gotoWorkload",
+		Title:     cputil.I18n(ctx, "operate"),
+		Width:     120,
+		Sorter:    false,
+	})
 	p.Operations = map[string]interface{}{
 		"changeSort": Operation{
 			Key:    "changeSort",

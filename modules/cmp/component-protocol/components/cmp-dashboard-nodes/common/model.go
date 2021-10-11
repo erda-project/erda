@@ -37,6 +37,9 @@ var (
 	// Freeze Button
 	CMPDashboardUncordonNode cptype.OperationKey = "uncordon"
 	CMPDashboardCordonNode   cptype.OperationKey = "cordon"
+	CMPDashboardDrainNode    cptype.OperationKey = "drain"
+	CMPDashboardOfflineNode  cptype.OperationKey = "offline"
+	CMPDashboardOnlineNode   cptype.OperationKey = "online"
 	CMPDashboardBatchSubmit  cptype.OperationKey = "batchSubmit"
 
 	CMPDashboardTableTabs cptype.OperationKey = "changeTab"
