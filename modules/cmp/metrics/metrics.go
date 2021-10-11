@@ -40,7 +40,7 @@ const (
 	NodeResourceUsageSelectStatement = `SELECT last(mem_used::field) as memRate , last(cpu_cores_usage::field) as cpuRate , host_ip::tag FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//NodeResourceUsageSelectStatement = `SELECT  mem_usage::field  ,cpu_cores_usage::field, host_ip FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//PodCpuUsageSelectStatement     = `SELECT SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field) as cpuRate, pod_name FROM docker_container_summary WHERE pod_namespace::tag=$pod_namespace and podsandbox != true GROUP BY pod_name::tag`
-	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field),2) as cpuRate ,pod_name::tag FROM docker_container_summary WHERE pod_namespace::tag=$pod_namespace and cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag`
+	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field),2) as cpuRate, pod_name::tag, pod_namespace::tag FROM docker_container_summary WHERE cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag`
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -187,7 +187,7 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, res map[string]*M
 		for _, row := range resp.Results[0].Series[0].Rows {
 			switch metricsReq.resKind {
 			case Pod:
-				k = cache.GenerateKey(Pod, Cpu, metricsReq.rawReq.Params["pod_namespace"].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+				k = cache.GenerateKey(Pod, Cpu, metricsReq.rawReq.Params["pod_namespace"].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue(), row.Values[3].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[1].GetNumberValue(),
 				}
@@ -196,7 +196,7 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, res map[string]*M
 					res[k] = d
 				}
 				m.setCache(k, d)
-				k = cache.GenerateKey(Pod, Memory, metricsReq.rawReq.Params["pod_namespace"].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+				k = cache.GenerateKey(Pod, Memory, metricsReq.rawReq.Params["pod_namespace"].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue(), row.Values[3].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[0].GetNumberValue(),
 				}
@@ -368,44 +368,16 @@ func ToInfluxReq(req *MetricsRequest, kind string) (map[string][]*MetricsReq, ma
 		}
 	} else {
 		for _, preq := range req.PodRequests {
-			key := preq.CacheKey()
-			if v, expired, err := cache.GetFreeCache().Get(key); err == nil {
-				if v != nil {
-					resp := &MetricsData{}
-					err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
-					if err != nil {
-						logrus.Errorf("try find cache error ,%v", err)
-					}
-					noNeed[key] = resp
-					if !expired {
-						logrus.Infof("%v cache hit", key)
-						continue
-					}
-				}
-				if v == nil || expired {
-					queryReq := &pb.QueryWithInfluxFormatRequest{}
-					queryReq.Start = "before_5m"
-					queryReq.End = "now"
-					queryReq.Statement = PodResourceUsageSelectStatement
-					queryReq.Params = map[string]*structpb.Value{
-						//"pod_name":      structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(preq.PodName())}}),
-						"pod_namespace": structpb.NewStringValue(preq.Namespace()),
-						"cluster_name":  structpb.NewStringValue(preq.ClusterName()),
-					}
-					queryReq.Filters = append(queryReq.Filters, &pb.Filter{
-						Key:   "tags.pod_name",
-						Op:    "in",
-						Value: structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(preq.PodName())}}),
-					})
-					sync := false
-					if v == nil {
-						sync = true
-					}
-					queryReqs[preq.Namespace()] = append(queryReqs[preq.Namespace()], &MetricsReq{rawReq: queryReq, sync: sync, resType: preq.ResourceType(), resKind: preq.ResourceKind(), key: preq.CacheKey()})
-				}
-			} else {
-				logrus.Errorf("Get %s cache error,%v", key, err)
+			queryReq := &pb.QueryWithInfluxFormatRequest{}
+			queryReq.Start = "before_5m"
+			queryReq.End = "now"
+			queryReq.Statement = PodResourceUsageSelectStatement
+			queryReq.Params = map[string]*structpb.Value{
+				//"pod_name":      structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(preq.PodName())}}),
+				"cluster_name": structpb.NewStringValue(preq.ClusterName()),
 			}
+			sync := false
+			queryReqs[preq.Namespace()] = append(queryReqs[preq.Namespace()], &MetricsReq{rawReq: queryReq, sync: sync, resType: preq.ResourceType(), resKind: preq.ResourceKind(), key: preq.CacheKey()})
 		}
 	}
 	return queryReqs, noNeed, nil
