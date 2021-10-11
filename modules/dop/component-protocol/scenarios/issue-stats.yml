@@ -139,14 +139,18 @@ components:
 
 rendering:
   filter:
+    - name: trendChartFilter
+    - name: stateVerticalBarChartFilter
+    - name: labelHorizontalBarChartFilter
+    - name: assigneeHorizontalBarChartFilter
     - name: trendChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
-        - name: "values"
-          value: "{{ filter.values }}"
         - name: "iterations"
           value: "{{ filter.iterations }}"
+        - name: "values"
+          value: "{{ trendChartFilter.values }}"
     - name: statePieChart
       state:
         - name: "issueList"
@@ -179,12 +183,16 @@ rendering:
           value: "{{ filter.issueList }}"
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
+        - name: "values"
+          value: "{{ stateVerticalBarChartFilter.values }}"
     - name: labelHorizontalBarChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
+        - name: "values"
+          value: "{{ labelHorizontalBarChartFilter.values }}"
     - name: assigneeHorizontalBarChart
       state:
         - name: "issueList"
@@ -193,6 +201,8 @@ rendering:
           value: "{{ filter.issueStateList }}"
         - name: "members"
           value: "{{ filter.members }}"
+        - name: "values"
+          value: "{{ assigneeHorizontalBarChartFilter.values }}"
 
   total:
     - name: open
@@ -228,12 +238,10 @@ rendering:
     - name: filter
     - name: trendChart
       state:
-        - name: "filterValues"
+        - name: "values"
           value: "{{ trendChartFilter.values }}"
         - name: "issueList"
           value: "{{ filter.issueList }}"
-        - name: "values"
-          value: "{{ filter.values }}"
         - name: "iterations"
           value: "{{ filter.iterations }}"
 
@@ -253,7 +261,7 @@ rendering:
     - name: labelHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ stateVerticalBarChartFilter.values }}"
+          value: "{{ labelHorizontalBarChartFilter.values }}"
         - name: "issueList"
           value: "{{ filter.issueList }}"
         - name: "issueStateList"
@@ -269,6 +277,8 @@ rendering:
           value: "{{ filter.issueList }}"
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
+        - name: "members"
+          value: "{{ filter.members }}"
         
 
   __DefaultRendering__:

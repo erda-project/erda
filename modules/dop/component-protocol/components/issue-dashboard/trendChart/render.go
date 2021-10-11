@@ -109,8 +109,8 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 	first, last := [3]int{0, 0, 0}, [3]int{0, 0, 0}
 
 	issues := common.IssueListRetriever(f.State.IssueList, func(i int) bool {
-		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.FilterValues.Type)
-		return f.State.FilterValues.Value == nil || strutil.Exist(f.State.FilterValues.Value, v)
+		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
+		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 	for _, i := range issues {
 		created := time.Date(i.CreatedAt.Year(), i.CreatedAt.Month(), i.CreatedAt.Day(), 0, 0, 0, 0, i.CreatedAt.Location())

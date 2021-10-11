@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -77,18 +76,15 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
-	bugList := common.IssueListFilter(f.State.IssueList, func(i int) bool {
+	bugList := common.IssueListRetriever(f.State.IssueList, func(i int) bool {
 		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 
 	bugMap := make(map[uint64]*dao.IssueItem)
 	for i := range bugList {
-		issue := &f.State.IssueList[i]
-		if issue.Type != apistructs.IssueTypeBug {
-			continue
-		}
-		bugMap[issue.ID] = issue
+		issue := bugList[i]
+		bugMap[issue.ID] = &issue
 	}
 
 	labels, err := f.issueSvc.GetIssueLabelsByProjectID(f.InParams.ProjectID)
@@ -136,5 +132,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props["option"] = bar.JSON()
 
 	c.Props = props
+	c.State = nil
 	return nil
 }

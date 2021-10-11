@@ -63,6 +63,9 @@ func (f *ComponentAction) SetToProtocolComponent(c *cptype.Component) error {
 	if err := json.Unmarshal(b, &c); err != nil {
 		return err
 	}
+	if _, ok := c.State["issueList"]; ok {
+		delete(c.State, "issueList")
+	}
 	return nil
 }
 
