@@ -183,7 +183,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if err != nil {
 		return err
 	}
-	f.State.IssueStateList = states
+	f.IssueStateList = states
 
 	orgID, err := strconv.Atoi(f.sdk.Identity.OrgID)
 	if err != nil {
@@ -197,14 +197,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if err != nil {
 		return err
 	}
-	f.State.Stages = stages
+	f.Stages = stages
 
 	helper := gshelper.NewGSHelper(gs)
 	helper.SetIterations(f.Iterations)
 	helper.SetMembers(f.Members)
 	helper.SetIssueList(f.IssueList)
-	helper.SetIssueStateList(f.State.IssueStateList)
-	helper.SetIssueStageList(f.State.Stages)
+	helper.SetIssueStateList(f.IssueStateList)
+	helper.SetIssueStageList(f.Stages)
 
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {
