@@ -18,19 +18,34 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+var steveServer cmp.SteveServer
+
+func (bot *BatchOperationTipModal) Init(ctx servicehub.Context) error {
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	if !ok {
+		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
+	}
+	steveServer = server
+	return bot.DefaultProvider.Init(ctx)
+}
+
 func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	bot.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	bot.SDK = cputil.SDK(ctx)
+	bot.ctx = ctx
 	err := common.Transfer(c.State, &bot.State)
 	if err != nil {
 		return err
@@ -132,7 +147,7 @@ func (bot *BatchOperationTipModal) CordonNode(nodeNames []string) error {
 			ClusterName: bot.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := bot.CtxBdl.CordonNode(req)
+		err := steveServer.CordonNode(bot.ctx, req)
 		if err != nil {
 			return err
 		}
@@ -149,7 +164,7 @@ func (bot *BatchOperationTipModal) UncordonNode(nodeNames []string) error {
 			ClusterName: bot.SDK.InParams["clusterName"].(string),
 			Name:        name,
 		}
-		err := bot.CtxBdl.UnCordonNode(req)
+		err := steveServer.UnCordonNode(bot.ctx, req)
 		if err != nil {
 			return err
 		}

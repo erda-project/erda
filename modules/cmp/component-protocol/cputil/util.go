@@ -155,3 +155,48 @@ func setPrec(f float64, prec int) float64 {
 	f = float64(int64(f*pow)) / pow
 	return f
 }
+
+// GetNodeAllocatedRes calculate allocated cpu, memory and pods for target node
+func GetNodeAllocatedRes(nodeName string, pods []data.Object) (cpu, mem, podNum int64) {
+	cpuQty := resource.NewQuantity(0, resource.DecimalSI)
+	memQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, pod := range pods {
+		if pod.String("spec", "nodeName") != nodeName || pod.String("status", "phase") == "Failed" ||
+			pod.String("status", "phase") == "Succeeded" {
+			continue
+		}
+		podNum++
+		containers := pod.Slice("spec", "containers")
+		for _, container := range containers {
+			requestsCPU := resource.NewQuantity(0, resource.DecimalSI)
+			requestsMem := resource.NewQuantity(0, resource.BinarySI)
+			requests := container.String("resources", "requests", "cpu")
+			if requests != "" {
+				*requestsCPU, _ = resource.ParseQuantity(requests)
+			}
+			requests = container.String("resources", "requests", "memory")
+			if requests != "" {
+				*requestsMem, _ = resource.ParseQuantity(requests)
+			}
+			cpuQty.Add(*requestsCPU)
+			cpuQty.Add(*requestsMem)
+		}
+	}
+	return cpuQty.MilliValue(), memQty.Value(), podNum
+}
+
+// CalculateNodeRes calculate unallocated cpu, memory and left cpu, mem, pods for given node and its allocated cpu, memory
+func CalculateNodeRes(node data.Object, allocatedCPU, allocatedMem, allocatedPods int64) (unallocatedCPU, unallocatedMem, leftCPU, leftMem, leftPods int64) {
+	allocatableCPUQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "cpu"))
+	allocatableMemQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "memory"))
+	allocatablePodQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "pods"))
+	capacityCPUQty, _ := resource.ParseQuantity(node.String("status", "capacity", "cpu"))
+	capacityMemQty, _ := resource.ParseQuantity(node.String("status", "capacity", "memory"))
+
+	unallocatedCPU = capacityCPUQty.MilliValue() - allocatableCPUQty.MilliValue()
+	unallocatedMem = capacityMemQty.Value() - allocatableMemQty.Value()
+	leftCPU = allocatableCPUQty.MilliValue() - allocatedCPU
+	leftMem = allocatableMemQty.Value() - allocatedMem
+	leftPods = allocatablePodQty.Value() - allocatedPods
+	return
+}

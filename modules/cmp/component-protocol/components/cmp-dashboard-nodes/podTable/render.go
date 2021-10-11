@@ -130,54 +130,58 @@ func (pt *PodInfoTable) getProps() {
 	pt.Props = p
 }
 
-func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) (*table.RowItem, error) {
+func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
 	var (
 		err    error
 		status *table.SteveStatus
+		items  []table.RowItem
 	)
-	status, err = pt.GetItemStatus(node)
-	if err != nil {
-		return nil, err
-	}
-	if status, err = pt.GetItemStatus(node); err != nil {
-		return nil, err
-	}
-	allocatable := cast.ToFloat64(node.String("extra", "parsedResource", "allocated", "Pods"))
-	capacity := cast.ToFloat64(node.String("extra", "parsedResource", "capacity", "Pods"))
-	ur := table.DistributionValue{Percent: common.GetPercent(allocatable, capacity)}
-	role := node.StringSlice("metadata", "fields")[2]
-	ip := node.StringSlice("metadata", "fields")[5]
-	if role == "<none>" {
-		role = "worker"
-	}
-	batchOperations := make([]string, 0)
-	if !strings.Contains(role, "master") {
-		if strings.Contains(status.Value, pt.SDK.I18n("SchedulingDisabled")) {
-			batchOperations = []string{"uncordon"}
-		} else {
-			batchOperations = []string{"cordon"}
+	for _, node := range nodes {
+		status, err = pt.GetItemStatus(node)
+		if err != nil {
+			return nil, err
 		}
+		if status, err = pt.GetItemStatus(node); err != nil {
+			return nil, err
+		}
+		allocatable := cast.ToFloat64(node.String("extra", "parsedResource", "allocated", "Pods"))
+		capacity := cast.ToFloat64(node.String("extra", "parsedResource", "capacity", "Pods"))
+		ur := table.DistributionValue{Percent: common.GetPercent(allocatable, capacity)}
+		role := node.StringSlice("metadata", "fields")[2]
+		ip := node.StringSlice("metadata", "fields")[5]
+		if role == "<none>" {
+			role = "worker"
+		}
+		batchOperations := make([]string, 0)
+		if !strings.Contains(role, "master") {
+			if strings.Contains(status.Value, pt.SDK.I18n("SchedulingDisabled")) {
+				batchOperations = []string{"uncordon"}
+			} else {
+				batchOperations = []string{"cordon"}
+			}
+		}
+		items = append(items, table.RowItem{
+			ID:      node.String("metadata", "name"),
+			IP:      ip,
+			Version: node.String("status", "nodeInfo", "kubeletVersion"),
+			Role:    role,
+			Node: table.Node{
+				RenderType: "multiple",
+				Renders:    pt.GetRenders(node.String("metadata", "name"), ip, node.Map("metadata", "labels")),
+			},
+			Status: *status,
+			Usage: table.Distribution{
+				RenderType: "progress",
+				Value:      ur.Percent,
+				Status:     table.GetDistributionStatus(ur.Percent),
+				Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
+			},
+			Operate:         pt.GetOperate(node.String("metadata", "name")),
+			BatchOperations: batchOperations,
+		})
 	}
-	ri := &table.RowItem{
-		ID:      node.String("metadata", "name"),
-		IP:      ip,
-		Version: node.String("status", "nodeInfo", "kubeletVersion"),
-		Role:    role,
-		Node: table.Node{
-			RenderType: "multiple",
-			Renders:    pt.GetRenders(node.String("metadata", "name"), ip, node.Map("metadata", "labels")),
-		},
-		Status: *status,
-		Usage: table.Distribution{
-			RenderType: "progress",
-			Value:      ur.Percent,
-			Status:     table.GetDistributionStatus(ur.Percent),
-			Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
-		},
-		Operate:         pt.GetOperate(node.String("metadata", "name")),
-		BatchOperations: batchOperations,
-	}
-	return ri, nil
+
+	return items, nil
 }
 
 func init() {
