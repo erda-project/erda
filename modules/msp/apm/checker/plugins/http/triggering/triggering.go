@@ -15,13 +15,14 @@
 package triggering
 
 import (
-	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
-	_ "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
+	_ "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 )
 
 const (
