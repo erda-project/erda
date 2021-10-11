@@ -178,15 +178,14 @@ func (svc *CodeCoverage) ReadyCallBack(req apistructs.CodeCoverageUpdateRequest)
 	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
 		return err
 	}
-	status := apistructs.CodeCoverageExecStatus(req.Status)
-	if status != apistructs.ReadyStatus {
-		return errors.New("the status is not ready")
+	if record.Status == apistructs.CancelStatus {
+		return nil
 	}
 
 	if record.Status != apistructs.RunningStatus {
 		return errors.New("the pre status is not running")
 	}
-	record.Status = status
+	record.Status = apistructs.ReadyStatus
 	record.Msg = req.Msg
 
 	return svc.db.Save(&record).Error
