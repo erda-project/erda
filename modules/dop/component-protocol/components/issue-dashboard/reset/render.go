@@ -12,58 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package complexityPieChart
+package reset
 
 import (
 	"context"
-	"encoding/json"
-
-	"github.com/go-echarts/go-echarts/v2/charts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+type ComponentAction struct {
+	base.DefaultProvider
+}
+
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "complexityPieChart",
+	base.InitProviderWithCreator("issue-dashboard", "reset",
 		func() servicehub.Provider { return &ComponentAction{} })
 }
 
-func (f *ComponentAction) getState(c *cptype.Component) error {
-	d, err := json.Marshal(c.State)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(d, &f.State)
-}
-
 func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-
-	if err := f.getState(c); err != nil {
-		return err
-	}
-
 	helper := gshelper.NewGSHelper(gs)
-
-	handler := stackhandlers.NewComplexityStackHandler()
-
-	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
-
-	pie := charts.NewPie()
-	pie.Colors = colors
-	pie.AddSeries("复杂度", seriesData, func(s *charts.SingleSeries) {
-		s.Animation = true
-	})
-	props := make(map[string]interface{})
-	props["title"] = "按复杂度"
-	props["chartType"] = "pie"
-	props["option"] = pie.JSON()
-
-	c.Props = props
-	c.State = nil
+	helper.SetIterations(nil)
+	helper.SetMembers(nil)
+	helper.SetIssueList(nil)
+	helper.SetIssueStateList(nil)
+	helper.SetIssueStageList(nil)
 	return nil
 }

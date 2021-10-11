@@ -60,7 +60,7 @@ hierarchy:
 components:
   page:
     type: Container
-    props: 
+    props:
       spaceSize: middle
   header:
     type: RowContainer
@@ -92,8 +92,8 @@ components:
     type: Text
   reopen:
     type: Text
-  
-  
+
+
   trendChart:
     type: Chart
   trendChartExtra:
@@ -136,6 +136,8 @@ components:
   assigneeHorizontalBarChartFilter:
     type: ContractiveFilter
 
+  reset:
+    type: Container
 
 rendering:
   filter:
@@ -144,56 +146,30 @@ rendering:
       state:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
-        - name: "stages"
+        - name: "issueStageList"
           value: "{{ filter.stages }}"
     - name: labelHorizontalBarChartFilter
       state:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
-        - name: "stages"
+        - name: "issueStageList"
           value: "{{ filter.stages }}"
     - name: assigneeHorizontalBarChartFilter
       state:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
-        - name: "stages"
+        - name: "issueStageList"
           value: "{{ filter.stages }}"
     - name: trendChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "iterations"
-          value: "{{ filter.iterations }}"
         - name: "values"
           value: "{{ trendChartFilter.values }}"
     - name: statePieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
     - name: complexityPieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: priorityPieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: severityPieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: stagePieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
     - name: total
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: open
       state:
         - name: "stats"
@@ -224,36 +200,17 @@ rendering:
           value: "{{ total.stats }}"
     - name: stateVerticalBarChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ stateVerticalBarChartFilter.values }}"
     - name: labelHorizontalBarChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ labelHorizontalBarChartFilter.values }}"
     - name: assigneeHorizontalBarChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "members"
-          value: "{{ filter.members }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
+    - name: reset
 
   trendChartFilter:
     - name: filter
@@ -261,10 +218,7 @@ rendering:
       state:
         - name: "values"
           value: "{{ trendChartFilter.values }}"
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "iterations"
-          value: "{{ filter.iterations }}"
+    - name: reset
 
   stateVerticalBarChartFilter:
     - name: filter
@@ -272,25 +226,15 @@ rendering:
       state:
         - name: "values"
           value: "{{ stateVerticalBarChartFilter.values }}"
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
-  
+    - name: reset
+
   labelHorizontalBarChartFilter:
     - name: filter
     - name: labelHorizontalBarChart
       state:
         - name: "values"
           value: "{{ labelHorizontalBarChartFilter.values }}"
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
+    - name: reset
 
   assigneeHorizontalBarChartFilter:
     - name: filter
@@ -298,14 +242,7 @@ rendering:
       state:
         - name: "values"
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "members"
-          value: "{{ filter.members }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
+    - name: reset
 
   __DefaultRendering__:
     - name: page
@@ -316,9 +253,6 @@ rendering:
 
     - name: overview
     - name: total
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: open
       state:
         - name: "stats"
@@ -354,54 +288,25 @@ rendering:
       state:
         - name: "filterValues"
           value: "{{ trendChartFilter.values }}"
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
         - name: "values"
           value: "{{ filter.values }}"
-        - name: "iterations"
-          value: "{{ filter.iterations }}"
     - name: chartGroup1
     - name: chartGroup2
     - name: statePieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
     - name: complexityPieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: priorityPieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: severityPieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
     - name: stagePieChart
-      state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
 
     - name: stateVerticalBarChartExtra
     - name: stateVerticalBarChartFilter
       state:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
-        - name: "stages"
+        - name: "issueStageList"
           value: "{{ filter.stages }}"
     - name: stateVerticalBarChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ trendChartFilter.values }}"
 
@@ -410,16 +315,10 @@ rendering:
       state:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
-        - name: "stages"
+        - name: "issueStageList"
           value: "{{ filter.stages }}"
     - name: labelHorizontalBarChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ labelHorizontalBarChartFilter.values }}"
 
@@ -428,17 +327,10 @@ rendering:
       state:
         - name: "issueStateList"
           value: "{{ filter.issueStateList }}"
-        - name: "stages"
+        - name: "issueStageList"
           value: "{{ filter.stages }}"
     - name: assigneeHorizontalBarChart
       state:
-        - name: "issueList"
-          value: "{{ filter.issueList }}"
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "members"
-          value: "{{ filter.members }}"
-        - name: "stages"
-          value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
+    - name: reset

@@ -77,7 +77,10 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 		if err != nil {
 			return err
 		}
-		data = record.ReportContent
+		reportContent := record.ReportContent
+		if len(reportContent) > 0 {
+			data = reportContent[0].Nodes
+		}
 		title = fmt.Sprintf("%s %s", record.TimeCreated.Format("2006-01-02 15:03:04"), title)
 		project, err := c.ctxBdl.GetProject(record.ProjectID)
 		if err != nil {
