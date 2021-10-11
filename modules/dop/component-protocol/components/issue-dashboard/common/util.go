@@ -15,6 +15,7 @@
 package common
 
 import (
+	"github.com/erda-project/erda/pkg/strutil"
 	"sort"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -63,7 +64,7 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 	return data, colors
 }
 
-func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.StackHandler, xAxis []string,
+func GroupToVerticalBarData(itemList []interface{}, wl []string, stackHandler stackhandlers.StackHandler, xAxis []string,
 	xIdx func(issue interface{}) string,
 	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string, []string) {
 	counter := make(map[string]map[string]int)
@@ -73,6 +74,11 @@ func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.S
 
 	for _, i := range itemList {
 		y := FixEmptyWord(stackIndexer(i))
+		if len(wl) > 0 { // empty means not filter
+			if !strutil.Exist(wl, y) {
+				continue
+			}
+		}
 		x := FixEmptyWord(xIdx(i))
 		if _, ok := counter[y]; !ok {
 			counter[y] = make(map[string]int)

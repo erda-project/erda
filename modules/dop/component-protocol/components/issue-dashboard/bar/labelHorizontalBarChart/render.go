@@ -33,7 +33,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -73,14 +72,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	bugList := common.IssueListRetriever(f.State.IssueList, func(i int) bool {
-		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
-		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
-	})
-
 	bugMap := make(map[uint64]*dao.IssueItem)
-	for i := range bugList {
-		issue := bugList[i]
+	for i := range f.State.IssueList {
+		issue := f.State.IssueList[i]
 		bugMap[issue.ID] = &issue
 	}
 
@@ -106,7 +100,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stackhandlers.WithIssueStageList(f.State.Stages),
 	).GetRetriever(f.State.Values.Type)
 
-	series, colors, realY := common.GroupToVerticalBarData(labelList, handler, nil, func(label interface{}) string {
+	series, colors, realY := common.GroupToVerticalBarData(labelList, f.State.Values.Value, handler, nil, func(label interface{}) string {
 		l := label.(*model.LabelIssueItem)
 		if l == nil {
 			return ""

@@ -39,11 +39,11 @@ type State struct {
 	Conditions           []filter.PropCondition    `json:"conditions,omitempty"`
 	Values               common.FrontendConditions `json:"values,omitempty"`
 	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
-	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
-	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
-	Members              []apistructs.Member       `json:"members,omitempty"`
-	Stages               []apistructs.IssueStage   `json:"stages,omitempty"`
+	IssueList            []dao.IssueItem           `json:"issueList"`
+	IssueStateList       []dao.IssueState          `json:"issueStateList"`
+	Iterations           []apistructs.Iteration    `json:"iterations"`
+	Members              []apistructs.Member       `json:"members"`
+	Stages               []apistructs.IssueStage   `json:"stages"`
 }
 
 type InParams struct {

@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -57,17 +56,17 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		memberMap[m.UserID] = m
 	}
 
-	bugList := common.IssueListFilter(f.State.IssueList, func(i int) bool {
-		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
-		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
-	})
+	var bugList []interface{}
+	for i := range f.State.IssueList {
+		bugList = append(bugList, &f.State.IssueList[i])
+	}
 
 	handler := stackhandlers.NewStackRetriever(
 		stackhandlers.WithIssueStateList(f.State.IssueStateList),
 		stackhandlers.WithIssueStageList(f.State.Stages),
 	).GetRetriever(f.State.Values.Type)
 
-	series, colors, realY := common.GroupToVerticalBarData(bugList, handler, nil, func(issue interface{}) string {
+	series, colors, realY := common.GroupToVerticalBarData(bugList, f.State.Values.Value, handler, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
 	}, common.GetStackBarSingleSeriesConverter(), 500)
 
