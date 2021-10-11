@@ -606,7 +606,7 @@ func (t *Table) GetOperate(id string) Operate {
 				JumpOut: true,
 				Target:  "cmpClustersPods",
 			},
-				Text:   t.SDK.I18n("show") + " Pods",
+				Text:   t.SDK.I18n("show"),
 				Reload: false,
 			},
 		},
