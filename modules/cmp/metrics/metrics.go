@@ -129,9 +129,9 @@ func (m *Metric) query(ctx context.Context, req *pb.QueryWithInfluxFormatRequest
 }
 
 // querySync returns influxdb data
-func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan struct{}) {
+func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan map[string]*MetricsData) {
 	var (
-		res  = struct{}{}
+		res  = make(map[string]*MetricsData)
 		resp *pb.QueryWithInfluxFormatResponse
 		err  error
 	)
@@ -163,16 +163,17 @@ func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan struct{}
 	if err != nil || resp == nil {
 		logrus.Errorf("metrics query error:%v, resp:%v", err, resp)
 	} else {
-		m.Store(resp, req)
+		res = m.Store(resp, req)
 	}
 	c <- res
 }
 
-func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *MetricsReq) {
+func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *MetricsReq) map[string]*MetricsData {
 	if !isEmptyResponse(resp) {
 		var (
-			k = ""
-			d *MetricsData
+			k   = ""
+			d   *MetricsData
+			res = make(map[string]*MetricsData)
 		)
 		for _, row := range resp.Results[0].Series[0].Rows {
 			switch metricsReq.resKind {
@@ -182,12 +183,14 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *Metri
 					Used: row.Values[1].GetNumberValue(),
 				}
 				m.setCache(k, d)
+				res[k] = d
 				logrus.Infof("update cache %v", k)
 				k = cache.GenerateKey(Pod, Memory, row.Values[3].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[0].GetNumberValue(),
 				}
 				m.setCache(k, d)
+				res[k] = d
 				logrus.Infof("update cache %v", k)
 			case Node:
 				k = cache.GenerateKey(Node, Cpu, metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -195,6 +198,7 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *Metri
 					Used: row.Values[1].GetNumberValue(),
 				}
 				m.setCache(k, d)
+				res[k] = d
 				logrus.Infof("update cache %v", k)
 
 				k = cache.GenerateKey(Node, Memory, metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -202,10 +206,13 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *Metri
 					Used: row.Values[0].GetNumberValue(),
 				}
 				m.setCache(k, d)
+				res[k] = d
 				logrus.Infof("update cache %v", k)
 			}
 		}
+		return res
 	}
+	return nil
 }
 
 func (m *Metric) setCache(k string, d interface{}) {
@@ -270,15 +277,14 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[stri
 	ctx2, cancelFunc := context.WithTimeout(ctx, queryTimeout)
 	defer cancelFunc()
 	logrus.Infof("qeury node metrics with timeout")
-	c := make(chan struct{})
+	c := make(chan map[string]*MetricsData)
 	go m.querySync(ctx2, metricsReq, c)
 	select {
 	case <-ctx2.Done():
 		return nil, QueryTimeoutError
-	case <-c:
-		for _, nreq := range req.NodeRequests {
-			key := nreq.CacheKey()
-			noNeed[key] = m.getCache(key)
+	case resp := <-c:
+		for key, v := range resp {
+			noNeed[key] = v
 		}
 	}
 	return noNeed, nil
@@ -292,15 +298,14 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[strin
 	ctx2, cancelFunc := context.WithTimeout(ctx, queryTimeout)
 	defer cancelFunc()
 	logrus.Infof("query pod metrics with timeout")
-	c := make(chan struct{})
+	c := make(chan map[string]*MetricsData)
 	go m.querySync(ctx2, metricsReq, c)
 	select {
 	case <-ctx2.Done():
 		return nil, QueryTimeoutError
-	case <-c:
-		for _, preq := range req.PodRequests {
-			key := preq.CacheKey()
-			noNeed[key] = m.getCache(key)
+	case resp := <-c:
+		for key, v := range resp {
+			noNeed[key] = v
 		}
 	}
 	return noNeed, nil
