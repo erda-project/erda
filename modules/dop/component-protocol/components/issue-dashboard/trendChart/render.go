@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
@@ -75,11 +74,8 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	helper := gshelper.NewGSHelper(gs)
 	f.IssueList = helper.GetIssueList()
-	iterations := helper.GetIterations()
-
-	if iterations != nil {
-		f.ChartDataRetriever(iterations[0])
-	}
+	// iterations := helper.GetIterations()
+	f.ChartDataRetriever(f.State.Values.Time)
 	return f.SetToProtocolComponent(c)
 }
 
@@ -99,10 +95,18 @@ func rangeDate(start, end time.Time) func() time.Time {
 	}
 }
 
-func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
+func timeFromMilli(millis int64) time.Time {
+	return time.Unix(0, millis*int64(time.Millisecond))
+}
+
+func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
+	if len(timeRange) < 2 {
+		return
+	}
+	start, end := timeFromMilli(timeRange[0]), timeFromMilli(timeRange[1])
 	dates := make([]string, 0)
 	cMap := make(map[time.Time][]int)
-	for rd := rangeDate(*iteration.StartedAt, *iteration.FinishedAt); ; {
+	for rd := rangeDate(start, end); ; {
 		date := rd()
 		if date.IsZero() {
 			break
@@ -118,9 +122,9 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 	})
 	for _, i := range issues {
 		created := time.Date(i.CreatedAt.Year(), i.CreatedAt.Month(), i.CreatedAt.Day(), 0, 0, 0, 0, i.CreatedAt.Location())
-		if created.Before(*iteration.StartedAt) {
+		if created.Before(start) {
 			first[0] += 1
-		} else if created.After(*iteration.FinishedAt) {
+		} else if created.After(end) {
 			last[0] += 1
 		} else {
 			cMap[created][0] += 1
@@ -128,9 +132,9 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 
 		if i.FinishTime != nil {
 			closed := time.Date(i.FinishTime.Year(), i.FinishTime.Month(), i.FinishTime.Day(), 0, 0, 0, 0, i.FinishTime.Location())
-			if closed.Before(*iteration.StartedAt) {
+			if closed.Before(start) {
 				first[1] += 1
-			} else if created.After(*iteration.FinishedAt) {
+			} else if created.After(end) {
 				last[1] += 1
 			} else {
 				cMap[closed][1] += 1
@@ -139,12 +143,12 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 	}
 
 	newIssue, closedIssue, unClosedIssue := make([]int, 0), make([]int, 0), make([]int, 0)
-	dates = append(dates, "更早")
-	newIssue = append(newIssue, first[0])
-	closedIssue = append(closedIssue, first[1])
-	first[2] = first[0] - first[1]
-	unClosedIssue = append(unClosedIssue, first[2])
-	for rd := rangeDate(*iteration.StartedAt, *iteration.FinishedAt); ; {
+	// dates = append(dates, "更早")
+	// newIssue = append(newIssue, first[0])
+	// closedIssue = append(closedIssue, first[1])
+	// first[2] = first[0] - first[1]
+	// unClosedIssue = append(unClosedIssue, first[2])
+	for rd := rangeDate(start, end); ; {
 		date := rd()
 		if date.IsZero() {
 			break
@@ -154,15 +158,20 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 		dates = append(dates, x)
 		newIssue = append(newIssue, cMap[date][0])
 		closedIssue = append(closedIssue, cMap[date][1])
-		unclose := unClosedIssue[len(unClosedIssue)-1] + cMap[date][0] - cMap[date][1]
+		unclose := cMap[date][0] - cMap[date][1]
+		if len(unClosedIssue) == 0 {
+			unclose += first[0] - first[1]
+		} else {
+			unclose += unClosedIssue[len(unClosedIssue)-1]
+		}
 		unClosedIssue = append(unClosedIssue, unclose)
 	}
 
-	dates = append(dates, "未来")
-	newIssue = append(newIssue, last[0])
-	closedIssue = append(closedIssue, last[1])
-	last[2] = unClosedIssue[len(unClosedIssue)-1] + last[0] - last[1]
-	unClosedIssue = append(unClosedIssue, last[2])
+	// dates = append(dates, "未来")
+	// newIssue = append(newIssue, last[0])
+	// closedIssue = append(closedIssue, last[1])
+	// last[2] = unClosedIssue[len(unClosedIssue)-1] + last[0] - last[1]
+	// unClosedIssue = append(unClosedIssue, last[2])
 
 	f.Chart = common.Chart{
 		Props: common.Props{

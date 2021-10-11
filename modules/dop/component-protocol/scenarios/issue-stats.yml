@@ -183,6 +183,10 @@ rendering:
       state:
         - name: "stats"
           value: "{{ total.stats }}"
+    - name: reopen
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: stateVerticalBarChart
       state:
         - name: "values"
@@ -274,10 +278,8 @@ rendering:
     - name: trendChartFilter
     - name: trendChart
       state:
-        - name: "filterValues"
-          value: "{{ trendChartFilter.values }}"
         - name: "values"
-          value: "{{ filter.values }}"
+          value: "{{ trendChartFilter.values }}"
     - name: chartGroup1
     - name: chartGroup2
     - name: statePieChart

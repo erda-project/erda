@@ -17,6 +17,7 @@ package trendChartFilter
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -68,13 +69,11 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	// switch event.Operation {
-	// case cptype.InitializeOperation, cptype.RenderingOperation:
-	// 	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
-	// 		return err
-	// 	}
-	// case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
-	// }
+	switch event.Operation {
+	case cptype.InitializeOperation, cptype.RenderingOperation:
+		f.State.Values.Time = nil
+	case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
+	}
 
 	if err := f.InitDefaultOperation(ctx, f.State); err != nil {
 		return err
@@ -89,6 +88,9 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	}
 	if f.State.FrontendChangedKey == "type" {
 		f.State.Values.Value = nil
+	}
+	if f.State.Values.Time == nil {
+		f.State.Values.Time = []int64{makeTimestamp(time.Now().AddDate(0, -1, 0)), makeTimestamp(time.Now())}
 	}
 	handler := stackhandlers.NewStackRetriever().GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
@@ -125,6 +127,17 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			Options:   handler.GetFilterOptions(),
 			Type:      filter.PropConditionTypeSelect,
 		},
+		{
+			EmptyText: "全部",
+			Fixed:     true,
+			Key:       "time",
+			Label:     "时间",
+			Type:      filter.PropConditionTypeRangePicker,
+			CustomProps: map[string]interface{}{
+				"allowClear":     false,
+				"selectableTime": []int64{makeTimestamp(time.Now().AddDate(0, -2, 0)), makeTimestamp(time.Now())},
+			},
+		},
 	}
 
 	f.Props = filter.Props{
@@ -138,4 +151,8 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	}
 
 	return nil
+}
+
+func makeTimestamp(t time.Time) int64 {
+	return t.UnixNano() / int64(time.Millisecond)
 }
