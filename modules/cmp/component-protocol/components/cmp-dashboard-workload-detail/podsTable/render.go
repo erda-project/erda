@@ -235,6 +235,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}()
 	waitGroup.Wait()
 
+	if err != nil {
+		return err
+	}
+
 	var items []Item
 	for _, item := range list {
 		obj := item.Data()

@@ -222,6 +222,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}()
 	waitGroup.Wait()
 
+	if err != nil {
+		return err
+	}
+
 	p.State.CountValues = make(map[string]int)
 	var items []Item
 	logrus.Infof("[XDEBUG] start process list")
