@@ -62,17 +62,21 @@ func (condition *Triggering) Executor(resp *http.Response) bool {
 }
 
 func (condition *Triggering) BodyStrategy(resp *http.Response) bool {
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return false
+	var body string
+	if resp.Body != nil {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false
+		}
+		body = string(bodyBytes)
 	}
 	switch condition.Operate {
 	case "contains":
-		if strings.Contains(string(body), condition.Value.GetStringValue()) {
+		if strings.Contains(body, condition.Value.GetStringValue()) {
 			return false
 		}
 	case "not_contains":
-		if !strings.Contains(string(body), condition.Value.GetStringValue()) {
+		if !strings.Contains(body, condition.Value.GetStringValue()) {
 			return false
 		}
 	default:
