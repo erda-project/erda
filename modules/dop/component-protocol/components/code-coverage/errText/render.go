@@ -93,10 +93,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		c.State = map[string]interface{}{}
 	}
 
-	if disableEnd {
-		disableTip = "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
-	} else {
-		if disableStart {
+	if disableStart {
+		if disableEnd {
+			disableTip = "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+		} else {
 			disableTip = "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
 		}
 	}
