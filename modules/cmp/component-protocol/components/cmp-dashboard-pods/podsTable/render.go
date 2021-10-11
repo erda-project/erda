@@ -225,12 +225,12 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
-		cpuReq.PodRequests = append(cpuReq.PodRequests, metrics.MetricsPodRequest{
+		cpuReq.PodRequests = append(cpuReq.PodRequests, &metrics.MetricsPodRequest{
 			MetricsRequest: cpuReq,
 			Name:           name,
 			PodNamespace:   namespace,
 		})
-		memReq.PodRequests = append(memReq.PodRequests, metrics.MetricsPodRequest{
+		memReq.PodRequests = append(memReq.PodRequests, &metrics.MetricsPodRequest{
 			MetricsRequest: memReq,
 			Name:           name,
 			PodNamespace:   namespace,

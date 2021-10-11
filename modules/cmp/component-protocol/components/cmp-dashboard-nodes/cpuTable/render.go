@@ -158,7 +158,7 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		Kind:    metrics.Node,
 	}
 	for _, node := range nodes {
-		req.NodeRequests = append(req.NodeRequests, metrics.MetricsNodeRequest{
+		req.NodeRequests = append(req.NodeRequests, &metrics.MetricsNodeRequest{
 			MetricsRequest: req,
 			Ip:             node.StringSlice("metadata", "fields")[5],
 		})

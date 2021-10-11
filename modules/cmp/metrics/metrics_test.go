@@ -153,7 +153,7 @@ func TestToInfluxReq1(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := ToInfluxReq(tt.args.req, tt.args.kind)
+			_, err := ToInfluxReq(tt.args.req, tt.args.kind)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToInfluxReq() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -238,12 +238,11 @@ func TestMetric_Store(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Metric{
-				ctx:           tt.fields.ctx,
-				Metricq:       tt.fields.Metricq,
-				metricReqChan: tt.fields.metricReqChan,
-				limiter:       tt.fields.limiter,
+				ctx:     tt.fields.ctx,
+				Metricq: tt.fields.Metricq,
+				limiter: tt.fields.limiter,
 			}
-			m.Store(tt.args.resp, tt.args.res, tt.args.metricsReq)
+			m.Store(tt.args.resp, tt.args.metricsReq)
 		})
 	}
 }
