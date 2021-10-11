@@ -388,6 +388,7 @@ func runTest(file string) (profiles []*cover.Profile, err error) {
 	}
 	args := append([]string{"test", "-tags=musl", "-work", "-cpu=2", "-timeout=30s", "-failfast", "-race", "-coverprofile=" + coverage, "-covermode=atomic"})
 	args = append(args, []string{"-ldflags", "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn"}...)
+	args = append(args, []string{"-gcflags", "-N -l"}...)
 	args = append(args, file)
 	fmt.Printf("exec: go %s\n", strings.Join(args, " "))
 	cmd := exec.Command("go", args...)

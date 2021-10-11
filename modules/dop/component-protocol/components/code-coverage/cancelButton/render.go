@@ -41,6 +41,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
+	var disable bool
+	var disableTip string
+
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
 		err := svc.Cancel(apistructs.CodeCoverageCancelRequest{
@@ -53,6 +56,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		judgeApplication := c.State["judgeApplication"]
+		judgeApplicationMessage := c.State["judgeApplicationMessage"]
+		if judgeApplication != nil {
+			var value = judgeApplication.(bool)
+			disable = !value
+
+			message := judgeApplicationMessage.(string)
+			if disable && message != "" {
+				disableTip = message
+			}
+		}
 	}
 
 	c.Type = "Button"
@@ -62,9 +76,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	c.Operations = map[string]interface{}{
 		"click": map[string]interface{}{
-			"key":     "click",
-			"reload":  true,
-			"confirm": "强制取消将会导致明细和报告都不会生成!",
+			"key":         "click",
+			"reload":      true,
+			"confirm":     "强制取消将会导致明细和报告都不会生成!",
+			"disabledTip": disableTip,
+			"disabled":    disable,
 		},
 	}
 	return nil

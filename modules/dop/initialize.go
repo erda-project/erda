@@ -481,6 +481,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	codeCvc := code_coverage.New(
 		code_coverage.WithDBClient(db),
 		code_coverage.WithBundle(bdl.Bdl),
+		code_coverage.WithEnvConfig(env),
 	)
 
 	// compose endpoints

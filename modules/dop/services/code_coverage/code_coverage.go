@@ -16,22 +16,27 @@ package code_coverage
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"strconv"
+	"sync"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/environment"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
 type CodeCoverage struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
+	db        CodeCoverageDBer
+	bdl       CodeCoverageBDLer
+	envConfig *environment.EnvConfig
 }
 
 type Option func(*CodeCoverage)
@@ -44,15 +49,21 @@ func New(options ...Option) *CodeCoverage {
 	return c
 }
 
-func WithDBClient(db *dao.DBClient) Option {
+func WithDBClient(db CodeCoverageDBer) Option {
 	return func(c *CodeCoverage) {
 		c.db = db
 	}
 }
 
-func WithBundle(bdl *bundle.Bundle) Option {
+func WithBundle(bdl CodeCoverageBDLer) Option {
 	return func(c *CodeCoverage) {
 		c.bdl = bdl
+	}
+}
+
+func WithEnvConfig(envConfig *environment.EnvConfig) Option {
+	return func(e *CodeCoverage) {
+		e.envConfig = envConfig
 	}
 }
 
@@ -71,7 +82,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrCreateIssue.AccessDenied()
+			return apierrors.ErrStartCodeCoverageExecRecord.AccessDenied()
 		}
 	}
 
@@ -87,26 +98,34 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		StartExecutor: req.UserID,
 		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
 	}
-	if err := svc.db.Create(&record).Error; err != nil {
+	tx := svc.db.TxBegin()
+	if err := tx.Create(&record).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
-	jacocoAddress := getJacocoAddr(record.ProjectID)
+	jacocoAddress := GetJacocoAddr(record.ProjectID)
 	if len(jacocoAddress) <= 0 {
+		tx.Rollback()
 		return fmt.Errorf("not find jaccoco application address")
 	}
 
 	// call jacoco start
-	return svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
+	if err := svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
 		ProjectID: record.ProjectID,
 		PlanID:    record.ID,
-	})
+	}); err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 }
 
 // End End record
 func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
-	var record dao.CodeCoverageExecRecord
-	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
+	record, err := svc.db.GetCodeCoverageByID(req.ID)
+	if err != nil {
 		return err
 	}
 
@@ -123,7 +142,7 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrCreateIssue.AccessDenied()
+			return apierrors.ErrEndCodeCoverageExecRecord.AccessDenied()
 		}
 	}
 
@@ -133,11 +152,15 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 	record.Status = apistructs.EndingStatus
 	record.TimeEnd = time.Now()
 	record.EndExecutor = req.UserID
-	if err := svc.db.Save(&record).Error; err != nil {
+	if err := svc.db.UpdateCodeCoverage(record); err != nil {
 		return err
 	}
 	// call jacoco end
-	return svc.bdl.JacocoEnd(getJacocoAddr(record.ProjectID), &apistructs.JacocoRequest{
+	jacocoAddress := GetJacocoAddr(record.ProjectID)
+	if len(jacocoAddress) <= 0 {
+		return fmt.Errorf("not find jaccoco application address")
+	}
+	return svc.bdl.JacocoEnd(jacocoAddress, &apistructs.JacocoRequest{
 		ProjectID: record.ProjectID,
 		PlanID:    record.ID,
 	})
@@ -158,7 +181,7 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 			return err
 		}
 		if !access.Access {
-			return apierrors.ErrCreateIssue.AccessDenied()
+			return apierrors.ErrCancelCodeCoverageExecRecord.AccessDenied()
 		}
 	}
 	record := dao.CodeCoverageExecRecord{
@@ -167,15 +190,13 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 		TimeEnd:      time.Now(),
 	}
 
-	return svc.db.Model(&dao.CodeCoverageExecRecord{}).
-		Where("project_id = ?", req.ProjectID).
-		Where("status IN (?)", apistructs.WorkingStatus).Updates(record).Error
+	return svc.db.CancelCodeCoverage(req.ProjectID, &record)
 }
 
 // ReadyCallBack Record ready callBack
 func (svc *CodeCoverage) ReadyCallBack(req apistructs.CodeCoverageUpdateRequest) error {
-	var record dao.CodeCoverageExecRecord
-	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
+	record, err := svc.db.GetCodeCoverageByID(req.ID)
+	if err != nil {
 		return err
 	}
 	if record.Status == apistructs.CancelStatus {
@@ -188,15 +209,16 @@ func (svc *CodeCoverage) ReadyCallBack(req apistructs.CodeCoverageUpdateRequest)
 	record.Status = apistructs.ReadyStatus
 	record.Msg = req.Msg
 
-	return svc.db.Save(&record).Error
+	return svc.db.UpdateCodeCoverage(record)
 }
 
 // EndCallBack Record end callBack
 func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) error {
-	var record dao.CodeCoverageExecRecord
-	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
+	record, err := svc.db.GetCodeCoverageByID(req.ID)
+	if err != nil {
 		return err
 	}
+
 	status := apistructs.CodeCoverageExecStatus(req.Status)
 	if status != apistructs.FailStatus && status != apistructs.SuccessStatus {
 		return errors.New("the status is not fail or success")
@@ -233,13 +255,13 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 		record.Coverage = coverage
 	}
 
-	return svc.db.Save(&record).Error
+	return svc.db.UpdateCodeCoverage(record)
 }
 
 // ReportCallBack Record report callBack
 func (svc *CodeCoverage) ReportCallBack(req apistructs.CodeCoverageUpdateRequest) error {
-	var record dao.CodeCoverageExecRecord
-	if err := svc.db.Model(&dao.CodeCoverageExecRecord{}).First(&record, req.ID).Error; err != nil {
+	record, err := svc.db.GetCodeCoverageByID(req.ID)
+	if err != nil {
 		return err
 	}
 	reportStatus := apistructs.CodeCoverageExecStatus(req.Status)
@@ -254,7 +276,7 @@ func (svc *CodeCoverage) ReportCallBack(req apistructs.CodeCoverageUpdateRequest
 	record.ReportMsg = req.Msg
 	record.ReportUrl = req.ReportTarUrl
 
-	return svc.db.Save(&record).Error
+	return svc.db.UpdateCodeCoverage(record)
 }
 
 // ListCodeCoverageRecord list code coverage record
@@ -264,36 +286,7 @@ func (svc *CodeCoverage) ListCodeCoverageRecord(req apistructs.CodeCoverageListR
 		list    []apistructs.CodeCoverageExecRecordDto
 		total   uint64
 	)
-	if req.PageNo == 0 {
-		req.PageNo = 1
-	}
-	if req.PageSize == 0 {
-		req.PageSize = 10
-	}
-
-	offset := (req.PageNo - 1) * req.PageSize
-	db := svc.db.Model(&dao.CodeCoverageExecRecordShort{}).
-		Where("project_id = ?", req.ProjectID)
-
-	if req.Statuses != nil {
-		db = db.Where("status in (?)", req.Statuses)
-	}
-	if req.TimeBegin != "" {
-		db = db.Where("time_begin >= ?", req.TimeBegin)
-	}
-	if req.TimeEnd != "" {
-		db = db.Where("time_begin <= ?", req.TimeEnd)
-	}
-
-	if req.Asc {
-		db = db.Order("id ASC")
-	} else {
-		db = db.Order("id DESC")
-	}
-
-	err = db.Offset(offset).Limit(req.PageSize).
-		Find(&records).
-		Offset(0).Limit(-1).Count(&total).Error
+	records, total, err = svc.db.ListCodeCoverage(req)
 	if err != nil {
 		return
 	}
@@ -308,8 +301,8 @@ func (svc *CodeCoverage) ListCodeCoverageRecord(req apistructs.CodeCoverageListR
 
 // GetCodeCoverageRecord Get code coverage record
 func (svc *CodeCoverage) GetCodeCoverageRecord(id uint64) (*apistructs.CodeCoverageExecRecordDto, error) {
-	var record dao.CodeCoverageExecRecord
-	if err := svc.db.First(&record, id).Error; err != nil {
+	record, err := svc.db.GetCodeCoverageByID(id)
+	if err != nil {
 		return nil, err
 	}
 	return record.Covert(), nil
@@ -317,8 +310,8 @@ func (svc *CodeCoverage) GetCodeCoverageRecord(id uint64) (*apistructs.CodeCover
 
 // JudgeRunningRecordExist Judge running record exist
 func (svc *CodeCoverage) JudgeRunningRecordExist(projectID uint64) error {
-	var records []dao.CodeCoverageExecRecord
-	if err := svc.db.Where("project_id = ?", projectID).Where("status IN (?)", apistructs.WorkingStatus).Find(&records).Error; err != nil {
+	records, err := svc.db.ListCodeCoverageByStatus(projectID, apistructs.WorkingStatus)
+	if err != nil {
 		return err
 	}
 	if len(records) > 0 {
@@ -328,8 +321,8 @@ func (svc *CodeCoverage) JudgeRunningRecordExist(projectID uint64) error {
 }
 
 func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
-	var records []dao.CodeCoverageExecRecord
-	if err := svc.db.Where("project_id = ?", projectID).Where("status IN (?)", apistructs.ReadyStatus).Find(&records).Error; err != nil {
+	records, err := svc.db.ListCodeCoverageByStatus(projectID, []apistructs.CodeCoverageExecStatus{apistructs.ReadyStatus})
+	if err != nil {
 		return false, err
 	}
 	if len(records) > 0 {
@@ -339,6 +332,93 @@ func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
 	return false, nil
 }
 
-func getJacocoAddr(projectID uint64) string {
+func GetJacocoAddr(projectID uint64) string {
 	return conf.JacocoAddr()[strconv.FormatUint(projectID, 10)]
+}
+
+func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID string) (bool, error, string) {
+	apps, err := svc.bdl.GetAppsByProject(projectID, orgID, userID)
+	if err != nil {
+		return false, err, ""
+	}
+
+	var findJacocoAgentEnv = false
+	var findJacocoEnv = false
+	var lock sync.Mutex
+
+	var wait = limit_sync_group.NewSemaphore(5)
+	for index := range apps.List {
+		wait.Add(1)
+		go func(index int) {
+			defer wait.Done()
+
+			lock.Lock()
+			if findJacocoAgentEnv && findJacocoEnv {
+				return
+			}
+			lock.Unlock()
+
+			app := apps.List[index]
+			var namespaceParams []apistructs.NamespaceParam
+			for _, env := range apistructs.EnvList {
+				namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
+					NamespaceName: fmt.Sprintf("app-%v-%v", app.ID, env),
+				})
+			}
+
+			configs, err := svc.envConfig.GetMultiNamespaceConfigs(nil, userID, namespaceParams)
+			if err != nil {
+				return
+			}
+
+			for _, envs := range configs {
+				var findTwoEnv = 0
+				for _, env := range envs {
+					if env.Key == "OPEN_JACOCO_AGENT" && env.Value == "true" {
+						lock.Lock()
+						findJacocoAgentEnv = true
+						lock.Unlock()
+					}
+					if env.Key == "ERDA_URL" || env.Key == "ERDA_TOKEN" {
+						findTwoEnv++
+					}
+				}
+				if findTwoEnv >= 2 {
+					lock.Lock()
+					findJacocoEnv = true
+					lock.Unlock()
+				}
+			}
+		}(index)
+	}
+	wait.Wait()
+
+	if !findJacocoEnv {
+		return false, nil, "not find jacoco application in project, please add jacoco application and set ERDA_URL,ERDA_TOKEN env"
+	}
+
+	if !findJacocoAgentEnv {
+		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env"
+	}
+
+	return true, nil, ""
+}
+
+type CodeCoverageDBer interface {
+	CreateCodeCoverage(record *dao.CodeCoverageExecRecord) error
+	UpdateCodeCoverage(record *dao.CodeCoverageExecRecord) error
+	GetCodeCoverageByID(id uint64) (*dao.CodeCoverageExecRecord, error)
+	CancelCodeCoverage(uint64, *dao.CodeCoverageExecRecord) error
+	ListCodeCoverageByStatus(projectID uint64, status []apistructs.CodeCoverageExecStatus) (records []dao.CodeCoverageExecRecord, err error)
+	ListCodeCoverage(req apistructs.CodeCoverageListRequest) (records []dao.CodeCoverageExecRecordShort, total uint64, err error)
+	TxBegin() *gorm.DB
+}
+
+type CodeCoverageBDLer interface {
+	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
+	JacocoStart(addr string, req *apistructs.JacocoRequest) error
+	JacocoEnd(addr string, req *apistructs.JacocoRequest) error
+	DownloadDiceFile(uuid string) (io.ReadCloser, error)
+	GetProject(id uint64) (*apistructs.ProjectDTO, error)
+	GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error)
 }

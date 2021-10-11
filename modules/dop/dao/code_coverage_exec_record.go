@@ -17,6 +17,7 @@ package dao
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"github.com/jinzhu/gorm"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -115,4 +116,74 @@ func (c *CodeCoverageExecRecordShort) Covert() apistructs.CodeCoverageExecRecord
 		TimeCreated:   c.CreatedAt,
 		TimeUpdated:   c.UpdatedAt,
 	}
+}
+
+// CreateCodeCoverage .
+func (client *DBClient) CreateCodeCoverage(record *CodeCoverageExecRecord) error {
+	return client.Create(record).Error
+}
+
+// UpdateCodeCoverage .
+func (client *DBClient) UpdateCodeCoverage(record *CodeCoverageExecRecord) error {
+	return client.Save(record).Error
+}
+
+// GetCodeCoverageByID .
+func (client *DBClient) GetCodeCoverageByID(id uint64) (*CodeCoverageExecRecord, error) {
+	var record CodeCoverageExecRecord
+	err := client.Model(&CodeCoverageExecRecord{}).First(&record, id).Error
+	return &record, err
+}
+
+// CancelCodeCoverage .
+func (client *DBClient) CancelCodeCoverage(projectID uint64, record *CodeCoverageExecRecord) error {
+	return client.Model(&CodeCoverageExecRecord{}).
+		Where("project_id = ?", projectID).
+		Where("status IN (?)", apistructs.WorkingStatus).Updates(record).Error
+}
+
+// ListCodeCoverageByStatus .
+func (client *DBClient) ListCodeCoverageByStatus(projectID uint64, status []apistructs.CodeCoverageExecStatus) (records []CodeCoverageExecRecord, err error) {
+	err = client.Where("project_id = ?", projectID).Where("status IN (?)", status).Find(&records).Error
+	return
+}
+
+// ListCodeCoverage .
+func (client *DBClient) ListCodeCoverage(req apistructs.CodeCoverageListRequest) (records []CodeCoverageExecRecordShort, total uint64, err error) {
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+
+	offset := (req.PageNo - 1) * req.PageSize
+	db := client.Model(&CodeCoverageExecRecordShort{}).
+		Where("project_id = ?", req.ProjectID)
+
+	if req.Statuses != nil {
+		db = db.Where("status in (?)", req.Statuses)
+	}
+	if req.TimeBegin != "" {
+		db = db.Where("time_begin >= ?", req.TimeBegin)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("time_begin <= ?", req.TimeEnd)
+	}
+
+	if req.Asc {
+		db = db.Order("id ASC")
+	} else {
+		db = db.Order("id DESC")
+	}
+
+	err = db.Offset(offset).Limit(req.PageSize).
+		Find(&records).
+		Offset(0).Limit(-1).Count(&total).Error
+	return
+}
+
+// TxBegin .
+func (client *DBClient) TxBegin() *gorm.DB {
+	return client.Begin()
 }
