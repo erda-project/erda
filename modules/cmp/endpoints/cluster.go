@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/ess"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -93,19 +94,17 @@ func (e *Endpoints) BatchUpgradeEdgeCluster(ctx context.Context, r *http.Request
 	logrus.Debugf("batch upgrade request header:%+v", r.Header)
 
 	// get identity info
-	i, resp := e.GetIdentity(r)
-	if resp != nil {
-		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
-		return
-	}
-
-	// permission check
-	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.DeleteAction)
+	userID, err := user.GetUserID(r)
 	if err != nil {
 		return
 	}
 
-	go e.clusters.BatchUpgradeEdgeCluster(req, i.UserID)
+	// permission check
+	err = e.PermissionCheck(userID.String(), "", "", apistructs.DeleteAction)
+	if err != nil {
+	}
+
+	go e.clusters.BatchUpgradeEdgeCluster(req, userID.String())
 
 	return mkResponse(apistructs.BatchUpgradeEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
