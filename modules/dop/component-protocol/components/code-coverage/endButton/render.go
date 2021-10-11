@@ -77,6 +77,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		disable = true
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
+
 		judgeApplication := c.State["judgeApplication"]
 		judgeApplicationMessage := c.State["judgeApplicationMessage"]
 		if judgeApplication != nil {

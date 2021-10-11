@@ -73,6 +73,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			disableTip = message
 		}
 
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
 		c.State["judgeApplication"] = judgeApplication
 		c.State["judgeApplicationMessage"] = message
 
