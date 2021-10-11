@@ -211,9 +211,22 @@ func GetDistributionStatus(str string) string {
 	}
 }
 
+func IsNodeOffline(node data.Object) bool {
+	labels := node.Map("metadata", "labels")
+	offlineLabel := labels.String(cmp.OfflineLabel)
+	return offlineLabel == "true"
+}
+
 func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	if node == nil {
 		return nil, common.NodeNotFoundErr
+	}
+	if IsNodeOffline(node) {
+		return &SteveStatus{
+			Value:      t.SDK.I18n("isOffline"),
+			RenderType: "textWithBadge",
+			Status:     "default",
+		}, nil
 	}
 	ss := &SteveStatus{
 		RenderType: "textWithBadge",
@@ -459,6 +472,21 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 		"uncordon": {
 			Key:    "uncordon",
 			Text:   t.SDK.I18n("uncordon"),
+			Reload: true,
+		},
+		"drain": {
+			Key:    "drain",
+			Text:   t.SDK.I18n("drain"),
+			Reload: true,
+		},
+		"offline": {
+			Key:    "offline",
+			Text:   t.SDK.I18n("offline"),
+			Reload: true,
+		},
+		"online": {
+			Key:    "online",
+			Text:   t.SDK.I18n("online"),
 			Reload: true,
 		},
 	}

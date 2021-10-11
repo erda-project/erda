@@ -363,7 +363,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 		memLimits := tempMemLimits[i]
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[cpuReq.PodRequests[i].CacheKey()].Used
+		metricsData, ok := cpuMetrics[cpuReq.PodRequests[i].CacheKey()]
+		usedCPUPercent := 0.0
+		if ok {
+			usedCPUPercent = metricsData.Used
+		}
 		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		items[i].CPUPercent = Percent{
 			RenderType: "progress",
@@ -373,7 +377,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[memReq.PodRequests[i].CacheKey()].Used
+		metricsData, ok = memMetrics[memReq.PodRequests[i].CacheKey()]
+		usedMemPercent := 0.0
+		if ok {
+			usedMemPercent = metricsData.Used
+		}
 		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		items[i].MemoryPercent = Percent{
 			RenderType: "progress",

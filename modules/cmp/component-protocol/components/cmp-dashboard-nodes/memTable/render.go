@@ -96,6 +96,15 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		case common.CMPDashboardCordonNode:
 			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardCordonNode
+		case common.CMPDashboardDrainNode:
+			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardDrainNode
+		case common.CMPDashboardOfflineNode:
+			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardOfflineNode
+		case common.CMPDashboardOnlineNode:
+			(*gs)["SelectedRowKeys"] = mt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardOnlineNode
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
@@ -161,11 +170,20 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		batchOperations := make([]string, 0)
 		if !strings.Contains(role, "master") {
 			if strings.Contains(status.Value, mt.SDK.I18n("SchedulingDisabled")) {
-				batchOperations = []string{"uncordon"}
+				batchOperations = append(batchOperations, "uncordon")
 			} else {
-				batchOperations = []string{"cordon"}
+				batchOperations = append(batchOperations, "cordon")
+			}
+			if !strings.Contains(role, "lb") {
+				batchOperations = append(batchOperations, "drain")
+				if !table.IsNodeOffline(c) {
+					batchOperations = append(batchOperations, "offline")
+				} else {
+					batchOperations = append(batchOperations, "online")
+				}
 			}
 		}
+
 		items = append(items, table.RowItem{
 			ID:      c.String("metadata", "name"),
 			IP:      ip,
@@ -221,7 +239,7 @@ func (mt *MemInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"cordon", "uncordon"},
+		"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 

@@ -16,6 +16,7 @@ package batchOperationTipModal
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -85,7 +86,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 			ops.Meta.Type = common.CMPDashboardCordonNode
 			bot.Operations["onOk"] = ops
-			bot.Props.Content = bot.SDK.I18n("Cordon following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
+			bot.Props.Content = bot.getContent(bot.SDK.I18n("Cordon following nodes"), selectRowKeys)
 		case common.CMPDashboardUncordonNode:
 			bot.State.Visible = true
 			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
@@ -97,7 +98,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 			ops.Meta.Type = common.CMPDashboardUncordonNode
 			bot.Operations["onOk"] = ops
-			bot.Props.Content = bot.SDK.I18n("Uncordon following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
+			bot.Props.Content = bot.getContent(bot.SDK.I18n("Uncordon following nodes"), selectRowKeys)
 		case common.CMPDashboardDrainNode:
 			bot.State.Visible = true
 			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
@@ -109,7 +110,7 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 			ops.Meta.Type = common.CMPDashboardDrainNode
 			bot.Operations["onOk"] = ops
-			bot.Props.Content = bot.SDK.I18n("Drain following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
+			bot.Props.Content = bot.getContent(bot.SDK.I18n("Drain following nodes"), selectRowKeys)
 		case common.CMPDashboardOfflineNode:
 			bot.State.Visible = true
 			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
@@ -121,7 +122,23 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			}
 			ops.Meta.Type = common.CMPDashboardOfflineNode
 			bot.Operations["onOk"] = ops
-			bot.Props.Content = bot.SDK.I18n("Offline following nodes") + "\n" + strings.Join(selectRowKeys, "\n")
+			content, err := bot.getOfflineContent(selectRowKeys)
+			if err != nil {
+				return err
+			}
+			bot.Props.Content = content
+		case common.CMPDashboardOnlineNode:
+			bot.State.Visible = true
+			selectRowKeys := (*gs)["SelectedRowKeys"].([]string)
+			bot.State.SelectedRowKeys = selectRowKeys
+			ops := Operation{}
+			err := common.Transfer(bot.Operations["onOk"], &ops)
+			if err != nil {
+				return err
+			}
+			ops.Meta.Type = common.CMPDashboardOnlineNode
+			bot.Operations["onOk"] = ops
+			bot.Props.Content = bot.getContent(bot.SDK.I18n("Online following nodes"), selectRowKeys)
 		}
 	case common.CMPDashboardBatchSubmit:
 		bot.State.Visible = false
@@ -152,7 +169,13 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 			if err != nil {
 				return bot.SetComponent(c)
 			}
+		case common.CMPDashboardOnlineNode:
+			err := bot.OnlineNode(selectRowKeys)
+			if err != nil {
+				return bot.SetComponent(c)
+			}
 		}
+
 	}
 	return bot.SetComponent(c)
 }
@@ -234,6 +257,25 @@ func (bot *BatchOperationTipModal) OfflineNode(nodeIDs []string) error {
 		bot.SDK.InParams["clusterName"].(string), nodeIDs)
 }
 
+func (bot *BatchOperationTipModal) OnlineNode(nodeIDs []string) error {
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		name := splits[0]
+		req := &apistructs.SteveRequest{
+			UserID:      bot.SDK.Identity.UserID,
+			OrgID:       bot.SDK.Identity.OrgID,
+			Type:        apistructs.K8SNode,
+			ClusterName: bot.SDK.InParams["clusterName"].(string),
+			Name:        name,
+		}
+		err := steveServer.OnlineNode(bot.ctx, req)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (bot *BatchOperationTipModal) getProps() {
 	bot.Props = Props{
 		Status:  "warning",
@@ -251,6 +293,54 @@ func (bot *BatchOperationTipModal) getOperations() {
 			Meta:       Meta{Type: ""},
 		},
 	}
+}
+
+func (bot *BatchOperationTipModal) getContent(tip string, nodeIDs []string) string {
+	content := fmt.Sprintf("%s\n", tip)
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		content += fmt.Sprintf("%s\n", splits[0])
+	}
+	return content
+}
+
+func (bot *BatchOperationTipModal) getOfflineContent(nodeIDs []string) (string, error) {
+	req := &apistructs.SteveRequest{
+		UserID:      bot.SDK.Identity.UserID,
+		OrgID:       bot.SDK.Identity.OrgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: bot.SDK.InParams["clusterName"].(string),
+	}
+	list, err := steveServer.ListSteveResource(bot.ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	nodeDrained := map[string]bool{}
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		nodeDrained[splits[0]] = true
+	}
+
+	for _, obj := range list {
+		pod := obj.Data()
+		fields := pod.StringSlice("metadata", "fields")
+		status := fields[2]
+		nodeName := fields[6]
+		if _, ok := nodeDrained[nodeName]; ok && status != "Evicted" && status != "Succeed" && status != "Failed" {
+			nodeDrained[nodeName] = false
+		}
+	}
+
+	content := bot.SDK.I18n("Offline following nodes") + "\n"
+	for node, isDrained := range nodeDrained {
+		if isDrained {
+			content += fmt.Sprintf("%s\n", node)
+		} else {
+			content += fmt.Sprintf("%s (%s)\n", node, bot.SDK.I18n("undrained"))
+		}
+	}
+	return content, nil
 }
 
 func init() {

@@ -47,6 +47,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const OfflineLabel = "dice/offline"
+
 type SteveServer interface {
 	GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
 	ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error)
@@ -60,8 +62,11 @@ type SteveServer interface {
 	UnCordonNode(context.Context, *apistructs.SteveRequest) error
 	DrainNode(context.Context, *apistructs.SteveRequest) error
 	OfflineNode(context.Context, string, string, string, []string) error
+	OnlineNode(context.Context, *apistructs.SteveRequest) error
 }
 
+// GetSteveResource gets k8s resource from steve server.
+// Required fields: ClusterName, Name, Type.
 func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
 		return types.APIObject{}, errors.New("clusterName, name and type fields are required")
@@ -120,6 +125,8 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	return obj, nil
 }
 
+// ListSteveResource lists k8s resource from steve server.
+// Required fields: ClusterName, Type.
 func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" {
 		return nil, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
@@ -194,6 +201,8 @@ func newReadCloser(obj interface{}) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(jsonData)), nil
 }
 
+// UpdateSteveResource update a k8s resource described by req.Obj from steve server and creates an audit event.
+// Required fields: ClusterName, Type, Name, Obj
 func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
 		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
@@ -260,6 +269,8 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 	return obj, nil
 }
 
+// CreateSteveResource creates a k8s resource described by req.Obj from steve server and creates an audit event.
+// Required fields: ClusterName, Type, Obj
 func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" {
 		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
@@ -333,6 +344,8 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 	return obj, nil
 }
 
+// DeleteSteveResource delete a k8s resource from steve server and creates an audit event.
+// Required fields: ClusterName, Type, Name
 func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
@@ -391,6 +404,8 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 	return nil
 }
 
+// PatchNode patch a node described by req.Obj from steve server.
+// Required fields: ClusterName, Name, Obj
 func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
@@ -470,6 +485,8 @@ func (p *provider) labelNode(ctx context.Context, req *apistructs.SteveRequest, 
 	return nil
 }
 
+// LabelNode labels a node and creates an audit event.
+// Required filed: ClusterName, Name, labels
 func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
 	if err := p.labelNode(ctx, req, labels); err != nil {
 		return err
@@ -490,7 +507,7 @@ func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, 
 	return nil
 }
 
-func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
+func (p *provider) unlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
 	if req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
@@ -512,6 +529,15 @@ func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest
 
 	err := p.PatchNode(ctx, req)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnlabelNode unlabels a node and creates an audit event.
+// Required filed: ClusterName, Name, labels
+func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
+	if err := p.unlabelNode(ctx, req, labels); err != nil {
 		return err
 	}
 
@@ -545,6 +571,8 @@ func (p *provider) cordonNode(ctx context.Context, req *apistructs.SteveRequest)
 	return err
 }
 
+// CordonNode cordons a node and creates an audit event.
+// Required fields: ClusterName, Name
 func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if err := p.cordonNode(ctx, req); err != nil {
 		return err
@@ -560,6 +588,8 @@ func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest)
 	return nil
 }
 
+// UnCordonNode uncordons a node and creates an audit event.
+// Required fields: ClusterName, Name
 func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
@@ -587,6 +617,7 @@ func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveReques
 	return nil
 }
 
+// DrainNode drains a node and creates an audit event.
 func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if err := p.cordonNode(ctx, req); err != nil {
 		return err
@@ -608,23 +639,28 @@ func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) 
 		return errors.Errorf("failed to get k8s client, %v", err)
 	}
 
-	for _, obj := range list {
-		pod := obj.Data()
-		if pod.String("spec", "nodeName") != req.Name {
-			continue
+	go func() {
+		for _, obj := range list {
+			pod := obj.Data()
+			if pod.String("spec", "nodeName") != req.Name {
+				continue
+			}
+			namespace := pod.String("metadata", "namespace")
+			name := pod.String("metadata", "name")
+			if err = client.ClientSet.PolicyV1beta1().Evictions(namespace).Evict(context.Background(), &v1beta1.Eviction{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to evict pod %s:%s, %v", namespace, name, err)
+				continue
+			} else {
+				logrus.Infof("drain node %s: pod %s:%s evicted", req.Name, namespace, name)
+			}
 		}
-		namespace := pod.String("metadata", "namespace")
-		name := pod.String("metadata", "name")
-		if err = client.ClientSet.PolicyV1beta1().Evictions(namespace).Evict(ctx, &v1beta1.Eviction{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
-		}); err != nil {
-			logrus.Errorf("failed to evict pod %s:%s, %v", namespace, name, err)
-			continue
-		}
-	}
+	}()
+
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
@@ -635,6 +671,8 @@ func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) 
 	return nil
 }
 
+// OfflineNode offlines a node by sending request to monitor. And creates an audit event.
+// nodeID format: nodeName/hostIP
 func (p *provider) OfflineNode(ctx context.Context, userID, orgID, clusterName string, nodeIDs []string) error {
 	var names, ips []string
 	for _, id := range nodeIDs {
@@ -654,44 +692,61 @@ func (p *provider) OfflineNode(ctx context.Context, userID, orgID, clusterName s
 			ClusterName: clusterName,
 			Name:        name,
 		}
-		if err := p.labelNode(ctx, req, map[string]string{"erda/offline": "true"}); err != nil {
+		if err := p.labelNode(ctx, req, map[string]string{OfflineLabel: "true"}); err != nil {
 			logrus.Errorf("failed to label node %s, %v", name, err)
 			continue
 		}
 	}
 
-	host := discover.Monitor()
-	path := "/api/resources/hosts/actions/offline"
-	headers := http.Header{
-		httputil.UserHeader: []string{userID},
-		httputil.OrgHeader:  []string{orgID},
-	}
-	client := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
-	req := map[string]interface{}{
-		"clusterName": clusterName,
-		"hostIPs":     ips,
-	}
+	go func() {
+		for i := 0; i < 5; i++ {
+			host := discover.Monitor()
+			path := "/api/resources/hosts/actions/offline"
+			headers := http.Header{
+				httputil.UserHeader: []string{userID},
+				httputil.OrgHeader:  []string{orgID},
+			}
+			client := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
+			req := map[string]interface{}{
+				"clusterName": clusterName,
+				"hostIPs":     ips,
+			}
 
-	var resp httpapi.Response
-	_, err := client.Post(host).Path(path).Headers(headers).JSONBody(&req).Do().JSON(&resp)
-	if err != nil {
-		return err
-	}
-	if !resp.Success {
-		return errors.New(resp.Err.Msg.(string))
-	}
+			var resp httpapi.Response
+			_, err := client.Post(host).Path(path).Headers(headers).JSONBody(&req).Do().JSON(&resp)
+			if err != nil {
+				logrus.Errorf("failed to post offline host, %v", err)
+			}
+		}
+	}()
 
 	nodeNames := strings.Join(names, ",")
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  clusterName,
 		middleware.AuditResourceName: nodeNames,
 	}
-	if err := p.Audit(userID, orgID, middleware.AuditOfflineName, auditCtx); err != nil {
+	if err := p.Audit(userID, orgID, middleware.AuditOfflineNode, auditCtx); err != nil {
 		logrus.Errorf("failed to audit when offline node, %v", err)
 	}
 	return nil
 }
 
+// OnlineNode onlines a node by removing node offline label. And creates an audit event.
+func (p *provider) OnlineNode(ctx context.Context, req *apistructs.SteveRequest) error {
+	if err := p.unlabelNode(ctx, req, []string{OfflineLabel}); err != nil {
+		return err
+	}
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
+		middleware.AuditResourceName: req.Name,
+	}
+	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditOnlineNode, auditCtx); err != nil {
+		logrus.Errorf("failed to audit when online node, %v", err)
+	}
+	return nil
+}
+
+// Auth authenticates by userID and orgID.
 func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error) {
 	scopeID, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
@@ -748,6 +803,7 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 	return user, nil
 }
 
+// Audit creates an audit event by bundle.
 func (p *provider) Audit(userID, orgID, templateName string, ctx map[string]interface{}) error {
 	if ctx == nil || len(ctx) == 0 {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("template context can not be empty"))
