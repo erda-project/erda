@@ -4,8 +4,9 @@
 package pb
 
 import (
-	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	url "net/url"
+
+	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 )
 
 // This is a compile-time assertion to ensure that this generated file
