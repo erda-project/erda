@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -87,20 +88,28 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		StartExecutor: req.UserID,
 		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
 	}
-	if err := svc.db.CreateCodeCoverage(&record); err != nil {
+	tx := svc.db.TxBegin()
+	if err := tx.Create(&record).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	jacocoAddress := GetJacocoAddr(record.ProjectID)
 	if len(jacocoAddress) <= 0 {
+		tx.Rollback()
 		return fmt.Errorf("not find jaccoco application address")
 	}
 
 	// call jacoco start
-	return svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
+	if err := svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
 		ProjectID: record.ProjectID,
 		PlanID:    record.ID,
-	})
+	}); err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 }
 
 // End End record
@@ -324,6 +333,7 @@ type CodeCoverageDBer interface {
 	CancelCodeCoverage(uint64, *dao.CodeCoverageExecRecord) error
 	ListCodeCoverageByStatus(projectID uint64, status []apistructs.CodeCoverageExecStatus) (records []dao.CodeCoverageExecRecord, err error)
 	ListCodeCoverage(req apistructs.CodeCoverageListRequest) (records []dao.CodeCoverageExecRecordShort, total uint64, err error)
+	TxBegin() *gorm.DB
 }
 
 type CodeCoverageBDLer interface {

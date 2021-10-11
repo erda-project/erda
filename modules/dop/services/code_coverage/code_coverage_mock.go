@@ -11,6 +11,7 @@ import (
 	apistructs "github.com/erda-project/erda/apistructs"
 	dao "github.com/erda-project/erda/modules/dop/dao"
 	gomock "github.com/golang/mock/gomock"
+	gorm "github.com/jinzhu/gorm"
 )
 
 // MockCodeCoverageDBer is a mock of CodeCoverageDBer interface.
@@ -108,6 +109,20 @@ func (m *MockCodeCoverageDBer) ListCodeCoverageByStatus(projectID uint64, status
 func (mr *MockCodeCoverageDBerMockRecorder) ListCodeCoverageByStatus(projectID, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCodeCoverageByStatus", reflect.TypeOf((*MockCodeCoverageDBer)(nil).ListCodeCoverageByStatus), projectID, status)
+}
+
+// TxBegin mocks base method.
+func (m *MockCodeCoverageDBer) TxBegin() *gorm.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TxBegin")
+	ret0, _ := ret[0].(*gorm.DB)
+	return ret0
+}
+
+// TxBegin indicates an expected call of TxBegin.
+func (mr *MockCodeCoverageDBerMockRecorder) TxBegin() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxBegin", reflect.TypeOf((*MockCodeCoverageDBer)(nil).TxBegin))
 }
 
 // UpdateCodeCoverage mocks base method.

@@ -25,36 +25,6 @@ import (
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-func TestStart(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := monkey.Patch(GetJacocoAddr, func(uint64) string {
-		return "addr"
-	})
-	defer m.Unpatch()
-
-	bdl := NewMockCodeCoverageBDLer(ctrl)
-	db := NewMockCodeCoverageDBer(ctrl)
-
-	bdl.EXPECT().CheckPermission(gomock.Any()).Return(&apistructs.PermissionCheckResponseData{
-		Access: true,
-	}, nil)
-
-	db.EXPECT().CreateCodeCoverage(gomock.Any()).Return(nil)
-	db.EXPECT().ListCodeCoverageByStatus(gomock.Any(), gomock.Any()).Return(nil, nil)
-
-	bdl.EXPECT().JacocoStart(gomock.Any(), gomock.Any()).Return(nil)
-
-	svc := New(WithDBClient(db), WithBundle(bdl))
-	if err := svc.Start(apistructs.CodeCoverageStartRequest{
-		IdentityInfo: apistructs.IdentityInfo{UserID: "1"},
-		ProjectID:    1,
-	}); err != nil {
-		t.Error(err)
-	}
-}
-
 func TestEnd(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
