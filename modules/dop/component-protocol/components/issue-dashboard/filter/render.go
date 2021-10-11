@@ -112,6 +112,15 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	if len(iterations) == 0 {
+		start := time.Now().AddDate(0, -1, 0)
+		end := time.Now()
+		iterations[-1] = apistructs.Iteration{
+			StartedAt:  &start,
+			FinishedAt: &end,
+		}
+	}
+
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		if err := f.InitDefaultOperation(ctx, iterations); err != nil {
@@ -226,7 +235,7 @@ func defaultIterationRetriever(iterations map[int64]apistructs.Iteration) int64 
 			return i
 		}
 	}
-	return 0
+	return -1
 }
 
 func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
