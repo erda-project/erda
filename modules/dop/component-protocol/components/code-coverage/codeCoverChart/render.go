@@ -90,8 +90,10 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		t := r.TimeCreated.Format(timeFormat)
 		timeList = append(timeList, t)
 		p := PointValue{
-			RecordID: r.ID,
-			Value:    r.Coverage,
+			RecordID:   r.ID,
+			Value:      r.Coverage,
+			SymbolSize: 8,
+			Symbol:     "circle",
 		}
 		if r.ID == ca.State.RecordID {
 			p.Symbol = "pin"
