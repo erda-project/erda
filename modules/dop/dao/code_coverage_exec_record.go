@@ -17,7 +17,6 @@ package dao
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"github.com/jinzhu/gorm"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -181,9 +180,4 @@ func (client *DBClient) ListCodeCoverage(req apistructs.CodeCoverageListRequest)
 		Find(&records).
 		Offset(0).Limit(-1).Count(&total).Error
 	return
-}
-
-// TxBegin .
-func (client *DBClient) TxBegin() *gorm.DB {
-	return client.Begin()
 }
