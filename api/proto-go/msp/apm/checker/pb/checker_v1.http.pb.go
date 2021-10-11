@@ -316,6 +316,14 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 						return nil, err
 					}
 				}
+				params := r.URL.Query()
+				if vals := params["projectId"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.ProjectID = val
+				}
 				out, err := handler(ctx, &in)
 				if err != nil {
 					return out, err

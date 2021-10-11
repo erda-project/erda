@@ -50,7 +50,7 @@ service CheckerV1Service {
 
   rpc DescribeCheckersV1 (DescribeCheckersV1Request) returns (DescribeCheckersV1Response)  {
     option (google.api.http)     = {
-      get: "/api/msp/apm/checkers/dashboard",
+      get: "/api/msp/apm/checkers/dashboard?projectId={projectID}",
     };
     option (erda.common.openapi) = {
       path: "/api/msp/apm/checkers/dashboard"
@@ -126,7 +126,7 @@ message GetCheckerV1Response {
 
 // DescribeCheckersV1
 message DescribeCheckersV1Request {
-  int64  projectID = 1 [(validator.field) = {int_gt: 0}];
+  int64  projectID = 1 [(validator.field) = {int_gt: 0}, json_name = "projectId"];
   string env       = 2 [(validator.field) = {string_not_empty : true}];
 }
 
