@@ -120,6 +120,7 @@ zh:
  bootID: 启动 ID
  osImage: 系统镜像
  podInfo: Pod 信息
+ podsList: Pods 列表
  Completed: 完成
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
@@ -322,6 +323,7 @@ en:
  osImage: OS Image
  packjob: Pack Job
  podInfo: Pod Info
+ podsList: Pods List
  podInspect: Pod Inspect
  rebootTimes: Reboot Times
  systemUUID: System UUID
@@ -344,4 +346,4 @@ en:
  job-label: Job Label
  other-label: Other Label
  cpu-size: CPU Cores
- memory-size: Memeory Size
+ memory-size: Memory Size
