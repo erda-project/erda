@@ -42,7 +42,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	var disable = false
-	var disabledTip string
 
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
@@ -58,11 +57,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 
 		disable = true
-		disabledTip = "启动中"
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
 		err := svc.JudgeRunningRecordExist(projectId)
 		if err != nil {
-			disabledTip = err.Error()
 			disable = true
 		}
 	}
@@ -77,7 +74,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"click": map[string]interface{}{
 			"key":         "click",
 			"reload":      true,
-			"disabledTip": disabledTip,
+			"disabledTip": "进行或明明细生成中请等待",
 			"disabled":    disable,
 		},
 	}
