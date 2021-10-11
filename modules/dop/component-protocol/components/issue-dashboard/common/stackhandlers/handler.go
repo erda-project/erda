@@ -39,13 +39,19 @@ var emptyStack = Stack{
 	Color: "red",
 }
 
-func getFilterOptions(stacks []Stack) []filter.PropConditionOption {
-	var options []filter.PropConditionOption
-	for _, s := range stacks {
-		options = append(options, filter.PropConditionOption{
+func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOption {
+	l := len(stacks)
+	options := make([]filter.PropConditionOption, l)
+	for i := 0; i < l; i++ {
+		j := i
+		if len(reverse) > 0 && reverse[0] {
+			j = l - 1 - i
+		}
+		s := stacks[j]
+		options[i] = filter.PropConditionOption{
 			Label: s.Name,
 			Value: s.Value,
-		})
+		}
 	}
 	return options
 }

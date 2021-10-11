@@ -62,5 +62,5 @@ func (h *PriorityStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *PriorityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+	return getFilterOptions(h.GetStacks(), true)
 }

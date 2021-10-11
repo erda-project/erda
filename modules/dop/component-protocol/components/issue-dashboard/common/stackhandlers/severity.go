@@ -63,5 +63,5 @@ func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *SeverityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+	return getFilterOptions(h.GetStacks(), true)
 }
