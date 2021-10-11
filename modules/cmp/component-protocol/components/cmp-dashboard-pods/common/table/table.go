@@ -178,8 +178,8 @@ type RowItem struct {
 
 func (t *Table) GetUsageValue(metricsData metrics.MetricsData) *DistributionValue {
 	return &DistributionValue{
-		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Used, metricsData.Total),
-		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
+		Text:    fmt.Sprintf("%.1f/%.1f", metricsData.Used, metricsData.Left),
+		Percent: common.GetPercent(metricsData.Used, metricsData.Left),
 	}
 }
 
@@ -199,13 +199,6 @@ func getColor(percent float64) string {
 		return common.ColorMap["orange"]
 	}
 	return common.ColorMap["green"]
-}
-
-func (t *Table) GetDistributionRate(metricsData metrics.MetricsData) *DistributionValue {
-	return &DistributionValue{
-		Text:    fmt.Sprintf("%f/%f", metricsData.Used, metricsData.Request),
-		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
-	}
 }
 
 // SetComponentValue mapping CpuInfoTable properties to Component

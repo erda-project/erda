@@ -146,7 +146,7 @@ func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) stri
 		}
 		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
 	default:
-		return ""
+		return fmt.Sprintf("%d", int64(res))
 	}
 }
 
@@ -179,7 +179,7 @@ func GetNodeAllocatedRes(nodeName string, pods []data.Object) (cpu, mem, podNum 
 				*requestsMem, _ = resource.ParseQuantity(requests)
 			}
 			cpuQty.Add(*requestsCPU)
-			cpuQty.Add(*requestsMem)
+			memQty.Add(*requestsMem)
 		}
 	}
 	return cpuQty.MilliValue(), memQty.Value(), podNum

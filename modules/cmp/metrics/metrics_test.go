@@ -177,14 +177,14 @@ func TestMetric_Store(t *testing.T) {
 
 	res := map[string]*MetricsData{}
 	res["111cpu"] = &MetricsData{
-		Used:    1,
-		Request: 0,
-		Total:   0,
+		Used:       1,
+		Unallocate: 0,
+		Left:       0,
 	}
 	res["111memory"] = &MetricsData{
-		Used:    2,
-		Request: 0,
-		Total:   0,
+		Used:       2,
+		Unallocate: 0,
+		Left:       0,
 	}
 	metricsReq := &pb.QueryWithInfluxFormatRequest{}
 	queryReq := &pb.QueryWithInfluxFormatRequest{}
