@@ -16,6 +16,7 @@ package query
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -30,7 +31,7 @@ func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {
 	boolQuery = boolQuery.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lte(end))
 	if len(req.Query) > 0 {
 		//byts, _ := json.Marshal(req.Query)
-		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery("content:" + req.Query))
+		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery(req.Query).DefaultField("content").DefaultOperator("AND"))
 	}
 	return boolQuery
 }
@@ -61,8 +62,13 @@ func (c *ESClient) searchLogsV2(req *LogSearchRequest, timeout time.Duration) (*
 			continue
 		}
 		c.setModule(&log)
+		log.DocId = hit.Id
 		log.Timestamp = log.Timestamp / int64(time.Millisecond)
-		resp.Data = append(resp.Data, &log)
+		item := &LogItem{Source: &log, Highlight: map[string][]string(hit.Highlight)}
+		if item.Highlight != nil {
+			delete(item.Highlight, "tags.dice_org_id")
+		}
+		resp.Data = append(resp.Data, item)
 	}
 	return resp, nil
 }
@@ -114,4 +120,99 @@ func (c *ESClient) statisticLogsV2(req *LogStatisticRequest, timeout time.Durati
 	}
 	result.Results[0].Data[0].Count.Data = list
 	return result, nil
+}
+
+func (c *ESClient) aggregateFields(req *LogFieldsAggregationRequest, timeout time.Duration) (*LogFieldsAggregationResponse, error) {
+	boolQuery := c.getBoolQueryV2(&req.LogRequest)
+	searchSource := elastic.NewSearchSource().Query(boolQuery)
+	searchSource.Size(0)
+	for _, field := range req.AggFields {
+		searchSource.Aggregation(field,
+			elastic.NewTermsAggregation().
+				Field(field).
+				Size(req.TermsSize).
+				Missing("null"))
+	}
+	if req.Debug {
+		c.printSearchSource(searchSource)
+	}
+	resp, err := c.doRequest(&req.LogRequest, searchSource, timeout)
+	if err != nil {
+		return nil, err
+	}
+	result := &LogFieldsAggregationResponse{
+		Total:     resp.TotalHits(),
+		AggFields: map[string]*LogFieldBucket{},
+	}
+	if resp.Aggregations == nil {
+		return result, nil
+	}
+	for _, field := range req.AggFields {
+		termsAgg, ok := resp.Aggregations.Terms(field)
+		if !ok {
+			return result, nil
+		}
+		result.AggFields[field] = &LogFieldBucket{
+			Buckets: make([]*BucketAgg, len(termsAgg.Buckets)),
+		}
+		for i, bucket := range termsAgg.Buckets {
+			result.AggFields[field].Buckets[i] = &BucketAgg{
+				Key:   fmt.Sprint(bucket.Key),
+				Count: bucket.DocCount,
+			}
+		}
+	}
+	return result, nil
+}
+
+func (c *ESClient) downloadLogs(req *LogDownloadRequest, callback func(batchLogs []*logs.Log) error) error {
+	boolQuery := c.getBoolQueryV2(&req.LogRequest)
+	searchSource := c.getScrollSearchSource(req, boolQuery)
+	if len(req.Sort) <= 0 {
+		searchSource.Sort("timestamp", true).Sort("offset", true)
+	}
+	if req.Debug {
+		c.printSearchSource(searchSource)
+	}
+
+	scrollRequestTimeout := 60 * time.Second
+	scrollKeepTime := "1m"
+	resp, err := c.doScroll(&req.LogRequest, searchSource, scrollRequestTimeout, scrollKeepTime)
+	if err != nil {
+		return err
+	}
+
+	scrollId := resp.ScrollId
+	defer c.clearScroll(&scrollId, scrollRequestTimeout)
+
+	for resp.Hits != nil && len(resp.Hits.Hits) > 0 {
+		hits := make([]*logs.Log, len(resp.Hits.Hits))
+		for i, hit := range resp.Hits.Hits {
+			var log logs.Log
+			err = json.Unmarshal([]byte(*hit.Source), &log)
+			if err != nil {
+				log = logs.Log{Content: string(*hit.Source)}
+				continue
+			}
+			c.setModule(&log)
+			log.DocId = hit.Id
+			log.Timestamp = log.Timestamp / int64(time.Millisecond)
+			hits[i] = &log
+		}
+		err = callback(hits)
+		if err != nil {
+			return err
+		}
+
+		if len(resp.Hits.Hits) < req.Size {
+			return nil
+		}
+
+		resp, err = c.scrollNext(scrollId, scrollRequestTimeout, scrollKeepTime)
+		if err != nil {
+			return err
+		}
+		scrollId = resp.ScrollId
+	}
+	return nil
 }

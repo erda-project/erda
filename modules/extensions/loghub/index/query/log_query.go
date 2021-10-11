@@ -17,6 +17,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,14 @@ type Tag struct {
 	Value string `json:"value"`
 }
 
+// LogField .
+type LogField struct {
+	FieldName          string `json:"fieldName"`
+	SupportAggregation bool   `json:"supportAggregation"`
+	Display            bool   `json:"display"`
+	Group              int    `json:"group"`
+}
+
 // LogRequest .
 type LogRequest struct {
 	OrgID       int64
@@ -47,11 +56,20 @@ type LogRequest struct {
 	Lang        i18n.LanguageCodes
 }
 
+type LogDownloadRequest struct {
+	LogRequest
+	Sort      []string
+	Size      int
+	MaxReturn int64
+}
+
 // LogSearchRequest .
 type LogSearchRequest struct {
 	LogRequest
-	Size int64
-	Sort string
+	Page      int64
+	Size      int64
+	Sort      []string
+	Highlight bool
 }
 
 // LogStatisticRequest .
@@ -61,11 +79,36 @@ type LogStatisticRequest struct {
 	Points   int64
 }
 
+type LogFieldsAggregationRequest struct {
+	LogRequest
+	AggFields []string
+	TermsSize int
+}
+
+type LogFieldsAggregationResponse struct {
+	Total     int64                      `json:"total"`
+	AggFields map[string]*LogFieldBucket `json:"aggFields"`
+}
+
+type LogFieldBucket struct {
+	Buckets []*BucketAgg `json:"buckets"`
+}
+
+type BucketAgg struct {
+	Count int64  `json:"count"`
+	Key   string `json:"key"`
+}
+
+type LogItem struct {
+	Source    *logs.Log           `json:"source"`
+	Highlight map[string][]string `json:"highlight"`
+}
+
 // LogQueryResponse .
 type LogQueryResponse struct {
 	Expends map[string]interface{} `json:"expends"`
 	Total   int64                  `json:"total"`
-	Data    []*logs.Log            `json:"data"`
+	Data    []*LogItem             `json:"data"`
 }
 
 // LogStatisticResponse .
@@ -153,25 +196,50 @@ func (c *ESClient) getTagsBoolQuery(req *LogRequest) *elastic.BoolQuery {
 func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.BoolQuery) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource().Query(boolQuery)
 	if len(req.Sort) > 0 {
-		sorts := strings.Split(req.Sort, ",")
-		for _, sort := range sorts {
-			ascending := true
-			parts := strings.SplitN(sort, " ", 2)
-			if len(parts) > 1 && "desc" == strings.ToLower(strings.TrimSpace(parts[1])) {
-				ascending = false
-			}
-			key := strings.TrimSpace(parts[0])
-			if c.LogVersion == LogVersion1 && key == "timestamp" {
-				key = "@timestamp"
-			}
-			searchSource.Sort(key, ascending)
-		}
+		c.getSort(searchSource, req.Sort)
 	}
-	searchSource.Size(int(req.Size))
+	if req.Highlight {
+		searchSource.Highlight(elastic.NewHighlight().
+			PreTags("").
+			PostTags("").
+			FragmentSize(1).
+			RequireFieldMatch(true).
+			BoundaryScannerType("word").
+			Field("*"))
+	}
+	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(req.Size))
 	return searchSource
 }
 
-func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+func (c *ESClient) getScrollSearchSource(req *LogDownloadRequest, boolQuery *elastic.BoolQuery) *elastic.SearchSource {
+	searchSource := elastic.NewSearchSource().Query(boolQuery)
+	if len(req.Sort) > 0 {
+		c.getSort(searchSource, req.Sort)
+	}
+	searchSource.Size(req.Size)
+	return searchSource
+}
+
+func (c *ESClient) getSort(searchSource *elastic.SearchSource, sorts []string) *elastic.SearchSource {
+	for _, sort := range sorts {
+		if len(sort) == 0 {
+			continue
+		}
+		ascending := true
+		parts := strings.SplitN(sort, " ", 2)
+		if len(parts) > 1 && "desc" == strings.ToLower(strings.TrimSpace(parts[1])) {
+			ascending = false
+		}
+		key := strings.TrimSpace(parts[0])
+		if c.LogVersion == LogVersion1 && key == "timestamp" {
+			key = "@timestamp"
+		}
+		searchSource.Sort(key, ascending)
+	}
+	return searchSource
+}
+
+func (c *ESClient) filterIndices(req *LogRequest) []string {
 	var indices []string
 	if len(req.Addon) > 0 {
 		start := req.Start * int64(time.Millisecond)
@@ -186,6 +254,11 @@ func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource
 			fmt.Println(start, end, indices)
 		}
 	}
+	return indices
+}
+
+func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration) (*elastic.SearchResult, error) {
+	indices := c.filterIndices(req)
 	if len(indices) <= 0 {
 		indices = c.Indices
 	}
@@ -201,7 +274,63 @@ func (c *ESClient) doRequest(req *LogRequest, searchSource *elastic.SearchSource
 		}
 		return nil, fmt.Errorf("fail to request es: %s", err)
 	}
+
 	return resp, nil
+}
+
+func (c *ESClient) doScroll(req *LogRequest, searchSource *elastic.SearchSource, timeout time.Duration, scrollKeepTime string) (*elastic.SearchResult, error) {
+	indices := c.filterIndices(req)
+	if len(indices) <= 0 {
+		indices = c.Indices
+	}
+	context, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.Client.Scroll(indices...).
+		IgnoreUnavailable(true).
+		AllowNoIndices(true).
+		SearchSource(searchSource).
+		Scroll(scrollKeepTime).Do(context)
+	if err != nil || (resp != nil && resp.Error != nil) {
+		if resp != nil && resp.Error != nil {
+			return nil, fmt.Errorf("fail to request es: %s", jsonx.MarshalAndIndent(resp.Error))
+		}
+		return nil, fmt.Errorf("fail to request es: %s", err)
+	}
+
+	return resp, nil
+}
+
+func (c *ESClient) scrollNext(scrollId string, timeout time.Duration, scrollKeepTime string) (*elastic.SearchResult, error) {
+	context, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.Client.Scroll().
+		IgnoreUnavailable(true).
+		AllowNoIndices(true).
+		ScrollId(scrollId).
+		Scroll(scrollKeepTime).Do(context)
+	if err != nil || (resp != nil && resp.Error != nil) {
+		if resp != nil && resp.Error != nil {
+			return nil, fmt.Errorf("fail to request es: %s", jsonx.MarshalAndIndent(resp.Error))
+		}
+		return nil, fmt.Errorf("fail to request es: %s", err)
+	}
+
+	return resp, nil
+}
+
+func (c *ESClient) clearScroll(scrollId *string, timeout time.Duration) error {
+	context, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.Client.ClearScroll(*scrollId).Do(context)
+	if resp != nil && !resp.Succeeded {
+		return fmt.Errorf("fail to clear scrollId: %s", *scrollId)
+	}
+
+	if err != nil {
+		return fmt.Errorf("fail to clear scrollId: %s, err: %s", *scrollId, err)
+	}
+
+	return nil
 }
 
 func (c *ESClient) doSearchLogs(req *LogSearchRequest, searchSource *elastic.SearchSource, timeout time.Duration) (int64, []*elastic.SearchHit, error) {
@@ -235,6 +364,34 @@ func (c *ESClient) setModule(log *logs.Log) {
 	}
 }
 
+func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*logs.Log) error) error {
+	clients := p.getESClients(req.OrgID, &req.LogRequest)
+	var count int64
+	var shouldStopIterate bool
+	for _, client := range clients {
+		err := client.downloadLogs(req, func(batchLogs []*logs.Log) error {
+			result := callback(batchLogs)
+			if result != nil {
+				shouldStopIterate = true
+				return result
+			}
+			count += int64(len(batchLogs))
+			if req.MaxReturn > 0 && count > req.MaxReturn {
+				shouldStopIterate = true
+				return fmt.Errorf("exceed max return count")
+			}
+			return nil
+		})
+		if shouldStopIterate {
+			break
+		}
+		if err != nil {
+			continue
+		}
+	}
+	return nil
+}
+
 // SearchLogs .
 func (p *provider) SearchLogs(req *LogSearchRequest) (interface{}, error) {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
@@ -246,7 +403,10 @@ func (p *provider) SearchLogs(req *LogSearchRequest) (interface{}, error) {
 		}
 		results = append(results, result)
 	}
-	return mergeLogSearch(int(req.Size), results), nil
+	// multiple result set appear only at org-level search scenario
+	// as we are going to remove the entry from cloud management page
+	// it's okay to ignore the page size limitation
+	return mergeLogSearch(0, results), nil
 }
 
 func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
@@ -260,8 +420,8 @@ func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
 		resp.Total += result.Total
 	}
 	var count int
-	for count < limit {
-		var min *logs.Log
+	for limit == 0 || count < limit {
+		var min *LogItem
 		var idx int
 		for i, result := range results {
 			if len(result.Data) <= 0 {
@@ -273,7 +433,7 @@ func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
 				idx = i
 				continue
 			}
-			if first.Timestamp < min.Timestamp || (first.Timestamp == min.Timestamp && first.Offset < min.Offset) {
+			if first.Source.Timestamp < min.Source.Timestamp || (first.Source.Timestamp == min.Source.Timestamp && first.Source.Offset < min.Source.Offset) {
 				min = first
 				idx = i
 				continue
@@ -324,4 +484,107 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 	}
 	first.Results[0].Data[0].Count.Data = list
 	return first
+}
+
+func (p *provider) AggregateLogFields(req *LogFieldsAggregationRequest) (interface{}, error) {
+	clients := p.getESClients(req.OrgID, &req.LogRequest)
+	if len(clients) == 0 {
+		return nil, fmt.Errorf("failed do aggregations: no backend server")
+	}
+	var results []*LogFieldsAggregationResponse
+	allErrors := map[string]string{}
+	var lastError string
+	for _, client := range clients {
+		result, err := client.aggregateFields(req, p.C.Timeout)
+		if err != nil {
+			allErrors[client.URLs] = err.Error()
+			lastError = err.Error()
+			continue
+		}
+		results = append(results, result)
+	}
+
+	if len(allErrors) == len(clients) {
+		p.L.Errorf("failed to do aggregations, error: %+v", allErrors)
+		return nil, fmt.Errorf("failed to do aggregations: %s", lastError)
+	}
+
+	return mergeFieldsAggregationResults(req.TermsSize, results), nil
+}
+
+func mergeFieldsAggregationResults(termsSize int, results []*LogFieldsAggregationResponse) *LogFieldsAggregationResponse {
+	if len(results) == 0 {
+		return nil
+	}
+	if len(results) == 1 {
+		return results[0]
+	}
+	first := results[0]
+	for _, result := range results[1:] {
+		first.Total += result.Total
+		for key, currAgg := range result.AggFields {
+			if firstAgg, ok := first.AggFields[key]; ok {
+				firstAgg.Buckets = concatBucketSlices(termsSize, firstAgg.Buckets, currAgg.Buckets)
+			} else {
+				first.AggFields[key] = currAgg
+			}
+		}
+	}
+	return first
+}
+
+func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
+	if len(slices) == 0 {
+		return nil
+	}
+	if len(slices) == 1 {
+		return slices[0]
+	}
+
+	m := map[string]int64{}
+	for _, slice := range slices {
+		for _, bucket := range slice {
+			m[bucket.Key] += bucket.Count
+		}
+	}
+
+	list := make([]*BucketAgg, 0, len(m))
+	for key, count := range m {
+		list = append(list, &BucketAgg{Key: key, Count: count})
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Count > list[j].Count
+	})
+
+	if limit <= 0 || len(list) <= limit {
+		return list
+	}
+	return list[:limit-1]
+}
+
+func (p *provider) ListDefaultFields() []*LogField {
+	return []*LogField{
+		{FieldName: "source", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "id", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "stream", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "content", SupportAggregation: false, Display: true, Group: 0},
+		{FieldName: "uniId", SupportAggregation: false, Display: false, Group: 0},
+		{FieldName: "tags.origin", SupportAggregation: false, Display: false, Group: 1},
+		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false, Group: 1},
+		{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false, Group: 1},
+		{FieldName: "tags.dice_cluster_name", SupportAggregation: true, Display: false, Group: 1},
+		{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false, Group: 2},
+		{FieldName: "tags.dice_project_name", SupportAggregation: true, Display: false, Group: 2},
+		{FieldName: "tags.dice_workspace", SupportAggregation: true, Display: false, Group: 2},
+		{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false, Group: 3},
+		{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true, Group: 3},
+		{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false, Group: 3},
+		{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false, Group: 3},
+		{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true, Group: 4},
+		{FieldName: "tags.pod_namespace", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.pod_name", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.container_name", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.request-id", SupportAggregation: false, Display: true, Group: 6},
+	}
 }
