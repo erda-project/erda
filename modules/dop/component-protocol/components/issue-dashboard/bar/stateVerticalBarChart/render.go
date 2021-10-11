@@ -60,7 +60,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 
-	handler := stackhandlers.NewStateStackHandler(nil)
+	handler := stackhandlers.NewStackRetriever(
+		stackhandlers.WithIssueStageList(nil),
+	).GetRetriever(f.State.Values.Type)
 	bar := charts.NewBar()
 
 	// x is always stable
