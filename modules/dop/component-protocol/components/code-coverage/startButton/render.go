@@ -42,6 +42,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	var disable = false
+	var disableTip = "进行或明细生成中请等待"
 
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
@@ -62,6 +63,23 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if err != nil {
 			disable = true
 		}
+
+		orgIDInt, err := strconv.ParseInt(sdk.Identity.OrgID, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		judgeApplication, err, message := svc.JudgeApplication(projectId, uint64(orgIDInt), sdk.Identity.UserID)
+		if err != nil {
+			return err
+		}
+		disable = !judgeApplication
+		if disable && message != "" {
+			disableTip = message
+		}
+
+		c.State["judgeApplication"] = judgeApplication
+		c.State["judgeApplicationMessage"] = message
 	}
 
 	c.Type = "Button"
@@ -74,7 +92,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"click": map[string]interface{}{
 			"key":         "click",
 			"reload":      true,
-			"disabledTip": "进行或明细生成中请等待",
+			"disabledTip": disableTip,
 			"disabled":    disable,
 		},
 	}

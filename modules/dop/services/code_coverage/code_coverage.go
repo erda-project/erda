@@ -19,6 +19,7 @@ import (
 	"io"
 	"io/ioutil"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -28,11 +29,14 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/environment"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
 type CodeCoverage struct {
 	db  CodeCoverageDBer
 	bdl CodeCoverageBDLer
+	envConfig *environment.EnvConfig
 }
 
 type Option func(*CodeCoverage)
@@ -54,6 +58,12 @@ func WithDBClient(db CodeCoverageDBer) Option {
 func WithBundle(bdl CodeCoverageBDLer) Option {
 	return func(c *CodeCoverage) {
 		c.bdl = bdl
+	}
+}
+
+func WithEnvConfig(envConfig *environment.EnvConfig) Option {
+	return func(e *CodeCoverage) {
+		e.envConfig = envConfig
 	}
 }
 
@@ -322,8 +332,76 @@ func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
 	return false, nil
 }
 
-func GetJacocoAddr(projectID uint64) string {
+func getJacocoAddr(projectID uint64) string {
 	return conf.JacocoAddr()[strconv.FormatUint(projectID, 10)]
+}
+
+func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID string) (bool, error, string) {
+	apps, err := svc.bdl.GetAppsByProject(projectID, orgID, userID)
+	if err != nil {
+		return false, err, ""
+	}
+
+	var findJacocoAgentEnv = false
+	var findJacocoEnv = false
+	var lock sync.Mutex
+
+	var wait = limit_sync_group.NewSemaphore(5)
+	for index := range apps.List {
+		wait.Add(1)
+		go func(index int) {
+			defer wait.Done()
+
+			lock.Lock()
+			if findJacocoAgentEnv && findJacocoEnv {
+				return
+			}
+			lock.Unlock()
+
+			app := apps.List[index]
+			var namespaceParams []apistructs.NamespaceParam
+			for _, env := range apistructs.EnvList {
+				namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
+					NamespaceName: fmt.Sprintf("app-%v-%v", app.ID, env),
+				})
+			}
+
+			configs, err := svc.envConfig.GetMultiNamespaceConfigs(nil, userID, namespaceParams)
+			if err != nil {
+				return
+			}
+
+			for _, envs := range configs {
+				var findTwoEnv = 0
+				for _, env := range envs {
+					if env.Key == "OPEN_JACOCO_AGENT" && env.Value == "true" {
+						lock.Lock()
+						findJacocoAgentEnv = true
+						lock.Unlock()
+					}
+					if env.Key == "ERDA_URL" || env.Key == "ERDA_TOKEN" {
+						findTwoEnv++
+					}
+				}
+				if findTwoEnv >= 2 {
+					lock.Lock()
+					findJacocoEnv = true
+					lock.Unlock()
+				}
+			}
+		}(index)
+	}
+	wait.Wait()
+
+	if !findJacocoEnv {
+		return false, nil, "not find jacoco application in project, please add jacoco application and set ERDA_URL,ERDA_TOKEN env"
+	}
+
+	if !findJacocoAgentEnv {
+		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env"
+	}
+
+	return true, nil, ""
 }
 
 type CodeCoverageDBer interface {

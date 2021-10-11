@@ -112,7 +112,17 @@ rendering:
   __DefaultRendering__:
     - name: startButton
     - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ startButton.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ startButton.judgeApplicationMessage }}"
     - name: cancelButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ startButton.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ startButton.judgeApplicationMessage }}"
     - name: timeSelector
     - name: codeCoverChart
       state:
