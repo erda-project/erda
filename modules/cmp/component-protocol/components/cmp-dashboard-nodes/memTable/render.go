@@ -151,8 +151,13 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 
 		key := req.NodeRequests[i].CacheKey()
 		distribution = mt.GetDistributionValue(float64(memRequest), float64(requestQty.Value()), table.Memory)
-		usage = mt.GetUsageValue(resp[key].Used, float64(requestQty.Value()), table.Memory)
-		dr = mt.GetUnusedRate(float64(memRequest)-resp[key].Used, float64(memRequest), table.Memory)
+		metricsData, ok := resp[key]
+		used := 0.0
+		if ok {
+			used = metricsData.Used
+		}
+		usage = mt.GetUsageValue(used, float64(requestQty.Value()), table.Memory)
+		dr = mt.GetUnusedRate(float64(memRequest)-used*1000, float64(memRequest), table.Memory)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {
