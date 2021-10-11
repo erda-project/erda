@@ -139,7 +139,7 @@ func (m *MetricsNodeRequest) IP() string {
 
 type MetricsData struct {
 	// if qurey pod resource, used means usedPercent. request and total are useless.
-	Used    float64 `json:"used"`
-	Request float64 `json:"request"`
-	Total   float64 `json:"total"`
+	Used       float64 `json:"used"`
+	Unallocate float64 `json:"unallocate"`
+	Left       float64 `json:"left"`
 }

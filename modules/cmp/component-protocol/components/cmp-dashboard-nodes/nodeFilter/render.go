@@ -49,7 +49,9 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	nf.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	nf.SDK = sdk
 	nf.Operations = getFilterOperation()
-	var nodes []data.Object
+	var (
+		nodeList, nodes []data.Object
+	)
 	// Get all nodes by cluster name
 	nodeReq := &apistructs.SteveRequest{}
 	nodeReq.OrgID = sdk.Identity.OrgID
@@ -65,7 +67,7 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	if err != nil {
 		return err
 	}
-	var nodeList []data.Object
+
 	for _, item := range resp {
 		nodeList = append(nodeList, item.Data())
 	}
