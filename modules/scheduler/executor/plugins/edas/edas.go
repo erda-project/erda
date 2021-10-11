@@ -2054,15 +2054,15 @@ func (e *EDAS) isScaleServices(newRuntime, oldRuntime *apistructs.ServiceGroup) 
 				newSvcCpu = newSvc.Resources.Cpu * 1000
 			}
 			if oldSvc.Scale != newSvc.Scale {
-				logrus.Errorf("[edas] isScaleServices old scale is %+v, new scale is %+v", oldSvc.Scale, newSvc.Scale)
+				logrus.Infof("[edas] isScaleServices old scale is %+v, new scale is %+v", oldSvc.Scale, newSvc.Scale)
 				return true
 			}
 			if oldResourceMem != newSvc.Resources.Mem {
-				logrus.Errorf("[edas] isScaleServices old mem is %+v, new mem is %+v", oldResourceMem, newSvc.Resources.Mem)
+				logrus.Infof("[edas] isScaleServices old mem is %+v, new mem is %+v", oldResourceMem, newSvc.Resources.Mem)
 				return true
 			}
 			if oldSvc.Resources.Cpu != newSvcCpu {
-				logrus.Errorf("[edas] isScaleServices old cpu is %+v, new cou is %+v", oldSvc.Resources.Cpu, newSvcCpu)
+				logrus.Infof("[edas] isScaleServices old cpu is %+v, new cou is %+v", oldSvc.Resources.Cpu, newSvcCpu)
 				return true
 			}
 		}
@@ -2086,10 +2086,10 @@ func (e *EDAS) isServiceToScale(newRuntime *apistructs.Service, oldRuntime *apis
 	} else {
 		newSvcCpu = newRuntime.Resources.Cpu * 1000
 	}
-	logrus.Errorf("[edas] new runtime cpu: %+v", newRuntime.Resources.Cpu)
+	logrus.Infof("[edas] new runtime cpu: %+v", newRuntime.Resources.Cpu)
 	for _, oldSvc := range oldRuntime.Services {
 		oldResourceMem := oldSvc.Resources.Mem / 1024 / 1024
-		logrus.Errorf("[edas] old runtime cpu: %+v", oldSvc.Resources.Cpu)
+		logrus.Infof("[edas] old runtime cpu: %+v", oldSvc.Resources.Cpu)
 		if newRuntime.Name == oldSvc.Name && oldSvc.Resources.Cpu == newSvcCpu && oldResourceMem == newRuntime.Resources.Mem && oldSvc.Scale != newRuntime.Scale && oldSvc.Scale != 0 {
 			return true
 		}
@@ -2103,7 +2103,7 @@ func (e *EDAS) isNotChangeService(newRuntime *apistructs.Service, oldRuntime *ap
 		return false
 	}
 	var newSvcCpu float64
-	logrus.Errorf("[edas] isNotChangeService origin new cpu: %v", newRuntime.Resources.Cpu)
+	logrus.Infof("[edas] isNotChangeService origin new cpu: %v", newRuntime.Resources.Cpu)
 	if e.unlimitCPU == "true" {
 		if newRuntime.Resources.Cpu < 1 {
 			newSvcCpu = 0
@@ -2113,10 +2113,10 @@ func (e *EDAS) isNotChangeService(newRuntime *apistructs.Service, oldRuntime *ap
 	} else {
 		newSvcCpu = newRuntime.Resources.Cpu * 1000
 	}
-	logrus.Errorf("[edas] isNotChangeService new cpu: %v, new mem: %v, new scale: %v", newSvcCpu, newRuntime.Resources.Mem, newRuntime.Scale)
+	logrus.Infof("[edas] isNotChangeService new cpu: %v, new mem: %v, new scale: %v", newSvcCpu, newRuntime.Resources.Mem, newRuntime.Scale)
 	for _, oldSvc := range oldRuntime.Services {
 		oldResourceMem := oldSvc.Resources.Mem / 1024 / 1024
-		logrus.Errorf("[edas] isNotChangeService old cpu: %v, old mem: %v, old scale: %v", oldSvc.Resources.Cpu, oldResourceMem, oldSvc.Scale)
+		logrus.Infof("[edas] isNotChangeService old cpu: %v, old mem: %v, old scale: %v", oldSvc.Resources.Cpu, oldResourceMem, oldSvc.Scale)
 		if newRuntime.Name == oldSvc.Name && oldSvc.Resources.Cpu == newSvcCpu && oldResourceMem == newRuntime.Resources.Mem && oldSvc.Scale == newRuntime.Scale && oldSvc.Image == newRuntime.Image {
 			return true
 		}
@@ -2220,11 +2220,20 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 		return nil, fmt.Errorf(errMsg)
 	}
 
+	if e.unlimitCPU == "true" {
+		if destService.Resources.Cpu < 1 {
+			destService.Resources.Cpu = 0
+		} else {
+			destService.Resources.Cpu = math.Floor(destService.Resources.Cpu+0.5) * 1000
+		}
+	}
+
 	logrus.Infof("[EDAS] start to get k8s deployment %s", strutil.Concat(sg.Type, "-", sg.ID))
 	if _, err = e.getK8sDeployList(sg.Type, sg.ID, &services); err != nil {
 		logrus.Debugf("[EDAS] Get deploy from k8s error: %+v", err)
 		return nil, err
 	}
+
 	for _, service := range services {
 		if service.Name == destService.Name {
 			service.Resources.Cpu = service.Resources.Cpu / 1000
@@ -2233,15 +2242,24 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 			break
 		}
 	}
+
 	var errString = make(chan string, 0)
 	go func() {
 		if originService != nil {
 			// Query the latest release order, and terminate if it is running
 			orderList, _ := e.listRecentChangeOrderInfo(appID)
 			if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
-				e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
+				err = e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
+				if err != nil {
+					errMsg := fmt.Sprintf("scale k8s application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
 			}
 
+			logrus.Infof("[EDAS] diff cpu %v, origin is %v, dest is %v", originService.Resources.Cpu == destService.Resources.Cpu, originService.Resources.Cpu, destService.Resources.Cpu)
+			logrus.Infof("[EDAS] diff memory %v, origin is %v, dest is %v", originService.Resources.Mem == destService.Resources.Mem, originService.Resources.Mem, destService.Resources.Mem)
+			logrus.Infof("[EDAS] diff scale %v, origin is %v, dest is %v", originService.Scale == destService.Scale, originService.Scale, destService.Scale)
 			if originService.Resources.Cpu == destService.Resources.Cpu &&
 				originService.Resources.Mem == destService.Resources.Mem &&
 				originService.Scale != destService.Scale {
@@ -2259,28 +2277,12 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 					errString <- errMsg
 				}
 			} else {
-				request := e.composeGetApplicationRequest(appID)
-				resp, err := e.client.GetK8sApplication(request)
-				if err != nil {
-					errMsg := fmt.Sprintf("get k8s application err: %v", err)
-					logrus.Errorf(errMsg)
-					errString <- errMsg
-				}
-				if resp.Code != 200 {
-					errMsg := fmt.Sprintf("get k8s application resp err: %v", resp.Message)
-					logrus.Errorf(errMsg)
-					errString <- errMsg
-				}
-				spec, err := e.composeServiceSpecFromApplication(resp.Applcation)
+				spec, err := e.fillServiceSpec(&destService, &sg, false)
 				if err != nil {
 					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
 					logrus.Errorf(errMsg)
 					errString <- errMsg
 				}
-				spec.CPU = int(destService.Resources.Cpu)
-				spec.Mem = int(destService.Resources.Mem)
-				spec.Mcpu = int(destService.Resources.Cpu * 1000)
-				spec.Instances = destService.Scale
 				err = e.deployApp(appID, spec)
 				if err != nil {
 					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
