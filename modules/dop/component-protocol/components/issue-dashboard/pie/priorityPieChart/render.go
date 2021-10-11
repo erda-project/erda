@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -46,9 +47,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	helper := gshelper.NewGSHelper(gs)
+
 	handler := stackhandlers.NewPriorityStackHandler()
 
-	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
+	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
 
 	pie := charts.NewPie()
 	pie.Colors = colors

@@ -41,6 +41,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/stagePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/statePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reopen"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reset"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/today"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/total"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/trendChart"

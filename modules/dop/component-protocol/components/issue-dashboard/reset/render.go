@@ -12,26 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package severityPieChart
+package reset
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/services/issuestate"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
-	sdk           *cptype.SDK
-	bdl           *bundle.Bundle
-	issueStateSvc *issuestate.IssueState
-	State         State `json:"state,omitempty"`
-	// InParams      InParams `json:"-"`
 	base.DefaultProvider
 }
 
-type State struct {
-	Values               common.FrontendConditions `json:"values,omitempty"`
-	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
+func init() {
+	base.InitProviderWithCreator("issue-dashboard", "reset",
+		func() servicehub.Provider { return &ComponentAction{} })
+}
+
+func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	helper := gshelper.NewGSHelper(gs)
+	helper.SetIterations(nil)
+	helper.SetMembers(nil)
+	helper.SetIssueList(nil)
+	helper.SetIssueStateList(nil)
+	helper.SetIssueStageList(nil)
+	return nil
 }

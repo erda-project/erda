@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -34,8 +35,7 @@ type ComponentAction struct {
 }
 
 type State struct {
-	IssueList []dao.IssueItem `json:"issueList,omitempty"`
-	Stats     common.Stats    `json:"stats,omitempty"`
+	Stats common.Stats `json:"stats,omitempty"`
 }
 
 func init() {
@@ -74,12 +74,14 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	f.DataRetriever()
+	f.DataRetriever(gs)
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *ComponentAction) DataRetriever() {
-	total := len(f.State.IssueList)
+func (f *ComponentAction) DataRetriever(gs *cptype.GlobalStateData) {
+	helper := gshelper.NewGSHelper(gs)
+	issueList := helper.GetIssueList()
+	total := len(issueList)
 	f.OverviewProps = common.OverviewProps{
 		RenderType: "linkText",
 		Value: common.OverviewValue{
@@ -104,7 +106,7 @@ func (f *ComponentAction) DataRetriever() {
 	}
 
 	var open, expire, today, week, month, undefined, reopen int
-	for _, i := range f.State.IssueList {
+	for _, i := range issueList {
 		if i.Belong != string(apistructs.IssueStateBelongClosed) {
 			open += 1
 		}

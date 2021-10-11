@@ -64,7 +64,7 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 	return data, colors
 }
 
-func GroupToVerticalBarData(itemList []interface{}, wl []string, stackHandler stackhandlers.StackHandler, xAxis []string,
+func GroupToBarData(itemList []interface{}, wl []string, stackHandler stackhandlers.StackHandler, xAxis []string,
 	xIdx func(issue interface{}) string,
 	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string, []string) {
 	counter := make(map[string]map[string]int)
@@ -156,16 +156,6 @@ func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.Is
 	for i, issue := range issues {
 		if match(i) {
 			res = append(res, issue)
-		}
-	}
-	return res
-}
-
-func IssueListFilter(issues []dao.IssueItem, match func(i int) bool) []interface{} {
-	res := make([]interface{}, 0)
-	for i := range issues {
-		if match(i) {
-			res = append(res, &issues[i])
 		}
 	}
 	return res

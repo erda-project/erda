@@ -93,7 +93,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"click": map[string]interface{}{
 			"key":         "click",
 			"reload":      true,
-			"disabledTip": "进行或明明细生成中请等待",
+			"disabledTip": "进行或明细生成中请等待",
 			"disabled":    disable,
 		},
 	}

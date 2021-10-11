@@ -16,9 +16,7 @@ package stagePieChart
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -33,6 +31,4 @@ type ComponentAction struct {
 }
 
 type State struct {
-	IssueList []dao.IssueItem         `json:"issueList,omitempty"`
-	Stages    []apistructs.IssueStage `json:"stages,omitempty"`
 }

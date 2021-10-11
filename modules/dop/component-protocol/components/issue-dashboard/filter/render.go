@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -173,10 +174,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	// TODO select multiple iteration
-	f.State.Iterations = []apistructs.Iteration{iterations[f.State.Values.IterationIDs]}
+	f.Iterations = []apistructs.Iteration{iterations[f.State.Values.IterationIDs]}
 
 	// todo modify data format
-	f.State.IssueList = data
+	f.IssueList = data
 
 	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, apistructs.IssueTypeBug)
 	if err != nil {
@@ -197,6 +198,13 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 	f.State.Stages = stages
+
+	helper := gshelper.NewGSHelper(gs)
+	helper.SetIterations(f.Iterations)
+	helper.SetMembers(f.Members)
+	helper.SetIssueList(f.IssueList)
+	helper.SetIssueStateList(f.State.IssueStateList)
+	helper.SetIssueStageList(f.State.Stages)
 
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {
@@ -275,7 +283,7 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOptio
 	if err != nil {
 		return nil, err
 	}
-	f.State.Members = members
+	f.Members = members
 	var results []filter.PropConditionOption
 	for _, member := range members {
 		results = append(results, filter.PropConditionOption{

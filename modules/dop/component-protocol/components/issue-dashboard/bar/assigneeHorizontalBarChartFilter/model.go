@@ -35,7 +35,7 @@ type State struct {
 	Values             common.FilterConditions `json:"values,omitempty"`
 	FrontendChangedKey string                  `json:"changedKey,omitempty"`
 	IssueStateList     []dao.IssueState        `json:"issueStateList,omitempty"`
-	Stages             []apistructs.IssueStage `json:"stages,omitempty"`
+	IssueStageList     []apistructs.IssueStage `json:"issueStageList,omitempty"`
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"

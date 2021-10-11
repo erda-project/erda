@@ -105,3 +105,5 @@ component-protocol.components.issue-dashboard.labelHorizontalBarChartFilter:
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChartExtra:
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChartFilter:
+
+component-protocol.components.issue-dashboard.reset:
