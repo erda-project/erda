@@ -37,9 +37,9 @@ var complexityColorMap = map[apistructs.IssueComplexity]string{
 func (h *ComplexityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
 	for _, i := range []apistructs.IssueComplexity{
-		apistructs.IssueComplexityHard,
-		apistructs.IssueComplexityNormal,
 		apistructs.IssueComplexityEasy,
+		apistructs.IssueComplexityNormal,
+		apistructs.IssueComplexityHard,
 	} {
 		stacks = append(stacks, Stack{
 			Name:  i.GetZhName(),

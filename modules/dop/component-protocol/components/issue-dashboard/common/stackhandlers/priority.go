@@ -37,11 +37,12 @@ var priorityColorMap = map[apistructs.IssuePriority]string{
 
 func (h *PriorityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
-	for _, i := range apistructs.IssuePriorityList {
+	for i := len(apistructs.IssuePriorityList) - 1; i >= 0; i-- {
+		priority := apistructs.IssuePriorityList[i]
 		stacks = append(stacks, Stack{
-			Name:  i.GetZhName(),
-			Value: string(i),
-			Color: priorityColorMap[i],
+			Name:  priority.GetZhName(),
+			Value: string(priority),
+			Color: priorityColorMap[priority],
 		})
 	}
 	return stacks

@@ -38,11 +38,12 @@ var severityColorMap = map[apistructs.IssueSeverity]string{
 
 func (h *SeverityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
-	for _, i := range apistructs.IssueSeveritys {
+	for i := len(apistructs.IssueSeveritys) - 1; i >= 0; i-- {
+		severity := apistructs.IssueSeveritys[i]
 		stacks = append(stacks, Stack{
-			Name:  i.GetZhName(),
-			Value: string(i),
-			Color: severityColorMap[i],
+			Name:  severity.GetZhName(),
+			Value: string(severity),
+			Color: severityColorMap[severity],
 		})
 	}
 	return stacks
