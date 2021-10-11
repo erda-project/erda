@@ -125,3 +125,9 @@ type Sysconf struct {
 	Envs         map[string]string `json:"envs,omitempty"`
 	OrgID        int               `json:"orgID,omitempty"`
 }
+
+func (sc *Sysconf) RemoveSensitiveInfo() {
+	sc.SSH = SSH{}
+	sc.Platform = Platform{}
+	sc.MainPlatform = nil
+}
