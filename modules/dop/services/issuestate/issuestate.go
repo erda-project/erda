@@ -25,8 +25,8 @@ import (
 
 // IssueState issue state service 对象
 type IssueState struct {
-	db  *dao.DBClient
 	bdl *bundle.Bundle
+	db  IssueStater
 }
 
 // Option 定义 IssueState 对象配置选项
@@ -42,7 +42,7 @@ func New(options ...Option) *IssueState {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao.DBClient) Option {
+func WithDBClient(db IssueStater) Option {
 	return func(is *IssueState) {
 		is.db = db
 	}
@@ -290,9 +290,9 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 		} else if i < 23 {
 			states[i].IssueType = apistructs.IssueTypeTicket
 		}
-		if err := is.db.CreateIssuesState(&states[i]); err != nil {
-			return err
-		}
+		//if err := is.db.CreateIssuesState(&states[i]); err != nil {
+		//	return err
+		//}
 	}
 	// state relation
 	for i := 0; i < 46; i++ {
@@ -314,4 +314,18 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 		}
 	}
 	return is.db.UpdateIssueStateRelations(projectID, apistructs.IssueTypeTask, relations)
+}
+
+type IssueStater interface {
+	UpdateIssueStateRelations(projectID int64, issueType apistructs.IssueType, StateRelations []dao.IssueStateRelation) error
+	CreateIssuesState(state *dao.IssueState) error
+	GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error)
+	GetIssueStateByIDs(ID []int64) ([]dao.IssueState, error)
+	GetIssueStateByID(ID int64) (*dao.IssueState, error)
+	GetIssuesStates(req *apistructs.IssueStatesGetRequest) ([]dao.IssueState, error)
+	GetIssueByState(state int64) (*dao.Issue, error)
+	DeleteIssuesStateRelationByStartID(id int64) error
+	DeleteIssuesState(id int64) error
+	GetIssuesStateRelations(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueStateJoinSQL, error)
+	UpdateIssueState(state *dao.IssueState) error
 }

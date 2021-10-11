@@ -20,14 +20,15 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 func TestIssueState_GetIssueStateIDs(t *testing.T) {
-	is := New()
 	db := &dao.DBClient{}
+	is := New(WithDBClient(db))
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStates",
 		func(db *dao.DBClient, req *apistructs.IssueStatesGetRequest) ([]dao.IssueState, error) {
 			return []dao.IssueState{
@@ -46,8 +47,8 @@ func TestIssueState_GetIssueStateIDs(t *testing.T) {
 }
 
 func TestIssueState_GetIssueStatesMap(t *testing.T) {
-	is := New()
 	db := &dao.DBClient{}
+	is := New(WithDBClient(db))
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStatesByProjectID",
 		func(db *dao.DBClient, projectID uint64, issuetype apistructs.IssueType) ([]dao.IssueState, error) {
 			return []dao.IssueState{
@@ -75,16 +76,16 @@ func TestIssueState_GetIssueStatesMap(t *testing.T) {
 }
 
 func TestInitProjectState(t *testing.T) {
-	is := New()
-	db := &dao.DBClient{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "CreateIssuesState", func(*dao.DBClient, *dao.IssueState) error {
-		return nil
-	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateIssueStateRelations", func(*dao.DBClient, int64, apistructs.IssueType, []dao.IssueStateRelation) error {
-		return nil
-	})
-	defer monkey.UnpatchAll()
-	if is.InitProjectState(1) != nil {
-		t.Error("fail")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := NewMockIssueStater(ctrl)
+
+	m.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(nil)
+	m.EXPECT().UpdateIssueStateRelations(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+	is := New(WithDBClient(m))
+	if err := is.InitProjectState(1); err != nil {
+		t.Error(err)
 	}
 }
