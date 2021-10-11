@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -104,7 +105,11 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	if err = ct.RenderList(c, table.Cpu, nodes); err != nil {
+	podsMap, err := ct.GetPods(ctx)
+	if err != nil {
+		return err
+	}
+	if err = ct.RenderList(c, table.Cpu, nodes, podsMap); err != nil {
 		return err
 	}
 	if err = ct.SetComponentValue(c); err != nil {
@@ -138,91 +143,93 @@ func (ct *CpuInfoTable) getProps() {
 	ct.Props = props
 }
 
-func (ct *CpuInfoTable) GetRowItem(c data.Object, tableType table.TableType) (*table.RowItem, error) {
+func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
 		distribution, dr, usage table.DistributionValue
-		resp                    []metrics.MetricsData
+		resp                    map[string]*metrics.MetricsData
 		nodeLabels              []string
+		items                   []table.RowItem
 	)
-	nodeLabelsData := c.Map("metadata", "labels")
-	for k := range nodeLabelsData {
-		nodeLabels = append(nodeLabels, k)
-	}
-	if status, err = ct.GetItemStatus(c); err != nil {
-		return nil, err
-	}
 	req := &metrics.MetricsRequest{
-		ClusterName: ct.SDK.InParams["clusterName"].(string),
-		NodeRequests: []metrics.MetricsNodeRequest{{
-			IP: c.StringSlice("metadata", "fields")[5],
-		}},
-		ResourceType: metrics.Cpu,
-		ResourceKind: metrics.Node,
-		OrgID:        ct.SDK.Identity.OrgID,
-		UserID:       ct.SDK.Identity.UserID,
+		Cluster: ct.SDK.InParams["clusterName"].(string),
+		Type:    metrics.Cpu,
+		Kind:    metrics.Node,
 	}
-
+	for _, node := range nodes {
+		req.NodeRequests = append(req.NodeRequests, metrics.MetricsNodeRequest{
+			MetricsRequest: req,
+			Ip:             node.StringSlice("metadata", "fields")[5],
+		})
+	}
 	if resp, err = mServer.NodeMetrics(ct.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
-		resp = []metrics.MetricsData{{Used: 0}}
 	}
-	//request := c.Map("status", "allocatable").String("cpu")
-	limitStr := c.Map("extra", "parsedResource", "capacity").String("CPU")
-	limitQuantity, _ := resource.ParseQuantity(limitStr)
-	requestStr := c.Map("extra", "parsedResource", "allocated").String("CPU")
-	requestQuantity, _ := resource.ParseQuantity(requestStr)
-	resp[0].Total = float64(limitQuantity.Value()) / 1000
-	resp[0].Request = float64(requestQuantity.Value()) / 1000
-	distribution = ct.GetDistributionValue(resp[0], table.Cpu)
-	usage = ct.GetUsageValue(resp[0], table.Cpu)
-	dr = ct.GetUnusedRate(resp[0], table.Cpu)
-	role := c.StringSlice("metadata", "fields")[2]
-	ip := c.StringSlice("metadata", "fields")[5]
-	if role == "<none>" {
-		role = "worker"
-	}
-	batchOperations := make([]string, 0)
-	if !strings.Contains(role, "master") {
-		if strings.Contains(status.Value, ct.SDK.I18n("SchedulingDisabled")) {
-			batchOperations = []string{"uncordon"}
-		} else {
-			batchOperations = []string{"cordon"}
+	for i, c := range nodes {
+		nodeLabelsData := c.Map("metadata", "labels")
+		for k := range nodeLabelsData {
+			nodeLabels = append(nodeLabels, k)
 		}
+		if status, err = ct.GetItemStatus(c); err != nil {
+			return nil, err
+		}
+		//request := c.Map("status", "allocatable").String("cpu")
+		nodeName := c.StringSlice("metadata", "fields")[0]
+		cpuRequest, _, _ := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "cpu"))
+
+		key := req.NodeRequests[i].CacheKey()
+		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
+		usage = ct.GetUsageValue(resp[key].Used, float64(requestQty.Value()), table.Cpu)
+		dr = ct.GetUnusedRate(float64(cpuRequest)-resp[key].Used*1000, float64(cpuRequest), table.Cpu)
+		role := c.StringSlice("metadata", "fields")[2]
+		ip := c.StringSlice("metadata", "fields")[5]
+		if role == "<none>" {
+			role = "worker"
+		}
+		batchOperations := make([]string, 0)
+		if !strings.Contains(role, "master") {
+			if strings.Contains(status.Value, ct.SDK.I18n("SchedulingDisabled")) {
+				batchOperations = []string{"uncordon"}
+			} else {
+				batchOperations = []string{"cordon"}
+			}
+		}
+		items = append(items, table.RowItem{
+			ID:      c.String("metadata", "name"),
+			IP:      ip,
+			Version: c.String("status", "nodeInfo", "kubeletVersion"),
+			Role:    role,
+			Node: table.Node{
+				RenderType: "multiple",
+				Renders:    ct.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
+			},
+			Status: *status,
+			Distribution: table.Distribution{
+				RenderType: "progress",
+				Value:      distribution.Percent,
+				Status:     table.GetDistributionStatus(distribution.Percent),
+				Tip:        distribution.Text,
+			},
+			Usage: table.Distribution{
+				RenderType: "progress",
+				Value:      usage.Percent,
+				Status:     table.GetDistributionStatus(usage.Percent),
+				Tip:        usage.Text,
+			},
+			UnusedRate: table.Distribution{
+				RenderType: "progress",
+				Value:      dr.Percent,
+				Status:     table.GetDistributionStatus(dr.Percent),
+				Tip:        dr.Text,
+			},
+			Operate:         ct.GetOperate(c.String("metadata", "name")),
+			BatchOperations: batchOperations,
+		},
+		)
 	}
-	ri := &table.RowItem{
-		ID:      c.String("metadata", "name"),
-		IP:      ip,
-		Version: c.String("status", "nodeInfo", "kubeletVersion"),
-		Role:    role,
-		Node: table.Node{
-			RenderType: "multiple",
-			Renders:    ct.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
-		},
-		Status: *status,
-		Distribution: table.Distribution{
-			RenderType: "progress",
-			Value:      distribution.Percent,
-			Status:     table.GetDistributionStatus(distribution.Percent),
-			Tip:        distribution.Text,
-		},
-		Usage: table.Distribution{
-			RenderType: "progress",
-			Value:      usage.Percent,
-			Status:     table.GetDistributionStatus(usage.Percent),
-			Tip:        usage.Text,
-		},
-		UnusedRate: table.Distribution{
-			RenderType: "progress",
-			Value:      dr.Percent,
-			Status:     table.GetDistributionStatus(dr.Percent),
-			Tip:        dr.Text,
-		},
-		Operate:         ct.GetOperate(c.String("metadata", "name")),
-		BatchOperations: batchOperations,
-	}
-	return ri, nil
+	return items, nil
 }
 
 func init() {

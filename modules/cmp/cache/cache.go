@@ -47,8 +47,6 @@ const (
 	UnsignedType
 	ByteType
 	ByteSliceType
-
-	minCacheSize = 2
 )
 
 var (
@@ -66,7 +64,10 @@ var (
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
-var ExpireFreshQueue *queue.TaskQueue
+var (
+	ExpireFreshQueue *queue.TaskQueue
+	globalPairLength = 1024
+)
 
 func init() {
 	queueSize := 100
@@ -77,7 +78,14 @@ func init() {
 	go ExpireFreshQueue.ExecuteLoop(5 * time.Second)
 }
 
-var FreeCache, _ = New(2<<30, 1<<27)
+var freeCache *Cache
+
+func GetFreeCache() *Cache {
+	if freeCache == nil {
+		freeCache, _ = New(1<<31, 1<<27)
+	}
+	return freeCache
+}
 
 // Cache implement concurrent safe cache with LRU and ttl strategy.
 type Cache struct {
@@ -93,7 +101,6 @@ type segment struct {
 	mapping map[string]int
 	maxSize int64
 	used    int64
-	nextIdx int64
 }
 
 func lowBit(x int) int {
@@ -120,7 +127,8 @@ func newPairs(maxSize int64, segNum int) []*segment {
 	// memory can not be totally used
 	pairLen := maxSize >> 4
 	for i := 0; i < segNum; i++ {
-		p := make([]*pair, mathutil.Min(int(pairLen), 1024))
+		globalPairLength = mathutil.Min(int(pairLen), globalPairLength)
+		p := make([]*pair, globalPairLength)
 		for j := range p {
 			p[j] = &pair{}
 		}
@@ -214,9 +222,18 @@ func (s *store) write(id int) error {
 	}
 	usage += needSize
 	idx := ps.Len()
-	ps.pairs[idx].key = newPair.key
-	ps.pairs[idx].value = newPair.value
-	ps.pairs[idx].overdueTimestamp = newPair.overdueTimestamp
+	if idx >= len(ps.pairs) {
+		ps.pairs = append(ps.pairs, &pair{
+			key:              newPair.key,
+			value:            newPair.value,
+			overdueTimestamp: newPair.overdueTimestamp,
+		})
+		globalPairLength = len(ps.pairs)
+	} else {
+		ps.pairs[idx].key = newPair.key
+		ps.pairs[idx].value = newPair.value
+		ps.pairs[idx].overdueTimestamp = newPair.overdueTimestamp
+	}
 	ps.mapping[newPair.key] = idx
 	heap.Push(ps, ps.pairs[idx])
 	ps.length++
@@ -259,8 +276,6 @@ func (seg *segment) updatePair(key string, newValues Values, overdueTimestamp in
 	seg.tmp.overdueTimestamp = overdueTimestamp
 	seg.tmp.value = newValues
 	seg.tmp.key = key
-	seg.tmp.idx = seg.nextIdx
-	seg.nextIdx++
 	return nil
 }
 
@@ -455,7 +470,7 @@ func New(size, segSize int64) (*Cache, error) {
 
 // Set write key, cacheValues, overdueTimestamp into cache.
 // whether update or add cache, remove is first.
-func (c *Cache) Set(key string, value Values, overdueTimestamp int64) error {
+func (c *Cache) Set(key string, value Values, duration int64) error {
 	var err error
 	id := c.k.getKeyId(key, c.store.segNum)
 	seg := c.store.segs[id]
@@ -465,7 +480,7 @@ func (c *Cache) Set(key string, value Values, overdueTimestamp int64) error {
 	// 1. remove old cache
 	c.store.remove(id, key)
 	// 2. set data into segment tmp
-	err = seg.updatePair(key, value, time.Now().UnixNano()+overdueTimestamp)
+	err = seg.updatePair(key, value, time.Now().UnixNano()+duration)
 	if err != nil {
 		return err
 	}
@@ -561,7 +576,7 @@ func (k *keyBuilder) getKeyId(str string, segNum int) int {
 	return int(xxhash.Sum64(k.b[:len(str)]) & uint64(segNum-1))
 }
 
-func GenerateKey(keys []string) string {
+func GenerateKey(keys ...string) string {
 	sort.Slice(keys, func(i, j int) bool {
 		return strings.Compare(keys[i], keys[j]) > 0
 	})

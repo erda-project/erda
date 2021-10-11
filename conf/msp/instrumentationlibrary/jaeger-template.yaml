@@ -170,13 +170,14 @@
 
         ```golang
         import(
-        	  "github.com/opentracing/opentracing-go"
+        	"github.com/opentracing/opentracing-go"
             "github.com/uber/jaeger-client-go"
             jaegercfg "github.com/uber/jaeger-client-go/config"
         )
         ```
 
         2. 配置 Tracer
+
         ```golang
         cfg := jaegercfg.Configuration{
         	Sampler: &jaegercfg.SamplerConfig{
@@ -184,21 +185,21 @@
         		Param: 1,
         	},
         	Reporter: &jaegercfg.ReporterConfig{
-        		LogSpans: true,
-        		CollectorEndpoint: "{{endpoint}}",
+        		LogSpans:          true,
+          		CollectorEndpoint: "{{endpoint}}",
         	},
         	Tags: []opentracing.Tag{
         		{
-        			Key: "msp.env.id",
+        			Key:   "msp.env.id",
         			Value: "{{msp_env_id}}",
         		},
         		{
-        			Key: "msp.env.token",
+        			Key:   "msp.env.token",
         			Value: "<your_token>",
         		},
         	},
         }
-        closer,err := cfg.InitGlobalTracer("<your_service_name>",jaegercfg.Logger(jaeger.StdLogger))
+        closer, err := cfg.InitGlobalTracer("<your_service_name>", jaegercfg.Logger(jaeger.StdLogger))
         if err != nil {
         	panic(err)
         }
