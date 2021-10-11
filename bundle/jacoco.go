@@ -16,10 +16,13 @@ package bundle
 
 import (
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func (b *Bundle) JacocoStart(addr string, req *apistructs.JacocoRequest) error {
-	hc := b.hc
+	hc := httpclient.New(
+		httpclient.WithCompleteRedirect(),
+	)
 	var jacocoResp apistructs.JacocoResponse
 	resp, err := hc.Post(addr).
 		Path("/api/jacoco/actions/start").JSONBody(req).
@@ -34,7 +37,9 @@ func (b *Bundle) JacocoStart(addr string, req *apistructs.JacocoRequest) error {
 }
 
 func (b *Bundle) JacocoEnd(addr string, req *apistructs.JacocoRequest) error {
-	hc := b.hc
+	hc := httpclient.New(
+		httpclient.WithCompleteRedirect(),
+	)
 	var jacocoResp apistructs.JacocoResponse
 	resp, err := hc.Post(addr).
 		Path("/api/jacoco/actions/end").JSONBody(req).
