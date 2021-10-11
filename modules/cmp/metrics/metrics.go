@@ -40,13 +40,15 @@ const (
 	NodeResourceUsageSelectStatement = `SELECT last(mem_used::field) as memRate , last(cpu_cores_usage::field) as cpuRate , host_ip::tag FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//NodeResourceUsageSelectStatement = `SELECT  mem_usage::field  ,cpu_cores_usage::field, host_ip FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//PodCpuUsageSelectStatement     = `SELECT SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field) as cpuRate, pod_name FROM docker_container_summary WHERE pod_namespace::tag=$pod_namespace and podsandbox != true GROUP BY pod_name::tag`
-	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field),2) as cpuRate, pod_name::tag, pod_namespace::tag FROM docker_container_summary WHERE cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag`
+	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field),2) as cpuRate ,pod_name::tag ,pod_namespace::tag FROM docker_container_summary WHERE  cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag, pod_namespace::tag `
 
 	Memory = "memory"
 	Cpu    = "cpu"
 
 	Pod  = "pod"
 	Node = "node"
+
+	syncKey = "metricsCacheSync"
 
 	queryTimeout = 30 * time.Second
 )
@@ -60,7 +62,7 @@ var (
 type Metric struct {
 	ctx           context.Context
 	Metricq       pb.MetricServiceServer
-	metricReqChan chan []*MetricsReq
+	metricReqChan chan *MetricsReq
 	limiter       *rate.Limiter
 }
 
@@ -69,14 +71,13 @@ type MetricsReq struct {
 	sync    bool
 	resType string
 	resKind string
-	key     string
 }
 
 func New(metricq pb.MetricServiceServer, ctx context.Context) *Metric {
 	m := &Metric{}
 	m.ctx = ctx
 	m.Metricq = metricq
-	m.metricReqChan = make(chan []*MetricsReq, 1024)
+	m.metricReqChan = make(chan *MetricsReq, 1024)
 	burst := 100
 	if size, err := strconv.Atoi(os.Getenv("METRICS_QUEUE_SIZE")); err == nil && size > burst {
 		burst = size
@@ -93,19 +94,16 @@ func (m *Metric) queryAsync() {
 			return
 		}
 		select {
-		case reqs, able := <-m.metricReqChan:
-			if !able {
-				return
-			} else if reqs == nil || len(reqs) == 0 {
+		case req := <-m.metricReqChan:
+			if req == nil {
 				continue
 			} else {
-				metricReq := m.mergeReq(reqs)
-				resp, err := m.query(m.ctx, metricReq.rawReq)
+				//metricReq := m.mergeReq(reqs)
+				resp, err := m.query(m.ctx, req.rawReq)
 				if err != nil || resp == nil {
 					logrus.Errorf("query metrics err,%v", err)
 				} else {
-					res := map[string]*MetricsData{}
-					m.Store(resp, res, metricReq)
+					m.Store(resp, req)
 				}
 			}
 		}
@@ -131,104 +129,83 @@ func (m *Metric) query(ctx context.Context, req *pb.QueryWithInfluxFormatRequest
 }
 
 // querySync returns influxdb data
-func (m *Metric) querySync(ctx context.Context, req map[string][]*MetricsReq, c chan map[string]*MetricsData) {
+func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan struct{}) {
 	var (
-		res  = make(map[string]*MetricsData)
+		res  = struct{}{}
 		resp *pb.QueryWithInfluxFormatResponse
 		err  error
 	)
-
-	for _, metricsReqs := range req {
-		for _, mreq := range metricsReqs {
-			d := &MetricsData{}
-			res[mreq.key] = d
-		}
-		syncReqs := make([]*MetricsReq, 0)
-		asyncReqs := make([]*MetricsReq, 0)
-		for _, metricsReq := range metricsReqs {
-			if metricsReq.sync {
-				logrus.Infof("cache not found, try fetch metrics synchronized %v", metricsReq.key)
-				syncReqs = append(syncReqs, metricsReq)
-			} else {
-				logrus.Infof("cache expired, try fetch metrics asynchronized %v", metricsReq.key)
-				asyncReqs = append(asyncReqs, metricsReq)
-			}
-		}
+	if req == nil {
+		c <- res
+		return
+	}
+	//syncReqs := make(*MetricsReq, 0)
+	//asyncReqs := make(*MetricsReq, 0)
+	if !req.sync {
+		//logrus.Infof("cache expired, try fetch metrics asynchronized %v", req.key)
+		//asyncReqs = append(asyncReqs, metricsReq)
 		select {
-		case m.metricReqChan <- asyncReqs:
+		case m.metricReqChan <- req:
 		default:
 			logrus.Warnf("channel is blocked, ayscn query skip")
 		}
-		metricsReq := m.mergeReq(syncReqs)
-		err = m.limiter.Wait(ctx)
-		if err != nil {
-			logrus.Errorf("limiter error:%v", err)
-			return
-		}
-		if metricsReq != nil {
-			resp, err = m.query(ctx, metricsReq.rawReq)
-			if err != nil || resp == nil {
-				logrus.Errorf("metrics query error:%v, resp:%v", err, resp)
-			} else {
-				res = m.Store(resp, res, metricsReq)
-			}
-		}
+		c <- res
+		return
+	}
+	//metricsReq := m.mergeReq(syncReqs)
+	err = m.limiter.Wait(ctx)
+	if err != nil {
+		logrus.Errorf("limiter error:%v", err)
+		c <- res
+		return
+	}
+	resp, err = m.query(ctx, req.rawReq)
+	if err != nil || resp == nil {
+		logrus.Errorf("metrics query error:%v, resp:%v", err, resp)
+	} else {
+		m.Store(resp, req)
 	}
 	c <- res
 }
 
-func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, res map[string]*MetricsData, metricsReq *MetricsReq) map[string]*MetricsData {
+func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *MetricsReq) {
 	if !isEmptyResponse(resp) {
 		var (
-			k    = ""
-			d    *MetricsData
-			tRes = make(map[string]*MetricsData)
+			k = ""
+			d *MetricsData
 		)
 		for _, row := range resp.Results[0].Series[0].Rows {
 			switch metricsReq.resKind {
 			case Pod:
-				k = cache.GenerateKey(Pod, Cpu, metricsReq.rawReq.Params["pod_namespace"].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue(), row.Values[3].GetStringValue())
+				k = cache.GenerateKey(Pod, Cpu, row.Values[3].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[1].GetNumberValue(),
 				}
-				tRes[k] = d
-				if _, ok := res[k]; ok {
-					res[k] = d
-				}
 				m.setCache(k, d)
-				k = cache.GenerateKey(Pod, Memory, metricsReq.rawReq.Params["pod_namespace"].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue(), row.Values[3].GetStringValue())
+				logrus.Infof("update cache %v", k)
+				k = cache.GenerateKey(Pod, Memory, row.Values[3].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[0].GetNumberValue(),
 				}
-				tRes[k] = d
-				if _, ok := res[k]; ok {
-					res[k] = d
-				}
 				m.setCache(k, d)
+				logrus.Infof("update cache %v", k)
 			case Node:
 				k = cache.GenerateKey(Node, Cpu, metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[1].GetNumberValue(),
 				}
-				tRes[k] = d
-				if _, ok := res[k]; ok {
-					res[k] = d
-				}
 				m.setCache(k, d)
+				logrus.Infof("update cache %v", k)
 
 				k = cache.GenerateKey(Node, Memory, metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
 				d = &MetricsData{
 					Used: row.Values[0].GetNumberValue(),
 				}
-				tRes[k] = d
-				if _, ok := res[k]; ok {
-					res[k] = d
-				}
 				m.setCache(k, d)
+				logrus.Infof("update cache %v", k)
 			}
 		}
 	}
-	return res
 }
 
 func (m *Metric) setCache(k string, d interface{}) {
@@ -241,6 +218,22 @@ func (m *Metric) setCache(k string, d interface{}) {
 			logrus.Errorf("cache set metrics %v err: %v", k, err)
 		}
 	}
+}
+
+func (m *Metric) getCache(key string) *MetricsData {
+
+	v, _, err := cache.GetFreeCache().Get(key)
+	if err != nil {
+		logrus.Errorf("get metrics %v err :%v", key, err)
+	}
+	d := &MetricsData{}
+	if v != nil {
+		err = jsi.Unmarshal(v[0].Value().([]byte), d)
+		if err != nil {
+			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
+		}
+	}
+	return d
 }
 
 func (m *Metric) mergeReq(reqs []*MetricsReq) *MetricsReq {
@@ -270,115 +263,101 @@ func (m *Metric) mergeReq(reqs []*MetricsReq) *MetricsReq {
 
 // NodeMetrics query cpu and memory metrics from es database, return immediately if cache hit.
 func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
-	var resp map[string]*MetricsData
-	reqs, noNeed, err := ToInfluxReq(req, Node)
-	if err != nil {
-		return nil, err
+	metricsReq, noNeed, err := m.ToInfluxReq(req, Node)
+	if metricsReq == nil || err != nil {
+		return noNeed, err
 	}
 	ctx2, cancelFunc := context.WithTimeout(ctx, queryTimeout)
 	defer cancelFunc()
 	logrus.Infof("qeury node metrics with timeout")
-	c := make(chan map[string]*MetricsData)
-	go m.querySync(ctx2, reqs, c)
+	c := make(chan struct{})
+	go m.querySync(ctx2, metricsReq, c)
 	select {
 	case <-ctx2.Done():
 		return nil, QueryTimeoutError
-	case resp = <-c:
-		for k, res := range resp {
-			if res == nil {
-				noNeed[k] = &MetricsData{}
-			} else {
-				noNeed[k] = res
-			}
+	case <-c:
+		for _, nreq := range req.NodeRequests {
+			key := nreq.CacheKey()
+			noNeed[key] = m.getCache(key)
 		}
 	}
 	return noNeed, nil
 }
 
 func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
-	var resp map[string]*MetricsData
-	reqs, noNeed, err := ToInfluxReq(req, Pod)
-	if err != nil {
-		return nil, err
+	metricsReq, noNeed, err := m.ToInfluxReq(req, Pod)
+	if metricsReq == nil || err != nil {
+		return noNeed, err
 	}
 	ctx2, cancelFunc := context.WithTimeout(ctx, queryTimeout)
 	defer cancelFunc()
-	logrus.Infof("qeury pod metrics with timeout")
-	c := make(chan map[string]*MetricsData)
-	go m.querySync(ctx, reqs, c)
+	logrus.Infof("query pod metrics with timeout")
+	c := make(chan struct{})
+	go m.querySync(ctx2, metricsReq, c)
 	select {
 	case <-ctx2.Done():
 		return nil, QueryTimeoutError
-	case resp = <-c:
-		for k, res := range resp {
-			if res == nil {
-				continue
-			}
-			noNeed[k] = res
+	case <-c:
+		for _, preq := range req.PodRequests {
+			key := preq.CacheKey()
+			noNeed[key] = m.getCache(key)
 		}
 	}
 	return noNeed, nil
 }
 
-func ToInfluxReq(req *MetricsRequest, kind string) (map[string][]*MetricsReq, map[string]*MetricsData, error) {
-	queryReqs := make(map[string][]*MetricsReq)
-	noNeed := make(map[string]*MetricsData)
+func (m *Metric) ToInfluxReq(req *MetricsRequest, kind string) (*MetricsReq, map[string]*MetricsData, error) {
+	clusterName := req.ClusterName()
 	if req.Cluster == "" {
 		return nil, nil, errors.New(fmt.Sprintf("parameter %s not found", req.Cluster))
 	}
-	if kind == Node {
-		for _, nreq := range req.NodeRequests {
-			key := nreq.CacheKey()
-			if v, expired, err := cache.GetFreeCache().Get(key); err == nil {
-				if v != nil {
-					resp := &MetricsData{}
-					err = jsi.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), resp)
-					if err != nil {
-						logrus.Errorf("try find cache error ,%v", err)
-					}
-					noNeed[key] = resp
-					logrus.Infof("%v cache hit,isExpired %v", key, expired)
-					if !expired {
-						continue
-					}
-				}
-				if v == nil || expired {
-					queryReq := &pb.QueryWithInfluxFormatRequest{}
-					queryReq.Start = "before_5m"
-					queryReq.End = "now"
-					queryReq.Statement = NodeResourceUsageSelectStatement
-					queryReq.Params = map[string]*structpb.Value{
-						"cluster_name": structpb.NewStringValue(nreq.ClusterName()),
-						//"host_ip":      structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(nreq.IP())}}),
-					}
-					queryReq.Filters = []*pb.Filter{{
-						Key:   "tags.host_ip",
-						Op:    "in",
-						Value: structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(nreq.IP())}}),
-					}}
-					sync := false
-					if v == nil {
-						sync = true
-					}
-					queryReqs[nreq.ClusterName()] = append(queryReqs[nreq.ClusterName()], &MetricsReq{rawReq: queryReq, sync: sync, resType: nreq.ResourceType(), resKind: nreq.ResourceKind(), key: nreq.CacheKey()})
-				}
-			} else {
-				logrus.Errorf("Get %s cache error,%v", key, err)
-			}
-		}
-	} else {
-		for _, preq := range req.PodRequests {
+	switch kind {
+	case Node:
+		return m.toInfluxReq(req.NodeRequests, clusterName, req.ResourceType(), req.ResourceKind(), NodeResourceUsageSelectStatement)
+	case Pod:
+
+		return m.toInfluxReq(req.PodRequests, clusterName, req.ResourceType(), req.ResourceKind(), PodResourceUsageSelectStatement)
+	default:
+		logrus.Errorf("query metrics kind %v, %v", kind, ResourceNotSupport)
+		return nil, nil, ResourceNotSupport
+	}
+}
+
+func (m *Metric) toInfluxReq(keys []MetricsReqInterface, clusterName, reqType, reqKind, sql string) (*MetricsReq, map[string]*MetricsData, error) {
+	var queryReqs *MetricsReq
+	noNeed := make(map[string]*MetricsData)
+	for _, request := range keys {
+		key := request.CacheKey()
+		noNeed[key] = m.getCache(key)
+	}
+	if v, expired, err := cache.GetFreeCache().Get(syncKey); err == nil {
+		if v != nil && !expired {
+			return nil, noNeed, nil
+		} else {
 			queryReq := &pb.QueryWithInfluxFormatRequest{}
 			queryReq.Start = "before_5m"
 			queryReq.End = "now"
-			queryReq.Statement = PodResourceUsageSelectStatement
+			queryReq.Statement = sql
 			queryReq.Params = map[string]*structpb.Value{
 				//"pod_name":      structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(preq.PodName())}}),
-				"cluster_name": structpb.NewStringValue(preq.ClusterName()),
+				"cluster_name": structpb.NewStringValue(clusterName),
 			}
 			sync := false
-			queryReqs[preq.Namespace()] = append(queryReqs[preq.Namespace()], &MetricsReq{rawReq: queryReq, sync: sync, resType: preq.ResourceType(), resKind: preq.ResourceKind(), key: preq.CacheKey()})
+			if v == nil {
+				syncV, err := cache.GetBoolValue(true)
+				if err != nil {
+					return nil, noNeed, err
+				}
+				err = cache.GetFreeCache().Set(syncKey, syncV, int64(queryTimeout))
+				if err != nil {
+					return nil, noNeed, err
+				}
+				sync = true
+			}
+			queryReqs = &MetricsReq{rawReq: queryReq, sync: sync, resType: reqType, resKind: reqKind}
 		}
+	} else {
+		logrus.Errorf("get %s %s cache error,%v", clusterName, Pod, err)
 	}
 	return queryReqs, noNeed, nil
 }
