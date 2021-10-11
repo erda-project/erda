@@ -58,6 +58,7 @@ component-protocol.components.code-coverage.endButton:
 component-protocol.components.code-coverage.cancelButton:
 component-protocol.components.code-coverage.executeHistoryTable:
 component-protocol.components.code-coverage.startButton:
+component-protocol.components.code-coverage.errText:
 component-protocol.components.code-coverage.timeSelector:
 component-protocol.components.code-coverage.tip:
 component-protocol.components.code-coverage.executeHistoryButton:
