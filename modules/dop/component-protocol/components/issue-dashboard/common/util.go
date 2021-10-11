@@ -15,7 +15,6 @@
 package common
 
 import (
-	"github.com/erda-project/erda/pkg/strutil"
 	"sort"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -24,6 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func FixEmptyWord(em string) string {
