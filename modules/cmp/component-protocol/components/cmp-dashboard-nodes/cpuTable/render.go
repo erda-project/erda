@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -104,7 +105,11 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	if err = ct.RenderList(c, table.Cpu, nodes); err != nil {
+	podsMap, err := ct.GetPods(ctx)
+	if err != nil {
+		return err
+	}
+	if err = ct.RenderList(c, table.Cpu, nodes, podsMap); err != nil {
 		return err
 	}
 	if err = ct.SetComponentValue(c); err != nil {
@@ -138,7 +143,7 @@ func (ct *CpuInfoTable) getProps() {
 	ct.Props = props
 }
 
-func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
+func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
@@ -170,16 +175,14 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			return nil, err
 		}
 		//request := c.Map("status", "allocatable").String("cpu")
-		limitStr := c.Map("extra", "parsedResource", "capacity").String("CPU")
-		limitQuantity, _ := resource.ParseQuantity(limitStr)
-		requestStr := c.Map("extra", "parsedResource", "allocated").String("CPU")
-		requestQuantity, _ := resource.ParseQuantity(requestStr)
+		nodeName := c.StringSlice("metadata", "fields")[0]
+		cpuRequest, _, _ := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "cpu"))
+
 		key := req.NodeRequests[i].CacheKey()
-		resp[key].Total = float64(limitQuantity.Value()) / 1000
-		resp[key].Request = float64(requestQuantity.Value()) / 1000
-		distribution = ct.GetDistributionValue(resp[key], table.Cpu)
-		usage = ct.GetUsageValue(resp[key], table.Cpu)
-		dr = ct.GetUnusedRate(resp[key], table.Cpu)
+		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
+		usage = ct.GetUsageValue(resp[key].Used, float64(requestQty.Value()), table.Cpu)
+		dr = ct.GetUnusedRate(float64(cpuRequest)-resp[key].Used*1000, float64(cpuRequest), table.Cpu)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {
