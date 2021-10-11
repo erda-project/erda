@@ -79,6 +79,7 @@ func (e *Endpoints) IsManager(userID string, scopeType apistructs.ScopeType, sco
 	if err != nil {
 		return err
 	}
+	logrus.Debugf("scopeRole: %+v", scopeRole)
 	if scopeRole.Access {
 		for _, role := range scopeRole.Roles {
 			if e.bdl.CheckIfRoleIsManager(role) {
