@@ -16,16 +16,15 @@ package code_coverage
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -34,8 +33,9 @@ import (
 )
 
 type CodeCoverage struct {
-	db        CodeCoverageDBer
-	bdl       CodeCoverageBDLer
+	db *dao.DBClient
+
+	bdl       *bundle.Bundle
 	envConfig *environment.EnvConfig
 }
 
@@ -49,13 +49,13 @@ func New(options ...Option) *CodeCoverage {
 	return c
 }
 
-func WithDBClient(db CodeCoverageDBer) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(c *CodeCoverage) {
 		c.db = db
 	}
 }
 
-func WithBundle(bdl CodeCoverageBDLer) Option {
+func WithBundle(bdl *bundle.Bundle) Option {
 	return func(c *CodeCoverage) {
 		c.bdl = bdl
 	}
@@ -402,23 +402,4 @@ func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID
 	}
 
 	return true, nil, ""
-}
-
-type CodeCoverageDBer interface {
-	CreateCodeCoverage(record *dao.CodeCoverageExecRecord) error
-	UpdateCodeCoverage(record *dao.CodeCoverageExecRecord) error
-	GetCodeCoverageByID(id uint64) (*dao.CodeCoverageExecRecord, error)
-	CancelCodeCoverage(uint64, *dao.CodeCoverageExecRecord) error
-	ListCodeCoverageByStatus(projectID uint64, status []apistructs.CodeCoverageExecStatus) (records []dao.CodeCoverageExecRecord, err error)
-	ListCodeCoverage(req apistructs.CodeCoverageListRequest) (records []dao.CodeCoverageExecRecordShort, total uint64, err error)
-	TxBegin() *gorm.DB
-}
-
-type CodeCoverageBDLer interface {
-	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
-	JacocoStart(addr string, req *apistructs.JacocoRequest) error
-	JacocoEnd(addr string, req *apistructs.JacocoRequest) error
-	DownloadDiceFile(uuid string) (io.ReadCloser, error)
-	GetProject(id uint64) (*apistructs.ProjectDTO, error)
-	GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error)
 }
