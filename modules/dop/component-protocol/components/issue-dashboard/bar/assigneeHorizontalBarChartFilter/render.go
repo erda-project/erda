@@ -17,6 +17,7 @@ package assigneeHorizontalBarChartFilter
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -79,7 +80,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	}
 	handler := stackhandlers.NewStackRetriever(
 		stackhandlers.WithIssueStateList(f.State.IssueStateList),
-		stackhandlers.WithIssueStageList(nil),
+		stackhandlers.WithIssueStageList(f.State.Stages),
 	).GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
 		{

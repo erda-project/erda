@@ -38,4 +38,5 @@ type State struct {
 	IssueList      []dao.IssueItem         `json:"issueList,omitempty"`
 	IssueStateList []dao.IssueState        `json:"issueStateList,omitempty"`
 	Members        []apistructs.Member     `json:"members,omitempty"`
+	Stages         []apistructs.IssueStage `json:"stages,omitempty"`
 }

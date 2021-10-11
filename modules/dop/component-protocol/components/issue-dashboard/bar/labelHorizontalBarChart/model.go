@@ -34,11 +34,10 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values               common.FilterConditions `json:"values,omitempty"`
-	Base64UrlQueryParams string                  `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem         `json:"issueList,omitempty"`
-	IssueStateList       []dao.IssueState        `json:"issueStateList,omitempty"`
-	Iterations           []apistructs.Iteration  `json:"iterations,omitempty"`
+	Values         common.FilterConditions `json:"values,omitempty"`
+	IssueList      []dao.IssueItem         `json:"issueList,omitempty"`
+	IssueStateList []dao.IssueState        `json:"issueStateList,omitempty"`
+	Stages         []apistructs.IssueStage `json:"stages,omitempty"`
 }
 
 type InParams struct {

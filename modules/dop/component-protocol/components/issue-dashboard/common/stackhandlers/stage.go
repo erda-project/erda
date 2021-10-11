@@ -15,16 +15,17 @@
 package stackhandlers
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type StageStackHandler struct {
-	issueStageList []dao.IssueStage
+	issueStageList []apistructs.IssueStage
 }
 
-func NewStageStackHandler(issueStageList []dao.IssueStage) *StageStackHandler {
+func NewStageStackHandler(issueStageList []apistructs.IssueStage) *StageStackHandler {
 	return &StageStackHandler{
 		issueStageList: issueStageList,
 	}

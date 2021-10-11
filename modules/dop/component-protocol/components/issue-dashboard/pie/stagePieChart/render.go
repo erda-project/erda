@@ -46,7 +46,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	handler := stackhandlers.NewStageStackHandler(nil) // TODO
+	handler := stackhandlers.NewStageStackHandler(f.State.Stages)
 
 	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
 

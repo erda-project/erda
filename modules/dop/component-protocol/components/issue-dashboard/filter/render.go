@@ -107,6 +107,8 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	f.sdk.Identity.OrgID = "1"
+
 	iterations, iterationOptions, err := f.getPropIterationsOptions()
 	if err != nil {
 		return err
@@ -173,6 +175,20 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 	f.State.IssueStateList = states
 
+	orgID, err := strconv.Atoi(f.sdk.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+
+	stages, err := f.issueSvc.GetIssueStage(&apistructs.IssueStageRequest{
+		OrgID:     int64(orgID),
+		IssueType: apistructs.IssueTypeBug,
+	})
+	if err != nil {
+		return err
+	}
+	f.State.Stages = stages
+
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {
 		return err
@@ -224,7 +240,6 @@ func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
 }
 
 func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Iteration, []filter.PropConditionOption, error) {
-	f.sdk.Identity.OrgID = "1"
 	iterations, err := f.bdl.ListProjectIterations(apistructs.IterationPagingRequest{PageNo: 1, PageSize: 1000, ProjectID: f.InParams.ProjectID, WithoutIssueSummary: true}, f.sdk.Identity.OrgID)
 	if err != nil {
 		return nil, nil, err

@@ -15,6 +15,7 @@
 package stackhandlers
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -51,7 +52,7 @@ func getFilterOptions(stacks []Stack) []filter.PropConditionOption {
 
 type StackRetriever struct {
 	issueStateList []dao.IssueState
-	issueStageList []dao.IssueStage
+	issueStageList []apistructs.IssueStage
 }
 
 type option func(retriever *StackRetriever)
@@ -70,7 +71,7 @@ func WithIssueStateList(issueStateList []dao.IssueState) option {
 	}
 }
 
-func WithIssueStageList(issueStageList []dao.IssueStage) option {
+func WithIssueStageList(issueStageList []apistructs.IssueStage) option {
 	return func(retriever *StackRetriever) {
 		retriever.issueStageList = issueStageList
 	}

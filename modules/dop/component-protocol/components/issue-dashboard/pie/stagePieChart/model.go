@@ -18,7 +18,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -34,8 +33,6 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values               common.FrontendConditions `json:"values,omitempty"`
-	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
-	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
+	IssueList []dao.IssueItem         `json:"issueList,omitempty"`
+	Stages    []apistructs.IssueStage `json:"stages,omitempty"`
 }
