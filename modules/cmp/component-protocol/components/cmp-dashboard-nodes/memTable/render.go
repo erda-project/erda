@@ -26,12 +26,13 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/cmp"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -103,7 +104,11 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	if err = mt.RenderList(c, table.Memory, nodes); err != nil {
+	podsMap, err := mt.GetPods(ctx)
+	if err != nil {
+		return err
+	}
+	if err = mt.RenderList(c, table.Memory, nodes, podsMap); err != nil {
 		return err
 	}
 	if err = mt.SetComponentValue(c); err != nil {
@@ -112,7 +117,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	return nil
 }
 
-func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
+func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
@@ -120,6 +125,7 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		resp                    map[string]*metrics.MetricsData
 		items                   []table.RowItem
 	)
+
 	req := &metrics.MetricsRequest{
 		Cluster: mt.SDK.InParams["clusterName"].(string),
 		Type:    metrics.Memory,
@@ -139,17 +145,14 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		if status, err = mt.GetItemStatus(c); err != nil {
 			return nil, err
 		}
+		nodeName := c.StringSlice("metadata", "fields")[0]
+		_, memRequest, _ := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "memory"))
 
-		limitStr := c.Map("extra", "parsedResource", "capacity").String("Memory")
-		limitQuantity, _ := resource.ParseQuantity(limitStr)
-		requestStr := c.Map("extra", "parsedResource", "allocated").String("Memory")
-		requestQuantity, _ := resource.ParseQuantity(requestStr)
 		key := req.NodeRequests[i].CacheKey()
-		resp[key].Total = float64(limitQuantity.Value())
-		resp[key].Request = float64(requestQuantity.Value())
-		distribution = mt.GetDistributionValue(resp[key], table.Memory)
-		usage = mt.GetUsageValue(resp[key], table.Memory)
-		dr = mt.GetUnusedRate(resp[key], table.Memory)
+		distribution = mt.GetDistributionValue(float64(memRequest), float64(requestQty.Value()), table.Memory)
+		usage = mt.GetUsageValue(resp[key].Used, float64(requestQty.Value()), table.Memory)
+		dr = mt.GetUnusedRate(float64(memRequest)-resp[key].Used, float64(memRequest), table.Memory)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {
