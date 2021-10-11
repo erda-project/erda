@@ -27,28 +27,28 @@ import (
 )
 
 func (p *provider) initTemplate(client *elastic.Client) error {
-	if len(p.C.IndexTemplateName) <= 0 || len(p.C.IndexTemplatePath) <= 0 {
+	if len(p.Cfg.IndexTemplateName) <= 0 || len(p.Cfg.IndexTemplatePath) <= 0 {
 		return fmt.Errorf("index template name or file is empty")
 	}
-	template, err := ioutil.ReadFile(p.C.IndexTemplatePath)
+	template, err := ioutil.ReadFile(p.Cfg.IndexTemplatePath)
 	if err != nil {
-		return fmt.Errorf("fail to load index template: %s", err)
+		return fmt.Errorf("failed to load index template: %s", err)
 	}
 	template = cfgpkg.EscapeEnv(template)
 	ctx := context.Background()
 	for i := 0; i < 2; i++ {
-		resp, err := client.IndexPutTemplate(p.C.IndexTemplateName).
+		resp, err := client.IndexPutTemplate(p.Cfg.IndexTemplateName).
 			BodyString(string(template)).Do(ctx)
 		if err != nil {
-			return fmt.Errorf("fail to set index template: %s", err)
+			return fmt.Errorf("failed to set index template: %s", err)
 		}
 		if resp.Acknowledged {
 			break
 		}
 	}
-	p.L.Infof("Put index template (%s) success", p.C.IndexTemplateName)
+	p.Log.Infof("Setup index template (%s) success", p.Cfg.IndexTemplateName)
 
-	emptyIndex := p.C.IndexPrefix + "-empty"
+	emptyIndex := p.Loader.EmptyIndex()
 	exists, err := client.IndexExists(emptyIndex).Do(ctx)
 	if err != nil {
 		return err
@@ -64,34 +64,36 @@ func (p *provider) initTemplate(client *elastic.Client) error {
 		if err != nil {
 			return err
 		}
-	}
-	p.L.Infof("Put empty index (%s) success", emptyIndex)
+		p.Log.Infof("Create empty index (%s) success", emptyIndex)
 
-	for i := 0; i < 2; i++ {
-		_, err = client.Index().Index(emptyIndex).Type(p.C.IndexType).BodyJson(&metric.Metric{
-			Name:      "monitor",
-			Timestamp: time.Now().UnixNano(),
-			Tags:      map[string]string{"from": "monitor"},
-			Fields:    map[string]interface{}{"value": 1},
-		}).Do(ctx)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return fmt.Errorf("fail to init empty index: %s", err)
-	}
-
-	if p.C.EnableRollover {
+		// put dummy data
 		for i := 0; i < 2; i++ {
-			// remove this indices, avoid collisions with aliases
-			_, err := client.DeleteIndex(p.C.IndexPrefix + "-*-rollover").Do(ctx)
+			_, err = client.Index().Index(emptyIndex).Type(p.Cfg.IndexType).BodyJson(&metric.Metric{
+				Name:      "monitor",
+				Timestamp: time.Now().UnixNano(),
+				Tags:      map[string]string{"from": "monitor"},
+				Fields:    map[string]interface{}{"value": 1},
+			}).Do(ctx)
 			if err == nil {
 				break
 			}
 		}
 		if err != nil {
-			return fmt.Errorf("fail to delete index %s: %s", p.C.IndexPrefix+"-*-rollover", err)
+			return fmt.Errorf("failed to init empty index: %s", err)
+		}
+		p.Log.Infof("Put dummy data into empty index (%s) success", emptyIndex)
+	}
+
+	if p.Cfg.EnableRollover {
+		for i := 0; i < 2; i++ {
+			// remove this indices, avoid collisions with aliases
+			_, err := client.DeleteIndex(p.indexPrefix + "-*-rollover").Do(ctx)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("failed to delete index %s: %s", p.indexPrefix+"-*-rollover", err)
 		}
 	}
 	return nil

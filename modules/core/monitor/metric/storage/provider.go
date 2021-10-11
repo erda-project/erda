@@ -24,10 +24,10 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index-manager"
 )
 
-const serviceIndexManager = "erda.core.monitor.metric.index"
+const serviceIndexManager = "erda.core.monitor.metric.index-manager"
 
 type config struct {
 	Inputs struct {
@@ -52,7 +52,7 @@ type provider struct {
 	C      *config
 	L      logs.Logger
 	kafka  kafka.Interface
-	index  indexmanager.Index
+	index  indexmanager.Interface
 	output struct {
 		es    writer.Writer
 		kafka writer.Writer
@@ -64,7 +64,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	es := ctx.Service("elasticsearch").(elasticsearch.Interface)
 	p.output.es = es.NewBatchWriter(&p.C.Output.Elasticsearch.WriterConfig)
-	p.index = ctx.Service(serviceIndexManager).(indexmanager.Index)
+	p.index = ctx.Service(serviceIndexManager).(indexmanager.Interface)
 
 	p.kafka = ctx.Service("kafka").(kafka.Interface)
 	if p.index.EnableRollover() {
