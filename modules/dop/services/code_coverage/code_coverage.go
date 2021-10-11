@@ -398,7 +398,7 @@ func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID
 	}
 
 	if !findJacocoAgentEnv {
-		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env"
+		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env and restart"
 	}
 
 	return true, nil, ""

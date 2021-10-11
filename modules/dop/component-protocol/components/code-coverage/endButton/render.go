@@ -94,11 +94,18 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 
 		if !disable {
-			ok, err := svc.JudgeCanEnd(projectId)
-			if err != nil {
-				disable = true
-			}
+			ok, _ := svc.JudgeCanEnd(projectId)
 			disable = !ok
+
+			if disable {
+				disableTip = "代码覆盖率统计明细生成中，结束按钮不可用, 请等待一段时间后手动刷新"
+			}
+
+			err = svc.JudgeRunningRecordExist(projectId)
+			if err != nil {
+				disableTip = "代码覆盖率统计进行中，结束按钮不可用, 请等待一段时间后手动刷新"
+			}
+
 		}
 	}
 
