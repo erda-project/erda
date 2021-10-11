@@ -159,14 +159,16 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			CustomProps: map[string]interface{}{
 				"mode": "single",
 			},
+			HaveFilter: true,
 		},
 		{
-			EmptyText: "全部",
-			Fixed:     true,
-			Key:       "member",
-			Label:     "成员",
-			Options:   projectMemberOptions,
-			Type:      filter.PropConditionTypeSelect,
+			EmptyText:  "全部",
+			Fixed:      true,
+			Key:        "member",
+			Label:      "成员",
+			Options:    projectMemberOptions,
+			Type:       filter.PropConditionTypeSelect,
+			HaveFilter: true,
 		},
 	}
 

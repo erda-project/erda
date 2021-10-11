@@ -194,6 +194,34 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
+    - name: open
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: expired
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: today
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: month
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: week
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: open
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
+    - name: undefined
+      state:
+        - name: "stats"
+          value: "{{ total.stats }}"
     - name: stateVerticalBarChart
       state:
         - name: "issueList"
@@ -226,36 +254,6 @@ rendering:
           value: "{{ filter.stages }}"
         - name: "values"
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
-
-  total:
-    - name: open
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
-    - name: expired
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
-    - name: today
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
-    - name: month
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
-    - name: week
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
-    - name: open
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
-    - name: undefined
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
 
   trendChartFilter:
     - name: filter
