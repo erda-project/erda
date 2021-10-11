@@ -129,6 +129,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		issuefilterbm.WithDBClient(db),
 	))
 	p.Protocol.WithContextValue(types.CodeCoverageService, ep.CodeCoverageService())
+	p.Protocol.WithContextValue(types.IssueService, ep.IssueService())
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")

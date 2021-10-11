@@ -4,6 +4,7 @@ service-register:
 http-server:
   addr: "${LISTEN_ADDR::9527}"
   allow_cors: true
+
 grpc-server:
   addr: ":9529"
 i18n:
@@ -67,3 +68,40 @@ component-protocol.components.code-coverage.downloadButton:
 
 
 
+component-protocol.components.issue-dashboard.filter:
+component-protocol.components.issue-dashboard.page:
+component-protocol.components.issue-dashboard.trendChart:
+component-protocol.components.issue-dashboard.trendChartExtra:
+component-protocol.components.issue-dashboard.trendChartFilter:
+component-protocol.components.issue-dashboard.chartGroup1:
+component-protocol.components.issue-dashboard.chartGroup2:
+component-protocol.components.issue-dashboard.statePieChart:
+component-protocol.components.issue-dashboard.complexityPieChart:
+component-protocol.components.issue-dashboard.priorityPieChart:
+component-protocol.components.issue-dashboard.severityPieChart:
+component-protocol.components.issue-dashboard.sourcePieChart:
+component-protocol.components.issue-dashboard.header:
+component-protocol.components.issue-dashboard.issueType:
+component-protocol.components.issue-dashboard.overview:
+component-protocol.components.issue-dashboard.issueTip:
+
+component-protocol.components.issue-dashboard.total:
+component-protocol.components.issue-dashboard.open:
+component-protocol.components.issue-dashboard.expired:
+component-protocol.components.issue-dashboard.today:
+component-protocol.components.issue-dashboard.month:
+component-protocol.components.issue-dashboard.reopen:
+component-protocol.components.issue-dashboard.week:
+component-protocol.components.issue-dashboard.undefined:
+
+component-protocol.components.issue-dashboard.stateVerticalBarChart:
+component-protocol.components.issue-dashboard.stateVerticalBarChartExtra:
+component-protocol.components.issue-dashboard.stateVerticalBarChartFilter:
+
+component-protocol.components.issue-dashboard.labelHorizontalBarChart:
+component-protocol.components.issue-dashboard.labelHorizontalBarChartExtra:
+component-protocol.components.issue-dashboard.labelHorizontalBarChartFilter:
+
+component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:
+component-protocol.components.issue-dashboard.assigneeHorizontalBarChartExtra:
+component-protocol.components.issue-dashboard.assigneeHorizontalBarChartFilter:

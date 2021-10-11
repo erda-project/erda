@@ -1031,6 +1031,10 @@ func (e *Endpoints) IssueStateService() *issuestate.IssueState {
 	return e.issueState
 }
 
+func (e *Endpoints) IssueService() *issue.Issue {
+	return e.issue
+}
+
 func (e *Endpoints) CodeCoverageService() *code_coverage.CodeCoverage {
 	return e.codeCoverageSvc
 }

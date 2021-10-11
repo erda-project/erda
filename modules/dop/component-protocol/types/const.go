@@ -19,4 +19,5 @@ const (
 	IssueStateService    = "issueState"
 	IssueFilterBmService = "issueFilterBookmark"
 	CodeCoverageService  = "codeCoverage"
+	IssueService         = "issue"
 )
