@@ -79,7 +79,7 @@ component-protocol.components.issue-dashboard.statePieChart:
 component-protocol.components.issue-dashboard.complexityPieChart:
 component-protocol.components.issue-dashboard.priorityPieChart:
 component-protocol.components.issue-dashboard.severityPieChart:
-component-protocol.components.issue-dashboard.sourcePieChart:
+component-protocol.components.issue-dashboard.stagePieChart:
 component-protocol.components.issue-dashboard.header:
 component-protocol.components.issue-dashboard.issueType:
 component-protocol.components.issue-dashboard.overview:

@@ -14,13 +14,89 @@
 
 package stackhandlers
 
+import (
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+)
+
 type StackHandler interface {
 	GetStacks() []Stack
 	GetIndexer() func(issue interface{}) string
+
+	GetFilterOptions() []filter.PropConditionOption
 }
 
 type Stack struct {
 	Name  string
 	Value string
 	Color string
+}
+
+var emptyStack = Stack{
+	Name:  "empty",
+	Value: "",
+	Color: "red",
+}
+
+func getFilterOptions(stacks []Stack) []filter.PropConditionOption {
+	var options []filter.PropConditionOption
+	for _, s := range stacks {
+		options = append(options, filter.PropConditionOption{
+			Label: s.Name,
+			Value: s.Value,
+		})
+	}
+	return options
+}
+
+type StackRetriever struct {
+	issueStateList []dao.IssueState
+	issueStageList []dao.IssueStage
+}
+
+type option func(retriever *StackRetriever)
+
+func NewStackRetriever(options ...option) *StackRetriever {
+	retriever := StackRetriever{}
+	for _, op := range options {
+		op(&retriever)
+	}
+	return &retriever
+}
+
+func WithIssueStateList(issueStateList []dao.IssueState) option {
+	return func(retriever *StackRetriever) {
+		retriever.issueStateList = issueStateList
+	}
+}
+
+func WithIssueStageList(issueStageList []dao.IssueStage) option {
+	return func(retriever *StackRetriever) {
+		retriever.issueStageList = issueStageList
+	}
+}
+
+const (
+	Priority   = "Priority"
+	Complexity = "Complexity"
+	Severity   = "Severity"
+	State      = "State"
+	Stage      = "Stage"
+)
+
+func (r *StackRetriever) GetRetriever(t string) StackHandler {
+	switch t {
+	case Priority:
+		return NewPriorityStackHandler()
+	case Complexity:
+		return NewComplexityStackHandler()
+	case Severity:
+		return NewSeverityStackHandler()
+	case State:
+		return NewStateStackHandler(r.issueStateList)
+	case Stage:
+		return NewStageStackHandler(r.issueStageList)
+	default:
+		return NewEmptyStackHandler()
+	}
 }

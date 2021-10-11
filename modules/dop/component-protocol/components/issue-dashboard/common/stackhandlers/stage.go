@@ -15,53 +15,52 @@
 package stackhandlers
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
-type SourceStackHandler struct {
+type StageStackHandler struct {
+	issueStageList []dao.IssueStage
 }
 
-func NewSourceStackHandler() *SourceStackHandler {
-	return &SourceStackHandler{}
+func NewStageStackHandler(issueStageList []dao.IssueStage) *StageStackHandler {
+	return &StageStackHandler{
+		issueStageList: issueStageList,
+	}
 }
 
-var sourceColorMap = map[apistructs.IssueComplexity]string{
-	apistructs.IssueComplexityHard:   "red",
-	apistructs.IssueComplexityNormal: "yellow",
-	apistructs.IssueComplexityEasy:   "green",
-}
+var stageColorList = []string{"red", "yellow", "green"}
 
-func (h *SourceStackHandler) GetStacks() []Stack {
+func (h *StageStackHandler) GetStacks() []Stack {
+	l := len(stageColorList)
 	var stacks []Stack
-	for _, i := range []apistructs.IssueComplexity{
-		apistructs.IssueComplexityHard,
-		apistructs.IssueComplexityNormal,
-		apistructs.IssueComplexityEasy,
-	} {
+	for idx, i := range h.issueStageList {
 		stacks = append(stacks, Stack{
-			Name:  "",
-			Value: i.GetZhName(),
-			Color: sourceColorMap[i],
-		}) // TODO
+			Name:  i.Name,
+			Value: i.Value,
+			Color: stageColorList[idx%l],
+		})
+	}
+	if len(stacks) == 0 {
+		stacks = append(stacks, emptyStack)
 	}
 	return stacks
 }
 
-func (h *SourceStackHandler) GetStackColors() []string {
-	return []string{"red", "yellow", "green"}
-}
-
-func (h *SourceStackHandler) GetIndexer() func(issue interface{}) string {
+func (h *StageStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		switch issue.(type) {
 		case *dao.IssueItem:
-			return issue.(*dao.IssueItem).Complexity.GetZhName() // TODO
+			return issue.(*dao.IssueItem).Stage
 		case *model.LabelIssueItem:
-			return issue.(*model.LabelIssueItem).Bug.Complexity.GetZhName()
+			return issue.(*model.LabelIssueItem).Bug.Stage
 		default:
 			return ""
 		}
 	}
+}
+
+func (h *StageStackHandler) GetFilterOptions() []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks())
 }

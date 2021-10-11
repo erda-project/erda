@@ -38,7 +38,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/complexityPieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/priorityPieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/severityPieChart"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/sourcePieChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/stagePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/statePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reopen"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/today"

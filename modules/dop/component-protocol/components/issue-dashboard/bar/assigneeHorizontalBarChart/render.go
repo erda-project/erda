@@ -17,6 +17,7 @@ package assigneeHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -65,7 +66,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 
-	handler := common.StackRetriever(f.State.Values.Type)
+	handler := stackhandlers.NewStackRetriever(
+		stackhandlers.WithIssueStateList(f.State.IssueStateList),
+		stackhandlers.WithIssueStageList(nil),
+	).GetRetriever(f.State.Values.Type)
 
 	series, colors, realY := common.GroupToVerticalBarData(bugList, handler, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee

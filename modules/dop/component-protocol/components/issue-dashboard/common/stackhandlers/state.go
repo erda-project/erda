@@ -20,15 +20,16 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type StateStackHandler struct {
-	IssueStateList []dao.IssueState
+	issueStateList []dao.IssueState
 }
 
 func NewStateStackHandler(issueStateList []dao.IssueState) *StateStackHandler {
 	return &StateStackHandler{
-		IssueStateList: issueStateList,
+		issueStateList: issueStateList,
 	}
 }
 
@@ -52,7 +53,7 @@ var stateColorMap = map[apistructs.IssueStateBelong][]string{
 func (h *StateStackHandler) GetStacks() []Stack {
 	var stacks []Stack
 	belongCounter := make(map[apistructs.IssueStateBelong]int)
-	for _, i := range h.IssueStateList {
+	for _, i := range h.issueStateList {
 		color := stateColorMap[i.Belong][belongCounter[i.Belong]%len(stateColorMap[i.Belong])]
 		belongCounter[i.Belong]++
 		stacks = append(stacks, Stack{
@@ -60,6 +61,9 @@ func (h *StateStackHandler) GetStacks() []Stack {
 			Value: fmt.Sprintf("%d", i.ID),
 			Color: color,
 		})
+	}
+	if len(stacks) == 0 {
+		stacks = append(stacks, emptyStack)
 	}
 	return stacks
 }
@@ -75,4 +79,8 @@ func (h *StateStackHandler) GetIndexer() func(issue interface{}) string {
 			return ""
 		}
 	}
+}
+
+func (h *StateStackHandler) GetFilterOptions() []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks())
 }

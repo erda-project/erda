@@ -17,11 +17,11 @@ package stateVerticalBarChartFilter
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -72,11 +72,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 
 func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State) error {
 	if f.State.Values.Type == "" {
-		f.State.Values.Type = common.Priority
+		f.State.Values.Type = stackhandlers.Priority
 	}
 	if f.State.FrontendChangedKey == "type" {
 		f.State.Values.Value = nil
 	}
+	handler := stackhandlers.NewStackRetriever(
+		stackhandlers.WithIssueStageList(nil),
+	).GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
 		{
 			EmptyText: "全部",
@@ -86,15 +89,19 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			Options: []filter.PropConditionOption{
 				{
 					Label: "优先级",
-					Value: common.Priority,
+					Value: stackhandlers.Priority,
 				},
 				{
 					Label: "复杂度",
-					Value: common.Complexity,
+					Value: stackhandlers.Complexity,
 				},
 				{
 					Label: "严重程度",
-					Value: common.Severity,
+					Value: stackhandlers.Severity,
+				},
+				{
+					Label: "引入源",
+					Value: stackhandlers.Stage,
 				},
 			},
 			Required: true,
@@ -108,7 +115,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			Fixed:     true,
 			Key:       "value",
 			Label:     "具体值",
-			Options:   common.ConditionMap[f.State.Values.Type],
+			Options:   handler.GetFilterOptions(),
 			Type:      filter.PropConditionTypeSelect,
 		},
 	}

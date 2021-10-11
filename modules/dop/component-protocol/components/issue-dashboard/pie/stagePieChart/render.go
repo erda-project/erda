@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sourcePieChart
+package stagePieChart
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "sourcePieChart",
+	base.InitProviderWithCreator("issue-dashboard", "stagePieChart",
 		func() servicehub.Provider { return &ComponentAction{} })
 }
 
@@ -46,7 +46,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	handler := stackhandlers.NewSourceStackHandler()
+	handler := stackhandlers.NewStageStackHandler(nil) // TODO
 
 	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
 

@@ -175,16 +175,3 @@ type counterList []counterItem
 func (l counterList) Less(i, j int) bool { return l[i].Value > l[j].Value }
 func (l counterList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 func (l counterList) Len() int           { return len(l) }
-
-func StackRetriever(t string) stackhandlers.StackHandler {
-	switch t {
-	case Priority:
-		return stackhandlers.NewPriorityStackHandler()
-	case Complexity:
-		return stackhandlers.NewComplexityStackHandler()
-	case Severity:
-		return stackhandlers.NewSeverityStackHandler()
-	default:
-		return stackhandlers.NewEmptyStackHandler()
-	}
-}

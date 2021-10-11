@@ -38,7 +38,7 @@ hierarchy:
       - priorityPieChart
     chartGroup2:
       - severityPieChart
-      - sourcePieChart
+      - stagePieChart
     stateVerticalBarChart:
       extraContent:
         stateVerticalBarChartExtra
@@ -112,7 +112,7 @@ components:
     type: Chart
   severityPieChart:
     type: Chart
-  sourcePieChart:
+  stagePieChart:
     type: Chart
 
   stateVerticalBarChart:
@@ -169,7 +169,7 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
-    - name: sourcePieChart
+    - name: stagePieChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
@@ -354,7 +354,7 @@ rendering:
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"
-    - name: sourcePieChart
+    - name: stagePieChart
       state:
         - name: "issueList"
           value: "{{ filter.issueList }}"

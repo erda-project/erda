@@ -17,6 +17,7 @@ package labelHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"strconv"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -104,7 +105,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		})
 	}
 
-	handler := common.StackRetriever(f.State.Values.Type)
+	handler := stackhandlers.NewStackRetriever(
+		stackhandlers.WithIssueStateList(f.State.IssueStateList),
+		stackhandlers.WithIssueStageList(nil),
+	).GetRetriever(f.State.Values.Type)
 
 	series, colors, realY := common.GroupToVerticalBarData(labelList, handler, nil, func(label interface{}) string {
 		l := label.(*model.LabelIssueItem)

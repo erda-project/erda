@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type SeverityStackHandler struct {
@@ -58,4 +59,8 @@ func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {
 			return ""
 		}
 	}
+}
+
+func (h *SeverityStackHandler) GetFilterOptions() []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks())
 }

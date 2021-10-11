@@ -17,6 +17,7 @@ package stateVerticalBarChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -59,7 +60,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 
-	handler := common.StackRetriever(f.State.Values.Type)
+	handler := stackhandlers.NewStateStackHandler(nil)
 	bar := charts.NewBar()
 
 	// x is always stable
