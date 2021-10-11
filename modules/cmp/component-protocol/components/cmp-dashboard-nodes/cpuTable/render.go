@@ -167,7 +167,7 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		Kind:    metrics.Node,
 	}
 	for _, node := range nodes {
-		req.NodeRequests = append(req.NodeRequests, metrics.MetricsNodeRequest{
+		req.NodeRequests = append(req.NodeRequests, &metrics.MetricsNodeRequest{
 			MetricsRequest: req,
 			Ip:             node.StringSlice("metadata", "fields")[5],
 		})
@@ -190,8 +190,13 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 
 		key := req.NodeRequests[i].CacheKey()
 		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
-		usage = ct.GetUsageValue(resp[key].Used, float64(requestQty.Value()), table.Cpu)
-		dr = ct.GetUnusedRate(float64(cpuRequest)-resp[key].Used*1000, float64(cpuRequest), table.Cpu)
+		metricsData, ok := resp[key]
+		used := 0.0
+		if ok {
+			used = metricsData.Used
+		}
+		usage = ct.GetUsageValue(used, float64(requestQty.Value()), table.Cpu)
+		dr = ct.GetUnusedRate(float64(cpuRequest)-used*1000, float64(cpuRequest), table.Cpu)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {

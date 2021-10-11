@@ -14,7 +14,11 @@
 
 package metrics
 
-import "github.com/erda-project/erda/modules/cmp/cache"
+import (
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/cmp/cache"
+)
 
 type MetricsRequest struct {
 	UserId       string
@@ -22,8 +26,8 @@ type MetricsRequest struct {
 	Cluster      string
 	Type         string
 	Kind         string
-	PodRequests  []MetricsPodRequest
-	NodeRequests []MetricsNodeRequest
+	PodRequests  []MetricsReqInterface
+	NodeRequests []MetricsReqInterface
 }
 
 func (m MetricsRequest) UserID() string {
@@ -50,6 +54,11 @@ type MetricsPodRequest struct {
 	*MetricsRequest
 	Name         string
 	PodNamespace string
+}
+
+func (m MetricsPodRequest) IP() string {
+	logrus.Errorf("pod request dose not support ip")
+	return ""
 }
 
 func (m MetricsPodRequest) CacheKey() string {
@@ -107,6 +116,16 @@ type MetricsReqInterface interface {
 type MetricsNodeRequest struct {
 	*MetricsRequest
 	Ip string
+}
+
+func (m *MetricsNodeRequest) PodName() string {
+	logrus.Errorf("node request dose not support pod name")
+	return ""
+}
+
+func (m *MetricsNodeRequest) Namespace() string {
+	logrus.Errorf("node request dose not support namespace")
+	return ""
 }
 
 func (m *MetricsNodeRequest) CacheKey() string {
