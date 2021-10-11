@@ -15,12 +15,13 @@
 package triggering
 
 import (
-	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"net/http"
 	"reflect"
 	"testing"
 
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 )
 
 func TestTriggering_HttpCodeStrategy(t *testing.T) {
