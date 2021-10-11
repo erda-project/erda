@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func FixEmptyWord(em string) string {
@@ -63,7 +64,7 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 	return data, colors
 }
 
-func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.StackHandler, xAxis []string,
+func GroupToBarData(itemList []interface{}, wl []string, stackHandler stackhandlers.StackHandler, xAxis []string,
 	xIdx func(issue interface{}) string,
 	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string, []string) {
 	counter := make(map[string]map[string]int)
@@ -73,6 +74,11 @@ func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.S
 
 	for _, i := range itemList {
 		y := FixEmptyWord(stackIndexer(i))
+		if len(wl) > 0 { // empty means not filter
+			if !strutil.Exist(wl, y) {
+				continue
+			}
+		}
 		x := FixEmptyWord(xIdx(i))
 		if _, ok := counter[y]; !ok {
 			counter[y] = make(map[string]int)
@@ -150,16 +156,6 @@ func IssueListRetriever(issues []dao.IssueItem, match func(i int) bool) []dao.Is
 	for i, issue := range issues {
 		if match(i) {
 			res = append(res, issue)
-		}
-	}
-	return res
-}
-
-func IssueListFilter(issues []dao.IssueItem, match func(i int) bool) []interface{} {
-	res := make([]interface{}, 0)
-	for i := range issues {
-		if match(i) {
-			res = append(res, &issues[i])
 		}
 	}
 	return res

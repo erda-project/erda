@@ -33,16 +33,19 @@ type ComponentFilter struct {
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
 	base.DefaultProvider
+
+	// local vars
+	IssueList  []dao.IssueItem        `json:"-"`
+	Iterations []apistructs.Iteration `json:"iterations"`
+	Members    []apistructs.Member    `json:"-"`
 }
 
 type State struct {
 	Conditions           []filter.PropCondition    `json:"conditions,omitempty"`
 	Values               common.FrontendConditions `json:"values,omitempty"`
 	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem           `json:"issueList,omitempty"`
-	IssueStateList       []dao.IssueState          `json:"issueStateList,omitempty"`
-	Iterations           []apistructs.Iteration    `json:"iterations,omitempty"`
-	Members              []apistructs.Member       `json:"members,omitempty"`
+	IssueStateList       []dao.IssueState          `json:"issueStateList"`
+	Stages               []apistructs.IssueStage   `json:"stages"`
 }
 
 type InParams struct {

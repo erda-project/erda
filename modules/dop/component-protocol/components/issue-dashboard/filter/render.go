@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -112,6 +113,15 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	if len(iterations) == 0 {
+		start := time.Now().AddDate(0, -1, 0)
+		end := time.Now()
+		iterations[-1] = apistructs.Iteration{
+			StartedAt:  &start,
+			FinishedAt: &end,
+		}
+	}
+
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		if err := f.InitDefaultOperation(ctx, iterations); err != nil {
@@ -150,28 +160,51 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			CustomProps: map[string]interface{}{
 				"mode": "single",
 			},
+			HaveFilter: true,
 		},
 		{
-			EmptyText: "全部",
-			Fixed:     true,
-			Key:       "member",
-			Label:     "成员",
-			Options:   projectMemberOptions,
-			Type:      filter.PropConditionTypeSelect,
+			EmptyText:  "全部",
+			Fixed:      true,
+			Key:        "member",
+			Label:      "成员",
+			Options:    projectMemberOptions,
+			Type:       filter.PropConditionTypeSelect,
+			HaveFilter: true,
 		},
 	}
 
 	// TODO select multiple iteration
-	f.State.Iterations = []apistructs.Iteration{iterations[f.State.Values.IterationIDs]}
+	f.Iterations = []apistructs.Iteration{iterations[f.State.Values.IterationIDs]}
 
 	// todo modify data format
-	f.State.IssueList = data
+	f.IssueList = data
 
 	states, err := f.issueSvc.GetIssuesStatesByProjectID(f.InParams.ProjectID, apistructs.IssueTypeBug)
 	if err != nil {
 		return err
 	}
 	f.State.IssueStateList = states
+
+	orgID, err := strconv.Atoi(f.sdk.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+
+	stages, err := f.issueSvc.GetIssueStage(&apistructs.IssueStageRequest{
+		OrgID:     int64(orgID),
+		IssueType: apistructs.IssueTypeBug,
+	})
+	if err != nil {
+		return err
+	}
+	f.State.Stages = stages
+
+	helper := gshelper.NewGSHelper(gs)
+	helper.SetIterations(f.Iterations)
+	helper.SetMembers(f.Members)
+	helper.SetIssueList(f.IssueList)
+	helper.SetIssueStateList(f.State.IssueStateList)
+	helper.SetIssueStageList(f.State.Stages)
 
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {
@@ -212,7 +245,7 @@ func defaultIterationRetriever(iterations map[int64]apistructs.Iteration) int64 
 			return i
 		}
 	}
-	return 0
+	return -1
 }
 
 func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
@@ -224,7 +257,6 @@ func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
 }
 
 func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Iteration, []filter.PropConditionOption, error) {
-	f.sdk.Identity.OrgID = "1"
 	iterations, err := f.bdl.ListProjectIterations(apistructs.IterationPagingRequest{PageNo: 1, PageSize: 1000, ProjectID: f.InParams.ProjectID, WithoutIssueSummary: true}, f.sdk.Identity.OrgID)
 	if err != nil {
 		return nil, nil, err
@@ -251,7 +283,7 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOptio
 	if err != nil {
 		return nil, err
 	}
-	f.State.Members = members
+	f.Members = members
 	var results []filter.PropConditionOption
 	for _, member := range members {
 		results = append(results, filter.PropConditionOption{

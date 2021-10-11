@@ -16,7 +16,6 @@ package stateVerticalBarChart
 
 import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -26,7 +25,5 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values         common.FilterConditions `json:"values,omitempty"`
-	IssueList      []dao.IssueItem         `json:"issueList,omitempty"`
-	IssueStateList []dao.IssueState        `json:"issueStateList,omitempty"`
+	Values common.FilterConditions `json:"values,omitempty"`
 }

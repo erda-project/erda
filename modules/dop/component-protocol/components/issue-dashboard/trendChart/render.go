@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -72,10 +73,13 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	if f.State.Iterations != nil {
-		f.ChartDataRetriever(f.State.Iterations[0])
+	helper := gshelper.NewGSHelper(gs)
+	f.IssueList = helper.GetIssueList()
+	iterations := helper.GetIterations()
+
+	if iterations != nil {
+		f.ChartDataRetriever(iterations[0])
 	}
-	f.State.IssueList = nil
 	return f.SetToProtocolComponent(c)
 }
 
@@ -108,8 +112,8 @@ func (f *ComponentAction) ChartDataRetriever(iteration apistructs.Iteration) {
 
 	first, last := [3]int{0, 0, 0}, [3]int{0, 0, 0}
 
-	issues := common.IssueListRetriever(f.State.IssueList, func(i int) bool {
-		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
+	issues := common.IssueListRetriever(f.IssueList, func(i int) bool {
+		v := f.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
 	for _, i := range issues {

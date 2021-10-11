@@ -17,7 +17,6 @@ package stateVerticalBarChart
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -25,9 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -49,32 +49,36 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
+	helper := gshelper.NewGSHelper(gs)
+
+	stateList := helper.GetIssueStateList()
 	stateMap := make(map[uint64]*dao.IssueState)
-	for i := range f.State.IssueStateList {
-		s := f.State.IssueStateList[i]
+	for i := range stateList {
+		s := stateList[i]
 		stateMap[s.ID] = &s
 	}
 
-	bugList := common.IssueListFilter(f.State.IssueList, func(i int) bool {
-		v := f.State.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
-		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
-	})
+	issueList := helper.GetIssueList()
+	var bugList []interface{}
+	for i := range issueList {
+		bugList = append(bugList, &issueList[i])
+	}
 
 	handler := stackhandlers.NewStackRetriever(
-		stackhandlers.WithIssueStageList(nil),
+		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 	bar := charts.NewBar()
 
 	// x is always stable
 	var xAxis []string
-	for _, i := range f.State.IssueStateList {
+	for _, i := range stateList {
 		xAxis = append(xAxis, i.Name)
 	}
 	bar.XAxisList[0] = opts.XAxis{
 		Data: xAxis,
 	}
 
-	series, colors, _ := common.GroupToVerticalBarData(bugList, handler, xAxis, func(issue interface{}) string {
+	series, colors, _ := common.GroupToBarData(bugList, f.State.Values.Value, handler, xAxis, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
 	}, common.GetStackBarSingleSeriesConverter(), 0)
 

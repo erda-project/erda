@@ -15,6 +15,7 @@
 package stackhandlers
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -38,20 +39,26 @@ var emptyStack = Stack{
 	Color: "red",
 }
 
-func getFilterOptions(stacks []Stack) []filter.PropConditionOption {
-	var options []filter.PropConditionOption
-	for _, s := range stacks {
-		options = append(options, filter.PropConditionOption{
+func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOption {
+	l := len(stacks)
+	options := make([]filter.PropConditionOption, l)
+	for i := 0; i < l; i++ {
+		j := i
+		if len(reverse) > 0 && reverse[0] {
+			j = l - 1 - i
+		}
+		s := stacks[j]
+		options[i] = filter.PropConditionOption{
 			Label: s.Name,
 			Value: s.Value,
-		})
+		}
 	}
 	return options
 }
 
 type StackRetriever struct {
 	issueStateList []dao.IssueState
-	issueStageList []dao.IssueStage
+	issueStageList []apistructs.IssueStage
 }
 
 type option func(retriever *StackRetriever)
@@ -70,7 +77,7 @@ func WithIssueStateList(issueStateList []dao.IssueState) option {
 	}
 }
 
-func WithIssueStageList(issueStageList []dao.IssueStage) option {
+func WithIssueStageList(issueStageList []apistructs.IssueStage) option {
 	return func(retriever *StackRetriever) {
 		retriever.issueStageList = issueStageList
 	}

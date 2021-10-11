@@ -16,10 +16,8 @@ package labelHorizontalBarChart
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -34,11 +32,7 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values               common.FilterConditions `json:"values,omitempty"`
-	Base64UrlQueryParams string                  `json:"issueFilter__urlQuery,omitempty"`
-	IssueList            []dao.IssueItem         `json:"issueList,omitempty"`
-	IssueStateList       []dao.IssueState        `json:"issueStateList,omitempty"`
-	Iterations           []apistructs.Iteration  `json:"iterations,omitempty"`
+	Values common.FilterConditions `json:"values,omitempty"`
 }
 
 type InParams struct {
