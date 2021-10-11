@@ -207,7 +207,14 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 			BoundaryScannerType("word").
 			Field("*"))
 	}
-	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(req.Size))
+
+	// max allowed size limit to 10000
+	size := req.Size
+	if req.Page*req.Size > 10000 {
+		size = 10000 - (req.Page-1)*req.Size
+	}
+
+	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(size))
 	return searchSource
 }
 
@@ -573,18 +580,18 @@ func (p *provider) ListDefaultFields() []*LogField {
 		{FieldName: "tags.origin", SupportAggregation: false, Display: false, Group: 1},
 		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false, Group: 1},
 		{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_cluster_name", SupportAggregation: true, Display: false, Group: 1},
+		{FieldName: "tags.dice_cluster_name", SupportAggregation: false, Display: false, Group: 1},
 		{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false, Group: 2},
-		{FieldName: "tags.dice_project_name", SupportAggregation: true, Display: false, Group: 2},
-		{FieldName: "tags.dice_workspace", SupportAggregation: true, Display: false, Group: 2},
+		{FieldName: "tags.dice_project_name", SupportAggregation: false, Display: false, Group: 2},
+		{FieldName: "tags.dice_workspace", SupportAggregation: false, Display: false, Group: 2},
 		{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false, Group: 3},
 		{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true, Group: 3},
 		{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false, Group: 3},
 		{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false, Group: 3},
 		{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true, Group: 4},
-		{FieldName: "tags.pod_namespace", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.pod_namespace", SupportAggregation: false, Display: false, Group: 5},
 		{FieldName: "tags.pod_name", SupportAggregation: true, Display: true, Group: 5},
-		{FieldName: "tags.container_name", SupportAggregation: true, Display: true, Group: 5},
+		{FieldName: "tags.container_name", SupportAggregation: false, Display: false, Group: 5},
 		{FieldName: "tags.request-id", SupportAggregation: false, Display: true, Group: 6},
 	}
 }
