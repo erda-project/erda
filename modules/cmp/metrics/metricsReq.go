@@ -14,23 +14,127 @@
 
 package metrics
 
+import "github.com/erda-project/erda/modules/cmp/cache"
+
 type MetricsRequest struct {
-	UserID       string
-	OrgID        string
-	ClusterName  string
-	ResourceType string
-	ResourceKind string
+	UserId       string
+	OrgId        string
+	Cluster      string
+	Type         string
+	Kind         string
 	PodRequests  []MetricsPodRequest
 	NodeRequests []MetricsNodeRequest
 }
 
+func (m MetricsRequest) UserID() string {
+	return m.UserId
+}
+
+func (m MetricsRequest) OrgID() string {
+	return m.OrgId
+}
+
+func (m MetricsRequest) ResourceType() string {
+	return m.Type
+}
+
+func (m MetricsRequest) ResourceKind() string {
+	return m.Kind
+}
+
+func (m MetricsRequest) ClusterName() string {
+	return m.Cluster
+}
+
 type MetricsPodRequest struct {
-	PodName   string
-	Namespace string
+	*MetricsRequest
+	Name         string
+	PodNamespace string
+}
+
+func (m MetricsPodRequest) CacheKey() string {
+	return cache.GenerateKey(m.ClusterName(), m.PodName(), m.Namespace(), m.ResourceType(), m.ResourceKind())
+}
+
+func (m *MetricsPodRequest) ResourceType() string {
+	return m.Type
+}
+
+func (m *MetricsPodRequest) ResourceKind() string {
+	return m.Kind
+}
+
+func (m *MetricsPodRequest) ClusterName() string {
+	return m.Cluster
+}
+
+func (m *MetricsPodRequest) PodName() string {
+	return m.Name
+}
+
+func (m *MetricsPodRequest) Namespace() string {
+	return m.PodNamespace
+}
+
+type Basic interface {
+	UserID() string
+	OrgID() string
+	ResourceType() string
+	ResourceKind() string
+	ClusterName() string
+}
+type NodeMetrics interface {
+	Basic
+	IP() string
+}
+
+type PodMetrics interface {
+	Basic
+	PodName() string
+	Namespace() string
+}
+
+type Key interface {
+	CacheKey() string
+}
+
+type MetricsReqInterface interface {
+	Key
+	PodMetrics
+	NodeMetrics
 }
 
 type MetricsNodeRequest struct {
-	IP string
+	*MetricsRequest
+	Ip string
+}
+
+func (m *MetricsNodeRequest) CacheKey() string {
+	return cache.GenerateKey(m.IP(), m.ClusterName(), m.ResourceType(), m.ResourceKind())
+}
+
+func (m *MetricsNodeRequest) ClusterName() string {
+	return m.Cluster
+}
+
+func (m *MetricsNodeRequest) UserID() string {
+	return m.UserId
+}
+
+func (m *MetricsNodeRequest) OrgID() string {
+	return m.OrgId
+}
+
+func (m *MetricsNodeRequest) ResourceType() string {
+	return m.Type
+}
+
+func (m *MetricsNodeRequest) ResourceKind() string {
+	return m.Kind
+}
+
+func (m *MetricsNodeRequest) IP() string {
+	return m.Ip
 }
 
 type MetricsData struct {
