@@ -18,6 +18,7 @@ import (
 	"container/heap"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,6 +48,7 @@ const (
 	UnsignedType
 	ByteType
 	ByteSliceType
+	InterfaceType
 )
 
 var (
@@ -61,6 +63,7 @@ var (
 	KeyTooLongError         = errors.New("key too long")
 	SizeTooSmallError       = errors.New("total size too small")
 	ValueTypeNotFoundError  = errors.New("cacheValues type not found")
+	ValueNotSupportError    = errors.New("value type not support")
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
@@ -207,7 +210,10 @@ func (s *store) write(id int) error {
 	ps := s.segs[id]
 	newPair := s.segs[id].tmp
 
-	needSize, _ := newPair.getEntrySize()
+	needSize, err := newPair.getEntrySize()
+	if err != nil {
+		return err
+	}
 	if ps.maxSize < needSize {
 		s.log.Errorf("exceed cache size ,seg size = %v, value size = %v, try next", ps.maxSize, needSize)
 		return EvictError
@@ -286,7 +292,9 @@ func (p *pair) getEntrySize() (int64, error) {
 	}
 	var usage = int64(0)
 	for _, v := range p.value {
-		usage += v.Size()
+		if size := v.Size(); size < 0 {
+			return -1, ValueNotSupportError
+		}
 	}
 	return usage, nil
 }
@@ -445,6 +453,92 @@ func (b BoolValue) Value() interface{} {
 	return b.value
 }
 
+type InterfaceValue struct {
+	o interface{}
+}
+
+func (i InterfaceValue) Size() int64 {
+	return interfaceGetSize(i.o)
+}
+
+func calc(refValue reflect.Value) (int, error) {
+	refValue.Type()
+	size := 0
+	switch refValue.Kind() {
+	case reflect.Int8, reflect.Bool, reflect.Uint8:
+		size += 1
+	case reflect.Int16, reflect.Uint16:
+		size += 2
+	case reflect.Int, reflect.Int32, reflect.Uint32, reflect.Float32:
+		size += 4
+	case reflect.Int64, reflect.Uint64, reflect.Float64:
+		size += 8
+	case reflect.String:
+		size += refValue.Len()
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < refValue.Len(); i++ {
+			s, err := calc(refValue.Index(i))
+			if err != nil {
+				return -1, err
+			}
+			size += s
+		}
+	case reflect.Map:
+		keys := refValue.MapKeys()
+		for _, key := range keys {
+			s, err := calc(key)
+			if err != nil {
+				return -1, err
+			}
+			size += s
+			s, err = calc(refValue.MapIndex(key))
+			if err != nil {
+				return -1, err
+			}
+			size += s
+		}
+	case reflect.Ptr, reflect.Interface:
+		s, err := calc(refValue.Elem())
+		if err != nil {
+			return -1, err
+		}
+		size += s
+	case reflect.Struct:
+		for i := 0; i < refValue.NumField(); i++ {
+			s, err := calc(refValue.Field(i))
+			if err != nil {
+				return -1, err
+			}
+			size += s
+		}
+	default:
+		return -1, ValueNotSupportError
+	}
+	return size, nil
+}
+
+func interfaceGetSize(o interface{}) int64 {
+	refValue := reflect.ValueOf(o)
+	size, err := calc(refValue)
+	if err != nil {
+		logrus.Error(err)
+		return -1
+	}
+	return int64(size)
+}
+
+func (i InterfaceValue) String() string {
+	return fmt.Sprintf("%v", i.o)
+}
+
+func (i InterfaceValue) Type() EntryType {
+	return InterfaceType
+}
+
+func (i InterfaceValue) Value() interface{} {
+	return i.o
+}
+
 // New returns cache.
 // parma size means memory cache can use.
 func New(size, segSize int64) (*Cache, error) {
@@ -591,6 +685,10 @@ func MarshalValue(o interface{}) (Values, error) {
 	return Values{ByteSliceValue{
 		value: d,
 	}}, nil
+}
+
+func GetInterfaceValue(o interface{}) (Values, error) {
+	return Values{InterfaceValue{o: o}}, nil
 }
 
 func GetByteValue(d byte) (Values, error) {
