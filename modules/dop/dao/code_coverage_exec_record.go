@@ -64,6 +64,7 @@ func (c *CodeCoverageExecRecord) Covert() *apistructs.CodeCoverageExecRecordDto 
 		ID:            c.ID,
 		ProjectID:     c.ProjectID,
 		Status:        c.Status.String(),
+		ReportStatus:  c.ReportStatus.String(),
 		Msg:           c.Msg,
 		Coverage:      c.Coverage,
 		ReportUrl:     c.ReportUrl,
