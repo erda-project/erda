@@ -17,7 +17,7 @@ func NewStateStackHandler(issueStateList []dao.IssueState) *StateStackHandler {
 	}
 }
 
-var colorMap = map[apistructs.IssueStateBelong][]string{
+var stateColorMap = map[apistructs.IssueStateBelong][]string{
 	// 待处理
 	apistructs.IssueStateBelongOpen: {"yellow"},
 	// 进行中
@@ -36,24 +36,17 @@ var colorMap = map[apistructs.IssueStateBelong][]string{
 
 func (h *StateStackHandler) GetStacks() []Stack {
 	var stacks []Stack
+	belongCounter := make(map[apistructs.IssueStateBelong]int)
 	for _, i := range h.IssueStateList {
+		color := stateColorMap[i.Belong][belongCounter[i.Belong] % len(stateColorMap[i.Belong])]
+		belongCounter[i.Belong]++
 		stacks = append(stacks, Stack{
 			Name:  i.Name,
 			Value: fmt.Sprintf("%d", i.ID),
+			Color: color,
 		})
 	}
 	return stacks
-}
-
-func (h *StateStackHandler) GetStackColors() []string {
-	var colors []string
-	belongCounter := make(map[apistructs.IssueStateBelong]int)
-	for _, i := range h.IssueStateList {
-		color := colorMap[i.Belong][belongCounter[i.Belong] % len(colorMap[i.Belong])]
-		colors = append(colors, color)
-		belongCounter[i.Belong]++
-	}
-	return colors
 }
 
 func (h *StateStackHandler) GetIndexer() func(issue interface{}) string {

@@ -27,19 +27,24 @@ func NewSeverityStackHandler() *SeverityStackHandler {
 	return &SeverityStackHandler{}
 }
 
+var severityColorMap = map[apistructs.IssueSeverity]string{
+	apistructs.IssueSeverityFatal:   "maroon",
+	apistructs.IssueSeveritySerious: "red",
+	apistructs.IssueSeverityNormal:  "yellow",
+	apistructs.IssueSeveritySlight:  "darkseagreen",
+	apistructs.IssueSeverityLow:     "green",
+}
+
 func (h *SeverityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
 	for _, i := range apistructs.IssueSeveritys {
 		stacks = append(stacks, Stack{
 			Name:  i.GetZhName(),
 			Value: string(i),
+			Color: severityColorMap[i],
 		})
 	}
 	return stacks
-}
-
-func (h *SeverityStackHandler) GetStackColors() []string {
-	return []string{"maroon", "red", "yellow", "darkseagreen", "green"}
 }
 
 func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {

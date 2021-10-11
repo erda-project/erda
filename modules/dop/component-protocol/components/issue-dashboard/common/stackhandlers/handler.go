@@ -16,7 +16,6 @@ package stackhandlers
 
 type StackHandler interface {
 	GetStacks() []Stack
-	GetStackColors() []string
 	GetIndexer() func(issue interface{}) string
 }
 

@@ -13,6 +13,12 @@ func NewSourceStackHandler() *SourceStackHandler {
 	return &SourceStackHandler{}
 }
 
+var sourceColorMap = map[apistructs.IssueComplexity]string{
+	apistructs.IssueComplexityHard:   "red",
+	apistructs.IssueComplexityNormal: "yellow",
+	apistructs.IssueComplexityEasy:   "green",
+}
+
 func (h *SourceStackHandler) GetStacks() []Stack {
 	var stacks []Stack
 	for _, i := range []apistructs.IssueComplexity{
@@ -23,6 +29,7 @@ func (h *SourceStackHandler) GetStacks() []Stack {
 		stacks = append(stacks, Stack{
 			Name:  "",
 			Value: i.GetZhName(),
+			Color: sourceColorMap[i],
 		}) // TODO
 	}
 	return stacks

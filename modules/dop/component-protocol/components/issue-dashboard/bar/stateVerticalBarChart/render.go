@@ -61,7 +61,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	handler := common.StackRetriever(f.State.Values.Type)
 	bar := charts.NewBar()
-	bar.Colors = handler.GetStackColors()
 
 	// x is always stable
 	var xAxis []string
@@ -72,9 +71,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Data: xAxis,
 	}
 
-	bar.MultiSeries, _ = common.GroupToVerticalBarData(bugList, handler, xAxis, func(issue interface{}) string {
+	series, colors, _ := common.GroupToVerticalBarData(bugList, handler, xAxis, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
 	}, common.GetStackBarSingleSeriesConverter(), 0)
+
+	bar.Colors = colors
+	bar.MultiSeries = series
 	bar.Tooltip.Show = true
 
 	props := make(map[string]interface{})

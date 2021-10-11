@@ -109,20 +109,21 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	handler := common.StackRetriever(f.State.Values.Type)
-	bar := charts.NewBar()
-	bar.Colors = handler.GetStackColors()
-	bar.XAxisList[0] = opts.XAxis{
-		Type: "value",
-	}
 
-	var realY []string
-	bar.MultiSeries, realY = common.GroupToVerticalBarData(labelList, handler, nil, func(label interface{}) string {
+	series, colors, realY := common.GroupToVerticalBarData(labelList, handler, nil, func(label interface{}) string {
 		l := label.(*model.LabelIssueItem)
 		if l == nil {
 			return ""
 		}
 		return l.LabelRel.Name
 	}, common.GetStackBarSingleSeriesConverter(), 500)
+
+	bar := charts.NewBar()
+	bar.Colors = colors
+	bar.MultiSeries = series
+	bar.XAxisList[0] = opts.XAxis{
+		Type: "value",
+	}
 
 	bar.YAxisList[0] = opts.YAxis{
 		Type: "category",

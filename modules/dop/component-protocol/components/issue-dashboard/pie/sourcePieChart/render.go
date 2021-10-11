@@ -48,9 +48,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	handler := stackhandlers.NewSourceStackHandler()
 
+	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
+
 	pie := charts.NewPie()
-	pie.Colors = []string{"red", "orange", "yellow", "lime", "green"}
-	pie.AddSeries("引入源", common.GroupToPieData(f.State.IssueList, handler), func(s *charts.SingleSeries) {
+	pie.Colors = colors
+	pie.AddSeries("引入源", seriesData, func(s *charts.SingleSeries) {
 		s.Animation = true
 	})
 	props := make(map[string]interface{})

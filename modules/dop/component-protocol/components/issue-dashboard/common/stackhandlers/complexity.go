@@ -27,6 +27,12 @@ func NewComplexityStackHandler() *ComplexityStackHandler {
 	return &ComplexityStackHandler{}
 }
 
+var complexityColorMap = map[apistructs.IssueComplexity]string{
+	apistructs.IssueComplexityHard:   "red",
+	apistructs.IssueComplexityNormal: "yellow",
+	apistructs.IssueComplexityEasy:   "green",
+}
+
 func (h *ComplexityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
 	for _, i := range []apistructs.IssueComplexity{
@@ -37,13 +43,10 @@ func (h *ComplexityStackHandler) GetStacks() []Stack {
 		stacks = append(stacks, Stack{
 			Name:  i.GetZhName(),
 			Value: string(i),
+			Color: complexityColorMap[i],
 		})
 	}
 	return stacks
-}
-
-func (h *ComplexityStackHandler) GetStackColors() []string {
-	return []string{"red", "yellow", "green"}
 }
 
 func (h *ComplexityStackHandler) GetIndexer() func(issue interface{}) string {

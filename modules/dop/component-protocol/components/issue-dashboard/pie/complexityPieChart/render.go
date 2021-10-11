@@ -48,9 +48,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	handler := stackhandlers.NewComplexityStackHandler()
 
+	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
+
 	pie := charts.NewPie()
-	pie.Colors = handler.GetStackColors()
-	pie.AddSeries("复杂度", common.GroupToPieData(f.State.IssueList, handler), func(s *charts.SingleSeries) {
+	pie.Colors = colors
+	pie.AddSeries("复杂度", seriesData, func(s *charts.SingleSeries) {
 		s.Animation = true
 	})
 	props := make(map[string]interface{})

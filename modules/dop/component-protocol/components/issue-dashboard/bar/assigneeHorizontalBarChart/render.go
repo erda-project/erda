@@ -66,16 +66,17 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	})
 
 	handler := common.StackRetriever(f.State.Values.Type)
+
+	series, colors, realY := common.GroupToVerticalBarData(bugList, handler, nil, func(issue interface{}) string {
+		return issue.(*dao.IssueItem).Assignee
+	}, common.GetStackBarSingleSeriesConverter(), 500)
+
 	bar := charts.NewBar()
-	bar.Colors = handler.GetStackColors()
+	bar.Colors = colors
+	bar.MultiSeries = series
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
 	}
-
-	var realY []string
-	bar.MultiSeries, realY = common.GroupToVerticalBarData(bugList, handler, nil, func(issue interface{}) string {
-		return issue.(*dao.IssueItem).Assignee
-	}, common.GetStackBarSingleSeriesConverter(), 500)
 
 	var nameY []string
 	for _, userID := range realY {

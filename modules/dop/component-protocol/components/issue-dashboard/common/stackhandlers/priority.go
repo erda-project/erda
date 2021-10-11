@@ -27,19 +27,23 @@ func NewPriorityStackHandler() *PriorityStackHandler {
 	return &PriorityStackHandler{}
 }
 
+var priorityColorMap = map[apistructs.IssuePriority]string{
+	apistructs.IssuePriorityUrgent: "maroon",
+	apistructs.IssuePriorityHigh:   "red",
+	apistructs.IssuePriorityNormal: "yellow",
+	apistructs.IssuePriorityLow:    "green",
+}
+
 func (h *PriorityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
 	for _, i := range apistructs.IssuePriorityList {
 		stacks = append(stacks, Stack{
 			Name:  i.GetZhName(),
 			Value: string(i),
+			Color: priorityColorMap[i],
 		})
 	}
 	return stacks
-}
-
-func (h *PriorityStackHandler) GetStackColors() []string {
-	return []string{"maroon", "red", "yellow", "green"}
 }
 
 func (h *PriorityStackHandler) GetIndexer() func(issue interface{}) string {

@@ -32,7 +32,7 @@ func FixEmptyWord(em string) string {
 	return em
 }
 
-func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackHandler) []opts.PieData {
+func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackHandler) ([]opts.PieData, []string) {
 	counter := make(map[string]int)
 	indexer := stackHandler.GetIndexer()
 
@@ -44,11 +44,12 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 	}
 
 	var data []opts.PieData
+	var colors []string
 	for _, stack := range stackHandler.GetStacks() {
 		cnt := counter[stack.Value]
-		//if cnt <= 0 {
-		//	continue
-		//}
+		if cnt <= 0 {
+			continue
+		}
 		data = append(data, opts.PieData{
 			Name:  stack.Name,
 			Value: cnt,
@@ -57,13 +58,14 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 				Show:      true,
 			},
 		})
+		colors = append(colors, stack.Color)
 	}
-	return data
+	return data, colors
 }
 
 func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.StackHandler, xAxis []string,
 	xIdx func(issue interface{}) string,
-	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string) {
+	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string, []string) {
 	counter := make(map[string]map[string]int)
 	counterSingle := make(map[string]int)
 
@@ -107,6 +109,7 @@ func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.S
 			xAxis[i], xAxis[j] = xAxis[j], xAxis[i]
 		}
 	}
+	var colors []string
 	for _, stack := range stackHandler.GetStacks() {
 		rowData := make([]*int, xl)
 		for i, x := range xAxis {
@@ -116,9 +119,10 @@ func GroupToVerticalBarData(itemList []interface{}, stackHandler stackhandlers.S
 			}
 		}
 		ms = append(ms, seriesConverter(stack.Name, rowData))
+		colors = append(colors, stack.Color)
 	}
 
-	return ms, xAxis
+	return ms, colors, xAxis
 }
 
 func GetAssigneeIndexer() func(issue interface{}) string {

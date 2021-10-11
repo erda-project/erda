@@ -48,9 +48,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	handler := stackhandlers.NewPriorityStackHandler()
 
+	seriesData, colors := common.GroupToPieData(f.State.IssueList, handler)
+
 	pie := charts.NewPie()
-	pie.Colors = handler.GetStackColors()
-	pie.AddSeries("优先级", common.GroupToPieData(f.State.IssueList, handler), func(s *charts.SingleSeries) {
+	pie.Colors = colors
+	pie.AddSeries("优先级", seriesData, func(s *charts.SingleSeries) {
 		s.Animation = true
 	})
 	props := make(map[string]interface{})
