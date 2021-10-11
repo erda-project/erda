@@ -42,7 +42,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	var disable bool
-	var disableTip string
 
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
@@ -61,15 +60,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 
 		judgeApplication := c.State["judgeApplication"]
-		judgeApplicationMessage := c.State["judgeApplicationMessage"]
 		if judgeApplication != nil {
 			var value = judgeApplication.(bool)
 			disable = !value
-
-			message := judgeApplicationMessage.(string)
-			if disable && message != "" {
-				disableTip = message
-			}
 		}
 	}
 
@@ -80,11 +73,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	c.Operations = map[string]interface{}{
 		"click": map[string]interface{}{
-			"key":         "click",
-			"reload":      true,
-			"confirm":     "强制取消将会导致明细和报告都不会生成!",
-			"disabledTip": disableTip,
-			"disabled":    disable,
+			"key":      "click",
+			"reload":   true,
+			"confirm":  "强制取消将会导致明细和报告都不会生成!",
+			"disabled": disable,
 		},
 	}
 	return nil

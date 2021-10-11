@@ -113,19 +113,25 @@ rendering:
           value: "{{ codeCoverChart.recordID }}"
 
   __DefaultRendering__:
+    - name: errText
     - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: endButton
       state:
         - name: "judgeApplication"
-          value: "{{ startButton.judgeApplication }}"
+          value: "{{ errText.judgeApplication }}"
         - name: "judgeApplicationMessage"
-          value: "{{ startButton.judgeApplicationMessage }}"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: cancelButton
       state:
         - name: "judgeApplication"
-          value: "{{ startButton.judgeApplication }}"
+          value: "{{ errText.judgeApplication }}"
         - name: "judgeApplicationMessage"
-          value: "{{ startButton.judgeApplicationMessage }}"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: timeSelector
     - name: codeCoverChart
       state:

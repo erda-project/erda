@@ -45,6 +45,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	var disableEnd bool
 	var disableStart bool
+	var jacocoDisable bool
 
 	switch event.Operation.String() {
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
@@ -52,17 +53,40 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			c.State = map[string]interface{}{}
 		}
 
-		ok, err := svc.JudgeCanEnd(projectId)
+		orgIDInt, err := strconv.ParseInt(sdk.Identity.OrgID, 10, 64)
 		if err != nil {
 			return err
 		}
-		disableEnd = !ok
 
-		err = svc.JudgeRunningRecordExist(projectId)
+		judgeApplication, err, message := svc.JudgeApplication(projectId, uint64(orgIDInt), sdk.Identity.UserID)
 		if err != nil {
-			disableStart = true
-		} else {
-			disableStart = false
+			return err
+		}
+		jacocoDisable = !judgeApplication
+		if jacocoDisable && message != "" {
+			disableTip = message
+		}
+
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
+
+		c.State["judgeApplication"] = judgeApplication
+		c.State["judgeApplicationMessage"] = message
+
+		if !jacocoDisable {
+			ok, err := svc.JudgeCanEnd(projectId)
+			if err != nil {
+				return err
+			}
+			disableEnd = !ok
+
+			err = svc.JudgeRunningRecordExist(projectId)
+			if err != nil {
+				disableStart = true
+			} else {
+				disableStart = false
+			}
 		}
 	}
 	if c.State == nil {
