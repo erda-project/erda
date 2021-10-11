@@ -116,7 +116,7 @@ func TestTriggering_Executor(t *testing.T) {
 		want   bool
 	}{
 		{"case > true", fields{Key: "http_code", Operate: ">", Value: structpb.NewNumberValue(200)}, args{resp: &http.Response{StatusCode: 100}}, true},
-		{"case contains true", fields{Key: "http_code", Operate: "contains", Value: structpb.NewStringValue("Error")}, args{resp: &http.Response{Body: nil}}, true},
+		{"case contains true", fields{Key: "body", Operate: "contains", Value: structpb.NewStringValue("Error")}, args{resp: &http.Response{Body: nil}}, true},
 		{"case not support", fields{Key: "xx", Operate: "contains", Value: structpb.NewStringValue("Error")}, args{resp: &http.Response{Body: nil}}, true},
 	}
 	for _, tt := range tests {
