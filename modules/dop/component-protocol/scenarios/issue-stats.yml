@@ -143,23 +143,8 @@ rendering:
   filter:
     - name: trendChartFilter
     - name: stateVerticalBarChartFilter
-      state:
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "issueStageList"
-          value: "{{ filter.stages }}"
     - name: labelHorizontalBarChartFilter
-      state:
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "issueStageList"
-          value: "{{ filter.stages }}"
     - name: assigneeHorizontalBarChartFilter
-      state:
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "issueStageList"
-          value: "{{ filter.stages }}"
     - name: trendChart
       state:
         - name: "values"
@@ -222,6 +207,7 @@ rendering:
 
   stateVerticalBarChartFilter:
     - name: filter
+    - name: stateVerticalBarChartFilter
     - name: stateVerticalBarChart
       state:
         - name: "values"
@@ -230,6 +216,7 @@ rendering:
 
   labelHorizontalBarChartFilter:
     - name: filter
+    - name: labelHorizontalBarChartFilter
     - name: labelHorizontalBarChart
       state:
         - name: "values"
@@ -238,6 +225,7 @@ rendering:
 
   assigneeHorizontalBarChartFilter:
     - name: filter
+    - name: assigneeHorizontalBarChartFilter
     - name: assigneeHorizontalBarChart
       state:
         - name: "values"
@@ -300,11 +288,6 @@ rendering:
 
     - name: stateVerticalBarChartExtra
     - name: stateVerticalBarChartFilter
-      state:
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "issueStageList"
-          value: "{{ filter.stages }}"
     - name: stateVerticalBarChart
       state:
         - name: "values"
@@ -312,11 +295,6 @@ rendering:
 
     - name: labelHorizontalBarChartExtra
     - name: labelHorizontalBarChartFilter
-      state:
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "issueStageList"
-          value: "{{ filter.stages }}"
     - name: labelHorizontalBarChart
       state:
         - name: "values"
@@ -324,11 +302,6 @@ rendering:
 
     - name: assigneeHorizontalBarChartExtra
     - name: assigneeHorizontalBarChartFilter
-      state:
-        - name: "issueStateList"
-          value: "{{ filter.issueStateList }}"
-        - name: "issueStageList"
-          value: "{{ filter.stages }}"
     - name: assigneeHorizontalBarChart
       state:
         - name: "values"

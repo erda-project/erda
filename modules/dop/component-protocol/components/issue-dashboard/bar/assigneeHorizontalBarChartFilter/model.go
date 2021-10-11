@@ -16,9 +16,7 @@ package assigneeHorizontalBarChartFilter
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -34,8 +32,6 @@ type State struct {
 	Conditions         []filter.PropCondition  `json:"conditions,omitempty"`
 	Values             common.FilterConditions `json:"values,omitempty"`
 	FrontendChangedKey string                  `json:"changedKey,omitempty"`
-	IssueStateList     []dao.IssueState        `json:"issueStateList,omitempty"`
-	IssueStageList     []apistructs.IssueStage `json:"issueStageList,omitempty"`
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"
