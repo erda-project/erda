@@ -80,14 +80,37 @@ components:
 
 rendering:
   cancelButton:
+    - name: errText
     - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: executeHistoryTable
   startButton:
+    - name: errText
     - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: executeHistoryTable
   endButton:
+    - name: errText
     - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: executeHistoryTable
   timeSelector:
     - name: codeCoverChart
