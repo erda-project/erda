@@ -57,9 +57,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	pie.Tooltip.Show = true
 	pie.Tooltip.Trigger = "item"
 	pie.Colors = colors
-	pie.AddSeries("复杂度", seriesData, func(s *charts.SingleSeries) {
-		s.Animation = true
-	})
+	pie.AddSeries("复杂度", seriesData, common.GetPieSeriesOpt())
 	props := make(map[string]interface{})
 	props["title"] = "按复杂度"
 	props["chartType"] = "pie"

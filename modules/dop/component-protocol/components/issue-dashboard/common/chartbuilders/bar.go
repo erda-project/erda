@@ -56,6 +56,7 @@ type StackOpt struct {
 type DataHandleOpt struct {
 	SeriesConverter func(name string, data []*int) charts.SingleSeries
 	DataWhiteList   []string
+	FillZero        bool
 }
 
 type Result struct {
@@ -77,7 +78,7 @@ func (f *BarBuilder) Generate() error {
 				maxValue = t
 			}
 		}
-		maxValue = int(float32(maxValue) * 1.2)
+		//maxValue = int(float32(maxValue) * 1.2)
 		f.FixedXAxisOrTop.MaxValue = maxValue
 		bar.XAxisList[0] = f.XDisplayConverter(&f.FixedXAxisOrTop)
 	}
@@ -86,6 +87,16 @@ func (f *BarBuilder) Generate() error {
 		f.YAxisOpt.YAxis = realY
 		bar.YAxisList[0] = f.YDisplayConverter(&f.YAxisOpt)
 	}
+
+	//if f.Top > 0 {
+	//	pageSize := 10
+	//	lastIdx := float32(f.Size-1)
+	//	if f.Size > pageSize {
+	//		bar.DataZoomList = []opts.DataZoom{
+	//			{Type: "slider", Start: lastIdx - float32(pageSize), End: lastIdx, YAxisIndex: 0},
+	//		}
+	//	}
+	//}
 
 	f.Bar = bar
 	f.Size = len(sum)
@@ -202,6 +213,7 @@ func GetStackBarSingleSeriesConverter() func(name string, data []*int) charts.Si
 				//Formatter: "{a}:{c}",
 				Show: true,
 			},
+			BarGap: "30%",
 		}
 	}
 }

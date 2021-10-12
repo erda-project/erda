@@ -135,15 +135,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	per := 100.0
-	cnt := builder.Result.Size
-	if cnt > 0 {
-		per = 16 * 100 / float64(cnt)
-	}
-	if per > 100 {
-		per = 100.0
-	}
-
 	bar := builder.Result.Bar
 	bar.Legend.Show = true
 	bar.Tooltip.Show = true
@@ -164,25 +155,30 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		n[i]["barWidth"] = 10
 	}
 	bb["series"] = n
-	bb["grid"] = map[string]interface{}{"right": 50}
-	bb["dataZoom"] = []map[string]interface{}{
-		{
-			"type":     "inside",
-			"orient":   "vertical",
-			"zoomLock": true,
-			"start":    0,
-			"end":      per,
-			"throttle": 0,
-		},
-		{
-			"type":       "slider",
-			"orient":     "vertical",
-			"handleSize": 20,
-			"zoomLock":   true,
-			"start":      0,
-			"end":        per,
-			"throttle":   0,
-		},
+	pageSize := 16
+	if builder.Result.Size > pageSize {
+		endIdx := builder.Result.Size - 1
+		startIdx := endIdx - 16
+		bb["grid"] = map[string]interface{}{"right": 50}
+		bb["dataZoom"] = []map[string]interface{}{
+			{
+				"type":       "inside",
+				"orient":     "vertical",
+				"zoomLock":   true,
+				"startValue": startIdx,
+				"endValue":   endIdx,
+				"throttle":   0,
+			},
+			{
+				"type":       "slider",
+				"orient":     "vertical",
+				"handleSize": 20,
+				"zoomLock":   true,
+				"startValue": startIdx,
+				"endValue":   endIdx,
+				"throttle":   0,
+			},
+		}
 	}
 
 	props := make(map[string]interface{})

@@ -15,6 +15,7 @@
 package common
 
 import (
+	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda/apistructs"
@@ -27,6 +28,13 @@ func FixEmptyWord(em string) string {
 		return "无"
 	}
 	return em
+}
+
+func GetPieSeriesOpt() func(*charts.SingleSeries) {
+	return func(s *charts.SingleSeries) {
+		s.Animation = true
+		s.Top = "12"
+	}
 }
 
 func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackHandler) ([]opts.PieData, []string) {
