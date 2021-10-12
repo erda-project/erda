@@ -38,6 +38,7 @@ var stageColorList = []string{"red", "yellow", "green"}
 func (h *StageStackHandler) GetStacks() []Stack {
 	l := len(stageColorList)
 	var stacks []Stack
+	stacks = append(stacks, sumStack)
 	for idx, i := range h.issueStageList {
 		stacks = append(stacks, Stack{
 			Name:  i.Name,

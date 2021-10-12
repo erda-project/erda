@@ -124,7 +124,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			Fixed:     true,
 			Key:       "value",
 			Label:     "具体值",
-			Options:   handler.GetFilterOptions(),
+			Options:   filterOutSum(handler.GetFilterOptions()),
 			Type:      filter.PropConditionTypeSelect,
 		},
 		{
@@ -151,6 +151,16 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	}
 
 	return nil
+}
+
+func filterOutSum(opts []filter.PropConditionOption) []filter.PropConditionOption {
+	var res []filter.PropConditionOption
+	for _, o := range opts {
+		if o.Value != "__sum__" {
+			res = append(res, o)
+		}
+	}
+	return res
 }
 
 func makeTimestamp(t time.Time) int64 {

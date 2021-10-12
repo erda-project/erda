@@ -39,6 +39,7 @@ var severityColorMap = map[apistructs.IssueSeverity]string{
 
 func (h *SeverityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
+	stacks = append(stacks, sumStack)
 	for i := len(apistructs.IssueSeveritys) - 1; i >= 0; i-- {
 		severity := apistructs.IssueSeveritys[i]
 		stacks = append(stacks, Stack{
@@ -67,5 +68,5 @@ func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *SeverityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+	return getFilterOptions(h.GetStacks())
 }

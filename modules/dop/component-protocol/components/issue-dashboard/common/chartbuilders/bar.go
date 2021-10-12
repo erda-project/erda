@@ -50,7 +50,7 @@ type YAxisOpt struct {
 }
 
 type StackOpt struct {
-	EnableSum bool
+	HideSum   bool
 	SkipEmpty bool
 }
 
@@ -99,15 +99,17 @@ func (f *BarBuilder) Generate() error {
 func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, []int) {
 	counter := make(map[string]map[string]int)
 	counterSingle := make(map[string]int)
+	counterSum := make(map[string]int)
 
 	stackIndexer := f.StackHandler.GetIndexer()
 
 	for _, i := range f.Items {
 		y := FixEmptyWord(stackIndexer(i))
-		if !showStack(f.DataWhiteList, y) {
+		x := FixEmptyWord(f.XIndexer(i))
+		counterSum[x]++
+		if !f.showStack(y) {
 			continue
 		}
-		x := FixEmptyWord(f.XIndexer(i))
 		if _, ok := counter[y]; !ok {
 			counter[y] = make(map[string]int)
 		}
@@ -120,7 +122,11 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 	if xl == 0 {
 		// use top instead
 		var sl counterList
-		for k, v := range counterSingle {
+		tm := counterSingle
+		if f.isOnlySum() {
+			tm = counterSum
+		}
+		for k, v := range tm {
 			if v == 0 {
 				continue
 			}
@@ -145,55 +151,51 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 		f.XAxis = xAxis
 	}
 	var colors []string
+	sum := make([]int, len(f.XAxis))
 	total := make([]int, len(f.XAxis))
+	for i, x := range f.XAxis {
+		sum[i] = counterSum[x]
+		total[i] = counterSingle[x]
+		if f.isOnlySum() {
+			total[i] = sum[i]
+		}
+	}
 
 	for _, stack := range f.StackHandler.GetStacks() {
-		if !showStack(f.DataWhiteList, stack.Value) {
+		if !f.showStack(stack.Value) {
 			continue
 		}
 		rowData := make([]*int, xl)
 		for i, x := range f.XAxis {
 			v := counter[stack.Value][x]
+			if stack.Value == "__sum__" {
+				rowData[i] = &sum[i] // TODO: should skip for sum?
+				continue
+			}
 			if v > 0 || !f.SkipEmpty {
 				rowData[i] = &v
 			}
-			total[i] += v
 		}
-		ms = append(ms, f.SeriesConverter(stack.Name, rowData))
+		s := f.SeriesConverter(stack.Name, rowData)
+		if stack.Value == "__sum__" && f.HideSum && !f.isOnlySum() {
+			nd := make([]*int, len(s.Data.([]*int)))
+			s.Data = nd
+		}
+		ms = append(ms, s)
 		colors = append(colors, stack.Color)
 	}
-
-	if f.EnableSum && len(colors) > 1 {
-		totalRes := make([]*int, len(total))
-		for i := range total {
-			if !f.SkipEmpty {
-				totalRes[i] = &total[i]
-			}
-		}
-
-		msNew := make(charts.MultiSeries, len(ms)+1)
-		colorsNew := make([]string, len(colors)+1)
-
-		msNew[0] = f.SeriesConverter("全部", totalRes)
-		colorsNew[0] = "gray"
-		for i := range ms {
-			msNew[i+1] = ms[i]
-		}
-		ms = msNew
-		for i := range colors {
-			colorsNew[i+1] = colors[i]
-		}
-		colors = colorsNew
-	}
-
 	return ms, colors, f.XAxis, total
 }
 
-func showStack(wl []string, item string) bool {
-	if len(wl) == 0 { // empty means not filter
+func (f *BarBuilder) showStack(item string) bool {
+	if len(f.DataWhiteList) == 0 { // empty means not filter
 		return true
 	}
-	return strutil.Exist(wl, item)
+	return strutil.Exist(f.DataWhiteList, item)
+}
+
+func (f *BarBuilder) isOnlySum() bool {
+	return len(f.DataWhiteList) == 1 && f.DataWhiteList[0] == "__sum__"
 }
 
 func GetStackBarSingleSeriesConverter() func(name string, data []*int) charts.SingleSeries {

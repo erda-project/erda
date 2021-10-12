@@ -89,7 +89,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			},
 		},
 		StackOpt: chartbuilders.StackOpt{
-			EnableSum: true,
 			SkipEmpty: false,
 		},
 		DataHandleOpt: chartbuilders.DataHandleOpt{

@@ -54,6 +54,7 @@ var stateColorMap = map[apistructs.IssueStateBelong][]string{
 
 func (h *StateStackHandler) GetStacks() []Stack {
 	var stacks []Stack
+	stacks = append(stacks, sumStack)
 	belongCounter := make(map[apistructs.IssueStateBelong]int)
 	for _, i := range h.issueStateList {
 		color := stateColorMap[i.Belong][belongCounter[i.Belong]%len(stateColorMap[i.Belong])]

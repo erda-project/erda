@@ -39,6 +39,12 @@ var emptyStack = Stack{
 	Color: "red",
 }
 
+var sumStack = Stack{
+	Name:  "总数",
+	Value: "__sum__",
+	Color: "gray",
+}
+
 func reverseStacks(stacks []Stack) {
 	for i, j := 0, len(stacks)-1; i < j; i, j = i+1, j-1 {
 		stacks[i], stacks[j] = stacks[j], stacks[i]
