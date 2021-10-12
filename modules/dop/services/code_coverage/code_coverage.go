@@ -16,14 +16,14 @@ package code_coverage
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/pkg/loop"
-	"github.com/sirupsen/logrus"
+
 	"io/ioutil"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/environment"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
+	"github.com/erda-project/erda/pkg/loop"
 )
 
 type CodeCoverage struct {
