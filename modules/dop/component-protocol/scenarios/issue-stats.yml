@@ -8,11 +8,9 @@ hierarchy:
       - issueTip
       - overview
       - trendChart
-      # - chart2
       - chartGroup1
       - chartGroup2
       - chartGroup3
-      # - chart5
     overview:
       - total
       - open
@@ -286,6 +284,7 @@ rendering:
           value: "{{ trendChartFilter.values }}"
     - name: chartGroup1
     - name: chartGroup2
+    - name: chartGroup3
     - name: statePieChart
     - name: complexityPieChart
     - name: priorityPieChart
