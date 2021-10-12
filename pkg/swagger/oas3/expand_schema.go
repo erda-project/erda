@@ -65,6 +65,9 @@ func ExpandSchemaRef(ref *openapi3.SchemaRef, oas3 *openapi3.Swagger) error {
 	if ref.Value == nil {
 		return nil
 	}
+	if ref.Value.Properties == nil {
+		ref.Value.Properties = make(openapi3.Schemas)
+	}
 
 	// 拓展引用合并到 properties
 	// 不考虑字段冲突的情况, 字段冲突时, 直接覆盖
@@ -88,14 +91,10 @@ func ExpandSchemaRef(ref *openapi3.SchemaRef, oas3 *openapi3.Swagger) error {
 		}
 	}
 
-	if properties := ref.Value.Properties; len(properties) > 0 {
-		ref.Value.Properties = make(map[string]*openapi3.SchemaRef, 0)
-		for _, property := range properties {
-			if err := ExpandSchemaRef(property, oas3); err != nil {
-				return err
-			}
+	for _, property := range ref.Value.Properties {
+		if err := ExpandSchemaRef(property, oas3); err != nil {
+			return err
 		}
-		ref.Value.Properties = properties
 	}
 
 	if items := ref.Value.Items; items != nil {
@@ -107,22 +106,17 @@ func ExpandSchemaRef(ref *openapi3.SchemaRef, oas3 *openapi3.Swagger) error {
 	}
 
 	if property := ref.Value.AdditionalProperties; property != nil {
-		ref.Value.AdditionalProperties = nil
 		if err := ExpandSchemaRef(property, oas3); err != nil {
 			return err
 		}
-		ref.Value.AdditionalProperties = property
 	}
 
 	extensions := ref.Value.ExtensionProps.Extensions
 	if len(extensions) == 0 {
 		return nil
 	}
-	if len(ref.Value.Properties) == 0 {
-		ref.Value.Properties = make(map[string]*openapi3.SchemaRef, 0)
-	}
 
-	ref.Value.ExtensionProps.Extensions = nil
+	ref.Value.ExtensionProps.Extensions = make(map[string]interface{})
 
 	// 如果存在非标准引用 (合并引用)
 	for xKey, value := range extensions {
@@ -170,18 +164,10 @@ func ExpandSchemaRef(ref *openapi3.SchemaRef, oas3 *openapi3.Swagger) error {
 			if referencedSchemaRef.Value == nil {
 				continue
 			}
-			if ref.Value == nil {
-				ref.Value = referencedSchemaRef.Value
-				continue
-			}
 
 			// 将被引类型的 required 列表追加到源类型的 required 列表
 			ref.Value.Required = append(ref.Value.Required, referencedSchemaRef.Value.Required...)
 			ref.Value.Required = dedupeStringSlice(ref.Value.Required)
-
-			if len(referencedSchemaRef.Value.Properties) == 0 {
-				referencedSchemaRef.Value.Properties = make(map[string]*openapi3.SchemaRef, 0)
-			}
 
 			// 将被引类型的属性追加到源 ExpandSchemaRef
 			for propertyName, property := range referencedSchemaRef.Value.Properties {
