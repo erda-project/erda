@@ -145,7 +145,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 			closed := time.Date(i.FinishTime.Year(), i.FinishTime.Month(), i.FinishTime.Day(), 0, 0, 0, 0, i.FinishTime.Location())
 			if closed.Before(start) {
 				first[1] += 1
-			} else if created.After(end) {
+			} else if closed.After(end) {
 				last[1] += 1
 			} else {
 				if _, ok := cMap[closed]; ok {
