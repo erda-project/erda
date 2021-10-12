@@ -29,7 +29,7 @@ const logPrefixContinueBackupQueueUsage = "[queue usage backup]"
 // loadQueueManger
 func (r *Reconciler) loadQueueManger(ctx context.Context) error {
 	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient), manager.WithJSClient(r.js))
+	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient), manager.WithEtcdClient(r.etcd))
 
 	return nil
 }
@@ -50,7 +50,7 @@ func (r *Reconciler) continueBackupQueueUsage(ctx context.Context) {
 				errDone <- err
 			}
 			for qID, qMsg := range queueSnapshot.QueueUsageByID {
-				if err := r.js.Put(ctx, manager.MakeQueueUsageBackupKey(qID), qMsg); err != nil {
+				if err := r.etcd.Put(ctx, manager.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
 					errDone <- err
 					return
 				}

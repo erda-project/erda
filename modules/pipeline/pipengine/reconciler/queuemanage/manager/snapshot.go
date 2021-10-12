@@ -14,21 +14,25 @@
 
 package manager
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/golang/protobuf/proto"
+)
 
 type SnapshotObj struct {
-	QueueUsageByID map[string]json.RawMessage `json:"queueUsageByID"`
+	QueueUsageByID map[string][]byte `json:"queueUsageByID"`
 }
 
 func (mgr *defaultManager) Export() json.RawMessage {
 	mgr.qLock.Lock()
 	defer mgr.qLock.Unlock()
 	obj := SnapshotObj{
-		QueueUsageByID: make(map[string]json.RawMessage),
+		QueueUsageByID: make(map[string][]byte),
 	}
 	for qID, queue := range mgr.queueByID {
 		u := queue.Usage()
-		uByte, _ := json.Marshal(u)
+		uByte, _ := proto.Marshal(&u)
 		obj.QueueUsageByID[qID] = uByte
 	}
 	b, _ := json.Marshal(&obj)

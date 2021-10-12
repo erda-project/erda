@@ -23,16 +23,16 @@ import (
 	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
-	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 func TestContinueBackupQueueUsage(t *testing.T) {
-	js := &jsonstore.JsonStoreImpl{}
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(js), "Put", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string, object interface{}) error {
+	etcdClient := &etcd.Store{}
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(etcdClient), "Put", func(j *etcd.Store, ctx context.Context, key string, value string) error {
 		return nil
 	})
 	defer pm.Unpatch()
-	q := manager.New(context.Background(), manager.WithJSClient(js))
+	q := manager.New(context.Background(), manager.WithEtcdClient(etcdClient))
 	//pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(q), "Export", func(mgr *types.QueueManager) json.RawMessage {
 	//	u := &pb.QueueUsage{}
 	//	bu, _ := json.Marshal(u)

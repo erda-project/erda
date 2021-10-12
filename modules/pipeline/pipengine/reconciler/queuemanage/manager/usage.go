@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
@@ -33,9 +34,13 @@ func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.Que
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
 	usage := pb.QueueUsage{}
-	err := mgr.js.Get(context.Background(), MakeQueueUsageBackupKey(queue.New(pq).ID()), &usage)
+	val, err := mgr.etcd.Get(context.Background(), MakeQueueUsageBackupKey(queue.New(pq).ID()))
 	if err != nil {
 		logrus.Errorf("failed to query queue usage, err: %v", err)
+		return nil
+	}
+	if err := proto.Unmarshal(val.Value, &usage); err != nil {
+		logrus.Errorf("failed to unmarshal queue usage, err: %v", err)
 		return nil
 	}
 	return &usage
