@@ -50,6 +50,7 @@ type State struct {
 
 type InParams struct {
 	FrontEndProjectID string `json:"projectId,omitempty"`
+	FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`
 	ProjectID         uint64
 }
 
