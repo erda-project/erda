@@ -40,6 +40,7 @@ type LogField struct {
 	FieldName          string `json:"fieldName"`
 	SupportAggregation bool   `json:"supportAggregation"`
 	Display            bool   `json:"display"`
+	AllowEdit          bool   `json:"allowEdit"`
 	Group              int    `json:"group"`
 }
 
@@ -207,7 +208,14 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 			BoundaryScannerType("word").
 			Field("*"))
 	}
-	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(req.Size))
+
+	// max allowed size limit to 10000
+	size := req.Size
+	if req.Page*req.Size > 10000 {
+		size = 10000 - (req.Page-1)*req.Size
+	}
+
+	searchSource.From(int((req.Page - 1) * req.Size)).Size(int(size))
 	return searchSource
 }
 
@@ -564,27 +572,18 @@ func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
 }
 
 func (p *provider) ListDefaultFields() []*LogField {
-	return []*LogField{
-		{FieldName: "source", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "id", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "stream", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "content", SupportAggregation: false, Display: true, Group: 0},
-		{FieldName: "uniId", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "tags.origin", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_cluster_name", SupportAggregation: true, Display: false, Group: 1},
-		{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false, Group: 2},
-		{FieldName: "tags.dice_project_name", SupportAggregation: true, Display: false, Group: 2},
-		{FieldName: "tags.dice_workspace", SupportAggregation: true, Display: false, Group: 2},
-		{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false, Group: 3},
-		{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true, Group: 3},
-		{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false, Group: 3},
-		{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false, Group: 3},
-		{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true, Group: 4},
-		{FieldName: "tags.pod_namespace", SupportAggregation: true, Display: true, Group: 5},
-		{FieldName: "tags.pod_name", SupportAggregation: true, Display: true, Group: 5},
-		{FieldName: "tags.container_name", SupportAggregation: true, Display: true, Group: 5},
-		{FieldName: "tags.request-id", SupportAggregation: false, Display: true, Group: 6},
+	var list []*LogField
+	if len(p.C.IndexFieldSettings.DefaultSettings.Fields) == 0 {
+		return list
 	}
+	for _, field := range p.C.IndexFieldSettings.DefaultSettings.Fields {
+		list = append(list, &LogField{
+			FieldName:          field.FieldName,
+			SupportAggregation: field.SupportAggregation,
+			Display:            field.Display,
+			Group:              field.Group,
+			AllowEdit:          field.AllowEdit,
+		})
+	}
+	return list
 }
