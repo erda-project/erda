@@ -590,6 +590,21 @@ func (mr *MockAlertServiceServerMockRecorder) QueryOrgHostsAlertRecord(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryOrgHostsAlertRecord", reflect.TypeOf((*MockAlertServiceServer)(nil).QueryOrgHostsAlertRecord), arg0, arg1)
 }
 
+// TriggerConditions mocks base method.
+func (m *MockAlertServiceServer) TriggerConditions(arg0 context.Context, arg1 *pb.TriggerConditionsRequest) (*pb.TriggerConditionsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TriggerConditions", arg0, arg1)
+	ret0, _ := ret[0].(*pb.TriggerConditionsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TriggerConditions indicates an expected call of TriggerConditions.
+func (mr *MockAlertServiceServerMockRecorder) TriggerConditions(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerConditions", reflect.TypeOf((*MockAlertServiceServer)(nil).TriggerConditions), arg0, arg1)
+}
+
 // UpdateAlert mocks base method.
 func (m *MockAlertServiceServer) UpdateAlert(arg0 context.Context, arg1 *pb.UpdateAlertRequest) (*pb.UpdateAlertResponse, error) {
 	m.ctrl.T.Helper()
