@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package erda.cmp.dashboard.resource;
+option go_package = "github.com/erda-project/erda-proto-go/cmp/dashboard/pb";
+
+service ClusterResource {
+  rpc GetClustersResources(GetClustersResourcesRequest)returns(GetClusterResourcesResponse) {}
+  rpc GetNamespacesResources(GetNamespacesResourcesRequest)returns(GetNamespacesResourcesResponse){}
+}
+
+message GetClustersResourcesRequest {
+  repeated string clusterNames = 1;
+}
+
+message GetClusterResourcesResponse {
+  uint32 total = 1;
+  repeated ClusterResourceDetail list = 2;
+}
+
+message ClusterResourceDetail {
+  string clusterName = 1;
+  string host = 2;
+  float cpuAllocatable = 3;
+  float cpuTotal = 4;
+  float cpuRequest = 5;
+  float memAllocatable = 6;
+  float memTotal = 7;
+  float memRequest = 8;
+  repeated string labels = 9;
+}
+
+message GetNamespacesResourcesRequest {
+  repeated string namespaces = 1;
+}
+
+message GetNamespacesResourcesResponse {
+  uint32 total = 1;
+  repeated NamespaceResourceDetail list = 2;
+}
+
+message NamespaceResourceDetail {
+  string namespace = 1;
+  float cpuRequest = 2;
+  float memRequest = 3;
+}
