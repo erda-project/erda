@@ -26,7 +26,7 @@ components:
   page:
     type: Container
   nodeFilter:
-    type: TiledFilter
+    type: ContractiveFilter
   charts:
     type: RowContainer
   batchOperationTipModal:
