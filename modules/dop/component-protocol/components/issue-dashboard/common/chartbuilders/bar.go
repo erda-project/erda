@@ -91,16 +91,6 @@ func (f *BarBuilder) Generate() error {
 		bar.YAxisList[0] = f.YDisplayConverter(&f.YAxisOpt)
 	}
 
-	//if f.Top > 0 {
-	//	pageSize := 10
-	//	lastIdx := float32(f.Size-1)
-	//	if f.Size > pageSize {
-	//		bar.DataZoomList = []opts.DataZoom{
-	//			{Type: "slider", Start: lastIdx - float32(pageSize), End: lastIdx, YAxisIndex: 0},
-	//		}
-	//	}
-	//}
-
 	f.Result.Bar = bar
 	f.Result.Size = len(sum)
 	return f.PostProcessor(&f.Result)
@@ -275,20 +265,35 @@ func GetHorizontalPostProcessor() func(result *Result) error {
 		bb["legend"] = nl
 
 		bb["animation"] = false
-		n := make([]map[string]interface{}, 0)
-		if err := common.DeepCopy(bb["series"], &n); err != nil {
-			return err
-		}
-		for i := range n {
-			n[i]["barWidth"] = 8
-		}
-		bb["series"] = n
 
+		// TODO: check if top > 0 (means top chart)
 		pageSize := 16
+
+		if result.Size < 16 {
+			// start padding
+			for i := range bar.MultiSeries {
+				s := &bar.MultiSeries[i]
+				data := s.Data.([]*int)
+				nData := make([]*int, 16-result.Size)
+				for _, d := range data {
+					nData = append(nData, d)
+				}
+				s.Data = nData
+			}
+			bb["series"] = bar.MultiSeries
+
+			data := bar.YAxisList[0].Data.([]string)
+			nData := make([]string, 16-result.Size)
+			for _, d := range data {
+				nData = append(nData, d)
+			}
+			bar.YAxisList[0].Data = nData
+		}
+
 		if result.Size > pageSize {
 			endIdx := result.Size - 1
 			startIdx := endIdx - 16
-			bb["grid"] = map[string]interface{}{"right": 50}
+			bb["grid"] = map[string]interface{}{"right": 30}
 			bb["dataZoom"] = []map[string]interface{}{
 				{
 					"type":       "inside",
@@ -299,16 +304,29 @@ func GetHorizontalPostProcessor() func(result *Result) error {
 					"throttle":   0,
 				},
 				{
-					"type":       "slider",
-					"orient":     "vertical",
-					"handleSize": 20,
-					"zoomLock":   true,
-					"startValue": startIdx,
-					"endValue":   endIdx,
-					"throttle":   0,
+					"type":           "slider",
+					"orient":         "vertical",
+					"handleSize":     15,
+					"width":          15,
+					"zoomLock":       true,
+					"startValue":     startIdx,
+					"endValue":       endIdx,
+					"throttle":       0,
+					"showDataShadow": false,
+					"showDetail":     false,
 				},
 			}
 		}
+
+		n := make([]map[string]interface{}, 0)
+		if err := common.DeepCopy(bb["series"], &n); err != nil {
+			return err
+		}
+		for i := range n {
+			n[i]["barWidth"] = 8
+		}
+		bb["series"] = n
+
 		result.Bb = bb
 		return nil
 	}
