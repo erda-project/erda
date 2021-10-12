@@ -1130,23 +1130,25 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 }
 
 func (k *Kubernetes) composeNodeAntiAffinityPreferredWithWorkspace(workspace string) []apiv1.PreferredSchedulingTerm {
-	var workspaces = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
+	var workspaceKeys = []string{"dev", "test", "staging", "prod"}
+	var weightMap = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
+
 	preferredSchedulerTerms := []apiv1.PreferredSchedulingTerm{}
 
-	for key := range workspaces {
+	for index, key := range workspaceKeys {
 		if strings.ToLower(workspace) == key {
-			delete(workspaces, key)
+			workspaceKeys = append(workspaceKeys[:index], workspaceKeys[index+1:]...)
 			break
 		}
 	}
 
-	for ws, weight := range workspaces {
+	for _, key := range workspaceKeys {
 		preferredSchedulerTerms = append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
-			Weight: weight,
+			Weight: weightMap[key],
 			Preference: apiv1.NodeSelectorTerm{
 				MatchExpressions: []apiv1.NodeSelectorRequirement{
 					{
-						Key:      fmt.Sprintf("dice/workspace-%s", ws),
+						Key:      fmt.Sprintf("dice/workspace-%s", key),
 						Operator: apiv1.NodeSelectorOpDoesNotExist,
 					},
 				},

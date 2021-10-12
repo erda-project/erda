@@ -73,7 +73,12 @@ func TestComposeDeploymentNodeAffinityPreferredWithServiceWorkspace(t *testing.T
 	}
 
 	resPreferred := k.composeDeploymentNodeAntiAffinityPreferred(workspace)
-	assert.DeepEqual(t, deploymentPreferred, resPreferred)
+	for index, preferred := range deploymentPreferred {
+		assert.DeepEqual(t, preferred.Preference.MatchExpressions[0].Key, resPreferred[index].Preference.MatchExpressions[0].Key)
+		assert.DeepEqual(t, preferred.Preference.MatchExpressions[0].Operator, resPreferred[index].Preference.MatchExpressions[0].Operator)
+		assert.DeepEqual(t, preferred.Weight, resPreferred[index].Weight)
+	}
+
 }
 
 func TestComposeStatefulSetNodeAffinityPreferredWithServiceWorkspace(t *testing.T) {
@@ -127,5 +132,9 @@ func TestComposeStatefulSetNodeAffinityPreferredWithServiceWorkspace(t *testing.
 		},
 	}
 	resPreferred := k.composeStatefulSetNodeAntiAffinityPreferred(workspace)
-	assert.DeepEqual(t, statefulSetPreferred, resPreferred)
+	for index, preferred := range statefulSetPreferred {
+		assert.DeepEqual(t, preferred.Preference.MatchExpressions[0].Key, resPreferred[index].Preference.MatchExpressions[0].Key)
+		assert.DeepEqual(t, preferred.Preference.MatchExpressions[0].Operator, resPreferred[index].Preference.MatchExpressions[0].Operator)
+		assert.DeepEqual(t, preferred.Weight, resPreferred[index].Weight)
+	}
 }
