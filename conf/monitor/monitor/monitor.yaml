@@ -87,6 +87,91 @@ erda.core.monitor.log.query:
 
 logs-index-query:
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
+  index_field_setting:
+    - field_name: source
+      support_aggregation: false
+      display: false
+      group: false
+    - field_name: id
+      support_aggregation: false
+      display: false
+      group: 0
+    - field_name: stream
+      support_aggregation: false
+      display: false
+      group: false
+    - field_name: content
+      support_aggregation: false
+      display: true
+      group: 0
+    - field_name: uniId
+      support_aggregation: false
+      display: false
+      group: 0
+    - field_name: tags.origin
+      support_aggregation: false
+      display: false
+      group: 1
+    - field_name: tags.dice_org_id
+      support_aggregation: false
+      display: false
+      group: 1
+    - field_name: tags.dice_org_name
+      support_aggregation: false
+      display: false
+      group: 1
+    - field_name: tags.dice_cluster_name
+      support_aggregation: false
+      display: false
+      group: 1
+    - field_name: tags.dice_project_id
+      support_aggregation: false
+      display: false
+      group: 2
+    - field_name: tags.dice_project_name
+      support_aggregation: false
+      display: false
+      group: 2
+    - field_name: tags.dice_workspace
+      support_aggregation: false
+      display: false
+      group: 2
+    - field_name: tags.dice_application_id
+      support_aggregation: false
+      display: false
+      group: 3
+    - field_name: tags.dice_application_name
+      support_aggregation: true
+      display: true
+      group: 3
+    - field_name: tags.dice_runtime_id
+      support_aggregation: false
+      display: false
+      group: 3
+    - field_name: tags.dice_runtime_name
+      support_aggregation: false
+      display: false
+      group: 3
+    - field_name: tags.dice_service_name
+      support_aggregation: true
+      display: true
+      group: 4
+    - field_name: tags.pod_namespace
+      support_aggregation: false
+      display: false
+      group: 5
+    - field_name: tags.pod_name
+      support_aggregation: true
+      display: true
+      group: 5
+    - field_name: tags.container_name
+      support_aggregation: false
+      display: false
+      group: 5
+    - field_name: tags.request-id
+      support_aggregation: false
+      display: true
+      group: 6
 log-metric-rules:
 node-topo:
 #apm providers

@@ -38,6 +38,14 @@ type config struct {
 	QueryBackES          bool          `file:"query_back_es" default:"false"`
 	IndexPreload         bool          `file:"index_preload" default:"false" env:"LOG_INDEX_PRELOAD"`
 	IndexPreloadInterval time.Duration `file:"index_preload_interval" default:"60s" env:"LOG_INDEX_PRELOAD_INTERVAL"`
+	IndexFieldSettings   []logField    `file:"index_field_setting"`
+}
+
+type logField struct {
+	FieldName          string `file:"field_name"`
+	SupportAggregation bool   `file:"support_aggregation"`
+	Display            bool   `file:"display"`
+	Group              int    `file:"group"`
 }
 
 type provider struct {

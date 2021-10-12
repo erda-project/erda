@@ -571,27 +571,14 @@ func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
 }
 
 func (p *provider) ListDefaultFields() []*LogField {
-	return []*LogField{
-		{FieldName: "source", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "id", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "stream", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "content", SupportAggregation: false, Display: true, Group: 0},
-		{FieldName: "uniId", SupportAggregation: false, Display: false, Group: 0},
-		{FieldName: "tags.origin", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_org_id", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_org_name", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_cluster_name", SupportAggregation: false, Display: false, Group: 1},
-		{FieldName: "tags.dice_project_id", SupportAggregation: false, Display: false, Group: 2},
-		{FieldName: "tags.dice_project_name", SupportAggregation: false, Display: false, Group: 2},
-		{FieldName: "tags.dice_workspace", SupportAggregation: false, Display: false, Group: 2},
-		{FieldName: "tags.dice_application_id", SupportAggregation: false, Display: false, Group: 3},
-		{FieldName: "tags.dice_application_name", SupportAggregation: true, Display: true, Group: 3},
-		{FieldName: "tags.dice_runtime_id", SupportAggregation: false, Display: false, Group: 3},
-		{FieldName: "tags.dice_runtime_name", SupportAggregation: false, Display: false, Group: 3},
-		{FieldName: "tags.dice_service_name", SupportAggregation: true, Display: true, Group: 4},
-		{FieldName: "tags.pod_namespace", SupportAggregation: false, Display: false, Group: 5},
-		{FieldName: "tags.pod_name", SupportAggregation: true, Display: true, Group: 5},
-		{FieldName: "tags.container_name", SupportAggregation: false, Display: false, Group: 5},
-		{FieldName: "tags.request-id", SupportAggregation: false, Display: true, Group: 6},
+	var list []*LogField
+	for _, field := range p.C.IndexFieldSettings {
+		list = append(list, &LogField{
+			FieldName:          field.FieldName,
+			SupportAggregation: field.SupportAggregation,
+			Display:            field.Display,
+			Group:              field.Group,
+		})
 	}
+	return list
 }
