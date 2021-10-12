@@ -181,7 +181,26 @@ func Example_mergeLogSearch() {
 }
 
 func TestListDefaultFields_Should_Success(t *testing.T) {
-	p := &provider{}
+	p := &provider{
+		C: &config{
+			IndexFieldSettings: struct {
+				File            string               `file:"file"`
+				DefaultSettings defaultFieldSettings `file:"default_settings"`
+			}{
+				File: "",
+				DefaultSettings: defaultFieldSettings{
+					Fields: []logField{
+						{
+							AllowEdit:          true,
+							FieldName:          "field-1",
+							Display:            true,
+							SupportAggregation: true,
+						},
+					},
+				},
+			},
+		},
+	}
 
 	result := p.ListDefaultFields()
 	if len(result) == 0 {
