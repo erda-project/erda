@@ -21,6 +21,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 )
 
@@ -60,8 +61,10 @@ type DataHandleOpt struct {
 }
 
 type Result struct {
-	Bar  *charts.Bar
-	Size int
+	Bar           *charts.Bar
+	Bb            interface{}
+	Size          int
+	PostProcessor func(*Result) error
 }
 
 func (f *BarBuilder) Generate() error {
@@ -98,9 +101,9 @@ func (f *BarBuilder) Generate() error {
 	//	}
 	//}
 
-	f.Bar = bar
-	f.Size = len(sum)
-	return nil
+	f.Result.Bar = bar
+	f.Result.Size = len(sum)
+	return f.PostProcessor(&f.Result)
 }
 
 func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, []int) {
@@ -215,5 +218,98 @@ func GetStackBarSingleSeriesConverter() func(name string, data []*int) charts.Si
 			},
 			BarGap: "30%",
 		}
+	}
+}
+
+func GetVerticalBarPostProcessor() func(result *Result) error {
+	return func(result *Result) error {
+		bar := result.Bar
+
+		bar.Legend.Show = true
+		bar.Legend.SelectedMode = "false" // string "false" cannot work
+		bar.Legend.TextStyle = &opts.TextStyle{FontSize: 10}
+		bar.Legend.ItemHeight = 10
+		bar.Legend.ItemWidth = 10
+		bar.Tooltip.Show = true
+
+		bb := bar.JSON()
+
+		nl := make(map[string]interface{})
+		if err := common.DeepCopy(bb["legend"], &nl); err != nil {
+			return err
+		}
+		nl["selectedMode"] = false
+		bb["legend"] = nl
+
+		n := make([]map[string]interface{}, 0)
+		if err := common.DeepCopy(bb["series"], &n); err != nil {
+			return err
+		}
+		for i := range n {
+			n[i]["barWidth"] = 10
+		}
+		bb["series"] = n
+		result.Bb = bb
+		return nil
+	}
+}
+
+func GetHorizontalPostProcessor() func(result *Result) error {
+	return func(result *Result) error {
+		bar := result.Bar
+		bar.Legend.Show = true
+		bar.Legend.SelectedMode = "false" // string "false" cannot work
+		bar.Legend.TextStyle = &opts.TextStyle{FontSize: 10}
+		bar.Legend.ItemHeight = 10
+		bar.Legend.ItemWidth = 10
+		bar.Tooltip.Show = true
+		bar.Tooltip.Trigger = "axis"
+
+		bb := bar.JSON()
+
+		nl := make(map[string]interface{})
+		if err := common.DeepCopy(bb["legend"], &nl); err != nil {
+			return err
+		}
+		nl["selectedMode"] = false
+		bb["legend"] = nl
+
+		bb["animation"] = false
+		n := make([]map[string]interface{}, 0)
+		if err := common.DeepCopy(bb["series"], &n); err != nil {
+			return err
+		}
+		for i := range n {
+			n[i]["barWidth"] = 8
+		}
+		bb["series"] = n
+
+		pageSize := 16
+		if result.Size > pageSize {
+			endIdx := result.Size - 1
+			startIdx := endIdx - 16
+			bb["grid"] = map[string]interface{}{"right": 50}
+			bb["dataZoom"] = []map[string]interface{}{
+				{
+					"type":       "inside",
+					"orient":     "vertical",
+					"zoomLock":   true,
+					"startValue": startIdx,
+					"endValue":   endIdx,
+					"throttle":   0,
+				},
+				{
+					"type":       "slider",
+					"orient":     "vertical",
+					"handleSize": 20,
+					"zoomLock":   true,
+					"startValue": startIdx,
+					"endValue":   endIdx,
+					"throttle":   0,
+				},
+			}
+		}
+		result.Bb = bb
+		return nil
 	}
 }

@@ -15,6 +15,8 @@
 package common
 
 import (
+	"encoding/json"
+
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
@@ -28,6 +30,14 @@ func FixEmptyWord(em string) string {
 		return "无"
 	}
 	return em
+}
+
+func DeepCopy(src, dst interface{}) error {
+	buf, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(buf, dst)
 }
 
 func GetPieSeriesOpt() func(*charts.SingleSeries) {

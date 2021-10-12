@@ -107,63 +107,19 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			SeriesConverter: chartbuilders.GetStackBarSingleSeriesConverter(),
 			DataWhiteList:   f.State.Values.Value,
 		},
+		Result: chartbuilders.Result{
+			PostProcessor: chartbuilders.GetHorizontalPostProcessor(),
+		},
 	}
 
 	if err := builder.Generate(); err != nil {
 		return err
 	}
 
-	bar := builder.Result.Bar
-	bar.Legend.Show = true
-	bar.Tooltip.Show = true
-	bar.Tooltip.Trigger = "axis"
-
-	bb := bar.JSON()
-
-	bb["animation"] = false
-	n := make([]map[string]interface{}, 0)
-	buf, err := json.Marshal(bb["series"])
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(buf, &n); err != nil {
-		return err
-	}
-	for i := range n {
-		n[i]["barWidth"] = 10
-	}
-	bb["series"] = n
-
-	pageSize := 16
-	if builder.Result.Size > pageSize {
-		endIdx := builder.Result.Size - 1
-		startIdx := endIdx - 16
-		bb["grid"] = map[string]interface{}{"right": 50}
-		bb["dataZoom"] = []map[string]interface{}{
-			{
-				"type":       "inside",
-				"orient":     "vertical",
-				"zoomLock":   true,
-				"startValue": startIdx,
-				"end":        endIdx,
-				"throttle":   0,
-			},
-			{
-				"type":       "slider",
-				"orient":     "vertical",
-				"handleSize": 20,
-				"zoomLock":   true,
-				"start":      startIdx,
-				"end":        endIdx,
-				"throttle":   0,
-			},
-		}
-	}
-
 	props := make(map[string]interface{})
 	props["title"] = "未完成缺陷按处理人分布（TOP 500）"
 	props["chartType"] = "bar"
-	props["option"] = bb
+	props["option"] = builder.Result.Bb
 	props["style"] = map[string]interface{}{"height": 400}
 
 	c.Props = props

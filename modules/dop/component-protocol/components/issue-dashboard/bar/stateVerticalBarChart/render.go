@@ -106,36 +106,19 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			},
 			DataWhiteList: f.State.Values.Value,
 		},
+		Result: chartbuilders.Result{
+			PostProcessor: chartbuilders.GetVerticalBarPostProcessor(),
+		},
 	}
 
 	if err := builder.Generate(); err != nil {
 		return err
 	}
 
-	bar := builder.Bar
-
-	bar.Legend.Show = true
-	bar.Tooltip.Show = true
-
-	bb := bar.JSON()
-
-	n := make([]map[string]interface{}, 0)
-	buf, err := json.Marshal(bb["series"])
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(buf, &n); err != nil {
-		return err
-	}
-	for i := range n {
-		n[i]["barWidth"] = 10
-	}
-	bb["series"] = n
-
 	props := make(map[string]interface{})
 	props["title"] = "缺陷状态分布"
 	props["chartType"] = "bar"
-	props["option"] = bb
+	props["option"] = builder.Result.Bb
 
 	c.Props = props
 	c.State = nil
