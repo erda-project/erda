@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -175,31 +177,56 @@ func (p *ComponentPodsTable) RenderTable() error {
 		ClusterName: p.State.ClusterName,
 	}
 
-	logrus.Infof("[XDEBUG] start list pods at %s", time.Now().Format(time.StampNano))
-	list, err := p.server.ListSteveResource(p.ctx, &podReq)
+	var (
+		list []types2.APIObject
+		err  error
+	)
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		logrus.Infof("[XDEBUG] start list pods at %s", time.Now().Format(time.StampNano))
+		list, err = p.server.ListSteveResource(p.ctx, &podReq)
+		logrus.Infof("[XDEBUG] end list pods at %s", time.Now().Format(time.StampNano))
+		waitGroup.Done()
+	}()
+
+	cpuMetrics := make(map[string]*metrics.MetricsData)
+	memMetrics := make(map[string]*metrics.MetricsData)
+	go func() {
+		var metricsErr error
+		cpuReq := &metrics.MetricsRequest{
+			UserId:  userID,
+			OrgId:   orgID,
+			Cluster: p.State.ClusterName,
+			Kind:    metrics.Pod,
+			Type:    metrics.Cpu,
+		}
+		memReq := &metrics.MetricsRequest{
+			UserId:  userID,
+			OrgId:   orgID,
+			Cluster: p.State.ClusterName,
+			Kind:    metrics.Pod,
+			Type:    metrics.Memory,
+		}
+		logrus.Infof("[XDEBUG] start get metrics at %s", time.Now().Format(time.StampNano))
+		cpuMetrics, metricsErr = mServer.PodMetrics(p.ctx, cpuReq)
+		if metricsErr != nil {
+			logrus.Errorf("failed to get cpu metrics for pods, %v", metricsErr)
+		}
+		memMetrics, metricsErr = mServer.PodMetrics(p.ctx, memReq)
+		if metricsErr != nil {
+			logrus.Errorf("failed to get mem metrics for pods, %v", metricsErr)
+		}
+		logrus.Infof("[XDEBUG] end get metrics at %s", time.Now().Format(time.StampNano))
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
+
 	if err != nil {
 		return err
 	}
-	logrus.Infof("[XDEBUG] end list pods at %s", time.Now().Format(time.StampNano))
-
-	cpuReq := &metrics.MetricsRequest{
-		UserId:  userID,
-		OrgId:   orgID,
-		Cluster: p.State.ClusterName,
-		Kind:    metrics.Pod,
-		Type:    metrics.Cpu,
-	}
-	memReq := &metrics.MetricsRequest{
-		UserId:  userID,
-		OrgId:   orgID,
-		Cluster: p.State.ClusterName,
-		Kind:    metrics.Pod,
-		Type:    metrics.Memory,
-	}
 
 	p.State.CountValues = make(map[string]int)
-	tempCPULimits := make([]*resource.Quantity, 0)
-	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
 	logrus.Infof("[XDEBUG] start process list")
 	for _, item := range list {
@@ -225,16 +252,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 			continue
 		}
 
-		cpuReq.PodRequests = append(cpuReq.PodRequests, metrics.MetricsPodRequest{
-			MetricsRequest: cpuReq,
-			Name:           name,
-			PodNamespace:   namespace,
-		})
-		memReq.PodRequests = append(memReq.PodRequests, metrics.MetricsPodRequest{
-			MetricsRequest: memReq,
-			Name:           name,
-			PodNamespace:   namespace,
-		})
 		p.State.CountValues[fields[2]]++
 		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
@@ -266,8 +283,21 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimitsStr = "-"
 		}
 
-		tempCPULimits = append(tempCPULimits, cpuLimits)
-		tempMemLimits = append(tempMemLimits, memLimits)
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		metricsData, ok := cpuMetrics[cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod)]
+		usedCPUPercent := 0.0
+		if ok {
+			usedCPUPercent = metricsData.Used
+		}
+		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		metricsData, ok = memMetrics[cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod)]
+		usedMemPercent := 0.0
+		if ok {
+			usedMemPercent = metricsData.Used
+		}
+		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -296,71 +326,33 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:         namespace,
-			IP:                fields[5],
-			CPURequests:       cpuRequestStr,
-			CPURequestsNum:    cpuRequests.MilliValue(),
+			Namespace:      namespace,
+			IP:             fields[5],
+			CPURequests:    cpuRequestStr,
+			CPURequestsNum: cpuRequests.MilliValue(),
+			CPUPercent: Percent{
+				RenderType: "progress",
+				Value:      cpuValue,
+				Tip:        cpuTip,
+				Status:     cpuStatus,
+			},
 			CPULimits:         cpuLimitsStr,
 			CPULimitsNum:      cpuLimits.MilliValue(),
 			MemoryRequests:    memRequestsStr,
 			MemoryRequestsNum: memRequests.Value(),
-			MemoryLimits:      memLimitsStr,
-			MemoryLimitsNum:   memLimits.Value(),
-			Ready:             fields[1],
-			Node:              fields[6],
+			MemoryPercent: Percent{
+				RenderType: "progress",
+				Value:      memValue,
+				Tip:        memTip,
+				Status:     memStatus,
+			},
+			MemoryLimits:    memLimitsStr,
+			MemoryLimitsNum: memLimits.Value(),
+			Ready:           fields[1],
+			Node:            fields[6],
 		})
 	}
 	logrus.Infof("[XDEBUG] end process list")
-	logrus.Infof("[XDEBUG] start get metrics at %s", time.Now().Format(time.StampNano))
-	var cpuMetrics, memMetrics map[string]*metrics.MetricsData
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		var gerr error
-		cpuMetrics, gerr = mServer.PodMetrics(p.ctx, cpuReq)
-		if gerr != nil || len(cpuMetrics) == 0 {
-			logrus.Errorf("failed to get cpu metrics for pods, %v", gerr)
-			cpuMetrics = make(map[string]*metrics.MetricsData)
-		}
-		wg.Done()
-	}()
-	go func() {
-		var gerr error
-		memMetrics, gerr = mServer.PodMetrics(p.ctx, memReq)
-		if gerr != nil || len(memMetrics) == 0 {
-			logrus.Errorf("failed to get memory metrics for pods, %v", gerr)
-			memMetrics = make(map[string]*metrics.MetricsData)
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-	logrus.Infof("[XDEBUG] end get metrics at %s", time.Now().Format(time.StampNano))
-	logrus.Infof("[XDEBUG] start process items")
-	for i := range items {
-		cpuLimits := tempCPULimits[i]
-		memLimits := tempMemLimits[i]
-
-		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[cpuReq.PodRequests[i].CacheKey()].Used
-		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
-		items[i].CPUPercent = Percent{
-			RenderType: "progress",
-			Value:      cpuValue,
-			Tip:        cpuTip,
-			Status:     cpuStatus,
-		}
-
-		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[memReq.PodRequests[i].CacheKey()].Used
-		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
-		items[i].MemoryPercent = Percent{
-			RenderType: "progress",
-			Value:      memValue,
-			Tip:        memTip,
-			Status:     memStatus,
-		}
-	}
-	logrus.Infof("[XDEBUG] end process items")
 	if p.State.Sorter.Field != "" {
 		cmpWrapper := func(field, order string) func(int, int) bool {
 			ascend := order == "ascend"

@@ -83,9 +83,9 @@ func TestToInfluxReq1(t *testing.T) {
 		Cluster:      clusterName,
 		Type:         Memory,
 		Kind:         Node,
-		NodeRequests: []MetricsNodeRequest{{Ip: "1.1.1.1"}},
+		NodeRequests: []MetricsReqInterface{&MetricsNodeRequest{Ip: "1.1.1.1"}},
 	}
-	nodeReq.NodeRequests = []MetricsNodeRequest{{Ip: "1.1.1.1", MetricsRequest: nodeReq}}
+	nodeReq.NodeRequests = []MetricsReqInterface{&MetricsNodeRequest{Ip: "1.1.1.1", MetricsRequest: nodeReq}}
 	podReq := &MetricsRequest{
 		UserId:  "1",
 		OrgId:   "2",
@@ -93,7 +93,7 @@ func TestToInfluxReq1(t *testing.T) {
 		Type:    Cpu,
 		Kind:    Pod,
 	}
-	podReq.PodRequests = []MetricsPodRequest{{PodNamespace: namespace, Name: "telegraf-app-00e2f41199-z92wc", MetricsRequest: podReq}}
+	podReq.PodRequests = []MetricsReqInterface{&MetricsPodRequest{PodNamespace: namespace, Name: "telegraf-app-00e2f41199-z92wc", MetricsRequest: podReq}}
 	tests := []struct {
 		name    string
 		args    args
@@ -114,16 +114,9 @@ func TestToInfluxReq1(t *testing.T) {
 						Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName)},
 						Start:     "before_5m",
 						End:       "now",
-						Filters: []*pb.Filter{{
-							Key:   "host_ip::tag",
-							Op:    "in",
-							Value: structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue("1.1.1.1")}}),
-						},
-						},
 					},
 				},
 			},
-			want1: map[string]*MetricsData{},
 		},
 		{
 			name: "test2",
@@ -138,22 +131,15 @@ func TestToInfluxReq1(t *testing.T) {
 						Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName)},
 						Start:     "before_5m",
 						End:       "now",
-						Filters: []*pb.Filter{{
-							Key:   "pod_name::tag",
-							Op:    "in",
-							Value: structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")}}),
-						},
-						},
 					},
 				},
 			},
-			want1: map[string]*MetricsData{},
 		},
 	}
-
+	m := &Metric{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := ToInfluxReq(tt.args.req, tt.args.kind)
+			_, _, err := m.ToInfluxReq(tt.args.req, tt.args.kind)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToInfluxReq() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -238,12 +224,11 @@ func TestMetric_Store(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Metric{
-				ctx:           tt.fields.ctx,
-				Metricq:       tt.fields.Metricq,
-				metricReqChan: tt.fields.metricReqChan,
-				limiter:       tt.fields.limiter,
+				ctx:     tt.fields.ctx,
+				Metricq: tt.fields.Metricq,
+				limiter: tt.fields.limiter,
 			}
-			m.Store(tt.args.resp, tt.args.res, tt.args.metricsReq)
+			m.Store(tt.args.resp, tt.args.metricsReq)
 		})
 	}
 }
