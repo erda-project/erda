@@ -195,7 +195,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	}
 	f.Chart = common.Chart{
 		Props: common.Props{
-			Title:     "缺陷新增、关闭、未关闭数走势",
+			Title:     "缺陷 - 新增、关闭、未关闭数趋势",
 			ChartType: "line",
 			Option: common.Option{
 				XAxis: common.XAxis{
