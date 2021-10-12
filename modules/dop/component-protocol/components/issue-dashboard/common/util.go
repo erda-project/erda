@@ -179,7 +179,7 @@ func GetStackBarSingleSeriesConverter() func(name string, data []*int) charts.Si
 			Data:  data,
 			Label: &opts.Label{
 				//Formatter: "{a}:{c}",
-				Show:      true,
+				Show: true,
 			},
 		}
 	}

@@ -72,7 +72,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	series, colors, realY, total := common.GroupToBarData(bugList, f.State.Values.Value, handler, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
-	}, common.GetStackBarSingleSeriesConverter(), 500, false,true)
+	}, common.GetStackBarSingleSeriesConverter(), 500, false, true)
 
 	per := 100.0
 	cnt := len(total)

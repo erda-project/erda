@@ -22,13 +22,13 @@ import (
 )
 
 type StageStackHandler struct {
-	reverse bool
+	reverse        bool
 	issueStageList []apistructs.IssueStage
 }
 
 func NewStageStackHandler(reverse bool, issueStageList []apistructs.IssueStage) *StageStackHandler {
 	return &StageStackHandler{
-		reverse: reverse,
+		reverse:        reverse,
 		issueStageList: issueStageList,
 	}
 }

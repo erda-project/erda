@@ -63,7 +63,7 @@ func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOpt
 }
 
 type StackRetriever struct {
-	reverseStack bool
+	reverseStack   bool
 	issueStateList []dao.IssueState
 	issueStageList []apistructs.IssueStage
 }
