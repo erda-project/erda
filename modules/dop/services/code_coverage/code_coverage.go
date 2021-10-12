@@ -354,6 +354,7 @@ func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID
 
 			lock.Lock()
 			if findJacocoAgentEnv && findJacocoEnv {
+				lock.Unlock()
 				return
 			}
 			lock.Unlock()

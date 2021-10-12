@@ -112,17 +112,22 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					"width":           "100%",
 					"height":          "100%",
 					"colorMappingBy":  "value",
-					"visualDimension": 9,
+					"visualDimension": 6,
 					"visualMin":       0,
 					"visualMax":       100,
-					"data":            data,
+					"breadcrumb": map[string]interface{}{
+						"itemStyle": map[string]interface{}{
+							"color": "#996cd3",
+						},
+					},
+					"data": data,
 					//"color":           []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 					"levels": []interface{}{
 						map[string]interface{}{
-							"color": []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
+							"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
 						},
 						map[string]interface{}{
-							"color": []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
+							"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
 						},
 					},
 					//"levels": []interface{}{
