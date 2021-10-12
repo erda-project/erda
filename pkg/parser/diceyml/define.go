@@ -76,7 +76,7 @@ type Selector struct {
 type Selectors map[string]Selector
 
 type EnvObject struct {
-	Envs     EnvMap   `yaml:"envs,omitempty" json:"-"`
+	Envs     EnvMap   `yaml:"envs,omitempty" json:"envs,omitempty"`
 	Services Services `yaml:"services,omitempty" json:"services,omitempty"`
 	AddOns   AddOns   `yaml:"addons,omitempty" json:"addons,omitempty"`
 }
@@ -446,6 +446,15 @@ func (sl Selector) MarshalYAML() (interface{}, error) {
 }
 
 func unmarshalSelector(selector *Selector, unmarshal func(interface{}) error) error {
+	obj := struct {
+		Not    bool     `json:"not"`
+		Values []string `json:"values"`
+	}{}
+	if err := unmarshal(&obj); err == nil {
+		selector.Not = obj.Not
+		selector.Values = obj.Values
+		return nil
+	}
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
