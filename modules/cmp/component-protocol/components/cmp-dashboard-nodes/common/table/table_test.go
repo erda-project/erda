@@ -332,8 +332,8 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			name:   "text",
 			fields: fields{},
 			args: args{
-				a:            0.2,
-				b:            1.2,
+				a:            200,
+				b:            1200,
 				resourceType: Cpu,
 			},
 			want: DistributionValue{"0.200/1.200", "16.7"},

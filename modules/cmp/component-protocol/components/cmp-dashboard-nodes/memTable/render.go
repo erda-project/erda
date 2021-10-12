@@ -167,8 +167,8 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			used = metricsData.Used
 		}
 		usage = mt.GetUsageValue(used, float64(requestQty.Value()), table.Memory)
-		unused := math.Max(float64(memRequest)-resp[key].Used*1000, 0.0)
-		dr = mt.GetUnusedRate(unused, float64(memRequest), table.Cpu)
+		unused := math.Max(float64(memRequest)-resp[key].Used, 0.0)
+		dr = mt.GetUnusedRate(unused, float64(memRequest), table.Memory)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {
