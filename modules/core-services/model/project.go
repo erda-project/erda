@@ -37,18 +37,39 @@ type Project struct {
 	EnableNS       bool      `gorm:"column:enable_ns"` // Whether to open the project-level namespace
 	IsPublic       bool      `gorm:"column:is_public"` // Is it a public project
 	Type           string    `gorm:"column:type"`      // project type
-
-	ProdCPUQuota    float64 `gorm:"prod_cpu_quota"`
-	ProdMemQutoa    float64 `gorm:"prod_mem_quota"`
-	StagingCPUQuota float64 `gorm:"staging_cpu_quota"`
-	StagingMemQuota float64 `gorm:"staging_mem_quota"`
-	TestCPUQuota    float64 `gorm:"staging_cpu_quota"`
-	TestMemQuota    float64 `gorm:"test_mem_quota"`
-	DevCPUQuota     float64 `gorm:"dev_cpu_quota"`
-	DevMemQuota     float64 `gorm:"dev_mem_quota"`
 }
 
 // TableName 设置模型对应数据库表名称
 func (Project) TableName() string {
 	return "ps_group_projects"
+}
+
+// ProjectQuota is the table "ps_group_projects_quota"
+type ProjectQuota struct {
+	ID        uint64    `gorm:"id" json:"id"`
+	CreatedAt time.Time `gorm:"created_at" json:"created_at"`
+	UpdatedAt time.Time `gorm:"updated_at" json:"updated_at"`
+
+	ProjectID          uint64 `gorm:"project_id" json:"project_id"`
+	ProjectName        string `gorm:"project_name" json:"project_name"`
+	ProdClusterName    string `gorm:"prod_cluster_name" json:"prod_cluster_name"`
+	StagingClusterName string `gorm:"staging_cluster_name" json:"staging_cluster_name"`
+	TestClusterName    string `gorm:"test_cluster_name" json:"test_cluster_name"`
+
+	ProdCPUQuota    float64 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
+	ProdMemQutoa    float64 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
+	StagingCPUQuota float64 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
+	StagingMemQuota float64 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
+	TestCPUQuota    float64 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
+	TestMemQuota    float64 `gorm:"test_mem_quota" json:"test_mem_quota"`
+	DevCPUQuota     float64 `gorm:"dev_cpu_quota" json:"dev_cpu_quota"`
+	DevMemQuota     float64 `gorm:"dev_mem_quota" json:"dev_mem_quota"`
+
+	CreatorID uint64 `gorm:"creator_id" json:"creator_id"`
+	UpdaterID uint64 `gorm:"updater_id" json:"updater_id"`
+}
+
+// TableName returns the model's name "ps_group_projects_quota"
+func (ProjectQuota) TableName() string {
+	return "ps_group_projects_quota"
 }
