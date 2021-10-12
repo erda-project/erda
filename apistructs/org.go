@@ -355,6 +355,34 @@ type OrgResourceInfo struct {
 	AvailableMem float64 `json:"availableMem"`
 }
 
+type OrgClustersResourcesInfo struct {
+	// deprecated:
+	AvailableCPU float64`json:"available_cpu"`
+	// deprecated:
+	AvailableMem float64`json:"available_mem"`
+	// deprecated:
+	TotalCPU float64`json:"total_cpu"`
+	// deprecated:
+	TotalMem float64`json:"total_mem"`
+
+	ClusterList []ClusterResources
+}
+
+type ClusterResources struct {
+	ClusterName string
+	Workspace string
+	CPUAllocatable float32
+	// CPUAvailable = CPUAllocatable - CPURequest
+	CPUAvailable float32
+	CPUQuotaRate float32
+	CPURequest float32
+	MemAllocatable float32
+	// MemAvailable = MemAllocatable - MemRequest
+	MemAvailable float32
+	MemQuotaRate float32
+	MemRequest float32
+}
+
 type OrgNexusGetRequest struct {
 	// +optional
 	Formats []nexus.RepositoryFormat `json:"formats,omitempty"`

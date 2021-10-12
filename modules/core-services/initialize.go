@@ -25,7 +25,9 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
+	cmppb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
@@ -171,12 +173,20 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	}
 	bdl := bundle.New(bundleOpts...)
 
+	// cmp dashboard client
+	conn, err := grpc.Dial("") // Todo: 不知道怎么创建一个客户端
+	if err != nil {
+		return nil, err
+	}
+	clusterResourceClient := cmppb.NewClusterResourceClient(conn)
+
 	// init org service
 	o := org.New(
 		org.WithDBClient(db),
 		org.WithUCClient(uc),
 		org.WithBundle(bdl),
 		org.WithRedisClient(redisCli),
+		org.WithClusterResourceClient(clusterResourceClient),
 	)
 
 	// init project service
@@ -266,6 +276,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithJSONStore(store),
@@ -292,7 +303,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithErrorBox(errorBox),
 		endpoints.WithFileSvc(fileSvc),
 		endpoints.WithUserSvc(user),
+		endpoints.WithClusterResourceClient(clusterResourceClient),
 	)
-
 	return ep, nil
 }

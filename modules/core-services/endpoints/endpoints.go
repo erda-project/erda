@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
 
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
@@ -49,22 +50,23 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	store              jsonstore.JsonStore
-	etcdStore          *etcd.Store
-	ossClient          *oss.Client
-	db                 *dao.DBClient
-	uc                 *ucauth.UCClient
-	bdl                *bundle.Bundle
-	org                *org.Org
-	project            *project.Project
-	approve            *approve.Approve
-	app                *application.Application
-	member             *member.Member
-	ManualReview       *manual_review.ManualReview
-	activity           *activity.Activity
-	permission         *permission.Permission
-	license            *license.License
-	notifyGroup        *notify.NotifyGroup
+	store                 jsonstore.JsonStore
+	etcdStore             *etcd.Store
+	ossClient             *oss.Client
+	db                    *dao.DBClient
+	uc                    *ucauth.UCClient
+	bdl                   *bundle.Bundle
+	clusterResourceClient dashboardPb.ClusterResourceClient
+	org                   *org.Org
+	project               *project.Project
+	approve               *approve.Approve
+	app                   *application.Application
+	member                *member.Member
+	ManualReview          *manual_review.ManualReview
+	activity              *activity.Activity
+	permission            *permission.Permission
+	license               *license.License
+	notifyGroup           *notify.NotifyGroup
 	mbox               *mbox.MBox
 	label              *label.Label
 	notice             *notice.Notice
@@ -249,6 +251,13 @@ func WithFileSvc(svc *filesvc.FileService) Option {
 func WithUserSvc(svc *user.User) Option {
 	return func(e *Endpoints) {
 		e.user = svc
+	}
+}
+
+// WithClusterResourceClient set the gRPC client of CMP cluster resource
+func WithClusterResourceClient(client dashboardPb.ClusterResourceClient) Option {
+	return func(e *Endpoints) {
+		e.clusterResourceClient = client
 	}
 }
 

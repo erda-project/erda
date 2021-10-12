@@ -15,6 +15,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 )
 
@@ -55,15 +56,16 @@ type ProjectQuota struct {
 	ProdClusterName    string `gorm:"prod_cluster_name" json:"prod_cluster_name"`
 	StagingClusterName string `gorm:"staging_cluster_name" json:"staging_cluster_name"`
 	TestClusterName    string `gorm:"test_cluster_name" json:"test_cluster_name"`
+	DevClusterName string `gorm:"dev_cluster_name" json:"dev_cluster_name"`
 
-	ProdCPUQuota    float64 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
-	ProdMemQutoa    float64 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
-	StagingCPUQuota float64 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
-	StagingMemQuota float64 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
-	TestCPUQuota    float64 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
-	TestMemQuota    float64 `gorm:"test_mem_quota" json:"test_mem_quota"`
-	DevCPUQuota     float64 `gorm:"dev_cpu_quota" json:"dev_cpu_quota"`
-	DevMemQuota     float64 `gorm:"dev_mem_quota" json:"dev_mem_quota"`
+	ProdCPUQuota    float32 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
+	ProdMemQutoa    float32 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
+	StagingCPUQuota float32 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
+	StagingMemQuota float32 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
+	TestCPUQuota    float32 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
+	TestMemQuota    float32 `gorm:"test_mem_quota" json:"test_mem_quota"`
+	DevCPUQuota     float32 `gorm:"dev_cpu_quota" json:"dev_cpu_quota"`
+	DevMemQuota     float32 `gorm:"dev_mem_quota" json:"dev_mem_quota"`
 
 	CreatorID uint64 `gorm:"creator_id" json:"creator_id"`
 	UpdaterID uint64 `gorm:"updater_id" json:"updater_id"`
@@ -72,4 +74,49 @@ type ProjectQuota struct {
 // TableName returns the model's name "ps_group_projects_quota"
 func (ProjectQuota) TableName() string {
 	return "ps_group_projects_quota"
+}
+
+func (p ProjectQuota) GetClusterName(workspace string) string {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return p.ProdClusterName
+	case "staging":
+		return p.StagingClusterName
+	case "test":
+		return p.TestClusterName
+	case "dev":
+		return p.DevClusterName
+	default:
+		return ""
+	}
+}
+
+func (p ProjectQuota) GetCPUQuota(workspace string) float32 {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return p.ProdCPUQuota
+	case "staging":
+		return p.StagingCPUQuota
+	case "test":
+		return p.TestCPUQuota
+	case "dev":
+		return p.DevCPUQuota
+	default:
+		return 0
+	}
+}
+
+func (p ProjectQuota) GetMemQuota(workspace string) float32 {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return p.ProdMemQutoa
+	case "staging":
+		return p.StagingMemQuota
+	case "test":
+		return p.TestMemQuota
+	case "dev":
+		return p.DevMemQuota
+	default:
+		return 0
+	}
 }

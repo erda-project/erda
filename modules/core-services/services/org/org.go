@@ -16,14 +16,17 @@
 package org
 
 import (
+	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -33,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/quota"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -43,6 +47,8 @@ type Org struct {
 	uc       *ucauth.UCClient
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
+
+	clusterResourceClient dashboardPb.ClusterResourceClient
 }
 
 // Option 定义 Org 对象的配置选项
@@ -82,6 +88,13 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithRedisClient(cli *redis.Client) Option {
 	return func(o *Org) {
 		o.redisCli = cli
+	}
+}
+
+// WithClusterResourceClient set the gRPC client of CMP cluster resource
+func WithClusterResourceClient(client dashboardPb.ClusterResourceClient) Option {
+	return func(o *Org) {
+		o.clusterResourceClient = client
 	}
 }
 
@@ -472,6 +485,8 @@ func (o *Org) RelateCluster(userID string, req *apistructs.OrgClusterRelationCre
 }
 
 // FetchOrgResources 获取企业资源情况
+//
+// Deprecated: The calculation caliber of the quota was reset on erda 1.3.3, please see FetchOrgClusterResource
 func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, error) {
 	relations, err := o.db.GetOrgClusterRelationsByOrg(int64(orgID))
 	if err != nil {
@@ -558,9 +573,108 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 	}, nil
 }
 
+func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
+	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	var getClustersResourcesRequest dashboardPb.GetClustersResourcesRequest
+	for _, cluster := range clusters {
+		getClustersResourcesRequest.ClusterNames = append(getClustersResourcesRequest.ClusterNames, cluster.ClusterName)
+	}
+	// cmp gRPC 接口查询给定集群所有集群的资源和标签情况
+	resources, err := o.clusterResourceClient.GetClustersResources(ctx, &getClustersResourcesRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	var resourceInfo apistructs.OrgClustersResourcesInfo
+	// 初始化所有集群的总资源 【】
+	var clustersQuota = make(map[string]*quota.Quota)
+	for _, host := range resources.List {
+		workspaces := extractWorkspacesFromLabels(host.GetLabels())
+		var q *quota.Quota
+		q, ok := clustersQuota[host.GetClusterName()]
+		if !ok {
+			q = quota.New(host.GetClusterName())
+			clustersQuota[host.GetClusterName()] = q
+		}
+		q.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
+		q.Mem.AddValue(host.GetMemAllocatable(), workspaces...)
+	}
+
+	for _, workspace := range quota.Workspaces {
+
+	}
+
+	// 查出所有项目的 quota 记录
+	var projectsQuota []*model.ProjectQuota
+	if err = o.db.Find(&projectsQuota).Error; err != nil {
+		return nil, errors.Wrap(err, "failed to Find all project quota")
+	}
+	// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
+	for _, workspace := range quota.Workspaces {
+		workspaceStr := quota.WorkspaceString(workspace)
+		for _, project := range projectsQuota {
+			if cluster, ok := clustersQuota[project.GetClusterName(workspaceStr)]; ok {
+				cluster.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
+				cluster.CPU.Quota(workspace, project.GetMemQuota(workspaceStr))
+			}
+		}
+	}
+
+	for _, workspace := range quota.Workspaces {
+		workspaceStr := quota.WorkspaceString(workspace)
+		for clusterName, cluster := range clustersQuota {
+			resource := apistructs.ClusterResources{
+				ClusterName:    clusterName,
+				Workspace:      workspaceStr,
+				CPUAllocatable: 0,
+				CPUAvailable:   cluster.CPU.Quotable(workspace),
+				CPUQuotaRate:   0,
+				CPURequest:     0,
+				MemAllocatable: 0,
+				MemAvailable:   cluster.Mem.Quotable(workspace),
+				MemQuotaRate:   0,
+				MemRequest:     0,
+			}
+		}
+	}
+
+}
+
+func extractWorkspacesFromLabels(labels []string) []quota.Workspace {
+	var (
+		m = make(map[quota.Workspace]bool)
+		w []quota.Workspace
+	)
+	for _, label := range labels {
+		switch strings.ToLower(label) {
+		case "workspace-prod":
+			m[quota.Prod] = true
+		case "workspace-staging":
+			m[quota.Staging] = true
+		case "workspace-test":
+			m[quota.Test] = true
+		case "workspace-dev":
+			m[quota.Dev] = true
+		}
+	}
+	for k := range m {
+		w = append(w, k)
+	}
+	return w
+}
+
 // ListAllOrgClusterRelation 获取所有企业对应集群关系
 func (o *Org) ListAllOrgClusterRelation() ([]model.OrgClusterRelation, error) {
 	return o.db.ListAllOrgClusterRelations()
+}
+
+// GetOrgClusterRelationsByOrg returns the list of clusters in the organization
+func (o *Org) GetOrgClusterRelationsByOrg(orgID uint64) ([]model.OrgClusterRelation, error) {
+	return o.db.GetOrgClusterRelationsByOrg(int64(orgID))
 }
 
 func (o *Org) checkReceiveTaskRuntimeEventParam(req *apistructs.PipelineTaskEvent) error {
