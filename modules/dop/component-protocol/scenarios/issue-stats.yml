@@ -21,7 +21,7 @@ hierarchy:
       - undefined
       - reopen
     header:
-      - issueType
+#      - issueType
       - filter
     trendChart:
       extraContent:
