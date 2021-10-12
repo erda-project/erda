@@ -68,6 +68,8 @@ openapi-v1-routes:
         addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9527}
         scenarios:
           - issue-manage
+          - issue-dashboard
+          - code-coverage
       - addr: http://localhost:8080
         scenarios:
           - demo

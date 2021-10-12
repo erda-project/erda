@@ -37,5 +37,5 @@ func TestGetUCRedirectHost(t *testing.T) {
 	})
 	defer guard.Unpatch()
 	host := GetUCRedirectHost(referer)
-	assert.Equal(t, "", host)
+	assert.Equal(t, "openapi.erda.cloud", host)
 }
