@@ -16,6 +16,7 @@ package memTable
 
 import (
 	"context"
+	"math"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -166,7 +167,8 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			used = metricsData.Used
 		}
 		usage = mt.GetUsageValue(used, float64(requestQty.Value()), table.Memory)
-		dr = mt.GetUnusedRate(float64(memRequest)-used*1000, float64(memRequest), table.Memory)
+		unused := math.Max(float64(memRequest)-resp[key].Used*1000, 0.0)
+		dr = mt.GetUnusedRate(unused, float64(memRequest), table.Cpu)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {
