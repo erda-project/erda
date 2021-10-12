@@ -70,15 +70,34 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 
-	series, colors, realY := common.GroupToBarData(bugList, f.State.Values.Value, handler, nil, func(issue interface{}) string {
+	series, colors, realY, total := common.GroupToBarData(bugList, f.State.Values.Value, handler, nil, func(issue interface{}) string {
 		return issue.(*dao.IssueItem).Assignee
-	}, common.GetStackBarSingleSeriesConverter(), 500)
+	}, common.GetStackBarSingleSeriesConverter(), 500, false,true)
+
+	per := 100.0
+	cnt := len(total)
+	if cnt > 0 {
+		per = 16 * 100 / float64(cnt)
+	}
+	if per > 100 {
+		per = 100.0
+	}
+	maxValue := 0
+	for _, t := range total {
+		if t > maxValue {
+			maxValue = t
+		}
+	}
 
 	bar := charts.NewBar()
+	bar.Legend.Show = true
+	bar.Tooltip.Show = true
+	bar.Tooltip.Trigger = "axis"
 	bar.Colors = colors
 	bar.MultiSeries = series
 	bar.XAxisList[0] = opts.XAxis{
 		Type: "value",
+		Max:  maxValue,
 	}
 
 	var nameY []string
@@ -96,10 +115,47 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Data: nameY,
 	}
 
+	bb := bar.JSON()
+
+	bb["animation"] = false
+	n := make([]map[string]interface{}, 0)
+	buf, err := json.Marshal(bb["series"])
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(buf, &n); err != nil {
+		return err
+	}
+	for i := range n {
+		n[i]["barWidth"] = 10
+	}
+	bb["series"] = n
+	bb["grid"] = map[string]interface{}{"right": 50}
+	bb["dataZoom"] = []map[string]interface{}{
+		{
+			"type":     "inside",
+			"orient":   "vertical",
+			"zoomLock": true,
+			"start":    0,
+			"end":      per,
+			"throttle": 0,
+		},
+		{
+			"type":       "slider",
+			"orient":     "vertical",
+			"handleSize": 20,
+			"zoomLock":   true,
+			"start":      0,
+			"end":        per,
+			"throttle":   0,
+		},
+	}
+
 	props := make(map[string]interface{})
 	props["title"] = "未完成缺陷按处理人分布（TOP 500）"
 	props["chartType"] = "bar"
-	props["option"] = bar.JSON()
+	props["option"] = bb
+	props["style"] = map[string]interface{}{"height": 400}
 
 	c.Props = props
 	c.State = nil

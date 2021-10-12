@@ -8,13 +8,9 @@ hierarchy:
       - issueTip
       - overview
       - trendChart
-      # - chart2
       - chartGroup1
       - chartGroup2
-      - stateVerticalBarChart
-      - labelHorizontalBarChart
-      - assigneeHorizontalBarChart
-      # - chart5
+      - chartGroup3
     overview:
       - total
       - open
@@ -34,10 +30,14 @@ hierarchy:
       - trendChartFilter
     chartGroup1:
       - statePieChart
-      - complexityPieChart
-      - priorityPieChart
+      - stateVerticalBarChart
     chartGroup2:
+      - labelHorizontalBarChart
+      - assigneeHorizontalBarChart
+    chartGroup3:
       - severityPieChart
+      - priorityPieChart
+      - complexityPieChart
       - stagePieChart
     stateVerticalBarChart:
       extraContent:
@@ -103,6 +103,8 @@ components:
   chartGroup1:
     type: Grid
   chartGroup2:
+    type: Grid
+  chartGroup3:
     type: Grid
   statePieChart:
     type: Chart
@@ -282,6 +284,7 @@ rendering:
           value: "{{ trendChartFilter.values }}"
     - name: chartGroup1
     - name: chartGroup2
+    - name: chartGroup3
     - name: statePieChart
     - name: complexityPieChart
     - name: priorityPieChart

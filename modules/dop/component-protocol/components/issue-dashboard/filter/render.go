@@ -224,8 +224,8 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, iterations m
 			Reload: true,
 		},
 	}
-	if f.State.Base64UrlQueryParams != "" {
-		b, err := base64.StdEncoding.DecodeString(f.State.Base64UrlQueryParams)
+	if f.InParams.FrontendUrlQuery != "" {
+		b, err := base64.StdEncoding.DecodeString(f.InParams.FrontendUrlQuery)
 		if err != nil {
 			return err
 		}

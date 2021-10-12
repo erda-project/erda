@@ -39,6 +39,12 @@ var emptyStack = Stack{
 	Color: "red",
 }
 
+func reverseStacks(stacks []Stack) {
+	for i, j := 0, len(stacks)-1; i < j; i, j = i+1, j-1 {
+		stacks[i], stacks[j] = stacks[j], stacks[i]
+	}
+}
+
 func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOption {
 	l := len(stacks)
 	options := make([]filter.PropConditionOption, l)
@@ -57,6 +63,7 @@ func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOpt
 }
 
 type StackRetriever struct {
+	reverseStack bool
 	issueStateList []dao.IssueState
 	issueStageList []apistructs.IssueStage
 }
@@ -69,6 +76,12 @@ func NewStackRetriever(options ...option) *StackRetriever {
 		op(&retriever)
 	}
 	return &retriever
+}
+
+func WithStacksReversed(reverse bool) option {
+	return func(retriever *StackRetriever) {
+		retriever.reverseStack = reverse
+	}
 }
 
 func WithIssueStateList(issueStateList []dao.IssueState) option {
@@ -94,15 +107,15 @@ const (
 func (r *StackRetriever) GetRetriever(t string) StackHandler {
 	switch t {
 	case Priority:
-		return NewPriorityStackHandler()
+		return NewPriorityStackHandler(r.reverseStack)
 	case Complexity:
-		return NewComplexityStackHandler()
+		return NewComplexityStackHandler(r.reverseStack)
 	case Severity:
-		return NewSeverityStackHandler()
+		return NewSeverityStackHandler(r.reverseStack)
 	case State:
-		return NewStateStackHandler(r.issueStateList)
+		return NewStateStackHandler(r.reverseStack, r.issueStateList)
 	case Stage:
-		return NewStageStackHandler(r.issueStageList)
+		return NewStageStackHandler(r.reverseStack, r.issueStageList)
 	default:
 		return NewEmptyStackHandler()
 	}

@@ -24,11 +24,13 @@ import (
 )
 
 type StateStackHandler struct {
+	reverse bool
 	issueStateList []dao.IssueState
 }
 
-func NewStateStackHandler(issueStateList []dao.IssueState) *StateStackHandler {
+func NewStateStackHandler(reverse bool, issueStateList []dao.IssueState) *StateStackHandler {
 	return &StateStackHandler{
+		reverse: reverse,
 		issueStateList: issueStateList,
 	}
 }
@@ -61,6 +63,9 @@ func (h *StateStackHandler) GetStacks() []Stack {
 			Value: fmt.Sprintf("%d", i.ID),
 			Color: color,
 		})
+	}
+	if h.reverse {
+		reverseStacks(stacks)
 	}
 	if len(stacks) == 0 {
 		stacks = append(stacks, emptyStack)

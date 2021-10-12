@@ -22,10 +22,11 @@ import (
 )
 
 type SeverityStackHandler struct {
+	reverse bool
 }
 
-func NewSeverityStackHandler() *SeverityStackHandler {
-	return &SeverityStackHandler{}
+func NewSeverityStackHandler(reverse bool) *SeverityStackHandler {
+	return &SeverityStackHandler{reverse: reverse}
 }
 
 var severityColorMap = map[apistructs.IssueSeverity]string{
@@ -45,6 +46,9 @@ func (h *SeverityStackHandler) GetStacks() []Stack {
 			Value: string(severity),
 			Color: severityColorMap[severity],
 		})
+	}
+	if h.reverse {
+		reverseStacks(stacks)
 	}
 	return stacks
 }

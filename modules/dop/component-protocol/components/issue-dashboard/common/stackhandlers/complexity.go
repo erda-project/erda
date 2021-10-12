@@ -22,10 +22,11 @@ import (
 )
 
 type ComplexityStackHandler struct {
+	reverse bool
 }
 
-func NewComplexityStackHandler() *ComplexityStackHandler {
-	return &ComplexityStackHandler{}
+func NewComplexityStackHandler(reverse bool) *ComplexityStackHandler {
+	return &ComplexityStackHandler{reverse: reverse}
 }
 
 var complexityColorMap = map[apistructs.IssueComplexity]string{
@@ -46,6 +47,9 @@ func (h *ComplexityStackHandler) GetStacks() []Stack {
 			Value: string(i),
 			Color: complexityColorMap[i],
 		})
+	}
+	if h.reverse {
+		reverseStacks(stacks)
 	}
 	return stacks
 }
