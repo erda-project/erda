@@ -531,18 +531,17 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 	status, tip, value := "", "", ""
 	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
-		usedRes = usedPercent / 100
-		percent := usedPercent / float64(totRes) * 1000
-		if percent <= 80 {
+		usedRes = float64(totRes) * usedPercent / 100
+		if usedPercent <= 80 {
 			status = "success"
-		} else if percent < 100 {
+		} else if usedPercent < 100 {
 			status = "warning"
 		} else {
 			status = "error"
 		}
-		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes*1000, format),
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-		value = fmt.Sprintf("%.2f", percent)
+		value = fmt.Sprintf("%.2f", usedPercent)
 	} else {
 		totRes = totQty.Value()
 		usedRes = float64(totRes) * usedPercent / 100
