@@ -127,10 +127,10 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					//"color":           []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 					"levels": []interface{}{
 						map[string]interface{}{
-							"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
+							"color": []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 						},
 						map[string]interface{}{
-							"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
+							"color": []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 						},
 					},
 					//"levels": []interface{}{
