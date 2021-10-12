@@ -87,6 +87,8 @@ erda.core.monitor.log.query:
 
 logs-index-query:
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
+  index_field_settings:
+    file: ${CONFIG_PATH}/logs/default_field_settings.yml
 log-metric-rules:
 node-topo:
 #apm providers

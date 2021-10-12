@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -36,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -192,13 +190,13 @@ type LabelsValue struct {
 }
 
 type GetRowItem interface {
-	GetRowItem(c data.Object, resName TableType) (*RowItem, error)
+	GetRowItems(c []data.Object, resName TableType, podsMap map[string][]data.Object) ([]RowItem, error)
 }
 
-func (t *Table) GetUsageValue(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetUsageValue(used, total float64, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    t.GetScaleValue(metricsData.Used, metricsData.Total, resourceType),
-		Percent: common.GetPercent(metricsData.Used, metricsData.Total),
+		Text:    t.GetScaleValue(used, total, resourceType),
+		Percent: common.GetPercent(used, total),
 	}
 }
 
@@ -213,9 +211,22 @@ func GetDistributionStatus(str string) string {
 	}
 }
 
+func IsNodeOffline(node data.Object) bool {
+	labels := node.Map("metadata", "labels")
+	offlineLabel := labels.String(cmp.OfflineLabel)
+	return offlineLabel == "true"
+}
+
 func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	if node == nil {
 		return nil, common.NodeNotFoundErr
+	}
+	if IsNodeOffline(node) {
+		return &SteveStatus{
+			Value:      t.SDK.I18n("isOffline"),
+			RenderType: "textWithBadge",
+			Status:     "default",
+		}, nil
 	}
 	ss := &SteveStatus{
 		RenderType: "textWithBadge",
@@ -239,18 +250,17 @@ func (t *Table) GetItemStatus(node data.Object) (*SteveStatus, error) {
 	return ss, nil
 }
 
-func (t *Table) GetDistributionValue(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
+func (t *Table) GetDistributionValue(req, total float64, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    t.GetScaleValue(metricsData.Request, metricsData.Total, resourceType),
-		Percent: common.GetPercent(metricsData.Request, metricsData.Total),
+		Text:    t.GetScaleValue(req, total, resourceType),
+		Percent: common.GetPercent(req, total),
 	}
 }
 
-func (t *Table) GetUnusedRate(metricsData metrics.MetricsData, resourceType TableType) DistributionValue {
-	unused := math.Max(metricsData.Request-metricsData.Used, 0.0)
+func (t *Table) GetUnusedRate(unallocate, requst float64, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    t.GetScaleValue(unused, metricsData.Request, resourceType),
-		Percent: common.GetPercent(unused, metricsData.Request),
+		Text:    t.GetScaleValue(unallocate, requst, resourceType),
+		Percent: common.GetPercent(unallocate, requst),
 	}
 }
 
@@ -294,7 +304,7 @@ func (t *Table) SetComponentValue(c *cptype.Component) error {
 	return nil
 }
 
-func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object) error {
+func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object, podsMap map[string][]data.Object) error {
 	var (
 		err        error
 		sortColumn string
@@ -309,10 +319,10 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 	//}
 	if t.State.Sorter.Field != "" {
 		sortColumn = t.State.Sorter.Field
-		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
+		asc = strings.ToLower(t.State.Sorter.Order) == "asc"
 	}
 
-	if items, err = t.SetData(nodes, tableType); err != nil {
+	if items, err = t.SetData(nodes, tableType, podsMap); err != nil {
 		return err
 	}
 	if sortColumn != "" {
@@ -332,9 +342,9 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		}
 	}
 
-	//t.State.Total = len(nodes)
+	//t.State.Left = len(nodes)
 	//start := (t.State.PageNo - 1) * t.State.PageSize
-	//end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Total)
+	//end := mathutil.Min(t.State.PageNo*t.State.PageSize, t.State.Left)
 
 	//component.Data = map[string]interface{}{"list": items[start:end]}
 	component.Data = map[string]interface{}{"list": items}
@@ -342,19 +352,8 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 }
 
 // SetData assemble rowItem of table
-func (t *Table) SetData(nodes []data.Object, tableType TableType) ([]RowItem, error) {
-	var (
-		list []RowItem
-		ri   *RowItem
-		err  error
-	)
-	for i := 0; i < len(nodes); i++ {
-		if ri, err = t.TableComponent.GetRowItem(nodes[i], tableType); err != nil {
-			return nil, err
-		}
-		list = append(list, *ri)
-	}
-	return list, nil
+func (t *Table) SetData(nodes []data.Object, tableType TableType, podsMap map[string][]data.Object) ([]RowItem, error) {
+	return t.TableComponent.GetRowItems(nodes, tableType, podsMap)
 }
 
 func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]data.Object, error) {
@@ -382,6 +381,30 @@ func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]dat
 		nodes = (*gs)["nodes"].([]data.Object)
 	}
 	return nodes, nil
+}
+
+func (t *Table) GetPods(ctx context.Context) (map[string][]data.Object, error) {
+	var podsMap = make(map[string][]data.Object)
+	// Get all nodes by cluster name
+
+	podReq := &apistructs.SteveRequest{}
+	podReq.OrgID = t.SDK.Identity.OrgID
+	podReq.UserID = t.SDK.Identity.UserID
+	podReq.Type = apistructs.K8SPod
+	if t.SDK.InParams["clusterName"] != nil {
+		podReq.ClusterName = t.SDK.InParams["clusterName"].(string)
+	} else {
+		return nil, common.ClusterNotFoundErr
+	}
+	resp, err := t.Server.ListSteveResource(ctx, podReq)
+	if err != nil {
+		return nil, err
+	}
+	for _, pod := range resp {
+		nodeName := pod.Data().StringSlice("metadata", "fields")[6]
+		podsMap[nodeName] = append(podsMap[nodeName], pod.Data())
+	}
+	return podsMap, nil
 }
 
 func (t *Table) CordonNode(ctx context.Context, nodeNames []string) error {
@@ -449,6 +472,21 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 		"uncordon": {
 			Key:    "uncordon",
 			Text:   t.SDK.I18n("uncordon"),
+			Reload: true,
+		},
+		"drain": {
+			Key:    "drain",
+			Text:   t.SDK.I18n("drain"),
+			Reload: true,
+		},
+		"offline": {
+			Key:    "offline",
+			Text:   t.SDK.I18n("offline"),
+			Reload: true,
+		},
+		"online": {
+			Key:    "online",
+			Text:   t.SDK.I18n("online"),
 			Reload: true,
 		},
 	}
@@ -596,7 +634,7 @@ func (t *Table) GetOperate(id string) Operate {
 				JumpOut: true,
 				Target:  "cmpClustersPods",
 			},
-				Text:   t.SDK.I18n("show") + " Pods",
+				Text:   t.SDK.I18n("show"),
 				Reload: false,
 			},
 		},
@@ -652,7 +690,7 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 type State struct {
 	//PageNo          int           `json:"pageNo,omitempty"`
 	//PageSize        int           `json:"pageSize,omitempty"`
-	//Total           int           `json:"total,omitempty"`
+	//Left           int           `json:"total,omitempty"`
 	SelectedRowKeys []string      `json:"selectedRowKeys,omitempty"`
 	Sorter          Sorter        `json:"sorterData,omitempty"`
 	Values          filter.Values `json:"values"`
