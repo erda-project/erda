@@ -29,8 +29,10 @@ CREATE TABLE `dice_code_coverage_exec_record`
     `time_end`       datetime       NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '结束时间',
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `msg`            varchar(2000)   NOT NULL DEFAULT "" COMMENT '日志信息',
-    `report_msg`     varchar(2000)   NOT NULL DEFAULT "" COMMENT '报告日志信息',
+    `msg`            varchar(2000)  NOT NULL DEFAULT "" COMMENT '日志信息',
+    `report_msg`     varchar(2000)  NOT NULL DEFAULT "" COMMENT '报告日志信息',
+    `report_time`    datetime       NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '报告生成时间',
     PRIMARY KEY (`id`),
     KEY              `idx_project_id` (`project_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='代码覆盖率执行记录';
+

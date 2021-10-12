@@ -294,6 +294,7 @@ func (svc *CodeCoverage) ReportCallBack(req apistructs.CodeCoverageUpdateRequest
 	record.ReportStatus = reportStatus
 	record.ReportMsg = req.Msg
 	record.ReportUrl = req.ReportTarUrl
+	record.ReportTime = time.Now()
 
 	return svc.db.UpdateCodeCoverage(record)
 }

@@ -119,6 +119,7 @@ type CodeCoverageExecRecordDto struct {
 	TimeEnd       time.Time           `json:"timeEnd"`
 	TimeCreated   time.Time           `json:"timeCreated"`
 	TimeUpdated   time.Time           `json:"timeUpdated"`
+	ReportTime    time.Time           `json:"reportTime"`
 }
 
 type ToolTip struct {
