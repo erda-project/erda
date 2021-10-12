@@ -24,13 +24,13 @@ import (
 )
 
 type StateStackHandler struct {
-	reverse bool
+	reverse        bool
 	issueStateList []dao.IssueState
 }
 
 func NewStateStackHandler(reverse bool, issueStateList []dao.IssueState) *StateStackHandler {
 	return &StateStackHandler{
-		reverse: reverse,
+		reverse:        reverse,
 		issueStateList: issueStateList,
 	}
 }
