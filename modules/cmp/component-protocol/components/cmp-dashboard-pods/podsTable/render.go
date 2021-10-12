@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
@@ -190,8 +191,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 		waitGroup.Done()
 	}()
 
-	cpuMetrics := make(map[string]*metrics.MetricsData)
-	memMetrics := make(map[string]*metrics.MetricsData)
 	go func() {
 		var metricsErr error
 		cpuReq := &metrics.MetricsRequest{
@@ -209,11 +208,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 			Type:    metrics.Memory,
 		}
 		logrus.Infof("[XDEBUG] start get metrics at %s", time.Now().Format(time.StampNano))
-		cpuMetrics, metricsErr = mServer.PodMetrics(p.ctx, cpuReq)
+		_, metricsErr = mServer.PodMetrics(p.ctx, cpuReq)
 		if metricsErr != nil {
 			logrus.Errorf("failed to get cpu metrics for pods, %v", metricsErr)
 		}
-		memMetrics, metricsErr = mServer.PodMetrics(p.ctx, memReq)
+		_, metricsErr = mServer.PodMetrics(p.ctx, memReq)
 		if metricsErr != nil {
 			logrus.Errorf("failed to get mem metrics for pods, %v", metricsErr)
 		}
@@ -284,19 +283,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		metricsData, ok := cpuMetrics[cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod)]
-		usedCPUPercent := 0.0
-		if ok {
-			usedCPUPercent = metricsData.Used
-		}
+		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
+		usedCPUPercent := metricsData.Used
 		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		metricsData, ok = memMetrics[cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod)]
-		usedMemPercent := 0.0
-		if ok {
-			usedMemPercent = metricsData.Used
-		}
+		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
+		usedMemPercent := metricsData.Used
 		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
@@ -482,18 +475,17 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 	status, tip, value := "", "", ""
 	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
-		usedRes = usedPercent / 100
-		percent := usedPercent / float64(totRes) * 1000
-		if percent <= 80 {
+		usedRes = float64(totRes) * usedPercent / 100
+		if usedPercent <= 80 {
 			status = "success"
-		} else if percent < 100 {
+		} else if usedPercent < 100 {
 			status = "warning"
 		} else {
 			status = "error"
 		}
-		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes*1000, format),
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-		value = fmt.Sprintf("%.2f", percent)
+		value = fmt.Sprintf("%.2f", usedPercent)
 	} else {
 		totRes = totQty.Value()
 		usedRes = float64(totRes) * usedPercent / 100
@@ -684,4 +676,20 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 	}
 	res, _ := resource.ParseQuantity(str)
 	return &res
+}
+
+func getCache(key string) *metrics.MetricsData {
+
+	v, _, err := cache.GetFreeCache().Get(key)
+	if err != nil {
+		logrus.Errorf("get metrics %v err :%v", key, err)
+	}
+	d := &metrics.MetricsData{}
+	if v != nil {
+		err = jsi.Unmarshal(v[0].Value().([]byte), d)
+		if err != nil {
+			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
+		}
+	}
+	return d
 }
