@@ -81,8 +81,8 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 		if len(reportContent) > 0 {
 			data = reportContent[0].Nodes
 		}
-		// default time 1000-01-01
-		if record.ReportTime.Year() < 2000 {
+		// mysql default time 1000-01-01
+		if record.ReportTime.Year() != 1000 {
 			title = fmt.Sprintf("%s %s", record.ReportTime.Format("2006-01-02 15:04:05"), title)
 		}
 		project, err := c.ctxBdl.GetProject(record.ProjectID)
