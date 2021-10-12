@@ -122,53 +122,108 @@ logs-index-query:
       support_aggregation: false
       display: false
       group: 1
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_org_name
       support_aggregation: false
       display: false
       group: 1
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_cluster_name
       support_aggregation: false
       display: false
       group: 1
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_project_id
       support_aggregation: false
       display: false
       group: 2
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_project_name
       support_aggregation: false
       display: false
       group: 2
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_workspace
       support_aggregation: false
       display: false
       group: 2
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_application_id
       support_aggregation: false
       display: false
       group: 3
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_application_name
-      support_aggregation: true
-      display: true
+      support_aggregation: false
+      display: false
       group: 3
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_runtime_id
       support_aggregation: false
       display: false
       group: 3
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_runtime_name
       support_aggregation: false
       display: false
       group: 3
-      allow_edit: true
+      allow_edit: false
     - field_name: tags.dice_service_name
+      support_aggregation: false
+      display: false
+      group: 4
+      allow_edit: false
+    - field_name: tags.org_id
+      support_aggregation: false
+      display: false
+      group: 1
+      allow_edit: true
+    - field_name: tags.org_name
+      support_aggregation: false
+      display: false
+      group: 1
+      allow_edit: true
+    - field_name: tags.cluster_name
+      support_aggregation: false
+      display: false
+      group: 1
+      allow_edit: true
+    - field_name: tags.project_id
+      support_aggregation: false
+      display: false
+      group: 2
+      allow_edit: true
+    - field_name: tags.project_name
+      support_aggregation: false
+      display: false
+      group: 2
+      allow_edit: true
+    - field_name: tags.workspace
+      support_aggregation: false
+      display: false
+      group: 2
+      allow_edit: true
+    - field_name: tags.application_id
+      support_aggregation: false
+      display: false
+      group: 3
+      allow_edit: true
+    - field_name: tags.application_name
+      support_aggregation: true
+      display: true
+      group: 3
+      allow_edit: true
+    - field_name: tags.runtime_id
+      support_aggregation: false
+      display: false
+      group: 3
+      allow_edit: true
+    - field_name: tags.runtime_name
+      support_aggregation: false
+      display: false
+      group: 3
+      allow_edit: true
+    - field_name: tags.service_name
       support_aggregation: true
       display: true
       group: 4
@@ -183,12 +238,27 @@ logs-index-query:
       display: true
       group: 5
       allow_edit: true
+    - field_name: tags.pod_ip
+      support_aggregation: true
+      display: true
+      group: 5
+      allow_edit: true
     - field_name: tags.container_name
       support_aggregation: false
       display: false
       group: 5
       allow_edit: true
+    - field_name: tags.container_id
+      support_aggregation: false
+      display: false
+      group: 5
+      allow_edit: true
     - field_name: tags.request-id
+      support_aggregation: false
+      display: false
+      group: 6
+      allow_edit: false
+    - field_name: tags.trace_id
       support_aggregation: false
       display: true
       group: 6
