@@ -16,6 +16,7 @@ package cpuTable
 
 import (
 	"context"
+	"math"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -195,8 +196,10 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		if ok {
 			used = metricsData.Used
 		}
+
 		usage = ct.GetUsageValue(used, float64(requestQty.Value()), table.Cpu)
-		dr = ct.GetUnusedRate(float64(cpuRequest)-used*1000, float64(cpuRequest), table.Cpu)
+		unused := math.Max(float64(cpuRequest)-resp[key].Used*1000, 0.0)
+		dr = ct.GetUnusedRate(unused, float64(cpuRequest), table.Cpu)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if role == "<none>" {
