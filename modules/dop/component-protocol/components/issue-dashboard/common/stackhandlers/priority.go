@@ -22,10 +22,11 @@ import (
 )
 
 type PriorityStackHandler struct {
+	reverse bool
 }
 
-func NewPriorityStackHandler() *PriorityStackHandler {
-	return &PriorityStackHandler{}
+func NewPriorityStackHandler(reverse bool) *PriorityStackHandler {
+	return &PriorityStackHandler{reverse: reverse}
 }
 
 var priorityColorMap = map[apistructs.IssuePriority]string{
@@ -37,13 +38,15 @@ var priorityColorMap = map[apistructs.IssuePriority]string{
 
 func (h *PriorityStackHandler) GetStacks() []Stack {
 	var stacks []Stack
-	for i := len(apistructs.IssuePriorityList) - 1; i >= 0; i-- {
-		priority := apistructs.IssuePriorityList[i]
+	for _, i := range apistructs.IssuePriorityList {
 		stacks = append(stacks, Stack{
-			Name:  priority.GetZhName(),
-			Value: string(priority),
-			Color: priorityColorMap[priority],
+			Name:  i.GetZhName(),
+			Value: string(i),
+			Color: priorityColorMap[i],
 		})
+	}
+	if h.reverse {
+		reverseStacks(stacks)
 	}
 	return stacks
 }

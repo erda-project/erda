@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package startButton
+package errText
 
 import (
 	"context"
@@ -41,55 +41,77 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
-	var disable = false
+	var disableTip string
+
+	var disableEnd bool
+	var disableStart bool
+	var jacocoDisable bool
 
 	switch event.Operation.String() {
-	case apistructs.ClickOperation.String():
+	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
 
-		err := svc.Start(apistructs.CodeCoverageStartRequest{
-			ProjectID: projectId,
-			IdentityInfo: apistructs.IdentityInfo{
-				UserID: sdk.Identity.UserID,
-			},
-		})
+		orgIDInt, err := strconv.ParseInt(sdk.Identity.OrgID, 10, 64)
 		if err != nil {
 			return err
 		}
 
-		disable = true
-	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		judgeApplication := c.State["judgeApplication"]
-		if judgeApplication != nil {
-			var value = judgeApplication.(bool)
-			disable = !value
+		judgeApplication, err, message := svc.JudgeApplication(projectId, uint64(orgIDInt), sdk.Identity.UserID)
+		if err != nil {
+			return err
+		}
+		jacocoDisable = !judgeApplication
+		if jacocoDisable && message != "" {
+			disableTip = message
 		}
 
-		if !disable {
-			err := svc.JudgeRunningRecordExist(projectId)
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
+
+		c.State["judgeApplication"] = judgeApplication
+		c.State["judgeApplicationMessage"] = message
+
+		if !jacocoDisable {
+			ok, err := svc.JudgeCanEnd(projectId)
 			if err != nil {
-				disable = true
+				return err
+			}
+			disableEnd = !ok
+
+			err = svc.JudgeRunningRecordExist(projectId)
+			if err != nil {
+				disableStart = true
+			} else {
+				disableStart = false
 			}
 		}
 	}
-
-	c.Type = "Button"
-	c.Props = map[string]interface{}{
-		"text": "开始",
-		"type": "primary",
+	if c.State == nil {
+		c.State = map[string]interface{}{}
 	}
 
-	c.Operations = map[string]interface{}{
-		"click": map[string]interface{}{
-			"key":      "click",
-			"reload":   true,
-			"disabled": disable,
+	if disableStart {
+		if disableEnd {
+			disableTip = "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+		} else {
+			disableTip = "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+		}
+	}
+
+	c.Props = map[string]interface{}{
+		"value": disableTip,
+		"styleConfig": map[string]interface{}{
+			"color": "red",
 		},
 	}
 	return nil
 }
 
 func init() {
-	base.InitProviderWithCreator("code-coverage", "startButton", func() servicehub.Provider {
+	base.InitProviderWithCreator("code-coverage", "errText", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
 }

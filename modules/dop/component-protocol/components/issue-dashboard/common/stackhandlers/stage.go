@@ -22,11 +22,13 @@ import (
 )
 
 type StageStackHandler struct {
+	reverse bool
 	issueStageList []apistructs.IssueStage
 }
 
-func NewStageStackHandler(issueStageList []apistructs.IssueStage) *StageStackHandler {
+func NewStageStackHandler(reverse bool, issueStageList []apistructs.IssueStage) *StageStackHandler {
 	return &StageStackHandler{
+		reverse: reverse,
 		issueStageList: issueStageList,
 	}
 }
@@ -42,6 +44,9 @@ func (h *StageStackHandler) GetStacks() []Stack {
 			Value: i.Value,
 			Color: stageColorList[idx%l],
 		})
+	}
+	if h.reverse {
+		reverseStacks(stacks)
 	}
 	if len(stacks) == 0 {
 		stacks = append(stacks, emptyStack)

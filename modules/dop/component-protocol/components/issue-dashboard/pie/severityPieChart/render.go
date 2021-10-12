@@ -49,11 +49,13 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	helper := gshelper.NewGSHelper(gs)
 
-	handler := stackhandlers.NewSeverityStackHandler()
+	handler := stackhandlers.NewSeverityStackHandler(false)
 
 	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
 
 	pie := charts.NewPie()
+	pie.Tooltip.Show = true
+	pie.Tooltip.Trigger = "item"
 	pie.Colors = colors
 	pie.AddSeries("严重程度", seriesData, func(s *charts.SingleSeries) {
 		s.Animation = true

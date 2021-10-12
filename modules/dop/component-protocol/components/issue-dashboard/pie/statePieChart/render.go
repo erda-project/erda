@@ -56,11 +56,13 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stateMap[i.ID] = i
 	}
 
-	handler := stackhandlers.NewStateStackHandler(stateList)
+	handler := stackhandlers.NewStateStackHandler(false, stateList)
 
 	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
 
 	pie := charts.NewPie()
+	pie.Tooltip.Show = true
+	pie.Tooltip.Trigger = "item"
 	pie.Colors = colors
 	pie.AddSeries("缺陷状态", seriesData, func(s *charts.SingleSeries) {
 		s.Animation = true

@@ -78,18 +78,44 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		Data: xAxis,
 	}
 
-	series, colors, _ := common.GroupToBarData(bugList, f.State.Values.Value, handler, xAxis, func(issue interface{}) string {
+	series, colors, _, _ := common.GroupToBarData(bugList, f.State.Values.Value, handler, xAxis, func(issue interface{}) string {
 		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
-	}, common.GetStackBarSingleSeriesConverter(), 0)
+	}, func(name string, data []*int) charts.SingleSeries {
+		return charts.SingleSeries{
+			Name: name,
+			Data: data,
+			Label: &opts.Label{
+				Show:      true,
+				Position:  "top",
+				Formatter: "{c}",
+			},
+		}
+	}, 0, true, false)
 
 	bar.Colors = colors
 	bar.MultiSeries = series
+	bar.Legend.Show = true
 	bar.Tooltip.Show = true
 
+	bb := bar.JSON()
+
+	n := make([]map[string]interface{}, 0)
+	buf, err := json.Marshal(bb["series"])
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(buf, &n); err != nil {
+		return err
+	}
+	for i := range n {
+		n[i]["barWidth"] = 10
+	}
+	bb["series"] = n
+
 	props := make(map[string]interface{})
-	props["title"] = "缺陷状态分布" // TODO: change by filter
+	props["title"] = "缺陷状态分布"
 	props["chartType"] = "bar"
-	props["option"] = bar.JSON()
+	props["option"] = bb
 
 	c.Props = props
 	c.State = nil

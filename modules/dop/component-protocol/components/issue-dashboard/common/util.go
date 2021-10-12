@@ -66,7 +66,7 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 
 func GroupToBarData(itemList []interface{}, wl []string, stackHandler stackhandlers.StackHandler, xAxis []string,
 	xIdx func(issue interface{}) string,
-	seriesConverter func(name string, data []*int) charts.SingleSeries, top int) (charts.MultiSeries, []string, []string) {
+	seriesConverter func(name string, data []*int) charts.SingleSeries, top int, enableTotal bool, skipEmpty bool) (charts.MultiSeries, []string, []string, []int) {
 	counter := make(map[string]map[string]int)
 	counterSingle := make(map[string]int)
 
@@ -74,10 +74,8 @@ func GroupToBarData(itemList []interface{}, wl []string, stackHandler stackhandl
 
 	for _, i := range itemList {
 		y := FixEmptyWord(stackIndexer(i))
-		if len(wl) > 0 { // empty means not filter
-			if !strutil.Exist(wl, y) {
-				continue
-			}
+		if !showStack(wl, y) {
+			continue
 		}
 		x := FixEmptyWord(xIdx(i))
 		if _, ok := counter[y]; !ok {
@@ -116,19 +114,55 @@ func GroupToBarData(itemList []interface{}, wl []string, stackHandler stackhandl
 		}
 	}
 	var colors []string
+	total := make([]int, len(xAxis))
+
 	for _, stack := range stackHandler.GetStacks() {
+		if !showStack(wl, stack.Value) {
+			continue
+		}
 		rowData := make([]*int, xl)
 		for i, x := range xAxis {
 			v := counter[stack.Value][x]
-			if v > 0 {
+			if v > 0 || !skipEmpty {
 				rowData[i] = &v
 			}
+			total[i] += v
 		}
 		ms = append(ms, seriesConverter(stack.Name, rowData))
 		colors = append(colors, stack.Color)
 	}
 
-	return ms, colors, xAxis
+	if enableTotal && len(colors) > 1 {
+		totalRes := make([]*int, len(total))
+		for i := range total {
+			if !skipEmpty {
+				totalRes[i] = &total[i]
+			}
+		}
+
+		msNew := make(charts.MultiSeries, len(ms)+1)
+		colorsNew := make([]string, len(colors)+1)
+
+		msNew[0] = seriesConverter("全部", totalRes)
+		colorsNew[0] = "gray"
+		for i := range ms {
+			msNew[i+1] = ms[i]
+		}
+		ms = msNew
+		for i := range colors {
+			colorsNew[i+1] = colors[i]
+		}
+		colors = colorsNew
+	}
+
+	return ms, colors, xAxis, total
+}
+
+func showStack(wl []string, item string) bool {
+	if len(wl) == 0 { // empty means not filter
+		return true
+	}
+	return strutil.Exist(wl, item)
 }
 
 func GetAssigneeIndexer() func(issue interface{}) string {
@@ -144,7 +178,7 @@ func GetStackBarSingleSeriesConverter() func(name string, data []*int) charts.Si
 			Stack: "total",
 			Data:  data,
 			Label: &opts.Label{
-				Formatter: "{a}:{c}",
+				//Formatter: "{a}:{c}",
 				Show:      true,
 			},
 		}

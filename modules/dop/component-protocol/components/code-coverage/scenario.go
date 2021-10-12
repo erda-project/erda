@@ -19,6 +19,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/codeCoverChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/downloadButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/endButton"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/errText"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/executeHistoryTable"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/startButton"

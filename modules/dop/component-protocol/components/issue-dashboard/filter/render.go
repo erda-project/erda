@@ -135,7 +135,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			apistructs.IssueTypeBug,
 		},
 		ProjectID:    f.InParams.ProjectID,
-		IterationIDs: []int64{f.State.Values.IterationIDs},
+		IterationIDs: f.State.Values.IterationIDs,
 		Assignees:    f.State.Values.AssigneeIDs,
 		// StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
 	})
@@ -156,10 +156,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			Label:     "迭代",
 			Options:   iterationOptions,
 			Type:      filter.PropConditionTypeSelect,
-			Required:  true,
-			CustomProps: map[string]interface{}{
-				"mode": "single",
-			},
+			// Required:  true,
+			// CustomProps: map[string]interface{}{
+			// 	"mode": "single",
+			// },
 			HaveFilter: true,
 		},
 		{
@@ -174,7 +174,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	// TODO select multiple iteration
-	f.Iterations = []apistructs.Iteration{iterations[f.State.Values.IterationIDs]}
+	// f.Iterations = []apistructs.Iteration{iterations[0]}
 
 	// todo modify data format
 	f.IssueList = data
@@ -200,7 +200,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	f.Stages = stages
 
 	helper := gshelper.NewGSHelper(gs)
-	helper.SetIterations(f.Iterations)
+	// helper.SetIterations(f.Iterations)
 	helper.SetMembers(f.Members)
 	helper.SetIssueList(f.IssueList)
 	helper.SetIssueStateList(f.IssueStateList)
@@ -234,7 +234,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, iterations m
 			return err
 		}
 	} else {
-		f.State.Values.IterationIDs = defaultIterationRetriever(iterations)
+		// f.State.Values.IterationIDs = defaultIterationRetriever(iterations)
 	}
 	return nil
 }

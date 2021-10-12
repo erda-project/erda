@@ -11,10 +11,13 @@ hierarchy:
       - codeCoverChart
       - treeMapChart
     buttonGroup:
-      - startButton
-      - endButton
-      - cancelButton
-      - executeHistory
+      left:
+        - errText
+      right:
+        - startButton
+        - endButton
+        - cancelButton
+        - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryContent
@@ -26,6 +29,8 @@ hierarchy:
       extraContent: downloadButton
 
 components:
+  errText:
+    type: Text
   page:
     type: Container
     props:
@@ -35,9 +40,7 @@ components:
     props:
       title: "代码覆盖率统计计划"
   buttonGroup:
-    type: RowContainer
-    props:
-      contentSetting: end
+    type: LRContainer
   codeCoverChart:
     type: Chart
   startButton:
@@ -77,14 +80,37 @@ components:
 
 rendering:
   cancelButton:
+    - name: errText
     - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: executeHistoryTable
   startButton:
+    - name: errText
     - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: executeHistoryTable
   endButton:
+    - name: errText
     - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: executeHistoryTable
   timeSelector:
     - name: codeCoverChart
@@ -110,19 +136,25 @@ rendering:
           value: "{{ codeCoverChart.recordID }}"
 
   __DefaultRendering__:
+    - name: errText
     - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: endButton
       state:
         - name: "judgeApplication"
-          value: "{{ startButton.judgeApplication }}"
+          value: "{{ errText.judgeApplication }}"
         - name: "judgeApplicationMessage"
-          value: "{{ startButton.judgeApplicationMessage }}"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: cancelButton
       state:
         - name: "judgeApplication"
-          value: "{{ startButton.judgeApplication }}"
+          value: "{{ errText.judgeApplication }}"
         - name: "judgeApplicationMessage"
-          value: "{{ startButton.judgeApplicationMessage }}"
+          value: "{{ errText.judgeApplicationMessage }}"
     - name: timeSelector
     - name: codeCoverChart
       state:

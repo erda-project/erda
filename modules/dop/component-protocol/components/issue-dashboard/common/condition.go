@@ -15,12 +15,13 @@
 package common
 
 type FrontendConditions struct {
-	IterationIDs int64 `json:"iteration,omitempty"`
-	// IterationIDs []int64  `json:"iteration,omitempty"`
-	AssigneeIDs []string `json:"member,omitempty"`
+	// IterationIDs int64 `json:"iteration,omitempty"`
+	IterationIDs []int64  `json:"iteration,omitempty"`
+	AssigneeIDs  []string `json:"member,omitempty"`
 }
 
 type FilterConditions struct {
 	Type  string   `json:"type,omitempty"`
 	Value []string `json:"value,omitempty"`
+	Time  []int64  `json:"time,omitempty"`
 }

@@ -58,6 +58,7 @@ component-protocol.components.code-coverage.endButton:
 component-protocol.components.code-coverage.cancelButton:
 component-protocol.components.code-coverage.executeHistoryTable:
 component-protocol.components.code-coverage.startButton:
+component-protocol.components.code-coverage.errText:
 component-protocol.components.code-coverage.timeSelector:
 component-protocol.components.code-coverage.tip:
 component-protocol.components.code-coverage.executeHistoryButton:
@@ -74,7 +75,8 @@ component-protocol.components.issue-dashboard.trendChart:
 component-protocol.components.issue-dashboard.trendChartExtra:
 component-protocol.components.issue-dashboard.trendChartFilter:
 component-protocol.components.issue-dashboard.chartGroup1:
-component-protocol.components.issue-dashboard.chartGroup2:
+component-protocol.components.issue-dashboard.chartGroup1@chartGroup2:
+component-protocol.components.issue-dashboard.chartGroup1@chartGroup3:
 component-protocol.components.issue-dashboard.statePieChart:
 component-protocol.components.issue-dashboard.complexityPieChart:
 component-protocol.components.issue-dashboard.priorityPieChart:

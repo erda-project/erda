@@ -112,34 +112,42 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					"width":           "100%",
 					"height":          "100%",
 					"colorMappingBy":  "value",
-					"visualDimension": 8,
+					"visualDimension": 9,
 					"visualMin":       0,
 					"visualMax":       100,
 					"data":            data,
-					"color":           []string{"maroon", "orange", "yellow", "green", "darkseagreen"},
+					//"color":           []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 					"levels": []interface{}{
 						map[string]interface{}{
-							"colorSaturation": []interface{}{0.3, 0.6},
-							"itemStyle": map[string]interface{}{
-								"gapWidth": 4,
-							},
+							"color": []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 						},
 						map[string]interface{}{
-							"colorSaturation": []interface{}{0.3, 0.6},
-							"itemStyle": map[string]interface{}{
-								"gapWidth": 2,
-							},
-						},
-						map[string]interface{}{
-							"colorSaturation": []interface{}{0.3, 0.5},
-							"itemStyle": map[string]interface{}{
-								"gapWidth": 1,
-							},
-						},
-						map[string]interface{}{
-							"colorSaturation": []interface{}{0.3, 0.5},
+							"color": []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
 						},
 					},
+					//"levels": []interface{}{
+					//	map[string]interface{}{
+					//		"colorSaturation": []interface{}{0.3, 0.6},
+					//		"itemStyle": map[string]interface{}{
+					//			"gapWidth": 4,
+					//		},
+					//	},
+					//	map[string]interface{}{
+					//		"colorSaturation": []interface{}{0.3, 0.6},
+					//		"itemStyle": map[string]interface{}{
+					//			"gapWidth": 2,
+					//		},
+					//	},
+					//	map[string]interface{}{
+					//		"colorSaturation": []interface{}{0.3, 0.5},
+					//		"itemStyle": map[string]interface{}{
+					//			"gapWidth": 1,
+					//		},
+					//	},
+					//	map[string]interface{}{
+					//		"colorSaturation": []interface{}{0.3, 0.5},
+					//	},
+					//},
 				},
 			},
 		},

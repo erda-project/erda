@@ -118,6 +118,12 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 			map[string]interface{}{
 				"name": "行覆盖率",
 				"data": valueLst,
+				"label": map[string]interface{}{
+					"normal": map[string]interface{}{
+						"show":     true,
+						"position": "top",
+					},
+				},
 				"areaStyle": map[string]interface{}{
 					"opacity": 0.1,
 				},
