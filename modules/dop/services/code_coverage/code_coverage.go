@@ -16,6 +16,8 @@ package code_coverage
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/pkg/loop"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"strconv"
 	"sync"
@@ -111,9 +113,14 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 	}
 
 	// call jacoco start
-	if err := svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
-		ProjectID: record.ProjectID,
-		PlanID:    record.ID,
+	if err := loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
+		if err := svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
+			ProjectID: record.ProjectID,
+			PlanID:    record.ID,
+		}); err != nil {
+			return false, err
+		}
+		return true, nil
 	}); err != nil {
 		tx.Rollback()
 		return err
@@ -160,10 +167,22 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 	if len(jacocoAddress) <= 0 {
 		return fmt.Errorf("not find jaccoco application address")
 	}
-	return svc.bdl.JacocoEnd(jacocoAddress, &apistructs.JacocoRequest{
-		ProjectID: record.ProjectID,
-		PlanID:    record.ID,
-	})
+
+	go func() {
+		if err = loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
+			if err = svc.bdl.JacocoEnd(jacocoAddress, &apistructs.JacocoRequest{
+				ProjectID: record.ProjectID,
+				PlanID:    record.ID,
+			}); err != nil {
+				return false, err
+			}
+			return true, nil
+		}); err != nil {
+			logrus.Error(fmt.Sprintf("failed to call JacocoEnd, err: %s", err.Error()))
+		}
+	}()
+
+	return nil
 }
 
 // Cancel Cancel record
