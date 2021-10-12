@@ -81,17 +81,29 @@ func (c *ESClient) statisticLogsV2(req *LogStatisticRequest, timeout time.Durati
 	if req.Points > 0 {
 		interval = (req.End - req.Start) / req.Points
 	}
+
+	// minimum interval limit to 1 second
+	if interval < 1000 {
+		interval = 1000
+	} else {
+		interval = interval - interval%1000
+	}
+
 	intervalMillisecond := interval
 	start := req.Start * int64(time.Millisecond)
 	end := req.End * int64(time.Millisecond)
 	interval = interval * int64(time.Millisecond)
+	boundEnd := end - (end-start)%interval
+	if boundMod := (end - start) % interval; boundMod == 0 {
+		boundEnd = boundEnd - interval
+	}
 	searchSource = searchSource.Aggregation("timestamp",
 		elastic.NewHistogramAggregation().
 			Field("timestamp").
 			Interval(float64(interval)).
 			MinDocCount(0).
 			Offset(float64(start%interval)).
-			ExtendedBounds(float64(start), float64(end)),
+			ExtendedBounds(float64(start), float64(boundEnd)),
 	)
 	if req.Debug {
 		c.printSearchSource(searchSource)
@@ -109,12 +121,12 @@ func (c *ESClient) statisticLogsV2(req *LogStatisticRequest, timeout time.Durati
 		return result, nil
 	}
 	list := result.Results[0].Data[0].Count.Data
-	for i, b := range histogram.Buckets {
-		if req.Points > 0 && int64(i+1) > req.Points && len(list) > 0 {
-			last := len(list) - 1
-			list[last] = list[last] + float64(b.DocCount)
-			continue
-		}
+	for _, b := range histogram.Buckets {
+		//if req.Points > 0 && int64(i+1) > req.Points && len(list) > 0 {
+		//	last := len(list) - 1
+		//	list[last] = list[last] + float64(b.DocCount)
+		//	continue
+		//}
 		result.Time = append(result.Time, int64(b.Key)/int64(time.Millisecond))
 		list = append(list, float64(b.DocCount))
 	}
