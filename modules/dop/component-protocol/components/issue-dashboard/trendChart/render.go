@@ -202,7 +202,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 					Data: dates,
 				},
 				YAxis: common.YAxis{
-					Max: float32(maxIssue) + 1,
+					Max: float32(maxIssue) * 1.2,
 				},
 				Color: []string{"blue", "green", "red"},
 				Series: []common.Item{
