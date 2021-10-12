@@ -20,6 +20,14 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 )
 
+var StagingEnv = "STAGING"
+var TestEnv = "TEST"
+var DefaultEnv = "DEFAULT"
+var DevEnv = "DEV"
+var ProdEnv = "PROD"
+
+var EnvList = []string{DefaultEnv, TestEnv, DevEnv, StagingEnv, ProdEnv}
+
 // EnvConfig 环境变量配置
 type EnvConfig struct {
 	Key   string `json:"key"`
