@@ -112,6 +112,7 @@ func (c *ComponentAction) setProps(recordID uint64) error {
 					"type":            "treemap",
 					"roam":            false,
 					"leafDepth":       2,
+					"bottom":          30,
 					"width":           "100%",
 					"height":          "90%",
 					"colorMappingBy":  "value",
