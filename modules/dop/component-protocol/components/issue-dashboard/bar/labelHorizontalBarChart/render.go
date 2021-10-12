@@ -17,15 +17,13 @@ package labelHorizontalBarChart
 import (
 	"context"
 	"encoding/json"
-	"strconv"
-
-	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
@@ -103,44 +101,53 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 
-	series, colors, realY, total := common.GroupToBarData(labelList, f.State.Values.Value, handler, nil, func(label interface{}) string {
-		l := label.(*model.LabelIssueItem)
-		if l == nil {
-			return ""
-		}
-		return l.LabelRel.Name
-	}, common.GetStackBarSingleSeriesConverter(), 500, false, true)
+	builder := &chartbuilders.BarBuilder{
+		Items:        labelList,
+		StackHandler: handler,
+		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
+			Top:      500,
+			XIndexer: getXIndexer(),
+			XDisplayConverter: func(opt *chartbuilders.FixedXAxisOrTop) opts.XAxis {
+				return opts.XAxis{
+					Type: "value",
+					Max:  opt.MaxValue,
+				}
+			},
+		},
+		YAxisOpt: chartbuilders.YAxisOpt{
+			YDisplayConverter: func(opt *chartbuilders.YAxisOpt) opts.YAxis {
+				return opts.YAxis{
+					Type: "category",
+					Data: opt.YAxis,
+				}
+			},
+		},
+		StackOpt: chartbuilders.StackOpt{
+			SkipEmpty: true,
+		},
+		DataHandleOpt: chartbuilders.DataHandleOpt{
+			SeriesConverter: chartbuilders.GetStackBarSingleSeriesConverter(),
+			DataWhiteList:   f.State.Values.Value,
+		},
+	}
+
+	if err := builder.Generate(); err != nil {
+		return err
+	}
 
 	per := 100.0
-	cnt := len(total)
+	cnt := builder.Result.Size
 	if cnt > 0 {
 		per = 16 * 100 / float64(cnt)
 	}
 	if per > 100 {
 		per = 100.0
 	}
-	maxValue := 0
-	for _, t := range total {
-		if t > maxValue {
-			maxValue = t
-		}
-	}
 
-	bar := charts.NewBar()
+	bar := builder.Result.Bar
 	bar.Legend.Show = true
 	bar.Tooltip.Show = true
 	bar.Tooltip.Trigger = "axis"
-	bar.Colors = colors
-	bar.MultiSeries = series
-	bar.XAxisList[0] = opts.XAxis{
-		Type: "value",
-		Max:  maxValue,
-	}
-
-	bar.YAxisList[0] = opts.YAxis{
-		Type: "category",
-		Data: realY,
-	}
 
 	bb := bar.JSON()
 
@@ -187,4 +194,14 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	c.Props = props
 	c.State = nil
 	return nil
+}
+
+func getXIndexer() func(interface{}) string {
+	return func(item interface{}) string {
+		l := item.(*model.LabelIssueItem)
+		if l == nil {
+			return ""
+		}
+		return l.LabelRel.Name
+	}
 }

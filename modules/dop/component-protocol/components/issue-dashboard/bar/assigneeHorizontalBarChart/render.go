@@ -18,13 +18,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -70,50 +69,63 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 
-	series, colors, realY, total := common.GroupToBarData(bugList, f.State.Values.Value, handler, nil, func(issue interface{}) string {
-		return issue.(*dao.IssueItem).Assignee
-	}, common.GetStackBarSingleSeriesConverter(), 500, false, true)
+	builder := &chartbuilders.BarBuilder{
+		Items:        bugList,
+		StackHandler: handler,
+		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
+			Top:      500,
+			XIndexer: getXIndexer(),
+			XDisplayConverter: func(opt *chartbuilders.FixedXAxisOrTop) opts.XAxis {
+				return opts.XAxis{
+					Type: "value",
+					Max:  opt.MaxValue,
+				}
+			},
+		},
+		YAxisOpt: chartbuilders.YAxisOpt{
+			YDisplayConverter: func(opt *chartbuilders.YAxisOpt) opts.YAxis {
+				var names []string
+				for _, userID := range opt.YAxis {
+					var name string
+					m, ok := memberMap[userID]
+					if ok && m != nil {
+						name = m.Nick
+						//name = m.Nick + " (" + userID + ")"
+					}
+					names = append(names, name)
+				}
+				return opts.YAxis{
+					Type: "category",
+					Data: names,
+				}
+			},
+		},
+		StackOpt: chartbuilders.StackOpt{
+			SkipEmpty: true,
+		},
+		DataHandleOpt: chartbuilders.DataHandleOpt{
+			SeriesConverter: chartbuilders.GetStackBarSingleSeriesConverter(),
+			DataWhiteList:   f.State.Values.Value,
+		},
+	}
+
+	if err := builder.Generate(); err != nil {
+		return err
+	}
 
 	per := 100.0
-	cnt := len(total)
+	cnt := builder.Result.Size
 	if cnt > 0 {
 		per = 16 * 100 / float64(cnt)
 	}
 	if per > 100 {
 		per = 100.0
 	}
-	maxValue := 0
-	for _, t := range total {
-		if t > maxValue {
-			maxValue = t
-		}
-	}
 
-	bar := charts.NewBar()
+	bar := builder.Result.Bar
 	bar.Legend.Show = true
 	bar.Tooltip.Show = true
 	bar.Tooltip.Trigger = "axis"
-	bar.Colors = colors
-	bar.MultiSeries = series
-	bar.XAxisList[0] = opts.XAxis{
-		Type: "value",
-		Max:  maxValue,
-	}
-
-	var nameY []string
-	for _, userID := range realY {
-		var name string
-		m, ok := memberMap[userID]
-		if ok && m != nil {
-			name = m.Nick
-		}
-		nameY = append(nameY, name)
-	}
-
-	bar.YAxisList[0] = opts.YAxis{
-		Type: "category",
-		Data: nameY,
-	}
 
 	bb := bar.JSON()
 
@@ -160,4 +172,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	c.Props = props
 	c.State = nil
 	return nil
+}
+
+func getXIndexer() func(interface{}) string {
+	return func(item interface{}) string {
+		return item.(*dao.IssueItem).Assignee
+	}
 }

@@ -21,7 +21,7 @@ hierarchy:
       - undefined
       - reopen
     header:
-      - issueType
+#      - issueType
       - filter
     trendChart:
       extraContent:
@@ -102,6 +102,8 @@ components:
     type: ContractiveFilter
   chartGroup1:
     type: Grid
+    props:
+      span: [6, 18]
   chartGroup2:
     type: Grid
   chartGroup3:

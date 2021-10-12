@@ -87,7 +87,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 	var timeList []string
 	var valueLst []PointValue
 	for _, r := range data.List {
-		t := r.TimeCreated.Format(timeFormat)
+		t := r.TimeEnd.Format(timeFormat)
 		timeList = append(timeList, t)
 		p := PointValue{
 			RecordID:   r.ID,
