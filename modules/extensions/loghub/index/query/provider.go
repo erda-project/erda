@@ -45,6 +45,7 @@ type logField struct {
 	FieldName          string `file:"field_name"`
 	SupportAggregation bool   `file:"support_aggregation"`
 	Display            bool   `file:"display"`
+	AllowEdit          bool   `file:"allow_edit" default:"true"`
 	Group              int    `file:"group"`
 }
 

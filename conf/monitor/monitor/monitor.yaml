@@ -92,14 +92,17 @@ logs-index-query:
       support_aggregation: false
       display: false
       group: false
+      allow_edit: false
     - field_name: id
       support_aggregation: false
       display: false
       group: 0
+      allow_edit: false
     - field_name: stream
       support_aggregation: false
       display: false
       group: false
+      allow_edit: false
     - field_name: content
       support_aggregation: false
       display: true
@@ -108,10 +111,12 @@ logs-index-query:
       support_aggregation: false
       display: false
       group: 0
+      allow_edit: false
     - field_name: tags.origin
       support_aggregation: false
       display: false
       group: 1
+      allow_edit: false
     - field_name: tags.dice_org_id
       support_aggregation: false
       display: false

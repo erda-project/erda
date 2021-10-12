@@ -40,6 +40,7 @@ type LogField struct {
 	FieldName          string `json:"fieldName"`
 	SupportAggregation bool   `json:"supportAggregation"`
 	Display            bool   `json:"display"`
+	AllowEdit          bool   `json:"allowEdit"`
 	Group              int    `json:"group"`
 }
 
