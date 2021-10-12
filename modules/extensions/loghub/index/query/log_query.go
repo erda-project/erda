@@ -579,6 +579,7 @@ func (p *provider) ListDefaultFields() []*LogField {
 			SupportAggregation: field.SupportAggregation,
 			Display:            field.Display,
 			Group:              field.Group,
+			AllowEdit:          field.AllowEdit,
 		})
 	}
 	return list
