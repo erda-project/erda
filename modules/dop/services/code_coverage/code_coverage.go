@@ -99,6 +99,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		TimeBegin:     time.Now(),
 		StartExecutor: req.UserID,
 		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
+		ReportTime:    time.Date(1000, 01, 01, 0, 0, 0, 0, time.UTC),
 	}
 	tx := svc.db.Begin()
 	if err := tx.Create(&record).Error; err != nil {
