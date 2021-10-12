@@ -1,0 +1,171 @@
+version: 1.0
+scenario: code-coverage
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - title
+      - tip
+      - buttonGroup
+      - codeCoverChart
+      - treeMapChart
+    buttonGroup:
+      left:
+        - errText
+      right:
+        - startButton
+        - endButton
+        - cancelButton
+        - executeHistory
+    executeHistory:
+      children: executeHistoryButton
+      content: executeHistoryContent
+    executeHistoryContent:
+      - executeHistoryTable
+    codeCoverChart:
+      extraContent: timeSelector
+    treeMapChart:
+      extraContent: downloadButton
+
+components:
+  errText:
+    type: Text
+  page:
+    type: Container
+    props:
+      spaceSize: middle
+  title:
+    type: Title
+    props:
+      title: "项目代码覆盖率统计"
+  buttonGroup:
+    type: LRContainer
+  codeCoverChart:
+    type: Chart
+  startButton:
+    type: Button
+  cancelButton:
+    type: Button
+  endButton:
+    type: Button
+  executeHistory:
+    type: Popover
+    props:
+      placement: leftBottom
+      size: xl
+      title: "项目代码覆盖率统计执行记录"
+      trigger: click
+  executeHistoryButton:
+    type: Button
+    props:
+      text: "执行记录"
+      type: "primary"
+  executeHistoryContent:
+    type: Container
+  executeHistoryTable:
+    type: Table
+  tip:
+    type: Alert
+    props:
+      type: warning
+      showIcon: false
+      message: "说明：代码覆盖率趋势主要反映测试用例覆盖项目（非单个或部分应用）的代码行数"
+  treeMapChart:
+    type: Chart
+  downloadButton:
+    type: Button
+  timeSelector:
+    type: DatePicker
+
+rendering:
+  cancelButton:
+    - name: errText
+    - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: executeHistoryTable
+  startButton:
+    - name: errText
+    - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: executeHistoryTable
+  endButton:
+    - name: errText
+    - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: executeHistoryTable
+  timeSelector:
+    - name: codeCoverChart
+      state:
+        - name: "value"
+          value: "{{ timeSelector.value }}"
+    - name: treeMapChart
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+    - name: downloadButton
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+  codeCoverChart:
+    - name: treeMapChart
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+    - name: downloadButton
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+
+  __DefaultRendering__:
+    - name: errText
+    - name: startButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: endButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: cancelButton
+      state:
+        - name: "judgeApplication"
+          value: "{{ errText.judgeApplication }}"
+        - name: "judgeApplicationMessage"
+          value: "{{ errText.judgeApplicationMessage }}"
+    - name: timeSelector
+    - name: codeCoverChart
+      state:
+        - name: "value"
+          value: "{{ timeSelector.value }}"
+    - name: treeMapChart
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+    - name: downloadButton
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+    - name: executeHistoryTable

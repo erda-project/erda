@@ -564,6 +564,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 				nilTime = nil
 				changedFields["finish_time"] = nilTime
 			}
+
+			if currentBelong.Belong != apistructs.IssueStateBelongReopen && newBelong.Belong == apistructs.IssueStateBelongReopen {
+				changedFields["reopen_count"] = issueModel.ReopenCount + 1
+			}
 		}
 	STREAM:
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
@@ -1513,4 +1517,20 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 	}
 
 	return projectMap, nil
+}
+
+func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
+	return svc.db.GetAllIssuesByProject(req)
+	// if err != nil {
+	// 	return data, nil
+	// }
+	// return data
+}
+
+func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
+	return svc.db.GetIssuesStatesByProjectID(projectID, issueType)
+}
+
+func (svc *Issue) GetIssueLabelsByProjectID(projectID uint64) ([]dao.IssueLabel, error) {
+	return svc.db.GetIssueLabelsByProjectID(projectID)
 }

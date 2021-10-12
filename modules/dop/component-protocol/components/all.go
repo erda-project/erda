@@ -15,5 +15,7 @@
 package components
 
 import (
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
 )

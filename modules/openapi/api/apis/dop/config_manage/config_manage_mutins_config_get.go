@@ -23,5 +23,6 @@ var CONFIG_MANAGE_MULTI_NS_CONFIG_GET = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 获取多个命名空间的所有配置",
 }

@@ -809,3 +809,17 @@
   action: GET
 
 ## msp end ##
+
+## code coverage start ##
+- role: Owner,PM,Lead,QA
+  scope: project
+  resource: codeCoverage
+  action: CREATE
+
+- role: Owner,PM,Lead,QA
+  scope: project
+  resource: codeCoverage
+  action: UPDATE
+
+## code coverage end ##
+
