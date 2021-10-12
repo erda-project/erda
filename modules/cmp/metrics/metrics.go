@@ -40,7 +40,7 @@ const (
 	NodeResourceUsageSelectStatement = `SELECT last(mem_used::field) as memRate , last(cpu_cores_usage::field) as cpuRate , host_ip::tag FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//NodeResourceUsageSelectStatement = `SELECT  mem_usage::field  ,cpu_cores_usage::field, host_ip FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//PodCpuUsageSelectStatement     = `SELECT SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field) as cpuRate, pod_name FROM docker_container_summary WHERE pod_namespace::tag=$pod_namespace and podsandbox != true GROUP BY pod_name::tag`
-	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field),2) as cpuRate ,pod_name::tag ,pod_namespace::tag FROM docker_container_summary WHERE  cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag, pod_namespace::tag `
+	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field) / SUM(cpu_limit::field) ,2) as cpuRate ,pod_name::tag ,pod_namespace::tag FROM docker_container_summary WHERE  cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag, pod_namespace::tag `
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -142,7 +142,7 @@ func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan map[stri
 	//syncReqs := make(*MetricsReq, 0)
 	//asyncReqs := make(*MetricsReq, 0)
 	if !req.sync {
-		//logrus.Infof("cache expired, try fetch metrics asynchronized %v", req.key)
+		logrus.Infof("cache expired, try fetch metrics asynchronized")
 		//asyncReqs = append(asyncReqs, metricsReq)
 		select {
 		case m.metricReqChan <- req:
@@ -312,16 +312,15 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[strin
 }
 
 func (m *Metric) ToInfluxReq(req *MetricsRequest, kind string) (*MetricsReq, map[string]*MetricsData, error) {
-	clusterName := req.ClusterName()
+	cluster := req.ClusterName()
 	if req.Cluster == "" {
 		return nil, nil, errors.New(fmt.Sprintf("parameter %s not found", req.Cluster))
 	}
 	switch kind {
 	case Node:
-		return m.toInfluxReq(req.NodeRequests, clusterName, req.ResourceType(), req.ResourceKind(), NodeResourceUsageSelectStatement)
+		return m.toInfluxReq(req.NodeRequests, cluster, req.ResourceType(), req.ResourceKind(), NodeResourceUsageSelectStatement)
 	case Pod:
-
-		return m.toInfluxReq(req.PodRequests, clusterName, req.ResourceType(), req.ResourceKind(), PodResourceUsageSelectStatement)
+		return m.toInfluxReq(req.PodRequests, cluster, req.ResourceType(), req.ResourceKind(), PodResourceUsageSelectStatement)
 	default:
 		logrus.Errorf("query metrics kind %v, %v", kind, ResourceNotSupport)
 		return nil, nil, ResourceNotSupport
