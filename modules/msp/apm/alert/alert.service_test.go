@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
-//go:generate mockgen -destination=./alert_register_test.go -package alert github.com/erda-project/erda-infra/pkg/transport Register
-//go:generate mockgen -destination=./alert_monitor_test.go -package alert github.com/erda-project/erda-proto-go/core/monitor/alert/pb AlertServiceServer
+////go:generate mockgen -destination=./alert_register_test.go -package alert github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./alert_monitor_test.go -package alert github.com/erda-project/erda-proto-go/core/monitor/alert/pb AlertServiceServer
 
 func Test_alertService_CreateCustomizeAlert(t *testing.T) {
 	ctrl := gomock.NewController(t)
