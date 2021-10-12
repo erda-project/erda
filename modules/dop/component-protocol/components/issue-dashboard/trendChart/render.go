@@ -127,7 +127,9 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 		} else if created.After(end) {
 			last[0] += 1
 		} else {
-			cMap[created][0] += 1
+			if _, ok := cMap[created]; ok {
+				cMap[created][0] += 1
+			}
 		}
 
 		if i.FinishTime != nil {
@@ -137,7 +139,9 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 			} else if created.After(end) {
 				last[1] += 1
 			} else {
-				cMap[closed][1] += 1
+				if _, ok := cMap[closed]; ok {
+					cMap[closed][1] += 1
+				}
 			}
 		}
 	}
