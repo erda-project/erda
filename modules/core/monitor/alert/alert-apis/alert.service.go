@@ -40,7 +40,17 @@ type alertService struct {
 	p *provider
 }
 
-const MicroService = "micro_service"
+const (
+	MicroService = "micro_service"
+	Org          = "org"
+
+	ClusterName = "clusterName"
+	MachineIp   = "ip"
+	Application = "application"
+	Service     = "service"
+)
+
+var indexDopSummary = []string{"spot-docker_container_summary-full_cluster", "spot-docker_container_summary-full_cluster.*"}
 
 func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
@@ -1299,4 +1309,91 @@ func (m *alertService) UpdateOrgAlertIssue(ctx context.Context, request *pb.Upda
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.UpdateOrgAlertIssueResponse{}, nil
+}
+
+func (m *alertService) TriggerConditions(ctx context.Context, request *pb.TriggerConditionsRequest) (*pb.TriggerConditionsResponse, error) {
+	orgIdStr := apis.GetOrgID(ctx)
+	userIdStr := apis.GetUserID(ctx)
+	org, err := m.p.bdl.GetOrg(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	resp := &pb.TriggerConditionsResponse{
+		Data: make(map[string]*structpb.Value),
+	}
+	if request.ScopeType == Org {
+		orgId, err := strconv.Atoi(orgIdStr)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		clusterRelation, err := m.p.bdl.GetOrgClusterRelationsByOrg(uint64(orgId))
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		clusterArr := make([]interface{}, 0)
+		clusters := make([]*apistructs.ResourceCluster, 0)
+		for _, v := range clusterRelation {
+			clusterArr = append(clusterArr, v.ClusterName)
+			clusters = append(clusters, &apistructs.ResourceCluster{
+				ClusterName: v.ClusterName,
+			})
+		}
+		clusterList, err := structpb.NewList(clusterArr)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		resp.Data[ClusterName] = structpb.NewListValue(clusterList)
+
+		groupReq := apistructs.ResourceRequest{
+			Clusters: clusters,
+		}
+		machineResp, err := m.p.bdl.GroupHosts(groupReq, org.Name, userIdStr)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		ips := make([]interface{}, 0)
+		for _, v := range machineResp {
+			ips = append(ips, v.IP)
+		}
+		ipList, err := structpb.NewList(ips)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		resp.Data[MachineIp] = structpb.NewListValue(ipList)
+	} else {
+		//scopeId is projectId
+		scopeId, err := strconv.Atoi(request.ScopeId)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		apps, err := m.p.bdl.GetAppsByProject(uint64(scopeId), org.ID, userIdStr)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		appMap := make(map[string]interface{})
+		for _, v := range apps.List {
+			appMap[strconv.Itoa(int(v.ID))] = v.Name
+		}
+		appStruct, err := structpb.NewStruct(appMap)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		resp.Data[Application] = structpb.NewStructValue(appStruct)
+
+		serviceResp, err := m.p.bdl.GetServices(request.Tk)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		serviceMap := make(map[string]interface{})
+		for _, v := range serviceResp {
+			serviceMap[v.Id] = v.Name
+		}
+		serviceStruct, err := structpb.NewStruct(serviceMap)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		resp.Data[Service] = structpb.NewStructValue(serviceStruct)
+	}
+	return resp, nil
 }

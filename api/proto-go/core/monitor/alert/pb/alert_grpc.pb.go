@@ -68,6 +68,7 @@ type AlertServiceClient interface {
 	QueryOrgAlertHistory(ctx context.Context, in *QueryOrgAlertHistoryRequest, opts ...grpc.CallOption) (*QueryOrgAlertHistoryResponse, error)
 	CreateOrgAlertIssue(ctx context.Context, in *CreateOrgAlertIssueRequest, opts ...grpc.CallOption) (*CreateOrgAlertIssueResponse, error)
 	UpdateOrgAlertIssue(ctx context.Context, in *UpdateOrgAlertIssueRequest, opts ...grpc.CallOption) (*UpdateOrgAlertIssueResponse, error)
+	TriggerConditions(ctx context.Context, in *TriggerConditionsRequest, opts ...grpc.CallOption) (*TriggerConditionsResponse, error)
 }
 
 type alertServiceClient struct {
@@ -501,6 +502,15 @@ func (c *alertServiceClient) UpdateOrgAlertIssue(ctx context.Context, in *Update
 	return out, nil
 }
 
+func (c *alertServiceClient) TriggerConditions(ctx context.Context, in *TriggerConditionsRequest, opts ...grpc.CallOption) (*TriggerConditionsResponse, error) {
+	out := new(TriggerConditionsResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/TriggerConditions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AlertServiceServer is the server API for AlertService service.
 // All implementations should embed UnimplementedAlertServiceServer
 // for forward compatibility
@@ -552,6 +562,7 @@ type AlertServiceServer interface {
 	QueryOrgAlertHistory(context.Context, *QueryOrgAlertHistoryRequest) (*QueryOrgAlertHistoryResponse, error)
 	CreateOrgAlertIssue(context.Context, *CreateOrgAlertIssueRequest) (*CreateOrgAlertIssueResponse, error)
 	UpdateOrgAlertIssue(context.Context, *UpdateOrgAlertIssueRequest) (*UpdateOrgAlertIssueResponse, error)
+	TriggerConditions(context.Context, *TriggerConditionsRequest) (*TriggerConditionsResponse, error)
 }
 
 // UnimplementedAlertServiceServer should be embedded to have forward compatible implementations.
@@ -698,6 +709,9 @@ func (*UnimplementedAlertServiceServer) CreateOrgAlertIssue(context.Context, *Cr
 }
 func (*UnimplementedAlertServiceServer) UpdateOrgAlertIssue(context.Context, *UpdateOrgAlertIssueRequest) (*UpdateOrgAlertIssueResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrgAlertIssue not implemented")
+}
+func (*UnimplementedAlertServiceServer) TriggerConditions(context.Context, *TriggerConditionsRequest) (*TriggerConditionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerConditions not implemented")
 }
 
 func RegisterAlertServiceServer(s grpc1.ServiceRegistrar, srv AlertServiceServer, opts ...grpc1.HandleOption) {
@@ -1139,6 +1153,15 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_AlertService_UpdateOrgAlertIssue_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "UpdateOrgAlertIssue", srv)
 		_AlertService_UpdateOrgAlertIssue_Handler = h.Interceptor(_AlertService_UpdateOrgAlertIssue_Handler)
+	}
+
+	_AlertService_TriggerConditions_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.TriggerConditions(ctx, req.(*TriggerConditionsRequest))
+	}
+	var _AlertService_TriggerConditions_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_TriggerConditions_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "TriggerConditions", srv)
+		_AlertService_TriggerConditions_Handler = h.Interceptor(_AlertService_TriggerConditions_Handler)
 	}
 
 	var serviceDesc = _AlertService_serviceDesc
@@ -2222,6 +2245,29 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.core.monitor.alert.AlertService/UpdateOrgAlertIssue",
 				}
 				return interceptor(ctx, in, info, _AlertService_UpdateOrgAlertIssue_Handler)
+			},
+		},
+		{
+			MethodName: "TriggerConditions",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(TriggerConditionsRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).TriggerConditions(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_TriggerConditions_info)
+				}
+				if interceptor == nil {
+					return _AlertService_TriggerConditions_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.alert.AlertService/TriggerConditions",
+				}
+				return interceptor(ctx, in, info, _AlertService_TriggerConditions_Handler)
 			},
 		},
 	}

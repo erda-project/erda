@@ -15,6 +15,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -210,4 +211,32 @@ func (b *Bundle) MetricsRouting(pathRouting, name string, paramValues url.Values
 		return nil, toAPIError(r.StatusCode(), apistructs.ErrorResponse{Msg: "failed to request metrics"})
 	}
 	return data["data"], nil
+}
+
+func (b *Bundle) GroupHosts(req apistructs.ResourceRequest, orgName, userId string) ([]*apistructs.HostData, error) {
+	host, err := b.urls.Monitor()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var respData apistructs.GroupHostDataResponse
+	resp, err := hc.Post(host).Path("/api/resources/group").
+		Header("User-ID", userId).
+		Param("orgName", orgName).JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return nil, toAPIError(resp.StatusCode(), respData.Error)
+	}
+	machines := make([]*apistructs.HostData, 0)
+	data, err := json.Marshal(respData.Data.Machines)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	err = json.Unmarshal(data, &machines)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	return machines, nil
 }

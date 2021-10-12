@@ -243,6 +243,11 @@ service AlertService {
       put: "/api/org-alert-records/{groupId}/issues",
     };
   }
+  rpc TriggerConditions (TriggerConditionsRequest) returns (TriggerConditionsResponse) {
+    option (google.api.http) = {
+      get: "/api/alerts/conditions"
+    };
+  }
 }
 
 message QueryCustomizeMetricRequest {
@@ -1182,4 +1187,14 @@ message UpdateOrgAlertIssueRequest {
 }
 
 message UpdateOrgAlertIssueResponse {
+}
+
+message TriggerConditionsRequest {
+  string scopeType = 1;
+  string scopeId   = 2;
+  string tk        = 3;
+}
+
+message TriggerConditionsResponse {
+  map<string, google.protobuf.Value> data = 1;
 }

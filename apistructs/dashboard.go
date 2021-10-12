@@ -88,6 +88,65 @@ type DashboardSpotLogRequest struct {
 	End    time.Duration // 纳秒
 }
 
+type ResourceRequest struct {
+	Clusters []*ResourceCluster `json:"clusters"`
+	Filters  []*ResourceFilter  `json:"filters"`
+	Groups   []string           `json:"groups"`
+}
+
+type ResourceCluster struct {
+	ClusterName string   `json:"clusterName"`
+	HostIPs     []string `json:"hostIPs"`
+}
+
+type ResourceFilter struct {
+	Key    string   `json:"key"`
+	Values []string `json:"values"`
+}
+
+type GroupHostDataResponse struct {
+	Header
+	Data DataGroupHostDTO `json:"data"`
+}
+
+type DataGroupHostDTO struct {
+	Machines []*HostData `json:"machines"`
+}
+
+type HostData struct {
+	ClusterName      string  `json:"clusterName"`
+	IP               string  `json:"ip"`
+	Hostname         string  `json:"hostname"`
+	OS               string  `json:"os"`
+	KernelVersion    string  `json:"kernelVersion"`
+	Labels           string  `json:"labels"`
+	Tasks            float64 `json:"tasks"`
+	CPUUsage         float64 `json:"cpuUsage"`
+	CPURequest       float64 `json:"cpuRequest"`
+	CPULimit         float64 `json:"cpuLimit"`
+	CPUOrigin        float64 `json:"cpuOrigin"`
+	CPUTotal         float64 `json:"cpuTotal"`
+	CPUAllocatable   float64 `json:"cpuAllocatable"`
+	MemUsage         float64 `json:"memUsage"`
+	MemRequest       float64 `json:"memRequest"`
+	MemLimit         float64 `json:"memLimit"`
+	MemOrigin        float64 `json:"memOrigin"`
+	MemTotal         float64 `json:"memTotal"`
+	MemAllocatable   float64 `json:"memAllocatable"`
+	DiskUsage        float64 `json:"diskUsage"`
+	DiskLimit        float64 `json:"diskLimit"`
+	DiskTotal        float64 `json:"diskTotal"`
+	Load1            float64 `json:"load1"`
+	Load5            float64 `json:"load5"`
+	Load15           float64 `json:"load15"`
+	CPUUsagePercent  float64 `json:"cpuUsagePercent"`
+	MemUsagePercent  float64 `json:"memUsagePercent"`
+	DiskUsagePercent float64 `json:"diskUsagePercent"`
+	LoadPercent      float64 `json:"loadPercent"`
+	CPUDispPercent   float64 `json:"cpuDispPercent"`
+	MemDispPercent   float64 `json:"memDispPercent"`
+}
+
 type DashboardSpotLogStream string
 
 var (

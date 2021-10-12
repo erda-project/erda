@@ -172,6 +172,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(MonitorService.QueryOrgAlertHistory, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
 			perm.Method(MonitorService.CreateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
 			perm.Method(MonitorService.UpdateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+			perm.NoPermMethod(MonitorService.TriggerConditions),
 		))
 	}
 	return nil

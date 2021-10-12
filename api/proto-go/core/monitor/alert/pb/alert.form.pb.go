@@ -148,6 +148,8 @@ var _ urlenc.URLValuesUnmarshaler = (*CreateOrgAlertIssueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateOrgAlertIssueResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateOrgAlertIssueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateOrgAlertIssueResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*TriggerConditionsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*TriggerConditionsResponse)(nil)
 
 // QueryCustomizeMetricRequest implement urlenc.URLValuesUnmarshaler.
 func (m *QueryCustomizeMetricRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -6697,5 +6699,27 @@ func (m *UpdateOrgAlertIssueRequest) UnmarshalURLValues(prefix string, values ur
 
 // UpdateOrgAlertIssueResponse implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateOrgAlertIssueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// TriggerConditionsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *TriggerConditionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeType":
+				m.ScopeType = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "tk":
+				m.Tk = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// TriggerConditionsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *TriggerConditionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

@@ -277,6 +277,10 @@ var _ json.Marshaler = (*UpdateOrgAlertIssueRequest)(nil)
 var _ json.Unmarshaler = (*UpdateOrgAlertIssueRequest)(nil)
 var _ json.Marshaler = (*UpdateOrgAlertIssueResponse)(nil)
 var _ json.Unmarshaler = (*UpdateOrgAlertIssueResponse)(nil)
+var _ json.Marshaler = (*TriggerConditionsRequest)(nil)
+var _ json.Unmarshaler = (*TriggerConditionsRequest)(nil)
+var _ json.Marshaler = (*TriggerConditionsResponse)(nil)
+var _ json.Unmarshaler = (*TriggerConditionsResponse)(nil)
 
 // QueryCustomizeMetricRequest implement json.Marshaler.
 func (m *QueryCustomizeMetricRequest) MarshalJSON() ([]byte, error) {
@@ -2649,6 +2653,42 @@ func (m *UpdateOrgAlertIssueResponse) MarshalJSON() ([]byte, error) {
 
 // UpdateOrgAlertIssueResponse implement json.Marshaler.
 func (m *UpdateOrgAlertIssueResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// TriggerConditionsRequest implement json.Marshaler.
+func (m *TriggerConditionsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TriggerConditionsRequest implement json.Marshaler.
+func (m *TriggerConditionsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// TriggerConditionsResponse implement json.Marshaler.
+func (m *TriggerConditionsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TriggerConditionsResponse implement json.Marshaler.
+func (m *TriggerConditionsResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

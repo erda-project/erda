@@ -224,3 +224,7 @@ func (s *alertServiceWrapper) CreateOrgAlertIssue(ctx context.Context, req *pb.C
 func (s *alertServiceWrapper) UpdateOrgAlertIssue(ctx context.Context, req *pb.UpdateOrgAlertIssueRequest) (*pb.UpdateOrgAlertIssueResponse, error) {
 	return s.client.UpdateOrgAlertIssue(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *alertServiceWrapper) TriggerConditions(ctx context.Context, req *pb.TriggerConditionsRequest) (*pb.TriggerConditionsResponse, error) {
+	return s.client.TriggerConditions(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

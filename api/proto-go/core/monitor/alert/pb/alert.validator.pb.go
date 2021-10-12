@@ -1236,3 +1236,10 @@ func (this *UpdateOrgAlertIssueRequest) Validate() error {
 func (this *UpdateOrgAlertIssueResponse) Validate() error {
 	return nil
 }
+func (this *TriggerConditionsRequest) Validate() error {
+	return nil
+}
+func (this *TriggerConditionsResponse) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}
