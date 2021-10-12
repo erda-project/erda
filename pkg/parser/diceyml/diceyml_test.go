@@ -15,11 +15,235 @@
 package diceyml
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+const testyml = `environments:
+  development:
+    addons:
+      mysql:
+        as: MYSQL
+        options:
+          create_dbs: mall_eevee
+          version: 5.7.29
+        plan: mysql:basic
+      oss:
+        options:
+          version: 1.0.0
+        plan: alicloud-oss:basic
+    envs:
+      ADMIN_URL: https://sunac-workspace-dev.zx.xinghangjiancai.com.cn
+      B2B_ITEM_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-item/b2b_item
+      B2B_LIB_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-item/lib_item
+      B2B_TRADE_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-trade/b2b_trade
+      CACHE_COOKIE_KEY: ((CACHE_COOKIE_KEY))
+      CMS_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-base/cms
+      CONTRACT_API_TRADING_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-contract/contract
+      CUSTOMER_API_PREFIX: https://zhonghaidichang-customer-dev.app.terminus.io
+      EEVEE_ITEM_ID: 110000100017001
+      EEVEE_SHOP_ID: 1
+      ITEM_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-item/item
+      MARKETING_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-price/marketing
+      MD_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-md/md
+      MD_API_TRADING_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-md/md
+      META_STORE_URL: http://meta-store-bfaf2eaa99.project-499-dev.svc.cluster.local:8080
+      MYSQL_DATABASE_EEVEE: mall_eevee
+      NODE_ENV: development
+      ORGANIZATION_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-md/organization
+      OSS_ENABLE: true
+      PARTNER_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-partner/partner
+      PAY_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-settlement/settlement
+      SETTINGS_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-base/settings
+      SETTLEMENT_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-settlement/settlement
+      SSO_SITE: ((SSO_SITE))
+      SSR_FALLBACK: false
+      TERMINUS_TA_ENABLE: true
+      TRADE_API_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-trade/trade
+      TRANTOR_APPLICATION_PREFIX: https://dev-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/trantor-workspace/meta-store
+      TRANTOR_SYS_URL: ((TRANTOR_SYS_URL))
+      USER_API_PREFIX: https://sunac-uc-dev.zx.xinghangjiancai.com.cn
+  production:
+    addons:
+      oss:
+        options:
+          version: 1.0.0
+        plan: alicloud-oss:basic
+      rds:
+        as: MYSQL
+        options:
+          version: 1.0.0
+        plan: alicloud-rds:basic
+    envs:
+      ADMIN_URL: http://workspace.zhenyuanfb.com
+      B2B_ITEM_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-item/b2b_item
+      B2B_LIB_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-item/lib_item
+      B2B_TRADE_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-trade/b2b_trade
+      CACHE_COOKIE_KEY: ((CACHE_COOKIE_KEY))
+      CMS_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-base/cms
+      CUSTOMER_API_PREFIX: https://zhonghaidichang-customer-test.app.terminus.io
+      EEVEE_ITEM_ID: 110000100017001
+      EEVEE_SHOP_ID: 1
+      HERD_REDIS_DB_INDEX: 5
+      ITEM_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-item/item
+      MARKETING_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-price/marketing
+      MD_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-md/md
+      MD_API_TRADING_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-md/md
+      META_STORE_URL: http://meta-store-b4569b7395.project-499-prod.svc.cluster.local:8080
+      MYSQL_DATABASE_EEVEE: ((MYSQL_DATABASE_EEVEE))
+      NODE_ENV: production
+      ORGANIZATION_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-md/organization
+      OSS_ENABLE: true
+      PARTNER_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-partner/partner
+      PAY_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-settlement/settlement
+      SETTINGS_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-base/settings
+      SETTLEMENT_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-settlement/settlement
+      SSO_SITE: ((SSO_SITE))
+      TERMINUS_TA_ENABLE: true
+      TRADE_API_PREFIX: http://gateway.zhenyuanfb.com/sunac-b2b/ep-trade/trade
+      TRANTOR_APPLICATION_PREFIX: http://gateway.zx.xinghangjiancai.com.cn/sunac-b2b/trantor-workspace/meta-store
+      TRANTOR_SYS_URL: ((TRANTOR_SYS_URL))
+      USER_API_PREFIX: http://admin-91a2f11554.project-499-prod.svc.cluster.local:8080
+    resources:
+      cpu: 1
+      mem: 1024
+  staging:
+    addons:
+      mysql:
+        as: MYSQL
+        options:
+          create_dbs: mall_eevee
+          version: 5.7.29
+        plan: mysql:basic
+      oss_staging:
+        options:
+          version: 1.0.0
+        plan: custom:basic
+    envs:
+      ADMIN_URL: https://sunac-workspace-staging.zx.xinghangjiancai.com.cn
+      B2B_ITEM_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-app-b2b-runtime/b2b_item/13255
+      B2B_LIB_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-item-runtime/lib_item/13231
+      B2B_TRADE_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-app-b2b-runtime/b2b_trade/13255
+      CACHE_COOKIE_KEY: ((CACHE_COOKIE_KEY))
+      CMS_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-base-runtime/cms/13254
+      CONTRACT_API_TRADING_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-contract-runtime/contract/13649
+      CUSTOMER_API_PREFIX: https://zhonghaidichang-customer-staging.app.terminus.io
+      EEVEE_ITEM_ID: 110000100017001
+      EEVEE_SHOP_ID: 1
+      HERD_REDIS_DB_INDEX: 5
+      ITEM_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-item-runtime/item/13231
+      MARKETING_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-trade-base-runtime/marketing/13235
+      MD_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-base-runtime/md/13254
+      MD_API_TRADING_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-trading-runtime/md/13252
+      META_STORE_URL: https://b2b-meta-store-staging.app.terminus.io
+      MYSQL_DATABASE_EEVEE: ((MYSQL_DATABASE_EEVEE))
+      NODE_ENV: staging
+      OSS_ENABLE: true
+      PARTNER_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-sourcing-runtime/partner/13251
+      PAY_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-finance-runtime/settlement/13207
+      SETTINGS_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-base-runtime/settings/13254
+      SETTLEMENT_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-finance-runtime/settlement/13207
+      SSO_SITE: ((SSO_SITE))
+      TERMINUS_TA_ENABLE: true
+      TRADE_API_PREFIX: https://staging-gateway.app.terminus.io/zhonghaidichang/gaia-trading-runtime/trade/13252
+      TRANTOR_APPLICATION_PREFIX: https://staging-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/trantor-workspace/meta-store
+      TRANTOR_SYS_URL: ((TRANTOR_SYS_URL))
+      USER_API_PREFIX: https://zhonghaidichang-uc-staging.app.terminus.io
+  test:
+    addons:
+      mysql:
+        as: MYSQL
+        options:
+          create_dbs: mall_eevee
+          version: 5.7.29
+        plan: mysql:basic
+      oss:
+        options:
+          version: 1.0.0
+        plan: alicloud-oss:basic
+    envs:
+      ADMIN_URL: https://sunac-workspace-test.zx.xinghangjiancai.com.cn
+      B2B_ITEM_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-item/b2b_item
+      B2B_LIB_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-item/lib_item
+      B2B_TRADE_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-trade/b2b_trade
+      CACHE_COOKIE_KEY: ((CACHE_COOKIE_KEY))
+      CMS_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-base/cms
+      CONTRACT_API_TRADING_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-contract/contract
+      CUSTOMER_API_PREFIX: https://zhonghaidichang-customer-test.app.terminus.io
+      EEVEE_ITEM_ID: 110000100017001
+      EEVEE_SHOP_ID: 1
+      HERD_REDIS_DB_INDEX: 5
+      ITEM_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-item/item
+      MARKETING_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-price/marketing
+      MD_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-md/md
+      MD_API_TRADING_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-md/md
+      META_STORE_URL: http://meta-store-a7a453e7f8.project-499-test.svc.cluster.local:8080
+      MYSQL_DATABASE_EEVEE: ((MYSQL_DATABASE_EEVEE))
+      NODE_ENV: test
+      ORGANIZATION_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-md/organization
+      OSS_ENABLE: true
+      PARTNER_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-partner/partner
+      PAY_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-settlement/settlement
+      SETTINGS_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-base/settings
+      SETTLEMENT_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-settlement/settlement
+      SSO_SITE: ((SSO_SITE))
+      TERMINUS_TA_ENABLE: true
+      TRADE_API_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/ep-trade/trade
+      TRANTOR_APPLICATION_PREFIX: https://test-gateway.zx.xinghangjiancai.com.cn/sunac-b2b/trantor-workspace/meta-store
+      TRANTOR_SYS_URL: ((TRANTOR_SYS_URL))
+      USER_API_PREFIX: https://sunac-uc-test.zx.xinghangjiancai.com.cn
+envs:
+  CSRF_ENABLE: true
+  ENABLE_SSR: false
+  OSS_ENABLE: true
+  SSR_FALLBACK: true
+  TERMINUS_KEY: ((TERMINUS_KEY))
+  TERMINUS_TA_COLLECTOR_URL: ((TERMINUS_TA_COLLECTOR_URL))
+  TERMINUS_TA_ENABLE: ((TERMINUS_TA_ENABLE))
+  TERMINUS_TA_URL: ((TERMINUS_TA_URL))
+jobs: {}
+services:
+  gaia-mall:
+    depends_on:
+    - herd
+    deployments:
+      replicas: 1
+    expose:
+    - 80
+    health_check:
+      http:
+        duration: 120
+        path: /health/check
+        port: 80
+    image: addon-registry.default.svc.cluster.local:5000/sunac-sunac-b2b/front-mall:gaia-mall-1634007373174664855
+    ports:
+    - 80
+    resources:
+      cpu: 0.2
+      disk: 4096
+      mem: 512
+  herd:
+    cmd: echo 'Start gaia-mall service ...' && npm run server
+    deployments:
+      replicas: 1
+    health_check:
+      http:
+        duration: 120
+        path: /health/check
+        port: 8081
+    image: addon-registry.default.svc.cluster.local:5000/sunac-sunac-b2b/front-mall:herd-1634006648533703951
+    ports:
+    - 8081
+    resources:
+      cpu: 0.2
+      disk: 10
+      mem: 512
+version: 2`
+
+const testjson = `{"version":"2.0","meta":{},"services":{"datastore":{"image":"registry.cn-hangzhou.aliyuncs.com/terminus/datastore:5.2.0.17.31.20210926","image_username":"","image_password":"","cmd":"","ports":[{"port":8080,"protocol":"TCP","l4_protocol":"TCP","expose":true,"default":false}],"envs":{"JAVA_OPTS":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -server -XX:NewRatio=1 -Xms3072m -Xmx3072m"},"resources":{"cpu":3,"mem":3072,"max_cpu":0,"max_mem":0,"disk":0,"network":{"mode":"container"}},"deployments":{"replicas":1,"policies":""},"expose":[8080],"health_check":{"http":{},"exec":{"cmd":"curl -k http://127.0.0.1:8080/api/data/health"}},"traffic_security":{}},"datastore-search":{"image":"registry.cn-hangzhou.aliyuncs.com/terminus/datastore-search:5.2.0.17.31.20210926","image_username":"","image_password":"","cmd":"","ports":[{"port":8080,"protocol":"TCP","l4_protocol":"TCP","expose":true,"default":false}],"envs":{"JAVA_OPTS":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -server -XX:NewRatio=1 -Xms512m -Xmx512m"},"resources":{"cpu":0.5,"mem":1024,"max_cpu":0,"max_mem":0,"disk":0,"network":{"mode":"container"}},"deployments":{"replicas":1,"policies":""},"expose":[8080],"health_check":{"http":{"port":8080,"path":"/api/web-tool/search-model/health","duration":600},"exec":{}},"traffic_security":{}},"meta-store":{"image":"registry.cn-hangzhou.aliyuncs.com/terminus/trantor-metastore-management:210925.203537","image_username":"","image_password":"","cmd":"","ports":[{"port":8080,"protocol":"TCP","l4_protocol":"TCP","expose":true,"default":false}],"envs":{"JAVA_OPTS":"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -server -Xmx3072m -Xms3072m -Xmn1024m -Xss512k -XX:NewRatio=1 -XX:+PrintGCDetails -XX:ParallelGCThreads=4 -XX:+UseConcMarkSweepGC -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -XX:+PrintHeapAtGC -XX:+UseContainerSupport"},"resources":{"cpu":4,"mem":4096,"max_cpu":0,"max_mem":0,"disk":0,"network":{"mode":"container"}},"deployments":{"replicas":1,"policies":"","selectors":{"location":{"not":false,"values":["datastore"]}}},"expose":[8080],"health_check":{"http":{"port":8080,"path":"/actuator/health","duration":900},"exec":{}},"traffic_security":{}},"trantor-console":{"image":"registry.cn-hangzhou.aliyuncs.com/terminus/trantor-console:1.17.0-support-console-17.89","image_username":"","image_password":"","cmd":"","ports":[{"port":8099,"protocol":"TCP","l4_protocol":"TCP","expose":true,"default":false}],"resources":{"cpu":0.25,"mem":256,"max_cpu":0,"max_mem":0,"disk":0,"network":{"mode":"container"}},"deployments":{"replicas":1,"policies":""},"expose":[8099],"health_check":{"http":{"port":80,"path":"/","duration":120},"exec":{}},"traffic_security":{}}},"addons":{"api-gateway":{"plan":"api-gateway:basic"},"elasticsearch":{"plan":"terminus-elasticsearch:basic","options":{"version":"5.6.9"}},"registercenter":{"plan":"registercenter:basic"},"rocketmq":{"plan":"rocketmq:basic","options":{"version":"4.2.0"}},"trantor-gaia-master":{"plan":"redis:basic","options":{"version":"3.2.12"}},"trantor-gaia-mysql":{"plan":"mysql:basic","options":{"version":"5.7.23"}}}}`
 
 const jobyml = `version: 2.0
 jobs:
@@ -1043,4 +1267,24 @@ func testNew(t *testing.T, i int, text string) {
 		t.Fatalf("[%v] failed to y.JSON: %v", i, err)
 	}
 	t.Logf("[%v] Json: %s", i, data)
+	var dice Object
+	err = json.Unmarshal([]byte(testjson), &dice)
+	if err != nil {
+		t.Fatalf("json unmarshal failed, err:%+v", err)
+	}
+	dy, err := New([]byte(testyml), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jstr, err := json.MarshalIndent(dy.obj, "", "\t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = json.Unmarshal(jstr, &dice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dice.Environments["development"].Envs["OSS_ENABLE"] != "true" {
+		t.Fatalf("json unmarshal error, dice:%s", jstr)
+	}
 }
