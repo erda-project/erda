@@ -650,7 +650,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
 	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
 		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
-		var source *apistructs.ResourceConfigInfo
 		for _, clusterItem := range clustersResources.List {
 			if !clusterItem.GetSuccess() {
 				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
@@ -659,20 +658,21 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			}
 			for _, host := range clusterItem.Hosts {
 				for _, label := range host.Labels {
+					var source *apistructs.ResourceConfigInfo
 					switch strings.ToLower(label) {
 					case "dice/workspace-prod=true":
 						source = projectDTO.ResourceConfig.PROD
 					case "dice/workspace-staging=true":
 						source = projectDTO.ResourceConfig.STAGING
-					case "dice/worksapce-test=true":
+					case "dice/workspace-test=true":
 						source = projectDTO.ResourceConfig.TEST
 					case "dice/workspace-dev=true":
 						source = projectDTO.ResourceConfig.DEV
 					}
-				}
-				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
-					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+					if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
+						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+					}
 				}
 			}
 		}
