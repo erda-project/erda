@@ -262,10 +262,8 @@ func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
 		}
 		return fmt.Sprintf("%.1f%s/%.1f%s", a, level[i], b, level[i])
 	case Cpu:
-		for a >= 1000 && b >= 1000 && i < 4 {
-			a /= 1000
-			b /= 1000
-		}
+		a /= 1000
+		b /= 1000
 		return fmt.Sprintf("%.3f/%.3f", a, b)
 	default:
 		for ; a >= 1000 && b >= 1000 && i < 4; i++ {
