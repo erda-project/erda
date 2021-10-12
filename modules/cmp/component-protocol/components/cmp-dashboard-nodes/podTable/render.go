@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cast"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -90,6 +91,15 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		case common.CMPDashboardCordonNode:
 			(*gs)["SelectedRowKeys"] = pt.State.SelectedRowKeys
 			(*gs)["OperationKey"] = common.CMPDashboardCordonNode
+		case common.CMPDashboardDrainNode:
+			(*gs)["SelectedRowKeys"] = pt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardDrainNode
+		case common.CMPDashboardOfflineNode:
+			(*gs)["SelectedRowKeys"] = pt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardOfflineNode
+		case common.CMPDashboardOnlineNode:
+			(*gs)["SelectedRowKeys"] = pt.State.SelectedRowKeys
+			(*gs)["OperationKey"] = common.CMPDashboardOnlineNode
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
@@ -98,7 +108,11 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	if err = pt.RenderList(c, table.Pod, nodes); err != nil {
+	podsMap, err := pt.GetPods(ctx)
+	if err != nil {
+		return err
+	}
+	if err = pt.RenderList(c, table.Pod, nodes, podsMap); err != nil {
 		return err
 	}
 	if err = pt.SetComponentValue(c); err != nil {
@@ -124,60 +138,74 @@ func (pt *PodInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"cordon", "uncordon"},
+		"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 	pt.Props = p
 }
 
-func (pt *PodInfoTable) GetRowItem(node data.Object, tableType table.TableType) (*table.RowItem, error) {
+func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
 	var (
-		err    error
 		status *table.SteveStatus
+		items  []table.RowItem
+		err    error
 	)
-	status, err = pt.GetItemStatus(node)
-	if err != nil {
-		return nil, err
-	}
-	if status, err = pt.GetItemStatus(node); err != nil {
-		return nil, err
-	}
-	allocatable := cast.ToFloat64(node.String("extra", "parsedResource", "allocated", "Pods"))
-	capacity := cast.ToFloat64(node.String("extra", "parsedResource", "capacity", "Pods"))
-	ur := table.DistributionValue{Percent: common.GetPercent(allocatable, capacity)}
-	role := node.StringSlice("metadata", "fields")[2]
-	ip := node.StringSlice("metadata", "fields")[5]
-	if role == "<none>" {
-		role = "worker"
-	}
-	batchOperations := make([]string, 0)
-	if !strings.Contains(role, "master") {
-		if strings.Contains(status.Value, pt.SDK.I18n("SchedulingDisabled")) {
-			batchOperations = []string{"uncordon"}
-		} else {
-			batchOperations = []string{"cordon"}
+	for _, c := range nodes {
+		status, err = pt.GetItemStatus(c)
+		if err != nil {
+			return nil, err
 		}
+		if status, err = pt.GetItemStatus(c); err != nil {
+			return nil, err
+		}
+		nodeName := c.StringSlice("metadata", "fields")[0]
+		_, _, pod := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		capacityPodsQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "pods"))
+		ur := table.DistributionValue{Percent: common.GetPercent(float64(pod), float64(capacityPodsQty.Value()))}
+		role := c.StringSlice("metadata", "fields")[2]
+		ip := c.StringSlice("metadata", "fields")[5]
+		if role == "<none>" {
+			role = "worker"
+		}
+		batchOperations := make([]string, 0)
+		if !strings.Contains(role, "master") {
+			if strings.Contains(status.Value, pt.SDK.I18n("SchedulingDisabled")) {
+				batchOperations = append(batchOperations, "uncordon")
+			} else {
+				batchOperations = append(batchOperations, "cordon")
+			}
+			if !strings.Contains(role, "lb") {
+				batchOperations = append(batchOperations, "drain")
+				if !table.IsNodeOffline(c) {
+					batchOperations = append(batchOperations, "offline")
+				} else {
+					batchOperations = append(batchOperations, "online")
+				}
+			}
+		}
+
+		items = append(items, table.RowItem{
+			ID:      c.String("metadata", "name"),
+			IP:      ip,
+			Version: c.String("status", "nodeInfo", "kubeletVersion"),
+			Role:    role,
+			Node: table.Node{
+				RenderType: "multiple",
+				Renders:    pt.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
+			},
+			Status: *status,
+			Usage: table.Distribution{
+				RenderType: "progress",
+				Value:      ur.Percent,
+				Status:     table.GetDistributionStatus(ur.Percent),
+				Tip:        pt.GetScaleValue(float64(pod), float64(capacityPodsQty.Value()), table.Pod),
+			},
+			Operate:         pt.GetOperate(c.String("metadata", "name")),
+			BatchOperations: batchOperations,
+		})
 	}
-	ri := &table.RowItem{
-		ID:      node.String("metadata", "name"),
-		IP:      ip,
-		Version: node.String("status", "nodeInfo", "kubeletVersion"),
-		Role:    role,
-		Node: table.Node{
-			RenderType: "multiple",
-			Renders:    pt.GetRenders(node.String("metadata", "name"), ip, node.Map("metadata", "labels")),
-		},
-		Status: *status,
-		Usage: table.Distribution{
-			RenderType: "progress",
-			Value:      ur.Percent,
-			Status:     table.GetDistributionStatus(ur.Percent),
-			Tip:        pt.GetScaleValue(allocatable, capacity, table.Pod),
-		},
-		Operate:         pt.GetOperate(node.String("metadata", "name")),
-		BatchOperations: batchOperations,
-	}
-	return ri, nil
+
+	return items, nil
 }
 
 func init() {

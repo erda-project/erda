@@ -16,6 +16,7 @@ package log
 
 // Log .
 type Log struct {
+	DocId     string            `json:"_id"`
 	Source    string            `json:"source"`
 	ID        string            `json:"id"`
 	Stream    string            `json:"stream"`
