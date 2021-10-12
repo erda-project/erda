@@ -161,7 +161,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	// closedIssue = append(closedIssue, first[1])
 	// first[2] = first[0] - first[1]
 	// unClosedIssue = append(unClosedIssue, first[2])
-	var maxIssue int
+	// var maxIssue int
 	for rd := rangeDate(start, end); ; {
 		date := rd()
 		if date.IsZero() {
@@ -179,7 +179,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 			unclose += unClosedIssue[len(unClosedIssue)-1]
 		}
 		unClosedIssue = append(unClosedIssue, unclose)
-		maxIssue = maxUInt(maxIssue, cMap[date][0], cMap[date][1], unclose)
+		// maxIssue = maxUInt(maxIssue, cMap[date][0], cMap[date][1], unclose)
 	}
 
 	// dates = append(dates, "未来")
@@ -195,14 +195,23 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	}
 	f.Chart = common.Chart{
 		Props: common.Props{
-			Title:     "缺陷新增、关闭、未关闭数走势",
+			Title:     "缺陷 - 新增、关闭、未关闭数趋势",
 			ChartType: "line",
 			Option: common.Option{
 				XAxis: common.XAxis{
 					Data: dates,
 				},
 				YAxis: common.YAxis{
-					Max: float32(maxIssue) * 1.2,
+					// Max: float32(maxIssue) * 1.2,
+				},
+				Grid: common.Grid{
+					Bottom: 30,
+					Top:    20,
+				},
+				Legend: common.Legend{
+					Show:         true,
+					SelectedMode: false,
+					Bottom:       0,
 				},
 				Color: []string{"blue", "green", "red"},
 				Series: []common.Item{
