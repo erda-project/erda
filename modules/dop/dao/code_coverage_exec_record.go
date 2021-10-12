@@ -33,6 +33,7 @@ type CodeCoverageExecRecord struct {
 	ReportMsg     string                            `json:"report_msg"`
 	Coverage      float64                           `json:"coverage"`
 	ReportUrl     string                            `json:"report_url"`
+	ReportTime    time.Time                         `json:"report_time"`
 	ReportContent CodeCoverageNodes                 `json:"report_content" sql:"TYPE:json"`
 	StartExecutor string                            `json:"start_executor"`
 	EndExecutor   string                            `json:"end_executor"`
@@ -75,6 +76,7 @@ func (c *CodeCoverageExecRecord) Covert() *apistructs.CodeCoverageExecRecordDto 
 		TimeEnd:       c.TimeEnd,
 		TimeCreated:   c.CreatedAt,
 		TimeUpdated:   c.UpdatedAt,
+		ReportTime:    c.ReportTime,
 	}
 }
 
@@ -92,6 +94,7 @@ type CodeCoverageExecRecordShort struct {
 	EndExecutor   string                            `json:"end_executor"`
 	TimeBegin     time.Time                         `json:"time_begin"`
 	TimeEnd       time.Time                         `json:"time_end"`
+	ReportTime    time.Time                         `json:"report_time"`
 }
 
 func (CodeCoverageExecRecordShort) TableName() string {
@@ -114,6 +117,7 @@ func (c *CodeCoverageExecRecordShort) Covert() apistructs.CodeCoverageExecRecord
 		TimeEnd:       c.TimeEnd,
 		TimeCreated:   c.CreatedAt,
 		TimeUpdated:   c.UpdatedAt,
+		ReportTime:    c.ReportTime,
 	}
 }
 

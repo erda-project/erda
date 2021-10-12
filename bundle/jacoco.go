@@ -15,6 +15,8 @@
 package bundle
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -22,6 +24,7 @@ import (
 func (b *Bundle) JacocoStart(addr string, req *apistructs.JacocoRequest) error {
 	hc := httpclient.New(
 		httpclient.WithCompleteRedirect(),
+		httpclient.WithTimeout(time.Second*3, time.Second*3),
 	)
 	var jacocoResp apistructs.JacocoResponse
 	resp, err := hc.Post(addr).
@@ -39,6 +42,7 @@ func (b *Bundle) JacocoStart(addr string, req *apistructs.JacocoRequest) error {
 func (b *Bundle) JacocoEnd(addr string, req *apistructs.JacocoRequest) error {
 	hc := httpclient.New(
 		httpclient.WithCompleteRedirect(),
+		httpclient.WithTimeout(time.Second*3, time.Second*3),
 	)
 	var jacocoResp apistructs.JacocoResponse
 	resp, err := hc.Post(addr).
