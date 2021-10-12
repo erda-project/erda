@@ -113,8 +113,8 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
-		(strutil.ToUpper(service.Env["DICE_WORKSPACE"]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env["DICE_WORKSPACE"]) == apistructs.TestWorkspace.String()) {
+		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
+			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
 		daemonset.Spec.UpdateStrategy = appsv1.DaemonSetUpdateStrategy{Type: appsv1.RollingUpdateDaemonSetStrategyType}
 	}
 
@@ -140,7 +140,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
+	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio

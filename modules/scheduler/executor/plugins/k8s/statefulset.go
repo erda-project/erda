@@ -81,6 +81,12 @@ func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
 			PodLabels: map[string]string{"addon_id": info.sg.Dice.ID},
 		}}, k).Affinity
 
+	if v, ok := service.Env[DiceWorkSpace]; ok {
+		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
+			affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
+			k.composeStatefulSetNodeAntiAffinityPreferred(v)...)
+	}
+
 	set.Spec.Template = apiv1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: info.namespace,
@@ -125,7 +131,7 @@ func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
 	// Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
+	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio

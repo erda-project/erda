@@ -1128,3 +1128,60 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 
 	return sg, nil
 }
+
+func (k *Kubernetes) composeNodeAntiAffinityPreferredWithWorkspace(workspace string) []apiv1.PreferredSchedulingTerm {
+	var workspaces = map[string]int32{"dev": 60, "test": 60, "staging": 80, "prod": 100}
+	preferredSchedulerTerms := []apiv1.PreferredSchedulingTerm{}
+
+	for key := range workspaces {
+		if strings.ToLower(workspace) == key {
+			delete(workspaces, key)
+			break
+		}
+	}
+
+	for ws, weight := range workspaces {
+		preferredSchedulerTerms = append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
+			Weight: weight,
+			Preference: apiv1.NodeSelectorTerm{
+				MatchExpressions: []apiv1.NodeSelectorRequirement{
+					{
+						Key:      fmt.Sprintf("dice/workspace-%s", ws),
+						Operator: apiv1.NodeSelectorOpDoesNotExist,
+					},
+				},
+			},
+		})
+	}
+	return preferredSchedulerTerms
+}
+
+func (k *Kubernetes) composeDeploymentNodeAntiAffinityPreferred(workspace string) []apiv1.PreferredSchedulingTerm {
+	preferredSchedulerTerms := k.composeNodeAntiAffinityPreferredWithWorkspace(workspace)
+	return append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
+		Weight: 100,
+		Preference: apiv1.NodeSelectorTerm{
+			MatchExpressions: []apiv1.NodeSelectorRequirement{
+				{
+					Key:      "dice/stateful-service",
+					Operator: apiv1.NodeSelectorOpDoesNotExist,
+				},
+			},
+		},
+	})
+}
+
+func (k *Kubernetes) composeStatefulSetNodeAntiAffinityPreferred(workspace string) []apiv1.PreferredSchedulingTerm {
+	preferredSchedulerTerms := k.composeNodeAntiAffinityPreferredWithWorkspace(workspace)
+	return append(preferredSchedulerTerms, apiv1.PreferredSchedulingTerm{
+		Weight: 100,
+		Preference: apiv1.NodeSelectorTerm{
+			MatchExpressions: []apiv1.NodeSelectorRequirement{
+				{
+					Key:      "dice/stateless-service",
+					Operator: apiv1.NodeSelectorOpDoesNotExist,
+				},
+			},
+		},
+	})
+}

@@ -40,6 +40,7 @@ const (
 
 	// default sa
 	defaultServiceAccountName = "default"
+	DiceWorkSpace             = "DICE_WORKSPACE"
 )
 
 var envReg = regexp.MustCompile(`\$\{([^}]+?)\}`)

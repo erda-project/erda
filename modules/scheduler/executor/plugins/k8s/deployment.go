@@ -429,15 +429,21 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	}
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
-		(strutil.ToUpper(service.Env["DICE_WORKSPACE"]) == apistructs.DevWorkspace.String() ||
-			strutil.ToUpper(service.Env["DICE_WORKSPACE"]) == apistructs.TestWorkspace.String()) {
+		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
+			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{Type: "Recreate"}
 	}
 
 	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
-	deployment.Spec.Template.Spec.Affinity = &affinity
 
+	if v, ok := service.Env[DiceWorkSpace]; ok {
+		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
+			affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
+			k.composeDeploymentNodeAntiAffinityPreferred(v)...)
+	}
+
+	deployment.Spec.Template.Spec.Affinity = &affinity
 	// inject hosts
 	deployment.Spec.Template.Spec.HostAliases = ConvertToHostAlias(service.Hosts)
 
@@ -752,6 +758,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 
 	return nil
 }
+
 func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec) {
 	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
 		Name:         "spot-emptydir",
@@ -838,7 +845,7 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
+	switch strutil.ToUpper(service.Env[DiceWorkSpace]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
 		memSubscribeRatio = k.devMemSubscribeRatio
