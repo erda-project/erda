@@ -38,7 +38,7 @@ components:
   title:
     type: Title
     props:
-      title: "代码覆盖率统计计划"
+      title: "项目代码覆盖率统计"
   buttonGroup:
     type: LRContainer
   codeCoverChart:
@@ -70,7 +70,7 @@ components:
     props:
       type: warning
       showIcon: false
-      message: "说明：代码覆盖统计计划是指开启统计和结束统计周期的管理，计划开始后会完全重新统计，在结束之前会持续统计，结束后会生成统计记录和报告"
+      message: "说明：代码覆盖率趋势主要反映测试用例覆盖项目（非单个或部分应用）的代码行数"
   treeMapChart:
     type: Chart
   downloadButton:
