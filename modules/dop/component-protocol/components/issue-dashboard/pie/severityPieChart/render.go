@@ -59,7 +59,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	pie.Colors = colors
 	pie.AddSeries("严重程度", seriesData, common.GetPieSeriesOpt())
 	props := make(map[string]interface{})
-	props["title"] = "按严重程度"
+	props["title"] = "缺陷 - 按严重程度分布"
 	props["chartType"] = "pie"
 	props["option"] = pie.JSON()
 

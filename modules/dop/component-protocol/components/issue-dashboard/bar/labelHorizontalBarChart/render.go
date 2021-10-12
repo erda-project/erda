@@ -140,7 +140,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "按标签分布（TOP 500）"
+	props["title"] = "缺陷 - 按标签分布（Top 500）"
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
 	props["style"] = map[string]interface{}{"height": 400}

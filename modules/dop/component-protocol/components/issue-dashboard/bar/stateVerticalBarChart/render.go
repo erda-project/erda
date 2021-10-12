@@ -116,7 +116,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "缺陷状态分布"
+	props["title"] = "缺陷 - 按状态分布"
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
 
