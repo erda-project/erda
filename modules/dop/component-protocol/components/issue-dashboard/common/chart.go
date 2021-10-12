@@ -29,7 +29,19 @@ type Option struct {
 	YAxis  YAxis    `json:"yAxis,omitempty"`
 	Series []Item   `json:"series,omitempty"`
 	Color  []string `json:"color,omitempty"`
-	Legend []string `json:"legend,omitempty"`
+	Legend Legend   `json:"legend,omitempty"`
+	Grid   Grid     `json:"grid,omitempty"`
+}
+
+type Grid struct {
+	Bottom int `json:"bottom,omitempty"`
+	Top    int `json:"top,omitempty"`
+}
+
+type Legend struct {
+	Show         bool `json:"show,omitempty"`
+	Bottom       int  `json:"bottom,omitempty"`
+	SelectedMode bool `json:"selectedMode,omitempty"`
 }
 
 type XAxis struct {
