@@ -50,8 +50,6 @@ const (
 	Service     = "service"
 )
 
-var indexDopSummary = []string{"spot-docker_container_summary-full_cluster", "spot-docker_container_summary-full_cluster.*"}
-
 func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	if request.AlertType == "" {
