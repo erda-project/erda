@@ -317,7 +317,7 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 	//}
 	if t.State.Sorter.Field != "" {
 		sortColumn = t.State.Sorter.Field
-		asc = strings.ToLower(t.State.Sorter.Order) == "asc"
+		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
 	}
 
 	if items, err = t.SetData(nodes, tableType, podsMap); err != nil {
@@ -640,11 +640,11 @@ func (t *Table) GetOperate(id string) Operate {
 }
 
 // SortByString sort by string value
-func SortByString(data []RowItem, sortColumn string, ascend bool) {
+func SortByString(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
-		if ascend {
+		if asc {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
@@ -652,9 +652,9 @@ func SortByString(data []RowItem, sortColumn string, ascend bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, ascend bool) {
+func SortByNode(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if ascend {
+		if asc {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -662,13 +662,13 @@ func SortByNode(data []RowItem, _ string, ascend bool) {
 }
 
 // SortByDistribution sort by percent
-func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
+func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
-		if ascend {
+		if asc {
 			return aValue < bValue
 		}
 		return aValue > bValue
