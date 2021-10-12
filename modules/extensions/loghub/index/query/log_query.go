@@ -573,10 +573,10 @@ func concatBucketSlices(limit int, slices ...[]*BucketAgg) []*BucketAgg {
 
 func (p *provider) ListDefaultFields() []*LogField {
 	var list []*LogField
-	if len(p.C.IndexFieldSettings) == 0 {
+	if len(p.C.IndexFieldSettings.DefaultSettings.Fields) == 0 {
 		return list
 	}
-	for _, field := range p.C.IndexFieldSettings {
+	for _, field := range p.C.IndexFieldSettings.DefaultSettings.Fields {
 		list = append(list, &LogField{
 			FieldName:          field.FieldName,
 			SupportAggregation: field.SupportAggregation,
