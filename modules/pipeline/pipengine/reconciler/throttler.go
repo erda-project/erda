@@ -50,7 +50,7 @@ func (r *Reconciler) loadThrottler(ctx context.Context) error {
 	logrus.Warnf("reconciler: failed to load throttler, ignore, import err: %v", err)
 	// load from database
 
-	r.continueBackupThrottler(ctx)
+	//r.continueBackupThrottler(ctx)
 	return nil
 }
 
