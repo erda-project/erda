@@ -44,6 +44,7 @@ type PropCondition struct {
 	QuickDelete QuickDelete            `json:"quickDelete,omitempty"`
 	Placeholder string                 `json:"placeholder,omitempty"`
 	Options     []PropConditionOption  `json:"options,omitempty"`
+	Required    bool                   `json:"required,omitempty"`
 	CustomProps map[string]interface{} `json:"customProps,omitempty"`
 }
 
@@ -72,9 +73,10 @@ type PropConditionOption struct {
 type PropConditionType string
 
 var (
-	PropConditionTypeSelect    PropConditionType = "select"
-	PropConditionTypeInput     PropConditionType = "input"
-	PropConditionTypeDateRange PropConditionType = "dateRange"
+	PropConditionTypeSelect      PropConditionType = "select"
+	PropConditionTypeInput       PropConditionType = "input"
+	PropConditionTypeDateRange   PropConditionType = "dateRange"
+	PropConditionTypeRangePicker PropConditionType = "rangePicker"
 )
 
 type StateKey string
