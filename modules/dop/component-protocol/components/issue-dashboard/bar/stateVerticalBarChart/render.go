@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -67,33 +67,53 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	handler := stackhandlers.NewStackRetriever(
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
-	bar := charts.NewBar()
 
 	// x is always stable
 	var xAxis []string
 	for _, i := range stateList {
 		xAxis = append(xAxis, i.Name)
 	}
-	bar.XAxisList[0] = opts.XAxis{
-		Data: xAxis,
+
+	builder := &chartbuilders.BarBuilder{
+		Items:        bugList,
+		StackHandler: handler,
+		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
+			XAxis: xAxis,
+			XIndexer: func(item interface{}) string {
+				return stateMap[uint64(item.(*dao.IssueItem).State)].Name
+			},
+			XDisplayConverter: func(opt *chartbuilders.FixedXAxisOrTop) opts.XAxis {
+				return opts.XAxis{
+					Data: opt.XAxis,
+				}
+			},
+		},
+		StackOpt: chartbuilders.StackOpt{
+			EnableSum: true,
+			SkipEmpty: false,
+		},
+		DataHandleOpt: chartbuilders.DataHandleOpt{
+			SeriesConverter: func(name string, data []*int) charts.SingleSeries {
+				return charts.SingleSeries{
+					Name: name,
+					Data: data,
+					Label: &opts.Label{
+						Show:      true,
+						Position:  "top",
+						Formatter: "{c}",
+					},
+				}
+			},
+			DataWhiteList: f.State.Values.Value,
+		},
 	}
 
-	series, colors, _, _ := common.GroupToBarData(bugList, f.State.Values.Value, handler, xAxis, func(issue interface{}) string {
-		return stateMap[uint64(issue.(*dao.IssueItem).State)].Name
-	}, func(name string, data []*int) charts.SingleSeries {
-		return charts.SingleSeries{
-			Name: name,
-			Data: data,
-			Label: &opts.Label{
-				Show:      true,
-				Position:  "top",
-				Formatter: "{c}",
-			},
-		}
-	}, 0, true, false)
+	if err := builder.Generate(); err != nil {
+		return err
+	}
 
-	bar.Colors = colors
-	bar.MultiSeries = series
+	bar := builder.Bar
+
 	bar.Legend.Show = true
 	bar.Tooltip.Show = true
 
