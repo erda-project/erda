@@ -26,6 +26,7 @@ type Props struct {
 
 type Option struct {
 	XAxis  XAxis    `json:"xAxis,omitempty"`
+	YAxis  YAxis    `json:"yAxis,omitempty"`
 	Series []Item   `json:"series,omitempty"`
 	Color  []string `json:"color,omitempty"`
 	Legend []string `json:"legend,omitempty"`
@@ -33,6 +34,10 @@ type Option struct {
 
 type XAxis struct {
 	Data []string `json:"data,omitempty"`
+}
+
+type YAxis struct {
+	Max float32 `json:"max,omitempty"`
 }
 
 type Item struct {
@@ -45,6 +50,12 @@ type Item struct {
 
 type Label struct {
 	Fortmatter string `json:"formatter,omitempty"`
+	Normal     Normal `json:"normal,omitempty"`
+}
+
+type Normal struct {
+	Position string `json:"position,omitempty"`
+	Show     bool   `json:"show,omitempty"`
 }
 
 type AreaStyle struct {

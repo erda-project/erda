@@ -99,6 +99,16 @@ func timeFromMilli(millis int64) time.Time {
 	return time.Unix(0, millis*int64(time.Millisecond))
 }
 
+func maxUInt(nums ...int) int {
+	max := 0
+	for _, n := range nums {
+		if n > max {
+			max = n
+		}
+	}
+	return max
+}
+
 func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	if len(timeRange) < 2 {
 		return
@@ -115,7 +125,6 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	}
 
 	first, last := [3]int{0, 0, 0}, [3]int{0, 0, 0}
-
 	issues := common.IssueListRetriever(f.IssueList, func(i int) bool {
 		v := f.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
@@ -152,6 +161,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	// closedIssue = append(closedIssue, first[1])
 	// first[2] = first[0] - first[1]
 	// unClosedIssue = append(unClosedIssue, first[2])
+	var maxIssue int
 	for rd := rangeDate(start, end); ; {
 		date := rd()
 		if date.IsZero() {
@@ -169,6 +179,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 			unclose += unClosedIssue[len(unClosedIssue)-1]
 		}
 		unClosedIssue = append(unClosedIssue, unclose)
+		maxIssue = maxUInt(maxIssue, cMap[date][0], cMap[date][1], unclose)
 	}
 
 	// dates = append(dates, "未来")
@@ -176,7 +187,12 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	// closedIssue = append(closedIssue, last[1])
 	// last[2] = unClosedIssue[len(unClosedIssue)-1] + last[0] - last[1]
 	// unClosedIssue = append(unClosedIssue, last[2])
-
+	label := common.Label{
+		Normal: common.Normal{
+			Position: "top",
+			Show:     true,
+		},
+	}
 	f.Chart = common.Chart{
 		Props: common.Props{
 			Title:     "缺陷新增、关闭、未关闭数走势",
@@ -184,6 +200,9 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 			Option: common.Option{
 				XAxis: common.XAxis{
 					Data: dates,
+				},
+				YAxis: common.YAxis{
+					Max: float32(maxIssue) + 1,
 				},
 				Color: []string{"blue", "green", "red"},
 				Series: []common.Item{
@@ -193,6 +212,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 						AreaStyle: common.AreaStyle{
 							Opacity: 0.1,
 						},
+						Label: label,
 					},
 					{
 						Name: "关闭",
@@ -200,6 +220,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 						AreaStyle: common.AreaStyle{
 							Opacity: 0.1,
 						},
+						Label: label,
 					},
 					{
 						Name: "未关闭",
@@ -207,6 +228,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 						AreaStyle: common.AreaStyle{
 							Opacity: 0.1,
 						},
+						Label: label,
 					},
 				},
 			},
