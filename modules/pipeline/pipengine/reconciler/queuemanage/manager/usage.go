@@ -15,19 +15,28 @@
 package manager
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 )
 
+func MakeQueueUsageBackupKey(qID string) string {
+	return fmt.Sprintf("/devops/pipeline/queue/reconciler/usage/%s", qID)
+}
+
 func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
-	q, ok := mgr.queueByID[queue.New(pq).ID()]
-	if !ok {
+	usage := pb.QueueUsage{}
+	err := mgr.js.Get(context.Background(), MakeQueueUsageBackupKey(queue.New(pq).ID()), &usage)
+	if err != nil {
+		logrus.Errorf("failed to query queue usage, err: %v", err)
 		return nil
 	}
-
-	usage := q.Usage()
 	return &usage
 }

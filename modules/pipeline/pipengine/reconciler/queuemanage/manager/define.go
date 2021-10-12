@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 // defaultManager is the default manager.
@@ -35,6 +36,7 @@ type defaultManager struct {
 	//pCacheLock     sync.RWMutex
 
 	dbClient *dbclient.Client
+	js       jsonstore.JsonStore
 }
 
 // New return a new queue manager.
@@ -70,5 +72,11 @@ type Option func(manager *defaultManager)
 func WithDBClient(dbClient *dbclient.Client) Option {
 	return func(mgr *defaultManager) {
 		mgr.dbClient = dbClient
+	}
+}
+
+func WithJSClient(js jsonstore.JsonStore) Option {
+	return func(mgr *defaultManager) {
+		mgr.js = js
 	}
 }

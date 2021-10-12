@@ -12,25 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package queue
 
-import (
-	"context"
-	"time"
+import "encoding/json"
 
-	"github.com/erda-project/erda/pkg/retry"
-)
+func (q *defaultQueue) Export() json.RawMessage {
+	return q.eq.Export()
+}
 
-func (r *Reconciler) beforeListen(ctx context.Context) error {
-	// init before listen
-	if err := retry.DoWithInterval(func() error { return r.loadQueueManger(ctx) }, 3, time.Second*10); err != nil {
-		return err
-	}
-	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
-		return err
-	}
-	go func() {
-		r.continueBackupQueueUsage(ctx)
-	}()
+func (q *defaultQueue) Import(rawMsg json.RawMessage) error {
 	return nil
 }

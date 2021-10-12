@@ -12,25 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package manager
 
-import (
-	"context"
-	"time"
+import "encoding/json"
 
-	"github.com/erda-project/erda/pkg/retry"
-)
+type SnapshotObj struct {
+	QueueUsageByID map[string]json.RawMessage `json:"queueUsageByID"`
+}
 
-func (r *Reconciler) beforeListen(ctx context.Context) error {
-	// init before listen
-	if err := retry.DoWithInterval(func() error { return r.loadQueueManger(ctx) }, 3, time.Second*10); err != nil {
-		return err
+func (mgr *defaultManager) Export() json.RawMessage {
+	mgr.qLock.Lock()
+	defer mgr.qLock.Unlock()
+	obj := SnapshotObj{
+		QueueUsageByID: make(map[string]json.RawMessage),
 	}
-	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
-		return err
+	for qID, queue := range mgr.queueByID {
+		u := queue.Usage()
+		uByte, _ := json.Marshal(u)
+		obj.QueueUsageByID[qID] = uByte
 	}
-	go func() {
-		r.continueBackupQueueUsage(ctx)
-	}()
+	b, _ := json.Marshal(&obj)
+	return b
+}
+
+// Import default queue manager execute in memory, don't need import
+func (mgr *defaultManager) Import(rawMsg json.RawMessage) error {
 	return nil
 }
