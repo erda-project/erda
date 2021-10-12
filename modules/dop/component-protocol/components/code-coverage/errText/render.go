@@ -43,8 +43,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	var disableTip string
 
-	var disableEnd bool
-	var disableStart bool
 	var jacocoDisable bool
 
 	switch event.Operation.String() {
@@ -75,29 +73,25 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		c.State["judgeApplicationMessage"] = message
 
 		if !jacocoDisable {
-			ok, err := svc.JudgeCanEnd(projectId)
+			list, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+				ProjectID: projectId,
+				PageNo:    1,
+				PageSize:  1,
+			})
 			if err != nil {
 				return err
 			}
-			disableEnd = !ok
 
-			err = svc.JudgeRunningRecordExist(projectId)
-			if err != nil {
-				disableStart = true
-			} else {
-				disableStart = false
+			if len(list.List) > 0 {
+				record := list.List[0]
+				if record.Status == apistructs.RunningStatus.String() || record.Status == apistructs.ReadyStatus.String() {
+					disableTip = "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+				}
+
+				if record.Status == apistructs.EndingStatus.String() {
+					disableTip = "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+				}
 			}
-		}
-	}
-	if c.State == nil {
-		c.State = map[string]interface{}{}
-	}
-
-	if disableStart {
-		if disableEnd {
-			disableTip = "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
-		} else {
-			disableTip = "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
 		}
 	}
 
