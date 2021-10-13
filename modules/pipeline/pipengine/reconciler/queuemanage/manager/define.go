@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
+	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
@@ -37,6 +38,7 @@ type defaultManager struct {
 
 	dbClient *dbclient.Client
 	etcd     *etcd.Store
+	js       jsonstore.JsonStore
 }
 
 // New return a new queue manager.
@@ -78,5 +80,11 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 func WithEtcdClient(etcdClient *etcd.Store) Option {
 	return func(mgr *defaultManager) {
 		mgr.etcd = etcdClient
+	}
+}
+
+func WithJsClient(js jsonstore.JsonStore) Option {
+	return func(mgr *defaultManager) {
+		mgr.js = js
 	}
 }

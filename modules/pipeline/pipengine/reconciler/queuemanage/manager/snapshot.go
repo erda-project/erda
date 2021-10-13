@@ -39,7 +39,7 @@ func (mgr *defaultManager) Export() json.RawMessage {
 	return b
 }
 
-// Import default queue manager execute in memory, don't need import
+// Import default queue manager execute in memory, don't need load from database
 func (mgr *defaultManager) Import(rawMsg json.RawMessage) error {
 	return nil
 }

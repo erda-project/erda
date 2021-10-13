@@ -22,8 +22,8 @@ import (
 )
 
 func (r *Reconciler) beforeListen(ctx context.Context) error {
-	// init before listen
-	if err := retry.DoWithInterval(func() error { return r.loadQueueManger(ctx) }, 3, time.Second*10); err != nil {
+	// init before listen, use new queue manager cover the initialize context
+	if err := retry.DoWithInterval(func() error { return r.LoadQueueManger(ctx) }, 3, time.Second*10); err != nil {
 		return err
 	}
 	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
@@ -31,6 +31,12 @@ func (r *Reconciler) beforeListen(ctx context.Context) error {
 	}
 	go func() {
 		r.continueBackupQueueUsage(ctx)
+	}()
+	go func() {
+		r.QueueManager.ListenInputQueueFromEtcd(ctx)
+	}()
+	go func() {
+		r.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd(ctx)
 	}()
 	return nil
 }

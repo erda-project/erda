@@ -17,6 +17,8 @@ package reconciler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -27,9 +29,9 @@ import (
 const logPrefixContinueBackupQueueUsage = "[queue usage backup]"
 
 // loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
+func (r *Reconciler) LoadQueueManger(ctx context.Context) error {
 	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient), manager.WithEtcdClient(r.etcd))
+	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient), manager.WithEtcdClient(r.etcd), manager.WithJsClient(r.js))
 
 	return nil
 }
@@ -48,12 +50,19 @@ func (r *Reconciler) continueBackupQueueUsage(ctx context.Context) {
 			queueSnapshot := manager.SnapshotObj{}
 			if err := json.Unmarshal(backup, &queueSnapshot); err != nil {
 				errDone <- err
+				return
 			}
+			errs := []string{}
 			for qID, qMsg := range queueSnapshot.QueueUsageByID {
 				if err := r.etcd.Put(ctx, manager.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
-					errDone <- err
-					return
+					errs = append(errs, fmt.Sprintf("%v", err))
+					continue
 				}
+			}
+			if len(errs) > 0 {
+				usageErr := fmt.Errorf(strings.Join(errs, ","))
+				errDone <- usageErr
+				return
 			}
 			done <- struct{}{}
 		}()

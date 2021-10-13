@@ -16,6 +16,7 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -29,7 +30,7 @@ import (
 func TestContinueBackupQueueUsage(t *testing.T) {
 	etcdClient := &etcd.Store{}
 	pm := monkey.PatchInstanceMethod(reflect.TypeOf(etcdClient), "Put", func(j *etcd.Store, ctx context.Context, key string, value string) error {
-		return nil
+		return fmt.Errorf("failed to put msg")
 	})
 	defer pm.Unpatch()
 	q := manager.New(context.Background(), manager.WithEtcdClient(etcdClient))
@@ -54,4 +55,5 @@ func TestContinueBackupQueueUsage(t *testing.T) {
 		time.Sleep(2 * time.Second)
 		cancel()
 	})
+
 }

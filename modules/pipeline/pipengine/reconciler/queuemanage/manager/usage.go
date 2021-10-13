@@ -27,7 +27,7 @@ import (
 )
 
 func MakeQueueUsageBackupKey(qID string) string {
-	return fmt.Sprintf("/devops/pipeline/queue/reconciler/usage/%s", qID)
+	return fmt.Sprintf("/devops/pipeline/queue_manager/actions/usage/%s", qID)
 }
 
 func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
