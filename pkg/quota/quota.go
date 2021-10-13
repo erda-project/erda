@@ -88,7 +88,7 @@ func (q ResourceQuota) TotalQuotable() float32 {
 	return sum
 }
 
-func (q *ResourceQuota) Quotable(workspace Workspace) float32 {
+func (q *ResourceQuota) TotalForWorkspace(workspace Workspace) float32 {
 	w := int(workspace)
 	exclusive := q.q[w][w][w][w]
 	var sum float32
@@ -109,7 +109,7 @@ func (q *ResourceQuota) Quotable(workspace Workspace) float32 {
 
 func (q *ResourceQuota) Quota(workspace Workspace, quota float32) error {
 	w := int(workspace)
-	if quota > q.Quotable(workspace) {
+	if quota > q.TotalForWorkspace(workspace) {
 		q.q = [4][4][4][4]float32{}
 		return errors.New("总资源不够")
 	}
