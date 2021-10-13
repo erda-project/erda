@@ -115,21 +115,21 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	query, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(query)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	data := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &data); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(data["pageNo"].(float64))
-	t.State.PageSize = uint64(data["pageSize"].(float64))
-	sorter := data["sorterData"].(map[string]interface{})
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
 	t.State.Sorter.Field = sorter["field"].(string)
 	t.State.Sorter.Order = sorter["order"].(string)
 	return nil
