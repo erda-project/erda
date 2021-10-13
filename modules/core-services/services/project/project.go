@@ -289,11 +289,13 @@ func (p *Project) UpdateWithEvent(projectID int64, updateReq *apistructs.Project
 }
 
 // Update 更新项目
-func (p *Project) Update(projectID int64, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
-	if err := checkClusterConfig(updateReq.ClusterConfig); err != nil {
-		return nil, err
+func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+	if updateReq.ClusterConfig != nil {
+		if err := updateReq.ClusterConfig.Check(); err != nil {
+			return nil, err
+		}
 	}
-
+	// todo: 回滚点是干什么的
 	if err := checkRollbackConfig(&updateReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -308,10 +310,30 @@ func (p *Project) Update(projectID int64, updateReq *apistructs.ProjectUpdateBod
 		return nil, err
 	}
 
-	if err = p.db.UpdateProject(&project); err != nil {
+	tx := p.db.Begin()
+	defer tx.RollbackUnlessCommitted()
+
+	if err = tx.Save(&project).Error; err != nil {
 		logrus.Warnf("failed to update project, (%v)", err)
 		return nil, errors.Errorf("failed to update project")
 	}
+
+	// create or update quota
+	if updateReq.ClusterConfig != nil {
+		var quota = new(model.ProjectQuota)
+		err = p.db.First(quota, map[string]interface{}{"project_id": projectID}).Error
+		patchProjectQuota(quota, userID, updateReq)
+		if err == nil {
+			err = tx.Save(quota).Error
+		} else {
+			err = tx.Create(quota).Error
+		}
+		if err != nil {
+			logrus.WithError(err).Errorln("failed to update project quota")
+			return nil, errors.Errorf("failed to update project quota: %v", err)
+		}
+	}
+	tx.Commit()
 
 	return &project, nil
 }
@@ -333,7 +355,7 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 		project.DisplayName = updateReq.DisplayName
 	}
 
-	if len(updateReq.ClusterConfig) != 0 {
+	if updateReq.ClusterConfig != nil {
 		project.ClusterConfig = string(clusterConfig)
 	}
 
@@ -350,6 +372,28 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 	project.IsPublic = updateReq.IsPublic
 
 	return nil
+}
+
+func patchProjectQuota(quota *model.ProjectQuota, userID string, updateReq *apistructs.ProjectUpdateBody) {
+	*quota = model.ProjectQuota{
+		ID:                 quota.ID,
+		ProjectID:          updateReq.ID,
+		ProjectName:        updateReq.Name,
+		ProdClusterName:    updateReq.ClusterConfig.PROD.ClusterName,
+		StagingClusterName: updateReq.ClusterConfig.STAGING.ClusterName,
+		TestClusterName:    updateReq.ClusterConfig.TEST.ClusterName,
+		DevClusterName:     updateReq.ClusterConfig.DEV.ClusterName,
+		ProdCPUQuota:       uint64(updateReq.ClusterConfig.PROD.CPUQuota * 1000),
+		ProdMemQutoa:       uint64(updateReq.ClusterConfig.PROD.MemQuota * 1024 * 1024 * 1024),
+		StagingCPUQuota:    uint64(updateReq.ClusterConfig.PROD.CPUQuota * 1000),
+		StagingMemQuota:    uint64(updateReq.ClusterConfig.STAGING.MemQuota * 1024 * 1024 * 1024),
+		TestCPUQuota:       uint64(updateReq.ClusterConfig.TEST.CPUQuota * 1000),
+		TestMemQuota:       uint64(updateReq.ClusterConfig.TEST.MemQuota * 1024 * 1024 * 1024),
+		DevCPUQuota:        uint64(updateReq.ClusterConfig.DEV.CPUQuota * 1000),
+		DevMemQuota:        uint64(updateReq.ClusterConfig.DEV.MemQuota * 1024 * 1024 * 1024),
+		CreatorID:          quota.CreatorID,
+		UpdaterID:          userID,
+	}
 }
 
 // DeleteWithEvent 删除项目 & 发送事件

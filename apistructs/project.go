@@ -125,7 +125,7 @@ type ProjectUpdateBody struct {
 	IsPublic    bool   `json:"isPublic"` // 是否公开项目
 
 	// 项目各环境集群配置
-	ClusterConfig map[string]string `json:"clusterConfig"`
+	ClusterConfig *ClusterConfigs `json:"clusterConfig"`
 
 	// 项目回滚点配置
 	RollbackConfig map[string]int `json:"rollbackConfig"`
