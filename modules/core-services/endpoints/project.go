@@ -148,7 +148,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 更新项目信息至DB
-	if err = e.project.UpdateWithEvent(projectID, &projectUpdateReq); err != nil {
+	if err = e.project.UpdateWithEvent(projectID, userID.String(), &projectUpdateReq); err != nil {
 		return apierrors.ErrUpdateProject.InternalError(err).ToResp(), nil
 	}
 

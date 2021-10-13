@@ -261,9 +261,9 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 }
 
 // UpdateWithEvent 更新项目 & 发送事件
-func (p *Project) UpdateWithEvent(projectID int64, updateReq *apistructs.ProjectUpdateBody) error {
+func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
 	// 更新项目
-	project, err := p.Update(projectID, updateReq)
+	project, err := p.Update(projectID, userID, updateReq)
 	if err != nil {
 		return err
 	}
