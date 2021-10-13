@@ -40,7 +40,7 @@ const (
 	NodeResourceUsageSelectStatement = `SELECT last(mem_used::field) as memRate , last(cpu_cores_usage::field) as cpuRate , host_ip::tag FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//NodeResourceUsageSelectStatement = `SELECT  mem_usage::field  ,cpu_cores_usage::field, host_ip FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//PodCpuUsageSelectStatement     = `SELECT SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field) as cpuRate, pod_name FROM docker_container_summary WHERE pod_namespace::tag=$pod_namespace and podsandbox != true GROUP BY pod_name::tag`
-	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field) / SUM(cpu_limit::field) ,2) as cpuRate ,pod_name::tag ,pod_namespace::tag FROM docker_container_summary WHERE  cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag, pod_namespace::tag `
+	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field) / SUM(cpu_limit::field) ,2) as cpuRate ,pod_name::tag ,pod_namespace::tag FROM docker_container_summary WHERE  cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag, pod_namespace::tag limit 100000 `
 
 	Memory = "memory"
 	Cpu    = "cpu"
@@ -168,7 +168,7 @@ func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan map[stri
 	c <- res
 }
 
-func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *MetricsReq) map[string]*MetricsData {
+func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *MetricsReq) map[string]*MetricsData {
 	if !isEmptyResponse(resp) {
 		var (
 			k   = ""
@@ -176,38 +176,45 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *Metri
 			res = make(map[string]*MetricsData)
 		)
 		for _, row := range resp.Results[0].Series[0].Rows {
-			switch metricsReq.resKind {
+			switch metricsRequest.resKind {
 			case Pod:
-				k = cache.GenerateKey(Pod, Cpu, row.Values[3].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
-				d = &MetricsData{
-					Used: row.Values[1].GetNumberValue(),
+				k = cache.GenerateKey(Pod, Cpu, row.Values[3].GetStringValue(), metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+				if row.Values[1].GetKind() != nil {
+					d = &MetricsData{
+						Used: row.Values[1].GetNumberValue(),
+					}
+					SetCache(k, d)
+					res[k] = d
+					logrus.Infof("update cache %v", k)
 				}
-				m.setCache(k, d)
-				res[k] = d
-				logrus.Infof("update cache %v", k)
-				k = cache.GenerateKey(Pod, Memory, row.Values[3].GetStringValue(), metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
-				d = &MetricsData{
-					Used: row.Values[0].GetNumberValue(),
+				if row.Values[0].GetKind() != nil {
+					k = cache.GenerateKey(Pod, Memory, row.Values[3].GetStringValue(), metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+					d = &MetricsData{
+						Used: row.Values[0].GetNumberValue(),
+					}
+					SetCache(k, d)
+					res[k] = d
+					logrus.Infof("update cache %v", k)
 				}
-				m.setCache(k, d)
-				res[k] = d
-				logrus.Infof("update cache %v", k)
 			case Node:
-				k = cache.GenerateKey(Node, Cpu, metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
-				d = &MetricsData{
-					Used: row.Values[1].GetNumberValue(),
+				if row.Values[1].GetKind() != nil {
+					k = cache.GenerateKey(Node, Cpu, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+					d = &MetricsData{
+						Used: row.Values[1].GetNumberValue(),
+					}
+					SetCache(k, d)
+					res[k] = d
+					logrus.Infof("update cache %v", k)
 				}
-				m.setCache(k, d)
-				res[k] = d
-				logrus.Infof("update cache %v", k)
-
-				k = cache.GenerateKey(Node, Memory, metricsReq.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
-				d = &MetricsData{
-					Used: row.Values[0].GetNumberValue(),
+				if row.Values[0].GetKind() != nil {
+					k = cache.GenerateKey(Node, Memory, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+					d = &MetricsData{
+						Used: row.Values[0].GetNumberValue(),
+					}
+					SetCache(k, d)
+					res[k] = d
+					logrus.Infof("update cache %v", k)
 				}
-				m.setCache(k, d)
-				res[k] = d
-				logrus.Infof("update cache %v", k)
 			}
 		}
 		return res
@@ -215,7 +222,7 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsReq *Metri
 	return nil
 }
 
-func (m *Metric) setCache(k string, d interface{}) {
+func SetCache(k string, d interface{}) {
 	data, err := cache.MarshalValue(d)
 	if err != nil {
 		logrus.Errorf("cache marshal metrics %v err: %v", k, err)
@@ -227,14 +234,15 @@ func (m *Metric) setCache(k string, d interface{}) {
 	}
 }
 
-func (m *Metric) getCache(key string) *MetricsData {
-
+func GetCache(key string) *MetricsData {
 	v, _, err := cache.GetFreeCache().Get(key)
 	if err != nil {
 		logrus.Errorf("get metrics %v err :%v", key, err)
+		return nil
 	}
-	d := &MetricsData{}
+	var d *MetricsData
 	if v != nil {
+		d = &MetricsData{}
 		err = jsi.Unmarshal(v[0].Value().([]byte), d)
 		if err != nil {
 			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
@@ -327,12 +335,12 @@ func (m *Metric) ToInfluxReq(req *MetricsRequest, kind string) (*MetricsReq, map
 	}
 }
 
-func (m *Metric) toInfluxReq(keys []MetricsReqInterface, clusterName, reqType, reqKind, sql string) (*MetricsReq, map[string]*MetricsData, error) {
+func (m *Metric) toInfluxReq(keys []MetricsReqInterface, clusterName, resourceType, resourceKind, sql string) (*MetricsReq, map[string]*MetricsData, error) {
 	var queryReqs *MetricsReq
 	noNeed := make(map[string]*MetricsData)
 	for _, request := range keys {
 		key := request.CacheKey()
-		noNeed[key] = m.getCache(key)
+		noNeed[key] = GetCache(key)
 	}
 	if v, expired, err := cache.GetFreeCache().Get(syncKey); err == nil {
 		if v != nil && !expired {
@@ -358,7 +366,7 @@ func (m *Metric) toInfluxReq(keys []MetricsReqInterface, clusterName, reqType, r
 				}
 				sync = true
 			}
-			queryReqs = &MetricsReq{rawReq: queryReq, sync: sync, resType: reqType, resKind: reqKind}
+			queryReqs = &MetricsReq{rawReq: queryReq, sync: sync, resType: resourceType, resKind: resourceKind}
 		}
 	} else {
 		logrus.Errorf("get %s %s cache error,%v", clusterName, Pod, err)
