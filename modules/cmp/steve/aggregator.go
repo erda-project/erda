@@ -76,11 +76,15 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 			}
 			exists := make(map[string]struct{})
 			for _, cluster := range clusters {
+				if cluster.ManageConfig == nil {
+					logrus.Infof("manage config for cluster %s is nil, skip it", cluster.Name)
+					continue
+				}
 				exists[cluster.Name] = struct{}{}
 				if _, ok := a.servers.Load(cluster.Name); ok {
 					continue
 				}
-				a.Add(&cluster)
+				a.Add(cluster)
 			}
 
 			checkDeleted := func(key interface{}, value interface{}) (res bool) {
@@ -120,14 +124,15 @@ func (a *Aggregator) init() {
 
 	for i := range clusters {
 		if clusters[i].ManageConfig == nil {
+			logrus.Infof("manage config for cluster %s is nil, skip it", clusters[i].Name)
 			continue
 		}
-		a.Add(&clusters[i])
+		a.Add(clusters[i])
 	}
 }
 
 // Add starts a steve server for k8s cluster with clusterName and add it into aggregator
-func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) {
+func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
 	if clusterInfo.Type != "k8s" && clusterInfo.Type != "edas" {
 		return
 	}
@@ -282,7 +287,7 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
-		a.Add(cluster)
+		a.Add(*cluster)
 		if s, ok = a.servers.Load(cluster.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
@@ -317,7 +322,7 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 		}
 
 		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
-		a.Add(cluster)
+		a.Add(*cluster)
 		if s, ok = a.servers.Load(cluster.Name); !ok {
 			return apierrors2.ErrInvoke.InternalError(errors.Errorf("failed to start steve server for cluster %s", cluster.Name))
 		}
@@ -330,7 +335,7 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 	return group.server.Handle(apiOp)
 }
 
-func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
+func (a *Aggregator) createSteve(clusterInfo apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
 	if clusterInfo.ManageConfig == nil {
 		return nil, nil, fmt.Errorf("manageConfig of cluster %s is null", clusterInfo.Name)
 	}
