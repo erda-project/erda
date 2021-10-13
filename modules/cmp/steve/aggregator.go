@@ -28,6 +28,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiuser "k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -35,6 +37,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type group struct {
@@ -349,8 +352,56 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 		cancel()
 		return nil, nil, err
 	}
-
+	go a.preloadCache(server, "node")
+	go a.preloadCache(server, "pod")
 	return server, cancel, nil
+}
+
+func (a *Aggregator) preloadCache(server *Server, resType string) {
+	for {
+		logrus.Infof("preload cache for %s in cluster %s", resType, server.ClusterName)
+		code := a.list(server, resType)
+		if code == 200 {
+			logrus.Infof("preload cache for %s in cluster %s succeeded", resType, server.ClusterName)
+			return
+		}
+		logrus.Infof("preload cache for %s in cluster %s failed, retry after 5 seconds", resType, server.ClusterName)
+		time.Sleep(time.Second * 5)
+	}
+}
+
+func (a *Aggregator) list(server *Server, resType string) int {
+	user := &apiuser.DefaultInfo{
+		Name: "admin",
+		UID:  "admin",
+		Groups: []string{
+			"system:masters",
+			"system:authenticated",
+		},
+	}
+	withUser := request.WithUser(a.Ctx, user)
+	path := strutil.JoinPath("/api/k8s/clusters", server.ClusterName, "v1", resType)
+	req, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
+
+	resp := &Response{}
+	apiOp := &types.APIRequest{
+		Type:           resType,
+		Method:         http.MethodGet,
+		ResponseWriter: resp,
+		Request:        req,
+		Response:       &StatusCodeGetter{Response: resp},
+	}
+
+	if err != nil {
+		logrus.Errorf("failed to new http request when preload cache for %s, %v", resType, err)
+		return 500
+	}
+
+	apiOp.Request = req
+	if err = server.Handle(apiOp); err != nil {
+		logrus.Errorf("failed to preload cache for %s, %v", resType, err)
+	}
+	return resp.StatusCode
 }
 
 func emptyMiddleware(next http.Handler) http.Handler {
