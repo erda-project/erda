@@ -108,11 +108,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	podsMap, err := pt.GetPods(ctx)
-	if err != nil {
-		return err
-	}
-	if err = pt.RenderList(c, table.Pod, nodes, podsMap); err != nil {
+	if err = pt.RenderList(c, table.Pod, nodes); err != nil {
 		return err
 	}
 	if err = pt.SetComponentValue(c); err != nil {
@@ -144,12 +140,18 @@ func (pt *PodInfoTable) getProps() {
 	pt.Props = p
 }
 
-func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
+func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
 	var (
 		status *table.SteveStatus
 		items  []table.RowItem
 		err    error
 	)
+	clusterName := ""
+	if pt.SDK.InParams["clusterName"] != nil {
+		clusterName = pt.SDK.InParams["clusterName"].(string)
+	} else {
+		return nil, common.ClusterNotFoundErr
+	}
 	for _, c := range nodes {
 		status, err = pt.GetItemStatus(c)
 		if err != nil {
@@ -159,7 +161,10 @@ func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			return nil, err
 		}
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		_, _, pod := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		_, _, pod, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, pt.SDK.Identity.UserID, pt.SDK.Identity.OrgID, nodeName)
+		if err != nil {
+			return nil, err
+		}
 		capacityPodsQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "pods"))
 		ur := table.DistributionValue{Percent: common.GetPercent(float64(pod), float64(capacityPodsQty.Value()))}
 		role := c.StringSlice("metadata", "fields")[2]

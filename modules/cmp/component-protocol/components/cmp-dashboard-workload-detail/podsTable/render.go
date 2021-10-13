@@ -298,13 +298,17 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
 		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
-		usedCPUPercent := metricsData.Used
-		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+		if metricsData != nil && !cpuLimits.IsZero() {
+			usedCPUPercent := metricsData.Used
+			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
 		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
-		usedMemPercent := metricsData.Used
-		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
+		if metricsData != nil && !memLimits.IsZero() {
+			usedMemPercent := metricsData.Used
+			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
+		}
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -560,11 +564,6 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
 		value = fmt.Sprintf("%.2f", usedPercent)
-	}
-	if usedRes < 1e-8 || totQty.IsZero() {
-		status = "success"
-		tip = "N/A"
-		value = "N/A"
 	}
 	return status, value, tip
 }

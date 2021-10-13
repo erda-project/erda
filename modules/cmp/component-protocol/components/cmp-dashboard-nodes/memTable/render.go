@@ -114,11 +114,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	podsMap, err := mt.GetPods(ctx)
-	if err != nil {
-		return err
-	}
-	if err = mt.RenderList(c, table.Memory, nodes, podsMap); err != nil {
+	if err = mt.RenderList(c, table.Memory, nodes); err != nil {
 		return err
 	}
 	if err = mt.SetComponentValue(c); err != nil {
@@ -127,7 +123,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	return nil
 }
 
-func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
+func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
@@ -135,7 +131,12 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		resp                    map[string]*metrics.MetricsData
 		items                   []table.RowItem
 	)
-
+	clusterName := ""
+	if mt.SDK.InParams["clusterName"] != nil {
+		clusterName = mt.SDK.InParams["clusterName"].(string)
+	} else {
+		return nil, common.ClusterNotFoundErr
+	}
 	req := &metrics.MetricsRequest{
 		Cluster: mt.SDK.InParams["clusterName"].(string),
 		Type:    metrics.Memory,
@@ -156,7 +157,10 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			return nil, err
 		}
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		_, memRequest, _ := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		_, memRequest, _, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, mt.SDK.Identity.UserID, mt.SDK.Identity.OrgID, nodeName)
+		if err != nil {
+			return nil, err
+		}
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "memory"))
 
 		key := req.NodeRequests[i].CacheKey()

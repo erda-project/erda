@@ -166,11 +166,11 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 
-	logrus.Infof("[DEBUG] start request steve aggregator at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] start request steve aggregator at %s", req.Type, time.Now().Format(time.StampNano))
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	logrus.Infof("[DEBUG] end request steve aggregator at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] end request steve aggregator at %s", req.Type, time.Now().Format(time.StampNano))
 
 	collection, ok := resp.ResponseData.(*types.GenericCollection)
 	if !ok {

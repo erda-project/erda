@@ -34,9 +34,9 @@ func (rw *Response) Write(apiOp *types.APIRequest, code int, obj types.APIObject
 
 func (rw *Response) WriteList(apiOp *types.APIRequest, code int, obj types.APIObjectList) {
 	rw.StatusCode = code
-	logrus.Infof("[DEBUG] start convert list at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] start convert list at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	rw.ResponseData = convertList(apiOp, obj)
-	logrus.Infof("[DEBUG] end convert list at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] end convert list at %s", apiOp.Type, time.Now().Format(time.StampNano))
 }
 
 func newCollection(apiOp *types.APIRequest, list types.APIObjectList) *types.GenericCollection {

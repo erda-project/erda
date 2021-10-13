@@ -79,9 +79,9 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		clusterName: c.clusterName,
 	}
 
-	logrus.Infof("[DEBUG] start get cache at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] start get cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	values, lexpired, err := c.cache.Get(key.getKey())
-	logrus.Infof("[DEBUG] end get cache at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] end get cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
 			key := cacheKey{
@@ -92,37 +92,37 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			allNsValues, expired, err := c.cache.Get(key.getKey())
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
-				logrus.Infof("[DEBUG] start jsi unmarshal data from cache at %s", time.Now().Format(time.StampNano))
+				logrus.Infof("[DEBUG %s] start jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
-					logrus.Infof("[DEBUG] end jsi unmarshal data from cache at %s", time.Now().Format(time.StampNano))
-					logrus.Infof("[DEBUG] start get by namespace at %s", time.Now().Format(time.StampNano))
+					logrus.Infof("[DEBUG %s] end jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					logrus.Infof("[DEBUG %s] start get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
 					list := getByNamespace(list, apiOp.Namespace)
-					logrus.Infof("[DEBUG] end get by namespace at %s", time.Now().Format(time.StampNano))
+					logrus.Infof("[DEBUG %s] end get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
 					return list, nil
 				}
 			}
 		}
 
-		logrus.Infof("[DEBUG] start list at %s", time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG %s] start list at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		queryQueue.Acquire(c.clusterName, 1)
 		list, err := c.Store.List(apiOp, schema)
 		queryQueue.Release(c.clusterName, 1)
 		if err != nil {
 			return types.APIObjectList{}, err
 		}
-		logrus.Infof("[DEBUG] end list at %s", time.Now().Format(time.StampNano))
-		logrus.Infof("[DEBUG] start marshal for cache at %s", time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG %s] end list at %s", apiOp.Type, time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG %s] start marshal for cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		vals, err := cache.MarshalValue(list)
-		logrus.Infof("[DEBUG] end marshal for cache at %s", time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG %s] end marshal for cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		if err != nil {
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 		}
-		logrus.Infof("[DEBUG] start set cache at %s", time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG %s] start set cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		if err = c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30); err != nil {
 			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
 		}
-		logrus.Infof("[DEBUG] end set cache at %s", time.Now().Format(time.StampNano))
+		logrus.Infof("[DEBUG %s] end set cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		return list, nil
 	}
 
@@ -161,12 +161,12 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	var list types.APIObjectList
-	logrus.Infof("[DEBUG] start unmarshal data from cache at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] start unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
 		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
 		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 	}
-	logrus.Infof("[DEBUG] end unmarshal data from cache at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] end unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	return list, nil
 }
 

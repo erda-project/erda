@@ -115,11 +115,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	if err != nil {
 		return err
 	}
-	podsMap, err := ct.GetPods(ctx)
-	if err != nil {
-		return err
-	}
-	if err = ct.RenderList(c, table.Cpu, nodes, podsMap); err != nil {
+	if err = ct.RenderList(c, table.Cpu, nodes); err != nil {
 		return err
 	}
 	if err = ct.SetComponentValue(c); err != nil {
@@ -153,7 +149,7 @@ func (ct *CpuInfoTable) getProps() {
 	ct.Props = props
 }
 
-func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, podsMap map[string][]data.Object) ([]table.RowItem, error) {
+func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
@@ -162,6 +158,12 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		nodeLabels              []string
 		items                   []table.RowItem
 	)
+	clusterName := ""
+	if ct.SDK.InParams["clusterName"] != nil {
+		clusterName = ct.SDK.InParams["clusterName"].(string)
+	} else {
+		return nil, common.ClusterNotFoundErr
+	}
 	req := &metrics.MetricsRequest{
 		Cluster: ct.SDK.InParams["clusterName"].(string),
 		Type:    metrics.Cpu,
@@ -186,7 +188,10 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		}
 		//request := c.Map("status", "allocatable").String("cpu")
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		cpuRequest, _, _ := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+		cpuRequest, _, _, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodeName)
+		if err != nil {
+			return nil, err
+		}
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "cpu"))
 
 		key := req.NodeRequests[i].CacheKey()
