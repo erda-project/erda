@@ -47,7 +47,7 @@ func GetPieSeriesOpt() func(*charts.SingleSeries) {
 	}
 }
 
-func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackHandler) ([]opts.PieData, []string) {
+func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.SeriesHandler) ([]opts.PieData, []string) {
 	counter := make(map[string]int)
 	indexer := stackHandler.GetIndexer()
 
@@ -60,7 +60,7 @@ func GroupToPieData(issueList []dao.IssueItem, stackHandler stackhandlers.StackH
 
 	var data []opts.PieData
 	var colors []string
-	for _, stack := range stackHandler.GetStacks() {
+	for _, stack := range stackHandler.GetSeries() {
 		cnt := counter[stack.Value]
 		if cnt <= 0 {
 			continue

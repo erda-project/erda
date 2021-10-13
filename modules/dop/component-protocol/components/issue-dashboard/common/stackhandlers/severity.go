@@ -37,18 +37,18 @@ var severityColorMap = map[apistructs.IssueSeverity]string{
 	apistructs.IssueSeverityLow:     "green",
 }
 
-func (h *SeverityStackHandler) GetStacks() []Stack {
-	var stacks []Stack
+func (h *SeverityStackHandler) GetSeries() []Series {
+	var stacks []Series
 	for i := len(apistructs.IssueSeveritys) - 1; i >= 0; i-- {
 		severity := apistructs.IssueSeveritys[i]
-		stacks = append(stacks, Stack{
+		stacks = append(stacks, Series{
 			Name:  severity.GetZhName(),
 			Value: string(severity),
 			Color: severityColorMap[severity],
 		})
 	}
 	if h.reverse {
-		reverseStacks(stacks)
+		reverseSeries(stacks)
 	}
 	return stacks
 }
@@ -67,5 +67,5 @@ func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *SeverityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+	return getFilterOptions(h.GetSeries(), true)
 }

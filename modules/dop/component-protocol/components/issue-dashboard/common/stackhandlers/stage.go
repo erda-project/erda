@@ -35,21 +35,21 @@ func NewStageStackHandler(reverse bool, issueStageList []apistructs.IssueStage) 
 
 var stageColorList = []string{"red", "yellow", "green"}
 
-func (h *StageStackHandler) GetStacks() []Stack {
+func (h *StageStackHandler) GetSeries() []Series {
 	l := len(stageColorList)
-	var stacks []Stack
+	var stacks []Series
 	for idx, i := range h.issueStageList {
-		stacks = append(stacks, Stack{
+		stacks = append(stacks, Series{
 			Name:  i.Name,
 			Value: i.Value,
 			Color: stageColorList[idx%l],
 		})
 	}
 	if h.reverse {
-		reverseStacks(stacks)
+		reverseSeries(stacks)
 	}
 	if len(stacks) == 0 {
-		stacks = append(stacks, emptyStack)
+		stacks = append(stacks, emptySeries)
 	}
 	return stacks
 }
@@ -68,5 +68,5 @@ func (h *StageStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *StageStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+	return getFilterOptions(h.GetSeries())
 }

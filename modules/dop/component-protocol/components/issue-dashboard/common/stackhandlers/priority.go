@@ -36,17 +36,17 @@ var priorityColorMap = map[apistructs.IssuePriority]string{
 	apistructs.IssuePriorityLow:    "green",
 }
 
-func (h *PriorityStackHandler) GetStacks() []Stack {
-	var stacks []Stack
+func (h *PriorityStackHandler) GetSeries() []Series {
+	var stacks []Series
 	for _, i := range apistructs.IssuePriorityList {
-		stacks = append(stacks, Stack{
+		stacks = append(stacks, Series{
 			Name:  i.GetZhName(),
 			Value: string(i),
 			Color: priorityColorMap[i],
 		})
 	}
 	if h.reverse {
-		reverseStacks(stacks)
+		reverseSeries(stacks)
 	}
 	return stacks
 }
@@ -65,5 +65,5 @@ func (h *PriorityStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *PriorityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+	return getFilterOptions(h.GetSeries(), true)
 }

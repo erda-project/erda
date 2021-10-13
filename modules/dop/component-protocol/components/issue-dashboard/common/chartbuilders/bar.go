@@ -26,8 +26,8 @@ import (
 )
 
 type BarBuilder struct {
-	Items        []interface{}
-	StackHandler stackhandlers.StackHandler
+	Items         []interface{}
+	SeriesHandler stackhandlers.SeriesHandler
 	FixedXAxisOrTop
 	YAxisOpt
 	StackOpt
@@ -100,7 +100,7 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 	counter := make(map[string]map[string]int)
 	counterSingle := make(map[string]int)
 
-	stackIndexer := f.StackHandler.GetIndexer()
+	stackIndexer := f.SeriesHandler.GetIndexer()
 
 	for _, i := range f.Items {
 		y := FixEmptyWord(stackIndexer(i))
@@ -138,16 +138,12 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 			xl++
 			last--
 		}
-		// reverse for top
-		for i, j := 0, len(xAxis)-1; i < j; i, j = i+1, j-1 {
-			xAxis[i], xAxis[j] = xAxis[j], xAxis[i]
-		}
 		f.XAxis = xAxis
 	}
 	var colors []string
 	total := make([]int, len(f.XAxis))
 
-	for _, stack := range f.StackHandler.GetStacks() {
+	for _, stack := range f.SeriesHandler.GetSeries() {
 		if !showStack(f.DataWhiteList, stack.Value) {
 			continue
 		}
@@ -244,7 +240,7 @@ func GetVerticalBarPostProcessor() func(result *Result) error {
 	}
 }
 
-func GetHorizontalPostProcessor() func(result *Result) error {
+func GetHorizontalPostProcessor(inverseYAxis bool) func(result *Result) error {
 	return func(result *Result) error {
 		bar := result.Bar
 		bar.Legend.Show = true
@@ -269,14 +265,14 @@ func GetHorizontalPostProcessor() func(result *Result) error {
 		// TODO: check if top > 0 (means top chart)
 		pageSize := 16
 
-		if result.Size < 16 {
+		if result.Size < pageSize {
 			// start padding
 			for i := range bar.MultiSeries {
 				s := &bar.MultiSeries[i]
 				data := s.Data.([]*int)
-				nData := make([]*int, 16-result.Size)
-				for _, d := range data {
-					nData = append(nData, d)
+				nData := make([]*int, pageSize)
+				for i := range data {
+					nData[i] = data[i]
 				}
 				s.Data = nData
 			}
@@ -291,8 +287,8 @@ func GetHorizontalPostProcessor() func(result *Result) error {
 		}
 
 		if result.Size > pageSize {
-			endIdx := result.Size - 1
-			startIdx := endIdx - 16
+			endIdx := 0
+			startIdx := pageSize
 			bb["grid"] = map[string]interface{}{"right": 30}
 			bb["dataZoom"] = []map[string]interface{}{
 				{
@@ -326,6 +322,15 @@ func GetHorizontalPostProcessor() func(result *Result) error {
 			n[i]["barWidth"] = 8
 		}
 		bb["series"] = n
+
+		if inverseYAxis {
+			yaxis := make([]map[string]interface{}, 0)
+			if err := common.DeepCopy(bb["yAxis"], &yaxis); err != nil {
+				return err
+			}
+			yaxis[0]["inverse"] = true
+			bb["yAxis"] = yaxis
+		}
 
 		result.Bb = bb
 		return nil

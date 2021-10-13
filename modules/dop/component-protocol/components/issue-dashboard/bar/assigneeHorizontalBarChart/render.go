@@ -70,8 +70,8 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	).GetRetriever(f.State.Values.Type)
 
 	builder := &chartbuilders.BarBuilder{
-		Items:        bugList,
-		StackHandler: handler,
+		Items:         bugList,
+		SeriesHandler: handler,
 		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
 			Top:      500,
 			XIndexer: getXIndexer(),
@@ -108,7 +108,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			DataWhiteList:   f.State.Values.Value,
 		},
 		Result: chartbuilders.Result{
-			PostProcessor: chartbuilders.GetHorizontalPostProcessor(),
+			PostProcessor: chartbuilders.GetHorizontalPostProcessor(true),
 		},
 	}
 

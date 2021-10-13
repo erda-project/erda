@@ -23,8 +23,8 @@ func NewEmptyStackHandler() *EmptyStackHandler {
 	return &EmptyStackHandler{}
 }
 
-func (h *EmptyStackHandler) GetStacks() []Stack {
-	return []Stack{emptyStack}
+func (h *EmptyStackHandler) GetSeries() []Series {
+	return []Series{emptySeries}
 }
 
 func (h *EmptyStackHandler) GetIndexer() func(issue interface{}) string {
@@ -34,5 +34,5 @@ func (h *EmptyStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *EmptyStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+	return getFilterOptions(h.GetSeries())
 }

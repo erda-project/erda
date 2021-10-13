@@ -20,40 +20,40 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
-type StackHandler interface {
-	GetStacks() []Stack
+type SeriesHandler interface {
+	GetSeries() []Series
 	GetIndexer() func(issue interface{}) string
 
 	GetFilterOptions() []filter.PropConditionOption
 }
 
-type Stack struct {
+type Series struct {
 	Name  string
 	Value string
 	Color string
 }
 
-var emptyStack = Stack{
+var emptySeries = Series{
 	Name:  "empty",
 	Value: "",
 	Color: "red",
 }
 
-func reverseStacks(stacks []Stack) {
-	for i, j := 0, len(stacks)-1; i < j; i, j = i+1, j-1 {
-		stacks[i], stacks[j] = stacks[j], stacks[i]
+func reverseSeries(series []Series) {
+	for i, j := 0, len(series)-1; i < j; i, j = i+1, j-1 {
+		series[i], series[j] = series[j], series[i]
 	}
 }
 
-func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOption {
-	l := len(stacks)
+func getFilterOptions(series []Series, reverse ...bool) []filter.PropConditionOption {
+	l := len(series)
 	options := make([]filter.PropConditionOption, l)
 	for i := 0; i < l; i++ {
 		j := i
 		if len(reverse) > 0 && reverse[0] {
 			j = l - 1 - i
 		}
-		s := stacks[j]
+		s := series[j]
 		options[i] = filter.PropConditionOption{
 			Label: s.Name,
 			Value: s.Value,
@@ -62,36 +62,36 @@ func getFilterOptions(stacks []Stack, reverse ...bool) []filter.PropConditionOpt
 	return options
 }
 
-type StackRetriever struct {
+type SeriesRetriever struct {
 	reverseStack   bool
 	issueStateList []dao.IssueState
 	issueStageList []apistructs.IssueStage
 }
 
-type option func(retriever *StackRetriever)
+type option func(retriever *SeriesRetriever)
 
-func NewStackRetriever(options ...option) *StackRetriever {
-	retriever := StackRetriever{}
+func NewStackRetriever(options ...option) *SeriesRetriever {
+	retriever := SeriesRetriever{}
 	for _, op := range options {
 		op(&retriever)
 	}
 	return &retriever
 }
 
-func WithStacksReversed(reverse bool) option {
-	return func(retriever *StackRetriever) {
+func WithSeriesReversed(reverse bool) option {
+	return func(retriever *SeriesRetriever) {
 		retriever.reverseStack = reverse
 	}
 }
 
 func WithIssueStateList(issueStateList []dao.IssueState) option {
-	return func(retriever *StackRetriever) {
+	return func(retriever *SeriesRetriever) {
 		retriever.issueStateList = issueStateList
 	}
 }
 
 func WithIssueStageList(issueStageList []apistructs.IssueStage) option {
-	return func(retriever *StackRetriever) {
+	return func(retriever *SeriesRetriever) {
 		retriever.issueStageList = issueStageList
 	}
 }
@@ -104,7 +104,7 @@ const (
 	Stage      = "Stage"
 )
 
-func (r *StackRetriever) GetRetriever(t string) StackHandler {
+func (r *SeriesRetriever) GetRetriever(t string) SeriesHandler {
 	switch t {
 	case Priority:
 		return NewPriorityStackHandler(r.reverseStack)

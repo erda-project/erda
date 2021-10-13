@@ -75,8 +75,8 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	builder := &chartbuilders.BarBuilder{
-		Items:        bugList,
-		StackHandler: handler,
+		Items:         bugList,
+		SeriesHandler: handler,
 		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
 			XAxis: xAxis,
 			XIndexer: func(item interface{}) string {

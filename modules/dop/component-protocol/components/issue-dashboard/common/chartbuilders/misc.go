@@ -14,6 +14,8 @@
 
 package chartbuilders
 
+import "strings"
+
 type counterItem struct {
 	Name  string
 	Value int
@@ -21,7 +23,12 @@ type counterItem struct {
 
 type counterList []counterItem
 
-func (l counterList) Less(i, j int) bool { return l[i].Value > l[j].Value }
+func (l counterList) Less(i, j int) bool {
+	if l[i].Value == l[j].Value {
+		return strings.Compare(l[i].Name, l[j].Name) < 0
+	}
+	return l[i].Value > l[j].Value
+}
 func (l counterList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 func (l counterList) Len() int           { return len(l) }
 

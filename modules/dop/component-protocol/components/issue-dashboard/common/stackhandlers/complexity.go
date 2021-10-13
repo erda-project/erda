@@ -35,21 +35,21 @@ var complexityColorMap = map[apistructs.IssueComplexity]string{
 	apistructs.IssueComplexityEasy:   "green",
 }
 
-func (h *ComplexityStackHandler) GetStacks() []Stack {
-	var stacks []Stack
+func (h *ComplexityStackHandler) GetSeries() []Series {
+	var stacks []Series
 	for _, i := range []apistructs.IssueComplexity{
 		apistructs.IssueComplexityEasy,
 		apistructs.IssueComplexityNormal,
 		apistructs.IssueComplexityHard,
 	} {
-		stacks = append(stacks, Stack{
+		stacks = append(stacks, Series{
 			Name:  i.GetZhName(),
 			Value: string(i),
 			Color: complexityColorMap[i],
 		})
 	}
 	if h.reverse {
-		reverseStacks(stacks)
+		reverseSeries(stacks)
 	}
 	return stacks
 }
@@ -68,5 +68,5 @@ func (h *ComplexityStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *ComplexityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+	return getFilterOptions(h.GetSeries(), true)
 }

@@ -52,23 +52,23 @@ var stateColorMap = map[apistructs.IssueStateBelong][]string{
 	apistructs.IssueStateBelongClosed: {"darkseagreen"},
 }
 
-func (h *StateStackHandler) GetStacks() []Stack {
-	var stacks []Stack
+func (h *StateStackHandler) GetSeries() []Series {
+	var stacks []Series
 	belongCounter := make(map[apistructs.IssueStateBelong]int)
 	for _, i := range h.issueStateList {
 		color := stateColorMap[i.Belong][belongCounter[i.Belong]%len(stateColorMap[i.Belong])]
 		belongCounter[i.Belong]++
-		stacks = append(stacks, Stack{
+		stacks = append(stacks, Series{
 			Name:  i.Name,
 			Value: fmt.Sprintf("%d", i.ID),
 			Color: color,
 		})
 	}
 	if h.reverse {
-		reverseStacks(stacks)
+		reverseSeries(stacks)
 	}
 	if len(stacks) == 0 {
-		stacks = append(stacks, emptyStack)
+		stacks = append(stacks, emptySeries)
 	}
 	return stacks
 }
@@ -87,5 +87,5 @@ func (h *StateStackHandler) GetIndexer() func(issue interface{}) string {
 }
 
 func (h *StateStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+	return getFilterOptions(h.GetSeries())
 }
