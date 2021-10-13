@@ -116,8 +116,8 @@ func preReceiveHook(pushEvents []*models.PayloadPushEvent, c *webcontext.Context
 
 // trigger event
 func PostReceiveHook(pushEvents []*models.PayloadPushEvent, c *webcontext.Context) {
-	pusher := c.MustGet("user").(*models.User)
-	repository := c.MustGet("repository").(*gitmodule.Repository)
+	pusher := c.User
+	repository := c.Repository
 
 	size, err := repository.CalcRepoSize()
 	if err == nil {
