@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
@@ -151,6 +152,10 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 				if _, ok := cMap[closed]; ok {
 					cMap[closed][1] += 1
 				}
+			}
+		} else {
+			if i.Belong == string(apistructs.IssueStateBelongClosed) {
+				first[1] += 1
 			}
 		}
 	}

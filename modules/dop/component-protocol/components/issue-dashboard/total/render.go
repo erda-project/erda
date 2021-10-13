@@ -105,7 +105,7 @@ func (f *ComponentAction) DataRetriever(gs *cptype.GlobalStateData) {
 }
 
 func StatsRetriever(issueList []dao.IssueItem) common.Stats {
-	var open, expire, today, week, month, undefined, reopen int
+	var open, expire, today, tomorrow, week, month, undefined, reopen int
 	for _, i := range issueList {
 		if i.ReopenCount > 0 {
 			reopen += 1
@@ -119,6 +119,8 @@ func StatsRetriever(issueList []dao.IssueItem) common.Stats {
 			expire += 1
 		case dao.ExpireTypeExpireIn1Day:
 			today += 1
+		case dao.ExpireTypeExpireIn2Days:
+			tomorrow += 1
 		case dao.ExpireTypeExpireIn7Days:
 			week += 1
 		case dao.ExpireTypeExpireIn30Days:
@@ -132,6 +134,7 @@ func StatsRetriever(issueList []dao.IssueItem) common.Stats {
 		Open:      strconv.Itoa(open),
 		Expire:    strconv.Itoa(expire),
 		Today:     strconv.Itoa(today),
+		Tomorrow:  strconv.Itoa(tomorrow),
 		Week:      strconv.Itoa(week),
 		Month:     strconv.Itoa(month),
 		Undefined: strconv.Itoa(undefined),
