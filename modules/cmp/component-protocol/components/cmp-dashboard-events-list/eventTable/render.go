@@ -194,14 +194,17 @@ func (t *ComponentEventTable) RenderList() error {
 		}
 		lastSeen := fmt.Sprintf("%s %s", fields[0], t.sdk.I18n("ago"))
 		lastSeenTimestamp, err := strfmt.ParseDuration(fields[0])
+		var ts int64 = 0
 		if err != nil {
-			lastSeenTimestamp = math.MaxInt32
+			ts = math.MaxInt64
 			lastSeen = t.sdk.I18n("unknown")
+		} else {
+			ts = lastSeenTimestamp.Milliseconds()
 		}
 
 		items = append(items, Item{
 			LastSeen:          lastSeen,
-			LastSeenTimestamp: lastSeenTimestamp.Milliseconds(),
+			LastSeenTimestamp: ts,
 			Type:              t.sdk.I18n(fields[1]),
 			Reason:            fields[2],
 			Object:            fields[3],
