@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-openapi/strfmt"
 	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	types2 "github.com/rancher/apiserver/pkg/types"
@@ -321,6 +322,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			Namespace:      namespace,
 			IP:             fields[5],
+			Age:            fields[4],
 			CPURequests:    cpuRequestStr,
 			CPURequestsNum: cpuRequests.MilliValue(),
 			CPUPercent: Percent{
@@ -377,6 +379,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 			case "ip":
 				return func(i int, j int) bool {
 					less := items[i].IP < items[j].IP
+					if ascend {
+						return less
+					}
+					return !less
+				}
+			case "age":
+				return func(i int, j int) bool {
+					ageI, _ := strfmt.ParseDuration(items[i].Age)
+					ageJ, _ := strfmt.ParseDuration(items[j].Age)
+					less := ageI < ageJ
 					if ascend {
 						return less
 					}
@@ -549,6 +561,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "node",
 			Title:     cputil.I18n(ctx, "node"),
+			Width:     120,
+			Sorter:    true,
+		},
+		{
+			DataIndex: "age",
+			Title:     cputil.I18n(ctx, "age"),
 			Width:     120,
 			Sorter:    true,
 		},
