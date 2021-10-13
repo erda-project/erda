@@ -71,7 +71,7 @@ func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
 
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	logrus.Errorf("@@@[DEBUG] start render pods table at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG] start render pods table at %s", time.Now().Format(time.StampNano))
 	p.InitComponent(ctx)
 	if err := p.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen podsTable component state, %v", err)
@@ -100,7 +100,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	if err := p.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
-	logrus.Errorf("@@@[DEBUG] end render pods table at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG] end render pods table at %s", time.Now().Format(time.StampNano))
 	p.Transfer(component)
 	return nil
 }
@@ -284,13 +284,17 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
 		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
-		usedCPUPercent := metricsData.Used
-		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+		if metricsData != nil && !cpuLimits.IsZero() {
+			usedCPUPercent := metricsData.Used
+			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
 		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
-		usedMemPercent := metricsData.Used
-		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
+		if metricsData != nil && !memLimits.IsZero() {
+			usedMemPercent := metricsData.Used
+			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
+		}
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -500,11 +504,6 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
 		value = fmt.Sprintf("%.2f", usedPercent)
 	}
-	if usedRes < 1e-8 || totQty.IsZero() {
-		status = "success"
-		tip = "N/A"
-		value = "N/A"
-	}
 	return status, value, tip
 }
 
@@ -673,7 +672,6 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 }
 
 func getCache(key string) *metrics.MetricsData {
-
 	v, _, err := cache.GetFreeCache().Get(key)
 	if err != nil {
 		logrus.Errorf("get metrics %v err :%v", key, err)

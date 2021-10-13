@@ -15,16 +15,23 @@
 package cputil
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
+	jsi "github.com/json-iterator/go"
+	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
 // ParseWorkloadStatus get status for workloads from .metadata.fields
@@ -156,11 +163,92 @@ func setPrec(f float64, prec int) float64 {
 	return f
 }
 
-// GetNodeAllocatedRes calculate allocated cpu, memory and pods for target node
-func GetNodeAllocatedRes(nodeName string, pods []data.Object) (cpu, mem, podNum int64) {
+type NodeAllocatedRes struct {
+	CPU    int64 `json:"cpu"`
+	Mem    int64 `json:"mem"`
+	PodNum int64 `json:"podNum"`
+}
+
+const cacheType = "nodeAllocatedRes"
+
+// GetNodeAllocatedRes get node allocated resource from cache.
+func GetNodeAllocatedRes(server cmp.SteveServer, clusterName, userID, orgID, nodeName string) (cpu, mem, podNum int64, err error) {
+	value, _, err := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, nodeName, cacheType))
+	if err != nil {
+		return
+	}
+	if value == nil {
+		req := &apistructs.SteveRequest{
+			UserID:      userID,
+			OrgID:       orgID,
+			Type:        apistructs.K8SPod,
+			ClusterName: clusterName,
+		}
+		pods, err := server.ListSteveResource(context.Background(), req)
+		if err != nil {
+			logrus.Errorf("failed to list pod in GetNodeAllocatedRes, %v", err)
+			return 0, 0, 0, err
+		}
+
+		cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
+		nar := &NodeAllocatedRes{
+			CPU:    cpu,
+			Mem:    mem,
+			PodNum: podNum,
+		}
+		value, err := cache.MarshalValue(nar)
+		if err != nil {
+			logrus.Errorf("failed to marshal value in GetNodeAllocatedRes, %v", err)
+		}
+		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache in GetNodeAllocatedRes, %v", err)
+		}
+
+		if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
+			return 0, 0, 0, err
+		}
+		return nar.CPU, nar.Mem, nar.PodNum, nil
+	}
+	go func() {
+		req := &apistructs.SteveRequest{
+			UserID:      userID,
+			OrgID:       orgID,
+			Type:        apistructs.K8SPod,
+			ClusterName: clusterName,
+		}
+		pods, err := server.ListSteveResource(context.Background(), req)
+		if err != nil {
+			logrus.Errorf("failed to list pod in GetNodeAllocatedRes, %v", err)
+			return
+		}
+
+		cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
+		nar := &NodeAllocatedRes{
+			CPU:    cpu,
+			Mem:    mem,
+			PodNum: podNum,
+		}
+		value, err := cache.MarshalValue(nar)
+		if err != nil {
+			logrus.Errorf("failed to marshal value in GetNodeAllocatedRes, %v", err)
+		}
+		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache in GetNodeAllocatedRes, %v", err)
+		}
+	}()
+	var nar NodeAllocatedRes
+	if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
+		return
+	}
+	return nar.CPU, nar.Mem, nar.PodNum, nil
+}
+
+// CalculateNodeAllocatedRes calculate allocated cpu, memory and pods for target node
+func CalculateNodeAllocatedRes(nodeName string, pods []types2.APIObject) (cpu, mem, podNum int64) {
 	cpuQty := resource.NewQuantity(0, resource.DecimalSI)
 	memQty := resource.NewQuantity(0, resource.BinarySI)
-	for _, pod := range pods {
+	for _, obj := range pods {
+		pod := obj.Data()
 		if pod.String("spec", "nodeName") != nodeName || pod.String("status", "phase") == "Failed" ||
 			pod.String("status", "phase") == "Succeeded" {
 			continue
