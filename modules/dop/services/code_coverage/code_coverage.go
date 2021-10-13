@@ -16,6 +16,8 @@ package code_coverage
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"io/ioutil"
 	"strconv"
@@ -259,12 +261,45 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	}
 
 	if req.ReportXmlUUID != "" {
+
 		f, err := svc.bdl.DownloadDiceFile(req.ReportXmlUUID)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-		all, err := ioutil.ReadAll(f)
+
+		tempAddr, err := ioutil.TempDir("", "jacoco_xml_tar_gz")
+		if err != nil {
+			return err
+		}
+
+		var xmlTarFileName = "_project_xml.tar.gz"
+		err = simpleRun("", "bash", "-c", fmt.Sprintf("cd %v && touch %v", tempAddr, xmlTarFileName))
+		if err != nil {
+			return err
+		}
+
+		fileBytes, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
+		err = ioutil.WriteFile(fmt.Sprintf("%v/%v", tempAddr, xmlTarFileName), fileBytes, 0777)
+		if err != nil {
+			return err
+		}
+
+		err = simpleRun("", "bash", "-c", fmt.Sprintf("cd %v && tar -xzf %v", tempAddr, xmlTarFileName))
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(fmt.Sprintf("%v/%v", tempAddr, "_project_xml"))
+		if err != nil {
+			return err
+		}
+
+		all, err := ioutil.ReadAll(file)
 		if err != nil {
 			return err
 		}
@@ -277,6 +312,17 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	}
 
 	return svc.db.UpdateCodeCoverage(record)
+}
+
+func simpleRun(dir string, name string, arg ...string) error {
+	fmt.Fprintf(os.Stdout, "Run: %s, %v\n", name, arg)
+	cmd := exec.Command(name, arg...)
+	if dir != "" {
+		cmd.Path = dir
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // ReportCallBack Record report callBack
