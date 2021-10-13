@@ -16,14 +16,15 @@ package log
 
 // Log .
 type Log struct {
-	DocId     string            `json:"_id"`
-	Source    string            `json:"source"`
-	ID        string            `json:"id"`
-	Stream    string            `json:"stream"`
-	Content   string            `json:"content"`
-	Offset    int64             `json:"offset"`
-	Timestamp int64             `json:"timestamp"`
-	Tags      map[string]string `json:"tags"`
+	DocId           string            `json:"_id"`
+	Source          string            `json:"source"`
+	ID              string            `json:"id"`
+	Stream          string            `json:"stream"`
+	Content         string            `json:"content"`
+	Offset          int64             `json:"offset"`
+	Timestamp       int64             `json:"timestamp"`
+	TimestampString string            `json:"timestampString"`
+	Tags            map[string]string `json:"tags"`
 }
 
 // LogMeta .
