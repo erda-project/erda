@@ -120,7 +120,7 @@ func (pt *PodInfoTable) getProps() {
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Sortable: true, Width: 120},
-			{DataIndex: "Operate", Title: pt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
+			{DataIndex: "Operate", Title: pt.SDK.I18n("podsList"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
 		"selectable":      true,
