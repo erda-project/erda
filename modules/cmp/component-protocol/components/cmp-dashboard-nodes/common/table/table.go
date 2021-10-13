@@ -190,7 +190,7 @@ type LabelsValue struct {
 }
 
 type GetRowItem interface {
-	GetRowItems(c []data.Object, resName TableType, podsMap map[string][]data.Object) ([]RowItem, error)
+	GetRowItems(c []data.Object, resName TableType) ([]RowItem, error)
 }
 
 func (t *Table) GetUsageValue(used, total float64, resourceType TableType) DistributionValue {
@@ -302,7 +302,7 @@ func (t *Table) SetComponentValue(c *cptype.Component) error {
 	return nil
 }
 
-func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object, podsMap map[string][]data.Object) error {
+func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object) error {
 	var (
 		err        error
 		sortColumn string
@@ -320,7 +320,7 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
 	}
 
-	if items, err = t.SetData(nodes, tableType, podsMap); err != nil {
+	if items, err = t.SetData(nodes, tableType); err != nil {
 		return err
 	}
 	if sortColumn != "" {
@@ -350,8 +350,8 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 }
 
 // SetData assemble rowItem of table
-func (t *Table) SetData(nodes []data.Object, tableType TableType, podsMap map[string][]data.Object) ([]RowItem, error) {
-	return t.TableComponent.GetRowItems(nodes, tableType, podsMap)
+func (t *Table) SetData(nodes []data.Object, tableType TableType) ([]RowItem, error) {
+	return t.TableComponent.GetRowItems(nodes, tableType)
 }
 
 func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]data.Object, error) {
