@@ -229,6 +229,10 @@ services:
       http: { }
       exec:
         cmd: "ls"
+    k8s_snippet:
+      container:
+        securityContext:
+          privileged: true
   collector:
     labels:
       cpu_bound: "true"
