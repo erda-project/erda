@@ -71,7 +71,7 @@ func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
 
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	logrus.Errorf("@@@[DEBUG] start render pods table at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG] start render pods table at %s", time.Now().Format(time.StampNano))
 	p.InitComponent(ctx)
 	if err := p.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen podsTable component state, %v", err)
@@ -100,7 +100,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	if err := p.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
-	logrus.Errorf("@@@[DEBUG] end render pods table at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG] end render pods table at %s", time.Now().Format(time.StampNano))
 	p.Transfer(component)
 	return nil
 }
