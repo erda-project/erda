@@ -238,8 +238,8 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 		return err
 	}
 	for i := range list {
-		list[i].Starter = uInfo[list[i].Starter].Name
-		list[i].Ender = uInfo[list[i].Ender].Name
+		list[i].Starter = uInfo[list[i].Starter].Nick
+		list[i].Ender = uInfo[list[i].Ender].Nick
 	}
 	ca.Data.List = list
 	return nil
