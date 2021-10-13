@@ -589,24 +589,41 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		return nil, err
 	}
 
-	var resourceInfo apistructs.OrgClustersResourcesInfo
 	// 初始化所有集群的总资源 【】
-	var clustersQuota = make(map[string]*quota.Quota)
+	var (
+		// 集群里的 allocatable 资源
+		clustersAllocatable = make(map[string]*quota.Quota)
+		// 集群里被 request 的资源
+		clustersRequest = make(map[string]*quota.Quota)
+		// 集群可分配的资源
+		clusterAvailable = make(map[string]*quota.Quota)
+	)
 	for _, host := range resources.List {
 		workspaces := extractWorkspacesFromLabels(host.GetLabels())
-		var q *quota.Quota
-		q, ok := clustersQuota[host.GetClusterName()]
+		var (
+			allocatable, request *quota.Quota
+			ok bool
+		)
+		// 累计此 host 上的 allocatable 资源
+		allocatable, ok = clustersAllocatable[host.GetClusterName()]
 		if !ok {
-			q = quota.New(host.GetClusterName())
-			clustersQuota[host.GetClusterName()] = q
+			allocatable = quota.New(host.GetClusterName())
+			clustersAllocatable[host.GetClusterName()] = allocatable
 		}
-		q.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
-		q.Mem.AddValue(host.GetMemAllocatable(), workspaces...)
-	}
+		allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
+		allocatable.Mem.AddValue(host.GetMemAllocatable(), workspaces...)
 
-	for _, workspace := range quota.Workspaces {
-
+		// 累计此 host 上的 request 资源
+		request, ok = clustersRequest[host.GetClusterName()]
+		if !ok {
+			request = quota.New(host.GetClusterName())
+			clustersRequest[host.GetClusterName()] = request
+		}
+		request.CPU.AddValue(host.GetCpuRequest(), workspaces...)
+		request.Mem.AddValue(host.GetMemRequest(), workspaces...)
 	}
+	// 可分配和总 allocatable 是一致的
+	copyClustersResource(clustersAllocatable, clusterAvailable)
 
 	// 查出所有项目的 quota 记录
 	var projectsQuota []*model.ProjectQuota
@@ -617,31 +634,47 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	for _, workspace := range quota.Workspaces {
 		workspaceStr := quota.WorkspaceString(workspace)
 		for _, project := range projectsQuota {
-			if cluster, ok := clustersQuota[project.GetClusterName(workspaceStr)]; ok {
-				cluster.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
-				cluster.CPU.Quota(workspace, project.GetMemQuota(workspaceStr))
+			if available, ok := clusterAvailable[project.GetClusterName(workspaceStr)]; ok {
+				available.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
+				available.CPU.Quota(workspace, project.GetMemQuota(workspaceStr))
 			}
 		}
 	}
 
+	var resourceInfo apistructs.OrgClustersResourcesInfo
 	for _, workspace := range quota.Workspaces {
 		workspaceStr := quota.WorkspaceString(workspace)
-		for clusterName, cluster := range clustersQuota {
+
+		for _, clusterName := range getClustersResourcesRequest.ClusterNames {
+			allocatable, ok1 := clustersAllocatable[clusterName]
+			request, ok2 := clustersAllocatable[clusterName]
+			available, ok3 := clusterAvailable[clusterName]
+			if !ok1 || !ok2 || !ok3 {
+				continue
+			}
 			resource := apistructs.ClusterResources{
 				ClusterName:    clusterName,
 				Workspace:      workspaceStr,
-				CPUAllocatable: 0,
-				CPUAvailable:   cluster.CPU.Quotable(workspace),
+				CPUAllocatable: allocatable.CPU.TotalForWorkspace(workspace),
+				CPUAvailable:   available.CPU.TotalForWorkspace(workspace),
 				CPUQuotaRate:   0,
-				CPURequest:     0,
-				MemAllocatable: 0,
-				MemAvailable:   cluster.Mem.Quotable(workspace),
+				CPURequest:     request.CPU.TotalForWorkspace(workspace),
+				MemAllocatable: allocatable.Mem.TotalForWorkspace(workspace),
+				MemAvailable:   available.Mem.TotalForWorkspace(workspace),
 				MemQuotaRate:   0,
-				MemRequest:     0,
+				MemRequest:     request.Mem.TotalForWorkspace(workspace),
 			}
+			resource.CPUQuotaRate = 1 - resource.CPUAvailable / resource.CPUAllocatable
+			resource.MemQuotaRate = 1 - resource.MemAvailable / resource.MemAllocatable
+			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
+			resourceInfo.TotalCPU += resource.CPUAllocatable
+			resourceInfo.TotalMem += resource.MemAllocatable
+			resourceInfo.AvailableCPU += resource.CPUAvailable
+			resourceInfo.AvailableMem += resource.MemAvailable
 		}
 	}
 
+	return &resourceInfo, nil
 }
 
 func extractWorkspacesFromLabels(labels []string) []quota.Workspace {
@@ -665,6 +698,13 @@ func extractWorkspacesFromLabels(labels []string) []quota.Workspace {
 		w = append(w, k)
 	}
 	return w
+}
+
+func copyClustersResource(src, dst map[string]*quota.Quota) {
+	for k, v := range src {
+		vv := *v
+		dst[k] = &vv
+	}
 }
 
 // ListAllOrgClusterRelation 获取所有企业对应集群关系

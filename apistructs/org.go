@@ -357,13 +357,13 @@ type OrgResourceInfo struct {
 
 type OrgClustersResourcesInfo struct {
 	// deprecated:
-	AvailableCPU float64`json:"available_cpu"`
+	AvailableCPU float32`json:"available_cpu"`
 	// deprecated:
-	AvailableMem float64`json:"available_mem"`
+	AvailableMem float32`json:"available_mem"`
 	// deprecated:
-	TotalCPU float64`json:"total_cpu"`
+	TotalCPU float32`json:"total_cpu"`
 	// deprecated:
-	TotalMem float64`json:"total_mem"`
+	TotalMem float32`json:"total_mem"`
 
 	ClusterList []ClusterResources
 }
