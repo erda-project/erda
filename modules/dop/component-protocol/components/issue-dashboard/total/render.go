@@ -63,9 +63,6 @@ func (f *ComponentAction) SetToProtocolComponent(c *cptype.Component) error {
 	if err := json.Unmarshal(b, &c); err != nil {
 		return err
 	}
-	if _, ok := c.State["issueList"]; ok {
-		delete(c.State, "issueList")
-	}
 	return nil
 }
 
@@ -104,17 +101,26 @@ func (f *ComponentAction) DataRetriever(gs *cptype.GlobalStateData) {
 			},
 		},
 	}
+	f.State.Stats = StatsRetriever(issueList)
+}
 
-	var open, expire, today, week, month, undefined, reopen int
+func StatsRetriever(issueList []dao.IssueItem) common.Stats {
+	var open, expire, today, tomorrow, week, month, undefined, reopen int
 	for _, i := range issueList {
-		if i.Belong != string(apistructs.IssueStateBelongClosed) {
-			open += 1
+		if i.ReopenCount > 0 {
+			reopen += 1
 		}
+		if i.Belong == string(apistructs.IssueStateBelongClosed) {
+			continue
+		}
+		open += 1
 		switch i.ExpiryStatus {
 		case dao.ExpireTypeExpired:
 			expire += 1
 		case dao.ExpireTypeExpireIn1Day:
 			today += 1
+		case dao.ExpireTypeExpireIn2Days:
+			tomorrow += 1
 		case dao.ExpireTypeExpireIn7Days:
 			week += 1
 		case dao.ExpireTypeExpireIn30Days:
@@ -122,15 +128,13 @@ func (f *ComponentAction) DataRetriever(gs *cptype.GlobalStateData) {
 		case dao.ExpireTypeUndefined:
 			undefined += 1
 		}
-		if i.ReopenCount > 0 {
-			reopen += 1
-		}
 	}
 
-	f.State.Stats = common.Stats{
+	return common.Stats{
 		Open:      strconv.Itoa(open),
 		Expire:    strconv.Itoa(expire),
 		Today:     strconv.Itoa(today),
+		Tomorrow:  strconv.Itoa(tomorrow),
 		Week:      strconv.Itoa(week),
 		Month:     strconv.Itoa(month),
 		Undefined: strconv.Itoa(undefined),
