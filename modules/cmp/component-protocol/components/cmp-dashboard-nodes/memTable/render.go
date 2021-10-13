@@ -227,7 +227,7 @@ func (mt *MemInfoTable) getProps() {
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: "Role", Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Sortable: true, Width: 120},
-			{DataIndex: "Operate", Title: mt.SDK.I18n("operate"), Width: 120, Fixed: "right"},
+			{DataIndex: "Operate", Title: mt.SDK.I18n("podsList"), Width: 120, Fixed: "right"},
 		},
 		"bordered":        true,
 		"selectable":      true,
