@@ -46,6 +46,8 @@ func (Project) TableName() string {
 }
 
 // ProjectQuota is the table "ps_group_projects_quota"
+// CPU quota unit is Core * 10^-3
+// Mem quota uint is Byte
 type ProjectQuota struct {
 	ID        uint64    `gorm:"id" json:"id"`
 	CreatedAt time.Time `gorm:"created_at" json:"created_at"`
@@ -58,17 +60,17 @@ type ProjectQuota struct {
 	TestClusterName    string `gorm:"test_cluster_name" json:"test_cluster_name"`
 	DevClusterName string `gorm:"dev_cluster_name" json:"dev_cluster_name"`
 
-	ProdCPUQuota    float32 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
-	ProdMemQutoa    float32 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
-	StagingCPUQuota float32 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
-	StagingMemQuota float32 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
-	TestCPUQuota    float32 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
-	TestMemQuota    float32 `gorm:"test_mem_quota" json:"test_mem_quota"`
-	DevCPUQuota     float32 `gorm:"dev_cpu_quota" json:"dev_cpu_quota"`
-	DevMemQuota     float32 `gorm:"dev_mem_quota" json:"dev_mem_quota"`
+	ProdCPUQuota    uint64 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
+	ProdMemQutoa    uint64 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
+	StagingCPUQuota uint64 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
+	StagingMemQuota uint64 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
+	TestCPUQuota    uint64 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
+	TestMemQuota    uint64 `gorm:"test_mem_quota" json:"test_mem_quota"`
+	DevCPUQuota     uint64 `gorm:"dev_cpu_quota" json:"dev_cpu_quota"`
+	DevMemQuota     uint64 `gorm:"dev_mem_quota" json:"dev_mem_quota"`
 
-	CreatorID uint64 `gorm:"creator_id" json:"creator_id"`
-	UpdaterID uint64 `gorm:"updater_id" json:"updater_id"`
+	CreatorID string `gorm:"creator_id" json:"creator_id"`
+	UpdaterID string `gorm:"updater_id" json:"updater_id"`
 }
 
 // TableName returns the model's name "ps_group_projects_quota"
@@ -91,7 +93,9 @@ func (p ProjectQuota) GetClusterName(workspace string) string {
 	}
 }
 
-func (p ProjectQuota) GetCPUQuota(workspace string) float32 {
+// GetCPUQuota returns the CPU quota on the workspace.
+// The unit is Core * 10^-3
+func (p ProjectQuota) GetCPUQuota(workspace string) uint64 {
 	switch strings.ToLower(workspace) {
 	case "prod":
 		return p.ProdCPUQuota
@@ -106,7 +110,9 @@ func (p ProjectQuota) GetCPUQuota(workspace string) float32 {
 	}
 }
 
-func (p ProjectQuota) GetMemQuota(workspace string) float32 {
+// GetMemQuota returns the Mem quota on the workspace.
+// The unit is Byte
+func (p ProjectQuota) GetMemQuota(workspace string) uint64 {
 	switch strings.ToLower(workspace) {
 	case "prod":
 		return p.ProdMemQutoa

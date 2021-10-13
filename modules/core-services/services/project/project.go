@@ -116,15 +116,18 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
-
-	if err := checkClusterConfig(createReq.ClusterConfig); err != nil {
-		return nil, err
+	if createReq.ClusterConfig != nil {
+		if err := createReq.ClusterConfig.Check(); err != nil {
+			return nil, err
+		}
 	}
+
 	clusterConfig, err := json.Marshal(createReq.ClusterConfig)
 	if err != nil {
 		logrus.Infof("failed to marshal clusterConfig, (%v)", err)
 		return nil, errors.Errorf("failed to marshal clusterConfig")
 	}
+	// Todo: 项目回滚点是什么东西
 	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -150,8 +153,13 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		return nil, errors.Errorf("failed to create project(name already exists)")
 	}
 
+	tx := p.db.Begin()
+	defer tx.RollbackUnlessCommitted()
+
+	now := time.Now()
 	// 添加项目至DB
 	project = &model.Project{
+		BaseModel:      model.BaseModel{},
 		Name:           createReq.Name,
 		DisplayName:    createReq.DisplayName,
 		Desc:           createReq.Desc,
@@ -159,19 +167,52 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		OrgID:          int64(createReq.OrgID),
 		UserID:         userID,
 		DDHook:         createReq.DdHook,
-		ClusterConfig:  string(clusterConfig),
-		RollbackConfig: string(rollbackConfig),
+		ClusterConfig:  string(clusterConfig),  // todo: 查清楚哪里用到的这两个字段
+		RollbackConfig: string(rollbackConfig), // todo:
 		CpuQuota:       createReq.CpuQuota,
 		MemQuota:       createReq.MemQuota,
 		Functions:      string(functions),
-		ActiveTime:     time.Now(),
+		ActiveTime:     now,
 		EnableNS:       conf.EnableNS(),
+		IsPublic:       false,
 		Type:           string(createReq.Template),
 	}
-	if err = p.db.CreateProject(project); err != nil {
-		logrus.Warnf("failed to insert project to db, (%v)", err)
-		return nil, errors.Errorf("failed to insert project to db")
+	if err := tx.Create(&project).Error; err != nil {
+		logrus.WithError(err).WithField("model", project.TableName()).
+			Errorln("failed to Create")
+		return nil, errors.Errorf("failed to insert project to database")
 	}
+
+	// record quota if it is configured
+	if createReq.ClusterConfig != nil {
+		quota := &model.ProjectQuota{
+			ID:                 0,
+			CreatedAt:          time.Time{},
+			UpdatedAt:          time.Time{},
+			ProjectID:          uint64(project.ID),
+			ProjectName:        createReq.Name,
+			ProdClusterName:    createReq.ClusterConfig.PROD.ClusterName,
+			StagingClusterName: createReq.ClusterConfig.STAGING.ClusterName,
+			TestClusterName:    createReq.ClusterConfig.TEST.ClusterName,
+			DevClusterName:     createReq.ClusterConfig.DEV.ClusterName,
+			ProdCPUQuota:       uint64(createReq.ClusterConfig.PROD.CPUQuota * 1000),
+			ProdMemQutoa:       uint64(createReq.ClusterConfig.PROD.MemQuota * 1024 * 1024 * 1024),
+			StagingCPUQuota:    uint64(createReq.ClusterConfig.STAGING.CPUQuota * 1000),
+			StagingMemQuota:    uint64(createReq.ClusterConfig.STAGING.MemQuota * 1024 * 1024),
+			TestCPUQuota:       uint64(createReq.ClusterConfig.TEST.CPUQuota * 1000),
+			TestMemQuota:       uint64(createReq.ClusterConfig.TEST.MemQuota * 1024 * 1024 * 1024),
+			DevCPUQuota:        uint64(createReq.ClusterConfig.DEV.CPUQuota * 1000),
+			DevMemQuota:        uint64(createReq.ClusterConfig.DEV.MemQuota * 1024 * 1024 * 1024),
+			CreatorID:          userID,
+			UpdaterID:          userID,
+		}
+		if err := tx.Create(&quota).Error; err != nil {
+			logrus.WithError(err).WithField("model", quota.TableName()).
+				Errorln("failed to Create")
+			return nil, errors.Errorf("failed to insert project quota to database")
+		}
+	}
+
 	// 新增项目管理员至admin_members表
 	users, err := p.uc.FindUsers([]string{userID})
 	if err != nil {
@@ -202,13 +243,19 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			ResourceKey:   apistructs.RoleResourceKey,
 			ResourceValue: types.RoleProjectOwner,
 		}
-		if err = p.db.CreateMember(&member); err != nil {
-			logrus.Warnf("failed to add member to db when create project, (%v)", err)
+		if err := tx.Create(&member).Error; err != nil {
+			logrus.WithError(err).WithField("model", member.TableName()).
+				Errorln("failed to add member to database while creating project")
+			return nil, errors.Errorf("failed to add member to database while creating project")
 		}
-		if err = p.db.CreateMemberExtra(&memberExtra); err != nil {
-			logrus.Warnf("failed to add member roles to db when create project, (%v)", err)
+		if err := tx.Create(&memberExtra).Error; err != nil {
+			logrus.WithError(err).WithField("model", memberExtra.TableName()).
+				Errorln("failed to add member roles to database while creating project")
+			return nil, errors.Errorf("failed to add member roles to database while creating project")
 		}
 	}
+
+	tx.Commit()
 
 	return project, nil
 }
@@ -836,6 +883,7 @@ func (p *Project) UpdateProjectActiveTime(req *apistructs.ProjectActiveTimeUpdat
 }
 
 // 检查cluster config合法性
+// Deprecated
 func checkClusterConfig(clusterConfig map[string]string) error {
 	// DEV/TEST/STAGING/PROD四个环境集群配置
 	l := len(clusterConfig)

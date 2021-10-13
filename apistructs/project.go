@@ -14,7 +14,11 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 // ProjectCreateRequest POST /api/projects 创建项目请求结构
 type ProjectCreateRequest struct {
@@ -35,7 +39,7 @@ type ProjectCreateRequest struct {
 	ClusterName string `json:"clusterName"` // TODO deprecated
 
 	// 项目各环境集群配置
-	ClusterConfig map[string]string `json:"clusterConfig"`
+	ClusterConfig *ClusterConfigs `json:"clusterConfig"`
 	// 项目回滚点配置
 	RollbackConfig map[string]int `json:"rollbackConfig"`
 	// +required 单位: c
@@ -44,6 +48,38 @@ type ProjectCreateRequest struct {
 	MemQuota float64 `json:"memQuota"`
 	// +required 项目模版
 	Template ProjectTemplate `json:"template"`
+}
+
+type ClusterConfigs struct {
+	PROD    *ClusterConfig `json:"prod"`
+	STAGING *ClusterConfig `json:"staging"`
+	TEST    *ClusterConfig `json:"test"`
+	DEV     *ClusterConfig `json:"dev"`
+}
+
+func (cc ClusterConfigs) Check() error {
+	for k, v := range map[string]*ClusterConfig{
+		"production": cc.PROD,
+		"staging":    cc.STAGING,
+		"test":       cc.TEST,
+		"dev":        cc.DEV,
+	} {
+		if v == nil {
+			return errors.Errorf("the cluster config on workspace %s is empty", k)
+		}
+	}
+	return nil
+}
+
+// ClusterConfig
+// CPU quota uint is Core .
+// Mem quota uint is GiB
+type ClusterConfig struct {
+	ClusterName string  `json:"cluster_name"`
+	// CPUQuota unit is Core
+	CPUQuota    float64 `json:"cpu_quota"`
+	// MemQuota unit is GiB
+	MemQuota    float64 `json:"mem_quota"`
 }
 
 // ProjectCreateResponse POST /api/projects 创建项目响应结构
