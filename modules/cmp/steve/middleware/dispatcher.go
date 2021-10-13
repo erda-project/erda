@@ -111,6 +111,12 @@ func (d *dispatcher) Print(b byte) error {
 
 func (d *dispatcher) Execute(b byte) error {
 	d.executeCommand = string(d.buf[startIdx : startIdx+d.length])
+	switch b {
+	case 1:
+		return d.CUB(len(d.buf))
+	case 5:
+		return d.CUF(len(d.buf))
+	}
 	if d.executeCommand == "" {
 		return nil
 	}
@@ -126,6 +132,7 @@ func (d *dispatcher) Execute(b byte) error {
 		cmd:   d.executeCommand,
 	})
 	d.executeCommand = ""
+	recover()
 	return nil
 }
 
