@@ -62,6 +62,7 @@ type Item struct {
 	Name              Link    `json:"name,omitempty"`
 	Namespace         string  `json:"namespace,omitempty"`
 	IP                string  `json:"ip,omitempty"`
+	Age               string  `json:"age,omitempty"`
 	CPURequests       string  `json:"cpuRequests,omitempty"`
 	CPURequestsNum    int64   `json:"CPURequestsNum,omitempty"`
 	CPUPercent        Percent `json:"cpuPercent,omitempty"`
