@@ -70,6 +70,8 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},
+					Icon:    "help",
+					IconTip: "不包含本日、明日、本周截止数据",
 				},
 			},
 		},

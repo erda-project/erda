@@ -44,6 +44,7 @@ func GetPieSeriesOpt() func(*charts.SingleSeries) {
 	return func(s *charts.SingleSeries) {
 		s.Animation = true
 		s.Top = "12"
+		s.Radius = [2]string{"0", "60%"}
 	}
 }
 

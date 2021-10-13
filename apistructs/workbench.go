@@ -53,4 +53,6 @@ var StateBelongs = []IssueStateBelong{
 	IssueStateBelongResloved,
 	IssueStateBelongWorking,
 	IssueStateBelongOpen,
+	IssueStateBelongResloved,
+	IssueStateBelongClosed,
 }

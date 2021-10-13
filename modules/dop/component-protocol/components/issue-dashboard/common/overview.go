@@ -31,6 +31,8 @@ type OverviewValue struct {
 type OverviewText struct {
 	Text        string      `json:"text,omitempty"`
 	StyleConfig StyleConfig `json:"styleConfig,omitempty"`
+	Icon        string      `json:"icon,omitempty"`
+	IconTip     string      `json:"iconTip,omitempty"`
 }
 
 type StyleConfig struct {
@@ -43,6 +45,7 @@ type Stats struct {
 	Open      string `json:"open,omitempty"`
 	Expire    string `json:"expire,omitempty"`
 	Today     string `json:"today,omitempty"`
+	Tomorrow  string `json:"tomorrow,omitempty"`
 	Week      string `json:"week,omitempty"`
 	Month     string `json:"month,omitempty"`
 	Undefined string `json:"undefined,omitempty"`

@@ -223,16 +223,14 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	}()
 
+	// instantly run once
+	updateIssueExpiryStatus(ep)
+
 	// daily issue expiry status update cron job
 	go func() {
 		cron := cron.New()
 		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
-			start := time.Now()
-			if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
-				logrus.Errorf("daily issue expiry status batch update err: %v", err)
-				return
-			}
-			logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
+			updateIssueExpiryStatus(ep)
 		})
 		if err != nil {
 			panic(err)
@@ -241,6 +239,15 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}()
 
 	return nil
+}
+
+func updateIssueExpiryStatus(ep *endpoints.Endpoints) {
+	start := time.Now()
+	if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
+		logrus.Errorf("daily issue expiry status batch update err: %v", err)
+		return
+	}
+	logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
 }
 
 func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {

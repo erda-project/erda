@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package week
+package tomorrow
 
 import (
 	"context"
@@ -31,7 +31,7 @@ type ComponentAction struct {
 }
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "week",
+	base.InitProviderWithCreator("issue-dashboard", "tomorrow",
 		func() servicehub.Provider { return &ComponentAction{} })
 }
 
@@ -58,7 +58,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			Direction: "col",
 			Text: []common.OverviewText{
 				{
-					Text: f.State.Stats.Week,
+					Text: f.State.Stats.Tomorrow,
 					StyleConfig: common.StyleConfig{
 						FontSize: 20,
 						Bold:     true,
@@ -66,12 +66,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					},
 				},
 				{
-					Text: "本周截止",
+					Text: "明日截止",
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},
 					Icon:    "help",
-					IconTip: "不包含本日和明日截止数据",
+					IconTip: "不包含本日截止数据",
 				},
 			},
 		},

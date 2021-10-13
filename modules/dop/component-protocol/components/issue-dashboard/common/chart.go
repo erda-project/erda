@@ -74,7 +74,7 @@ type AreaStyle struct {
 	Opacity float32 `json:"opacity,omitempty"`
 }
 
-const PieChartFormat = "{b}\n{d}%({c})"
+const PieChartFormat = "{b}\n{d}%"
 
 type PieChart struct {
 	Props PieChartProps `json:"props,omitempty"`
