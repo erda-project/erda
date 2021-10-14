@@ -245,11 +245,16 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 		if err := f.flushOptsByFilter(filterID, f.InParams.FrontendUrlQuery); err != nil {
 			return err
 		}
-	} else {
-		f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]
 	}
 
+	f.setDefaultState(res, f.InParams.FrontendFixedIssueType)
 	return nil
+}
+
+func (f *ComponentFilter) setDefaultState(stateMap map[string][]int64, key string) {
+	if f.State.FrontendConditionValues.States == nil {
+		f.State.FrontendConditionValues.States = stateMap[key]
+	}
 }
 
 func (f *ComponentFilter) determineFilterID(filterEntity string) string {

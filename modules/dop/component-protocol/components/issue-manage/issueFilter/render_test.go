@@ -83,3 +83,42 @@ func Test_determineFilterID(t *testing.T) {
 	}
 	assert.Equal(t, "123", f.determineFilterID("eyJzdGF0ZXMiOls2NTddLCJhc3NpZ25lZUlEcyI6WyIyIl19"))
 }
+
+func TestComponentFilter_setDefaultState(t *testing.T) {
+	type args struct {
+		stateMap map[string][]int64
+		key      string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "test",
+			args: args{
+				stateMap: map[string][]int64{
+					"t": {1},
+				},
+				key: "t",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &ComponentFilter{}
+			f.setDefaultState(tt.args.stateMap, tt.args.key)
+			assert.Equal(t, []int64{1}, f.State.FrontendConditionValues.States)
+		})
+		t.Run(tt.name, func(t *testing.T) {
+			f := &ComponentFilter{
+				State: State{
+					FrontendConditionValues: FrontendConditions{
+						States: []int64{2},
+					},
+				},
+			}
+			f.setDefaultState(tt.args.stateMap, tt.args.key)
+			assert.Equal(t, []int64{2}, f.State.FrontendConditionValues.States)
+		})
+	}
+}
