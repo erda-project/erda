@@ -28,6 +28,8 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "upgradeEdgeCluster", "升级边缘集群")
 	message.SetString(language.SimplifiedChinese, "offlineEdgeCluster", "集群下线")
 	message.SetString(language.SimplifiedChinese, "importKubernetesCluster", "导入Kubernetes集群")
+	message.SetString(language.SimplifiedChinese, "createClusterCredential", "创建集群认证 Token")
+	message.SetString(language.SimplifiedChinese, "resetClusterCredential", "重置集群认证 Token")
 	message.SetString(language.SimplifiedChinese, "buyNodes", "购买云资源")
 	message.SetString(language.SimplifiedChinese, "addNodes", "添加机器")
 	message.SetString(language.SimplifiedChinese, "addEssNodes", "弹性扩容")

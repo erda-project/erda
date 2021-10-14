@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
-
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -130,7 +130,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		org_resource.WithRedisClient(redisCli),
 	)
 
-	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o)
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	return server, nil
 }
 
-func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
+func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
+	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -175,6 +176,7 @@ func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS json
 		cachedJS,
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrgResource(o),
+		endpoints.WithCredential(c),
 	)
 
 	// Sync org resource task status
