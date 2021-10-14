@@ -112,7 +112,8 @@ message QueryNotifyGroupRequest {
 }
 
 message QueryNotifyGroupResponse {
-  QueryNotifyGroupData data = 1;
+  QueryNotifyGroupData  data      = 1;
+  repeated string       userIDs   = 2;
 }
 
 message QueryNotifyGroupData {
