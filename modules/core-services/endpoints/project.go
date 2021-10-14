@@ -102,7 +102,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 	logrus.Infof("request body: %+v", projectUpdateReq)
 
-	oldProject, err := e.project.Get(projectID)
+	oldProject, err := e.project.Get(ctx, projectID)
 	if err != nil {
 		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
 	}
@@ -197,7 +197,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	project, err := e.project.Get(projectID)
+	project, err := e.project.Get(ctx, projectID)
 	if err != nil {
 		if err == dao.ErrNotFoundProject {
 			return apierrors.ErrGetProject.NotFound().ToResp(), nil
@@ -229,7 +229,7 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 审计事件需要项目详情，发生错误不应中断业务流程
-	project, err := e.project.Get(projectID)
+	project, err := e.project.Get(ctx, projectID)
 	if err != nil {
 		logrus.Errorf("when get project for audit faild %v", err)
 	}

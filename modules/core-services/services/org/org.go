@@ -36,7 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/numeral"
-	"github.com/erda-project/erda/pkg/quota"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -592,22 +592,22 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	// 初始化所有集群的总资源 【】
 	var (
 		// 集群里的 allocatable 资源
-		clustersAllocatable = make(map[string]*quota.Quota)
+		clustersAllocatable = make(map[string]*calcu.Calculator)
 		// 集群里被 request 的资源
-		clustersRequest = make(map[string]*quota.Quota)
+		clustersRequest = make(map[string]*calcu.Calculator)
 		// 集群可分配的资源
-		clusterAvailable = make(map[string]*quota.Quota)
+		clusterAvailable = make(map[string]*calcu.Calculator)
 	)
 	for _, host := range resources.List {
 		workspaces := extractWorkspacesFromLabels(host.GetLabels())
 		var (
-			allocatable, request *quota.Quota
+			allocatable, request *calcu.Calculator
 			ok bool
 		)
 		// 累计此 host 上的 allocatable 资源
 		allocatable, ok = clustersAllocatable[host.GetClusterName()]
 		if !ok {
-			allocatable = quota.New(host.GetClusterName())
+			allocatable = calcu.New(host.GetClusterName())
 			clustersAllocatable[host.GetClusterName()] = allocatable
 		}
 		allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
@@ -616,7 +616,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		// 累计此 host 上的 request 资源
 		request, ok = clustersRequest[host.GetClusterName()]
 		if !ok {
-			request = quota.New(host.GetClusterName())
+			request = calcu.New(host.GetClusterName())
 			clustersRequest[host.GetClusterName()] = request
 		}
 		request.CPU.AddValue(host.GetCpuRequest(), workspaces...)
@@ -631,8 +631,8 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		return nil, errors.Wrap(err, "failed to Find all project quota")
 	}
 	// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
-	for _, workspace := range quota.Workspaces {
-		workspaceStr := quota.WorkspaceString(workspace)
+	for _, workspace := range calcu.Workspaces {
+		workspaceStr := calcu.WorkspaceString(workspace)
 		for _, project := range projectsQuota {
 			if available, ok := clusterAvailable[project.GetClusterName(workspaceStr)]; ok {
 				available.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
@@ -642,8 +642,8 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	}
 
 	var resourceInfo apistructs.OrgClustersResourcesInfo
-	for _, workspace := range quota.Workspaces {
-		workspaceStr := quota.WorkspaceString(workspace)
+	for _, workspace := range calcu.Workspaces {
+		workspaceStr := calcu.WorkspaceString(workspace)
 
 		for _, clusterName := range getClustersResourcesRequest.ClusterNames {
 			allocatable, ok1 := clustersAllocatable[clusterName]
@@ -655,14 +655,14 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 			resource := apistructs.ClusterResources{
 				ClusterName:    clusterName,
 				Workspace:      workspaceStr,
-				CPUAllocatable: allocatable.CPU.TotalForWorkspace(workspace),
-				CPUAvailable:   available.CPU.TotalForWorkspace(workspace),
+				CPUAllocatable:calcu.MillcoreToCore( allocatable.CPU.TotalForWorkspace(workspace)),
+				CPUAvailable:   calcu.MillcoreToCore(available.CPU.TotalForWorkspace(workspace)),
 				CPUQuotaRate:   0,
-				CPURequest:     request.CPU.TotalForWorkspace(workspace),
-				MemAllocatable: allocatable.Mem.TotalForWorkspace(workspace),
-				MemAvailable:   available.Mem.TotalForWorkspace(workspace),
+				CPURequest:     calcu.MillcoreToCore(request.CPU.TotalForWorkspace(workspace)),
+				MemAllocatable: calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace)),
+				MemAvailable:   calcu.ByteToGibibyte(available.Mem.TotalForWorkspace(workspace)),
 				MemQuotaRate:   0,
-				MemRequest:     request.Mem.TotalForWorkspace(workspace),
+				MemRequest:     calcu.ByteToGibibyte(request.Mem.TotalForWorkspace(workspace)),
 			}
 			resource.CPUQuotaRate = 1 - resource.CPUAvailable / resource.CPUAllocatable
 			resource.MemQuotaRate = 1 - resource.MemAvailable / resource.MemAllocatable
@@ -677,21 +677,21 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	return &resourceInfo, nil
 }
 
-func extractWorkspacesFromLabels(labels []string) []quota.Workspace {
+func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
 	var (
-		m = make(map[quota.Workspace]bool)
-		w []quota.Workspace
+		m = make(map[calcu.Workspace]bool)
+		w []calcu.Workspace
 	)
 	for _, label := range labels {
 		switch strings.ToLower(label) {
 		case "workspace-prod":
-			m[quota.Prod] = true
+			m[calcu.Prod] = true
 		case "workspace-staging":
-			m[quota.Staging] = true
+			m[calcu.Staging] = true
 		case "workspace-test":
-			m[quota.Test] = true
+			m[calcu.Test] = true
 		case "workspace-dev":
-			m[quota.Dev] = true
+			m[calcu.Dev] = true
 		}
 	}
 	for k := range m {
@@ -700,7 +700,7 @@ func extractWorkspacesFromLabels(labels []string) []quota.Workspace {
 	return w
 }
 
-func copyClustersResource(src, dst map[string]*quota.Quota) {
+func copyClustersResource(src, dst map[string]*calcu.Calculator) {
 	for k, v := range src {
 		vv := *v
 		dst[k] = &vv

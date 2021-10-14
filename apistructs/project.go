@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -51,10 +52,10 @@ type ProjectCreateRequest struct {
 }
 
 type ClusterConfigs struct {
-	PROD    *ClusterConfig `json:"prod"`
-	STAGING *ClusterConfig `json:"staging"`
-	TEST    *ClusterConfig `json:"test"`
-	DEV     *ClusterConfig `json:"dev"`
+	PROD    *ClusterConfig `json:"PROD"`
+	STAGING *ClusterConfig `json:"STAGING"`
+	TEST    *ClusterConfig `json:"TEST"`
+	DEV     *ClusterConfig `json:"DEV"`
 }
 
 func (cc ClusterConfigs) Check() error {
@@ -75,11 +76,11 @@ func (cc ClusterConfigs) Check() error {
 // CPU quota uint is Core .
 // Mem quota uint is GiB
 type ClusterConfig struct {
-	ClusterName string  `json:"cluster_name"`
+	ClusterName string `json:"cluster_name"`
 	// CPUQuota unit is Core
-	CPUQuota    float64 `json:"cpu_quota"`
+	CPUQuota float64 `json:"cpu_quota"`
 	// MemQuota unit is GiB
-	MemQuota    float64 `json:"mem_quota"`
+	MemQuota float64 `json:"mem_quota"`
 }
 
 // ProjectCreateResponse POST /api/projects 创建项目响应结构
@@ -238,19 +239,75 @@ type ProjectDTO struct {
 	ProjectResourceUsage
 
 	// 项目各环境集群配置
-	ClusterConfig  map[string]string `json:"clusterConfig"`
-	RollbackConfig map[string]int    `json:"rollbackConfig"`
-	CpuQuota       float64           `json:"cpuQuota"`
-	MemQuota       float64           `json:"memQuota"`
+	// Deprecated: to retrieve the relationship between clusters and workspaces,
+	// please use ResourceConfig .
+	ClusterConfig map[string]string `json:"clusterConfig"`
+	// ResourceConfig shows the relationship between clusters and workspaces,
+	// and contains the quota info for every workspace .
+	ResourceConfig *ResourceConfigs `json:"resourceConfig"`
+	RollbackConfig map[string]int   `json:"rollbackConfig"`
+	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
+	CpuQuota float64 `json:"cpuQuota"`
+	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
+	MemQuota float64 `json:"memQuota"`
 
 	// 项目创建时间
 	CreatedAt time.Time `json:"createdAt"`
-
 	// 项目更新时间
 	UpdatedAt time.Time `json:"updatedAt"`
 
 	// Project type
 	Type string `json:"type"`
+}
+
+type ResourceConfigs struct {
+	PROD    *ResourceConfig `json:"PROD"`
+	STAGING *ResourceConfig `json:"STAGING"`
+	TEST    *ResourceConfig `json:"TEST"`
+	DEV     *ResourceConfig `json:"DEV"`
+}
+
+func NewResourceConfig() *ResourceConfigs {
+	return &ResourceConfigs{
+		PROD:    new(ResourceConfig),
+		STAGING: new(ResourceConfig),
+		TEST:    new(ResourceConfig),
+		DEV:     new(ResourceConfig),
+	}
+}
+
+func (cc ResourceConfigs) GetClusterName(workspace string) string {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return cc.PROD.ClusterName
+	case "staging":
+		return cc.STAGING.ClusterName
+	case "test":
+		return cc.TEST.ClusterName
+	case "dev":
+		return cc.DEV.ClusterName
+	default:
+		return ""
+	}
+}
+
+type ResourceConfig struct {
+	ClusterName             string  `json:"clusterName"`
+	CPUQuota                float64 `json:"cpuQuota"`
+	CPURequest              float64 `json:"cpuRequest"`
+	CPURequestRate          float64 `json:"cpuRequestRate"`
+	CPURequestByAddon       float64 `json:"cpuRequestByAddon"`
+	CPURequestByAddonRate   float64 `json:"cpuRequestByAddonRate"`
+	CPURequestByService     float64 `json:"cpuRequestByService"`
+	CPURequestByServiceRate float64 `json:"cpuRequestByServiceRate"`
+	MemQuota                float64 `json:"memQuota"`
+	MemRequest              float64 `json:"memRequest"`
+	MemRequestRate          float64 `json:"memRequestRate"`
+	MemRequestByAddon       float64 `json:"memRequestByAddon"`
+	MemRequestByAddonRate   float64 `json:"memRequestByAddonRate"`
+	MemRequestByService     float64 `json:"memRequestByService"`
+	MemRequestByServiceRate float64 `json:"memRequestByServiceRate"`
+	Tips                    string  `json:"tips"`
 }
 
 // ProjectResourceUsage 项目资源使用

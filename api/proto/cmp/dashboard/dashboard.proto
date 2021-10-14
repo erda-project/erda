@@ -20,17 +20,22 @@ message GetClusterResourcesResponse {
 message ClusterResourceDetail {
   string clusterName = 1;
   string host = 2;
-  float cpuAllocatable = 3;
-  float cpuTotal = 4;
-  float cpuRequest = 5;
-  float memAllocatable = 6;
-  float memTotal = 7;
-  float memRequest = 8;
+  uint64 cpuAllocatable = 3;
+  uint64 cpuTotal = 4;
+  uint64 cpuRequest = 5;
+  uint64 memAllocatable = 6;
+  uint64 memTotal = 7;
+  uint64 memRequest = 8;
   repeated string labels = 9;
 }
 
 message GetNamespacesResourcesRequest {
-  repeated string namespaces = 1;
+  repeated ClusterNamespacePair namespaces = 1;
+}
+
+message ClusterNamespacePair {
+  string clusterName = 1;
+  string namespace = 2;
 }
 
 message GetNamespacesResourcesResponse {
@@ -39,7 +44,8 @@ message GetNamespacesResourcesResponse {
 }
 
 message NamespaceResourceDetail {
-  string namespace = 1;
-  float cpuRequest = 2;
-  float memRequest = 3;
+  string clusterName = 1;
+  string namespace = 2;
+  uint64 cpuRequest = 3;
+  uint64 memRequest = 4;
 }

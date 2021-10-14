@@ -21,6 +21,8 @@ var _ json.Marshaler = (*ClusterResourceDetail)(nil)
 var _ json.Unmarshaler = (*ClusterResourceDetail)(nil)
 var _ json.Marshaler = (*GetNamespacesResourcesRequest)(nil)
 var _ json.Unmarshaler = (*GetNamespacesResourcesRequest)(nil)
+var _ json.Marshaler = (*ClusterNamespacePair)(nil)
+var _ json.Unmarshaler = (*ClusterNamespacePair)(nil)
 var _ json.Marshaler = (*GetNamespacesResourcesResponse)(nil)
 var _ json.Unmarshaler = (*GetNamespacesResourcesResponse)(nil)
 var _ json.Marshaler = (*NamespaceResourceDetail)(nil)
@@ -93,6 +95,24 @@ func (m *GetNamespacesResourcesRequest) MarshalJSON() ([]byte, error) {
 
 // GetNamespacesResourcesRequest implement json.Marshaler.
 func (m *GetNamespacesResourcesRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ClusterNamespacePair implement json.Marshaler.
+func (m *ClusterNamespacePair) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ClusterNamespacePair implement json.Marshaler.
+func (m *ClusterNamespacePair) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

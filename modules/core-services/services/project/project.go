@@ -16,6 +16,7 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"strconv"
@@ -25,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -34,6 +36,7 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -42,6 +45,8 @@ type Project struct {
 	db  *dao.DBClient
 	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
+
+	clusterResourceClient dashboardPb.ClusterResourceClient
 }
 
 // Option 定义 Project 对象的配置选项
@@ -74,6 +79,13 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(p *Project) {
 		p.bdl = bdl
+	}
+}
+
+// WithClusterResourceClient set the gRPC client of CMP cluster resource
+func WithClusterResourceClient(client dashboardPb.ClusterResourceClient) Option {
+	return func(p *Project) {
+		p.clusterResourceClient = client
 	}
 }
 
@@ -462,7 +474,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 }
 
 // Get 获取项目
-func (p *Project) Get(projectID int64) (*apistructs.ProjectDTO, error) {
+func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -476,6 +488,118 @@ func (p *Project) Get(projectID int64) (*apistructs.ProjectDTO, error) {
 	for _, v := range owners {
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
+
+	var projectQuota model.ProjectQuota
+	if err := p.db.First(&projectQuota).Error; err != nil {
+		logrus.WithError(err).WithField("project_id", projectID).
+			Warnln("failed to select the quota record of the project")
+		return &projectDTO, nil
+	}
+	projectDTO.ClusterConfig = make(map[string]string)
+	projectDTO.ResourceConfig = apistructs.NewResourceConfig()
+	projectDTO.ClusterConfig["PROD"] = projectQuota.ProdClusterName
+	projectDTO.ClusterConfig["STAGING"] = projectQuota.StagingClusterName
+	projectDTO.ClusterConfig["TEST"] = projectQuota.TestClusterName
+	projectDTO.ClusterConfig["DEV"] = projectQuota.DevClusterName
+	projectDTO.ResourceConfig.PROD.ClusterName = projectQuota.ProdClusterName
+	projectDTO.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
+	projectDTO.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
+	projectDTO.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
+	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota)
+	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota)
+	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota)
+	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota)
+	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQutoa)
+	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota)
+	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
+	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)
+
+	var podInfos []apistructs.PodInfo
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
+		logrus.WithError(err).WithField("project_id", projectID).
+			Warnln("failed to Find the namespaces info in the project")
+		return &projectDTO, nil
+	}
+
+	var (
+		namespaces        = make(map[string]map[string]bool) // key: clusterName, value.key: k8s_namespace
+		addonNamespaces   = make(map[string]bool)            // key: k8s_namespace
+		serviceNamespaces = make(map[string]bool)            // key: k8s_namespace
+	)
+	for _, podInfo := range podInfos {
+		if _, ok := namespaces[podInfo.Cluster]; ok {
+			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = true
+		} else {
+			namespaces[podInfo.Cluster] = map[string]bool{podInfo.K8sNamespace: true}
+		}
+
+		switch podInfo.ServiceType {
+		case "addon":
+			addonNamespaces[podInfo.K8sNamespace] = true
+		case "stateless-service":
+			serviceNamespaces[podInfo.K8sNamespace] = true
+		}
+	}
+	var resourceRequest dashboardPb.GetNamespacesResourcesRequest
+	for clusterName, v := range namespaces {
+		if len(v) == 0 {
+			continue
+		}
+		for namespace := range v {
+			resourceRequest.Namespaces = append(resourceRequest.Namespaces, &dashboardPb.ClusterNamespacePair{
+				ClusterName: clusterName,
+				Namespace:   namespace,
+			})
+		}
+	}
+	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
+		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
+	}
+
+	for _, item := range resources.List {
+		var source *apistructs.ResourceConfig
+		switch item.GetClusterName() {
+		case projectDTO.ResourceConfig.PROD.ClusterName:
+			source = projectDTO.ResourceConfig.PROD
+		case projectDTO.ResourceConfig.STAGING.ClusterName:
+			source = projectDTO.ResourceConfig.STAGING
+		case projectDTO.ResourceConfig.TEST.ClusterName:
+			source = projectDTO.ResourceConfig.TEST
+		case projectDTO.ResourceConfig.DEV.ClusterName:
+			source = projectDTO.ResourceConfig.DEV
+		}
+		if source == nil {
+			continue
+		}
+
+		source.CPURequest += calcu.MillcoreToCore(item.GetCpuRequest())
+		source.MemRequest += calcu.ByteToGibibyte(item.GetMemRequest())
+		if _, ok := addonNamespaces[item.GetNamespace()]; ok {
+			source.CPURequestByAddon += source.CPURequest
+			source.MemRequestByAddon += source.MemRequest
+		}
+		if _, ok := serviceNamespaces[item.GetNamespace()]; ok {
+			source.CPURequestByService += source.CPURequest
+			source.MemRequestByService += source.MemRequest
+		}
+	}
+
+	for _, source := range []*apistructs.ResourceConfig{
+		projectDTO.ResourceConfig.PROD,
+		projectDTO.ResourceConfig.STAGING,
+		projectDTO.ResourceConfig.TEST,
+		projectDTO.ResourceConfig.DEV,
+	} {
+		source.CPURequestRate = source.CPURequest / source.CPUQuota
+		source.CPURequestByAddonRate = source.CPURequestByAddon / source.CPUQuota
+		source.CPURequestByServiceRate = source.CPURequestByService / source.CPUQuota
+		source.MemRequestRate = source.MemRequest / source.MemQuota
+		source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
+		source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
+	}
+
 	return &projectDTO, nil
 }
 
@@ -989,11 +1113,8 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 	return checkRollbackConfig(rollbackConfig)
 }
 
+// todo: 这个函数影响的范围
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
-	var clusterConfig map[string]string
-	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
-		clusterConfig = make(map[string]string)
-	}
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
 		rollbackConfig = make(map[string]int)
@@ -1014,7 +1135,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Stats: apistructs.ProjectStats{
 			CountApplications: int(total),
 		},
-		ClusterConfig:  clusterConfig,
+		ClusterConfig:  nil,
 		RollbackConfig: rollbackConfig,
 		CpuQuota:       project.CpuQuota,
 		MemQuota:       project.MemQuota,

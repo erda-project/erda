@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package quota
+package resourcecalculator
 
 import (
 	"sort"
@@ -31,33 +31,33 @@ var Workspaces = []Workspace{Prod, Staging, Test, Dev}
 
 type Workspace int
 
-type Quota struct {
+type Calculator struct {
 	ClusterName string
-	CPU         *ResourceQuota
-	Mem         *ResourceQuota
+	CPU         *ResourceCalculator
+	Mem         *ResourceCalculator
 }
 
 // Todo: 该算法并没有体现调度的优先级，需优化
 
-type ResourceQuota struct {
-	q [4][4][4][4]float32
+type ResourceCalculator struct {
+	q [4][4][4][4]uint64
 }
 
-func New(clusterName string) *Quota {
-	return &Quota{
+func New(clusterName string) *Calculator {
+	return &Calculator{
 		ClusterName: clusterName,
 		CPU:         newResourceQuota(),
 		Mem:         newResourceQuota(),
 	}
 }
 
-func newResourceQuota() *ResourceQuota {
-	return &ResourceQuota{
-		q: [4][4][4][4]float32{},
+func newResourceQuota() *ResourceCalculator {
+	return &ResourceCalculator{
+		q: [4][4][4][4]uint64{},
 	}
 }
 
-func (q *ResourceQuota) AddValue(value float32, workspace ...Workspace) {
+func (q *ResourceCalculator) AddValue(value uint64, workspace ...Workspace) {
 	sort.Slice(workspace, func(i, j int) bool {
 		return workspace[i] < workspace[j]
 	})
@@ -74,8 +74,8 @@ func (q *ResourceQuota) AddValue(value float32, workspace ...Workspace) {
 	}
 }
 
-func (q ResourceQuota) TotalQuotable() float32 {
-	var sum float32
+func (q ResourceCalculator) TotalQuotable() uint64 {
+	var sum uint64
 	for i := 0; i < len(q.q); i++ {
 		for j := 0; j < len(q.q[i]); j++ {
 			for k := 0; k < len(q.q[i][j]); k++ {
@@ -88,10 +88,10 @@ func (q ResourceQuota) TotalQuotable() float32 {
 	return sum
 }
 
-func (q *ResourceQuota) TotalForWorkspace(workspace Workspace) float32 {
+func (q *ResourceCalculator) TotalForWorkspace(workspace Workspace) uint64 {
 	w := int(workspace)
 	exclusive := q.q[w][w][w][w]
-	var sum float32
+	var sum uint64
 
 	for i := 0; i < len(q.q); i++ {
 		for j := 0; j < len(q.q[i]); j++ {
@@ -107,10 +107,10 @@ func (q *ResourceQuota) TotalForWorkspace(workspace Workspace) float32 {
 	return sum + exclusive
 }
 
-func (q *ResourceQuota) Quota(workspace Workspace, quota float32) error {
+func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
 	w := int(workspace)
 	if quota > q.TotalForWorkspace(workspace) {
-		q.q = [4][4][4][4]float32{}
+		q.q = [4][4][4][4]uint64{}
 		return errors.New("总资源不够")
 	}
 
@@ -158,4 +158,19 @@ func WorkspaceString(workspace Workspace) string {
 	default:
 		return ""
 	}
+}
+
+func CoreToMillcore(v float64) uint64 {
+	return uint64(v * 1000)
+}
+
+func MillcoreToCore(v uint64) float64 {
+	return float64(v) / 1000
+}
+
+func GibibyteToByte(v float64) uint64 {
+	return uint64(v*1024*1024*1024)
+}
+func ByteToGibibyte(v uint64) float64 {
+	return float64(v) / (1024*1024*1024)
 }

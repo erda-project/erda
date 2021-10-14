@@ -16,6 +16,7 @@ var _ urlenc.URLValuesUnmarshaler = (*GetClustersResourcesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetClusterResourcesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ClusterResourceDetail)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ClusterNamespacePair)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NamespaceResourceDetail)(nil)
 
@@ -59,41 +60,41 @@ func (m *ClusterResourceDetail) UnmarshalURLValues(prefix string, values url.Val
 			case "host":
 				m.Host = vals[0]
 			case "cpuAllocatable":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.CpuAllocatable = float32(val)
+				m.CpuAllocatable = val
 			case "cpuTotal":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.CpuTotal = float32(val)
+				m.CpuTotal = val
 			case "cpuRequest":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.CpuRequest = float32(val)
+				m.CpuRequest = val
 			case "memAllocatable":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.MemAllocatable = float32(val)
+				m.MemAllocatable = val
 			case "memTotal":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.MemTotal = float32(val)
+				m.MemTotal = val
 			case "memRequest":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.MemRequest = float32(val)
+				m.MemRequest = val
 			case "labels":
 				m.Labels = vals
 			}
@@ -104,11 +105,18 @@ func (m *ClusterResourceDetail) UnmarshalURLValues(prefix string, values url.Val
 
 // GetNamespacesResourcesRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetNamespacesResourcesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ClusterNamespacePair implement urlenc.URLValuesUnmarshaler.
+func (m *ClusterNamespacePair) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "namespaces":
-				m.Namespaces = vals
+			case "clusterName":
+				m.ClusterName = vals[0]
+			case "namespace":
+				m.Namespace = vals[0]
 			}
 		}
 	}
@@ -137,20 +145,22 @@ func (m *NamespaceResourceDetail) UnmarshalURLValues(prefix string, values url.V
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "clusterName":
+				m.ClusterName = vals[0]
 			case "namespace":
 				m.Namespace = vals[0]
 			case "cpuRequest":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.CpuRequest = float32(val)
+				m.CpuRequest = val
 			case "memRequest":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.MemRequest = float32(val)
+				m.MemRequest = val
 			}
 		}
 	}
