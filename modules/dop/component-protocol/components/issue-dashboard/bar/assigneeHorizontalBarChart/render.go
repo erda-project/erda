@@ -61,6 +61,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	issueList := helper.GetIssueList()
 	var bugList []interface{}
 	for i := range issueList {
+		if issueList[i].Belong == string(apistructs.IssueStateBelongClosed) {
+			continue
+		}
 		bugList = append(bugList, &issueList[i])
 	}
 

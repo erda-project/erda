@@ -4,10 +4,13 @@
 package pb
 
 import (
+	json "encoding/json"
 	url "net/url"
 	strconv "strconv"
+	strings "strings"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -30,6 +33,8 @@ var _ urlenc.URLValuesUnmarshaler = (*CheckerStatusV1)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCheckerIssuesV1Request)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCheckerIssuesV1Response)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CheckerV1)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*HttpModeConfig)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Condition)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DescribeResultV1)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DescribeItemV1)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CheckerChartV1)(nil)
@@ -53,11 +58,6 @@ func (m *CreateCheckerV1Request) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Mode = vals[0]
-			case "data.url":
-				if m.Data == nil {
-					m.Data = &CheckerV1{}
-				}
-				m.Data.Url = vals[0]
 			case "data.projectID":
 				if m.Data == nil {
 					m.Data = &CheckerV1{}
@@ -120,11 +120,6 @@ func (m *UpdateCheckerV1Request) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Mode = vals[0]
-			case "data.url":
-				if m.Data == nil {
-					m.Data = &CheckerV1{}
-				}
-				m.Data.Url = vals[0]
 			case "data.projectID":
 				if m.Data == nil {
 					m.Data = &CheckerV1{}
@@ -198,11 +193,6 @@ func (m *DeleteCheckerV1Response) UnmarshalURLValues(prefix string, values url.V
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Mode = vals[0]
-			case "data.url":
-				if m.Data == nil {
-					m.Data = &CheckerV1{}
-				}
-				m.Data.Url = vals[0]
 			case "data.projectID":
 				if m.Data == nil {
 					m.Data = &CheckerV1{}
@@ -259,11 +249,6 @@ func (m *GetCheckerV1Response) UnmarshalURLValues(prefix string, values url.Valu
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Mode = vals[0]
-			case "data.url":
-				if m.Data == nil {
-					m.Data = &CheckerV1{}
-				}
-				m.Data.Url = vals[0]
 			case "data.projectID":
 				if m.Data == nil {
 					m.Data = &CheckerV1{}
@@ -474,8 +459,6 @@ func (m *CheckerV1) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Name = vals[0]
 			case "mode":
 				m.Mode = vals[0]
-			case "url":
-				m.Url = vals[0]
 			case "projectID":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -484,6 +467,120 @@ func (m *CheckerV1) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.ProjectID = val
 			case "env":
 				m.Env = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// HttpModeConfig implement urlenc.URLValuesUnmarshaler.
+func (m *HttpModeConfig) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "url":
+				m.Url = vals[0]
+			case "method":
+				m.Method = vals[0]
+			case "headers":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Headers = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Headers = val
+					} else {
+						m.Headers = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "body":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Body = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Body = val
+					} else {
+						m.Body = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "retry":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Retry = val
+			case "interval":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Interval = val
+			}
+		}
+	}
+	return nil
+}
+
+// Condition implement urlenc.URLValuesUnmarshaler.
+func (m *Condition) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "key":
+				m.Key = vals[0]
+			case "operate":
+				m.Operate = vals[0]
+			case "value":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value = val
+					} else {
+						m.Value = structpb.NewStringValue(vals[0])
+					}
+				}
 			}
 		}
 	}

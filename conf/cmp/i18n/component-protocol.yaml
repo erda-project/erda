@@ -209,7 +209,7 @@ zh:
  isOffline: 已下线
  no select: 未选择
  select labels: 选择标签
-
+ OutOfDisk: 磁盘资源不足
 
 en:
  # general

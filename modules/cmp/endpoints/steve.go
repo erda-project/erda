@@ -50,7 +50,7 @@ func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars 
 	}
 
 	if strutil.Equal(req.Action, bundle.CreateAction, true) {
-		e.SteveAggregator.Add(&req.Content)
+		e.SteveAggregator.Add(req.Content)
 	}
 
 	if strutil.Equal(req.Action, bundle.DeleteAction, true) {

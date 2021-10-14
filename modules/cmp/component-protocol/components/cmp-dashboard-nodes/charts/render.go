@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
@@ -50,31 +49,20 @@ func (cht *Charts) Init(ctx servicehub.Context) error {
 	return cht.DefaultProvider.Init(ctx)
 }
 func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	var podsMap = make(map[string][]data.Object)
 	cht.Props = Props{
 		ContentSetting: "between",
 		SpaceSize:      "big",
 	}
 	c.Props = cht.Props
 	cht.SDK = cputil.SDK(ctx)
-	podReq := &apistructs.SteveRequest{}
-	podReq.OrgID = cht.SDK.Identity.OrgID
-	podReq.UserID = cht.SDK.Identity.UserID
-	podReq.Type = apistructs.K8SPod
 
+	clusterName := ""
 	if cht.SDK.InParams["clusterName"] != nil {
-		podReq.ClusterName = cht.SDK.InParams["clusterName"].(string)
+		clusterName = cht.SDK.InParams["clusterName"].(string)
 	} else {
 		return common.ClusterNotFoundErr
 	}
-	resp, err := steveServer.ListSteveResource(ctx, podReq)
-	if err != nil {
-		return err
-	}
-	for _, pod := range resp {
-		nodeName := pod.Data().StringSlice("metadata", "fields")[6]
-		podsMap[nodeName] = append(podsMap[nodeName], pod.Data())
-	}
+
 	nodes := (*gs)["nodes"].([]data.Object)
 	resourceNames := []string{chart.CPU, chart.Memory, chart.Pods}
 	for _, resourceName := range resourceNames {
@@ -90,7 +78,10 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 		}
 		for _, node := range nodes {
 			nodeName := node.StringSlice("metadata", "fields")[0]
-			cpu, mem, pod := cputil2.GetNodeAllocatedRes(nodeName, podsMap[nodeName])
+			cpu, mem, pod, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, cht.SDK.Identity.UserID, cht.SDK.Identity.OrgID, nodeName)
+			if err != nil {
+				return err
+			}
 			switch resourceName {
 			case chart.CPU:
 				unallocatedCPU, _, leftCPU, _, _ := cputil2.CalculateNodeRes(node, cpu, 0, 0)
