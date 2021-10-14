@@ -247,15 +247,15 @@ func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params st
 }
 
 func (p *provider) logSequentialSearch(r *http.Request, params struct {
-	Timestamp   int64  `query:"timestamp"`
-	Id          string `query:"id"`
-	Offset      int64  `query:"offset"`
-	Count       int64  `query:"count"`
-	Query       string `query:"query"`
-	Sort        string `query:"sort"`
-	Debug       bool   `query:"debug"`
-	Addon       string `param:"addon"`
-	ClusterName string `query:"clusterName"`
+	TimestampNanos int64  `query:"timestampNanos"`
+	Id             string `query:"id"`
+	Offset         int64  `query:"offset"`
+	Count          int64  `query:"count"`
+	Query          string `query:"query"`
+	Sort           string `query:"sort"`
+	Debug          bool   `query:"debug"`
+	Addon          string `param:"addon"`
+	ClusterName    string `query:"clusterName"`
 }) interface{} {
 	orgID := api.OrgID(r)
 	orgid, err := strconv.ParseInt(orgID, 10, 64)
@@ -266,7 +266,7 @@ func (p *provider) logSequentialSearch(r *http.Request, params struct {
 		params.Count = 20
 	}
 	filters := p.buildLogFilters(r)
-	start, end := params.Timestamp, int64(0)
+	start, end := params.TimestampNanos, int64(0)
 	if params.Sort == "desc" {
 		start, end = end, start
 	}
@@ -288,7 +288,7 @@ func (p *provider) logSequentialSearch(r *http.Request, params struct {
 		Page:        1,
 		Size:        params.Count,
 		Sort:        sorts,
-		SearchAfter: []interface{}{params.Timestamp, params.Id, params.Offset},
+		SearchAfter: []interface{}{params.TimestampNanos, params.Id, params.Offset},
 	})
 	if err != nil {
 		return api.Errors.Internal(err)
