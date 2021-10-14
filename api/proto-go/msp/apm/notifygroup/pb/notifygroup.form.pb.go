@@ -276,6 +276,8 @@ func (m *QueryNotifyGroupResponse) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
