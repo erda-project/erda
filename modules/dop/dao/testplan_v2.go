@@ -33,6 +33,7 @@ type TestPlanV2 struct {
 	CreatorID     string
 	UpdaterID     string
 	ProjectID     uint64
+	IterationID   uint64
 	SpaceID       uint64
 	IsArchived    bool
 	ExecuteApiNum int64
@@ -53,6 +54,7 @@ func (tp *TestPlanV2) Convert2DTO() apistructs.TestPlanV2 {
 		Desc:          tp.Desc,
 		ProjectID:     tp.ProjectID,
 		SpaceID:       tp.SpaceID,
+		IterationID:   tp.IterationID,
 		Creator:       tp.CreatorID,
 		Updater:       tp.UpdaterID,
 		Steps:         []*apistructs.TestPlanV2Step{},
@@ -67,7 +69,8 @@ func (tp *TestPlanV2) Convert2DTO() apistructs.TestPlanV2 {
 // TestPlanV2Join join dice_autotest_space
 type TestPlanV2Join struct {
 	TestPlanV2
-	SpaceName string
+	SpaceName     string
+	IterationName string
 }
 
 // Convert2DTO convert DAO to DTO
@@ -78,6 +81,8 @@ func (tp TestPlanV2Join) Convert2DTO() *apistructs.TestPlanV2 {
 		Desc:          tp.Desc,
 		ProjectID:     tp.ProjectID,
 		SpaceID:       tp.SpaceID,
+		IterationID:   tp.IterationID,
+		IterationName: tp.IterationName,
 		SpaceName:     tp.SpaceName,
 		Creator:       tp.CreatorID,
 		Updater:       tp.UpdaterID,
@@ -131,10 +136,12 @@ func (client *DBClient) PagingTestPlanV2(req *apistructs.TestPlanV2PagingRequest
 	)
 	db := client.Table("dice_autotest_plan").Select("dice_autotest_plan.id, dice_autotest_plan.created_at, "+
 		"dice_autotest_plan.updated_at, dice_autotest_plan.name, dice_autotest_plan.desc, dice_autotest_plan.creator_id, "+
-		"dice_autotest_plan.updater_id, "+"dice_autotest_plan.project_id, dice_autotest_plan.space_id, "+
+		"dice_autotest_plan.updater_id, "+"dice_autotest_plan.project_id, dice_autotest_plan.space_id, dice_autotest_plan.iteration_id, "+
 		"dice_autotest_plan.pass_rate, "+"dice_autotest_plan.execute_time, "+"dice_autotest_plan.execute_api_num, "+
+		"dice_iterations.title AS iteration_name,"+
 		"dice_autotest_space.name as space_name, "+"dice_autotest_plan.is_archived").
 		Joins("inner join dice_autotest_space on dice_autotest_plan.space_id = dice_autotest_space.id").
+		Joins("LEFT join dice_iterations on dice_autotest_plan.iteration_id = dice_iterations.id").
 		Where("dice_autotest_plan.project_id = ?", req.ProjectID)
 
 	if req.Name != "" {
@@ -148,6 +155,9 @@ func (client *DBClient) PagingTestPlanV2(req *apistructs.TestPlanV2PagingRequest
 	}
 	if req.SpaceID != 0 {
 		db = db.Where("dice_autotest_plan.space_id = ?", req.SpaceID)
+	}
+	if req.IterationID != nil {
+		db = db.Where("dice_autotest_plan.iteration_id = ?", req.IterationID)
 	}
 	if len(req.IDs) != 0 {
 		db = db.Where("dice_autotest_plan.id in (?)", req.IDs)

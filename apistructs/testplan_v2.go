@@ -30,6 +30,8 @@ type TestPlanV2 struct {
 	ProjectID     uint64            `json:"project"`
 	SpaceID       uint64            `json:"spaceID"`
 	SpaceName     string            `json:"spaceName"`
+	IterationID   uint64            `json:"iterationID"`
+	IterationName string            `json:"iterationName"`
 	Creator       string            `json:"creator"`
 	Owners        []string          `json:"owners"`
 	Updater       string            `json:"updater"`
@@ -44,11 +46,12 @@ type TestPlanV2 struct {
 
 // TestPlanV2CreateRequest testplan v2 create request
 type TestPlanV2CreateRequest struct {
-	Name      string   `json:"name"`
-	Desc      string   `json:"desc"`
-	Owners    []string `json:"owners"`
-	ProjectID uint64   `json:"projectID"`
-	SpaceID   uint64   `json:"spaceID"`
+	Name        string   `json:"name"`
+	Desc        string   `json:"desc"`
+	Owners      []string `json:"owners"`
+	ProjectID   uint64   `json:"projectID"`
+	SpaceID     uint64   `json:"spaceID"`
+	IterationID uint64   `json:"iterationID"`
 
 	IdentityInfo
 }
@@ -80,12 +83,13 @@ type TestPlanV2CreateResponse struct {
 
 // TestPlanV2UpdateRequest testplan v2 update request
 type TestPlanV2UpdateRequest struct {
-	Name       string   `json:"name"`
-	Desc       string   `json:"desc"`
-	SpaceID    uint64   `json:"spaceID"`
-	Owners     []string `json:"owners"`
-	TestPlanID uint64   `json:"-"`
-	IsArchived *bool    `json:"isArchived"`
+	Name        string   `json:"name"`
+	Desc        string   `json:"desc"`
+	SpaceID     uint64   `json:"spaceID"`
+	Owners      []string `json:"owners"`
+	TestPlanID  uint64   `json:"-"`
+	IsArchived  *bool    `json:"isArchived"`
+	IterationID uint64   `json:"iterationID"`
 
 	IdentityInfo
 }
@@ -98,13 +102,14 @@ type TestPlanV2UpdateResponse struct {
 
 // TestPlanV2PagingRequest testplan v2 query request
 type TestPlanV2PagingRequest struct {
-	Name       string   `schema:"name"`
-	Owners     []string `schema:"owners"`
-	Creator    string   `schema:"creator"`
-	Updater    string   `schema:"updater"`
-	SpaceID    uint64   `schema:"spaceID"`
-	ProjectID  uint64   `schema:"projectID"`
-	IsArchived *bool    `schema:"isArchived"`
+	Name        string   `schema:"name"`
+	Owners      []string `schema:"owners"`
+	Creator     string   `schema:"creator"`
+	Updater     string   `schema:"updater"`
+	SpaceID     uint64   `schema:"spaceID"`
+	ProjectID   uint64   `schema:"projectID"`
+	IterationID uint64   `json:"iterationID"`
+	IsArchived  *bool    `schema:"isArchived"`
 
 	// +optional default 1
 	PageNo uint64 `schema:"pageNo"`
