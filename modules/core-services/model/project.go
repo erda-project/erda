@@ -58,7 +58,7 @@ type ProjectQuota struct {
 	ProdClusterName    string `gorm:"prod_cluster_name" json:"prod_cluster_name"`
 	StagingClusterName string `gorm:"staging_cluster_name" json:"staging_cluster_name"`
 	TestClusterName    string `gorm:"test_cluster_name" json:"test_cluster_name"`
-	DevClusterName string `gorm:"dev_cluster_name" json:"dev_cluster_name"`
+	DevClusterName     string `gorm:"dev_cluster_name" json:"dev_cluster_name"`
 
 	ProdCPUQuota    uint64 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
 	ProdMemQutoa    uint64 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
@@ -125,4 +125,8 @@ func (p ProjectQuota) GetMemQuota(workspace string) uint64 {
 	default:
 		return 0
 	}
+}
+
+func (p ProjectQuota) ClustersNames() []string {
+	return []string{p.ProdClusterName, p.StagingClusterName, p.TestClusterName, p.DevClusterName}
 }

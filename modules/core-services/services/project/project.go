@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -587,6 +588,33 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		}
 	}
 
+	// 查出各环境的实际可用资源
+	// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
+	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
+	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
+		&dashboardPb.GetClustersResourcesRequest{ClusterNames: projectQuota.ClustersNames()}); err == nil {
+		var source *apistructs.ResourceConfig
+		for _, host := range clustersResources.List {
+			for _, label := range host.Labels {
+				switch strings.ToLower(label) {
+				case "prod":
+					source = projectDTO.ResourceConfig.PROD
+				case "staging":
+					source = projectDTO.ResourceConfig.STAGING
+				case "test":
+					source = projectDTO.ResourceConfig.TEST
+				case "dev":
+					source = projectDTO.ResourceConfig.TEST
+				}
+			}
+			if source != nil && source.ClusterName == host.GetClusterName() {
+				source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
+				source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+			}
+		}
+	}
+
+	// 根据已有统计值计算其他统计值
 	for _, source := range []*apistructs.ResourceConfig{
 		projectDTO.ResourceConfig.PROD,
 		projectDTO.ResourceConfig.STAGING,
@@ -599,9 +627,21 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		source.MemRequestRate = source.MemRequest / source.MemQuota
 		source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
 		source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
+		if source.CPUAvailable > source.CPUQuota {
+			source.Tips = "该环境在本集群的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
+		}
 	}
 
 	return &projectDTO, nil
+}
+
+func hasLabel(labels []string, label string) bool {
+	for _, l := range labels {
+		if l == label {
+			return true
+		}
+	}
+	return false
 }
 
 // GetModelProject 获取项目

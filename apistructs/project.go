@@ -300,6 +300,7 @@ type ResourceConfig struct {
 	CPURequestByAddonRate   float64 `json:"cpuRequestByAddonRate"`
 	CPURequestByService     float64 `json:"cpuRequestByService"`
 	CPURequestByServiceRate float64 `json:"cpuRequestByServiceRate"`
+	CPUAvailable            float64 `json:"cpuAvailable"`
 	MemQuota                float64 `json:"memQuota"`
 	MemRequest              float64 `json:"memRequest"`
 	MemRequestRate          float64 `json:"memRequestRate"`
@@ -307,6 +308,7 @@ type ResourceConfig struct {
 	MemRequestByAddonRate   float64 `json:"memRequestByAddonRate"`
 	MemRequestByService     float64 `json:"memRequestByService"`
 	MemRequestByServiceRate float64 `json:"memRequestByServiceRate"`
+	MemAvailable            float64 `json:"memAvailable"`
 	Tips                    string  `json:"tips"`
 }
 
