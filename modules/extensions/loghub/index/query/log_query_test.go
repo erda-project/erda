@@ -258,6 +258,26 @@ func Test_getSearchSource_Should_Sort_As_Expect(t *testing.T) {
 	}
 }
 
+func Test_getSearchSource_Should_Include_SearchAfter(t *testing.T) {
+	c := &ESClient{}
+	req := &LogSearchRequest{
+		SearchAfter: []interface{}{"12343434", 123, 123},
+	}
+	result, err := c.getSearchSource(req, elastic.NewBoolQuery()).Source()
+	if err != nil {
+		t.Errorf("should not error getting serialized search source")
+	}
+	data := result.(map[string]interface{})["search_after"].([]interface{})
+	if len(data) != len(req.SearchAfter) {
+		t.Errorf("search_after generated not as expect, expect len: %d, but got len: %d", len(req.SearchAfter), len(data))
+	}
+	for i, item := range data {
+		if item != req.SearchAfter[i] {
+			t.Errorf("search_after generated not as expect")
+		}
+	}
+}
+
 func Test_aggregateFields_With_ValidParams_Should_Success(t *testing.T) {
 	c := &ESClient{}
 	want := struct {
