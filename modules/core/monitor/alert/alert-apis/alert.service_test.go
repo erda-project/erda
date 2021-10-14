@@ -194,6 +194,6 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 		ScopeType:   "msp",
 	})
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("should not err")
 	}
 }
