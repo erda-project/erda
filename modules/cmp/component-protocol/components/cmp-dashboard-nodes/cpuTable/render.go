@@ -178,6 +178,10 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 	if resp, err = mServer.NodeMetrics(ct.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
 	}
+	nodesAllocatedRes, err := cputil2.GetNodesAllocatedRes(steveServer, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodes)
+	if err != nil {
+		return nil, err
+	}
 	for i, c := range nodes {
 		nodeLabelsData := c.Map("metadata", "labels")
 		for k := range nodeLabelsData {
@@ -188,10 +192,7 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		}
 		//request := c.Map("status", "allocatable").String("cpu")
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		cpuRequest, _, _, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodeName)
-		if err != nil {
-			return nil, err
-		}
+		cpuRequest := nodesAllocatedRes[nodeName].CPU
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "cpu"))
 
 		key := req.NodeRequests[i].CacheKey()

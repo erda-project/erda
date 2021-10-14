@@ -64,6 +64,10 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 	}
 
 	nodes := (*gs)["nodes"].([]data.Object)
+	nodesAllocatedRes, err := cputil2.GetNodesAllocatedRes(steveServer, clusterName, cht.SDK.Identity.UserID, cht.SDK.Identity.OrgID, nodes)
+	if err != nil {
+		return err
+	}
 	resourceNames := []string{chart.CPU, chart.Memory, chart.Pods}
 	for _, resourceName := range resourceNames {
 		resourceType := resource.DecimalSI
@@ -78,10 +82,8 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 		}
 		for _, node := range nodes {
 			nodeName := node.StringSlice("metadata", "fields")[0]
-			cpu, mem, pod, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, cht.SDK.Identity.UserID, cht.SDK.Identity.OrgID, nodeName)
-			if err != nil {
-				return err
-			}
+			nar := nodesAllocatedRes[nodeName]
+			cpu, mem, pod := nar.CPU, nar.Mem, nar.PodNum
 			switch resourceName {
 			case chart.CPU:
 				unallocatedCPU, _, leftCPU, _, _ := cputil2.CalculateNodeRes(node, cpu, 0, 0)
