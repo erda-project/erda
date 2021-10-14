@@ -150,40 +150,8 @@ func (this *CheckerV1) Validate() error {
 	if this.Mode == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("Mode", fmt.Errorf(`value '%v' must not be an empty string`, this.Mode))
 	}
-	// Validation of proto3 map<> fields is unsupported.
-	return nil
-}
-func (this *HttpModeConfig) Validate() error {
 	if this.Url == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("Url", fmt.Errorf(`value '%v' must not be an empty string`, this.Url))
-	}
-	if this.Method == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("Method", fmt.Errorf(`value '%v' must not be an empty string`, this.Method))
-	}
-	if this.Headers != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Headers); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Headers", err)
-		}
-	}
-	if this.Body != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Body); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Body", err)
-		}
-	}
-	for _, item := range this.Triggering {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Triggering", err)
-			}
-		}
-	}
-	return nil
-}
-func (this *Condition) Validate() error {
-	if this.Value != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Value); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Value", err)
-		}
 	}
 	return nil
 }

@@ -3,7 +3,6 @@ syntax = "proto3";
 package erda.msp.apm.checker;
 option go_package = "github.com/erda-project/erda-proto-go/msp/apm/checker/pb";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
-import "google/protobuf/struct.proto";
 import "google/api/annotations.proto";
 
 service CheckerService {
@@ -107,9 +106,9 @@ message DescribeCheckerResponse {}
 
 // common 
 message Checker {
-  int64                              id     = 1;
-  string                             name   = 2 [(validator.field) = {string_not_empty : true}];
-  string                             type   = 3 [(validator.field) = {string_not_empty : true}];
-  map<string, google.protobuf.Value> config = 5;
-  map<string, string>                tags   = 6;
+  int64               id     = 1;
+  string              name   = 2 [(validator.field) = {string_not_empty : true}];
+  string              type   = 3 [(validator.field) = {string_not_empty : true}];
+  map<string, string> config = 5;
+  map<string, string> tags   = 6;
 }
