@@ -1236,3 +1236,42 @@ func (this *UpdateOrgAlertIssueRequest) Validate() error {
 func (this *UpdateOrgAlertIssueResponse) Validate() error {
 	return nil
 }
+func (this *GetAlertConditionsRequest) Validate() error {
+	return nil
+}
+func (this *GetAlertConditionsResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *Conditions) Validate() error {
+	return nil
+}
+func (this *GetAlertConditionsValueRequest) Validate() error {
+	return nil
+}
+func (this *GetAlertConditionsValueResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *AlertConditionsValue) Validate() error {
+	for _, item := range this.Value {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Value", err)
+			}
+		}
+	}
+	return nil
+}

@@ -148,6 +148,12 @@ var _ urlenc.URLValuesUnmarshaler = (*CreateOrgAlertIssueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateOrgAlertIssueResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateOrgAlertIssueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateOrgAlertIssueResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Conditions)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertConditionsValue)(nil)
 
 // QueryCustomizeMetricRequest implement urlenc.URLValuesUnmarshaler.
 func (m *QueryCustomizeMetricRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -6697,5 +6703,75 @@ func (m *UpdateOrgAlertIssueRequest) UnmarshalURLValues(prefix string, values ur
 
 // UpdateOrgAlertIssueResponse implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateOrgAlertIssueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetAlertConditionsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeType":
+				m.ScopeType = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertConditionsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// Conditions implement urlenc.URLValuesUnmarshaler.
+func (m *Conditions) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "displayName":
+				m.DisplayName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertConditionsValueRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "orgName":
+				m.OrgName = vals[0]
+			case "projectId":
+				m.ProjectId = vals[0]
+			case "terminusKey":
+				m.TerminusKey = vals[0]
+			case "scopeType":
+				m.ScopeType = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertConditionsValueResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsValueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// AlertConditionsValue implement urlenc.URLValuesUnmarshaler.
+func (m *AlertConditionsValue) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "index":
+				m.Index = vals[0]
+			}
+		}
+	}
 	return nil
 }

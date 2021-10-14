@@ -116,6 +116,10 @@ type AlertServiceHandler interface {
 	CreateOrgAlertIssue(context.Context, *CreateOrgAlertIssueRequest) (*CreateOrgAlertIssueResponse, error)
 	// PUT /api/org-alert-records/{groupId}/issues
 	UpdateOrgAlertIssue(context.Context, *UpdateOrgAlertIssueRequest) (*UpdateOrgAlertIssueResponse, error)
+	// GET /api/alerts/conditions
+	GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)
+	// GET /api/alerts/conditions/value
+	GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)
 }
 
 // RegisterAlertServiceHandler register AlertServiceHandler to http.Router.
@@ -2509,6 +2513,78 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 		)
 	}
 
+	add_GetAlertConditions := func(method, path string, fn func(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertConditionsRequest))
+		}
+		var GetAlertConditions_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertConditions_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetAlertConditions", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertConditions_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertConditionsRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetAlertConditionsValue := func(method, path string, fn func(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertConditionsValueRequest))
+		}
+		var GetAlertConditionsValue_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertConditionsValue_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetAlertConditionsValue", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertConditionsValue_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertConditionsValueRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_QueryCustomizeMetric("GET", "/api/customize/alerts/metrics", srv.QueryCustomizeMetric)
 	add_QueryCustomizeNotifyTarget("GET", "/api/customize/alerts/notifies/targets", srv.QueryCustomizeNotifyTarget)
 	add_QueryOrgCustomizeNotifyTarget("GET", "/api/orgs/customize/alerts/notifies/targets", srv.QueryOrgCustomizeNotifyTarget)
@@ -2556,4 +2632,6 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	add_QueryOrgAlertHistory("GET", "/api/org-alert-records/{groupId}/histories", srv.QueryOrgAlertHistory)
 	add_CreateOrgAlertIssue("POST", "/api/org-alert-records/{groupId}/issues", srv.CreateOrgAlertIssue)
 	add_UpdateOrgAlertIssue("PUT", "/api/org-alert-records/{groupId}/issues", srv.UpdateOrgAlertIssue)
+	add_GetAlertConditions("GET", "/api/alerts/conditions", srv.GetAlertConditions)
+	add_GetAlertConditionsValue("GET", "/api/alerts/conditions/value", srv.GetAlertConditionsValue)
 }

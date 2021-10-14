@@ -1,0 +1,12 @@
+- scope: org
+  conditions:
+    - name: cluster_name
+      displayName: 集群
+    - name: host_ip
+      displayName: 机器ip
+- scope: msp
+  conditions:
+    - name: application_id
+      displayName: 应用id
+    - name: service_name
+      displayName: 服务

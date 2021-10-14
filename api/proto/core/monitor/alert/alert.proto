@@ -243,6 +243,16 @@ service AlertService {
       put: "/api/org-alert-records/{groupId}/issues",
     };
   }
+  rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {
+    option (google.api.http) = {
+      get: "/api/alerts/conditions"
+    };
+  }
+  rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
+    option (google.api.http) = {
+      get: "/api/alerts/conditions/value"
+    };
+  }
 }
 
 message QueryCustomizeMetricRequest {
@@ -1182,4 +1192,33 @@ message UpdateOrgAlertIssueRequest {
 }
 
 message UpdateOrgAlertIssueResponse {
+}
+
+message GetAlertConditionsRequest {
+  string scopeType = 1;
+}
+
+message GetAlertConditionsResponse {
+  repeated Conditions data = 1 [json_name = "conditions"];
+}
+
+message Conditions {
+  string name        = 1;
+  string displayName = 2;
+}
+
+message GetAlertConditionsValueRequest {
+  string orgName     = 1;
+  string projectId   = 2;
+  string terminusKey = 3;
+  string scopeType   = 4;
+}
+
+message GetAlertConditionsValueResponse {
+  repeated AlertConditionsValue data = 1;
+}
+
+message AlertConditionsValue {
+  string                         index = 1;
+  repeated google.protobuf.Value value = 2;
 }
