@@ -328,6 +328,7 @@ var (
 	ErrListAutoTestSceneSet   = err("ErrListAutoTestSceneSet", "获取自动化测试场景集列表失败")
 	ErrDragAutoTestSceneSet   = err("ErrDragAutoTestSceneSet", "拖动自动化测试场景集失败")
 	ErrExportAutoTestSceneSet = err("ErrExportAutoTestSceneSet", "导出自动化测试场景集失败")
+	ErrImportAutotestSceneSet = err("ErrImportAutotestSceneSet", "导入自动化测试场景集失败")
 
 	ErrCreateTicket = err("ErrCreateTicket", "创建工单失败")
 	ErrUpdateTicket = err("ErrUpdateTicket", "更新工单失败")

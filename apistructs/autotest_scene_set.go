@@ -14,15 +14,38 @@
 
 package apistructs
 
+type TestSceneSetFileType string
+
+var (
+	TestSceneSetFileTypeExcel TestSceneSetFileType = "excel"
+)
+
+func (t TestSceneSetFileType) Valid() bool {
+	switch t {
+	case TestSceneSetFileTypeExcel:
+		return true
+	default:
+		return false
+	}
+}
+
 // AutoTestSpaceExportRequest export autotest space
 type AutoTestSceneSetExportRequest struct {
-	ID           uint64            `json:"id"`
-	Locale       string            `schema:"-"`
-	IsCopy       bool              `json:"-"`
-	FileType     TestSpaceFileType `schema:"fileType"`
-	SceneSetName string            `json:"sceneSetName"`
-	SpaceID      uint64            `json:"spaceID"`
-	ProjectID    uint64            `json:"projectID"`
+	ID           uint64               `json:"id"`
+	Locale       string               `schema:"-"`
+	IsCopy       bool                 `json:"-"`
+	FileType     TestSceneSetFileType `schema:"fileType"`
+	SceneSetName string               `json:"sceneSetName"`
+	SpaceID      uint64               `json:"spaceID"`
+	ProjectID    uint64               `json:"projectID"`
+
+	IdentityInfo
+}
+
+type AutoTestSceneSetImportRequest struct {
+	ProjectID uint64               `schema:"projectID"`
+	SpaceID   uint64               `schema:"spaceID"`
+	FileType  TestSceneSetFileType `schema:"fileType"`
 
 	IdentityInfo
 }

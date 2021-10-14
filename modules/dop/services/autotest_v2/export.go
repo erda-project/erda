@@ -257,7 +257,7 @@ func (svc *Service) ExportSceneSet(req apistructs.AutoTestSceneSetExportRequest)
 
 	l := svc.bdl.GetLocale(req.Locale)
 	fileName := l.Get(i18n.I18nKeySceneSetSheetName)
-	if req.FileType == apistructs.TestSpaceFileTypeExcel {
+	if req.FileType == apistructs.TestSceneSetFileTypeExcel {
 		fileName += ".xlsx"
 	}
 	fileReq := apistructs.TestFileRecordRequest{

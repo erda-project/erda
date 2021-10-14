@@ -393,6 +393,19 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	return lists, nil
 }
 
+func (svc *Service) IsExistSceneSetName(spaceID uint64, sceneSetName string) bool {
+	sceneSets, err := svc.db.SceneSetsBySpaceID(spaceID)
+	if err != nil {
+		return false
+	}
+	for _, set := range sceneSets {
+		if set.Name == sceneSetName {
+			return true
+		}
+	}
+	return false
+}
+
 // CutAutotestScene 移除场景
 func (svc *Service) CutAutotestScene(sc *dao.AutoTestScene) error {
 	next, err := svc.db.GetAutotestSceneByPreID(sc.ID)
