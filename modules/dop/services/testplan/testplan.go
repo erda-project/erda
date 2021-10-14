@@ -16,7 +16,6 @@ package testplan
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/modules/dop/services/iteration"
 	"reflect"
 	"sort"
 	"strconv"
@@ -31,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
+	"github.com/erda-project/erda/modules/dop/services/iteration"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/pkg/strutil"

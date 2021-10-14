@@ -123,7 +123,7 @@ type TestPlanPagingRequest struct {
 	Name        string       `schema:"name"`
 	Statuses    []TPStatus   `schema:"status"`
 	ProjectID   uint64       `schema:"projectID"`
-	IterationID *uint64       `json:"iterationID"`
+	IterationID *uint64      `json:"iterationID"`
 	Type        TestPlanType `schema:"type"`
 	IsArchived  *bool        `schema:"isArchived"`
 
