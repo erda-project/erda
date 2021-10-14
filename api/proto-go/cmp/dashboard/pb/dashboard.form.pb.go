@@ -187,6 +187,8 @@ func (m *NamespaceResourceDetail) UnmarshalURLValues(prefix string, values url.V
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "clusterName":
+				m.ClusterName = vals[0]
 			case "namespace":
 				m.Namespace = vals[0]
 			case "cpuRequest":
