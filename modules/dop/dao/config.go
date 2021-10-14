@@ -57,6 +57,19 @@ func (client *DBClient) GetEnvConfigsByNamespaceID(namespaceID int64) ([]model.C
 	return configItems, nil
 }
 
+func (client *DBClient) ListEnvConfigsByNamespaceID(namespaceIDList []int64) ([]model.ConfigItem, error) {
+	var configItems []model.ConfigItem
+	if err := client.Where("namespace_id in (?)", namespaceIDList).Where("is_deleted = ?", "N").
+		Find(&configItems).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return configItems, nil
+}
+
 // GetEnvConfigByKey 根据 namespaceID, key 获取某个配置信息
 func (client *DBClient) GetEnvConfigByKey(namespaceID int64, key string) (*model.ConfigItem, error) {
 	configItem := &model.ConfigItem{}
