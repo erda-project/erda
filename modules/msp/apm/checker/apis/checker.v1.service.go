@@ -16,7 +16,6 @@ package apis
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -48,12 +47,6 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data.ProjectID <= 0 {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
-
-	args, argsStr, err := s.ConvertArgsByMode(req.Data.Mode, req.Data.Config)
-
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	extra := strconv.FormatInt(req.Data.ProjectID, 10)
 	now := time.Now()
 	m := &db.Metric{
@@ -62,8 +55,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 		Name:       req.Data.Name,
 		Mode:       req.Data.Mode,
 		Extra:      extra,
-		URL:        args.(*pb.HttpModeConfig).Url,
-		Config:     argsStr,
+		URL:        req.Data.Url,
 		CreateTime: now,
 		UpdateTime: now,
 	}
@@ -80,37 +72,14 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	return &pb.CreateCheckerV1Response{Data: m.ID}, nil
 }
 
-func (s *checkerV1Service) ConvertArgsByMode(mode string, args map[string]*structpb.Value) (interface{}, string, error) {
-	switch mode {
-	case "http":
-		bytes, err := json.Marshal(args)
-		jsonStr := string(bytes)
-		if err != nil {
-			return nil, "", err
-		}
-		var httpArgs pb.HttpModeConfig
-		err = json.Unmarshal(bytes, &httpArgs)
-		if err != nil {
-			return nil, "", err
-		}
-		return &httpArgs, jsonStr, err
-	default:
-		return nil, "", nil
-	}
-}
-
 func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, projectID int64) *pb.Checker {
-	config := make(map[string]*structpb.Value)
-	err := json.Unmarshal([]byte(m.Config), &config)
-	if err != nil {
-		return nil
-	}
-
 	ck := &pb.Checker{
-		Id:     m.ID,
-		Name:   m.Name,
-		Type:   m.Mode,
-		Config: config,
+		Id:   m.ID,
+		Name: m.Name,
+		Type: m.Mode,
+		Config: map[string]string{
+			"url": m.URL,
+		},
 		Tags: map[string]string{
 			"_metric_scope": "micro_service",
 			"project_id":    strconv.FormatInt(projectID, 10),
@@ -161,11 +130,8 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	if metric == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("metric/%d", req.Id))
 	}
-	args, argsStr, err := s.ConvertArgsByMode(req.Data.Mode, req.Data.Config)
+	metric.URL = req.Data.Url
 	metric.Name = req.Data.Name
-	metric.URL = args.(*pb.HttpModeConfig).Url
-	metric.Config = argsStr
-
 	if err := s.metricDB.Update(metric); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
@@ -207,9 +173,9 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 		return nil, err
 	}
 	return &pb.DeleteCheckerV1Response{Data: &pb.CheckerV1{
-		Name: metric.Name,
-		Mode: metric.Mode,
-		//Url:       metric.URL,
+		Name:      metric.Name,
+		Mode:      metric.Mode,
+		Url:       metric.URL,
 		ProjectID: projectID,
 		Env:       metric.Env,
 	}}, nil
@@ -229,9 +195,9 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 	}
 	return &pb.GetCheckerV1Response{
 		Data: &pb.CheckerV1{
-			Name: metric.Name,
-			Mode: metric.Mode,
-			//Url:       metric.URL,
+			Name:      metric.Name,
+			Mode:      metric.Mode,
+			Url:       metric.URL,
 			ProjectID: projectID,
 			Env:       metric.Env,
 		},
@@ -298,7 +264,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 			Name:   item.Name,
 			Mode:   item.Mode,
 			Url:    item.URL,
-			Status: StatusMiss,
+			Status: statusMiss,
 		}
 		results[item.ID] = result
 	}
@@ -308,7 +274,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	}
 	var downCount int64
 	for _, item := range results {
-		if item.Status == StatusRED {
+		if item.Status == statusRED {
 			downCount++
 		}
 	}
@@ -332,14 +298,14 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			Name:   metric.Name,
 			Mode:   metric.Mode,
 			Url:    metric.URL,
-			Status: StatusMiss,
+			Status: statusMiss,
 		}
 		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
 		for _, item := range results {
-			if item.Status == StatusRED {
+			if item.Status == statusRED {
 				downCount++
 			}
 		}
@@ -456,9 +422,9 @@ func (s *checkerV1Service) queryCheckerMetrics(start, end int64, statement strin
 }
 
 const (
-	StatusRED   = "Major Outage"
-	StatusGreen = "Operational"
-	StatusMiss  = "Miss"
+	statusRED   = "Major Outage"
+	statusGreen = "Operational"
+	statusMiss  = "Miss"
 )
 
 func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithInfluxFormatResponse, metrics map[int64]*pb.DescribeItemV1) {
@@ -535,13 +501,13 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 
 			var downCount, upCount int64
 			for stat, item := range status {
-				if stat != StatusRED && stat != StatusGreen {
-					stat = StatusMiss
+				if stat != statusRED && stat != statusGreen {
+					stat = statusMiss
 				}
 				for i := range item.time {
 					if i < len(chart.Status) {
 						if item.count[i] > 0 {
-							if stat == StatusRED || chart.Status[i] == StatusMiss {
+							if stat == statusRED || chart.Status[i] == statusMiss {
 								chart.Status[i] = stat
 							}
 						}
@@ -549,17 +515,17 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 						if item.count[i] > 0 {
 							chart.Status = append(chart.Status, stat)
 						} else {
-							chart.Status = append(chart.Status, StatusMiss)
+							chart.Status = append(chart.Status, statusMiss)
 						}
 					}
-					if stat == StatusRED {
+					if stat == statusRED {
 						downCount += item.count[i]
 					} else {
 						upCount += item.count[i]
 					}
 				}
 				// TODO optimize
-				if stat == StatusRED {
+				if stat == statusRED {
 					for i := len(item.time) - 1; i >= 0; i-- {
 						if item.count[i] > 0 {
 							j := i - 1
@@ -588,14 +554,14 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 			}
 			if len(chart.Status) > 0 {
 				for i := len(chart.Status) - 1; i >= 0; i-- {
-					if chart.Status[i] != StatusMiss {
+					if chart.Status[i] != statusMiss {
 						m.Status = chart.Status[i]
 						break
 					}
 				}
 			}
 			if len(m.Status) <= 0 {
-				m.Status = StatusMiss
+				m.Status = statusMiss
 			}
 			totalCount := downCount + upCount
 			if totalCount > 0 {
@@ -688,8 +654,8 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 				continue
 			}
 			stat := group.keys[0]
-			if stat != StatusRED && stat != StatusGreen {
-				stat = StatusMiss
+			if stat != statusRED && stat != statusGreen {
+				stat = statusMiss
 			}
 			var ts []int64
 			for i, row := range group.rows {
@@ -699,7 +665,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 				ts = append(ts, timestamp/int64(time.Millisecond))
 				if i < len(status) {
 					if count > 0 {
-						if stat == StatusRED || status[i] == StatusMiss {
+						if stat == statusRED || status[i] == statusMiss {
 							status[i] = stat
 						}
 					}
@@ -707,7 +673,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 					if count > 0 {
 						status = append(status, stat)
 					} else {
-						status = append(status, StatusMiss)
+						status = append(status, statusMiss)
 					}
 				}
 			}

@@ -22,22 +22,22 @@ const _ = http.SupportPackageIsVersion1
 
 // CheckerV1ServiceHandler is the server API for CheckerV1Service service.
 type CheckerV1ServiceHandler interface {
-	// POST /api/msp/apm/checker
+	// POST /api/v1/msp/checkers/projects/{data.projectID}/metrics
 	CreateCheckerV1(context.Context, *CreateCheckerV1Request) (*CreateCheckerV1Response, error)
-	// POST /api/msp/apm/checker/{id}
+	// POST /api/v1/msp/checkers/metrics/{id}
 	UpdateCheckerV1(context.Context, *UpdateCheckerV1Request) (*UpdateCheckerV1Response, error)
-	// DELETE /api/msp/apm/checker/{id}
+	// DELETE /api/v1/msp/checkers/metrics/{id}
 	DeleteCheckerV1(context.Context, *DeleteCheckerV1Request) (*DeleteCheckerV1Response, error)
-	// GET /api/msp/apm/checker/{id}
+	// GET /api/v1/msp/checkers/metrics/{id}
 	GetCheckerV1(context.Context, *GetCheckerV1Request) (*GetCheckerV1Response, error)
-	// GET /api/msp/apm/checkers/dashboard
+	// GET /api/v1/msp/checkers/projects/{projectID}/dashboard
 	DescribeCheckersV1(context.Context, *DescribeCheckersV1Request) (*DescribeCheckersV1Response, error)
-	// GET /api/msp/apm/checker/{id}/dashboard
+	// GET /api/v1/msp/checkers/metrics/{id}/dashboard
 	DescribeCheckerV1(context.Context, *DescribeCheckerV1Request) (*DescribeCheckerV1Response, error)
-	// GET /api/msp/apm/checker/{id}/status
+	// GET /api/v1/msp/checkers/metrics/{id}/status
 	GetCheckerStatusV1(context.Context, *GetCheckerStatusV1Request) (*GetCheckerStatusV1Response, error)
 	// +depracated
-	// GET /api/msp/apm/checker/{id}/issues
+	// GET /api/v1/msp/checkers/metrics/{id}/issues
 	GetCheckerIssuesV1(context.Context, *GetCheckerIssuesV1Request) (*GetCheckerIssuesV1Response, error)
 }
 
@@ -73,6 +73,9 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 			CreateCheckerV1_info = transport.NewServiceInfo("erda.msp.apm.checker.CheckerV1Service", "CreateCheckerV1", srv)
 			handler = h.Interceptor(handler)
 		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
 		r.Add(method, path, encodeFunc(
 			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
 				ctx := http.WithRequest(r.Context(), r)
@@ -89,6 +92,33 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
 					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
 						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "data.projectID":
+							if in.Data == nil {
+								in.Data = &CheckerV1{}
+							}
+							val, err := strconv.ParseInt(val, 10, 64)
+							if err != nil {
+								return nil, err
+							}
+							in.Data.ProjectID = val
+						}
 					}
 				}
 				out, err := handler(ctx, &in)
@@ -298,6 +328,9 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 			DescribeCheckersV1_info = transport.NewServiceInfo("erda.msp.apm.checker.CheckerV1Service", "DescribeCheckersV1", srv)
 			handler = h.Interceptor(handler)
 		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
 		r.Add(method, path, encodeFunc(
 			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
 				ctx := http.WithRequest(r.Context(), r)
@@ -316,13 +349,29 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 						return nil, err
 					}
 				}
-				params := r.URL.Query()
-				if vals := params["projectId"]; len(vals) > 0 {
-					val, err := strconv.ParseInt(vals[0], 10, 64)
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
 					if err != nil {
 						return nil, err
 					}
-					in.ProjectID = val
+					for k, val := range vars {
+						switch k {
+						case "projectID":
+							val, err := strconv.ParseInt(val, 10, 64)
+							if err != nil {
+								return nil, err
+							}
+							in.ProjectID = val
+						}
+					}
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -522,12 +571,12 @@ func RegisterCheckerV1ServiceHandler(r http.Router, srv CheckerV1ServiceHandler,
 		)
 	}
 
-	add_CreateCheckerV1("POST", "/api/msp/apm/checker", srv.CreateCheckerV1)
-	add_UpdateCheckerV1("POST", "/api/msp/apm/checker/{id}", srv.UpdateCheckerV1)
-	add_DeleteCheckerV1("DELETE", "/api/msp/apm/checker/{id}", srv.DeleteCheckerV1)
-	add_GetCheckerV1("GET", "/api/msp/apm/checker/{id}", srv.GetCheckerV1)
-	add_DescribeCheckersV1("GET", "/api/msp/apm/checkers/dashboard", srv.DescribeCheckersV1)
-	add_DescribeCheckerV1("GET", "/api/msp/apm/checker/{id}/dashboard", srv.DescribeCheckerV1)
-	add_GetCheckerStatusV1("GET", "/api/msp/apm/checker/{id}/status", srv.GetCheckerStatusV1)
-	add_GetCheckerIssuesV1("GET", "/api/msp/apm/checker/{id}/issues", srv.GetCheckerIssuesV1)
+	add_CreateCheckerV1("POST", "/api/v1/msp/checkers/projects/{data.projectID}/metrics", srv.CreateCheckerV1)
+	add_UpdateCheckerV1("POST", "/api/v1/msp/checkers/metrics/{id}", srv.UpdateCheckerV1)
+	add_DeleteCheckerV1("DELETE", "/api/v1/msp/checkers/metrics/{id}", srv.DeleteCheckerV1)
+	add_GetCheckerV1("GET", "/api/v1/msp/checkers/metrics/{id}", srv.GetCheckerV1)
+	add_DescribeCheckersV1("GET", "/api/v1/msp/checkers/projects/{projectID}/dashboard", srv.DescribeCheckersV1)
+	add_DescribeCheckerV1("GET", "/api/v1/msp/checkers/metrics/{id}/dashboard", srv.DescribeCheckerV1)
+	add_GetCheckerStatusV1("GET", "/api/v1/msp/checkers/metrics/{id}/status", srv.GetCheckerStatusV1)
+	add_GetCheckerIssuesV1("GET", "/api/v1/msp/checkers/metrics/{id}/issues", srv.GetCheckerIssuesV1)
 }

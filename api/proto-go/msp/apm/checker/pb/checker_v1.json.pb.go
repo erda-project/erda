@@ -49,10 +49,6 @@ var _ json.Marshaler = (*GetCheckerIssuesV1Response)(nil)
 var _ json.Unmarshaler = (*GetCheckerIssuesV1Response)(nil)
 var _ json.Marshaler = (*CheckerV1)(nil)
 var _ json.Unmarshaler = (*CheckerV1)(nil)
-var _ json.Marshaler = (*HttpModeConfig)(nil)
-var _ json.Unmarshaler = (*HttpModeConfig)(nil)
-var _ json.Marshaler = (*Condition)(nil)
-var _ json.Unmarshaler = (*Condition)(nil)
 var _ json.Marshaler = (*DescribeResultV1)(nil)
 var _ json.Unmarshaler = (*DescribeResultV1)(nil)
 var _ json.Marshaler = (*DescribeItemV1)(nil)
@@ -379,42 +375,6 @@ func (m *CheckerV1) MarshalJSON() ([]byte, error) {
 
 // CheckerV1 implement json.Marshaler.
 func (m *CheckerV1) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// HttpModeConfig implement json.Marshaler.
-func (m *HttpModeConfig) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// HttpModeConfig implement json.Marshaler.
-func (m *HttpModeConfig) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// Condition implement json.Marshaler.
-func (m *Condition) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// Condition implement json.Marshaler.
-func (m *Condition) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

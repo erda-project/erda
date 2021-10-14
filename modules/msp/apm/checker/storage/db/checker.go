@@ -15,14 +15,12 @@
 package db
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 )
@@ -48,8 +46,8 @@ type scopeInfo struct {
 	ScopeID     string `gorm:"column:scope_id"`
 }
 
-// JoinFields .
-type JoinFields struct {
+// JoinFileds .
+type JoinFileds struct {
 	ID          int64  `gorm:"column:id"`
 	Name        string `gorm:"column:name"`
 	Mode        string `gorm:"column:mode"`
@@ -57,13 +55,12 @@ type JoinFields struct {
 	ProjectID   int64  `gorm:"column:project_id"`
 	ProjectName string `gorm:"column:project_name"`
 	Env         string `gorm:"column:env"`
-	Config      string `gorm:"config"`
 	ScopeID     string `gorm:"column:scope_id"`
 	IsDeleted   string `gorm:"column:is_deleted"`
 }
 
 // Deleted .
-func (f *JoinFields) Deleted() bool {
+func (f *JoinFileds) Deleted() bool {
 	return f.IsDeleted != "N"
 }
 
@@ -72,7 +69,6 @@ var joinFieldSelect = strings.Join([]string{
 	"sp_metric.name AS `name`",
 	"sp_metric.mode AS `mode`",
 	"sp_metric.url AS `url`",
-	"sp_metric.config AS `config`",
 	"sp_project.project_id AS `project_id`",
 	// "sp_monitor.project_name AS `project_name`",
 	"sp_metric.env AS `env`",
@@ -81,7 +77,7 @@ var joinFieldSelect = strings.Join([]string{
 }, ", ")
 
 func (db *CheckerDB) FullList() (checkers []*pb.Checker, deleted []int64, err error) {
-	var list []*JoinFields
+	var list []*JoinFileds
 	if err := db.DB.Table(TableMetric).
 		Select(joinFieldSelect).
 		Joins("LEFT JOIN sp_project ON sp_project.id = sp_metric.project_id").
@@ -117,7 +113,7 @@ func (db *CheckerDB) FullList() (checkers []*pb.Checker, deleted []int64, err er
 	return checkers, deleted, nil
 }
 
-func (db *CheckerDB) updateCacheIfNeed(list []*JoinFields) error {
+func (db *CheckerDB) updateCacheIfNeed(list []*JoinFileds) error {
 	now := time.Now()
 	if db.cache == nil || time.Now().After(db.lastCacheUpdate.Add(db.ScopeInfoUpdateInterval)) {
 		cache := make(map[scopeCacheKey]*scopeInfo)
@@ -161,18 +157,14 @@ func (db *CheckerDB) queryScopeInfo(projectID int64, env string) (*scopeInfo, er
 	return &info, nil
 }
 
-func convertToChecker(fields *JoinFields) *pb.Checker {
-	config := make(map[string]*structpb.Value)
-	err := json.Unmarshal([]byte(fields.Config), &config)
-	if err != nil {
-		return nil
-	}
-
+func convertToChecker(fields *JoinFileds) *pb.Checker {
 	return &pb.Checker{
-		Id:     fields.ID,
-		Name:   fields.Name,
-		Type:   fields.Mode,
-		Config: config,
+		Id:   fields.ID,
+		Name: fields.Name,
+		Type: fields.Mode,
+		Config: map[string]string{
+			"url": fields.URL,
+		},
 		Tags: map[string]string{
 			"_metric_scope":    "micro_service",
 			"_metric_scope_id": fields.ScopeID,
