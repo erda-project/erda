@@ -236,6 +236,74 @@ func (e *EnvConfig) DeleteConfig(permission *permission.Permission, namespace, k
 	return err
 }
 
+func (e *EnvConfig) ListConfigs(namespaceParams []apistructs.NamespaceParam) (map[string][]apistructs.EnvConfig, error) {
+	if namespaceParams == nil {
+		return nil, errors.New("namespace param is nil")
+	}
+
+	var namespaces []string
+	var nsDecryptMap = map[string]bool{}
+	for _, nsParams := range namespaceParams {
+		namespaces = append(namespaces, nsParams.NamespaceName)
+		nsDecryptMap[nsParams.NamespaceName] = nsParams.Decrypt
+	}
+
+	spaces, err := e.db.ListNamespaceByName(namespaces)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get namespace by name")
+	}
+	var instanceIDList []int64
+	var instanceIDSpaceMap = map[int64]model.ConfigNamespace{}
+	for _, space := range spaces {
+		instanceIDList = append(instanceIDList, space.ID)
+		instanceIDSpaceMap[space.ID] = space
+	}
+
+	configs, err := e.db.ListEnvConfigsByNamespaceID(instanceIDList)
+	if err != nil {
+		return nil, err
+	}
+	var instanceIDConfigMap = map[uint64][]model.ConfigItem{}
+	for _, config := range configs {
+		instanceIDConfigMap[config.NamespaceID] = append(instanceIDConfigMap[config.NamespaceID], config)
+	}
+
+	var mapEnvConfigs = map[string][]apistructs.EnvConfig{}
+	for instanceID := range instanceIDConfigMap {
+		space, ok := instanceIDSpaceMap[int64(instanceID)]
+		if !ok {
+			continue
+		}
+
+		decrypt, ok := nsDecryptMap[space.Name]
+		if !ok {
+			continue
+		}
+		mapEnvConfigs[space.Name] = decryptAndEntitys2Res(instanceIDConfigMap[instanceID], decrypt)
+	}
+
+	for k := range mapEnvConfigs {
+		for i := range mapEnvConfigs[k] {
+			mapEnvConfigs[k][i].Type = map[string]string{"ENV": "kv", "FILE": "dice-file"}[mapEnvConfigs[k][i].ConfigType]
+			if mapEnvConfigs[k][i].Type == "dice-file" {
+				mapEnvConfigs[k][i].Operations = &cmspb.PipelineCmsConfigOperations{
+					CanDownload: true,
+					CanEdit:     true,
+					CanDelete:   true,
+				}
+			} else if mapEnvConfigs[k][i].Operations == nil {
+				mapEnvConfigs[k][i].Operations = &cmspb.PipelineCmsConfigOperations{
+					CanDownload: false,
+					CanEdit:     true,
+					CanDelete:   true,
+				}
+			}
+		}
+	}
+
+	return mapEnvConfigs, nil
+}
+
 // GetMultiNamespaceConfigs 根据多个 namespace 获取所有配置信息
 func (e *EnvConfig) GetMultiNamespaceConfigs(permission *permission.Permission, userID string, namespaceParams []apistructs.NamespaceParam) (map[string][]apistructs.EnvConfig, error) {
 	// check namespace params

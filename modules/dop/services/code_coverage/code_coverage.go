@@ -16,10 +16,11 @@ package code_coverage
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"io/ioutil"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/environment"
-	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/loop"
 )
 
@@ -259,12 +259,45 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	}
 
 	if req.ReportXmlUUID != "" {
+
 		f, err := svc.bdl.DownloadDiceFile(req.ReportXmlUUID)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-		all, err := ioutil.ReadAll(f)
+
+		tempAddr, err := ioutil.TempDir("", "jacoco_xml_tar_gz")
+		if err != nil {
+			return err
+		}
+
+		var xmlTarFileName = "_project_xml.tar.gz"
+		err = simpleRun("", "bash", "-c", fmt.Sprintf("cd %v && touch %v", tempAddr, xmlTarFileName))
+		if err != nil {
+			return err
+		}
+
+		fileBytes, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
+		err = ioutil.WriteFile(fmt.Sprintf("%v/%v", tempAddr, xmlTarFileName), fileBytes, 0777)
+		if err != nil {
+			return err
+		}
+
+		err = simpleRun("", "bash", "-c", fmt.Sprintf("cd %v && tar -xzf %v", tempAddr, xmlTarFileName))
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(fmt.Sprintf("%v/%v", tempAddr, "_project_xml"))
+		if err != nil {
+			return err
+		}
+
+		all, err := ioutil.ReadAll(file)
 		if err != nil {
 			return err
 		}
@@ -277,6 +310,17 @@ func (svc *CodeCoverage) EndCallBack(req apistructs.CodeCoverageUpdateRequest) e
 	}
 
 	return svc.db.UpdateCodeCoverage(record)
+}
+
+func simpleRun(dir string, name string, arg ...string) error {
+	fmt.Fprintf(os.Stdout, "Run: %s, %v\n", name, arg)
+	cmd := exec.Command(name, arg...)
+	if dir != "" {
+		cmd.Path = dir
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // ReportCallBack Record report callBack
@@ -366,55 +410,40 @@ func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID
 
 	var findJacocoAgentEnv = false
 	var findJacocoEnv = false
-	var lock sync.Mutex
 
-	var wait = limit_sync_group.NewSemaphore(5)
+	var namespaceParams []apistructs.NamespaceParam
 	for index := range apps.List {
-		wait.Add(1)
-		go func(index int) {
-			defer wait.Done()
+		for _, envValue := range apistructs.EnvList {
+			namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
+				NamespaceName: fmt.Sprintf("app-%v-%v", apps.List[index].ID, envValue),
+			})
+		}
+	}
 
-			lock.Lock()
-			if findJacocoAgentEnv && findJacocoEnv {
-				lock.Unlock()
-				return
-			}
-			lock.Unlock()
+	nsConfigs, err := svc.envConfig.ListConfigs(namespaceParams)
 
-			app := apps.List[index]
-			var namespaceParams []apistructs.NamespaceParam
-			for _, env := range apistructs.EnvList {
-				namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
-					NamespaceName: fmt.Sprintf("app-%v-%v", app.ID, env),
-				})
-			}
+	for index := range apps.List {
+		if findJacocoAgentEnv && findJacocoEnv {
+			break
+		}
 
-			configs, err := svc.envConfig.GetMultiNamespaceConfigs(nil, userID, namespaceParams)
-			if err != nil {
-				return
-			}
-
-			for _, envs := range configs {
-				var findTwoEnv = 0
-				for _, env := range envs {
-					if env.Key == "OPEN_JACOCO_AGENT" && env.Value == "true" {
-						lock.Lock()
-						findJacocoAgentEnv = true
-						lock.Unlock()
-					}
-					if env.Key == "ERDA_URL" || env.Key == "ERDA_TOKEN" {
-						findTwoEnv++
-					}
+		app := apps.List[index]
+		for _, searchEnv := range apistructs.EnvList {
+			var findTwoEnv = 0
+			ns := fmt.Sprintf("app-%v-%v", app.ID, searchEnv)
+			for _, envValue := range nsConfigs[ns] {
+				if envValue.Key == "OPEN_JACOCO_AGENT" && envValue.Value == "true" {
+					findJacocoAgentEnv = true
+				}
+				if envValue.Key == "ERDA_URL" || envValue.Key == "ERDA_TOKEN" {
+					findTwoEnv++
 				}
 				if findTwoEnv >= 2 {
-					lock.Lock()
 					findJacocoEnv = true
-					lock.Unlock()
 				}
 			}
-		}(index)
+		}
 	}
-	wait.Wait()
 
 	if !findJacocoEnv {
 		return false, nil, "not find jacoco application in project, please add jacoco application and set ERDA_URL,ERDA_TOKEN env"
