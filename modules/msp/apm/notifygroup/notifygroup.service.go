@@ -113,15 +113,16 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err := json.Marshal(resp.List)
+	data, err := json.Marshal(resp.Data.List)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.QueryNotifyGroupResponse{
 		Data: &pb.QueryNotifyGroupData{
 			List:  make([]*pb.NotifyGroup, 0),
-			Total: int64(resp.Total),
+			Total: int64(resp.Data.Total),
 		},
+		UserIDs: resp.UserIDs,
 	}
 	err = json.Unmarshal(data, &result.Data.List)
 	if err != nil {
