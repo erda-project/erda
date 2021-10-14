@@ -188,9 +188,9 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 
 		key := req.NodeRequests[i].CacheKey()
 		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
-		metricsData, ok := resp[key]
+		metricsData := metrics.GetCache(key)
 		used := 0.0
-		if ok {
+		if metricsData != nil {
 			used = metricsData.Used
 		}
 
