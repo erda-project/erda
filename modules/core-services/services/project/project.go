@@ -461,6 +461,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	if err = p.db.DeleteProject(projectID); err != nil {
 		return nil, errors.Errorf("failed to delete project, (%v)", err)
 	}
+	_ = p.db.DeleteProjectQutoa(projectID)
 	logrus.Infof("deleted project %d", projectID)
 
 	// 删除权限表记录
