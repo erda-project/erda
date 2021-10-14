@@ -70,6 +70,16 @@ func (a *AutoTestSpaceDB) SetSceneSets() error {
 	return nil
 }
 
+func (a *AutoTestSpaceDB) SetSingleSceneSet(SetID uint64) error {
+	a.Data.SceneSets = map[uint64][]apistructs.SceneSet{}
+	sceneSet, err := a.Data.svc.GetSceneSet(SetID)
+	if err != nil {
+		return err
+	}
+	a.Data.SceneSets[a.Data.SpaceID] = []apistructs.SceneSet{*sceneSet}
+	return nil
+}
+
 func (a *AutoTestSpaceDB) SetScenes() error {
 	a.Data.Scenes = map[uint64][]apistructs.AutoTestScene{}
 	for _, v := range a.Data.SceneSets[a.Data.Space.ID] {
@@ -236,6 +246,100 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 
 	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: file.UUID}); err != nil {
 		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		return
+	}
+}
+
+func (svc *Service) ExportSceneSet(req apistructs.AutoTestSceneSetExportRequest) (uint64, error) {
+	if !req.FileType.Valid() {
+		return 0, apierrors.ErrExportAutoTestSceneSet.InvalidParameter("fileType")
+	}
+
+	l := svc.bdl.GetLocale(req.Locale)
+	fileName := l.Get(i18n.I18nKeySceneSetSheetName)
+	if req.FileType == apistructs.TestSpaceFileTypeExcel {
+		fileName += ".xlsx"
+	}
+	fileReq := apistructs.TestFileRecordRequest{
+		FileName:     fileName,
+		Description:  req.SceneSetName,
+		Type:         apistructs.FileSceneSetActionTypeExport,
+		State:        apistructs.FileRecordStatePending,
+		ProjectID:    req.ProjectID,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			AutotestSceneSetFileExtraInfo: &apistructs.AutoTestSceneSetFileExtraInfo{
+				ExportRequest: &req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return 0, apierrors.ErrExportAutoTestSceneSet.InternalError(err)
+	}
+	return id, nil
+}
+
+func (svc *Service) ExportSceneSetFile(record *dao.TestFileRecord) {
+	extra := record.Extra.AutotestSceneSetFileExtraInfo
+	if extra == nil || extra.ExportRequest == nil {
+		logrus.Errorf("autotest scene set export missing request data")
+		return
+	}
+
+	req := extra.ExportRequest
+	id := record.ID
+	fileName := record.FileName
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		return
+	}
+	spaceDBData := AutoTestSpaceDB{Data: &AutoTestSpaceData{
+		svc:          svc,
+		IdentityInfo: req.IdentityInfo,
+		Locale:       req.Locale,
+		SpaceID:      req.SpaceID,
+		IsCopy:       req.IsCopy,
+	},
+	}
+
+	creator := AutoTestSpaceDirector{}
+	creator.New(&spaceDBData)
+	if err := creator.ConstructFromSceneSet(req.ID); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		}
+		return
+	}
+	spaceData := creator.Creator.GetSpaceData()
+	w := bytes.Buffer{}
+	if err := spaceData.ConvertSceneSetToExcel(&w, fileName); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		}
+		return
+	}
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fileName,
+		ByteSize:        int64(w.Len()),
+		FileReader:      ioutil.NopCloser(&w),
+		From:            "Autotest Scene Set",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := svc.bdl.UploadFile(uploadReq)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		}
+		return
+	}
+
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: file.UUID}); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
 		return
 	}
 }

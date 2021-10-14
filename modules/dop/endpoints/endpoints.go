@@ -428,6 +428,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/scenesets/{setID}", Method: http.MethodDelete, Handler: e.DeleteSceneSet},
 		{Path: "/api/autotests/scenesets/actions/drag", Method: http.MethodPut, Handler: e.DragSceneSet},
 		{Path: "/api/autotests/scenesets/actions/copy", Method: http.MethodPost, Handler: e.CopySceneSet},
+		{Path: "/api/autotests/scenesets/actions/export", Method: http.MethodPost, Handler: e.ExportSceneSet},
 
 		// migrate
 		{Path: "/api/autotests/actions/migrate-from-autotestv1", Method: http.MethodGet, Handler: e.MigrateFromAutoTestV1},

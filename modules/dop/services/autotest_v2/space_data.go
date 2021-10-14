@@ -61,6 +61,7 @@ type AutoTestSpaceDataCreator interface {
 	SetScenes() error
 	SetSceneSteps() error
 	SetConfigs() error
+	SetSingleSceneSet(setID uint64) error
 	GetSpaceData() *AutoTestSpaceData
 }
 
@@ -91,6 +92,23 @@ func (a *AutoTestSpaceDirector) Construct() error {
 	}
 
 	if err := a.Creator.SetConfigs(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *AutoTestSpaceDirector) ConstructFromSceneSet(setID uint64) error {
+	if err := a.Creator.SetSpace(); err != nil {
+		return err
+	}
+	if err := a.Creator.SetSingleSceneSet(setID); err != nil {
+		return err
+	}
+	if err := a.Creator.SetScenes(); err != nil {
+		return err
+	}
+	if err := a.Creator.SetSceneSteps(); err != nil {
 		return err
 	}
 
@@ -359,6 +377,23 @@ func (a *AutoTestSpaceData) ConvertToExcel(w io.Writer, fileName string) error {
 		return err
 	}
 	excel.WriteFile(w, file, fileName)
+	return nil
+}
+
+func (a *AutoTestSpaceData) ConvertSceneSetToExcel(w io.Writer, fileName string) error {
+	file := excel.NewXLSXFile()
+	if err := a.addSceneSetToExcel(file); err != nil {
+		return err
+	}
+	if err := a.addSceneToExcel(file); err != nil {
+		return err
+	}
+	if err := a.addSceneStepToExcel(file); err != nil {
+		return err
+	}
+	if err := excel.WriteFile(w, file, fileName); err != nil {
+		return err
+	}
 	return nil
 }
 

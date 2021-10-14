@@ -615,7 +615,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport, apistructs.FileSceneSetActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -629,6 +629,9 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSpaceActionTypeExport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ExportFile(record)
+	case apistructs.FileSceneSetActionTypeExport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ExportSceneSetFile(record)
 	default:
 
 	}

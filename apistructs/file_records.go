@@ -47,8 +47,9 @@ type TestFileRecordRequest struct {
 }
 
 type TestFileExtra struct {
-	ManualTestFileExtraInfo    *ManualTestFileExtraInfo    `json:"manualTestExtraFileInfo,omitempty"`
-	AutotestSpaceFileExtraInfo *AutoTestSpaceFileExtraInfo `json:"autotestSpaceFileExtraInfo,omitempty"`
+	ManualTestFileExtraInfo       *ManualTestFileExtraInfo       `json:"manualTestExtraFileInfo,omitempty"`
+	AutotestSpaceFileExtraInfo    *AutoTestSpaceFileExtraInfo    `json:"autotestSpaceFileExtraInfo,omitempty"`
+	AutotestSceneSetFileExtraInfo *AutoTestSceneSetFileExtraInfo `json:"autotestSceneSetFileExtraInfo,omitempty"`
 }
 
 type ManualTestFileExtraInfo struct {
@@ -63,20 +64,25 @@ type AutoTestSpaceFileExtraInfo struct {
 	ExportRequest *AutoTestSpaceExportRequest `json:"exportRequest,omitempty"`
 }
 
+type AutoTestSceneSetFileExtraInfo struct {
+	ExportRequest *AutoTestSceneSetExportRequest `json:"exportRequest,omitempty"`
+}
+
 type FileRecordState string
 
 type FileActionType string
 
 const (
-	FileRecordStatePending    FileRecordState = "pending"
-	FileRecordStateProcessing FileRecordState = "processing"
-	FileRecordStateSuccess    FileRecordState = "success"
-	FileRecordStateFail       FileRecordState = "fail"
-	FileActionTypeCopy        FileActionType  = "copy"
-	FileActionTypeImport      FileActionType  = "import"
-	FileActionTypeExport      FileActionType  = "export"
-	FileSpaceActionTypeExport FileActionType  = "spaceExport"
-	FileSpaceActionTypeImport FileActionType  = "spaceImport"
+	FileRecordStatePending       FileRecordState = "pending"
+	FileRecordStateProcessing    FileRecordState = "processing"
+	FileRecordStateSuccess       FileRecordState = "success"
+	FileRecordStateFail          FileRecordState = "fail"
+	FileActionTypeCopy           FileActionType  = "copy"
+	FileActionTypeImport         FileActionType  = "import"
+	FileActionTypeExport         FileActionType  = "export"
+	FileSpaceActionTypeExport    FileActionType  = "spaceExport"
+	FileSpaceActionTypeImport    FileActionType  = "spaceImport"
+	FileSceneSetActionTypeExport FileActionType  = "sceneSetExport"
 )
 
 type ListTestFileRecordsRequest struct {
