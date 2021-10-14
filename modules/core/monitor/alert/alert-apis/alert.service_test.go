@@ -161,6 +161,6 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 		ScopeType:   "org",
 	})
 	if err != nil {
-		fmt.Println("should not err")
+		fmt.Println(err)
 	}
 }
