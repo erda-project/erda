@@ -171,76 +171,104 @@ type NodeAllocatedRes struct {
 
 const cacheType = "nodeAllocatedRes"
 
-// GetNodeAllocatedRes get node allocated resource from cache.
-func GetNodeAllocatedRes(server cmp.SteveServer, clusterName, userID, orgID, nodeName string) (cpu, mem, podNum int64, err error) {
-	value, _, err := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, nodeName, cacheType))
-	if err != nil {
-		return
-	}
-	if value == nil {
-		req := &apistructs.SteveRequest{
-			UserID:      userID,
-			OrgID:       orgID,
-			Type:        apistructs.K8SPod,
-			ClusterName: clusterName,
-		}
-		pods, err := server.ListSteveResource(context.Background(), req)
+// GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
+func GetNodesAllocatedRes(server cmp.SteveServer, clusterName, userID, orgID string, nodes []data.Object) (map[string]NodeAllocatedRes, error) {
+	var pods []types2.APIObject
+	hasExpired := false
+	nodesAllocatedRes := make(map[string]NodeAllocatedRes)
+	for _, node := range nodes {
+		nodeName := node.String("metadata", "name")
+		value, expired, err := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, nodeName, cacheType))
 		if err != nil {
-			logrus.Errorf("failed to list pod in GetNodeAllocatedRes, %v", err)
-			return 0, 0, 0, err
+			return nil, err
 		}
-
+		if expired {
+			hasExpired = true
+		}
+		if value != nil {
+			var nar NodeAllocatedRes
+			if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
+				logrus.Errorf("failed to unmarshal for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+				continue
+			}
+			nodesAllocatedRes[nodeName] = nar
+			continue
+		}
+		if pods == nil {
+			req := &apistructs.SteveRequest{
+				UserID:      userID,
+				OrgID:       orgID,
+				Type:        apistructs.K8SPod,
+				ClusterName: clusterName,
+			}
+			pods, err = server.ListSteveResource(context.Background(), req)
+			if err != nil {
+				return nil, err
+			}
+		}
 		cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
-		nar := &NodeAllocatedRes{
+		nar := NodeAllocatedRes{
 			CPU:    cpu,
 			Mem:    mem,
 			PodNum: podNum,
 		}
-		value, err := cache.MarshalValue(nar)
+		value, err = cache.MarshalValue(nar)
 		if err != nil {
-			logrus.Errorf("failed to marshal value in GetNodeAllocatedRes, %v", err)
+			logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+			continue
 		}
 		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
-			logrus.Errorf("failed to set cache in GetNodeAllocatedRes, %v", err)
+			logrus.Errorf("failed to set cache for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+			continue
 		}
 
 		if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
-			return 0, 0, 0, err
+			logrus.Errorf("failed to unmarshal for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+			continue
 		}
-		return nar.CPU, nar.Mem, nar.PodNum, nil
+		nodesAllocatedRes[nodeName] = nar
 	}
-	go func() {
-		req := &apistructs.SteveRequest{
-			UserID:      userID,
-			OrgID:       orgID,
-			Type:        apistructs.K8SPod,
-			ClusterName: clusterName,
-		}
-		pods, err := server.ListSteveResource(context.Background(), req)
-		if err != nil {
-			logrus.Errorf("failed to list pod in GetNodeAllocatedRes, %v", err)
-			return
-		}
+	if hasExpired {
+		go func() {
+			var err error
+			if pods == nil {
+				req := &apistructs.SteveRequest{
+					UserID:      userID,
+					OrgID:       orgID,
+					Type:        apistructs.K8SPod,
+					ClusterName: clusterName,
+				}
 
-		cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
-		nar := &NodeAllocatedRes{
-			CPU:    cpu,
-			Mem:    mem,
-			PodNum: podNum,
-		}
-		value, err := cache.MarshalValue(nar)
-		if err != nil {
-			logrus.Errorf("failed to marshal value in GetNodeAllocatedRes, %v", err)
-		}
-		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
-			logrus.Errorf("failed to set cache in GetNodeAllocatedRes, %v", err)
-		}
-	}()
-	var nar NodeAllocatedRes
-	if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
-		return
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+				defer cancel()
+				pods, err = server.ListSteveResource(ctx, req)
+				if err != nil {
+					logrus.Errorf("failed to list pods in GetNodeAllocatedRes goroutine, %v", err)
+					return
+				}
+			}
+			for _, node := range nodes {
+				nodeName := node.String("metadata", "name")
+				cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
+				nar := NodeAllocatedRes{
+					CPU:    cpu,
+					Mem:    mem,
+					PodNum: podNum,
+				}
+				value, err := cache.MarshalValue(nar)
+				if err != nil {
+					logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
+					continue
+				}
+				if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
+					logrus.Errorf("failed to set cache for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
+					continue
+				}
+			}
+			logrus.Infof("update node allocated resource cache succeeded")
+		}()
 	}
-	return nar.CPU, nar.Mem, nar.PodNum, nil
+	return nodesAllocatedRes, nil
 }
 
 // CalculateNodeAllocatedRes calculate allocated cpu, memory and pods for target node
