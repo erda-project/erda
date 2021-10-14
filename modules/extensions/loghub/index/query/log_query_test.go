@@ -17,6 +17,7 @@ package query
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -309,6 +310,21 @@ func Test_getSearchSource_Should_Include_SearchAfter(t *testing.T) {
 		if item != req.SearchAfter[i] {
 			t.Errorf("search_after generated not as expect")
 		}
+	}
+}
+
+func Test_getBoolQueryV2_Should_Work_As_Expect(t *testing.T) {
+	c := &ESClient{}
+	req := LogRequest{
+		Start:     1,
+		End:       10,
+		TimeScale: time.Millisecond,
+	}
+	want := "map[range:map[timestamp:map[from:1000000 include_lower:true include_upper:true to:10000000]]]"
+	result, _ := c.getBoolQueryV2(&req).Source()
+	got := fmt.Sprintf("%+v", result)
+	if !strings.Contains(got, want) {
+		t.Errorf("expect: %s, but got: %s", want, got)
 	}
 }
 
