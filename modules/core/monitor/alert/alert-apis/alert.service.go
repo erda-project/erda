@@ -1317,7 +1317,6 @@ func (m *alertService) GetAlertConditions(ctx context.Context, request *pb.GetAl
 	for _, v := range m.p.alertConditions {
 		if v.Scope == request.ScopeType {
 			data, err := json.Marshal(v.Conditions)
-			fmt.Println(string(data))
 			if err != nil {
 				return nil, errors.NewInternalServerError(err)
 			}

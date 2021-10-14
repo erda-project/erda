@@ -94,8 +94,7 @@ func Test_alertService_GetAlertConditions(t *testing.T) {
 			m := &alertService{
 				p: tt.fields.p,
 			}
-			got, err := m.GetAlertConditions(tt.args.ctx, tt.args.request)
-			fmt.Println(got)
+			_, err := m.GetAlertConditions(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAlertConditions() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -127,12 +126,35 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 		},
 	}, nil)
 	pro := &provider{
-		C:            &config{},
-		Metric:       metricService,
-		alertService: &alertService{},
+		C: &config{
+			SilencePolicy:   "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
+			AlertConditions: "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
+		},
+		alertConditions: make([]*AlertConditions, 0),
+		conditionIndex:  make([]*ConditionIndex, 0),
+		alertService:    &alertService{},
 	}
+
+	f, err := ioutil.ReadFile(pro.C.AlertConditions)
+	if err != nil {
+		fmt.Println("read file is fail ", err)
+	}
+	err = yaml.Unmarshal(f, pro.alertConditions)
+	if err != nil {
+		fmt.Println("unmarshal is fail ", err)
+	}
+
+	f, err = ioutil.ReadFile(pro.C.ConditionIndex)
+	if err != nil {
+		fmt.Println("read file is fail ", err)
+	}
+	err = yaml.Unmarshal(f, pro.conditionIndex)
+	if err != nil {
+		fmt.Println("unmarshal is fail ", err)
+	}
+
 	pro.alertService.p = pro
-	_, err := pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
+	_, err = pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
 		OrgName:     "erda",
 		ProjectId:   "3",
 		TerminusKey: "sg44yfh5464g6uy56j7224f",
