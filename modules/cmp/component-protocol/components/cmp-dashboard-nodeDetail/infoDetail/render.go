@@ -136,7 +136,7 @@ func (infoDetail *InfoDetail) getTags(node data.Object) []Field {
 	for k, v := range node.Map("metadata", "labels") {
 		g, _ := infoDetail.GetLabelGroupAndDisplayName(k + "=" + v.(string))
 		tag = append(tag, Field{
-			Label: fmt.Sprintf("%s:%s", k, v),
+			Label: fmt.Sprintf("%s=%s", k, v),
 			Group: g,
 		})
 	}
@@ -152,7 +152,7 @@ func (infoDetail *InfoDetail) getAnnotations(node data.Object) []Field {
 	desc := make([]Field, 0)
 	for k, v := range node.Map("metadata", "annotations") {
 		desc = append(desc, Field{
-			Label: fmt.Sprintf("%s:%s", k, v),
+			Label: fmt.Sprintf("%s=%s", k, v),
 		})
 	}
 	if len(desc) == 0 {

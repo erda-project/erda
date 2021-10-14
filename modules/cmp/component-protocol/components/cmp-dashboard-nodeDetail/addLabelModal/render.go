@@ -99,23 +99,23 @@ func (alm *AddLabelModal) getProps() {
 			ComponentProps: ComponentProps{
 				Options: []Option{
 					{
-						Name:  alm.SDK.I18n("env"),
+						Name:  alm.SDK.I18n("env-label"),
 						Value: "environment",
 					},
 					{
-						Name:  alm.SDK.I18n("service"),
+						Name:  alm.SDK.I18n("service-label"),
 						Value: "service",
 					},
 					{
-						Name:  alm.SDK.I18n("job"),
+						Name:  alm.SDK.I18n("job-label"),
 						Value: "job",
 					},
 					{
-						Name:  alm.SDK.I18n("other"),
+						Name:  alm.SDK.I18n("other-label"),
 						Value: "other",
 					},
 					{
-						Name:  alm.SDK.I18n("custom"),
+						Name:  alm.SDK.I18n("custom-label"),
 						Value: "custom",
 					},
 				},
