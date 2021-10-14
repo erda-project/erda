@@ -65,7 +65,7 @@ func (b *Bundle) CreateNotifyGroup(orgID string, userID string, request *apistru
 	return &getResp.Data, nil
 }
 
-func (b *Bundle) QueryNotifyGroup(orgID string, request *apistructs.QueryNotifyGroupRequest) (*apistructs.QueryNotifyGroupData, error) {
+func (b *Bundle) QueryNotifyGroup(orgID string, request *apistructs.QueryNotifyGroupRequest) (*apistructs.QueryNotifyGroupResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (b *Bundle) QueryNotifyGroup(orgID string, request *apistructs.QueryNotifyG
 	if !resp.IsOK() || !getResp.Success {
 		return nil, toAPIError(resp.StatusCode(), getResp.Error)
 	}
-	return &getResp.Data, nil
+	return &getResp, nil
 }
 
 func (b *Bundle) GetNotifyGroup(id int64, orgID string) (*apistructs.GetNotifyGroupResponse, error) {
