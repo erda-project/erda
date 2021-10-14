@@ -258,6 +258,40 @@ func Test_getSearchSource_Should_Sort_As_Expect(t *testing.T) {
 	}
 }
 
+func Test_filterIndices_With_Addon_Should_Filter_Success(t *testing.T) {
+	c := &ESClient{
+		Entrys: []*IndexEntry{
+			{
+				Index: "index-1",
+				MinTS: 1 * int64(time.Millisecond),
+				MaxTS: 20 * int64(time.Millisecond),
+			},
+			{
+				Index: "index-2",
+				MinTS: 20 * int64(time.Millisecond),
+			},
+		},
+	}
+	req := &LogRequest{
+		Start:       1,
+		End:         10,
+		TimeScale:   time.Millisecond,
+		Addon:       "addon-1",
+		ClusterName: "cluster-1",
+	}
+	want := []string{"index-1"}
+
+	indices := c.filterIndices(req)
+	if len(indices) != len(want) {
+		t.Errorf("filterd indices failed, expect len: %d, but got len: %d", len(want), len(indices))
+	}
+	for i, index := range want {
+		if indices[i] != index {
+			t.Errorf("filterd indices assert failed, expect: %s", index)
+		}
+	}
+}
+
 func Test_getSearchSource_Should_Include_SearchAfter(t *testing.T) {
 	c := &ESClient{}
 	req := &LogSearchRequest{
