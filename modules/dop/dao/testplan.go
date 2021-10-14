@@ -91,7 +91,7 @@ func (client *DBClient) DeleteTestPlan(testPlanID uint64) error {
 }
 
 // GetTestPlan Fetch test plan
-func (client DBClient) GetTestPlan(testPlanID uint64) (*TestPlan, error) {
+func (client *DBClient) GetTestPlan(testPlanID uint64) (*TestPlan, error) {
 	var testPlan TestPlan
 	if err := client.Where("id = ?", testPlanID).Find(&testPlan).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
