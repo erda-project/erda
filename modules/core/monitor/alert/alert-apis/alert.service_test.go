@@ -70,6 +70,32 @@ func Test_alertService_GetAlertConditions(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_getAlertConditions",
+			fields: fields{
+				p: &provider{
+					C: &config{
+						OrgFilterTags:               "",
+						MicroServiceFilterTags:      "",
+						MicroServiceOtherFilterTags: "",
+						SilencePolicy:               "",
+						AlertConditions:             "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
+						ConditionIndex:              "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
+						Cassandra: struct {
+							cassandra.SessionConfig `file:"session"`
+							GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
+						}{},
+					},
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				request: &pb.GetAlertConditionsRequest{
+					ScopeType: "test",
+				},
+			},
+			wantErr: false,
+		},
 	}
 	tests[0].fields.p.alertConditions = make([]*AlertConditions, 0)
 	f, err := ioutil.ReadFile(tests[0].fields.p.C.AlertConditions)
@@ -127,19 +153,20 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	}, nil)
 	pro := &provider{
 		C: &config{
-			SilencePolicy:   "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
-			AlertConditions: "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
+			AlertConditions: "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
+			ConditionIndex:  "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
 		},
 		alertConditions: make([]*AlertConditions, 0),
 		conditionIndex:  make([]*ConditionIndex, 0),
 		alertService:    &alertService{},
+		Metric:          metricService,
 	}
 
 	f, err := ioutil.ReadFile(pro.C.AlertConditions)
 	if err != nil {
 		fmt.Println("read file is fail ", err)
 	}
-	err = yaml.Unmarshal(f, pro.alertConditions)
+	err = yaml.Unmarshal(f, &pro.alertConditions)
 	if err != nil {
 		fmt.Println("unmarshal is fail ", err)
 	}
@@ -148,7 +175,7 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	if err != nil {
 		fmt.Println("read file is fail ", err)
 	}
-	err = yaml.Unmarshal(f, pro.conditionIndex)
+	err = yaml.Unmarshal(f, &pro.conditionIndex)
 	if err != nil {
 		fmt.Println("unmarshal is fail ", err)
 	}
@@ -159,6 +186,12 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 		ProjectId:   "3",
 		TerminusKey: "sg44yfh5464g6uy56j7224f",
 		ScopeType:   "org",
+	})
+	_, err = pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
+		OrgName:     "erda",
+		ProjectId:   "3",
+		TerminusKey: "sg44yfh5464g6uy56j7224f",
+		ScopeType:   "msp",
 	})
 	if err != nil {
 		fmt.Println(err)
