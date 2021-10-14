@@ -108,7 +108,7 @@ type TestPlanV2PagingRequest struct {
 	Updater     string   `schema:"updater"`
 	SpaceID     uint64   `schema:"spaceID"`
 	ProjectID   uint64   `schema:"projectID"`
-	IterationID uint64   `json:"iterationID"`
+	IterationID *uint64  `json:"iterationID"`
 	IsArchived  *bool    `schema:"isArchived"`
 
 	// +optional default 1

@@ -16,6 +16,7 @@ package testplan
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/modules/dop/services/iteration"
 	"reflect"
 	"sort"
 	"strconv"
@@ -44,6 +45,7 @@ type TestPlan struct {
 	autotest      *autotest.Service
 	issueSvc      *issue.Issue
 	issueStateSvc *issuestate.IssueState
+	iterationSvc  *iteration.Iteration
 }
 
 // Option
@@ -104,6 +106,12 @@ func WithIssueState(issueStateSvc *issuestate.IssueState) Option {
 	}
 }
 
+func WithIterationSvc(iterationSvc *iteration.Iteration) Option {
+	return func(svc *TestPlan) {
+		svc.iterationSvc = iterationSvc
+	}
+}
+
 // Create 创建测试计划
 func (t *TestPlan) Create(req apistructs.TestPlanCreateRequest) (uint64, error) {
 	// req params check
@@ -140,12 +148,13 @@ func (t *TestPlan) Create(req apistructs.TestPlanCreateRequest) (uint64, error) 
 
 	// create testplan
 	testPlan := dao.TestPlan{
-		Name:      req.Name,
-		ProjectID: req.ProjectID,
-		Status:    apistructs.TPStatusDoing,
-		CreatorID: req.UserID,
-		UpdaterID: req.UserID,
-		Type:      apistructs.TestPlanTypeManual,
+		Name:        req.Name,
+		ProjectID:   req.ProjectID,
+		IterationID: req.IterationID,
+		Status:      apistructs.TPStatusDoing,
+		CreatorID:   req.UserID,
+		UpdaterID:   req.UserID,
+		Type:        apistructs.TestPlanTypeManual,
 	}
 	// 自动化测试计划
 	if req.IsAutoTest {
@@ -219,6 +228,7 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		t := time.Unix(int64(*req.TimestampSecEndedAt), 0)
 		testPlan.EndedAt = &t
 	}
+	testPlan.IterationID = req.IterationID
 
 	var isUpdateArchive bool
 	if req.IsArchived != nil {
@@ -345,15 +355,23 @@ func (t *TestPlan) Get(testPlanID uint64) (*apistructs.TestPlan, error) {
 	// list member
 	members, err := t.db.ListTestPlanMembersByPlanID(testPlanID)
 	if err != nil {
-		return nil, apierrors.ErrListTestPlanMembers.InternalError(err)
+		return nil, apierrors.ErrGetTestPlan.InternalError(err)
 	}
 	// list rels
 	countMap, err := t.db.ListTestPlanCaseRelsCount([]uint64{testPlanID})
 	if err != nil {
-		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
+		return nil, apierrors.ErrGetTestPlan.InternalError(err)
 	}
 
 	convertedTp := t.Convert(testPlan, countMap[testPlanID], members...)
+
+	if testPlan.IterationID != 0 {
+		iterationDao, err := t.iterationSvc.Get(testPlan.IterationID)
+		if err != nil {
+			return nil, apierrors.ErrGetTestPlan.InternalError(err)
+		}
+		convertedTp.IterationName = iterationDao.Title
+	}
 
 	return &convertedTp, nil
 }
@@ -400,12 +418,38 @@ func (t *TestPlan) Paging(req apistructs.TestPlanPagingRequest) (*apistructs.Tes
 
 	testPlans := make([]apistructs.TestPlan, 0, len(list))
 	var userIDs []string
+	var iterationIDs []uint64
 	for _, tp := range list {
 		convertedTp := t.Convert(&tp, relCountMap[uint64(tp.ID)], memberMap[uint64(tp.ID)]...)
 		testPlans = append(testPlans, convertedTp)
 		userIDs = append(append(userIDs, convertedTp.OwnerID, convertedTp.CreatorID, convertedTp.UpdaterID), convertedTp.PartnerIDs...)
+		iterationIDs = append(iterationIDs, tp.IterationID)
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
+	iterationIDs = strutil.DedupUint64Slice(iterationIDs, true)
+
+	iterationMap := make(map[uint64]string, len(iterationIDs))
+	if len(iterationIDs) > 0 {
+		iterations, _, err := t.iterationSvc.Paging(apistructs.IterationPagingRequest{
+			PageNo:              1,
+			PageSize:            999,
+			ProjectID:           req.ProjectID,
+			WithoutIssueSummary: true,
+			IDs:                 iterationIDs,
+		})
+		if err != nil {
+			return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
+		}
+		for _, v := range iterations {
+			iterationMap[v.ID] = v.Title
+		}
+	}
+
+	for i := range testPlans {
+		if testPlans[i].IterationID != 0 {
+			testPlans[i].IterationName = iterationMap[testPlans[i].IterationID]
+		}
+	}
 
 	return &apistructs.TestPlanPagingResponseData{
 		Total:   total,
@@ -629,21 +673,22 @@ func (t *TestPlan) ExecuteAPITest(req apistructs.TestPlanAPITestExecuteRequest) 
 // Convert
 func (t *TestPlan) Convert(testPlan *dao.TestPlan, relsCount apistructs.TestPlanRelsCount, members ...dao.TestPlanMember) apistructs.TestPlan {
 	result := apistructs.TestPlan{
-		ID:         uint64(testPlan.ID),
-		Name:       testPlan.Name,
-		Status:     testPlan.Status,
-		ProjectID:  testPlan.ProjectID,
-		CreatorID:  testPlan.CreatorID,
-		UpdaterID:  testPlan.UpdaterID,
-		CreatedAt:  &testPlan.CreatedAt,
-		UpdatedAt:  &testPlan.UpdatedAt,
-		Summary:    testPlan.Summary,
-		StartedAt:  testPlan.StartedAt,
-		EndedAt:    testPlan.EndedAt,
-		RelsCount:  relsCount,
-		Type:       testPlan.Type,
-		Inode:      testPlan.Inode,
-		IsArchived: testPlan.IsArchived,
+		ID:          uint64(testPlan.ID),
+		Name:        testPlan.Name,
+		Status:      testPlan.Status,
+		ProjectID:   testPlan.ProjectID,
+		CreatorID:   testPlan.CreatorID,
+		UpdaterID:   testPlan.UpdaterID,
+		CreatedAt:   &testPlan.CreatedAt,
+		UpdatedAt:   &testPlan.UpdatedAt,
+		Summary:     testPlan.Summary,
+		StartedAt:   testPlan.StartedAt,
+		EndedAt:     testPlan.EndedAt,
+		RelsCount:   relsCount,
+		Type:        testPlan.Type,
+		Inode:       testPlan.Inode,
+		IsArchived:  testPlan.IsArchived,
+		IterationID: testPlan.IterationID,
 	}
 	for _, mem := range members {
 		if mem.Role.IsOwner() {
