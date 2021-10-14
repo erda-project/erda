@@ -110,6 +110,10 @@ func (a *AutoTestSpaceExcel) SetSceneSets() error {
 	return nil
 }
 
+func (a *AutoTestSpaceExcel) SetSingleSceneSet(setID uint64) error {
+	return nil
+}
+
 // SetScenes get scenes, input, output data
 // and insert input, output data to scenes
 func (a *AutoTestSpaceExcel) SetScenes() error {

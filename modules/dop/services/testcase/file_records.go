@@ -44,8 +44,9 @@ func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint
 
 func convertTestFileExtra(fileExtra apistructs.TestFileExtra) dao.TestFileExtra {
 	return dao.TestFileExtra{
-		ManualTestFileExtraInfo:    fileExtra.ManualTestFileExtraInfo,
-		AutotestSpaceFileExtraInfo: fileExtra.AutotestSpaceFileExtraInfo,
+		ManualTestFileExtraInfo:       fileExtra.ManualTestFileExtraInfo,
+		AutotestSpaceFileExtraInfo:    fileExtra.AutotestSpaceFileExtraInfo,
+		AutotestSceneSetFileExtraInfo: fileExtra.AutotestSceneSetFileExtraInfo,
 	}
 }
 
