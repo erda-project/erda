@@ -50,6 +50,13 @@ const (
 	ManageProxy = "proxy"
 )
 
+// cluster credential
+const (
+	ErdaClusterConfig = "erda-cluster-credential"
+	AccessKey         = "CLUSTER_ACCESS_KEY"
+	CMPClusterScope   = "cmp_cluster"
+)
+
 // ClusterCreateRequest 集群创建请求
 // TODO 逐步废弃 urls & settings, 统一使用config
 type ClusterCreateRequest struct {
