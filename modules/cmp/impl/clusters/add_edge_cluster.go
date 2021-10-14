@@ -98,6 +98,32 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 	strs := strings.Split(string(req.CloudVendor), "-")
 	req.CloudVendorName, req.CloudBasicRsc = strs[0], strs[1]
 
+	// import cluster
+	ic := apistructs.ImportCluster{
+		CredentialType: "proxy",
+		ClusterName:    req.ClusterName,
+		DisplayName:    req.DisplayName,
+		OrgID:          req.OrgID,
+		ScheduleConfig: apistructs.ClusterSchedConfig{
+			CPUSubscribeRatio: "1",
+		},
+		ClusterType:    "k8s",
+		WildcardDomain: req.RootDomain,
+	}
+	err = c.importCluster(userid, &ic)
+	if err != nil {
+		logrus.Errorf("import cluster failed, request: %v, error: %v", req, err)
+		return recordID, err
+	}
+
+	// get cluster access key
+	cak, err := c.GetOrCreateAccessKey(req.ClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster access key failed, cluster: %s, error: %v", req.ClusterName, err)
+		return recordID, err
+	}
+	req.ClusterAccessKey = cak.AccessKey
+
 	logrus.Debugf("cloud request: %v", req)
 
 	var yml apistructs.PipelineYml
@@ -168,24 +194,6 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
 		logrus.Errorf(errstr)
-		return recordID, err
-	}
-
-	// import cluster
-	ic := apistructs.ImportCluster{
-		CredentialType: "proxy",
-		ClusterName:    req.ClusterName,
-		DisplayName:    req.DisplayName,
-		OrgID:          req.OrgID,
-		ScheduleConfig: apistructs.ClusterSchedConfig{
-			CPUSubscribeRatio: "1",
-		},
-		ClusterType:    "k8s",
-		WildcardDomain: req.RootDomain,
-	}
-	err = c.importCluster(userid, &ic)
-	if err != nil {
-		logrus.Errorf("import cluster failed, request: %v, error: %v", req, err)
 		return recordID, err
 	}
 
@@ -369,16 +377,17 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Alias:   string(apistructs.NodePhasePlan),
 			Params: map[string]interface{}{
 				// base fields which create cluster
-				"org_name":       req.OrgName,
-				"dice_version":   req.DiceVersion,
-				"cluster_name":   req.ClusterName,
-				"root_domain":    req.RootDomain,
-				"enable_https":   req.EnableHttps,
-				"cluster_size":   req.ClusterSize,
-				"nameservers":    req.Nameservers,
-				"collector_url":  req.CollectorURL,
-				"open_api":       req.OpenAPI,
-				"cluster_dialer": req.ClusterDialer,
+				"org_name":           req.OrgName,
+				"dice_version":       req.DiceVersion,
+				"cluster_name":       req.ClusterName,
+				"cluster_access_key": req.ClusterAccessKey,
+				"root_domain":        req.RootDomain,
+				"enable_https":       req.EnableHttps,
+				"cluster_size":       req.ClusterSize,
+				"nameservers":        req.Nameservers,
+				"collector_url":      req.CollectorURL,
+				"open_api":           req.OpenAPI,
+				"cluster_dialer":     req.ClusterDialer,
 
 				// fields which create cluster on vpc
 				"cloud_vendor":     req.CloudVendor,
@@ -427,16 +436,17 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Version: "1.0",
 			Alias:   string(apistructs.NodePhaseBuyNode),
 			Params: map[string]interface{}{
-				"org_name":       req.OrgName,
-				"dice_version":   req.DiceVersion,
-				"cluster_name":   req.ClusterName,
-				"root_domain":    req.RootDomain,
-				"enable_https":   req.EnableHttps,
-				"cluster_size":   req.ClusterSize,
-				"nameservers":    req.Nameservers,
-				"collector_url":  req.CollectorURL,
-				"open_api":       req.OpenAPI,
-				"cluster_dialer": req.ClusterDialer,
+				"org_name":           req.OrgName,
+				"dice_version":       req.DiceVersion,
+				"cluster_name":       req.ClusterName,
+				"cluster_access_key": req.ClusterAccessKey,
+				"root_domain":        req.RootDomain,
+				"enable_https":       req.EnableHttps,
+				"cluster_size":       req.ClusterSize,
+				"nameservers":        req.Nameservers,
+				"collector_url":      req.CollectorURL,
+				"open_api":           req.OpenAPI,
+				"cluster_dialer":     req.ClusterDialer,
 
 				"cloud_vendor":     req.CloudVendor,
 				"region":           req.Region,
@@ -518,25 +528,26 @@ func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml 
 				"root_domain":  req.RootDomain,
 				"enable_https": req.EnableHttps,
 
-				"cluster_name":      req.ClusterName,
-				"access_key_id":     req.AccessKey,
-				"access_key_secret": req.SecretKey,
-				"region":            req.Region,
-				"charge_type":       req.ChargeType,
-				"charge_period":     req.ChargePeriod,
-				"vpc_id":            req.VpcID,
-				"vswitch_id":        req.VSwitchID,
-				"vpc_subnet":        req.VpcCIDR,
-				"vswitch_subnet":    req.VSwitchCIDR,
-				"nat_gateway_id":    req.NatGatewayID,
-				"forward_table_id":  req.ForwardTableID,
-				"snat_table_id":     req.SnatTableID,
-				"container_subnet":  req.PodCIDR,
-				"vip_subnet":        req.ServiceCIDR,
-				"worker_number":     worker_number,
-				"ecs_instance_type": req.EcsInstType,
-				"k8s_version":       req.K8sVersion,
-				"managed":           managed,
+				"cluster_name":       req.ClusterName,
+				"cluster_access_key": req.ClusterAccessKey,
+				"access_key_id":      req.AccessKey,
+				"access_key_secret":  req.SecretKey,
+				"region":             req.Region,
+				"charge_type":        req.ChargeType,
+				"charge_period":      req.ChargePeriod,
+				"vpc_id":             req.VpcID,
+				"vswitch_id":         req.VSwitchID,
+				"vpc_subnet":         req.VpcCIDR,
+				"vswitch_subnet":     req.VSwitchCIDR,
+				"nat_gateway_id":     req.NatGatewayID,
+				"forward_table_id":   req.ForwardTableID,
+				"snat_table_id":      req.SnatTableID,
+				"container_subnet":   req.PodCIDR,
+				"vip_subnet":         req.ServiceCIDR,
+				"worker_number":      worker_number,
+				"ecs_instance_type":  req.EcsInstType,
+				"k8s_version":        req.K8sVersion,
+				"managed":            managed,
 
 				"collector_url":     req.CollectorURL,
 				"openapi_url":       req.OpenAPI,
@@ -552,25 +563,26 @@ func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml 
 				"root_domain":  req.RootDomain,
 				"enable_https": req.EnableHttps,
 
-				"cluster_name":      req.ClusterName,
-				"access_key_id":     req.AccessKey,
-				"access_key_secret": req.SecretKey,
-				"region":            req.Region,
-				"charge_type":       req.ChargeType,
-				"charge_period":     req.ChargePeriod,
-				"vpc_subnet":        req.VpcCIDR,
-				"vpc_id":            req.VpcID,
-				"vswitch_id":        req.VSwitchID,
-				"vswitch_subnet":    req.VSwitchCIDR,
-				"nat_gateway_id":    req.NatGatewayID,
-				"forward_table_id":  req.ForwardTableID,
-				"snat_table_id":     req.SnatTableID,
-				"container_subnet":  req.PodCIDR,
-				"vip_subnet":        req.ServiceCIDR,
-				"worker_number":     worker_number,
-				"ecs_instance_type": req.EcsInstType,
-				"k8s_version":       req.K8sVersion,
-				"managed":           managed,
+				"cluster_name":       req.ClusterName,
+				"cluster_access_key": req.ClusterAccessKey,
+				"access_key_id":      req.AccessKey,
+				"access_key_secret":  req.SecretKey,
+				"region":             req.Region,
+				"charge_type":        req.ChargeType,
+				"charge_period":      req.ChargePeriod,
+				"vpc_subnet":         req.VpcCIDR,
+				"vpc_id":             req.VpcID,
+				"vswitch_id":         req.VSwitchID,
+				"vswitch_subnet":     req.VSwitchCIDR,
+				"nat_gateway_id":     req.NatGatewayID,
+				"forward_table_id":   req.ForwardTableID,
+				"snat_table_id":      req.SnatTableID,
+				"container_subnet":   req.PodCIDR,
+				"vip_subnet":         req.ServiceCIDR,
+				"worker_number":      worker_number,
+				"ecs_instance_type":  req.EcsInstType,
+				"k8s_version":        req.K8sVersion,
+				"managed":            managed,
 
 				"collector_url":     req.CollectorURL,
 				"openapi_url":       req.OpenAPI,

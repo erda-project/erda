@@ -103,16 +103,25 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 		return
 	}
 
+	// get cluster access key
+	cak, err := c.GetOrCreateAccessKey(req.ClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster access key failed, cluster: %s, error: %v", req.ClusterName, err)
+		return
+	}
+
 	yml := apistructs.PipelineYml{
 		Version: "1.1",
 		Stages: [][]*apistructs.PipelineYmlAction{{{
 			Type:    "upgrade-edge-cluster",
 			Version: "1.0",
 			Params: map[string]interface{}{
-				"dice_version": centralClusterInfo.Get(apistructs.DICE_VERSION),
+				"dice_version":       centralClusterInfo.Get(apistructs.DICE_VERSION),
+				"cluster_access_key": cak,
 			},
 		}}},
 	}
+
 	b, err := yaml.Marshal(yml)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to marshal pipelineyml: %v", err)
