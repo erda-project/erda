@@ -30,7 +30,7 @@ import (
 
 const DataValueKey = "action_data_value_key"
 
-func (a *ComponentAction) GenActionState(c *apistructs.Component) (err error) {
+func (a *ComponentAction) GenActionState(c *apistructs.Component) (version string, err error) {
 	sByte, err := json.Marshal(c.State)
 	if err != nil {
 		err = fmt.Errorf("failed to marshal action version, state:%+v, err:%v", c.State, err)
@@ -42,6 +42,23 @@ func (a *ComponentAction) GenActionState(c *apistructs.Component) (err error) {
 		return
 	}
 	a.SetActionState(state)
+
+	data := c.State["formData"]
+	if data == nil {
+		return
+	}
+
+	fromData, ok := data.(map[string]interface{})
+	if !ok {
+		return
+	}
+	versionInterface, ok := fromData["version"]
+	if !ok {
+		return
+	}
+
+	version = versionInterface.(string)
+
 	return
 }
 
@@ -237,16 +254,15 @@ func GenLoopProps(loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPr
 	return
 }
 
-func (a *ComponentAction) GenActionProps(name, version string) (err error) {
-	actionExt, versions, err := a.QueryExtensionVersion(name, version)
+func GenActionProps(ctx context.Context, c *apistructs.Component, name, version string) (err error) {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	actionExt, versions, err := QueryExtensionVersion(bdl.Bdl, name, version)
 	if err != nil {
 		logrus.Errorf("query extension version failed, name:%s, version:%s, err:%v", name, version, err)
 		return
 	}
 	// 默认请求时，version为空，需要以默认版本覆盖
-	if version == "" {
-		a.SetActionState(ComponentActionState{Version: actionExt.Version})
-	}
+	c.State["version"] = actionExt.Version
 
 	header, err := GenHeaderProps(actionExt, versions)
 	if err != nil {
@@ -271,7 +287,9 @@ func (a *ComponentAction) GenActionProps(name, version string) (err error) {
 	props = append(props, params...)
 	props = append(props, resource...)
 	props = append(props, loop...)
-	a.SetActionProps(props)
+	c.Props = map[string]interface{}{
+		"fields": props,
+	}
 	return
 }
 
@@ -283,6 +301,10 @@ func registerActionTypeRender() {
 		actionTypeRender = make(map[string]func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error))
 		actionTypeRender["manual-review"] = func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
 			action := ctx.Value(DataValueKey).(*apistructs.PipelineYmlAction)
+			if action == nil {
+				return nil
+			}
+
 			params := action.Params
 			if params == nil || params["processor"] == nil {
 				return nil
@@ -318,9 +340,15 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 		return err
 	}
 
+	if c.State == nil {
+		c.State = map[string]interface{}{}
+	}
+
+	var changeVersion string
+
 	switch event.Operation {
 	case apistructs.ChangeOperation:
-		err = a.GenActionState(c)
+		changeVersion, err = a.GenActionState(c)
 		if err != nil {
 			logrus.Errorf("generate action state failed,  err:%v", err)
 			return
@@ -330,17 +358,50 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 		logrus.Warnf("operation [%s] not support, use default operation instead", event.Operation)
 	}
 
-	name := scenario.ScenarioKey
-	version := a.GetActionVersion()
-	err = a.GenActionProps(name, version)
+	actionName := scenario.ScenarioKey
+	chooseActionData := getChooseActionData(bdl)
+
+	var chooseActionVersion string
+	if chooseActionData != nil && chooseActionData.Version != "" && chooseActionData.Type == actionName {
+		chooseActionVersion = chooseActionData.Version
+	}
+
+	version := GetActionVersion(c)
+	if chooseActionData != nil && chooseActionData.Type == actionName {
+		version = chooseActionVersion
+	}
+	if version == "[前端选择列表选择]" {
+		version = ""
+	}
+
+	if changeVersion != "" {
+		version = changeVersion
+	}
+
+	err = GenActionProps(ctx, c, actionName, version)
 	if err != nil {
-		logrus.Errorf("generate action props failed, name:%s, version:%s, err:%v", name, version, err)
+		logrus.Errorf("generate action props failed, name:%s, version:%s, err:%v", actionName, version, err)
 		return err
 	}
-	c.Props = a.Props
-	cont, _ := json.Marshal(a.State)
-	_ = json.Unmarshal(cont, &c.State)
+	version = GetActionVersion(c)
 
+	doFunc := actionTypeRender[actionName]
+	if doFunc == nil {
+		return nil
+	}
+
+	if chooseActionData == nil {
+		chooseActionData = &apistructs.PipelineYmlAction{
+			Type:    actionName,
+			Version: version,
+		}
+	}
+
+	newCtx := context.WithValue(ctx, DataValueKey, chooseActionData)
+	return doFunc(newCtx, c, scenario, event, globalStateData)
+}
+
+func getChooseActionData(bdl protocol.ContextBundle) *apistructs.PipelineYmlAction {
 	if bdl.InParams == nil {
 		return nil
 	}
@@ -349,7 +410,8 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 	}
 	actionDataJson, err := json.Marshal(bdl.InParams["actionData"])
 	if err != nil {
-		return fmt.Errorf("failed to marshal actionData:%+v, err:%v", bdl.InParams["actionData"], err)
+		fmt.Printf("failed to marshal actionData:%+v, err:%v", bdl.InParams["actionData"], err)
+		return nil
 	}
 	if len(actionDataJson) <= 0 {
 		return nil
@@ -358,20 +420,11 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 	var action = &apistructs.PipelineYmlAction{}
 	err = json.Unmarshal(actionDataJson, action)
 	if err != nil {
-		return fmt.Errorf("failed to Unmarshal actionData:%+v, err:%v", actionDataJson, err)
-	}
-
-	if action.Type == "" {
-		action.Type = scenario.ScenarioKey
-	}
-
-	doFunc := actionTypeRender[action.Type]
-	if doFunc == nil {
+		fmt.Printf("failed to Unmarshal actionData:%+v, err:%v", actionDataJson, err)
 		return nil
 	}
 
-	newCtx := context.WithValue(ctx, DataValueKey, action)
-	return doFunc(newCtx, c, scenario, event, globalStateData)
+	return action
 }
 
 func RenderCreator() protocol.CompRender {

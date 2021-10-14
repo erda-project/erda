@@ -21,6 +21,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -69,16 +70,24 @@ func (a *ComponentAction) SetActionProps(p interface{}) {
 	a.Props = map[string]interface{}{"fields": p}
 }
 
-func (a ComponentAction) GetActionVersion() string {
-	return a.State.Version
+func GetActionVersion(c *apistructs.Component) string {
+	version, ok := c.State["version"]
+	if !ok {
+		return ""
+	}
+	versionValue, ok := version.(string)
+	if !ok {
+		return ""
+	}
+	return versionValue
 }
 
-func (a ComponentAction) QueryExtensionVersion(name, version string) (*apistructs.ExtensionVersion, []VersionOption, error) {
+func QueryExtensionVersion(bdl *bundle.Bundle, name, version string) (*apistructs.ExtensionVersion, []VersionOption, error) {
 	var (
 		target   *apistructs.ExtensionVersion
 		versions []VersionOption
 	)
-	actions, err := a.ctxBdl.Bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: name, YamlFormat: true})
+	actions, err := bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{Name: name, YamlFormat: true})
 	if err != nil {
 		return nil, nil, err
 	}
