@@ -6,7 +6,7 @@
       displayName: 机器ip
 - scope: msp
   conditions:
-    - name: application_id
-      displayName: 应用id
+    - name: application_name
+      displayName: 应用
     - name: service_name
       displayName: 服务
