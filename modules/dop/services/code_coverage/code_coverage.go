@@ -21,7 +21,6 @@ import (
 
 	"io/ioutil"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/environment"
-	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/loop"
 )
 
@@ -412,55 +410,40 @@ func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID
 
 	var findJacocoAgentEnv = false
 	var findJacocoEnv = false
-	var lock sync.Mutex
 
-	var wait = limit_sync_group.NewSemaphore(5)
+	var namespaceParams []apistructs.NamespaceParam
 	for index := range apps.List {
-		wait.Add(1)
-		go func(index int) {
-			defer wait.Done()
+		for _, envValue := range apistructs.EnvList {
+			namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
+				NamespaceName: fmt.Sprintf("app-%v-%v", apps.List[index].ID, envValue),
+			})
+		}
+	}
 
-			lock.Lock()
-			if findJacocoAgentEnv && findJacocoEnv {
-				lock.Unlock()
-				return
-			}
-			lock.Unlock()
+	nsConfigs, err := svc.envConfig.ListConfigs(namespaceParams)
 
-			app := apps.List[index]
-			var namespaceParams []apistructs.NamespaceParam
-			for _, env := range apistructs.EnvList {
-				namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
-					NamespaceName: fmt.Sprintf("app-%v-%v", app.ID, env),
-				})
-			}
+	for index := range apps.List {
+		if findJacocoAgentEnv && findJacocoEnv {
+			break
+		}
 
-			configs, err := svc.envConfig.GetMultiNamespaceConfigs(nil, userID, namespaceParams)
-			if err != nil {
-				return
-			}
-
-			for _, envs := range configs {
-				var findTwoEnv = 0
-				for _, env := range envs {
-					if env.Key == "OPEN_JACOCO_AGENT" && env.Value == "true" {
-						lock.Lock()
-						findJacocoAgentEnv = true
-						lock.Unlock()
-					}
-					if env.Key == "ERDA_URL" || env.Key == "ERDA_TOKEN" {
-						findTwoEnv++
-					}
+		app := apps.List[index]
+		for _, searchEnv := range apistructs.EnvList {
+			var findTwoEnv = 0
+			ns := fmt.Sprintf("app-%v-%v", app.ID, searchEnv)
+			for _, envValue := range nsConfigs[ns] {
+				if envValue.Key == "OPEN_JACOCO_AGENT" && envValue.Value == "true" {
+					findJacocoAgentEnv = true
+				}
+				if envValue.Key == "ERDA_URL" || envValue.Key == "ERDA_TOKEN" {
+					findTwoEnv++
 				}
 				if findTwoEnv >= 2 {
-					lock.Lock()
 					findJacocoEnv = true
-					lock.Unlock()
 				}
 			}
-		}(index)
+		}
 	}
-	wait.Wait()
 
 	if !findJacocoEnv {
 		return false, nil, "not find jacoco application in project, please add jacoco application and set ERDA_URL,ERDA_TOKEN env"

@@ -23,7 +23,6 @@ var ORCHESTRATOR_RUNTIME_CREATE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  false,
-	CheckToken:  true,
 	Doc: `
 summary: 创建 Runtime
 consumes:
