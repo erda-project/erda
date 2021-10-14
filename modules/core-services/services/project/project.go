@@ -47,7 +47,7 @@ type Project struct {
 	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
 
-	clusterResourceClient dashboardPb.ClusterResourceClient
+	clusterResourceClient dashboardPb.ClusterResourceServer
 }
 
 // Option 定义 Project 对象的配置选项
@@ -84,7 +84,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceClient) Option {
+func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
 		p.clusterResourceClient = client
 	}

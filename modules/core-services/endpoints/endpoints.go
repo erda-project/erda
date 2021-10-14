@@ -67,14 +67,14 @@ type Endpoints struct {
 	permission            *permission.Permission
 	license               *license.License
 	notifyGroup           *notify.NotifyGroup
-	mbox               *mbox.MBox
-	label              *label.Label
-	notice             *notice.Notice
-	queryStringDecoder *schema.Decoder
-	audit              *audit.Audit
-	errorbox           *errorbox.ErrorBox
-	fileSvc            *filesvc.FileService
-	user               *user.User
+	mbox                  *mbox.MBox
+	label                 *label.Label
+	notice                *notice.Notice
+	queryStringDecoder    *schema.Decoder
+	audit                 *audit.Audit
+	errorbox              *errorbox.ErrorBox
+	fileSvc               *filesvc.FileService
+	user                  *user.User
 }
 
 type Option func(*Endpoints)
@@ -251,13 +251,6 @@ func WithFileSvc(svc *filesvc.FileService) Option {
 func WithUserSvc(svc *user.User) Option {
 	return func(e *Endpoints) {
 		e.user = svc
-	}
-}
-
-// WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceClient) Option {
-	return func(e *Endpoints) {
-		e.clusterResourceClient = client
 	}
 }
 

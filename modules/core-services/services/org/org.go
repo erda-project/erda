@@ -48,7 +48,7 @@ type Org struct {
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
 
-	clusterResourceClient dashboardPb.ClusterResourceClient
+	clusterResourceClient dashboardPb.ClusterResourceServer
 }
 
 // Option 定义 Org 对象的配置选项
@@ -92,7 +92,7 @@ func WithRedisClient(cli *redis.Client) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceClient) Option {
+func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
 	return func(o *Org) {
 		o.clusterResourceClient = client
 	}
@@ -602,7 +602,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		workspaces := extractWorkspacesFromLabels(host.GetLabels())
 		var (
 			allocatable, request *calcu.Calculator
-			ok bool
+			ok                   bool
 		)
 		// 累计此 host 上的 allocatable 资源
 		allocatable, ok = clustersAllocatable[host.GetClusterName()]
@@ -655,7 +655,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 			resource := apistructs.ClusterResources{
 				ClusterName:    clusterName,
 				Workspace:      workspaceStr,
-				CPUAllocatable:calcu.MillcoreToCore( allocatable.CPU.TotalForWorkspace(workspace)),
+				CPUAllocatable: calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace)),
 				CPUAvailable:   calcu.MillcoreToCore(available.CPU.TotalForWorkspace(workspace)),
 				CPUQuotaRate:   0,
 				CPURequest:     calcu.MillcoreToCore(request.CPU.TotalForWorkspace(workspace)),
@@ -664,8 +664,8 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				MemQuotaRate:   0,
 				MemRequest:     calcu.ByteToGibibyte(request.Mem.TotalForWorkspace(workspace)),
 			}
-			resource.CPUQuotaRate = 1 - resource.CPUAvailable / resource.CPUAllocatable
-			resource.MemQuotaRate = 1 - resource.MemAvailable / resource.MemAllocatable
+			resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
+			resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
 			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
 			resourceInfo.TotalCPU += resource.CPUAllocatable
 			resourceInfo.TotalMem += resource.MemAllocatable

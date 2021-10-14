@@ -18,11 +18,13 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 )
 
 type provider struct {
-	Cms cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	Cms cmspb.CmsServiceServer            `autowired:"erda.core.pipeline.cms.CmsService"`
+	Cmp dashboardPb.ClusterResourceServer `autowired:"erda.cmp.dashboard.ClusterResource"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
