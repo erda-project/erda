@@ -15,7 +15,6 @@
 package http
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -27,9 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
-	"github.com/erda-project/erda/modules/msp/apm/checker/apis"
 	"github.com/erda-project/erda/modules/msp/apm/checker/plugins"
-	"github.com/erda-project/erda/modules/msp/apm/checker/plugins/http/triggering"
 )
 
 type config struct {
@@ -49,7 +46,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error { return nil }
 
 func (p *provider) Validate(c *pb.Checker) error {
-	urlstr := c.Config["url"].GetStringValue()
+	urlstr := c.Config["url"]
 	if len(urlstr) <= 0 {
 		return fmt.Errorf("url must not be empdy")
 	}
@@ -62,13 +59,13 @@ func (p *provider) Validate(c *pb.Checker) error {
 
 func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 	// method
-	method := c.Config["method"].GetStringValue()
+	method := c.Config["method"]
 	if len(method) <= 0 {
 		method = http.MethodGet
 	}
 
 	// url
-	urlstr := c.Config["url"].GetStringValue()
+	urlstr := c.Config["url"]
 	if len(urlstr) <= 0 {
 		return nil, fmt.Errorf("url must not be empdy")
 	}
@@ -79,19 +76,6 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 
 	// headers
 	headers := http.Header{}
-	headersStruct := c.Config["headers"].GetStructValue()
-	headersStr, err := json.Marshal(headersStruct)
-	if err != nil {
-		return nil, fmt.Errorf("invalid headers: %s", err)
-	}
-	var hs map[string]string
-	err = json.Unmarshal(headersStr, &hs)
-	if err != nil {
-		return nil, fmt.Errorf("invalid url: %s", err)
-	}
-	for k := range hs {
-		headers.Add(k, hs[k])
-	}
 	for k, vals := range p.Cfg.Headers {
 		for _, v := range vals {
 			headers.Add(k, v)
@@ -100,91 +84,52 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 	for k, v := range c.Config {
 		if strings.HasPrefix(k, "header_") {
 			k = k[len("header_"):]
-			headers.Add(k, v.GetStringValue())
+			headers.Add(k, v)
 		}
 	}
 
 	// timeout
 	var timeout time.Duration
-	if val := c.Config["timeout"]; len(val.GetStringValue()) > 0 {
-		timeout, err = time.ParseDuration(val.GetStringValue())
+	if val := c.Config["timeout"]; len(val) > 0 {
+		timeout, err = time.ParseDuration(val)
 		if err != nil {
 			return nil, fmt.Errorf("invalid timeout: %s", err)
 		}
 	}
-
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
 
 	// trace
 	var trace bool
-	if val := c.Config["trace"]; len(val.GetStringValue()) > 0 {
-		trace, err = strconv.ParseBool(val.GetStringValue())
+	if val := c.Config["trace"]; len(val) > 0 {
+		trace, err = strconv.ParseBool(val)
 		if err != nil {
 			return nil, fmt.Errorf("invalid trace: %s", err)
 		}
 	}
 
-	// body
-	bodyStruct := c.Config["body"].GetStructValue()
-	bodyStr := ""
-	if bodyStruct != nil {
-
-		bodyBytes, err := json.Marshal(bodyStruct)
-		if err != nil {
-			return nil, err
-		}
-		bodyStr = string(bodyBytes)
-	}
-
-	// retry
-	retryCount := int64(c.Config["retry"].GetNumberValue())
-
-	// interval
-	interval := int64(c.Config["interval"].GetNumberValue())
-
-	// triggering
-	var triggers []*pb.Condition
-	triggeringStruct := c.Config["triggering"].GetListValue()
-	if triggeringStruct != nil {
-		triggerBytes, err := json.Marshal(triggeringStruct)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(triggerBytes, &triggers)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &httpHandler{
-		p:          p,
-		tags:       c.Tags,
-		method:     method,
-		url:        urlstr,
-		headers:    headers,
-		body:       bodyStr,
-		retry:      retryCount,
-		triggering: triggers,
-		interval:   interval,
-		timeout:    timeout,
-		trace:      trace,
+		p:       p,
+		tags:    c.Tags,
+		method:  method,
+		url:     urlstr,
+		headers: headers,
+		body:    c.Config["body"],
+		timeout: timeout,
+		trace:   trace,
 	}, nil
 }
 
 type httpHandler struct {
-	p          *provider
-	tags       map[string]string
-	method     string
-	url        string
-	headers    http.Header
-	body       string
-	retry      int64
-	interval   int64
-	triggering []*pb.Condition
-	timeout    time.Duration
-	trace      bool
+	p       *provider
+	tags    map[string]string
+	method  string
+	url     string
+	headers http.Header
+	body    string
+	timeout time.Duration
+	trace   bool
 }
 
 func (h httpHandler) Do(ctx plugins.Context) error {
@@ -198,41 +143,25 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 	for k, v := range h.tags {
 		tags[k] = v
 	}
-	headers, err := json.Marshal(h.headers)
-	if err != nil {
-		return nil
-	}
 	tags["url"] = h.url
-	tags["method"] = h.method
-	tags["body"] = h.body
-	tags["headers"] = string(headers)
-	tags["retry_spec"] = strconv.FormatInt(h.retry, 10)
-	var triggersBytes []byte
-	if h.triggering != nil {
-		triggersBytes, err = json.Marshal(h.triggering)
-	}
-	tags["interval"] = strconv.FormatInt(h.interval, 10)
-	tags["triggering"] = string(triggersBytes)
-	fields["retry"] = 0
+	fields["retry"] = 0 // for compatibility
 
 	req, err := http.NewRequestWithContext(ctx, h.method, h.url, strings.NewReader(h.body))
-	req.Header = h.headers
-
 	if err != nil {
 		fields["latency"] = 0
-		checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
-		err = ctx.Report(&plugins.Metric{
+		fields["code"] = 601
+		fields["message"] = err.Error()
+		tags["status"] = "2"                 // for compatibility
+		tags["status_name"] = "Major Outage" // for compatibility
+		ctx.Report(&plugins.Metric{
 			Name:   "status_page",
 			Tags:   tags,
 			Fields: fields,
 		})
-		if err != nil {
-			return err
-		}
 		return err
 	}
 
-	// setup trace if sample is true
+	// setup trage if need
 	if h.trace || h.p.shouldSample() {
 		h.p.setupTrace(req, tags, fields)
 	}
@@ -258,51 +187,29 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 	resp, err := client.Do(req)
 	latency := time.Now().Sub(start).Milliseconds()
 	fields["latency"] = latency
-
-	// strategy of triggering condition
-	triggers := h.triggering
-
-	resultStatus := true
-	for _, condition := range triggers {
-		t := triggering.New(condition)
-		resultStatus = t.Executor(resp) && resultStatus
+	if err != nil {
+		fields["code"] = 601
+		fields["message"] = err.Error()
+		tags["status"] = "2"                 // for compatibility
+		tags["status_name"] = "Major Outage" // for compatibility
+	} else {
+		fields["code"] = resp.StatusCode
+		if resp.StatusCode >= 400 {
+			fields["message"] = http.StatusText(resp.StatusCode)
+			tags["status"] = "2"                 // for compatibility
+			tags["status_name"] = "Major Outage" // for compatibility
+		} else {
+			tags["status"] = "1"                // for compatibility
+			tags["status_name"] = "Operational" // for compatibility
+		}
 	}
 
-	checkerStatusHandler(err, resultStatus, fields, tags, resp)
-
-	err = ctx.Report(&plugins.Metric{
+	ctx.Report(&plugins.Metric{
 		Name:   "status_page",
 		Tags:   tags,
 		Fields: fields,
 	})
-	if err != nil {
-		return err
-	}
 	return nil
-}
-
-func checkerStatusHandler(err error, resultStatus bool, fields map[string]interface{}, tags map[string]string, resp *http.Response) {
-	if err != nil {
-		checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
-		return
-	}
-	if !resultStatus {
-		checkerStatusMetric("2", apis.StatusRED, resp.StatusCode, tags, fields)
-	} else {
-		checkerStatusMetric("1", apis.StatusGreen, resp.StatusCode, tags, fields)
-	}
-	fields["triggering_status"] = resultStatus
-}
-
-func checkerStatusMetric(status, statusName string, statusCode int, tags map[string]string, fields map[string]interface{}) {
-	fields["code"] = statusCode
-	message := http.StatusText(statusCode)
-	if message == "" {
-		message = "Checker Request Failed"
-	}
-	fields["message"] = message
-	tags["status"] = status
-	tags["status_name"] = statusName
 }
 
 func init() {
