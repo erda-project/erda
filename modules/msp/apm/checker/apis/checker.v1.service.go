@@ -294,10 +294,16 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
+		var config map[string]*structpb.Value
+		if item.Config != "" {
+			json.Unmarshal([]byte(item.Config), &config)
+		}
+
 		result := &pb.DescribeItemV1{
 			Name:   item.Name,
 			Mode:   item.Mode,
 			Url:    item.URL,
+			Config: config,
 			Status: StatusMiss,
 		}
 		results[item.ID] = result
