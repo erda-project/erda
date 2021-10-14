@@ -45,6 +45,18 @@ func (client *DBClient) GetNamespaceByName(name string) (*model.ConfigNamespace,
 	return namespace, nil
 }
 
+func (client *DBClient) ListNamespaceByName(names []string) ([]model.ConfigNamespace, error) {
+	namespaces := []model.ConfigNamespace{}
+	if err := client.Where("name in (?)", names).Where("is_deleted = ?", "N").
+		Find(&namespaces).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return namespaces, nil
+}
+
 // GetNamespacesByNames 根据 多个names 获取 多个namespace
 func (client *DBClient) GetNamespacesByNames(names []string) ([]model.ConfigNamespace, error) {
 	var namespaces []model.ConfigNamespace
