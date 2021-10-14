@@ -58,6 +58,7 @@ type Metric struct {
 	AccountID  int64     `gorm:"column:account_id"`
 	Status     int64     `gorm:"column:status"`
 	Env        string    `gorm:"column:env"`
+	Config     string    `gorm:"config"`
 	CreateTime time.Time `gorm:"column:create_time"`
 	UpdateTime time.Time `gorm:"column:update_time"`
 	IsDeleted  string    `gorm:"column:is_deleted"`

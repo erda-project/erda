@@ -17,71 +17,71 @@ service CheckerV1Service {
   };
 
   rpc CreateCheckerV1 (CreateCheckerV1Request) returns (CreateCheckerV1Response)  {
-    option (google.api.http) = {
-      post: "/api/v1/msp/checkers/projects/{data.projectID}/metrics",
+    option (google.api.http)     = {
+      post: "/api/msp/apm/checker",
       body: "data",
     };
     option (erda.common.openapi) = {
-      path: "/api/projects/{data.projectID}/metrics"
+      path: "/api/msp/apm/checker"
     };
   }
   rpc UpdateCheckerV1 (UpdateCheckerV1Request) returns (UpdateCheckerV1Response)  {
-    option (google.api.http) = {
-      post: "/api/v1/msp/checkers/metrics/{id}",
+    option (google.api.http)     = {
+      post: "/api/msp/apm/checker/{id}",
       body: "data",
     };
     option (erda.common.openapi) = {
-      path: "/api/metrics/{id}"
+      path: "/api/msp/apm/checker/{id}"
     };
   }
   rpc DeleteCheckerV1 (DeleteCheckerV1Request) returns (DeleteCheckerV1Response) {
-    option (google.api.http) = {
-      delete: "/api/v1/msp/checkers/metrics/{id}",
+    option (google.api.http)     = {
+      delete: "/api/msp/apm/checker/{id}",
     };
     option (erda.common.openapi) = {
-      path: "/api/metrics/{id}"
+      path: "/api/msp/apm/checker/{id}"
     };
   }
   rpc GetCheckerV1 (GetCheckerV1Request) returns (GetCheckerV1Response) {
     option (google.api.http) = {
-      get: "/api/v1/msp/checkers/metrics/{id}",
+      get: "/api/msp/apm/checker/{id}",
     };
   }
-  
+
   rpc DescribeCheckersV1 (DescribeCheckersV1Request) returns (DescribeCheckersV1Response)  {
-    option (google.api.http) = {
-      get: "/api/v1/msp/checkers/projects/{projectID}/dashboard",
+    option (google.api.http)     = {
+      get: "/api/msp/apm/checkers/dashboard?projectId={projectID}",
     };
     option (erda.common.openapi) = {
-      path: "/api/projects/{projectID}/dashboard"
+      path: "/api/msp/apm/checkers/dashboard"
     };
   }
 
   rpc DescribeCheckerV1 (DescribeCheckerV1Request) returns (DescribeCheckerV1Response)  {
-    option (google.api.http) = {
-      get: "/api/v1/msp/checkers/metrics/{id}/dashboard",
+    option (google.api.http)     = {
+      get: "/api/msp/apm/checker/{id}/dashboard",
     };
     option (erda.common.openapi) = {
-      path: "/api/metrics/{id}/dashboard"
+      path: "/api/msp/apm/checker/{id}/dashboard"
     };
   }
 
   rpc GetCheckerStatusV1 (GetCheckerStatusV1Request) returns (GetCheckerStatusV1Response)  {
-    option (google.api.http) = {
-      get: "/api/v1/msp/checkers/metrics/{id}/status",
+    option (google.api.http)     = {
+      get: "/api/msp/apm/checker/{id}/status",
     };
     option (erda.common.openapi) = {
-      path: "/api/metrics/{id}/status"
+      path: "/api/msp/apm/checker/{id}/status"
     };
   }
 
   // +depracated
   rpc GetCheckerIssuesV1 (GetCheckerIssuesV1Request) returns (GetCheckerIssuesV1Response)  {
-    option (google.api.http) = {
-      get: "/api/v1/msp/checkers/metrics/{id}/issues",
+    option (google.api.http)     = {
+      get: "/api/msp/apm/checker/{id}/issues",
     };
     option (erda.common.openapi) = {
-      path: "/api/metrics/{id}/issues"
+      path: "/api/msp/apm/checker/{id}/issues"
     };
   }
 
@@ -89,7 +89,7 @@ service CheckerV1Service {
 
 // CreateCheckerV1
 message CreateCheckerV1Request {
-  CheckerV1 data      = 1 [(validator.field) = {msg_exists : true}];
+  CheckerV1 data = 1 [(validator.field) = {msg_exists : true}];
 }
 
 message CreateCheckerV1Response {
@@ -126,8 +126,8 @@ message GetCheckerV1Response {
 
 // DescribeCheckersV1
 message DescribeCheckersV1Request {
-  int64  projectID  = 1 [(validator.field) = {int_gt: 0}];
-  string env        = 2 [(validator.field) = {string_not_empty : true}];
+  int64  projectID = 1 [(validator.field) = {int_gt: 0}, json_name = "projectId"];
+  string env       = 2 [(validator.field) = {string_not_empty : true}];
 }
 
 message DescribeCheckersV1Response {
@@ -169,11 +169,27 @@ message GetCheckerIssuesV1Response {
 
 // common
 message CheckerV1 {
-  string name       = 1 [(validator.field) = {string_not_empty : true}];
-  string mode       = 2 [(validator.field) = {string_not_empty : true}];
-  string url        = 3 [(validator.field) = {string_not_empty : true}];
-  int64  projectID  = 4;
-  string env        = 5;
+  string                             name      = 1 [(validator.field) = {string_not_empty : true}];
+  string                             mode      = 2 [(validator.field) = {string_not_empty : true}];
+  int64                              projectID = 3 [json_name = "projectId"];
+  string                             env       = 4;
+  map<string, google.protobuf.Value> config    = 5;
+}
+
+message HttpModeConfig {
+  string                url        = 1 [(validator.field) = {string_not_empty : true}]; // request url
+  string                method     = 2 [(validator.field) = {string_not_empty : true}]; // request method
+  google.protobuf.Value headers    = 3; // request headers
+  google.protobuf.Value body       = 4; // request body
+  repeated Condition    triggering = 5; // triggering conditions
+  int64                 retry      = 6; // retry count
+  int64                 interval   = 7; // request interval
+}
+
+message Condition {
+  string                key     = 1;
+  string                operate = 2;
+  google.protobuf.Value value   = 3;
 }
 
 message DescribeResultV1 {
