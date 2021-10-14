@@ -98,6 +98,23 @@ func (a *AutoTestSpaceDirector) Construct() error {
 	return nil
 }
 
+func (a *AutoTestSpaceDirector) ConstructSceneSet() error {
+	if err := a.Creator.SetSceneSets(); err != nil {
+		return err
+	}
+	if err := a.Creator.SetSceneSets(); err != nil {
+		return err
+	}
+	if err := a.Creator.SetScenes(); err != nil {
+		return err
+	}
+	if err := a.Creator.SetSceneSteps(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *AutoTestSpaceDirector) ConstructFromSceneSet(setID uint64) error {
 	if err := a.Creator.SetSpace(); err != nil {
 		return err
@@ -527,25 +544,63 @@ func (a *AutoTestSpaceData) Copy() (*apistructs.AutoTestSpace, error) {
 	return a.NewSpace, nil
 }
 
+func (a *AutoTestSpaceData) CopyFromSceneSets() error {
+	if err := a.CopySceneSets(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return err
+	}
+	if err := a.CopyScenes(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return err
+	}
+	if err := a.CopySceneSteps(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return err
+	}
+	if err := a.CopyInputs(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return err
+	}
+	if err := a.CopyOutputs(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return err
+	}
+	return nil
+}
+
 func (a *AutoTestSpaceData) CopySceneSets() error {
 	var preID uint64 = 0
 	a.sceneSetIDAssociationMap = map[uint64]uint64{}
 
 	for _, each := range a.SceneSets[a.Space.ID] {
-		newSet := &dao.SceneSet{
-			Name:        each.Name,
-			Description: each.Description,
-			SpaceID:     a.NewSpace.ID,
-			PreID:       preID,
-			CreatorID:   a.UserID,
-		}
-		if err := a.svc.db.CreateSceneSet(newSet); err != nil {
+		name := a.generateSceneSetName(each.Name)
+		newSetID, err := a.svc.CreateSceneSet(apistructs.SceneSetRequest{
+			Name:         name,
+			Description:  each.Description,
+			PreID:        preID,
+			IdentityInfo: a.IdentityInfo,
+			ProjectId:    a.ProjectID,
+			SpaceID:      a.NewSpace.ID,
+		})
+		if err != nil {
 			return err
 		}
-		a.sceneSetIDAssociationMap[each.ID] = newSet.ID
-		preID = newSet.ID
+		a.sceneSetIDAssociationMap[each.ID] = newSetID
+		preID = newSetID
 	}
 	return nil
+}
+
+func (a *AutoTestSpaceData) generateSceneSetName(sceneSetName string) string {
+	name := sceneSetName
+	idx := 1
+	for {
+		if !a.svc.IsExistSceneSetName(a.NewSpace.ID, name) {
+			return name
+		}
+		name = fmt.Sprintf("%s(%d)", sceneSetName, idx)
+		idx++
+	}
 }
 
 func (a *AutoTestSpaceData) CopyScenes() error {

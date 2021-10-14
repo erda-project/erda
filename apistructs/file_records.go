@@ -66,6 +66,7 @@ type AutoTestSpaceFileExtraInfo struct {
 
 type AutoTestSceneSetFileExtraInfo struct {
 	ExportRequest *AutoTestSceneSetExportRequest `json:"exportRequest,omitempty"`
+	ImportRequest *AutoTestSceneSetImportRequest `json:"importRequest"`
 }
 
 type FileRecordState string
@@ -83,6 +84,7 @@ const (
 	FileSpaceActionTypeExport    FileActionType  = "spaceExport"
 	FileSpaceActionTypeImport    FileActionType  = "spaceImport"
 	FileSceneSetActionTypeExport FileActionType  = "sceneSetExport"
+	FileSceneSetActionTypeImport FileActionType  = "sceneSetImport"
 )
 
 type ListTestFileRecordsRequest struct {

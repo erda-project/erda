@@ -232,7 +232,7 @@ func (e *Endpoints) CopySceneSet(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(setId)
 }
 
-func (e *Endpoints) ExportSceneSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) ExportAutotestSceneSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrExportAutoTestSceneSet.NotLogin().ToResp(), nil
@@ -262,7 +262,7 @@ func (e *Endpoints) ExportSceneSet(ctx context.Context, r *http.Request, vars ma
 
 	fileID, err := e.autotestV2.ExportSceneSet(req)
 	if err != nil {
-		return apierrors.ErrExportAutoTestSceneSet.InternalError(err).ToResp(), nil
+		return errorresp.ErrResp(err)
 	}
 	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSceneSetActionTypeExport)
 	if err != nil {
@@ -275,5 +275,36 @@ func (e *Endpoints) ExportSceneSet(ctx context.Context, r *http.Request, vars ma
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,
 		Content: fileID,
+	}, nil
+}
+
+func (e *Endpoints) ImportAutotestSceneSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrImportAutotestSceneSet.InternalError(err).ToResp(), nil
+	}
+
+	var req apistructs.AutoTestSceneSetImportRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrImportAutotestSceneSet.InvalidParameter(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	recordID, err := e.autotestV2.ImportSceneSet(req, r)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSceneSetActionTypeImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- recordID
+	}
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: recordID,
 	}, nil
 }

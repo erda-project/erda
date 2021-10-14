@@ -644,7 +644,7 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 
 func importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport, apistructs.FileSceneSetActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -658,6 +658,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSpaceActionTypeImport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ImportFile(record)
+	case apistructs.FileSceneSetActionTypeImport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ImportSceneSetFile(record)
 	default:
 
 	}
