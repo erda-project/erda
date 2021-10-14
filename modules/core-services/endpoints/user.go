@@ -192,7 +192,7 @@ func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[st
 	if err != nil {
 		return apierrors.ErrListUser.InvalidParameter("pageSize").ToResp(), nil
 	}
-	users, err = e.uc.FuzzSearchUserByName(req.Name)
+	users, err = e.uc.FindUsersByKey(req.Name)
 	if err != nil {
 		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 	}
