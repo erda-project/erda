@@ -24,7 +24,7 @@ import (
 
 type provider struct {
 	Cms cmspb.CmsServiceServer            `autowired:"erda.core.pipeline.cms.CmsService"`
-	Cmp dashboardPb.ClusterResourceServer `autowired:"erda.cmp.dashboard.ClusterResource"`
+	Cmp dashboardPb.ClusterResourceServer `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }

@@ -64,7 +64,7 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 	}
 
 	nodes := (*gs)["nodes"].([]data.Object)
-	nodesAllocatedRes, err := cputil2.GetNodesAllocatedRes(steveServer, clusterName, cht.SDK.Identity.UserID, cht.SDK.Identity.OrgID, nodes)
+	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(steveServer, false, clusterName, cht.SDK.Identity.UserID, cht.SDK.Identity.OrgID, nodes)
 	if err != nil {
 		return err
 	}
