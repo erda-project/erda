@@ -448,5 +448,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
+
+		{Path: "/api/allnamespaces", Method: http.MethodGet, Handler: e.GetAllNamespaces},
 	}
 }

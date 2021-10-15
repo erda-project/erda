@@ -14,9 +14,26 @@
 
 package bundle
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httputil"
+)
 
 func (b *Bundle) GetWorkspaceNamespaces(req *apistructs.GetWorkspaceNamespaceRequest) ([]string, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
 
-	return []string{}, nil
+	var nssResp apistructs.GetWorkspaceNamespaceResponse
+	resp, err := hc.Get(host).Path("/api/allnamespaces").Header(httputil.InternalHeader, "bundle").Do().JSON(&nssResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !nssResp.Success {
+		return nil, toAPIError(resp.StatusCode(), nssResp.Error)
+	}
+	return nssResp.Namespaces, nil
 }
