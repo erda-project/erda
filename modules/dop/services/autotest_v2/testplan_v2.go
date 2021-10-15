@@ -43,6 +43,7 @@ func (svc *Service) CreateTestPlanV2(req apistructs.TestPlanV2CreateRequest) (ui
 		UpdaterID:     req.UserID,
 		SpaceID:       req.SpaceID,
 		ProjectID:     req.ProjectID,
+		IterationID:   req.IterationID,
 		ExecuteTime:   nil,
 		PassRate:      float64(0),
 		ExecuteApiNum: 0,
@@ -56,7 +57,7 @@ func (svc *Service) CreateTestPlanV2(req apistructs.TestPlanV2CreateRequest) (ui
 	var members []dao.AutoTestPlanMember
 	for _, ownerID := range req.Owners {
 		members = append(members, dao.AutoTestPlanMember{
-			TestPlanID: uint64(testPlanV2.ID),
+			TestPlanID: testPlanV2.ID,
 			Role:       apistructs.TestPlanMemberRoleOwner,
 			UserID:     ownerID,
 		})
@@ -406,6 +407,10 @@ func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, mo
 	if req.SpaceID != model.SpaceID {
 		// todo 检查测试计划下是否还有场景集
 		fields["space_id"] = req.SpaceID
+	}
+
+	if req.IterationID != model.IterationID {
+		fields["iteration_id"] = req.IterationID
 	}
 
 	if req.Desc != model.Desc {

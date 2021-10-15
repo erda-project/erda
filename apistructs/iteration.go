@@ -84,6 +84,8 @@ type IterationPagingRequest struct {
 	State IterationState `schema:"state"`
 	// +optional 是否查询事项概览，默认查询
 	WithoutIssueSummary bool `schema:"withoutIssueSummary"`
+	// +optional
+	IDs []uint64 `json:"ids" schema:"id"`
 }
 
 type IterationPagingResponse struct {

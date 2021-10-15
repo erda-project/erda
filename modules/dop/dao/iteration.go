@@ -103,6 +103,9 @@ func (client *DBClient) PagingIterations(req apistructs.IterationPagingRequest) 
 	if req.Deadline != "" {
 		sql = sql.Where("finished_at > ?", req.Deadline)
 	}
+	if len(req.IDs) != 0 {
+		sql = sql.Where("id IN (?)", req.IDs)
+	}
 
 	// result
 	offset := (req.PageNo - 1) * req.PageSize

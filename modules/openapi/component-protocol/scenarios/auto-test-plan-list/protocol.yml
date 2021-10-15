@@ -101,6 +101,9 @@ components:
         - title: "测试空间"
           dataIndex: "testSpace"
           width: 150
+        - title: "迭代"
+          dataIndex: "iteration"
+          width: 150
         - title: "负责人"
           dataIndex: "owners"
           width: 80

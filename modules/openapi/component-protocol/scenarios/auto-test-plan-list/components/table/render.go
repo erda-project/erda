@@ -39,6 +39,7 @@ type TableItem struct {
 	Name          string                 `json:"name"`
 	Owners        map[string]interface{} `json:"owners"`
 	TestSpace     string                 `json:"testSpace"`
+	Iteration     string                 `json:"iteration"`
 	Operate       Operate                `json:"operate"`
 	ExecuteApiNum string                 `json:"executeApiNum"`
 	PassRate      PassRate               `json:"passRate"`
@@ -177,7 +178,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		return err
 	}
 	// data
-	l := []TableItem{}
+	var l []TableItem
 	for _, data := range r.List {
 		item := TableItem{
 			Id:   data.ID,
@@ -188,6 +189,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 				"showIcon":   false,
 			},
 			TestSpace: data.SpaceName,
+			Iteration: data.IterationName,
 			Operate: Operate{
 				RenderType: "tableOperation",
 				Operations: map[string]interface{}{},

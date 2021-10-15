@@ -426,6 +426,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		testplan.WithAutoTest(autotest),
 		testplan.WithIssue(issue),
 		testplan.WithIssueState(issueState),
+		testplan.WithIterationSvc(itr),
 	)
 
 	workBench := workbench.New(
