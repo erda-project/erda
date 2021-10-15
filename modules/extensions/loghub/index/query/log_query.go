@@ -55,6 +55,7 @@ type LogRequest struct {
 	Query       string
 	Debug       bool
 	Lang        i18n.LanguageCodes
+	TimeScale   time.Duration
 }
 
 type LogDownloadRequest struct {
@@ -67,10 +68,11 @@ type LogDownloadRequest struct {
 // LogSearchRequest .
 type LogSearchRequest struct {
 	LogRequest
-	Page      int64
-	Size      int64
-	Sort      []string
-	Highlight bool
+	Page        int64
+	Size        int64
+	Sort        []string
+	Highlight   bool
+	SearchAfter []interface{}
 }
 
 // LogStatisticRequest .
@@ -209,6 +211,10 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 			Field("*"))
 	}
 
+	if len(req.SearchAfter) > 0 {
+		searchSource.SearchAfter(req.SearchAfter...)
+	}
+
 	// max allowed size limit to 10000
 	size := req.Size
 	if req.Page*req.Size > 10000 {
@@ -250,8 +256,8 @@ func (c *ESClient) getSort(searchSource *elastic.SearchSource, sorts []string) *
 func (c *ESClient) filterIndices(req *LogRequest) []string {
 	var indices []string
 	if len(req.Addon) > 0 {
-		start := req.Start * int64(time.Millisecond)
-		end := req.End * int64(time.Millisecond)
+		start := req.Start * int64(req.TimeScale)
+		end := req.End * int64(req.TimeScale)
 		for _, entry := range c.Entrys {
 			if (entry.MinTS == 0 || entry.MinTS <= end) &&
 				(entry.MaxTS == 0 || entry.MaxTS >= start) {
