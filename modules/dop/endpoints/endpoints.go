@@ -227,6 +227,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// project pipeline
 		{Path: "/api/cicds-project", Method: http.MethodPost, Handler: e.projectPipelineCreate},
+		{Path: "/api/cicds-project/actions/pipeline-detail", Method: http.MethodGet, Handler: e.projectPipelineDetail},
 
 		// cms
 		{Path: "/api/cicds/configs", Method: http.MethodPost, Handler: e.createOrUpdateCmsNsConfigs},
