@@ -178,6 +178,10 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 	if resp, err = mServer.NodeMetrics(ct.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
 	}
+	nodesAllocatedRes, err := cputil2.GetNodesAllocatedRes(steveServer, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodes)
+	if err != nil {
+		return nil, err
+	}
 	for i, c := range nodes {
 		nodeLabelsData := c.Map("metadata", "labels")
 		for k := range nodeLabelsData {
@@ -188,22 +192,18 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		}
 		//request := c.Map("status", "allocatable").String("cpu")
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		cpuRequest, _, _, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodeName)
-		if err != nil {
-			return nil, err
-		}
+		cpuRequest := nodesAllocatedRes[nodeName].CPU
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "cpu"))
 
 		key := req.NodeRequests[i].CacheKey()
 		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
-		metricsData, ok := resp[key]
+		metricsData := metrics.GetCache(key)
 		used := 0.0
-		if ok {
+		if metricsData != nil {
 			used = metricsData.Used
 		}
-
-		usage = ct.GetUsageValue(used, float64(requestQty.Value()), table.Cpu)
-		unused := math.Max(float64(cpuRequest)-resp[key].Used*1000, 0.0)
+		usage = ct.GetUsageValue(used*1000, float64(requestQty.Value())*1000, table.Cpu)
+		unused := math.Max(float64(cpuRequest)-used*1000, 0.0)
 		dr = ct.GetUnusedRate(unused, float64(cpuRequest), table.Cpu)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]

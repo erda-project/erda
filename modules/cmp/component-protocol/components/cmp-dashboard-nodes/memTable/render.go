@@ -152,26 +152,27 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		logrus.Errorf("metrics error: %v", err)
 		resp = make(map[string]*metrics.MetricsData)
 	}
+	nodesAllocatedRes, err := cputil2.GetNodesAllocatedRes(steveServer, clusterName, mt.SDK.Identity.UserID, mt.SDK.Identity.OrgID, nodes)
+	if err != nil {
+		return nil, err
+	}
 	for i, c := range nodes {
 		if status, err = mt.GetItemStatus(c); err != nil {
 			return nil, err
 		}
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		_, memRequest, _, err := cputil2.GetNodeAllocatedRes(steveServer, clusterName, mt.SDK.Identity.UserID, mt.SDK.Identity.OrgID, nodeName)
-		if err != nil {
-			return nil, err
-		}
+		memRequest := nodesAllocatedRes[nodeName].Mem
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "memory"))
 
 		key := req.NodeRequests[i].CacheKey()
 		distribution = mt.GetDistributionValue(float64(memRequest), float64(requestQty.Value()), table.Memory)
-		metricsData, ok := resp[key]
+		metricsData := metrics.GetCache(key)
 		used := 0.0
-		if ok {
+		if metricsData != nil {
 			used = metricsData.Used
 		}
 		usage = mt.GetUsageValue(used, float64(requestQty.Value()), table.Memory)
-		unused := math.Max(float64(memRequest)-resp[key].Used, 0.0)
+		unused := math.Max(float64(memRequest)-used, 0.0)
 		dr = mt.GetUnusedRate(unused, float64(memRequest), table.Memory)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]

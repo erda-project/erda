@@ -115,6 +115,13 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			err = errors.New(errstr)
 			return recordID, err
 		}
+
+		// Delete accessKey
+		if err = c.DeleteAccessKey(req.ClusterName); err != nil {
+			errStr := fmt.Sprintf("failed to delete cluster access key, cluster: %v, err: %v", req.ClusterName, err)
+			logrus.Error(errStr)
+			return recordID, err
+		}
 	}
 
 	recordID, err = updateDeleteRecord(c.db, dbclient.Record{
