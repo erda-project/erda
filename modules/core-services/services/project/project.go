@@ -129,13 +129,13 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
-	if createReq.ClusterConfig != nil {
-		if err := createReq.ClusterConfig.Check(); err != nil {
+	if createReq.ResourceConfigs != nil {
+		if err := createReq.ResourceConfigs.Check(); err != nil {
 			return nil, err
 		}
 	}
 
-	clusterConfig, err := json.Marshal(createReq.ClusterConfig)
+	clusterConfig, err := json.Marshal(createReq.ResourceConfigs)
 	if err != nil {
 		logrus.Infof("failed to marshal clusterConfig, (%v)", err)
 		return nil, errors.Errorf("failed to marshal clusterConfig")
@@ -197,25 +197,25 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	}
 
 	// record quota if it is configured
-	if createReq.ClusterConfig != nil {
+	if createReq.ResourceConfigs != nil {
 		quota := &model.ProjectQuota{
 			ID:                 0,
 			CreatedAt:          time.Time{},
 			UpdatedAt:          time.Time{},
 			ProjectID:          uint64(project.ID),
 			ProjectName:        createReq.Name,
-			ProdClusterName:    createReq.ClusterConfig.PROD.ClusterName,
-			StagingClusterName: createReq.ClusterConfig.STAGING.ClusterName,
-			TestClusterName:    createReq.ClusterConfig.TEST.ClusterName,
-			DevClusterName:     createReq.ClusterConfig.DEV.ClusterName,
-			ProdCPUQuota:       uint64(createReq.ClusterConfig.PROD.CPUQuota * 1000),
-			ProdMemQutoa:       uint64(createReq.ClusterConfig.PROD.MemQuota * 1024 * 1024 * 1024),
-			StagingCPUQuota:    uint64(createReq.ClusterConfig.STAGING.CPUQuota * 1000),
-			StagingMemQuota:    uint64(createReq.ClusterConfig.STAGING.MemQuota * 1024 * 1024),
-			TestCPUQuota:       uint64(createReq.ClusterConfig.TEST.CPUQuota * 1000),
-			TestMemQuota:       uint64(createReq.ClusterConfig.TEST.MemQuota * 1024 * 1024 * 1024),
-			DevCPUQuota:        uint64(createReq.ClusterConfig.DEV.CPUQuota * 1000),
-			DevMemQuota:        uint64(createReq.ClusterConfig.DEV.MemQuota * 1024 * 1024 * 1024),
+			ProdClusterName:    createReq.ResourceConfigs.PROD.ClusterName,
+			StagingClusterName: createReq.ResourceConfigs.STAGING.ClusterName,
+			TestClusterName:    createReq.ResourceConfigs.TEST.ClusterName,
+			DevClusterName:     createReq.ResourceConfigs.DEV.ClusterName,
+			ProdCPUQuota:       uint64(createReq.ResourceConfigs.PROD.CPUQuota * 1000),
+			ProdMemQutoa:       uint64(createReq.ResourceConfigs.PROD.MemQuota * 1024 * 1024 * 1024),
+			StagingCPUQuota:    uint64(createReq.ResourceConfigs.STAGING.CPUQuota * 1000),
+			StagingMemQuota:    uint64(createReq.ResourceConfigs.STAGING.MemQuota * 1024 * 1024),
+			TestCPUQuota:       uint64(createReq.ResourceConfigs.TEST.CPUQuota * 1000),
+			TestMemQuota:       uint64(createReq.ResourceConfigs.TEST.MemQuota * 1024 * 1024 * 1024),
+			DevCPUQuota:        uint64(createReq.ResourceConfigs.DEV.CPUQuota * 1000),
+			DevMemQuota:        uint64(createReq.ResourceConfigs.DEV.MemQuota * 1024 * 1024 * 1024),
 			CreatorID:          userID,
 			UpdaterID:          userID,
 		}
@@ -303,8 +303,8 @@ func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *api
 
 // Update 更新项目
 func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
-	if updateReq.ClusterConfig != nil {
-		if err := updateReq.ClusterConfig.Check(); err != nil {
+	if updateReq.ResourceConfigs != nil {
+		if err := updateReq.ResourceConfigs.Check(); err != nil {
 			return nil, err
 		}
 	}
@@ -332,7 +332,7 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 	}
 
 	// create or update quota
-	if updateReq.ClusterConfig != nil {
+	if updateReq.ResourceConfigs != nil {
 		var quota = new(model.ProjectQuota)
 		err = p.db.First(quota, map[string]interface{}{"project_id": projectID}).Error
 		patchProjectQuota(quota, userID, updateReq)
@@ -352,7 +352,7 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 }
 
 func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
-	clusterConfig, err := json.Marshal(updateReq.ClusterConfig)
+	clusterConfig, err := json.Marshal(updateReq.ResourceConfigs)
 	if err != nil {
 		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
 		return errors.Errorf("failed to marshal clusterConfig")
@@ -368,7 +368,7 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 		project.DisplayName = updateReq.DisplayName
 	}
 
-	if updateReq.ClusterConfig != nil {
+	if updateReq.ResourceConfigs != nil {
 		project.ClusterConfig = string(clusterConfig)
 	}
 
@@ -392,18 +392,18 @@ func patchProjectQuota(quota *model.ProjectQuota, userID string, updateReq *apis
 		ID:                 quota.ID,
 		ProjectID:          updateReq.ID,
 		ProjectName:        updateReq.Name,
-		ProdClusterName:    updateReq.ClusterConfig.PROD.ClusterName,
-		StagingClusterName: updateReq.ClusterConfig.STAGING.ClusterName,
-		TestClusterName:    updateReq.ClusterConfig.TEST.ClusterName,
-		DevClusterName:     updateReq.ClusterConfig.DEV.ClusterName,
-		ProdCPUQuota:       uint64(updateReq.ClusterConfig.PROD.CPUQuota * 1000),
-		ProdMemQutoa:       uint64(updateReq.ClusterConfig.PROD.MemQuota * 1024 * 1024 * 1024),
-		StagingCPUQuota:    uint64(updateReq.ClusterConfig.PROD.CPUQuota * 1000),
-		StagingMemQuota:    uint64(updateReq.ClusterConfig.STAGING.MemQuota * 1024 * 1024 * 1024),
-		TestCPUQuota:       uint64(updateReq.ClusterConfig.TEST.CPUQuota * 1000),
-		TestMemQuota:       uint64(updateReq.ClusterConfig.TEST.MemQuota * 1024 * 1024 * 1024),
-		DevCPUQuota:        uint64(updateReq.ClusterConfig.DEV.CPUQuota * 1000),
-		DevMemQuota:        uint64(updateReq.ClusterConfig.DEV.MemQuota * 1024 * 1024 * 1024),
+		ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
+		StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
+		TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
+		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
+		ProdCPUQuota:       uint64(updateReq.ResourceConfigs.PROD.CPUQuota * 1000),
+		ProdMemQutoa:       uint64(updateReq.ResourceConfigs.PROD.MemQuota * 1024 * 1024 * 1024),
+		StagingCPUQuota:    uint64(updateReq.ResourceConfigs.PROD.CPUQuota * 1000),
+		StagingMemQuota:    uint64(updateReq.ResourceConfigs.STAGING.MemQuota * 1024 * 1024 * 1024),
+		TestCPUQuota:       uint64(updateReq.ResourceConfigs.TEST.CPUQuota * 1000),
+		TestMemQuota:       uint64(updateReq.ResourceConfigs.TEST.MemQuota * 1024 * 1024 * 1024),
+		DevCPUQuota:        uint64(updateReq.ResourceConfigs.DEV.CPUQuota * 1000),
+		DevMemQuota:        uint64(updateReq.ResourceConfigs.DEV.MemQuota * 1024 * 1024 * 1024),
 		CreatorID:          quota.CreatorID,
 		UpdaterID:          userID,
 	}
@@ -561,7 +561,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	}
 
 	for _, item := range resources.List {
-		var source *apistructs.ResourceConfig
+		var source *apistructs.ResourceConfigInfo
 		switch item.GetClusterName() {
 		case projectDTO.ResourceConfig.PROD.ClusterName:
 			source = projectDTO.ResourceConfig.PROD
@@ -593,7 +593,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
 	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
 		&dashboardPb.GetClustersResourcesRequest{ClusterNames: projectQuota.ClustersNames()}); err == nil {
-		var source *apistructs.ResourceConfig
+		var source *apistructs.ResourceConfigInfo
 		for _, host := range clustersResources.List {
 			for _, label := range host.Labels {
 				switch strings.ToLower(label) {
@@ -615,7 +615,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	}
 
 	// 根据已有统计值计算其他统计值
-	for _, source := range []*apistructs.ResourceConfig{
+	for _, source := range []*apistructs.ResourceConfigInfo{
 		projectDTO.ResourceConfig.PROD,
 		projectDTO.ResourceConfig.STAGING,
 		projectDTO.ResourceConfig.TEST,

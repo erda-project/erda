@@ -39,8 +39,10 @@ type ProjectCreateRequest struct {
 	ClusterID   uint64 `json:"clusterId"`   // TODO deprecated
 	ClusterName string `json:"clusterName"` // TODO deprecated
 
+	// Deprecated:项目各环境集群配置
+	ClusterConfig map[string]string `json:"clusterConfig"`
 	// 项目各环境集群配置
-	ClusterConfig *ClusterConfigs `json:"clusterConfig"`
+	ResourceConfigs *ResourceConfigs `json:"resourceConfig"`
 	// 项目回滚点配置
 	RollbackConfig map[string]int `json:"rollbackConfig"`
 	// +required 单位: c
@@ -51,14 +53,14 @@ type ProjectCreateRequest struct {
 	Template ProjectTemplate `json:"template"`
 }
 
-type ClusterConfigs struct {
+type ResourceConfigs struct {
 	PROD    *ClusterConfig `json:"PROD"`
 	STAGING *ClusterConfig `json:"STAGING"`
 	TEST    *ClusterConfig `json:"TEST"`
 	DEV     *ClusterConfig `json:"DEV"`
 }
 
-func (cc ClusterConfigs) Check() error {
+func (cc ResourceConfigs) Check() error {
 	for k, v := range map[string]*ClusterConfig{
 		"production": cc.PROD,
 		"staging":    cc.STAGING,
@@ -123,10 +125,12 @@ type ProjectUpdateBody struct {
 	Logo        string `json:"logo"`
 	Desc        string `json:"desc"`
 	DdHook      string `json:"ddHook"`
-	IsPublic    bool   `json:"isPublic"` // 是否公开项目
 
+	// Deprecated:项目各环境集群配置
+	ClusterConfig map[string]string `json:"clusterConfig"`
 	// 项目各环境集群配置
-	ClusterConfig *ClusterConfigs `json:"clusterConfig"`
+	ResourceConfigs *ResourceConfigs `json:"resourceConfig"`
+	IsPublic        bool             `json:"isPublic"` // 是否公开项目
 
 	// 项目回滚点配置
 	RollbackConfig map[string]int `json:"rollbackConfig"`
@@ -244,8 +248,8 @@ type ProjectDTO struct {
 	ClusterConfig map[string]string `json:"clusterConfig"`
 	// ResourceConfig shows the relationship between clusters and workspaces,
 	// and contains the quota info for every workspace .
-	ResourceConfig *ResourceConfigs `json:"resourceConfig"`
-	RollbackConfig map[string]int   `json:"rollbackConfig"`
+	ResourceConfig *ResourceConfigsInfo `json:"resourceConfig"`
+	RollbackConfig map[string]int       `json:"rollbackConfig"`
 	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
 	CpuQuota float64 `json:"cpuQuota"`
 	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
@@ -260,23 +264,23 @@ type ProjectDTO struct {
 	Type string `json:"type"`
 }
 
-type ResourceConfigs struct {
-	PROD    *ResourceConfig `json:"PROD"`
-	STAGING *ResourceConfig `json:"STAGING"`
-	TEST    *ResourceConfig `json:"TEST"`
-	DEV     *ResourceConfig `json:"DEV"`
+type ResourceConfigsInfo struct {
+	PROD    *ResourceConfigInfo `json:"PROD"`
+	STAGING *ResourceConfigInfo `json:"STAGING"`
+	TEST    *ResourceConfigInfo `json:"TEST"`
+	DEV     *ResourceConfigInfo `json:"DEV"`
 }
 
-func NewResourceConfig() *ResourceConfigs {
-	return &ResourceConfigs{
-		PROD:    new(ResourceConfig),
-		STAGING: new(ResourceConfig),
-		TEST:    new(ResourceConfig),
-		DEV:     new(ResourceConfig),
+func NewResourceConfig() *ResourceConfigsInfo {
+	return &ResourceConfigsInfo{
+		PROD:    new(ResourceConfigInfo),
+		STAGING: new(ResourceConfigInfo),
+		TEST:    new(ResourceConfigInfo),
+		DEV:     new(ResourceConfigInfo),
 	}
 }
 
-func (cc ResourceConfigs) GetClusterName(workspace string) string {
+func (cc ResourceConfigsInfo) GetClusterName(workspace string) string {
 	switch strings.ToLower(workspace) {
 	case "prod":
 		return cc.PROD.ClusterName
@@ -291,7 +295,7 @@ func (cc ResourceConfigs) GetClusterName(workspace string) string {
 	}
 }
 
-type ResourceConfig struct {
+type ResourceConfigInfo struct {
 	ClusterName             string  `json:"clusterName"`
 	CPUQuota                float64 `json:"cpuQuota"`
 	CPURequest              float64 `json:"cpuRequest"`
