@@ -198,23 +198,24 @@ message DescribeResultV1 {
 }
 
 message DescribeItemV1 {
-  string         name         = 1;
-  string         mode         = 2;
-  string         url          = 3;
+  string                             name         = 1;
+  string                             mode         = 2;
+  string                             url          = 3;
 
-  string         status       = 4;
-  string         uptime       = 5;
-  string         downtime     = 6;
-  string         downDuration = 7;
-  double         latency      = 8;
-  string         requestId    = 9;
+  string                             status       = 4;
+  string                             uptime       = 5;
+  string                             downtime     = 6;
+  string                             downDuration = 7;
+  double                             latency      = 8;
+  string                             requestId    = 9;
 
-  double         apdex        = 10;
-  double         avg          = 11;
-  double         max          = 12;
-  double         min          = 13;
+  double                             apdex        = 10;
+  double                             avg          = 11;
+  double                             max          = 12;
+  double                             min          = 13;
 
-  CheckerChartV1 chart        = 14;
+  CheckerChartV1                     chart        = 14;
+  map<string, google.protobuf.Value> config       = 15;
 }
 
 message CheckerChartV1 {
