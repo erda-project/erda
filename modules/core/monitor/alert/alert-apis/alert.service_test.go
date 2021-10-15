@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/ghodss/yaml"
 	"github.com/golang/mock/gomock"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -27,6 +28,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func Test_alertService_GetAlertConditions(t *testing.T) {
@@ -54,7 +58,6 @@ func Test_alertService_GetAlertConditions(t *testing.T) {
 						MicroServiceOtherFilterTags: "",
 						SilencePolicy:               "",
 						AlertConditions:             "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
-						ConditionIndex:              "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
 						Cassandra: struct {
 							cassandra.SessionConfig `file:"session"`
 							GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
@@ -80,7 +83,6 @@ func Test_alertService_GetAlertConditions(t *testing.T) {
 						MicroServiceOtherFilterTags: "",
 						SilencePolicy:               "",
 						AlertConditions:             "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
-						ConditionIndex:              "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
 						Cassandra: struct {
 							cassandra.SessionConfig `file:"session"`
 							GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
@@ -106,15 +108,6 @@ func Test_alertService_GetAlertConditions(t *testing.T) {
 	if err != nil {
 		fmt.Println("unmarshal is fail ", err)
 	}
-	tests[0].fields.p.conditionIndex = make([]*ConditionIndex, 0)
-	f, err = ioutil.ReadFile(tests[0].fields.p.C.ConditionIndex)
-	if err != nil {
-		fmt.Println("read file is fail ", err)
-	}
-	err = yaml.Unmarshal(f, &tests[0].fields.p.conditionIndex)
-	if err != nil {
-		fmt.Println("unmarshal is fail ", err)
-	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &alertService{
@@ -133,6 +126,7 @@ func Test_alertService_GetAlertConditions(t *testing.T) {
 func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	defer monkey.UnpatchAll()
 	metricService := NewMockMetricServiceServer(ctrl)
 	metricService.EXPECT().QueryWithInfluxFormat(gomock.Any(), gomock.Any()).AnyTimes().Return(&metricpb.QueryWithInfluxFormatResponse{
 		Results: []*metricpb.Result{
@@ -151,13 +145,20 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 			},
 		},
 	}, nil)
+	monkey.Patch(apis.GetOrgID, func(_ context.Context) string {
+		return "2"
+	})
+	monkey.Patch((*bundle.Bundle).GetOrg, func(_ *bundle.Bundle, _ interface{}) (*apistructs.OrgDTO, error) {
+		return &apistructs.OrgDTO{
+			ID:   1,
+			Name: "erda",
+		}, nil
+	})
 	pro := &provider{
 		C: &config{
 			AlertConditions: "./../../../../../conf/monitor/monitor/alert/trigger_conditions.yaml",
-			ConditionIndex:  "./../../../../../conf/monitor/monitor/alert/condition_index.yaml",
 		},
 		alertConditions: make([]*AlertConditions, 0),
-		conditionIndex:  make([]*ConditionIndex, 0),
 		alertService:    &alertService{},
 		Metric:          metricService,
 	}
@@ -171,24 +172,13 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 		fmt.Println("unmarshal is fail ", err)
 	}
 
-	f, err = ioutil.ReadFile(pro.C.ConditionIndex)
-	if err != nil {
-		fmt.Println("read file is fail ", err)
-	}
-	err = yaml.Unmarshal(f, &pro.conditionIndex)
-	if err != nil {
-		fmt.Println("unmarshal is fail ", err)
-	}
-
 	pro.alertService.p = pro
 	_, err = pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
-		OrgName:     "erda",
 		ProjectId:   "3",
 		TerminusKey: "sg44yfh5464g6uy56j7224f",
 		ScopeType:   "org",
 	})
 	_, err = pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
-		OrgName:     "erda",
 		ProjectId:   "3",
 		TerminusKey: "sg44yfh5464g6uy56j7224f",
 		ScopeType:   "msp",

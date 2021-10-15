@@ -110,7 +110,6 @@ erda.core.monitor.alert:
   micro_service_other_filter_tags: "${MICRO_SERVICE_OTHER_FILTER_TAGS:application_id}"
   silence_policy: "${SILENCE_POLICY:fixed,doubled}"
   alert_conditions: "${CONFIG_PATH}/alert/trigger_conditions.yaml"
-  condition_index: "${CONFIG_PATH}/alert/condition_index.yaml"
   cassandra:
     session:
       keyspace:

@@ -1331,92 +1331,57 @@ func (m *alertService) GetAlertConditions(ctx context.Context, request *pb.GetAl
 }
 
 func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
+	orgIdStr := apis.GetOrgID(ctx)
+	org, err := m.p.bdl.GetOrg(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	result := &pb.GetAlertConditionsValueResponse{
 		Data: make([]*pb.AlertConditionsValue, 0),
 	}
-	for _, v := range m.p.conditionIndex {
-		if request.ScopeType == Org {
-			if v.Condition == ClusterName {
+	for _, v := range m.p.alertConditions {
+		if request.ScopeType == v.Scope {
+			for _, cond := range v.Conditions {
 				req := &metricpb.QueryWithInfluxFormatRequest{
-					Start:     "before_1h",
-					End:       "now",
-					Statement: fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY cluster_name::tag`, v.Condition, v.Index),
-					Params: map[string]*structpb.Value{
-						"org_name": structpb.NewStringValue(request.OrgName),
-					},
+					Start: "before_1h",
+					End:   "now",
 				}
-				resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
-				if err != nil {
-					return nil, errors.NewInternalServerError(err)
+				if cond.Name == ClusterName {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+					req.Params = map[string]*structpb.Value{
+						"org_name": structpb.NewStringValue(org.Name),
+					}
 				}
-				clusterName := getResultValue(resp.Results)
-				result.Data = append(result.Data, &pb.AlertConditionsValue{
-					Index: ClusterName,
-					Value: clusterName,
-				})
-			}
-			if v.Condition == HostIp {
-				req := &metricpb.QueryWithInfluxFormatRequest{
-					Start:     "before_1h",
-					End:       "now",
-					Statement: fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY host_ip::tag`, v.Condition, v.Index),
-					Params: map[string]*structpb.Value{
-						"org_name": structpb.NewStringValue(request.OrgName),
-					},
+				if cond.Name == HostIp {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+					req.Params = map[string]*structpb.Value{
+						"org_name": structpb.NewStringValue(org.Name),
+					}
 				}
-				resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
-				if err != nil {
-					return nil, errors.NewInternalServerError(err)
-				}
-				hostIp := getResultValue(resp.Results)
-				result.Data = append(result.Data, &pb.AlertConditionsValue{
-					Index: HostIp,
-					Value: hostIp,
-				})
-			}
-		}
-		if request.ScopeType == Msp {
-			if v.Condition == ApplicationName {
-				req := &metricpb.QueryWithInfluxFormatRequest{
-					Start:     "before_1h",
-					End:       "now",
-					Statement: fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY application_name::tag`, v.Condition, v.Index),
-					Params: map[string]*structpb.Value{
-						"org_name":     structpb.NewStringValue(request.OrgName),
+				if cond.Name == ApplicationName {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+					req.Params = map[string]*structpb.Value{
+						"org_name":     structpb.NewStringValue(org.Name),
 						"project_id":   structpb.NewStringValue(request.ProjectId),
 						"terminus_key": structpb.NewStringValue(request.TerminusKey),
-					},
+					}
 				}
-
-				resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
-				if err != nil {
-					return nil, errors.NewInternalServerError(err)
-				}
-				application := getResultValue(resp.Results)
-				result.Data = append(result.Data, &pb.AlertConditionsValue{
-					Index: ApplicationName,
-					Value: application,
-				})
-			}
-			if v.Condition == ServiceName {
-				req := &metricpb.QueryWithInfluxFormatRequest{
-					Start:     "0",   // or timestamp
-					End:       "now", // or timestamp
-					Statement: fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY service_name::tag`, v.Condition, v.Index),
-					Params: map[string]*structpb.Value{
-						"org_name":     structpb.NewStringValue(request.OrgName),
+				if cond.Name == ServiceName {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+					req.Params = map[string]*structpb.Value{
+						"org_name":     structpb.NewStringValue(org.Name),
 						"project_id":   structpb.NewStringValue(request.ProjectId),
 						"terminus_key": structpb.NewStringValue(request.TerminusKey),
-					},
+					}
 				}
 				resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
 				if err != nil {
 					return nil, errors.NewInternalServerError(err)
 				}
-				service := getResultValue(resp.Results)
+				conditions := getResultValue(resp.Results)
 				result.Data = append(result.Data, &pb.AlertConditionsValue{
-					Index: ServiceName,
-					Value: service,
+					Index: cond.Name,
+					Value: conditions,
 				})
 			}
 		}

@@ -1208,10 +1208,9 @@ message Conditions {
 }
 
 message GetAlertConditionsValueRequest {
-  string orgName     = 1;
-  string projectId   = 2;
-  string terminusKey = 3;
-  string scopeType   = 4;
+  string projectId   = 1;
+  string terminusKey = 2;
+  string scopeType   = 3;
 }
 
 message GetAlertConditionsValueResponse {

@@ -1,8 +1,0 @@
-- condition: cluster_name
-  index: host_summary
-- condition: host_ip
-  index: host_summary
-- condition: application_name
-  index: docker_container_summary
-- condition: service_name
-  index: docker_container_summary

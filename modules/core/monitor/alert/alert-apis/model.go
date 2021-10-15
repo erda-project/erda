@@ -21,6 +21,7 @@ type AlertConditions struct {
 
 type Conditions struct {
 	Name        string `json:"name"`
+	Index       string `json:"index"`
 	DisplayName string `json:"displayName"`
 }
 

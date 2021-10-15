@@ -48,7 +48,6 @@ type config struct {
 	MicroServiceOtherFilterTags string `file:"micro_service_other_filter_tags"`
 	SilencePolicy               string `file:"silence_policy"`
 	AlertConditions             string `file:"alert_conditions"`
-	ConditionIndex              string `file:"condition_index"`
 	Cassandra                   struct {
 		cassandra.SessionConfig `file:"session"`
 		GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
@@ -70,7 +69,6 @@ type provider struct {
 	microServiceFilterTags      map[string]bool
 	microServiceOtherFilterTags map[string]bool
 	alertConditions             []*AlertConditions
-	conditionIndex              []*ConditionIndex
 
 	Register     transport.Register           `autowired:"service-register" optional:"true"`
 	Metric       metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
@@ -116,15 +114,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	p.conditionIndex = make([]*ConditionIndex, 0)
-	f, err = ioutil.ReadFile(p.C.ConditionIndex)
-	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(f, &p.conditionIndex)
-	if err != nil {
-		return err
-	}
+	//p.conditionIndex = make([]*ConditionIndex, 0)
+	//f, err = ioutil.ReadFile(p.C.ConditionIndex)
+	//if err != nil {
+	//	return err
+	//}
+	//err = yaml.Unmarshal(f, &p.conditionIndex)
+	//if err != nil {
+	//	return err
+	//}
 
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
 	session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)

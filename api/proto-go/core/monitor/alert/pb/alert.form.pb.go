@@ -6744,8 +6744,6 @@ func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, value
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "orgName":
-				m.OrgName = vals[0]
 			case "projectId":
 				m.ProjectId = vals[0]
 			case "terminusKey":
