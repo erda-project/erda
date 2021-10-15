@@ -181,6 +181,72 @@ func Example_mergeLogSearch() {
 
 }
 
+func Test_mergeStatisticResponse_Should_Success(t *testing.T) {
+	var result0 *LogStatisticResponse = nil
+	result1 := &LogStatisticResponse{
+		Total:    1,
+		Interval: 1000,
+		Time:     []int64{1},
+		Results: []*LogStatisticResult{
+			&LogStatisticResult{
+				Data: []*CountHistogram{
+					&CountHistogram{
+						Count: ArrayAgg{
+							Data: []float64{1},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result2 := &LogStatisticResponse{
+		Total:    1,
+		Interval: 1000,
+		Time:     []int64{2},
+		Results: []*LogStatisticResult{
+			&LogStatisticResult{
+				Data: []*CountHistogram{
+					&CountHistogram{
+						Count: ArrayAgg{
+							Data: []float64{2},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	want := &LogStatisticResponse{
+		Total:    2,
+		Interval: 1000,
+		Time:     []int64{1},
+		Results: []*LogStatisticResult{
+			&LogStatisticResult{
+				Data: []*CountHistogram{
+					&CountHistogram{
+						Count: ArrayAgg{
+							Data: []float64{1},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result := mergeStatisticResponse([]*LogStatisticResponse{result0, result1, result2})
+	fmt.Printf("%+v", result)
+	if result.Total != want.Total {
+		t.Errorf("assert merge failed, expect total: %d, but got: %d", want.Total, result.Total)
+	}
+	if len(result.Time) != len(want.Time) {
+		t.Errorf("assert merge failed, expect times len: %d, but got len: %d", len(want.Time), len(result.Time))
+	}
+	if len(result.Results[0].Data) != len(want.Results[0].Data) {
+		t.Errorf("assert merge failed, expect data len: %d, but got len: %d", len(want.Results[0].Data), len(result.Results[0].Data))
+	}
+}
+
 func TestListDefaultFields_Should_Success(t *testing.T) {
 	p := &provider{
 		C: &config{

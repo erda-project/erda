@@ -484,9 +484,23 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 	} else if len(results) == 1 {
 		return results[0]
 	}
+
 	first := results[0]
+	for _, result := range results[1:] {
+		if first != nil && first.Total > 0 {
+			break
+		}
+		first = result
+	}
+	if first == nil {
+		return first
+	}
+
 	list := first.Results[0].Data[0].Count.Data
 	for _, result := range results[1:] {
+		if result == nil || result.Total == 0 || result == first {
+			continue
+		}
 		first.Total += result.Total
 		for i, item := range result.Results[0].Data[0].Count.Data {
 			if i < len(list) {
