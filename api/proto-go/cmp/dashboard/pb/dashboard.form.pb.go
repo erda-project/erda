@@ -118,6 +118,14 @@ func (m *HostResourceDetail) UnmarshalURLValues(prefix string, values url.Values
 				m.MemRequest = val
 			case "labels":
 				m.Labels = vals
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				m.Err = vals[0]
 			}
 		}
 	}
