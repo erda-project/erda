@@ -60,3 +60,63 @@ func TestSetDiffFinishedIssueNum(t *testing.T) {
 	assert.Equal(t, 3, items[0].ExpiredIssueNum)
 	assert.Equal(t, 3, items[1].UnSpecialIssueNum)
 }
+
+func TestWorkbench_GetUndoneProjectItems(t *testing.T) {
+	issueSvc := &issue.Issue{}
+	item := &apistructs.WorkbenchProjectItem{
+		TotalIssueNum: 1,
+		IssueList: []apistructs.Issue{
+			{
+				ID: 1,
+			},
+		},
+	}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(issueSvc), "GetIssuesByStates",
+		func(issueSvc *issue.Issue, req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
+			return map[uint64]*apistructs.WorkbenchProjectItem{
+				1: item,
+			}, nil
+		})
+	defer m.Unpatch()
+
+	workbench := New(WithIssue(issueSvc))
+
+	type args struct {
+		req    apistructs.WorkbenchRequest
+		userID string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *apistructs.WorkbenchResponse
+		wantErr bool
+	}{
+		{
+			name: "test",
+			args: args{
+				req: apistructs.WorkbenchRequest{},
+			},
+			want: &apistructs.WorkbenchResponse{
+				Data: apistructs.WorkbenchResponseData{
+					TotalProject: 1,
+					List: []*apistructs.WorkbenchProjectItem{
+						item,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := workbench.GetUndoneProjectItems(tt.args.req, tt.args.userID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Workbench.GetUndoneProjectItems() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Workbench.GetUndoneProjectItems() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

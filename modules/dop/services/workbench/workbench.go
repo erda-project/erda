@@ -164,7 +164,7 @@ func (w *Workbench) GetUndoneProjectItems(req apistructs.WorkbenchRequest, userI
 		PageNo:   1,
 		PageSize: uint64(req.IssueSize),
 		IssueListRequest: apistructs.IssueListRequest{
-			StateBelongs: apistructs.StateBelongs,
+			StateBelongs: apistructs.UnfinishedStateBelongs,
 			Assignees:    []string{userID},
 			External:     true,
 			OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
