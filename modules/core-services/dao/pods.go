@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package dao
 
-type GetWorkspaceNamespaceRequest struct {
-	ProjectID string `json:"projectID"`
-	Workspace string `json:"workspace"`
-}
+import "github.com/erda-project/erda/apistructs"
 
-type GetWorkspaceNamespaceResponse struct {
-	Header
-	Namespaces []string `json:"namespaces"`
+// GetPodsByWorkspace get all pods in workspace in target project
+func (client *DBClient) GetPodsByWorkspace(projectID, workspace string) ([]apistructs.PodInfo, error) {
+	var podInfos []apistructs.PodInfo
+	if err := client.Find(&podInfos, map[string]interface{}{
+		"project_id": projectID,
+		"workspace":  workspace,
+	}).Error; err != nil {
+		return nil, err
+	}
+	return podInfos, nil
 }
