@@ -772,6 +772,7 @@ func StepToAction(step apistructs.AutoTestSceneStep, req apistructs.SnippetConfi
 	action.Labels[apistructs.AutotestType] = apistructs.AutotestSceneStep
 	action.Alias = pipelineyml.ActionAlias(strconv.Itoa(int(step.ID)))
 	action.If = expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder
+	action.Disable = step.IsDisabled
 
 	switch step.Type {
 	case apistructs.StepTypeCustomScript:

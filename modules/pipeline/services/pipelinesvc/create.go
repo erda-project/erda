@@ -274,7 +274,7 @@ func ymlTasksMergeDBTasks(actionTasks []spec.PipelineTask, dbTasks []spec.Pipeli
 	return mergeTasks
 }
 
-// determine whether the task status is disabled according to the TaskOperates of the pipeline
+// determine whether the task status is disabled according to the TaskOperates of the pipeline and task extra disable field
 func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*spec.PipelineTask, error) {
 	for _, taskOp := range p.Extra.TaskOperates {
 		// the name of the disabled task matches the task name

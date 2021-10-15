@@ -138,6 +138,8 @@ type Action struct {
 
 	If string `yaml:"if,omitempty"` // 条件执行
 
+	Disable bool `yaml:"disable,omitempty"` // make task disable or enable
+
 	// TODO 在未来版本中，可能去除 stage，依赖关系则必须通过 Needs 来声明。
 	// 目前不开放给用户使用。由 parser 自动赋值。
 	// Needs 显式声明依赖的 actions。隐式依赖关系是下一个 stage 依赖之前所有 stage 里的 action。
