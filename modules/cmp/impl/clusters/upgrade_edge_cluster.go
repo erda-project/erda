@@ -48,7 +48,7 @@ func New(db *dbclient.DBClient, bdl *bundle.Bundle, c credentialpb.AccessKeyServ
 //		2 -- do precheck
 //		3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
 func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, userid string, orgid string) (recordID uint64, status int, precheckHint string, err error) {
-	records, err := c.db.RecordsReader().ByClusterNames(req.ClusterName).ByRecordTypes(dbclient.RecordTypeUpgradeEdgeCluster.String()).Do()
+	records, err := getUpgradeRecords(c.db, req.ClusterName)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to query record: %v", err)
 		logrus.Errorf(errstr)
@@ -110,6 +110,12 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 		return
 	}
 
+	if cak.AccessKey == "" {
+		err = fmt.Errorf("empty cluster access key, cluster: %s", req.ClusterName)
+		logrus.Errorf(err.Error())
+		return
+	}
+
 	yml := apistructs.PipelineYml{
 		Version: "1.1",
 		Stages: [][]*apistructs.PipelineYmlAction{{{
@@ -117,7 +123,7 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 			Version: "1.0",
 			Params: map[string]interface{}{
 				"dice_version":       centralClusterInfo.Get(apistructs.DICE_VERSION),
-				"cluster_access_key": cak,
+				"cluster_access_key": cak.AccessKey,
 			},
 		}}},
 	}
@@ -142,7 +148,7 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 		logrus.Errorf(errstr)
 		return
 	}
-	recordID, err = c.db.RecordsWriter().Create(&dbclient.Record{
+	recordID, err = createRecord(c.db, dbclient.Record{
 		RecordType:  dbclient.RecordTypeUpgradeEdgeCluster,
 		UserID:      userid,
 		OrgID:       orgid,
@@ -151,12 +157,17 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 		Detail:      "",
 		PipelineID:  dto.ID,
 	})
+
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
 		logrus.Errorf(errstr)
 		return
 	}
 	return
+}
+
+func getUpgradeRecords(db *dbclient.DBClient, cluster string) ([]dbclient.Record, error) {
+	return db.RecordsReader().ByClusterNames(cluster).ByRecordTypes(dbclient.RecordTypeUpgradeEdgeCluster.String()).Do()
 }
 
 func (c *Clusters) BatchUpgradeEdgeCluster(req apistructs.BatchUpgradeEdgeClusterRequest, userid string) {
