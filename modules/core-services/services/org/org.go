@@ -586,7 +586,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	// cmp gRPC 接口查询给定集群所有集群的资源和标签情况
 	resources, err := o.clusterResourceClient.GetClustersResources(ctx, &getClustersResourcesRequest)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to GetClusterResources, clusters: %v", getClustersResourcesRequest.GetClusterNames())
 	}
 
 	// 初始化所有集群的总资源 【】
