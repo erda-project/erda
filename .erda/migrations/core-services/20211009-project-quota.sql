@@ -1,6 +1,6 @@
 CREATE TABLE `ps_group_projects_quota`
 (
-    `id`                   BIGINT(20)     NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+    `id`                   BIGINT(20)     NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Primary Key',
     `created_at`           DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
     `updated_at`           DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',

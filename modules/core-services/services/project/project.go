@@ -135,11 +135,17 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		}
 	}
 
-	clusterConfig, err := json.Marshal(createReq.ResourceConfigs)
-	if err != nil {
-		logrus.Infof("failed to marshal clusterConfig, (%v)", err)
-		return nil, errors.Errorf("failed to marshal clusterConfig")
+	var clusterConfig []byte
+	if createReq.ResourceConfigs != nil {
+		createReq.ClusterConfig = map[string]string{
+			"PROD":    createReq.ResourceConfigs.PROD.ClusterName,
+			"STAGING": createReq.ResourceConfigs.STAGING.ClusterName,
+			"TEST":    createReq.ResourceConfigs.TEST.ClusterName,
+			"DEV":     createReq.ResourceConfigs.DEV.ClusterName,
+		}
+		clusterConfig, _ = json.Marshal(createReq.ClusterConfig)
 	}
+
 	// Todo: 项目回滚点是什么东西
 	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
 		return nil, err
@@ -197,11 +203,9 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	}
 
 	// record quota if it is configured
+	logrus.WithField("createReq.ResourceConfigs", createReq.ResourceConfigs).Infoln()
 	if createReq.ResourceConfigs != nil {
 		quota := &model.ProjectQuota{
-			ID:                 0,
-			CreatedAt:          time.Time{},
-			UpdatedAt:          time.Time{},
 			ProjectID:          uint64(project.ID),
 			ProjectName:        createReq.Name,
 			ProdClusterName:    createReq.ResourceConfigs.PROD.ClusterName,

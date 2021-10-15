@@ -61,7 +61,7 @@ type ProjectQuota struct {
 	DevClusterName     string `gorm:"dev_cluster_name" json:"dev_cluster_name"`
 
 	ProdCPUQuota    uint64 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
-	ProdMemQutoa    uint64 `gorm:"prod_mem_quota" json:"prod_mem_qutoa"`
+	ProdMemQutoa    uint64 `gorm:"prod_mem_quota" json:"prod_mem_quota"`
 	StagingCPUQuota uint64 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
 	StagingMemQuota uint64 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
 	TestCPUQuota    uint64 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
