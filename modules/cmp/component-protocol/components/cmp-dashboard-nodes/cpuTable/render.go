@@ -177,7 +177,7 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 	if resp, err = mServer.NodeMetrics(ct.Ctx, req); err != nil || resp == nil {
 		logrus.Errorf("metrics error: %v", err)
 	}
-	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(steveServer, false, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodes)
+	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(ct.Ctx, steveServer, false, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodes)
 	if err != nil {
 		return nil, err
 	}

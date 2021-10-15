@@ -151,7 +151,7 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		logrus.Errorf("metrics error: %v", err)
 		resp = make(map[string]*metrics.MetricsData)
 	}
-	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(steveServer, false, clusterName, mt.SDK.Identity.UserID, mt.SDK.Identity.OrgID, nodes)
+	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(mt.Ctx, steveServer, false, clusterName, mt.SDK.Identity.UserID, mt.SDK.Identity.OrgID, nodes)
 	if err != nil {
 		return nil, err
 	}

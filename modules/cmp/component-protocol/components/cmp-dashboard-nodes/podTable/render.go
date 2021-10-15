@@ -151,7 +151,7 @@ func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 	} else {
 		return nil, common.ClusterNotFoundErr
 	}
-	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(steveServer, false, clusterName, pt.SDK.Identity.UserID, pt.SDK.Identity.OrgID, nodes)
+	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(pt.Ctx, steveServer, false, clusterName, pt.SDK.Identity.UserID, pt.SDK.Identity.OrgID, nodes)
 	if err != nil {
 		return nil, err
 	}
