@@ -30,8 +30,10 @@ import (
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -145,25 +147,25 @@ func (e *Endpoints) pipelineDetail(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrGetUser.InvalidParameter(err).ToResp(), nil
 	}
 
-	// obtain pipeline information according to pipelineID
-	p, err := e.bdl.GetPipeline(req.PipelineID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	if err := e.permission.CheckRuntimeBranch(identityInfo, p.ApplicationID, p.Branch, apistructs.OperateAction); err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	result, err := e.bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
-		PipelineID:               req.PipelineID,
-		SimplePipelineBaseResult: req.SimplePipelineBaseResult,
-	})
+	result, err := getPipelineDetailAndCheckPermission(e.bdl, e.permission, req, identityInfo)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
 	return httpserver.OkResp(result)
+}
+
+func getPipelineDetailAndCheckPermission(bdl *bundle.Bundle, permission *permission.Permission, req apistructs.CICDPipelineDetailRequest, identityInfo apistructs.IdentityInfo) (*apistructs.PipelineDetailDTO, error) {
+	result, err := bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+		PipelineID: req.PipelineID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := permission.CheckRuntimeBranch(identityInfo, result.ApplicationID, result.Branch, apistructs.OperateAction); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[string]string) (

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/permission"
 )
 
 func Test_shouldCheckPermission(t *testing.T) {
@@ -86,4 +87,72 @@ func TestUpdateCmsNsConfigsWhenUserNotExist(t *testing.T) {
 	defer monkey.UnpatchAll()
 	e := New()
 	assert.Equal(t, "the member is not exist", e.UpdateCmsNsConfigs("1", 1).Error())
+}
+
+func TestEndpoints_pipelineDetail(t *testing.T) {
+
+}
+
+func Test_getPipelineDetailAndCheckPermission(t *testing.T) {
+	type args struct {
+		req          apistructs.CICDPipelineDetailRequest
+		identityInfo apistructs.IdentityInfo
+		result       apistructs.PipelineDetailDTO
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			args: args{
+				req: apistructs.CICDPipelineDetailRequest{
+					PipelineID:               1,
+					SimplePipelineBaseResult: false,
+				},
+				result: apistructs.PipelineDetailDTO{
+					PipelineDTO: apistructs.PipelineDTO{
+						ID:            1,
+						ApplicationID: 1,
+						Branch:        "master",
+					},
+				},
+				identityInfo: apistructs.IdentityInfo{
+					UserID: "1",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			var bdl = &bundle.Bundle{}
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineV2", func(bdl *bundle.Bundle, req apistructs.PipelineDetailRequest) (*apistructs.PipelineDetailDTO, error) {
+				assert.Equal(t, req.PipelineID, tt.args.req.PipelineID)
+				assert.Equal(t, req.SimplePipelineBaseResult, tt.args.req.SimplePipelineBaseResult)
+
+				return &tt.args.result, nil
+			})
+
+			defer patch.Unpatch()
+
+			var permissionChecker = &permission.Permission{}
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(permissionChecker), "CheckRuntimeBranch", func(p *permission.Permission, identityInfo apistructs.IdentityInfo, appID uint64, branch string, action string) error {
+				assert.Equal(t, tt.args.identityInfo, identityInfo)
+				assert.Equal(t, tt.args.result.ApplicationID, appID)
+				assert.Equal(t, tt.args.result.Branch, branch)
+				return nil
+			})
+			defer patch1.Unpatch()
+
+			got, err := getPipelineDetailAndCheckPermission(bdl, permissionChecker, tt.args.req, tt.args.identityInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getPipelineDetailAndCheckPermission() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.NotNil(t, got)
+			assert.Equal(t, got.ID, tt.args.result.ID)
+		})
+	}
 }
