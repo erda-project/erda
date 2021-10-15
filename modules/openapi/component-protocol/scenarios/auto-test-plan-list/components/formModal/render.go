@@ -108,11 +108,39 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		if err != nil {
 			return err
 		}
-		formData := map[string]interface{}{"name": resp.Data.Name, "spaceId": resp.Data.SpaceID, "owners": resp.Data.Owners}
+
+		iterations, err := bdl.Bdl.ListProjectIterations(apistructs.IterationPagingRequest{
+			PageNo:              1,
+			PageSize:            999,
+			ProjectID:           projectID,
+			WithoutIssueSummary: true,
+		}, "0")
+		if err != nil {
+			return err
+		}
+		list := make([]map[string]interface{}, 0, len(iterations))
+		for _, v := range iterations {
+			list = append(list, map[string]interface{}{"name": v.Title, "value": v.ID})
+		}
+		iterationsBytes, err := json.Marshal(list)
+		if err != nil {
+			return err
+		}
+
+		var iterationName string
+		if resp.Data.IterationID != 0 {
+			iteration, err := bdl.Bdl.GetIteration(resp.Data.IterationID)
+			if err != nil {
+				return err
+			}
+			iterationName = iteration.Title
+		}
+
+		formData := map[string]interface{}{"name": resp.Data.Name, "spaceId": resp.Data.SpaceID, "owners": resp.Data.Owners, "iterationId": iterationName}
 		c.State["visible"] = true
 		c.State["formData"] = formData
 		c.State["isUpdate"] = true
-		c.Props = auto_test_plan_list.GenUpdateFormModalProps(tsBytes)
+		c.Props = auto_test_plan_list.GenUpdateFormModalProps(tsBytes, iterationsBytes)
 		return nil
 	}
 
@@ -133,8 +161,27 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		if err != nil {
 			return err
 		}
+
+		iterations, err := bdl.Bdl.ListProjectIterations(apistructs.IterationPagingRequest{
+			PageNo:              1,
+			PageSize:            999,
+			ProjectID:           projectID,
+			WithoutIssueSummary: true,
+		}, "0")
+		if err != nil {
+			return err
+		}
+		list := make([]map[string]interface{}, 0, len(iterations))
+		for _, v := range iterations {
+			list = append(list, map[string]interface{}{"name": v.Title, "value": v.ID})
+		}
+		iterationsBytes, err := json.Marshal(list)
+		if err != nil {
+			return err
+		}
+
 		c.State["isCreate"] = true
-		c.Props = auto_test_plan_list.GenCreateFormModalProps(tsBytes)
+		c.Props = auto_test_plan_list.GenCreateFormModalProps(tsBytes, iterationsBytes)
 		return nil
 	}
 
