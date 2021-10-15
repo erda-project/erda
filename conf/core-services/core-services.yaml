@@ -24,4 +24,4 @@ mysql:
 erda.core.services.authentication.credentials.accesskey:
 
 grpc-client@erda.cmp.dashboard.resource.ClusterResource:
-  addr: "${cmp_grpc_addr:cmp:9029}"
+  addr: "${CMP_GRPC_ADDR:cmp:9029}"
