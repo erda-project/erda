@@ -684,13 +684,13 @@ func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
 	)
 	for _, label := range labels {
 		switch strings.ToLower(label) {
-		case "workspace-prod":
+		case "dice/workspace-prod=true":
 			m[calcu.Prod] = true
-		case "workspace-staging":
+		case "dice/workspace-staging=true":
 			m[calcu.Staging] = true
-		case "workspace-test":
+		case "dice/workspace-test=true":
 			m[calcu.Test] = true
-		case "workspace-dev":
+		case "dice/workspace-dev=true":
 			m[calcu.Dev] = true
 		}
 	}

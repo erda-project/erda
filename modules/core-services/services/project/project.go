@@ -597,13 +597,13 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		for _, host := range clustersResources.List {
 			for _, label := range host.Labels {
 				switch strings.ToLower(label) {
-				case "prod":
+				case "dice/workspace-prod=true":
 					source = projectDTO.ResourceConfig.PROD
-				case "staging":
+				case "dice/workspace-staging=true":
 					source = projectDTO.ResourceConfig.STAGING
-				case "test":
+				case "dice/worksapce-test=true":
 					source = projectDTO.ResourceConfig.TEST
-				case "dev":
+				case "dice/workspace-dev=true":
 					source = projectDTO.ResourceConfig.TEST
 				}
 			}
@@ -633,15 +633,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	}
 
 	return &projectDTO, nil
-}
-
-func hasLabel(labels []string, label string) bool {
-	for _, l := range labels {
-		if l == label {
-			return true
-		}
-	}
-	return false
 }
 
 // GetModelProject 获取项目
