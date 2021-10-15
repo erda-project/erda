@@ -15,6 +15,11 @@
 package apistructs
 
 type GetWorkspaceNamespaceRequest struct {
-	ProjectID string
-	Workspace string
+	ProjectID string `json:"projectID"`
+	Workspace string `json:"workspace"`
+}
+
+type GetWorkspaceNamespaceResponse struct {
+	Header
+	Namespaces []string `json:"namespaces"`
 }
