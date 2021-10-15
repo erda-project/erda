@@ -33,22 +33,29 @@ import (
 func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error) {
 	resp := &pb.GetClusterResourcesResponse{}
 	for _, clusterName := range cReq.ClusterNames {
+		detail := &pb.ClusterResourceDetail{ClusterName: clusterName}
 		nodesList, err := p.ListSteveResource(ctx, &apistructs.SteveRequest{
 			NoAuthentication: true,
 			Type:             apistructs.K8SNode,
 			ClusterName:      clusterName,
 		})
 		if err != nil {
-			return nil, err
+			logrus.Errorf("failed to get cluster resource for cluster %s, %v", clusterName, err)
+			detail.Err = err.Error()
+			resp.List = append(resp.List, detail)
+			continue
 		}
 		var nodes []data.Object
 		for _, obj := range nodesList {
 			nodes = append(nodes, obj.Data())
 		}
 
-		nodesAllocatedRes, err := GetNodesAllocatedRes(p, true, clusterName, "", "", nodes)
+		nodesAllocatedRes, err := GetNodesAllocatedRes(ctx, p, true, clusterName, "", "", nodes)
 		if err != nil {
-			return nil, err
+			logrus.Errorf("failed to get nodes allocated resource for cluster %s, %v", clusterName, err)
+			detail.Err = err.Error()
+			resp.List = append(resp.List, detail)
+			continue
 		}
 		for _, node := range nodes {
 			nodeName := node.String("metadata", "name")
@@ -69,8 +76,7 @@ func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetCluster
 			for k, v := range labels {
 				labelArr = append(labelArr, fmt.Sprintf("%s=%s", k, v))
 			}
-			resp.List = append(resp.List, &pb.ClusterResourceDetail{
-				ClusterName:    clusterName,
+			detail.Hosts = append(detail.Hosts, &pb.HostResourceDetail{
 				Host:           nodeName,
 				CpuAllocatable: uint64(allocatableCPU),
 				CpuTotal:       uint64(capacityCPU),
@@ -81,6 +87,8 @@ func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetCluster
 				Labels:         labelArr,
 			})
 		}
+		detail.Success = true
+		resp.List = append(resp.List, detail)
 	}
 	resp.Total = uint32(len(resp.List))
 	return resp, nil
@@ -94,19 +102,25 @@ func (p *provider) GetNamespacesResources(ctx context.Context, nReq *pb.GetNames
 	}
 
 	for cluster, namespaces := range nss {
-		nsAllocatableRes, err := GetNamespaceAllocatedRes(p, true, cluster, "", "", namespaces)
+		item := &pb.ClusterResourceItem{ClusterName: cluster}
+		nsAllocatableRes, err := GetNamespaceAllocatedRes(ctx, p, true, cluster, "", "", namespaces)
 		if err != nil {
-			return nil, err
+			logrus.Errorf("failed to get namespace allocated resource for cluster %s", cluster)
+			item.Err = err.Error()
+			resp.List = append(resp.List, item)
+			continue
 		}
 		for _, namespace := range namespaces {
-			resp.List = append(resp.List, &pb.NamespaceResourceDetail{
-				ClusterName: cluster,
-				Namespace:   namespace,
-				CpuRequest:  uint64(nsAllocatableRes[namespace].CPU),
-				MemRequest:  uint64(nsAllocatableRes[namespace].Mem),
+			item.List = append(item.List, &pb.NamespaceResourceDetail{
+				Namespace:  namespace,
+				CpuRequest: uint64(nsAllocatableRes[namespace].CPU),
+				MemRequest: uint64(nsAllocatableRes[namespace].Mem),
 			})
 		}
+		item.Success = true
+		resp.List = append(resp.List, item)
 	}
+	resp.Total = uint32(len(resp.List))
 	return resp, nil
 }
 
@@ -122,7 +136,7 @@ const (
 )
 
 // GetNamespaceAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
-func GetNamespaceAllocatedRes(server SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
+func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nsAllocatedRes := make(map[string]AllocatedRes)
@@ -151,7 +165,7 @@ func GetNamespaceAllocatedRes(server SteveServer, noAuthentication bool, cluster
 				Type:             apistructs.K8SPod,
 				ClusterName:      clusterName,
 			}
-			pods, err = server.ListSteveResource(context.Background(), req)
+			pods, err = server.ListSteveResource(ctx, req)
 			if err != nil {
 				return nil, err
 			}
@@ -252,7 +266,7 @@ func CalculateNamespaceAllocatedRes(name string, pods []types2.APIObject) (cpu, 
 }
 
 // GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
-func GetNodesAllocatedRes(server SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
+func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nodesAllocatedRes := make(map[string]AllocatedRes)
@@ -282,7 +296,7 @@ func GetNodesAllocatedRes(server SteveServer, noAuthentication bool, clusterName
 				Type:             apistructs.K8SPod,
 				ClusterName:      clusterName,
 			}
-			pods, err = server.ListSteveResource(context.Background(), req)
+			pods, err = server.ListSteveResource(ctx, req)
 			if err != nil {
 				return nil, err
 			}
