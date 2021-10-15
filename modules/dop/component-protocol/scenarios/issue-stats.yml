@@ -10,6 +10,7 @@ hierarchy:
       - trendChart
       - chartGroup1
       - chartGroup2
+      - labelHorizontalBarChart
       - chartGroup3
     overview:
       - total
@@ -35,8 +36,8 @@ hierarchy:
       - statePieChart
       - stateVerticalBarChart
     chartGroup2:
-      - labelHorizontalBarChart
       - assigneeHorizontalBarChart
+      - ownerHorizontalBarChart
     chartGroup3:
       - severityPieChart
       - priorityPieChart
@@ -59,6 +60,12 @@ hierarchy:
         assigneeHorizontalBarChartExtra
     assigneeHorizontalBarChartExtra:
       - assigneeHorizontalBarChartFilter
+
+    ownerHorizontalBarChart:
+      extraContent:
+        ownerHorizontalBarChartExtra
+    ownerHorizontalBarChartExtra:
+      - ownerHorizontalBarChartFilter
 
 components:
   page:
@@ -151,6 +158,13 @@ components:
     type: RowContainer
   assigneeHorizontalBarChartFilter:
     type: ContractiveFilter
+  
+  ownerHorizontalBarChart:
+    type: Chart
+  ownerHorizontalBarChartExtra:
+    type: RowContainer
+  ownerHorizontalBarChartFilter:
+    type: ContractiveFilter
 
   reset:
     type: Container
@@ -161,6 +175,7 @@ rendering:
     - name: stateVerticalBarChartFilter
     - name: labelHorizontalBarChartFilter
     - name: assigneeHorizontalBarChartFilter
+    - name: ownerHorizontalBarChartFilter
     - name: trendChart
       state:
         - name: "values"
@@ -219,6 +234,10 @@ rendering:
       state:
         - name: "values"
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
+    - name: ownerHorizontalBarChart
+      state:
+        - name: "values"
+          value: "{{ ownerHorizontalBarChartFilter.values }}"
     - name: reset
 
   trendChartFilter:
@@ -256,6 +275,15 @@ rendering:
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
     - name: reset
 
+  ownerHorizontalBarChartFilter:
+    - name: filter
+    - name: ownerHorizontalBarChartFilter
+    - name: ownerHorizontalBarChart
+      state:
+        - name: "values"
+          value: "{{ ownerHorizontalBarChartFilter.values }}"
+    - name: reset
+  
   __DefaultRendering__:
     - name: page
     - name: header
@@ -334,4 +362,11 @@ rendering:
       state:
         - name: "values"
           value: "{{ assigneeHorizontalBarChartFilter.values }}"
+
+    - name: ownerHorizontalBarChartExtra
+    - name: ownerHorizontalBarChartFilter
+    - name: ownerHorizontalBarChart
+      state:
+        - name: "values"
+          value: "{{ ownerHorizontalBarChartFilter.values }}"
     - name: reset
