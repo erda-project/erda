@@ -15,12 +15,13 @@
 package apis
 
 import (
-	"bou.ke/monkey"
 	"context"
-	"github.com/pkg/errors"
 	"reflect"
 	"testing"
 	"time"
+
+	"bou.ke/monkey"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	checkerpb "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
