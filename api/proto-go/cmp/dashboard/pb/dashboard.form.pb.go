@@ -19,6 +19,7 @@ var _ urlenc.URLValuesUnmarshaler = (*HostResourceDetail)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ClusterNamespacePair)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ClusterResourceItem)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NamespaceResourceDetail)(nil)
 
 // GetClustersResourcesRequest implement urlenc.URLValuesUnmarshaler.
@@ -56,6 +57,14 @@ func (m *ClusterResourceDetail) UnmarshalURLValues(prefix string, values url.Val
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				m.Err = vals[0]
 			case "clusterName":
 				m.ClusterName = vals[0]
 			}
@@ -109,14 +118,6 @@ func (m *HostResourceDetail) UnmarshalURLValues(prefix string, values url.Values
 				m.MemRequest = val
 			case "labels":
 				m.Labels = vals
-			case "success":
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.Success = val
-			case "err":
-				m.Err = vals[0]
 			}
 		}
 	}
@@ -160,13 +161,32 @@ func (m *GetNamespacesResourcesResponse) UnmarshalURLValues(prefix string, value
 	return nil
 }
 
+// ClusterResourceItem implement urlenc.URLValuesUnmarshaler.
+func (m *ClusterResourceItem) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				m.Err = vals[0]
+			case "clusterName":
+				m.ClusterName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
 // NamespaceResourceDetail implement urlenc.URLValuesUnmarshaler.
 func (m *NamespaceResourceDetail) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "clusterName":
-				m.ClusterName = vals[0]
 			case "namespace":
 				m.Namespace = vals[0]
 			case "cpuRequest":

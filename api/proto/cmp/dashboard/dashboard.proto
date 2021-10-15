@@ -18,8 +18,10 @@ message GetClusterResourcesResponse {
 }
 
 message ClusterResourceDetail {
-  string clusterName = 1;
-  repeated HostResourceDetail hosts = 2;
+  bool success = 1;
+  string err = 2;
+  string clusterName = 3;
+  repeated HostResourceDetail hosts = 4;
 }
 
 message HostResourceDetail {
@@ -31,8 +33,6 @@ message HostResourceDetail {
   uint64 memTotal = 7;
   uint64 memRequest = 8;
   repeated string labels = 9;
-  bool success = 10;
-  string err = 11;
 }
 
 message GetNamespacesResourcesRequest {
@@ -46,11 +46,17 @@ message ClusterNamespacePair {
 
 message GetNamespacesResourcesResponse {
   uint32 total = 1;
-  repeated NamespaceResourceDetail list = 2;
+  repeated ClusterResourceItem list = 2;
+}
+
+message ClusterResourceItem {
+  bool success = 1;
+  string err = 2;
+  string clusterName = 3;
+  repeated NamespaceResourceDetail list = 4;
 }
 
 message NamespaceResourceDetail {
-  string clusterName = 1;
   string namespace = 2;
   uint64 cpuRequest = 3;
   uint64 memRequest = 4;

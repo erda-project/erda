@@ -65,6 +65,16 @@ func (this *GetNamespacesResourcesResponse) Validate() error {
 	}
 	return nil
 }
+func (this *ClusterResourceItem) Validate() error {
+	for _, item := range this.List {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *NamespaceResourceDetail) Validate() error {
 	return nil
 }
