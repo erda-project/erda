@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/go-ansiterm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -43,6 +44,9 @@ const (
 	AuditUncordonNode   = "uncordonNode"
 	AuditLabelNode      = "labelNode"
 	AuditUnLabelNode    = "unLabelNode"
+	AuditDrainNode      = "drainNode"
+	AuditOfflineNode    = "offlineNode"
+	AuditOnlineNode     = "onlineNode"
 	AuditUpdateResource = "updateK8SResource"
 	AuditCreateResource = "createK8SResource"
 	AuditDeleteResource = "deleteK8SResource"
@@ -248,9 +252,12 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
+	d := NewDispatcher()
+	parser := ansiterm.CreateParser("Ground", d)
 	wc := &wrapConn{
-		Conn: conn,
+		Conn:       conn,
+		parser:     parser,
+		dispatcher: d,
 	}
 	w.wc = wc
 	return wc, rw, nil
@@ -258,8 +265,9 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 type wrapConn struct {
 	net.Conn
-	buf  []byte
-	cmds []*cmdWithTimestamp
+	parser     *ansiterm.AnsiParser
+	dispatcher *dispatcher
+	cmds       []*cmdWithTimestamp
 }
 
 type cmdWithTimestamp struct {
@@ -269,39 +277,26 @@ type cmdWithTimestamp struct {
 
 func (w *wrapConn) Read(p []byte) (n int, err error) {
 	n, err = w.Conn.Read(p)
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Error(r)
+		}
+	}()
 	data := websocket.DecodeFrame(p)
 	if len(data) <= 1 || data[0] != '0' {
 		return
 	}
-	decoded, _ := base64.StdEncoding.DecodeString(string(data[1:]))
-	if err != nil || len(decoded) == 0 {
-		return
-	}
-
-	w.buf = append(w.buf, decoded...)
-
-	// splits by \n and \r
-	splits := strings.Split(string(w.buf), "\r")
-	cmds := make([]string, 0)
-	for _, str := range splits {
-		cmds = append(cmds, strings.Split(str, "\n")...)
-	}
-
-	w.buf = nil
-	length := len(cmds)
-	if decoded[len(decoded)-1] != '\r' && decoded[len(decoded)-1] != '\n' {
-		w.buf = append(w.buf, cmds[length-1]...)
-		length--
-	}
-	for i := 0; i < length; i++ {
-		if len(cmds[i]) == 0 {
-			continue
+	for _, d := range strings.Split(string(data), "\n") {
+		decoded, _ := base64.StdEncoding.DecodeString(d[1:])
+		if err != nil || len(decoded) == 0 {
+			return
 		}
-		w.cmds = append(w.cmds, &cmdWithTimestamp{
-			start: time.Now(),
-			cmd:   cmds[i],
-		})
+		_, err = w.parser.Parse(decoded)
+		if err != nil {
+			return 0, err
+		}
 	}
+	w.cmds = w.dispatcher.cmds
 	return
 }
 

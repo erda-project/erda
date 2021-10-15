@@ -19,17 +19,22 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	db2 "github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-////go:generate mockgen -destination=./credential_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./member_register_test.go -package member github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./projectServer_test.go -package member github.com/erda-project/erda-proto-go/msp/tenant/project/pb ProjectServiceServer
 func Test_memberService_ListMember(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -68,10 +73,13 @@ func Test_memberService_ListMember(t *testing.T) {
 		func(_ *bundle.Bundle, _ apistructs.MemberListRequest) (*apistructs.MemberList, error) {
 			return listMembersAndTotalData, nil
 		})
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
+	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMember(context.Background(), &pb.ListMemberRequest{
 		ScopeType: "project",
-		ScopeId:   15,
+		ScopeId:   "c393550824b3d50aa758fee4593d6e31",
 		PageNo:    1,
 		PageSize:  1,
 	})
@@ -93,6 +101,9 @@ func Test_memberService_DeleteMember(t *testing.T) {
 	}
 	var bdl *bundle.Bundle
 	defer monkey.UnpatchAll()
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
+	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "DeleteMember",
 		func(_ *bundle.Bundle, _ apistructs.MemberRemoveRequest) error {
 			return nil
@@ -117,33 +128,75 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	register := NewMockRegister(ctrl)
+	pService := NewMockProjectServiceServer(ctrl)
+	defer monkey.UnpatchAll()
 	pro := &provider{
 		Cfg:           &config{},
 		Register:      register,
 		memberService: &memberService{},
 		bdl:           &bundle.Bundle{},
+		ProjectServer: pService,
 	}
-	var bdl *bundle.Bundle
-	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListMemberRoles",
-		func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
-			return &apistructs.RoleList{
-				List: []apistructs.RoleInfo{
-					{
-						Role: "xxse",
-						Name: "dfdf",
-					},
-				},
-				Total: 1,
-			}, nil
-		})
-	monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+
+	pService.EXPECT().GetProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&projectpb.GetProjectResponse{
+		Data: &projectpb.Project{
+			Id:           "10",
+			Name:         "sqw-xm",
+			Type:         "DOP",
+			Relationship: nil,
+			CreateTime:   1632461946000000000,
+			UpdateTime:   1632461946000000000,
+			IsDeleted:    false,
+			DisplayName:  "sqw-xm",
+			DisplayType:  "DOP",
+		},
+	}, nil)
+	monkey.Patch(apis.GetOrgID, func(_ context.Context) string {
 		return "1"
+	})
+	monkey.Patch((*db.MSPTenantDB).QueryTenant, func(_ *db.MSPTenantDB, _ string) (*db.MSPTenant, error) {
+		return nil, nil
+	})
+	monkey.Patch((*db2.InstanceTenantDB).GetInstanceByTenantGroup, func(_ *db2.InstanceTenantDB, _ string) (*db2.InstanceTenant, error) {
+		return &db2.InstanceTenant{
+			ID:          "1",
+			InstanceID:  "",
+			Config:      "",
+			Options:     `{"projectId":"3"}`,
+			TenantGroup: "",
+			Engine:      "",
+			Az:          "",
+			CreateTime:  time.Time{},
+			UpdateTime:  time.Time{},
+			IsDeleted:   "",
+		}, nil
+	})
+	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
+		return &apistructs.RoleList{
+			List: []apistructs.RoleInfo{
+				{
+					Role: "Owner",
+					Name: "项目所有者",
+				},
+				{
+					Role: "",
+					Name: "",
+				},
+				{
+					Role: "Lead",
+					Name: "研发主管",
+				},
+			},
+			Total: 8,
+		}, nil
+	})
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
 	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMemberRoles(context.Background(), &pb.ListMemberRolesRequest{
 		ScopeType: "project",
-		ScopeID:   12,
+		ScopeId:   "fc1f8c074e46a9df505a15c1a94d62cc",
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -170,6 +223,9 @@ func Test_memberService_CreateOrUpdateMember(t *testing.T) {
 		func(_ *bundle.Bundle, _ apistructs.MemberAddRequest, _ string) error {
 			return nil
 		})
+	monkey.Patch(memberService.GetProjectIdByScopeId, func(_ memberService, _ string) (string, error) {
+		return "4", nil
+	})
 	pro.memberService.p = pro
 	_, err := pro.memberService.CreateOrUpdateMember(context.Background(), &pb.CreateOrUpdateMemberRequest{
 		Scope: &pb.Scope{

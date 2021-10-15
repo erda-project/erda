@@ -26,7 +26,7 @@ service GlobalService {
 
   rpc GetFeatures(GetFeaturesRequest) returns (GetFeaturesResponse) {
     option (google.api.http) = {
-      get: "/api/gateway/gateway-features/{clusterName}",
+      get: "/api/gateway/openapi/gateway-features/{clusterName}",
     };
   }
 }

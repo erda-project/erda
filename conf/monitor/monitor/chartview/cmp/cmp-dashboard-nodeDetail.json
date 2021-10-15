@@ -119,6 +119,7 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -279,6 +280,7 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -336,7 +338,7 @@
         "title": "load rate5",
         "i18n": {
           "title": {
-            "zh": "磁盘5分钟平均负载",
+            "zh": "系统5分钟平均负载",
             "en": "load rate5"
           }
         },
@@ -435,6 +437,7 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -613,9 +616,11 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               },
               {
+                "show": true,
                 "name": ""
               }
             ]
@@ -808,9 +813,11 @@
           "option": {
             "yAxis": [
               {
+                "show": true,
                 "name": ""
               },
               {
+                "show": true,
                 "name": ""
               }
             ]

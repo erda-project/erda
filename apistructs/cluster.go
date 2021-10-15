@@ -50,6 +50,13 @@ const (
 	ManageProxy = "proxy"
 )
 
+// cluster credential
+const (
+	ErdaClusterConfig = "erda-cluster-credential"
+	AccessKey         = "CLUSTER_ACCESS_KEY"
+	CMPClusterScope   = "cmp_cluster"
+)
+
 // ClusterCreateRequest 集群创建请求
 // TODO 逐步废弃 urls & settings, 统一使用config
 type ClusterCreateRequest struct {
@@ -160,6 +167,17 @@ type ClusterSchedConfig struct {
 	DevCPUSubscribeRatio     string `json:"devCPUSubscribeRatio"`
 	TestCPUSubscribeRatio    string `json:"testCPUSubscribeRatio"`
 	StagingCPUSubscribeRatio string `json:"stagingCPUSubscribeRatio"`
+}
+
+func (csc *ClusterSchedConfig) RemoveSensitiveInfo() {
+	csc.AuthType = ""
+	csc.AuthUsername = ""
+	csc.AuthPassword = ""
+	csc.CACrt = ""
+	csc.ClientKey = ""
+	csc.ClientCrt = ""
+	csc.AccessKey = ""
+	csc.AccessSecret = ""
 }
 
 // OpsConfig 集群ops配置初始化

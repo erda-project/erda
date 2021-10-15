@@ -38,14 +38,14 @@
             ],
             "resultFilters": [
               {
-                "alias": "主机",
+                "alias": "Url",
                 "i18n": {
                   "alias": {
-                    "en": "Host",
-                    "zh": "主机"
+                    "en": "Url",
+                    "zh": "Url"
                   }
                 },
-                "field": "application_http_service-host::tag",
+                "field": "application_http_service-http_url::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{host}}"
@@ -116,7 +116,7 @@
               }
             ],
             "where": [
-              "host::tag='{{host}}'"
+              "http_url::tag='{{host}}'"
             ]
           },
           "header": null,
@@ -159,14 +159,14 @@
             ],
             "resultFilters": [
               {
-                "alias": "主机",
+                "alias": "Url",
                 "i18n": {
                   "alias": {
-                    "en": "Host",
-                    "zh": "主机"
+                    "en": "Url",
+                    "zh": "Url"
                   }
                 },
-                "field": "application_http_service-host::tag",
+                "field": "application_http_service-http_url::tag",
                 "filter": {
                   "operation": "=",
                   "value": "{{host}}"
@@ -239,7 +239,7 @@
               }
             ],
             "where": [
-              "host::tag='{{host}}'"
+              "http_url::tag='{{host}}'"
             ]
           },
           "header": null,

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/issuerelated"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,11 +39,12 @@ import (
 
 // Issue 事件操作封装
 type Issue struct {
-	db     *dao.DBClient
-	bdl    *bundle.Bundle
-	stream *issuestream.IssueStream
-	uc     *ucauth.UCClient
-	tran   i18n.Translator
+	db           *dao.DBClient
+	bdl          *bundle.Bundle
+	stream       *issuestream.IssueStream
+	uc           *ucauth.UCClient
+	tran         i18n.Translator
+	issueRelated *issuerelated.IssueRelated
 }
 
 // Option 定义 Issue 配置选项
@@ -75,6 +77,13 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithIssueStream(stream *issuestream.IssueStream) Option {
 	return func(issue *Issue) {
 		issue.stream = stream
+	}
+}
+
+// WithIssueRelated set issue related svc
+func WithIssueRelated(issueRelated *issuerelated.IssueRelated) Option {
+	return func(issue *Issue) {
+		issue.issueRelated = issueRelated
 	}
 }
 
@@ -554,6 +563,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 				var nilTime *time.Time
 				nilTime = nil
 				changedFields["finish_time"] = nilTime
+			}
+
+			if currentBelong.Belong != apistructs.IssueStateBelongReopen && newBelong.Belong == apistructs.IssueStateBelongReopen {
+				changedFields["reopen_count"] = issueModel.ReopenCount + 1
 			}
 		}
 	STREAM:
@@ -1504,4 +1517,20 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 	}
 
 	return projectMap, nil
+}
+
+func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
+	return svc.db.GetAllIssuesByProject(req)
+	// if err != nil {
+	// 	return data, nil
+	// }
+	// return data
+}
+
+func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
+	return svc.db.GetIssuesStatesByProjectID(projectID, issueType)
+}
+
+func (svc *Issue) GetIssueLabelsByProjectID(projectID uint64) ([]dao.IssueLabel, error) {
+	return svc.db.GetIssueLabelsByProjectID(projectID)
 }

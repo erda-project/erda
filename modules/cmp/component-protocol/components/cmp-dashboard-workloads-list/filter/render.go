@@ -72,6 +72,7 @@ func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Componen
 	if err := f.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to gen filter component url query, %v", err)
 	}
+	f.Transfer(component)
 	return nil
 }
 
@@ -85,17 +86,17 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decodeData, err := base64.StdEncoding.DecodeString(urlQuery)
+	base64Decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 
 	var values Values
-	if err := json.Unmarshal(decodeData, &values); err != nil {
+	if err := json.Unmarshal(base64Decoded, &values); err != nil {
 		return err
 	}
 	f.State.Values = values
@@ -303,14 +304,24 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	jsonData, err := json.Marshal(f.State.Values)
+	data, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encodeData := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.FilterURLQuery = encodeData
+	base64Encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = base64Encoded
 	return nil
+}
+
+func (f *ComponentFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
+		"clusterName":      f.State.ClusterName,
+		"conditions":       f.State.Conditions,
+		"values":           f.State.Values,
+		"filter__urlQuery": f.State.FilterURLQuery,
+	}
+	component.Operations = f.Operations
 }
 
 func hasSuffix(name string) (string, bool) {

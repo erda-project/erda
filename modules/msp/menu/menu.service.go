@@ -311,6 +311,12 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 			configs[tenant.Engine] = config
 		}
 	}
+
+	// if both log-analytics and log-service addon exists, use log-service config only
+	if _, ok := configs["log-service"]; ok {
+		delete(configs, "log-analytics")
+	}
+
 	return configs, nil
 }
 

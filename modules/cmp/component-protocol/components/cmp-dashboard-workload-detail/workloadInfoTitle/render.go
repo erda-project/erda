@@ -31,7 +31,9 @@ func init() {
 
 func (t *ComponentWorkloadInfoTitle) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
-	t.Props.Title = cputil.I18n(ctx, "workloadDetail")
-	t.Props.Size = "small"
+	component.Props = Props{
+		Title: cputil.I18n(ctx, "workloadDetail"),
+		Size:  "small",
+	}
 	return nil
 }

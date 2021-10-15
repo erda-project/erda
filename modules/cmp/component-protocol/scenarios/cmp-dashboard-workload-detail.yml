@@ -1,5 +1,3 @@
-version: 0.1
-
 scenario: cmp-dashboard-workload-detail
 
 hierarchy:
@@ -41,23 +39,25 @@ rendering:
       state:
         - name: "workloadId"
           value: "{{ __InParams__.workloadId }}"
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"
     - name: workloadStatus
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
-          value: "{{ __InParams__.workloadId }}"
+          value: "{{ workloadTitle.workloadId }}"
     - name: workloadInfoTitle
     - name: workloadInfo
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
-          value: "{{ __InParams__.workloadId }}"
+          value: "{{ workloadTitle.workloadId }}"
     - name: podsTableTitle
     - name: podsTable
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
-          value: "{{ __InParams__.workloadId }}"
+          value: "{{ workloadTitle.workloadId }}"

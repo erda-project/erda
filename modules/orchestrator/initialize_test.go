@@ -23,7 +23,7 @@ import (
 )
 
 func Test_initCron(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 	defer cancel()
 
 	ctrl := gomock.NewController(t)

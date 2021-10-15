@@ -30,20 +30,20 @@ type ComponentEventTable struct {
 	server cmp.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
-	State      State                  `json:"state,omitempty"`
 	Props      Props                  `json:"props,omitempty"`
 	Data       Data                   `json:"data,omitempty"`
+	State      State                  `json:"state,omitempty"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
 type State struct {
 	ClusterName        string       `json:"clusterName,omitempty"`
+	EventTableUQLQuery string       `json:"eventTable__urlQuery,omitempty"`
 	FilterValues       FilterValues `json:"filterValues,omitempty"`
 	PageNo             uint64       `json:"pageNo,omitempty"`
 	PageSize           uint64       `json:"pageSize,omitempty"`
 	Sorter             Sorter       `json:"sorterData,omitempty"`
 	Total              uint64       `json:"total"`
-	EventTableUQLQuery string       `json:"eventTable__urlQuery,omitempty"`
 }
 
 type FilterValues struct {
@@ -71,8 +71,10 @@ type Item struct {
 }
 
 type Props struct {
+	IsLoadMore      bool     `json:"isLoadMore,omitempty"`
 	PageSizeOptions []string `json:"pageSizeOptions,omitempty"`
 	Columns         []Column `json:"columns,omitempty"`
+	SortDirections  []string `json:"sortDirections,omitempty"`
 }
 
 type Column struct {

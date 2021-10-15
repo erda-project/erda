@@ -23,12 +23,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type OrgResource struct {
 	db       *dbclient.DBClient
-	uc       *ucauth.UCClient
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
 }
@@ -47,13 +45,6 @@ func New(options ...Option) *OrgResource {
 func WithDBClient(db *dbclient.DBClient) Option {
 	return func(o *OrgResource) {
 		o.db = db
-	}
-}
-
-// WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(o *OrgResource) {
-		o.uc = uc
 	}
 }
 

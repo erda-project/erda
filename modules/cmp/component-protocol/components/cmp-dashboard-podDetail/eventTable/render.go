@@ -56,6 +56,7 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 		return err
 	}
 	t.SetComponentValue(ctx)
+	t.Transfer(component)
 	return nil
 }
 
@@ -148,6 +149,7 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
+		IsLoadMore: true,
 		RowKey:     "id",
 		Pagination: false,
 		Columns: []Column{
@@ -172,6 +174,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 				Width:     120,
 			},
 		},
+		SortDirections: []string{"descend", "ascend"},
 	}
 	t.Operations = make(map[string]interface{})
 	t.Operations[apistructs.OnChangePageNoOperation.String()] = Operation{
@@ -186,6 +189,18 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 		Key:    apistructs.OnChangeSortOperation.String(),
 		Reload: true,
 	}
+}
+
+func (t *ComponentEventTable) Transfer(c *cptype.Component) {
+	c.Props = t.Props
+	c.Data = map[string]interface{}{
+		"list": t.Data.List,
+	}
+	c.State = map[string]interface{}{
+		"clusterName": t.State.ClusterName,
+		"podId":       t.State.PodID,
+	}
+	c.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

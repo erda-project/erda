@@ -40,7 +40,10 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
 				return StageData{}, err
 			}
-			title = title + "等待 " + strconv.Itoa(value.WaitTime) + " 秒"
+			if value.WaitTime > 0 {
+				value.WaitTimeSec = value.WaitTime
+			}
+			title = title + "等待 " + strconv.Itoa(value.WaitTimeSec) + " 秒"
 		}
 	} else if step.Type == apistructs.StepTypeAPI {
 		if step.Value == "" {
@@ -66,7 +69,11 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 	} else if step.Type == apistructs.StepTypeScene {
 		title = title + "嵌套场景: " + step.Name
 	} else if step.Type == apistructs.StepTypeCustomScript {
-		title = title + "自定义任务: " + step.Name
+		if step.Value == "" {
+			title = title + "空 自定义脚本"
+		} else {
+			title = title + "自定义脚本: " + step.Name
+		}
 	}
 	pd := StageData{
 		Title:      title,

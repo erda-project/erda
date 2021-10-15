@@ -15,6 +15,7 @@ import (
 var _ urlenc.URLValuesUnmarshaler = (*ScopeRoleAccessRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Scope)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ScopeRoleAccessResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ScopeRoleData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ScopeResource)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMemberRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMemberResponse)(nil)
@@ -75,6 +76,51 @@ func (m *ScopeRoleAccessResponse) UnmarshalURLValues(prefix string, values url.V
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+			case "data.access":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.Access = val
+			case "data.roles":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				m.Data.Roles = vals
+			case "data.exist":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.Exist = val
+			case "data.contactsWhenNoPermission":
+				if m.Data == nil {
+					m.Data = &ScopeRoleData{}
+				}
+				m.Data.ContactsWhenNoPermission = vals
+			case "userIDs":
+				m.UserIDs = vals
+			}
+		}
+	}
+	return nil
+}
+
+// ScopeRoleData implement urlenc.URLValuesUnmarshaler.
+func (m *ScopeRoleData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
 			case "access":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -122,11 +168,7 @@ func (m *ListMemberRequest) UnmarshalURLValues(prefix string, values url.Values)
 			case "scopeType":
 				m.ScopeType = vals[0]
 			case "scopeId":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.ScopeId = val
+				m.ScopeId = vals[0]
 			case "pageNo":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -370,12 +412,8 @@ func (m *ListMemberRolesRequest) UnmarshalURLValues(prefix string, values url.Va
 			switch prefix + key {
 			case "scopeType":
 				m.ScopeType = vals[0]
-			case "scopeID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.ScopeID = val
+			case "scopeId":
+				m.ScopeId = vals[0]
 			}
 		}
 	}

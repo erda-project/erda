@@ -36,6 +36,8 @@ const (
 	RecordTypeAddAliCSECluster        RecordType = "addAliCSEdgeCluster"
 	RecordTypeAddAliCSManagedCluster  RecordType = "addAliCSManagedEdgeCluster"
 	RecordTypeImportKubernetesCluster RecordType = "importKubernetesCluster"
+	RecordTypeCreateClusterCredential RecordType = "createClusterCredential"
+	RecordTypeResetClusterCredential  RecordType = "resetClusterCredential"
 	RecordTypeUpgradeEdgeCluster      RecordType = "upgradeEdgeCluster"
 	RecordTypeOfflineEdgeCluster      RecordType = "offlineEdgeCluster"
 	RecordTypeCreateAliCloudMysql     RecordType = "createAliCloudMysql"

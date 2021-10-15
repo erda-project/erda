@@ -4,6 +4,9 @@ health:
   path: "/api/health"
 prometheus:
 monitor-monitoring:
+  usage_sync_interval:
+    metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL:1h}
+    log: ${MONITOR_MONITORING_LOG_SYNC_INTERVAL:30m}
 
 grpc-server:
   addr: ":7080"
@@ -48,19 +51,19 @@ erda.core.monitor.metric.index:
 
 # metric query
 erda.core.monitor.metric:
-   _enable: ${METRIC_QUERY_ENABLE:true}
-   chart_meta:
-     path: ${CONFIG_PATH}/charts
-     reload_interval: "30s"
-   metric_meta:
-     sources:
-       - "index"
-       - "file"
-       - "database"
-     group_files:
-       - "${CONFIG_PATH}/metricmeta/groups/org.yml"
-       - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
-     metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
+  _enable: ${METRIC_QUERY_ENABLE:true}
+  chart_meta:
+    path: ${CONFIG_PATH}/charts
+    reload_interval: "30s"
+  metric_meta:
+    sources:
+      - "index"
+      - "file"
+      - "database"
+    group_files:
+      - "${CONFIG_PATH}/metricmeta/groups/org.yml"
+      - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
+    metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
 
 erda.core.monitor.alertdetail:
 
@@ -84,6 +87,8 @@ erda.core.monitor.log.query:
 
 logs-index-query:
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
+  index_field_settings:
+    file: ${CONFIG_PATH}/logs/default_field_settings.yml
 log-metric-rules:
 node-topo:
 #apm providers
@@ -98,9 +103,9 @@ apm-topology:
 apm-report:
 
 erda.core.monitor.alert:
-#  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,cluster_name,host_ip,org_id,org_name,project_id,project_name,application_id,application_name,runtime_id,runtime_name,service_id,service_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,job_id,addon_id,instance_id,instance_type,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key}"
+  #  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,cluster_name,host_ip,org_id,org_name,project_id,project_name,application_id,application_name,runtime_id,runtime_name,service_id,service_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,job_id,addon_id,instance_id,instance_type,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key}"
   micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
-#  org_filter_tags: "${ORG_FILTER_TAGS:size,platform_addon,os,kernel_version,container_id,version,is_edge,login_callback,namespace,app_config_namespace,container_name,container_image,http_port,image_version,deployment,ssh_user,deployment_id,email_smtp_port,openapi_addr,ingress_version,email_smtp_is_ssl,openapi_token_for_action_bootstrap,email_smtp_host,ssh_password,email_smtp_display_user,metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,org_id,org_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key,root_domain,email_smtp_username,inside,email_smtp_username,cluster_type,protocol,email_smtp_password,storage_mountpoint,terminus_version,email_smtp_display_user,openapi_public_url}"
+  #  org_filter_tags: "${ORG_FILTER_TAGS:size,platform_addon,os,kernel_version,container_id,version,is_edge,login_callback,namespace,app_config_namespace,container_name,container_image,http_port,image_version,deployment,ssh_user,deployment_id,email_smtp_port,openapi_addr,ingress_version,email_smtp_is_ssl,openapi_token_for_action_bootstrap,email_smtp_host,ssh_password,email_smtp_display_user,metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,org_id,org_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key,root_domain,email_smtp_username,inside,email_smtp_username,cluster_type,protocol,email_smtp_password,storage_mountpoint,terminus_version,email_smtp_display_user,openapi_public_url}"
   org_filter_tags: "${ORG_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
   micro_service_other_filter_tags: "${MICRO_SERVICE_OTHER_FILTER_TAGS:application_id}"
   silence_policy: "${SILENCE_POLICY:fixed,doubled}"

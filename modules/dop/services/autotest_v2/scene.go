@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -73,7 +74,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		RefSetID: req.RefSetID,
 		Name:     req.Name,
 	}
-	if err := svc.checkCycle(checkScene, nil, nil); err != nil {
+	if err := svc.checkCycle(checkScene, nil, nil, nil); err != nil {
 		return 0, apierrors.ErrCreateAutoTestScene.InternalError(err)
 	}
 
@@ -118,7 +119,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 }
 
 // check whether the nesting depth of the scene reference scene set is greater than a certain value
-func (svc *Service) checkCycle(scene dao.AutoTestScene, allNodes []uint64, allNodesMap map[uint64]bool) error {
+func (svc *Service) checkCycle(scene dao.AutoTestScene, allNodes []uint64, allNodesMap map[uint64]bool, tx *gorm.DB) error {
 	// Initialization data, add begin data
 	if allNodes == nil && allNodesMap == nil {
 		allNodes = append(allNodes, scene.SetID)
@@ -139,7 +140,7 @@ func (svc *Service) checkCycle(scene dao.AutoTestScene, allNodes []uint64, allNo
 		return fmt.Errorf("error scene reference scene set cycle error, scene reference path : %v", allNodes)
 	}
 
-	_, refScenes, err := svc.db.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: scene.RefSetID})
+	_, refScenes, err := svc.db.ListAutotestSceneTx(apistructs.AutotestSceneRequest{SetID: scene.RefSetID}, tx)
 	if err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func (svc *Service) checkCycle(scene dao.AutoTestScene, allNodes []uint64, allNo
 		if refScene.RefSetID <= 0 {
 			continue
 		}
-		err := svc.checkCycle(refScene, allNodes, allNodesMap)
+		err := svc.checkCycle(refScene, allNodes, allNodesMap, tx)
 		if err != nil {
 			return err
 		}
@@ -235,7 +236,32 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 			return 0, apierrors.ErrMoveAutoTestScene.AlreadyExists()
 		}
 	}
-	err := svc.db.MoveAutoTestScene(req.ID, preID, uint64(req.GroupID))
+
+	err := svc.db.Transaction(func(tx *gorm.DB) error {
+		err := svc.db.MoveAutoTestScene(req.ID, preID, uint64(req.GroupID), tx)
+		if err != nil {
+			return err
+		}
+
+		scene, err := svc.db.GetAutotestSceneTx(req.ID, tx)
+		if err != nil {
+			return err
+		}
+
+		// scene reference scene set is moved
+		if scene.RefSetID > 0 && req.GroupID > 0 {
+			checkScene := dao.AutoTestScene{
+				SpaceID:  scene.SpaceID,
+				SetID:    scene.SetID,
+				RefSetID: scene.RefSetID,
+			}
+			err := svc.checkCycle(checkScene, nil, nil, tx)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -787,11 +813,17 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 		if err != nil {
 			return nil, err
 		}
+		if value.WaitTime > 0 {
+			value.WaitTimeSec = value.WaitTime
+		}
+		if value.WaitTimeSec <= 0 {
+			return nil, errors.Errorf("Invalid wait time sec: %d", value.WaitTimeSec)
+		}
 
-		action.Type = "custom-script"
+		action.Type = "wait"
 		action.Version = "1.0"
-		action.Commands = []string{
-			"sleep " + strconv.Itoa(value.WaitTime) + "s",
+		action.Params = map[string]interface{}{
+			"wait_time_sec": value.WaitTimeSec,
 		}
 	case apistructs.StepTypeConfigSheet:
 		var value apistructs.AutoTestRunConfigSheet

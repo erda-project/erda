@@ -58,7 +58,7 @@ services:
     deployments:
       labels:
         GROUP: "devops"
-      replicas: 1
+      replicas: ${replicas:1}
     envs:
       DEBUG: "true"
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
@@ -229,6 +229,10 @@ services:
       http: { }
       exec:
         cmd: "ls"
+    k8s_snippet:
+      container:
+        securityContext:
+          privileged: true
   collector:
     labels:
       cpu_bound: "true"
@@ -350,7 +354,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "devops"
     expose:
@@ -529,7 +533,8 @@ services:
     resources:
       cpu: ${request_cpu:2}
       max_cpu: 2
-      mem: 2048
+      mem: ${request_mem:6144}
+      max_mem: 6144
       network:
         mode: "container"
     binds:
@@ -565,7 +570,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -598,7 +603,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 2
+      replicas: ${replicas:1}
       labels:
         GROUP: "devops"
     health_check:
@@ -706,7 +711,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: ${replicas:0}
+      replicas: 0
       labels:
         GROUP: "spot-v2"
     health_check:

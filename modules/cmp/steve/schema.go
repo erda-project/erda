@@ -33,9 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 
-	fm "github.com/erda-project/erda/modules/cmp/steve/formatter"
 	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 )
 
@@ -45,8 +43,8 @@ func DefaultSchemas(baseSchema *types.APISchemas) {
 }
 
 func DefaultSchemaTemplates(ctx context.Context, clusterName string, cf *client.Factory,
-	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup, k8sInterface kubernetes.Interface) []schema.Template {
-	nodeFormatter := fm.NewNodeFormatter(ctx, k8sInterface)
+	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup) []schema.Template {
+	ctx = context.WithValue(ctx, "clusterName", clusterName)
 	return []schema.Template{
 		DefaultTemplate(ctx, clusterName, cf, asl),
 		apigroups.Template(discovery),
@@ -61,10 +59,6 @@ func DefaultSchemaTemplates(ctx context.Context, clusterName string, cf *client.
 		{
 			ID:        "pod",
 			Formatter: formatters.Pod,
-		},
-		{
-			ID:        "node",
-			Formatter: nodeFormatter.Formatter,
 		},
 	}
 }

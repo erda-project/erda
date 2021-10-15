@@ -26,7 +26,7 @@ components:
   page:
     type: Container
   nodeFilter:
-    type: TiledFilter
+    type: ContractiveFilter
   charts:
     type: RowContainer
   batchOperationTipModal:
@@ -91,6 +91,7 @@ rendering:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: addLabelModal
+    - name: batchOperationTipModal
     - name: cleanData
 
   cpuTable:
@@ -134,6 +135,7 @@ rendering:
     - name: cpuChart
     - name: memChart
     - name: podChart
+    - name: batchOperationTipModal
     - name: addLabelModal
     - name: cleanData
 
@@ -157,7 +159,9 @@ rendering:
           value: "{{ nodeFilter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
+    - name: batchOperationTipModal
     - name: cleanData
+
 
 
 

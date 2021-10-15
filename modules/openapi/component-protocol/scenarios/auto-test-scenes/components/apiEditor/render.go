@@ -25,6 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
@@ -108,7 +110,11 @@ func (ae *ApiEditor) Render(ctx context.Context, c *apistructs.Component, scenar
 	}
 	ae.State.SceneId = sceneID
 
-	projecrIDStr := fmt.Sprintf("%v", bdl.InParams["projectId"])
+	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
+	if err != nil {
+		return err
+	}
+	projecrIDStr := strconv.FormatUint(projectID, 10)
 
 	// 获取小试一把信息
 	if _, ok := c.State["isFirstIn"]; ok {
@@ -165,7 +171,7 @@ LABEL:
 		steps = append(steps, sStep)
 		steps = append(steps, sStep.Children...)
 	}
-	maps, err := GetStepOutPut(steps)
+	maps, err := step.GetStepOutPut(steps)
 	if err != nil {
 		return err
 	}
@@ -178,6 +184,20 @@ LABEL:
 		stepChildren1 = append(stepChildren1, Input{Label: k, Value: k, IsLeaf: false, Children: stepChildren2})
 	}
 	inputs = append(inputs, Input{Label: "前置接口出参", Value: "前置接口出参", IsLeaf: false, Children: stepChildren1})
+
+	maps, err = step.GetConfigSheetStepOutPut(steps, bdl.Bdl)
+	if err != nil {
+		return err
+	}
+	stepChildren1 = make([]Input, 0, 0)
+	for k, v := range maps {
+		stepChildren2 := make([]Input, 0, 0)
+		for k1, v1 := range v {
+			stepChildren2 = append(stepChildren2, Input{Label: k1, Value: v1, IsLeaf: true})
+		}
+		stepChildren1 = append(stepChildren1, Input{Label: k, Value: k, IsLeaf: false, Children: stepChildren2})
+	}
+	inputs = append(inputs, Input{Label: "前置配置单出参", Value: "前置配置单出参", IsLeaf: false, Children: stepChildren1})
 
 	// 全局变量入参
 	cfgReq := apistructs.AutoTestGlobalConfigListRequest{Scope: "project-autotest-testcase", ScopeID: projecrIDStr}
@@ -292,7 +312,7 @@ LABEL:
 			body.Content = apiSpec.RequestBody[0].Body.Example
 		}
 
-		apiInfo := APISpec{
+		apiInfo := step.APISpec{
 			APIInfo: apistructs.APIInfoV2{
 				Name:      apiSpec.OperationID,
 				URL:       apiSpec.Path,
@@ -330,22 +350,22 @@ LABEL:
 	}
 
 	// 第一次进来，获取step渲染
-	step, err := bdl.Bdl.GetAutoTestSceneStep(apistructs.AutotestGetSceneStepReq{
+	sceneStep, err := bdl.Bdl.GetAutoTestSceneStep(apistructs.AutotestGetSceneStepReq{
 		ID:     stepID,
 		UserID: userID,
 	})
 	if err != nil {
 		return err
 	}
-	if step.Value == "" {
-		step.Value = emptySpecStr
+	if sceneStep.Value == "" {
+		sceneStep.Value = emptySpecStr
 	}
-	var apiInfo APISpec
+	var apiInfo step.APISpec
 	// TODO 名字用step表里的name
-	if err := json.Unmarshal([]byte(step.Value), &apiInfo); err != nil {
+	if err := json.Unmarshal([]byte(sceneStep.Value), &apiInfo); err != nil {
 		return err
 	}
-	apiInfo.APIInfo.Name = step.Name
-	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": step.APISpecID, "loop": apiInfo.Loop}
+	apiInfo.APIInfo.Name = sceneStep.Name
+	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": sceneStep.APISpecID, "loop": apiInfo.Loop}
 	return nil
 }

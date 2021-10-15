@@ -209,7 +209,9 @@ func (c *Clusters) ImportClusterWithRecord(userID string, req *apistructs.Import
 		Detail:      detailInfo,
 	})
 
-	logrus.Errorf("recorde import cluster error: %v", recordError)
+	if recordError != nil {
+		logrus.Errorf("recorde import cluster error: %v", recordError)
+	}
 
 	return err
 }
@@ -617,6 +619,12 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 		return nil, err
 	}
 
+	ak, err := c.GetOrCreateAccessKey(clusterName)
+	if err != nil {
+		logrus.Errorf("render cluster acccessKey error: %v", err)
+		return nil, err
+	}
+
 	rd := RenderDeploy{
 		ErdaNamespace: getWorkerNamespace(),
 		JobImage:      renderReleaseImageAddr(),
@@ -625,7 +633,7 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 			{Name: "ERDA_CHART_VERSION", Value: conf.ErdaVersion()},
 			{Name: "HELM_NAMESPACE", Value: getWorkerNamespace()},
 			{Name: "NODE_LABELS", Value: fmt.Sprintf(ErdaOrgLabel+"=true", orgName)},
-			{Name: "ERDA_CHART_VALUES", Value: generateSetValues(ci)},
+			{Name: "ERDA_CHART_VALUES", Value: generateSetValues(ci, ak.AccessKey)},
 			{Name: "HELM_REPO_URL", Value: conf.HelmRepoURL()},
 			{Name: "HELM_REPO_USERNAME", Value: conf.HelmRepoUsername()},
 			{Name: "HELM_REPO_PASSWORD", Value: conf.HelmRepoPassword()},
@@ -636,14 +644,14 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 }
 
 // generateSetValues generate the values of helm chart install set
-func generateSetValues(ci *apistructs.ClusterInfo) string {
+func generateSetValues(ci *apistructs.ClusterInfo, clusterAK string) string {
 	// current cluster type in database is k8s, dice-cluster-info need kubernetes
 	if ci.Type == "k8s" {
 		ci.Type = "kubernetes"
 	}
-	return "tags.work=true,tags.master=false," +
+	return "tags.worker=true,tags.master=false," +
 		fmt.Sprintf("global.domain=%s,erda.clusterName=%s,", ci.WildcardDomain, ci.Name) +
-		fmt.Sprintf("erda.clusterConfig.clusterType=%s,", strings.ToLower(ci.Type)) +
+		fmt.Sprintf("erda.clusterConfig.clusterType=%s,erda.clusterConfig.clusterAccessKey=%s,", strings.ToLower(ci.Type), clusterAK) +
 		fmt.Sprintf("erda.masterCluster.domain=%s,erda.masterCluster.protocol=%s", conf.ErdaDomain(), conf.ErdaProtocol())
 }
 

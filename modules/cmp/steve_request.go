@@ -18,26 +18,36 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	"k8s.io/api/policy/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
+	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+const OfflineLabel = "dice/offline"
 
 type SteveServer interface {
 	GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
@@ -50,8 +60,13 @@ type SteveServer interface {
 	UnlabelNode(context.Context, *apistructs.SteveRequest, []string) error
 	CordonNode(context.Context, *apistructs.SteveRequest) error
 	UnCordonNode(context.Context, *apistructs.SteveRequest) error
+	DrainNode(context.Context, *apistructs.SteveRequest) error
+	OfflineNode(context.Context, string, string, string, []string) error
+	OnlineNode(context.Context, *apistructs.SteveRequest) error
 }
 
+// GetSteveResource gets k8s resource from steve server.
+// Required fields: ClusterName, Name, Type.
 func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
 		return types.APIObject{}, errors.New("clusterName, name and type fields are required")
@@ -61,7 +76,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to authenticate, %v", err)
+		return types.APIObject{}, err
 	}
 	if req.Type == apistructs.K8SNode {
 		user = &apiuser.DefaultInfo{
@@ -77,7 +92,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
 	if err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -97,29 +112,31 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, errors.New(objData.String("message"))
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 	return obj, nil
 }
 
+// ListSteveResource lists k8s resource from steve server.
+// Required fields: ClusterName, Type.
 func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" {
-		return nil, errors.New("clusterName and type fields are required")
+		return nil, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to authenticate, %v", err)
+		return nil, err
 	}
 	if req.Type == apistructs.K8SNode {
 		user = &apiuser.DefaultInfo{
@@ -135,7 +152,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -149,18 +166,23 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 
-	logrus.Infof("[DEBUG] start request steve aggregator at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] start request steve aggregator at %s", req.Type, time.Now().Format(time.StampNano))
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return nil, err
+		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	logrus.Infof("[DEBUG] end request steve aggregator at %s", time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] end request steve aggregator at %s", req.Type, time.Now().Format(time.StampNano))
 
 	collection, ok := resp.ResponseData.(*types.GenericCollection)
 	if !ok {
 		if resp.ResponseData == nil {
-			return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return nil, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return nil, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		rawResource, ok := resp.ResponseData.(*types.RawResource)
+		if !ok {
+			return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
+		}
+		obj := rawResource.APIObject.Data()
+		return nil, apierrors.ErrInvoke.InternalError(errors.New(obj.String("message")))
 	}
 
 	var objects []types.APIObject
@@ -179,30 +201,32 @@ func newReadCloser(obj interface{}) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(jsonData)), nil
 }
 
+// UpdateSteveResource update a k8s resource described by req.Obj from steve server and creates an audit event.
+// Required fields: ClusterName, Type, Name, Obj
 func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return types.APIObject{}, errors.New("clusterName, name and type fields are required")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
 	}
 	if !isObjInvalid(req.Obj) {
-		return types.APIObject{}, errors.New("obj in req is invalid")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("obj in req is invalid"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to authenticate, %v", err)
+		return types.APIObject{}, err
 	}
 
 	body, err := newReadCloser(req.Obj)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to get body, %v", err)
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.Errorf("failed to get body, %v", err))
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodPut, path, body)
 	if err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -216,21 +240,21 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, errors.New(objData.String("message"))
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
 	auditCtx := map[string]interface{}{
@@ -245,30 +269,32 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 	return obj, nil
 }
 
+// CreateSteveResource creates a k8s resource described by req.Obj from steve server and creates an audit event.
+// Required fields: ClusterName, Type, Obj
 func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {
 	if req.Type == "" || req.ClusterName == "" {
-		return types.APIObject{}, errors.New("clusterName and type fields are required")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
 	}
 	if !isObjInvalid(req.Obj) {
-		return types.APIObject{}, errors.New("obj in req is invalid")
+		return types.APIObject{}, apierrors.ErrInvoke.InvalidParameter(errors.New("obj in req is invalid"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type))
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to authenticate, %v", err)
+		return types.APIObject{}, err
 	}
 
 	body, err := newReadCloser(req.Obj)
 	if err != nil {
-		return types.APIObject{}, fmt.Errorf("failed to get body, %v", err)
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to get body, %v", err))
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodPost, path, body)
 	if err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -281,21 +307,21 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return types.APIObject{}, err
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return types.APIObject{}, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return types.APIObject{}, fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, errors.New(objData.String("message"))
+		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
 	reqObj, err := data.Convert(req.Obj)
@@ -318,22 +344,24 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 	return obj, nil
 }
 
+// DeleteSteveResource delete a k8s resource from steve server and creates an audit event.
+// Required fields: ClusterName, Type, Name
 func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName, name and type fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return fmt.Errorf("failed to authenticate, %v", err)
+		return err
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodDelete, path, nil)
 	if err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -347,21 +375,21 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return errors.New(objData.String("message"))
+		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
 	auditCtx := map[string]interface{}{
@@ -376,30 +404,32 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 	return nil
 }
 
+// PatchNode patch a node described by req.Obj from steve server.
+// Required fields: ClusterName, Name, Obj
 func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName, name and type fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName, name and type fields are required"))
 	}
 	if !isObjInvalid(req.Obj) {
-		return errors.New("obj in req is invalid")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("obj in req is invalid"))
 	}
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1/node", req.Name)
 
 	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
 	if err != nil {
-		return fmt.Errorf("failed to authenticate, %v", err)
+		return err
 	}
 
 	body, err := newReadCloser(req.Obj)
 	if err != nil {
-		return fmt.Errorf("failed to get body, %v", err)
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("failed to get body, %v", err))
 	}
 
 	withUser := request.WithUser(ctx, user)
 	r, err := http.NewRequestWithContext(withUser, http.MethodPatch, path, body)
 	if err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	resp := &steve.Response{}
@@ -413,32 +443,32 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		Response:       &steve.StatusCodeGetter{Response: resp},
 	}
 	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return err
+		return apierrors.ErrInvoke.InternalError(err)
 	}
 
 	rawRes, ok := resp.ResponseData.(*types.RawResource)
 	if !ok {
 		if resp.ResponseData == nil {
-			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+			return apierrors.ErrInvoke.InternalError(errors.New("null response data"))
 		}
-		return fmt.Errorf("unknown type: %s", reflect.TypeOf(resp.ResponseData).String())
+		return apierrors.ErrInvoke.InternalError(errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String()))
 	}
 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return errors.New(objData.String("message"))
+		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 	return nil
 }
 
-func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
+func (p *provider) labelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	if labels == nil || len(labels) == 0 {
-		return errors.New("labels are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("labels are required"))
 	}
 
 	metadata := map[string]interface{}{
@@ -452,12 +482,22 @@ func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, 
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// LabelNode labels a node and creates an audit event.
+// Required filed: ClusterName, Name, labels
+func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
+	if err := p.labelNode(ctx, req, labels); err != nil {
+		return err
+	}
 
 	var k, v string
 	// there can only be one piece of k/v
 	for k, v = range labels {
 	}
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 		middleware.AuditTargetLabel:  fmt.Sprintf("%s=%s", k, v),
 	}
@@ -467,13 +507,13 @@ func (p *provider) LabelNode(ctx context.Context, req *apistructs.SteveRequest, 
 	return nil
 }
 
-func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
+func (p *provider) unlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	if len(labels) == 0 {
-		return errors.New("labels are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("labels are required"))
 	}
 
 	toUnlabel := make(map[string]interface{})
@@ -491,8 +531,18 @@ func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// UnlabelNode unlabels a node and creates an audit event.
+// Required filed: ClusterName, Name, labels
+func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest, labels []string) error {
+	if err := p.unlabelNode(ctx, req, labels); err != nil {
+		return err
+	}
 
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 		middleware.AuditTargetLabel:  labels[0],
 	}
@@ -502,9 +552,9 @@ func (p *provider) UnlabelNode(ctx context.Context, req *apistructs.SteveRequest
 	return nil
 }
 
-func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
+func (p *provider) cordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	spec := map[string]interface{}{
@@ -518,8 +568,18 @@ func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest)
 	if err != nil {
 		return err
 	}
+	return err
+}
+
+// CordonNode cordons a node and creates an audit event.
+// Required fields: ClusterName, Name
+func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
+	if err := p.cordonNode(ctx, req); err != nil {
+		return err
+	}
 
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 	}
 	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditCordonNode, auditCtx); err != nil {
@@ -528,9 +588,11 @@ func (p *provider) CordonNode(ctx context.Context, req *apistructs.SteveRequest)
 	return nil
 }
 
+// UnCordonNode uncordons a node and creates an audit event.
+// Required fields: ClusterName, Name
 func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveRequest) error {
 	if req.ClusterName == "" || req.Name == "" {
-		return errors.New("clusterName and name fields are required")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))
 	}
 
 	spec := map[string]interface{}{
@@ -546,6 +608,7 @@ func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveReques
 	}
 
 	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceName: req.Name,
 	}
 	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditUncordonNode, auditCtx); err != nil {
@@ -554,10 +617,140 @@ func (p *provider) UnCordonNode(ctx context.Context, req *apistructs.SteveReques
 	return nil
 }
 
+// DrainNode drains a node and creates an audit event.
+func (p *provider) DrainNode(ctx context.Context, req *apistructs.SteveRequest) error {
+	if err := p.cordonNode(ctx, req); err != nil {
+		return err
+	}
+
+	podReq := &apistructs.SteveRequest{
+		UserID:      req.UserID,
+		OrgID:       req.OrgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: req.ClusterName,
+	}
+	list, err := p.ListSteveResource(ctx, podReq)
+	if err != nil {
+		return errors.Errorf("failed to list pods, %v", err)
+	}
+
+	client, err := k8sclient.New(req.ClusterName)
+	if err != nil {
+		return errors.Errorf("failed to get k8s client, %v", err)
+	}
+
+	go func() {
+		for _, obj := range list {
+			pod := obj.Data()
+			if pod.String("spec", "nodeName") != req.Name {
+				continue
+			}
+			namespace := pod.String("metadata", "namespace")
+			name := pod.String("metadata", "name")
+			if err = client.ClientSet.PolicyV1beta1().Evictions(namespace).Evict(context.Background(), &v1beta1.Eviction{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to evict pod %s:%s, %v", namespace, name, err)
+				continue
+			} else {
+				logrus.Infof("drain node %s: pod %s:%s evicted", req.Name, namespace, name)
+			}
+		}
+	}()
+
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
+		middleware.AuditResourceName: req.Name,
+	}
+	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditDrainNode, auditCtx); err != nil {
+		logrus.Errorf("failed to audit when drain node, %v", err)
+	}
+	return nil
+}
+
+// OfflineNode offlines a node by sending request to monitor. And creates an audit event.
+// nodeID format: nodeName/hostIP
+func (p *provider) OfflineNode(ctx context.Context, userID, orgID, clusterName string, nodeIDs []string) error {
+	var names, ips []string
+	for _, id := range nodeIDs {
+		splits := strings.Split(id, "/")
+		if len(splits) != 2 {
+			logrus.Errorf("failed to offline host, invalid id %s", id)
+			continue
+		}
+		name, ip := splits[0], splits[1]
+		names = append(names, name)
+		ips = append(ips, ip)
+
+		req := &apistructs.SteveRequest{
+			UserID:      userID,
+			OrgID:       orgID,
+			Type:        apistructs.K8SNode,
+			ClusterName: clusterName,
+			Name:        name,
+		}
+		if err := p.labelNode(ctx, req, map[string]string{OfflineLabel: "true"}); err != nil {
+			logrus.Errorf("failed to label node %s, %v", name, err)
+			continue
+		}
+	}
+
+	go func() {
+		for i := 0; i < 5; i++ {
+			host := discover.Monitor()
+			path := "/api/resources/hosts/actions/offline"
+			headers := http.Header{
+				httputil.UserHeader: []string{userID},
+				httputil.OrgHeader:  []string{orgID},
+			}
+			client := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
+			req := map[string]interface{}{
+				"clusterName": clusterName,
+				"hostIPs":     ips,
+			}
+
+			var resp httpapi.Response
+			_, err := client.Post(host).Path(path).Headers(headers).JSONBody(&req).Do().JSON(&resp)
+			if err != nil {
+				logrus.Errorf("failed to post offline host, %v", err)
+			}
+		}
+	}()
+
+	nodeNames := strings.Join(names, ",")
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  clusterName,
+		middleware.AuditResourceName: nodeNames,
+	}
+	if err := p.Audit(userID, orgID, middleware.AuditOfflineNode, auditCtx); err != nil {
+		logrus.Errorf("failed to audit when offline node, %v", err)
+	}
+	return nil
+}
+
+// OnlineNode onlines a node by removing node offline label. And creates an audit event.
+func (p *provider) OnlineNode(ctx context.Context, req *apistructs.SteveRequest) error {
+	if err := p.unlabelNode(ctx, req, []string{OfflineLabel}); err != nil {
+		return err
+	}
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  req.ClusterName,
+		middleware.AuditResourceName: req.Name,
+	}
+	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditOnlineNode, auditCtx); err != nil {
+		logrus.Errorf("failed to audit when online node, %v", err)
+	}
+	return nil
+}
+
+// Auth authenticates by userID and orgID.
 func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error) {
 	scopeID, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid org id %s, %v", orgID, err)
+		return nil, apierrors.ErrInvoke.InvalidParameter(fmt.Sprintf("invalid org id %s, %v", orgID, err))
 	}
 
 	clusters, err := p.listClusterByType(scopeID, "k8s", "edas")
@@ -573,7 +766,7 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		}
 	}
 	if !found {
-		return nil, fmt.Errorf("cluster %s not found in org %s", clusterName, orgID)
+		return nil, apierrors.ErrInvoke.InvalidParameter(fmt.Sprintf("cluster %s not found in org %s", clusterName, orgID))
 	}
 
 	r := &apistructs.ScopeRoleAccessRequest{
@@ -587,7 +780,7 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		return nil, err
 	}
 	if !rsp.Access {
-		return nil, errors.New("access denied")
+		return nil, apierrors.ErrInvoke.AccessDenied()
 	}
 
 	name := fmt.Sprintf("erda-user-%s", userID)
@@ -596,29 +789,29 @@ func (p *provider) Auth(userID, orgID, clusterName string) (apiuser.Info, error)
 		UID:  name,
 	}
 	for _, role := range rsp.Roles {
-		if role == bundle.RoleOrgManager {
-			user.Groups = append(user.Groups, steve.OrgManagerGroup)
+		group, ok := steve.RoleToGroup[role]
+		if !ok {
+			continue
 		}
-		if role == bundle.RoleOrgSupport {
-			user.Groups = append(user.Groups, steve.OrgSupportGroup)
-		}
+		user.Groups = append(user.Groups, group)
 	}
 
 	if len(user.Groups) == 0 {
-		return nil, errors.New("access denied")
+		return nil, apierrors.ErrInvoke.AccessDenied()
 	}
 
 	return user, nil
 }
 
+// Audit creates an audit event by bundle.
 func (p *provider) Audit(userID, orgID, templateName string, ctx map[string]interface{}) error {
 	if ctx == nil || len(ctx) == 0 {
-		return errors.New("template context can not be empty")
+		return apierrors.ErrInvoke.InvalidParameter(errors.New("template context can not be empty"))
 	}
 
 	scopeID, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
-		return fmt.Errorf("invalid org id %s, %v", orgID, err)
+		return apierrors.ErrInvoke.InvalidParameter(fmt.Errorf("invalid org id %s, %v", orgID, err))
 	}
 
 	now := strconv.FormatInt(time.Now().Unix(), 10)

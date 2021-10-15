@@ -55,7 +55,7 @@ const (
 	OldRightPlaceholder = "}"
 )
 
-var MockString = []string{"string", "integer", "float", "boolean", "upper", "lower", "mobile", "digital_letters", "letters", "character", "timestamp",
+var MockString = []string{"string", "integer", "integer_length", "float", "boolean", "upper", "lower", "mobile", "digital_letters", "letters", "character", "timestamp",
 	"timestamp_hour", "timestamp_after_hour", "timestamp_day", "timestamp_after_day", "timestamp_ms", "timestamp_ms_hour", "timestamp_ms_after_hour",
 	"timestamp_ms_day", "timestamp_ms_after_day", "timestamp_ns", "timestamp_ns_hour", "timestamp_ns_after_hour", "timestamp_ns_day",
 	"timestamp_ns_after_day", "date", "date_day", "datetime", "datetime_hour"}
@@ -232,6 +232,32 @@ func GenRandomRef(key string) string {
 
 func GenOutputRef(alias, outputName string) string {
 	return fmt.Sprintf("%s %s.%s.%s %s", LeftPlaceholder, Outputs, alias, outputName, RightPlaceholder)
+}
+
+func DecodeOutputKey(express string) (string, bool) {
+	replaced := strutil.ReplaceAllStringSubmatchFunc(Re, express, func(sub []string) string {
+		inner := sub[1]
+		inner = strings.Trim(inner, " ")
+
+		ss := strings.SplitN(inner, ".", 3)
+
+		if len(ss) < 3 {
+			return sub[0]
+		}
+
+		switch ss[0] {
+		case Outputs:
+			return ss[2]
+		default:
+			return sub[0]
+		}
+	})
+
+	if express == replaced {
+		return express, false
+	}
+
+	return replaced, true
 }
 
 func Quote(s string) string {

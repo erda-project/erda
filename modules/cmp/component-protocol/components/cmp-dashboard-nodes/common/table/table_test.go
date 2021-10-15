@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -319,7 +318,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 	type fields struct {
 	}
 	type args struct {
-		metricsData  metrics.MetricsData
+		a, b         float64
 		resourceType TableType
 	}
 	tests := []struct {
@@ -333,8 +332,8 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			name:   "text",
 			fields: fields{},
 			args: args{
-				metricsData: metrics.MetricsData{Used: 1, Request: 1.2,
-					Total: 10},
+				a:            200,
+				b:            1200,
 				resourceType: Cpu,
 			},
 			want: DistributionValue{"0.200/1.200", "16.7"},
@@ -343,8 +342,8 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			name:   "text",
 			fields: fields{},
 			args: args{
-				metricsData: metrics.MetricsData{Used: 1, Request: 1.2,
-					Total: 10},
+				a:            0.2,
+				b:            1.2,
 				resourceType: Memory,
 			},
 			want: DistributionValue{"0.2/1.2", "16.7"},
@@ -353,7 +352,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t := &Table{}
-			if got := t.GetUnusedRate(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+			if got := t.GetUnusedRate(tt.args.a, tt.args.b, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
 				t1.Errorf("GetUnusedRate() = %v, want %v", got, tt.want)
 			}
 		})
@@ -373,7 +372,7 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 		State           State
 	}
 	type args struct {
-		metricsData  metrics.MetricsData
+		a, b         float64
 		resourceType TableType
 	}
 	tests := []struct {
@@ -385,7 +384,8 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 		{
 			name: "1",
 			args: args{
-				metricsData:  metrics.MetricsData{1, 2, 3},
+				a:            2,
+				b:            3,
 				resourceType: Pod,
 			},
 			want: DistributionValue{
@@ -397,7 +397,7 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t := &Table{}
-			if got := t.GetDistributionValue(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+			if got := t.GetDistributionValue(tt.args.a, tt.args.b, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
 				t1.Errorf("GetDistributionValue() = %v, want %v", got, tt.want)
 			}
 		})
@@ -417,7 +417,7 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 		State           State
 	}
 	type args struct {
-		metricsData  metrics.MetricsData
+		a, b         float64
 		resourceType TableType
 	}
 	tests := []struct {
@@ -429,7 +429,8 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 		{
 			name: "1",
 			args: args{
-				metricsData:  metrics.MetricsData{1, 2, 3},
+				a:            1,
+				b:            3,
 				resourceType: Pod,
 			},
 			want: DistributionValue{
@@ -441,7 +442,7 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t := &Table{}
-			if got := t.GetUsageValue(tt.args.metricsData, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+			if got := t.GetUsageValue(tt.args.a, tt.args.b, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
 				t1.Errorf("GetUsageValue() = %v, want %v", got, tt.want)
 			}
 		})

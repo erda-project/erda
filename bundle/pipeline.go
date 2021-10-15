@@ -426,3 +426,24 @@ func (b *Bundle) ParsePipelineYmlGraph(req apistructs.PipelineYmlParseGraphReque
 	}
 	return graphResp.Data, nil
 }
+
+func (b *Bundle) GetPipelineActionParamsAndOutputs(req apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
+	host, err := b.urls.Pipeline()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var snippetQueryDetailsResponse *apistructs.SnippetQueryDetailsResponse
+	httpResp, err := hc.Post(host).Path("/api/pipeline-snippets/actions/query-details").
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(req).
+		Do().JSON(&snippetQueryDetailsResponse)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !httpResp.IsOK() || !snippetQueryDetailsResponse.Success {
+		return nil, toAPIError(httpResp.StatusCode(), snippetQueryDetailsResponse.Error)
+	}
+	return snippetQueryDetailsResponse.Data, nil
+}

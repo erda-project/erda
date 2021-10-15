@@ -22,8 +22,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
+	"github.com/go-openapi/strfmt"
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
+	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -34,6 +38,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
@@ -92,6 +97,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
 	p.SetComponentValue(ctx)
+	p.Transfer(component)
 	return nil
 }
 
@@ -191,31 +197,48 @@ func (p *ComponentPodsTable) RenderTable() error {
 		OrgID:       orgID,
 		Type:        apistructs.K8SPod,
 		ClusterName: p.State.ClusterName,
-		Namespace:   namespace,
 	}
 
-	list, err := p.server.ListSteveResource(p.ctx, &podReq)
+	var list []types2.APIObject
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		list, err = p.server.ListSteveResource(p.ctx, &podReq)
+		waitGroup.Done()
+	}()
+
+	go func() {
+		var metricsErr error
+		cpuReq := &metrics.MetricsRequest{
+			UserId:  userID,
+			OrgId:   orgID,
+			Cluster: p.State.ClusterName,
+			Kind:    metrics.Pod,
+			Type:    metrics.Cpu,
+		}
+		memReq := &metrics.MetricsRequest{
+			UserId:  userID,
+			OrgId:   orgID,
+			Cluster: p.State.ClusterName,
+			Kind:    metrics.Pod,
+			Type:    metrics.Memory,
+		}
+		_, metricsErr = mServer.PodMetrics(p.ctx, cpuReq)
+		if metricsErr != nil {
+			logrus.Errorf("failed to get cpu metrics for pods, %v", metricsErr)
+		}
+		_, metricsErr = mServer.PodMetrics(p.ctx, memReq)
+		if metricsErr != nil {
+			logrus.Errorf("failed to get mem metrics for pods, %v", metricsErr)
+		}
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
+
 	if err != nil {
 		return err
 	}
 
-	cpuReq := metrics.MetricsRequest{
-		UserID:       userID,
-		OrgID:        orgID,
-		ClusterName:  p.State.ClusterName,
-		ResourceKind: metrics.Pod,
-		ResourceType: metrics.Cpu,
-	}
-	memReq := metrics.MetricsRequest{
-		UserID:       userID,
-		OrgID:        orgID,
-		ClusterName:  p.State.ClusterName,
-		ResourceKind: metrics.Pod,
-		ResourceType: metrics.Memory,
-	}
-
-	tempCPULimits := make([]*resource.Quantity, 0)
-	tempMemLimits := make([]*resource.Quantity, 0)
 	var items []Item
 	for _, item := range list {
 		obj := item.Data()
@@ -237,22 +260,13 @@ func (p *ComponentPodsTable) RenderTable() error {
 
 		name := obj.String("metadata", "name")
 		namespace := obj.String("metadata", "namespace")
-		cpuReq.PodRequests = append(cpuReq.PodRequests, metrics.MetricsPodRequest{
-			PodName:   name,
-			Namespace: namespace,
-		})
-		memReq.PodRequests = append(memReq.PodRequests, metrics.MetricsPodRequest{
-			PodName:   name,
-			Namespace: namespace,
-		})
-
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 9 {
 			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
 			continue
 		}
-		status := p.parsePodStatus(fields[2])
 
+		status := p.parsePodStatus(fields[2])
 		containers := obj.Slice("spec", "containers")
 		cpuRequests := resource.NewQuantity(0, resource.DecimalSI)
 		cpuLimits := resource.NewQuantity(0, resource.DecimalSI)
@@ -282,8 +296,19 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimitsStr = "-"
 		}
 
-		tempCPULimits = append(tempCPULimits, cpuLimits)
-		tempMemLimits = append(tempMemLimits, memLimits)
+		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
+		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
+		if metricsData != nil && !cpuLimits.IsZero() {
+			usedCPUPercent := metricsData.Used
+			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
+		}
+
+		memStatus, memValue, memTip := "success", "0", "N/A"
+		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
+		if metricsData != nil && !memLimits.IsZero() {
+			usedMemPercent := metricsData.Used
+			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
+		}
 
 		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
@@ -301,6 +326,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 								Params: map[string]string{
 									"podId": id,
 								},
+								Query: map[string]string{
+									"namespace": namespace,
+									"podName":   name,
+								},
 							},
 							JumpOut: true,
 						},
@@ -308,55 +337,32 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:         namespace,
-			IP:                fields[5],
-			CPURequests:       cpuRequestStr,
-			CPURequestsNum:    cpuRequests.MilliValue(),
+			Namespace:      namespace,
+			IP:             fields[5],
+			Age:            fields[4],
+			CPURequests:    cpuRequestStr,
+			CPURequestsNum: cpuRequests.MilliValue(),
+			CPUPercent: Percent{
+				RenderType: "progress",
+				Value:      cpuValue,
+				Tip:        cpuTip,
+				Status:     cpuStatus,
+			},
 			CPULimits:         cpuLimitsStr,
 			CPULimitsNum:      cpuLimits.MilliValue(),
 			MemoryRequests:    memRequestsStr,
 			MemoryRequestsNum: memRequests.Value(),
-			MemoryLimits:      memLimitsStr,
-			MemoryLimitsNum:   memLimits.Value(),
-			Ready:             fields[1],
-			NodeName:          fields[6],
+			MemoryPercent: Percent{
+				RenderType: "progress",
+				Value:      memValue,
+				Tip:        memTip,
+				Status:     memStatus,
+			},
+			MemoryLimits:    memLimitsStr,
+			MemoryLimitsNum: memLimits.Value(),
+			Ready:           fields[1],
+			NodeName:        fields[6],
 		})
-	}
-
-	cpuMetrics, err := mServer.PodMetrics(p.ctx, &cpuReq)
-	if err != nil || len(cpuMetrics) == 0 {
-		logrus.Errorf("failed to get cpu metrics for pods, %v", err)
-		cpuMetrics = make([]metrics.MetricsData, len(items), len(items))
-	}
-	memMetrics, err := mServer.PodMetrics(p.ctx, &memReq)
-	if err != nil || len(memMetrics) == 0 {
-		logrus.Errorf("failed to get mem metrics for pods, %v", err)
-		memMetrics = make([]metrics.MetricsData, len(items), len(items))
-	}
-
-	for i := range items {
-		cpuLimits := tempCPULimits[i]
-		memLimits := tempMemLimits[i]
-
-		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		usedCPUPercent := cpuMetrics[i].Used
-		cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
-		items[i].CPUPercent = Percent{
-			RenderType: "progress",
-			Value:      cpuValue,
-			Tip:        cpuTip,
-			Status:     cpuStatus,
-		}
-
-		memStatus, memValue, memTip := "success", "0", "N/A"
-		usedMemPercent := memMetrics[i].Used
-		memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
-		items[i].MemoryPercent = Percent{
-			RenderType: "progress",
-			Value:      memValue,
-			Tip:        memTip,
-			Status:     memStatus,
-		}
 	}
 
 	if p.State.Sorter.Field != "" {
@@ -390,6 +396,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 			case "ip":
 				return func(i int, j int) bool {
 					less := items[i].IP < items[j].IP
+					if ascend {
+						return less
+					}
+					return !less
+				}
+			case "age":
+				return func(i int, j int) bool {
+					ageI, _ := strfmt.ParseDuration(items[i].Age)
+					ageJ, _ := strfmt.ParseDuration(items[j].Age)
+					less := ageI < ageJ
 					if ascend {
 						return less
 					}
@@ -520,38 +536,41 @@ func (p *ComponentPodsTable) isOwnedByTargetCronJob(pod data.Object, cronJobName
 
 func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resource.Quantity, format resource.Format) (string, string, string) {
 	var totRes int64
+	var usedRes float64
+	status, tip, value := "", "", ""
 	if format == resource.DecimalSI {
 		totRes = totQty.MilliValue()
+		usedRes = float64(totRes) * usedPercent / 100
+		if usedPercent <= 80 {
+			status = "success"
+		} else if usedPercent < 100 {
+			status = "warning"
+		} else {
+			status = "error"
+		}
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
+			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
+		value = fmt.Sprintf("%.2f", usedPercent)
 	} else {
 		totRes = totQty.Value()
-	}
-	usedRes := float64(totRes) * usedPercent / 100
-	usedQtyString := cmpcputil.ResourceToString(p.sdk, usedRes, format)
-
-	status := ""
-	if usedPercent <= 80 {
-		status = "success"
-	} else if usedPercent < 100 {
-		status = "warning"
-	} else {
-		status = "error"
-	}
-
-	tip := ""
-	if format == resource.DecimalSI {
-		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-	} else {
-		tip = fmt.Sprintf("%s/%s", usedQtyString, cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
-	}
-	value := fmt.Sprintf("%.2f", usedPercent)
-	if usedRes < 1e-8 {
-		tip = "N/A"
-		value = "N/A"
+		usedRes = float64(totRes) * usedPercent / 100
+		if usedPercent <= 80 {
+			status = "success"
+		} else if usedPercent < 100 {
+			status = "warning"
+		} else {
+			status = "error"
+		}
+		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
+			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
+		value = fmt.Sprintf("%.2f", usedPercent)
 	}
 	return status, value, tip
 }
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
+	p.Props.SortDirections = []string{"descend", "ascend"}
+	p.Props.IsLoadMore = true
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}
@@ -629,6 +648,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Width:     120,
 			Sorter:    true,
 		},
+		{
+			DataIndex: "age",
+			Title:     cputil.I18n(ctx, "age"),
+			Width:     120,
+			Sorter:    true,
+		},
 	}
 
 	p.Operations = map[string]interface{}{
@@ -637,6 +662,23 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Reload: true,
 		},
 	}
+}
+
+func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
+	component.Props = p.Props
+	component.State = map[string]interface{}{
+		"clusterName":       p.State.ClusterName,
+		"workloadId":        p.State.WorkloadID,
+		"pageNo":            p.State.PageNo,
+		"pageSize":          p.State.PageSize,
+		"sorterData":        p.State.Sorter,
+		"total":             p.State.Total,
+		"podsTableURLQuery": p.State.PodsTableURLQuery,
+	}
+	component.Data = map[string]interface{}{
+		"list": p.Data.List,
+	}
+	component.Operations = p.Operations
 }
 
 func matchSelector(selector, labels map[string]interface{}) bool {
@@ -690,4 +732,20 @@ func getRange(length, pageNo, pageSize int) (int, int) {
 		r = length
 	}
 	return l, r
+}
+
+func getCache(key string) *metrics.MetricsData {
+
+	v, _, err := cache.GetFreeCache().Get(key)
+	if err != nil {
+		logrus.Errorf("get metrics %v err :%v", key, err)
+	}
+	d := &metrics.MetricsData{}
+	if v != nil {
+		err = jsi.Unmarshal(v[0].Value().([]byte), d)
+		if err != nil {
+			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
+		}
+	}
+	return d
 }

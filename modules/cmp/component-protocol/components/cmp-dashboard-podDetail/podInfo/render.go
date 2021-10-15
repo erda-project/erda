@@ -94,6 +94,7 @@ func (podInfo *PodInfo) Render(ctx context.Context, c *cptype.Component, s cptyp
 	podInfo.Data = map[string]Data{
 		"data": data,
 	}
+	podInfo.Transfer(c)
 	return nil
 }
 
@@ -117,28 +118,54 @@ func (podInfo *PodInfo) GenComponentState(component *cptype.Component) error {
 	return nil
 }
 
+func (podInfo *PodInfo) Transfer(component *cptype.Component) {
+	component.Props = podInfo.Props
+	component.Data = map[string]interface{}{}
+	for k, v := range podInfo.Data {
+		component.Data[k] = v
+	}
+	component.State = map[string]interface{}{
+		"clusterName": podInfo.State.ClusterName,
+		"podId":       podInfo.State.PodID,
+	}
+}
+
 func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
+	var workloadField Field
+	if workloadId != "" {
+		workloadField = Field{
+			Label:      podInfo.SDK.I18n("workload"),
+			ValueKey:   "workload",
+			RenderType: "linkText",
+			Operations: map[string]Operation{
+				"click": {
+					Key:    "gotoWorkloadDetail",
+					Reload: false,
+					Command: Command{
+						Key:    "goto",
+						Target: "cmpClustersWorkloadDetail",
+						State: CommandState{Params: map[string]string{
+							"workloadId": workloadId,
+						}},
+						JumpOut: true,
+					},
+				},
+			},
+		}
+	} else {
+		workloadField = Field{
+			Label:    podInfo.SDK.I18n("workload"),
+			ValueKey: "workload",
+		}
+	}
 	return Props{
-		ColumnNum: 4,
+		IsLoadMore: true,
+		ColumnNum:  4,
 		Fields: []Field{
 			{Label: podInfo.SDK.I18n("namespace"), ValueKey: "namespace"},
 			{Label: podInfo.SDK.I18n("age"), ValueKey: "age"},
 			{Label: podInfo.SDK.I18n("podIP"), ValueKey: "ip"},
-			{Label: podInfo.SDK.I18n("workload"), ValueKey: "workload", RenderType: "linkText",
-				Operations: map[string]Operation{
-					"click": {
-						Key:    "gotoWorkloadDetail",
-						Reload: false,
-						Command: Command{
-							Key:    "goto",
-							Target: "cmpClustersWorkloadDetail",
-							State: CommandState{Params: map[string]string{
-								"workloadId": workloadId,
-							}},
-							JumpOut: true,
-						},
-					},
-				}},
+			workloadField,
 			{Label: podInfo.SDK.I18n("node"), ValueKey: "node", RenderType: "linkText",
 				Operations: map[string]Operation{
 					"click": {
@@ -181,8 +208,12 @@ func (podInfo *PodInfo) getWorkloadID(pod data.Object) (string, error) {
 		return "", nil
 	}
 	ownerReference := ownerReferences[0]
-	name := ownerReference.String("name")
 	kind := ownerReference.String("kind")
+	if kind != "Deployment" && kind != "StatefulSet" && kind != "ReplicaSet" && kind != "DaemonSet" &&
+		kind != "Job" && kind != "CronJob" {
+		return "", nil
+	}
+	name := ownerReference.String("name")
 	namespace := pod.String("metadata", "namespace")
 
 	if kind == "ReplicaSet" {

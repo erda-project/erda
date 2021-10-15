@@ -482,6 +482,13 @@ var (
 	ErrParallelRunPipeline = err("ErrParallelRunPipeline", "已有流水线正在运行中")
 
 	ErrListFileRecords = err("ErrListFileRecords", "failed to list file records")
+
+	ErrStartCodeCoverageExecRecord  = err("ErrStartCodeCoverageExecRecord", "代码覆盖率执行开始失败")
+	ErrEndCodeCoverageExecRecord    = err("ErrEndCodeCoverageExecRecord", "代码覆盖率执行结束失败")
+	ErrCancelCodeCoverageExecRecord = err("ErrCancelCodeCoverageExecRecord", "代码覆盖率执行强制取消失败")
+	ErrUpdateCodeCoverageExecRecord = err("ErrUpdateCodeCoverageExecRecord", "修改代码覆盖率执行记录失败")
+	ErrGetCodeCoverageExecRecord    = err("ErrUpdateCodeCoverageExecRecord", "获取代码覆盖率执行记录失败")
+	ErrListCodeCoverageExecRecord   = err("ErrUpdateCodeCoverageExecRecord", "列表获取代码覆盖率执行记录失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

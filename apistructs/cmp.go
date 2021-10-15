@@ -154,6 +154,7 @@ type OrgClusterInfoBasicData struct {
 type OfflineEdgeClusterRequest struct {
 	OrgID       uint64 `json:"orgID"`
 	ClusterName string `json:"clusterName"`
+	Force       bool   `json:"force"`
 }
 
 type OfflineEdgeClusterResponse struct {
@@ -1612,6 +1613,34 @@ type ClusterInitRetry struct {
 }
 
 type InitClusterResponse struct {
+	Header
+	Data string `json:"data"`
+}
+
+type ClusterAk struct {
+	Id        string `json:"id"`
+	AccessKey string `json:"accessKey"`
+}
+
+type ClusterGetAkResponse struct {
+	Header
+	Data *ClusterAk `json:"data"`
+}
+
+type ClusterCreateAkRequest struct {
+	ClusterName string `json:"clusterName"`
+}
+
+type ClusterCreateAkResponse struct {
+	Header
+	Data string `json:"data"`
+}
+
+type ClusterResetAkRequest struct {
+	ClusterName string `json:"clusterName"`
+}
+
+type ClusterResetAkResponse struct {
 	Header
 	Data string `json:"data"`
 }

@@ -4,12 +4,12 @@
     - name: Java
       enabled: true
     - name: Golang
-      enabled: false
-    - name: PHP
-      enabled: false
+      enabled: true
     - name: .NET Core
-      enabled: false
+      enabled: true
     - name: Node.js
+      enabled: true
+    - name: C++
       enabled: false
 
 - instrumentationlibrary: Apache SkyWalking

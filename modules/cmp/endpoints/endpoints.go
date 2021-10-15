@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/impl/addons"
@@ -28,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/mns"
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -43,11 +45,13 @@ type Endpoints struct {
 	orgResource     *org_resource.OrgResource
 	Mns             *mns.Mns
 	Ess             *ess.Ess
+	metrics         *metrics.Metric
 	CloudAccount    *cloud_account.CloudAccount
 	Addons          *addons.Addons
 	JS              jsonstore.JsonStore
 	CachedJS        jsonstore.JsonStore
 	SteveAggregator *steve.Aggregator
+	Credential      credentialpb.AccessKeyServiceServer
 }
 
 type Option func(*Endpoints)
@@ -61,12 +65,13 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.dbclient = db
 	e.labels = labels.New(db, e.bdl)
 	e.nodes = nodes.New(db, e.bdl)
-	e.clusters = clusters.New(db, e.bdl)
+	e.clusters = clusters.New(db, e.bdl, e.Credential)
 	e.Mns = mns.New(db, e.bdl, e.nodes, js)
 	e.Ess = ess.New(e.bdl, e.Mns, e.nodes, e.labels)
 	e.CloudAccount = cloud_account.New(db, cachedJS)
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
+	e.metrics = ctx.Value("metrics").(*metrics.Metric)
 	e.CachedJS = cachedJS
 	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
 	return e
@@ -89,6 +94,13 @@ func WithOrgResource(o *org_resource.OrgResource) Option {
 	}
 }
 
+// WithCredential with accessKey credential
+func WithCredential(c credentialpb.AccessKeyServiceServer) Option {
+	return func(e *Endpoints) {
+		e.Credential = c
+	}
+}
+
 // Routes Return routes
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
@@ -107,6 +119,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cluster", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.OfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
 		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
+		{Path: "/api/cluster/credential/access-keys", Method: http.MethodGet, Handler: auth(i18nPrinter(e.GetAccessKey))},
+		{Path: "/api/cluster/credential/access-keys", Method: http.MethodPost, Handler: auth(i18nPrinter(e.CreateAccessKey))},
+		{Path: "/api/cluster/credential/access-keys/actions/reset", Method: http.MethodPost, Handler: auth(i18nPrinter(e.ResetAccessKey))},
 		{Path: "/api/org-cluster-info", Method: http.MethodGet, Handler: auth(i18nPrinter(e.OrgClusterInfo))},
 
 		// officer apis
@@ -213,5 +228,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// task list
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: i18nPrinter(e.ListOrgRunningTasks)},
 		{Path: "/api/tasks", Method: http.MethodPost, Handler: i18nPrinter(e.DealTaskEvent)},
+		{Path: "/api/metrics", Method: http.MethodPost, Handler: i18nPrinter(e.MetricsQuery)},
 	}
 }

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 	auto_test_plan_list "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list"
 )
 
@@ -74,19 +75,21 @@ const (
 
 func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	projectIDStr := fmt.Sprintf("%v", bdl.InParams["projectId"])
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+
+	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
 	if err != nil {
 		return err
 	}
+
 	cond := apistructs.TestPlanV2PagingRequest{ProjectID: projectID, PageNo: 1, PageSize: auto_test_plan_list.DefaultTablePageSize}
 	cond.UserID = bdl.Identity.UserID
+	if _, ok := c.State["pageNo"]; ok {
+		cond.PageNo = uint64(c.State["pageNo"].(float64))
+	}
 
 	switch event.Operation.String() {
-	case "changePageNo":
-		if _, ok := c.State["pageNo"]; ok {
-			cond.PageNo = uint64(c.State["pageNo"].(float64))
-		}
+	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		cond.PageNo = 1
 	case "edit":
 		var operationData OperationData
 		odBytes, err := json.Marshal(event.OperationData)

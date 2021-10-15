@@ -42,6 +42,7 @@ func (w *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.C
 
 	w.Props.Title = fmt.Sprintf("%s: %d", cputil.I18n(ctx, "totalWorkload"), count)
 	w.Props.Size = "small"
+	w.Transfer(component)
 	return nil
 }
 
@@ -59,6 +60,13 @@ func (w *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
 	}
 	w.State = state
 	return nil
+}
+
+func (w *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
+	component.Props = w.Props
+	component.State = map[string]interface{}{
+		"values": w.State.Values,
+	}
 }
 
 func addCount(count Count) int {

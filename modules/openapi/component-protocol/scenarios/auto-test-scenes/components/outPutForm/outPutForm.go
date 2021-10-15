@@ -15,7 +15,10 @@
 package outPutForm
 
 import (
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 )
 
 func (i *ComponentOutPutForm) SetProps() error {
@@ -107,18 +110,32 @@ func (i *ComponentOutPutForm) RenderOnChange() ([]PropChangeOption, error) {
 		return nil, err
 	}
 
-	req := apistructs.AutotestListStepOutPutRequest{
-		List: list,
+	var steps []apistructs.AutoTestSceneStep
+	for _, sStep := range list {
+		steps = append(steps, sStep)
+		for _, pStep := range sStep.Children {
+			steps = append(steps, pStep)
+		}
 	}
-	req.UserID = i.ctxBdl.Identity.UserID
-	mp, err := i.ctxBdl.Bdl.ListAutoTestStepOutput(req)
+
+	var stepNameMap = map[string]string{}
+	for _, s := range steps {
+		stepNameMap[strconv.FormatUint(s.ID, 10)] = s.Name
+	}
+
+	outputs, err := step.GetStepAllOutput(steps, i.ctxBdl.Bdl)
+	if err != nil {
+		return nil, err
+	}
 
 	var lt []PropChangeOption
-	for k, v := range mp {
-		lt = append(lt, PropChangeOption{
-			Label: k,
-			Value: v,
-		})
+	for stepID, stepValue := range outputs {
+		for key, express := range stepValue {
+			lt = append(lt, PropChangeOption{
+				Label: step.MakeStepOutputSelectKey(stepID, stepNameMap[stepID], key),
+				Value: express,
+			})
+		}
 	}
 	return lt, nil
 }

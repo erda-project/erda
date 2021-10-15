@@ -16,17 +16,17 @@ package component_protocol
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda-proto-go/cp/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
@@ -38,10 +38,12 @@ const (
 
 func modifyProxyResponse(proxyConfig types.ProxyConfig) func(*http.Response) error {
 	return func(resp *http.Response) error {
+		logrus.Infof("[DEBUG] start wrap erda style resp at %s", time.Now().Format(time.StampNano))
 		if err := wrapErdaStyleResponse(proxyConfig, resp); err != nil {
 			logrus.Errorf("failed to wrap erda style response when modify proxied response of component-protocol: %v", err)
 			return err
 		}
+		logrus.Infof("[DEBUG] end wrap erda style resp at %s", time.Now().Format(time.StampNano))
 		return nil
 	}
 }
@@ -62,6 +64,11 @@ type cpErrResponse struct {
 
 // wrapErdaStyleResponse wrap response by erda response.
 func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (wErr error) {
+	if resp.Header.Get("X-NEED-USER-INFO") != "true" {
+		logrus.Info("resp doesn't have need user info header, skip inject user info")
+		resp.Header.Set("Content-Type", "application/json")
+		return
+	}
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -76,50 +83,62 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 
 	// construct erda style response
 	var erdaResp response
-	if resp.StatusCode/100 != 2 {
-		var cpErrResp cpErrResponse
-		if err := json.Unmarshal(content, &cpErrResp); err != nil {
-			panic(err)
-		}
-		erdaResp = response{
-			Success: false,
-			Err: apistructs.ErrorResponse{
-				Code: proxyErrorCode + ": " + strutil.String(cpErrResp.Code),
-				Msg:  cpErrResp.Err,
-			},
-		}
-	} else {
-		var renderResp pb.RenderResponse
-		if err := json.Unmarshal(content, &renderResp); err != nil {
-			panic(err)
-		}
-		erdaResp = response{
-			Success: true,
-			Data:    &renderResp,
-			Err:     apistructs.ErrorResponse{},
-		}
-		// whether need inject user info
-		if renderResp.Protocol != nil && len(renderResp.Protocol.GlobalState) > 0 {
-			userIDsValue, ok := renderResp.Protocol.GlobalState[cptype.GlobalInnerKeyUserIDs.String()]
-			if ok {
-				var userIDs []string
-				if err := cputil.ObjJSONTransfer(userIDsValue, &userIDs); err != nil {
-					panic(err)
-				}
-				userIDs = strutil.DedupSlice(userIDs, true)
-				userInfos, err := posthandle.GetUsers(userIDs, true)
-				if err != nil {
-					return err
-				}
-				// inject to response body
-				erdaResp.UserIDs = userIDs
-				erdaResp.UserInfo = userInfos
-			}
-		}
+	if err := jsi.Unmarshal(content, &erdaResp); err != nil {
+		panic(err)
+	}
+	renderResponse, ok := erdaResp.Data.(map[string]interface{})
+	if !ok {
+		logrus.Infof("data in response is not map[string]interface{}, skip inject user info")
+		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		return nil
+	}
+	protocol, ok := renderResponse["protocol"]
+	if !ok {
+		logrus.Infof("protocol is nil in response, skip inject user info")
+		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		return nil
+	}
+	obj, ok := protocol.(map[string]interface{})
+	if !ok {
+		logrus.Infof("protocol in response is not map[string]interface{}, skip inject user info")
+		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		return nil
+	}
+	globalState, ok := obj["state"]
+	if !ok {
+		logrus.Infof("globalState is nil in response, skip inject user info")
+		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		return nil
+	}
+	obj, ok = globalState.(map[string]interface{})
+	if !ok {
+		logrus.Infof("globalState is response is not map[string]interface{}, skip inject user info")
+		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		return nil
 	}
 
+	userIDsValue, ok := obj[cptype.GlobalInnerKeyUserIDs.String()]
+	if !ok {
+		logrus.Infof("userIDsValue is nil, skip inject user info")
+		resp.Body = ioutil.NopCloser(bytes.NewReader(content))
+		return nil
+	}
+
+	var userIDs []string
+	if err := cputil.ObjJSONTransfer(userIDsValue, &userIDs); err != nil {
+		panic(err)
+	}
+	userIDs = strutil.DedupSlice(userIDs, true)
+	userInfos, err := posthandle.GetUsers(userIDs, true)
+	if err != nil {
+		return err
+	}
+	// inject to response body
+	erdaResp.UserIDs = userIDs
+	erdaResp.UserInfo = userInfos
+
 	// update response body
-	newErdaBody, err := json.Marshal(erdaResp)
+	newErdaBody, err := jsi.Marshal(erdaResp)
 	if err != nil {
 		panic(err)
 	}

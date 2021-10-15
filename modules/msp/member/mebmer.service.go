@@ -17,8 +17,13 @@ package member
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -28,7 +33,76 @@ type memberService struct {
 	p *provider
 }
 
+func (m memberService) GetProjectIdByScopeId(scopeId string) (string, error) {
+	projectId := ""
+	var err error
+	projectId, err = m.p.monitorDB.SelectProjectIdByTk(scopeId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			instance, err := m.p.mspTenantDB.QueryTenant(scopeId)
+			if err != nil {
+				return "", err
+			}
+			if instance != nil {
+				projectId = instance.RelatedProjectId
+			}
+		} else {
+			return projectId, err
+		}
+	}
+	return projectId, nil
+}
+
 func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemberRolesRequest) (*pb.ListMemberRolesResponse, error) {
+	projectId, err := m.GetProjectIdByScopeId(request.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if projectId == "" {
+		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.ScopeId))
+	}
+	project, err := m.p.ProjectServer.GetProject(ctx, &projectpb.GetProjectRequest{
+		ProjectID: projectId,
+	})
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.Atoi(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if project.Data.Type == "DOP" {
+		scopeId, err := strconv.Atoi(projectId)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		roleList, err := m.p.bdl.ListMemberRoles(apistructs.ListScopeManagersByScopeIDRequest{
+			ScopeType: apistructs.ScopeType(request.ScopeType),
+			ScopeID:   int64(scopeId),
+		}, int64(orgId))
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		roleListResult := &pb.ListMemberRolesResponse{
+			Data: &pb.RoleList{
+				List:  make([]*pb.RoleInfo, 0),
+				Total: int64(roleList.Total),
+			},
+		}
+		for _, v := range roleList.List {
+			if v.Role == "" && v.Name == "" {
+				roleListResult.Data.Total--
+				continue
+			}
+			role := &pb.RoleInfo{
+				Role: v.Role,
+				Name: v.Name,
+			}
+			roleListResult.Data.List = append(roleListResult.Data.List, role)
+		}
+		return roleListResult, nil
+	}
 	return &pb.ListMemberRolesResponse{
 		Data: &pb.RoleList{
 			List: []*pb.RoleInfo{
@@ -61,7 +135,15 @@ func (m memberService) DeleteMember(ctx context.Context, request *pb.DeleteMembe
 		return nil, errors.NewInternalServerError(err)
 	}
 	userId := apis.GetUserID(ctx)
+	projectIdStr, err := m.GetProjectIdByScopeId(request.Scope.Id)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if projectIdStr == "" {
+		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.Scope.Id))
+	}
 	deleteReq.IdentityInfo.UserID = userId
+	deleteReq.Scope.ID = projectIdStr
 	err = m.p.bdl.DeleteMember(deleteReq)
 	if err != nil {
 		return nil, err
@@ -79,6 +161,14 @@ func (m memberService) CreateOrUpdateMember(ctx context.Context, request *pb.Cre
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectIdStr, err := m.GetProjectIdByScopeId(request.Scope.Id)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if projectIdStr == "" {
+		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.Scope.Id))
+	}
+	memberReq.Scope.ID = projectIdStr
 	userId := apis.GetUserID(ctx)
 	err = m.p.bdl.AddMember(memberReq, userId)
 	if err != nil {
@@ -92,10 +182,25 @@ func (m memberService) ListMember(ctx context.Context, request *pb.ListMemberReq
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	listMemberReq := apistructs.MemberListRequest{}
-	err = json.Unmarshal(data, &listMemberReq)
+	projectIdStr, err := m.GetProjectIdByScopeId(request.ScopeId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
+	}
+	if projectIdStr == "" {
+		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.ScopeId))
+	}
+	projectId, err := strconv.Atoi(projectIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	listMemberReq := apistructs.MemberListRequest{
+		ScopeType: apistructs.ScopeType(request.ScopeType),
+		ScopeID:   int64(projectId),
+		Roles:     request.Roles,
+		Labels:    request.Label,
+		Q:         request.Q,
+		PageNo:    int(request.PageNo),
+		PageSize:  int(request.PageSize),
 	}
 	listTotal, err := m.p.bdl.ListMembersAndTotal(listMemberReq)
 	if err != nil {
@@ -134,14 +239,10 @@ func (m memberService) ScopeRoleAccess(ctx context.Context, request *pb.ScopeRol
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := pb.ScopeRoleAccessResponse{
-		Access:                   false,
-		Roles:                    make([]string, 0),
-		PermissionList:           make([]*pb.ScopeResource, 0),
-		ResourceRoleList:         make([]*pb.ScopeResource, 0),
-		Exist:                    false,
-		ContactsWhenNoPermission: make([]string, 0),
+		Data:    &pb.ScopeRoleData{},
+		UserIDs: list.ContactsWhenNoPermission,
 	}
-	err = json.Unmarshal(data, &result)
+	err = json.Unmarshal(data, &result.Data)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

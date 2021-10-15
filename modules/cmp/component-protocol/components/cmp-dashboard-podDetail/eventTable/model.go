@@ -24,14 +24,14 @@ import (
 
 type ComponentEventTable struct {
 	base.DefaultProvider
-	SDK    *cptype.SDK
+	SDK    *cptype.SDK `json:"-"`
 	ctx    context.Context
 	server cmp.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
-	State      State                  `json:"state,omitempty"`
 	Props      Props                  `json:"props,omitempty"`
 	Data       Data                   `json:"data,omitempty"`
+	State      State                  `json:"state,omitempty"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
@@ -54,9 +54,11 @@ type Item struct {
 }
 
 type Props struct {
-	RowKey     string   `json:"rowKey,omitempty''"`
-	Pagination bool     `json:"pagination"`
-	Columns    []Column `json:"columns"`
+	IsLoadMore     bool     `json:"isLoadMore,omitempty"`
+	RowKey         string   `json:"rowKey,omitempty''"`
+	Pagination     bool     `json:"pagination"`
+	Columns        []Column `json:"columns"`
+	SortDirections []string `json:"sortDirections,omitempty"`
 }
 
 type Column struct {

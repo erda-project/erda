@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
-
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -43,7 +43,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func (p *provider) initialize(ctx context.Context) error {
@@ -108,13 +107,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		return nil, err
 	}
 
-	// init uc client
-	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
-		uc.SetDBClient(db.DB)
-	}
-
 	// init Bundle
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(
@@ -134,12 +126,11 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 
 	o := org_resource.New(
 		org_resource.WithDBClient(db),
-		org_resource.WithUCClient(uc),
 		org_resource.WithBundle(bdl),
 		org_resource.WithRedisClient(redisCli),
 	)
 
-	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o)
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +165,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	return server, nil
 }
 
-func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
+func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
+	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -184,6 +176,7 @@ func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS json
 		cachedJS,
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrgResource(o),
+		endpoints.WithCredential(c),
 	)
 
 	// Sync org resource task status

@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -40,6 +41,14 @@ type Token struct {
 var tokenValue *Token
 
 var userCache = cache.New(12*time.Hour, 1*time.Hour)
+
+var uc *ucauth.UCClient
+
+func InitializeUcClient(db *gorm.DB) {
+	uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+	uc.SetDBClient(db)
+	logrus.Infof("gittar uc client set up")
+}
 
 func GetToken(forceRefresh bool) (string, error) {
 	if tokenValue == nil || tokenValue.ExpiresAt < time.Now().Unix() || forceRefresh {
@@ -74,7 +83,6 @@ func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 		return nil, nil
 	}
 	if conf.OryEnabled() {
-		uc := ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 		user, err := uc.GetUser(id)
 		if err != nil {
 			return nil, err

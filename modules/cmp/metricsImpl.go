@@ -20,11 +20,11 @@ import (
 	"github.com/erda-project/erda/modules/cmp/metrics"
 )
 
-func (p *provider) NodeMetrics(ctx context.Context, req *metrics.MetricsRequest) ([]metrics.MetricsData, error) {
+func (p *provider) NodeMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {
 	return p.Metrics.NodeMetrics(ctx, req)
 }
 
-func (p *provider) PodMetrics(ctx context.Context, req *metrics.MetricsRequest) ([]metrics.MetricsData, error) {
+func (p *provider) PodMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {
 	return p.Metrics.PodMetrics(ctx, req)
 
 }

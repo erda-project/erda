@@ -71,7 +71,7 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 ) *TaskRun {
 	return &TaskRun{
-		Ctx:       ctx,
+		Ctx:       context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), make(chan interface{})),
 		Task:      task,
 		Executor:  executor,
 		Throttler: throttler,
@@ -135,8 +135,9 @@ type Elem struct {
 	Cancel    context.CancelFunc
 	Timeout   time.Duration
 
-	ErrCh  chan error
-	DoneCh chan interface{}
+	ErrCh          chan error
+	DoneCh         chan interface{}
+	ExecutorDoneCh chan interface{} // executorDoneCh allow action executor return directly
 
 	ExitCh chan struct{}
 }

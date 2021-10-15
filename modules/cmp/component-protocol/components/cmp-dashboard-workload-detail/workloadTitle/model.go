@@ -14,14 +14,23 @@
 
 package workloadTitle
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+import (
+	"context"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
 
 type ComponentWorkloadTitle struct {
 	base.DefaultProvider
 
-	Type  string `json:"type,omitempty"`
-	Props Props  `json:"props,omitempty"`
-	State State  `json:"state,omitempty"`
+	sdk    *cptype.SDK
+	ctx    context.Context
+	server cmp.SteveServer
+	Type   string `json:"type,omitempty"`
+	Props  Props  `json:"props,omitempty"`
+	State  State  `json:"state,omitempty"`
 }
 
 type Props struct {
@@ -29,5 +38,7 @@ type Props struct {
 }
 
 type State struct {
-	WorkloadID string `json:"workloadId,omitempty"`
+	ClusterName string `json:"clusterName,omitempty"`
+	WorkloadID  string `json:"workloadId,omitempty"`
+	PodID       string `json:"podId,omitempty"`
 }

@@ -15,6 +15,7 @@
 package topology
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -184,7 +185,7 @@ func Test_getDashboardId(t *testing.T) {
 		{name: TypeMysql, args: args{TypeMysql}, want: "topology_node_db"},
 		{name: TypeRedis, args: args{TypeRedis}, want: "topology_node_cache"},
 		{name: TypeRocketMQ, args: args{TypeRocketMQ}, want: "topology_node_mq"},
-		{name: TypeHttp, args: args{TypeHttp}, want: "topology_node_other"},
+		{name: TypeExternal, args: args{TypeExternal}, want: "topology_node_other"},
 		{name: JavaProcessType, args: args{JavaProcessType}, want: "process_analysis_java"},
 		{name: NodeJsProcessType, args: args{NodeJsProcessType}, want: "process_analysis_nodejs"},
 		{name: "not", args: args{"not"}, want: ""},
@@ -445,6 +446,43 @@ func Test_handleSlowTranslationTraceResult(t *testing.T) {
 			got := handleSlowTranslationTraceResult(tt.args.topology, tt.args.lang, tt.args.data)
 			if got == nil {
 				t.Errorf("handleSlowTranslationTraceResult() = %v", got)
+			}
+		})
+	}
+}
+
+func Test_handlerTranslationConditions(t *testing.T) {
+	type args struct {
+		params translation
+		param  map[string]interface{}
+		where  bytes.Buffer
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantField   string
+		wantOrderBy string
+		wantErr     bool
+	}{
+		{"case1", args{params: translation{Layer: "xxx"}, where: bytes.Buffer{}}, "", "", true},
+		{"case2", args{params: translation{Layer: ""}, where: bytes.Buffer{}}, "", "", true},
+		{"case3", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case4", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case5", args{params: translation{Layer: "http", Sort: 0}, where: bytes.Buffer{}}, "http_path::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case6", args{params: translation{Layer: "rpc", Sort: 1}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY sum(elapsed_count::field) DESC", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotField, gotOrderBy, err := handlerTranslationConditions(tt.args.params, tt.args.param, tt.args.where)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("handlerTranslationConditions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotField != tt.wantField {
+				t.Errorf("handlerTranslationConditions() got = %v, want %v", gotField, tt.wantField)
+			}
+			if gotOrderBy != tt.wantOrderBy {
+				t.Errorf("handlerTranslationConditions() got = %v, want %v", gotOrderBy, tt.wantOrderBy)
 			}
 		})
 	}

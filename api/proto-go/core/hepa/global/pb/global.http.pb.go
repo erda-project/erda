@@ -27,7 +27,7 @@ type GlobalServiceHandler interface {
 	GetTenantGroup(context.Context, *GetTenantGroupRequest) (*GetTenantGroupResponse, error)
 	// POST /api/gateway/tenants
 	CreateTenant(context.Context, *CreateTenantRequest) (*CreateTenantResponse, error)
-	// GET /api/gateway/gateway-features/{clusterName}
+	// GET /api/gateway/openapi/gateway-features/{clusterName}
 	GetFeatures(context.Context, *GetFeaturesRequest) (*GetFeaturesResponse, error)
 }
 
@@ -231,5 +231,5 @@ func RegisterGlobalServiceHandler(r http.Router, srv GlobalServiceHandler, opts 
 	add_GetHealth("GET", "/_api/health", srv.GetHealth)
 	add_GetTenantGroup("GET", "/api/gateway/tenant-group", srv.GetTenantGroup)
 	add_CreateTenant("POST", "/api/gateway/tenants", srv.CreateTenant)
-	add_GetFeatures("GET", "/api/gateway/gateway-features/{clusterName}", srv.GetFeatures)
+	add_GetFeatures("GET", "/api/gateway/openapi/gateway-features/{clusterName}", srv.GetFeatures)
 }
