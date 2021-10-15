@@ -17,6 +17,7 @@ package query
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -255,6 +256,75 @@ func Test_getSearchSource_Should_Sort_As_Expect(t *testing.T) {
 	expect := "[map[timestamp:map[order:desc]] map[offset:map[order:desc]]]"
 	if data != expect {
 		t.Errorf("sort assert failed, expect: %s, but got: %s", expect, data)
+	}
+}
+
+func Test_filterIndices_With_Addon_Should_Filter_Success(t *testing.T) {
+	c := &ESClient{
+		Entrys: []*IndexEntry{
+			{
+				Index: "index-1",
+				MinTS: 1 * int64(time.Millisecond),
+				MaxTS: 20 * int64(time.Millisecond),
+			},
+			{
+				Index: "index-2",
+				MinTS: 20 * int64(time.Millisecond),
+			},
+		},
+	}
+	req := &LogRequest{
+		Start:       1,
+		End:         10,
+		TimeScale:   time.Millisecond,
+		Addon:       "addon-1",
+		ClusterName: "cluster-1",
+	}
+	want := []string{"index-1"}
+
+	indices := c.filterIndices(req)
+	if len(indices) != len(want) {
+		t.Errorf("filterd indices failed, expect len: %d, but got len: %d", len(want), len(indices))
+	}
+	for i, index := range want {
+		if indices[i] != index {
+			t.Errorf("filterd indices assert failed, expect: %s", index)
+		}
+	}
+}
+
+func Test_getSearchSource_Should_Include_SearchAfter(t *testing.T) {
+	c := &ESClient{}
+	req := &LogSearchRequest{
+		SearchAfter: []interface{}{"12343434", 123, 123},
+	}
+	result, err := c.getSearchSource(req, elastic.NewBoolQuery()).Source()
+	if err != nil {
+		t.Errorf("should not error getting serialized search source")
+	}
+	data := result.(map[string]interface{})["search_after"].([]interface{})
+	if len(data) != len(req.SearchAfter) {
+		t.Errorf("search_after generated not as expect, expect len: %d, but got len: %d", len(req.SearchAfter), len(data))
+	}
+	for i, item := range data {
+		if item != req.SearchAfter[i] {
+			t.Errorf("search_after generated not as expect")
+		}
+	}
+}
+
+func Test_getBoolQueryV2_Should_Work_As_Expect(t *testing.T) {
+	c := &ESClient{}
+	req := LogRequest{
+		Start:     1,
+		End:       10,
+		TimeScale: time.Millisecond,
+	}
+	want := "map[range:map[timestamp:map[from:1000000 include_lower:true include_upper:true to:10000000]]]"
+	result, _ := c.getBoolQueryV2(&req).Source()
+	got := fmt.Sprintf("%+v", result)
+	if !strings.Contains(got, want) {
+		t.Errorf("expect: %s, but got: %s", want, got)
 	}
 }
 

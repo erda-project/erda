@@ -17,6 +17,7 @@ package query
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -26,9 +27,16 @@ import (
 
 func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {
 	boolQuery := c.getTagsBoolQuery(req)
-	start := req.Start * int64(time.Millisecond)
-	end := req.End * int64(time.Millisecond)
-	boolQuery = boolQuery.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lte(end))
+	start := req.Start * int64(req.TimeScale)
+	end := req.End * int64(req.TimeScale)
+	timeRangeQuery := elastic.NewRangeQuery("timestamp")
+	if start > 0 {
+		timeRangeQuery.Gte(start)
+	}
+	if end > 0 {
+		timeRangeQuery.Lte(end)
+	}
+	boolQuery = boolQuery.Filter(timeRangeQuery)
 	if len(req.Query) > 0 {
 		//byts, _ := json.Marshal(req.Query)
 		boolQuery = boolQuery.Filter(elastic.NewQueryStringQuery(req.Query).DefaultField("content").DefaultOperator("AND"))
@@ -63,6 +71,7 @@ func (c *ESClient) searchLogsV2(req *LogSearchRequest, timeout time.Duration) (*
 		}
 		c.setModule(&log)
 		log.DocId = hit.Id
+		log.TimestampNanos = strconv.FormatInt(log.Timestamp, 10)
 		log.Timestamp = log.Timestamp / int64(time.Millisecond)
 		item := &LogItem{Source: &log, Highlight: map[string][]string(hit.Highlight)}
 		if item.Highlight != nil {
@@ -90,9 +99,9 @@ func (c *ESClient) statisticLogsV2(req *LogStatisticRequest, timeout time.Durati
 	}
 
 	intervalMillisecond := interval
-	start := req.Start * int64(time.Millisecond)
-	end := req.End * int64(time.Millisecond)
-	interval = interval * int64(time.Millisecond)
+	start := req.Start * int64(req.TimeScale)
+	end := req.End * int64(req.TimeScale)
+	interval = interval * int64(req.TimeScale)
 	boundEnd := end - (end-start)%interval
 	if boundMod := (end - start) % interval; boundMod == 0 {
 		boundEnd = boundEnd - interval

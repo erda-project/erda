@@ -1,4 +1,9 @@
 fields:
+  - field_name: tags.level
+    support_aggregation: true
+    display: true
+    group: 0
+    allow_edit: true
   - field_name: source
     support_aggregation: false
     display: false
