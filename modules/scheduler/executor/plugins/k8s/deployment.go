@@ -15,6 +15,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -43,10 +44,21 @@ const (
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
 )
 
-func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	deployment, err := k.newDeployment(service, sg)
 	if err != nil {
 		return errors.Errorf("failed to generate deployment struct, name: %s, (%v)", service.Name, err)
+	}
+
+	projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
+	cpu := int64(service.Resources.Cpu * 1000)
+	mem := int64(service.Resources.Mem * float64(1<<20))
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("workspace quota is not enough")
 	}
 
 	err = k.deploy.Create(deployment)
@@ -116,8 +128,21 @@ func (k *Kubernetes) getDeployment(namespace, name string) (*appsv1.Deployment, 
 	return k.deploy.Get(namespace, name)
 }
 
-func (k *Kubernetes) putDeployment(deployment *appsv1.Deployment, service *apistructs.Service) error {
-	err := k.deploy.Put(deployment)
+func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deployment, service *apistructs.Service) error {
+	projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
+	deltaCPU, deltaMem, err := k.getDeploymentDeltaResource(ctx, deployment)
+	if err != nil {
+		return errors.Errorf("faield to get delta resource for deployment %s, %v", deployment.Name, err)
+	}
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("workspace quota is not enough")
+	}
+
+	err = k.deploy.Put(deployment)
 	if err != nil {
 		return errors.Errorf("failed to update deployment, name: %s, (%v)", service.Name, err)
 	}
@@ -129,6 +154,35 @@ func (k *Kubernetes) putDeployment(deployment *appsv1.Deployment, service *apist
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
 	return nil
+}
+
+func (k *Kubernetes) getDeploymentDeltaResource(ctx context.Context, deploy *appsv1.Deployment) (deltaCPU, deltaMemory int64, err error) {
+	oldDeploy, err := k.k8sClient.ClientSet.AppsV1().Deployments(deploy.Namespace).Get(ctx, deploy.Name, metav1.GetOptions{})
+	if err != nil {
+		return 0, 0, err
+	}
+	oldCPUQty := resource.NewQuantity(0, resource.DecimalSI)
+	oldMemQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, container := range oldDeploy.Spec.Template.Spec.Containers {
+		if container.Resources.Requests == nil {
+			continue
+		}
+		oldCPUQty.Add(*container.Resources.Requests.Cpu())
+		oldMemQty.Add(*container.Resources.Requests.Memory())
+	}
+
+	newCPUQty := resource.NewQuantity(0, resource.DecimalSI)
+	newMemQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, container := range deploy.Spec.Template.Spec.Containers {
+		if container.Resources.Requests == nil {
+			continue
+		}
+		newCPUQty.Add(*container.Resources.Requests.Cpu())
+		newMemQty.Add(*container.Resources.Requests.Memory())
+	}
+	deltaCPU = newCPUQty.MilliValue() - oldCPUQty.MilliValue()
+	deltaMemory = newMemQty.Value() - oldMemQty.Value()
+	return
 }
 
 func (k *Kubernetes) deleteDeployment(namespace, name string) error {

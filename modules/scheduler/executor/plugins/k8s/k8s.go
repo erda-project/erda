@@ -22,11 +22,10 @@ import (
 	"strings"
 	"sync"
 
-	appsv1 "k8s.io/api/apps/v1"
-
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -64,6 +63,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -165,6 +165,8 @@ type Kubernetes struct {
 	options      map[string]string
 	addr         string
 	client       *httpclient.HTTPClient
+	k8sClient    *k8sclient.K8sClient
+	bdl          *bundle.Bundle
 	evCh         chan *eventtypes.StatusEvent
 	deploy       *deployment.Deployment
 	ds           *ds.Daemonset
@@ -359,6 +361,12 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
+	bdl := bundle.New(bundle.WithCoreServices())
+	k8sClient, err := k8sclient.New(clusterName)
+	if err != nil {
+		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
+	}
+
 	k := &Kubernetes{
 		name:                     name,
 		clusterName:              clusterName,
@@ -366,6 +374,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		options:                  options,
 		addr:                     addr,
 		client:                   client,
+		k8sClient:                k8sClient,
+		bdl:                      bdl,
 		evCh:                     evCh,
 		deploy:                   deploy,
 		ds:                       ds,
@@ -431,7 +441,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		return nil, addon.Create(op, runtime)
 	}
 
-	if err = k.createRuntime(runtime); err != nil {
+	if err = k.createRuntime(ctx, runtime); err != nil {
 		logrus.Errorf("failed to create runtime, namespace: %s, name: %s, (%v)",
 			runtime.Type, runtime.ID, err)
 		return nil, err
@@ -538,7 +548,7 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 	}
 	// namespace does not exist, this update is equivalent to creating
 	if notFound {
-		if err = k.createRuntime(runtime); err != nil {
+		if err = k.createRuntime(ctx, runtime); err != nil {
 			return nil, err
 		}
 
@@ -551,7 +561,7 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 	// 2, updateOneByOne, Categorize the three types of services to be created, services to be updated, and services to be deleted, and deal with them one by one
 
 	// Stateless service using updateOneByOne currently
-	return nil, k.updateRuntime(runtime)
+	return nil, k.updateRuntime(ctx, runtime)
 }
 
 // Inspect implements getting servicegroup info
@@ -652,7 +662,7 @@ func (k *Kubernetes) KillPod(podname string) error {
 // Two interfaces may call this function
 // 1, Create
 // 2, Update
-func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 
 	if service == nil {
 		return errors.Errorf("service empty")
@@ -673,10 +683,10 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	var err error
 	switch service.WorkLoad {
 	case ServicePerNode:
-		err = k.createDaemonSet(service, sg)
+		err = k.createDaemonSet(ctx, service, sg)
 	default:
 		// Step 2. Create related deployment
-		err = k.createDeployment(service, sg)
+		err = k.createDeployment(ctx, service, sg)
 	}
 	if err != nil {
 		return err
@@ -751,7 +761,7 @@ func (k *Kubernetes) getClusterIP(namespace, name string) (string, error) {
 
 // The creation operation needs to be completed before the update operation, because the newly created service may be a dependency of the service to be updated
 // TODO: The updateOne function will be abstracted later
-func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceGroup) error {
 	labelSelector := make(map[string]string)
 	var ns = sg.ProjectNamespace
 	if ns == "" {
@@ -788,7 +798,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 				if err != nil {
 					return err
 				}
-				if err = k.updateDaemonSet(desireDaemonSet); err != nil {
+				if err = k.updateDaemonSet(ctx, desireDaemonSet); err != nil {
 					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}
@@ -798,7 +808,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 				if err != nil {
 					return err
 				}
-				if err = k.putDeployment(desiredDeployment, &svc); err != nil {
+				if err = k.putDeployment(ctx, desiredDeployment, &svc); err != nil {
 					logrus.Debugf("failed to update deployment in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}
@@ -813,7 +823,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 			// Does not exist in the old service collection, do the create operation
 			// TODO: what to do if errors in Create ? before k8s create deployment ?
 			// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
-			if err := k.createOne(&svc, sg); err != nil {
+			if err := k.createOne(ctx, &svc, sg); err != nil {
 				logrus.Errorf("failed to create service in update interface, name: %s, (%v)", svc.Name, err)
 				return err
 			}
