@@ -86,7 +86,7 @@ To start using Erda, please refer to the following documentation.
 
 ## Contributing
 
-Contributions are always welcomed. Please refer to [Contributing to Erda](CONTRIBUTING.md) for details.
+Contributions are always welcomed. Please refer to [Contributing to Erda](CONTRIBUTING.md) for details .
 
 ## Contact Us
 
