@@ -87,5 +87,5 @@ erda.core.services.authentication.credentials.accesskey-client:
 http-server:
   addr: ":9028"
   allow_cors: true
-#grpc-server:
-#  addr: ":9029"
+grpc-server:
+ addr: ":9029"
