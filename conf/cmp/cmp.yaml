@@ -82,6 +82,7 @@ erda.core.monitor.metric-client:
 # core service credential
 grpc-client@erda.core.services.authentication.credentials.accesskey:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+  block: false
 erda.core.services.authentication.credentials.accesskey-client:
 
 http-server:
