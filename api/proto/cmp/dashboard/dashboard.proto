@@ -19,6 +19,10 @@ message GetClusterResourcesResponse {
 
 message ClusterResourceDetail {
   string clusterName = 1;
+  repeated HostResourceDetail hosts = 2;
+}
+
+message HostResourceDetail {
   string host = 2;
   uint64 cpuAllocatable = 3;
   uint64 cpuTotal = 4;
@@ -27,6 +31,8 @@ message ClusterResourceDetail {
   uint64 memTotal = 7;
   uint64 memRequest = 8;
   repeated string labels = 9;
+  bool success = 10;
+  string err = 11;
 }
 
 message GetNamespacesResourcesRequest {

@@ -30,6 +30,16 @@ func (this *GetClusterResourcesResponse) Validate() error {
 	return nil
 }
 func (this *ClusterResourceDetail) Validate() error {
+	for _, item := range this.Hosts {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Hosts", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *HostResourceDetail) Validate() error {
 	return nil
 }
 func (this *GetNamespacesResourcesRequest) Validate() error {

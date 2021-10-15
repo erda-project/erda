@@ -15,6 +15,7 @@ import (
 var _ urlenc.URLValuesUnmarshaler = (*GetClustersResourcesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetClusterResourcesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ClusterResourceDetail)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*HostResourceDetail)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ClusterNamespacePair)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesResponse)(nil)
@@ -57,6 +58,17 @@ func (m *ClusterResourceDetail) UnmarshalURLValues(prefix string, values url.Val
 			switch prefix + key {
 			case "clusterName":
 				m.ClusterName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// HostResourceDetail implement urlenc.URLValuesUnmarshaler.
+func (m *HostResourceDetail) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
 			case "host":
 				m.Host = vals[0]
 			case "cpuAllocatable":
@@ -97,6 +109,14 @@ func (m *ClusterResourceDetail) UnmarshalURLValues(prefix string, values url.Val
 				m.MemRequest = val
 			case "labels":
 				m.Labels = vals
+			case "success":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Success = val
+			case "err":
+				m.Err = vals[0]
 			}
 		}
 	}
