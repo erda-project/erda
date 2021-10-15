@@ -598,29 +598,37 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		// 集群可分配的资源
 		clusterAvailable = make(map[string]*calcu.Calculator)
 	)
-	for _, host := range resources.List {
-		workspaces := extractWorkspacesFromLabels(host.GetLabels())
+	for _, cluster := range resources.List {
+		if !cluster.GetSuccess() {
+			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+
 		var (
 			allocatable, request *calcu.Calculator
 			ok                   bool
 		)
 		// 累计此 host 上的 allocatable 资源
-		allocatable, ok = clustersAllocatable[host.GetClusterName()]
+		allocatable, ok = clustersAllocatable[cluster.GetClusterName()]
 		if !ok {
-			allocatable = calcu.New(host.GetClusterName())
-			clustersAllocatable[host.GetClusterName()] = allocatable
+			allocatable = calcu.New(cluster.GetClusterName())
+			clustersAllocatable[cluster.GetClusterName()] = allocatable
 		}
-		allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
-		allocatable.Mem.AddValue(host.GetMemAllocatable(), workspaces...)
-
 		// 累计此 host 上的 request 资源
-		request, ok = clustersRequest[host.GetClusterName()]
+		request, ok = clustersRequest[cluster.GetClusterName()]
 		if !ok {
-			request = calcu.New(host.GetClusterName())
-			clustersRequest[host.GetClusterName()] = request
+			request = calcu.New(cluster.GetClusterName())
+			clustersRequest[cluster.GetClusterName()] = request
 		}
-		request.CPU.AddValue(host.GetCpuRequest(), workspaces...)
-		request.Mem.AddValue(host.GetMemRequest(), workspaces...)
+
+		for _, host := range cluster.Hosts {
+			workspaces := extractWorkspacesFromLabels(host.GetLabels())
+			allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
+			allocatable.Mem.AddValue(host.GetMemAllocatable(), workspaces...)
+			request.CPU.AddValue(host.GetCpuRequest(), workspaces...)
+			request.Mem.AddValue(host.GetMemRequest(), workspaces...)
+		}
 	}
 	// 可分配和总 allocatable 是一致的
 	copyClustersResource(clustersAllocatable, clusterAvailable)

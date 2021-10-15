@@ -560,9 +560,15 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
 	}
 
-	for _, item := range resources.List {
+	for _, clusterItem := range resources.List {
+		if !clusterItem.GetSuccess() {
+			logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+
 		var source *apistructs.ResourceConfigInfo
-		switch item.GetClusterName() {
+		switch clusterItem.GetClusterName() {
 		case projectDTO.ResourceConfig.PROD.ClusterName:
 			source = projectDTO.ResourceConfig.PROD
 		case projectDTO.ResourceConfig.STAGING.ClusterName:
@@ -576,15 +582,18 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			continue
 		}
 
-		source.CPURequest += calcu.MillcoreToCore(item.GetCpuRequest())
-		source.MemRequest += calcu.ByteToGibibyte(item.GetMemRequest())
-		if _, ok := addonNamespaces[item.GetNamespace()]; ok {
-			source.CPURequestByAddon += source.CPURequest
-			source.MemRequestByAddon += source.MemRequest
-		}
-		if _, ok := serviceNamespaces[item.GetNamespace()]; ok {
-			source.CPURequestByService += source.CPURequest
-			source.MemRequestByService += source.MemRequest
+		for _, namespaceItem := range clusterItem.List {
+			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
+			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
+			source.MemRequest += calcu.ByteToGibibyte(namespaceItem.GetMemRequest())
+			if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
+				source.CPURequestByAddon += source.CPURequest
+				source.MemRequestByAddon += source.MemRequest
+			}
+			if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
+				source.CPURequestByService += source.CPURequest
+				source.MemRequestByService += source.MemRequest
+			}
 		}
 	}
 
@@ -594,22 +603,29 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
 		&dashboardPb.GetClustersResourcesRequest{ClusterNames: projectQuota.ClustersNames()}); err == nil {
 		var source *apistructs.ResourceConfigInfo
-		for _, host := range clustersResources.List {
-			for _, label := range host.Labels {
-				switch strings.ToLower(label) {
-				case "dice/workspace-prod=true":
-					source = projectDTO.ResourceConfig.PROD
-				case "dice/workspace-staging=true":
-					source = projectDTO.ResourceConfig.STAGING
-				case "dice/worksapce-test=true":
-					source = projectDTO.ResourceConfig.TEST
-				case "dice/workspace-dev=true":
-					source = projectDTO.ResourceConfig.TEST
-				}
+		for _, clusterItem := range clustersResources.List {
+			if !clusterItem.GetSuccess() {
+				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
+					Warnln("the cluster is not valid now")
+				continue
 			}
-			if source != nil && source.ClusterName == host.GetClusterName() {
-				source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
-				source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+			for _, host := range clusterItem.Hosts {
+				for _, label := range host.Labels {
+					switch strings.ToLower(label) {
+					case "dice/workspace-prod=true":
+						source = projectDTO.ResourceConfig.PROD
+					case "dice/workspace-staging=true":
+						source = projectDTO.ResourceConfig.STAGING
+					case "dice/worksapce-test=true":
+						source = projectDTO.ResourceConfig.TEST
+					case "dice/workspace-dev=true":
+						source = projectDTO.ResourceConfig.TEST
+					}
+				}
+				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
+					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+				}
 			}
 		}
 	}
