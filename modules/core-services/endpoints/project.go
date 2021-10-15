@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -43,8 +44,13 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	if r.Body == nil {
 		return apierrors.ErrCreateProject.MissingParameter("body").ToResp(), nil
 	}
+	bodyData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to read request body")
+		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil
+	}
 	var projectCreateReq apistructs.ProjectCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&projectCreateReq); err != nil {
+	if err := json.Unmarshal(bodyData, &projectCreateReq); err != nil {
 		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil
 	}
 	if !strutil.IsValidPrjOrAppName(projectCreateReq.Name) {
