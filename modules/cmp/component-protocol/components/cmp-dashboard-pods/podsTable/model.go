@@ -72,6 +72,7 @@ type Item struct {
 	Name              Link    `json:"name,omitempty"`
 	Namespace         string  `json:"namespace,omitempty"`
 	IP                string  `json:"ip,omitempty"`
+	Age               string  `json:"age,omitempty"`
 	CPURequests       string  `json:"cpuRequests,omitempty"`
 	CPURequestsNum    int64   `json:"CPURequestsNum,omitempty"`
 	CPUPercent        Percent `json:"cpuPercent,omitempty"`
@@ -84,6 +85,7 @@ type Item struct {
 	MemoryLimitsNum   int64   `json:"MemoryLimitsNum,omitempty"`
 	Ready             string  `json:"ready,omitempty"`
 	Node              string  `json:"node,omitempty"`
+	GotoWorkload      Link    `json:"gotoWorkload,omitempty"`
 }
 
 type Status struct {

@@ -17,6 +17,7 @@ package dao
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -53,6 +54,7 @@ type Issue struct {
 
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
+	ReopenCount  int
 }
 
 type ExpireType string
@@ -717,4 +719,85 @@ func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueSt
 		}
 	}
 	return nil
+}
+
+type IssueItem struct {
+	dbengine.BaseModel
+
+	PlanStartedAt  *time.Time                 // 计划开始时间
+	PlanFinishedAt *time.Time                 // 计划结束时间
+	ProjectID      uint64                     // 所属项目 ID
+	IterationID    int64                      // 所属迭代 ID
+	AppID          *uint64                    // 所属应用 ID
+	RequirementID  *int64                     // 所属需求 ID
+	Type           apistructs.IssueType       // issue 类型
+	Title          string                     // 标题
+	Content        string                     // 内容
+	State          int64                      // 状态
+	Priority       apistructs.IssuePriority   // 优先级
+	Complexity     apistructs.IssueComplexity // 复杂度
+	Severity       apistructs.IssueSeverity   // 严重程度
+	Creator        string                     // issue 创建者 ID
+	Assignee       string                     // 分配到 issue 的人，即当前处理人
+	Source         string                     // issue创建的来源，目前只有工单使用
+	ManHour        string                     // 工时信息
+	External       bool                       // 用来区分是通过ui还是bundle创建的
+	Deleted        bool                       // 是否已删除
+	Stage          string                     // bug阶段 or 任务类型 的值
+	Owner          string                     // 负责人
+
+	FinishTime   *time.Time // 实际结束时间
+	ExpiryStatus ExpireType
+	ReopenCount  int
+
+	Name   string
+	Belong string
+}
+
+func (i *IssueItem) FilterPropertyRetriever(condition string) string {
+	r := reflect.ValueOf(i)
+	f := reflect.Indirect(r).FieldByName(condition)
+	return string(f.String())
+}
+
+func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {
+	var res []IssueItem
+	sql := client.Table("dice_issues").Joins(joinState)
+	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ?", req.ProjectID)
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
+	}
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("assignee in (?)", req.Assignees)
+	}
+	if len(req.IterationIDs) > 0 {
+		sql = sql.Where("iteration_id in (?)", req.IterationIDs)
+	}
+	if len(req.Type) > 0 {
+		sql = sql.Where("type IN (?)", req.Type)
+	}
+	if err := sql.Select("dice_issues.*, dice_issue_state.name, dice_issue_state.belong").Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+type IssueLabel struct {
+	dbengine.BaseModel
+	LabelID uint64                      // 标签 id
+	RefType apistructs.ProjectLabelType // 标签作用类型, eg: issue
+	RefID   uint64                      // 标签关联目标 id
+	Name    string                      // 标签名称
+	Type    apistructs.ProjectLabelType // 标签作用类型
+}
+
+var joinLabel = "LEFT JOIN dice_labels ON dice_label_relations.label_id = dice_labels.id"
+
+func (client *DBClient) GetIssueLabelsByProjectID(projectID uint64) ([]IssueLabel, error) {
+	var res []IssueLabel
+	sql := client.Table("dice_label_relations").Joins(joinLabel).Where("project_id = ?", projectID)
+	if err := sql.Select("dice_label_relations.*, dice_labels.name, dice_labels.type").Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
 }

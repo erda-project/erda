@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -39,7 +40,8 @@ import (
 var scenarioFS embed.FS
 
 type provider struct {
-	Server pb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	Server     pb.MetricServiceServer              `autowired:"erda.core.monitor.metric.MetricService"`
+	Credential credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
 
 	Metrics         *metrics.Metric
 	Protocol        componentprotocol.Interface
@@ -55,9 +57,10 @@ type Provider interface {
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
-	p.Metrics = &metrics.Metric{Metricq: p.Server}
+	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
-	return p.initialize(ctx)
+	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
+	return p.initialize(ctxNew)
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

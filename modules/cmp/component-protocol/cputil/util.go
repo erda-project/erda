@@ -15,16 +15,23 @@
 package cputil
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
+	jsi "github.com/json-iterator/go"
+	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
 // ParseWorkloadStatus get status for workloads from .metadata.fields
@@ -146,7 +153,7 @@ func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) stri
 		}
 		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
 	default:
-		return ""
+		return fmt.Sprintf("%d", int64(res))
 	}
 }
 
@@ -154,4 +161,158 @@ func setPrec(f float64, prec int) float64 {
 	pow := math.Pow10(prec)
 	f = float64(int64(f*pow)) / pow
 	return f
+}
+
+type NodeAllocatedRes struct {
+	CPU    int64 `json:"cpu"`
+	Mem    int64 `json:"mem"`
+	PodNum int64 `json:"podNum"`
+}
+
+const cacheType = "nodeAllocatedRes"
+
+// GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
+func GetNodesAllocatedRes(server cmp.SteveServer, clusterName, userID, orgID string, nodes []data.Object) (map[string]NodeAllocatedRes, error) {
+	var pods []types2.APIObject
+	hasExpired := false
+	nodesAllocatedRes := make(map[string]NodeAllocatedRes)
+	for _, node := range nodes {
+		nodeName := node.String("metadata", "name")
+		value, expired, err := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, nodeName, cacheType))
+		if err != nil {
+			return nil, err
+		}
+		if expired {
+			hasExpired = true
+		}
+		if value != nil {
+			var nar NodeAllocatedRes
+			if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
+				logrus.Errorf("failed to unmarshal for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+				continue
+			}
+			nodesAllocatedRes[nodeName] = nar
+			continue
+		}
+		if pods == nil {
+			req := &apistructs.SteveRequest{
+				UserID:      userID,
+				OrgID:       orgID,
+				Type:        apistructs.K8SPod,
+				ClusterName: clusterName,
+			}
+			pods, err = server.ListSteveResource(context.Background(), req)
+			if err != nil {
+				return nil, err
+			}
+		}
+		cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
+		nar := NodeAllocatedRes{
+			CPU:    cpu,
+			Mem:    mem,
+			PodNum: podNum,
+		}
+		value, err = cache.MarshalValue(nar)
+		if err != nil {
+			logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+			continue
+		}
+		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+			continue
+		}
+
+		if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
+			logrus.Errorf("failed to unmarshal for node %s in GetNodeAllocatedRes, %v", nodeName, err)
+			continue
+		}
+		nodesAllocatedRes[nodeName] = nar
+	}
+	if hasExpired {
+		go func() {
+			var err error
+			if pods == nil {
+				req := &apistructs.SteveRequest{
+					UserID:      userID,
+					OrgID:       orgID,
+					Type:        apistructs.K8SPod,
+					ClusterName: clusterName,
+				}
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+				defer cancel()
+				pods, err = server.ListSteveResource(ctx, req)
+				if err != nil {
+					logrus.Errorf("failed to list pods in GetNodeAllocatedRes goroutine, %v", err)
+					return
+				}
+			}
+			for _, node := range nodes {
+				nodeName := node.String("metadata", "name")
+				cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
+				nar := NodeAllocatedRes{
+					CPU:    cpu,
+					Mem:    mem,
+					PodNum: podNum,
+				}
+				value, err := cache.MarshalValue(nar)
+				if err != nil {
+					logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
+					continue
+				}
+				if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, cacheType), value, time.Second.Nanoseconds()*30); err != nil {
+					logrus.Errorf("failed to set cache for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
+					continue
+				}
+			}
+			logrus.Infof("update node allocated resource cache succeeded")
+		}()
+	}
+	return nodesAllocatedRes, nil
+}
+
+// CalculateNodeAllocatedRes calculate allocated cpu, memory and pods for target node
+func CalculateNodeAllocatedRes(nodeName string, pods []types2.APIObject) (cpu, mem, podNum int64) {
+	cpuQty := resource.NewQuantity(0, resource.DecimalSI)
+	memQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, obj := range pods {
+		pod := obj.Data()
+		if pod.String("spec", "nodeName") != nodeName || pod.String("status", "phase") == "Failed" ||
+			pod.String("status", "phase") == "Succeeded" {
+			continue
+		}
+		podNum++
+		containers := pod.Slice("spec", "containers")
+		for _, container := range containers {
+			requestsCPU := resource.NewQuantity(0, resource.DecimalSI)
+			requestsMem := resource.NewQuantity(0, resource.BinarySI)
+			requests := container.String("resources", "requests", "cpu")
+			if requests != "" {
+				*requestsCPU, _ = resource.ParseQuantity(requests)
+			}
+			requests = container.String("resources", "requests", "memory")
+			if requests != "" {
+				*requestsMem, _ = resource.ParseQuantity(requests)
+			}
+			cpuQty.Add(*requestsCPU)
+			memQty.Add(*requestsMem)
+		}
+	}
+	return cpuQty.MilliValue(), memQty.Value(), podNum
+}
+
+// CalculateNodeRes calculate unallocated cpu, memory and left cpu, mem, pods for given node and its allocated cpu, memory
+func CalculateNodeRes(node data.Object, allocatedCPU, allocatedMem, allocatedPods int64) (unallocatedCPU, unallocatedMem, leftCPU, leftMem, leftPods int64) {
+	allocatableCPUQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "cpu"))
+	allocatableMemQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "memory"))
+	allocatablePodQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "pods"))
+	capacityCPUQty, _ := resource.ParseQuantity(node.String("status", "capacity", "cpu"))
+	capacityMemQty, _ := resource.ParseQuantity(node.String("status", "capacity", "memory"))
+
+	unallocatedCPU = capacityCPUQty.MilliValue() - allocatableCPUQty.MilliValue()
+	unallocatedMem = capacityMemQty.Value() - allocatableMemQty.Value()
+	leftCPU = allocatableCPUQty.MilliValue() - allocatedCPU
+	leftMem = allocatableMemQty.Value() - allocatedMem
+	leftPods = allocatablePodQty.Value() - allocatedPods
+	return
 }

@@ -15,11 +15,13 @@
 package query
 
 import (
+	"io/ioutil"
 	"sync/atomic"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/olivere/elastic"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -36,8 +38,24 @@ import (
 type config struct {
 	Timeout              time.Duration `file:"timeout" default:"60s"`
 	QueryBackES          bool          `file:"query_back_es" default:"false"`
-	IndexPreload         bool          `file:"index_preload" default:"false" env:"LOG_INDEX_PRELOAD"`
+	IndexPreload         bool          `file:"index_preload" default:"true" env:"LOG_INDEX_PRELOAD"`
 	IndexPreloadInterval time.Duration `file:"index_preload_interval" default:"60s" env:"LOG_INDEX_PRELOAD_INTERVAL"`
+	IndexFieldSettings   struct {
+		File            string               `file:"file"`
+		DefaultSettings defaultFieldSettings `file:"default_settings"`
+	} `file:"index_field_settings"`
+}
+
+type defaultFieldSettings struct {
+	Fields []logField `file:"fields" yaml:"fields"`
+}
+
+type logField struct {
+	FieldName          string `file:"field_name" yaml:"field_name"`
+	SupportAggregation bool   `file:"support_aggregation" yaml:"support_aggregation"`
+	Display            bool   `file:"display"`
+	AllowEdit          bool   `file:"allow_edit" default:"true" yaml:"allow_edit"`
+	Group              int    `file:"group" yaml:"group"`
 }
 
 type provider struct {
@@ -64,6 +82,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 	p.mysql = ctx.Service("mysql").(mysql.Interface).DB()
 	p.db = db.New(p.mysql)
+
+	if len(p.C.IndexFieldSettings.File) > 0 {
+		f, err := ioutil.ReadFile(p.C.IndexFieldSettings.File)
+		if err != nil {
+			return err
+		}
+		var defaultSettings defaultFieldSettings
+		err = yaml.Unmarshal(f, &defaultSettings)
+		if err != nil {
+			return err
+		}
+		p.C.IndexFieldSettings.DefaultSettings = defaultSettings
+	}
 
 	es := ctx.Service("elasticsearch@logs").(elasticsearch.Interface)
 	p.client = es.Client()

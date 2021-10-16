@@ -17,6 +17,8 @@ package endpoints
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -26,9 +28,60 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
+
+var (
+	permissionFailErr   = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+	identityNotFoundErr = fmt.Errorf("identity not found")
+)
+
+// MetricsQuery handle query request
+func (e *Endpoints) MetricsQuery(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var (
+		req *metrics.MetricsRequest
+		err error
+	)
+	// get identity info
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		httpserver.ErrResp(http.StatusInternalServerError, "InternalError", "identity not found")
+		return httpserver.HTTPResponse{
+			Status:  http.StatusOK,
+			Content: "failed to unmarshal request",
+		}, identityNotFoundErr
+	}
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.GetAction)
+	if err != nil {
+		return httpserver.ErrResp(http.StatusInternalServerError, "InternalError", permissionFailErr.Error())
+	}
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logrus.Errorf("failed to unmarshal request: %v", err)
+		return httpserver.HTTPResponse{
+			Status:  http.StatusOK,
+			Content: "failed to unmarshal request",
+		}, err
+	}
+
+	//logrus.Infof("query metrics :%s %s %s names = %v ,ips = %v", req.ClusterName, req.ResourceKind, req.ResourceType, req.PodRequests, req.NodeRequests)
+	if strings.ToLower(req.ResourceKind()) == metrics.Node {
+		data, _ := e.metrics.NodeMetrics(ctx, req)
+		return httpserver.HTTPResponse{
+			Status:  http.StatusOK,
+			Content: data,
+		}, err
+	} else {
+		data, _ := e.metrics.PodMetrics(ctx, req)
+		return httpserver.HTTPResponse{
+			Status:  http.StatusOK,
+			Content: data,
+		}, err
+	}
+}
 
 func ProxyMetrics(ctx context.Context, r *http.Request, vars map[string]string) error {
 

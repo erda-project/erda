@@ -48,9 +48,19 @@ type WorkbenchProjectItem struct {
 }
 
 var StateBelongs = []IssueStateBelong{
-	IssueStateBelongReopen,
-	IssueStateBelongWontfix,
-	IssueStateBelongResloved,
-	IssueStateBelongWorking,
 	IssueStateBelongOpen,
+	IssueStateBelongWorking,
+	IssueStateBelongDone,
+	IssueStateBelongWontfix,
+	IssueStateBelongReopen,
+	IssueStateBelongResloved,
+	IssueStateBelongClosed,
+}
+
+var UnfinishedStateBelongs = []IssueStateBelong{
+	IssueStateBelongOpen,
+	IssueStateBelongWorking,
+	IssueStateBelongWontfix,
+	IssueStateBelongReopen,
+	IssueStateBelongResloved,
 }

@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/cdp"
 	"github.com/erda-project/erda/modules/dop/services/certificate"
+	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
@@ -226,6 +227,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// project pipeline
 		{Path: "/api/cicds-project", Method: http.MethodPost, Handler: e.projectPipelineCreate},
+		{Path: "/api/cicds-project/actions/pipeline-detail", Method: http.MethodGet, Handler: e.projectPipelineDetail},
 
 		// cms
 		{Path: "/api/cicds/configs", Method: http.MethodPost, Handler: e.createOrUpdateCmsNsConfigs},
@@ -407,6 +409,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/testplans/{testPlanID}/actions/move-step", Method: http.MethodPut, Handler: e.MoveTestPlanV2Step},
 		{Path: "/api/autotests/testplans-step/{stepID}", Method: http.MethodGet, Handler: e.GetTestPlanV2Step},
 		{Path: "/api/autotests/testplans-step/{stepID}", Method: http.MethodPut, Handler: e.UpdateTestPlanV2Step},
+		{Path: "/api/autotests/testplans/{testPlanID}/steps/actions/list-by-group-id", Method: http.MethodGet, Handler: e.ListTestPlanV2Step},
 
 		{Path: "/api/reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryReportSets},
 
@@ -575,6 +578,17 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/actions/get-nexus-docker-credential-by-image", Method: http.MethodGet, Handler: e.GetNexusOrgDockerCredentialByImage},
 		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodPost, Handler: e.CreateOrgPublisher},
 		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodGet, Handler: e.CreateOrgPublisher},
+
+		// code coverage
+		{Path: "/api/code-coverage/actions/start", Method: http.MethodPost, Handler: e.StartCodeCoverage},
+		{Path: "/api/code-coverage/actions/end", Method: http.MethodPost, Handler: e.EndCodeCoverage},
+		{Path: "/api/code-coverage/actions/cancel", Method: http.MethodPost, Handler: e.CancelCodeCoverage},
+		{Path: "/api/code-coverage/actions/ready-callBack", Method: http.MethodPost, Handler: e.ReadyCallBack},
+		{Path: "/api/code-coverage/actions/end-callBack", Method: http.MethodPost, Handler: e.EndCallBack},
+		{Path: "/api/code-coverage/actions/report-callBack", Method: http.MethodPost, Handler: e.ReportCallBack},
+		{Path: "/api/code-coverage/records/actions/list", Method: http.MethodGet, Handler: e.ListCodeCoverageRecord},
+		{Path: "/api/code-coverage/record/{id}", Method: http.MethodGet, Handler: e.GetCodeCoverageRecord},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -630,28 +644,29 @@ type Endpoints struct {
 	sceneset        *sceneset.Service
 	migrate         *migrate.Service
 
-	store          jsonstore.JsonStore
-	ossClient      *oss.Client
-	etcdStore      *etcd.Store
-	ticket         *ticket.Ticket
-	comment        *comment.Comment
-	branchRule     *branchrule.BranchRule
-	namespace      *namespace.Namespace
-	envConfig      *environment.EnvConfig
-	issue          *issue.Issue
-	issueStream    *issuestream.IssueStream
-	issueRelated   *issuerelated.IssueRelated
-	issueProperty  *issueproperty.IssueProperty
-	issueState     *issuestate.IssueState
-	issuePanel     *issuepanel.IssuePanel
-	workBench      *workbench.Workbench
-	uc             *ucauth.UCClient
-	iteration      *iteration.Iteration
-	publisher      *publisher.Publisher
-	certificate    *certificate.Certificate
-	appCertificate *appcertificate.AppCertificate
-	libReference   *libreference.LibReference
-	org            *org.Org
+	store           jsonstore.JsonStore
+	ossClient       *oss.Client
+	etcdStore       *etcd.Store
+	ticket          *ticket.Ticket
+	comment         *comment.Comment
+	branchRule      *branchrule.BranchRule
+	namespace       *namespace.Namespace
+	envConfig       *environment.EnvConfig
+	issue           *issue.Issue
+	issueStream     *issuestream.IssueStream
+	issueRelated    *issuerelated.IssueRelated
+	issueProperty   *issueproperty.IssueProperty
+	issueState      *issuestate.IssueState
+	issuePanel      *issuepanel.IssuePanel
+	workBench       *workbench.Workbench
+	uc              *ucauth.UCClient
+	iteration       *iteration.Iteration
+	publisher       *publisher.Publisher
+	certificate     *certificate.Certificate
+	appCertificate  *appcertificate.AppCertificate
+	libReference    *libreference.LibReference
+	org             *org.Org
+	codeCoverageSvc *code_coverage.CodeCoverage
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -989,6 +1004,12 @@ func WithOrg(org *org.Org) Option {
 	}
 }
 
+func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
+	return func(e *Endpoints) {
+		e.codeCoverageSvc = svc
+	}
+}
+
 var queryStringDecoder *schema.Decoder
 
 func init() {
@@ -1010,4 +1031,12 @@ func (e *Endpoints) TestSetService() *testset.Service {
 
 func (e *Endpoints) IssueStateService() *issuestate.IssueState {
 	return e.issueState
+}
+
+func (e *Endpoints) IssueService() *issue.Issue {
+	return e.issue
+}
+
+func (e *Endpoints) CodeCoverageService() *code_coverage.CodeCoverage {
+	return e.codeCoverageSvc
 }

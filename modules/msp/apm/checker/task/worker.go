@@ -20,6 +20,8 @@ import (
 	"io"
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/plugins"
@@ -36,7 +38,7 @@ var (
 )
 
 func NewWorker(log logs.Logger, c *pb.Checker, ctx plugins.Context, handler plugins.Handler) (Worker, error) {
-	strategy := c.Config["strategy"]
+	strategy := c.Config["strategy"].GetStringValue()
 	if len(strategy) == 0 {
 		strategy = defaultStrategy
 	}
@@ -57,17 +59,13 @@ type periodicWorker struct {
 	closeCh  chan struct{}
 }
 
-func newPeriodicWorker(log logs.Logger, cfg map[string]string, ctx plugins.Context, handler plugins.Handler) (*periodicWorker, error) {
+func newPeriodicWorker(log logs.Logger, cfg map[string]*structpb.Value, ctx plugins.Context, handler plugins.Handler) (*periodicWorker, error) {
 	interval := defaultPeriodicInterval
-	if i := cfg["interval"]; len(i) > 0 {
-		i, err := time.ParseDuration(i)
-		if err != nil {
-			return nil, fmt.Errorf("invalid interval %s", err)
-		}
+	if i := cfg["interval"].GetNumberValue(); i > 0 {
+		interval = time.Duration(i) * time.Second
 		if i <= 0 {
 			return nil, fmt.Errorf("invalid interval %d", int64(i))
 		}
-		interval = i
 	}
 	return &periodicWorker{
 		log:      log,

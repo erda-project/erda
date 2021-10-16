@@ -44,6 +44,9 @@ const (
 	AuditUncordonNode   = "uncordonNode"
 	AuditLabelNode      = "labelNode"
 	AuditUnLabelNode    = "unLabelNode"
+	AuditDrainNode      = "drainNode"
+	AuditOfflineNode    = "offlineNode"
+	AuditOnlineNode     = "onlineNode"
 	AuditUpdateResource = "updateK8SResource"
 	AuditCreateResource = "createK8SResource"
 	AuditDeleteResource = "deleteK8SResource"
@@ -274,6 +277,11 @@ type cmdWithTimestamp struct {
 
 func (w *wrapConn) Read(p []byte) (n int, err error) {
 	n, err = w.Conn.Read(p)
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Error(r)
+		}
+	}()
 	data := websocket.DecodeFrame(p)
 	if len(data) <= 1 || data[0] != '0' {
 		return

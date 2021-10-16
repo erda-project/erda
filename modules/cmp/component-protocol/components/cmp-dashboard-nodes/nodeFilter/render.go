@@ -16,6 +16,7 @@ package nodeFilter
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -49,7 +50,9 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	nf.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	nf.SDK = sdk
 	nf.Operations = getFilterOperation()
-	var nodes []data.Object
+	var (
+		nodeList, nodes []data.Object
+	)
 	// Get all nodes by cluster name
 	nodeReq := &apistructs.SteveRequest{}
 	nodeReq.OrgID = sdk.Identity.OrgID
@@ -65,7 +68,7 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	if err != nil {
 		return err
 	}
-	var nodeList []data.Object
+
 	for _, item := range resp {
 		nodeList = append(nodeList, item.Data())
 	}
@@ -76,6 +79,7 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 		}
 	}
 	nf.Props = nf.GetFilterProps(labels)
+	nf.getState(labels)
 	switch event.Operation {
 	case common.CMPDashboardFilterOperationKey, common.CMPDashboardTableTabs, cptype.RenderingOperation:
 		if err := common.Transfer(c.State, &nf.State); err != nil {
@@ -105,6 +109,114 @@ func isEmptyFilter(values filter.Values) bool {
 	return true
 }
 
+func (nf *NodeFilter) getState(labels map[string]struct{}) {
+	//conditions := []filter.Condition{
+	//	{
+	//		Key:     "organization",
+	//		Label:   nf.SDK.I18n("organization-label"),
+	//		Type:    "select",
+	//		Options: []filter.Option{},
+	//	},
+	//}
+	conditions := []filter.Condition{
+		{
+			EmptyText:  nf.SDK.I18n("no select"),
+			Key:        "state",
+			Label:      nf.SDK.I18n("select labels"),
+			Type:       "select",
+			Fixed:      true,
+			HaveFilter: true,
+			Options:    []filter.Option{},
+		}, {
+			Fixed:       true,
+			Key:         "Q",
+			Label:       nf.SDK.I18n("label"),
+			Placeholder: nf.SDK.I18n("input node Name or IP"),
+			Type:        "input",
+		},
+	}
+	var customs []string
+	var enterprise []string
+	for l := range labels {
+		if strings.HasPrefix(l, "dice/org-") && strings.HasSuffix(l, "=true") {
+			enterprise = append(enterprise, l)
+			continue
+		}
+		exist := false
+		for _, dl := range filter.DefaultLabels {
+			if dl == l {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			customs = append(customs, l)
+		}
+	}
+	sort.Slice(enterprise, func(i, j int) bool {
+		return enterprise[i] < enterprise[j]
+	})
+	for _, l := range enterprise {
+		i := strings.Index(l, "=true")
+		conditions[0].Options = append(conditions[0].Options, filter.Option{
+			Label: l[9:i],
+			Value: l,
+		})
+	}
+	sort.Slice(customs, func(i, j int) bool {
+		return customs[i] < customs[j]
+	})
+	var customOps []filter.Option
+	for _, l := range customs {
+		customOps = append(customOps, filter.Option{
+			Label: l,
+			Value: l,
+		})
+	}
+	conditions[0].Options = append(conditions[0].Options, []filter.Option{
+		{
+			Value: "env",
+			Label: nf.SDK.I18n("env-label"),
+			Children: []filter.Option{
+				{Label: nf.SDK.I18n("dev"), Value: "dice/workspace-dev"},
+				{Label: nf.SDK.I18n("test"), Value: "dice/workspace-test=true"},
+				{Label: nf.SDK.I18n("staging"), Value: "dice/workspace-staging=true"},
+				{Label: nf.SDK.I18n("prod"), Value: "dice/workspace-prod=true"},
+			},
+		},
+		{
+			Value: "service",
+			Label: nf.SDK.I18n("service-label"),
+			Children: []filter.Option{
+				{Label: nf.SDK.I18n("stateful-service"), Value: "dice/stateful-service=true"},
+				{Label: nf.SDK.I18n("stateless-service"), Value: "dice/stateless-service=true"},
+				{Label: nf.SDK.I18n("location-cluster-service"), Value: "dice/location-cluster-service=true"},
+			},
+		},
+		{
+			Value: "job-label",
+			Label: nf.SDK.I18n("job-label"),
+			Children: []filter.Option{
+				{Label: nf.SDK.I18n("cicd-job"), Value: "dice/job=true"},
+				{Label: nf.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"},
+			},
+		},
+		{
+			Value: "other-label",
+			Label: nf.SDK.I18n("other-label"),
+			Children: append([]filter.Option{
+				{Label: nf.SDK.I18n("lb"), Value: "dice/lb"},
+				{Label: nf.SDK.I18n("platform"), Value: "dice/platform"},
+			}, customOps...),
+		},
+	}...,
+	)
+	nf.State = filter.State{
+		Conditions:  conditions,
+		Values:      nil,
+		ClusterName: "",
+	}
+}
 func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 	var nodes []data.Object
 	labels := make([]string, 0)

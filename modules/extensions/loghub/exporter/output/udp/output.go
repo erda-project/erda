@@ -24,8 +24,10 @@ import (
 )
 
 type config struct {
-	Addr    string        `file:"addr"`
-	Timeout time.Duration `file:"timeout"`
+	Addr           string        `file:"addr"`
+	Timeout        time.Duration `file:"timeout"`
+	FragmentSize   int           `file:"fragment_size" default:"1024" env:"UDP_FRAGMENT_SIZE"`
+	PacketSplitter string        `file:"packet_splitter" default:"\n" env:"UDP_PACKET_SPLITTER"`
 }
 
 type provider struct {
@@ -53,16 +55,41 @@ func (p *provider) newOutput(i int) (exporter.Output, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &udpOutput{udpAddr, conn, p.C.Timeout}, nil
+	return &udpOutput{udpAddr, conn, p.C.Timeout, p.C.FragmentSize, p.C.PacketSplitter}, nil
 }
 
 type udpOutput struct {
-	addr    *net.UDPAddr
-	conn    *net.UDPConn
-	timeout time.Duration
+	addr           *net.UDPAddr
+	conn           *net.UDPConn
+	timeout        time.Duration
+	fragmentSize   int
+	packetSplitter string
 }
 
 func (o *udpOutput) Write(logkey string, data []byte) error {
+	if len(o.packetSplitter) > 0 {
+		data = append(data, []byte(o.packetSplitter)...)
+	}
+	if o.fragmentSize <= 0 {
+		return o.WriteOnce(data)
+	}
+	for newLen := len(data); newLen > 0; newLen = len(data) {
+		if newLen <= o.fragmentSize {
+			return o.WriteOnce(data)
+		}
+
+		fragment := data[:o.fragmentSize]
+		err := o.WriteOnce(fragment)
+		if err != nil {
+			return err
+		}
+
+		data = data[o.fragmentSize:]
+	}
+	return nil
+}
+
+func (o *udpOutput) WriteOnce(data []byte) error {
 	o.conn.SetWriteDeadline(time.Now().Add(o.timeout))
 	_, err := o.conn.Write(data)
 	if err != nil {

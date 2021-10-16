@@ -52,7 +52,13 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return 0, nil
 	})
 
-	c := New(db, bdl)
+	c := New(db, bdl, nil)
+
+	// monkey patch Credential with core services
+	monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteAccessKey", func(*Clusters, string) error {
+		return nil
+	})
+
 	_, err := c.OfflineEdgeCluster(req, "", "")
 	assert.NoError(t, err)
 }

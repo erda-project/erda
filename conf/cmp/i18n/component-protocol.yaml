@@ -35,6 +35,9 @@ zh:
  Warning: 警告
  eventSearchPlaceHolder: 搜索事件内容
 
+ # cmp-dashboard-pods-list.podsTable
+ gotoWorkload: 查看工作负载
+
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU 请求值
  cpuLimits: CPU 限制值
@@ -120,6 +123,7 @@ zh:
  bootID: 启动 ID
  osImage: 系统镜像
  podInfo: Pod 信息
+ podsList: Pods 列表
  Completed: 完成
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
@@ -145,8 +149,10 @@ zh:
  mono: 独占
  cordon: 冻结
  uncordon: 解冻
+ drain: 驱散
+ offline: 下线
+ online: 上线
  cluster-service: 集群服务
- drain: 驱逐节点
  rebootTimes: 重启次数
  operate: 操作
  console: 控制台
@@ -195,8 +201,15 @@ zh:
  status update success: 状态修改成功
  Cordon following nodes: 冻结以下节点：
  Uncordon following nodes: 解冻以下节点：
+ Drain following nodes: 驱散以下节点：
+ Offline following nodes: 下线以下节点：
+ Online following nodes: 上线以下节点：
  show: 查看
-
+ undrained: 此节点中还存在未驱散的Pod！
+ isOffline: 已下线
+ no select: 未选择
+ select labels: 选择标签
+ OutOfDisk: 磁盘资源不足
 
 en:
  # general
@@ -234,6 +247,9 @@ en:
  Normal: Normal
  Warning: Warning
  eventSearchPlaceHolder: Search Events
+
+ # cmp-dashboard-pods-list.podsTable
+ gotoWorkload: Goto Workload
 
  # cmp-dashboard-workload-detail.podsTable
  cpuRequests: CPU Requests
@@ -322,6 +338,7 @@ en:
  osImage: OS Image
  packjob: Pack Job
  podInfo: Pod Info
+ podsList: Pods List
  podInspect: Pod Inspect
  rebootTimes: Reboot Times
  systemUUID: System UUID
@@ -344,4 +361,5 @@ en:
  job-label: Job Label
  other-label: Other Label
  cpu-size: CPU Cores
- memory-size: Memeory Size
+ memory-size: Memory Size
+ undrained: There are still unevicted Pods in this node!

@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/cdp"
 	"github.com/erda-project/erda/modules/dop/services/certificate"
+	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
@@ -127,6 +128,8 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.IssueFilterBmService, issuefilterbm.New(
 		issuefilterbm.WithDBClient(db),
 	))
+	p.Protocol.WithContextValue(types.CodeCoverageService, ep.CodeCoverageService())
+	p.Protocol.WithContextValue(types.IssueService, ep.IssueService())
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -220,16 +223,14 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	}()
 
+	// instantly run once
+	updateIssueExpiryStatus(ep)
+
 	// daily issue expiry status update cron job
 	go func() {
 		cron := cron.New()
 		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
-			start := time.Now()
-			if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
-				logrus.Errorf("daily issue expiry status batch update err: %v", err)
-				return
-			}
-			logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
+			updateIssueExpiryStatus(ep)
 		})
 		if err != nil {
 			panic(err)
@@ -238,6 +239,15 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}()
 
 	return nil
+}
+
+func updateIssueExpiryStatus(ep *endpoints.Endpoints) {
+	start := time.Now()
+	if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
+		logrus.Errorf("daily issue expiry status batch update err: %v", err)
+		return
+	}
+	logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
 }
 
 func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
@@ -416,6 +426,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		testplan.WithAutoTest(autotest),
 		testplan.WithIssue(issue),
 		testplan.WithIssueState(issueState),
+		testplan.WithIterationSvc(itr),
 	)
 
 	workBench := workbench.New(
@@ -475,6 +486,12 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		org.WithNexusSvc(nexusSvc),
 	)
 
+	codeCvc := code_coverage.New(
+		code_coverage.WithDBClient(db),
+		code_coverage.WithBundle(bdl.Bdl),
+		code_coverage.WithEnvConfig(env),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -529,6 +546,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithAppCertificate(appCer),
 		endpoints.WithLibReference(libReference),
 		endpoints.WithOrg(o),
+		endpoints.WithCodeCoverageExecRecord(codeCvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)

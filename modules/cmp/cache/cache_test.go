@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 	"modernc.org/mathutil"
 
@@ -189,6 +190,8 @@ func TestCache_Write(t *testing.T) {
 	type args struct {
 		pairs map[string]Values
 	}
+	bytes := make([]byte, 1024*1024)
+	rand.Read(bytes)
 	tests := []struct {
 		name string
 
@@ -324,8 +327,8 @@ func TestCache_Write(t *testing.T) {
 				pairs: map[string]Values{
 
 					"metricsStr": {
-						StringValue{
-							value: string(make([]byte, 1024*1024)),
+						ByteSliceValue{
+							value: bytes,
 						},
 					},
 				},
@@ -541,6 +544,113 @@ func TestMarshalValue(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MarshalValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func Test_calc(t *testing.T) {
+	type N struct {
+		A string
+		B []int
+		C map[string]interface{}
+		D []string
+		E uint8
+		F int64
+		G float32
+		H int16
+	}
+	var defaultN = N{
+		"adasdadasdasdsdasdd", //19
+		[]int{12, 23, 3},      //12
+		map[string]interface{}{
+			"321": "2311", //7
+			"aaa": N{ //3+1+12+3+1+8+4+2 34
+				"1",
+				[]int{12, 23, 3},
+				nil,
+				[]string{"1", "2", "3"},
+				1,
+				2,
+				3.221,
+				32,
+			},
+			"bbb": &N{ //3+1+3+1+8+4+2 34
+				"1",
+				[]int{12, 23, 3},
+				nil,
+				[]string{"1", "2", "3"},
+				1,
+				2,
+				3.221,
+				32,
+			},
+		},
+		[]string{"1", "2", "3"}, // 12
+		1,                       //1
+		2,                       //8
+		3.221,                   //4
+		32,                      //2
+	}
+	v := []types.APIObject{
+		{
+			Type: "testType",
+			ID:   "test",
+			Object: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"fields": []interface{}{
+						"1m",
+						"Normal",
+						"Scheduled",
+						"pod/test-0",
+						"",
+						"default",
+						"Success",
+						"1m",
+						1,
+						"test",
+					},
+				},
+			},
+		},
+	}
+	refValue := reflect.ValueOf(defaultN)
+	refValue2 := reflect.ValueOf(v)
+	type args struct {
+		refValue reflect.Value
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "1",
+			args: args{
+				refValue: refValue,
+			},
+			want:    124,
+			wantErr: false,
+		},
+		{
+			name: "2",
+			args: args{
+				refValue: refValue2,
+			},
+			want:    77,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := calc(tt.args.refValue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("calc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("calc() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

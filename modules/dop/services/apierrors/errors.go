@@ -238,6 +238,8 @@ var (
 	ErrAddTestPlanStep                    = err("ErrAddTestPlanStep", "添加测试计划步骤失败")
 	ErrDeleteTestPlanStep                 = err("ErrDeleteTestPlanStep", "删除测试计划步骤失败")
 	ErrUpdateTestPlanStep                 = err("ErrUpdateTestPlanStep", "更新测试计划步骤失败")
+	ErrListTestPlanStep                   = err("ErrListTestPlanStep", "获取测试计划步骤失败")
+	ErrMoveTestPlanStep                   = err("ErrMoveTestPlanStep", "移动测试计划步骤失败")
 	ErrCreateTestPlanMember               = err("ErrCreateTestPlanMember", "测试计划关联成员失败")
 	ErrUpdateTestPlanMember               = err("ErrUpdateTestPlanMember", "测试计划更新成员失败")
 	ErrListTestPlanMembers                = err("ErrListTestPlanMembers", "查询测试计划关联成员列表失败")
@@ -480,6 +482,13 @@ var (
 	ErrParallelRunPipeline = err("ErrParallelRunPipeline", "已有流水线正在运行中")
 
 	ErrListFileRecords = err("ErrListFileRecords", "failed to list file records")
+
+	ErrStartCodeCoverageExecRecord  = err("ErrStartCodeCoverageExecRecord", "代码覆盖率执行开始失败")
+	ErrEndCodeCoverageExecRecord    = err("ErrEndCodeCoverageExecRecord", "代码覆盖率执行结束失败")
+	ErrCancelCodeCoverageExecRecord = err("ErrCancelCodeCoverageExecRecord", "代码覆盖率执行强制取消失败")
+	ErrUpdateCodeCoverageExecRecord = err("ErrUpdateCodeCoverageExecRecord", "修改代码覆盖率执行记录失败")
+	ErrGetCodeCoverageExecRecord    = err("ErrUpdateCodeCoverageExecRecord", "获取代码覆盖率执行记录失败")
+	ErrListCodeCoverageExecRecord   = err("ErrUpdateCodeCoverageExecRecord", "列表获取代码覆盖率执行记录失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
