@@ -334,10 +334,15 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	results := make(map[int64]*pb.DescribeItemV1)
 	var downCount int64
 	if metric != nil {
+		var config map[string]*structpb.Value
+		if metric.Config != "" {
+			json.Unmarshal([]byte(metric.Config), &config)
+		}
 		results[req.Id] = &pb.DescribeItemV1{
 			Name:   metric.Name,
 			Mode:   metric.Mode,
 			Url:    metric.URL,
+			Config: config,
 			Status: StatusMiss,
 		}
 		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
