@@ -212,18 +212,18 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			StagingClusterName: createReq.ResourceConfigs.STAGING.ClusterName,
 			TestClusterName:    createReq.ResourceConfigs.TEST.ClusterName,
 			DevClusterName:     createReq.ResourceConfigs.DEV.ClusterName,
-			ProdCPUQuota:       uint64(createReq.ResourceConfigs.PROD.CPUQuota * 1000),
-			ProdMemQuota:       uint64(createReq.ResourceConfigs.PROD.MemQuota * 1024 * 1024 * 1024),
-			StagingCPUQuota:    uint64(createReq.ResourceConfigs.STAGING.CPUQuota * 1000),
-			StagingMemQuota:    uint64(createReq.ResourceConfigs.STAGING.MemQuota * 1024 * 1024),
-			TestCPUQuota:       uint64(createReq.ResourceConfigs.TEST.CPUQuota * 1000),
-			TestMemQuota:       uint64(createReq.ResourceConfigs.TEST.MemQuota * 1024 * 1024 * 1024),
-			DevCPUQuota:        uint64(createReq.ResourceConfigs.DEV.CPUQuota * 1000),
-			DevMemQuota:        uint64(createReq.ResourceConfigs.DEV.MemQuota * 1024 * 1024 * 1024),
+			ProdCPUQuota:       calcu.CoreToMillcore(createReq.ResourceConfigs.PROD.CPUQuota),
+			ProdMemQuota:       calcu.GibibyteToByte(createReq.ResourceConfigs.PROD.MemQuota),
+			StagingCPUQuota:    calcu.CoreToMillcore(createReq.ResourceConfigs.STAGING.CPUQuota),
+			StagingMemQuota:    calcu.GibibyteToByte(createReq.ResourceConfigs.STAGING.MemQuota),
+			TestCPUQuota:       calcu.CoreToMillcore(createReq.ResourceConfigs.TEST.CPUQuota),
+			TestMemQuota:       calcu.GibibyteToByte(createReq.ResourceConfigs.TEST.MemQuota),
+			DevCPUQuota:        calcu.CoreToMillcore(createReq.ResourceConfigs.DEV.CPUQuota),
+			DevMemQuota:        calcu.GibibyteToByte(createReq.ResourceConfigs.DEV.MemQuota),
 			CreatorID:          userID,
 			UpdaterID:          userID,
 		}
-		if err := tx.Create(&quota).Error; err != nil {
+		if err := tx.Debug().Create(&quota).Error; err != nil {
 			logrus.WithError(err).WithField("model", quota.TableName()).
 				Errorln("failed to Create")
 			return nil, errors.Errorf("failed to insert project quota to database")

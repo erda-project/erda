@@ -78,11 +78,11 @@ func (cc ResourceConfigs) Check() error {
 // CPU quota uint is Core .
 // Mem quota uint is GiB
 type ClusterConfig struct {
-	ClusterName string `json:"cluster_name"`
+	ClusterName string `json:"clusterName"`
 	// CPUQuota unit is Core
-	CPUQuota float64 `json:"cpu_quota"`
+	CPUQuota float64 `json:"cpuQuota"`
 	// MemQuota unit is GiB
-	MemQuota float64 `json:"mem_quota"`
+	MemQuota float64 `json:"memQuota"`
 }
 
 // ProjectCreateResponse POST /api/projects 创建项目响应结构
