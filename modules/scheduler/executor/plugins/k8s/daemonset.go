@@ -15,6 +15,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -31,10 +32,21 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (k *Kubernetes) createDaemonSet(service *apistructs.Service, sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	daemonset, err := k.newDaemonSet(service, sg)
 	if err != nil {
 		return errors.Errorf("failed to generate daemonset struct, name: %s, (%v)", service.Name, err)
+	}
+
+	_, projectID, workspace, runtimeID := extractContainerEnvs(daemonset.Spec.Template.Spec.Containers)
+	cpu := int64(service.Resources.Cpu * 1000)
+	mem := int64(service.Resources.Mem * float64(1<<20))
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("workspace quota is not enough")
 	}
 
 	return k.ds.Create(daemonset)
@@ -66,8 +78,49 @@ func (k *Kubernetes) deleteDaemonSet(namespace, name string) error {
 	return k.ds.Delete(namespace, name)
 }
 
-func (k *Kubernetes) updateDaemonSet(ds *appsv1.DaemonSet) error {
+func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet) error {
+	_, projectID, workspace, runtimeID := extractContainerEnvs(ds.Spec.Template.Spec.Containers)
+	deltaCPU, deltaMem, err := k.getDaemonSetDeltaResource(ctx, ds)
+	if err != nil {
+		return errors.Errorf("faield to get delta resource for daemonSet %s, %v", ds.Name, err)
+	}
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("workspace quota is not enough")
+	}
 	return k.ds.Update(ds)
+}
+
+func (k *Kubernetes) getDaemonSetDeltaResource(ctx context.Context, ds *appsv1.DaemonSet) (deltaCPU, deltaMemory int64, err error) {
+	oldDs, err := k.k8sClient.ClientSet.AppsV1().DaemonSets(ds.Namespace).Get(ctx, ds.Name, metav1.GetOptions{})
+	if err != nil {
+		return 0, 0, err
+	}
+	oldCPUQty := resource.NewQuantity(0, resource.DecimalSI)
+	oldMemQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, container := range oldDs.Spec.Template.Spec.Containers {
+		if container.Resources.Requests == nil {
+			continue
+		}
+		oldCPUQty.Add(*container.Resources.Requests.Cpu())
+		oldMemQty.Add(*container.Resources.Requests.Memory())
+	}
+
+	newCPUQty := resource.NewQuantity(0, resource.DecimalSI)
+	newMemQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, container := range ds.Spec.Template.Spec.Containers {
+		if container.Resources.Requests == nil {
+			continue
+		}
+		newCPUQty.Add(*container.Resources.Requests.Cpu())
+		newMemQty.Add(*container.Resources.Requests.Memory())
+	}
+	deltaCPU = newCPUQty.MilliValue() - oldCPUQty.MilliValue()
+	deltaMemory = newMemQty.Value() - oldMemQty.Value()
+	return
 }
 
 func (k *Kubernetes) getDaemonSet(namespace, name string) (*appsv1.DaemonSet, error) {

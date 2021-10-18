@@ -99,7 +99,7 @@ func (e *Endpoints) CreateApplication(ctx context.Context, r *http.Request, vars
 		logrus.Errorf("update project active time err: %v", err)
 	}
 
-	applicationDTO := e.convertToApplicationDTO(*app, false, identify.UserID, nil)
+	applicationDTO := e.convertToApplicationDTO(ctx, *app, false, identify.UserID, nil)
 
 	return httpserver.OkResp(applicationDTO)
 }
@@ -284,7 +284,7 @@ func (e *Endpoints) GetApplication(ctx context.Context, r *http.Request, vars ma
 			blockStatusMap[id] = status
 		}
 	}
-	return httpserver.OkResp(e.convertToApplicationDTO(*app, true, userID, blockStatusMap), nil)
+	return httpserver.OkResp(e.convertToApplicationDTO(ctx, *app, true, userID, blockStatusMap), nil)
 }
 
 // DeleteApplication 删除应用
@@ -314,7 +314,7 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrDeleteApplication.AccessDenied().ToResp(), nil
 	}
 	app, err := e.app.Get(applicationID)
-	applicationDTO := e.convertToApplicationDTO(*app, false, userID.String(), nil)
+	applicationDTO := e.convertToApplicationDTO(ctx, *app, false, userID.String(), nil)
 
 	// 删除应用
 	if err = e.app.DeleteWithEvent(applicationID); err != nil {
@@ -567,7 +567,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 			}
 			continue
 		}
-		appDTO := e.convertToApplicationDTO(applications[i], false, userID.String(), blockStatusMap)
+		appDTO := e.convertToApplicationDTO(ctx, applications[i], false, userID.String(), blockStatusMap)
 		// 填充成员角色
 		if roles, ok := memberMap[int64(appDTO.ID)]; ok {
 			appDTO.MemberRoles = roles
@@ -777,7 +777,7 @@ func (e *Endpoints) checkPermission(r *http.Request, scopeType apistructs.ScopeT
 	return nil
 }
 
-func (e *Endpoints) convertToApplicationDTO(application model.Application, withProjectToken bool, userID string, blockStatusMap map[uint64]string) apistructs.ApplicationDTO {
+func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application model.Application, withProjectToken bool, userID string, blockStatusMap map[uint64]string) apistructs.ApplicationDTO {
 	var config map[string]interface{}
 	if err := json.Unmarshal([]byte(application.Config), &config); err != nil {
 		config = make(map[string]interface{})
@@ -797,7 +797,7 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 	}
 
 	// TODO ApplicationDTO 去除clusterName, 暂时兼容添加
-	project, err := e.project.Get(application.ProjectID)
+	project, err := e.project.Get(ctx, application.ProjectID)
 	if err != nil {
 		logrus.Error(err)
 	}

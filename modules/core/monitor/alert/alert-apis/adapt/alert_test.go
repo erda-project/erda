@@ -293,7 +293,7 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 	})
 	monkey.Patch((*Adapt).getEnabledAlertRulesByScopeAndIndices, func(_ *Adapt, _ i18n.LanguageCodes, _, _ string, _ []string) (map[string]*pb.AlertRule, error) {
 		return map[string]*pb.AlertRule{
-			"app_resource_container_cpu": &pb.AlertRule{
+			"app_resource_container_cpu": {
 				Id:         0,
 				Name:       "",
 				AlertScope: "",
