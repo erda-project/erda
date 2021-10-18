@@ -28,7 +28,15 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (k *Kubernetes) GetWorkspaceQuota(ctx context.Context, projectID, workspace string) (cpu, mem int64, err error) {
+func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, workspace string) (cpu, mem int64, err error) {
+	cpuQuota, memQuota, err := k.bdl.GetWorkspaceQuota(&apistructs.GetWorkspaceQuotaRequest{
+		ProjectID: projectID,
+		Workspace: workspace,
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+
 	namespaces, err := k.bdl.GetWorkspaceNamespaces(&apistructs.GetWorkspaceNamespaceRequest{
 		ProjectID: projectID,
 		Workspace: workspace,
@@ -57,11 +65,14 @@ func (k *Kubernetes) GetWorkspaceQuota(ctx context.Context, projectID, workspace
 			}
 		}
 	}
-	return cpuQty.MilliValue(), memQty.Value(), nil
+
+	leftCPU := int64(cpuQuota*1000) - cpuQty.MilliValue()
+	leftMem := int64(memQuota*float64(1<<20)) - memQty.Value()
+	return leftCPU, leftMem, nil
 }
 
 func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64) (bool, error) {
-	leftCPU, leftMem, err := k.GetWorkspaceQuota(ctx, projectID, workspace)
+	leftCPU, leftMem, err := k.GetWorkspaceLeftQuota(ctx, projectID, workspace)
 	if err != nil {
 		return false, err
 	}

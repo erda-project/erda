@@ -22,19 +22,17 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-// GetAllNamespaces get all namespaces in target project workspace
-func (e *Endpoints) GetAllNamespaces(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) GetWorkspaceQuota(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	projectID := vars["projectID"]
 	workspace := vars["workspace"]
 
-	podsInfo, err := e.db.GetPodsByWorkspace(projectID, workspace)
+	cpu, mem, err := e.db.GetWorkspaceQuota(projectID, workspace)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err).ToResp(), nil
 	}
 
-	var namespaces []string
-	for _, pod := range podsInfo {
-		namespaces = append(namespaces, pod.Namespace)
-	}
-	return httpserver.OkResp(namespaces)
+	return httpserver.OkResp(map[string]interface{}{
+		"cpu":    cpu,
+		"memory": mem,
+	})
 }
