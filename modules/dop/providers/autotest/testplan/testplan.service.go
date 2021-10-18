@@ -45,25 +45,75 @@ func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {
 
 func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.TestPlanUpdateByHookRequest) (*pb.TestPlanUpdateByHookResponse, error) {
 	logrus.Info("start testplan execute callback")
-	if req.Content.TestPlanID == 0 {
-		return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
+
+	if req.Content.StepAPIType == apistructs.AutoTestPlan {
+		if req.Content.TestPlanID == 0 {
+			return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
+		}
+		go func() {
+			err := s.ProcessEvent(req.Content)
+			if err != nil {
+				logrus.Errorf("failed to ProcessEvent, err: %s", err.Error())
+			}
+		}()
+		fields := make(map[string]interface{}, 0)
+		fields["pass_rate"] = req.Content.PassRate
+		fields["execute_time"] = parseExecuteTime(req.Content.ExecuteTime)
+		fields["execute_api_num"] = req.Content.ApiExecNum
+		fields["success_api_num"] = req.Content.ApiSuccessNum
+		fields["total_api_num"] = req.Content.ApiTotalNum
+		fields["execute_rate"] = req.Content.ApiTotalNum
+
+		if req.Content.ApiTotalNum == 0 {
+			fields["execute_rate"] = 0
+		} else {
+			fields["execute_rate"] = float64(req.Content.ApiExecNum) / float64(req.Content.ApiTotalNum) * 100
+		}
+
+		if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
+			return nil, err
+		}
 	}
 
-	go func() {
-		err := s.ProcessEvent(req.Content)
-		if err != nil {
-			logrus.Errorf("failed to ProcessEvent, err: %s", err.Error())
-		}
-	}()
-
-	fields := make(map[string]interface{}, 0)
-	fields["pass_rate"] = req.Content.PassRate
-	fields["execute_time"] = parseExecuteTime(req.Content.ExecuteTime)
-	fields["execute_api_num"] = req.Content.ApiTotalNum
-	if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
+	if err := s.createTestPlanExecHistory(req); err != nil {
 		return nil, err
 	}
+
 	return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, nil
+}
+
+func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHookRequest) error {
+	var testPlan db.TestPlanV2
+	if err := s.db.First(&testPlan, req.Content.TestPlanID).Error; err != nil {
+		return err
+	}
+	iterationID := req.Content.IterationID
+	if iterationID == 0 {
+		iterationID = testPlan.IterationID
+	}
+
+	execHistory := db.AutoTestExecHistory{
+		CreatorID:     req.Content.CreatorID,
+		ProjectID:     testPlan.ProjectID,
+		SpaceID:       testPlan.SpaceID,
+		IterationID:   iterationID,
+		PlanID:        req.Content.TestPlanID,
+		SceneID:       req.Content.SceneID,
+		SceneSetID:    req.Content.SceneSetID,
+		StepID:        req.Content.StepID,
+		ParentID:      req.Content.ParentID,
+		Type:          apistructs.StepAPIType(req.Content.StepAPIType),
+		Status:        apistructs.PipelineStatus(req.Content.Status),
+		PipelineYml:   req.Content.PipelineYml,
+		ExecuteApiNum: req.Content.ApiExecNum,
+		SuccessApiNum: req.Content.ApiSuccessNum,
+		PassRate:      req.Content.PassRate,
+		ExecuteRate:   float64(req.Content.ApiExecNum) / float64(req.Content.ApiTotalNum) * 100,
+		TotalApiNum:   req.Content.ApiTotalNum,
+		ExecuteTime:   *parseExecuteTime(req.Content.ExecuteTime),
+	}
+
+	return s.db.CreateAutoTestExecHistory(&execHistory)
 }
 
 // parseExecuteTime parse string to time, if err return nil

@@ -32,6 +32,18 @@ message Content {
   int64 apiTotalNum = 4;
   // time duration of the test plan execution
   string executeDuration = 5;
+  int64  apiSuccessNum = 6;
+  int64  apiExecNum = 7;
+  string pipelineYml = 8;
+  string stepAPIType = 9;
+  string status = 10;
+  uint64 sceneID = 11;
+  uint64 sceneSetID = 12;
+  uint64 parentID = 13;
+  uint64 projectID = 14;
+  string creatorID = 15;
+  uint64 iterationID = 16;
+  uint64 stepID = 17;
 }
 
 message TestPlanUpdateByHookResponse {

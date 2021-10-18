@@ -17,24 +17,75 @@ package db
 import (
 	"time"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 // TestPlanV2 测试计划V2
 type TestPlanV2 struct {
 	dbengine.BaseModel
-	Name        string
-	Desc        string
-	CreatorID   string
-	UpdaterID   string
-	ProjectID   uint64
-	SpaceID     uint64
-	PipelineID  uint64
-	PassRate    float64
-	ExecuteTime *time.Time
+	Name          string
+	Desc          string
+	CreatorID     string
+	UpdaterID     string
+	ProjectID     uint64
+	SpaceID       uint64
+	PipelineID    uint64
+	PassRate      float64
+	ExecuteTime   *time.Time
+	ExecuteApiNum uint64
+	TotalApiNum   uint64
+	SuccessApiNum uint64
+	ExecuteRate   float64
+	IterationID   uint64
 }
 
 // TableName table name
 func (TestPlanV2) TableName() string {
 	return "dice_autotest_plan"
+}
+
+type AutoTestExecHistory struct {
+	dbengine.BaseModel
+
+	CreatorID   string
+	ProjectID   uint64
+	SpaceID     uint64
+	IterationID uint64
+	PlanID      uint64
+	SceneID     uint64
+	SceneSetID  uint64
+	StepID      uint64
+	ParentID    uint64
+	Type        apistructs.StepAPIType
+	Status      apistructs.PipelineStatus
+
+	PipelineYml   string // Used to record the order of scenes,sceneSets and steps
+	ExecuteApiNum int64
+	SuccessApiNum int64
+	PassRate      float64
+	ExecuteRate   float64
+	TotalApiNum   int64
+	ExecuteTime   time.Time
+}
+
+func (AutoTestExecHistory) TableName() string {
+	return "dice_autotest_exec_history"
+}
+
+type AutoTestScene struct {
+	dbengine.BaseModel
+	Name        string                 `gorm:"name"`
+	Description string                 `gorm:"description"` // 描述
+	SpaceID     uint64                 `gorm:"space_id"`    // 场景所属测试空间ID
+	SetID       uint64                 `gorm:"set_id"`      // 场景集ID
+	PreID       uint64                 `gorm:"pre_id"`      // 排序的前驱ID
+	CreatorID   string                 `gorm:"creator_id"`
+	UpdaterID   string                 `gorm:"updater_id"`
+	Status      apistructs.SceneStatus `gorm:"status"`
+	RefSetID    uint64                 `gorm:"ref_set_id"` // 引用场景集ID
+}
+
+func (AutoTestScene) TableName() string {
+	return "dice_autotest_scene"
 }

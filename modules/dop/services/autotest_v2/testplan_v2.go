@@ -467,6 +467,9 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 							apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
 							apistructs.LabelSceneSetID:       strconv.Itoa(int(v.SceneSetID)),
 							apistructs.LabelSpaceID:          strconv.Itoa(int(testPlan.SpaceID)),
+							apistructs.LabelTestPlanID:       strconv.FormatUint(testPlan.ID, 10),
+							apistructs.LabelUserID:           req.UserID,
+							apistructs.LabelIterationID:      req.Labels[apistructs.LabelIterationID],
 						},
 					},
 				},
@@ -721,9 +724,9 @@ func (svc *Service) QuerySceneSetPipelineSnippetYaml(req apistructs.SnippetConfi
 	for index, v := range scenes {
 		var specStage pipelineyml.Stage
 
-		var req apistructs.AutotestSceneRequest
-		req.SceneID = v.ID
-		inputs, err := svc.ListAutoTestSceneInput(req.SceneID)
+		var SceneReq apistructs.AutotestSceneRequest
+		SceneReq.SceneID = v.ID
+		inputs, err := svc.ListAutoTestSceneInput(SceneReq.SceneID)
 		if err != nil {
 			return "", err
 		}
@@ -755,6 +758,9 @@ func (svc *Service) QuerySceneSetPipelineSnippetYaml(req apistructs.SnippetConfi
 						apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
 						apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
 						apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+						apistructs.LabelTestPlanID:       req.Labels[apistructs.LabelTestPlanID],
+						apistructs.LabelUserID:           req.Labels[apistructs.LabelUserID],
+						apistructs.LabelIterationID:      req.Labels[apistructs.LabelIterationID],
 					},
 				},
 			},
@@ -801,7 +807,7 @@ func (svc *Service) BatchQueryScenePipelineSnippetYaml(configs []apistructs.Snip
 
 	var resultConfigs []apistructs.BatchSnippetConfigYml
 	for key, v := range results {
-		yml, err := svc.DoSceneToYml(v.Steps, v.Inputs, v.Output)
+		yml, err := svc.DoSceneToYml(v.Steps, v.Inputs, v.Output, configsMap[v.ID])
 		if err != nil {
 			return nil, err
 		}
@@ -824,7 +830,7 @@ func (svc *Service) QueryScenePipelineSnippetYaml(req apistructs.SnippetConfig) 
 		return "", err
 	}
 
-	yml, err := svc.SceneToYml(uint64(sceneSetIDInt))
+	yml, err := svc.SceneToYml(uint64(sceneSetIDInt), req)
 	if err != nil {
 		return "", err
 	}

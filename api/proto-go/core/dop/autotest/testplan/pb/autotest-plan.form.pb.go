@@ -76,6 +76,98 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					m.Content = &Content{}
 				}
 				m.Content.ExecuteDuration = vals[0]
+			case "content.apiSuccessNum":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ApiSuccessNum = val
+			case "content.apiExecNum":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ApiExecNum = val
+			case "content.pipelineYml":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.PipelineYml = vals[0]
+			case "content.stepAPIType":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.StepAPIType = vals[0]
+			case "content.status":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.Status = vals[0]
+			case "content.sceneID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.SceneID = val
+			case "content.sceneSetID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.SceneSetID = val
+			case "content.parentID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ParentID = val
+			case "content.projectID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ProjectID = val
+			case "content.creatorID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.CreatorID = vals[0]
+			case "content.iterationID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.IterationID = val
+			case "content.stepID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.StepID = val
 			}
 		}
 	}
@@ -109,6 +201,62 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.ApiTotalNum = val
 			case "executeDuration":
 				m.ExecuteDuration = vals[0]
+			case "apiSuccessNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApiSuccessNum = val
+			case "apiExecNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApiExecNum = val
+			case "pipelineYml":
+				m.PipelineYml = vals[0]
+			case "stepAPIType":
+				m.StepAPIType = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "sceneID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SceneID = val
+			case "sceneSetID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SceneSetID = val
+			case "parentID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ParentID = val
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "creatorID":
+				m.CreatorID = vals[0]
+			case "iterationID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.IterationID = val
+			case "stepID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.StepID = val
 			}
 		}
 	}
