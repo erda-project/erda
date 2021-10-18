@@ -1670,25 +1670,25 @@ func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.Applica
 		deployNeedCpu = localCpu - runtime.CPU
 		deployNeedMem = localMem - float64(runtime.Mem)
 	}
-	logrus.Infof("PrepareCheckProjectResource deployNeedMem: %f", deployNeedMem)
-	logrus.Infof("PrepareCheckProjectResource deployNeedCpu: %f", deployNeedCpu)
-	logrus.Infof("PrepareCheckProjectResource usedMem: %f", usedMem)
-	logrus.Infof("PrepareCheckProjectResource usedCpu: %f", usedCpu)
-	// 比较项目quota预留资源是不是够
-	if utils.Smaller(projectInfo.CpuQuota-usedCpu, deployNeedCpu) {
-		s := fmt.Sprintf("The CPU reserved for the project is %.2f cores, %.2f cores have been occupied, %.2f CPUs are required for deploy, and the resources for application release are insufficient", projectInfo.CpuQuota, usedCpu, deployNeedCpu)
-		fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
-		return 0.0, 0.0, errors.Errorf(s)
-	}
-	useMem2, err := strconv.ParseFloat(fmt.Sprintf("%.2f", usedMem), 64)
-	if err != nil {
-		return 0.0, 0.0, err
-	}
-	if utils.Smaller(projectInfo.MemQuota*1024.0-float64(usedMem), deployNeedMem) {
-		s := fmt.Sprintf("The memory reserved for the project is %.2f G, %.2f G have been occupied, %.2f G are required for deploy, and the resources for application release are insufficient", projectInfo.MemQuota, useMem2/1024, deployNeedMem/1024.0)
-		fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
-		return 0.0, 0.0, errors.Errorf(s)
-	}
+	//logrus.Infof("PrepareCheckProjectResource deployNeedMem: %f", deployNeedMem)
+	//logrus.Infof("PrepareCheckProjectResource deployNeedCpu: %f", deployNeedCpu)
+	//logrus.Infof("PrepareCheckProjectResource usedMem: %f", usedMem)
+	//logrus.Infof("PrepareCheckProjectResource usedCpu: %f", usedCpu)
+	//// 比较项目quota预留资源是不是够
+	//if utils.Smaller(projectInfo.CpuQuota-usedCpu, deployNeedCpu) {
+	//	s := fmt.Sprintf("The CPU reserved for the project is %.2f cores, %.2f cores have been occupied, %.2f CPUs are required for deploy, and the resources for application release are insufficient", projectInfo.CpuQuota, usedCpu, deployNeedCpu)
+	//	fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
+	//	return 0.0, 0.0, errors.Errorf(s)
+	//}
+	//useMem2, err := strconv.ParseFloat(fmt.Sprintf("%.2f", usedMem), 64)
+	//if err != nil {
+	//	return 0.0, 0.0, err
+	//}
+	//if utils.Smaller(projectInfo.MemQuota*1024.0-float64(usedMem), deployNeedMem) {
+	//	s := fmt.Sprintf("The memory reserved for the project is %.2f G, %.2f G have been occupied, %.2f G are required for deploy, and the resources for application release are insufficient", projectInfo.MemQuota, useMem2/1024, deployNeedMem/1024.0)
+	//	fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
+	//	return 0.0, 0.0, errors.Errorf(s)
+	//}
 
 	return deployNeedCpu, deployNeedMem, nil
 }
