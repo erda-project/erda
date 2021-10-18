@@ -76,13 +76,15 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 	if err != nil {
 		return false, err
 	}
+	reqCPUStr := resourceToString(float64(requestsCPU), "cpu")
+	leftCPUStr := resourceToString(float64(leftCPU), "cpu")
+	reqMemStr := resourceToString(float64(requestsMem), "memory")
+	leftMemStr := resourceToString(float64(leftMem), "memory")
+
+	logrus.Infof("Checking workspace quota, requests cpu:%s cores, left %s cores; requests memory: %s, left %s",
+		reqCPUStr, leftCPUStr, reqMemStr, leftMemStr)
 
 	if requestsCPU > leftCPU || requestsMem > leftMem {
-		reqCPUStr := resourceToString(float64(requestsCPU), "cpu")
-		leftCPUStr := resourceToString(float64(leftCPU), "cpu")
-		reqMemStr := resourceToString(float64(requestsMem), "memory")
-		leftMemStr := resourceToString(float64(leftMem), "memory")
-
 		if err = k.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
 			ErrorLog: apistructs.ErrorLog{
 				ResourceType:   apistructs.RuntimeError,
