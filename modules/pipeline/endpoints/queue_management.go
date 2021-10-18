@@ -148,7 +148,7 @@ func (e *Endpoints) updatePipelineQueue(ctx context.Context, r *http.Request, va
 	}
 
 	// update queue in manager
-	e.reconciler.QueueManager.IdempotentAddQueue(queue)
+	e.reconciler.QueueManager.SendQueueToEtcd(queue.ID)
 
 	return httpserver.OkResp(queue)
 }
@@ -204,9 +204,7 @@ func (e *Endpoints) batchUpgradePipelinePriority(ctx context.Context, r *http.Re
 		return errorresp.ErrResp(err)
 	}
 
-	if err = e.reconciler.QueueManager.BatchUpdatePipelinePriorityInQueue(queue, req.PipelineIDsOrderByPriorityFromHighToLow); err != nil {
-		return apierrors.ErrUpgradePipelinePriority.InternalError(err).ToResp(), nil
-	}
+	e.reconciler.QueueManager.SendUpdatePriorityPipelineIDsToEtcd(queue.ID, req.PipelineIDsOrderByPriorityFromHighToLow)
 
 	return httpserver.OkResp(nil)
 }

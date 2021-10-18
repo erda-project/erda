@@ -16,14 +16,66 @@ package reconciler
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/manager"
 )
 
+const logPrefixContinueBackupQueueUsage = "[queue usage backup]"
+
 // loadQueueManger
-func (r *Reconciler) loadQueueManger(ctx context.Context) error {
+func (r *Reconciler) LoadQueueManger(ctx context.Context) error {
 	// init queue manager
-	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient))
+	r.QueueManager = manager.New(ctx, manager.WithDBClient(r.dbClient), manager.WithEtcdClient(r.etcd), manager.WithJsClient(r.js))
 
 	return nil
+}
+
+func (r *Reconciler) continueBackupQueueUsage(ctx context.Context) {
+	done := make(chan struct{})
+	errDone := make(chan error)
+
+	var costTime time.Duration
+	for {
+		go func() {
+			begin := time.Now()
+			backup := r.QueueManager.Export()
+			end := time.Now()
+			costTime = end.Sub(begin)
+			queueSnapshot := manager.SnapshotObj{}
+			if err := json.Unmarshal(backup, &queueSnapshot); err != nil {
+				errDone <- err
+				return
+			}
+			errs := []string{}
+			for qID, qMsg := range queueSnapshot.QueueUsageByID {
+				if err := r.etcd.Put(ctx, manager.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
+					errs = append(errs, fmt.Sprintf("%v", err))
+					continue
+				}
+			}
+			if len(errs) > 0 {
+				usageErr := fmt.Errorf(strings.Join(errs, ","))
+				errDone <- usageErr
+				return
+			}
+			done <- struct{}{}
+		}()
+
+		select {
+		case <-done:
+			logrus.Debugf("%s: sleep 30s for next backup (cost %s this time)", logPrefixContinueBackupQueueUsage, costTime)
+			time.Sleep(time.Second * 30)
+		case err := <-errDone:
+			logrus.Errorf("%s: failed to load, wait 10s for next loading, err: %v", logPrefixContinueBackupQueueUsage, err)
+			time.Sleep(time.Second * 10)
+		case <-ctx.Done():
+			return
+		}
+	}
 }

@@ -160,6 +160,9 @@ func (p *provider) do() error {
 	if err != nil {
 		return fmt.Errorf("failed to init reconciler, err: %v", err)
 	}
+	if err := r.LoadQueueManger(context.Background()); err != nil {
+		return fmt.Errorf("failed to load reconciler queue manager, err: %v", err)
+	}
 	if err := engine.OnceDo(r); err != nil {
 		return err
 	}
