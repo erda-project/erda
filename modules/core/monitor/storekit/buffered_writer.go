@@ -12,30 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package storekit
 
-import "github.com/recallsong/go-utils/errorx"
+import (
+	"fmt"
+
+	"github.com/recallsong/go-utils/errorx"
+)
 
 // BufferedWriter .
 type BufferedWriter struct {
 	w        BatchWriter
-	buf      []*Data
+	buf      []Data
 	capacity int
 }
 
 var _ Writer = (*BufferedWriter)(nil)
+var _ BatchWriter = (*BufferedWriter)(nil)
 
 // NewBufferedWriter .
 func NewBufferedWriter(w BatchWriter, capacity int) *BufferedWriter {
 	return &BufferedWriter{
 		w:        w,
-		buf:      make([]*Data, 0, capacity),
+		buf:      make([]Data, 0, capacity),
 		capacity: capacity,
 	}
 }
 
 // Write .
-func (b *BufferedWriter) Write(data *Data) error {
+func (b *BufferedWriter) Write(data Data) error {
 	if len(b.buf)+1 > b.capacity {
 		err := b.Flush()
 		if err != nil {
@@ -48,7 +53,7 @@ func (b *BufferedWriter) Write(data *Data) error {
 
 // WriteN returns the number of buffers written to the data.
 // if a Flush error occurs, the error will be returned
-func (b *BufferedWriter) WriteN(data ...*Data) (int, error) {
+func (b *BufferedWriter) WriteN(data ...Data) (int, error) {
 	alen := len(b.buf)
 	blen := len(data)
 	if alen+blen < b.capacity {
@@ -93,10 +98,20 @@ func (b *BufferedWriter) WriteN(data ...*Data) (int, error) {
 func (b *BufferedWriter) Flush() error {
 	l := len(b.buf)
 	if l > 0 {
-		n, err := b.w.WriteN(b.buf...)
-		b.buf = b.buf[0 : l-n]
-		if err != nil {
-			return err
+		for {
+			n, err := b.w.WriteN(b.buf...)
+			if err != nil {
+				return err
+			}
+			if n <= 0 {
+				return fmt.Errorf("flush data got number(%d)", n)
+			}
+			if n != len(b.buf) {
+				b.buf = b.buf[0 : l-n]
+				continue
+			}
+			b.buf = b.buf[0:0]
+			break
 		}
 	}
 	return nil
@@ -106,7 +121,7 @@ func (b *BufferedWriter) Flush() error {
 func (b *BufferedWriter) Size() int { return len(b.buf) }
 
 // Data .
-func (b *BufferedWriter) Data() []*Data { return b.buf }
+func (b *BufferedWriter) Data() []Data { return b.buf }
 
 // Close .
 func (b *BufferedWriter) Close() error {

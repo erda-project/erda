@@ -12,22 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package storekit
 
-import "time"
-
-// ErrorHandler .
-type WriteErrorHandler func(error) error
+import (
+	"encoding/json"
+	"io"
+	"os"
+	"time"
+)
 
 // WrapBatchWriter .
 func WrapBatchWriter(
 	bw BatchWriter,
 	bufferSize uint64, // buffer size
 	timeout time.Duration, // timeout for buffer flush
-	errorh WriteErrorHandler, // error handler
+	errorh func(error) error, // error handler
 ) Writer {
 	w := &channelWriter{
-		dataCh:  make(chan *Data, bufferSize),
+		dataCh:  make(chan Data, bufferSize),
 		closeCh: make(chan error, 1),
 	}
 	go w.run(bw, int(bufferSize), timeout, errorh)
@@ -35,16 +37,16 @@ func WrapBatchWriter(
 }
 
 type channelWriter struct {
-	dataCh  chan *Data
+	dataCh  chan Data
 	closeCh chan error
 }
 
-func (w *channelWriter) Write(data *Data) error {
+func (w *channelWriter) Write(data Data) error {
 	w.dataCh <- data
 	return nil
 }
 
-func (w *channelWriter) WriteN(data ...*Data) (int, error) {
+func (w *channelWriter) WriteN(data ...Data) (int, error) {
 	for _, item := range data {
 		w.dataCh <- item
 	}
@@ -56,7 +58,7 @@ func (w *channelWriter) Close() error {
 	return <-w.closeCh
 }
 
-func (w *channelWriter) run(bw BatchWriter, capacity int, timeout time.Duration, errorh WriteErrorHandler) {
+func (w *channelWriter) run(bw BatchWriter, capacity int, timeout time.Duration, errorh func(error) error) {
 	buf := NewBufferedWriter(bw, capacity)
 	tick := time.NewTicker(timeout)
 	var err error
@@ -103,3 +105,33 @@ func (w *channelWriter) run(bw BatchWriter, capacity int, timeout time.Duration,
 		}
 	}
 }
+
+// Stdout .
+type Stdout struct {
+	Out io.Writer
+	Enc *json.Encoder
+}
+
+// DefaultStdout .
+var DefaultStdout = Stdout{
+	Out: os.Stdout,
+	Enc: json.NewEncoder(os.Stdout),
+}
+
+func init() {
+	DefaultStdout.Enc.SetIndent("", "\t")
+}
+
+func (w Stdout) Write(val Data) error {
+	w.Enc.Encode(val)
+	return nil
+}
+
+func (w Stdout) WriteN(vals ...Data) (int, error) {
+	for _, val := range vals {
+		w.Enc.Encode(val)
+	}
+	return len(vals), nil
+}
+
+func (w Stdout) Close() error { return nil }

@@ -12,10 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package loader
 
-// MergedIterator .
-func MergedIterator(cmp interface{}, its ...Iterator) Iterator {
-	// TODO: to implement
+import (
+	"net/http"
+
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
+)
+
+func (p *provider) intRoutes(routes httpserver.Router, prefix string) error {
+	routes.GET(prefix+"/loader/indices", p.getIndicesCache)
 	return nil
+}
+
+func (p *provider) getIndicesCache(r *http.Request) interface{} {
+	v := p.indices.Load()
+	return api.Success(v)
 }
