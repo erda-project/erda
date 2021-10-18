@@ -39,17 +39,20 @@ type Calculator struct {
 }
 
 type ResourceCalculator struct {
-	M map[string]uint64
+	Type string
+	M    map[string]uint64
 }
 
 func New(clusterName string) *Calculator {
 	return &Calculator{
 		ClusterName: clusterName,
 		CPU: &ResourceCalculator{
-			M: make(map[string]uint64),
+			Type: "CPU",
+			M:    make(map[string]uint64),
 		},
 		Mem: &ResourceCalculator{
-			M: make(map[string]uint64),
+			Type: "Memory",
+			M:    make(map[string]uint64),
 		},
 	}
 }
@@ -92,8 +95,9 @@ func (q *ResourceCalculator) TotalForWorkspace(workspace Workspace) uint64 {
 }
 
 func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
-	if quota > q.TotalForWorkspace(workspace) {
-		return errors.New("总资源不够")
+	if totalForWorkspace := q.TotalForWorkspace(workspace); quota > totalForWorkspace {
+		return errors.Errorf("the resource %v is not enough, total: %v, your request：%v",
+			q.Type, totalForWorkspace, quota)
 	}
 
 	// 按优先级减扣
