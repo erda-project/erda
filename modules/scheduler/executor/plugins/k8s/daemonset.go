@@ -38,7 +38,7 @@ func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Se
 		return errors.Errorf("failed to generate daemonset struct, name: %s, (%v)", service.Name, err)
 	}
 
-	projectID, workspace, runtimeID := extractContainerEnvs(daemonset.Spec.Template.Spec.Containers)
+	_, projectID, workspace, runtimeID := extractContainerEnvs(daemonset.Spec.Template.Spec.Containers)
 	cpu := int64(service.Resources.Cpu * 1000)
 	mem := int64(service.Resources.Mem * float64(1<<20))
 	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
@@ -79,7 +79,7 @@ func (k *Kubernetes) deleteDaemonSet(namespace, name string) error {
 }
 
 func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet) error {
-	projectID, workspace, runtimeID := extractContainerEnvs(ds.Spec.Template.Spec.Containers)
+	_, projectID, workspace, runtimeID := extractContainerEnvs(ds.Spec.Template.Spec.Containers)
 	deltaCPU, deltaMem, err := k.getDaemonSetDeltaResource(ctx, ds)
 	if err != nil {
 		return errors.Errorf("faield to get delta resource for daemonSet %s, %v", ds.Name, err)
