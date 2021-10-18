@@ -33,16 +33,16 @@
 `2021-10-15`
 
 ### New Features
-* add code coverage & bug dashboard.[#2342](https://github.com/erda-project/erda/pull/2342)
-* optimize checker for HTTP mode.[#2377](https://github.com/erda-project/erda/pull/2377)
-* auto test platform's scene set now supports parallel execute.[#2412](https://github.com/erda-project/erda/pull/2412)
-* optimize load speed of k8s dashboard's nodes list. [#2355](https://github.com/erda-project/erda/pull/2355)
+* The DevOps platform now supports code coverage dashboard & bugs dashboard.[#2342](https://github.com/erda-project/erda/pull/2342)
+* Optimize HTTP active monitoring in the microservice platform [#2377](https://github.com/erda-project/erda/pull/2377)
+* The scenario set of the automated test platform now supports parallel execution.[#2412](https://github.com/erda-project/erda/pull/2412)
+* Optimize load speed of k8s dashboard's nodes list. [#2355](https://github.com/erda-project/erda/pull/2355)
 
 ### Bug Fixes
-* fix batch cluster upgrade permission problem.[#2308](https://github.com/erda-project/erda/pull/2308)
-* fix cluster-agent module missing privileged param.[#2367](https://github.com/erda-project/erda/pull/2367)
-* fix micro service plagform's notify group not have userinfo.[#2393](https://github.com/erda-project/erda/pull/2393)
-* fix start same k8s dashboard sever redundantly when watch clusters. [#2366](https://github.com/erda-project/erda/pull/2366)
+* Fix the bug that batch cluster upgrade has wrong permission.[#2308](https://github.com/erda-project/erda/pull/2308)
+* Fix the bug that cluster-agent module missing privileged param.[#2367](https://github.com/erda-project/erda/pull/2367)
+* Fix the bug that there is no user information in the notification group of the microservice platform.[#2393](https://github.com/erda-project/erda/pull/2393)
+* Fix the bug that start same k8s dashboard sever redundantly when watch multi clusters. [#2366](https://github.com/erda-project/erda/pull/2366)
 
 # v1.3.0
 
