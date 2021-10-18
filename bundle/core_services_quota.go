@@ -29,7 +29,7 @@ func (b *Bundle) GetWorkspaceQuota(req *apistructs.GetWorkspaceQuotaRequest) (in
 	}
 	hc := b.hc
 
-	path := fmt.Sprintf("/api/projects/%s/workspaces/%s/namespaces", req.ProjectID, req.Workspace)
+	path := fmt.Sprintf("/api/projects/%s/workspaces/%s/quota", req.ProjectID, req.Workspace)
 	var quotaResp apistructs.GetWorkspaceQuotaResponse
 	resp, err := hc.Get(host).Path(path).Header(httputil.InternalHeader, "bundle").Do().JSON(&quotaResp)
 	if err != nil {
