@@ -66,8 +66,8 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 		}
 	}
 
-	leftCPU := int64(cpuQuota*1000) - cpuQty.MilliValue()
-	leftMem := int64(memQuota*float64(1<<20)) - memQty.Value()
+	leftCPU := cpuQuota - cpuQty.MilliValue()
+	leftMem := memQuota - memQty.Value()
 	return leftCPU, leftMem, nil
 }
 

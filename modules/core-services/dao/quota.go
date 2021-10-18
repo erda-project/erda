@@ -22,7 +22,7 @@ import (
 
 // GetWorkspaceQuota get project workspace quota
 // Valid workspace: prod, staging, test, dev
-func (client *DBClient) GetWorkspaceQuota(projectID, workspace string) (float64, float64, error) {
+func (client *DBClient) GetWorkspaceQuota(projectID, workspace string) (int64, int64, error) {
 	var projectQuota apistructs.ProjectQuota
 	if err := client.Find(&projectQuota, map[string]interface{}{
 		"project_id": projectID,

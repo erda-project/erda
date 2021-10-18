@@ -21,6 +21,6 @@ type GetWorkspaceQuotaRequest struct {
 
 type GetWorkspaceQuotaResponse struct {
 	Header
-	CPU    float64 `json:"cpu"`
-	Memory float64 `json:"memory"`
+	CPU    int64 `json:"cpu"`
+	Memory int64 `json:"memory"`
 }

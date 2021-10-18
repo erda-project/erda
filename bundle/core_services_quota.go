@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) GetWorkspaceQuota(req *apistructs.GetWorkspaceQuotaRequest) (float64, float64, error) {
+func (b *Bundle) GetWorkspaceQuota(req *apistructs.GetWorkspaceQuotaRequest) (int64, int64, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return 0, 0, err

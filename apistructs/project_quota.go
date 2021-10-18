@@ -26,14 +26,14 @@ type ProjectQuota struct {
 	StagingClusterName string    `json:"staging_cluster_name" gorm:"staging_cluster_name"`
 	TestClusterName    string    `json:"test_cluster_name" gorm:"test_cluster_name"`
 	DevClusterName     string    `json:"dev_cluster_name" gorm:"dev_cluster_name"`
-	ProdCPUQuota       float64   `json:"prod_cpu_quota" gorm:"prod_cpu_quota"`
-	ProdMemQuota       float64   `json:"prod_mem_quota" gorm:"prod_mem_quota"`
-	StagingCPUQuota    float64   `json:"staging_cpu_quota" gorm:"staging_cpu_quota"`
-	StagingMemQuota    float64   `json:"staging_mem_quota" gorm:"staging_mem_quota"`
-	TestCPUQuota       float64   `json:"test_cpu_quota" gorm:"test_cpu_quota"`
-	TestMemQuota       float64   `json:"test_mem_quota" gorm:"test_mem_quota"`
-	DevCPUQuota        float64   `json:"dev_cpu_quota" gorm:"dev_cpu_quota"`
-	DevMemQuota        float64   `json:"dev_mem_quota" gorm:"dev_mem_quota"`
+	ProdCPUQuota       int64     `json:"prod_cpu_quota" gorm:"prod_cpu_quota"`
+	ProdMemQuota       int64     `json:"prod_mem_quota" gorm:"prod_mem_quota"`
+	StagingCPUQuota    int64     `json:"staging_cpu_quota" gorm:"staging_cpu_quota"`
+	StagingMemQuota    int64     `json:"staging_mem_quota" gorm:"staging_mem_quota"`
+	TestCPUQuota       int64     `json:"test_cpu_quota" gorm:"test_cpu_quota"`
+	TestMemQuota       int64     `json:"test_mem_quota" gorm:"test_mem_quota"`
+	DevCPUQuota        int64     `json:"dev_cpu_quota" gorm:"dev_cpu_quota"`
+	DevMemQuota        int64     `json:"dev_mem_quota" gorm:"dev_mem_quota"`
 	CreatorID          uint64    `json:"creator_id" gorm:"creator_id"`
 	UpdaterID          uint64    `json:"updater_id" gorm:"updater_id"`
 }
