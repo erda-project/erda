@@ -102,8 +102,14 @@ type BucketAgg struct {
 	Key   string `json:"key"`
 }
 
+type Log struct {
+	*logs.Log
+	DocId          string `json:"_id"`
+	TimestampNanos string `json:"timestampNanos"`
+}
+
 type LogItem struct {
-	Source    *logs.Log           `json:"source"`
+	Source    *Log                `json:"source"`
 	Highlight map[string][]string `json:"highlight"`
 }
 
@@ -358,7 +364,7 @@ func (c *ESClient) doSearchLogs(req *LogSearchRequest, searchSource *elastic.Sea
 	return resp.TotalHits(), resp.Hits.Hits, nil
 }
 
-func (c *ESClient) setModule(log *logs.Log) {
+func (c *ESClient) setModule(log *Log) {
 	if log.Tags != nil {
 		if log.Tags["origin"] == "sls" {
 			project := log.Tags["sls_project"]
@@ -378,12 +384,12 @@ func (c *ESClient) setModule(log *logs.Log) {
 	}
 }
 
-func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*logs.Log) error) error {
+func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*Log) error) error {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
 	var count int64
 	var shouldStopIterate bool
 	for _, client := range clients {
-		err := client.downloadLogs(req, func(batchLogs []*logs.Log) error {
+		err := client.downloadLogs(req, func(batchLogs []*Log) error {
 			result := callback(batchLogs)
 			if result != nil {
 				shouldStopIterate = true

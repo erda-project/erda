@@ -44,11 +44,13 @@ type LogV1 struct {
 }
 
 // ToLog .
-func (l *LogV1) ToLog() *logs.Log {
-	log := &logs.Log{
-		Content: l.Message,
-		Offset:  l.Offset,
-		Tags:    l.Tags,
+func (l *LogV1) ToLog() *Log {
+	log := &Log{
+		Log: &logs.Log{
+			Content: l.Message,
+			Offset:  l.Offset,
+			Tags:    l.Tags,
+		},
 	}
 	t, err := time.Parse("2006-01-02T15:04:05.999Z", l.Timestamp)
 	if err == nil {
