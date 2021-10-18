@@ -22,6 +22,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/core-services"
+	_ "github.com/erda-project/erda/modules/core-services/services/notify/channel"
 	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
 
 	// infra

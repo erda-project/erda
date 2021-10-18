@@ -1,0 +1,106 @@
+syntax = "proto3";
+package erda.core.services.notify.channel;
+option go_package = "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+
+service NotifyChannelService {
+  rpc CreateNotifyChannel (CreateNotifyChannelRequest) returns (CreateNotifyChannelResponse)  {
+    option (google.api.http) = {
+      post: "/api/notify-channel",
+    };
+  }
+
+  rpc GetNotifyChannels (GetNotifyChannelsRequest) returns (GetNotifyChannelsResponse)  {
+    option (google.api.http) = {
+      get: "/api/notify-channels",
+    };
+  }
+
+  rpc UpdateNotifyChannel (UpdateNotifyChannelRequest) returns (UpdateNotifyChannelResponse)  {
+    option (google.api.http) = {
+      put: "/api/notify-channel",
+    };
+  }
+
+  rpc GetNotifyChannel (GetNotifyChannelRequest) returns (GetNotifyChannelResponse)  {
+    option (google.api.http) = {
+      get: "/api/notify-channel",
+    };
+  }
+
+  rpc DeleteNotifyChannel (DeleteNotifyChannelRequest) returns (DeleteNotifyChannelResponse)  {
+    option (google.api.http) = {
+      delete: "/api/notify-channel",
+    };
+  }
+}
+
+message DeleteNotifyChannelRequest {
+  string id = 1;
+}
+
+message DeleteNotifyChannelResponse {
+  string id = 1;
+}
+
+message GetNotifyChannelRequest {
+  string id = 1;
+}
+
+message GetNotifyChannelResponse {
+  NotifyChannel data = 1;
+}
+
+message UpdateNotifyChannelRequest {
+  string                             id     = 1;
+  string                             name   = 2;
+  string                             type   = 3;
+  map<string, google.protobuf.Value> config = 4;
+}
+
+message UpdateNotifyChannelResponse {
+  NotifyChannel data = 1;
+}
+
+message GetNotifyChannelsRequest {
+  int64  page     = 1;
+  string pageSize = 2;
+}
+
+message GetNotifyChannelsResponse {
+  int64                  page     = 1;
+  string                 pageSize = 2;
+  int64                  total    = 3;
+  repeated NotifyChannel data     = 4;
+}
+
+message CreateNotifyChannelRequest {
+  string                             name   = 1;
+  string                             type   = 2;
+  map<string, google.protobuf.Value> config = 3;
+}
+
+message CreateNotifyChannelResponse {
+  NotifyChannel data = 1;
+}
+
+message NotifyChannel {
+  string                             id          = 1;
+  string                             name        = 2;
+  string                             type        = 3;
+  map<string, google.protobuf.Value> config      = 4;
+  string                             scopeId     = 5;
+  string                             scopeType   = 6;
+  string                             creatorName = 7;
+  string                             createAt    = 8;
+  string                             updateAt    = 9;
+}
+
+// channel type
+enum Type {
+  ALI_SHORT_MESSAGE = 0;
+}

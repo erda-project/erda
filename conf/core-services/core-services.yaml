@@ -22,3 +22,4 @@ mysql:
   database: "${MYSQL_DATABASE:dice}"
 
 erda.core.services.authentication.credentials.accesskey:
+erda.core.services.notify.channel:
