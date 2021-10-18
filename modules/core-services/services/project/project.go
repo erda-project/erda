@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
+	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -631,7 +632,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
 	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
 	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
-		&dashboardPb.GetClustersResourcesRequest{ClusterNames: projectQuota.ClustersNames()}); err == nil {
+		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
 		var source *apistructs.ResourceConfigInfo
 		for _, clusterItem := range clustersResources.List {
 			if !clusterItem.GetSuccess() {
@@ -649,7 +650,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 					case "dice/worksapce-test=true":
 						source = projectDTO.ResourceConfig.TEST
 					case "dice/workspace-dev=true":
-						source = projectDTO.ResourceConfig.TEST
+						source = projectDTO.ResourceConfig.DEV
 					}
 				}
 				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
@@ -677,7 +678,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
 			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
 		}
-		if source.CPUAvailable > source.CPUQuota {
+		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
 			source.Tips = "该环境在本集群的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
 		}
 	}
