@@ -197,14 +197,13 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 
 		key := req.NodeRequests[i].CacheKey()
 		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
-		metricsData, ok := resp[key]
+		metricsData := metrics.GetCache(key)
 		used := 0.0
-		if ok {
+		if metricsData != nil {
 			used = metricsData.Used
 		}
-
-		usage = ct.GetUsageValue(used, float64(requestQty.Value()), table.Cpu)
-		unused := math.Max(float64(cpuRequest)-resp[key].Used*1000, 0.0)
+		usage = ct.GetUsageValue(used*1000, float64(requestQty.Value())*1000, table.Cpu)
+		unused := math.Max(float64(cpuRequest)-used*1000, 0.0)
 		dr = ct.GetUnusedRate(unused, float64(cpuRequest), table.Cpu)
 		role := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]

@@ -17,6 +17,7 @@ package types
 import (
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/snapshot"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -31,4 +32,5 @@ type Queue interface {
 	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
 	PopOutPipeline(p *spec.Pipeline)
 	BatchUpdatePipelinePriorityInQueue(pipelines []*spec.Pipeline) error
+	snapshot.Snapshot
 }

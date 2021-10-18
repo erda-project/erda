@@ -113,3 +113,32 @@ func (e *Endpoints) projectPipelineCreate(ctx context.Context, r *http.Request, 
 
 	return httpserver.OkResp(resp)
 }
+
+func (e *Endpoints) projectPipelineDetail(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+
+	var req apistructs.CICDPipelineDetailRequest
+	err := e.queryStringDecoder.Decode(&req, r.URL.Query())
+	if err != nil {
+		return apierrors.ErrGetPipeline.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrGetUser.InvalidParameter(err).ToResp(), nil
+	}
+
+	if !identityInfo.IsInternalClient() {
+		return errorresp.ErrResp(apierrors.ErrCheckPermission.InternalError(fmt.Errorf("external users cannot call the internal interface\n")))
+	}
+
+	result, err := e.bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+		PipelineID:               req.PipelineID,
+		SimplePipelineBaseResult: req.SimplePipelineBaseResult,
+	})
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(result)
+}

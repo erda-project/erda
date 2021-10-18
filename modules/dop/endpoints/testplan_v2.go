@@ -249,24 +249,24 @@ func (e *Endpoints) DeleteTestPlanV2Step(ctx context.Context, r *http.Request, v
 	return httpserver.OkResp("succ")
 }
 
-// UpdateTestPlanV2Step Update the test plan step
+// MoveTestPlanV2Step move the test plan step
 func (e *Endpoints) MoveTestPlanV2Step(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrUpdateTestPlanStep.NotLogin().ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.NotLogin().ToResp(), nil
 	}
 
 	testPlanID, err := getTestPlanID(vars)
 	if err != nil {
-		return apierrors.ErrUpdateTestPlanStep.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.InvalidParameter(err).ToResp(), nil
 	}
 
-	var req apistructs.TestPlanV2StepUpdateRequest
+	var req apistructs.TestPlanV2StepMoveRequest
 	if r.ContentLength == 0 {
-		return apierrors.ErrUpdateTestPlanStep.MissingParameter("request body").ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.MissingParameter("request body").ToResp(), nil
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return apierrors.ErrUpdateTestPlanStep.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrMoveTestPlanStep.InvalidParameter(err).ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
 	req.TestPlanID = testPlanID
@@ -325,6 +325,35 @@ func (e *Endpoints) GetTestPlanV2Step(ctx context.Context, r *http.Request, vars
 	}
 
 	return httpserver.OkResp(step)
+}
+
+// ListTestPlanV2Step list TestPlan step
+func (e *Endpoints) ListTestPlanV2Step(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListTestPlanStep.NotLogin().ToResp(), nil
+	}
+
+	testPlanID, err := strconv.ParseUint(vars["testPlanID"], 10, 64)
+	if err != nil {
+		return errorresp.ErrResp(errors.New("testPlanID id parse failed"))
+	}
+
+	var groupID uint64
+	groupIDStr := r.URL.Query().Get("groupID")
+	if groupIDStr != "" {
+		groupID, err = strconv.ParseUint(groupIDStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrGetTestPlan.InvalidParameter(err).ToResp(), nil
+		}
+	}
+
+	steps, err := e.autotestV2.ListTestPlanV2Step(testPlanID, groupID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(steps)
 }
 
 func getTestPlanID(vars map[string]string) (uint64, error) {

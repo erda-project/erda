@@ -53,7 +53,7 @@ type Reconciler struct {
 	dbClient *dbclient.Client
 
 	QueueManager  types.QueueManager
-	TaskThrottler throttler.Throttler
+	TaskThrottler throttler.Throttler // TODO remove the throttler.Throttler, after release/1.3 iteration throttler is not necessary
 
 	// processingTasks store task id which is in processing
 	processingTasks sync.Map

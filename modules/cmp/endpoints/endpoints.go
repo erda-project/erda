@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/impl/addons"
@@ -50,6 +51,7 @@ type Endpoints struct {
 	JS              jsonstore.JsonStore
 	CachedJS        jsonstore.JsonStore
 	SteveAggregator *steve.Aggregator
+	Credential      credentialpb.AccessKeyServiceServer
 }
 
 type Option func(*Endpoints)
@@ -63,7 +65,7 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.dbclient = db
 	e.labels = labels.New(db, e.bdl)
 	e.nodes = nodes.New(db, e.bdl)
-	e.clusters = clusters.New(db, e.bdl)
+	e.clusters = clusters.New(db, e.bdl, e.Credential)
 	e.Mns = mns.New(db, e.bdl, e.nodes, js)
 	e.Ess = ess.New(e.bdl, e.Mns, e.nodes, e.labels)
 	e.CloudAccount = cloud_account.New(db, cachedJS)
@@ -92,6 +94,13 @@ func WithOrgResource(o *org_resource.OrgResource) Option {
 	}
 }
 
+// WithCredential with accessKey credential
+func WithCredential(c credentialpb.AccessKeyServiceServer) Option {
+	return func(e *Endpoints) {
+		e.Credential = c
+	}
+}
+
 // Routes Return routes
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
@@ -110,6 +119,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cluster", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.OfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
 		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
+		{Path: "/api/cluster/credential/access-keys", Method: http.MethodGet, Handler: auth(i18nPrinter(e.GetAccessKey))},
+		{Path: "/api/cluster/credential/access-keys", Method: http.MethodPost, Handler: auth(i18nPrinter(e.CreateAccessKey))},
+		{Path: "/api/cluster/credential/access-keys/actions/reset", Method: http.MethodPost, Handler: auth(i18nPrinter(e.ResetAccessKey))},
 		{Path: "/api/org-cluster-info", Method: http.MethodGet, Handler: auth(i18nPrinter(e.OrgClusterInfo))},
 
 		// officer apis
