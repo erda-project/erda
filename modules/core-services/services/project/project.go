@@ -16,15 +16,18 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -34,6 +37,8 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
+	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -42,6 +47,8 @@ type Project struct {
 	db  *dao.DBClient
 	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
+
+	clusterResourceClient dashboardPb.ClusterResourceServer
 }
 
 // Option 定义 Project 对象的配置选项
@@ -74,6 +81,13 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(p *Project) {
 		p.bdl = bdl
+	}
+}
+
+// WithClusterResourceClient set the gRPC client of CMP cluster resource
+func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+	return func(p *Project) {
+		p.clusterResourceClient = client
 	}
 }
 
@@ -116,15 +130,21 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
+	var clusterConfig []byte
+	if createReq.ResourceConfigs != nil {
+		if err := createReq.ResourceConfigs.Check(); err != nil {
+			return nil, err
+		}
+		createReq.ClusterConfig = map[string]string{
+			"PROD":    createReq.ResourceConfigs.PROD.ClusterName,
+			"STAGING": createReq.ResourceConfigs.STAGING.ClusterName,
+			"TEST":    createReq.ResourceConfigs.TEST.ClusterName,
+			"DEV":     createReq.ResourceConfigs.DEV.ClusterName,
+		}
+		clusterConfig, _ = json.Marshal(createReq.ClusterConfig)
+	}
 
-	if err := checkClusterConfig(createReq.ClusterConfig); err != nil {
-		return nil, err
-	}
-	clusterConfig, err := json.Marshal(createReq.ClusterConfig)
-	if err != nil {
-		logrus.Infof("failed to marshal clusterConfig, (%v)", err)
-		return nil, errors.Errorf("failed to marshal clusterConfig")
-	}
+	// Todo: 项目回滚点是什么东西
 	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -150,8 +170,13 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		return nil, errors.Errorf("failed to create project(name already exists)")
 	}
 
+	tx := p.db.Begin()
+	defer tx.RollbackUnlessCommitted()
+
+	now := time.Now()
 	// 添加项目至DB
 	project = &model.Project{
+		BaseModel:      model.BaseModel{},
 		Name:           createReq.Name,
 		DisplayName:    createReq.DisplayName,
 		Desc:           createReq.Desc,
@@ -159,19 +184,50 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		OrgID:          int64(createReq.OrgID),
 		UserID:         userID,
 		DDHook:         createReq.DdHook,
-		ClusterConfig:  string(clusterConfig),
-		RollbackConfig: string(rollbackConfig),
+		ClusterConfig:  string(clusterConfig),  // todo: 查清楚哪里用到的这两个字段
+		RollbackConfig: string(rollbackConfig), // todo:
 		CpuQuota:       createReq.CpuQuota,
 		MemQuota:       createReq.MemQuota,
 		Functions:      string(functions),
-		ActiveTime:     time.Now(),
+		ActiveTime:     now,
 		EnableNS:       conf.EnableNS(),
+		IsPublic:       false,
 		Type:           string(createReq.Template),
 	}
-	if err = p.db.CreateProject(project); err != nil {
-		logrus.Warnf("failed to insert project to db, (%v)", err)
-		return nil, errors.Errorf("failed to insert project to db")
+	if err := tx.Create(&project).Error; err != nil {
+		logrus.WithError(err).WithField("model", project.TableName()).
+			Errorln("failed to Create")
+		return nil, errors.Errorf("failed to insert project to database")
 	}
+
+	// record quota if it is configured
+	logrus.WithField("createReq.ResourceConfigs", createReq.ResourceConfigs).Infoln()
+	if createReq.ResourceConfigs != nil {
+		quota := &model.ProjectQuota{
+			ProjectID:          uint64(project.ID),
+			ProjectName:        createReq.Name,
+			ProdClusterName:    createReq.ResourceConfigs.PROD.ClusterName,
+			StagingClusterName: createReq.ResourceConfigs.STAGING.ClusterName,
+			TestClusterName:    createReq.ResourceConfigs.TEST.ClusterName,
+			DevClusterName:     createReq.ResourceConfigs.DEV.ClusterName,
+			ProdCPUQuota:       calcu.CoreToMillcore(createReq.ResourceConfigs.PROD.CPUQuota),
+			ProdMemQuota:       calcu.GibibyteToByte(createReq.ResourceConfigs.PROD.MemQuota),
+			StagingCPUQuota:    calcu.CoreToMillcore(createReq.ResourceConfigs.STAGING.CPUQuota),
+			StagingMemQuota:    calcu.GibibyteToByte(createReq.ResourceConfigs.STAGING.MemQuota),
+			TestCPUQuota:       calcu.CoreToMillcore(createReq.ResourceConfigs.TEST.CPUQuota),
+			TestMemQuota:       calcu.GibibyteToByte(createReq.ResourceConfigs.TEST.MemQuota),
+			DevCPUQuota:        calcu.CoreToMillcore(createReq.ResourceConfigs.DEV.CPUQuota),
+			DevMemQuota:        calcu.GibibyteToByte(createReq.ResourceConfigs.DEV.MemQuota),
+			CreatorID:          userID,
+			UpdaterID:          userID,
+		}
+		if err := tx.Debug().Create(&quota).Error; err != nil {
+			logrus.WithError(err).WithField("model", quota.TableName()).
+				Errorln("failed to Create")
+			return nil, errors.Errorf("failed to insert project quota to database")
+		}
+	}
+
 	// 新增项目管理员至admin_members表
 	users, err := p.uc.FindUsers([]string{userID})
 	if err != nil {
@@ -202,21 +258,27 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			ResourceKey:   apistructs.RoleResourceKey,
 			ResourceValue: types.RoleProjectOwner,
 		}
-		if err = p.db.CreateMember(&member); err != nil {
-			logrus.Warnf("failed to add member to db when create project, (%v)", err)
+		if err := tx.Create(&member).Error; err != nil {
+			logrus.WithError(err).WithField("model", member.TableName()).
+				Errorln("failed to add member to database while creating project")
+			return nil, errors.Errorf("failed to add member to database while creating project")
 		}
-		if err = p.db.CreateMemberExtra(&memberExtra); err != nil {
-			logrus.Warnf("failed to add member roles to db when create project, (%v)", err)
+		if err := tx.Create(&memberExtra).Error; err != nil {
+			logrus.WithError(err).WithField("model", memberExtra.TableName()).
+				Errorln("failed to add member roles to database while creating project")
+			return nil, errors.Errorf("failed to add member roles to database while creating project")
 		}
 	}
+
+	tx.Commit()
 
 	return project, nil
 }
 
 // UpdateWithEvent 更新项目 & 发送事件
-func (p *Project) UpdateWithEvent(projectID int64, updateReq *apistructs.ProjectUpdateBody) error {
+func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
 	// 更新项目
-	project, err := p.Update(projectID, updateReq)
+	project, err := p.Update(projectID, userID, updateReq)
 	if err != nil {
 		return err
 	}
@@ -242,11 +304,13 @@ func (p *Project) UpdateWithEvent(projectID int64, updateReq *apistructs.Project
 }
 
 // Update 更新项目
-func (p *Project) Update(projectID int64, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
-	if err := checkClusterConfig(updateReq.ClusterConfig); err != nil {
-		return nil, err
+func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+	if updateReq.ResourceConfigs != nil {
+		if err := updateReq.ResourceConfigs.Check(); err != nil {
+			return nil, err
+		}
 	}
-
+	// todo: 回滚点是干什么的
 	if err := checkRollbackConfig(&updateReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -261,16 +325,56 @@ func (p *Project) Update(projectID int64, updateReq *apistructs.ProjectUpdateBod
 		return nil, err
 	}
 
-	if err = p.db.UpdateProject(&project); err != nil {
+	tx := p.db.Begin()
+	defer tx.RollbackUnlessCommitted()
+
+	if err = tx.Save(&project).Error; err != nil {
 		logrus.Warnf("failed to update project, (%v)", err)
 		return nil, errors.Errorf("failed to update project")
 	}
+
+	// create or update quota
+	if updateReq.ResourceConfigs != nil {
+		var (
+			oldQuota = new(model.ProjectQuota)
+			quota    = model.ProjectQuota{
+				ProjectID:          updateReq.ID,
+				ProjectName:        updateReq.Name,
+				ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
+				StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
+				TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
+				DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
+				ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+				ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
+				StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+				StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
+				TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
+				TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
+				DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
+				DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
+				CreatorID:          userID,
+				UpdaterID:          userID,
+			}
+		)
+		if err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error; err == nil {
+			quota.ID = oldQuota.ID
+			quota.CreatorID = oldQuota.CreatorID
+			err = tx.Debug().Save(&quota).Error
+		} else {
+			err = tx.Debug().Create(&quota).Error
+		}
+		if err != nil {
+			logrus.WithError(err).Errorln("failed to update project quota")
+			return nil, errors.Errorf("failed to update project quota: %v", err)
+		}
+	}
+	tx.Commit()
 
 	return &project, nil
 }
 
 func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
-	clusterConfig, err := json.Marshal(updateReq.ClusterConfig)
+	clusterConfig, err := json.Marshal(updateReq.ResourceConfigs)
 	if err != nil {
 		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
 		return errors.Errorf("failed to marshal clusterConfig")
@@ -286,7 +390,7 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 		project.DisplayName = updateReq.DisplayName
 	}
 
-	if len(updateReq.ClusterConfig) != 0 {
+	if updateReq.ResourceConfigs != nil {
 		project.ClusterConfig = string(clusterConfig)
 	}
 
@@ -303,6 +407,28 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 	project.IsPublic = updateReq.IsPublic
 
 	return nil
+}
+
+func patchProjectQuota(quota *model.ProjectQuota, userID string, updateReq *apistructs.ProjectUpdateBody) {
+	*quota = model.ProjectQuota{
+		ID:                 quota.ID,
+		ProjectID:          updateReq.ID,
+		ProjectName:        updateReq.Name,
+		ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
+		StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
+		TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
+		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
+		ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
+		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
+		TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
+		TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
+		DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
+		DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
+		CreatorID:          quota.CreatorID,
+		UpdaterID:          userID,
+	}
 }
 
 // DeleteWithEvent 删除项目 & 发送事件
@@ -358,6 +484,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	if err = p.db.DeleteProject(projectID); err != nil {
 		return nil, errors.Errorf("failed to delete project, (%v)", err)
 	}
+	_ = p.db.DeleteProjectQutoa(projectID)
 	logrus.Infof("deleted project %d", projectID)
 
 	// 删除权限表记录
@@ -371,7 +498,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 }
 
 // Get 获取项目
-func (p *Project) Get(projectID int64) (*apistructs.ProjectDTO, error) {
+func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -385,6 +512,177 @@ func (p *Project) Get(projectID int64) (*apistructs.ProjectDTO, error) {
 	for _, v := range owners {
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
+
+	logrus.Infoln("query ProjectQuota")
+	var projectQuota model.ProjectQuota
+	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
+		logrus.WithError(err).WithField("project_id", projectID).
+			Warnln("failed to select the quota record of the project")
+		return &projectDTO, nil
+	}
+	projectDTO.ClusterConfig = make(map[string]string)
+	projectDTO.ResourceConfig = apistructs.NewResourceConfig()
+	projectDTO.ClusterConfig["PROD"] = projectQuota.ProdClusterName
+	projectDTO.ClusterConfig["STAGING"] = projectQuota.StagingClusterName
+	projectDTO.ClusterConfig["TEST"] = projectQuota.TestClusterName
+	projectDTO.ClusterConfig["DEV"] = projectQuota.DevClusterName
+	projectDTO.ResourceConfig.PROD.ClusterName = projectQuota.ProdClusterName
+	projectDTO.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
+	projectDTO.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
+	projectDTO.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
+	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota)
+	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota)
+	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota)
+	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota)
+	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota)
+	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota)
+	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
+	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)
+	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota + projectQuota.StagingCPUQuota + projectQuota.TestCPUQuota + projectQuota.DevCPUQuota)
+	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota + projectQuota.StagingMemQuota + projectQuota.TestMemQuota + projectQuota.DevMemQuota)
+
+	logrus.Infoln("query PodInfo")
+	var podInfos []apistructs.PodInfo
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
+		logrus.WithError(err).WithField("project_id", projectID).
+			Warnln("failed to Find the namespaces info in the project")
+		return &projectDTO, nil
+	}
+
+	var (
+		namespaces        = make(map[string]map[string]bool) // key: clusterName, value.key: k8s_namespace
+		addonNamespaces   = make(map[string]bool)            // key: k8s_namespace
+		serviceNamespaces = make(map[string]bool)            // key: k8s_namespace
+	)
+	for _, podInfo := range podInfos {
+		if _, ok := namespaces[podInfo.Cluster]; ok {
+			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = true
+		} else {
+			namespaces[podInfo.Cluster] = map[string]bool{podInfo.K8sNamespace: true}
+		}
+
+		switch podInfo.ServiceType {
+		case "addon":
+			addonNamespaces[podInfo.K8sNamespace] = true
+		case "stateless-service":
+			serviceNamespaces[podInfo.K8sNamespace] = true
+		}
+	}
+	var resourceRequest dashboardPb.GetNamespacesResourcesRequest
+	for clusterName, v := range namespaces {
+		if len(v) == 0 {
+			continue
+		}
+		for namespace := range v {
+			resourceRequest.Namespaces = append(resourceRequest.Namespaces, &dashboardPb.ClusterNamespacePair{
+				ClusterName: clusterName,
+				Namespace:   namespace,
+			})
+		}
+	}
+
+	logrus.Infof("GetNamespacesResources: %+v", resourceRequest)
+	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
+		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
+	}
+	data, _ := json.Marshal(resources)
+	logrus.Infof("GetNamespacesResources response: %s", string(data))
+
+	for _, clusterItem := range resources.List {
+		if !clusterItem.GetSuccess() {
+			logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+
+		var source *apistructs.ResourceConfigInfo
+		switch clusterItem.GetClusterName() {
+		case projectDTO.ResourceConfig.PROD.ClusterName:
+			source = projectDTO.ResourceConfig.PROD
+		case projectDTO.ResourceConfig.STAGING.ClusterName:
+			source = projectDTO.ResourceConfig.STAGING
+		case projectDTO.ResourceConfig.TEST.ClusterName:
+			source = projectDTO.ResourceConfig.TEST
+		case projectDTO.ResourceConfig.DEV.ClusterName:
+			source = projectDTO.ResourceConfig.DEV
+		}
+		if source == nil {
+			continue
+		}
+
+		for _, namespaceItem := range clusterItem.List {
+			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
+			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
+			source.MemRequest += calcu.ByteToGibibyte(namespaceItem.GetMemRequest())
+			if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
+				source.CPURequestByAddon += source.CPURequest
+				source.MemRequestByAddon += source.MemRequest
+			}
+			if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
+				source.CPURequestByService += source.CPURequest
+				source.MemRequestByService += source.MemRequest
+			}
+		}
+	}
+
+	logrus.Infof("GetClustersResourcesRequest: %+v", projectQuota.ClustersNames())
+	// 查出各环境的实际可用资源
+	// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
+	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
+	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
+		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
+		var source *apistructs.ResourceConfigInfo
+		for _, clusterItem := range clustersResources.List {
+			if !clusterItem.GetSuccess() {
+				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
+					Warnln("the cluster is not valid now")
+				continue
+			}
+			for _, host := range clusterItem.Hosts {
+				for _, label := range host.Labels {
+					switch strings.ToLower(label) {
+					case "dice/workspace-prod=true":
+						source = projectDTO.ResourceConfig.PROD
+					case "dice/workspace-staging=true":
+						source = projectDTO.ResourceConfig.STAGING
+					case "dice/worksapce-test=true":
+						source = projectDTO.ResourceConfig.TEST
+					case "dice/workspace-dev=true":
+						source = projectDTO.ResourceConfig.DEV
+					}
+				}
+				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
+					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+				}
+			}
+		}
+	}
+
+	// 根据已有统计值计算其他统计值
+	for _, source := range []*apistructs.ResourceConfigInfo{
+		projectDTO.ResourceConfig.PROD,
+		projectDTO.ResourceConfig.STAGING,
+		projectDTO.ResourceConfig.TEST,
+		projectDTO.ResourceConfig.DEV,
+	} {
+		if source.CPUQuota != 0 {
+			source.CPURequestRate = source.CPURequest / source.CPUQuota
+			source.CPURequestByAddonRate = source.CPURequestByAddon / source.CPUQuota
+			source.CPURequestByServiceRate = source.CPURequestByService / source.CPUQuota
+		}
+		if source.MemQuota != 0 {
+			source.MemRequestRate = source.MemRequest / source.MemQuota
+			source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
+			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
+		}
+		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
+			source.Tips = "该环境在本集群的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
+		}
+	}
+
 	return &projectDTO, nil
 }
 
@@ -836,6 +1134,7 @@ func (p *Project) UpdateProjectActiveTime(req *apistructs.ProjectActiveTimeUpdat
 }
 
 // 检查cluster config合法性
+// Deprecated
 func checkClusterConfig(clusterConfig map[string]string) error {
 	// DEV/TEST/STAGING/PROD四个环境集群配置
 	l := len(clusterConfig)
@@ -897,11 +1196,8 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 	return checkRollbackConfig(rollbackConfig)
 }
 
+// todo: 这个函数影响的范围
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
-	var clusterConfig map[string]string
-	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
-		clusterConfig = make(map[string]string)
-	}
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
 		rollbackConfig = make(map[string]int)
@@ -922,7 +1218,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Stats: apistructs.ProjectStats{
 			CountApplications: int(total),
 		},
-		ClusterConfig:  clusterConfig,
+		ClusterConfig:  nil,
 		RollbackConfig: rollbackConfig,
 		CpuQuota:       project.CpuQuota,
 		MemQuota:       project.MemQuota,

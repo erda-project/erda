@@ -15,6 +15,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 )
 
@@ -42,4 +43,90 @@ type Project struct {
 // TableName 设置模型对应数据库表名称
 func (Project) TableName() string {
 	return "ps_group_projects"
+}
+
+// ProjectQuota is the table "ps_group_projects_quota"
+// CPU quota unit is Core * 10^-3
+// Mem quota uint is Byte
+type ProjectQuota struct {
+	ID        uint64    `gorm:"id" json:"id"`
+	CreatedAt time.Time `gorm:"created_at" json:"created_at"`
+	UpdatedAt time.Time `gorm:"updated_at" json:"updated_at"`
+
+	ProjectID          uint64 `gorm:"project_id" json:"project_id"`
+	ProjectName        string `gorm:"project_name" json:"project_name"`
+	ProdClusterName    string `gorm:"prod_cluster_name" json:"prod_cluster_name"`
+	StagingClusterName string `gorm:"staging_cluster_name" json:"staging_cluster_name"`
+	TestClusterName    string `gorm:"test_cluster_name" json:"test_cluster_name"`
+	DevClusterName     string `gorm:"dev_cluster_name" json:"dev_cluster_name"`
+
+	ProdCPUQuota    uint64 `gorm:"prod_cpu_quota" json:"prod_cpu_quota"`
+	ProdMemQuota    uint64 `gorm:"prod_mem_quota" json:"prod_mem_quota"`
+	StagingCPUQuota uint64 `gorm:"staging_cpu_quota" json:"staging_cpu_quota"`
+	StagingMemQuota uint64 `gorm:"staging_mem_quota" json:"staging_mem_quota"`
+	TestCPUQuota    uint64 `gorm:"test_cpu_quota" json:"test_cpu_quota"`
+	TestMemQuota    uint64 `gorm:"test_mem_quota" json:"test_mem_quota"`
+	DevCPUQuota     uint64 `gorm:"dev_cpu_quota" json:"dev_cpu_quota"`
+	DevMemQuota     uint64 `gorm:"dev_mem_quota" json:"dev_mem_quota"`
+
+	CreatorID string `gorm:"creator_id" json:"creator_id"`
+	UpdaterID string `gorm:"updater_id" json:"updater_id"`
+}
+
+// TableName returns the model's name "ps_group_projects_quota"
+func (ProjectQuota) TableName() string {
+	return "ps_group_projects_quota"
+}
+
+func (p ProjectQuota) GetClusterName(workspace string) string {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return p.ProdClusterName
+	case "staging":
+		return p.StagingClusterName
+	case "test":
+		return p.TestClusterName
+	case "dev":
+		return p.DevClusterName
+	default:
+		return ""
+	}
+}
+
+// GetCPUQuota returns the CPU quota on the workspace.
+// The unit is Core * 10^-3
+func (p ProjectQuota) GetCPUQuota(workspace string) uint64 {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return p.ProdCPUQuota
+	case "staging":
+		return p.StagingCPUQuota
+	case "test":
+		return p.TestCPUQuota
+	case "dev":
+		return p.DevCPUQuota
+	default:
+		return 0
+	}
+}
+
+// GetMemQuota returns the Mem quota on the workspace.
+// The unit is Byte
+func (p ProjectQuota) GetMemQuota(workspace string) uint64 {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return p.ProdMemQuota
+	case "staging":
+		return p.StagingMemQuota
+	case "test":
+		return p.TestMemQuota
+	case "dev":
+		return p.DevMemQuota
+	default:
+		return 0
+	}
+}
+
+func (p ProjectQuota) ClustersNames() []string {
+	return []string{p.ProdClusterName, p.StagingClusterName, p.TestClusterName, p.DevClusterName}
 }
