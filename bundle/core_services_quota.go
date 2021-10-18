@@ -38,5 +38,5 @@ func (b *Bundle) GetWorkspaceQuota(req *apistructs.GetWorkspaceQuotaRequest) (in
 	if !resp.IsOK() || !quotaResp.Success {
 		return 0, 0, toAPIError(resp.StatusCode(), quotaResp.Error)
 	}
-	return quotaResp.CPU, quotaResp.Memory, nil
+	return quotaResp.Data.CPU, quotaResp.Data.Memory, nil
 }

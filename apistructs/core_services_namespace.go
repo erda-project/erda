@@ -21,5 +21,5 @@ type GetWorkspaceNamespaceRequest struct {
 
 type GetWorkspaceNamespaceResponse struct {
 	Header
-	Namespaces []string `json:"namespaces"`
+	Data []string `json:"data"`
 }
