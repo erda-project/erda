@@ -15,6 +15,7 @@
 package resourcecalculator_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -29,12 +30,9 @@ type result struct {
 }
 
 func TestResourceCalculator_AddValue(t *testing.T) {
-	t.Log("Case-1")
-	testResourceCalculator_AddValue_Case1(t)
-	t.Log("Case-2")
-	testResourceCalculator_AddValue_Case2(t)
-	t.Log("Case-3")
-	testResourceCalculator_AddValue_Case3(t)
+	t.Run("Case-1", testResourceCalculator_AddValue_Case1)
+	t.Run("Case-2", testResourceCalculator_AddValue_Case2)
+	t.Run("Case-3", testResourceCalculator_AddValue_Case3)
 }
 
 func testResourceCalculator_AddValue_Case1(t *testing.T) {
@@ -55,20 +53,22 @@ func testResourceCalculator_AddValue_Case1(t *testing.T) {
 	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
 		t.Fatal(err)
 	}
+	data, _ := json.MarshalIndent(c, "", "  ")
+	t.Logf("new c: %s", string(data))
 	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
 		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
 
 	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Fatal("total error")
+		t.Error("total error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Fatal("staging error")
+		t.Errorf("staging error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Fatal("test error")
+		t.Error("test error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Fatal("dev error")
+		t.Error("dev error")
 	}
 }
 
@@ -90,20 +90,22 @@ func testResourceCalculator_AddValue_Case2(t *testing.T) {
 	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
 		t.Fatal(err)
 	}
+	data, _ := json.MarshalIndent(c, "", "  ")
+	t.Logf("new c: %s", string(data))
 	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
 		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
 
 	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Fatal("total error")
+		t.Error("total error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Fatal("staging error")
+		t.Error("staging error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Fatal("test error")
+		t.Error("test error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Fatal("dev error")
+		t.Error("dev error")
 	}
 }
 
@@ -125,20 +127,22 @@ func testResourceCalculator_AddValue_Case3(t *testing.T) {
 	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
 		t.Fatal(err)
 	}
+	data, _ := json.MarshalIndent(c, "", "  ")
+	t.Logf("new c: %s", string(data))
 	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
 		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
 
 	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Fatal("total error")
+		t.Error("total error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Fatal("staging error")
+		t.Error("staging error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Fatal("test error")
+		t.Error("test error")
 	}
 	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Fatal("dev error")
+		t.Error("dev error")
 	}
 }
 
@@ -150,7 +154,8 @@ func initC(t *testing.T) *calcu.Calculator {
 	c.Mem.AddValue(1, calcu.Dev, calcu.Test, calcu.Staging)
 	c.Mem.AddValue(2, calcu.Test)
 	c.Mem.AddValue(3, calcu.Staging)
-	t.Logf("initC total quotable: %v", c.Mem.TotalQuotable())
+	data, _ := json.MarshalIndent(c.Mem, "", "  ")
+	t.Logf("initC total quotable: %v, c: %s", c.Mem.TotalQuotable(), string(data))
 	return c
 }
 
@@ -201,4 +206,8 @@ func TestByteToGibibyte(t *testing.T) {
 	if calcu.ByteToGibibyte(v) != r {
 		t.Fatal("calculate error")
 	}
+}
+
+func TestWorkspacesString(t *testing.T) {
+	t.Log(calcu.WorkspacesString([]calcu.Workspace{calcu.Prod, calcu.Dev, calcu.Staging}))
 }
