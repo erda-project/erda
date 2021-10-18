@@ -33,16 +33,17 @@ func TestResourceCalculator_AddValue(t *testing.T) {
 	t.Run("Case-1", testResourceCalculator_AddValue_Case1)
 	t.Run("Case-2", testResourceCalculator_AddValue_Case2)
 	t.Run("Case-3", testResourceCalculator_AddValue_Case3)
+	t.Run("Case-4", testResourceCalculator_AddValue_Case4)
 }
 
 func testResourceCalculator_AddValue_Case1(t *testing.T) {
 	c := initC(t)
 	r := result{
-		TotalQuotable:   6,
-		ProdQuotable:    0,
+		TotalQuotable:   7,
+		ProdQuotable:    1,
 		StagingQuotable: 3,
 		TestQuotable:    3,
-		DevQuota:        3,
+		DevQuota:        4,
 	}
 	if err := c.Mem.Quota(calcu.Dev, 1); err != nil {
 		t.Fatal(err)
@@ -75,11 +76,11 @@ func testResourceCalculator_AddValue_Case1(t *testing.T) {
 func testResourceCalculator_AddValue_Case2(t *testing.T) {
 	c := initC(t)
 	r := result{
-		TotalQuotable:   4,
-		ProdQuotable:    0,
+		TotalQuotable:   5,
+		ProdQuotable:    1,
 		StagingQuotable: 3,
 		TestQuotable:    1,
-		DevQuota:        2,
+		DevQuota:        3,
 	}
 	if err := c.Mem.Quota(calcu.Dev, 1); err != nil {
 		t.Fatal(err)
@@ -112,11 +113,11 @@ func testResourceCalculator_AddValue_Case2(t *testing.T) {
 func testResourceCalculator_AddValue_Case3(t *testing.T) {
 	c := initC(t)
 	r := result{
-		TotalQuotable:   3,
-		ProdQuotable:    0,
+		TotalQuotable:   4,
+		ProdQuotable:    1,
 		StagingQuotable: 2,
 		TestQuotable:    0,
-		DevQuota:        1,
+		DevQuota:        2,
 	}
 	if err := c.Mem.Quota(calcu.Dev, 1); err != nil {
 		t.Fatal(err)
@@ -146,11 +147,49 @@ func testResourceCalculator_AddValue_Case3(t *testing.T) {
 	}
 }
 
+func testResourceCalculator_AddValue_Case4(t *testing.T) {
+	c := initC(t)
+	r := result{
+		TotalQuotable:   3,
+		ProdQuotable:    1,
+		StagingQuotable: 2,
+		TestQuotable:    0,
+		DevQuota:        1,
+	}
+	if err := c.Mem.Quota(calcu.Dev, 3); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Mem.Quota(calcu.Test, 3); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := json.MarshalIndent(c, "", "  ")
+	t.Logf("new c: %s", string(data))
+	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
+		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
+
+	if c.Mem.TotalQuotable() != r.TotalQuotable {
+		t.Error("total error")
+	}
+	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
+		t.Error("staging error")
+	}
+	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
+		t.Error("test error")
+	}
+	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
+		t.Error("dev error")
+	}
+}
+
 func initC(t *testing.T) *calcu.Calculator {
 	clusterName := "erda-hongkong"
 	c := calcu.New(clusterName)
 	c.Mem.AddValue(2, calcu.Dev)
 	c.Mem.AddValue(1, calcu.Dev, calcu.Test)
+	c.Mem.AddValue(1, calcu.Dev, calcu.Prod)
 	c.Mem.AddValue(1, calcu.Dev, calcu.Test, calcu.Staging)
 	c.Mem.AddValue(2, calcu.Test)
 	c.Mem.AddValue(3, calcu.Staging)
