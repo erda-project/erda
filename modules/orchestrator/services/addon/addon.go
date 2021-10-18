@@ -2661,10 +2661,6 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 		needDeployAddons = append(needDeployAddons, *createItem)
 	}
 
-	if err := a.PrepareCheckProjectLastResource(req.ProjectID, &needDeployAddons); err != nil {
-		return err
-	}
-
 	for index, v := range deploys {
 		createItem := needDeployAddons[index]
 		instanceRes, err := a.AttachAndCreate(&createItem)

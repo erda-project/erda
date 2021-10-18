@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
-	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -152,7 +151,7 @@ func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 	} else {
 		return nil, common.ClusterNotFoundErr
 	}
-	nodesAllocatedRes, err := cputil2.GetNodesAllocatedRes(steveServer, clusterName, pt.SDK.Identity.UserID, pt.SDK.Identity.OrgID, nodes)
+	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(pt.Ctx, steveServer, false, clusterName, pt.SDK.Identity.UserID, pt.SDK.Identity.OrgID, nodes)
 	if err != nil {
 		return nil, err
 	}

@@ -74,11 +74,11 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 
-	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
-	if err != nil {
-		return types.APIObject{}, err
-	}
-	if req.Type == apistructs.K8SNode {
+	var (
+		user apiuser.Info
+		err  error
+	)
+	if req.Type == apistructs.K8SNode || req.NoAuthentication {
 		user = &apiuser.DefaultInfo{
 			Name: "admin",
 			UID:  "admin",
@@ -86,6 +86,11 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 				"system:masters",
 				"system:authenticated",
 			},
+		}
+	} else {
+		user, err = p.Auth(req.UserID, req.OrgID, req.ClusterName)
+		if err != nil {
+			return types.APIObject{}, err
 		}
 	}
 
@@ -134,11 +139,11 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
 
-	user, err := p.Auth(req.UserID, req.OrgID, req.ClusterName)
-	if err != nil {
-		return nil, err
-	}
-	if req.Type == apistructs.K8SNode {
+	var (
+		user apiuser.Info
+		err  error
+	)
+	if req.Type == apistructs.K8SNode || req.NoAuthentication {
 		user = &apiuser.DefaultInfo{
 			Name: "admin",
 			UID:  "admin",
@@ -146,6 +151,11 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 				"system:masters",
 				"system:authenticated",
 			},
+		}
+	} else {
+		user, err = p.Auth(req.UserID, req.OrgID, req.ClusterName)
+		if err != nil {
+			return nil, err
 		}
 	}
 

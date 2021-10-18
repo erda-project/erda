@@ -53,7 +53,7 @@ func ValidateRuntime(specObj interface{}, action string) (*apistructs.ServiceGro
 	return &sg, nil
 }
 
-func (k *Kubernetes) createRuntime(sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) createRuntime(ctx context.Context, sg *apistructs.ServiceGroup) error {
 	var ns = MakeNamespace(sg)
 	if sg.ProjectNamespace != "" && !IsGroupStateful(sg) {
 		ns = sg.ProjectNamespace
@@ -70,10 +70,10 @@ func (k *Kubernetes) createRuntime(sg *apistructs.ServiceGroup) error {
 
 	// statefulset application
 	if IsGroupStateful(sg) {
-		return k.CreateStatefulGroup(sg, layers)
+		return k.CreateStatefulGroup(ctx, sg, layers)
 	}
 	// stateless application
-	return k.createStatelessGroup(sg, layers)
+	return k.createStatelessGroup(ctx, sg, layers)
 }
 
 func (k *Kubernetes) destroyRuntime(ns string) error {
@@ -133,7 +133,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 	return nil
 }
 
-func (k *Kubernetes) updateRuntime(sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) updateRuntime(ctx context.Context, sg *apistructs.ServiceGroup) error {
 	var ns = MakeNamespace(sg)
 	if sg.ProjectNamespace != "" && !IsGroupStateful(sg) {
 		ns = sg.ProjectNamespace
@@ -147,10 +147,10 @@ func (k *Kubernetes) updateRuntime(sg *apistructs.ServiceGroup) error {
 	if IsGroupStateful(sg) {
 		return errors.Errorf("Not supported for updating stateful applications")
 	}
-	return k.updateOneByOne(sg)
+	return k.updateOneByOne(ctx, sg)
 }
 
-func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers [][]*apistructs.Service) error {
+func (k *Kubernetes) createStatelessGroup(ctx context.Context, sg *apistructs.ServiceGroup, layers [][]*apistructs.Service) error {
 	var ns = MakeNamespace(sg)
 	if sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
@@ -164,7 +164,7 @@ func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers []
 			// logrus.Debugf("in Create, going to create service(%s/%s)", service.Namespace, service.Name)
 			// As long as one of the services fails to create, then the successfully created services are cleared
 			// In this case, create a new state and return to the upper level
-			if err = k.createOne(service, sg); err == nil {
+			if err = k.createOne(ctx, service, sg); err == nil {
 				continue
 			}
 
@@ -199,7 +199,7 @@ func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers []
 }
 
 // CreateStatefulGroup create statefull group
-func (k *Kubernetes) CreateStatefulGroup(sg *apistructs.ServiceGroup, layers [][]*apistructs.Service) error {
+func (k *Kubernetes) CreateStatefulGroup(ctx context.Context, sg *apistructs.ServiceGroup, layers [][]*apistructs.Service) error {
 	if sg == nil || len(layers) == 0 {
 		return k8serror.ErrInvalidParams
 	}
@@ -234,7 +234,7 @@ func (k *Kubernetes) CreateStatefulGroup(sg *apistructs.ServiceGroup, layers [][
 			envs:        allEnv,
 			annotations: annotations,
 		}
-		return k.createStatefulSet(info)
+		return k.createStatefulSet(ctx, info)
 	}
 
 	logrus.Infof("statefulset groups: %+v", groups)
@@ -284,7 +284,7 @@ func (k *Kubernetes) CreateStatefulGroup(sg *apistructs.ServiceGroup, layers [][
 			envs:        groupEnv,
 			annotations: globalAnno,
 		}
-		if err := k.createStatefulSet(info); err != nil {
+		if err := k.createStatefulSet(ctx, info); err != nil {
 			logrus.Errorf("failed to create one stateful group, name: %v, (%v)", groups[i].ID, err)
 		}
 	}

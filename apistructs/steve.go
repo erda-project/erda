@@ -82,12 +82,15 @@ const (
 
 // SteveRequest used to query steve server by bundle.
 type SteveRequest struct {
-	UserID      string     // used to authentication, required
-	OrgID       string     // used to authentication, required
-	Type        K8SResType // type of resource, required
-	ClusterName string     // cluster name, required
-	Name        string     // name of resource，required when Get, Delete, Update
-	Namespace   string     // namespace of resource
+	// Only support in GetSteveResource and ListSteveResource !
+	// If true, request steve as admin, no need UserID and OrgID.
+	NoAuthentication bool
+	UserID           string     // used to authentication, required
+	OrgID            string     // used to authentication, required
+	Type             K8SResType // type of resource, required
+	ClusterName      string     // cluster name, required
+	Name             string     // name of resource，required when Get, Delete, Update
+	Namespace        string     // namespace of resource
 	// label selector, optional when list
 	// format: "key=value"，or "key in (value1, value2)"，or "key notin (value1, value2)"
 	LabelSelector []string

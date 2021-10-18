@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -43,8 +44,13 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	if r.Body == nil {
 		return apierrors.ErrCreateProject.MissingParameter("body").ToResp(), nil
 	}
+	bodyData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to read request body")
+		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil
+	}
 	var projectCreateReq apistructs.ProjectCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&projectCreateReq); err != nil {
+	if err := json.Unmarshal(bodyData, &projectCreateReq); err != nil {
 		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil
 	}
 	if !strutil.IsValidPrjOrAppName(projectCreateReq.Name) {
@@ -52,6 +58,7 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 			projectCreateReq.Name)).ToResp(), nil
 	}
 	logrus.Infof("request body: %+v", projectCreateReq)
+	logrus.Infof("request body data: %s", string(bodyData))
 
 	// 操作鉴权
 	req := apistructs.PermissionCheckRequest{
@@ -102,7 +109,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 	logrus.Infof("request body: %+v", projectUpdateReq)
 
-	oldProject, err := e.project.Get(projectID)
+	oldProject, err := e.project.Get(ctx, projectID)
 	if err != nil {
 		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
 	}
@@ -148,7 +155,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 更新项目信息至DB
-	if err = e.project.UpdateWithEvent(projectID, &projectUpdateReq); err != nil {
+	if err = e.project.UpdateWithEvent(projectID, userID.String(), &projectUpdateReq); err != nil {
 		return apierrors.ErrUpdateProject.InternalError(err).ToResp(), nil
 	}
 
@@ -197,7 +204,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	project, err := e.project.Get(projectID)
+	project, err := e.project.Get(ctx, projectID)
 	if err != nil {
 		if err == dao.ErrNotFoundProject {
 			return apierrors.ErrGetProject.NotFound().ToResp(), nil
@@ -229,7 +236,7 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 审计事件需要项目详情，发生错误不应中断业务流程
-	project, err := e.project.Get(projectID)
+	project, err := e.project.Get(ctx, projectID)
 	if err != nil {
 		logrus.Errorf("when get project for audit faild %v", err)
 	}

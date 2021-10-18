@@ -28,14 +28,14 @@ func TestAgent_asyncPushCollectorLog(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	ctx, cancel := context.WithCancel(context.Background())
 	agent := Agent{
-		Ctx: ctx,
-		Cancel: cancel,
+		Ctx:         ctx,
+		Cancel:      cancel,
 		FileWatcher: &filewatch.Watcher{GracefulDoneC: make(chan struct{})},
 	}
 	go func() {
 		time.Sleep(time.Second)
 		cancel()
-		<- agent.FileWatcher.GracefulDoneC
+		<-agent.FileWatcher.GracefulDoneC
 	}()
 	agent.asyncPushCollectorLog()
 }

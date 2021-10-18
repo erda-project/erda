@@ -654,12 +654,11 @@ func (e *Endpoints) FetchOrgResources(ctx context.Context, r *http.Request, vars
 		}
 	}
 
-	orgResourceInfo, err := e.org.FetchOrgResources(orgID)
+	resource, err := e.org.FetchOrgClusterResource(ctx, orgID)
 	if err != nil {
 		return apierrors.ErrFetchOrgResources.InternalError(err).ToResp(), nil
 	}
-
-	return httpserver.OkResp(orgResourceInfo)
+	return httpserver.OkResp(resource)
 }
 
 func (e *Endpoints) SetReleaseCrossCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

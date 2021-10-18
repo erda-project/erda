@@ -192,7 +192,7 @@ func (e *Endpoints) ScopeRoleAccess(ctx context.Context, r *http.Request, vars m
 		}
 
 		// 判断scope是否已经被删除
-		deleted, err := e.scopeIsDeleted(accessReq.Scope.Type, scopeID)
+		deleted, err := e.scopeIsDeleted(ctx, accessReq.Scope.Type, scopeID)
 		if err != nil {
 			return apierrors.ErrAccessPermission.InternalError(err).ToResp(), nil
 		}
@@ -267,10 +267,10 @@ func (e *Endpoints) getPermissionList(userID string, scopeType apistructs.ScopeT
 	return permissionAdaptor.PermissionList(userID, scopeType, scopeID)
 }
 
-func (e *Endpoints) scopeIsDeleted(scopeType apistructs.ScopeType, scopeID int64) (bool, error) {
+func (e *Endpoints) scopeIsDeleted(ctx context.Context, scopeType apistructs.ScopeType, scopeID int64) (bool, error) {
 	switch scopeType {
 	case apistructs.ProjectScope:
-		_, err := e.project.Get(scopeID)
+		_, err := e.project.Get(ctx, scopeID)
 		if err != nil && err.Error() == "failed to get project: "+dao.ErrNotFoundProject.Error() {
 			return true, nil
 		}

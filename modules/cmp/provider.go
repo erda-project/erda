@@ -24,15 +24,18 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/cmp/steve"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -43,6 +46,7 @@ type provider struct {
 	Server     pb.MetricServiceServer              `autowired:"erda.core.monitor.metric.MetricService"`
 	Credential credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
 
+	Register        transport.Register `autowired:"service-register" optional:"true"`
 	Metrics         *metrics.Metric
 	Protocol        componentprotocol.Interface
 	Tran            i18n.Translator `translator:"component-protocol"`
@@ -74,6 +78,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			)),
 	))
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
+	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
 	return nil
 }
 

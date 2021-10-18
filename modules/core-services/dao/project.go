@@ -40,6 +40,10 @@ func (client *DBClient) DeleteProject(projectID int64) error {
 	return client.Where("id = ?", projectID).Delete(&model.Project{}).Error
 }
 
+func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
+	return client.Delete(new(model.ProjectQuota), map[string]interface{}{"project_id": projectID}).Error
+}
+
 // GetProjectByID 根据projectID获取项目信息
 func (client *DBClient) GetProjectByID(projectID int64) (model.Project, error) {
 	var project model.Project

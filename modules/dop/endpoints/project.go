@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"sync"
@@ -52,8 +53,14 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	if r.Body == nil {
 		return apierrors.ErrCreateProject.MissingParameter("body").ToResp(), nil
 	}
+	bodyData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to read request body")
+		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil
+	}
+	logrus.WithField("request body", string(bodyData)).Infoln("CreateProject")
 	var projectCreateReq apistructs.ProjectCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&projectCreateReq); err != nil {
+	if err := json.Unmarshal(bodyData, &projectCreateReq); err != nil {
 		return apierrors.ErrCreateProject.InvalidParameter(err).ToResp(), nil
 	}
 	if !strutil.IsValidPrjOrAppName(projectCreateReq.Name) {
@@ -61,6 +68,8 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 			projectCreateReq.Name)).ToResp(), nil
 	}
 	logrus.Infof("request body: %+v", projectCreateReq)
+	data, _ := json.Marshal(projectCreateReq)
+	logrus.Infof("request body data marshaled: %s", string(data))
 
 	// check permission
 	req := apistructs.PermissionCheckRequest{

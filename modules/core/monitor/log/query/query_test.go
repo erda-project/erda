@@ -49,7 +49,7 @@ func Test_provider_getLogItems(t *testing.T) {
 				},
 			},
 			want: []*pb.LogItem{
-				&pb.LogItem{
+				{
 					Id:         "aaa",
 					Source:     "container",
 					Stream:     "stdout",

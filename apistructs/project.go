@@ -14,7 +14,12 @@
 
 package apistructs
 
-import "time"
+import (
+	"strings"
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 // ProjectCreateRequest POST /api/projects 创建项目请求结构
 type ProjectCreateRequest struct {
@@ -34,8 +39,10 @@ type ProjectCreateRequest struct {
 	ClusterID   uint64 `json:"clusterId"`   // TODO deprecated
 	ClusterName string `json:"clusterName"` // TODO deprecated
 
-	// 项目各环境集群配置
+	// Deprecated:项目各环境集群配置
 	ClusterConfig map[string]string `json:"clusterConfig"`
+	// 项目各环境集群配置
+	ResourceConfigs *ResourceConfigs `json:"resourceConfig"`
 	// 项目回滚点配置
 	RollbackConfig map[string]int `json:"rollbackConfig"`
 	// +required 单位: c
@@ -44,6 +51,38 @@ type ProjectCreateRequest struct {
 	MemQuota float64 `json:"memQuota"`
 	// +required 项目模版
 	Template ProjectTemplate `json:"template"`
+}
+
+type ResourceConfigs struct {
+	PROD    *ResourceConfig `json:"PROD"`
+	STAGING *ResourceConfig `json:"STAGING"`
+	TEST    *ResourceConfig `json:"TEST"`
+	DEV     *ResourceConfig `json:"DEV"`
+}
+
+func (cc ResourceConfigs) Check() error {
+	for k, v := range map[string]*ResourceConfig{
+		"production": cc.PROD,
+		"staging":    cc.STAGING,
+		"test":       cc.TEST,
+		"dev":        cc.DEV,
+	} {
+		if v == nil {
+			return errors.Errorf("the cluster config on workspace %s is empty", k)
+		}
+	}
+	return nil
+}
+
+// ResourceConfig
+// CPU quota uint is Core .
+// Mem quota uint is GiB
+type ResourceConfig struct {
+	ClusterName string `json:"clusterName"`
+	// CPUQuota unit is Core
+	CPUQuota float64 `json:"cpuQuota"`
+	// MemQuota unit is GiB
+	MemQuota float64 `json:"memQuota"`
 }
 
 // ProjectCreateResponse POST /api/projects 创建项目响应结构
@@ -86,10 +125,12 @@ type ProjectUpdateBody struct {
 	Logo        string `json:"logo"`
 	Desc        string `json:"desc"`
 	DdHook      string `json:"ddHook"`
-	IsPublic    bool   `json:"isPublic"` // 是否公开项目
 
-	// 项目各环境集群配置
+	// Deprecated:项目各环境集群配置
 	ClusterConfig map[string]string `json:"clusterConfig"`
+	// 项目各环境集群配置
+	ResourceConfigs *ResourceConfigs `json:"resourceConfig"`
+	IsPublic        bool             `json:"isPublic"` // 是否公开项目
 
 	// 项目回滚点配置
 	RollbackConfig map[string]int `json:"rollbackConfig"`
@@ -202,19 +243,77 @@ type ProjectDTO struct {
 	ProjectResourceUsage
 
 	// 项目各环境集群配置
-	ClusterConfig  map[string]string `json:"clusterConfig"`
-	RollbackConfig map[string]int    `json:"rollbackConfig"`
-	CpuQuota       float64           `json:"cpuQuota"`
-	MemQuota       float64           `json:"memQuota"`
+	// Deprecated: to retrieve the relationship between clusters and workspaces,
+	// please use ResourceConfig .
+	ClusterConfig map[string]string `json:"clusterConfig"`
+	// ResourceConfig shows the relationship between clusters and workspaces,
+	// and contains the quota info for every workspace .
+	ResourceConfig *ResourceConfigsInfo `json:"resourceConfig"`
+	RollbackConfig map[string]int       `json:"rollbackConfig"`
+	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
+	CpuQuota float64 `json:"cpuQuota"`
+	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
+	MemQuota float64 `json:"memQuota"`
 
 	// 项目创建时间
 	CreatedAt time.Time `json:"createdAt"`
-
 	// 项目更新时间
 	UpdatedAt time.Time `json:"updatedAt"`
 
 	// Project type
 	Type string `json:"type"`
+}
+
+type ResourceConfigsInfo struct {
+	PROD    *ResourceConfigInfo `json:"PROD"`
+	STAGING *ResourceConfigInfo `json:"STAGING"`
+	TEST    *ResourceConfigInfo `json:"TEST"`
+	DEV     *ResourceConfigInfo `json:"DEV"`
+}
+
+func NewResourceConfig() *ResourceConfigsInfo {
+	return &ResourceConfigsInfo{
+		PROD:    new(ResourceConfigInfo),
+		STAGING: new(ResourceConfigInfo),
+		TEST:    new(ResourceConfigInfo),
+		DEV:     new(ResourceConfigInfo),
+	}
+}
+
+func (cc ResourceConfigsInfo) GetClusterName(workspace string) string {
+	switch strings.ToLower(workspace) {
+	case "prod":
+		return cc.PROD.ClusterName
+	case "staging":
+		return cc.STAGING.ClusterName
+	case "test":
+		return cc.TEST.ClusterName
+	case "dev":
+		return cc.DEV.ClusterName
+	default:
+		return ""
+	}
+}
+
+type ResourceConfigInfo struct {
+	ClusterName             string  `json:"clusterName"`
+	CPUQuota                float64 `json:"cpuQuota"`
+	CPURequest              float64 `json:"cpuRequest"`
+	CPURequestRate          float64 `json:"cpuRequestRate"`
+	CPURequestByAddon       float64 `json:"cpuRequestByAddon"`
+	CPURequestByAddonRate   float64 `json:"cpuRequestByAddonRate"`
+	CPURequestByService     float64 `json:"cpuRequestByService"`
+	CPURequestByServiceRate float64 `json:"cpuRequestByServiceRate"`
+	CPUAvailable            float64 `json:"cpuAvailable"`
+	MemQuota                float64 `json:"memQuota"`
+	MemRequest              float64 `json:"memRequest"`
+	MemRequestRate          float64 `json:"memRequestRate"`
+	MemRequestByAddon       float64 `json:"memRequestByAddon"`
+	MemRequestByAddonRate   float64 `json:"memRequestByAddonRate"`
+	MemRequestByService     float64 `json:"memRequestByService"`
+	MemRequestByServiceRate float64 `json:"memRequestByServiceRate"`
+	MemAvailable            float64 `json:"memAvailable"`
+	Tips                    string  `json:"tips"`
 }
 
 // ProjectResourceUsage 项目资源使用

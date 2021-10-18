@@ -188,13 +188,30 @@ func (p *provider) getProjectId(orgId uint64, az string) (uint64, error) {
 	return projectId, nil
 }
 
+// todo: 询 msp 这里创建项目时了逻辑，以及 quota 按环境如何分配
 func (p *provider) createProject(orgId uint64, projectName, clusterName, displayName, desc string) (uint64, error) {
 	return p.Bdl.CreateProject(apistructs.ProjectCreateRequest{
-		ClusterConfig: map[string]string{
-			"DEV":     clusterName,
-			"TEST":    clusterName,
-			"STAGING": clusterName,
-			"PROD":    clusterName,
+		ResourceConfigs: &apistructs.ResourceConfigs{
+			PROD: &apistructs.ResourceConfig{
+				ClusterName: clusterName,
+				CPUQuota:    5.0 / 4,
+				MemQuota:    16.0 / 4,
+			},
+			STAGING: &apistructs.ResourceConfig{
+				ClusterName: clusterName,
+				CPUQuota:    5.0 / 4,
+				MemQuota:    16.0 / 4,
+			},
+			TEST: &apistructs.ResourceConfig{
+				ClusterName: clusterName,
+				CPUQuota:    5.0 / 4,
+				MemQuota:    16.0 / 4,
+			},
+			DEV: &apistructs.ResourceConfig{
+				ClusterName: clusterName,
+				CPUQuota:    5.0 / 4,
+				MemQuota:    16.0 / 4,
+			},
 		},
 		OrgID:       orgId,
 		Name:        projectName,

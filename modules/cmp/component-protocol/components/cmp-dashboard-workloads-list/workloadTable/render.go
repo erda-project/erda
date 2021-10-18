@@ -88,34 +88,34 @@ func (w *ComponentWorkloadTable) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	base64Decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	newQuery := make(map[string]interface{})
-	if err := json.Unmarshal(base64Decoded, &newQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(newQuery["pageNo"].(float64))
-	w.State.PageSize = uint64(newQuery["pageSize"].(float64))
-	sorter := newQuery["sorterData"].(map[string]interface{})
+	w.State.PageNo = uint64(query["pageNo"].(float64))
+	w.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
 	w.State.Sorter.Field = sorter["field"].(string)
 	w.State.Sorter.Order = sorter["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = w.State.PageNo
-	query["pageSize"] = w.State.PageSize
-	query["sorterData"] = w.State.Sorter
-	jsonData, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = w.State.PageNo
+	urlQuery["pageSize"] = w.State.PageSize
+	urlQuery["sorterData"] = w.State.Sorter
+	data, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	w.State.WorkloadTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	w.State.WorkloadTableURLQuery = encoded
 	return nil
 }
 

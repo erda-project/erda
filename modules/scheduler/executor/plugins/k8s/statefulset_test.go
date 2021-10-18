@@ -348,6 +348,6 @@ func TestCreateStatefulSet(t *testing.T) {
 		annotations: map[string]string{},
 	}
 
-	err := kubernetes.createStatefulSet(info)
+	err := kubernetes.createStatefulSet(context.Background(), info)
 	assert.Nil(t, err)
 }

@@ -16,6 +16,7 @@ package k8s
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -35,7 +37,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
+func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo) error {
 
 	statefulName := statefulsetName(info.sg)
 
@@ -157,7 +159,40 @@ func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
 	if info.namespace == "fake-test" {
 		return nil
 	}
+
+	addonID, projectID, workspace, _ := extractContainerEnvs(set.Spec.Template.Spec.Containers)
+	runtimeID, err := k.db.GetRuntimeID(addonID)
+	if err != nil {
+		return errors.Errorf("failed to get runtime ID for statefulSet %s, %v", statefulName, err)
+	}
+
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, int64(service.Resources.Cpu*1000), int64(service.Resources.Mem*float64(1<<20)))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("workspace quota is not enough")
+	}
 	return k.sts.Create(set)
+}
+
+func extractContainerEnvs(containers []corev1.Container) (addonID, projectID, workspace, runtimeID string) {
+	envSuffixMap := map[string]*string{
+		"ADDON_ID":        &addonID,
+		"DICE_PROJECT_ID": &projectID,
+		"DICE_RUNTIME_ID": &runtimeID,
+		"DICE_WORKSPACE":  &workspace,
+	}
+	for _, container := range containers {
+		for _, env := range container.Env {
+			for k, v := range envSuffixMap {
+				if strutil.HasSuffixes(env.Name, k) && *v == "" {
+					*v = env.Value
+				}
+			}
+		}
+	}
+	return
 }
 
 func (k *Kubernetes) setBind(set *appsv1.StatefulSet, container *apiv1.Container, service *apistructs.Service) error {
