@@ -15,20 +15,71 @@
 package collector
 
 import (
+	"sync"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/oap/collector/authentication"
 )
 
-func (p *provider) basicAuth() interface{} {
+type Option func(authenticator *Authenticator)
+
+type Authenticator struct {
+	mu        sync.RWMutex
+	logger    logs.Logger
+	config    *config
+	validator authentication.Validator
+}
+
+func NewAuthenticator(opts ...Option) *Authenticator {
+	a := &Authenticator{}
+
+	for _, opt := range opts {
+		opt(a)
+	}
+
+	return a
+}
+
+// WithLogger with Logger
+func WithLogger(l logs.Logger) Option {
+	return func(a *Authenticator) {
+		a.logger = l
+	}
+}
+
+// WithValidator with validator
+func WithValidator(v authentication.Validator) Option {
+	return func(a *Authenticator) {
+		a.validator = v
+	}
+}
+
+// WithConfig with config
+func WithConfig(cfg *config) Option {
+	return func(a *Authenticator) {
+		a.config = cfg
+	}
+}
+
+// basicAuth basic auth
+func (a *Authenticator) basicAuth() interface{} {
 	return middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
 		Validator: func(username string, password string, context echo.Context) (bool, error) {
-			if username == p.Cfg.Auth.Username && password == p.Cfg.Auth.Password {
+			if username == a.config.Auth.Username && password == a.config.Auth.Password {
 				return true, nil
 			}
 			return false, nil
 		},
 		Skipper: func(context echo.Context) bool {
-			if p.Cfg.Auth.Force {
+			if a.config.Auth.Skip {
+				return true
+			}
+
+			if a.config.Auth.Force {
 				return false
 			}
 			// 兼容旧版本，没有添加认证的客户端，这个版本先跳过
@@ -36,4 +87,29 @@ func (p *provider) basicAuth() interface{} {
 			return authorizationHeader == ""
 		},
 	})
+}
+
+// keyAuth key auth
+func (a *Authenticator) keyAuth() interface{} {
+	return middleware.KeyAuthWithConfig(middleware.KeyAuthConfig{
+		Validator: func(s string, context echo.Context) (bool, error) {
+			clusterName := context.Request().Header.Get(apistructs.AuthClusterKeyHeader)
+			if clusterName == "" {
+				return false, nil
+			}
+
+			if a.validator.Validate(apistructs.CMPClusterScope, clusterName, s) {
+				return true, nil
+			}
+
+			return false, nil
+		},
+		Skipper: func(context echo.Context) bool {
+			if a.config.Auth.Skip {
+				return true
+			}
+			return false
+		},
+	})
+
 }
