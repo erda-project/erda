@@ -15,6 +15,8 @@
 package bundle
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -27,8 +29,9 @@ func (b *Bundle) GetWorkspaceNamespaces(req *apistructs.GetWorkspaceNamespaceReq
 	}
 	hc := b.hc
 
+	path := fmt.Sprintf("/api/projects/%s/workspaces/%s/namespaces", req.ProjectID, req.Workspace)
 	var nssResp apistructs.GetWorkspaceNamespaceResponse
-	resp, err := hc.Get(host).Path("/api/allnamespaces").Header(httputil.InternalHeader, "bundle").Do().JSON(&nssResp)
+	resp, err := hc.Get(host).Path(path).Header(httputil.InternalHeader, "bundle").Do().JSON(&nssResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}

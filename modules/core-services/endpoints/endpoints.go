@@ -314,6 +314,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/actions/list-by-states", Method: http.MethodGet, Handler: e.GetProjectListByStates},
 		{Path: "/api/projects/actions/list-all", Method: http.MethodGet, Handler: e.GetAllProjects},
 		{Path: "/api/projects/actions/get-projects-map", Method: http.MethodGet, Handler: e.GetModelProjectsMap},
+		{Path: "/api/projects/{projectID}/workspaces/{workspace}/namespaces", Method: http.MethodGet, Handler: e.GetAllNamespaces},
+		{Path: "/api/projects/{projectID}/workspaces/{workspace}/quota", Method: http.MethodGet, Handler: e.GetWorkspaceQuota},
 
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
@@ -448,7 +450,5 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
-
-		{Path: "/api/allnamespaces", Method: http.MethodGet, Handler: e.GetAllNamespaces},
 	}
 }
