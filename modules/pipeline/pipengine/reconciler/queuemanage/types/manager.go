@@ -15,8 +15,11 @@
 package types
 
 import (
+	"context"
+
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/snapshot"
 )
 
 // QueueManager manage all queues and related pipelines.
@@ -27,4 +30,9 @@ type QueueManager interface {
 	PopOutPipelineFromQueue(pipelineID uint64)
 	BatchUpdatePipelinePriorityInQueue(pq *apistructs.PipelineQueue, pipelineIDs []uint64) error
 	Stop()
+	SendQueueToEtcd(queueID uint64)
+	ListenInputQueueFromEtcd(ctx context.Context)
+	SendUpdatePriorityPipelineIDsToEtcd(queueID uint64, pipelineIDS []uint64)
+	ListenUpdatePriorityPipelineIDsFromEtcd(ctx context.Context)
+	snapshot.Snapshot
 }
