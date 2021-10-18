@@ -44,7 +44,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		req.UserID = bdl.Identity.UserID
 		req.TestPlanID = uint64(c.State["testPlanId"].(float64))
 		req.PreID = lastStepID
-		req.GroupID = 0
 		stepID, err := bdl.Bdl.CreateTestPlansV2Step(req)
 		if err != nil {
 			return err

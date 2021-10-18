@@ -54,11 +54,9 @@ type InParams struct {
 }
 
 type DragParams struct {
-	DragGroupKey int64 `json:"dragGroupKey"`
-	DropGroupKey int64 `json:"dropGroupKey"`
-	DragKey      int64 `json:"dragKey"`
-	DropKey      int64 `json:"dropKey"`
-	Position     int64 `json:"position"`
+	DragKey  uint64 `json:"dragKey"`
+	DropKey  uint64 `json:"dropKey"`
+	Position int64  `json:"position"`
 }
 
 type State struct {
