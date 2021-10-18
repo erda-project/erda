@@ -213,7 +213,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			TestClusterName:    createReq.ResourceConfigs.TEST.ClusterName,
 			DevClusterName:     createReq.ResourceConfigs.DEV.ClusterName,
 			ProdCPUQuota:       uint64(createReq.ResourceConfigs.PROD.CPUQuota * 1000),
-			ProdMemQutoa:       uint64(createReq.ResourceConfigs.PROD.MemQuota * 1024 * 1024 * 1024),
+			ProdMemQuota:       uint64(createReq.ResourceConfigs.PROD.MemQuota * 1024 * 1024 * 1024),
 			StagingCPUQuota:    uint64(createReq.ResourceConfigs.STAGING.CPUQuota * 1000),
 			StagingMemQuota:    uint64(createReq.ResourceConfigs.STAGING.MemQuota * 1024 * 1024),
 			TestCPUQuota:       uint64(createReq.ResourceConfigs.TEST.CPUQuota * 1000),
@@ -337,13 +337,33 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 
 	// create or update quota
 	if updateReq.ResourceConfigs != nil {
-		var quota = new(model.ProjectQuota)
-		err = p.db.First(quota, map[string]interface{}{"project_id": projectID}).Error
-		patchProjectQuota(quota, userID, updateReq)
-		if err == nil {
-			err = tx.Save(quota).Error
+		var (
+			oldQuota = new(model.ProjectQuota)
+			quota    = model.ProjectQuota{
+				ProjectID:          updateReq.ID,
+				ProjectName:        updateReq.Name,
+				ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
+				StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
+				TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
+				DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
+				ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+				ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
+				StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+				StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
+				TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
+				TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
+				DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
+				DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
+				CreatorID:          userID,
+				UpdaterID:          userID,
+			}
+		)
+		if err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error; err == nil {
+			quota.ID = oldQuota.ID
+			quota.CreatorID = oldQuota.CreatorID
+			err = tx.Debug().Save(&quota).Error
 		} else {
-			err = tx.Create(quota).Error
+			err = tx.Debug().Create(&quota).Error
 		}
 		if err != nil {
 			logrus.WithError(err).Errorln("failed to update project quota")
@@ -400,14 +420,14 @@ func patchProjectQuota(quota *model.ProjectQuota, userID string, updateReq *apis
 		StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
 		TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
 		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
-		ProdCPUQuota:       uint64(updateReq.ResourceConfigs.PROD.CPUQuota * 1000),
-		ProdMemQutoa:       uint64(updateReq.ResourceConfigs.PROD.MemQuota * 1024 * 1024 * 1024),
-		StagingCPUQuota:    uint64(updateReq.ResourceConfigs.PROD.CPUQuota * 1000),
-		StagingMemQuota:    uint64(updateReq.ResourceConfigs.STAGING.MemQuota * 1024 * 1024 * 1024),
-		TestCPUQuota:       uint64(updateReq.ResourceConfigs.TEST.CPUQuota * 1000),
-		TestMemQuota:       uint64(updateReq.ResourceConfigs.TEST.MemQuota * 1024 * 1024 * 1024),
-		DevCPUQuota:        uint64(updateReq.ResourceConfigs.DEV.CPUQuota * 1000),
-		DevMemQuota:        uint64(updateReq.ResourceConfigs.DEV.MemQuota * 1024 * 1024 * 1024),
+		ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
+		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
+		TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
+		TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
+		DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
+		DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
 		CreatorID:          quota.CreatorID,
 		UpdaterID:          userID,
 	}
@@ -515,7 +535,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota)
 	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota)
 	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota)
-	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQutoa)
+	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota)
 	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota)
 	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
 	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)

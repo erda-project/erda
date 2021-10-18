@@ -115,7 +115,7 @@ func (p ProjectQuota) GetCPUQuota(workspace string) uint64 {
 func (p ProjectQuota) GetMemQuota(workspace string) uint64 {
 	switch strings.ToLower(workspace) {
 	case "prod":
-		return p.ProdMemQutoa
+		return p.ProdMemQuota
 	case "staging":
 		return p.StagingMemQuota
 	case "test":
