@@ -10,7 +10,8 @@
 </tr>
 <tr>
   <td valign="top">
-    <b><a href="#v130">1.3.0</a></b><br/>
+    <a href="#v131">1.3.1</a><br/>
+    <a href="#v130">1.3.0</a><br/>
   </td>
   <td valign="top">
     <a href="#v121">1.2.1</a><br/>
@@ -26,6 +27,22 @@
   </td>
 </tr>
 </table>
+
+# v1.3.1
+
+`2021-10-15`
+
+### New Features
+* add code coverage & bug dashboard.[#2342](https://github.com/erda-project/erda/pull/2342)
+* optimize checker for HTTP mode.[#2377](https://github.com/erda-project/erda/pull/2377)
+* auto test platform's scene set now supports parallel execute.[#2412](https://github.com/erda-project/erda/pull/2412)
+* optimize load speed of k8s dashboard's nodes list. [#2355](https://github.com/erda-project/erda/pull/2355)
+
+### Bug Fixes
+* fix batch cluster upgrade permission problem.[#2308](https://github.com/erda-project/erda/pull/2308)
+* fix cluster-agent module missing privileged param.[#2367](https://github.com/erda-project/erda/pull/2367)
+* fix micro service plagform's notify group not have userinfo.[#2393](https://github.com/erda-project/erda/pull/2393)
+* fix start same k8s dashboard sever redundantly when watch clusters. [#2366](https://github.com/erda-project/erda/pull/2366)
 
 # v1.3.0
 
