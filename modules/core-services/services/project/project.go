@@ -537,6 +537,8 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota)
 	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
 	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)
+	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota + projectQuota.StagingCPUQuota + projectQuota.TestCPUQuota + projectQuota.DevCPUQuota)
+	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota + projectQuota.StagingMemQuota + projectQuota.TestMemQuota + projectQuota.DevMemQuota)
 
 	logrus.Infoln("query PodInfo")
 	var podInfos []apistructs.PodInfo
@@ -584,6 +586,8 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
 		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
 	}
+	data, _ := json.Marshal(resources)
+	logrus.Infof("GetNamespacesResources response: %s", string(data))
 
 	for _, clusterItem := range resources.List {
 		if !clusterItem.GetSuccess() {
