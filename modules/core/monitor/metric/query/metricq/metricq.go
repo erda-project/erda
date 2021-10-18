@@ -15,17 +15,20 @@
 package metricq
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 	queryv1 "github.com/erda-project/erda/modules/core/monitor/metric/query/query/v1"
+	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 // InfluxQL tsql
@@ -83,7 +86,17 @@ func (q *metricq) Client() *elastic.Client {
 
 // Indices .
 func (q *metricq) Indices(metrics []string, clusters []string, start, end int64) []string {
-	return q.index.GetReadIndices(metrics, clusters, start, end)
+	keys := make([]loader.KeyPath, len(metrics)+1)
+	for i, item := range metrics {
+		keys[i] = loader.KeyPath{
+			Keys:      []string{item},
+			Recursive: true,
+		}
+	}
+	keys[len(metrics)] = loader.KeyPath{}
+	start = start * int64(time.Millisecond)
+	end = end*int64(time.Millisecond) + (int64(time.Millisecond) - 1)
+	return q.index.Indices(context.Background(), start, end, keys...)
 }
 
 // Handle .

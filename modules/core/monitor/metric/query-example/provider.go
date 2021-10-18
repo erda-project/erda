@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 type provider struct {

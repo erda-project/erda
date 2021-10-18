@@ -1,12 +1,14 @@
 {
   "index_patterns": ["spot-*"],
   "settings": {
-    "refresh_interval": "30s",
-    "index.translog.durability": "async",
-    "index.translog.sync_interval": "20s",
-    "index.translog.flush_threshold_size": "1024mb",
-    "number_of_shards": 1,
-    "number_of_replicas": 0
+    "number_of_shards": ${METRIC_INDEX_SHARDS:1},
+    "number_of_replicas": ${METRIC_INDEX_REPLICAS:1},
+    "index":{
+        "refresh_interval":"30s",
+        "translog.durability": "async",
+        "translog.sync_interval": "20s",
+        "translog.flush_threshold_size": "1024mb"
+    }
   },
   "mappings": {
     "spot": {

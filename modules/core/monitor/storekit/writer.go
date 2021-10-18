@@ -16,8 +16,8 @@ package storekit
 
 import (
 	"encoding/json"
-	"io"
-	"os"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -106,32 +106,42 @@ func (w *channelWriter) run(bw BatchWriter, capacity int, timeout time.Duration,
 	}
 }
 
-// Stdout .
-type Stdout struct {
-	Out io.Writer
-	Enc *json.Encoder
-}
+// StdoutWriter .
+type StdoutWriter struct{}
 
-// DefaultStdout .
-var DefaultStdout = Stdout{
-	Out: os.Stdout,
-	Enc: json.NewEncoder(os.Stdout),
-}
+// DefaultStdoutWriter .
+var DefaultStdoutWriter = StdoutWriter{}
 
-func init() {
-	DefaultStdout.Enc.SetIndent("", "\t")
-}
-
-func (w Stdout) Write(val Data) error {
-	w.Enc.Encode(val)
+func (w StdoutWriter) Write(val Data) error {
+	w.WriteN(val)
 	return nil
 }
 
-func (w Stdout) WriteN(vals ...Data) (int, error) {
+func (w StdoutWriter) WriteN(vals ...Data) (int, error) {
 	for _, val := range vals {
-		w.Enc.Encode(val)
+		sb := &strings.Builder{}
+		enc := json.NewEncoder(sb)
+		enc.SetIndent("", "\t")
+		enc.Encode(val)
+		fmt.Println(sb.String())
 	}
 	return len(vals), nil
 }
 
-func (w Stdout) Close() error { return nil }
+func (w StdoutWriter) Close() error { return nil }
+
+// NopWriter .
+type NopWriter struct{}
+
+// DefaultNopWriter .
+var DefaultNopWriter = NopWriter{}
+
+func (w NopWriter) Write(val Data) error {
+	return nil
+}
+
+func (w NopWriter) WriteN(vals ...Data) (int, error) {
+	return len(vals), nil
+}
+
+func (w NopWriter) Close() error { return nil }

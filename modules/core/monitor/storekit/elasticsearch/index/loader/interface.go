@@ -39,6 +39,9 @@ type (
 		Keys(path ...string) []string
 		IndexGroup(path ...string) *IndexGroup
 
+		Prefixes() []string
+		Match(index string) *index.MatchResult
+
 		RequestTimeout() time.Duration
 		QueryIndexTimeRange() bool
 		Client() *elastic.Client

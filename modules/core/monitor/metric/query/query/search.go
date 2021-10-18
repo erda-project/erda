@@ -25,17 +25,16 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql/formats"
 )
 
 type queryer struct {
-	index indexloader.Interface
+	index IndexLoader
 }
 
 // New .
-func New(index indexloader.Interface) Queryer {
+func New(index IndexLoader) Queryer {
 	return &queryer{
 		index: index,
 	}
@@ -132,7 +131,7 @@ func (q *queryer) doQuery(ql, statement string, params map[string]interface{}, f
 	}
 	query := querys[0]
 	metrics, clusters := getMetricsAndClustersFromSources(query.Sources())
-	indices := q.index.GetReadIndices(metrics, clusters, start, end)
+	indices := q.index.GetIndices(metrics, clusters, start, end)
 	for _, c := range clusters {
 		query.BoolQuery().Filter(elastic.NewTermQuery(TagKey+".cluster_name", c))
 	}
@@ -191,7 +190,7 @@ func (q *queryer) esRequest(indices []string, searchSource *elastic.SearchSource
 		IgnoreUnavailable(true).AllowNoIndices(true).
 		SearchSource(searchSource).Do(context)
 	if err != nil || (resp != nil && resp.Error != nil) {
-		if len(indices) <= 0 || (len(indices) == 1 && indices[0] == q.index.EmptyIndex()) {
+		if len(indices) <= 0 || (len(indices) == 1 && strings.HasSuffix(indices[0], "-empty")) {
 			return nil, nil
 		}
 		if resp != nil && resp.Error != nil {
@@ -223,7 +222,7 @@ func (q *queryer) QueryWithFormat(tsql, statement, format string, langCode i18n.
 
 // QueryRaw .
 func (q *queryer) QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error) {
-	indices := q.index.GetReadIndices(metrics, clusters, start, end)
+	indices := q.index.GetIndices(metrics, clusters, start, end)
 	return q.SearchRaw(indices, searchSource)
 }
 

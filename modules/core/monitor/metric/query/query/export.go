@@ -33,7 +33,8 @@ func (q *queryer) Export(ql, statement string, params map[string]interface{}, op
 	}
 	sources, boolQuery, searchSource, err := parser.ParseRawQuery()
 	metrics, clusters := getMetricsAndClustersFromSources(sources)
-	indices := q.index.GetReadIndices(metrics, clusters, start, end)
+
+	indices := q.index.GetIndices(metrics, clusters, start, end)
 	for _, c := range clusters {
 		boolQuery.Filter(elastic.NewTermQuery(ClusterNameKey, c))
 	}
@@ -69,7 +70,7 @@ func (q *queryer) esScrollRequest(indices []string, searchSource *elastic.Search
 	defer cancel()
 	resp, err := req.Do(context)
 	if err != nil || (resp != nil && resp.Error != nil) {
-		if err == io.EOF || len(indices) <= 0 || (len(indices) == 1 && indices[0] == q.index.EmptyIndex()) {
+		if err == io.EOF || len(indices) <= 0 || (len(indices) == 1 && strings.HasSuffix(indices[0], "-empty")) {
 			return nil, nil
 		}
 		if resp != nil && resp.Error != nil {

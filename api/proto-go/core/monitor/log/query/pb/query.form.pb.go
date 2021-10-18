@@ -31,20 +31,24 @@ func (m *LogItem) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Source = vals[0]
 			case "stream":
 				m.Stream = vals[0]
-			case "timeBucket":
-				m.TimeBucket = vals[0]
 			case "timestamp":
-				m.Timestamp = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Timestamp = val
 			case "offset":
-				m.Offset = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Offset = val
 			case "content":
 				m.Content = vals[0]
 			case "level":
 				m.Level = vals[0]
 			case "requestId":
 				m.RequestId = vals[0]
-			case "pattern":
-				m.Pattern = vals[0]
 			}
 		}
 	}

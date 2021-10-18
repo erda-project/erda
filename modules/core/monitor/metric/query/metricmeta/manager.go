@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 // MetaSource .

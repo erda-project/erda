@@ -12,28 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package log
+package persist
 
-// Log .
-type Log struct {
-	Source    string            `json:"source"`
-	ID        string            `json:"id"`
-	Stream    string            `json:"stream"`
-	Content   string            `json:"content"`
-	Offset    int64             `json:"offset"`
-	Timestamp int64             `json:"timestamp"`
-	Tags      map[string]string `json:"tags"`
+import (
+	"github.com/erda-project/erda/modules/core/monitor/metric"
+)
+
+// Validator .
+type Validator interface {
+	Validate(m *metric.Metric) error
 }
 
-// LabeledLog .
-type LabeledLog struct {
-	Log
-	Labels map[string]string `json:"labels,omitempy"`
+type nopValidator struct{}
+
+func (*nopValidator) Validate(*metric.Metric) error { return nil }
+
+// NopValidator .
+var NopValidator Validator = &nopValidator{}
+
+func newValidator(cfg *config) Validator {
+	return &validator{}
 }
 
-// LogMeta .
-type LogMeta struct {
-	Source string            `json:"source"`
-	ID     string            `json:"id"`
-	Tags   map[string]string `json:"tags"`
+type validator struct {
+}
+
+func (v *validator) Validate(m *metric.Metric) error {
+	// TODO: check something
+	return nil
 }

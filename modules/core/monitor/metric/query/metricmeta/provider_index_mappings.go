@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 // IndexMappingsGroupProvider .
@@ -50,7 +50,7 @@ func (p *IndexMappingsGroupProvider) MappingsByID(id, scope, scopeID string, nam
 
 // Groups .
 func (p *IndexMappingsGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Translator, scope, scopeID string, ms map[string]*pb.MetricMeta) (groups []*pb.Group, err error) {
-	names := p.index.MetricNames()
+	names := p.index.Keys()
 	for _, name := range names {
 		if strings.HasPrefix(name, "_") {
 			continue
@@ -76,12 +76,16 @@ func NewIndexMappingsMetricMetaProvider(index indexloader.Interface) (*IndexMapp
 // MetricMeta .
 func (p *IndexMappingsMetricMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i i18n.I18n, scope, scopeID string, names ...string) (map[string]*pb.MetricMeta, error) {
 	var indices []string
-	if len(names) > 0 {
-		for _, n := range names {
-			indices = append(indices, p.index.IndexPrefix()+"-"+n+"-*")
-		}
-	} else {
-		indices = append(indices, p.index.IndexPrefix()+"-*")
+	// if len(names) > 0 {
+	// 	for _, n := range names {
+	// 		indices = append(indices, p.index.IndexPrefix()+"-"+n+"-*")
+	// 	}
+	// } else {
+	// 	indices = append(indices, p.index.IndexPrefix()+"-*")
+	// }
+
+	for _, prefix := range p.index.Prefixes() {
+		indices = append(indices, prefix+"*")
 	}
 	resp, err := p.getMappings(indices)
 	if err != nil {
@@ -89,14 +93,14 @@ func (p *IndexMappingsMetricMetaProvider) MetricMeta(langCodes i18n.LanguageCode
 	}
 	metas := make(map[string]*pb.MetricMeta)
 	for key, m := range resp {
-		if len(key) < len(p.index.IndexPrefix())+1 {
+		match := p.index.Match(key)
+		if match == nil {
 			continue
 		}
-		keys := strings.Split(key, "-")
-		key = keys[1]
-		if strings.HasPrefix(key, "_") || key == "empty" {
+		if len(match.Keys) <= 1 || match.Keys[0] == "empty" {
 			continue
 		}
+		key = match.Keys[0]
 		mp, ok := m.(map[string]interface{})
 		if !ok {
 			continue

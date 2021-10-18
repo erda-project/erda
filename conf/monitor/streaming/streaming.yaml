@@ -4,28 +4,19 @@ http-server:
 health:
   path: "/api/health"
 
+# storages
+kafka:
+  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+  producer:
+    options:
+      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
+
 cassandra:
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
   password: ${CASSANDRA_SECURITY_PASSWORD}
   timeout: "${CASSANDRA_TIMEOUT:3s}"
-
-elasticsearch:
-  urls: "${ES_URL:http://localhost:9200}"
-  security: ${ES_SECURITY_ENABLE:false}
-  username: "${ES_SECURITY_USERNAME}"
-  password: "${ES_SECURITY_PASSWORD}"
-
-kafka:
-  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
-  comsumer:
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-  producer:
-    options:
-      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
@@ -44,39 +35,120 @@ etcd:
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
 
-etcd-mutex:
-  root_path: "/erda/streaming"
+elasticsearch:
+  urls: "${ES_URL:http://localhost:9200}"
+  security: ${ES_SECURITY_ENABLE:false}
+  username: "${ES_SECURITY_USERNAME}"
+  password: "${ES_SECURITY_PASSWORD}"
 
-log-store:
-  _enable: ${LOG_STORE_ENABLE:true}
+elasticsearch.index.initializer:
+  templates:
+    - name: "spot_metric_template"
+      path: "${CONFIG_PATH}/metric_index_template.json"
+    - name: "erda-logs"
+      path: "${CONFIG_PATH}/log_index_template.json"
+
+# elasticsearch for log
+elasticsearch.index.loader@log:
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "10s"
+  match:
+    - prefix: "erda-logs-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+
+elasticsearch.index.creator@log:
+  patterns:
+    - first_index: "erda-logs-<org>-000001"
+      alias: "erda-logs-<org>-rollover"
+    - first_index: "erda-logs-<org>.<key>-000001"
+      alias: "erda-logs-<org>.<key>-rollover"
+  remove_conflicting_indices: true
+
+elasticsearch.index.rollover@log:
+  check_interval: "30s"
+  body_file: "${CONFIG_PATH}/index_rollover.json"
+  patterns:
+    - index: "erda-logs-<org>-{number}"
+      alias: "erda-logs-<org>-rollover"
+    - index: "erda-logs-<org>.<key>-{number}"
+      alias: "erda-logs-<org>.<key>-rollover"
+
+storage-retention-strategy@log:
+  load_from_database: true
+  ttl_reload_interval: "3m"
+
+log-storage-elasticsearch:
+  write_timeout: "1m"
+  index_type: "logs"
+
+log-persist:
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
-    group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
-    parallelism: ${LOG_CONSUMERS:3}
-    options:
-      queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
-  output:
-    id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
-    log_schema:
-      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
-    cassandra:
-      writer_config:
-        parallelism: ${CASSANDRA_PARALLELISM:3}
-        batch:
-          size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: ${CASSANDRA_BATCH_TIMEOUT:10s}
-        retry: -1  # block forever. kafka will handle the issue of stream block
-      session_config:
-        keyspace:
-          name: "spot_prod"
-          auto: ${LOG_STORE_CASSANDRA_SESSION_KEYSPACE_AUTO:true} # 自动创建 keyspace
-          replication:
-            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-        reconnection:
-          check_interval: ${LOG_STORE_CASSANDRA_RECONNECTION_CHECK_INTERVAL:3m}
-      default_ttl: "${LOG_TTL:168h}"
-      gc_grace_seconds: 86400
+    group: "${LOG_GROUP_ID:erda-logs-dev}"
+  id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+  read_timeout: "5s"
+  buffer_size: ${LOG_BATCH_SIZE:50}
+  parallelism: ${LOG_PERSIST_PARALLELISM:3}
+  print_invalid_log: false
+
+# elasticsearch for metric
+elasticsearch.index.loader@metric:
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "10s"
+  match:
+    - prefix: "spot-"
+      patterns:
+        - "empty"
+        - "<metric>-<namespace>.<key>-r-{number}"
+        - "<metric>-<namespace>-r-{number}"
+        - "<metric>-<namespace>-m-{}"
+        - "<metric>-<namespace>-m-{}"
+        - "<metric>-<namespace>.<key>-<timestamp>"
+        - "<metric>-<namespace>-<timestamp>"
+        - "<metric>-<namespace>.<key>"
+        - "<metric>-<namespace>"
+
+elasticsearch.index.creator@metric:
+  patterns:
+    - first_index: "spot-<metric>-<namespace>-r-000001"
+      alias: "spot-<metric>-<namespace>-rollover"
+    - first_index: "spot-<metric>-<namespace>.<key>-r-000001"
+      alias: "spot-<metric>-<namespace>.<key>-rollover"
+  fixed_patterns:
+    - "spot-<metric>-<namespace>"
+    - "spot-<metric>-<namespace>.<key>"
+  remove_conflicting_indices: true
+
+elasticsearch.index.rollover@metric:
+  check_interval: "30m"
+  body_file: "${CONFIG_PATH}/index_rollover.json"
+  patterns:
+    - index: "spot-<metric>-<namespace>-r-{number}"
+      alias: "spot-<metric>-<namespace>-rollover"
+    - index: "spot-<metric>-<namespace>.<key>-r-{number}"
+      alias: "spot-<metric>-<namespace>.<key>-rollover"
+
+storage-retention-strategy@metric:
+  load_from_database: true
+  ttl_reload_interval: "3m"
+
+metric-storage-elasticsearch:
+  read_timeout: "1m"
+  write_timeout: "1m"
+  index_type: "spot"
+
+metric-persist:
+  input:
+    topics: "${METRIC_TOPICS:spot-metrics,msp-tracing-metrics}"
+    group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
+  read_timeout: "5s"
+  buffer_size: ${METRIC_BATCH_SIZE:50}
+  parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
+  features:
+    generate_meta: true
+    machine_summary: true
 
 browser-analytics:
   _enable: ${BROWSER_ENABLE:true}
@@ -84,6 +156,9 @@ browser-analytics:
     topics: "${BROWSER_TOPICS:spot-analytics}"
     group: "${BROWSER_GROUP_ID:spot-monitor-browser-dev}"
     parallelism: ${BROWSER_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   output:
     topic: "${METRIC_TOPICS:spot-metrics}"
     parallelism: ${KAFKA_PARALLELISM:3}
@@ -92,76 +167,22 @@ browser-analytics:
       timeout: "10s"
   ipdb: "${CONFIG_PATH}/ipdata.dat"
 
-metrics-storage:
-  _enable: ${METRIC_ENABLE:true}
-  inputs:
-    metric:
-      topics: "${METRIC_TOPICS:spot-metrics,msp-tracing-metrics}"
-      group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
-      parallelism: ${METRIC_CONSUMERS:3}
-    creating_index_metric:
-      topics: "${CREATING_INDEX_METRIC_TOPIC:spot-metrics-creating}"
-      group: "${CREATING_INDEX_METRIC_GROUP_ID:spot-monitor-metrics-creating-dev}"
-      parallelism: ${CREATING_INDEX_METRIC_CONSUMERS:1}
-  output:
-    features:
-      generate_meta: true
-      counter: true
-      machine_summary: true
-    elasticsearch:
-      writer_config:
-        type: "spot"
-        parallelism: ${ES_PARALLELISM:3}
-        batch:
-          size: ${ES_BATCH_SIZE:50}
-          timeout: "30s"
-    kafka:
-      topic: "${CREATING_INDEX_METRIC_TOPIC:spot-metrics-creating}"
-      parallelism: ${CREATING_INDEX_METRIC_OUTPUT_PARALLELISM:2}
-      batch:
-        size: ${CREATING_INDEX_METRIC_OUTPUT_BATCH_SIZE:10}
-        timeout: "10s"
-
-erda.core.monitor.metric.index-loader:
-  load_mode: "LoadFromElasticSearchOnly"
-  default_namespace: "full_cluster"
-  request_timeout: "30s"
-  index_prefix: "spot"
-  query_index_time_range: false
-  index_reload_interval: "2m"
-
-erda.core.monitor.metric.index-manager:
-  request_timeout: "1m"
-  default_namespace: "full_cluster"
-  # namespaces:
-  #     - name: "host_*"
-  #       tags:
-  #           - key: "org_name"
-  #             value: "terminus"
-  #       namespace: "terminus"
-  index_type: "spot"
-  # index init
-  enable_index_init: ${METRIC_INDEX_INIT_ENABLE:true}
-  index_template_name: "spot_metric_template"
-  index_template_path: "${CONFIG_PATH}/index_template.json"
-  # index rollover
-  enable_rollover: ${METRIC_INDEX_ROLLOVER_ENABLE:true}
-  rollover_body_file: "${CONFIG_PATH}/index.rollover.json"
-  rollover_interval: "30m"
-  # index ttl
-  load_index_ttl_from_database: true
-  ttl_reload_interval: "3m"
-
 trace-storage:
   _enable: ${TRACE_ENABLE:true}
   spot_input:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${SPOT_TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   oap_input:
     topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${OAP_TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   output:
     cassandra:
       writer_config:
@@ -186,21 +207,27 @@ trace-storage:
         size:  ${KAFKA_BATCH_SIZE:50}
         timeout: "10s"
 
-i18n@metric:
-
-http-server@admin:
-  addr: ":7098"
-pprof:
-prometheus:
-
 alert-storage:
   input:
     topics: "${TRACE_TOPICS:spot-alert-record}"
     group: "${TRACE_GROUP_ID:spot-alert-record-dev}"
     parallelism: ${TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
 
 notify-storage:
   input:
     topics: "${TRACE_TOPICS:spot-notify-record}"
     group: "${TRACE_GROUP_ID:spot-notify-record-dev}"
     parallelism: ${TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+
+i18n@metric:
+
+http-server@admin:
+  addr: ":7098"
+pprof:
+prometheus:

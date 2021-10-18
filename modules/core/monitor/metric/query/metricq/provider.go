@@ -25,10 +25,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 
 	// v1
 	queryv1 "github.com/erda-project/erda/modules/core/monitor/metric/query/query/v1"
@@ -50,7 +50,7 @@ type provider struct {
 	C          *config
 	L          logs.Logger
 	Meta       *metricmeta.Manager   `autowired:"erda.core.monitor.metric.meta"`
-	Index      indexloader.Interface `autowired:"erda.core.monitor.metric.index-loader"`
+	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	ChartTrans i18n.Translator       `autowired:"i18n" translator:"charts"`
 	q          *metricq
@@ -64,8 +64,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	p.q = &metricq{
-		Queryer:   query.New(p.Index),
-		queryv1:   queryv1.New(p.Index, charts, p.Meta, p.ChartTrans),
+		Queryer:   query.New(&query.MetricIndexLoader{Interface: p.Index}),
+		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
 		index:     p.Index,
 		meta:      p.Meta,
 		charts:    charts,

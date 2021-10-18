@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	indexloader "github.com/erda-project/erda/modules/core/monitor/metric/index-loader"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 // MetaIndexGroupProvider .
@@ -154,9 +154,13 @@ func (p *MetaIndexMetricMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i
 		Aggregation("tags.metric_name", elastic.NewTermsAggregation().Field("tags.metric_name").Size(100000). //  impossible size
 															SubAggregation("topHit", elastic.NewTopHitsAggregation().Size(1).Sort("timestamp", false).
 																FetchSourceContext(elastic.NewFetchSourceContext(true).Include("*"))))
-	end := time.Now().UnixNano() / int64(time.Millisecond)
-	start := end - 7*24*int64(time.Hour)/int64(time.Millisecond)
-	indices := p.index.GetReadIndices([]string{"_metric_meta"}, nil, start, end)
+	end := time.Now().UnixNano()
+	start := end - 7*24*int64(time.Hour)
+
+	indices := p.index.Indices(context.Background(), start, end, indexloader.KeyPath{
+		Keys:      []string{"_metric_meta"},
+		Recursive: true,
+	}, indexloader.KeyPath{})
 	result, err := p.searchRaw(indices, searchSource)
 	if err != nil {
 		return nil, err

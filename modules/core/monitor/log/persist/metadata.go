@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package indexloader
+package persist
 
-import (
-	"net/http"
+import log "github.com/erda-project/erda/modules/core/monitor/log"
 
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	api "github.com/erda-project/erda/pkg/common/httpapi"
-)
-
-func (p *provider) intRoutes(routes httpserver.Router) error {
-	routes.GET("/api/metrics-index-manager/inspect/indices", p.getIndicesCache)
-	return nil
+// MetadataProcessor .
+type MetadataProcessor interface {
+	Process(data *log.LabeledLog) error
 }
 
-func (p *provider) getIndicesCache(r *http.Request) interface{} {
-	v := p.indices.Load()
-	return api.Success(v)
+func newMetadataProcessor(cfg *config) MetadataProcessor {
+	return NopMetadataProcessor
 }
+
+type nopMetadataProcessor struct{}
+
+func (*nopMetadataProcessor) Process(data *log.LabeledLog) error { return nil }
+
+// NopMetadataProcessor .
+var NopMetadataProcessor MetadataProcessor = &nopMetadataProcessor{}

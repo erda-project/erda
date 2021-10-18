@@ -141,3 +141,48 @@ consumeLoop:
 		}
 	}
 }
+
+// NewMockBatchReader .
+func NewMockBatchReader(ctx context.Context, interval time.Duration, batchSize int, creator func() interface{}) BatchReader {
+	ctx, cancel := context.WithCancel(ctx)
+	return &mockBatchReader{
+		ctx:     ctx,
+		cancel:  cancel,
+		timer:   time.NewTimer(0),
+		size:    batchSize,
+		creator: creator,
+	}
+}
+
+// mockBatchReader .
+type mockBatchReader struct {
+	ctx      context.Context
+	cancel   func()
+	interval time.Duration
+	timer    *time.Timer
+	size     int
+	creator  func() interface{}
+}
+
+func (r *mockBatchReader) ReadN(buf []Data, timeout time.Duration) (int, error) {
+	size := r.size
+	if len(buf) < size {
+		size = len(buf)
+	}
+	select {
+	case <-r.ctx.Done():
+		return 0, nil
+	case <-r.timer.C:
+		for i := 0; i < size; i++ {
+			buf[i] = r.creator()
+		}
+	}
+	r.timer.Reset(r.interval)
+	return size, nil
+}
+
+func (r *mockBatchReader) Confirm() error { return nil }
+func (r *mockBatchReader) Close() error {
+	r.cancel()
+	return nil
+}

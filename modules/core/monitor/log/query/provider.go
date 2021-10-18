@@ -15,13 +15,9 @@
 package query
 
 import (
-	"fmt"
-	"time"
-
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/monitor/common"
@@ -30,38 +26,23 @@ import (
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
-type config struct {
-	Cassandra cassandra.SessionConfig `file:"cassandra"`
-	Download  struct {
-		TimeSpan time.Duration `file:"time_span" default:"5m"`
-	} `file:"download"`
-}
+type config struct{}
 
-// +provider
 type provider struct {
-	Cfg             *config
-	Logger          logs.Logger
-	Register        transport.Register
-	logQueryService *logQueryService
-	Cassandra       cassandra.Interface
-	HttpServer      httpserver.Router `autowired:"http-server"`
-	Perm            perm.Interface    `autowired:"permission"`
+	Cfg      *config
+	Logger   logs.Logger
+	Register transport.Register `autowired:"service-register" optional:"true"`
+	Router   httpserver.Router  `autowired:"http-router"`
+	Perm     perm.Interface     `autowired:"permission"`
 
-	cqlQuery CQLQueryInf
+	logQueryService *logQueryService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
-	if err != nil {
-		return fmt.Errorf("fail to create cassandra session: %s", err)
+	p.logQueryService = &logQueryService{
+		p:       p,
+		storage: nil,
 	}
-	p.cqlQuery = &cassandraQuery{
-		session: session,
-	}
-
-	p.intRoutes(p.HttpServer)
-
-	p.logQueryService = &logQueryService{p}
 	if p.Register != nil {
 		pb.RegisterLogQueryServiceImp(p.Register, p.logQueryService, apis.Options(), p.Perm.Check(
 			perm.NoPermMethod(pb.LogQueryServiceServer.GetLog),
@@ -69,6 +50,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(pb.LogQueryServiceServer.GetLogByOrganization, perm.ScopeOrg, common.ResourceOrgCenter, perm.ActionGet, monitorperm.OrgIDByClusterWrapper("ClusterName")),
 		))
 	}
+
+	p.initRoutes(p.Router)
 	return nil
 }
 
@@ -81,16 +64,10 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.core.monitor.log.query", &servicehub.Spec{
-		Services:             pb.ServiceNames(),
-		Types:                pb.Types(),
-		OptionalDependencies: []string{"service-register"},
-		Description:          "",
-		ConfigFunc: func() interface{} {
-			return &config{}
-		},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
+	servicehub.Register("erda.core.monitor.log.query-v2", &servicehub.Spec{
+		Services:   pb.ServiceNames(),
+		Types:      pb.Types(),
+		ConfigFunc: func() interface{} { return &config{} },
+		Creator:    func() servicehub.Provider { return &provider{} },
 	})
 }

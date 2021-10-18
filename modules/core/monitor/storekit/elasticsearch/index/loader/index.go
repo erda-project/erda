@@ -352,8 +352,8 @@ func (p *provider) Indices(ctx context.Context, start, end int64, paths ...KeyPa
 	if indices == nil {
 		return nil
 	}
-	startT := time.Unix(start/1000, (start%1000)*int64(time.Millisecond))
-	endT := time.Unix(end/1000, (end%1000)*int64(time.Millisecond)+int64(time.Millisecond)-1)
+	startT := time.Unix(start/int64(time.Second), start%int64(time.Second))
+	endT := time.Unix(end/int64(time.Second), end%int64(time.Second))
 	for _, path := range paths {
 		p.findIndexByPath(path.Keys, path.Recursive, indices, startT, endT, &list)
 	}
@@ -423,4 +423,49 @@ func (p *provider) IndexGroup(path ...string) *IndexGroup {
 		}
 	}
 	return indices
+}
+
+func (p *provider) Prefixes() []string {
+	prefixes := make([]string, len(p.matchers), len(p.matchers))
+	for i, m := range p.matchers {
+		prefixes[i] = m.prefix
+	}
+	return prefixes
+}
+
+func (p *provider) Match(indexName string) (matched *index.MatchResult) {
+	for _, matcher := range p.matchers {
+		if !strings.HasPrefix(indexName, matcher.prefix) {
+			continue
+		}
+		indexName = indexName[len(matcher.prefix):]
+	patterns:
+		for _, ptn := range matcher.patterns {
+			result, ok := ptn.Match(indexName, index.InvalidPatternValueChars)
+			if !ok {
+				continue
+			}
+			for i, v := range ptn.Vars {
+				switch v {
+				case index.IndexVarNumber:
+					_, err := strconv.ParseInt(result.Vars[i], 10, 64)
+					if err != nil {
+						continue patterns
+					}
+				case index.IndexVarTimestamp:
+					_, err := strconv.ParseInt(result.Vars[i], 10, 64)
+					if err != nil {
+						continue patterns
+					}
+				case index.IndexVarNone:
+				}
+			}
+			matched = result
+			break
+		}
+		if matched != nil {
+			return matched
+		}
+	}
+	return nil
 }

@@ -102,32 +102,36 @@ func (p *provider) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case req := <-p.createCh:
-			p.createdLock.Lock()
-			if !p.created[req.Alias] {
-				for {
-					ok, err := p.createIndex(ctx, req.Index, req.Alias)
-					if err != nil {
-						p.Log.Error(err)
-						select {
-						case <-ctx.Done():
-							p.createdLock.Unlock()
-							return nil
-						default:
+			if func(req request) bool {
+				p.createdLock.Lock()
+				defer p.createdLock.Unlock()
+				if !p.created[req.Alias] {
+					for {
+						ok, err := p.createIndex(ctx, req.Index, req.Alias)
+						if err != nil {
+							p.Log.Error(err)
+							select {
+							case <-ctx.Done():
+								return true
+							default:
+							}
+							continue
 						}
-						continue
+						if ok {
+							p.Log.Infof("create index %q with alias %q ok", req.Index, req.Alias)
+						}
+						break
 					}
-					if ok {
-						p.Log.Infof("create index %q with alias %q ok", req.Index, req.Alias)
-					}
-					break
+					// avoid duplicate index creation
+					p.created[req.Alias] = true
 				}
-				// avoid duplicate index creation
-				p.created[req.Alias] = true
-			}
-			p.createdLock.Unlock()
-			if req.Wait != nil {
-				req.Wait <- nil
-				close(req.Wait)
+				if req.Wait != nil {
+					req.Wait <- nil
+					close(req.Wait)
+				}
+				return false
+			}(req) {
+				return nil
 			}
 		}
 	}
