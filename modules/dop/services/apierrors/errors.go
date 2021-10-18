@@ -238,8 +238,6 @@ var (
 	ErrAddTestPlanStep                    = err("ErrAddTestPlanStep", "添加测试计划步骤失败")
 	ErrDeleteTestPlanStep                 = err("ErrDeleteTestPlanStep", "删除测试计划步骤失败")
 	ErrUpdateTestPlanStep                 = err("ErrUpdateTestPlanStep", "更新测试计划步骤失败")
-	ErrListTestPlanStep                   = err("ErrListTestPlanStep", "获取测试计划步骤失败")
-	ErrMoveTestPlanStep                   = err("ErrMoveTestPlanStep", "移动测试计划步骤失败")
 	ErrCreateTestPlanMember               = err("ErrCreateTestPlanMember", "测试计划关联成员失败")
 	ErrUpdateTestPlanMember               = err("ErrUpdateTestPlanMember", "测试计划更新成员失败")
 	ErrListTestPlanMembers                = err("ErrListTestPlanMembers", "查询测试计划关联成员列表失败")

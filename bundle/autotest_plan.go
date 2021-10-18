@@ -68,7 +68,7 @@ func (b *Bundle) DeleteTestPlansV2Step(req apistructs.TestPlanV2StepDeleteReques
 }
 
 // MoveTestPlansV2Step 移动测试计划步骤
-func (b *Bundle) MoveTestPlansV2Step(req apistructs.TestPlanV2StepMoveRequest) error {
+func (b *Bundle) MoveTestPlansV2Step(req apistructs.TestPlanV2StepUpdateRequest) error {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func (b *Bundle) GetTestPlanV2(testPlanID uint64) (*apistructs.TestPlanV2GetResp
 	return &getResp, nil
 }
 
-// GetTestPlanV2Step 获取测试计划步骤
+// GetTestPlanV2 获取测试计划步骤
 func (b *Bundle) GetTestPlanV2Step(stepID uint64) (*apistructs.TestPlanV2Step, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
@@ -199,30 +199,7 @@ func (b *Bundle) GetTestPlanV2Step(stepID uint64) (*apistructs.TestPlanV2Step, e
 	return &getResp.Data, nil
 }
 
-// ListTestPlanV2Step list test plan step
-func (b *Bundle) ListTestPlanV2Step(testPlanID, groupID uint64) ([]*apistructs.TestPlanV2Step, error) {
-	host, err := b.urls.DOP()
-	if err != nil {
-		return nil, err
-	}
-	hc := b.hc
-
-	var getResp apistructs.TestPlanV2StepListResponse
-	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/autotests/testplans/%d/steps/actions/list-by-group-id", testPlanID)).
-		Param("groupID", strconv.FormatUint(groupID, 10)).
-		Header(httputil.InternalHeader, "bundle").Do().JSON(&getResp)
-
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	if !resp.IsOK() || !getResp.Success {
-		return nil, toAPIError(resp.StatusCode(), getResp.Error)
-	}
-
-	return getResp.Data, nil
-}
-
-// UpdateTestPlanV2Step 获取测试计划步骤
+// GetTestPlanV2 获取测试计划步骤
 func (b *Bundle) UpdateTestPlanV2Step(req apistructs.TestPlanV2StepUpdateRequest) error {
 	host, err := b.urls.DOP()
 	if err != nil {

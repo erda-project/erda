@@ -16,19 +16,29 @@ package sceneset
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
-	maxSize int = 200
+	maxSize       int = 200
+	nameMaxLength int = 50
+	descMaxLength int = 255
 )
 
 func (svc *Service) CreateSceneSet(req apistructs.SceneSetRequest) (uint64, error) {
-	if err := req.Validate(); err != nil {
+	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(nameMaxLength)); err != nil {
 		return 0, err
+	}
+	if err := strutil.Validate(req.Description, strutil.MaxRuneCountValidator(descMaxLength)); err != nil {
+		return 0, err
+	}
+	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {
+		return 0, apierrors.ErrCreateAutoTestSceneSet.InvalidState("只可输入中文、英文、数字、中划线或下划线")
 	}
 
 	count, err := svc.db.CountSceneSetByName(req.Name, req.SpaceID)
@@ -44,7 +54,7 @@ func (svc *Service) CreateSceneSet(req apistructs.SceneSetRequest) (uint64, erro
 		return 0, err
 	}
 	if len(sets) >= maxSize {
-		return 0, fmt.Errorf("reach max sceneset size")
+		return 0, fmt.Errorf("Reach max sceneset size!")
 	}
 
 	preID := uint64(0)
@@ -88,12 +98,22 @@ func (svc *Service) GetSceneSetsBySpaceID(spaceID uint64) ([]apistructs.SceneSet
 		res = append(res, s)
 	}
 
+	// res := make([]apistructs.SceneSet, 0, len(sceneSets))
+	// for _, item := range sceneSets {
+	// 	res = append(res, *mapping(&item))
+	// }
 	return res, nil
 }
 
 func (svc *Service) UpdateSceneSet(setID uint64, req apistructs.SceneSetRequest) (*apistructs.SceneSet, error) {
-	if err := req.Validate(); err != nil {
+	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(nameMaxLength)); err != nil {
 		return nil, err
+	}
+	if err := strutil.Validate(req.Description, strutil.MaxRuneCountValidator(descMaxLength)); err != nil {
+		return nil, err
+	}
+	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {
+		return nil, apierrors.ErrCreateAutoTestSceneSet.InvalidState("只可输入中文、英文、数字、中划线或下划线")
 	}
 
 	s, err := svc.db.GetSceneSet(setID)
