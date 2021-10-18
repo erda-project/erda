@@ -38,5 +38,5 @@ func (b *Bundle) GetWorkspaceNamespaces(req *apistructs.GetWorkspaceNamespaceReq
 	if !resp.IsOK() || !nssResp.Success {
 		return nil, toAPIError(resp.StatusCode(), nssResp.Error)
 	}
-	return nssResp.Namespaces, nil
+	return nssResp.Data, nil
 }
