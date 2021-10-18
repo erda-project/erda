@@ -68,6 +68,8 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 			projectCreateReq.Name)).ToResp(), nil
 	}
 	logrus.Infof("request body: %+v", projectCreateReq)
+	data, _ := json.Marshal(projectCreateReq)
+	logrus.Infof("request body data marshaled: %s", string(data))
 
 	// check permission
 	req := apistructs.PermissionCheckRequest{

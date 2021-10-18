@@ -129,14 +129,11 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
+	var clusterConfig []byte
 	if createReq.ResourceConfigs != nil {
 		if err := createReq.ResourceConfigs.Check(); err != nil {
 			return nil, err
 		}
-	}
-
-	var clusterConfig []byte
-	if createReq.ResourceConfigs != nil {
 		createReq.ClusterConfig = map[string]string{
 			"PROD":    createReq.ResourceConfigs.PROD.ClusterName,
 			"STAGING": createReq.ResourceConfigs.STAGING.ClusterName,

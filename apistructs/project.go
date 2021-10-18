@@ -54,14 +54,14 @@ type ProjectCreateRequest struct {
 }
 
 type ResourceConfigs struct {
-	PROD    *ClusterConfig `json:"PROD"`
-	STAGING *ClusterConfig `json:"STAGING"`
-	TEST    *ClusterConfig `json:"TEST"`
-	DEV     *ClusterConfig `json:"DEV"`
+	PROD    *ResourceConfig `json:"PROD"`
+	STAGING *ResourceConfig `json:"STAGING"`
+	TEST    *ResourceConfig `json:"TEST"`
+	DEV     *ResourceConfig `json:"DEV"`
 }
 
 func (cc ResourceConfigs) Check() error {
-	for k, v := range map[string]*ClusterConfig{
+	for k, v := range map[string]*ResourceConfig{
 		"production": cc.PROD,
 		"staging":    cc.STAGING,
 		"test":       cc.TEST,
@@ -74,10 +74,10 @@ func (cc ResourceConfigs) Check() error {
 	return nil
 }
 
-// ClusterConfig
+// ResourceConfig
 // CPU quota uint is Core .
 // Mem quota uint is GiB
-type ClusterConfig struct {
+type ResourceConfig struct {
 	ClusterName string `json:"clusterName"`
 	// CPUQuota unit is Core
 	CPUQuota float64 `json:"cpuQuota"`

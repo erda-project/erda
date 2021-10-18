@@ -192,22 +192,22 @@ func (p *provider) getProjectId(orgId uint64, az string) (uint64, error) {
 func (p *provider) createProject(orgId uint64, projectName, clusterName, displayName, desc string) (uint64, error) {
 	return p.Bdl.CreateProject(apistructs.ProjectCreateRequest{
 		ResourceConfigs: &apistructs.ResourceConfigs{
-			PROD: &apistructs.ClusterConfig{
+			PROD: &apistructs.ResourceConfig{
 				ClusterName: clusterName,
 				CPUQuota:    5.0 / 4,
 				MemQuota:    16.0 / 4,
 			},
-			STAGING: &apistructs.ClusterConfig{
+			STAGING: &apistructs.ResourceConfig{
 				ClusterName: clusterName,
 				CPUQuota:    5.0 / 4,
 				MemQuota:    16.0 / 4,
 			},
-			TEST: &apistructs.ClusterConfig{
+			TEST: &apistructs.ResourceConfig{
 				ClusterName: clusterName,
 				CPUQuota:    5.0 / 4,
 				MemQuota:    16.0 / 4,
 			},
-			DEV: &apistructs.ClusterConfig{
+			DEV: &apistructs.ResourceConfig{
 				ClusterName: clusterName,
 				CPUQuota:    5.0 / 4,
 				MemQuota:    16.0 / 4,

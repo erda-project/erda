@@ -58,6 +58,7 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 			projectCreateReq.Name)).ToResp(), nil
 	}
 	logrus.Infof("request body: %+v", projectCreateReq)
+	logrus.Infof("request body data: %s", string(bodyData))
 
 	// 操作鉴权
 	req := apistructs.PermissionCheckRequest{
