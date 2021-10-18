@@ -512,6 +512,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
+	logrus.Infoln("query ProjectQuota")
 	var projectQuota model.ProjectQuota
 	if err := p.db.First(&projectQuota).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -537,6 +538,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
 	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)
 
+	logrus.Infoln("query PodInfo")
 	var podInfos []apistructs.PodInfo
 	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -575,6 +577,8 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			})
 		}
 	}
+
+	logrus.Infof("GetNamespacesResources: %+v", resourceRequest)
 	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
@@ -618,6 +622,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		}
 	}
 
+	logrus.Infof("GetClustersResourcesRequest: %+v", projectQuota.ClustersNames())
 	// 查出各环境的实际可用资源
 	// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
 	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
@@ -658,12 +663,16 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.ResourceConfig.TEST,
 		projectDTO.ResourceConfig.DEV,
 	} {
-		source.CPURequestRate = source.CPURequest / source.CPUQuota
-		source.CPURequestByAddonRate = source.CPURequestByAddon / source.CPUQuota
-		source.CPURequestByServiceRate = source.CPURequestByService / source.CPUQuota
-		source.MemRequestRate = source.MemRequest / source.MemQuota
-		source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
-		source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
+		if source.CPUQuota != 0 {
+			source.CPURequestRate = source.CPURequest / source.CPUQuota
+			source.CPURequestByAddonRate = source.CPURequestByAddon / source.CPUQuota
+			source.CPURequestByServiceRate = source.CPURequestByService / source.CPUQuota
+		}
+		if source.MemQuota != 0 {
+			source.MemRequestRate = source.MemRequest / source.MemQuota
+			source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
+			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
+		}
 		if source.CPUAvailable > source.CPUQuota {
 			source.Tips = "该环境在本集群的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
 		}
