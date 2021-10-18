@@ -514,7 +514,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 
 	logrus.Infoln("query ProjectQuota")
 	var projectQuota model.ProjectQuota
-	if err := p.db.First(&projectQuota).Error; err != nil {
+	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
 			Warnln("failed to select the quota record of the project")
 		return &projectDTO, nil
