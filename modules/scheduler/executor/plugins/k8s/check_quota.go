@@ -36,6 +36,7 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 	if err != nil {
 		return 0, 0, err
 	}
+	logrus.Infof("get workspace %s of project %s quota: cpu: %d. mem: %d", workspace, projectID, cpuQuota, memQuota)
 
 	namespaces, err := k.bdl.GetWorkspaceNamespaces(&apistructs.GetWorkspaceNamespaceRequest{
 		ProjectID: projectID,
