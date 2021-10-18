@@ -50,7 +50,7 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 		return errors.Errorf("failed to generate deployment struct, name: %s, (%v)", service.Name, err)
 	}
 
-	projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
+	_, projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
 	cpu := int64(service.Resources.Cpu * 1000)
 	mem := int64(service.Resources.Mem * float64(1<<20))
 	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
@@ -129,7 +129,7 @@ func (k *Kubernetes) getDeployment(namespace, name string) (*appsv1.Deployment, 
 }
 
 func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deployment, service *apistructs.Service) error {
-	projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
+	_, projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
 	deltaCPU, deltaMem, err := k.getDeploymentDeltaResource(ctx, deployment)
 	if err != nil {
 		return errors.Errorf("faield to get delta resource for deployment %s, %v", deployment.Name, err)

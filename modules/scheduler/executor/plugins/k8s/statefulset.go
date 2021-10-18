@@ -160,7 +160,12 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		return nil
 	}
 
-	projectID, workspace, runtimeID := extractContainerEnvs(set.Spec.Template.Spec.Containers)
+	addonID, projectID, workspace, _ := extractContainerEnvs(set.Spec.Template.Spec.Containers)
+	runtimeID, err := k.db.GetRuntimeID(addonID)
+	if err != nil {
+		return errors.Errorf("failed to get runtime ID for statefulSet %s, %v", statefulName, err)
+	}
+
 	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, int64(service.Resources.Cpu*1000), int64(service.Resources.Mem*float64(1<<20)))
 	if err != nil {
 		return err
@@ -171,8 +176,9 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	return k.sts.Create(set)
 }
 
-func extractContainerEnvs(containers []corev1.Container) (projectID, workspace, runtimeID string) {
+func extractContainerEnvs(containers []corev1.Container) (addonID, projectID, workspace, runtimeID string) {
 	envSuffixMap := map[string]*string{
+		"ADDON_ID":        &addonID,
 		"DICE_PROJECT_ID": &projectID,
 		"DICE_RUNTIME_ID": &runtimeID,
 		"DICE_WORKSPACE":  &workspace,
