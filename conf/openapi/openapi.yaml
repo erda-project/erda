@@ -70,6 +70,7 @@ openapi-v1-routes:
           - issue-manage
           - issue-dashboard
           - code-coverage
+          - addon-account-manage
       - addr: http://localhost:8080
         scenarios:
           - demo
