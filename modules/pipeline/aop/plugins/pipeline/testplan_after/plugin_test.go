@@ -15,6 +15,7 @@
 package testplan_after
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -169,6 +170,74 @@ func TestSendStepMessage(t *testing.T) {
 
 	err := p.sendStepMessage(&ctx, 0, 0, 0, 0, 0, "1")
 	if err != nil {
+		t.Error("fail")
+	}
+}
+
+func TestStatistics(t *testing.T) {
+	var db *dbclient.Client
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineWithTasks", func(*dbclient.Client, uint64) (*spec.PipelineWithTasks, error) {
+		var id uint64 = 2
+		return &spec.PipelineWithTasks{
+			Pipeline: nil,
+			Tasks: []*spec.PipelineTask{
+				{
+					ID:     1,
+					Name:   "1",
+					Type:   "api-test",
+					Status: "Success",
+					Extra: spec.PipelineTaskExtra{
+						Action: pipelineyml.Action{
+							Version: "2.0",
+						},
+					},
+				},
+				{
+					ID:     2,
+					Name:   "2",
+					Type:   "api-test",
+					Status: "fail",
+					Extra: spec.PipelineTaskExtra{
+						Action: pipelineyml.Action{
+							Version: "2.0",
+						},
+					},
+				},
+				{
+					ID:                3,
+					Name:              "3",
+					Type:              "snippet",
+					Status:            "fail",
+					SnippetPipelineID: &id,
+				},
+			},
+		}, nil
+	})
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "BatchListPipelineReportsByPipelineID", func(*dbclient.Client, []uint64, []string, ...dbclient.SessionOption) (map[uint64][]spec.PipelineReport, error) {
+		meta := apistructs.PipelineReportMeta{}
+		meta["apiTotalNum"] = 2
+		meta["apiSuccessNum"] = 1
+		return map[uint64][]spec.PipelineReport{
+			1: {{
+				Meta: meta,
+			}},
+		}, nil
+	})
+
+	ctx := aoptypes.TuneContext{
+		Context: context.Background(),
+		SDK: aoptypes.SDK{
+			DBClient: db,
+		},
+	}
+	numStatistics, err := statistics(&ctx, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	if numStatistics.ApiExecNum != 3 && numStatistics.ApiSuccessNum != 2 {
 		t.Error("fail")
 	}
 }
