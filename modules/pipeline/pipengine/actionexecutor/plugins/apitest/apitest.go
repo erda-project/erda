@@ -78,7 +78,7 @@ func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{
 			fmt.Printf("failed to query latest task, err: %v \n", err)
 			return
 		}
-		*task = latestTask
+		//*task = latestTask
 
 		meta := latestTask.Result.Metadata
 		for _, metaField := range meta {
@@ -103,7 +103,7 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 	if err != nil {
 		return apistructs.PipelineStatusDesc{}, fmt.Errorf("failed to query latest task, err: %v", err)
 	}
-	*task = latestTask
+	//*task = latestTask
 
 	if task.Status.IsEndStatus() {
 		return apistructs.PipelineStatusDesc{Status: task.Status}, nil
