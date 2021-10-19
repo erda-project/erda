@@ -1,6 +1,18 @@
+###
+
 GET http://localhost:3033/api/autotests/scenes/2/actions/list-input
 Accept: application/json
 User-ID: 2
+###
+
+PUT http://127.0.0.1:9527/api/autotests/scenes/actions/move-scene
+Content-Type: application/json
+User-ID: 2
+
+{
+  "id": 1626,
+  "target": 1627
+}
 
 ###
 PUT http://localhost:3033/api/autotests/scenes/2/actions/update-input
