@@ -24,6 +24,11 @@ Add one of the following kinds:
 #### ChangeLog
 <!--
 Describe the specific changes from the user's perspective, as well as possible Breaking Change and other risks.
+Common Format：
+Bugfix： Fix the bug that ... in xxx platform （修复了 xxx 平台的 ...）
+Feature: Support/Optimize ... in xxx platform （实现/优化了 xxx 平台的 ...）
+
+`xxx` is one of DevOps/Micro Service/Cloud Management
 -->
 
 | Language | Changelog |
