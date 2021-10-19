@@ -1,0 +1,9 @@
+zh:
+  AvailableIsLessThanQuota: "本集群上该环境的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
+  NoResourceForTheWorkspace: "本集群上该环境的可用资源为 0, 请检查是否未正确为节点标注环境标签"
+  NoNodesInTheCluster: "此集群没有可用的节点，请添加节点"
+
+en:
+  AvailableIsLessThanQuota: "The actual available resource on this workspace in the cluster is less than the quota. Please ask the administrator to allocate project resources reasonably"
+  NoResourceForTheWorkspace: "No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes"
+  NoNodesInTheCluster: "No allocatable nodes in the cluster, please add nodes for it"

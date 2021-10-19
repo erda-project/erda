@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -574,6 +575,11 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 }
 
 func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
+	var locale *i18n.LocaleResource
+	if v := ctx.Value("locale"); v != nil {
+		locale = v.(*i18n.LocaleResource)
+	}
+
 	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
 	if err != nil {
 		return nil, err
@@ -591,6 +597,8 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 
 	// 初始化所有集群的总资源 【】
 	var (
+		// 集群 nodes 数量
+		clusterNodes = make(map[string]int)
 		// 集群里的 allocatable 资源
 		clustersAllocatable = make(map[string]*calcu.Calculator)
 		// 集群里被 request 的资源
@@ -621,7 +629,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 			request = calcu.New(cluster.GetClusterName())
 			clustersRequest[cluster.GetClusterName()] = request
 		}
-
+		clusterNodes[cluster.GetClusterName()] = len(cluster.GetHosts())
 		for _, host := range cluster.Hosts {
 			workspaces := extractWorkspacesFromLabels(host.GetLabels())
 			allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
@@ -671,9 +679,23 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				MemAvailable:   calcu.ByteToGibibyte(available.Mem.TotalForWorkspace(workspace)),
 				MemQuotaRate:   0,
 				MemRequest:     calcu.ByteToGibibyte(request.Mem.TotalForWorkspace(workspace)),
+				Nodes:          clusterNodes[clusterName],
 			}
-			resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
-			resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+			if resource.CPUAllocatable > 0 {
+				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
+				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+			} else {
+				resource.Tips = "No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes"
+				if locale != nil {
+					resource.Tips = locale.Get("NoResourceForTheWorkspace")
+				}
+			}
+			if resource.Nodes == 0 {
+				resource.Tips = "No allocatable nodes in the cluster, please add nodes for it"
+				if locale != nil {
+					resource.Tips = locale.Get("NoNodesInTheCluster")
+				}
+			}
 			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
 			resourceInfo.TotalCPU += resource.CPUAllocatable
 			resourceInfo.TotalMem += resource.MemAllocatable

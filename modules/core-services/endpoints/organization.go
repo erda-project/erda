@@ -627,6 +627,9 @@ func (e *Endpoints) getPermOrgs(r *http.Request) (bool, []int64, error) {
 
 // FetchOrgResources 获取企业资源情况
 func (e *Endpoints) FetchOrgResources(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	locale := e.GetLocale(r)
+	ctx = context.WithValue(ctx, "locale", locale)
+
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil

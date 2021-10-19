@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -144,7 +145,6 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		clusterConfig, _ = json.Marshal(createReq.ClusterConfig)
 	}
 
-	// Todo: 项目回滚点是什么东西
 	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -184,8 +184,8 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		OrgID:          int64(createReq.OrgID),
 		UserID:         userID,
 		DDHook:         createReq.DdHook,
-		ClusterConfig:  string(clusterConfig),  // todo: 查清楚哪里用到的这两个字段
-		RollbackConfig: string(rollbackConfig), // todo:
+		ClusterConfig:  string(clusterConfig),
+		RollbackConfig: string(rollbackConfig),
 		CpuQuota:       createReq.CpuQuota,
 		MemQuota:       createReq.MemQuota,
 		Functions:      string(functions),
@@ -310,7 +310,6 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 			return nil, err
 		}
 	}
-	// todo: 回滚点是干什么的
 	if err := checkRollbackConfig(&updateReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -499,6 +498,11 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 
 // Get 获取项目
 func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
+	var locale *i18n.LocaleResource
+	if v := ctx.Value("locale"); v != nil {
+		locale = v.(*i18n.LocaleResource)
+	}
+
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -679,7 +683,11 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
 		}
 		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
-			source.Tips = "该环境在本集群的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
+			source.Tips = "The actual available resource on this workspace in the cluster is less than the quota. " +
+				"Please ask the administrator to allocate project resources reasonably"
+			if locale != nil {
+				source.Tips = locale.Get("AvailableIsLessThanQuota")
+			}
 		}
 	}
 
@@ -1196,7 +1204,6 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 	return checkRollbackConfig(rollbackConfig)
 }
 
-// todo: 这个函数影响的范围
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
