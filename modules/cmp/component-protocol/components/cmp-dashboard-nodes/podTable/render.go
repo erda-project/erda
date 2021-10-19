@@ -179,13 +179,13 @@ func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			} else {
 				batchOperations = append(batchOperations, "cordon")
 			}
-			if !strings.Contains(role, "lb") {
-				batchOperations = append(batchOperations, "drain")
-				if !table.IsNodeOffline(c) {
-					batchOperations = append(batchOperations, "offline")
-				} else {
-					batchOperations = append(batchOperations, "online")
-				}
+		}
+		if role == "worker" && !table.IsNodeLabelInBlacklist(c) {
+			batchOperations = append(batchOperations, "drain")
+			if !table.IsNodeOffline(c) {
+				batchOperations = append(batchOperations, "offline")
+			} else {
+				batchOperations = append(batchOperations, "online")
 			}
 		}
 
