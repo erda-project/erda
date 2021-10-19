@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	logs "github.com/erda-project/erda/modules/core/monitor/log"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -229,7 +228,7 @@ func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params st
 		Sort:      params.Sort,
 		Size:      params.Size,
 		MaxReturn: params.MaxReturn,
-	}, func(batchLogs []*logs.Log) error {
+	}, func(batchLogs []*Log) error {
 		for _, item := range batchLogs {
 			_, err = w.Write([]byte(item.Content))
 			if err != nil {
