@@ -57,40 +57,7 @@ func (d *define) Create(ctx context.Context, task *spec.PipelineTask) (interface
 }
 
 func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
-	executorDoneCh := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan interface{})
-	if executorDoneCh == nil {
-		return nil, fmt.Errorf("wait: failed to get exector channel, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
-	}
-	go func() {
-
-		var status = apistructs.PipelineStatusFailed
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Printf("api-test logic do panic recover:%s", r)
-				executorDoneCh <- apistructs.PipelineStatusDesc{Status: status}
-			}
-		}()
-
-		logic.Do(ctx, task)
-
-		latestTask, err := d.dbClient.GetPipelineTask(task.ID)
-		if err != nil {
-			fmt.Printf("failed to query latest task, err: %v \n", err)
-			return
-		}
-		*task = latestTask
-
-		meta := latestTask.Result.Metadata
-		for _, metaField := range meta {
-			if metaField.Name == logic.MetaKeyResult {
-				if metaField.Value == logic.ResultSuccess {
-					status = apistructs.PipelineStatusSuccess
-				}
-			}
-		}
-
-		executorDoneCh <- apistructs.PipelineStatusDesc{Status: status}
-	}()
+	logic.Do(ctx, task)
 	return nil, nil
 }
 
@@ -125,13 +92,12 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 			if metaField.Value == logic.ResultSuccess {
 				return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}, nil
 			}
-			if metaField.Value == logic.ResultFailed {
-				return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusFailed}, nil
-			}
+			return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusFailed}, nil
 		}
 	}
+
 	// return created status to do start step
-	return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusRunning}, nil
+	return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusCreated}, nil
 }
 
 func (d *define) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
