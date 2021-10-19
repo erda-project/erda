@@ -29,7 +29,7 @@ type NotifyChannel struct {
 	ScopeId     string    `gorm:"column:scope_id" db:"scope_id" json:"scope_id" form:"scope_id"`                 //域id
 	CreatorId   string    `gorm:"column:creator_id" db:"creator_id" json:"creator_id" form:"creator_id"`         //创建人Id
 	CreatorName string    `gorm:"column:creator_name" db:"creator_name" json:"creator_name" form:"creator_name"` //创建人Id
-	CreateAt    time.Time `gorm:"column:create_at" db:"create_at" json:"create_at" form:"create_at"`             //创建时间
+	CreatedAt   time.Time `gorm:"column:created_at" db:"created_at" json:"created_at" form:"created_at"`         //创建时间
 	UpdatedAt   time.Time `gorm:"column:updated_at" db:"updated_at" json:"updated_at" form:"updated_at"`         //更新时间
 	IsDeleted   bool      `gorm:"column:is_deleted" db:"is_deleted" json:"is_deleted" form:"is_deleted"`         //是否删除
 }

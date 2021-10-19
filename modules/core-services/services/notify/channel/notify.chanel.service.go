@@ -80,7 +80,7 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 		ScopeType:   "org",
 		CreatorId:   creatorId,
 		CreatorName: user.Name,
-		CreateAt:    time.Now(),
+		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 		IsDeleted:   false,
 	})
@@ -221,7 +221,7 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(channel *model.NotifyChan
 	}
 	ncpb.Config = config
 	layout := "2006-01-02 15:04:05"
-	ncpb.CreateAt = channel.CreateAt.Format(layout)
+	ncpb.CreateAt = channel.CreatedAt.Format(layout)
 	ncpb.UpdateAt = channel.UpdatedAt.Format(layout)
 	return &ncpb
 }
