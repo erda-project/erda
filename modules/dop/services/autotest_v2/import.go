@@ -470,7 +470,7 @@ func (svc *Service) ImportSceneSet(req apistructs.AutoTestSceneSetImportRequest,
 		return 0, apierrors.ErrImportAutotestSceneSet.InvalidParameter("fileType")
 	}
 	if req.SpaceID == 0 {
-		return 0, apierrors.ErrExportAutoTestSceneSet.MissingParameter("projectID")
+		return 0, apierrors.ErrImportAutotestSceneSet.MissingParameter("spaceID")
 	}
 
 	space, err := svc.bdl.GetTestSpace(req.SpaceID)
@@ -502,6 +502,7 @@ func (svc *Service) ImportSceneSet(req apistructs.AutoTestSceneSetImportRequest,
 		ProjectID:    uint64(space.ProjectID),
 		Type:         apistructs.FileSceneSetActionTypeImport,
 		ApiFileUUID:  file.UUID,
+		SpaceID:      space.ID,
 		State:        apistructs.FileRecordStatePending,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{

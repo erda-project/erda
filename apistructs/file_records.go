@@ -27,6 +27,7 @@ type TestFileRecord struct {
 	ProjectID   uint64          `json:"projectID"`
 	TestSetID   uint64          `json:"testSetID"`
 	ApiFileUUID string          `json:"apiFileUUID"`
+	SpaceID     uint64          `json:"spaceID"`
 	Type        FileActionType  `json:"type"`
 	State       FileRecordState `json:"state"`
 	CreatedAt   time.Time       `json:"createdAt"`
@@ -38,6 +39,7 @@ type TestFileRecordRequest struct {
 	ID          uint64          `json:"id"`
 	FileName    string          `json:"name"`
 	ProjectID   uint64          `json:"projectID"`
+	SpaceID     uint64          `json:"spaceID"`
 	Description string          `json:"description"`
 	ApiFileUUID string          `json:"apiFileUUID"`
 	Type        FileActionType  `json:"type"`
@@ -89,6 +91,7 @@ const (
 
 type ListTestFileRecordsRequest struct {
 	ProjectID uint64           `json:"projectID"`
+	SpaceID   uint64           `json:"spaceID"`
 	Types     []FileActionType `json:"types"`
 	Locale    string           `json:"locale"`
 }

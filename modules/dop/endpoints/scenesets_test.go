@@ -29,11 +29,9 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/dop/bdl"
-
-	atv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/bdl"
+	atv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/pkg/user"
 )
 

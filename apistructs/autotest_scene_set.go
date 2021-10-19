@@ -29,7 +29,7 @@ func (t TestSceneSetFileType) Valid() bool {
 	}
 }
 
-// AutoTestSpaceExportRequest export autotest space
+// AutoTestSceneSetExportRequest export autotest scene set
 type AutoTestSceneSetExportRequest struct {
 	ID           uint64               `json:"id"`
 	Locale       string               `schema:"-"`
@@ -48,4 +48,9 @@ type AutoTestSceneSetImportRequest struct {
 	FileType  TestSceneSetFileType `schema:"fileType"`
 
 	IdentityInfo
+}
+
+type AutoTestSceneSetImportResponse struct {
+	Header
+	Data uint64 `json:"data"`
 }

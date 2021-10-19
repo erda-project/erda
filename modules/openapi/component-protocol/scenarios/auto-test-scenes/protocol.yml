@@ -14,7 +14,11 @@ hierarchy:
       - fileFormModal
     leftHead:
       left: leftHeadTitle
-      right: leftHeadButton
+      right:
+        - leftHeadAddSceneSet
+        - moreOperation
+    moreOperation:
+      children: moreIcon
     rightPage:
       - folderDetail
       - fileDetail
@@ -149,11 +153,16 @@ components:
     type: Alert
   leftHeadTitle:
     type: Title
-  leftHeadButton:
-    type: Button
+  leftHeadAddSceneSet:
+    type: Icon
+  moreOperation:
+    type: Dropdown
+  moreIcon:
+    type: Icon
     props:
-      text: 添加
-      type: primary
+      iconType: moreOne
+      size: 18
+      hoverAction: true
   fileTree:
     type: FileTree
   fileFormModal:
@@ -532,13 +541,13 @@ rendering:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: resultDrawer
-  leftHeadButton:
+  leftHeadAddSceneSet:
     - name: "fileFormModal"
       state:
         - name: "visible"
-          value: "{{ leftHeadButton.formVisible }}"
+          value: "{{ leftHeadAddSceneSet.formVisible }}"
         - name: "actionType"
-          value: "{{ leftHeadButton.actionType }}"
+          value: "{{ leftHeadAddSceneSet.actionType }}"
   fileDetail:
     - name: fileConfig
       state:
@@ -888,11 +897,12 @@ rendering:
           value: "{{ executeTaskBreadcrumb.visible }}"
 
   __DefaultRendering__:
+    - name: moreOperation
     - name: autoTestScenes
     - name: leftPage
     - name: leftHead
     - name: leftHeadTitle
-    - name: leftHeadButton
+    - name: leftHeadAddSceneSet
     - name: fileSearch
     - name: fileTree
     - name: rightPage

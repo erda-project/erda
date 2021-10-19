@@ -29,6 +29,7 @@ func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint
 		FileName:    req.FileName,
 		Description: req.Description,
 		ProjectID:   req.ProjectID,
+		SpaceID:     req.SpaceID,
 		Type:        req.Type,
 		State:       req.State,
 		ApiFileUUID: req.ApiFileUUID,
@@ -140,6 +141,7 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 			}
 			return 0
 		}(),
+		SpaceID:     s.SpaceID,
 		Description: s.Description,
 		Type:        s.Type,
 		State:       s.State,

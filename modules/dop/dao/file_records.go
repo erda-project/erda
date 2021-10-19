@@ -33,6 +33,7 @@ type TestFileRecord struct {
 	Description string
 	ApiFileUUID string
 	ProjectID   uint64
+	SpaceID     uint64
 	Type        apistructs.FileActionType
 	State       apistructs.FileRecordState
 	OperatorID  string
@@ -90,17 +91,19 @@ type stateCounter struct {
 	Count int
 }
 
-// Get Records by projectId
+// Get Records by projectId, spaceId, types
 func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]TestFileRecord, map[string]int, error) {
 	var res []TestFileRecord
+	sql := client.Table("dice_test_file_records").Where("`project_id` = ?", req.ProjectID)
+	if req.SpaceID > 0 {
+		sql = sql.Where("`space_id` = ?", req.SpaceID)
+	}
 	if len(req.Types) > 0 {
-		if err := client.Where("`project_id` = ? AND `type` IN (?)", req.ProjectID, req.Types).Order("created_at desc").Find(&res).Error; err != nil {
-			return nil, nil, err
-		}
-	} else {
-		if err := client.Where("`project_id` = ?", req.ProjectID).Order("created_at desc").Find(&res).Error; err != nil {
-			return nil, nil, err
-		}
+		sql = sql.Where("`type` IN (?)", req.Types)
+	}
+
+	if err := sql.Order("created_at desc").Find(&res).Error; err != nil {
+		return nil, nil, err
 	}
 
 	var counterList []stateCounter

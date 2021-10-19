@@ -266,6 +266,7 @@ func (svc *Service) ExportSceneSet(req apistructs.AutoTestSceneSetExportRequest)
 		Type:         apistructs.FileSceneSetActionTypeExport,
 		State:        apistructs.FileRecordStatePending,
 		ProjectID:    req.ProjectID,
+		SpaceID:      req.SpaceID,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{
 			AutotestSceneSetFileExtraInfo: &apistructs.AutoTestSceneSetFileExtraInfo{
