@@ -98,6 +98,32 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 	strs := strings.Split(string(req.CloudVendor), "-")
 	req.CloudVendorName, req.CloudBasicRsc = strs[0], strs[1]
 
+	// import cluster
+	ic := apistructs.ImportCluster{
+		CredentialType: "proxy",
+		ClusterName:    req.ClusterName,
+		DisplayName:    req.DisplayName,
+		OrgID:          req.OrgID,
+		ScheduleConfig: apistructs.ClusterSchedConfig{
+			CPUSubscribeRatio: "1",
+		},
+		ClusterType:    "k8s",
+		WildcardDomain: req.RootDomain,
+	}
+	err = c.importCluster(userid, &ic)
+	if err != nil {
+		logrus.Errorf("import cluster failed, request: %v, error: %v", req, err)
+		return recordID, err
+	}
+
+	// get cluster access key
+	cak, err := c.GetOrCreateAccessKey(req.ClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster access key failed, cluster: %s, error: %v", req.ClusterName, err)
+		return recordID, err
+	}
+	req.ClusterAccessKey = cak.AccessKey
+
 	logrus.Debugf("cloud request: %v", req)
 
 	var yml apistructs.PipelineYml
@@ -168,24 +194,6 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create record: %v", err)
 		logrus.Errorf(errstr)
-		return recordID, err
-	}
-
-	// import cluster
-	ic := apistructs.ImportCluster{
-		CredentialType: "proxy",
-		ClusterName:    req.ClusterName,
-		DisplayName:    req.DisplayName,
-		OrgID:          req.OrgID,
-		ScheduleConfig: apistructs.ClusterSchedConfig{
-			CPUSubscribeRatio: "1",
-		},
-		ClusterType:    "k8s",
-		WildcardDomain: req.RootDomain,
-	}
-	err = c.importCluster(userid, &ic)
-	if err != nil {
-		logrus.Errorf("import cluster failed, request: %v, error: %v", req, err)
 		return recordID, err
 	}
 
@@ -369,6 +377,8 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Alias:   string(apistructs.NodePhasePlan),
 			Params: map[string]interface{}{
 				// base fields which create cluster
+				"cluster_access_key": req.ClusterAccessKey,
+
 				"org_name":       req.OrgName,
 				"dice_version":   req.DiceVersion,
 				"cluster_name":   req.ClusterName,
@@ -427,6 +437,9 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Version: "1.0",
 			Alias:   string(apistructs.NodePhaseBuyNode),
 			Params: map[string]interface{}{
+
+				"cluster_access_key": req.ClusterAccessKey,
+
 				"org_name":       req.OrgName,
 				"dice_version":   req.DiceVersion,
 				"cluster_name":   req.ClusterName,
@@ -518,6 +531,8 @@ func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml 
 				"root_domain":  req.RootDomain,
 				"enable_https": req.EnableHttps,
 
+				"cluster_access_key": req.ClusterAccessKey,
+
 				"cluster_name":      req.ClusterName,
 				"access_key_id":     req.AccessKey,
 				"access_key_secret": req.SecretKey,
@@ -551,6 +566,8 @@ func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml 
 				"org_name":     req.OrgName,
 				"root_domain":  req.RootDomain,
 				"enable_https": req.EnableHttps,
+
+				"cluster_access_key": req.ClusterAccessKey,
 
 				"cluster_name":      req.ClusterName,
 				"access_key_id":     req.AccessKey,

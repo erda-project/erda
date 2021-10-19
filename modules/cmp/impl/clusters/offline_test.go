@@ -48,7 +48,7 @@ func TestOfflineEdgeCluster(t *testing.T) {
 	})
 
 	// monkey record delete func
-	monkey.Patch(updateDeleteRecord, func(_ *dbclient.DBClient, _ dbclient.Record) (uint64, error) {
+	monkey.Patch(createRecord, func(_ *dbclient.DBClient, _ dbclient.Record) (uint64, error) {
 		return 0, nil
 	})
 
