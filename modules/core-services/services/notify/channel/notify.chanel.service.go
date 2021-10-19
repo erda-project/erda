@@ -151,7 +151,7 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 		channel.Type = req.Type
 	}
 	if req.Config != nil {
-		err = s.ConfigValidate(req.Type, req.Config)
+		err := s.ConfigValidate(req.Type, req.Config)
 		if err != nil {
 			return nil, err
 		}
