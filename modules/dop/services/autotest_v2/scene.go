@@ -794,7 +794,6 @@ func StepToAction(step apistructs.AutoTestSceneStep, req apistructs.SnippetConfi
 				apistructs.LabelSpaceID:          strconv.Itoa(int(step.SpaceID)),
 				apistructs.LabelIterationID:      req.Labels[apistructs.LabelIterationID],
 				apistructs.LabelTestPlanID:       req.Labels[apistructs.LabelTestPlanID],
-				apistructs.LabelUserID:           req.Labels[apistructs.LabelUserID],
 			},
 		}
 	case apistructs.StepTypeAPI:

@@ -47,13 +47,3 @@ type AutoTestExecHistory struct {
 func (AutoTestExecHistory) TableName() string {
 	return "dice_autotest_exec_history"
 }
-
-// CreateAutoTestExecHistory .
-func (db *DBClient) CreateAutoTestExecHistory(execHistory *AutoTestExecHistory) error {
-	return db.Create(execHistory).Error
-}
-
-// BatchCreateAutoTestExecHistory .
-func (db *DBClient) BatchCreateAutoTestExecHistory(list []AutoTestExecHistory) error {
-	return db.Create(list).Error
-}

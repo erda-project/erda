@@ -151,8 +151,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return err
 	}
 	if stepType == apistructs.StepTypeScene {
-		if err = p.sendStepMessage(ctx, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID, userID);
-			err != nil {
+		if err = p.sendStepMessage(ctx, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID, userID); err != nil {
 			return err
 		}
 	}
