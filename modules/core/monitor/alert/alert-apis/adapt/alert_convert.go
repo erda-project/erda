@@ -388,13 +388,11 @@ func ToPBAlertExpressionModel(expression *db.AlertExpression) *pb.AlertExpressio
 		return nil
 	}
 	e.Window = window
-	level, ok := utils.GetMapValueArr(expression.Attributes, "level")
+	level, ok := utils.GetMapValueString(expression.Attributes, "level")
 	if !ok {
 		return nil
 	}
-	for _, v := range level {
-		e.Level = append(e.Level, v.(string))
-	}
+	e.Level = level
 	functions, ok := utils.GetMapValueArr(expression.Expression, "functions")
 	if !ok {
 		return nil

@@ -709,7 +709,7 @@ message AlertExpression {
   bool                             isRecover  = 6;
   int64                            createTime = 7;
   int64                            updateTime = 8;
-  repeated string                  level      = 9;
+  string                           level      = 9;
 }
 
 message AlertExpressionFunction {
