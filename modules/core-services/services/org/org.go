@@ -639,7 +639,9 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		}
 	}
 	// 可分配和总 allocatable 是一致的
-	copyClustersResource(clustersAllocatable, clusterAvailable)
+	for k, v := range clustersAllocatable {
+		clusterAvailable[k] = v.Copy()
+	}
 
 	// 查出所有项目的 quota 记录
 	var projectsQuota []*model.ProjectQuota
@@ -652,7 +654,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		for _, project := range projectsQuota {
 			if available, ok := clusterAvailable[project.GetClusterName(workspaceStr)]; ok {
 				available.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
-				available.CPU.Quota(workspace, project.GetMemQuota(workspaceStr))
+				available.Mem.Quota(workspace, project.GetMemQuota(workspaceStr))
 			}
 		}
 	}
@@ -681,21 +683,28 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				MemRequest:     calcu.ByteToGibibyte(request.Mem.TotalForWorkspace(workspace)),
 				Nodes:          clusterNodes[clusterName],
 			}
-			if resource.CPUAllocatable > 0 {
-				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
-				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
-			} else {
+			if resource.CPUAllocatable == 0 && resource.MemAllocatable == 0 {
 				resource.Tips = "No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes"
 				if locale != nil {
 					resource.Tips = locale.Get("NoResourceForTheWorkspace")
 				}
-			}
-			if resource.Nodes == 0 {
-				resource.Tips = "No allocatable nodes in the cluster, please add nodes for it"
-				if locale != nil {
-					resource.Tips = locale.Get("NoNodesInTheCluster")
+				if resource.Nodes == 0 {
+					resource.Tips = "No allocatable nodes in the cluster, please add nodes for it"
+					if locale != nil {
+						resource.Tips = locale.Get("NoNodesInTheCluster")
+					}
+				}
+			} else {
+				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
+				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+				if !available.CPU.StatusOK(workspace) {
+					resource.Tips = "The total quota is more than total allocatable, resource squeeze will occur"
+					if locale != nil {
+						resource.Tips = locale.Get("ResourceSqueeze")
+					}
 				}
 			}
+
 			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
 			resourceInfo.TotalCPU += resource.CPUAllocatable
 			resourceInfo.TotalMem += resource.MemAllocatable
@@ -728,13 +737,6 @@ func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
 		w = append(w, k)
 	}
 	return w
-}
-
-func copyClustersResource(src, dst map[string]*calcu.Calculator) {
-	for k, v := range src {
-		vv := *v
-		dst[k] = &vv
-	}
 }
 
 // ListAllOrgClusterRelation 获取所有企业对应集群关系

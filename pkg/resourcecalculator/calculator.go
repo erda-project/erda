@@ -38,23 +38,34 @@ type Calculator struct {
 	Mem         *ResourceCalculator
 }
 
-type ResourceCalculator struct {
-	Type string
-	M    map[string]uint64
-}
-
 func New(clusterName string) *Calculator {
 	return &Calculator{
 		ClusterName: clusterName,
 		CPU: &ResourceCalculator{
-			Type: "CPU",
-			M:    make(map[string]uint64),
+			Type:   "CPU",
+			M:      make(map[string]uint64),
+			status: make(map[Workspace]int),
 		},
 		Mem: &ResourceCalculator{
-			Type: "Memory",
-			M:    make(map[string]uint64),
+			Type:   "Memory",
+			M:      make(map[string]uint64),
+			status: make(map[Workspace]int),
 		},
 	}
+}
+
+func (c *Calculator) Copy() *Calculator {
+	return &Calculator{
+		ClusterName: c.ClusterName,
+		CPU:         c.CPU.Copy(),
+		Mem:         c.Mem.Copy(),
+	}
+}
+
+type ResourceCalculator struct {
+	Type   string
+	M      map[string]uint64
+	status map[Workspace]int
 }
 
 func (q *ResourceCalculator) AddValue(value uint64, workspace ...Workspace) {
@@ -96,6 +107,12 @@ func (q *ResourceCalculator) TotalForWorkspace(workspace Workspace) uint64 {
 
 func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
 	if totalForWorkspace := q.TotalForWorkspace(workspace); quota > totalForWorkspace {
+		for k := range q.M {
+			if strings.Contains(k, WorkspaceString(workspace)) {
+				q.M[k] = 0
+				q.status[workspace] = -1
+			}
+		}
 		return errors.Errorf("the resource %v is not enough, total: %v, your request：%v",
 			q.Type, totalForWorkspace, quota)
 	}
@@ -111,6 +128,24 @@ func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
 		q.M[v] = 0
 	}
 	return nil
+}
+
+func (q *ResourceCalculator) StatusOK(workspace Workspace) bool {
+	return q.status[workspace] >= 0
+}
+
+func (q *ResourceCalculator) Copy() *ResourceCalculator {
+	var r ResourceCalculator
+	r.Type = q.Type
+	r.M = make(map[string]uint64)
+	r.status = make(map[Workspace]int)
+	for k, v := range q.M {
+		r.M[k] = v
+	}
+	for k, v := range q.status {
+		r.status[k] = v
+	}
+	return &r
 }
 
 func WorkspaceString(workspace Workspace) string {
