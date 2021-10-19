@@ -76,7 +76,7 @@ components:
   referenceTip:
     type: Alert
     props:
-      type: normal
+      type: info
       message: 该账号被以下应用所引用，请确认
       showIcon: true
   deleteModal:
@@ -156,94 +156,93 @@ components:
         reload: true
   accountTable:
     type: Table
-    name: accountTable
-    props:
-      className: ''
-      columns:
-        - data:
-          dataIndex: username
-          title: 账号
-        - data:
-          dataIndex: password
-          title: 密码
-        - data:
-          dataIndex: referenceCount
-          title: 被引用的次数
-        - data:
-          dataIndex: creator
-          title: 创建者
-        - data:
-          dataIndex: createdAt
-          title: 创建时间
-        - data:
-          dataIndex: operate
-          title: 操作
-          width: 180
-      pageSizeOptions:
-        - '10'
-        - '20'
-        - '50'
-        - '100'
-      rowKey: id
-      rowSelection:
-      title: ''
-      visible: true
-    data:
-      list:
-        - id: 16
-          username:
-            renderType: textWithTags
-            value: abc
-            tags:
-              - tag: 主账号
-                color: green
-          password: "******"
-          referenceCount:
-            renderType: linkText
-            value: 12
-            operations:
-              click:
-                command:
-                  key: set
-                  state:
-                    visible: true
-                    id: 16
-                  target: referenceModal
-                disabled: false
-                disabledTip: 无操作权限，请联系项目所有者/项目经理开通操作权限
-                key: edit
-                reload: false
-                showIndex: 1
-                successMsg: ''
-                text: 编辑
-          creator: Mike
-          createdAt: 2021-10-01 12:00
-          operate:
-            operations:
-              setMain:
-                confirm: 主账号将被新引用应用或者已引用应用重启后使用，请确认是否要设置
-                disabled: false
-                disabledTip: ''
-                key: setMain
-                meta:
-                  id: 16
-                reload: true
-                showIndex: 1
-                successMsg: ''
-                text: 设置为主账号
-              delete:
-                confirm: 是否确认删除
-                disabled: false
-                disabledTip: 无法删除
-                key: delete
-                meta:
-                  id: 16
-                reload: true
-                showIndex: 2
-                successMsg: 删除成功
-                text: 删除
-            renderType: tableOperation
-            value: ''
+#    props:
+#      className: ''
+#      columns:
+#        - data:
+#          dataIndex: username
+#          title: 账号
+#        - data:
+#          dataIndex: password
+#          title: 密码
+#        - data:
+#          dataIndex: referenceCount
+#          title: 被引用的次数
+#        - data:
+#          dataIndex: creator
+#          title: 创建者
+#        - data:
+#          dataIndex: createdAt
+#          title: 创建时间
+#        - data:
+#          dataIndex: operate
+#          title: 操作
+#          width: 180
+#      pageSizeOptions:
+#        - '10'
+#        - '20'
+#        - '50'
+#        - '100'
+#      rowKey: id
+#      rowSelection:
+#      title: ''
+#      visible: true
+#    data:
+#      list:
+#        - id: 16
+#          username:
+#            renderType: textWithTags
+#            value: abc
+#            tags:
+#              - tag: 主账号
+#                color: green
+#          password: "******"
+#          referenceCount:
+#            renderType: linkText
+#            value: 12
+#            operations:
+#              click:
+#                command:
+#                  key: set
+#                  state:
+#                    visible: true
+#                    id: 16
+#                  target: referenceModal
+#                disabled: false
+#                disabledTip: 无操作权限，请联系项目所有者/项目经理开通操作权限
+#                key: edit
+#                reload: false
+#                showIndex: 1
+#                successMsg: ''
+#                text: 编辑
+#          creator: Mike
+#          createdAt: 2021-10-01 12:00
+#          operate:
+#            operations:
+#              setMain:
+#                confirm: 主账号将被新引用应用或者已引用应用重启后使用，请确认是否要设置
+#                disabled: false
+#                disabledTip: ''
+#                key: setMain
+#                meta:
+#                  id: 16
+#                reload: true
+#                showIndex: 1
+#                successMsg: ''
+#                text: 设置为主账号
+#              delete:
+#                confirm: 是否确认删除
+#                disabled: false
+#                disabledTip: 无法删除
+#                key: delete
+#                meta:
+#                  id: 16
+#                reload: true
+#                showIndex: 2
+#                successMsg: 删除成功
+#                text: 删除
+#            renderType: tableOperation
+#            value: ''
     state:
       pageNo: 1
       pageSize: 10
@@ -265,7 +264,6 @@ components:
           jumpOut: false
   page:
     type: Container
-    name: page
   topHead:
     type: RowContainer
     name: topHead
@@ -275,3 +273,4 @@ components:
 rendering:
   __DefaultRendering__:
     - name: page
+    - name: accountTable
