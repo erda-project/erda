@@ -345,7 +345,7 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			Config: config,
 			Status: StatusMiss,
 		}
-		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
+		err = s.QueryCheckersLatencySummary(req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
@@ -433,7 +433,7 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(projectID int64,
 	)
 }
 
-func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange(timeUnit, 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
 	return s.queryCheckerMetrics(start, end, `
