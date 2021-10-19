@@ -28,6 +28,8 @@ type NotifyChannelServiceHandler interface {
 	GetNotifyChannel(context.Context, *GetNotifyChannelRequest) (*GetNotifyChannelResponse, error)
 	// DELETE /api/notify-channel
 	DeleteNotifyChannel(context.Context, *DeleteNotifyChannelRequest) (*DeleteNotifyChannelResponse, error)
+	// GET /api/notify-channel/types
+	GetNotifyChannelTypes(context.Context, *GetNotifyChannelTypesRequest) (*GetNotifyChannelTypesResponse, error)
 }
 
 // RegisterNotifyChannelServiceHandler register NotifyChannelServiceHandler to http.Router.
@@ -233,9 +235,46 @@ func RegisterNotifyChannelServiceHandler(r http.Router, srv NotifyChannelService
 		)
 	}
 
+	add_GetNotifyChannelTypes := func(method, path string, fn func(context.Context, *GetNotifyChannelTypesRequest) (*GetNotifyChannelTypesResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetNotifyChannelTypesRequest))
+		}
+		var GetNotifyChannelTypes_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetNotifyChannelTypes_info = transport.NewServiceInfo("erda.core.services.notify.channel.NotifyChannelService", "GetNotifyChannelTypes", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetNotifyChannelTypes_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetNotifyChannelTypesRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateNotifyChannel("POST", "/api/notify-channel", srv.CreateNotifyChannel)
 	add_GetNotifyChannels("GET", "/api/notify-channels", srv.GetNotifyChannels)
 	add_UpdateNotifyChannel("PUT", "/api/notify-channel", srv.UpdateNotifyChannel)
 	add_GetNotifyChannel("GET", "/api/notify-channel", srv.GetNotifyChannel)
 	add_DeleteNotifyChannel("DELETE", "/api/notify-channel", srv.DeleteNotifyChannel)
+	add_GetNotifyChannelTypes("GET", "/api/notify-channel/types", srv.GetNotifyChannelTypes)
 }

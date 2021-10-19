@@ -16,12 +16,15 @@ var _ urlenc.URLValuesUnmarshaler = (*DeleteNotifyChannelRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteNotifyChannelResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelTypesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelTypesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateNotifyChannelRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateNotifyChannelResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelsRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateNotifyChannelRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateNotifyChannelResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannel)(nil)
 
 // DeleteNotifyChannelRequest implement urlenc.URLValuesUnmarshaler.
@@ -86,7 +89,25 @@ func (m *GetNotifyChannelResponse) UnmarshalURLValues(prefix string, values url.
 				if m.Data == nil {
 					m.Data = &NotifyChannel{}
 				}
-				m.Data.Type = vals[0]
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+			case "data.type.name":
+				if m.Data == nil {
+					m.Data = &NotifyChannel{}
+				}
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+				m.Data.Type.Name = vals[0]
+			case "data.type.displayName":
+				if m.Data == nil {
+					m.Data = &NotifyChannel{}
+				}
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+				m.Data.Type.DisplayName = vals[0]
 			case "data.scopeId":
 				if m.Data == nil {
 					m.Data = &NotifyChannel{}
@@ -115,6 +136,16 @@ func (m *GetNotifyChannelResponse) UnmarshalURLValues(prefix string, values url.
 			}
 		}
 	}
+	return nil
+}
+
+// GetNotifyChannelTypesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyChannelTypesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetNotifyChannelTypesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyChannelTypesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
@@ -158,7 +189,25 @@ func (m *UpdateNotifyChannelResponse) UnmarshalURLValues(prefix string, values u
 				if m.Data == nil {
 					m.Data = &NotifyChannel{}
 				}
-				m.Data.Type = vals[0]
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+			case "data.type.name":
+				if m.Data == nil {
+					m.Data = &NotifyChannel{}
+				}
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+				m.Data.Type.Name = vals[0]
+			case "data.type.displayName":
+				if m.Data == nil {
+					m.Data = &NotifyChannel{}
+				}
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+				m.Data.Type.DisplayName = vals[0]
 			case "data.scopeId":
 				if m.Data == nil {
 					m.Data = &NotifyChannel{}
@@ -202,7 +251,11 @@ func (m *GetNotifyChannelsRequest) UnmarshalURLValues(prefix string, values url.
 				}
 				m.Page = val
 			case "pageSize":
-				m.PageSize = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
 			}
 		}
 	}
@@ -221,7 +274,11 @@ func (m *GetNotifyChannelsResponse) UnmarshalURLValues(prefix string, values url
 				}
 				m.Page = val
 			case "pageSize":
-				m.PageSize = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
 			case "total":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -272,7 +329,25 @@ func (m *CreateNotifyChannelResponse) UnmarshalURLValues(prefix string, values u
 				if m.Data == nil {
 					m.Data = &NotifyChannel{}
 				}
-				m.Data.Type = vals[0]
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+			case "data.type.name":
+				if m.Data == nil {
+					m.Data = &NotifyChannel{}
+				}
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+				m.Data.Type.Name = vals[0]
+			case "data.type.displayName":
+				if m.Data == nil {
+					m.Data = &NotifyChannel{}
+				}
+				if m.Data.Type == nil {
+					m.Data.Type = &NotifyChannelType{}
+				}
+				m.Data.Type.DisplayName = vals[0]
 			case "data.scopeId":
 				if m.Data == nil {
 					m.Data = &NotifyChannel{}
@@ -304,6 +379,21 @@ func (m *CreateNotifyChannelResponse) UnmarshalURLValues(prefix string, values u
 	return nil
 }
 
+// NotifyChannelType implement urlenc.URLValuesUnmarshaler.
+func (m *NotifyChannelType) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "displayName":
+				m.DisplayName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
 // NotifyChannel implement urlenc.URLValuesUnmarshaler.
 func (m *NotifyChannel) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
@@ -314,7 +404,19 @@ func (m *NotifyChannel) UnmarshalURLValues(prefix string, values url.Values) err
 			case "name":
 				m.Name = vals[0]
 			case "type":
-				m.Type = vals[0]
+				if m.Type == nil {
+					m.Type = &NotifyChannelType{}
+				}
+			case "type.name":
+				if m.Type == nil {
+					m.Type = &NotifyChannelType{}
+				}
+				m.Type.Name = vals[0]
+			case "type.displayName":
+				if m.Type == nil {
+					m.Type = &NotifyChannelType{}
+				}
+				m.Type.DisplayName = vals[0]
 			case "scopeId":
 				m.ScopeId = vals[0]
 			case "scopeType":

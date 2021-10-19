@@ -25,6 +25,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/chtype"
@@ -87,18 +88,27 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, err
 	}
-	return &pb.CreateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(channel)}, nil
+	return &pb.CreateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel)}, nil
 }
 
 func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.GetNotifyChannelsRequest) (*pb.GetNotifyChannelsResponse, error) {
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.Page < 10 {
+		req.Page = 10
+	}
+	if req.Page > 50 {
+		req.Page = 50
+	}
 	orgId := apis.GetOrgID(ctx)
 	if orgId == "" {
 		return nil, pkgerrors.NewNotFoundError("Org")
 	}
-	total, channels, err := s.NotifyChannelDB.ListByPage(req.Page, req.PageSize, orgId)
+	total, channels, err := s.NotifyChannelDB.ListByPage((req.Page-1)*req.PageSize, req.PageSize, orgId)
 	var pbChannels []*pb.NotifyChannel
 	for _, channel := range channels {
-		pbChannels = append(pbChannels, s.CovertToPbNotifyChannel(&channel))
+		pbChannels = append(pbChannels, s.CovertToPbNotifyChannel(apis.Language(ctx), &channel))
 	}
 
 	if err != nil {
@@ -157,22 +167,22 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, pkgerrors.NewDatabaseError(err)
 	}
-	return &pb.UpdateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(update)}, nil
+	return &pb.UpdateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), update)}, nil
 }
 
 func (s *notifyChannelService) GetNotifyChannel(ctx context.Context, req *pb.GetNotifyChannelRequest) (*pb.GetNotifyChannelResponse, error) {
-	if req.GetId() == "" {
+	if req.Id == "" {
 		return nil, pkgerrors.NewMissingParameterError("id")
 	}
-	channel, err := s.NotifyChannelDB.GetById(req.GetId())
+	channel, err := s.NotifyChannelDB.GetById(req.Id)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(channel)}, nil
+	return &pb.GetNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel)}, nil
 }
 
 func (s *notifyChannelService) DeleteNotifyChannel(ctx context.Context, req *pb.DeleteNotifyChannelRequest) (*pb.DeleteNotifyChannelResponse, error) {
-	if req.GetId() == "" {
+	if req.Id == "" {
 		return nil, pkgerrors.NewMissingParameterError("id")
 	}
 	channel, err := s.NotifyChannelDB.DeleteById(req.Id)
@@ -180,6 +190,17 @@ func (s *notifyChannelService) DeleteNotifyChannel(ctx context.Context, req *pb.
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
 	return &pb.DeleteNotifyChannelResponse{Id: channel.Id}, nil
+}
+
+func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *pb.GetNotifyChannelTypesRequest) (*pb.GetNotifyChannelTypesResponse, error) {
+
+	language := apis.Language(ctx)
+	var types []*pb.NotifyChannelType
+	types = append(types, &pb.NotifyChannelType{
+		Name:        strings.ToLower(pb.Type_ALI_SHORT_MESSAGE.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_ALI_SHORT_MESSAGE.String())),
+	})
+	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
 }
 
 func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) error {
@@ -200,15 +221,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 	}
 }
 
-func (s *notifyChannelService) ParamsValidate(req *pb.CreateNotifyChannelRequest) error {
-	err := s.ConfigValidate(req.Type, req.Config)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *notifyChannelService) CovertToPbNotifyChannel(channel *model.NotifyChannel) *pb.NotifyChannel {
+func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
 	ncpb := pb.NotifyChannel{}
 	err := copier.CopyWithOption(&ncpb, &channel, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 	if err != nil {
@@ -220,6 +233,10 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(channel *model.NotifyChan
 		return nil
 	}
 	ncpb.Config = config
+	ncpb.Type = &pb.NotifyChannelType{
+		Name:        channel.Type,
+		DisplayName: s.p.I18n.Text(lang, channel.Type),
+	}
 	layout := "2006-01-02 15:04:05"
 	ncpb.CreateAt = channel.CreatedAt.Format(layout)
 	ncpb.UpdateAt = channel.UpdatedAt.Format(layout)

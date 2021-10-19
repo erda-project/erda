@@ -20,6 +20,7 @@ import (
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
@@ -36,7 +37,8 @@ type provider struct {
 	Register            transport.Register
 	bdl                 *bundle.Bundle
 	notifyChanelService *notifyChannelService
-	DB                  *gorm.DB `autowired:"mysql-client"`
+	DB                  *gorm.DB        `autowired:"mysql-client"`
+	I18n                i18n.Translator `autowired:"i18n" translator:"cs-i18n"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

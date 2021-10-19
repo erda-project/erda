@@ -5,7 +5,6 @@ grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.cms-client:
 
-
 # new api with proto style
 http-server:
   addr: ":9536"
@@ -13,6 +12,10 @@ grpc-server:
   addr: ":9537"
 permission:
 service-register:
+
+i18n:
+  common:
+    - conf/core-services/i18n/cs-i18n.yml
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
@@ -23,7 +26,6 @@ mysql:
 
 erda.core.services.authentication.credentials.accesskey:
 erda.core.services.notify.channel:
-
 
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"

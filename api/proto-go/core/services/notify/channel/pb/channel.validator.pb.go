@@ -37,6 +37,19 @@ func (this *GetNotifyChannelResponse) Validate() error {
 	}
 	return nil
 }
+func (this *GetNotifyChannelTypesRequest) Validate() error {
+	return nil
+}
+func (this *GetNotifyChannelTypesResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *UpdateNotifyChannelRequest) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
 	return nil
@@ -74,7 +87,15 @@ func (this *CreateNotifyChannelResponse) Validate() error {
 	}
 	return nil
 }
+func (this *NotifyChannelType) Validate() error {
+	return nil
+}
 func (this *NotifyChannel) Validate() error {
+	if this.Type != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Type); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Type", err)
+		}
+	}
 	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }

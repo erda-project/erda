@@ -99,7 +99,7 @@ func (db *NotifyChannelDB) UpdateById(notifyChannel *model.NotifyChannel) (*mode
 	return notifyChannel, nil
 }
 
-func (db *NotifyChannelDB) ListByPage(offset int64, pageSize, orgId string) (int64, []model.NotifyChannel, error) {
+func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, orgId string) (int64, []model.NotifyChannel, error) {
 	var channels []model.NotifyChannel
 	whereDB := db.db().
 		Where("`is_deleted` = ?", false).

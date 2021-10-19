@@ -37,6 +37,12 @@ service NotifyChannelService {
       delete: "/api/notify-channel",
     };
   }
+
+  rpc GetNotifyChannelTypes (GetNotifyChannelTypesRequest) returns (GetNotifyChannelTypesResponse)  {
+    option (google.api.http) = {
+      get: "/api/notify-channel/types",
+    };
+  }
 }
 
 message DeleteNotifyChannelRequest {
@@ -55,6 +61,12 @@ message GetNotifyChannelResponse {
   NotifyChannel data = 1;
 }
 
+message GetNotifyChannelTypesRequest {}
+
+message GetNotifyChannelTypesResponse {
+  repeated NotifyChannelType data = 1;
+}
+
 message UpdateNotifyChannelRequest {
   string                             id     = 1;
   string                             name   = 2;
@@ -67,13 +79,13 @@ message UpdateNotifyChannelResponse {
 }
 
 message GetNotifyChannelsRequest {
-  int64  page     = 1;
-  string pageSize = 2;
+  int64 page     = 1;
+  int64 pageSize = 2;
 }
 
 message GetNotifyChannelsResponse {
   int64                  page     = 1;
-  string                 pageSize = 2;
+  int64                  pageSize = 2;
   int64                  total    = 3;
   repeated NotifyChannel data     = 4;
 }
@@ -88,10 +100,15 @@ message CreateNotifyChannelResponse {
   NotifyChannel data = 1;
 }
 
+message NotifyChannelType {
+  string name        = 1;
+  string displayName = 2;
+}
+
 message NotifyChannel {
   string                             id          = 1;
   string                             name        = 2;
-  string                             type        = 3;
+  NotifyChannelType                  type        = 3;
   map<string, google.protobuf.Value> config      = 4;
   string                             scopeId     = 5;
   string                             scopeType   = 6;
