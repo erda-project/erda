@@ -38,7 +38,7 @@ func TestDoFilter(t *testing.T) {
 			name: "test",
 			args: args{
 				nodeList: d,
-				values:   map[string]interface{}{"Q": "na", "service": []interface{}{"key1=value1", "serviceLabel2"}},
+				values:   map[string]interface{}{"Q": "na", "service": []interface{}{"key1=value1"}},
 			},
 			want: d,
 		},
