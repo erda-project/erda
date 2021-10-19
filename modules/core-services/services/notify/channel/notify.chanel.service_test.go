@@ -17,12 +17,12 @@ package channel
 import (
 	"context"
 	"errors"
-	"github.com/jinzhu/copier"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/jinzhu/copier"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
