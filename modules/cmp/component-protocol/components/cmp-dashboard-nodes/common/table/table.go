@@ -685,6 +685,30 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 	})
 }
 
+var nodeLabelBlacklist = map[string]string{
+	"dice/platform":  "true",
+	"dice/lb":        "true",
+	"dice/cassandra": "true",
+	"dice/es":        "true",
+	"dice/kafka":     "true",
+	"dice/nexus":     "true",
+	"dice/gittar":    "true",
+}
+
+func IsNodeLabelInBlacklist(node data.Object) bool {
+	labels := node.Map("metadata", "labels")
+	for k, v := range labels {
+		value, ok := v.(string)
+		if !ok {
+			continue
+		}
+		if s, ok := nodeLabelBlacklist[k]; ok && s == value {
+			return true
+		}
+	}
+	return false
+}
+
 type State struct {
 	//PageNo          int           `json:"pageNo,omitempty"`
 	//PageSize        int           `json:"pageSize,omitempty"`
