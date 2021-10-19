@@ -102,6 +102,11 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		executeTime = &t
 	}
 
+	project, err := s.bdl.GetProject(testPlan.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	execHistory := db.AutoTestExecHistory{
 		CreatorID:     req.Content.CreatorID,
 		ProjectID:     testPlan.ProjectID,
@@ -111,7 +116,7 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		SceneID:       req.Content.SceneID,
 		SceneSetID:    req.Content.SceneSetID,
 		StepID:        req.Content.StepID,
-		ParentID:      req.Content.ParentID,
+		ParentPID:     req.Content.ParentID,
 		Type:          apistructs.StepAPIType(req.Content.StepAPIType),
 		Status:        apistructs.PipelineStatus(req.Content.Status),
 		PipelineYml:   req.Content.PipelineYml,
@@ -122,6 +127,7 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		TotalApiNum:   req.Content.ApiTotalNum,
 		ExecuteTime:   *executeTime,
 		CostTimeSec:   req.Content.CostTimeSec,
+		OrgID:         project.OrgID,
 	}
 	return s.db.CreateAutoTestExecHistory(&execHistory)
 }

@@ -57,7 +57,7 @@ type AutoTestExecHistory struct {
 	SceneID     uint64
 	SceneSetID  uint64
 	StepID      uint64
-	ParentID    uint64
+	ParentPID   uint64
 	Type        apistructs.StepAPIType
 	Status      apistructs.PipelineStatus
 
@@ -69,6 +69,7 @@ type AutoTestExecHistory struct {
 	TotalApiNum   int64
 	ExecuteTime   time.Time
 	CostTimeSec   int64
+	OrgID         uint64
 }
 
 func (AutoTestExecHistory) TableName() string {

@@ -150,7 +150,10 @@ func TestGetCostTime(t *testing.T) {
 }
 
 func TestCreateTestPlanExecHistory(t *testing.T) {
-	var DB db.TestPlanDB
+	var (
+		DB  db.TestPlanDB
+		bdl bundle.Bundle
+	)
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "GetTestPlan", func(*db.TestPlanDB, uint64) (*db.TestPlanV2, error) {
 		return &db.TestPlanV2{}, nil
@@ -159,10 +162,15 @@ func TestCreateTestPlanExecHistory(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "CreateAutoTestExecHistory", func(*db.TestPlanDB, *db.AutoTestExecHistory) error {
 		return nil
 	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "GetProject", func(*bundle.Bundle, uint64) (*apistructs.ProjectDTO, error) {
+		return &apistructs.ProjectDTO{}, nil
+	})
 	defer monkey.UnpatchAll()
 
 	svc := TestPlanService{
-		db: DB,
+		db:  DB,
+		bdl: &bdl,
 	}
 	err := svc.createTestPlanExecHistory(&pb.TestPlanUpdateByHookRequest{
 		Content: &pb.Content{
