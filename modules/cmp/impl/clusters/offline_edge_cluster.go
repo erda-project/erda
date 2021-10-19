@@ -124,7 +124,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 		}
 	}
 
-	recordID, err = updateDeleteRecord(c.db, dbclient.Record{
+	recordID, err = createRecord(c.db, dbclient.Record{
 		RecordType:  dbclient.RecordTypeOfflineEdgeCluster,
 		UserID:      userid,
 		OrgID:       orgid,
@@ -142,6 +142,6 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	return recordID, nil
 }
 
-func updateDeleteRecord(db *dbclient.DBClient, record dbclient.Record) (recordID uint64, err error) {
+func createRecord(db *dbclient.DBClient, record dbclient.Record) (recordID uint64, err error) {
 	return db.RecordsWriter().Create(&record)
 }

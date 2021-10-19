@@ -137,12 +137,13 @@ const (
 
 type CloudClusterInfo struct {
 	// 边缘集群配置信息
-	ClusterName string `json:"clusterName"` //集群名称
-	DisplayName string `json:"displayName"` //集群展示名称
-	RootDomain  string `json:"rootDomain"`  //泛域名
-	EnableHttps bool   `json:"enableHttps"` //是否开启https
-	ClusterSize string `json:"clusterSize"` //已有资源创建所需参数；测试/生产
-	Nameservers string `json:"nameservers"` //已有资源创建所需参数，通过逗号分隔
+	ClusterName      string `json:"clusterName"`      //集群名称
+	ClusterAccessKey string `json:"clusterAccessKey"` //集群访问token
+	DisplayName      string `json:"displayName"`      //集群展示名称
+	RootDomain       string `json:"rootDomain"`       //泛域名
+	EnableHttps      bool   `json:"enableHttps"`      //是否开启https
+	ClusterSize      string `json:"clusterSize"`      //已有资源创建所需参数；测试/生产
+	Nameservers      string `json:"nameservers"`      //已有资源创建所需参数，通过逗号分隔
 
 	// 中心集群配置信息，自动获取
 	CollectorURL  string `json:"collectorURL"`
