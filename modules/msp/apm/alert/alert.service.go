@@ -170,6 +170,7 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	alertData.AlertScope = MicroServiceScope
 	alertData.AlertScopeId = request.TenantGroup
 	alertData.Attributes = request.Attributes
+	alertData.TriggerCondition = request.TriggerCondition
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
 	}
@@ -265,6 +266,7 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	alertData.UpdateTime = request.UpdateTime
 	alertData.Attributes = request.Attributes
 	alertData.Domain = request.Domain
+	alertData.TriggerCondition = request.TriggerCondition
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
 	}

@@ -110,6 +110,7 @@ var _ urlenc.URLValuesUnmarshaler = (*QueryOrgAlertData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetOrgAlertDetailRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetOrgAlertDetailResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateOrgAlertRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*TriggerCondition)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateOrgAlertResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateOrgAlertRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateOrgAlertResponse)(nil)
@@ -4184,6 +4185,8 @@ func (m *AlertExpression) UnmarshalURLValues(prefix string, values url.Values) e
 					return err
 				}
 				m.UpdateTime = val
+			case "level":
+				m.Level = vals
 			}
 		}
 	}
@@ -4353,6 +4356,8 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.UpdateTime = val
+			case "level":
+				m.Level = vals
 			}
 		}
 	}
@@ -5032,6 +5037,23 @@ func (m *CreateOrgAlertRequest) UnmarshalURLValues(prefix string, values url.Val
 					return err
 				}
 				m.UpdateTime = val
+			}
+		}
+	}
+	return nil
+}
+
+// TriggerCondition implement urlenc.URLValuesUnmarshaler.
+func (m *TriggerCondition) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "condition":
+				m.Condition = vals[0]
+			case "operator":
+				m.Operator = vals[0]
+			case "values":
+				m.Values = vals[0]
 			}
 		}
 	}

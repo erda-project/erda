@@ -201,6 +201,8 @@ var _ json.Marshaler = (*GetOrgAlertDetailResponse)(nil)
 var _ json.Unmarshaler = (*GetOrgAlertDetailResponse)(nil)
 var _ json.Marshaler = (*CreateOrgAlertRequest)(nil)
 var _ json.Unmarshaler = (*CreateOrgAlertRequest)(nil)
+var _ json.Marshaler = (*TriggerCondition)(nil)
+var _ json.Unmarshaler = (*TriggerCondition)(nil)
 var _ json.Marshaler = (*CreateOrgAlertResponse)(nil)
 var _ json.Unmarshaler = (*CreateOrgAlertResponse)(nil)
 var _ json.Marshaler = (*UpdateOrgAlertRequest)(nil)
@@ -1965,6 +1967,24 @@ func (m *CreateOrgAlertRequest) MarshalJSON() ([]byte, error) {
 
 // CreateOrgAlertRequest implement json.Marshaler.
 func (m *CreateOrgAlertRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// TriggerCondition implement json.Marshaler.
+func (m *TriggerCondition) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TriggerCondition implement json.Marshaler.
+func (m *TriggerCondition) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

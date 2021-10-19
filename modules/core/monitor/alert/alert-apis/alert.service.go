@@ -125,16 +125,6 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	}
 	alert.Attributes = make(map[string]*structpb.Value)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
-	id, err := strconv.ParseUint(orgID, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
-	}
-	if len(alert.ClusterNames) <= 0 {
-		return nil, errors.NewMissingParameterError("cluster name")
-	}
-	if !m.checkOrgClusterNames(id, alert.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "create", "access denied")
-	}
 	aid, err := m.p.a.CreateOrgAlert(alert, orgID)
 	if err != nil {
 		if adapt.IsInvalidParameterError(err) {
@@ -980,16 +970,6 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 	request.Attributes = make(map[string]*structpb.Value)
 	orgName := structpb.NewStringValue(org.Name)
 	request.Attributes["org_name"] = orgName
-	id, err := strconv.ParseUint(orgID, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
-	}
-	if len(request.ClusterNames) <= 0 {
-		return nil, errors.NewMissingParameterError("cluster names")
-	}
-	if !m.checkOrgClusterNames(id, request.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
-	}
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

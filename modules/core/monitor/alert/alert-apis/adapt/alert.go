@@ -561,11 +561,6 @@ func (a *Adapt) CreateOrgAlert(alert *pb.Alert, orgID string) (alertID uint64, e
 	alert.Attributes["alert_record_path"] = alertRecordPath
 	diceOrgId := structpb.NewStringValue(orgID)
 	alert.Attributes["dice_org_id"] = diceOrgId
-	clusterName, err := a.StringSliceToValue(alert.ClusterNames)
-	if err != nil {
-		return 0, nil
-	}
-	alert.Attributes["cluster_name"] = clusterName
 	return a.CreateAlert(alert)
 }
 
@@ -640,11 +635,6 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *pb.Alert, orgID string) er
 	alert.Attributes["alert_dashboard_path"] = alertDashboardPath
 	alertRecordPath := structpb.NewStringValue(recordPath)
 	alert.Attributes["alert_record_path"] = alertRecordPath
-	clusterName, err := a.StringSliceToValue(alert.ClusterNames)
-	if err != nil {
-		return err
-	}
-	alert.Attributes["cluster_name"] = clusterName
 
 	return a.UpdateAlert(alertID, alert)
 }
