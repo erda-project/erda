@@ -95,11 +95,11 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	if req.Page < 1 {
 		req.Page = 1
 	}
-	if req.Page < 10 {
-		req.Page = 10
+	if req.PageSize < 10 {
+		req.PageSize = 10
 	}
-	if req.Page > 50 {
-		req.Page = 50
+	if req.PageSize > 50 {
+		req.PageSize = 50
 	}
 	orgId := apis.GetOrgID(ctx)
 	if orgId == "" {
