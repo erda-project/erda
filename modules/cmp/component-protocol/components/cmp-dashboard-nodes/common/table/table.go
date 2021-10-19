@@ -686,13 +686,14 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 }
 
 var nodeLabelBlacklist = map[string]string{
-	"dice/platform":  "true",
-	"dice/lb":        "true",
-	"dice/cassandra": "true",
-	"dice/es":        "true",
-	"dice/kafka":     "true",
-	"dice/nexus":     "true",
-	"dice/gittar":    "true",
+	"dice/platform":         "true",
+	"dice/lb":               "true",
+	"dice/cassandra":        "true",
+	"dice/es":               "true",
+	"dice/kafka":            "true",
+	"dice/nexus":            "true",
+	"dice/gittar":           "true",
+	"dice/stateful-service": "true",
 }
 
 func IsNodeLabelInBlacklist(node data.Object) bool {
