@@ -44,6 +44,7 @@ message Content {
   uint64 iterationID = 16;
   uint64 stepID = 17;
   double ExecuteRate = 18;
+  string executeDuration = 19;
 }
 
 message TestPlanUpdateByHookResponse {

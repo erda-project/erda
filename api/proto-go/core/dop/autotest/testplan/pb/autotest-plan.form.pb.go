@@ -181,6 +181,11 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Content.ExecuteRate = val
+			case "content.executeDuration":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.ExecuteDuration = vals[0]
 			}
 		}
 	}
@@ -280,6 +285,8 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.ExecuteRate = val
+			case "executeDuration":
+				m.ExecuteDuration = vals[0]
 			}
 		}
 	}

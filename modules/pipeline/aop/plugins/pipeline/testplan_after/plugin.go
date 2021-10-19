@@ -130,21 +130,21 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	apiSuccessNum := statics.ApiSuccessNum
 
 	var req = testplanpb.Content{
-		TestPlanID:      testPlanID,
-		ExecuteTime:     ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
-		ApiTotalNum:     int64(apiExecNum),
-		ApiSuccessNum:   int64(apiSuccessNum),
-		ApiExecNum:      int64(apiExecNum),
-		PipelineYml:     ctx.SDK.Pipeline.PipelineYml,
-		StepAPIType:     stepType.String(),
-		Status:          ctx.SDK.Pipeline.Status.String(),
-		SceneID:         sceneID,
-		SceneSetID:      sceneSetID,
-		ParentID:        parentPipelineID,
-		CreatorID:       userID,
-		IterationID:     iterationID,
-		StepID:          0,
-		CostTimeSec:     ctx.SDK.Pipeline.CostTimeSec,
+		TestPlanID:    testPlanID,
+		ExecuteTime:   ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
+		ApiTotalNum:   int64(apiExecNum),
+		ApiSuccessNum: int64(apiSuccessNum),
+		ApiExecNum:    int64(apiExecNum),
+		PipelineYml:   ctx.SDK.Pipeline.PipelineYml,
+		StepAPIType:   stepType.String(),
+		Status:        ctx.SDK.Pipeline.Status.String(),
+		SceneID:       sceneID,
+		SceneSetID:    sceneSetID,
+		ParentID:      parentPipelineID,
+		CreatorID:     userID,
+		IterationID:   iterationID,
+		StepID:        0,
+		CostTimeSec:   ctx.SDK.Pipeline.CostTimeSec,
 	}
 	if err = p.sendMessage(req, ctx); err != nil {
 		return err
@@ -176,21 +176,21 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 			stepID, _ := strconv.ParseUint(task.Name, 10, 64)
 
 			err = p.sendMessage(testplanpb.Content{
-				TestPlanID:      testPlanID,
-				ExecuteTime:     task.TimeBegin.Format("2006-01-02 15:04:05"),
-				ApiTotalNum:     1,
-				ApiSuccessNum:   apiSuccessNum,
-				ApiExecNum:      1,
-				PipelineYml:     "",
-				StepAPIType:     apistructs.StepTypeAPI.String(),
-				Status:          task.Status.String(),
-				SceneID:         sceneID,
-				SceneSetID:      sceneSetID,
-				ParentID:        parentPipelineID,
-				CreatorID:       userID,
-				StepID:          stepID,
-				IterationID:     iterationID,
-				CostTimeSec:     task.CostTimeSec,
+				TestPlanID:    testPlanID,
+				ExecuteTime:   task.TimeBegin.Format("2006-01-02 15:04:05"),
+				ApiTotalNum:   1,
+				ApiSuccessNum: apiSuccessNum,
+				ApiExecNum:    1,
+				PipelineYml:   "",
+				StepAPIType:   apistructs.StepTypeAPI.String(),
+				Status:        task.Status.String(),
+				SceneID:       sceneID,
+				SceneSetID:    sceneSetID,
+				ParentID:      parentPipelineID,
+				CreatorID:     userID,
+				StepID:        stepID,
+				IterationID:   iterationID,
+				CostTimeSec:   task.CostTimeSec,
 			}, ctx)
 			if err != nil {
 				return err
@@ -311,7 +311,7 @@ func (p *provider) sendMessage(req testplanpb.Content, ctx *aoptypes.TuneContext
 	}
 	// create event
 	if err := p.Bundle.CreateEvent(ev2); err != nil {
-		logrus.Warnf("failed to send autoTestPlan update event, (%v)", err)
+		logrus.Errorf("failed to send autoTestPlan update event, (%v)", err)
 		return err
 	}
 	return nil

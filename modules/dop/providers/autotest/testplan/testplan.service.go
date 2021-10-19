@@ -57,6 +57,7 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 			req.Content.PassRate = float64(req.Content.ApiSuccessNum) / float64(req.Content.ApiTotalNum) * 100
 			req.Content.ExecuteRate = float64(req.Content.ApiExecNum) / float64(req.Content.ApiTotalNum) * 100
 		}
+		req.Content.ExecuteDuration = getCostTime(req.Content.CostTimeSec)
 
 		go func() {
 			err := s.ProcessEvent(req.Content)
@@ -87,13 +88,18 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 }
 
 func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHookRequest) error {
-	var testPlan db.TestPlanV2
-	if err := s.db.First(&testPlan, req.Content.TestPlanID).Error; err != nil {
+	testPlan, err := s.db.GetTestPlan(req.Content.TestPlanID)
+	if err != nil {
 		return err
 	}
 	iterationID := req.Content.IterationID
 	if iterationID == 0 {
 		iterationID = testPlan.IterationID
+	}
+	executeTime := parseExecuteTime(req.Content.ExecuteTime)
+	if executeTime == nil {
+		t := time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local)
+		executeTime = &t
 	}
 
 	execHistory := db.AutoTestExecHistory{
@@ -114,10 +120,9 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		PassRate:      req.Content.PassRate,
 		ExecuteRate:   req.Content.ExecuteRate,
 		TotalApiNum:   req.Content.ApiTotalNum,
-		ExecuteTime:   *parseExecuteTime(req.Content.ExecuteTime),
+		ExecuteTime:   *executeTime,
 		CostTimeSec:   req.Content.CostTimeSec,
 	}
-
 	return s.db.CreateAutoTestExecHistory(&execHistory)
 }
 
@@ -162,7 +167,7 @@ func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
 			"project_name":     project.Name,
 			"plan_name":        testPlan.Name,
 			"pass_rate":        fmt.Sprintf("%.2f", req.PassRate),
-			"execute_duration": getCostTime(req.CostTimeSec),
+			"execute_duration": req.ExecuteDuration,
 			"api_total_num":    fmt.Sprintf("%d", req.ApiTotalNum),
 		}
 		marshal, _ := json.Marshal(params)

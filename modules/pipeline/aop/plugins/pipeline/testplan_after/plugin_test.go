@@ -94,7 +94,6 @@ func Test_sendMessage(t *testing.T) {
 		TestPlanID:      1,
 		ExecuteTime:     "",
 		PassRate:        10,
-		ExecuteDuration: "11:11:11",
 		ApiTotalNum:     100,
 	}
 	want := &apistructs.EventCreateRequest{
