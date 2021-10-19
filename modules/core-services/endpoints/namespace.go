@@ -34,7 +34,7 @@ func (e *Endpoints) GetAllNamespaces(ctx context.Context, r *http.Request, vars 
 
 	var namespaces []string
 	for _, pod := range podsInfo {
-		namespaces = append(namespaces, pod.Namespace)
+		namespaces = append(namespaces, pod.K8sNamespace)
 	}
 	return httpserver.OkResp(namespaces)
 }
