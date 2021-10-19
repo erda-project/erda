@@ -44,11 +44,13 @@ func New(clusterName string) *Calculator {
 		CPU: &ResourceCalculator{
 			Type:   "CPU",
 			M:      make(map[string]uint64),
+			quota:  make(map[Workspace]uint64),
 			status: make(map[Workspace]int),
 		},
 		Mem: &ResourceCalculator{
 			Type:   "Memory",
 			M:      make(map[string]uint64),
+			quota:  make(map[Workspace]uint64),
 			status: make(map[Workspace]int),
 		},
 	}
@@ -65,6 +67,7 @@ func (c *Calculator) Copy() *Calculator {
 type ResourceCalculator struct {
 	Type   string
 	M      map[string]uint64
+	quota  map[Workspace]uint64
 	status map[Workspace]int
 }
 
@@ -106,6 +109,7 @@ func (q *ResourceCalculator) TotalForWorkspace(workspace Workspace) uint64 {
 }
 
 func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
+	q.quota[workspace] += quota
 	if totalForWorkspace := q.TotalForWorkspace(workspace); quota > totalForWorkspace {
 		for k := range q.M {
 			if strings.Contains(k, WorkspaceString(workspace)) {
@@ -130,6 +134,10 @@ func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
 	return nil
 }
 
+func (q *ResourceCalculator) AlreadyQuota(workspace Workspace) uint64 {
+	return q.quota[workspace]
+}
+
 func (q *ResourceCalculator) StatusOK(workspace Workspace) bool {
 	return q.status[workspace] >= 0
 }
@@ -138,9 +146,13 @@ func (q *ResourceCalculator) Copy() *ResourceCalculator {
 	var r ResourceCalculator
 	r.Type = q.Type
 	r.M = make(map[string]uint64)
+	r.quota = make(map[Workspace]uint64)
 	r.status = make(map[Workspace]int)
 	for k, v := range q.M {
 		r.M[k] = v
+	}
+	for k, v := range q.quota {
+		r.quota[k] = v
 	}
 	for k, v := range q.status {
 		r.status[k] = v

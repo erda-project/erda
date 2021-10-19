@@ -697,10 +697,13 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 			} else {
 				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
 				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
-				if !available.CPU.StatusOK(workspace) {
+				if !available.CPU.StatusOK(workspace) || !available.Mem.StatusOK(workspace) {
 					resource.Tips = "The total quota is more than total allocatable, resource squeeze will occur"
 					if locale != nil {
-						resource.Tips = locale.Get("ResourceSqueeze")
+						resource.Tips = fmt.Sprintf(locale.Get("ResourceSqueeze"),
+							available.CPU.AlreadyQuota(workspace), available.Mem.AlreadyQuota(workspace),
+							allocatable.CPU.TotalForWorkspace(workspace), allocatable.Mem.TotalForWorkspace(workspace),
+						)
 					}
 				}
 			}

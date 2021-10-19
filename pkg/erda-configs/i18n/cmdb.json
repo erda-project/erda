@@ -158,7 +158,11 @@
     "RoleOrgEdgeAppEngineer": "边缘运维工程师",
     "PublisherMemberRole": "发布成员",
     "MemberLabelOutsource": "外包人员",
-    "MemberLabelPartner": "合作伙伴"
+    "MemberLabelPartner": "合作伙伴",
+    "AvailableIsLessThanQuota": "注意：集群当前已分配资源（CPU：%.2f, 内存：%.2f）已经超过集群总资源（CPU：%.2f, 内存：%.2f），项目资源分配会按先用先得的原则进行抢占",
+    "NoResourceForTheWorkspace": "本集群上该环境的可用资源为 0, 请检查是否未正确为节点标注环境标签",
+    "NoNodesInTheCluster": "此集群没有可用的节点，请添加节点",
+    "ResourceSqueeze": "已分配资源大于集群总资源，可能发生资源抢占，请合理分配资源",
   },
   "en-US": {
     "ErrGetLicense": "Failed to get license",
@@ -228,6 +232,10 @@
     "RoleOrgEdgeAppEngineer": "Edge Ops engineer",
     "PublisherMemberRole": "publish member",
     "MemberLabelOutsource": "outsource",
-    "MemberLabelPartner": "partner"
+    "MemberLabelPartner": "partner",
+    "AvailableIsLessThanQuota": "The actual available resource on this workspace in the cluster is less than the quota. Please ask the Ops to allocate project resources reasonably",
+    "NoResourceForTheWorkspace": "No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes",
+    "NoNodesInTheCluster": "No allocatable nodes in the cluster, please add nodes for it",
+    "ResourceSqueeze": "Note: The current allocated resources of the cluster (CPU:%.2f, memory:%.2f) have exceeded the total resources of the cluster (CPU:%.2f, memory:%.2f), the project resource allocation will be based on the principle of first use first serve Preempt",
   }
 }
