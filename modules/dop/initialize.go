@@ -130,6 +130,10 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	))
 	p.Protocol.WithContextValue(types.CodeCoverageService, ep.CodeCoverageService())
 	p.Protocol.WithContextValue(types.IssueService, ep.IssueService())
+	p.Protocol.WithContextValue(types.IterationService, ep.IterationService())
+	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
+	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
+	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")

@@ -23,57 +23,65 @@ func TestGetScenarioAndCompNameFromProviderKey(t *testing.T) {
 		providerKey string
 	}
 	tests := []struct {
-		name         string
-		args         args
-		wantScenario string
-		wantCompName string
-		haveErr      bool
+		name             string
+		args             args
+		wantScenario     string
+		wantCompName     string
+		wantInstanceName string
+		haveErr          bool
 	}{
 		{
 			name: "issue-manage.content",
 			args: args{
 				providerKey: "component-protocol.components.issue-manage.content",
 			},
-			wantScenario: "issue-manage",
-			wantCompName: "content",
-			haveErr:      false,
+			wantScenario:     "issue-manage",
+			wantCompName:     "content",
+			wantInstanceName: "content",
+			haveErr:          false,
 		},
 		{
 			name: "issue-manage.content@content2",
 			args: args{
 				providerKey: "component-protocol.components.issue-manage.content@content2",
 			},
-			wantScenario: "issue-manage",
-			wantCompName: "content2",
-			haveErr:      false,
+			wantScenario:     "issue-manage",
+			wantCompName:     "content",
+			wantInstanceName: "content2",
+			haveErr:          false,
 		},
 		{
 			name: "missing compName",
 			args: args{
 				providerKey: "component-protocol.components.issue-manage",
 			},
-			wantScenario: "",
-			wantCompName: "",
-			haveErr:      true,
+			wantScenario:     "",
+			wantCompName:     "",
+			wantInstanceName: "",
+			haveErr:          true,
 		},
 		{
 			name: "invalid prefix",
 			args: args{
 				providerKey: "xxx.components.issue-manage",
 			},
-			wantScenario: "",
-			wantCompName: "",
-			haveErr:      true,
+			wantScenario:     "",
+			wantCompName:     "",
+			wantInstanceName: "",
+			haveErr:          true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotScenario, gotCompName, gotErr := GetScenarioAndCompNameFromProviderKey(tt.args.providerKey)
+			gotScenario, gotCompName, gotInstanceName, gotErr := GetScenarioAndCompNameFromProviderKey(tt.args.providerKey)
 			if gotScenario != tt.wantScenario {
 				t.Errorf("MustGetScenarioAndCompNameFromProviderKey() gotScenario = %v, want %v", gotScenario, tt.wantScenario)
 			}
 			if gotCompName != tt.wantCompName {
 				t.Errorf("MustGetScenarioAndCompNameFromProviderKey() gotCompName = %v, want %v", gotCompName, tt.wantCompName)
+			}
+			if gotInstanceName != tt.wantInstanceName {
+				t.Errorf("MustGetScenarioAndInstanceNameFromProviderKey() gotInstanceName = %v, want %v", gotInstanceName, tt.wantInstanceName)
 			}
 			if (tt.haveErr && gotErr == nil) || (!tt.haveErr && gotErr != nil) {
 				t.Errorf("MustGetScenarioAndCompNameFromProviderKey() getErr = %v, haveErr %v", gotErr, tt.haveErr)

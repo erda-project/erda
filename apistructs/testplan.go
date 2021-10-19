@@ -120,12 +120,12 @@ type TestPlanGetResponse struct {
 
 // TestPlanPagingRequest 测试计划列表请求
 type TestPlanPagingRequest struct {
-	Name        string       `schema:"name"`
-	Statuses    []TPStatus   `schema:"status"`
-	ProjectID   uint64       `schema:"projectID"`
-	IterationID *uint64      `json:"iterationID"`
-	Type        TestPlanType `schema:"type"`
-	IsArchived  *bool        `schema:"isArchived"`
+	Name         string       `schema:"name"`
+	Statuses     []TPStatus   `schema:"status"`
+	ProjectID    uint64       `schema:"projectID"`
+	IterationIDs []uint64     `schema:"iterationID"`
+	Type         TestPlanType `schema:"type"`
+	IsArchived   *bool        `schema:"isArchived"`
 
 	// member about
 	OwnerIDs   []string `schema:"ownerID"`
