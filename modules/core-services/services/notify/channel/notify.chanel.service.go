@@ -217,7 +217,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		}
 		return asm.Validate()
 	default:
-		return pkgerrors.NewInternalServerError(errors.New("Not support notify channel type"))
+		return errors.New("Not support notify channel type")
 	}
 }
 
