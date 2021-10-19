@@ -330,7 +330,6 @@ func Test_notifyChannelService_ConfigValidate(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{channelType: "", c: nil}, true},
 		{"case1", args{channelType: "ali_short_message", c: map[string]*structpb.Value{"accessKeyId": structpb.NewStringValue("xx"), "accessKeySecret": structpb.NewStringValue("xx"), "signName": structpb.NewStringValue("xx"), "templateCode": structpb.NewStringValue("xx")}}, false},
 	}
 	for _, tt := range tests {
