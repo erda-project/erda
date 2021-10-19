@@ -13,7 +13,7 @@ kind: Config
 clusters:
 - cluster:
     api-version: v1
-    server: "https://kubernetes:443"
+    server: "https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"
     insecure-skip-tls-verify: true
   name: "Default"
 contexts:
