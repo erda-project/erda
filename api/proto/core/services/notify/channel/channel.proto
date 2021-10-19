@@ -6,11 +6,23 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "common/openapi.proto";
 
 service NotifyChannelService {
+  option (erda.common.openapi_service) = {
+    service: "core-services",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
   rpc CreateNotifyChannel (CreateNotifyChannelRequest) returns (CreateNotifyChannelResponse)  {
     option (google.api.http) = {
       post: "/api/notify-channel",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel"
     };
   }
 
@@ -18,11 +30,17 @@ service NotifyChannelService {
     option (google.api.http) = {
       get: "/api/notify-channels",
     };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channels"
+    };
   }
 
   rpc UpdateNotifyChannel (UpdateNotifyChannelRequest) returns (UpdateNotifyChannelResponse)  {
     option (google.api.http) = {
       put: "/api/notify-channel",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel"
     };
   }
 
@@ -30,17 +48,26 @@ service NotifyChannelService {
     option (google.api.http) = {
       get: "/api/notify-channel",
     };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel"
+    };
   }
 
   rpc DeleteNotifyChannel (DeleteNotifyChannelRequest) returns (DeleteNotifyChannelResponse)  {
     option (google.api.http) = {
       delete: "/api/notify-channel",
     };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel"
+    };
   }
 
   rpc GetNotifyChannelTypes (GetNotifyChannelTypesRequest) returns (GetNotifyChannelTypesResponse)  {
     option (google.api.http) = {
       get: "/api/notify-channel/types",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel/types"
     };
   }
 }
