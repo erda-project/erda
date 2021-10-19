@@ -249,15 +249,23 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 		}
 		if len(labels) != 0 {
 			for _, node := range nodeList {
-			NEXT:
+				contains := false
 				for _, l := range labels {
+					exist := false
 					for k, v := range node.Map("metadata", "labels") {
 						nl := k + "=" + v.(string)
 						if strings.Contains(nl, l) {
-							nodes = append(nodes, node)
-							break NEXT
+							exist = true
+							break
 						}
 					}
+					contains = exist
+					if !contains {
+						break
+					}
+				}
+				if contains {
+					nodes = append(nodes, node)
 				}
 			}
 		} else {
