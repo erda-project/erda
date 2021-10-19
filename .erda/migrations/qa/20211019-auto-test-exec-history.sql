@@ -21,6 +21,7 @@ CREATE TABLE `dice_autotest_exec_history`
     `execute_rate`    decimal(10, 2)      NOT NULL DEFAULT 0 COMMENT '执行率',
     `total_api_num`   int(20)             NOT NULL DEFAULT 0 COMMENT '总api数量',
     `execute_time`    datetime            NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '执行数据',
+    `cost_time_sec`   int(20)             NOT NULL DEFAULT 0 COMMENT '执行耗时',
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='自动化测试执行记录';

@@ -94,7 +94,6 @@ func Test_processEvent(t *testing.T) {
 		TestPlanID:      1,
 		ExecuteTime:     "2006-01-02 15:04:05",
 		PassRate:        10.123,
-		ExecuteDuration: "10:10:10",
 		ApiTotalNum:     100,
 	})
 	assert.NoError(t, err)
@@ -116,5 +115,35 @@ func TestParseExecuteTime(t *testing.T) {
 	}
 	for _, v := range tt {
 		assert.Equal(t, v.want, parseExecuteTime(v.value))
+	}
+}
+
+func TestGetCostTime(t *testing.T) {
+	tt := []struct {
+		costTimeSec int64
+		want        string
+	}{
+		{
+			costTimeSec: 59,
+			want:        "00:00:59",
+		},
+
+		{
+			costTimeSec: 3600,
+			want:        "01:00:00",
+		},
+
+		{
+			costTimeSec: 59*60 + 59,
+			want:        "00:59:59",
+		},
+
+		{
+			costTimeSec: -1,
+			want:        "-",
+		},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, getCostTime(v.costTimeSec))
 	}
 }

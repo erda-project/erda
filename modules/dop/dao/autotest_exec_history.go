@@ -42,6 +42,7 @@ type AutoTestExecHistory struct {
 	ExecuteRate   float64
 	TotalApiNum   int64
 	ExecuteTime   time.Time
+	CostTimeSec   int64
 }
 
 func (AutoTestExecHistory) TableName() string {

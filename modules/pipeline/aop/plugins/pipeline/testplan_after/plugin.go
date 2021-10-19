@@ -132,9 +132,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	var req = testplanpb.Content{
 		TestPlanID:      testPlanID,
 		ExecuteTime:     ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
-		PassRate:        statics.PassRate,
 		ApiTotalNum:     int64(apiExecNum),
-		ExecuteDuration: time.Unix(ctx.SDK.Pipeline.CostTimeSec, 0).In(time.UTC).Format("15:04:05"),
 		ApiSuccessNum:   int64(apiSuccessNum),
 		ApiExecNum:      int64(apiExecNum),
 		PipelineYml:     ctx.SDK.Pipeline.PipelineYml,
@@ -146,6 +144,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		CreatorID:       userID,
 		IterationID:     iterationID,
 		StepID:          0,
+		CostTimeSec:     ctx.SDK.Pipeline.CostTimeSec,
 	}
 	if err = p.sendMessage(req, ctx); err != nil {
 		return err
@@ -169,11 +168,9 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 		if task.Type == apistructs.ActionTypeAPITest &&
 			task.Extra.Action.Version == "2.0" {
 			var (
-				passRate      float64
 				apiSuccessNum int64
 			)
 			if task.Status.IsSuccessStatus() {
-				passRate = 100.00
 				apiSuccessNum = 1
 			}
 			stepID, _ := strconv.ParseUint(task.Name, 10, 64)
@@ -181,9 +178,7 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 			err = p.sendMessage(testplanpb.Content{
 				TestPlanID:      testPlanID,
 				ExecuteTime:     task.TimeBegin.Format("2006-01-02 15:04:05"),
-				PassRate:        passRate,
 				ApiTotalNum:     1,
-				ExecuteDuration: time.Unix(task.CostTimeSec, 0).In(time.UTC).Format("15:04:05"),
 				ApiSuccessNum:   apiSuccessNum,
 				ApiExecNum:      1,
 				PipelineYml:     "",
@@ -195,6 +190,7 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 				CreatorID:       userID,
 				StepID:          stepID,
 				IterationID:     iterationID,
+				CostTimeSec:     task.CostTimeSec,
 			}, ctx)
 			if err != nil {
 				return err
@@ -207,7 +203,6 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 type ApiNumStatistics struct {
 	ApiExecNum    int
 	ApiSuccessNum int
-	PassRate      float64
 }
 
 func statistics(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
@@ -255,17 +250,9 @@ func statistics(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics
 			apiSuccessNum += meta.ApiSuccessNum
 		}
 	}
-
-	var passRate float64
-	if apiExecNum == 0 {
-		passRate = 0
-	} else {
-		passRate = float64(apiSuccessNum) / float64(apiExecNum) * 100
-	}
 	return &ApiNumStatistics{
 		ApiExecNum:    apiExecNum,
 		ApiSuccessNum: apiSuccessNum,
-		PassRate:      passRate,
 	}, nil
 
 }

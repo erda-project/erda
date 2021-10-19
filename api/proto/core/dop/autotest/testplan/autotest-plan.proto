@@ -30,8 +30,7 @@ message Content {
   string executeTime = 2;
   double passRate = 3;
   int64 apiTotalNum = 4;
-  // time duration of the test plan execution
-  string executeDuration = 5;
+  int64 costTimeSec = 5;
   int64  apiSuccessNum = 6;
   int64  apiExecNum = 7;
   string pipelineYml = 8;
@@ -44,6 +43,7 @@ message Content {
   string creatorID = 15;
   uint64 iterationID = 16;
   uint64 stepID = 17;
+  double ExecuteRate = 18;
 }
 
 message TestPlanUpdateByHookResponse {

@@ -38,6 +38,7 @@ type TestPlanV2 struct {
 	SuccessApiNum uint64
 	ExecuteRate   float64
 	IterationID   uint64
+	CostTimeSec   int64
 }
 
 // TableName table name
@@ -67,6 +68,7 @@ type AutoTestExecHistory struct {
 	ExecuteRate   float64
 	TotalApiNum   int64
 	ExecuteTime   time.Time
+	CostTimeSec   int64
 }
 
 func (AutoTestExecHistory) TableName() string {

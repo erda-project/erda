@@ -42,6 +42,7 @@ type TestPlanV2 struct {
 	SuccessApiNum int64
 	TotalApiNum   int64
 	ExecuteRate   float64
+	CostTimeSec   int64
 }
 
 // TableName table name
