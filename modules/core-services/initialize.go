@@ -177,6 +177,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		org.WithUCClient(uc),
 		org.WithBundle(bdl),
 		org.WithRedisClient(redisCli),
+		org.WithClusterResourceClient(p.Cmp),
 	)
 
 	// init project service
@@ -184,6 +185,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithDBClient(db),
 		project.WithUCClient(uc),
 		project.WithBundle(bdl),
+		project.WithClusterResourceClient(p.Cmp),
 	)
 
 	// init app service
@@ -293,6 +295,5 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithFileSvc(fileSvc),
 		endpoints.WithUserSvc(user),
 	)
-
 	return ep, nil
 }

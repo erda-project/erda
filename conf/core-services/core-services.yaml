@@ -23,3 +23,9 @@ mysql:
 
 erda.core.services.authentication.credentials.accesskey:
 erda.core.services.notify.channel:
+
+
+grpc-client@erda.cmp.dashboard.resource:
+  addr: "${CMP_GRPC_ADDR:cmp:9029}"
+  block: false
+erda.cmp.dashboard.resource-client:
