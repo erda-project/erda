@@ -40,7 +40,7 @@ type Conf struct {
 	InitContainerImage         string `env:"INIT_CONTAINER_IMAGE" default:"registry.cn-hangzhou.aliyuncs.com/dice-third-party/curl:stable"`
 	TokenClientID              string `env:"TOKEN_CLIENT_ID" default:"orchestrator"`
 	TokenClientSecret          string `env:"TOKEN_CLIENT_SECRET" default:"devops/orchestrator"`
-	InspectServiceGroupTimeout int    `env:"INSPECT_SERVICEGROUP_TIMEOUT" default:"3"`
+	InspectServiceGroupTimeout int    `env:"INSPECT_SERVICEGROUP_TIMEOUT" default:"60"`
 }
 
 var cfg Conf
