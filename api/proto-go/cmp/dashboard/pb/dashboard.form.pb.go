@@ -118,14 +118,6 @@ func (m *HostResourceDetail) UnmarshalURLValues(prefix string, values url.Values
 				m.MemRequest = val
 			case "labels":
 				m.Labels = vals
-			case "success":
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.Success = val
-			case "err":
-				m.Err = vals[0]
 			}
 		}
 	}
@@ -195,8 +187,6 @@ func (m *NamespaceResourceDetail) UnmarshalURLValues(prefix string, values url.V
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "clusterName":
-				m.ClusterName = vals[0]
 			case "namespace":
 				m.Namespace = vals[0]
 			case "cpuRequest":
