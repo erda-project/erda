@@ -334,13 +334,18 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	results := make(map[int64]*pb.DescribeItemV1)
 	var downCount int64
 	if metric != nil {
+		var config map[string]*structpb.Value
+		if metric.Config != "" {
+			json.Unmarshal([]byte(metric.Config), &config)
+		}
 		results[req.Id] = &pb.DescribeItemV1{
 			Name:   metric.Name,
 			Mode:   metric.Mode,
 			Url:    metric.URL,
+			Config: config,
 			Status: StatusMiss,
 		}
-		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
+		err = s.QueryCheckersLatencySummary(req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
@@ -428,7 +433,7 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(projectID int64,
 	)
 }
 
-func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange(timeUnit, 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
 	return s.queryCheckerMetrics(start, end, `
