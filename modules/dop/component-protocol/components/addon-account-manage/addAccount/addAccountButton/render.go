@@ -12,11 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package addAccountButton
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-account-manage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+type comp struct {
+	base.DefaultProvider
+}
+
+func init() {
+	base.InitProviderWithCreator("addon-account-manage", "addAccountButton",
+		func() servicehub.Provider { return &comp{} })
+}
+
+func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	return nil
+}

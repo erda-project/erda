@@ -116,3 +116,14 @@ component-protocol.components.issue-dashboard.ownerHorizontalBarChartExtra:
 component-protocol.components.issue-dashboard.ownerHorizontalBarChartFilter:
 
 component-protocol.components.issue-dashboard.reset:
+
+
+component-protocol.components.addon-account-manage.accountTable:
+component-protocol.components.addon-account-manage.accountFormModal:
+component-protocol.components.addon-account-manage.addAccountButton:
+component-protocol.components.addon-account-manage.deleteModal:
+component-protocol.components.addon-account-manage.deleteTip:
+component-protocol.components.addon-account-manage.forceDeleteButton:
+component-protocol.components.addon-account-manage.referenceModal:
+component-protocol.components.addon-account-manage.referenceTable:
+component-protocol.components.addon-account-manage.referenceTip:
