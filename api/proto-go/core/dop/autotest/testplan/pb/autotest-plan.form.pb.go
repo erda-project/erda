@@ -71,11 +71,15 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Content.ApiTotalNum = val
-			case "content.executeDuration":
+			case "content.costTimeSec":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
-				m.Content.ExecuteDuration = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.CostTimeSec = val
 			case "content.apiSuccessNum":
 				if m.Content == nil {
 					m.Content = &Content{}
@@ -168,6 +172,15 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Content.StepID = val
+			case "content.ExecuteRate":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ExecuteRate = val
 			}
 		}
 	}
@@ -199,8 +212,12 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.ApiTotalNum = val
-			case "executeDuration":
-				m.ExecuteDuration = vals[0]
+			case "costTimeSec":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CostTimeSec = val
 			case "apiSuccessNum":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -257,6 +274,12 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.StepID = val
+			case "ExecuteRate":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.ExecuteRate = val
 			}
 		}
 	}
