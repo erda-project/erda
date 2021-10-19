@@ -15,9 +15,28 @@
 package manager
 
 import (
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
+	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
+	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	etcdQueueWatchPrefix         = "/devops/pipeline/queue_manager/actions/update/"
+	etcdQueuePipelineWatchPrefix = "/devops/pipeline/queue_manager/actions/batch-update/"
+)
+
+var (
+	defaultQueueManagerLogPrefix = "[default queue manager]"
 )
 
 // IdempotentAddQueue add to to manager idempotent.
@@ -42,4 +61,110 @@ func (mgr *defaultManager) IdempotentAddQueue(pq *apistructs.PipelineQueue) type
 	newQueue.Start(qStopCh)
 
 	return newQueue
+}
+
+func (mgr *defaultManager) SendQueueToEtcd(queueID uint64) {
+	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*60)).Do(func() (abort bool, err error) {
+		err = mgr.js.Put(context.Background(), fmt.Sprintf("%s%d", etcdQueueWatchPrefix, queueID), nil)
+		if err != nil {
+			logrus.Errorf("%s: send to queue failed, err: %v", defaultQueueManagerLogPrefix, err)
+			return false, err
+		}
+		logrus.Infof("%s: queue id: %d add to queue success", defaultQueueManagerLogPrefix, queueID)
+		return true, nil
+	})
+}
+
+func (mgr *defaultManager) SendUpdatePriorityPipelineIDsToEtcd(queueID uint64, pipelineIDS []uint64) {
+	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*60)).Do(func() (abort bool, err error) {
+		err = mgr.js.Put(context.Background(), fmt.Sprintf("%s%d", etcdQueuePipelineWatchPrefix, queueID), pipelineIDS)
+		if err != nil {
+			logrus.Errorf("%s: send to queue pipelines failed, err: %v", defaultQueueManagerLogPrefix, err)
+			return false, err
+		}
+		logrus.Infof("%s: queue id: %d add to queue pipelines success", defaultQueueManagerLogPrefix, queueID)
+		return true, nil
+	})
+}
+
+// Listen leader node should listen etcd, watch queue information
+func (mgr *defaultManager) ListenInputQueueFromEtcd(ctx context.Context) {
+	logrus.Infof("%s: start listen", defaultQueueManagerLogPrefix)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_ = mgr.js.IncludeWatch().Watch(ctx, etcdQueueWatchPrefix, true, true, true, nil,
+				func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
+					go func() {
+						logrus.Infof("%s: watched a key change: %s, changeType", key, t.String())
+						queueID, err := parseQueueIDFromWatchedKey(key, etcdQueueWatchPrefix)
+						if err != nil {
+							logrus.Errorf("%s: failed to parse queueID from watched key, key: %s, err: %v", defaultQueueManagerLogPrefix, key, err)
+							return
+						}
+						pq, exist, err := mgr.dbClient.GetPipelineQueue(queueID)
+						if err != nil {
+							logrus.Errorf("%s: failed to get queue, id: %d, err: %v", defaultQueueManagerLogPrefix, queueID, err)
+							return
+						}
+						if !exist {
+							logrus.Errorf("%s: queue not existed, id: %d, err: %v", defaultQueueManagerLogPrefix, queueID, err)
+							return
+						}
+
+						_ = mgr.IdempotentAddQueue(pq)
+					}()
+
+					return nil
+				})
+		}
+	}
+}
+
+func (mgr *defaultManager) ListenUpdatePriorityPipelineIDsFromEtcd(ctx context.Context) {
+	logrus.Infof("%s: start listen pipeline ids", defaultQueueManagerLogPrefix)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_ = mgr.js.IncludeWatch().Watch(ctx, etcdQueuePipelineWatchPrefix, true, true, false, []uint64{},
+				func(key string, value interface{}, t storetypes.ChangeType) (_ error) {
+					logrus.Infof("%s: watched a key change: %s, value: %v, changeType", key, value, t.String())
+					queueID, err := parseQueueIDFromWatchedKey(key, etcdQueuePipelineWatchPrefix)
+					if err != nil {
+						logrus.Errorf("%s: failed to parse queueID from watched key, key: %s, err: %v", defaultQueueManagerLogPrefix, key, err)
+						return
+					}
+					pq, exist, err := mgr.dbClient.GetPipelineQueue(queueID)
+					if err != nil {
+						logrus.Errorf("%s: failed to get queue, id: %d, err: %v", defaultQueueManagerLogPrefix, queueID, err)
+						return
+					}
+					if !exist {
+						logrus.Errorf("%s: queue not existed, id: %d, err: %v", defaultQueueManagerLogPrefix, queueID, err)
+						return
+					}
+
+					pipelineIDS, ok := value.(*[]uint64)
+					if !ok {
+						logrus.Errorf("%s: failed convert value: %v to pipeline ids", defaultQueueManagerLogPrefix, value)
+						return
+					}
+					if err := mgr.BatchUpdatePipelinePriorityInQueue(pq, *pipelineIDS); err != nil {
+						logrus.Errorf("%s: failed to batch update pipeline priority in queue, err: %v", defaultQueueManagerLogPrefix, err)
+						return
+					}
+
+					return nil
+				})
+		}
+	}
+}
+
+func parseQueueIDFromWatchedKey(key string, prefixKey string) (uint64, error) {
+	pipelineIDStr := strutil.TrimPrefixes(key, prefixKey)
+	return strconv.ParseUint(pipelineIDStr, 10, 64)
 }
