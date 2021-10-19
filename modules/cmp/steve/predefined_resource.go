@@ -207,6 +207,20 @@ rules:
   - 'pods/exec'
   verbs:
   - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: erda-readonly
+rules:
+- apiGroups:
+  - "*"
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
 `
 	ClusterRoleBindingExpression = `
 ---
@@ -217,7 +231,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: view
+  name: erda-readonly
 subjects:
 - kind: Group
   name: erda-org-support
