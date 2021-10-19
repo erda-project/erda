@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -91,10 +92,10 @@ func Test_sendMessage(t *testing.T) {
 		Bundle: bdl,
 	}
 	req := testplanpb.Content{
-		TestPlanID:      1,
-		ExecuteTime:     "",
-		PassRate:        10,
-		ApiTotalNum:     100,
+		TestPlanID:  1,
+		ExecuteTime: "",
+		PassRate:    10,
+		ApiTotalNum: 100,
 	}
 	want := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
@@ -122,4 +123,52 @@ func Test_sendMessage(t *testing.T) {
 	}
 	err := p.sendMessage(req, ctx)
 	assert.NoError(t, err)
+}
+
+func TestSendStepMessage(t *testing.T) {
+	var (
+		db  *dbclient.Client
+		bdl *bundle.Bundle
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineWithTasks", func(*dbclient.Client, uint64) (*spec.PipelineWithTasks, error) {
+		return &spec.PipelineWithTasks{
+			Pipeline: nil,
+			Tasks: []*spec.PipelineTask{
+				{
+					ID:   1,
+					Name: "1",
+					Type: "api-test",
+					Extra: spec.PipelineTaskExtra{
+						Action: pipelineyml.Action{
+							Version: "2.0",
+						},
+					},
+					Status: "success",
+				},
+			},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent",
+		func(b *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+			return nil
+		})
+
+	defer monkey.UnpatchAll()
+
+	p := &provider{
+		Bundle: bdl,
+	}
+	ctx := aoptypes.TuneContext{
+		Context: nil,
+		SDK: aoptypes.SDK{
+			DBClient: db,
+		},
+	}
+
+	err := p.sendStepMessage(&ctx, 0, 0, 0, 0, 0, "1")
+	if err != nil {
+		t.Error("fail")
+	}
 }
