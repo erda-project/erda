@@ -104,13 +104,10 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 			if err != nil {
 				return
 			}
-
-			executorChan := make(chan interface{})
-			ctx = context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorChan)
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
 				r.TaskThrottler, executor, &p, r.bdl, r.dbClient, r.js,
-				r.actionAgentSvc, r.extMarketSvc, executorChan)
+				r.actionAgentSvc, r.extMarketSvc)
 
 			// tear down task
 			defer func() {

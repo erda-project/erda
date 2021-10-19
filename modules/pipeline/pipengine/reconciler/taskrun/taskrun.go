@@ -53,7 +53,7 @@ type TaskRun struct {
 	PExitCh        <-chan struct{}
 	PExitChCancel  context.CancelFunc
 	PExit          bool
-	ExecutorDoneCh chan interface{} // executorDoneCh allow action executor return directly
+	ExecutorDoneCh chan interface{}
 
 	// 轮训状态间隔期间可能任务已经是终态，FakeTimeout = true
 	FakeTimeout bool
@@ -70,10 +70,11 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client, js jsonstore.JsonStore,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
-	executorCh chan interface{},
 ) *TaskRun {
+	// make executor has buffer, don't block task framework
+	executorCH := make(chan interface{}, 1)
 	return &TaskRun{
-		Ctx:       ctx,
+		Ctx:       context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCH),
 		Task:      task,
 		Executor:  executor,
 		Throttler: throttler,
@@ -91,7 +92,7 @@ func New(ctx context.Context, task *spec.PipelineTask,
 
 		PExitCh:        pExitCh,
 		PExitChCancel:  pExitChCancel,
-		ExecutorDoneCh: executorCh,
+		ExecutorDoneCh: executorCH,
 
 		ActionAgentSvc: actionAgentSvc,
 		ExtMarketSvc:   extMarketSvc,
