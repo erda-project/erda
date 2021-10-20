@@ -17,12 +17,11 @@ package cleaner
 import (
 	"context"
 	"sort"
-	"strings"
 	"time"
-	"unicode"
 
 	"github.com/olivere/elastic"
 
+	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
@@ -320,12 +319,16 @@ func (p *provider) rolloverAlias(alias, body string) (bool, error) {
 	return resp.Acknowledged, nil
 }
 
-func (p *provider) indexAlias(index *loader.IndexEntry) string {
-	idx := strings.LastIndexFunc(index.Index, func(r rune) bool {
-		return !unicode.IsDigit(r)
-	})
-	if idx < 0 {
-		return ""
+func (p *provider) indexAlias(entry *loader.IndexEntry) string {
+	for _, ptn := range p.rolloverAliasPatterns {
+		result, match := ptn.index.Match(entry.Index, index.InvalidPatternValueChars)
+		if match {
+			alias, err := ptn.alias.Fill(result.Keys...)
+			if err != nil {
+				p.Log.Errorf("failed to fill keys %v into alias pattern %q: %s", result.Keys, err, ptn.alias.Pattern)
+			}
+			return alias
+		}
 	}
-	return index.Index[0:idx] + p.Cfg.DiskClean.RolloverAliasSuffix
+	return ""
 }

@@ -47,6 +47,7 @@ message GetLogRequest {
     int64 end = 6;
     int64 count = 7;
     string pattern = 8;
+    bool debug = 10;
 }
 
 message GetLogByRuntimeRequest {
@@ -59,6 +60,7 @@ message GetLogByRuntimeRequest {
     int64 count = 7;
     string applicationId = 8;
     string pattern = 9;
+    bool debug = 10;
 }
 
 message GetLogByOrganizationRequest {
@@ -71,6 +73,7 @@ message GetLogByOrganizationRequest {
     int64 count = 7;
     string clusterName = 8;
     string pattern = 9;
+    bool debug = 11;
 }
 
 message GetLogResponse {

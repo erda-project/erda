@@ -62,8 +62,15 @@ type (
 			HighDiskUsagePercent   float64       `file:"high_disk_usage_percent" default:"85"`
 			LowDiskUsagePercent    float64       `file:"low_disk_usage_percent" default:"70"`
 			RolloverBodyFile       string        `file:"rollover_body_file"`
-			RolloverAliasSuffix    string        `file:"rollover_alias_suffix"`
+			RolloverAliasPatterns  []struct {
+				Index string `file:"index"`
+				Alias string `file:"alias"`
+			} `file:"rollover_alias_patterns"`
 		} `file:"disk_clean"`
+	}
+	indexAliasPattern struct {
+		index *index.Pattern
+		alias *index.Pattern
 	}
 	provider struct {
 		Cfg        *config
@@ -77,6 +84,7 @@ type (
 		// for disk clean
 		minIndicesStoreInDisk    int64
 		rolloverBodyForDiskClean string
+		rolloverAliasPatterns    []*indexAliasPattern
 	}
 )
 
@@ -139,6 +147,27 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			return fmt.Errorf("invalid min_indices_store: %s", err)
 		}
 		p.minIndicesStoreInDisk = minIndicesStore
+
+		if len(p.Cfg.DiskClean.RolloverAliasPatterns) <= 0 {
+			return fmt.Errorf("rollover_alias_patterns are required")
+		}
+		for i, ptn := range p.Cfg.DiskClean.RolloverAliasPatterns {
+			if len(ptn.Index) <= 0 || len(ptn.Alias) <= 0 {
+				return fmt.Errorf("pattern(%d) index and alias is required", i)
+			}
+			ip, err := index.BuildPattern(ptn.Index)
+			if err != nil {
+				return err
+			}
+			ap, err := index.BuildPattern(ptn.Alias)
+			if err != nil {
+				return err
+			}
+			if ap.VarNum > 0 {
+				return fmt.Errorf("pattern(%d) can't contains vars", i)
+			}
+			p.rolloverAliasPatterns = append(p.rolloverAliasPatterns, &indexAliasPattern{index: ip, alias: ap})
+		}
 
 		// run disk clean task on leader node
 		p.election.OnLeader(p.runDiskCheckAndClean)

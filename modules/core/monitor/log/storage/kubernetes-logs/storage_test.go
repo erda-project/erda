@@ -1,0 +1,720 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kuberneteslogs
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	reflect "reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/modules/core/monitor/log/storage"
+	"github.com/recallsong/go-utils/encoding/jsonx"
+	v1 "k8s.io/api/core/v1"
+)
+
+type logTestItem struct {
+	Timestamp int64
+	Content   string
+}
+
+var (
+	commonLogTestItems = []logTestItem{
+		{Timestamp: 11, Content: "1111"},
+		{Timestamp: 12, Content: "2222"},
+		{Timestamp: 13, Content: "3333"},
+		{Timestamp: 14, Content: "4444.0"},
+		{Timestamp: 14, Content: "4444.1"},
+		{Timestamp: 15, Content: "5555"},
+		{Timestamp: 16, Content: "6666"},
+	}
+	commonTestOptions = map[string]interface{}{
+		"pod_namespace":  "namespace1",
+		"pod_name":       "name1",
+		"container_name": "container_name1",
+		"cluster_name":   "cluster_name1",
+	}
+	commonTestFilters = []*storage.Filter{
+		{
+			Key:   "id",
+			Op:    storage.EQ,
+			Value: "test_id",
+		},
+	}
+)
+
+var stdout = os.Stdout
+
+func printf(tmp string, args ...interface{}) {
+	fmt.Fprintf(stdout, tmp, args...)
+}
+
+func queryFuncForTest(expectNamespace, expectPod, expectContainer string, items []logTestItem) func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error) {
+	return func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error) {
+		if expectNamespace != it.podNamespace || expectPod != it.podName || expectContainer != opts.Container {
+			return nil, fmt.Errorf("want keys: [%q,%q,%q], got keys: [%q,%q,%q]",
+				expectNamespace, expectPod, expectContainer, it.podNamespace, it.podName, opts.Container)
+		}
+		var lines []string
+		if opts.SinceTime == nil {
+			for _, item := range items {
+				t := time.Unix(item.Timestamp/int64(time.Second), item.Timestamp%int64(time.Second))
+				line := t.Format(time.RFC3339Nano) + " " + item.Content
+				lines = append(lines, line)
+			}
+		} else {
+			for i, item := range items {
+				t := time.Unix(item.Timestamp/int64(time.Second), item.Timestamp%int64(time.Second))
+				if t.After(opts.SinceTime.Time) || t.Equal(opts.SinceTime.Time) {
+					for n := len(items); i < n; i++ {
+						item := items[i]
+						t := time.Unix(item.Timestamp/int64(time.Second), item.Timestamp%int64(time.Second))
+						line := t.Format(time.RFC3339Nano) + " " + item.Content
+						lines = append(lines, line)
+					}
+					break
+				}
+			}
+		}
+		printf("request since time: %v \n", opts.SinceTime)
+		printf("response logs: \n%s\n", strings.Join(lines, "\n"))
+		return io.NopCloser(strings.NewReader(strings.Join(lines, "\n"))), nil
+	}
+}
+
+func Test_cStorage_Iterator_Next(t *testing.T) {
+	tests := []struct {
+		name        string
+		source      []logTestItem
+		bufferLines int64
+		sel         *storage.Selector
+		want        []interface{}
+	}{
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   11,
+				End:     13,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 11,
+					Offset:    math.MaxInt64,
+					Content:   "1111",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 12,
+					Offset:    math.MaxInt64,
+					Content:   "2222",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   12,
+				End:     13,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 12,
+					Offset:    math.MaxInt64,
+					Content:   "2222",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   13,
+				End:     16,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 13,
+					Offset:    math.MaxInt64,
+					Content:   "3333",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.0",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.1",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 15,
+					Offset:    math.MaxInt64,
+					Content:   "5555",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   100,
+				End:     1000,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   10,
+				End:     11,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: defaultBufferLines,
+			sel: &storage.Selector{
+				Start:   11,
+				End:     13,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 11,
+					Offset:    math.MaxInt64,
+					Content:   "1111",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 12,
+					Offset:    math.MaxInt64,
+					Content:   "2222",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			namespace, _ := tt.sel.Options["pod_namespace"].(string)
+			name, _ := tt.sel.Options["pod_name"].(string)
+			container, _ := tt.sel.Options["container_name"].(string)
+			s := &cStorage{
+				log: logrusx.New(),
+				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
+					return queryFuncForTest(namespace, name, container, tt.source), nil
+				},
+				bufferLines: tt.bufferLines,
+			}
+			it, err := s.Iterator(context.TODO(), tt.sel)
+			if err != nil {
+				t.Errorf("cStorage.Iterator() got error: %s", it.Error())
+				return
+			}
+			var got []interface{}
+			for it.Next() {
+				got = append(got, it.Value())
+			}
+			if it.Error() != nil {
+				t.Errorf("cStorage.Iterator().Next() got error: %s", it.Error())
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cStorage.Iterator().Next() \ngot %v, \nwant %v", jsonx.MarshalAndIndent(got), jsonx.MarshalAndIndent(tt.want))
+			}
+		})
+	}
+}
+
+func Test_cStorage_Iterator_Prev(t *testing.T) {
+	tests := []struct {
+		name        string
+		source      []logTestItem
+		bufferLines int64
+		sel         *storage.Selector
+		want        []interface{}
+	}{
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   11,
+				End:     13,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 12,
+					Offset:    math.MaxInt64,
+					Content:   "2222",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 11,
+					Offset:    math.MaxInt64,
+					Content:   "1111",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   12,
+				End:     13,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 12,
+					Offset:    math.MaxInt64,
+					Content:   "2222",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   13,
+				End:     16,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 15,
+					Offset:    math.MaxInt64,
+					Content:   "5555",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.1",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.0",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 13,
+					Offset:    math.MaxInt64,
+					Content:   "3333",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   100,
+				End:     1000,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   0,
+				End:     11,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: defaultBufferLines,
+			sel: &storage.Selector{
+				Start:   10,
+				End:     13,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 12,
+					Offset:    math.MaxInt64,
+					Content:   "2222",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 11,
+					Offset:    math.MaxInt64,
+					Content:   "1111",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			namespace, _ := tt.sel.Options["pod_namespace"].(string)
+			name, _ := tt.sel.Options["pod_name"].(string)
+			container, _ := tt.sel.Options["container_name"].(string)
+			s := &cStorage{
+				log: logrusx.New(),
+				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
+					return queryFuncForTest(namespace, name, container, tt.source), nil
+				},
+				bufferLines: tt.bufferLines,
+			}
+			it, err := s.Iterator(context.TODO(), tt.sel)
+			if err != nil {
+				t.Errorf("cStorage.Iterator() got error: %s", it.Error())
+				return
+			}
+			var got []interface{}
+			for it.Prev() {
+				got = append(got, it.Value())
+			}
+			if it.Error() != nil {
+				t.Errorf("cStorage.Iterator().Prev() got error: %s", it.Error())
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cStorage.Iterator().Prev() \ngot %v, \nwant %v", jsonx.MarshalAndIndent(got), jsonx.MarshalAndIndent(tt.want))
+			}
+		})
+	}
+}
+
+func Test_cStorage_Iterator_FirstNext(t *testing.T) {
+	tests := []struct {
+		name        string
+		source      []logTestItem
+		bufferLines int64
+		sel         *storage.Selector
+		want        []interface{}
+	}{
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   13,
+				End:     15,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 13,
+					Offset:    math.MaxInt64,
+					Content:   "3333",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.0",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.1",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   100,
+				End:     1000,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   10,
+				End:     11,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			namespace, _ := tt.sel.Options["pod_namespace"].(string)
+			name, _ := tt.sel.Options["pod_name"].(string)
+			container, _ := tt.sel.Options["container_name"].(string)
+			s := &cStorage{
+				log: logrusx.New(),
+				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
+					return queryFuncForTest(namespace, name, container, tt.source), nil
+				},
+				bufferLines: tt.bufferLines,
+			}
+			it, err := s.Iterator(context.TODO(), tt.sel)
+			if err != nil {
+				t.Errorf("cStorage.Iterator() got error: %s", it.Error())
+				return
+			}
+			var got []interface{}
+			if it.First() {
+				got = append(got, it.Value())
+			}
+			for it.Next() {
+				got = append(got, it.Value())
+			}
+			if it.Error() != nil {
+				t.Errorf("cStorage.Iterator() First() and Next() got error: %s", it.Error())
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cStorage.Iterator() First() and Next() \ngot %v, \nwant %v", jsonx.MarshalAndIndent(got), jsonx.MarshalAndIndent(tt.want))
+			}
+		})
+	}
+}
+
+func Test_cStorage_Iterator_LastPrev(t *testing.T) {
+	tests := []struct {
+		name        string
+		source      []logTestItem
+		bufferLines int64
+		sel         *storage.Selector
+		want        []interface{}
+	}{
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   13,
+				End:     15,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: []interface{}{
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.1",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 14,
+					Offset:    math.MaxInt64,
+					Content:   "4444.0",
+					Level:     "",
+					RequestId: "",
+				},
+				&pb.LogItem{
+					Id:        "test_id",
+					Source:    "container",
+					Stream:    "",
+					Timestamp: 13,
+					Offset:    math.MaxInt64,
+					Content:   "3333",
+					Level:     "",
+					RequestId: "",
+				},
+			},
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   100,
+				End:     1000,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+		{
+			source:      commonLogTestItems,
+			bufferLines: 1,
+			sel: &storage.Selector{
+				Start:   10,
+				End:     11,
+				Filters: commonTestFilters,
+				Options: commonTestOptions,
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			namespace, _ := tt.sel.Options["pod_namespace"].(string)
+			name, _ := tt.sel.Options["pod_name"].(string)
+			container, _ := tt.sel.Options["container_name"].(string)
+			s := &cStorage{
+				log: logrusx.New(),
+				getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
+					return queryFuncForTest(namespace, name, container, tt.source), nil
+				},
+				bufferLines: tt.bufferLines,
+			}
+			it, err := s.Iterator(context.TODO(), tt.sel)
+			if err != nil {
+				t.Errorf("cStorage.Iterator() got error: %s", it.Error())
+				return
+			}
+			var got []interface{}
+			if it.Last() {
+				got = append(got, it.Value())
+			}
+			for it.Prev() {
+				got = append(got, it.Value())
+			}
+			if it.Error() != nil {
+				t.Errorf("cStorage.Iterator() Last() and Prev()  got error: %s", it.Error())
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cStorage.Iterator() Last() and Prev() \ngot %v, \nwant %v", jsonx.MarshalAndIndent(got), jsonx.MarshalAndIndent(tt.want))
+			}
+		})
+	}
+}

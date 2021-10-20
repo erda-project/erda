@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -42,9 +43,9 @@ func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource 
 		}
 		switch filter.Op {
 		case storage.EQ:
-			query = query.Filter(elastic.NewRegexpQuery(filter.Key, val))
-		case storage.REGEXP:
 			query = query.Filter(elastic.NewTermQuery(filter.Key, val))
+		case storage.REGEXP:
+			query = query.Filter(elastic.NewRegexpQuery(filter.Key, val))
 		}
 	}
 	return searchSource.Query(query)
@@ -55,10 +56,15 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	indices := p.Loader.Indices(ctx, sel.Start, sel.End, loader.KeyPath{
 		Recursive: true,
 	})
+	searchSource := p.getSearchSource(sel)
+	if sel.Debug {
+		source, _ := searchSource.Source()
+		fmt.Printf("indices: %v\nsearchSource: %s\n", strings.Join(indices, ","), jsonx.MarshalAndIndent(source))
+	}
 	return &scrollIterator{
 		ctx:          ctx,
 		sel:          sel,
-		searchSource: p.getSearchSource(sel),
+		searchSource: searchSource,
 		client:       p.client,
 		timeout:      p.Cfg.QueryTimeout,
 		pageSize:     p.Cfg.ReadPageSize,
@@ -169,10 +175,6 @@ func (it *scrollIterator) release() (err error) {
 }
 
 func (it *scrollIterator) fetch(dir iteratorDir) error {
-	fmt.Println(it.indices)
-	source, _ := it.searchSource.Source()
-	fmt.Println(jsonx.MarshalAndIndent(source))
-
 	if len(it.indices) <= 0 {
 		it.err = io.EOF
 		return it.err
@@ -254,6 +256,14 @@ func (it *scrollIterator) checkClosed() bool {
 			it.err = storekit.ErrIteratorClosed
 		}
 		return true
+	}
+	select {
+	case <-it.ctx.Done():
+		if it.err == nil {
+			it.err = storekit.ErrIteratorClosed
+		}
+		return true
+	default:
 	}
 	return false
 }

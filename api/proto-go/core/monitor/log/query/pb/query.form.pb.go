@@ -88,6 +88,12 @@ func (m *GetLogRequest) UnmarshalURLValues(prefix string, values url.Values) err
 				m.Count = val
 			case "pattern":
 				m.Pattern = vals[0]
+			case "debug":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Debug = val
 			}
 		}
 	}
@@ -129,6 +135,12 @@ func (m *GetLogByRuntimeRequest) UnmarshalURLValues(prefix string, values url.Va
 				m.ApplicationId = vals[0]
 			case "pattern":
 				m.Pattern = vals[0]
+			case "debug":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Debug = val
 			}
 		}
 	}
@@ -170,6 +182,12 @@ func (m *GetLogByOrganizationRequest) UnmarshalURLValues(prefix string, values u
 				m.ClusterName = vals[0]
 			case "pattern":
 				m.Pattern = vals[0]
+			case "debug":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Debug = val
 			}
 		}
 	}

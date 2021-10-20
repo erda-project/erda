@@ -36,42 +36,55 @@ type Interface interface {
 
 type (
 	config struct {
-		Pattern string `file:"pattern"`
+		KeyPatterns []string `file:"key_patterns"`
+	}
+	keyPattern struct {
+		pattern *index.Pattern
+		idx     int
 	}
 	provider struct {
 		Cfg      *config
 		Log      logs.Logger
 		strategy Interface `autowired:"storage-retention-strategy"`
-		pattern  *index.Pattern
-		keyIdx   int
+		patterns []*keyPattern
 	}
 )
 
 var _ cleaner.RetentionStrategy = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	ptn, err := index.BuildPattern(p.Cfg.Pattern)
-	if err != nil {
-		return err
-	}
-	p.keyIdx = -1
-	for i, key := range ptn.Keys {
-		if key == "key" {
-			p.keyIdx = i
-			break
+	for _, item := range p.Cfg.KeyPatterns {
+		ptn, err := index.BuildPattern(item)
+		if err != nil {
+			return err
 		}
+		kp := &keyPattern{
+			pattern: ptn,
+			idx:     -1,
+		}
+		for i, key := range ptn.Keys {
+			if key == "key" {
+				kp.idx = i
+				break
+			}
+		}
+		if kp.idx < 0 {
+			return fmt.Errorf("not fount <key> in pattern %q", item)
+		}
+		p.patterns = append(p.patterns, kp)
 	}
-	if p.keyIdx < 0 {
-		return fmt.Errorf("not fount <key> in pattern %q", p.Cfg.Pattern)
+	if len(p.patterns) <= 0 {
+		return fmt.Errorf("patterns is required")
 	}
-	p.pattern = ptn
 	return p.initStrategy(ctx)
 }
 
 func (p *provider) GetTTL(entry *loader.IndexEntry) time.Duration {
-	result, ok := p.pattern.Match(entry.Index, index.InvalidPatternValueChars)
-	if ok {
-		return p.strategy.GetTTL(result.Keys[p.keyIdx])
+	for _, ptn := range p.patterns {
+		result, ok := ptn.pattern.Match(entry.Index, index.InvalidPatternValueChars)
+		if ok {
+			return p.strategy.GetTTL(result.Keys[ptn.idx])
+		}
 	}
 	return p.strategy.DefaultTTL()
 }

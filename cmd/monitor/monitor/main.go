@@ -26,6 +26,8 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
+	_ "github.com/erda-project/erda/modules/core/monitor/log/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/core/monitor/log/storage/kubernetes-logs"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query-example"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"

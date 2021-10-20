@@ -27,8 +27,11 @@ import (
 )
 
 type logQueryService struct {
-	p       *provider
-	storage storage.Storage
+	p                   *provider
+	startTime           int64
+	storageReader       storage.Storage
+	k8sReader           storage.Storage
+	frozenStorageReader storage.Storage
 }
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
@@ -83,13 +86,13 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	if fn != nil {
 		fn(sel)
 	}
-	it, err := s.storage.Iterator(ctx, sel)
+	it, err := s.getIterator(ctx, sel)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	defer it.Close()
 
-	items, err := toLogItems(it, req.GetCount() >= 0, getLimit(req.GetCount()))
+	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -107,7 +110,7 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 	if fn != nil {
 		fn(sel)
 	}
-	it, err := s.storage.Iterator(ctx, sel)
+	it, err := s.getIterator(ctx, sel)
 	if err != nil {
 		return errors.NewInternalServerError(err)
 	}
@@ -133,6 +136,41 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 	return nil
 }
 
+func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
+	if sel.Scheme != "container" {
+		if sel.Start > s.startTime || s.frozenStorageReader == nil {
+			return s.storageReader.Iterator(ctx, sel)
+		}
+		return s.tryGetIterator(ctx, sel, s.storageReader, s.frozenStorageReader)
+	}
+	if sel.End >= time.Now().Add(-24*time.Hour).UnixNano() {
+		return s.tryGetIterator(ctx, sel, s.k8sReader, s.storageReader, s.frozenStorageReader)
+	}
+	return s.tryGetIterator(ctx, sel, s.storageReader, s.frozenStorageReader)
+}
+
+func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selector, storages ...storage.Storage) (it storekit.Iterator, err error) {
+	var its []storekit.Iterator
+	for _, stor := range storages {
+		if stor == nil {
+			continue
+		}
+		it, _err := stor.Iterator(ctx, sel)
+		if err != nil {
+			s.p.Log.Errorf("failed to create %T.Iterator: %s", stor, _err)
+			err = _err
+			continue
+		}
+		its = append(its, it)
+	}
+	if len(its) == 0 {
+		return nil, err
+	} else if len(its) == 1 {
+		return its[0], nil
+	}
+	return storekit.MergedHeadOverlappedIterator(storage.DefaultComparer, its...), nil
+}
+
 // Request .
 type Request interface {
 	GetStart() int64
@@ -145,6 +183,7 @@ type Request interface {
 	GetId() string
 	GetSource() string
 	GetStream() string
+	GetDebug() bool
 }
 
 const (
@@ -173,6 +212,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	sel := &storage.Selector{
 		Start: req.GetStart(),
 		End:   req.GetEnd(),
+		Debug: req.GetDebug(),
 	}
 
 	if sel.End <= 0 {
@@ -193,7 +233,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 			Value: req.GetRequestId(),
 		})
 	} else if len(req.GetId()) > 0 {
-		sel.Scheme = "container"
+		sel.Scheme = req.GetSource()
 		sel.Filters = append(sel.Filters, &storage.Filter{
 			Key:   "id",
 			Op:    storage.EQ,
@@ -210,7 +250,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 			sel.Filters = append(sel.Filters, &storage.Filter{
 				Key:   "stream",
 				Op:    storage.EQ,
-				Value: req.GetSource(),
+				Value: req.GetStream(),
 			})
 		}
 	} else {
@@ -230,7 +270,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	return sel, nil
 }
 
-func toLogItems(it storekit.Iterator, forward bool, limit int) (list []*pb.LogItem, err error) {
+func toLogItems(ctx context.Context, it storekit.Iterator, forward bool, limit int) (list []*pb.LogItem, err error) {
 	if forward {
 		for it.Next() {
 			if len(list) >= limit {
@@ -244,12 +284,12 @@ func toLogItems(it storekit.Iterator, forward bool, limit int) (list []*pb.LogIt
 		}
 	} else {
 		for it.Prev() {
+			if len(list) >= limit {
+				break
+			}
 			log, ok := it.Value().(*pb.LogItem)
 			if !ok {
 				continue
-			}
-			if len(list) >= limit {
-				return list, nil
 			}
 			list = append(list, log)
 		}

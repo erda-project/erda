@@ -51,7 +51,7 @@ elasticsearch.index.initializer:
 # elasticsearch for log
 elasticsearch.index.loader@log:
   load_mode: "LoadFromElasticSearchOnly"
-  index_reload_interval: "10s"
+  index_reload_interval: "1m"
   match:
     - prefix: "erda-logs-"
       patterns:
@@ -96,7 +96,7 @@ log-persist:
 # elasticsearch for metric
 elasticsearch.index.loader@metric:
   load_mode: "LoadFromElasticSearchOnly"
-  index_reload_interval: "10s"
+  index_reload_interval: "1m"
   match:
     - prefix: "spot-"
       patterns:

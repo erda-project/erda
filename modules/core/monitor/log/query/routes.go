@@ -59,6 +59,7 @@ type LogRequest struct {
 	ApplicationID string `from:"applicationId"`
 	ClusterName   string `from:"clusterName"`
 	Pattern       string `from:"pattern"`
+	Debug         bool   `from:"debug"`
 
 	regexp *regexp.Regexp
 }
@@ -71,6 +72,7 @@ func (r *LogRequest) GetRequestId() string { return r.RequestID }
 func (r *LogRequest) GetId() string        { return r.ID }
 func (r *LogRequest) GetSource() string    { return r.Source }
 func (r *LogRequest) GetStream() string    { return r.Stream }
+func (r *LogRequest) GetDebug() bool       { return r.Debug }
 
 var lineBreak = []byte("\n")
 

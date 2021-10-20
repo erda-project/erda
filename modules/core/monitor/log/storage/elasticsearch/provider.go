@@ -86,7 +86,11 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 					return "", "", "", nil, storekit.ErrExitConsume
 				}
 			}
-			return index, data.ID + "-" + strconv.FormatInt(data.Offset, 16), p.Cfg.IndexType, &Document{
+			id = data.ID
+			if len(id) > 12 {
+				id = id[:12]
+			}
+			return index, id + strconv.FormatInt(data.Timestamp, 36) + "-" + strconv.FormatInt(data.Offset, 36), p.Cfg.IndexType, &Document{
 				Log:  &data.Log,
 				Date: getUnixMillisecond(data.Timestamp),
 			}, nil
