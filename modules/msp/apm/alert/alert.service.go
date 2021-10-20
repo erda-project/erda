@@ -119,9 +119,23 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 	}
 	appIdStr := resp.Data.Attributes["application_id"]
 	idData := appIdStr.GetListValue().AsSlice()
-	appIds := make([]string, 0)
+	appNames := make([]string, 0)
 	for _, v := range idData {
-		appIds = append(appIds, v.(string))
+		appIdStr := v.(string)
+		appId, err := strconv.Atoi(appIdStr)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		app, err := a.p.bdl.GetApp(uint64(appId))
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		appNames = append(appNames, app.Name)
+	}
+	condition := &monitor.TriggerCondition{
+		Condition: ApplicationId,
+		Operator:  "in",
+		Values:    strings.Join(appNames, ","),
 	}
 	getAlertData := &alert.ApmAlertData{
 		Id:           int64(resp.Data.Id),
@@ -131,12 +145,12 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 		Enable:       resp.Data.Enable,
 		Rules:        resp.Data.Rules,
 		Notifies:     resp.Data.Notifies,
-		AppIds:       appIds,
 		Domain:       resp.Data.Domain,
 		Attributes:   resp.Data.Attributes,
 		CreateTime:   resp.Data.CreateTime,
 		UpdateTime:   resp.Data.UpdateTime,
 	}
+	getAlertData.TriggerCondition = append(getAlertData.TriggerCondition, condition)
 	result := &alert.GetAlertResponse{
 		Data: getAlertData,
 	}

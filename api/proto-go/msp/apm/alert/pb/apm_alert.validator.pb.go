@@ -91,6 +91,13 @@ func (this *ApmAlertData) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.TriggerCondition {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("TriggerCondition", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *CreateAlertRequest) Validate() error {

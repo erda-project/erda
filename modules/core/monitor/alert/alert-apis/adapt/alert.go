@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -423,13 +424,25 @@ func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*pb.Alert
 	}
 	output := a.ValueMapToInterfaceMap(alert.Attributes)
 	if clusterNames, ok := utils.GetMapValueArr(output, "cluster_name"); ok {
+		names := make([]string, 0)
+		condition := &pb.TriggerCondition{
+			Condition: ClusterName,
+			Operator:  "in",
+		}
 		for _, v := range clusterNames {
 			if clusterName, ok := v.(string); ok {
-				alert.ClusterNames = append(alert.ClusterNames, clusterName)
+				names = append(names, clusterName)
 			}
 		}
+		condition.Values = strings.Join(names, ",")
+		alert.TriggerCondition = append(alert.TriggerCondition, condition)
 	} else if clusterName, ok := utils.GetMapValueString(output, "cluster_name"); ok {
-		alert.ClusterNames = append(alert.ClusterNames, clusterName)
+		condition := &pb.TriggerCondition{
+			Condition: ClusterName,
+			Operator:  "in",
+			Values:    clusterName,
+		}
+		alert.TriggerCondition = append(alert.TriggerCondition, condition)
 	}
 	alert.Attributes = nil
 	return alert, nil

@@ -153,18 +153,19 @@ message GetAlertResponse {
 }
 
 message ApmAlertData {
-  int64                                            id           = 1;
-  string                                           name         = 2;
-  string                                           alertScope   = 3;
-  string                                           alertScopeId = 4;
-  bool                                             enable       = 5;
-  repeated erda.core.monitor.alert.AlertExpression rules        = 6;
-  repeated erda.core.monitor.alert.AlertNotify     notifies     = 7;
-  repeated string                                  appIds       = 8;
-  string                                           domain       = 9;
-  map<string, google.protobuf.Value>               attributes   = 10;
-  int64                                            createTime   = 11;
-  int64                                            updateTime   = 12;
+  int64                                             id               = 1;
+  string                                            name             = 2;
+  string                                            alertScope       = 3;
+  string                                            alertScopeId     = 4;
+  bool                                              enable           = 5;
+  repeated erda.core.monitor.alert.AlertExpression  rules            = 6;
+  repeated erda.core.monitor.alert.AlertNotify      notifies         = 7;
+  repeated string                                   appIds           = 8;
+  string                                            domain           = 9;
+  map<string, google.protobuf.Value>                attributes       = 10;
+  int64                                             createTime       = 11;
+  int64                                             updateTime       = 12;
+  repeated erda.core.monitor.alert.TriggerCondition triggerCondition = 13;
 }
 
 message CreateAlertRequest {
