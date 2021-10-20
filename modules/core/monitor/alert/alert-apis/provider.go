@@ -114,15 +114,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	//p.conditionIndex = make([]*ConditionIndex, 0)
-	//f, err = ioutil.ReadFile(p.C.ConditionIndex)
-	//if err != nil {
-	//	return err
-	//}
-	//err = yaml.Unmarshal(f, &p.conditionIndex)
-	//if err != nil {
-	//	return err
-	//}
 
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
 	session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
