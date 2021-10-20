@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
+	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -83,11 +84,6 @@ func (a *Addon) CreateMysqlTenant(name string, addoninsRouting *dbclient.AddonIn
 		dbs = []string{username}
 	}
 
-	clusterinfo, err := a.bdl.QueryClusterInfo(addonins.Cluster)
-	if err != nil {
-		return "", err
-	}
-
 	kmskey, err := a.bdl.KMSCreateKey(apistructs.KMSCreateKeyRequest{
 		CreateKeyRequest: kmstypes.CreateKeyRequest{
 			PluginKind: kmstypes.PluginKind_DICE_KMS,
@@ -133,12 +129,13 @@ func (a *Addon) CreateMysqlTenant(name string, addoninsRouting *dbclient.AddonIn
 		return "", fmt.Errorf("addon 配置中 MYSQL_HOST | MYSQL_PASSWORD | MYSQL_PORT | MYSQL_USERNAME 不存在: %+v", addonconfig.Config)
 	}
 
-	var execSqlDto apistructs.MysqlExec
-	execSqlDto.URL = strutil.Join([]string{apistructs.AddonMysqlJdbcPrefix, host.(string), ":", port.(string)}, "")
+	var execSqlDto mysqlhelper.Request
+	execSqlDto.Url = strutil.Join([]string{apistructs.AddonMysqlJdbcPrefix, host.(string), ":", port.(string)}, "")
 	execSqlDto.User = rootname.(string)
 	execSqlDto.Password = rootpasswd.(string)
 	execSqlDto.Sqls = sqls
-	if err := a.bdl.MySQLExec(&execSqlDto, formatSoldierUrl(&clusterinfo)); err != nil {
+	execSqlDto.ClusterKey = addonins.Cluster
+	if err := execSqlDto.Exec(); err != nil {
 		return "", err
 	}
 
