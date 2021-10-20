@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
@@ -169,8 +170,8 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 
 // GetProject 获取项目详情
 func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	locale := e.GetLocale(r)
-	ctx = context.WithValue(ctx, "locale", locale)
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
 
 	// 检查projectID合法性
 	projectID, err := strutil.Atoi64(vars["projectID"])

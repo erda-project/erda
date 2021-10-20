@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -35,7 +36,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
-	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -48,6 +48,7 @@ type Org struct {
 	uc       *ucauth.UCClient
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
+	trans    i18n.Translator
 
 	clusterResourceClient dashboardPb.ClusterResourceServer
 }
@@ -96,6 +97,13 @@ func WithRedisClient(cli *redis.Client) Option {
 func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
 	return func(o *Org) {
 		o.clusterResourceClient = client
+	}
+}
+
+// WithI18n sets the translator
+func WithI18n(trans i18n.Translator) Option {
+	return func(o *Org) {
+		o.trans = trans
 	}
 }
 
@@ -575,10 +583,7 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 }
 
 func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
-	var locale *i18n.LocaleResource
-	if v := ctx.Value("locale"); v != nil {
-		locale = v.(*i18n.LocaleResource)
-	}
+	langCodes := ctx.Value("lang_codes").(i18n.LanguageCodes)
 
 	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
 	if err != nil {
@@ -684,27 +689,29 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				Nodes:          clusterNodes[clusterName],
 			}
 			if resource.CPUAllocatable == 0 && resource.MemAllocatable == 0 {
-				resource.Tips = "No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes"
-				if locale != nil {
-					resource.Tips = locale.Get("NoResourceForTheWorkspace")
-				}
+				resource.Tips = o.trans.Text(langCodes, "NoResourceForTheWorkspace")
 				if resource.Nodes == 0 {
-					resource.Tips = "No allocatable nodes in the cluster, please add nodes for it"
-					if locale != nil {
-						resource.Tips = locale.Get("NoNodesInTheCluster")
-					}
+					resource.Tips = o.trans.Text(langCodes, "NoNodesInTheCluster")
 				}
 			} else {
 				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
 				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
-				if !available.CPU.StatusOK(workspace) || !available.Mem.StatusOK(workspace) {
-					resource.Tips = "The total quota is more than total allocatable, resource squeeze will occur"
-					if locale != nil {
-						resource.Tips = fmt.Sprintf(locale.Get("ResourceSqueeze"),
-							available.CPU.AlreadyQuota(workspace), available.Mem.AlreadyQuota(workspace),
-							allocatable.CPU.TotalForWorkspace(workspace), allocatable.Mem.TotalForWorkspace(workspace),
-						)
-					}
+				switch {
+				case !available.CPU.StatusOK(workspace) && !available.Mem.StatusOK(workspace):
+					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"),
+						available.CPU.AlreadyQuota(workspace), available.Mem.AlreadyQuota(workspace),
+						allocatable.CPU.TotalForWorkspace(workspace), allocatable.Mem.TotalForWorkspace(workspace),
+					)
+				case !available.CPU.StatusOK(workspace):
+					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"),
+						available.CPU.AlreadyQuota(workspace),
+						allocatable.CPU.TotalForWorkspace(workspace),
+					)
+				case !available.Mem.StatusOK(workspace):
+					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"),
+						available.Mem.AlreadyQuota(workspace),
+						allocatable.Mem.TotalForWorkspace(workspace),
+					)
 				}
 			}
 

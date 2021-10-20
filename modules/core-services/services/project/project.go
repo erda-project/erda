@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -36,7 +37,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
-	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -45,9 +45,10 @@ import (
 
 // Project 资源对象操作封装
 type Project struct {
-	db  *dao.DBClient
-	uc  *ucauth.UCClient
-	bdl *bundle.Bundle
+	db    *dao.DBClient
+	uc    *ucauth.UCClient
+	bdl   *bundle.Bundle
+	trans i18n.Translator
 
 	clusterResourceClient dashboardPb.ClusterResourceServer
 }
@@ -89,6 +90,13 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
 		p.clusterResourceClient = client
+	}
+}
+
+// WithI18n set the translator
+func WithI18n(trans i18n.Translator) Option {
+	return func(p *Project) {
+		p.trans = trans
 	}
 }
 
@@ -506,10 +514,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 
 // Get 获取项目
 func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
-	var locale *i18n.LocaleResource
-	if v := ctx.Value("locale"); v != nil {
-		locale = v.(*i18n.LocaleResource)
-	}
+	langCodes := ctx.Value("lang_codes").(i18n.LanguageCodes)
 
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
@@ -691,11 +696,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
 		}
 		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
-			source.Tips = "The actual available resource on this workspace in the cluster is less than the quota. " +
-				"Please ask the administrator to allocate project resources reasonably"
-			if locale != nil {
-				source.Tips = locale.Get("AvailableIsLessThanQuota")
-			}
+			source.Tips = p.trans.Text(langCodes, "AvailableIsLessThanQuota")
 		}
 	}
 

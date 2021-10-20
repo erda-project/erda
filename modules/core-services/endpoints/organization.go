@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -627,8 +628,8 @@ func (e *Endpoints) getPermOrgs(r *http.Request) (bool, []int64, error) {
 
 // FetchOrgResources 获取企业资源情况
 func (e *Endpoints) FetchOrgResources(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	locale := e.GetLocale(r)
-	ctx = context.WithValue(ctx, "locale", locale)
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
 
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
