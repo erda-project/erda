@@ -559,3 +559,35 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 		fmt.Println("should not err")
 	}
 }
+
+func TestAdapt_GetOrgAlertDetail(t *testing.T) {
+	defer monkey.UnpatchAll()
+	monkey.Patch((*Adapt).GetAlertDetail, func(_ *Adapt, lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
+		return &pb.Alert{
+			Id:               1,
+			Name:             "erdatest",
+			AlertScope:       "object",
+			AlertScopeId:     "1",
+			Enable:           false,
+			Rules:            nil,
+			Notifies:         nil,
+			Filters:          nil,
+			Attributes:       nil,
+			ClusterNames:     []string{"erda-dev", "erda-test"},
+			Domain:           "",
+			CreateTime:       0,
+			UpdateTime:       0,
+			TriggerCondition: nil,
+		}, nil
+	})
+	monkey.Patch((*Adapt).ValueMapToInterfaceMap, func(_ *Adapt, input map[string]*structpb.Value) map[string]interface{} {
+		return map[string]interface{}{
+			"cluster_name": []string{"erda-dev", "erda-test"},
+		}
+	})
+	a := &Adapt{}
+	_, err := a.GetAlertDetail(i18n.LanguageCodes{}, 1)
+	if err != nil {
+		fmt.Println("should not err,err is ", err)
+	}
+}
