@@ -31,7 +31,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core-services/dao"
 	eventboxapi "github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -160,7 +159,6 @@ func init() {
 
 // Kubernetes is the Executor struct for k8s cluster
 type Kubernetes struct {
-	db           *dao.DBClient
 	name         executortypes.Name
 	clusterName  string
 	cluster      *apistructs.ClusterInfo
@@ -369,13 +367,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
 	}
 
-	db, err := dao.NewDBClient()
-	if err != nil {
-		return nil, errors.Errorf("failed to get db client for cluster %s, %v", clusterName, err)
-	}
-
 	k := &Kubernetes{
-		db:                       db,
 		name:                     name,
 		clusterName:              clusterName,
 		cluster:                  cluster,

@@ -583,7 +583,7 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 }
 
 func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
-	langCodes := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 
 	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
 	if err != nil {
