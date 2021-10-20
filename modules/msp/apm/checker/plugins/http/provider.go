@@ -202,62 +202,91 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 	if err != nil {
 		return nil
 	}
-	tags["url"] = h.url
-	tags["method"] = h.method
-	tags["body"] = h.body
-	tags["headers"] = string(headers)
-	tags["retry_spec"] = strconv.FormatInt(h.retry, 10)
-	var triggersBytes []byte
-	if h.triggering != nil {
-		triggersBytes, err = json.Marshal(h.triggering)
-	}
-	tags["interval"] = strconv.FormatInt(h.interval, 10)
-	tags["triggering"] = string(triggersBytes)
-	fields["retry"] = 0
 
-	req, err := http.NewRequestWithContext(ctx, h.method, h.url, strings.NewReader(h.body))
-	req.Header = h.headers
+	for i := 0; i <= int(h.retry); i++ {
+		tags["url"] = h.url
+		tags["method"] = h.method
+		tags["body"] = h.body
+		tags["headers"] = string(headers)
+		tags["retry_spec"] = strconv.FormatInt(h.retry, 10)
+		var triggersBytes []byte
+		if h.triggering != nil {
+			triggersBytes, err = json.Marshal(h.triggering)
+		}
+		tags["interval"] = strconv.FormatInt(h.interval, 10)
+		tags["triggering"] = string(triggersBytes)
+		fields["retry"] = i
 
-	if err != nil {
-		fields["latency"] = 0
-		checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
-		err = ctx.Report(&plugins.Metric{
-			Name:   "status_page",
-			Tags:   tags,
-			Fields: fields,
-		})
+		req, err := http.NewRequestWithContext(ctx, h.method, h.url, strings.NewReader(h.body))
+		req.Header = h.headers
+
 		if err != nil {
+			fields["latency"] = 0
+			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
+			err = ctx.Report(&plugins.Metric{
+				Name:   "status_page",
+				Tags:   tags,
+				Fields: fields,
+			})
+			if err != nil {
+				return err
+			}
 			return err
 		}
-		return err
-	}
 
-	// setup trace if sample is true
-	if h.trace || h.p.shouldSample() {
-		h.p.setupTrace(req, tags, fields)
-	}
+		// setup trace if sample is true
+		if h.trace || h.p.shouldSample() {
+			h.p.setupTrace(req, tags, fields)
+		}
 
-	// create client with timeout
-	client := &http.Client{
-		Timeout: h.timeout,
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (net.Conn, error) {
-				c, err := net.DialTimeout(netw, addr, h.timeout*3)
-				if err != nil {
-					return nil, err
-				}
-				c.SetDeadline(time.Now().Add(h.timeout))
-				return c, nil
+		// create client with timeout
+		client := &http.Client{
+			Timeout: h.timeout,
+			Transport: &http.Transport{
+				Dial: func(netw, addr string) (net.Conn, error) {
+					c, err := net.DialTimeout(netw, addr, h.timeout*3)
+					if err != nil {
+						return nil, err
+					}
+					c.SetDeadline(time.Now().Add(h.timeout))
+					return c, nil
 
+				},
 			},
-		},
-	}
+		}
 
-	// do request
-	start := time.Now()
-	resp, err := client.Do(req)
-	if err != nil {
-		checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
+		// do request
+		start := time.Now()
+		resp, err := client.Do(req)
+		if err != nil {
+			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
+			err = ctx.Report(&plugins.Metric{
+				Name:   "status_page",
+				Tags:   tags,
+				Fields: fields,
+			})
+			if err != nil {
+				return err
+			}
+			return err
+		}
+
+		latency := time.Now().Sub(start).Milliseconds()
+		fields["latency"] = latency
+
+		// strategy of triggering condition
+		triggers := h.triggering
+
+		resultStatus := true
+		if resp != nil {
+			for _, condition := range triggers {
+				t := triggering.New(condition)
+				resultStatus = t.Executor(resp) && resultStatus
+			}
+		}
+
+		checkerStatusHandler(err, resultStatus, fields, tags, resp)
+
 		err = ctx.Report(&plugins.Metric{
 			Name:   "status_page",
 			Tags:   tags,
@@ -266,33 +295,15 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		if err != nil {
 			return err
 		}
-		return err
-	}
 
-	latency := time.Now().Sub(start).Milliseconds()
-	fields["latency"] = latency
-
-	// strategy of triggering condition
-	triggers := h.triggering
-
-	resultStatus := true
-	if resp != nil {
-		for _, condition := range triggers {
-			t := triggering.New(condition)
-			resultStatus = t.Executor(resp) && resultStatus
+		if i == 0 {
+			break
+		}
+		if resultStatus {
+			break
 		}
 	}
 
-	checkerStatusHandler(err, resultStatus, fields, tags, resp)
-
-	err = ctx.Report(&plugins.Metric{
-		Name:   "status_page",
-		Tags:   tags,
-		Fields: fields,
-	})
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

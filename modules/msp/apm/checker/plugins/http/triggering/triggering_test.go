@@ -15,6 +15,8 @@
 package triggering
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"testing"
@@ -68,6 +70,14 @@ func TestTriggering_HttpCodeStrategy(t *testing.T) {
 }
 
 func TestTriggering_BodyStrategy(t *testing.T) {
+	body1 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body2 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body3 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body4 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body5 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body6 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body7 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
+	body8 := ioutil.NopCloser(bytes.NewReader([]byte("This is a test body, hello world!")))
 	type fields struct {
 		Key     string
 		Operate string
@@ -82,8 +92,14 @@ func TestTriggering_BodyStrategy(t *testing.T) {
 		args   args
 		want   bool
 	}{
-		{"case contains true", fields{Key: "body", Operate: "contains", Value: structpb.NewStringValue("Error")}, args{resp: &http.Response{Body: nil}}, true},
-		{"case not_contains false", fields{Key: "body", Operate: "not_contains", Value: structpb.NewStringValue("Error")}, args{resp: &http.Response{Body: nil}}, false},
+		{"case contains y", fields{Key: "body", Operate: "contains", Value: structpb.NewStringValue("hello")}, args{resp: &http.Response{Body: body1}}, false},
+		{"case contains n", fields{Key: "body", Operate: "contains", Value: structpb.NewStringValue("error")}, args{resp: &http.Response{Body: body2}}, true},
+		{"case not_contains y", fields{Key: "body", Operate: "not_contains", Value: structpb.NewStringValue("error")}, args{resp: &http.Response{Body: body3}}, false},
+		{"case not_contains n", fields{Key: "body", Operate: "not_contains", Value: structpb.NewStringValue("hello")}, args{resp: &http.Response{Body: body4}}, true},
+		{"case regex y", fields{Key: "body", Operate: "regex", Value: structpb.NewStringValue("test.*hello")}, args{resp: &http.Response{Body: body5}}, false},
+		{"case regex n", fields{Key: "body", Operate: "regex", Value: structpb.NewStringValue("test.*hallo")}, args{resp: &http.Response{Body: body6}}, true},
+		{"case not_regex y", fields{Key: "body", Operate: "not_regex", Value: structpb.NewStringValue("test.*hallo")}, args{resp: &http.Response{Body: body7}}, false},
+		{"case not_regex n", fields{Key: "body", Operate: "not_regex", Value: structpb.NewStringValue("test.*hello")}, args{resp: &http.Response{Body: body8}}, true},
 		{"case not support", fields{Key: "body", Operate: "x", Value: structpb.NewStringValue("Error")}, args{resp: &http.Response{Body: nil}}, true},
 	}
 	for _, tt := range tests {
@@ -93,7 +109,8 @@ func TestTriggering_BodyStrategy(t *testing.T) {
 				Operate: tt.fields.Operate,
 				Value:   tt.fields.Value,
 			}
-			if got := condition.BodyStrategy(tt.args.resp); got != tt.want {
+			got := condition.BodyStrategy(tt.args.resp)
+			if got != tt.want {
 				t.Errorf("BodyStrategy() = %v, want %v", got, tt.want)
 			}
 		})
