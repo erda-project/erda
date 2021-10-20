@@ -699,18 +699,18 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				switch {
 				case !available.CPU.StatusOK(workspace) && !available.Mem.StatusOK(workspace):
 					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"),
-						available.CPU.AlreadyQuota(workspace), available.Mem.AlreadyQuota(workspace),
-						allocatable.CPU.TotalForWorkspace(workspace), allocatable.Mem.TotalForWorkspace(workspace),
+						calcu.MillcoreToCore(available.CPU.AlreadyQuota(workspace)), calcu.ByteToGibibyte(available.Mem.AlreadyQuota(workspace)),
+						calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace)), calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace)),
 					)
 				case !available.CPU.StatusOK(workspace):
 					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"),
-						available.CPU.AlreadyQuota(workspace),
-						allocatable.CPU.TotalForWorkspace(workspace),
+						calcu.MillcoreToCore(available.CPU.AlreadyQuota(workspace)),
+						calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace)),
 					)
 				case !available.Mem.StatusOK(workspace):
 					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"),
-						available.Mem.AlreadyQuota(workspace),
-						allocatable.Mem.TotalForWorkspace(workspace),
+						calcu.ByteToGibibyte(available.Mem.AlreadyQuota(workspace)),
+						calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace)),
 					)
 				}
 			}
