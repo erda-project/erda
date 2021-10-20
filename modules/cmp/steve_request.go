@@ -49,22 +49,6 @@ import (
 
 const OfflineLabel = "dice/offline"
 
-type SteveServer interface {
-	GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
-	ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error)
-	UpdateSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
-	CreateSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
-	DeleteSteveResource(context.Context, *apistructs.SteveRequest) error
-	PatchNode(context.Context, *apistructs.SteveRequest) error
-	LabelNode(context.Context, *apistructs.SteveRequest, map[string]string) error
-	UnlabelNode(context.Context, *apistructs.SteveRequest, []string) error
-	CordonNode(context.Context, *apistructs.SteveRequest) error
-	UnCordonNode(context.Context, *apistructs.SteveRequest) error
-	DrainNode(context.Context, *apistructs.SteveRequest) error
-	OfflineNode(context.Context, string, string, string, []string) error
-	OnlineNode(context.Context, *apistructs.SteveRequest) error
-}
-
 // GetSteveResource gets k8s resource from steve server.
 // Required fields: ClusterName, Name, Type.
 func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRequest) (types.APIObject, error) {

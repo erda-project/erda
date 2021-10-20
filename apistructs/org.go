@@ -374,12 +374,6 @@ type OrgClustersResourcesResp struct {
 	Quotas []QuotaData
 }
 
-type GetQuotaOnClustersRequest struct {
-	ClusterNames []string `json:"clusterNames"`
-	// CPUQuota is the total cpu quota on the clusters
-	OrgID string
-}
-
 type QuotaData struct {
 	ClusterName string
 	Principal   string

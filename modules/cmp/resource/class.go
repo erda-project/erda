@@ -83,7 +83,7 @@ type Quota struct {
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	data = make(map[string]*PieData)
-	resp, err := bdl.Bdl.FetchQuotaOnClusters(ordId, request.ClusterNames)
+	resp, err := bdl.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterNames)
 	if err != nil {
 		return
 	}

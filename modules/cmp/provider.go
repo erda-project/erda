@@ -56,12 +56,6 @@ type provider struct {
 	SteveAggregator *steve.Aggregator
 }
 
-type Provider interface {
-	SteveServer
-	metrics.Interface
-	ClusterInterface
-}
-
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)

@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rancher/apiserver/pkg/types"
+
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -30,9 +32,6 @@ type GaugeData struct {
 	Title string    `json:"title"`
 	Value []float64 `json:"value"`
 	Name  string    `json:"name"`
-}
-
-type Table struct {
 }
 
 func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (map[string]*GaugeData, error) {
@@ -133,9 +132,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 	}
 	// 4. get all quota
-	quotaReq := &apistructs.GetQuotaOnClustersRequest{}
-	quotaReq.ClusterNames = names
-	quota, err := bdl.Bdl.FetchQuotaOnClusters(int64(orgid), names)
+	quota, err := bdl.Bdl.FetchQuotaOnClusters(orgid, names)
 	if err != nil {
 		return
 	}
@@ -153,7 +150,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 			Type:        apistructs.K8SNamespace,
 			ClusterName: clusterName,
 		}
-		resource, err := r.Server.ListSteveResource(r.Ctx, sreq)
+		var resource []types.APIObject
+		resource, err = r.Server.ListSteveResource(r.Ctx, sreq)
 		if err != nil {
 			return
 		}
@@ -168,13 +166,18 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	if err != nil {
 		return
 	}
-	involveNamespace := make(map[string]bool)
-	for _, namespace := range nresp.Namespaces {
-		involveNamespace[namespace] = true
+	involveNamespace := make(map[string]map[string]bool)
+	for _, pair := range nresp.List {
+		for k, n := range pair.Clusters {
+			for _, s := range n {
+				involveNamespace[k][s] = true
+			}
+		}
+
 	}
 	irrelevantNamespace := make([]*pb.ClusterNamespacePair, 0)
 	for _, namespace := range allNamespace {
-		if !involveNamespace[namespace.Namespace] {
+		if !involveNamespace[namespace.ClusterName][namespace.Namespace] {
 			irrelevantNamespace = append(irrelevantNamespace, namespace)
 		}
 	}

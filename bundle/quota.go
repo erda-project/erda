@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) FetchQuotaOnClusters(orgID int64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
+func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (b *Bundle) FetchQuotaOnClusters(orgID int64, clusterNames []string) (*apis
 	httpResp, err := hc.Get(host).
 		Path(fmt.Sprintf("/api/projects-quota")).
 		Params(params).
-		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Do().
 		JSON(&resp)
 	if err != nil {
