@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dao
+package instanceinfo
 
 import "time"
 
@@ -40,9 +40,9 @@ func (AddonPrebuild) TableName() string {
 	return "tb_addon_prebuild"
 }
 
-func (client *DBClient) GetRuntimeID(instanceID string) (string, error) {
+func (c *Client) GetRuntimeID(instanceID string) (string, error) {
 	var addonPrebuild AddonPrebuild
-	if err := client.Find(&addonPrebuild, map[string]interface{}{
+	if err := c.db.Find(&addonPrebuild, map[string]interface{}{
 		"instance_id": instanceID,
 	}).Error; err != nil {
 		return "", err
