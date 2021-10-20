@@ -126,17 +126,8 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 		}
 	}
 
-	// body
-	bodyStruct := c.Config["body"].GetStructValue()
-	bodyStr := ""
-	if bodyStruct != nil {
-
-		bodyBytes, err := json.Marshal(bodyStruct)
-		if err != nil {
-			return nil, err
-		}
-		bodyStr = string(bodyBytes)
-	}
+	// body todo 是否需要去除转义符？
+	bodyStr := c.Config["body"].GetStringValue()
 
 	// retry
 	retryCount := int64(c.Config["retry"].GetNumberValue())
@@ -203,18 +194,20 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		return nil
 	}
 
+	tags["url"] = h.url
+	tags["method"] = h.method
+	tags["body"] = h.body
+	tags["headers"] = string(headers)
+	tags["retry_spec"] = strconv.FormatInt(h.retry, 10)
+	var triggersBytes []byte
+	if h.triggering != nil {
+		triggersBytes, err = json.Marshal(h.triggering)
+	}
+	tags["interval"] = strconv.FormatInt(h.interval, 10)
+	tags["triggering"] = string(triggersBytes)
+
 	for i := 0; i <= int(h.retry); i++ {
-		tags["url"] = h.url
-		tags["method"] = h.method
-		tags["body"] = h.body
-		tags["headers"] = string(headers)
-		tags["retry_spec"] = strconv.FormatInt(h.retry, 10)
-		var triggersBytes []byte
-		if h.triggering != nil {
-			triggersBytes, err = json.Marshal(h.triggering)
-		}
-		tags["interval"] = strconv.FormatInt(h.interval, 10)
-		tags["triggering"] = string(triggersBytes)
+
 		fields["retry"] = i
 
 		req, err := http.NewRequestWithContext(ctx, h.method, h.url, strings.NewReader(h.body))
@@ -223,15 +216,7 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		if err != nil {
 			fields["latency"] = 0
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
-			err = ctx.Report(&plugins.Metric{
-				Name:   "status_page",
-				Tags:   tags,
-				Fields: fields,
-			})
-			if err != nil {
-				return err
-			}
-			return err
+			continue
 		}
 
 		// setup trace if sample is true
@@ -250,7 +235,6 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 					}
 					c.SetDeadline(time.Now().Add(h.timeout))
 					return c, nil
-
 				},
 			},
 		}
@@ -260,15 +244,7 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		resp, err := client.Do(req)
 		if err != nil {
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
-			err = ctx.Report(&plugins.Metric{
-				Name:   "status_page",
-				Tags:   tags,
-				Fields: fields,
-			})
-			if err != nil {
-				return err
-			}
-			return err
+			continue
 		}
 
 		latency := time.Now().Sub(start).Milliseconds()
@@ -276,7 +252,6 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 
 		// strategy of triggering condition
 		triggers := h.triggering
-
 		resultStatus := true
 		if resp != nil {
 			for _, condition := range triggers {
@@ -284,18 +259,9 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 				resultStatus = t.Executor(resp) && resultStatus
 			}
 		}
+		checkerStatusHandler(resultStatus, fields, tags, resp)
 
-		checkerStatusHandler(err, resultStatus, fields, tags, resp)
-
-		err = ctx.Report(&plugins.Metric{
-			Name:   "status_page",
-			Tags:   tags,
-			Fields: fields,
-		})
-		if err != nil {
-			return err
-		}
-
+		// no retry
 		if i == 0 {
 			break
 		}
@@ -304,14 +270,16 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		}
 	}
 
+	ctx.Report(&plugins.Metric{
+		Name:   "status_page",
+		Tags:   tags,
+		Fields: fields,
+	})
+
 	return nil
 }
 
-func checkerStatusHandler(err error, resultStatus bool, fields map[string]interface{}, tags map[string]string, resp *http.Response) {
-	if err != nil {
-		checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
-		return
-	}
+func checkerStatusHandler(resultStatus bool, fields map[string]interface{}, tags map[string]string, resp *http.Response) {
 	if !resultStatus {
 		checkerStatusMetric("2", apis.StatusRED, resp.StatusCode, tags, fields)
 	} else {
