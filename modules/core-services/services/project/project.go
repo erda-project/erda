@@ -411,6 +411,7 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 					ProjectID:    uint64(projectID),
 					Context:      auditCtx,
 					TemplateName: "updateQuota",
+					Result:       "success",
 					StartTime:    now,
 					EndTime:      now,
 				},
