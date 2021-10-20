@@ -49,7 +49,7 @@ type provider struct {
 	Log logs.Logger
 
 	PipelineCms cmspb.CmsServiceServer      `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
-	PipelineDs  definition_client.Processor `autowired:"erda.core.pipeline.definition-process-client"`
+	PipelineDs  definition_client.Processor `autowired:"erda.core.pipeline.definition-process-client" optional:"true"`
 	TestPlanSvc *testplan.TestPlanService   `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
 
 	Protocol   componentprotocol.Interface

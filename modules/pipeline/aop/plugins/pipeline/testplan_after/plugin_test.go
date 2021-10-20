@@ -15,6 +15,7 @@
 package testplan_after
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -91,11 +93,10 @@ func Test_sendMessage(t *testing.T) {
 		Bundle: bdl,
 	}
 	req := testplanpb.Content{
-		TestPlanID:      1,
-		ExecuteTime:     "",
-		PassRate:        10,
-		ExecuteDuration: "11:11:11",
-		ApiTotalNum:     100,
+		TestPlanID:  1,
+		ExecuteTime: "",
+		PassRate:    10,
+		ApiTotalNum: 100,
 	}
 	want := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
@@ -123,4 +124,120 @@ func Test_sendMessage(t *testing.T) {
 	}
 	err := p.sendMessage(req, ctx)
 	assert.NoError(t, err)
+}
+
+func TestSendStepMessage(t *testing.T) {
+	var (
+		db  *dbclient.Client
+		bdl *bundle.Bundle
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineWithTasks", func(*dbclient.Client, uint64) (*spec.PipelineWithTasks, error) {
+		return &spec.PipelineWithTasks{
+			Pipeline: nil,
+			Tasks: []*spec.PipelineTask{
+				{
+					ID:   1,
+					Name: "1",
+					Type: "api-test",
+					Extra: spec.PipelineTaskExtra{
+						Action: pipelineyml.Action{
+							Version: "2.0",
+						},
+					},
+					Status: "success",
+				},
+			},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateEvent",
+		func(b *bundle.Bundle, ev *apistructs.EventCreateRequest) error {
+			return nil
+		})
+
+	defer monkey.UnpatchAll()
+
+	p := &provider{
+		Bundle: bdl,
+	}
+	ctx := aoptypes.TuneContext{
+		Context: nil,
+		SDK: aoptypes.SDK{
+			DBClient: db,
+		},
+	}
+
+	err := p.sendStepMessage(&ctx, 0, 0, 0, 0, 0, "1")
+	if err != nil {
+		t.Error("fail")
+	}
+}
+
+func TestStatistics(t *testing.T) {
+	var db *dbclient.Client
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineWithTasks", func(*dbclient.Client, uint64) (*spec.PipelineWithTasks, error) {
+		var id uint64 = 2
+		return &spec.PipelineWithTasks{
+			Pipeline: nil,
+			Tasks: []*spec.PipelineTask{
+				{
+					ID:     1,
+					Name:   "1",
+					Type:   "api-test",
+					Status: "Success",
+					Extra: spec.PipelineTaskExtra{
+						Action: pipelineyml.Action{
+							Version: "2.0",
+						},
+					},
+				},
+				{
+					ID:     2,
+					Name:   "2",
+					Type:   "api-test",
+					Status: "fail",
+					Extra: spec.PipelineTaskExtra{
+						Action: pipelineyml.Action{
+							Version: "2.0",
+						},
+					},
+				},
+				{
+					ID:                3,
+					Name:              "3",
+					Type:              "snippet",
+					Status:            "fail",
+					SnippetPipelineID: &id,
+				},
+			},
+		}, nil
+	})
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "BatchListPipelineReportsByPipelineID", func(*dbclient.Client, []uint64, []string, ...dbclient.SessionOption) (map[uint64][]spec.PipelineReport, error) {
+		meta := apistructs.PipelineReportMeta{}
+		meta["apiTotalNum"] = 2
+		meta["apiSuccessNum"] = 1
+		return map[uint64][]spec.PipelineReport{
+			1: {{
+				Meta: meta,
+			}},
+		}, nil
+	})
+
+	ctx := aoptypes.TuneContext{
+		Context: context.Background(),
+		SDK: aoptypes.SDK{
+			DBClient: db,
+		},
+	}
+	numStatistics, err := statistics(&ctx, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	if numStatistics.ApiExecNum != 3 && numStatistics.ApiSuccessNum != 2 {
+		t.Error("fail")
+	}
 }
