@@ -94,16 +94,16 @@ func WithRedisClient(cli *redis.Client) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 	return func(o *Org) {
-		o.clusterResourceClient = client
+		o.clusterResourceClient = cli
 	}
 }
 
 // WithI18n sets the translator
-func WithI18n(trans i18n.Translator) Option {
+func WithI18n(translator i18n.Translator) Option {
 	return func(o *Org) {
-		o.trans = trans
+		o.trans = translator
 	}
 }
 

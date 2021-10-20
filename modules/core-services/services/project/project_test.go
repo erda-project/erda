@@ -111,13 +111,13 @@ func TestGetModelProjectsMap(t *testing.T) {
 }
 
 func TestWtihI18n(t *testing.T) {
-	var trans i18n.Translator
-	New(WithI18n(trans))
+	var translator i18n.Translator
+	New(WithI18n(translator))
 }
 
 func TestWithClusterResourceClient(t *testing.T) {
-	var c dashboardPb.ClusterResourceServer
-	New(WithClusterResourceClient(c))
+	var cli dashboardPb.ClusterResourceServer
+	New(WithClusterResourceClient(cli))
 }
 
 // TODO We need to turn this ut on after adding the delete portal to the UI

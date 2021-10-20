@@ -93,15 +93,11 @@ func TestOrgNameRetriever(t *testing.T) {
 }
 
 func TestWithI18n(t *testing.T) {
-	var (
-		trans i18n.Translator
-	)
-	New(WithI18n(trans))
+	var translator i18n.Translator
+	New(WithI18n(translator))
 }
 
 func TestWithClusterResourceClient(t *testing.T) {
-	var (
-		c dashboardPb.ClusterResourceServer
-	)
-	New(WithClusterResourceClient(c))
+	var cli dashboardPb.ClusterResourceServer
+	New(WithClusterResourceClient(cli))
 }
