@@ -95,6 +95,15 @@ zh:
   test-case-num-notpassed: 未通过
   test-case-rate-passed: 通过率
   test-case-rate-executed: 执行率
+  no-iteration: 未指定迭代
+  test-case-status: 状态
+  block: 阻塞
+  INIT: 未执行
+  BLOCK: 阻塞
+  SUCC: 已通过
+  FAIL: 未通过
+  notpassed: 未通过
+  mt_pan_chart: 手动测试计划分布图
 en:
   issue-manage: issue manage
   issue: issue
@@ -189,3 +198,12 @@ en:
   test-case-num-notpassed: Not Passed
   test-case-rate-passed: Passed Rate
   test-case-rate-executed: Executed Rate
+  no-iteration: no iteration
+  test-case-status: Status
+  block: Block
+  notpassed: Not Passed
+  mt_pan_chart: Manual Test Plan Chart
+  INIT: Not Executed
+  BLOCK: Block
+  SUCC: Success
+  FAIL: Failed
