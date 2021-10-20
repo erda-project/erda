@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -26,7 +26,7 @@ type ComponentEventTable struct {
 	base.DefaultProvider
 	SDK    *cptype.SDK `json:"-"`
 	ctx    context.Context
-	server cmp.SteveServer
+	server _interface.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
 	Props      Props                  `json:"props,omitempty"`

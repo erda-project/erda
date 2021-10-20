@@ -31,13 +31,14 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
+	"github.com/erda-project/erda/modules/cmp/interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp.SteveServer
+var steveServer _interface.SteveServer
 
 func (pt *PodInfoTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
