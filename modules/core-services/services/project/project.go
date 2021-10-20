@@ -514,7 +514,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 
 // Get 获取项目
 func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
-	langCodes := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
