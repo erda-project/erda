@@ -233,6 +233,7 @@ const (
 	AutotestSceneStep                = "STEP"
 	AutotestSceneSet                 = "SCENESET"
 	AutotestScene                    = "SCENE"
+	AutoTestPlan                     = "TESTPLAN"
 )
 
 func (v StepAPIType) String() string {

@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan/db"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 )
 
@@ -69,7 +70,7 @@ func Test_processEvent(t *testing.T) {
 				"project_name":     "project",
 				"plan_name":        "test",
 				"pass_rate":        "10.12",
-				"execute_duration": "10:10:10",
+				"execute_duration": "",
 				"api_total_num":    "100",
 			}
 			assert.True(t, reflect.DeepEqual(want, groupNotifyRequest.Params))
@@ -91,11 +92,10 @@ func Test_processEvent(t *testing.T) {
 		})
 
 	err := p.ProcessEvent(&pb.Content{
-		TestPlanID:      1,
-		ExecuteTime:     "2006-01-02 15:04:05",
-		PassRate:        10.123,
-		ExecuteDuration: "10:10:10",
-		ApiTotalNum:     100,
+		TestPlanID:  1,
+		ExecuteTime: "2006-01-02 15:04:05",
+		PassRate:    10.123,
+		ApiTotalNum: 100,
 	})
 	assert.NoError(t, err)
 }
@@ -116,5 +116,68 @@ func TestParseExecuteTime(t *testing.T) {
 	}
 	for _, v := range tt {
 		assert.Equal(t, v.want, parseExecuteTime(v.value))
+	}
+}
+
+func TestGetCostTime(t *testing.T) {
+	tt := []struct {
+		costTimeSec int64
+		want        string
+	}{
+		{
+			costTimeSec: 59,
+			want:        "00:00:59",
+		},
+
+		{
+			costTimeSec: 3600,
+			want:        "01:00:00",
+		},
+
+		{
+			costTimeSec: 59*60 + 59,
+			want:        "00:59:59",
+		},
+
+		{
+			costTimeSec: -1,
+			want:        "-",
+		},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, getCostTime(v.costTimeSec))
+	}
+}
+
+func TestCreateTestPlanExecHistory(t *testing.T) {
+	var (
+		DB  db.TestPlanDB
+		bdl bundle.Bundle
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "GetTestPlan", func(*db.TestPlanDB, uint64) (*db.TestPlanV2, error) {
+		return &db.TestPlanV2{}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "CreateAutoTestExecHistory", func(*db.TestPlanDB, *db.AutoTestExecHistory) error {
+		return nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "GetProject", func(*bundle.Bundle, uint64) (*apistructs.ProjectDTO, error) {
+		return &apistructs.ProjectDTO{}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	svc := TestPlanService{
+		db:  DB,
+		bdl: &bdl,
+	}
+	err := svc.createTestPlanExecHistory(&pb.TestPlanUpdateByHookRequest{
+		Content: &pb.Content{
+			ExecuteTime: "2006-01-02 15:04:05",
+		},
+	})
+	if err != nil {
+		t.Error("fail")
 	}
 }
