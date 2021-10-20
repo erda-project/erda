@@ -277,6 +277,7 @@ def entry():
         print(d)
 
     # 从 ES 获取各个集群每台机器的 cpu mem allocatable 情况
+    """
     hits: list = query_from_es(get_es_url())
     for hit in hits:
         try:
@@ -289,8 +290,10 @@ def entry():
                 cluster_mem_allocatable_sum[cluster_name] += mem_request
         except Exception as e:
             print("failed to get cluster name, cpu_request, mem_request", e)
+    """
 
     # 对每一个项目的四个环境的 quota 进行再分配: 从 allocatable 资源中取出一半, 按该环境的 request 对集群总 request 的比值分配
+    """
     for key in projects:
         # 生产
         cluster_name = projects[key].prod_cluster_name
@@ -358,6 +361,7 @@ def entry():
                     cluster_name in cluster_mem_request_sum and \
                     mem_request_sum > 0:
                 projects[key].dev_mem_request += projects[key].dev_mem_request / mem_request_sum * mem_allocatable_sum
+    """
 
     print("最终分配情况")
     records = []
