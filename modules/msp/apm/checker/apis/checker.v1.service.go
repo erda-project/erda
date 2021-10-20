@@ -90,6 +90,18 @@ func (s *checkerV1Service) ConvertArgsByMode(mode string, args map[string]*struc
 		}
 		var httpArgs pb.HttpModeConfig
 		err = json.Unmarshal(bytes, &httpArgs)
+		if httpArgs.Interval > int64(30*time.Minute.Seconds()) {
+			httpArgs.Interval = int64(30 * time.Minute.Seconds())
+		}
+		if httpArgs.Interval < int64(15*time.Second.Seconds()) {
+			httpArgs.Interval = int64(15 * time.Second.Seconds())
+		}
+		if httpArgs.Retry > 10 {
+			httpArgs.Retry = 10
+		}
+		if httpArgs.Retry < 0 {
+			httpArgs.Retry = 0
+		}
 		if err != nil {
 			return nil, "", err
 		}
