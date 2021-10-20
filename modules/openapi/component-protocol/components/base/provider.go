@@ -33,7 +33,7 @@ func (p *DefaultProvider) Render(ctx context.Context, c *cptype.Component, scena
 
 // Init .
 func (p *DefaultProvider) Init(ctx servicehub.Context) error {
-	scenario, compName := MustGetScenarioAndCompNameFromProviderKey(ctx.Key())
+	scenario, compName, _ := MustGetScenarioAndCompNameFromProviderKey(ctx.Key())
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
 		Scenario: scenario,
 		CompName: compName,

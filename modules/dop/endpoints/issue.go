@@ -90,7 +90,7 @@ func (e *Endpoints) CreateIssue(ctx context.Context, r *http.Request, vars map[s
 	// 关联 测试计划用例
 	if len(createReq.TestPlanCaseRelIDs) > 0 {
 		// 批量查询测试计划用例
-		testPlanCaseRels, err := e.testPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: createReq.TestPlanCaseRelIDs})
+		testPlanCaseRels, err := e.mttestPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: createReq.TestPlanCaseRelIDs})
 		if err != nil {
 			return nil, err
 		}
@@ -377,7 +377,7 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 	// 更新 关联测试计划用例
 	if len(updateReq.TestPlanCaseRelIDs) > 0 && !updateReq.RemoveTestPlanCaseRelIDs {
 		// 批量查询测试计划用例
-		testPlanCaseRels, err := e.testPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: updateReq.TestPlanCaseRelIDs})
+		testPlanCaseRels, err := e.mttestPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: updateReq.TestPlanCaseRelIDs})
 		if err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
@@ -831,7 +831,7 @@ func (e *Endpoints) GetTestPlanCaseRels(issueID uint64) ([]apistructs.TestPlanCa
 			relIDs = append(relIDs, issueCaseRel.TestPlanCaseRelID)
 		}
 		relIDs = strutil.DedupUint64Slice(relIDs, true)
-		rels, err := e.testPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: relIDs})
+		rels, err := e.mttestPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: relIDs})
 		if err != nil {
 			return nil, err
 		}

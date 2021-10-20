@@ -32,7 +32,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/erda-project/erda-infra v0.0.0-20211020033303-a1383ec4dd5e
+	github.com/erda-project/erda-infra v0.0.0-20211020035050-6de2fc645c7b
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
@@ -126,17 +126,13 @@ require (
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
 	github.com/tebeka/strftime v0.1.5 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
-	go.uber.org/atomic v1.8.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
 	google.golang.org/genproto v0.0.0-20210916144049-3192f974c780
