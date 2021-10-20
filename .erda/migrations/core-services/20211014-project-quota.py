@@ -191,6 +191,7 @@ def entry():
     """
     please implement this and add it to the list entries
     """
+    # 查出所有项目的 cluster_config
     projects = dict()
     # 查询所有 s_pod_infos 记录（排除无效的记录）
     pod_infos = SPodInfo.objects.exclude(project_id__isnull=True) \
@@ -213,11 +214,11 @@ def entry():
         cluster_mem_request_sum[pod_info.cluster] = 0
 
     # 打印 s_pod_info 中查出的记录
-    print("s_pod_info 记录")
-    for item in pod_infos:
-        print(json.dumps({"project_id": item.project_id, "project_name": item.project_name, "workspace": item.workspace,
-                          "cpu_request": item.cpu_request, "mem_request": item.mem_request, "cluster": item.cluster},
-                         indent=2))
+    # print("s_pod_info 记录")
+    # for item in pod_infos:
+    #     print(json.dumps({"project_id": item.project_id, "project_name": item.project_name, "workspace": item.workspace,
+    #                       "cpu_request": item.cpu_request, "mem_request": item.mem_request, "cluster": item.cluster},
+    #                      indent=2))
 
     # 项目当前各环境的 request 情况乘以 1.3，作为各环境的 quota
     for pod_info in pod_infos:
@@ -226,23 +227,23 @@ def entry():
     for pod_info in pod_infos:
         if str(pod_info.workspace) == "prod":
             projects[pod_info.project_id].prod_cluster_name = pod_info.cluster
-            projects[pod_info.project_id].prod_cpu_request += pod_info.cpu_request * 1.3 * 1000 # Core => MillCore
-            projects[pod_info.project_id].prod_mem_request += pod_info.mem_request * 1.3 * 1024 # Mib  => byte
+            projects[pod_info.project_id].prod_cpu_request += pod_info.cpu_request * 1.3 * 1000  # Core => MillCore
+            projects[pod_info.project_id].prod_mem_request += pod_info.mem_request * 1.3 * 1024 * 1024  # Mib  => byte
         if str(pod_info.workspace) == "staging":
             projects[pod_info.project_id].staging_cluster_name = pod_info.cluster
             projects[pod_info.project_id].staging_cpu_request += pod_info.cpu_request * 1.3 * 1000
-            projects[pod_info.project_id].staging_mem_request += pod_info.mem_request * 1.3 * 1024
+            projects[pod_info.project_id].staging_mem_request += pod_info.mem_request * 1.3 * 1024 * 1024
         if str(pod_info.workspace) == "test":
             projects[pod_info.project_id].test_cluster_name = pod_info.cluster
             projects[pod_info.project_id].test_cpu_request += pod_info.cpu_request * 1.3 * 1000
-            projects[pod_info.project_id].test_mem_request += pod_info.mem_request * 1.3 * 1024
+            projects[pod_info.project_id].test_mem_request += pod_info.mem_request * 1.3 * 1024 * 1024
         if str(pod_info.workspace) == "dev":
             projects[pod_info.project_id].dev_cluster_name = pod_info.cluster
             projects[pod_info.project_id].dev_cpu_request += pod_info.cpu_request * 1.3 * 1000
-            projects[pod_info.project_id].dev_mem_request += pod_info.mem_request * 1.3 * 1024
+            projects[pod_info.project_id].dev_mem_request += pod_info.mem_request * 1.3 * 1024 * 1024
         # 累计各集群的 request 情况，后面按 request 比例分配 quota 时作为分母用到
         cluster_cpu_request_sum[pod_info.cluster] += pod_info.cpu_request * 1000
-        cluster_mem_request_sum[pod_info.cluster] += pod_info.mem_request * 1024
+        cluster_mem_request_sum[pod_info.cluster] += pod_info.mem_request * 1024 * 1024
 
     # 打印目前的分配情况
     print("第一次分配情况")
@@ -276,7 +277,7 @@ def entry():
         try:
             cluster_name = hit['_source']['tags']['cluster_name']
             cpu_request = hit['_source']['fields']['cpu_allocatable'] * 1000  # 单位 核*1000=毫核
-            mem_request = hit['_source']['fields']['cpu_allocatable'] * 1024 # 单位 Mib*1024=byte
+            mem_request = hit['_source']['fields']['cpu_allocatable'] * 1024 * 1024  # 单位 Mib=>byte
             if cluster_name in cluster_cpu_allocatable_sum.keys():
                 cluster_cpu_allocatable_sum[cluster_name] += cpu_request
             if cluster_name in cluster_mem_allocatable_sum.keys():
@@ -285,7 +286,7 @@ def entry():
             print("failed to get cluster name, cpu_request, mem_request", e)
 
     # 对每一个项目的四个环境的 quota 进行再分配: 从 allocatable 资源中取出一半, 按该环境的 request 对集群总 request 的比值分配
-    for key in projects.keys():
+    for key in projects:
         # 生产
         cluster_name = projects[key].prod_cluster_name
         cpu_request_sum = cluster_cpu_request_sum[cluster_name]
@@ -349,34 +350,13 @@ def entry():
                 mem_request_sum > 0:
             projects[key].dev_mem_request += projects[key].dev_mem_request / mem_request_sum * mem_allocatable_sum
 
-    # 打印最终配额情况
-    for key in projects.keys():
-        project = projects[key]
-        d = {
-            "project_id": project.project_id,
-            "project_name": project.project_name,
-
-            "prod_cluster_name": project.prod_cluster_name,
-            "prod_cpu_request": project.prod_cpu_request,
-            "prod_mem_request": project.prod_mem_request,
-
-            "staging_cluster_name": project.prod_cluster_name,
-            "staging_cpu_request": project.prod_cpu_request,
-            "staging_mem_request": project.prod_mem_request,
-
-            "test_cluster_name": project.prod_cluster_name,
-            "test_cpu_request": project.prod_cpu_request,
-            "test_mem_request": project.prod_mem_request,
-
-            "dev_cluster_name": project.prod_cluster_name,
-            "dev_cpu_request": project.prod_cpu_request,
-            "dev_mem_request": project.prod_mem_request,
-        }
-        print("最终分配情况:", d)
-
+    print("最终分配情况")
     records = []
     for key in projects:
         project = projects[key]
+        # 如果 quota 记录已存在，则忽略
+        if PsGroupProjectsQuota.objects.filter(project_id=int(project.project_id)).count() > 0:
+            continue
         quota_record = PsGroupProjectsQuota()
         quota_record.project_id = project.project_id
         quota_record.project_name = project.project_name
@@ -384,17 +364,58 @@ def entry():
         quota_record.staging_cluster_name = project.staging_cluster_name
         quota_record.test_cluster_name = project.test_cluster_name
         quota_record.dev_cluster_name = project.dev_cluster_name
-        quota_record.prod_cpu_quota = project.prod_cpu_request
-        quota_record.prod_mem_quota = project.prod_mem_request
-        quota_record.staging_cpu_quota = project.staging_cpu_request
-        quota_record.staging_mem_quota = project.staging_mem_request
-        quota_record.test_cpu_quota = project.test_cpu_request
-        quota_record.test_mem_quota = project.test_mem_request
-        quota_record.dev_cpu_quota = project.dev_cpu_request
-        quota_record.dev_mem_quota = project.dev_mem_request
+        quota_record.prod_cpu_quota = int(project.prod_cpu_request)
+        quota_record.prod_mem_quota = int(project.prod_mem_request)
+        quota_record.staging_cpu_quota = int(project.staging_cpu_request)
+        quota_record.staging_mem_quota = int(project.staging_mem_request)
+        quota_record.test_cpu_quota = int(project.test_cpu_request)
+        quota_record.test_mem_quota = int(project.test_mem_request)
+        quota_record.dev_cpu_quota = int(project.dev_cpu_request)
+        quota_record.dev_mem_quota = int(project.dev_mem_request)
         quota_record.creator_id = 0
         quota_record.updater_id = 0
+        if quota_record.prod_cluster_name == "" or \
+                quota_record.staging_cluster_name == "" or \
+                quota_record.test_cluster_name == "" or \
+                quota_record.dev_cluster_name == "":
+            try:
+                project_record = PsGroupProjects.objects.get(pk=int(quota_record.project_id))
+            except Exception as e:
+                print("查询项目信息失败", "project_id:", int(quota_record.project_id), "Exception:", e)
+            try:
+                cluster_config = json.loads(project_record.cluster_config)
+                quota_record.prod_cluster_name = cluster_config["PROD"]
+                quota_record.staging_cluster_name = cluster_config["STAGING"]
+                quota_record.test_cluster_name = cluster_config["TEST"]
+                quota_record.dev_cluster_name = cluster_config["DEV"]
+            except Exception as e:
+                print("获取 cluster_config 失败，cluster_config: ", project_record.cluster_config,
+                      "project_id: ", project_record.project_id,
+                      "project_name: ", project_record.project_name,
+                      "Exception: ", e)
+        d = {
+            "project_id": quota_record.project_id,
+            "project_name": quota_record.project_name,
+
+            "prod_cluster_name": quota_record.prod_cluster_name,
+            "prod_cpu_quota": quota_record.prod_cpu_quota,
+            "prod_mem_quota": quota_record.prod_mem_quota,
+
+            "staging_cluster_name": quota_record.staging_cluster_name,
+            "staging_cpu_quota": quota_record.staging_cpu_quota,
+            "staging_mem_quota": quota_record.staging_mem_quota,
+
+            "test_cluster_name": quota_record.test_cluster_name,
+            "test_cpu_quota": quota_record.test_cpu_quota,
+            "test_mem_quota": quota_record.test_mem_quota,
+
+            "dev_cluster_name": quota_record.dev_cluster_name,
+            "dev_cpu_quota": quota_record.dev_cpu_quota,
+            "dev_mem_quota": quota_record.dev_mem_quota,
+        }
+        print("最终分配情况:", d)
         records.append(quota_record)
+
     PsGroupProjectsQuota.objects.bulk_create(records)
 
     pass
