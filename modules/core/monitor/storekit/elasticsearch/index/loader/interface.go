@@ -19,10 +19,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
-	"github.com/olivere/elastic"
 )
 
 type (

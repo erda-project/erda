@@ -15,9 +15,10 @@
 package persist
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Statistics .

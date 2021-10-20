@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
@@ -29,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/creator"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
-	"github.com/olivere/elastic"
 )
 
 type (

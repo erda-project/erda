@@ -20,11 +20,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
-	"github.com/jinzhu/gorm"
 )
 
 // Interface .

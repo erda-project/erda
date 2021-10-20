@@ -18,11 +18,12 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-redis/redis"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
-	"github.com/go-redis/redis"
-	v1 "k8s.io/api/core/v1"
 )
 
 type (

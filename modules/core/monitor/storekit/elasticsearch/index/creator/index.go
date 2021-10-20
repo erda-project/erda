@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 )
 
 // Ensure .

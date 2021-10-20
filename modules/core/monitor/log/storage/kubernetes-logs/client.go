@@ -18,8 +18,9 @@ import (
 	"fmt"
 
 	"github.com/bluele/gcache"
-	"github.com/erda-project/erda/pkg/k8sclient"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 // ClientManager .
