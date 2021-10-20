@@ -1,16 +1,16 @@
 - scope: org
   conditions:
-    - name: cluster_name
+    - key: cluster_name
       index: host_summary
       displayName: 集群
-    - name: host_ip
+    - key: host_ip
       index: host_summary
       displayName: 机器ip
 - scope: msp
   conditions:
-    - name: application_name
+    - key: application_name
       index: docker_container_summary
       displayName: 应用
-    - name: service_name
+    - key: service_name
       index: docker_container_summary
       displayName: 服务

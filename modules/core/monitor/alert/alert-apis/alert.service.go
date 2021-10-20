@@ -1346,28 +1346,28 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 					Start: "before_1h",
 					End:   "now",
 				}
-				if cond.Name == ClusterName {
-					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+				if cond.Key == ClusterName {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Key, cond.Index, cond.Key)
 					req.Params = map[string]*structpb.Value{
 						"org_name": structpb.NewStringValue(org.Name),
 					}
 				}
-				if cond.Name == HostIp {
-					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+				if cond.Key == HostIp {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Key, cond.Index, cond.Key)
 					req.Params = map[string]*structpb.Value{
 						"org_name": structpb.NewStringValue(org.Name),
 					}
 				}
-				if cond.Name == ApplicationName {
-					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+				if cond.Key == ApplicationName {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Key, cond.Index, cond.Key)
 					req.Params = map[string]*structpb.Value{
 						"org_name":     structpb.NewStringValue(org.Name),
 						"project_id":   structpb.NewStringValue(request.ProjectId),
 						"terminus_key": structpb.NewStringValue(request.TerminusKey),
 					}
 				}
-				if cond.Name == ServiceName {
-					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Name, cond.Index, cond.Name)
+				if cond.Key == ServiceName {
+					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Key, cond.Index, cond.Key)
 					req.Params = map[string]*structpb.Value{
 						"org_name":     structpb.NewStringValue(org.Name),
 						"project_id":   structpb.NewStringValue(request.ProjectId),
@@ -1380,8 +1380,8 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 				}
 				conditions := getResultValue(resp.Results)
 				result.Data = append(result.Data, &pb.AlertConditionsValue{
-					Index: cond.Name,
-					Value: conditions,
+					Key:     cond.Key,
+					Options: conditions,
 				})
 			}
 		}

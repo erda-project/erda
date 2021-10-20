@@ -1203,7 +1203,7 @@ message GetAlertConditionsResponse {
 }
 
 message Conditions {
-  string name        = 1;
+  string key         = 1;
   string displayName = 2;
 }
 
@@ -1218,6 +1218,6 @@ message GetAlertConditionsValueResponse {
 }
 
 message AlertConditionsValue {
-  string                         index = 1;
-  repeated google.protobuf.Value value = 2;
+  string                         key     = 1;
+  repeated google.protobuf.Value options = 2;
 }

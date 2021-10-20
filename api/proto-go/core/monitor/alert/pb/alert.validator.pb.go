@@ -1266,10 +1266,10 @@ func (this *GetAlertConditionsValueResponse) Validate() error {
 	return nil
 }
 func (this *AlertConditionsValue) Validate() error {
-	for _, item := range this.Value {
+	for _, item := range this.Options {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Value", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("Options", err)
 			}
 		}
 	}

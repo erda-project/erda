@@ -6729,8 +6729,8 @@ func (m *Conditions) UnmarshalURLValues(prefix string, values url.Values) error 
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "name":
-				m.Name = vals[0]
+			case "key":
+				m.Key = vals[0]
 			case "displayName":
 				m.DisplayName = vals[0]
 			}
@@ -6766,8 +6766,8 @@ func (m *AlertConditionsValue) UnmarshalURLValues(prefix string, values url.Valu
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "index":
-				m.Index = vals[0]
+			case "key":
+				m.Key = vals[0]
 			}
 		}
 	}
