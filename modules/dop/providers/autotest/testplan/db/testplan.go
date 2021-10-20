@@ -30,3 +30,20 @@ func (client *TestPlanDB) UpdateTestPlanV2(testPlanID uint64, fields map[string]
 
 	return client.Model(&tp).Updates(fields).Error
 }
+
+// CreateAutoTestExecHistory .
+func (db *TestPlanDB) CreateAutoTestExecHistory(execHistory *AutoTestExecHistory) error {
+	return db.Create(execHistory).Error
+}
+
+// BatchCreateAutoTestExecHistory .
+func (db *TestPlanDB) BatchCreateAutoTestExecHistory(list []AutoTestExecHistory) error {
+	return db.Create(list).Error
+}
+
+// GetTestPlan .
+func (db *TestPlanDB) GetTestPlan(id uint64) (*TestPlanV2, error) {
+	var testPlan TestPlanV2
+	err := db.Model(&TestPlanV2{}).First(&testPlan, id).Error
+	return &testPlan, err
+}

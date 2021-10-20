@@ -45,25 +45,91 @@ func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {
 
 func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.TestPlanUpdateByHookRequest) (*pb.TestPlanUpdateByHookResponse, error) {
 	logrus.Info("start testplan execute callback")
-	if req.Content.TestPlanID == 0 {
-		return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
+
+	if req.Content.StepAPIType == apistructs.AutoTestPlan {
+		if req.Content.TestPlanID == 0 {
+			return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
+		}
+		if req.Content.ApiTotalNum == 0 {
+			req.Content.PassRate = 0
+			req.Content.ExecuteRate = 0
+		} else {
+			req.Content.PassRate = float64(req.Content.ApiSuccessNum) / float64(req.Content.ApiTotalNum) * 100
+			req.Content.ExecuteRate = float64(req.Content.ApiExecNum) / float64(req.Content.ApiTotalNum) * 100
+		}
+		req.Content.ExecuteDuration = getCostTime(req.Content.CostTimeSec)
+
+		go func() {
+			err := s.ProcessEvent(req.Content)
+			if err != nil {
+				logrus.Errorf("failed to ProcessEvent, err: %s", err.Error())
+			}
+		}()
+
+		fields := make(map[string]interface{}, 0)
+		fields["execute_time"] = parseExecuteTime(req.Content.ExecuteTime)
+		fields["execute_api_num"] = req.Content.ApiExecNum
+		fields["success_api_num"] = req.Content.ApiSuccessNum
+		fields["total_api_num"] = req.Content.ApiTotalNum
+		fields["cost_time_sec"] = req.Content.CostTimeSec
+		fields["execute_rate"] = req.Content.PassRate
+		fields["pass_rate"] = req.Content.ExecuteRate
+
+		if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
+			return nil, err
+		}
 	}
 
-	go func() {
-		err := s.ProcessEvent(req.Content)
-		if err != nil {
-			logrus.Errorf("failed to ProcessEvent, err: %s", err.Error())
-		}
-	}()
-
-	fields := make(map[string]interface{}, 0)
-	fields["pass_rate"] = req.Content.PassRate
-	fields["execute_time"] = parseExecuteTime(req.Content.ExecuteTime)
-	fields["execute_api_num"] = req.Content.ApiTotalNum
-	if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
+	if err := s.createTestPlanExecHistory(req); err != nil {
 		return nil, err
 	}
+
 	return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, nil
+}
+
+func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHookRequest) error {
+	testPlan, err := s.db.GetTestPlan(req.Content.TestPlanID)
+	if err != nil {
+		return err
+	}
+	iterationID := req.Content.IterationID
+	if iterationID == 0 {
+		iterationID = testPlan.IterationID
+	}
+	executeTime := parseExecuteTime(req.Content.ExecuteTime)
+	if executeTime == nil {
+		t := time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local)
+		executeTime = &t
+	}
+
+	project, err := s.bdl.GetProject(testPlan.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	execHistory := db.AutoTestExecHistory{
+		CreatorID:     req.Content.CreatorID,
+		ProjectID:     testPlan.ProjectID,
+		SpaceID:       testPlan.SpaceID,
+		IterationID:   iterationID,
+		PlanID:        req.Content.TestPlanID,
+		SceneID:       req.Content.SceneID,
+		SceneSetID:    req.Content.SceneSetID,
+		StepID:        req.Content.StepID,
+		ParentPID:     req.Content.ParentID,
+		Type:          apistructs.StepAPIType(req.Content.StepAPIType),
+		Status:        apistructs.PipelineStatus(req.Content.Status),
+		PipelineYml:   req.Content.PipelineYml,
+		ExecuteApiNum: req.Content.ApiExecNum,
+		SuccessApiNum: req.Content.ApiSuccessNum,
+		PassRate:      req.Content.PassRate,
+		ExecuteRate:   req.Content.ExecuteRate,
+		TotalApiNum:   req.Content.ApiTotalNum,
+		ExecuteTime:   *executeTime,
+		CostTimeSec:   req.Content.CostTimeSec,
+		OrgID:         project.OrgID,
+	}
+	return s.db.CreateAutoTestExecHistory(&execHistory)
 }
 
 // parseExecuteTime parse string to time, if err return nil
@@ -96,6 +162,7 @@ func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
 	orgID := strconv.FormatUint(project.OrgID, 10)
 	projectID := strconv.FormatUint(project.ID, 10)
 	notifyDetails, err := s.bdl.QueryNotifiesBySource(orgID, "project", projectID, eventName, "")
+
 	for _, notifyDetail := range notifyDetails {
 		if notifyDetail.NotifyGroup == nil {
 			continue
@@ -150,4 +217,13 @@ func convertUTCTime(tm string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return executeTime.Add(m), nil
+}
+
+// getCostTime the format of time is "00:00:00"
+// id is not end status or err return "-"
+func getCostTime(costTimeSec int64) string {
+	if costTimeSec < 0 {
+		return "-"
+	}
+	return time.Unix(costTimeSec, 0).In(time.UTC).Format("15:04:05")
 }
