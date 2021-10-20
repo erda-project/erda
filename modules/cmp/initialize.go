@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
+	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
@@ -78,7 +79,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	var redisCli *redis.Client
 
 	db := dbclient.Open(dbengine.MustOpen())
-
+	r := ctx.Value("resource").(*resource.Resource)
+	r.DB = db
 	i18n.InitI18N()
 
 	// cache etcd

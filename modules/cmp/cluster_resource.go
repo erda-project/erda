@@ -30,6 +30,11 @@ import (
 	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
+type ClusterInterface interface {
+	GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error)
+	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
+}
+
 func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error) {
 	resp := &pb.GetClusterResourcesResponse{}
 	for _, clusterName := range cReq.ClusterNames {

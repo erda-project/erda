@@ -1,4 +1,4 @@
-CREATE TABLE `cmp_prject_resource_daily`
+CREATE TABLE `cmp_project_resource_daily`
 (
     `id`           BIGINT(20)     NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Primary Key',
     `created_at`   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
@@ -6,6 +6,8 @@ CREATE TABLE `cmp_prject_resource_daily`
 
     `project_id`   BIGINT(20)     NOT NULL COMMENT '项目 id',
     `project_name` VARCHAR(255)   NOT NULL COMMENT '项目标识',
+    `cluster_name`  VARCHAR(41)    NOT NULL COMMENT '集群标识',
+
     `cpu_quota`    DECIMAL(65, 2) NOT NULL DEFAULT 0.0 COMMENT '采集时CPU 配额',
     `cpu_request`  DECIMAL(65, 2) NOT NULL DEFAULT 0.0 COMMENT '采集时CPU 请求值',
     `mem_quota`    DECIMAL(65, 2) NOT NULL DEFAULT 0.0 COMMENT '采集时内存配额',

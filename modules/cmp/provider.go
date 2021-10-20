@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -49,6 +51,7 @@ type provider struct {
 	Register        transport.Register `autowired:"service-register" optional:"true"`
 	Metrics         *metrics.Metric
 	Protocol        componentprotocol.Interface
+	Resource        *resource.Resource
 	Tran            i18n.Translator `translator:"component-protocol"`
 	SteveAggregator *steve.Aggregator
 }
@@ -56,6 +59,7 @@ type provider struct {
 type Provider interface {
 	SteveServer
 	metrics.Interface
+	ClusterInterface
 }
 
 // Run Run the provider
@@ -63,7 +67,10 @@ func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
 	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
+	lang := cputil.Language(ctx)
+	p.Resource = resource.New(ctx, p.Tran, lang)
 	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
+	ctxNew = context.WithValue(ctxNew, "resource", p.Resource)
 	return p.initialize(ctxNew)
 }
 
