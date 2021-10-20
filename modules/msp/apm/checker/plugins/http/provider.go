@@ -214,7 +214,6 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		req.Header = h.headers
 
 		if err != nil {
-			fields["latency"] = 0
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
 			continue
 		}
@@ -281,6 +280,7 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 
 func checkerStatusHandler(resultStatus bool, fields map[string]interface{}, tags map[string]string, resp *http.Response) {
 	if !resultStatus {
+		fields["latency"] = 0
 		checkerStatusMetric("2", apis.StatusRED, resp.StatusCode, tags, fields)
 	} else {
 		checkerStatusMetric("1", apis.StatusGreen, resp.StatusCode, tags, fields)
