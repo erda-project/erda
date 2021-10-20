@@ -126,7 +126,7 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 		}
 	}
 
-	// body todo 是否需要去除转义符？
+	// body
 	bodyStr := c.Config["body"].GetStringValue()
 
 	// retry
