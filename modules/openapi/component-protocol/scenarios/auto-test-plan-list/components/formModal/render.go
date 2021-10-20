@@ -141,6 +141,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		c.State["formData"] = formData
 		c.State["isUpdate"] = true
 		c.Props = auto_test_plan_list.GenUpdateFormModalProps(tsBytes, iterationsBytes)
+		(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = resp.Data.Owners
 		return nil
 	}
 
