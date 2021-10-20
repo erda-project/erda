@@ -21,17 +21,16 @@ import (
 const TableNotifyChannel = "erda_notify_channel"
 
 type NotifyChannel struct {
-	Id          string    `gorm:"column:id" db:"id" json:"id" form:"id"`                                         //id
-	Name        string    `gorm:"column:name" db:"name" json:"name" form:"name"`                                 //渠道名称
-	Type        string    `gorm:"column:type" db:"type" json:"type" form:"type"`                                 //渠道类型
-	Config      string    `gorm:"column:config" db:"config" json:"config" form:"config"`                         //渠道配置
-	ScopeType   string    `gorm:"column:scope_type" db:"scope_type" json:"scope_type" form:"scope_type"`         //域类型
-	ScopeId     string    `gorm:"column:scope_id" db:"scope_id" json:"scope_id" form:"scope_id"`                 //域id
-	CreatorId   string    `gorm:"column:creator_id" db:"creator_id" json:"creator_id" form:"creator_id"`         //创建人Id
-	CreatorName string    `gorm:"column:creator_name" db:"creator_name" json:"creator_name" form:"creator_name"` //创建人Id
-	CreatedAt   time.Time `gorm:"column:created_at" db:"created_at" json:"created_at" form:"created_at"`         //创建时间
-	UpdatedAt   time.Time `gorm:"column:updated_at" db:"updated_at" json:"updated_at" form:"updated_at"`         //更新时间
-	IsDeleted   bool      `gorm:"column:is_deleted" db:"is_deleted" json:"is_deleted" form:"is_deleted"`         //是否删除
+	Id        string    `gorm:"column:id" db:"id" json:"id" form:"id"`                                 //id
+	Name      string    `gorm:"column:name" db:"name" json:"name" form:"name"`                         //渠道名称
+	Type      string    `gorm:"column:type" db:"type" json:"type" form:"type"`                         //渠道类型
+	Config    string    `gorm:"column:config" db:"config" json:"config" form:"config"`                 //渠道配置
+	ScopeType string    `gorm:"column:scope_type" db:"scope_type" json:"scope_type" form:"scope_type"` //域类型
+	ScopeId   string    `gorm:"column:scope_id" db:"scope_id" json:"scope_id" form:"scope_id"`         //域id
+	CreatorId string    `gorm:"column:creator_id" db:"creator_id" json:"creator_id" form:"creator_id"` //创建人Id
+	CreatedAt time.Time `gorm:"column:created_at" db:"created_at" json:"created_at" form:"created_at"` //创建时间
+	UpdatedAt time.Time `gorm:"column:updated_at" db:"updated_at" json:"updated_at" form:"updated_at"` //更新时间
+	IsDeleted bool      `gorm:"column:is_deleted" db:"is_deleted" json:"is_deleted" form:"is_deleted"` //是否删除
 }
 
 func (NotifyChannel) TableName() string {

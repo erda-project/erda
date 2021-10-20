@@ -61,6 +61,9 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 
 	creatorId := apis.GetUserID(ctx)
 	user, err := s.p.bdl.GetCurrentUser(creatorId)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
 	if user == nil || user.ID == "" {
 		return nil, pkgerrors.NewNotFoundError("User")
 	}
@@ -73,17 +76,16 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 		return nil, err
 	}
 	channel, err := s.NotifyChannelDB.Create(&model.NotifyChannel{
-		Id:          uuid.NewV4().String(),
-		Name:        req.Name,
-		Type:        req.Type,
-		Config:      string(config),
-		ScopeId:     orgId,
-		ScopeType:   "org",
-		CreatorId:   creatorId,
-		CreatorName: user.Name,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		IsDeleted:   false,
+		Id:        uuid.NewV4().String(),
+		Name:      req.Name,
+		Type:      req.Type,
+		Config:    string(config),
+		ScopeId:   orgId,
+		ScopeType: "org",
+		CreatorId: creatorId,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		IsDeleted: false,
 	})
 	if err != nil {
 		return nil, err
@@ -237,6 +239,11 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		Name:        channel.Type,
 		DisplayName: s.p.I18n.Text(lang, channel.Type),
 	}
+	user, err := s.p.bdl.GetCurrentUser(channel.CreatorId)
+	if user != nil && user.Name != "" {
+		ncpb.CreatorName = user.Name
+	}
+
 	layout := "2006-01-02 15:04:05"
 	ncpb.CreateAt = channel.CreatedAt.Format(layout)
 	ncpb.UpdateAt = channel.UpdatedAt.Format(layout)
