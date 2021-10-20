@@ -305,7 +305,15 @@ func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *api
 
 // Update 更新项目
 func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+	data, _ := json.Marshal(updateReq)
+	logrus.Infof("updateReq: %s", string(data))
 	if updateReq.ResourceConfigs != nil {
+		updateReq.ClusterConfig = map[string]string{
+			"PROD":    updateReq.ResourceConfigs.PROD.ClusterName,
+			"STAGING": updateReq.ResourceConfigs.STAGING.ClusterName,
+			"TEST":    updateReq.ResourceConfigs.TEST.ClusterName,
+			"DEV":     updateReq.ResourceConfigs.DEV.ClusterName,
+		}
 		if err := updateReq.ResourceConfigs.Check(); err != nil {
 			return nil, err
 		}
@@ -337,7 +345,7 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 		var (
 			oldQuota = new(model.ProjectQuota)
 			quota    = model.ProjectQuota{
-				ProjectID:          updateReq.ID,
+				ProjectID:          uint64(projectID),
 				ProjectName:        updateReq.Name,
 				ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
 				StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
@@ -1141,30 +1149,6 @@ func (p *Project) UpdateProjectActiveTime(req *apistructs.ProjectActiveTimeUpdat
 	return nil
 }
 
-// 检查cluster config合法性
-// Deprecated
-func checkClusterConfig(clusterConfig map[string]string) error {
-	// DEV/TEST/STAGING/PROD四个环境集群配置
-	l := len(clusterConfig)
-	// 空则不配置
-	if l == 0 {
-		return nil
-	}
-
-	// check
-	if l != 4 {
-		return errors.Errorf("invalid param(clusterConfig is empty)")
-	}
-	for key := range clusterConfig {
-		switch key {
-		case string(types.DevWorkspace), string(types.TestWorkspace), string(types.StagingWorkspace),
-			string(types.ProdWorkspace):
-		default:
-			return errors.Errorf("invalid param, cluster config: %s", key)
-		}
-	}
-	return nil
-}
 func checkRollbackConfig(rollbackConfig *map[string]int) error {
 	// DEV/TEST/STAGING/PROD
 	l := len(*rollbackConfig)

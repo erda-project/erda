@@ -104,7 +104,12 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrUpdateProject.MissingParameter("body").ToResp(), nil
 	}
 	var projectUpdateReq apistructs.ProjectUpdateBody
-	if err := json.NewDecoder(r.Body).Decode(&projectUpdateReq); err != nil {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
+	}
+	logrus.Infof("projectUpdateReq raw body: %s", string(data))
+	if err := json.Unmarshal(data, &projectUpdateReq); err != nil {
 		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
 	}
 	logrus.Infof("request body: %+v", projectUpdateReq)
