@@ -191,6 +191,11 @@ def entry():
     """
     please implement this and add it to the list entries
     """
+    # 如果没有任何项目, 则直接退出
+    if PsGroupProjects.objects.all().count() == 0:
+        print("没有任何项目, 跳过 quota 迁移")
+        return
+
     # 查出所有项目的 cluster_config
     projects = dict()
     # 查询所有 s_pod_infos 记录（排除无效的记录）
@@ -289,66 +294,70 @@ def entry():
     for key in projects:
         # 生产
         cluster_name = projects[key].prod_cluster_name
-        cpu_request_sum = cluster_cpu_request_sum[cluster_name]
-        cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
-        mem_request_sum = cluster_mem_request_sum[cluster_name]
-        mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
-        if cluster_name in cluster_cpu_allocatable_sum.keys() and \
-                cluster_name in cluster_cpu_request_sum.keys() and \
-                cpu_request_sum > 0:
-            # 该环境 request 的值 / 该集群总的被 request 的值 * 该集群 allocatable 的值的一半
-            projects[key].prod_cpu_request += projects[key].prod_cpu_request / cpu_request_sum * cpu_allocatable_sum
-        if cluster_name in cluster_mem_allocatable_sum.keys() and \
-                cluster_name in cluster_mem_request_sum and \
-                mem_request_sum > 0:
-            projects[key].prod_mem_request += projects[key].prod_mem_request / mem_request_sum * mem_allocatable_sum
+        if cluster_name != "" and cluster_name in cluster_cpu_request_sum.keys():
+            cpu_request_sum = cluster_cpu_request_sum[cluster_name]
+            cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
+            mem_request_sum = cluster_mem_request_sum[cluster_name]
+            mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
+            if cluster_name in cluster_cpu_allocatable_sum.keys() and \
+                    cluster_name in cluster_cpu_request_sum.keys() and \
+                    cpu_request_sum > 0:
+                # 该环境 request 的值 / 该集群总的被 request 的值 * 该集群 allocatable 的值的一半
+                projects[key].prod_cpu_request += projects[key].prod_cpu_request / cpu_request_sum * cpu_allocatable_sum
+            if cluster_name in cluster_mem_allocatable_sum.keys() and \
+                    cluster_name in cluster_mem_request_sum and \
+                    mem_request_sum > 0:
+                projects[key].prod_mem_request += projects[key].prod_mem_request / mem_request_sum * mem_allocatable_sum
 
         # 预发
         cluster_name = projects[key].staging_cluster_name
-        cpu_request_sum = cluster_cpu_request_sum[cluster_name]
-        cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
-        mem_request_sum = cluster_mem_request_sum[cluster_name]
-        mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
-        if cluster_name in cluster_cpu_allocatable_sum.keys() and \
-                cluster_name in cluster_cpu_request_sum.keys() and \
-                cpu_request_sum > 0:
-            projects[key].staging_cpu_request += projects[
-                                                     key].staging_cpu_request / cpu_request_sum * cpu_allocatable_sum
-        if cluster_name in cluster_mem_allocatable_sum.keys() and \
-                cluster_name in cluster_mem_request_sum and \
-                mem_request_sum > 0:
-            projects[key].staging_mem_request += projects[
-                                                     key].staging_mem_request / mem_request_sum * mem_allocatable_sum
+        if cluster_name != "" and cluster_name in cluster_cpu_request_sum.keys():
+            cpu_request_sum = cluster_cpu_request_sum[cluster_name]
+            cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
+            mem_request_sum = cluster_mem_request_sum[cluster_name]
+            mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
+            if cluster_name in cluster_cpu_allocatable_sum.keys() and \
+                    cluster_name in cluster_cpu_request_sum.keys() and \
+                    cpu_request_sum > 0:
+                projects[key].staging_cpu_request += projects[
+                                                         key].staging_cpu_request / cpu_request_sum * cpu_allocatable_sum
+            if cluster_name in cluster_mem_allocatable_sum.keys() and \
+                    cluster_name in cluster_mem_request_sum and \
+                    mem_request_sum > 0:
+                projects[key].staging_mem_request += projects[
+                                                         key].staging_mem_request / mem_request_sum * mem_allocatable_sum
 
         # 测试
         cluster_name = projects[key].test_cluster_name
-        cpu_request_sum = cluster_cpu_request_sum[cluster_name]
-        cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
-        mem_request_sum = cluster_mem_request_sum[cluster_name]
-        mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
-        if cluster_name in cluster_cpu_allocatable_sum.keys() and \
-                cluster_name in cluster_cpu_request_sum.keys() and \
-                cpu_request_sum > 0:
-            projects[key].test_cpu_request += projects[key].test_cpu_request / cpu_request_sum * cpu_allocatable_sum
-        if cluster_name in cluster_mem_allocatable_sum.keys() and \
-                cluster_name in cluster_mem_request_sum and \
-                mem_request_sum > 0:
-            projects[key].test_mem_request += projects[key].test_mem_request / mem_request_sum * mem_allocatable_sum
+        if cluster_name != "" and cluster_name in cluster_cpu_request_sum.keys():
+            cpu_request_sum = cluster_cpu_request_sum[cluster_name]
+            cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
+            mem_request_sum = cluster_mem_request_sum[cluster_name]
+            mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
+            if cluster_name in cluster_cpu_allocatable_sum.keys() and \
+                    cluster_name in cluster_cpu_request_sum.keys() and \
+                    cpu_request_sum > 0:
+                projects[key].test_cpu_request += projects[key].test_cpu_request / cpu_request_sum * cpu_allocatable_sum
+            if cluster_name in cluster_mem_allocatable_sum.keys() and \
+                    cluster_name in cluster_mem_request_sum and \
+                    mem_request_sum > 0:
+                projects[key].test_mem_request += projects[key].test_mem_request / mem_request_sum * mem_allocatable_sum
 
         # 开发
         cluster_name = projects[key].dev_cluster_name
-        cpu_request_sum = cluster_cpu_request_sum[cluster_name]
-        cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
-        mem_request_sum = cluster_mem_request_sum[cluster_name]
-        mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
-        if cluster_name in cluster_cpu_allocatable_sum.keys() and \
-                cluster_name in cluster_cpu_request_sum.keys() and \
-                cpu_request_sum > 0:
-            projects[key].dev_cpu_request += projects[key].dev_cpu_request / cpu_request_sum * cpu_allocatable_sum
-        if cluster_name in cluster_mem_allocatable_sum.keys() and \
-                cluster_name in cluster_mem_request_sum and \
-                mem_request_sum > 0:
-            projects[key].dev_mem_request += projects[key].dev_mem_request / mem_request_sum * mem_allocatable_sum
+        if cluster_name != "" and cluster_name in cluster_cpu_request_sum.keys():
+            cpu_request_sum = cluster_cpu_request_sum[cluster_name]
+            cpu_allocatable_sum = cluster_cpu_allocatable_sum[cluster_name] / 2
+            mem_request_sum = cluster_mem_request_sum[cluster_name]
+            mem_allocatable_sum = cluster_mem_allocatable_sum[cluster_name] / 2
+            if cluster_name in cluster_cpu_allocatable_sum.keys() and \
+                    cluster_name in cluster_cpu_request_sum.keys() and \
+                    cpu_request_sum > 0:
+                projects[key].dev_cpu_request += projects[key].dev_cpu_request / cpu_request_sum * cpu_allocatable_sum
+            if cluster_name in cluster_mem_allocatable_sum.keys() and \
+                    cluster_name in cluster_mem_request_sum and \
+                    mem_request_sum > 0:
+                projects[key].dev_mem_request += projects[key].dev_mem_request / mem_request_sum * mem_allocatable_sum
 
     print("最终分配情况")
     records = []
@@ -380,19 +389,20 @@ def entry():
                 quota_record.dev_cluster_name == "":
             try:
                 project_record = PsGroupProjects.objects.get(pk=int(quota_record.project_id))
+                try:
+                    cluster_config = json.loads(project_record.cluster_config)
+                    quota_record.prod_cluster_name = cluster_config["PROD"]
+                    quota_record.staging_cluster_name = cluster_config["STAGING"]
+                    quota_record.test_cluster_name = cluster_config["TEST"]
+                    quota_record.dev_cluster_name = cluster_config["DEV"]
+                except Exception as e:
+                    print("获取 cluster_config 失败，cluster_config: ", project_record.cluster_config,
+                          "project_id: ", project_record.project_id,
+                          "project_name: ", project_record.project_name,
+                          "Exception: ", e)
             except Exception as e:
                 print("查询项目信息失败", "project_id:", int(quota_record.project_id), "Exception:", e)
-            try:
-                cluster_config = json.loads(project_record.cluster_config)
-                quota_record.prod_cluster_name = cluster_config["PROD"]
-                quota_record.staging_cluster_name = cluster_config["STAGING"]
-                quota_record.test_cluster_name = cluster_config["TEST"]
-                quota_record.dev_cluster_name = cluster_config["DEV"]
-            except Exception as e:
-                print("获取 cluster_config 失败，cluster_config: ", project_record.cluster_config,
-                      "project_id: ", project_record.project_id,
-                      "project_name: ", project_record.project_name,
-                      "Exception: ", e)
+
         d = {
             "project_id": quota_record.project_id,
             "project_name": quota_record.project_name,
