@@ -30,6 +30,8 @@ type TestPlanV2 struct {
 	ProjectID     uint64            `json:"project"`
 	SpaceID       uint64            `json:"spaceID"`
 	SpaceName     string            `json:"spaceName"`
+	IterationID   uint64            `json:"iterationID"`
+	IterationName string            `json:"iterationName"`
 	Creator       string            `json:"creator"`
 	Owners        []string          `json:"owners"`
 	Updater       string            `json:"updater"`
@@ -44,11 +46,12 @@ type TestPlanV2 struct {
 
 // TestPlanV2CreateRequest testplan v2 create request
 type TestPlanV2CreateRequest struct {
-	Name      string   `json:"name"`
-	Desc      string   `json:"desc"`
-	Owners    []string `json:"owners"`
-	ProjectID uint64   `json:"projectID"`
-	SpaceID   uint64   `json:"spaceID"`
+	Name        string   `json:"name"`
+	Desc        string   `json:"desc"`
+	Owners      []string `json:"owners"`
+	ProjectID   uint64   `json:"projectID"`
+	SpaceID     uint64   `json:"spaceID"`
+	IterationID uint64   `json:"iterationID"`
 
 	IdentityInfo
 }
@@ -80,12 +83,13 @@ type TestPlanV2CreateResponse struct {
 
 // TestPlanV2UpdateRequest testplan v2 update request
 type TestPlanV2UpdateRequest struct {
-	Name       string   `json:"name"`
-	Desc       string   `json:"desc"`
-	SpaceID    uint64   `json:"spaceID"`
-	Owners     []string `json:"owners"`
-	TestPlanID uint64   `json:"-"`
-	IsArchived *bool    `json:"isArchived"`
+	Name        string   `json:"name"`
+	Desc        string   `json:"desc"`
+	SpaceID     uint64   `json:"spaceID"`
+	Owners      []string `json:"owners"`
+	TestPlanID  uint64   `json:"-"`
+	IsArchived  *bool    `json:"isArchived"`
+	IterationID uint64   `json:"iterationID"`
 
 	IdentityInfo
 }
@@ -98,13 +102,14 @@ type TestPlanV2UpdateResponse struct {
 
 // TestPlanV2PagingRequest testplan v2 query request
 type TestPlanV2PagingRequest struct {
-	Name       string   `schema:"name"`
-	Owners     []string `schema:"owners"`
-	Creator    string   `schema:"creator"`
-	Updater    string   `schema:"updater"`
-	SpaceID    uint64   `schema:"spaceID"`
-	ProjectID  uint64   `schema:"projectID"`
-	IsArchived *bool    `schema:"isArchived"`
+	Name        string   `schema:"name"`
+	Owners      []string `schema:"owners"`
+	Creator     string   `schema:"creator"`
+	Updater     string   `schema:"updater"`
+	SpaceID     uint64   `schema:"spaceID"`
+	ProjectID   uint64   `schema:"projectID"`
+	IterationID *uint64  `json:"iterationID"`
+	IsArchived  *bool    `schema:"isArchived"`
 
 	// +optional default 1
 	PageNo uint64 `schema:"pageNo"`
@@ -171,6 +176,12 @@ type TestPlanV2StepGetResponse struct {
 	Data TestPlanV2Step `json:"data"`
 }
 
+// TestPlanV2StepListResponse testplan get response
+type TestPlanV2StepListResponse struct {
+	Header
+	Data []*TestPlanV2Step `json:"data"`
+}
+
 // TestPlanV2PagingResponseData testplan query response data
 type TestPlanV2PagingResponseData struct {
 	Total   int           `json:"total"`
@@ -184,6 +195,7 @@ type TestPlanV2Step struct {
 	SceneSetName string `json:"sceneSetName"`
 	PreID        uint64 `json:"preID"`
 	PlanID       uint64 `json:"planID"`
+	GroupID      uint64 `json:"groupID"`
 	ID           uint64 `json:"id"`
 }
 
@@ -192,6 +204,7 @@ type TestPlanV2StepAddRequest struct {
 	SceneSetID uint64 `json:"sceneSetID"`
 	PreID      uint64 `json:"preID"`
 	TestPlanID uint64 `json:"-"`
+	GroupID    uint64 `json:"groupID"`
 
 	IdentityInfo
 }
@@ -227,4 +240,17 @@ type TestPlanV2StepUpdateRequest struct {
 type TestPlanV2StepUpdateResp struct {
 	Header
 	Data string `json:"data"`
+}
+
+// TestPlanV2StepMoveRequest move a step in the test plan request
+type TestPlanV2StepMoveRequest struct {
+	StepID       uint64 `json:"stepID"`
+	LastStepID   uint64 `json:"lastStepID"`
+	PreID        uint64 `json:"preID"`
+	ScenesSetId  uint64 `json:"scenesSetId"`
+	TestPlanID   uint64 `json:"-"`
+	TargetStepID uint64 `json:"targetStepID"`
+	IsGroup      bool   `json:"isGroup"` // true: means move with group
+
+	IdentityInfo
 }

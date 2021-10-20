@@ -21,7 +21,7 @@ import (
 )
 
 // GenCreateFormModalProps 生成创建测试计划表单的props
-func GenCreateFormModalProps(testSpace []byte) interface{} {
+func GenCreateFormModalProps(testSpace, iteration []byte) interface{} {
 	props := `{
           "name": "计划",
           "fields": [
@@ -50,6 +50,16 @@ func GenCreateFormModalProps(testSpace []byte) interface{} {
                 "options": ` + string(testSpace) +
 		`}
             },
+			{
+              "component": "select",
+              "key": "iterationId",
+              "label": "迭代",
+							"disabled": false,
+              "required": false,
+              "componentProps": {
+                "options": ` + string(iteration) +
+		`}
+            },
             {
               "key": "owners",
               "label": "负责人",
@@ -72,7 +82,7 @@ func GenCreateFormModalProps(testSpace []byte) interface{} {
 }
 
 // GenUpdateFormModalProps 生成更新测试计划表单的props
-func GenUpdateFormModalProps(testSpace []byte) interface{} {
+func GenUpdateFormModalProps(testSpace, iteration []byte) interface{} {
 	props := `{
           "name": "计划",
           "fields": [
@@ -98,6 +108,16 @@ func GenUpdateFormModalProps(testSpace []byte) interface{} {
               "disabled": true,
 							"componentProps": {
                 "options": ` + string(testSpace) +
+		`}
+            },
+			{
+              "component": "select",
+              "key": "iterationId",
+              "label": "迭代",
+              "required": false,
+              "disabled": false,
+							"componentProps": {
+                "options": ` + string(iteration) +
 		`}
             },
             {

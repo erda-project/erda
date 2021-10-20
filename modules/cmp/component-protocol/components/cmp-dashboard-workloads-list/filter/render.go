@@ -86,17 +86,17 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	base64Decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
 
 	var values Values
-	if err := json.Unmarshal(base64Decoded, &values); err != nil {
+	if err := json.Unmarshal(decoded, &values); err != nil {
 		return err
 	}
 	f.State.Values = values
@@ -309,8 +309,8 @@ func (f *ComponentFilter) EncodeURLQuery() error {
 		return err
 	}
 
-	base64Encoded := base64.StdEncoding.EncodeToString(data)
-	f.State.FilterURLQuery = base64Encoded
+	encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encoded
 	return nil
 }
 

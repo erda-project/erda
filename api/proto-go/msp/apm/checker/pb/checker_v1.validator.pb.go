@@ -197,6 +197,7 @@ func (this *DescribeItemV1) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("Chart", err)
 		}
 	}
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *CheckerChartV1) Validate() error {

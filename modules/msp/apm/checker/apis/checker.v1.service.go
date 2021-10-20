@@ -294,15 +294,21 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
+		var config map[string]*structpb.Value
+		if item.Config != "" {
+			json.Unmarshal([]byte(item.Config), &config)
+		}
+
 		result := &pb.DescribeItemV1{
 			Name:   item.Name,
 			Mode:   item.Mode,
 			Url:    item.URL,
+			Config: config,
 			Status: StatusMiss,
 		}
 		results[item.ID] = result
 	}
-	err = s.queryCheckersLatencySummaryByProject(req.ProjectID, results)
+	err = s.QueryCheckersLatencySummaryByProject(req.ProjectID, results)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.project_id/%d", req.ProjectID), err)
 	}
@@ -328,13 +334,18 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	results := make(map[int64]*pb.DescribeItemV1)
 	var downCount int64
 	if metric != nil {
+		var config map[string]*structpb.Value
+		if metric.Config != "" {
+			json.Unmarshal([]byte(metric.Config), &config)
+		}
 		results[req.Id] = &pb.DescribeItemV1{
 			Name:   metric.Name,
 			Mode:   metric.Mode,
 			Url:    metric.URL,
+			Config: config,
 			Status: StatusMiss,
 		}
-		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
+		err = s.QueryCheckersLatencySummary(req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
@@ -406,7 +417,7 @@ func getTimeRange(unit string, num int, align bool) (start int64, end int64, int
 	return
 }
 
-func (s *checkerV1Service) queryCheckersLatencySummaryByProject(projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange("hour", 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
 	return s.queryCheckerMetrics(start, end, `
@@ -422,7 +433,7 @@ func (s *checkerV1Service) queryCheckersLatencySummaryByProject(projectID int64,
 	)
 }
 
-func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange(timeUnit, 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
 	return s.queryCheckerMetrics(start, end, `

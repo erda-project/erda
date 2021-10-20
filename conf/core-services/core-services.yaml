@@ -22,3 +22,8 @@ mysql:
   database: "${MYSQL_DATABASE:dice}"
 
 erda.core.services.authentication.credentials.accesskey:
+
+grpc-client@erda.cmp.dashboard.resource:
+  addr: "${CMP_GRPC_ADDR:cmp:9029}"
+  block: false
+erda.cmp.dashboard.resource-client:

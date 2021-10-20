@@ -227,6 +227,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// project pipeline
 		{Path: "/api/cicds-project", Method: http.MethodPost, Handler: e.projectPipelineCreate},
+		{Path: "/api/cicds-project/actions/pipeline-detail", Method: http.MethodGet, Handler: e.projectPipelineDetail},
 
 		// cms
 		{Path: "/api/cicds/configs", Method: http.MethodPost, Handler: e.createOrUpdateCmsNsConfigs},
@@ -408,6 +409,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/testplans/{testPlanID}/actions/move-step", Method: http.MethodPut, Handler: e.MoveTestPlanV2Step},
 		{Path: "/api/autotests/testplans-step/{stepID}", Method: http.MethodGet, Handler: e.GetTestPlanV2Step},
 		{Path: "/api/autotests/testplans-step/{stepID}", Method: http.MethodPut, Handler: e.UpdateTestPlanV2Step},
+		{Path: "/api/autotests/testplans/{testPlanID}/steps/actions/list-by-group-id", Method: http.MethodGet, Handler: e.ListTestPlanV2Step},
 
 		{Path: "/api/reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryReportSets},
 

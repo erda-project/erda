@@ -256,6 +256,19 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 	// do request
 	start := time.Now()
 	resp, err := client.Do(req)
+	if err != nil {
+		checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
+		err = ctx.Report(&plugins.Metric{
+			Name:   "status_page",
+			Tags:   tags,
+			Fields: fields,
+		})
+		if err != nil {
+			return err
+		}
+		return err
+	}
+
 	latency := time.Now().Sub(start).Milliseconds()
 	fields["latency"] = latency
 
@@ -263,9 +276,11 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 	triggers := h.triggering
 
 	resultStatus := true
-	for _, condition := range triggers {
-		t := triggering.New(condition)
-		resultStatus = t.Executor(resp) && resultStatus
+	if resp != nil {
+		for _, condition := range triggers {
+			t := triggering.New(condition)
+			resultStatus = t.Executor(resp) && resultStatus
+		}
 	}
 
 	checkerStatusHandler(err, resultStatus, fields, tags, resp)

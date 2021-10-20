@@ -530,6 +530,9 @@ services:
       - port: 9028
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 9029
+        protocol: "TCP"
+        l4_protocol: "TCP"
     resources:
       cpu: ${request_cpu:2}
       max_cpu: 2

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	logs "github.com/erda-project/erda/modules/core/monitor/log"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -30,6 +29,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	// 项目 + env 日志查询
 	routes.GET("/api/micro_service/:addon/logs/statistic/histogram", p.logStatistic)
 	routes.GET("/api/micro_service/:addon/logs/search", p.logSearch)
+	routes.GET("/api/micro_service/:addon/logs/sequentialSearch", p.logSequentialSearch)
 	routes.GET("/api/micro_service/logs/tags/tree", p.logMSTagsTree)
 	routes.GET("/api/micro_service/:addon/logs/fields", p.logFields)
 	routes.GET("/api/micro_service/:addon/logs/fields/aggregation", p.logFieldsAggregation)
@@ -102,6 +102,7 @@ func (p *provider) logStatistic(r *http.Request, params struct {
 			Addon:       params.Addon,
 			Start:       params.Start,
 			End:         params.End,
+			TimeScale:   time.Millisecond,
 			Filters:     filters,
 			Query:       params.Query,
 			Debug:       params.Debug,
@@ -150,6 +151,7 @@ func (p *provider) logFieldsAggregation(r *http.Request, params struct {
 			Addon:       params.Addon,
 			Start:       params.Start,
 			End:         params.End,
+			TimeScale:   time.Millisecond,
 			Filters:     filters,
 			Query:       params.Query,
 			Debug:       params.Debug,
@@ -217,6 +219,7 @@ func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params st
 			Addon:       params.Addon,
 			Start:       params.Start,
 			End:         params.End,
+			TimeScale:   time.Millisecond,
 			Filters:     filters,
 			Query:       params.Query,
 			Debug:       params.Debug,
@@ -225,7 +228,7 @@ func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params st
 		Sort:      params.Sort,
 		Size:      params.Size,
 		MaxReturn: params.MaxReturn,
-	}, func(batchLogs []*logs.Log) error {
+	}, func(batchLogs []*Log) error {
 		for _, item := range batchLogs {
 			_, err = w.Write([]byte(item.Content))
 			if err != nil {
@@ -240,6 +243,56 @@ func (p *provider) logDownload(r *http.Request, w http.ResponseWriter, params st
 		return api.Errors.Internal(err)
 	}
 	return nil
+}
+
+func (p *provider) logSequentialSearch(r *http.Request, params struct {
+	TimestampNanos int64  `query:"timestampNanos"`
+	Id             string `query:"id"`
+	Offset         int64  `query:"offset"`
+	Count          int64  `query:"count"`
+	Query          string `query:"query"`
+	Sort           string `query:"sort"`
+	Debug          bool   `query:"debug"`
+	Addon          string `param:"addon"`
+	ClusterName    string `query:"clusterName"`
+}) interface{} {
+	orgID := api.OrgID(r)
+	orgid, err := strconv.ParseInt(orgID, 10, 64)
+	if err != nil {
+		return api.Errors.InvalidParameter("invalid Org-ID")
+	}
+	if params.Count <= 0 {
+		params.Count = 20
+	}
+	filters := p.buildLogFilters(r)
+	start, end := params.TimestampNanos, int64(0)
+	if params.Sort == "desc" {
+		start, end = end, start
+	}
+	sorts := []string{"timestamp " + params.Sort, "id " + params.Sort, "offset " + params.Sort}
+
+	logs, err := p.SearchLogs(&LogSearchRequest{
+		LogRequest: LogRequest{
+			OrgID:       orgid,
+			ClusterName: params.ClusterName,
+			Addon:       params.Addon,
+			Start:       start,
+			End:         end,
+			TimeScale:   time.Nanosecond,
+			Filters:     filters,
+			Query:       params.Query,
+			Debug:       params.Debug,
+			Lang:        api.Language(r),
+		},
+		Page:        1,
+		Size:        params.Count,
+		Sort:        sorts,
+		SearchAfter: []interface{}{params.TimestampNanos, params.Id, params.Offset},
+	})
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(logs)
 }
 
 func (p *provider) logSearch(r *http.Request, params struct {
@@ -274,6 +327,7 @@ func (p *provider) logSearch(r *http.Request, params struct {
 			Addon:       params.Addon,
 			Start:       params.Start,
 			End:         params.End,
+			TimeScale:   time.Millisecond,
 			Filters:     filters,
 			Query:       params.Query,
 			Debug:       params.Debug,

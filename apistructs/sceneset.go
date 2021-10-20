@@ -15,12 +15,21 @@
 package apistructs
 
 import (
+	"fmt"
+	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const SceneSetsAutotestExecType = "sceneSets"
-const SceneAutotestExecType = "scene"
+const (
+	SceneSetsAutotestExecType = "sceneSets"
+	SceneAutotestExecType     = "scene"
+
+	SceneSetNameMaxLength int = 50
+	SceneSetDescMaxLength int = 255
+)
 
 type SceneSet struct {
 	ID          uint64    `json:"id"`
@@ -51,6 +60,19 @@ type SceneSetRequest struct {
 	Position    int64  `json:"position,omitempty"` // 插入位置
 	ProjectId   uint64 `json:"projectID"`
 	IdentityInfo
+}
+
+func (req *SceneSetRequest) Validate() error {
+	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(SceneSetNameMaxLength)); err != nil {
+		return err
+	}
+	if err := strutil.Validate(req.Description, strutil.MaxRuneCountValidator(SceneSetDescMaxLength)); err != nil {
+		return err
+	}
+	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {
+		return fmt.Errorf("the name not match %s", "^[a-zA-Z\u4e00-\u9fa50-9_-]*$")
+	}
+	return nil
 }
 
 // type SceneSetUpdateRequest struct {

@@ -55,6 +55,7 @@ type LogRequest struct {
 	Query       string
 	Debug       bool
 	Lang        i18n.LanguageCodes
+	TimeScale   time.Duration
 }
 
 type LogDownloadRequest struct {
@@ -67,10 +68,11 @@ type LogDownloadRequest struct {
 // LogSearchRequest .
 type LogSearchRequest struct {
 	LogRequest
-	Page      int64
-	Size      int64
-	Sort      []string
-	Highlight bool
+	Page        int64
+	Size        int64
+	Sort        []string
+	Highlight   bool
+	SearchAfter []interface{}
 }
 
 // LogStatisticRequest .
@@ -100,8 +102,14 @@ type BucketAgg struct {
 	Key   string `json:"key"`
 }
 
+type Log struct {
+	*logs.Log
+	DocId          string `json:"_id"`
+	TimestampNanos string `json:"timestampNanos"`
+}
+
 type LogItem struct {
-	Source    *logs.Log           `json:"source"`
+	Source    *Log                `json:"source"`
 	Highlight map[string][]string `json:"highlight"`
 }
 
@@ -209,6 +217,10 @@ func (c *ESClient) getSearchSource(req *LogSearchRequest, boolQuery *elastic.Boo
 			Field("*"))
 	}
 
+	if len(req.SearchAfter) > 0 {
+		searchSource.SearchAfter(req.SearchAfter...)
+	}
+
 	// max allowed size limit to 10000
 	size := req.Size
 	if req.Page*req.Size > 10000 {
@@ -250,8 +262,8 @@ func (c *ESClient) getSort(searchSource *elastic.SearchSource, sorts []string) *
 func (c *ESClient) filterIndices(req *LogRequest) []string {
 	var indices []string
 	if len(req.Addon) > 0 {
-		start := req.Start * int64(time.Millisecond)
-		end := req.End * int64(time.Millisecond)
+		start := req.Start * int64(req.TimeScale)
+		end := req.End * int64(req.TimeScale)
 		for _, entry := range c.Entrys {
 			if (entry.MinTS == 0 || entry.MinTS <= end) &&
 				(entry.MaxTS == 0 || entry.MaxTS >= start) {
@@ -352,7 +364,7 @@ func (c *ESClient) doSearchLogs(req *LogSearchRequest, searchSource *elastic.Sea
 	return resp.TotalHits(), resp.Hits.Hits, nil
 }
 
-func (c *ESClient) setModule(log *logs.Log) {
+func (c *ESClient) setModule(log *Log) {
 	if log.Tags != nil {
 		if log.Tags["origin"] == "sls" {
 			project := log.Tags["sls_project"]
@@ -372,12 +384,12 @@ func (c *ESClient) setModule(log *logs.Log) {
 	}
 }
 
-func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*logs.Log) error) error {
+func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*Log) error) error {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
 	var count int64
 	var shouldStopIterate bool
 	for _, client := range clients {
-		err := client.downloadLogs(req, func(batchLogs []*logs.Log) error {
+		err := client.downloadLogs(req, func(batchLogs []*Log) error {
 			result := callback(batchLogs)
 			if result != nil {
 				shouldStopIterate = true
@@ -478,9 +490,23 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 	} else if len(results) == 1 {
 		return results[0]
 	}
+
 	first := results[0]
+	for _, result := range results[1:] {
+		if first != nil && first.Total > 0 {
+			break
+		}
+		first = result
+	}
+	if first == nil {
+		return first
+	}
+
 	list := first.Results[0].Data[0].Count.Data
 	for _, result := range results[1:] {
+		if result == nil || result.Total == 0 || result == first {
+			continue
+		}
 		first.Total += result.Total
 		for i, item := range result.Results[0].Data[0].Count.Data {
 			if i < len(list) {
