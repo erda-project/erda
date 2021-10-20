@@ -87,16 +87,16 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
-		p.clusterResourceClient = client
+		p.clusterResourceClient = cli
 	}
 }
 
 // WithI18n set the translator
-func WithI18n(trans i18n.Translator) Option {
+func WithI18n(translator i18n.Translator) Option {
 	return func(p *Project) {
-		p.trans = trans
+		p.trans = translator
 	}
 }
 
