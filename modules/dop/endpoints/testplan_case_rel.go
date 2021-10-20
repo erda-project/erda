@@ -51,7 +51,7 @@ func (e *Endpoints) CreateTestPlanCaseRelations(ctx context.Context, r *http.Req
 	req.IdentityInfo = identityInfo
 	req.TestPlanID = testPlanID
 
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -73,7 +73,7 @@ func (e *Endpoints) CreateTestPlanCaseRelations(ctx context.Context, r *http.Req
 		}
 	}
 
-	result, err := e.testPlan.CreateCaseRelations(req)
+	result, err := e.mttestPlan.CreateCaseRelations(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -93,7 +93,7 @@ func (e *Endpoints) GetTestPlanCaseRel(ctx context.Context, r *http.Request, var
 		return apierrors.ErrGetTestPlanCaseRel.InvalidParameter("relationID").ToResp(), nil
 	}
 
-	rel, err := e.testPlan.GetRel(relID)
+	rel, err := e.mttestPlan.GetRel(relID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -124,7 +124,7 @@ func (e *Endpoints) BatchUpdateTestPlanCaseRelations(ctx context.Context, r *htt
 	req.IdentityInfo = identityInfo
 
 	// 查询测试计划
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -147,7 +147,7 @@ func (e *Endpoints) BatchUpdateTestPlanCaseRelations(ctx context.Context, r *htt
 		}
 	}
 
-	if err = e.testPlan.BatchUpdateTestPlanCaseRels(req); err != nil {
+	if err = e.mttestPlan.BatchUpdateTestPlanCaseRels(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -183,7 +183,7 @@ func (e *Endpoints) RemoveTestPlanCaseRelIssueRelations(ctx context.Context, r *
 	req.IdentityInfo = identityInfo
 
 	// 查询测试计划
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -205,7 +205,7 @@ func (e *Endpoints) RemoveTestPlanCaseRelIssueRelations(ctx context.Context, r *
 		}
 	}
 
-	if err = e.testPlan.RemoveTestPlanCaseRelIssueRelations(req); err != nil {
+	if err = e.mttestPlan.RemoveTestPlanCaseRelIssueRelations(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -241,7 +241,7 @@ func (e *Endpoints) AddTestPlanCaseRelIssueRelations(ctx context.Context, r *htt
 	req.IdentityInfo = identityInfo
 
 	// 查询测试计划
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -263,7 +263,7 @@ func (e *Endpoints) AddTestPlanCaseRelIssueRelations(ctx context.Context, r *htt
 		}
 	}
 
-	if err = e.testPlan.AddTestPlanCaseRelIssueRelations(req); err != nil {
+	if err = e.mttestPlan.AddTestPlanCaseRelIssueRelations(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -291,7 +291,7 @@ func (e *Endpoints) InternalRemoveTestPlanCaseRelIssueRelations(ctx context.Cont
 		return apierrors.ErrRemoveTestPlanCaseRelIssueRelation.InvalidParameter(fmt.Errorf("invalid issueID: %s", issueIDStr)).ToResp(), nil
 	}
 
-	if err := e.testPlan.InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID); err != nil {
+	if err := e.mttestPlan.InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
