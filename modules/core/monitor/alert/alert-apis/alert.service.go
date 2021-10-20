@@ -40,7 +40,10 @@ type alertService struct {
 	p *provider
 }
 
-const MicroService = "micro_service"
+const (
+	MicroService = "micro_service"
+	ClusterName  = "cluster_name"
+)
 
 func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
@@ -125,6 +128,20 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	}
 	alert.Attributes = make(map[string]*structpb.Value)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	id, err := strconv.ParseUint(orgID, 10, 64)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
+	}
+	for _, v := range alert.TriggerCondition {
+		if v.Condition == ClusterName {
+			if len(v.Values) <= 0 {
+				return nil, errors.NewMissingParameterError("cluster_names")
+			}
+			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
+				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
+			}
+		}
+	}
 	aid, err := m.p.a.CreateOrgAlert(alert, orgID)
 	if err != nil {
 		if adapt.IsInvalidParameterError(err) {
@@ -966,7 +983,20 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-
+	id, err := strconv.ParseUint(orgID, 10, 64)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
+	}
+	for _, v := range request.TriggerCondition {
+		if v.Condition == ClusterName {
+			if len(v.Values) <= 0 {
+				return nil, errors.NewMissingParameterError("cluster_names")
+			}
+			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
+				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
+			}
+		}
+	}
 	request.Attributes = make(map[string]*structpb.Value)
 	orgName := structpb.NewStringValue(org.Name)
 	request.Attributes["org_name"] = orgName
