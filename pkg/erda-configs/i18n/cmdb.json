@@ -158,7 +158,7 @@
     "RoleOrgEdgeAppEngineer": "边缘运维工程师",
     "PublisherMemberRole": "发布成员",
     "MemberLabelOutsource": "外包人员",
-    "MemberLabelPartner": "合作伙伴"
+    "MemberLabelPartner": "合作伙伴",
   },
   "en-US": {
     "ErrGetLicense": "Failed to get license",
@@ -228,6 +228,6 @@
     "RoleOrgEdgeAppEngineer": "Edge Ops engineer",
     "PublisherMemberRole": "publish member",
     "MemberLabelOutsource": "outsource",
-    "MemberLabelPartner": "partner"
+    "MemberLabelPartner": "partner",
   }
 }

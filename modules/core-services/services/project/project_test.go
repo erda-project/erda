@@ -23,6 +23,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -106,6 +108,16 @@ func TestGetModelProjectsMap(t *testing.T) {
 	projectMap, err := p.GetModelProjectsMap(projectIDs)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(projectMap))
+}
+
+func TestWtihI18n(t *testing.T) {
+	var trans i18n.Translator
+	New(WithI18n(trans))
+}
+
+func TestWithClusterResourceClient(t *testing.T) {
+	var c dashboardPb.ClusterResourceServer
+	New(WithClusterResourceClient(c))
 }
 
 // TODO We need to turn this ut on after adding the delete portal to the UI

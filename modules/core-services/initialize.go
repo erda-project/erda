@@ -178,6 +178,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		org.WithBundle(bdl),
 		org.WithRedisClient(redisCli),
 		org.WithClusterResourceClient(p.Cmp),
+		org.WithI18n(p.Tran),
 	)
 
 	// init project service
@@ -186,6 +187,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithUCClient(uc),
 		project.WithBundle(bdl),
 		project.WithClusterResourceClient(p.Cmp),
+		project.WithI18n(p.Tran),
 	)
 
 	// init app service
