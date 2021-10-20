@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
@@ -64,23 +65,43 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		bugList = append(bugList, &issueList[i])
 	}
 
+	iterationList := helper.GetIterations()
+	iterationMap := make(map[int64]*apistructs.Iteration)
+	for i := range iterationList {
+		s := iterationList[i]
+		iterationMap[s.ID] = &s
+	}
+
 	handler := stackhandlers.NewStackRetriever(
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
+		stackhandlers.WithIssueStateList(helper.GetIssueStateList()),
 	).GetRetriever(f.State.Values.Type)
-
-	// x is always stable
-	var xAxis []string
-	for _, i := range stateList {
-		xAxis = append(xAxis, i.Name)
-	}
 
 	builder := &chartbuilders.BarBuilder{
 		Items:        bugList,
 		StackHandler: handler,
 		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
-			XAxis: xAxis,
+			XAxis: func() []string {
+				var xAxis []string
+				switch c.Name {
+				case "iteration":
+					for _, i := range iterationList {
+						xAxis = append(xAxis, i.Title)
+					}
+				default:
+					for _, i := range stateList {
+						xAxis = append(xAxis, i.Name)
+					}
+				}
+				return xAxis
+			}(),
 			XIndexer: func(item interface{}) string {
-				return stateMap[uint64(item.(*dao.IssueItem).State)].Name
+				switch c.Name {
+				case "iteration":
+					return iterationMap[item.(*dao.IssueItem).IterationID].Title
+				default:
+					return stateMap[uint64(item.(*dao.IssueItem).State)].Name
+				}
 			},
 			XDisplayConverter: func(opt *chartbuilders.FixedXAxisOrTop) opts.XAxis {
 				return opts.XAxis{
@@ -116,7 +137,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "缺陷 - 按状态分布"
+	switch c.Name {
+	case "iteration":
+		props["title"] = "缺陷 - 按迭代分布"
+	default:
+		props["title"] = "缺陷 - 按状态分布"
+	}
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
 

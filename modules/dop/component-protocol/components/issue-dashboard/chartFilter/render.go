@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package assigneeHorizontalBarChartFilter
+package chartFilter
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "assigneeHorizontalBarChartFilter",
+	base.InitProviderWithCreator("issue-dashboard", "chartFilter",
 		func() servicehub.Provider { return &ComponentFilter{} })
 }
 
@@ -64,14 +64,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	if err := f.InitDefaultOperation(ctx, f.State, gs); err != nil {
+	if err := f.InitDefaultOperation(c, gs); err != nil {
 		return err
 	}
 
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State, gs *cptype.GlobalStateData) error {
+func (f *ComponentFilter) InitDefaultOperation(c *cptype.Component, gs *cptype.GlobalStateData) error {
 	if f.State.Values.Type == "" {
 		f.State.Values.Type = stackhandlers.Priority
 	}
@@ -83,36 +83,47 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State,
 		stackhandlers.WithIssueStateList(helper.GetIssueStateList()),
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
+
+	options := []filter.PropConditionOption{
+		{
+			Label: "优先级",
+			Value: stackhandlers.Priority,
+		},
+		{
+			Label: "复杂度",
+			Value: stackhandlers.Complexity,
+		},
+		{
+			Label: "严重程度",
+			Value: stackhandlers.Severity,
+		},
+	}
+	if c.Name == "stateVerticalBar" {
+		options = append(options, filter.PropConditionOption{
+			Label: "引入源",
+			Value: stackhandlers.Stage,
+		})
+	} else {
+		options = append(options, []filter.PropConditionOption{
+			{
+				Label: "状态",
+				Value: stackhandlers.State,
+			},
+			{
+				Label: "引入源",
+				Value: stackhandlers.Stage,
+			},
+		}...)
+	}
 	f.State.Conditions = []filter.PropCondition{
 		{
 			EmptyText: "全部",
 			Fixed:     true,
 			Key:       "type",
 			Label:     "类型",
-			Options: []filter.PropConditionOption{
-				{
-					Label: "优先级",
-					Value: stackhandlers.Priority,
-				},
-				{
-					Label: "复杂度",
-					Value: stackhandlers.Complexity,
-				},
-				{
-					Label: "严重程度",
-					Value: stackhandlers.Severity,
-				},
-				{
-					Label: "状态",
-					Value: stackhandlers.State,
-				},
-				{
-					Label: "引入源",
-					Value: stackhandlers.Stage,
-				},
-			},
-			Required: true,
-			Type:     filter.PropConditionTypeSelect,
+			Options:   options,
+			Required:  true,
+			Type:      filter.PropConditionTypeSelect,
 			CustomProps: map[string]interface{}{
 				"mode": "single",
 			},
