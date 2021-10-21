@@ -17,6 +17,7 @@ package mt_block_detail_item
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -25,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -182,8 +184,13 @@ func makeMtCaseRatePassed(ctx context.Context, mtPlans []apistructs.TestPlan) Te
 		total += plan.RelsCount.Total
 		passed += plan.RelsCount.Succ
 	}
+	rate := float64(passed) / float64(total) * 100
+	if math.IsNaN(rate) {
+		rate = 0.00
+	}
+	rate = numeral.Round(rate, 2)
 	return TextValue{
-		Value:      strutil.String(float64(passed)/float64(total)*100) + "%",
+		Value:      strutil.String(rate) + "%",
 		Kind:       cputil.I18n(ctx, "test-case-rate-passed"),
 		ValueColor: ColorTextMain,
 	}
@@ -195,8 +202,13 @@ func makeMtCaseRateExecuted(ctx context.Context, mtPlans []apistructs.TestPlan) 
 		total += plan.RelsCount.Total
 		executed = executed + (plan.RelsCount.Total - plan.RelsCount.Init)
 	}
+	rate := float64(executed) / float64(total) * 100
+	if math.IsNaN(rate) {
+		rate = 0.00
+	}
+	rate = numeral.Round(rate, 2)
 	return TextValue{
-		Value:      strutil.String(float64(executed)/float64(total)*100) + "%",
+		Value:      strutil.String(rate) + "%",
 		Kind:       cputil.I18n(ctx, "test-case-rate-executed"),
 		ValueColor: ColorTextMain,
 	}
