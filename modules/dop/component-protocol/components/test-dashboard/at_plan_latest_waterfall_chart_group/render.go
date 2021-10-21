@@ -12,5 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chart
+package at_plan_latest_waterfall_chart_group
 
+import (
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
+
+func init() {
+	base.InitProvider(common.ScenarioKeyTestDashboard, "at_plan_latest_waterfall_chart_group")
+}

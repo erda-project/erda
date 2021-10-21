@@ -39,7 +39,6 @@ type Chart struct {
 type (
 	Props struct {
 		ChartType string `json:"chartType"`
-		Title     string `json:"title"`
 		Option    Option `json:"option"`
 	}
 	Option struct {
@@ -106,7 +105,6 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 func tableToBarChartProps(ctx context.Context, table []CategoryLine) Props {
 	return Props{
 		ChartType: "bar",
-		Title:     cputil.I18n(ctx, "mt_pan_chart"),
 		Option: Option{
 			Color:  []string{"green", "orange", "red", "grey"},
 			Legend: Legend{Show: true},

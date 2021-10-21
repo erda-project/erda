@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package at_rate_notpassed
+package mt_plan_chart_group
 
 import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
@@ -20,5 +20,5 @@ import (
 )
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "at_rate_notpassed")
+	base.InitProvider(common.ScenarioKeyTestDashboard, "mt_plan_chart_group")
 }

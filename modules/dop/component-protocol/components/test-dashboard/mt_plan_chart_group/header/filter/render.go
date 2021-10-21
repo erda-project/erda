@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mt_plan_chart_filter
+package filter
 
 import (
 	"context"
@@ -78,22 +78,22 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			}(),
 			Type: filter.PropConditionTypeSelect,
 		},
-		// statuses
-		{
-			EmptyText: cputil.I18n(ctx, "all"),
-			Fixed:     true,
-			Key:       "statuses",
-			Label:     cputil.I18n(ctx, "test-case-status"),
-			Options: func() (opts []filter.PropConditionOption) {
-				return []filter.PropConditionOption{
-					{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusInit)), Value: apistructs.CaseExecStatusInit},
-					{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusSucc)), Value: apistructs.CaseExecStatusSucc},
-					{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusFail)), Value: apistructs.CaseExecStatusFail},
-					{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusBlocked)), Value: apistructs.CaseExecStatusBlocked},
-				}
-			}(),
-			Type: filter.PropConditionTypeSelect,
-		},
+		//// statuses
+		//{
+		//	EmptyText: cputil.I18n(ctx, "all"),
+		//	Fixed:     true,
+		//	Key:       "statuses",
+		//	Label:     cputil.I18n(ctx, "test-case-status"),
+		//	Options: func() (opts []filter.PropConditionOption) {
+		//		return []filter.PropConditionOption{
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusInit)), Value: apistructs.CaseExecStatusInit},
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusSucc)), Value: apistructs.CaseExecStatusSucc},
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusFail)), Value: apistructs.CaseExecStatusFail},
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusBlocked)), Value: apistructs.CaseExecStatusBlocked},
+		//		}
+		//	}(),
+		//	Type: filter.PropConditionTypeSelect,
+		//},
 	}
 
 	// put selected values into global state
@@ -111,7 +111,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		}
 		return
 	}())
-	h.SetMtPlanChartFilterStatusList(f.State.Values.CaseStatuses)
+	//h.SetMtPlanChartFilterStatusList(f.State.Values.CaseStatuses)
 
 	if err := f.setToComponent(c); err != nil {
 		return err
