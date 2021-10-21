@@ -101,9 +101,9 @@ func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 }
 
 // WithI18n sets the translator
-func WithI18n(translator i18n.Translator) Option {
+func WithI18n(trans i18n.Translator) Option {
 	return func(o *Org) {
-		o.trans = translator
+		o.trans = trans
 	}
 }
 
