@@ -326,6 +326,18 @@ func TestToDBAlertExpressionModel(t *testing.T) {
 					Domain:       "https://erda.test.terminus.io",
 					CreateTime:   0,
 					UpdateTime:   0,
+					TriggerCondition: []*pb.TriggerCondition{
+						{
+							Condition: "cluster_name",
+							Operator:  "in",
+							Values:    "erda-dev,erda-test",
+						},
+						{
+							Condition: "host_ip",
+							Operator:  "eq",
+							Values:    "127.0.0.1",
+						},
+					},
 				},
 				rule: &pb.AlertRule{
 					Id:         44,

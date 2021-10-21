@@ -449,7 +449,6 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	attributes["alert_title"] = alert.Name
 	attributes["alert_scope"] = alert.AlertScope
 	attributes["alert_scope_id"] = alert.AlertScopeId
-	//attributes["recover"] = strconv.FormatBool(e.IsRecover)
 	attributes["recover"] = strconv.FormatBool(e.IsRecover)
 	attributes["level"] = e.Level
 	// remove some fields that are not needed by flink to avoid too long attributes
