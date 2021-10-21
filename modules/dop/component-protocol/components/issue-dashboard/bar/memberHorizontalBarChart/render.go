@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ownerHorizontalBarChart
+package memberHorizontalBarChart
 
 import (
 	"context"
@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("issue-dashboard", "ownerHorizontalBarChart",
+	base.InitProviderWithCreator("issue-dashboard", "memberHorizontalBarChart",
 		func() servicehub.Provider { return &ComponentAction{} })
 }
 
@@ -69,12 +69,16 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 	).GetRetriever(f.State.Values.Type)
 
+	if c.Name == "reopenByOwner" {
+		handler = stackhandlers.NewStackRetriever().GetRetriever("重新打开次数")
+	}
+
 	builder := &chartbuilders.BarBuilder{
 		Items:        bugList,
 		StackHandler: handler,
 		FixedXAxisOrTop: chartbuilders.FixedXAxisOrTop{
 			Top:      500,
-			XIndexer: getXIndexer(),
+			XIndexer: getXIndexer(c),
 			XDisplayConverter: func(opt *chartbuilders.FixedXAxisOrTop) opts.XAxis {
 				return opts.XAxis{
 					Type: "value",
@@ -105,6 +109,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		DataHandleOpt: chartbuilders.DataHandleOpt{
 			SeriesConverter: chartbuilders.GetStackBarSingleSeriesConverter(),
 			DataWhiteList:   f.State.Values.Value,
+			StatsProperty:   getStatesProperty(c),
 		},
 		Result: chartbuilders.Result{
 			PostProcessor: chartbuilders.GetHorizontalPostProcessor(),
@@ -116,18 +121,38 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "缺陷 - 按责任者分布（Top 500）"
+	switch c.Name {
+	case "owner":
+		props["title"] = "缺陷 - 按责任者分布（Top 500）"
+	case "reopenByOwner":
+		props["title"] = "缺陷 - 重新打开次数最多的责任者（Top 500）"
+	}
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
 	props["style"] = map[string]interface{}{"height": 400}
 
 	c.Props = props
-	c.State = nil
 	return nil
 }
 
-func getXIndexer() func(interface{}) string {
+func getXIndexer(c *cptype.Component) func(interface{}) string {
 	return func(item interface{}) string {
-		return item.(*dao.IssueItem).Owner
+		switch c.Name {
+		case "owner", "reopenByOwner":
+			return item.(*dao.IssueItem).Owner
+		default:
+			return ""
+		}
+	}
+}
+
+func getStatesProperty(c *cptype.Component) func(interface{}) int {
+	return func(item interface{}) int {
+		switch c.Name {
+		case "reopenByOwner":
+			return item.(*dao.IssueItem).ReopenCount
+		default:
+			return 1
+		}
 	}
 }

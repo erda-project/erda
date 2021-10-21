@@ -117,6 +117,6 @@ func (r *StackRetriever) GetRetriever(t string) StackHandler {
 	case Stage:
 		return NewStageStackHandler(r.reverseStack, r.issueStageList)
 	default:
-		return NewEmptyStackHandler()
+		return NewDefaultStackHandler(t)
 	}
 }

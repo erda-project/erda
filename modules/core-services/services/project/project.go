@@ -284,9 +284,9 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 }
 
 // UpdateWithEvent 更新项目 & 发送事件
-func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
+func (p *Project) UpdateWithEvent(orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
 	// 更新项目
-	project, err := p.Update(projectID, userID, updateReq)
+	project, err := p.Update(orgID, projectID, userID, updateReq)
 	if err != nil {
 		return err
 	}
@@ -312,7 +312,7 @@ func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *api
 }
 
 // Update 更新项目
-func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
 	data, _ := json.Marshal(updateReq)
 	logrus.Infof("updateReq: %s", string(data))
 	if updateReq.ResourceConfigs != nil {
@@ -382,10 +382,59 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 			logrus.WithError(err).Errorln("failed to update project quota")
 			return nil, errors.Errorf("failed to update project quota: %v", err)
 		}
+
+		if isQuotaChanged(*oldQuota, quota) {
+			org, err := p.bdl.GetOrg(orgID)
+			if err != nil {
+				return nil, errors.Errorf("failed to get org by id %d, %v", orgID, err)
+			}
+			auditCtx := map[string]interface{}{
+				"orgName":     org.Name,
+				"projectName": project.Name,
+				"devCPU":      calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
+				"devMem":      calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
+				"testCPU":     calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
+				"testMem":     calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
+				"stagingCPU":  calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
+				"stagingMem":  calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
+				"prodCPU":     calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
+				"prodMem":     calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
+			}
+
+			now := strconv.FormatInt(time.Now().Unix(), 10)
+			if err = p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+				Audit: apistructs.Audit{
+					UserID:       userID,
+					ScopeType:    apistructs.OrgScope,
+					ScopeID:      uint64(orgID),
+					OrgID:        uint64(orgID),
+					ProjectID:    uint64(projectID),
+					Context:      auditCtx,
+					TemplateName: "updateQuota",
+					Result:       "success",
+					StartTime:    now,
+					EndTime:      now,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create quota audit event when update project %s, %v", project.Name, err)
+			}
+		} else {
+			logrus.Infof("project %s quota is not changed, skip audit", project.Name)
+		}
 	}
 	tx.Commit()
 
 	return &project, nil
+}
+
+func isQuotaChanged(oldQuota, newQuota model.ProjectQuota) bool {
+	if oldQuota.DevCPUQuota != newQuota.DevCPUQuota || oldQuota.DevMemQuota != newQuota.DevMemQuota ||
+		oldQuota.TestCPUQuota != newQuota.TestCPUQuota || oldQuota.TestMemQuota != newQuota.TestMemQuota ||
+		oldQuota.StagingCPUQuota != newQuota.StagingCPUQuota || oldQuota.StagingMemQuota != newQuota.StagingMemQuota ||
+		oldQuota.ProdCPUQuota != newQuota.ProdCPUQuota || oldQuota.ProdMemQuota != newQuota.ProdMemQuota {
+		return true
+	}
+	return false
 }
 
 func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
