@@ -18,7 +18,7 @@ service NotifyChannelService {
   };
 
   rpc CreateNotifyChannel (CreateNotifyChannelRequest) returns (CreateNotifyChannelResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       post: "/api/notify-channel",
     };
     option (erda.common.openapi) = {
@@ -27,7 +27,7 @@ service NotifyChannelService {
   }
 
   rpc GetNotifyChannels (GetNotifyChannelsRequest) returns (GetNotifyChannelsResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/notify-channels",
     };
     option (erda.common.openapi) = {
@@ -36,7 +36,7 @@ service NotifyChannelService {
   }
 
   rpc UpdateNotifyChannel (UpdateNotifyChannelRequest) returns (UpdateNotifyChannelResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       put: "/api/notify-channel",
     };
     option (erda.common.openapi) = {
@@ -45,7 +45,7 @@ service NotifyChannelService {
   }
 
   rpc GetNotifyChannel (GetNotifyChannelRequest) returns (GetNotifyChannelResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/notify-channel",
     };
     option (erda.common.openapi) = {
@@ -54,7 +54,7 @@ service NotifyChannelService {
   }
 
   rpc DeleteNotifyChannel (DeleteNotifyChannelRequest) returns (DeleteNotifyChannelResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       delete: "/api/notify-channel",
     };
     option (erda.common.openapi) = {
@@ -63,13 +63,32 @@ service NotifyChannelService {
   }
 
   rpc GetNotifyChannelTypes (GetNotifyChannelTypesRequest) returns (GetNotifyChannelTypesResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/notify-channel/types",
     };
     option (erda.common.openapi) = {
       path: "/api/notify-channel/types"
     };
   }
+
+  rpc GetNotifyChannelEnabled (GetNotifyChannelEnabledRequest) returns (GetNotifyChannelEnabledResponse)  {
+    option (google.api.http)     = {
+      get: "/api/notify-channel/enabled",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel/enabled"
+    };
+  }
+}
+
+message GetNotifyChannelEnabledRequest {
+  string scopeId   = 1;
+  string scopeType = 2;
+  string type      = 3;
+}
+
+message GetNotifyChannelEnabledResponse {
+  NotifyChannel data = 1;
 }
 
 message DeleteNotifyChannelRequest {
@@ -88,17 +107,13 @@ message GetNotifyChannelResponse {
   NotifyChannel data = 1;
 }
 
-message GetNotifyChannelTypesRequest {}
-
-message GetNotifyChannelTypesResponse {
-  repeated NotifyChannelType data = 1;
-}
-
 message UpdateNotifyChannelRequest {
-  string                             id     = 1;
-  string                             name   = 2;
-  string                             type   = 3;
-  map<string, google.protobuf.Value> config = 4;
+  string                             id                  = 1;
+  string                             name                = 2;
+  string                             type                = 3;
+  string                             channelProviderType = 4;
+  string                             enable              = 5;
+  map<string, google.protobuf.Value> config              = 6;
 }
 
 message UpdateNotifyChannelResponse {
@@ -118,13 +133,26 @@ message GetNotifyChannelsResponse {
 }
 
 message CreateNotifyChannelRequest {
-  string                             name   = 1;
-  string                             type   = 2;
-  map<string, google.protobuf.Value> config = 3;
+  string                             name                = 1;
+  string                             type                = 2;
+  string                             channelProviderType = 3;
+  map<string, google.protobuf.Value> config              = 4;
 }
 
 message CreateNotifyChannelResponse {
   NotifyChannel data = 1;
+}
+
+message GetNotifyChannelTypesRequest {}
+
+message GetNotifyChannelTypesResponse {
+  repeated NotifyChannelTypeResponse data = 1;
+}
+
+message NotifyChannelTypeResponse {
+  string                             name        = 1;
+  string                             displayName = 2;
+  repeated NotifyChannelProviderType providers   = 3;
 }
 
 message NotifyChannelType {
@@ -132,19 +160,31 @@ message NotifyChannelType {
   string displayName = 2;
 }
 
+message NotifyChannelProviderType {
+  string name        = 1;
+  string displayName = 2;
+}
+
 message NotifyChannel {
-  string                             id          = 1;
-  string                             name        = 2;
-  NotifyChannelType                  type        = 3;
-  map<string, google.protobuf.Value> config      = 4;
-  string                             scopeId     = 5;
-  string                             scopeType   = 6;
-  string                             creatorName = 7;
-  string                             createAt    = 8;
-  string                             updateAt    = 9;
+  string                             id                  = 1;
+  string                             name                = 2;
+  NotifyChannelType                  type                = 3;
+  map<string, google.protobuf.Value> config              = 4;
+  string                             scopeId             = 5;
+  string                             scopeType           = 6;
+  string                             creatorName         = 7;
+  string                             createAt            = 8;
+  string                             updateAt            = 9;
+  NotifyChannelProviderType          channelProviderType = 10;
+  bool                               enable              = 11;
 }
 
 // channel type
 enum Type {
+  SHORT_MESSAGE = 0;
+}
+
+// channel service provider type
+enum ProviderType {
   ALI_SHORT_MESSAGE = 0;
 }

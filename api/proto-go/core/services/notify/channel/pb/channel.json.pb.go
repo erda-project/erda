@@ -13,6 +13,10 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*GetNotifyChannelEnabledRequest)(nil)
+var _ json.Unmarshaler = (*GetNotifyChannelEnabledRequest)(nil)
+var _ json.Marshaler = (*GetNotifyChannelEnabledResponse)(nil)
+var _ json.Unmarshaler = (*GetNotifyChannelEnabledResponse)(nil)
 var _ json.Marshaler = (*DeleteNotifyChannelRequest)(nil)
 var _ json.Unmarshaler = (*DeleteNotifyChannelRequest)(nil)
 var _ json.Marshaler = (*DeleteNotifyChannelResponse)(nil)
@@ -21,10 +25,6 @@ var _ json.Marshaler = (*GetNotifyChannelRequest)(nil)
 var _ json.Unmarshaler = (*GetNotifyChannelRequest)(nil)
 var _ json.Marshaler = (*GetNotifyChannelResponse)(nil)
 var _ json.Unmarshaler = (*GetNotifyChannelResponse)(nil)
-var _ json.Marshaler = (*GetNotifyChannelTypesRequest)(nil)
-var _ json.Unmarshaler = (*GetNotifyChannelTypesRequest)(nil)
-var _ json.Marshaler = (*GetNotifyChannelTypesResponse)(nil)
-var _ json.Unmarshaler = (*GetNotifyChannelTypesResponse)(nil)
 var _ json.Marshaler = (*UpdateNotifyChannelRequest)(nil)
 var _ json.Unmarshaler = (*UpdateNotifyChannelRequest)(nil)
 var _ json.Marshaler = (*UpdateNotifyChannelResponse)(nil)
@@ -37,10 +37,54 @@ var _ json.Marshaler = (*CreateNotifyChannelRequest)(nil)
 var _ json.Unmarshaler = (*CreateNotifyChannelRequest)(nil)
 var _ json.Marshaler = (*CreateNotifyChannelResponse)(nil)
 var _ json.Unmarshaler = (*CreateNotifyChannelResponse)(nil)
+var _ json.Marshaler = (*GetNotifyChannelTypesRequest)(nil)
+var _ json.Unmarshaler = (*GetNotifyChannelTypesRequest)(nil)
+var _ json.Marshaler = (*GetNotifyChannelTypesResponse)(nil)
+var _ json.Unmarshaler = (*GetNotifyChannelTypesResponse)(nil)
+var _ json.Marshaler = (*NotifyChannelTypeResponse)(nil)
+var _ json.Unmarshaler = (*NotifyChannelTypeResponse)(nil)
 var _ json.Marshaler = (*NotifyChannelType)(nil)
 var _ json.Unmarshaler = (*NotifyChannelType)(nil)
+var _ json.Marshaler = (*NotifyChannelProviderType)(nil)
+var _ json.Unmarshaler = (*NotifyChannelProviderType)(nil)
 var _ json.Marshaler = (*NotifyChannel)(nil)
 var _ json.Unmarshaler = (*NotifyChannel)(nil)
+
+// GetNotifyChannelEnabledRequest implement json.Marshaler.
+func (m *GetNotifyChannelEnabledRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyChannelEnabledRequest implement json.Marshaler.
+func (m *GetNotifyChannelEnabledRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetNotifyChannelEnabledResponse implement json.Marshaler.
+func (m *GetNotifyChannelEnabledResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyChannelEnabledResponse implement json.Marshaler.
+func (m *GetNotifyChannelEnabledResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // DeleteNotifyChannelRequest implement json.Marshaler.
 func (m *DeleteNotifyChannelRequest) MarshalJSON() ([]byte, error) {
@@ -109,42 +153,6 @@ func (m *GetNotifyChannelResponse) MarshalJSON() ([]byte, error) {
 
 // GetNotifyChannelResponse implement json.Marshaler.
 func (m *GetNotifyChannelResponse) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// GetNotifyChannelTypesRequest implement json.Marshaler.
-func (m *GetNotifyChannelTypesRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// GetNotifyChannelTypesRequest implement json.Marshaler.
-func (m *GetNotifyChannelTypesRequest) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// GetNotifyChannelTypesResponse implement json.Marshaler.
-func (m *GetNotifyChannelTypesResponse) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// GetNotifyChannelTypesResponse implement json.Marshaler.
-func (m *GetNotifyChannelTypesResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
@@ -258,6 +266,60 @@ func (m *CreateNotifyChannelResponse) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// GetNotifyChannelTypesRequest implement json.Marshaler.
+func (m *GetNotifyChannelTypesRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyChannelTypesRequest implement json.Marshaler.
+func (m *GetNotifyChannelTypesRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetNotifyChannelTypesResponse implement json.Marshaler.
+func (m *GetNotifyChannelTypesResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyChannelTypesResponse implement json.Marshaler.
+func (m *GetNotifyChannelTypesResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// NotifyChannelTypeResponse implement json.Marshaler.
+func (m *NotifyChannelTypeResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// NotifyChannelTypeResponse implement json.Marshaler.
+func (m *NotifyChannelTypeResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // NotifyChannelType implement json.Marshaler.
 func (m *NotifyChannelType) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -271,6 +333,24 @@ func (m *NotifyChannelType) MarshalJSON() ([]byte, error) {
 
 // NotifyChannelType implement json.Marshaler.
 func (m *NotifyChannelType) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// NotifyChannelProviderType implement json.Marshaler.
+func (m *NotifyChannelProviderType) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// NotifyChannelProviderType implement json.Marshaler.
+func (m *NotifyChannelProviderType) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

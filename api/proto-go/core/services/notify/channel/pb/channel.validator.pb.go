@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/erda-project/erda-proto-go/common/pb"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
@@ -20,6 +21,17 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *GetNotifyChannelEnabledRequest) Validate() error {
+	return nil
+}
+func (this *GetNotifyChannelEnabledResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
 func (this *DeleteNotifyChannelRequest) Validate() error {
 	return nil
 }
@@ -33,19 +45,6 @@ func (this *GetNotifyChannelResponse) Validate() error {
 	if this.Data != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
-		}
-	}
-	return nil
-}
-func (this *GetNotifyChannelTypesRequest) Validate() error {
-	return nil
-}
-func (this *GetNotifyChannelTypesResponse) Validate() error {
-	for _, item := range this.Data {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
-			}
 		}
 	}
 	return nil
@@ -87,7 +86,33 @@ func (this *CreateNotifyChannelResponse) Validate() error {
 	}
 	return nil
 }
+func (this *GetNotifyChannelTypesRequest) Validate() error {
+	return nil
+}
+func (this *GetNotifyChannelTypesResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *NotifyChannelTypeResponse) Validate() error {
+	for _, item := range this.Providers {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Providers", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *NotifyChannelType) Validate() error {
+	return nil
+}
+func (this *NotifyChannelProviderType) Validate() error {
 	return nil
 }
 func (this *NotifyChannel) Validate() error {
@@ -97,5 +122,10 @@ func (this *NotifyChannel) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	if this.ChannelProviderType != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ChannelProviderType); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("ChannelProviderType", err)
+		}
+	}
 	return nil
 }

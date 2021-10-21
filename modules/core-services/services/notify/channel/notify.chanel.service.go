@@ -17,6 +17,7 @@ package channel
 import (
 	context "context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,7 +47,10 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 	if req.Type == "" {
 		return nil, pkgerrors.NewMissingParameterError("type")
 	}
-	err := s.ConfigValidate(req.Type, req.Config)
+	if req.ChannelProviderType == "" {
+		return nil, pkgerrors.NewMissingParameterError("channelProviderType")
+	}
+	err := s.ConfigValidate(req.ChannelProviderType, req.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -76,16 +80,18 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 		return nil, err
 	}
 	channel, err := s.NotifyChannelDB.Create(&model.NotifyChannel{
-		Id:        uuid.NewV4().String(),
-		Name:      req.Name,
-		Type:      req.Type,
-		Config:    string(config),
-		ScopeId:   orgId,
-		ScopeType: "org",
-		CreatorId: creatorId,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		IsDeleted: false,
+		Id:              uuid.NewV4().String(),
+		Name:            req.Name,
+		Type:            req.Type,
+		ChannelProvider: req.ChannelProviderType,
+		Config:          string(config),
+		ScopeId:         orgId,
+		ScopeType:       "org",
+		CreatorId:       creatorId,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+		Enable:          false, // default no enable
+		IsDeleted:       false,
 	})
 	if err != nil {
 		return nil, err
@@ -152,8 +158,19 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 	if req.Type != "" {
 		channel.Type = req.Type
 	}
+	if req.ChannelProviderType != "" {
+		channel.ChannelProvider = req.ChannelProviderType
+	}
+	if req.Enable != "" {
+
+		enable, err := strconv.ParseBool(req.Enable)
+		if err != nil {
+			return nil, errors.New("enable parma failed")
+		}
+		channel.Enable = enable
+	}
 	if req.Config != nil {
-		err := s.ConfigValidate(req.Type, req.Config)
+		err := s.ConfigValidate(req.ChannelProviderType, req.Config)
 		if err != nil {
 			return nil, err
 		}
@@ -197,17 +214,34 @@ func (s *notifyChannelService) DeleteNotifyChannel(ctx context.Context, req *pb.
 func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *pb.GetNotifyChannelTypesRequest) (*pb.GetNotifyChannelTypesResponse, error) {
 
 	language := apis.Language(ctx)
-	var types []*pb.NotifyChannelType
-	types = append(types, &pb.NotifyChannelType{
-		Name:        strings.ToLower(pb.Type_ALI_SHORT_MESSAGE.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_ALI_SHORT_MESSAGE.String())),
+
+	var shortMessageProviderTypes []*pb.NotifyChannelProviderType
+	shortMessageProviderTypes = append(shortMessageProviderTypes, &pb.NotifyChannelProviderType{
+		Name:        strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String())),
 	})
-	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
+
+	var types []*pb.NotifyChannelTypeResponse
+	types = append(types, &pb.NotifyChannelTypeResponse{
+		Name:        strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
+		DisplayName: strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
+		Providers:   shortMessageProviderTypes,
+	})
+
+	return &pb.GetNotifyChannelTypesResponse{Data: nil}, nil
+}
+
+func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req *pb.GetNotifyChannelEnabledRequest) (*pb.GetNotifyChannelEnabledResponse, error) {
+	data, err := s.NotifyChannelDB.GetByScopeAndType(req.ScopeId, req.ScopeType, req.Type)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+	return &pb.GetNotifyChannelEnabledResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), data)}, nil
 }
 
 func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) error {
 	switch channelType {
-	case strings.ToLower(pb.Type_ALI_SHORT_MESSAGE.String()):
+	case strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String()):
 		bytes, err := json.Marshal(c)
 		if err != nil {
 			return errors.New("Json parser failed.")
@@ -239,11 +273,15 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		Name:        channel.Type,
 		DisplayName: s.p.I18n.Text(lang, channel.Type),
 	}
+	ncpb.ChannelProviderType = &pb.NotifyChannelProviderType{
+		Name:        channel.ChannelProvider,
+		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
+	}
 	user, err := s.p.bdl.GetCurrentUser(channel.CreatorId)
 	if user != nil && user.Name != "" {
 		ncpb.CreatorName = user.Name
 	}
-
+	ncpb.Enable = channel.Enable
 	layout := "2006-01-02 15:04:05"
 	ncpb.CreateAt = channel.CreatedAt.Format(layout)
 	ncpb.UpdateAt = channel.UpdatedAt.Format(layout)

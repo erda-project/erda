@@ -38,6 +38,25 @@ func (db *NotifyChannelDB) Create(notifyChannel *model.NotifyChannel) (*model.No
 	return notifyChannel, nil
 }
 
+func (db *NotifyChannelDB) GetByScopeAndType(scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
+	channel := &model.NotifyChannel{}
+	err := db.db().
+		Where("`scope_id` = ?", scopeId).
+		Where("`scope_type` = ?", scopeType).
+		Where("`type` = ?", channelType).
+		Where("`enable` = ?", true).
+		Where("`is_deleted` = ?", false).
+		Find(channel).
+		Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return channel, nil
+}
+
 func (db *NotifyChannelDB) GetById(id string) (*model.NotifyChannel, error) {
 	channel := &model.NotifyChannel{}
 	err := db.db().Where("`id` = ?", id).Where("`is_deleted` = ?", false).Find(channel).Error

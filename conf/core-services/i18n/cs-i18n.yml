@@ -1,4 +1,6 @@
 en:
     ali_short_message: "Ali Short Message Service"
+    short_message: "Short Message"
 zh:
     ali_short_message: "阿里云短信服务"
+    short_message: "短信"

@@ -16,6 +16,7 @@ service-register:
 i18n:
   common:
     - conf/core-services/i18n/cs-i18n.yml
+    - conf/core-services/i18n/i18n.yaml
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
