@@ -414,7 +414,7 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 			"prodCPU":     calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
 			"prodMem":     calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
 		}
-		now := strconv.FormatInt(time.Now().Unix(), 10)
+		now := time.Now().Format("2006-01-02 15:04:05")
 		audit := apistructs.Audit{
 			UserID:       userID,
 			ScopeType:    apistructs.OrgScope,
