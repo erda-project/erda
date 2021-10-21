@@ -349,81 +349,94 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 		return nil, errors.Errorf("failed to update project")
 	}
 
-	// create or update quota
-	if updateReq.ResourceConfigs != nil {
-		var (
-			oldQuota = new(model.ProjectQuota)
-			quota    = model.ProjectQuota{
-				ProjectID:          uint64(projectID),
-				ProjectName:        updateReq.Name,
-				ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
-				StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
-				TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
-				DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
-				ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-				ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
-				StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-				StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
-				TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
-				TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
-				DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
-				DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
-				CreatorID:          userID,
-				UpdaterID:          userID,
-			}
-		)
-		if err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error; err == nil {
-			quota.ID = oldQuota.ID
-			quota.CreatorID = oldQuota.CreatorID
-			err = tx.Debug().Save(&quota).Error
-		} else {
-			err = tx.Debug().Create(&quota).Error
-		}
-		if err != nil {
-			logrus.WithError(err).Errorln("failed to update project quota")
-			return nil, errors.Errorf("failed to update project quota: %v", err)
-		}
-
-		if isQuotaChanged(*oldQuota, quota) {
-			var orgName = strconv.FormatInt(orgID, 10)
-			if org, err := p.db.GetOrg(orgID); err == nil {
-				orgName = fmt.Sprintf("%s(%s)", org.Name, org.DisplayName)
-			}
-			auditCtx := map[string]interface{}{
-				"orgName":     orgName,
-				"projectName": project.Name,
-				"devCPU":      calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
-				"devMem":      calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
-				"testCPU":     calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
-				"testMem":     calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
-				"stagingCPU":  calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
-				"stagingMem":  calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
-				"prodCPU":     calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
-				"prodMem":     calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
-			}
-
-			now := strconv.FormatInt(time.Now().Unix(), 10)
-			if err = p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
-				Audit: apistructs.Audit{
-					UserID:       userID,
-					ScopeType:    apistructs.OrgScope,
-					ScopeID:      uint64(orgID),
-					OrgID:        uint64(orgID),
-					ProjectID:    uint64(projectID),
-					Context:      auditCtx,
-					TemplateName: "updateQuota",
-					Result:       "success",
-					StartTime:    now,
-					EndTime:      now,
-				},
-			}); err != nil {
-				logrus.Errorf("failed to create quota audit event when update project %s, %v", project.Name, err)
-			}
-		} else {
-			logrus.Infof("project %s quota is not changed, skip audit", project.Name)
-		}
+	if updateReq.ResourceConfigs == nil {
+		tx.Commit()
+		return &project, nil
 	}
-	tx.Commit()
+
+	// create or update quota
+	var (
+		oldQuota = new(model.ProjectQuota)
+		quota    = model.ProjectQuota{
+			ProjectID:          uint64(projectID),
+			ProjectName:        updateReq.Name,
+			ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
+			StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
+			TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
+			DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
+			ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+			ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
+			StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+			StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
+			TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
+			TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
+			DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
+			DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
+			CreatorID:          userID,
+			UpdaterID:          userID,
+		}
+	)
+	if err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error; err == nil {
+		quota.ID = oldQuota.ID
+		quota.CreatorID = oldQuota.CreatorID
+		err = tx.Debug().Save(&quota).Error
+	} else {
+		err = tx.Debug().Create(&quota).Error
+	}
+	if err != nil {
+		logrus.WithError(err).Errorln("failed to update project quota")
+		return nil, errors.Errorf("failed to update project quota: %v", err)
+	}
+	if err = tx.Commit().Error; err != nil {
+		err = errors.Wrap(err, "failed commit to update project and quota")
+		logrus.WithError(err).Errorln()
+		return nil, err
+	}
+
+	// audit
+	go func() {
+		if !isQuotaChanged(*oldQuota, quota) {
+			return
+		}
+		var orgName = strconv.FormatInt(orgID, 10)
+		if org, err := p.db.GetOrg(orgID); err == nil {
+			orgName = fmt.Sprintf("%s(%s)", org.Name, org.DisplayName)
+		}
+		auditCtx := map[string]interface{}{
+			"orgName":     orgName,
+			"projectName": project.Name,
+			"devCPU":      calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
+			"devMem":      calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
+			"testCPU":     calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
+			"testMem":     calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
+			"stagingCPU":  calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
+			"stagingMem":  calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
+			"prodCPU":     calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
+			"prodMem":     calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
+		}
+		now := strconv.FormatInt(time.Now().Unix(), 10)
+		audit := apistructs.Audit{
+			UserID:       userID,
+			ScopeType:    apistructs.OrgScope,
+			ScopeID:      uint64(orgID),
+			OrgID:        uint64(orgID),
+			ProjectID:    uint64(projectID),
+			Context:      auditCtx,
+			TemplateName: "updateQuota",
+			Result:       "success",
+			StartTime:    now,
+			EndTime:      now,
+		}
+		auditRecord, err := convertAuditCreateReq2Model(audit)
+		if err != nil {
+			logrus.WithError(err).WithField("audit", audit).
+				Errorf("failed to convertAuditCreateReq2Model")
+			return
+		}
+		if err = p.db.CreateAudit(auditRecord); err != nil {
+			logrus.Errorf("failed to create quota audit event when update project %s, %v", project.Name, err)
+		}
+	}()
 
 	return &project, nil
 }
@@ -472,6 +485,41 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 	project.IsPublic = updateReq.IsPublic
 
 	return nil
+}
+
+func convertAuditCreateReq2Model(req apistructs.Audit) (*model.Audit, error) {
+	context, err := json.Marshal(req.Context)
+	if err != nil {
+		return nil, err
+	}
+	startAt, err := time.ParseInLocation("2006-01-02 15:04:05", req.StartTime, time.Local)
+	if err != nil {
+		return nil, err
+	}
+	endAt, err := time.ParseInLocation("2006-01-02 15:04:05", req.EndTime, time.Local)
+	if err != nil {
+		return nil, err
+	}
+	audit := &model.Audit{
+		StartTime:    startAt,
+		EndTime:      endAt,
+		UserID:       req.UserID,
+		ScopeType:    req.ScopeType,
+		ScopeID:      req.ScopeID,
+		FDPProjectID: req.FDPProjectID,
+		AppID:        req.AppID,
+		OrgID:        req.OrgID,
+		ProjectID:    req.ProjectID,
+		Context:      string(context),
+		TemplateName: req.TemplateName,
+		AuditLevel:   req.AuditLevel,
+		Result:       req.Result,
+		ErrorMsg:     req.ErrorMsg,
+		ClientIP:     req.ClientIP,
+		UserAgent:    req.UserAgent,
+	}
+
+	return audit, nil
 }
 
 func patchProjectQuota(quota *model.ProjectQuota, userID string, updateReq *apistructs.ProjectUpdateBody) {
