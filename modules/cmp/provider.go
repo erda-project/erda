@@ -18,7 +18,6 @@ package cmp
 import (
 	"context"
 	"embed"
-	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"runtime"
 	"time"
 
@@ -31,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
