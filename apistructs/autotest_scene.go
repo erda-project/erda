@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -100,6 +101,11 @@ type AutoTestSceneStep struct {
 	UpdaterID string              `json:"updaterID"`
 	Children  []AutoTestSceneStep // 并行子节点
 	APISpecID uint64              `json:"apiSpecID"` // api集市id
+}
+
+func (a *AutoTestSceneStep) ToJsonCopyText() string {
+	b, _ := json.Marshal(a)
+	return string(b)
 }
 
 type AutotestSceneRequest struct {
