@@ -16,28 +16,44 @@ package bundle
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) FetchQuota(req *apistructs.GetQuotaOnClustersRequest) (*apistructs.GetQuotaOnClustersResponse, error) {
+func (b *Bundle) FetchQuotaOnClusters(orgID int64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
-	var rsp = apistructs.GetQuotaOnClustersResponse{}
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/projects-quota")).Header(httputil.OrgHeader, req.OrgID).
-		Do().JSON(req)
+	type response struct {
+		apistructs.Header
+		Data *apistructs.GetQuotaOnClustersResponse
+	}
+	var (
+		resp   response
+		params = make(url.Values)
+	)
+	for _, clusterName := range clusterNames {
+		params.Add("clusterName", clusterName)
+	}
+	httpResp, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/projects-quota")).
+		Params(params).
+		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Do().
+		JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrListFileRecord.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return nil, toAPIError(httpResp.StatusCode(), rsp.Error)
+		return nil, toAPIError(httpResp.StatusCode(), resp.Error)
 	}
-	return &rsp, nil
+	return resp.Data, nil
 }
 
 func (b *Bundle) ListOrgNamespace(req *apistructs.OrgClustersNamespaceReq) (*apistructs.OrgClustersNamespaceResp, error) {

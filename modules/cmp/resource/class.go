@@ -87,7 +87,7 @@ func (r *Resource) GetPie(ordId string, userId string, request *apistructs.Class
 	req := &apistructs.GetQuotaOnClustersRequest{}
 	req.ClusterNames = request.ClusterNames
 	req.OrgID = ordId
-	resp, err := bdl.Bdl.FetchQuota(req)
+	resp, err := bdl.Bdl.FetchQuotaOnClusters(req)
 	if err != nil {
 		return
 	}

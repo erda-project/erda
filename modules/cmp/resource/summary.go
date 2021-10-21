@@ -135,7 +135,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	// 4. get all quota
 	quotaReq := &apistructs.GetQuotaOnClustersRequest{}
 	quotaReq.ClusterNames = names
-	quota, err := bdl.Bdl.FetchQuota(quotaReq)
+	quota, err := bdl.Bdl.FetchQuotaOnClusters(quotaReq)
 	if err != nil {
 		return
 	}
