@@ -582,7 +582,7 @@ func TestAdapt_GetOrgAlertDetail(t *testing.T) {
 	})
 	monkey.Patch((*Adapt).ValueMapToInterfaceMap, func(_ *Adapt, input map[string]*structpb.Value) map[string]interface{} {
 		return map[string]interface{}{
-			"cluster_name": []string{"erda-dev", "erda-test"},
+			"cluster_name": []interface{}{"erda-dev", "erda-test"},
 		}
 	})
 	a := &Adapt{}
