@@ -68,6 +68,23 @@ groups:
           name: Thread
         - id: application_jvm_class_loader
           name: Class Loader
+        - id: apm_component_tomcat
+          name: Tomcat
+          children:
+            - id: apm_component_tomcat_thread_pool_max
+              name: ThreadPool Max Threads
+            - id: apm_component_tomcat_thread_pool_busy
+              name: ThreadPool Busy Threads
+            - id: apm_component_tomcat_thread_pool_connection_count
+              name: ThreadPool Connection Count
+            - id: apm_component_tomcat_thread_pool_max_connections
+              name: ThreadPool Max Connection
+            - id: apm_component_tomcat_thread_pool_accept_count
+              name: ThreadPool Accept Count
+            - id: apm_component_tomcat_thread_pool_keep_alive_count
+              name: ThreadPool KeepAlive Count
+            - id: apm_component_tomcat_other
+              name: Other Tomcat Metrics
     - id: application_nodejs
       name: NodeJS
       children:
@@ -201,3 +218,48 @@ mapping:
       - name: ta_browser
     ta_document:
       - name: ta_document
+    # Tomcat Metrics
+    apm_component_tomcat_thread_pool_max:
+      - name: apm_component_tomcat
+        fields: [max_threads]
+        filters:
+          - tag: field
+            op: eq
+            value: "max_threads"
+    apm_component_tomcat_thread_pool_busy:
+      - name: apm_component_tomcat
+        fields: [threads_busy]
+        filters:
+          - tag: field
+            op: eq
+            value: "threads_busy"
+    apm_component_tomcat_thread_pool_connection_count:
+      - name: apm_component_tomcat
+        fields: [connection_count]
+        filters:
+          - tag: field
+            op: eq
+            value: "connection_count"
+    apm_component_tomcat_thread_pool_max_connections:
+      - name: apm_component_tomcat
+        fields: [max_connections]
+        filters:
+          - tag: field
+            op: eq
+            value: "max_connections"
+    apm_component_tomcat_thread_pool_accept_count:
+      - name: apm_component_tomcat
+        fields: [accept_count]
+        filters:
+          - tag: field
+            op: eq
+            value: "accept_count"
+    apm_component_tomcat_thread_pool_keep_alive_count:
+      - name: apm_component_tomcat
+        fields: [keep_alive_count]
+        filters:
+          - tag: field
+            op: eq
+            value: "keep_alive_count"
+    apm_component_tomcat_other:
+      - name: apm_component_tomcat
