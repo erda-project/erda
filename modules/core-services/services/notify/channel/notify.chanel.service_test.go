@@ -341,3 +341,49 @@ func Test_notifyChannelService_ConfigValidate(t *testing.T) {
 		})
 	}
 }
+
+func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetNotifyChannelEnabledRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.GetNotifyChannelEnabledRequest{ScopeId: "", ScopeType: "", Type: "xx"}}, true},
+		{"case2", args{req: &pb.GetNotifyChannelEnabledRequest{ScopeId: "xx", ScopeType: "", Type: ""}}, true},
+		{"case3", args{req: &pb.GetNotifyChannelEnabledRequest{ScopeId: "error", ScopeType: "xx", Type: "xx"}}, true},
+		{"case4", args{req: &pb.GetNotifyChannelEnabledRequest{ScopeId: "xx", ScopeType: "xx", Type: "xx"}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+				return i18n.LanguageCodes{{Code: "zh"}}
+			})
+			var ncdb *db.NotifyChannelDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
+				if scopeId == "error" {
+					return nil, errors.New("error")
+				}
+				return &model.NotifyChannel{Id: "test"}, nil
+			})
+			var ncs *notifyChannelService
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+				nc := pb.NotifyChannel{}
+				err := copier.CopyWithOption(&nc, channel, copier.Option{IgnoreEmpty: true, DeepCopy: true})
+				if err != nil {
+					return nil
+				}
+				return &nc
+			})
+			s := &notifyChannelService{}
+			_, err := s.GetNotifyChannelEnabled(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNotifyChannelEnabled() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
