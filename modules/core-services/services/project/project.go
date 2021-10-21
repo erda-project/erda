@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -44,9 +45,10 @@ import (
 
 // Project 资源对象操作封装
 type Project struct {
-	db  *dao.DBClient
-	uc  *ucauth.UCClient
-	bdl *bundle.Bundle
+	db    *dao.DBClient
+	uc    *ucauth.UCClient
+	bdl   *bundle.Bundle
+	trans i18n.Translator
 
 	clusterResourceClient dashboardPb.ClusterResourceServer
 }
@@ -85,9 +87,16 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
-		p.clusterResourceClient = client
+		p.clusterResourceClient = cli
+	}
+}
+
+// WithI18n set the translator
+func WithI18n(translator i18n.Translator) Option {
+	return func(p *Project) {
+		p.trans = translator
 	}
 }
 
@@ -144,7 +153,6 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		clusterConfig, _ = json.Marshal(createReq.ClusterConfig)
 	}
 
-	// Todo: 项目回滚点是什么东西
 	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -184,8 +192,8 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		OrgID:          int64(createReq.OrgID),
 		UserID:         userID,
 		DDHook:         createReq.DdHook,
-		ClusterConfig:  string(clusterConfig),  // todo: 查清楚哪里用到的这两个字段
-		RollbackConfig: string(rollbackConfig), // todo:
+		ClusterConfig:  string(clusterConfig),
+		RollbackConfig: string(rollbackConfig),
 		CpuQuota:       createReq.CpuQuota,
 		MemQuota:       createReq.MemQuota,
 		Functions:      string(functions),
@@ -276,9 +284,9 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 }
 
 // UpdateWithEvent 更新项目 & 发送事件
-func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
+func (p *Project) UpdateWithEvent(orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
 	// 更新项目
-	project, err := p.Update(projectID, userID, updateReq)
+	project, err := p.Update(orgID, projectID, userID, updateReq)
 	if err != nil {
 		return err
 	}
@@ -304,13 +312,20 @@ func (p *Project) UpdateWithEvent(projectID int64, userID string, updateReq *api
 }
 
 // Update 更新项目
-func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+	data, _ := json.Marshal(updateReq)
+	logrus.Infof("updateReq: %s", string(data))
 	if updateReq.ResourceConfigs != nil {
+		updateReq.ClusterConfig = map[string]string{
+			"PROD":    updateReq.ResourceConfigs.PROD.ClusterName,
+			"STAGING": updateReq.ResourceConfigs.STAGING.ClusterName,
+			"TEST":    updateReq.ResourceConfigs.TEST.ClusterName,
+			"DEV":     updateReq.ResourceConfigs.DEV.ClusterName,
+		}
 		if err := updateReq.ResourceConfigs.Check(); err != nil {
 			return nil, err
 		}
 	}
-	// todo: 回滚点是干什么的
 	if err := checkRollbackConfig(&updateReq.RollbackConfig); err != nil {
 		return nil, err
 	}
@@ -338,7 +353,7 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 		var (
 			oldQuota = new(model.ProjectQuota)
 			quota    = model.ProjectQuota{
-				ProjectID:          updateReq.ID,
+				ProjectID:          uint64(projectID),
 				ProjectName:        updateReq.Name,
 				ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
 				StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
@@ -367,10 +382,59 @@ func (p *Project) Update(projectID int64, userID string, updateReq *apistructs.P
 			logrus.WithError(err).Errorln("failed to update project quota")
 			return nil, errors.Errorf("failed to update project quota: %v", err)
 		}
+
+		if isQuotaChanged(*oldQuota, quota) {
+			org, err := p.bdl.GetOrg(orgID)
+			if err != nil {
+				return nil, errors.Errorf("failed to get org by id %d, %v", orgID, err)
+			}
+			auditCtx := map[string]interface{}{
+				"orgName":     org.Name,
+				"projectName": project.Name,
+				"devCPU":      calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
+				"devMem":      calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
+				"testCPU":     calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
+				"testMem":     calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
+				"stagingCPU":  calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
+				"stagingMem":  calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
+				"prodCPU":     calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
+				"prodMem":     calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
+			}
+
+			now := strconv.FormatInt(time.Now().Unix(), 10)
+			if err = p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+				Audit: apistructs.Audit{
+					UserID:       userID,
+					ScopeType:    apistructs.OrgScope,
+					ScopeID:      uint64(orgID),
+					OrgID:        uint64(orgID),
+					ProjectID:    uint64(projectID),
+					Context:      auditCtx,
+					TemplateName: "updateQuota",
+					Result:       "success",
+					StartTime:    now,
+					EndTime:      now,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create quota audit event when update project %s, %v", project.Name, err)
+			}
+		} else {
+			logrus.Infof("project %s quota is not changed, skip audit", project.Name)
+		}
 	}
 	tx.Commit()
 
 	return &project, nil
+}
+
+func isQuotaChanged(oldQuota, newQuota model.ProjectQuota) bool {
+	if oldQuota.DevCPUQuota != newQuota.DevCPUQuota || oldQuota.DevMemQuota != newQuota.DevMemQuota ||
+		oldQuota.TestCPUQuota != newQuota.TestCPUQuota || oldQuota.TestMemQuota != newQuota.TestMemQuota ||
+		oldQuota.StagingCPUQuota != newQuota.StagingCPUQuota || oldQuota.StagingMemQuota != newQuota.StagingMemQuota ||
+		oldQuota.ProdCPUQuota != newQuota.ProdCPUQuota || oldQuota.ProdMemQuota != newQuota.ProdMemQuota {
+		return true
+	}
+	return false
 }
 
 func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
@@ -499,6 +563,8 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 
 // Get 获取项目
 func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -633,7 +699,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
 	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
 		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
-		var source *apistructs.ResourceConfigInfo
 		for _, clusterItem := range clustersResources.List {
 			if !clusterItem.GetSuccess() {
 				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
@@ -642,20 +707,21 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			}
 			for _, host := range clusterItem.Hosts {
 				for _, label := range host.Labels {
+					var source *apistructs.ResourceConfigInfo
 					switch strings.ToLower(label) {
 					case "dice/workspace-prod=true":
 						source = projectDTO.ResourceConfig.PROD
 					case "dice/workspace-staging=true":
 						source = projectDTO.ResourceConfig.STAGING
-					case "dice/worksapce-test=true":
+					case "dice/workspace-test=true":
 						source = projectDTO.ResourceConfig.TEST
 					case "dice/workspace-dev=true":
 						source = projectDTO.ResourceConfig.DEV
 					}
-				}
-				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
-					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+					if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
+						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+					}
 				}
 			}
 		}
@@ -679,7 +745,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
 		}
 		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
-			source.Tips = "该环境在本集群的实际可用资源已小于配额，可能资源已被挤占，请询管理员合理分配项目资源"
+			source.Tips = p.trans.Text(langCodes, "AvailableIsLessThanQuota")
 		}
 	}
 
@@ -1133,30 +1199,6 @@ func (p *Project) UpdateProjectActiveTime(req *apistructs.ProjectActiveTimeUpdat
 	return nil
 }
 
-// 检查cluster config合法性
-// Deprecated
-func checkClusterConfig(clusterConfig map[string]string) error {
-	// DEV/TEST/STAGING/PROD四个环境集群配置
-	l := len(clusterConfig)
-	// 空则不配置
-	if l == 0 {
-		return nil
-	}
-
-	// check
-	if l != 4 {
-		return errors.Errorf("invalid param(clusterConfig is empty)")
-	}
-	for key := range clusterConfig {
-		switch key {
-		case string(types.DevWorkspace), string(types.TestWorkspace), string(types.StagingWorkspace),
-			string(types.ProdWorkspace):
-		default:
-			return errors.Errorf("invalid param, cluster config: %s", key)
-		}
-	}
-	return nil
-}
 func checkRollbackConfig(rollbackConfig *map[string]int) error {
 	// DEV/TEST/STAGING/PROD
 	l := len(*rollbackConfig)
@@ -1196,7 +1238,6 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 	return checkRollbackConfig(rollbackConfig)
 }
 
-// todo: 这个函数影响的范围
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {

@@ -381,6 +381,10 @@ type ClusterResources struct {
 	MemAvailable float64
 	MemQuotaRate float64
 	MemRequest   float64
+	// Nodes is nums of nodes
+	Nodes int
+	// Tips is the tip for the cluster
+	Tips string
 }
 
 type OrgNexusGetRequest struct {

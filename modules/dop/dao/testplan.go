@@ -173,8 +173,8 @@ func (client *DBClient) PagingTestPlan(req apistructs.TestPlanPagingRequest) (ui
 	if req.IsArchived != nil {
 		sql = sql.Where("is_archived = ?", req.IsArchived)
 	}
-	if req.IterationID != nil {
-		sql = sql.Where("iteration_id = ?", req.IterationID)
+	if len(req.IterationIDs) > 0 {
+		sql = sql.Where("iteration_id IN (?)", req.IterationIDs)
 	}
 	if err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).
 		Order("`id` DESC").Find(&testPlans).

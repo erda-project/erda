@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -47,6 +48,7 @@ type Org struct {
 	uc       *ucauth.UCClient
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
+	trans    i18n.Translator
 
 	clusterResourceClient dashboardPb.ClusterResourceServer
 }
@@ -92,9 +94,16 @@ func WithRedisClient(cli *redis.Client) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 	return func(o *Org) {
-		o.clusterResourceClient = client
+		o.clusterResourceClient = cli
+	}
+}
+
+// WithI18n sets the translator
+func WithI18n(translator i18n.Translator) Option {
+	return func(o *Org) {
+		o.trans = translator
 	}
 }
 
@@ -574,6 +583,8 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 }
 
 func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+
 	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
 	if err != nil {
 		return nil, err
@@ -591,6 +602,8 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 
 	// 初始化所有集群的总资源 【】
 	var (
+		// 集群 nodes 数量
+		clusterNodes = make(map[string]int)
 		// 集群里的 allocatable 资源
 		clustersAllocatable = make(map[string]*calcu.Calculator)
 		// 集群里被 request 的资源
@@ -621,7 +634,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 			request = calcu.New(cluster.GetClusterName())
 			clustersRequest[cluster.GetClusterName()] = request
 		}
-
+		clusterNodes[cluster.GetClusterName()] = len(cluster.GetHosts())
 		for _, host := range cluster.Hosts {
 			workspaces := extractWorkspacesFromLabels(host.GetLabels())
 			allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
@@ -631,7 +644,9 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		}
 	}
 	// 可分配和总 allocatable 是一致的
-	copyClustersResource(clustersAllocatable, clusterAvailable)
+	for k, v := range clustersAllocatable {
+		clusterAvailable[k] = v.Copy()
+	}
 
 	// 查出所有项目的 quota 记录
 	var projectsQuota []*model.ProjectQuota
@@ -644,7 +659,7 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		for _, project := range projectsQuota {
 			if available, ok := clusterAvailable[project.GetClusterName(workspaceStr)]; ok {
 				available.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
-				available.CPU.Quota(workspace, project.GetMemQuota(workspaceStr))
+				available.Mem.Quota(workspace, project.GetMemQuota(workspaceStr))
 			}
 		}
 	}
@@ -671,9 +686,35 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				MemAvailable:   calcu.ByteToGibibyte(available.Mem.TotalForWorkspace(workspace)),
 				MemQuotaRate:   0,
 				MemRequest:     calcu.ByteToGibibyte(request.Mem.TotalForWorkspace(workspace)),
+				Nodes:          clusterNodes[clusterName],
 			}
-			resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
-			resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+			if resource.CPUAllocatable == 0 && resource.MemAllocatable == 0 {
+				resource.Tips = o.trans.Text(langCodes, "NoResourceForTheWorkspace")
+				if resource.Nodes == 0 {
+					resource.Tips = o.trans.Text(langCodes, "NoNodesInTheCluster")
+				}
+			} else {
+				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
+				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+				switch {
+				case !available.CPU.StatusOK(workspace) && !available.Mem.StatusOK(workspace):
+					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"),
+						calcu.MillcoreToCore(available.CPU.AlreadyQuota(workspace)), calcu.ByteToGibibyte(available.Mem.AlreadyQuota(workspace)),
+						calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace)), calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace)),
+					)
+				case !available.CPU.StatusOK(workspace):
+					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"),
+						calcu.MillcoreToCore(available.CPU.AlreadyQuota(workspace)),
+						calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace)),
+					)
+				case !available.Mem.StatusOK(workspace):
+					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"),
+						calcu.ByteToGibibyte(available.Mem.AlreadyQuota(workspace)),
+						calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace)),
+					)
+				}
+			}
+
 			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
 			resourceInfo.TotalCPU += resource.CPUAllocatable
 			resourceInfo.TotalMem += resource.MemAllocatable
@@ -706,13 +747,6 @@ func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
 		w = append(w, k)
 	}
 	return w
-}
-
-func copyClustersResource(src, dst map[string]*calcu.Calculator) {
-	for k, v := range src {
-		vv := *v
-		dst[k] = &vv
-	}
 }
 
 // ListAllOrgClusterRelation 获取所有企业对应集群关系
