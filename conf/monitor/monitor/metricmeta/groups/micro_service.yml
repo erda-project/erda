@@ -261,3 +261,5 @@ mapping:
           - tag: field
             op: eq
             value: "keep_alive_count"
+    apm_component_tomcat_other:
+      - name: apm_component_tomcat
