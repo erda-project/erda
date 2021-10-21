@@ -46,10 +46,10 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 		wantErr bool
 	}{
 		{"case1", args{req: &pb.CreateNotifyChannelRequest{Name: "", Type: "ali_short_message", Config: nil}}, true},
-		{"case1", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "", Config: map[string]*structpb.Value{}}}, true},
+		{"case2", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "", Config: map[string]*structpb.Value{}}}, true},
 		{"case3", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "error", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case4", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case5", args{req: &pb.CreateNotifyChannelRequest{Name: "create_error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case4", args{req: &pb.CreateNotifyChannelRequest{Name: "create_error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case5", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "ali_short_message", Config: nil}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -69,7 +69,7 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 				if name == "" {
 					return nil, errors.New("err")
 				}
-				if name == "" {
+				if name == "test" {
 					return &model.NotifyChannel{Id: "xx", Name: name}, nil
 				}
 				return nil, nil
@@ -165,18 +165,18 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{req: &pb.UpdateNotifyChannelRequest{Name: "create_error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case2", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "create_error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case3", args{req: &pb.UpdateNotifyChannelRequest{Id: "nil", Name: "create_error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case4", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case5", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case6", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "exist", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case7", args{req: &pb.UpdateNotifyChannelRequest{Id: "not_same", Name: "current", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case8", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "current", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case9", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "", Config: nil}}, false},
-		{"case10", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "ali_short_message", Config: nil}}, false},
-		{"case11", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case12", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "test", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case1", args{req: &pb.UpdateNotifyChannelRequest{Name: "create_error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case2", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "create_error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case3", args{req: &pb.UpdateNotifyChannelRequest{Id: "nil", Name: "create_error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case4", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
+		{"case5", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case6", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "exist", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case7", args{req: &pb.UpdateNotifyChannelRequest{Id: "not_same", Name: "current", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case8", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "current", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
+		{"case9", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "", ChannelProviderType: "ali_short_message", Config: nil}}, false},
+		{"case10", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "short_message", ChannelProviderType: "ali_short_message", Config: nil}}, false},
+		{"case11", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
+		{"case12", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "test", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -382,6 +382,77 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 			_, err := s.GetNotifyChannelEnabled(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetNotifyChannelEnabled() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.UpdateNotifyChannelEnabledRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: ""}}, true},
+		{"case2", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "error", Enable: true}}, true},
+		{"case3", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "nil", Enable: false}}, true},
+		{"case4", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "type_error", Enable: true}}, true},
+		{"case5", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "type_exist", Enable: true}}, true},
+		{"case6", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "update_error", Enable: true}}, true},
+		{"case7", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "test", Enable: false}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+				return i18n.LanguageCodes{{Code: "zh"}}
+			})
+			var ncdb *db.NotifyChannelDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+				if id == "error" {
+					return nil, errors.New("error")
+				}
+				if id == "nil" {
+					return nil, nil
+				}
+				if id == "type_error" {
+					return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "type_error", IsEnabled: false}, nil
+				}
+				if id == "type_exist" {
+					return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "type_exist", IsEnabled: false}, nil
+				}
+
+				if id == "update_error" {
+					return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "update_error", IsEnabled: false}, nil
+				}
+				return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "test", IsEnabled: false}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetCountByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (int64, error) {
+				if channelType == "type_error" {
+					return 0, errors.New("error")
+				}
+				if channelType == "type_exist" {
+					return 1, nil
+				}
+				return 0, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "UpdateById", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
+				if notifyChannel.Type == "update_error" {
+					return nil, errors.New("error")
+				}
+				return notifyChannel, nil
+			})
+
+			s := &notifyChannelService{}
+			_, err := s.UpdateNotifyChannelEnabled(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UpdateNotifyChannelEnabled() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

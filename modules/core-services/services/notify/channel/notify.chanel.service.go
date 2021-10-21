@@ -244,7 +244,16 @@ func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req 
 
 func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, req *pb.UpdateNotifyChannelEnabledRequest) (*pb.UpdateNotifyChannelEnabledResponse, error) {
 
+	if req.Id == "" {
+		return nil, pkgerrors.NewMissingParameterError("id")
+	}
 	channel, err := s.NotifyChannelDB.GetById(req.Id)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+	if channel == nil {
+		return nil, errors.New(fmt.Sprintf("not found channel by id (%s)", req.Id))
+	}
 
 	if channel.IsEnabled == false && req.Enable == true {
 		enabledCount, err := s.NotifyChannelDB.GetCountByScopeAndType(channel.ScopeId, channel.ScopeType, channel.Type)
@@ -283,6 +292,9 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 }
 
 func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+	if channel == nil {
+		return nil
+	}
 	ncpb := pb.NotifyChannel{}
 	err := copier.CopyWithOption(&ncpb, &channel, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 	if err != nil {
