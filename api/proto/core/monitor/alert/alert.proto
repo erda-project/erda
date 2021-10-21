@@ -9,13 +9,6 @@ import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/openapi.proto";
 
 service AlertService {
-  option (erda.common.openapi_service) = {
-    service: "monitor",
-    auth: {
-      check_login: true,
-      check_token: true,
-    }
-  };
   rpc QueryCustomizeMetric (QueryCustomizeMetricRequest) returns (QueryCustomizeMetricResponse) {
     option (google.api.http) = {
       get: "/api/customize/alerts/metrics",
@@ -252,19 +245,13 @@ service AlertService {
     };
   }
   rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/alerts/conditions"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/alerts/conditions"
     };
   }
   rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/alerts/conditions/value"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/alerts/conditions/value"
     };
   }
 }

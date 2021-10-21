@@ -1075,3 +1075,50 @@ func (a *alertService) DashboardPreview(ctx context.Context, request *alert.Dash
 	}
 	return result, nil
 }
+
+func (a *alertService) GetAlertConditions(ctx context.Context, request *alert.GetAlertConditionsRequest) (*alert.GetAlertConditionsResponse, error) {
+	conditionReq := &monitor.GetAlertConditionsRequest{
+		ScopeType: request.ScopeType,
+	}
+	result, err := a.p.Monitor.GetAlertConditions(ctx, conditionReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	data, err := json.Marshal(result.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	resp := &alert.GetAlertConditionsResponse{
+		Data: make([]*monitor.Conditions, 0),
+	}
+	err = json.Unmarshal(data, &resp.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return resp, nil
+}
+
+func (a *alertService) GetAlertConditionsValue(ctx context.Context, request *alert.GetAlertConditionsValueRequest) (*alert.GetAlertConditionsValueResponse, error) {
+	conditionReq := &monitor.GetAlertConditionsValueRequest{
+		ProjectId:   request.ProjectId,
+		TerminusKey: request.TerminusKey,
+		ScopeType:   request.ScopeType,
+	}
+	context := utils.NewContextWithHeader(ctx)
+	result, err := a.p.Monitor.GetAlertConditionsValue(context, conditionReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	data, err := json.Marshal(result.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	resp := &alert.GetAlertConditionsValueResponse{
+		Data: make([]*monitor.AlertConditionsValue, 0),
+	}
+	err = json.Unmarshal(data, &resp.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return resp, nil
+}

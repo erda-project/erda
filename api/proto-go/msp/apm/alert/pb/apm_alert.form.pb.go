@@ -67,6 +67,10 @@ var _ urlenc.URLValuesUnmarshaler = (*UpdateAlertRecordIssueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateAlertRecordIssueResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DashboardPreviewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DashboardPreviewResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueResponse)(nil)
 
 // QueryAlertRuleRequest implement urlenc.URLValuesUnmarshaler.
 func (m *QueryAlertRuleRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -2209,5 +2213,45 @@ func (m *DashboardPreviewResponse) UnmarshalURLValues(prefix string, values url.
 			}
 		}
 	}
+	return nil
+}
+
+// GetAlertConditionsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeType":
+				m.ScopeType = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertConditionsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetAlertConditionsValueRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectId":
+				m.ProjectId = vals[0]
+			case "terminusKey":
+				m.TerminusKey = vals[0]
+			case "scopeType":
+				m.ScopeType = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertConditionsValueResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertConditionsValueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

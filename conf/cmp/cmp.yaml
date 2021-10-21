@@ -79,6 +79,10 @@ grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.core.monitor.metric-client:
 
+grpc-client@erda.core.monitor.alert:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.alert-client:
+
 # core service credential
 grpc-client@erda.core.services.authentication.credentials.accesskey:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
