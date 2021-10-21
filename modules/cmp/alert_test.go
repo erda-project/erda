@@ -17,17 +17,17 @@ package cmp
 import (
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/types/known/structpb"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 )
 
-//go:generate mockgen -destination=./alert_register_test.go -package cmp github.com/erda-project/erda-infra/pkg/transport Register
-//go:generate mockgen -destination=./alert_monitor_test.go -package cmp github.com/erda-project/erda-proto-go/core/monitor/alert/pb AlertServiceServer
+////go:generate mockgen -destination=./alert_register_test.go -package cmp github.com/erda-project/erda-infra/pkg/transport Register
+////go:generate mockgen -destination=./alert_monitor_test.go -package cmp github.com/erda-project/erda-proto-go/core/monitor/alert/pb AlertServiceServer
 func Test_provider_GetAlertConditions(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

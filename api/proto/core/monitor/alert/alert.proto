@@ -244,16 +244,8 @@ service AlertService {
       put: "/api/org-alert-records/{groupId}/issues",
     };
   }
-  rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {
-    option (google.api.http)     = {
-      get: "/api/alerts/conditions"
-    };
-  }
-  rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
-    option (google.api.http)     = {
-      get: "/api/alerts/conditions/value"
-    };
-  }
+  rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {}
+  rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {}
 }
 
 message QueryCustomizeMetricRequest {
