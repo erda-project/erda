@@ -55,7 +55,7 @@ func GenCreateFormModalProps(testSpace, iteration []byte) interface{} {
               "key": "iterationId",
               "label": "迭代",
 							"disabled": false,
-              "required": false,
+              "required": true,
               "componentProps": {
                 "options": ` + string(iteration) +
 		`}
@@ -114,7 +114,7 @@ func GenUpdateFormModalProps(testSpace, iteration []byte) interface{} {
               "component": "select",
               "key": "iterationId",
               "label": "迭代",
-              "required": false,
+              "required": true,
               "disabled": false,
 							"componentProps": {
                 "options": ` + string(iteration) +
