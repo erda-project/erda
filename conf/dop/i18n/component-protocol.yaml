@@ -106,6 +106,7 @@ zh:
   mt-plan-chart: 手动测试计划分布图
   at-case-rate-trending-chart: 自动化测试执行率和通过率趋势
   at-plan-latest-waterfall-chart: 自动化测试计划执行详情瀑布图
+  user-not-exist: 用户不存在
 en:
   issue-manage: issue manage
   issue: issue
@@ -211,3 +212,4 @@ en:
   FAIL: Failed
   at-case-rate-trending-chart: Auto Test Executed&Pass Rate Trending Chart
   at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
+  user-not-exist: user does not exist
