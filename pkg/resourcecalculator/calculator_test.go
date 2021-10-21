@@ -281,4 +281,5 @@ func TestResourceCalculator_StatusOK(t *testing.T) {
 func TestResourceToString(t *testing.T) {
 	t.Log(calcu.ResourceToString(1000, "cpu"))
 	t.Log(calcu.ResourceToString(5*1024*1024*1024, "memory"))
+	t.Log(calcu.ResourceToString(1000, "error key"))
 }

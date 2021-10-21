@@ -522,28 +522,6 @@ func convertAuditCreateReq2Model(req apistructs.Audit) (*model.Audit, error) {
 	return audit, nil
 }
 
-func patchProjectQuota(quota *model.ProjectQuota, userID string, updateReq *apistructs.ProjectUpdateBody) {
-	*quota = model.ProjectQuota{
-		ID:                 quota.ID,
-		ProjectID:          updateReq.ID,
-		ProjectName:        updateReq.Name,
-		ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
-		StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
-		TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
-		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
-		ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-		ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
-		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-		StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
-		TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
-		TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
-		DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
-		DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
-		CreatorID:          quota.CreatorID,
-		UpdaterID:          userID,
-	}
-}
-
 // DeleteWithEvent 删除项目 & 发送事件
 func (p *Project) DeleteWithEvent(projectID int64) error {
 	// 删除项目
