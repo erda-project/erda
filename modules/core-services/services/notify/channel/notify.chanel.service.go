@@ -17,7 +17,7 @@ package channel
 import (
 	context "context"
 	"encoding/json"
-	"strconv"
+	"fmt"
 	"strings"
 	"time"
 
@@ -90,7 +90,7 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 		CreatorId:       creatorId,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
-		Enable:          false, // default no enable
+		IsEnabled:       false, // default no enable
 		IsDeleted:       false,
 	})
 	if err != nil {
@@ -161,14 +161,7 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 	if req.ChannelProviderType != "" {
 		channel.ChannelProvider = req.ChannelProviderType
 	}
-	if req.Enable != "" {
 
-		enable, err := strconv.ParseBool(req.Enable)
-		if err != nil {
-			return nil, errors.New("enable parma failed")
-		}
-		channel.Enable = enable
-	}
 	if req.Config != nil {
 		err := s.ConfigValidate(req.ChannelProviderType, req.Config)
 		if err != nil {
@@ -249,6 +242,28 @@ func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req 
 	return &pb.GetNotifyChannelEnabledResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), data)}, nil
 }
 
+func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, req *pb.UpdateNotifyChannelEnabledRequest) (*pb.UpdateNotifyChannelEnabledResponse, error) {
+
+	channel, err := s.NotifyChannelDB.GetById(req.Id)
+
+	if channel.IsEnabled == false && req.Enable == true {
+		enabledCount, err := s.NotifyChannelDB.GetCountByScopeAndType(channel.ScopeId, channel.ScopeType, channel.Type)
+		if err != nil {
+			return nil, pkgerrors.NewInternalServerError(err)
+		}
+		if enabledCount >= 1 {
+			return nil, errors.New(fmt.Sprintf("There are other enabled channel of this type (%s)", channel.Type))
+		}
+	}
+	channel.IsEnabled = req.Enable
+	channel.UpdatedAt = time.Now()
+	updated, err := s.NotifyChannelDB.UpdateById(channel)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+	return &pb.UpdateNotifyChannelEnabledResponse{Id: updated.Id, Enable: updated.IsEnabled}, nil
+}
+
 func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) error {
 	switch channelType {
 	case strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String()):
@@ -291,7 +306,7 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 	if user != nil && user.Name != "" {
 		ncpb.CreatorName = user.Name
 	}
-	ncpb.Enable = channel.Enable
+	ncpb.Enable = channel.IsEnabled
 	layout := "2006-01-02 15:04:05"
 	ncpb.CreateAt = channel.CreatedAt.Format(layout)
 	ncpb.UpdateAt = channel.UpdatedAt.Format(layout)

@@ -79,6 +79,25 @@ service NotifyChannelService {
       path: "/api/notify-channel/enabled"
     };
   }
+
+  rpc UpdateNotifyChannelEnabled (UpdateNotifyChannelEnabledRequest) returns (UpdateNotifyChannelEnabledResponse)  {
+    option (google.api.http)     = {
+      put: "/api/notify-channel/enabled",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel/enabled"
+    };
+  }
+}
+
+message UpdateNotifyChannelEnabledRequest {
+  string id     = 1;
+  bool   enable = 2;
+}
+
+message UpdateNotifyChannelEnabledResponse {
+  string id     = 1;
+  bool   enable = 2;
 }
 
 message GetNotifyChannelEnabledRequest {
@@ -114,6 +133,8 @@ message UpdateNotifyChannelRequest {
   string                             channelProviderType = 4;
   string                             enable              = 5;
   map<string, google.protobuf.Value> config              = 6;
+  string                             scopeId             = 7;
+  string                             scopeType           = 8;
 }
 
 message UpdateNotifyChannelResponse {

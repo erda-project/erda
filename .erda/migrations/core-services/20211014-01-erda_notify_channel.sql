@@ -8,7 +8,7 @@ CREATE TABLE `erda_notify_channel`
     `scope_id`         varchar(20)  NOT NULL COMMENT '域id',
     `creator_id`       varchar(100) NOT NULL COMMENT '创建人id',
     `channel_provider` varchar(100) NOT NULL COMMENT '渠道提供商',
-    `enable`           tinyint(1) NOT NULL COMMENT '是否启用',
+    `is_enabled`       tinyint(1) NOT NULL COMMENT '是否启用',
     `created_at`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `is_deleted`       tinyint(1) NOT NULL COMMENT '是否删除',

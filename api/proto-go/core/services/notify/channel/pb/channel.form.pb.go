@@ -12,6 +12,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*UpdateNotifyChannelEnabledRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*UpdateNotifyChannelEnabledResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelEnabledRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelEnabledResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteNotifyChannelRequest)(nil)
@@ -30,6 +32,44 @@ var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelTypeResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelProviderType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannel)(nil)
+
+// UpdateNotifyChannelEnabledRequest implement urlenc.URLValuesUnmarshaler.
+func (m *UpdateNotifyChannelEnabledRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				m.Id = vals[0]
+			case "enable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Enable = val
+			}
+		}
+	}
+	return nil
+}
+
+// UpdateNotifyChannelEnabledResponse implement urlenc.URLValuesUnmarshaler.
+func (m *UpdateNotifyChannelEnabledResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				m.Id = vals[0]
+			case "enable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Enable = val
+			}
+		}
+	}
+	return nil
+}
 
 // GetNotifyChannelEnabledRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetNotifyChannelEnabledRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -312,6 +352,10 @@ func (m *UpdateNotifyChannelRequest) UnmarshalURLValues(prefix string, values ur
 				m.ChannelProviderType = vals[0]
 			case "enable":
 				m.Enable = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "scopeType":
+				m.ScopeType = vals[0]
 			}
 		}
 	}

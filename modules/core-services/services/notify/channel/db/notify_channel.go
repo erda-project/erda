@@ -38,13 +38,31 @@ func (db *NotifyChannelDB) Create(notifyChannel *model.NotifyChannel) (*model.No
 	return notifyChannel, nil
 }
 
+func (db *NotifyChannelDB) GetCountByScopeAndType(scopeId, scopeType, channelType string) (int64, error) {
+	var count int64
+	err := db.db().
+		Where("`scope_id` = ?", scopeId).
+		Where("`scope_type` = ?", scopeType).
+		Where("`type` = ?", channelType).
+		Where("`is_enabled` = ?", true).
+		Where("`is_deleted` = ?", false).
+		Count(&count).Error
+	if err == gorm.ErrRecordNotFound {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, errors.NewDatabaseError(err)
+	}
+	return count, err
+}
+
 func (db *NotifyChannelDB) GetByScopeAndType(scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
 	channel := &model.NotifyChannel{}
 	err := db.db().
 		Where("`scope_id` = ?", scopeId).
 		Where("`scope_type` = ?", scopeType).
 		Where("`type` = ?", channelType).
-		Where("`enable` = ?", true).
+		Where("`is_enabled` = ?", true).
 		Where("`is_deleted` = ?", false).
 		Find(channel).
 		Error
@@ -111,7 +129,7 @@ func (db *NotifyChannelDB) DeleteById(id string) (*model.NotifyChannel, error) {
 
 func (db *NotifyChannelDB) UpdateById(notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
 
-	err := db.db().Model(notifyChannel).Update(notifyChannel).Error
+	err := db.db().Model(notifyChannel).Save(notifyChannel).Error
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}

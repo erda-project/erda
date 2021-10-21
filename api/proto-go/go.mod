@@ -3,7 +3,7 @@ module github.com/erda-project/erda-proto-go
 go 1.14
 
 require (
-	github.com/erda-project/erda-infra v0.0.0-20211013014115-020910fe953e
+	github.com/erda-project/erda-infra v0.0.0-20210929085513-aaf78ecd92ac
 	github.com/golang/protobuf v1.5.2
 	github.com/mwitkow/go-proto-validators v0.3.2
 	google.golang.org/genproto v0.0.0-20210820002220-43fce44e7af1
