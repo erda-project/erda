@@ -251,7 +251,7 @@ func ResourceToString(res float64, typ string) string {
 	case "cpu":
 		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
 	case "memory":
-		units := []string{"B", "K", "M", "G", "T"}
+		units := []string{"B", "KB", "MB", "GB", "TB"}
 		i := 0
 		for res >= 1<<10 && i < len(units)-1 {
 			res /= 1 << 10

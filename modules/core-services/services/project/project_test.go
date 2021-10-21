@@ -120,6 +120,40 @@ func TestWithClusterResourceClient(t *testing.T) {
 	New(WithClusterResourceClient(cli))
 }
 
+func Test_convertAuditCreateReq2Model(t *testing.T) {
+	var audit = apistructs.Audit{
+		ID:           0,
+		UserID:       "",
+		ScopeType:    "",
+		ScopeID:      0,
+		FDPProjectID: "",
+		OrgID:        0,
+		ProjectID:    0,
+		AppID:        0,
+		Context:      nil,
+		TemplateName: "",
+		AuditLevel:   "",
+		Result:       "",
+		ErrorMsg:     "",
+		StartTime:    "2006-01-02 15:04:05",
+		EndTime:      "2006-01-02 15:04:05",
+		ClientIP:     "",
+		UserAgent:    "",
+	}
+	if _, err := convertAuditCreateReq2Model(audit); err != nil {
+		t.Fatal(err)
+	}
+
+	audit.EndTime = "123456"
+	if _, err := convertAuditCreateReq2Model(audit); err == nil {
+		t.Fatal("err")
+	}
+	audit.StartTime = "123456"
+	if _, err := convertAuditCreateReq2Model(audit); err == nil {
+		t.Fatal("err")
+	}
+}
+
 // TODO We need to turn this ut on after adding the delete portal to the UI
 // func TestDeleteProjectWhenAddonExists(t *testing.T) {
 // 	db := &dao.DBClient{}
