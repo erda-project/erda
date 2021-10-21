@@ -54,6 +54,11 @@ type InParams struct {
 
 type State struct {
 	Conditions []filter.PropCondition `json:"conditions,omitempty"`
+	Values     SelectedValues         `json:"values,omitempty"`
+}
+
+type SelectedValues struct {
+	IterationIDs []uint64 `json:"iteration,omitempty"`
 }
 
 func (f *Filter) initFromProtocol(ctx context.Context, c *cptype.Component) error {

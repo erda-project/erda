@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mt_block_header_filter
+package filter
 
 import (
 	"context"
 	"encoding/json"
-	"time"
-
-	"github.com/recallsong/go-utils/container/slice"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -32,9 +29,8 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "mt_block_header_filter",
-		func() servicehub.Provider { return &Filter{} },
-	)
+	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "mt_plan_chart_filter",
+		func() servicehub.Provider { return &Filter{} })
 }
 
 type Filter struct {
@@ -44,15 +40,15 @@ type Filter struct {
 }
 
 type State struct {
-	Conditions []filter.PropCondition  `json:"conditions,omitempty"`
-	Values     MtPlanFilterStateValues `json:"values,omitempty"`
+	Conditions []filter.PropCondition `json:"conditions,omitempty"`
+	Values     FilterStateValues      `json:"values,omitempty"`
 }
 
-type MtPlanFilterStateValues struct {
-	MtPlanIDs []uint64 `json:"mtPlanIDs,omitempty"`
+type FilterStateValues struct {
+	MtPlanIDs    []uint64                        `json:"mtPlanIDs,omitempty"`
+	CaseStatuses []apistructs.TestCaseExecStatus `json:"caseStatuses,omitempty"`
 }
 
-// Render is empty implement.
 func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := f.initFromProtocol(ctx, c); err != nil {
 		return err
@@ -60,52 +56,48 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 
 	h := gshelper.NewGSHelper(gs)
 	globalMtPlans := h.GetGlobalManualTestPlanList()
-	selectedItrsByID := h.GetGlobalSelectedIterationsByID()
 	f.State.Conditions = []filter.PropCondition{
+		// testplans
 		{
 			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "mtPlanIDs",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
-				type Obj struct {
-					filter.PropConditionOption
-					itrCreateTime time.Time
-				}
-				var beforeOpts []Obj // used for order
 				for _, plan := range globalMtPlans {
 					itrPrefix := cputil.I18n(ctx, "[${iteration}: %s]", plan.IterationName)
 					if plan.IterationID <= 0 {
 						itrPrefix = cputil.I18n(ctx, "[${no-iteration}]")
 					}
-					beforeOpts = append(beforeOpts, Obj{
-						PropConditionOption: filter.PropConditionOption{
-							Label: cputil.I18n(ctx, "%s %s", itrPrefix, plan.Name),
-							Value: plan.ID,
-						},
-						itrCreateTime: func() time.Time {
-							itr, ok := selectedItrsByID[plan.IterationID]
-							if !ok {
-								return time.Time{}
-							}
-							return itr.CreatedAt
-						}(),
+					opts = append(opts, filter.PropConditionOption{
+						Label: cputil.I18n(ctx, "%s %s", itrPrefix, plan.Name),
+						Value: plan.ID,
 					})
-				}
-				slice.Sort(beforeOpts, func(i, j int) bool {
-					return beforeOpts[i].itrCreateTime.After(beforeOpts[j].itrCreateTime)
-				})
-				for _, bo := range beforeOpts {
-					opts = append(opts, bo.PropConditionOption)
 				}
 				return
 			}(),
 			Type: filter.PropConditionTypeSelect,
 		},
+		//// statuses
+		//{
+		//	EmptyText: cputil.I18n(ctx, "all"),
+		//	Fixed:     true,
+		//	Key:       "statuses",
+		//	Label:     cputil.I18n(ctx, "test-case-status"),
+		//	Options: func() (opts []filter.PropConditionOption) {
+		//		return []filter.PropConditionOption{
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusInit)), Value: apistructs.CaseExecStatusInit},
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusSucc)), Value: apistructs.CaseExecStatusSucc},
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusFail)), Value: apistructs.CaseExecStatusFail},
+		//			{Label: cputil.I18n(ctx, string(apistructs.CaseExecStatusBlocked)), Value: apistructs.CaseExecStatusBlocked},
+		//		}
+		//	}(),
+		//	Type: filter.PropConditionTypeSelect,
+		//},
 	}
 
 	// put selected values into global state
-	h.SetMtBlockFilterTestPlanList(func() (selectedMtPlans []apistructs.TestPlan) {
+	h.SetMtPlanChartFilterTestPlanList(func() (selectedMtPlans []apistructs.TestPlan) {
 		// not selected, return all
 		if len(f.State.Values.MtPlanIDs) == 0 {
 			return globalMtPlans
@@ -119,6 +111,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		}
 		return
 	}())
+	//h.SetMtPlanChartFilterStatusList(f.State.Values.CaseStatuses)
 
 	if err := f.setToComponent(c); err != nil {
 		return err
