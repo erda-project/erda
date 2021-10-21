@@ -37,6 +37,8 @@ rendering:
     - name: header
     - name: workloadTitle
       state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
           value: "{{ __InParams__.workloadId }}"
         - name: "podId"
