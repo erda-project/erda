@@ -18,6 +18,7 @@ package project
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -384,12 +385,12 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 		}
 
 		if isQuotaChanged(*oldQuota, quota) {
-			org, err := p.bdl.GetOrg(orgID)
-			if err != nil {
-				return nil, errors.Errorf("failed to get org by id %d, %v", orgID, err)
+			var orgName = strconv.FormatInt(orgID, 10)
+			if org, err := p.db.GetOrg(orgID); err == nil {
+				orgName = fmt.Sprintf("%s(%s)", org.Name, org.DisplayName)
 			}
 			auditCtx := map[string]interface{}{
-				"orgName":     org.Name,
+				"orgName":     orgName,
 				"projectName": project.Name,
 				"devCPU":      calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
 				"devMem":      calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
