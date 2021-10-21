@@ -23,7 +23,7 @@ import (
 )
 
 // GetEnabledNotifyChannelByType get enabled notify channel of specific from core-service.
-func (b *Bundle) GetEnabledNotifyChannelByType(orgID interface{}, channelType string) (*apistructs.NotifyChannelDTO, error) {
+func (b *Bundle) GetEnabledNotifyChannelByType(orgID interface{}, channelType apistructs.NotifyChannelType) (*apistructs.NotifyChannelDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (b *Bundle) GetEnabledNotifyChannelByType(orgID interface{}, channelType st
 	hc := b.hc
 
 	var fetchResp apistructs.NotifyChannelFetchResponse
-	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/notify-channel/enabled?orgId=%v&channelType=%v", orgID, channelType)).
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/notify-channel/enabled?scopeType=org&scopeId=%v&type=%v", orgID, channelType)).
 		Header(httputil.InternalHeader, "bundle").Do().JSON(&fetchResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

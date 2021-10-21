@@ -22,9 +22,20 @@ type NotifyChannelFetchResponse struct {
 
 // NotifyChannelDTO 通知渠道结构
 type NotifyChannelDTO struct {
-	ID     uint64               `json:"id"`
-	Name   string               `json:"name"`
-	Config *NotifyChannelConfig `json:"config"`
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
+	Type struct {
+		Name        NotifyChannelType `json:"name"`
+		DisplayName string            `json:"displayName"`
+	} `json:"type"`
+	Config              *NotifyChannelConfig `json:"config"`
+	ScopeId             string               `json:"scopeId"`
+	ScopeType           string               `json:"scopeType"`
+	ChannelProviderType struct {
+		Name        NotifyChannelProviderType `json:"name"`
+		DisplayName string                    `json:"displayName"`
+	} `json:"channelProviderType"`
+	Enable bool `json:"enable"`
 }
 
 type NotifyChannelConfig struct {
@@ -33,3 +44,9 @@ type NotifyChannelConfig struct {
 	SignName        string `json:"signName"`
 	TemplateCode    string `json:"templateCode"`
 }
+
+type NotifyChannelType string
+type NotifyChannelProviderType string
+
+const NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE = NotifyChannelType("short_message")
+const NOTIFY_CHANNEL_PROVIDER_TYPE_ALIYUN = NotifyChannelProviderType("ali_short_message")
