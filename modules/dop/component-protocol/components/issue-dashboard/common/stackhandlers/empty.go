@@ -16,23 +16,28 @@ package stackhandlers
 
 import "github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 
-type EmptyStackHandler struct {
+type DefaultStackHandler struct {
+	SingleStackName string
 }
 
-func NewEmptyStackHandler() *EmptyStackHandler {
-	return &EmptyStackHandler{}
+func NewDefaultStackHandler(single string) *DefaultStackHandler {
+	return &DefaultStackHandler{SingleStackName: single}
 }
 
-func (h *EmptyStackHandler) GetStacks() []Stack {
-	return []Stack{emptyStack}
+func (h *DefaultStackHandler) GetStacks() []Stack {
+	return []Stack{{
+		Name:  h.SingleStackName,
+		Value: "",
+		Color: "red",
+	}}
 }
 
-func (h *EmptyStackHandler) GetIndexer() func(issue interface{}) string {
+func (h *DefaultStackHandler) GetIndexer() func(issue interface{}) string {
 	return func(issue interface{}) string {
 		return ""
 	}
 }
 
-func (h *EmptyStackHandler) GetFilterOptions() []filter.PropConditionOption {
+func (h *DefaultStackHandler) GetFilterOptions() []filter.PropConditionOption {
 	return getFilterOptions(h.GetStacks())
 }

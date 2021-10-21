@@ -200,7 +200,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	f.Stages = stages
 
 	helper := gshelper.NewGSHelper(gs)
-	// helper.SetIterations(f.Iterations)
+	helper.SetIterations(f.Iterations)
 	helper.SetMembers(f.Members)
 	helper.SetIssueList(f.IssueList)
 	helper.SetIssueStateList(f.IssueStateList)
@@ -261,6 +261,10 @@ func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Itera
 	if err != nil {
 		return nil, nil, err
 	}
+	f.Iterations = append(iterations, apistructs.Iteration{
+		ID:    -1,
+		Title: "待处理",
+	})
 	var options []filter.PropConditionOption
 	iterationMap := make(map[int64]apistructs.Iteration)
 	for _, iteration := range iterations {
