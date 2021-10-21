@@ -22,7 +22,7 @@ type NotifyChannelFetchResponse struct {
 
 // NotifyChannelDTO 通知渠道结构
 type NotifyChannelDTO struct {
-	ID   uint64 `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 	Type struct {
 		Name        NotifyChannelType `json:"name"`
