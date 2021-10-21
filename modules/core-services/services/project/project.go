@@ -87,16 +87,16 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
-		p.clusterResourceClient = client
+		p.clusterResourceClient = cli
 	}
 }
 
 // WithI18n set the translator
-func WithI18n(trans i18n.Translator) Option {
+func WithI18n(translator i18n.Translator) Option {
 	return func(p *Project) {
-		p.trans = trans
+		p.trans = translator
 	}
 }
 
@@ -514,7 +514,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 
 // Get 获取项目
 func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
-	langCodes := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
@@ -650,7 +650,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
 	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
 		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
-		var source *apistructs.ResourceConfigInfo
 		for _, clusterItem := range clustersResources.List {
 			if !clusterItem.GetSuccess() {
 				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
@@ -659,20 +658,21 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			}
 			for _, host := range clusterItem.Hosts {
 				for _, label := range host.Labels {
+					var source *apistructs.ResourceConfigInfo
 					switch strings.ToLower(label) {
 					case "dice/workspace-prod=true":
 						source = projectDTO.ResourceConfig.PROD
 					case "dice/workspace-staging=true":
 						source = projectDTO.ResourceConfig.STAGING
-					case "dice/worksapce-test=true":
+					case "dice/workspace-test=true":
 						source = projectDTO.ResourceConfig.TEST
 					case "dice/workspace-dev=true":
 						source = projectDTO.ResourceConfig.DEV
 					}
-				}
-				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
-					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+					if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
+						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+					}
 				}
 			}
 		}
