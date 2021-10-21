@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 )
@@ -88,4 +90,14 @@ func TestOrgNameRetriever(t *testing.T) {
 	assert.Equal(t, "erda", orgNameRetriever(domains[0], domainRoots[0]))
 	assert.Equal(t, "buzz", orgNameRetriever(domains[1], domainRoots[1]))
 	assert.Equal(t, "", orgNameRetriever(domains[2], domainRoots[0]))
+}
+
+func TestWithI18n(t *testing.T) {
+	var trans i18n.Translator
+	New(WithI18n(trans))
+}
+
+func TestWithClusterResourceClient(t *testing.T) {
+	var cli dashboardPb.ClusterResourceServer
+	New(WithClusterResourceClient(cli))
 }

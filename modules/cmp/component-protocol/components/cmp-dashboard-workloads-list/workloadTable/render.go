@@ -84,23 +84,23 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	urlQuery, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	base64Decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	newQuery := make(map[string]interface{})
-	if err := json.Unmarshal(base64Decoded, &newQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(newQuery["pageNo"].(float64))
-	w.State.PageSize = uint64(newQuery["pageSize"].(float64))
-	sorter := newQuery["sorterData"].(map[string]interface{})
-	w.State.Sorter.Field = sorter["field"].(string)
-	w.State.Sorter.Order = sorter["order"].(string)
+	w.State.PageNo = uint64(query["pageNo"].(float64))
+	w.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
+	w.State.Sorter.Field, _ = sorter["field"].(string)
+	w.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
@@ -109,13 +109,13 @@ func (w *ComponentWorkloadTable) EncodeURLQuery() error {
 	query["pageNo"] = w.State.PageNo
 	query["pageSize"] = w.State.PageSize
 	query["sorterData"] = w.State.Sorter
-	jsonData, err := json.Marshal(query)
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	w.State.WorkloadTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	w.State.WorkloadTableURLQuery = encoded
 	return nil
 }
 

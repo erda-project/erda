@@ -1604,6 +1604,17 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 
 // prepareCheckProjectResource 计算项目预留资源，是否满足发布徐局
 func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.ApplicationDTO, projectID uint64, legacyDice *diceyml.Object, runtime *dbclient.Runtime) (float64, float64, error) {
+	/* todo: 修改逻辑
+	查找目标集群带该环境标签和stateless-service标签的集群的 allocatable 资源和 request 资源，分别记为 Allocatable 和 ActualRequest；
+	计算该项目当前环境已有的 services 和 addons, 他们的 dice.yml 声明的资源，记为 AlreadyRequest；
+	计算要部署的服务的 dice.yml 声明的资源，记为 CurrentRequest；
+	查找该项目当前环境的 quota，记为 Q；
+	如果 Q - AlreadyRequest < CurrentRequest, 则配额不够，不可部署。
+	如果 Allocatable - ActualRequest < CurrentRequest, 则提示实际资源不够，但仍允许部署（不管它是否部得起来）
+
+	注意：声明的资源都是超卖后的。
+	*/
+
 	// 获取项目资源信息
 	projectInfo, err := fsm.bdl.GetProject(projectID)
 	if err != nil {
@@ -1659,25 +1670,25 @@ func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.Applica
 		deployNeedCpu = localCpu - runtime.CPU
 		deployNeedMem = localMem - float64(runtime.Mem)
 	}
-	logrus.Infof("PrepareCheckProjectResource deployNeedMem: %f", deployNeedMem)
-	logrus.Infof("PrepareCheckProjectResource deployNeedCpu: %f", deployNeedCpu)
-	logrus.Infof("PrepareCheckProjectResource usedMem: %f", usedMem)
-	logrus.Infof("PrepareCheckProjectResource usedCpu: %f", usedCpu)
-	// 比较项目quota预留资源是不是够
-	if utils.Smaller(projectInfo.CpuQuota-usedCpu, deployNeedCpu) {
-		s := fmt.Sprintf("The CPU reserved for the project is %.2f cores, %.2f cores have been occupied, %.2f CPUs are required for deploy, and the resources for application release are insufficient", projectInfo.CpuQuota, usedCpu, deployNeedCpu)
-		fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
-		return 0.0, 0.0, errors.Errorf(s)
-	}
-	useMem2, err := strconv.ParseFloat(fmt.Sprintf("%.2f", usedMem), 64)
-	if err != nil {
-		return 0.0, 0.0, err
-	}
-	if utils.Smaller(projectInfo.MemQuota*1024.0-float64(usedMem), deployNeedMem) {
-		s := fmt.Sprintf("The memory reserved for the project is %.2f G, %.2f G have been occupied, %.2f G are required for deploy, and the resources for application release are insufficient", projectInfo.MemQuota, useMem2/1024, deployNeedMem/1024.0)
-		fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
-		return 0.0, 0.0, errors.Errorf(s)
-	}
+	//logrus.Infof("PrepareCheckProjectResource deployNeedMem: %f", deployNeedMem)
+	//logrus.Infof("PrepareCheckProjectResource deployNeedCpu: %f", deployNeedCpu)
+	//logrus.Infof("PrepareCheckProjectResource usedMem: %f", usedMem)
+	//logrus.Infof("PrepareCheckProjectResource usedCpu: %f", usedCpu)
+	//// 比较项目quota预留资源是不是够
+	//if utils.Smaller(projectInfo.CpuQuota-usedCpu, deployNeedCpu) {
+	//	s := fmt.Sprintf("The CPU reserved for the project is %.2f cores, %.2f cores have been occupied, %.2f CPUs are required for deploy, and the resources for application release are insufficient", projectInfo.CpuQuota, usedCpu, deployNeedCpu)
+	//	fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
+	//	return 0.0, 0.0, errors.Errorf(s)
+	//}
+	//useMem2, err := strconv.ParseFloat(fmt.Sprintf("%.2f", usedMem), 64)
+	//if err != nil {
+	//	return 0.0, 0.0, err
+	//}
+	//if utils.Smaller(projectInfo.MemQuota*1024.0-float64(usedMem), deployNeedMem) {
+	//	s := fmt.Sprintf("The memory reserved for the project is %.2f G, %.2f G have been occupied, %.2f G are required for deploy, and the resources for application release are insufficient", projectInfo.MemQuota, useMem2/1024, deployNeedMem/1024.0)
+	//	fsm.ExportLogInfoDetail(apistructs.ErrorLevel, fmt.Sprintf("%d", fsm.Runtime.ID), "资源配额不足无法部署", s)
+	//	return 0.0, 0.0, errors.Errorf(s)
+	//}
 
 	return deployNeedCpu, deployNeedMem, nil
 }
