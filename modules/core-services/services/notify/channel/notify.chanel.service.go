@@ -232,6 +232,16 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 }
 
 func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req *pb.GetNotifyChannelEnabledRequest) (*pb.GetNotifyChannelEnabledResponse, error) {
+	if req.ScopeId == "" {
+		return nil, pkgerrors.NewMissingParameterError("scopeId")
+	}
+	if req.ScopeType == "" {
+		req.ScopeType = "org"
+	}
+	if req.Type == "" {
+		return nil, pkgerrors.NewMissingParameterError("type")
+	}
+
 	data, err := s.NotifyChannelDB.GetByScopeAndType(req.ScopeId, req.ScopeType, req.Type)
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
