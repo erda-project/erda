@@ -15,7 +15,10 @@
 package resourcecalculator
 
 import (
+	"fmt"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -241,4 +244,27 @@ func priority(workspace Workspace) []string {
 		}
 	}
 	return nil
+}
+
+func ResourceToString(res float64, typ string) string {
+	switch typ {
+	case "cpu":
+		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
+	case "memory":
+		units := []string{"B", "K", "M", "G", "T"}
+		i := 0
+		for res >= 1<<10 && i < len(units)-1 {
+			res /= 1 << 10
+			i++
+		}
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
+	default:
+		return fmt.Sprintf("%.f", res)
+	}
+}
+
+func setPrec(f float64, prec int) float64 {
+	pow := math.Pow10(prec)
+	f = float64(int64(f*pow)) / pow
+	return f
 }
