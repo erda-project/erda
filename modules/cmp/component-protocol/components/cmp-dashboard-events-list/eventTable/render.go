@@ -115,39 +115,39 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	urlQuery, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	jsonData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &jsonData); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(jsonData["pageNo"].(float64))
-	t.State.PageSize = uint64(jsonData["pageSize"].(float64))
-	sorter := jsonData["sorterData"].(map[string]interface{})
-	t.State.Sorter.Field = sorter["field"].(string)
-	t.State.Sorter.Order = sorter["order"].(string)
+	t.State.PageNo = uint64(urlQuery["pageNo"].(float64))
+	t.State.PageSize = uint64(urlQuery["pageSize"].(float64))
+	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	t.State.Sorter.Field = sorterData["field"].(string)
+	t.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = int(t.State.PageNo)
-	query["pageSize"] = int(t.State.PageSize)
-	query["sorterData"] = t.State.Sorter
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = int(t.State.PageNo)
+	urlQuery["pageSize"] = int(t.State.PageSize)
+	urlQuery["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(query)
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	decoded := base64.StdEncoding.EncodeToString(jsonData)
-	t.State.EventTableUQLQuery = decoded
+	decode := base64.StdEncoding.EncodeToString(jsonData)
+	t.State.EventTableUQLQuery = decode
 	return nil
 }
 

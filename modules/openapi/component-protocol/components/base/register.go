@@ -23,30 +23,32 @@ const (
 	componentProviderNamePrefix = "component-protocol.components."
 )
 
-func MustGetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, compName string) {
-	scenario, compName, err := GetScenarioAndCompNameFromProviderKey(providerKey)
+func MustGetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, compName, instanceName string) {
+	scenario, compName, instanceName, err := GetScenarioAndCompNameFromProviderKey(providerKey)
 	if err != nil {
 		panic(err)
 	}
 
-	return scenario, compName
+	return scenario, compName, instanceName
 }
 
-func GetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, compName string, err error) {
+func GetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, compName, instanceName string, err error) {
 	if !strings.HasPrefix(providerKey, componentProviderNamePrefix) {
-		return "", "", fmt.Errorf("invalid prefix")
+		return "", "", "", fmt.Errorf("invalid prefix")
 	}
 	ss := strings.SplitN(providerKey, ".", 4)
 	if len(ss) != 4 {
-		return "", "", fmt.Errorf("not standard provider key: %s", providerKey)
+		return "", "", "", fmt.Errorf("not standard provider key: %s", providerKey)
 	}
 	vv := strings.SplitN(ss[3], "@", 2)
 	if len(vv) == 2 {
-		compName = vv[1]
+		compName = vv[0]
+		instanceName = vv[1]
 	} else {
 		compName = ss[3]
+		instanceName = compName
 	}
-	return ss[2], compName, nil
+	return ss[2], compName, instanceName, nil
 }
 
 func MakeComponentProviderName(scenario, compType string) string {

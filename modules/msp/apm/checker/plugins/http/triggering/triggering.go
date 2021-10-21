@@ -17,6 +17,7 @@ package triggering
 import (
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -72,17 +73,18 @@ func (condition *Triggering) BodyStrategy(resp *http.Response) bool {
 	}
 	switch condition.Operate {
 	case "contains":
-		if strings.Contains(body, condition.Value.GetStringValue()) {
-			return false
-		}
+		return !strings.Contains(body, condition.Value.GetStringValue())
 	case "not_contains":
-		if !strings.Contains(body, condition.Value.GetStringValue()) {
-			return false
-		}
+		return strings.Contains(body, condition.Value.GetStringValue())
+	case "regex":
+		re := regexp.MustCompile(condition.Value.GetStringValue())
+		return !re.MatchString(body)
+	case "not_regex":
+		re := regexp.MustCompile(condition.Value.GetStringValue())
+		return re.MatchString(body)
 	default:
 		return true
 	}
-	return true
 }
 
 func (condition *Triggering) HttpCodeStrategy(resp *http.Response) bool {

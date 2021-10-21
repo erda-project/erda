@@ -58,6 +58,7 @@ type DataHandleOpt struct {
 	SeriesConverter func(name string, data []*int) charts.SingleSeries
 	DataWhiteList   []string
 	FillZero        bool
+	StatsProperty   func(interface{}) int
 }
 
 type Result struct {
@@ -111,8 +112,12 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 		if _, ok := counter[y]; !ok {
 			counter[y] = make(map[string]int)
 		}
-		counter[y][x]++
-		counterSingle[x]++
+		v := 1
+		if f.DataHandleOpt.StatsProperty != nil {
+			v = f.DataHandleOpt.StatsProperty(i)
+		}
+		counter[y][x] += v
+		counterSingle[x] += v
 	}
 
 	var ms charts.MultiSeries
@@ -153,7 +158,7 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 		}
 		rowData := make([]*int, xl)
 		for i, x := range f.XAxis {
-			v := counter[stack.Value][x]
+			v := counter[FixEmptyWord(stack.Value)][x]
 			if v > 0 || !f.SkipEmpty {
 				rowData[i] = &v
 			}
