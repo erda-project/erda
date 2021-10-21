@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package assigneeHorizontalBarChartExtra
+package chartExtra
 
 import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 func init() {
-	base.InitProvider("issue-dashboard", "assigneeHorizontalBarChartExtra")
+	base.InitProvider("issue-dashboard", "chartExtra")
 }

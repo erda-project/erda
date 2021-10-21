@@ -74,9 +74,7 @@ component-protocol.components.issue-dashboard.page:
 component-protocol.components.issue-dashboard.trendChart:
 component-protocol.components.issue-dashboard.trendChartExtra:
 component-protocol.components.issue-dashboard.trendChartFilter:
-component-protocol.components.issue-dashboard.chartGroup@chartGroup1:
-component-protocol.components.issue-dashboard.chartGroup@chartGroup2:
-component-protocol.components.issue-dashboard.chartGroup@chartGroup3:
+component-protocol.components.issue-dashboard.chartGroup:
 component-protocol.components.issue-dashboard.statePieChart:
 component-protocol.components.issue-dashboard.complexityPieChart:
 component-protocol.components.issue-dashboard.priorityPieChart:
@@ -100,21 +98,13 @@ component-protocol.components.issue-dashboard.undefined:
 component-protocol.components.issue-dashboard.split:
 
 component-protocol.components.issue-dashboard.stateVerticalBarChart:
-component-protocol.components.issue-dashboard.stateVerticalBarChartExtra:
-component-protocol.components.issue-dashboard.stateVerticalBarChartFilter:
-
 component-protocol.components.issue-dashboard.labelHorizontalBarChart:
-component-protocol.components.issue-dashboard.labelHorizontalBarChartExtra:
-component-protocol.components.issue-dashboard.labelHorizontalBarChartFilter:
 
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:
-component-protocol.components.issue-dashboard.assigneeHorizontalBarChartExtra:
-component-protocol.components.issue-dashboard.assigneeHorizontalBarChartFilter:
+component-protocol.components.issue-dashboard.memberHorizontalBarChart:
 
-component-protocol.components.issue-dashboard.ownerHorizontalBarChart:
-component-protocol.components.issue-dashboard.ownerHorizontalBarChartExtra:
-component-protocol.components.issue-dashboard.ownerHorizontalBarChartFilter:
-
+component-protocol.components.issue-dashboard.chartFilter:
+component-protocol.components.issue-dashboard.chartExtra:
 component-protocol.components.issue-dashboard.reset:
 
 ## test-dashboard

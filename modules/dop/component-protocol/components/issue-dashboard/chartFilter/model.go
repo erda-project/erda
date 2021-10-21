@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stateVerticalBarChartFilter
+package chartFilter
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
