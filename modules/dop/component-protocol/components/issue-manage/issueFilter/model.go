@@ -145,7 +145,7 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 			Options: []filter.PropConditionOption{
 				{Label: cputil.I18n(ctx, "fatal"), Value: "FATAL", Icon: ""},
 				{Label: cputil.I18n(ctx, "serious"), Value: "SERIOUS", Icon: ""},
-				{Label: cputil.I18n(ctx, "normal"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "ordinary"), Value: "NORMAL", Icon: ""},
 				{Label: cputil.I18n(ctx, "slight"), Value: "SLIGHT", Icon: ""},
 				{Label: cputil.I18n(ctx, "suggest"), Value: "SUGGEST", Icon: ""},
 			},
