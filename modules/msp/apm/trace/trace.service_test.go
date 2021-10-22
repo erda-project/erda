@@ -23,9 +23,11 @@ import (
 
 	"github.com/bmizerany/assert"
 	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
@@ -1037,11 +1039,11 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 		//`,
 		//			args{
 		//				context.TODO(),
-		//				&pb.GetTracesRequest{
+		//				&pb.SpanEventRequest{
 		//					// TODO: setup fields
 		//				},
 		//			},
-		//			&pb.GetTracesResponse{
+		//			&pb.SpanEventRequest{
 		//				// TODO: setup fields.
 		//			},
 		//			false,
@@ -1138,6 +1140,60 @@ func Test_traceService_getSpanEventQueryTime(t *testing.T) {
 			start, end := s.getSpanEventQueryTime(tt.args.req)
 			assert.Equal(t, start, tt.wantStartTime)
 			assert.Equal(t, end, tt.wantEndTime)
+		})
+	}
+}
+
+func Test_traceService_handleSpanEventResponse(t *testing.T) {
+	table := &metricpb.TableResult{
+		Cols: []*metricpb.TableColumn{
+			{Key: "event::tag", Name: "tags.event", Flag: "tag"},
+			{Key: "service::tag", Name: "tags.service", Flag: "tag"},
+			{Key: "timestamp", Name: "timestamp", Flag: "timestamp"},
+		},
+		Data: []*metricpb.TableRow{
+			{
+				Values: map[string]*structpb.Value{
+					"event::tag":   structpb.NewStringValue("server send"),
+					"service::tag": structpb.NewStringValue("service1"),
+					"timestamp":    structpb.NewNumberValue(1634875807541),
+				},
+			},
+		},
+	}
+	type args struct {
+		req *metricpb.TableResult
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantResp []*pb.SpanEvent
+	}{
+		{
+			"case1",
+			args{
+				table,
+			},
+			[]*pb.SpanEvent{
+				{
+					Timestamp: 1634875807541,
+					Events: map[string]string{
+						"event": "server send",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     nil,
+				i18n:                  nil,
+				traceRequestHistoryDB: nil,
+			}
+			events := s.handleSpanEventResponse(tt.args.req)
+			assert.Equal(t, len(events), len(tt.wantResp))
+			assert.Equal(t, events[0].Timestamp, tt.wantResp[0].Timestamp)
 		})
 	}
 }
