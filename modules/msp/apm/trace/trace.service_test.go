@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -1024,45 +1025,54 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 	}
 	tests := []struct {
 		name     string
-		service  string
-		config   string
 		args     args
 		wantResp *pb.SpanEventResponse
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.msp.apm.trace.TraceService",
-		//			`
-		//erda.msp.apm.trace:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.SpanEventRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.SpanEventRequest{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
+		{
+			"case 1",
+			args{
+				context.TODO(),
+				&pb.SpanEventRequest{
+					// TODO: setup fields
+				},
+			},
+			&pb.SpanEventResponse{
+				// TODO: setup fields.
+			},
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
+			var metricq *metricpb.UnimplementedMetricServiceServer
+			monkey.PatchInstanceMethod(reflect.TypeOf(metricq), "QueryWithTableFormat", func(context.Context, *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+				return &metricpb.QueryWithTableFormatResponse{
+					Data: &metricpb.TableResult{
+						Cols: []*metricpb.TableColumn{
+							{Key: "event::tag", Name: "tags.event", Flag: "tag"},
+							{Key: "service::tag", Name: "tags.service", Flag: "tag"},
+							{Key: "timestamp", Name: "timestamp", Flag: "timestamp"},
+						},
+						Data: []*metricpb.TableRow{
+							{
+								Values: map[string]*structpb.Value{
+									"event::tag":   structpb.NewStringValue("server send"),
+									"service::tag": structpb.NewStringValue("service1"),
+									"timestamp":    structpb.NewNumberValue(1634875807541),
+								},
+							},
+						},
+					},
+				}, nil
+			})
+			s := &traceService{
+				p:                     &provider{Metric: metricq},
+				i18n:                  nil,
+				traceRequestHistoryDB: nil,
 			}
-			srv := hub.Service(tt.service).(pb.TraceServiceServer)
-			got, err := srv.GetSpanEvents(tt.args.ctx, tt.args.req)
+			got, err := s.GetSpanEvents(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("traceService.GetSpanEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
