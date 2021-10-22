@@ -76,24 +76,6 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
 }
 
-func (e *Endpoints) GetResourceTable(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
-	req := &apistructs.TableRequest{}
-	orgIDStr := r.Header.Get(httputil.OrgHeader)
-	userIDStr := r.Header.Get(httputil.UserHeader)
-	if orgIDStr == "" {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
-	}
-	err = jsi.NewDecoder(r.Body).Decode(req)
-	if err != nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
-	}
-	pie, err := e.Resource.GetTable(orgIDStr, userIDStr, req.ClusterNames, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
-}
-
 func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
 	orgIDStr := r.Header.Get(httputil.OrgHeader)

@@ -19,13 +19,13 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
-	"github.com/erda-project/erda/modules/cmp/interface"
 )
 
 type Resource struct {
 	Ctx    context.Context
-	Server _interface.Provider `autowired:"erda.cmp"`
+	Server cmp_interface.Provider `autowired:"erda.cmp"`
 	I18N   i18n.Translator
 	Lang   i18n.LanguageCodes
 	DB     *dbclient.DBClient
@@ -50,13 +50,11 @@ func New(ctx context.Context, i18n i18n.Translator, lang i18n.LanguageCodes) *Re
 }
 
 func (r *Resource) Init(ctx servicehub.Context) error {
-	sServer := ctx.Service("cmp").(_interface.Provider)
+	sServer := ctx.Service("cmp").(cmp_interface.Provider)
 	r.Server = sServer
 	r.Ctx = ctx
 	return nil
 }
-
-//"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 
 type XAixs struct {
 	Type string   `json:"type"`

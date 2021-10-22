@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/cmp/interface"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
@@ -38,11 +38,11 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer _interface.SteveServer
+var steveServer cmp_interface.SteveServer
 var mServer metrics.Interface
 
 func (mt *MemInfoTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}

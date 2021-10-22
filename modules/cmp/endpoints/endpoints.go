@@ -243,7 +243,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		{Path: "/api/resourceSummary", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceGauge)},
 		{Path: "/api/resourceClass", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClass)},
-		{Path: "/api/resourceTable", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceTable)},
 		{Path: "/api/resourceClusterTrend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClusterTrend)},
 		{Path: "/api/resourceProjectTrend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceProjectTrend)},
 

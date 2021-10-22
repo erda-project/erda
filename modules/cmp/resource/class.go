@@ -103,7 +103,7 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	data[project] = pie
 
 	// principal
-	pie, err = r.GetProjectPie(request.ResourceType, resp)
+	pie, err = r.GetPrincipalPie(request.ResourceType, resp)
 	if err != nil {
 		return
 	}
@@ -156,12 +156,11 @@ func (r *Resource) GetProjectPie(resourceType string, resp *apistructs.GetQuotaO
 	return
 }
 
-func (r *Resource) GetPrincipalPie(resourceType string, resp *apistructs.GetQuotaOnClustersResponse) (projectPie *PieData, err error) {
+func (r *Resource) GetPrincipalPie(resourceType string, resp *apistructs.GetQuotaOnClustersResponse) (principalPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
 	)
-	projectPie = &PieData{}
 	principalMap := make(map[string]Quota)
 	for _, owner := range resp.Owners {
 		if q, ok = principalMap[owner.Name]; !ok {
@@ -171,7 +170,7 @@ func (r *Resource) GetPrincipalPie(resourceType string, resp *apistructs.GetQuot
 		q.memQuota = owner.MemQuota
 		principalMap[owner.Name] = q
 	}
-	principalPie := &PieData{}
+	principalPie = &PieData{}
 	serie := PieSerie{
 		Name: r.I18n("distribution by principal"),
 		Type: "pie",
@@ -193,8 +192,8 @@ func (r *Resource) GetPrincipalPie(resourceType string, resp *apistructs.GetQuot
 	return
 }
 
-func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterResourcesResponse) (projectPie *PieData, err error) {
-	clusterPie := &PieData{}
+func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterResourcesResponse) (clusterPie *PieData, err error) {
+	clusterPie = &PieData{}
 	serie := PieSerie{
 		Name: r.I18n("distribution by cluster"),
 		Type: "pie",

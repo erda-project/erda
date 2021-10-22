@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp/interface"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -365,7 +365,7 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 		DefaultProvider base.DefaultProvider
 		SDK             *cptype.SDK
 		Ctx             context.Context
-		Server          _interface.SteveServer
+		Server          cmp_interface.SteveServer
 		Type            string
 		Props           map[string]interface{}
 		Operations      map[string]interface{}
@@ -410,7 +410,7 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 		DefaultProvider base.DefaultProvider
 		SDK             *cptype.SDK
 		Ctx             context.Context
-		Server          _interface.SteveServer
+		Server          cmp_interface.SteveServer
 		Type            string
 		Props           map[string]interface{}
 		Operations      map[string]interface{}

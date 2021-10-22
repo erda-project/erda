@@ -34,11 +34,28 @@ type GaugeData struct {
 	Name  string    `json:"name"`
 }
 
-func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (map[string]*GaugeData, error) {
-	data := make(map[string]*GaugeData)
+func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
 	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterNames, nil, nil)
 	if err != nil {
 		return nil, err
+	}
+	data = r.getGauge(request, resp)
+	return data, nil
+}
+
+func (r *Resource) getGauge(request *apistructs.GaugeRequest, resp *apistructs.ResourceResp) (data map[string]*GaugeData) {
+	data = make(map[string]*GaugeData)
+	var (
+		nodesGauge = &GaugeData{}
+		cpuGauge   = &GaugeData{}
+		memGauge   = &GaugeData{}
+	)
+	data["nodes"] = nodesGauge
+	data["cpu"] = cpuGauge
+	data["memory"] = memGauge
+
+	if resp.MemTotal == 0 || resp.CpuTotal == 0 {
+		return nil
 	}
 	cpuBase := float64(request.CpuUnit) / resp.CpuTotal
 	memBase := float64(request.MemoryUnit*G) / resp.MemTotal
@@ -48,11 +65,7 @@ func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.Gau
 	CpuTotal := resp.CpuTotal
 	MemQuota := resp.MemQuota
 	CpuQuota := resp.CpuQuota
-	var (
-		nodesGauge = &GaugeData{}
-		cpuGauge   = &GaugeData{}
-		memGauge   = &GaugeData{}
-	)
+
 	nodesGauge.Title = r.I18n("节点压力表")
 	if MemTotal/memBase > CpuTotal/cpuBase {
 		nodesGauge.Value = []float64{MemRequest / MemTotal}
@@ -65,17 +78,6 @@ func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.Gau
 	}
 	data["nodes"] = nodesGauge
 
-	nodesGauge.Title = r.I18n("节点压力表")
-	if MemTotal/memBase > CpuTotal/cpuBase {
-		nodesGauge.Value = []float64{MemRequest / MemTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("节点") + fmt.Sprintf("%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
-		nodesGauge.Split = []float64{MemQuota / MemTotal}
-	} else {
-		nodesGauge.Value = []float64{CpuRequest / CpuTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", CpuQuota/CpuTotal) + r.I18n("节点") + fmt.Sprintf("%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
-		nodesGauge.Split = []float64{CpuQuota / CpuTotal}
-	}
-
 	cpuGauge.Title = r.I18n("CPU压力表")
 	cpuGauge.Value = []float64{CpuRequest / CpuTotal}
 	cpuGauge.Name = fmt.Sprintf("%.1f", CpuQuota/CpuTotal) + r.I18n("核") + fmt.Sprintf("%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
@@ -87,11 +89,7 @@ func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.Gau
 	memGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("G") + fmt.Sprintf("%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
 	memGauge.Split = []float64{MemQuota / MemTotal}
 	data["memory"] = memGauge
-	return data, nil
-}
-
-func (r *Resource) GetTable(ordId string, userID string, clusterNames, projectIds, principal []string) (Table, err error) {
-	return nil, nil
+	return
 }
 
 func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, projectIds, principal []string) (resp *apistructs.ResourceResp, err error) {

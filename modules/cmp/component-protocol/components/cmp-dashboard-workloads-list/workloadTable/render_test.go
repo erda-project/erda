@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
-	"github.com/erda-project/erda/modules/cmp/interface"
 )
 
 func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
@@ -94,7 +94,7 @@ func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 }
 
 type MockSteveServer struct {
-	_interface.SteveServer
+	cmp_interface.SteveServer
 }
 
 func (m *MockSteveServer) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {

@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
-	_interface "github.com/erda-project/erda/modules/cmp/interface"
+	_interface "github.com/erda-project/erda/modules/cmp/cmp_interface"
 )
 
 func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error) {

@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/interface"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -28,7 +28,7 @@ type ComponentFilter struct {
 	ctx    context.Context
 	bdl    *bundle.Bundle
 	sdk    *cptype.SDK
-	server _interface.SteveServer
+	server cmp_interface.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`

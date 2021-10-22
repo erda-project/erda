@@ -38,10 +38,10 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/cmp/interface"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -53,12 +53,12 @@ func init() {
 }
 
 var (
-	steveServer _interface.SteveServer
+	steveServer cmp_interface.SteveServer
 	mServer     metrics.Interface
 )
 
 func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
