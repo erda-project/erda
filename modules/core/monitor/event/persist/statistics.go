@@ -15,9 +15,9 @@
 package persist
 
 import (
-	"github.com/erda-project/erda/modules/core/monitor/event"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/erda-project/erda/modules/core/monitor/event"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
