@@ -85,11 +85,13 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o := CreateOperation{}
 		o.Key = apistructs.AutoTestSceneStepCopyOperationKey.String()
 		o.Icon = "fz1"
-		o.HoverTip = "复制接口"
+		//o.HoverTip = "复制接口"
+		o.Text = "复制接口"
 		o.Disabled = false
 		o.Reload = true
 		o.HoverShow = true
 		o.Meta.ID = step.ID
+		o.Group = "copy"
 		pd.Operations["copy"] = o
 
 		o2 := CreateOperation{}
@@ -101,6 +103,18 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o2.HoverShow = true
 		o2.Meta.ID = step.ID
 		pd.Operations["add"] = o2
+
+		o3 := CreateOperation{}
+		o3.Key = apistructs.AutoTestSceneStepCopyAsJsonOperationKey.String()
+		o3.Icon = "fz1"
+		o3.Reload = false
+		o3.Text = "复制Json格式"
+		o3.Key = "copyAsJson"
+		o3.Disabled = false
+		o3.Group = "copy"
+		o3.Meta.ID = step.ID
+		o3.CopyText = step.ToJsonCopyText()
+		pd.Operations["copyAsJson"] = o3
 	}
 
 	os := OperationInfo{

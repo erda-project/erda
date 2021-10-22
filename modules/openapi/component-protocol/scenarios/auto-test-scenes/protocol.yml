@@ -57,6 +57,7 @@ hierarchy:
       - configSheetDrawer
       - customScriptDrawer
       - nestedSceneDrawer
+      - addCopyApiFormModal
     fileExecute:
       - executeHead
       - executeInfo
@@ -247,6 +248,8 @@ components:
     type: Button
   addApiButton:
     type: Button
+  addCopyApiFormModal:
+    type: FormModal
   addCustomScriptButton:
     type: Button
   waitEditorDrawer:
@@ -376,6 +379,10 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
+    - name: addCopyApiFormModal
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
     - name: addConfigSheetButton
       state:
         - name: "sceneId"
@@ -473,6 +480,10 @@ rendering:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
     - name: addApiButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addCopyApiFormModal
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
@@ -575,6 +586,9 @@ rendering:
       state:
         - name: "stepId"
           value: "{{ addApiButton.createStepID }}"
+  addCopyApiFormModal:
+    - name: fileInfo
+    - name: stages
   addConfigSheetButton:
     - name: fileInfo
     - name: stages
@@ -947,6 +961,10 @@ rendering:
           value: "{{ fileTree.sceneId }}"
     - name: stagesOperations
     - name: addApiButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addCopyApiFormModal
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
