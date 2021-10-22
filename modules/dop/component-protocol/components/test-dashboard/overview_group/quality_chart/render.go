@@ -134,6 +134,9 @@ func (q *Q) calcMtPlanScore(ctx context.Context, h *gshelper.GSHelper) float64 {
 		numCaseTotal += plan.RelsCount.Total
 	}
 
+	if numCaseTotal == 0 {
+		return 0
+	}
 	score := float64(numCasePassed) / float64(numCaseTotal) * float64(numCaseExecuted) / float64(numCaseTotal) * 100
 	return score
 }
@@ -204,6 +207,9 @@ func (q *Q) calcBugReopenRate(ctx context.Context, h *gshelper.GSHelper) float64
 	reopenCount, totalCount, err := q.dbClient.BugReopenCount(q.projectID, h.GetGlobalSelectedIterationIDs())
 	if err != nil {
 		panic(err)
+	}
+	if totalCount == 0 {
+		return 0
 	}
 	score := float64(reopenCount) / float64(totalCount) * 100
 	return score
