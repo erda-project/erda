@@ -141,6 +141,7 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		OrgID:         project.OrgID,
 		TimeBegin:     *timeBegin,
 		TimeEnd:       *timeEnd,
+		PipelineID:    req.Content.PipelineID,
 	}
 	return s.db.CreateAutoTestExecHistory(&execHistory)
 }

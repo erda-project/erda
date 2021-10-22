@@ -46,6 +46,7 @@ type AutoTestExecHistory struct {
 	OrgID         uint64
 	TimeBegin     time.Time
 	TimeEnd       time.Time
+	PipelineID    uint64
 }
 
 func (a *AutoTestExecHistory) Convert() apistructs.AutoTestExecHistoryDto {
@@ -73,6 +74,7 @@ func (a *AutoTestExecHistory) Convert() apistructs.AutoTestExecHistoryDto {
 		OrgID:         a.OrgID,
 		CreatedAt:     a.CreatedAt,
 		UpdatedAt:     a.UpdatedAt,
+		PipelineID:    a.PipelineID,
 	}
 }
 

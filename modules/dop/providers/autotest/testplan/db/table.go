@@ -72,6 +72,7 @@ type AutoTestExecHistory struct {
 	OrgID         uint64
 	TimeBegin     time.Time
 	TimeEnd       time.Time
+	PipelineID    uint64
 }
 
 func (AutoTestExecHistory) TableName() string {

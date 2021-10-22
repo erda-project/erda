@@ -141,6 +141,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		SceneID:       sceneID,
 		SceneSetID:    sceneSetID,
 		ParentID:      parentPipelineID,
+		PipelineID:    ctx.SDK.Pipeline.PipelineID,
 		CreatorID:     userID,
 		IterationID:   iterationID,
 		StepID:        0,
@@ -152,7 +153,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return err
 	}
 	if stepType == apistructs.StepTypeScene {
-		if err = p.sendStepMessage(ctx, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID, userID); err != nil {
+		if err = p.sendStepMessage(ctx, testPlanID, sceneID, sceneSetID, iterationID, ctx.SDK.Pipeline.PipelineID, userID); err != nil {
 			return err
 		}
 	}
@@ -189,6 +190,7 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 				SceneID:       sceneID,
 				SceneSetID:    sceneSetID,
 				ParentID:      parentPipelineID,
+				PipelineID:    task.PipelineID,
 				CreatorID:     userID,
 				StepID:        stepID,
 				IterationID:   iterationID,

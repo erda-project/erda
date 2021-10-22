@@ -40,6 +40,7 @@ type AutoTestExecHistoryDto struct {
 	OrgID         uint64         `json:"orgID"`
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
+	PipelineID    uint64         `json:"pipelineID"`
 }
 
 type ExecHistorySceneAvgCostTime struct {
