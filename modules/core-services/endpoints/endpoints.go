@@ -317,6 +317,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}/workspaces/{workspace}/namespaces", Method: http.MethodGet, Handler: e.GetAllNamespaces},
 		{Path: "/api/projects/{projectID}/workspaces/{workspace}/quota", Method: http.MethodGet, Handler: e.GetWorkspaceQuota},
 
+		{Path: "/api/projects-quota", Method: http.MethodGet, Handler: e.GetProjectQuota},
+
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},

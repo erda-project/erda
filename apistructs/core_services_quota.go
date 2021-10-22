@@ -14,6 +14,10 @@
 
 package apistructs
 
+import (
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
+)
+
 type GetWorkspaceQuotaRequest struct {
 	ProjectID string `json:"projectID"`
 	Workspace string `json:"workspace"`
@@ -27,4 +31,85 @@ type GetWorkspaceQuotaResponse struct {
 type WorkspaceQuotaData struct {
 	CPU    int64 `json:"cpu"`
 	Memory int64 `json:"memory"`
+}
+
+type GetQuotaOnClustersResponse struct {
+	ClusterNames []string `json:"clusterNames"`
+	// CPUQuota is the total cpu quota on the clusters
+	CPUQuota float64 `json:"cpuQuota"`
+	cpuQuota uint64
+	// MemQuota is hte total mem quota on the clusters
+	MemQuota float64 `json:"memQuota"`
+	memQuota uint64
+	Owners   []*OwnerQuotaOnClusters `json:"owners"`
+}
+
+// AccuQuota accumulate cpu and mem quota value
+func (q *GetQuotaOnClustersResponse) AccuQuota(cpu, mem uint64) {
+	q.cpuQuota += cpu
+	q.memQuota += mem
+}
+
+func (q GetQuotaOnClustersResponse) ReCalcu() {
+	q.CPUQuota = 0
+	q.MemQuota = 0
+	for _, owner := range q.Owners {
+		owner.ReCalcu()
+		q.AccuQuota(owner.cpuQuota, owner.memQuota)
+	}
+	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
+	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
+}
+
+type OwnerQuotaOnClusters struct {
+	ID       uint64 `json:"id"`
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+	// CPUQuota is the total cpu quota for the owner on the clusters
+	CPUQuota float64 `json:"cpuQuota"`
+	cpuQuota uint64
+	// MemQuota is the total mem quota for the owner on the clusters
+	MemQuota float64 `json:"memQuota"`
+	memQuota uint64
+	Projects []*ProjectQuotaOnClusters `json:"projects"`
+}
+
+// AccuQuota accumulate cpu and mem quota value
+func (q *OwnerQuotaOnClusters) AccuQuota(cpu, mem uint64) {
+	q.cpuQuota += cpu
+	q.memQuota += mem
+}
+
+func (q OwnerQuotaOnClusters) ReCalcu() {
+	q.CPUQuota = 0
+	q.MemQuota = 0
+	for _, project := range q.Projects {
+		project.ReCalcu()
+		q.AccuQuota(project.cpuQuota, project.memQuota)
+	}
+	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
+	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
+}
+
+type ProjectQuotaOnClusters struct {
+	ID          uint64 `json:"id"`
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+	// CPUQuota is the total cpu quota for the project on the clusters
+	CPUQuota float64 `json:"cpuQuota"`
+	cpuQuota uint64
+	// CPUQuota is the total mem quota for the project on the clusters
+	MemQuota float64 `json:"memQuota"`
+	memQuota uint64
+}
+
+// AccuQuota accumulate cpu and mem quota value
+func (q *ProjectQuotaOnClusters) AccuQuota(cpu, mem uint64) {
+	q.cpuQuota += cpu
+	q.memQuota += mem
+}
+
+func (q ProjectQuotaOnClusters) ReCalcu() {
+	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
+	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
 }

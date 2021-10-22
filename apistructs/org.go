@@ -380,37 +380,6 @@ type GetQuotaOnClustersRequest struct {
 	OrgID string
 }
 
-type GetQuotaOnClustersResponse struct {
-	Header
-	ClusterNames []string `json:"clusterNames"`
-	// CPUQuota is the total cpu quota on the clusters
-	CPUQuota float64 `json:"cpuQuota"`
-	// MemQuota is hte total mem quota on the clusters
-	MemQuota float64                `json:"memQuota"`
-	Owners   []OwnerQuotaOnClusters `json:"owners"`
-}
-
-type OwnerQuotaOnClusters struct {
-	ID       uint64 `json:"id"`
-	Name     string `json:"name"`
-	Nickname string `json:"nickname"`
-	// CPUQuota is the total cpu quota for the owner on the clusters
-	CPUQuota float64 `json:"cpuQuota"`
-	// MemQuota is the total mem quota for the owner on the clusters
-	MemQuota float64                   `json:"memQuota"`
-	Projects []*ProjectQuotaOnClusters `json:"projects"`
-}
-
-type ProjectQuotaOnClusters struct {
-	ID          uint64 `json:"id"`
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
-	// CPUQuota is the total cpu quota for the project on the clusters
-	CPUQuota float64 `json:"cpuQuota"`
-	// CPUQuota is the total mem quota for the project on the clusters
-	MemQuota float64 `json:"memQuota"`
-}
-
 type QuotaData struct {
 	ClusterName string
 	Principal   string
