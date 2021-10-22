@@ -35,6 +35,7 @@ require (
 	github.com/erda-project/erda-infra v0.0.0-20211022070527-4e4f57b4b4dd
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
+	github.com/erda-project/erda-sourcecov v0.1.0
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
