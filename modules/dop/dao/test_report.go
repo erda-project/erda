@@ -34,6 +34,7 @@ type TestReportRecord struct {
 	CreatorID    string         `json:"creator_id"`    // creator id
 	QualityScore float64        `json:"quality_score"` // total quality score
 	ReportData   TestReportData `json:"report_data"`   // issue and test dashboard component protocol
+	Summary      string         `json:"summary"`       // test report summary
 }
 
 type TestReportData apistructs.TestReportData
@@ -64,7 +65,7 @@ func (dat *TestReportData) Scan(value interface{}) error {
 }
 
 func (TestReportRecord) TableName() string {
-	return "dice_test_report_records"
+	return "erda_test_report_records"
 }
 
 func (t *TestReportRecord) Convert() apistructs.TestReportRecord {
@@ -76,6 +77,7 @@ func (t *TestReportRecord) Convert() apistructs.TestReportRecord {
 		CreatedAt:    t.CreatedAt,
 		UpdatedAt:    t.UpdatedAt,
 		Name:         t.Name,
+		Summary:      t.Summary,
 		QualityScore: t.QualityScore,
 		ReportData: apistructs.TestReportData{
 			IssueDashboard: t.ReportData.IssueDashboard,
@@ -99,13 +101,13 @@ func (client *DBClient) ListTestReportRecord(req apistructs.TestReportRecordList
 	)
 	sql := client.Model(&TestReportRecord{}).Where("project_id = ?", req.ProjectID)
 	if req.ID > 0 {
-		sql = sql.Where("id = ?", req.ID)
+		sql = sql.Where("`id` = ?", req.ID)
 	}
-	if req.IterationID > 0 {
-		sql = sql.Where("iteration_id = ?", req.IterationID)
+	if len(req.IterationIDS) > 0 {
+		sql = sql.Where("`iteration_id` IN (?)", req.IterationIDS)
 	}
 	if req.Name != "" {
-		sql = sql.Where("name like ?", "%"+req.Name+"%")
+		sql = sql.Where("`name` like ?", "%"+req.Name+"%")
 	}
 	if req.OrderBy != "" {
 		if req.Asc {

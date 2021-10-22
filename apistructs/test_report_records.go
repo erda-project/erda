@@ -15,6 +15,8 @@
 package apistructs
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -29,27 +31,48 @@ type TestReportRecord struct {
 	CreatedAt    time.Time      `json:"createdAt"`
 	UpdatedAt    time.Time      `json:"updatedAt"`
 	Name         string         `json:"name"`
+	Summary      string         `json:"summary"`
 	QualityScore float64        `json:"qualityScore"`
 	ReportData   TestReportData `json:"reportData"`
 }
 
 type TestReportData struct {
-	IssueDashboard *ComponentProtocol `json:"issue-dashboard,omitempty"`
-	TestDashboard  *ComponentProtocol `json:"test-dashboard,omitempty"`
+	IssueDashboard *ComponentProtocolRequest `json:"issue-dashboard,omitempty"`
+	TestDashboard  *ComponentProtocolRequest `json:"test-dashboard,omitempty"`
+}
+
+type reportQualityScore struct {
+	QualityScore float64 `json:"qualityScore"`
+}
+
+func (t *TestReportData) GetQualityScore() (float64, error) {
+	if t.TestDashboard == nil || t.TestDashboard.Protocol == nil || t.TestDashboard.Protocol.GlobalState == nil {
+		return 0, fmt.Errorf("missing quality score data")
+	}
+
+	scoreByt, err := json.Marshal(t.TestDashboard.Protocol.GlobalState)
+	if err != nil {
+		return 0, err
+	}
+	var score reportQualityScore
+	if err := json.Unmarshal(scoreByt, &score); err != nil {
+		return 0, err
+	}
+	return score.QualityScore, nil
 }
 
 type TestReportRecordListRequest struct {
 	IdentityInfo
 
-	ID            uint64 `json:"id"`
-	Name          string `json:"name"`
-	ProjectID     uint64 `json:"projectID"`
-	IterationID   uint64 `json:"iterationID"`
-	GetReportData bool   `json:"getReportData"`
-	OrderBy       string `json:"orderBy"`
-	Asc           bool   `json:"asc"`
-	PageNo        uint64 `json:"pageNo"`
-	PageSize      uint64 `json:"pageSize"`
+	ID            uint64   `json:"id"`
+	Name          string   `json:"name"`
+	ProjectID     uint64   `json:"projectID"`
+	IterationIDS  []uint64 `json:"iterationIDS"`
+	GetReportData bool     `json:"getReportData"`
+	OrderBy       string   `json:"orderBy"`
+	Asc           bool     `json:"asc"`
+	PageNo        uint64   `json:"pageNo"`
+	PageSize      uint64   `json:"pageSize"`
 }
 
 func (req *TestReportRecordListRequest) URLQueryString() map[string][]string {
@@ -60,8 +83,11 @@ func (req *TestReportRecordListRequest) URLQueryString() map[string][]string {
 	if req.ProjectID != 0 {
 		query["projectID"] = []string{strconv.FormatInt(int64(req.ProjectID), 10)}
 	}
-	if req.IterationID != 0 {
-		query["iterationID"] = []string{strconv.FormatInt(int64(req.IterationID), 10)}
+	if len(req.IterationIDS) > 0 {
+		query["iterationIDS"] = []string{}
+		for _, iteration := range req.IterationIDS {
+			query["iterationIDS"] = append(query["iterationIDS"], strconv.FormatInt(int64(iteration), 10))
+		}
 	}
 	query["getReportData"] = []string{strconv.FormatBool(req.GetReportData)}
 	if req.OrderBy != "" {

@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) CreateTestReportRecord(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -36,6 +37,11 @@ func (e *Endpoints) CreateTestReportRecord(ctx context.Context, r *http.Request,
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrCreateTestReportRecord.InvalidParameter(err).ToResp(), nil
 	}
+	projectID, err := strutil.Atoi64(vars["projectID"])
+	if err != nil {
+		return apierrors.ErrCreateTestReportRecord.InvalidParameter(err).ToResp(), nil
+	}
+	req.ProjectID = uint64(projectID)
 	if req.ProjectID == 0 {
 		return apierrors.ErrCreateTestReportRecord.InvalidParameter("projectId").ToResp(), nil
 	}
@@ -58,6 +64,14 @@ func (e *Endpoints) ListTestReportRecord(ctx context.Context, r *http.Request, v
 	var req apistructs.TestReportRecordListRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrListTestReportRecord.InvalidParameter(err).ToResp(), nil
+	}
+	projectID, err := strutil.Atoi64(vars["projectID"])
+	if err != nil {
+		return apierrors.ErrListTestReportRecord.InvalidParameter(err).ToResp(), nil
+	}
+	req.ProjectID = uint64(projectID)
+	if req.ProjectID == 0 {
+		return apierrors.ErrListTestReportRecord.InvalidParameter("projectId").ToResp(), nil
 	}
 
 	data, err := e.testReportSvc.ListTestReportByRequest(req)

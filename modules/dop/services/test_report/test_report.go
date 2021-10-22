@@ -15,6 +15,8 @@
 package test_report
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -73,12 +75,23 @@ func (svc *TestReport) CreateTestReport(req apistructs.TestReportRecord) (uint64
 	if err != nil {
 		return 0, apierrors.ErrCreateTestReportRecord.NotFound()
 	}
+	if iteration.ProjectID != req.ProjectID {
+		return 0, apierrors.ErrCreateTestReportRecord.InvalidParameter("iterationID")
+	}
+	qualityScore, err := req.ReportData.GetQualityScore()
+	if err != nil {
+		return 0, apierrors.ErrCreateTestReportRecord.InternalError(err)
+	}
+	if qualityScore > 500 || qualityScore < 0 {
+		return 0, apierrors.ErrCreateTestReportRecord.InvalidParameter(fmt.Sprintf("qualityScore: %.2f", qualityScore))
+	}
 	record := &dao.TestReportRecord{
 		Name:         req.Name,
 		ProjectID:    req.ProjectID,
 		IterationID:  iteration.ID,
 		CreatorID:    req.UserID,
-		QualityScore: req.QualityScore,
+		QualityScore: qualityScore,
+		Summary:      req.Summary,
 		ReportData: dao.TestReportData{
 			IssueDashboard: req.ReportData.IssueDashboard,
 			TestDashboard:  req.ReportData.TestDashboard,

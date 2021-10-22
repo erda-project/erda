@@ -15,7 +15,7 @@
 package bundle
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -29,7 +29,7 @@ func (b *Bundle) ListTestReportRecord(req apistructs.TestReportRecordListRequest
 		return rsp, err
 	}
 
-	request := b.hc.Get(host).Path("/api/test-report/records/actions/list")
+	request := b.hc.Get(host).Path(fmt.Sprintf("/api/projects/%d/test-reports/actions/list", req.ProjectID))
 	resp, err := request.
 		Header(httputil.UserHeader, req.UserID).
 		Params(req.URLQueryString()).
@@ -49,7 +49,7 @@ func (b *Bundle) GetTestReportRecord(req apistructs.TestReportRecord) (apistruct
 	if err != nil {
 		return rsp.Data, err
 	}
-	request := b.hc.Get(host).Path("/api/test-report/record/" + strconv.FormatInt(int64(req.ID), 10))
+	request := b.hc.Get(host).Path(fmt.Sprintf("/api/projects/%d/test-reports/%d", req.ProjectID, req.ID))
 	resp, err := request.
 		Header(httputil.UserHeader, req.UserID).
 		Do().JSON(&rsp)
@@ -68,7 +68,7 @@ func (b *Bundle) CreateTestReportRecord(req apistructs.TestReportRecord) (uint64
 		return 0, err
 	}
 
-	request := b.hc.Post(host).Path("/api/test-report")
+	request := b.hc.Post(host).Path(fmt.Sprintf("/api/projects/%d/test-reports", req.ProjectID))
 	var rsp apistructs.CreateTestReportRecordResponse
 	resp, err := request.
 		Header(httputil.UserHeader, req.UserID).

@@ -24,8 +24,6 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/dop/services/test_report"
-
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -61,6 +59,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
@@ -595,9 +594,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/code-coverage/actions/status", Method: http.MethodGet, Handler: e.GetCodeCoverageRecordStatus},
 
 		// test report
-		{Path: "/api/test-report", Method: http.MethodPost, Handler: e.CreateTestReportRecord},
-		{Path: "/api/test-report/records/actions/list", Method: http.MethodGet, Handler: e.ListTestReportRecord},
-		{Path: "/api/test-report/record/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports", Method: http.MethodPost, Handler: e.CreateTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports/actions/list", Method: http.MethodGet, Handler: e.ListTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
 
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},

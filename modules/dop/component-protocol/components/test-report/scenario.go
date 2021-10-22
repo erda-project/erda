@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package test_report
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/scenes-import-record"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-report"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-report/createReportButton"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-report/filter"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-report/table"
 )

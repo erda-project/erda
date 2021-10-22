@@ -24,11 +24,8 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/dop/services/test_report"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -72,6 +69,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
