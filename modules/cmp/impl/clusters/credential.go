@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -151,10 +152,15 @@ func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysI
 	// Get kubernetes clientSet
 	cs := kc.ClientSet
 
+	return c.ResetAccessKeyWithClientSet(clusterName, cs)
+}
+
+// ResetAccessKeyWithClientSet reset access key with specified clientSet
+func (c *Clusters) ResetAccessKeyWithClientSet(clusterName string, cs *kubernetes.Clientset) (*credentialpb.AccessKeysItem, error) {
 	// Get worker namespace
 	workerNs := getWorkerNamespace()
 
-	sec, err := cs.CoreV1().Secrets(workerNs).Get(context.Background(), apistructs.ErdaClusterConfig, v1.GetOptions{})
+	sec, err := cs.CoreV1().Secrets(workerNs).Get(context.Background(), apistructs.ErdaClusterCredential, v1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			tipErr := fmt.Errorf("get worker cluster config err: %v", err)
@@ -165,7 +171,7 @@ func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysI
 		logrus.Info("cluster credential secret doesn't exist, create it.")
 		sec, err = cs.CoreV1().Secrets(workerNs).Create(context.Background(), &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
-				Name: apistructs.ErdaClusterConfig,
+				Name: apistructs.ErdaClusterCredential,
 			},
 		}, v1.CreateOptions{})
 		if err != nil {
@@ -192,7 +198,7 @@ func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysI
 	}
 
 	// Update secret
-	sec.Data[apistructs.AccessKey] = []byte(newAk.AccessKey)
+	sec.Data[apistructs.ClusterAccessKey] = []byte(newAk.AccessKey)
 
 	_, err = cs.CoreV1().Secrets(workerNs).Update(context.Background(), sec, v1.UpdateOptions{})
 	if err != nil {

@@ -21,12 +21,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/modules/cluster-dialer/config"
 	"github.com/erda-project/erda/modules/cluster-dialer/server"
 )
 
 type provider struct {
-	Cfg *config.Config // auto inject this field
+	Cfg        *config.Config                      // auto inject this field
+	Credential credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -38,7 +40,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return server.Start(ctx, p.Cfg)
+	return server.Start(ctx, p.Credential, p.Cfg)
 }
 
 func init() {

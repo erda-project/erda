@@ -23,25 +23,35 @@ import (
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
+	"github.com/erda-project/erda/modules/cluster-dialer/auth"
 	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
 )
 
 const (
 	dialerListenAddr2 = "127.0.0.1:18753"
 	helloListenAddr2  = "127.0.0.1:18754"
+	fakeClusterKey    = "test"
 )
 
 func Test_netportal(t *testing.T) {
-	go Start(context.Background(), &serverconfig.Config{
+	defer monkey.UnpatchAll()
+
+	authorizer := auth.New(auth.WithCredentialClient(nil))
+	monkey.Patch(authorizer.Authorizer, func(req *http.Request) (string, bool, error) {
+		return fakeClusterKey, true, nil
+	})
+
+	go Start(context.Background(), nil, &serverconfig.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
 	})
 	go client.Start(context.Background(), &clientconfig.Config{
 		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
-		ClusterKey:          "test",
-		SecretKey:           "test",
+		ClusterKey:          fakeClusterKey,
 		CollectClusterInfo:  false,
 	})
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {

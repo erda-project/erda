@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
 	_ "github.com/erda-project/erda/modules/cluster-dialer"
 )
 

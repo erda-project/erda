@@ -2,5 +2,6 @@ cluster-agent:
   debug: ${DEBUG:false}
   clusterDialEndpoint: "${CLUSTER_DIALER_PUBLIC_URL}/clusteragent/connect"
   clusterKey: "${DICE_CLUSTER_NAME}"
-  secretKey: "${SECRET_KEY}"
+  erdaNamespace: "${DICE_NAMESPACE}"
+  clusterAccessKey: "${CLUSTER_ACCESS_KEY}"
   k8sApiServerAddr: "${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"

@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -28,13 +29,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cluster-agent/config"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
-var connected = make(chan struct{})
+var (
+	connected    = make(chan struct{})
+	disConnected = make(chan struct{})
+)
 
 const (
 	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -58,7 +63,7 @@ func getClusterInfo(apiserverAddr string) (map[string]interface{}, error) {
 	}, nil
 }
 
-func parseDialerEndpoint(clusterKey, endpoint string) (string, error) {
+func parseDialerEndpoint(endpoint string) (string, error) {
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return "", err
@@ -82,9 +87,8 @@ func parseDialerEndpoint(clusterKey, endpoint string) (string, error) {
 func Start(ctx context.Context, cfg *config.Config) error {
 	headers := http.Header{
 		"X-Erda-Cluster-Key": {cfg.ClusterKey},
-		// TODO: support encode with secretKey
-		"Authorization": {cfg.ClusterKey},
 	}
+
 	if cfg.CollectClusterInfo {
 		clusterInfo, err := getClusterInfo(cfg.K8SApiServerAddr)
 		if err != nil {
@@ -97,12 +101,28 @@ func Start(ctx context.Context, cfg *config.Config) error {
 		headers["X-Erda-Cluster-Info"] = []string{base64.StdEncoding.EncodeToString(bytes)}
 	}
 
-	ep, err := parseDialerEndpoint(cfg.ClusterKey, cfg.ClusterDialEndpoint)
+	ep, err := parseDialerEndpoint(cfg.ClusterDialEndpoint)
 	if err != nil {
 		return err
 	}
 
+	// Set access key values default
+	setAccessKey(cfg.ClusterAccessKey)
+
+	// If specified cluster access key, preferred to use it.
+	if cfg.ClusterAccessKey == "" {
+		go func() {
+			if err := WatchClusterCredential(ctx, cfg); err != nil {
+				logrus.Errorf("watch cluster info error: %v", err)
+				return
+			}
+		}()
+	} else {
+		logrus.Infof("use specified cluster access key: %v", cfg.ClusterAccessKey)
+	}
+
 	for {
+		headers.Set("Authorization", getAccessKey())
 		remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
 			switch proto {
 			case "tcp":
@@ -128,7 +148,16 @@ func Connected() <-chan struct{} {
 	return connected
 }
 
-func onConnect(context.Context, *remotedialer.Session) error {
-	connected <- struct{}{}
-	return nil
+func onConnect(ctx context.Context, _ *remotedialer.Session) error {
+	go func() {
+		connected <- struct{}{}
+	}()
+
+	// Or passThrough cancel() function
+	select {
+	case <-disConnected:
+		return fmt.Errorf("config reload")
+	case <-ctx.Done():
+		return nil
+	}
 }
