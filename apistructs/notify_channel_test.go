@@ -39,7 +39,7 @@ func Test_(t *testing.T) {
         "createAt": "2021-10-20 21:10:14",
         "updateAt": "2021-10-20 21:30:02",
         "channelProviderType": {
-            "name": "ali_short_message",
+            "name": "aliyun_sms",
             "displayName": "阿里云短信服务"
         },
         "enable": true

@@ -49,4 +49,4 @@ type NotifyChannelType string
 type NotifyChannelProviderType string
 
 const NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE = NotifyChannelType("short_message")
-const NOTIFY_CHANNEL_PROVIDER_TYPE_ALIYUN = NotifyChannelProviderType("ali_short_message")
+const NOTIFY_CHANNEL_PROVIDER_TYPE_ALIYUN = NotifyChannelProviderType("aliyun_sms")
