@@ -284,12 +284,16 @@ func (s *PipelineSvc) MakeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *
 		runParams = append(runParams, apistructs.PipelineRunParam{Name: k, Value: v})
 	}
 	// transfer snippetTask to pipeline create request
+	labels := p.Labels
+	for k, v := range snippetConfig.Labels {
+		labels[k] = v
+	}
 	snippetPipelineCreateReq := apistructs.PipelineCreateRequestV2{
 		PipelineYml:            yamlContent,
 		ClusterName:            snippetTask.Extra.ClusterName,
 		PipelineYmlName:        snippetConfig.Name,
 		PipelineSource:         apistructs.PipelineSource(snippetConfig.Source),
-		Labels:                 p.Labels,
+		Labels:                 labels,
 		NormalLabels:           p.NormalLabels,
 		Envs:                   p.Snapshot.Envs,
 		ConfigManageNamespaces: p.Extra.ConfigManageNamespaces,

@@ -1,5 +1,5 @@
 {
     "conditions": {
-        "max_size": "${METRIC_INDEX_ROLLOVER_MIN_SIZE:256mb}"
+        "max_size": "${INDEX_ROLLOVER_MIN_SIZE:256mb}"
     }
 }

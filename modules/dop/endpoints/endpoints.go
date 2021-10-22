@@ -60,7 +60,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
-	"github.com/erda-project/erda/modules/dop/services/testplan"
+	mttestplan "github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/modules/dop/services/workbench"
@@ -430,6 +430,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/scenesets/{setID}", Method: http.MethodDelete, Handler: e.DeleteSceneSet},
 		{Path: "/api/autotests/scenesets/actions/drag", Method: http.MethodPut, Handler: e.DragSceneSet},
 		{Path: "/api/autotests/scenesets/actions/copy", Method: http.MethodPost, Handler: e.CopySceneSet},
+		{Path: "/api/autotests/scenesets/actions/export", Method: http.MethodPost, Handler: e.ExportAutotestSceneSet},
+		{Path: "/api/autotests/scenesets/actions/import", Method: http.MethodPost, Handler: e.ImportAutotestSceneSet},
 
 		// migrate
 		{Path: "/api/autotests/actions/migrate-from-autotestv1", Method: http.MethodGet, Handler: e.MigrateFromAutoTestV1},
@@ -636,7 +638,7 @@ type Endpoints struct {
 	db              *dao.DBClient
 	testcase        *testcase.Service
 	testset         *testset.Service
-	testPlan        *testplan.TestPlan
+	mttestPlan      *mttestplan.TestPlan
 	autotest        *autotest.Service
 	autotestV2      *atv2.Service
 	sonarMetricRule *sonar_metric_rule.Service
@@ -818,9 +820,9 @@ func WithSonarMetricRule(sonarMetricRule *sonar_metric_rule.Service) Option {
 }
 
 // WithTestplan 设置 testplan endpoint
-func WithTestplan(testPlan *testplan.TestPlan) Option {
+func WithTestplan(testPlan *mttestplan.TestPlan) Option {
 	return func(e *Endpoints) {
-		e.testPlan = testPlan
+		e.mttestPlan = testPlan
 	}
 }
 
@@ -1039,4 +1041,20 @@ func (e *Endpoints) IssueService() *issue.Issue {
 
 func (e *Endpoints) CodeCoverageService() *code_coverage.CodeCoverage {
 	return e.codeCoverageSvc
+}
+
+func (e *Endpoints) IterationService() *iteration.Iteration {
+	return e.iteration
+}
+
+func (e *Endpoints) ManualTestCaseService() *testcase.Service {
+	return e.testcase
+}
+
+func (e *Endpoints) ManualTestPlanService() *mttestplan.TestPlan {
+	return e.mttestPlan
+}
+
+func (e *Endpoints) AutoTestPlanService() *atv2.Service {
+	return e.autotestV2
 }

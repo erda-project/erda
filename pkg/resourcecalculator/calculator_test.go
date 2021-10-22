@@ -250,3 +250,36 @@ func TestByteToGibibyte(t *testing.T) {
 func TestWorkspacesString(t *testing.T) {
 	t.Log(calcu.WorkspacesString([]calcu.Workspace{calcu.Prod, calcu.Dev, calcu.Staging}))
 }
+
+func TestResourceCalculator_Copy(t *testing.T) {
+	clusterName := "erda-hongkong"
+	c := calcu.New(clusterName)
+	d := c.Copy()
+	for k, v := range c.CPU.M {
+		if v != d.CPU.M[k] {
+			t.Fatal("copy error")
+		}
+	}
+}
+
+func TestResourceCalculator_AlreadyQuota(t *testing.T) {
+	clusterName := "erda-hongkong"
+	c := calcu.New(clusterName)
+	if c.CPU.AlreadyQuota(calcu.Prod) != 0 {
+		t.Fatal("AlreadyQuota error")
+	}
+}
+
+func TestResourceCalculator_StatusOK(t *testing.T) {
+	clusterName := "erda-hongkong"
+	c := calcu.New(clusterName)
+	if !c.CPU.StatusOK(calcu.Prod) {
+		t.Fatal("StatusOK error")
+	}
+}
+
+func TestResourceToString(t *testing.T) {
+	t.Log(calcu.ResourceToString(1000, "cpu"))
+	t.Log(calcu.ResourceToString(5*1024*1024*1024, "memory"))
+	t.Log(calcu.ResourceToString(1000, "error key"))
+}

@@ -393,6 +393,19 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	return lists, nil
 }
 
+func (svc *Service) IsExistSceneSetName(spaceID uint64, sceneSetName string) bool {
+	sceneSets, err := svc.db.SceneSetsBySpaceID(spaceID)
+	if err != nil {
+		return false
+	}
+	for _, set := range sceneSets {
+		if set.Name == sceneSetName {
+			return true
+		}
+	}
+	return false
+}
+
 // CutAutotestScene 移除场景
 func (svc *Service) CutAutotestScene(sc *dao.AutoTestScene) error {
 	next, err := svc.db.GetAutotestSceneByPreID(sc.ID)
@@ -436,7 +449,7 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 		return nil, err
 	}
 
-	yml, err := svc.SceneToYml(scene.ID)
+	yml, err := svc.SceneToYml(scene.ID, apistructs.SnippetConfig{})
 	if err != nil {
 		return nil, err
 	}
@@ -669,7 +682,7 @@ func (svc *Service) renderPreSceneStepsOutput(sceneID uint64, replaceYml string)
 	return replaceYml
 }
 
-func (svc *Service) SceneToYml(scene uint64) (string, error) {
+func (svc *Service) SceneToYml(scene uint64, req apistructs.SnippetConfig) (string, error) {
 	sceneInputs, err := svc.ListAutoTestSceneInput(scene)
 	if err != nil {
 		return "", err
@@ -685,20 +698,20 @@ func (svc *Service) SceneToYml(scene uint64) (string, error) {
 		return "", err
 	}
 
-	return svc.DoSceneToYml(sceneSteps, sceneInputs, sceneOutputs)
+	return svc.DoSceneToYml(sceneSteps, sceneInputs, sceneOutputs, req)
 }
 
-func (svc *Service) DoSceneToYml(sceneSteps []apistructs.AutoTestSceneStep, sceneInputs []apistructs.AutoTestSceneInput, sceneOutputs []apistructs.AutoTestSceneOutput) (string, error) {
+func (svc *Service) DoSceneToYml(sceneSteps []apistructs.AutoTestSceneStep, sceneInputs []apistructs.AutoTestSceneInput, sceneOutputs []apistructs.AutoTestSceneOutput, req apistructs.SnippetConfig) (string, error) {
 	sceneStages := StepToStages(sceneSteps)
 
-	yml, err := SceneToPipelineYml(sceneInputs, sceneOutputs, sceneStages)
+	yml, err := SceneToPipelineYml(sceneInputs, sceneOutputs, sceneStages, req)
 	if err != nil {
 		return "", err
 	}
 	return yml, err
 }
 
-func SceneToPipelineYml(inputs []apistructs.AutoTestSceneInput, outputs []apistructs.AutoTestSceneOutput, stages [][]apistructs.AutoTestSceneStep) (string, error) {
+func SceneToPipelineYml(inputs []apistructs.AutoTestSceneInput, outputs []apistructs.AutoTestSceneOutput, stages [][]apistructs.AutoTestSceneStep, req apistructs.SnippetConfig) (string, error) {
 	var spec pipelineyml.Spec
 	spec.Params = make([]*pipelineyml.PipelineParam, len(inputs))
 	spec.Outputs = make([]*pipelineyml.PipelineOutput, len(outputs))
@@ -726,7 +739,7 @@ func SceneToPipelineYml(inputs []apistructs.AutoTestSceneInput, outputs []apistr
 			if step.Value == "" {
 				continue
 			}
-			action, err := StepToAction(step)
+			action, err := StepToAction(step, req)
 			if err != nil {
 				return "", err
 			}
@@ -748,7 +761,7 @@ func SceneToPipelineYml(inputs []apistructs.AutoTestSceneInput, outputs []apistr
 	return string(yml), nil
 }
 
-func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType]*pipelineyml.Action, error) {
+func StepToAction(step apistructs.AutoTestSceneStep, req apistructs.SnippetConfig) (map[pipelineyml.ActionType]*pipelineyml.Action, error) {
 	var action pipelineyml.Action
 	stepJson, err := json.Marshal(step)
 	if err != nil {
@@ -792,6 +805,8 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 				apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
 				apistructs.LabelSceneID:          strconv.Itoa(int(value.SceneID)),
 				apistructs.LabelSpaceID:          strconv.Itoa(int(step.SpaceID)),
+				apistructs.LabelIterationID:      req.Labels[apistructs.LabelIterationID],
+				apistructs.LabelTestPlanID:       req.Labels[apistructs.LabelTestPlanID],
 			},
 		}
 	case apistructs.StepTypeAPI:

@@ -40,3 +40,20 @@ func TestAutoTestRunWait(t *testing.T) {
 	assert.Equal(t, 2, jsonWait.WaitTimeSec)
 	assert.Equal(t, 2, envWait.WaitTimeSec)
 }
+
+func TestToJsonCopyText(t *testing.T) {
+	jsonStr := `{
+	"method": "",
+	"type": "API",
+	"value": "{\"apiSpec\":{\"asserts\":[],\"body\":{\"content\":null,\"type\":\"\"},\"headers\":null,\"id\":\"\",\"method\":\"GET\",\"name\":\"a\",\"out_params\":[],\"params\":[{\"key\":\"d\",\"value\":\"${{ params.a }}\"}],\"url\":\"www.xxx.com?d=${{ params.a }}\"},\"loop\":null}"
+}`
+	step := AutoTestSceneStep{
+		SpaceID:   1,
+		SceneID:   1,
+		CreatorID: "123",
+		Type:      StepTypeAPI,
+		Value:     "{\"apiSpec\":{\"asserts\":[],\"body\":{\"content\":null,\"type\":\"\"},\"headers\":null,\"id\":\"\",\"method\":\"GET\",\"name\":\"a\",\"out_params\":[],\"params\":[{\"key\":\"d\",\"value\":\"${{ params.a }}\"}],\"url\":\"www.xxx.com?d=${{ params.a }}\"},\"loop\":null}",
+	}
+
+	assert.Equal(t, jsonStr, step.ToJsonCopyText())
+}

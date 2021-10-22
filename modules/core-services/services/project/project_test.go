@@ -23,6 +23,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -106,6 +108,50 @@ func TestGetModelProjectsMap(t *testing.T) {
 	projectMap, err := p.GetModelProjectsMap(projectIDs)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(projectMap))
+}
+
+func TestWtihI18n(t *testing.T) {
+	var translator i18n.Translator
+	New(WithI18n(translator))
+}
+
+func TestWithClusterResourceClient(t *testing.T) {
+	var cli dashboardPb.ClusterResourceServer
+	New(WithClusterResourceClient(cli))
+}
+
+func Test_convertAuditCreateReq2Model(t *testing.T) {
+	var audit = apistructs.Audit{
+		ID:           0,
+		UserID:       "",
+		ScopeType:    "",
+		ScopeID:      0,
+		FDPProjectID: "",
+		OrgID:        0,
+		ProjectID:    0,
+		AppID:        0,
+		Context:      nil,
+		TemplateName: "",
+		AuditLevel:   "",
+		Result:       "",
+		ErrorMsg:     "",
+		StartTime:    "2006-01-02 15:04:05",
+		EndTime:      "2006-01-02 15:04:05",
+		ClientIP:     "",
+		UserAgent:    "",
+	}
+	if _, err := convertAuditCreateReq2Model(audit); err != nil {
+		t.Fatal(err)
+	}
+
+	audit.EndTime = "123456"
+	if _, err := convertAuditCreateReq2Model(audit); err == nil {
+		t.Fatal("err")
+	}
+	audit.StartTime = "123456"
+	if _, err := convertAuditCreateReq2Model(audit); err == nil {
+		t.Fatal("err")
+	}
 }
 
 // TODO We need to turn this ut on after adding the delete portal to the UI
