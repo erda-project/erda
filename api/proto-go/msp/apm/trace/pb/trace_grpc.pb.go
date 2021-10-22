@@ -30,6 +30,7 @@ type TraceServiceClient interface {
 	CreateTraceDebug(ctx context.Context, in *CreateTraceDebugRequest, opts ...grpc.CallOption) (*CreateTraceDebugResponse, error)
 	StopTraceDebug(ctx context.Context, in *StopTraceDebugRequest, opts ...grpc.CallOption) (*StopTraceDebugResponse, error)
 	GetTraceDebugHistoryStatusByRequestID(ctx context.Context, in *GetTraceDebugStatusByRequestIDRequest, opts ...grpc.CallOption) (*GetTraceDebugStatusByRequestIDResponse, error)
+	GetSpanEvents(ctx context.Context, in *SpanEventRequest, opts ...grpc.CallOption) (*SpanEventResponse, error)
 }
 
 type traceServiceClient struct {
@@ -121,6 +122,15 @@ func (c *traceServiceClient) GetTraceDebugHistoryStatusByRequestID(ctx context.C
 	return out, nil
 }
 
+func (c *traceServiceClient) GetSpanEvents(ctx context.Context, in *SpanEventRequest, opts ...grpc.CallOption) (*SpanEventResponse, error) {
+	out := new(SpanEventResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.apm.trace.TraceService/GetSpanEvents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TraceServiceServer is the server API for TraceService service.
 // All implementations should embed UnimplementedTraceServiceServer
 // for forward compatibility
@@ -134,6 +144,7 @@ type TraceServiceServer interface {
 	CreateTraceDebug(context.Context, *CreateTraceDebugRequest) (*CreateTraceDebugResponse, error)
 	StopTraceDebug(context.Context, *StopTraceDebugRequest) (*StopTraceDebugResponse, error)
 	GetTraceDebugHistoryStatusByRequestID(context.Context, *GetTraceDebugStatusByRequestIDRequest) (*GetTraceDebugStatusByRequestIDResponse, error)
+	GetSpanEvents(context.Context, *SpanEventRequest) (*SpanEventResponse, error)
 }
 
 // UnimplementedTraceServiceServer should be embedded to have forward compatible implementations.
@@ -166,6 +177,9 @@ func (*UnimplementedTraceServiceServer) StopTraceDebug(context.Context, *StopTra
 }
 func (*UnimplementedTraceServiceServer) GetTraceDebugHistoryStatusByRequestID(context.Context, *GetTraceDebugStatusByRequestIDRequest) (*GetTraceDebugStatusByRequestIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTraceDebugHistoryStatusByRequestID not implemented")
+}
+func (*UnimplementedTraceServiceServer) GetSpanEvents(context.Context, *SpanEventRequest) (*SpanEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSpanEvents not implemented")
 }
 
 func RegisterTraceServiceServer(s grpc1.ServiceRegistrar, srv TraceServiceServer, opts ...grpc1.HandleOption) {
@@ -265,6 +279,15 @@ func _get_TraceService_serviceDesc(srv TraceServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_TraceService_GetTraceDebugHistoryStatusByRequestID_info = transport.NewServiceInfo("erda.msp.apm.trace.TraceService", "GetTraceDebugHistoryStatusByRequestID", srv)
 		_TraceService_GetTraceDebugHistoryStatusByRequestID_Handler = h.Interceptor(_TraceService_GetTraceDebugHistoryStatusByRequestID_Handler)
+	}
+
+	_TraceService_GetSpanEvents_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetSpanEvents(ctx, req.(*SpanEventRequest))
+	}
+	var _TraceService_GetSpanEvents_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_TraceService_GetSpanEvents_info = transport.NewServiceInfo("erda.msp.apm.trace.TraceService", "GetSpanEvents", srv)
+		_TraceService_GetSpanEvents_Handler = h.Interceptor(_TraceService_GetSpanEvents_Handler)
 	}
 
 	var serviceDesc = _TraceService_serviceDesc
@@ -474,6 +497,29 @@ func _get_TraceService_serviceDesc(srv TraceServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.msp.apm.trace.TraceService/GetTraceDebugHistoryStatusByRequestID",
 				}
 				return interceptor(ctx, in, info, _TraceService_GetTraceDebugHistoryStatusByRequestID_Handler)
+			},
+		},
+		{
+			MethodName: "GetSpanEvents",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(SpanEventRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(TraceServiceServer).GetSpanEvents(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _TraceService_GetSpanEvents_info)
+				}
+				if interceptor == nil {
+					return _TraceService_GetSpanEvents_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.apm.trace.TraceService/GetSpanEvents",
+				}
+				return interceptor(ctx, in, info, _TraceService_GetSpanEvents_Handler)
 			},
 		},
 	}

@@ -67,6 +67,12 @@ var _ json.Marshaler = (*Span)(nil)
 var _ json.Unmarshaler = (*Span)(nil)
 var _ json.Marshaler = (*Trace)(nil)
 var _ json.Unmarshaler = (*Trace)(nil)
+var _ json.Marshaler = (*SpanEvent)(nil)
+var _ json.Unmarshaler = (*SpanEvent)(nil)
+var _ json.Marshaler = (*SpanEventRequest)(nil)
+var _ json.Unmarshaler = (*SpanEventRequest)(nil)
+var _ json.Marshaler = (*SpanEventResponse)(nil)
+var _ json.Unmarshaler = (*SpanEventResponse)(nil)
 
 // GetTraceQueryConditionsRequest implement json.Marshaler.
 func (m *GetTraceQueryConditionsRequest) MarshalJSON() ([]byte, error) {
@@ -549,6 +555,60 @@ func (m *Trace) MarshalJSON() ([]byte, error) {
 
 // Trace implement json.Marshaler.
 func (m *Trace) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// SpanEvent implement json.Marshaler.
+func (m *SpanEvent) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// SpanEvent implement json.Marshaler.
+func (m *SpanEvent) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// SpanEventRequest implement json.Marshaler.
+func (m *SpanEventRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// SpanEventRequest implement json.Marshaler.
+func (m *SpanEventRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// SpanEventResponse implement json.Marshaler.
+func (m *SpanEventResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// SpanEventResponse implement json.Marshaler.
+func (m *SpanEventResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
