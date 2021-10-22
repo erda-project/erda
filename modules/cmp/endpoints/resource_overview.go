@@ -91,5 +91,7 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 		},
 	}
 
+	// todo: authentication
+
 	return httpserver.OkResp(data)
 }
