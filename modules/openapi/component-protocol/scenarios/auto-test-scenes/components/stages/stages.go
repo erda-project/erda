@@ -79,6 +79,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		Title:      title,
 		ID:         step.ID,
 		GroupID:    int64(groupID),
+		Disabled:   step.IsDisabled,
 		Operations: make(map[string]interface{}),
 	}
 	if step.Type == apistructs.StepTypeAPI {
@@ -139,6 +140,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 	oc.Disabled = false
 	oc.Reload = true
 	oc.Confirm = "是否确认删除"
+	oc.HoverShow = true
 	oc.Meta = OpMetaInfo{AutotestSceneRequest: apistructs.AutotestSceneRequest{
 		AutoTestSceneParams: apistructs.AutoTestSceneParams{
 			ID: pd.ID,
@@ -146,6 +148,21 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 	}}
 	pd.Operations["delete"] = oc
 
+	successMsg := "步骤禁用成功"
+	if step.IsDisabled {
+		successMsg = "步骤启用成功"
+	}
+	od := OperationInfo{}
+	od.Key = apistructs.AutoTestSceneStepSwitchOperationKey.String()
+	od.Reload = true
+	od.Meta = OpMetaInfo{
+		Data: OpMetaData{
+			ID:      step.ID,
+			Disable: step.IsDisabled,
+		},
+	}
+	od.SuccessMsg = successMsg
+	pd.Operations["switch"] = od
 	return pd, nil
 }
 
@@ -267,6 +284,38 @@ func (i *ComponentStageForm) RenderDeleteStagesForm(opsData interface{}) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (i *ComponentStageForm) RenderDisableStagesForm(opsData interface{}) error {
+	meta, err := GetOpsInfo(opsData)
+	if err != nil {
+		return err
+	}
+	var d bool
+	if !meta.Data.Disable {
+		d = true
+	}
+	oldStep, err := i.ctxBdl.Bdl.GetAutoTestSceneStep(apistructs.AutotestGetSceneStepReq{
+		ID: meta.Data.ID,
+	})
+	if err != nil {
+		return err
+	}
+	i.State.AutotestSceneRequest.IsDisabled = &d
+	i.State.AutotestSceneRequest.ID = meta.Data.ID
+	i.State.AutotestSceneRequest.Name = oldStep.Name
+	i.State.AutotestSceneRequest.Type = oldStep.Type
+	i.State.AutotestSceneRequest.Value = oldStep.Value
+	i.State.AutotestSceneRequest.SpaceID = oldStep.SpaceID
+	i.State.AutotestSceneRequest.SceneID = oldStep.SceneID
+	i.State.AutotestSceneRequest.UpdaterID = i.ctxBdl.Identity.UserID
+	i.State.AutotestSceneRequest.APISpecID = oldStep.APISpecID
+	id, err := i.ctxBdl.Bdl.UpdateAutoTestSceneStep(i.State.AutotestSceneRequest)
+	if err != nil {
+		return err
+	}
+	i.State.StepId = id
 	return nil
 }
 

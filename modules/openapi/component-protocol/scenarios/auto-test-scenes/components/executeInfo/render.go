@@ -160,7 +160,6 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		if err != nil {
 			return err
 		}
-		fmt.Println(res)
 		if res != nil && len(res.Reports) > 0 && res.Reports[0].Meta != nil {
 			value, err := json.Marshal(res.Reports[0].Meta)
 			if err != nil {

@@ -50,6 +50,7 @@ type PropColumn struct {
 	ValueKey   string                                           `json:"valueKey"`
 	RenderType string                                           `json:"renderType"`
 	Operations map[apistructs.OperationKey]apistructs.Operation `json:"operations"`
+	Tips       string                                           `json:"tips"`
 }
 
 type State struct {
@@ -216,6 +217,7 @@ Label:
 		{
 			Label:    "接口总数",
 			ValueKey: "autoTestNum",
+			Tips:     "接口总数不包括禁用接口",
 		},
 		{
 			Label:    "接口执行率",

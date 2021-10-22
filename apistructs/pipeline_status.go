@@ -235,6 +235,10 @@ func (status PipelineStatus) IsAbnormalFailedStatus() bool {
 	}
 }
 
+func (status PipelineStatus) IsDisabledStatus() bool {
+	return status == PipelineStatusDisabled
+}
+
 func (status PipelineStatus) IsFailedStatus() bool {
 	return status.IsNormalFailedStatus() || status.IsAbnormalFailedStatus()
 }

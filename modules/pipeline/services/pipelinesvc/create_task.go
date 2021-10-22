@@ -85,6 +85,10 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	if task.Extra.Pause {
 		task.Status = apistructs.PipelineStatusPaused
 	}
+	// if action is disabled, set task status disabled directly
+	if action.Disable {
+		task.Status = apistructs.PipelineStatusDisabled
+	}
 	task.CostTimeSec = -1
 	task.QueueTimeSec = -1
 

@@ -102,6 +102,7 @@ type PipelineYmlAction struct {
 	Caches        []ActionCache          `json:"caches,omitempty"`                                         // 缓存
 	SnippetConfig *SnippetConfig         `json:"snippet_config,omitempty" yaml:"snippet_config,omitempty"` // snippet 的配置
 	If            string                 `json:"if,omitempty"`                                             // 条件执行
+	Disable       bool                   `json:"disable,omitempty"`                                        // task is disable or enable
 	Loop          *PipelineTaskLoop      `json:"loop,omitempty"`                                           // 循环执行
 	SnippetStages *SnippetStages         `json:"snippetStages,omitempty"`                                  // snippetStages snippet 展开
 }

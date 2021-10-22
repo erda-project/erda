@@ -114,6 +114,9 @@ func (svc *Service) UpdateAutoTestSceneStep(req apistructs.AutotestSceneRequest)
 	step.Name = req.Name
 	step.UpdaterID = req.UserID
 	step.APISpecID = req.APISpecID
+	if req.IsDisabled != nil {
+		step.IsDisabled = *req.IsDisabled
+	}
 	if err := svc.db.UpdateAutotestSceneStep(step); err != nil {
 		return 0, err
 	}

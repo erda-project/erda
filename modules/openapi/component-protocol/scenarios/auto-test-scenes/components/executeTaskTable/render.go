@@ -312,10 +312,12 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				if task.Type != apistructs.ActionTypeSnippet {
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
-							Key:    "checkDetail",
-							Text:   "查看结果",
-							Reload: false,
-							Meta:   task.Result,
+							Key:         "checkDetail",
+							Text:        "查看结果",
+							Reload:      false,
+							Meta:        task.Result,
+							DisabledTip: "禁用接口无法查看结果",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 						"checkLog": dataOperation{
 							Key:    "checkLog",
@@ -326,6 +328,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								"pipelineId": a.State.PipelineID,
 								"nodeId":     task.ID,
 							},
+							DisabledTip: "禁用接口无法查看日志",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 					}
 					taskNum = "-"
@@ -386,10 +390,12 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait || res.Type == apistructs.StepTypeCustomScript {
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
-							Key:    "checkDetail",
-							Text:   "查看结果",
-							Reload: false,
-							Meta:   task.Result,
+							Key:         "checkDetail",
+							Text:        "查看结果",
+							Reload:      false,
+							Meta:        task.Result,
+							DisabledTip: "禁用接口无法查看结果",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 						"checkLog": dataOperation{
 							Key:    "checkLog",
@@ -400,6 +406,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								"pipelineId": a.State.PipelineID,
 								"nodeId":     task.ID,
 							},
+							DisabledTip: "禁用接口无法查看日志",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 					}
 				}

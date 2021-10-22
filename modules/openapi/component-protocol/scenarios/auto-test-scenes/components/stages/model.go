@@ -45,6 +45,7 @@ type StageData struct {
 	Title      string                 `json:"title"`
 	ID         uint64                 `json:"id"`
 	GroupID    int64                  `json:"groupId"`
+	Disabled   bool                   `json:"disabled"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
@@ -90,6 +91,7 @@ type OperationBaseInfo struct {
 	Reload      bool   `json:"reload"`
 	Disabled    bool   `json:"disabled"`
 	DisabledTip string `json:"disabledTip"`
+	SuccessMsg  string `json:"successMsg"`
 }
 
 type OpMetaData struct {
@@ -99,6 +101,7 @@ type OpMetaData struct {
 	Name      string                   `json:"name"`      // 名称
 	APISpecID uint64                   `json:"apiSpecID"` // api集市id
 	ID        uint64                   `json:"id"`
+	Disable   bool                     `json:"disable"`
 }
 
 type OpMetaInfo struct {
