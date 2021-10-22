@@ -153,6 +153,8 @@ func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 		Cmd:            strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
 		CPU:            task.Extra.RuntimeResource.CPU,
 		Memory:         task.Extra.RuntimeResource.Memory,
+		MaxCPU:         task.Extra.RuntimeResource.MaxCPU,
+		MaxMemory:      task.Extra.RuntimeResource.MaxMemory,
 		Binds:          task.Extra.Binds,
 		Volumes:        MakeVolume(task),
 		PreFetcher:     task.Extra.PreFetcher,

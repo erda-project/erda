@@ -106,6 +106,7 @@ zh:
   mt-plan-chart: 手动测试计划分布图
   at-case-rate-trending-chart: 自动化测试执行率和通过率趋势
   at-plan-latest-waterfall-chart: 自动化测试计划执行详情瀑布图
+  user-not-exist: 用户不存在
   import: 导入
   export: 导出
   scene-set-export-confirm: 是否确认导出
@@ -125,6 +126,13 @@ zh:
   result: 结果
   auto-test-scene-num: 场景数
   auto-test-api-num: 接口数
+  radar-manual-test-plan: 手动测试计划
+  radar-auto-test-plan: 自动化测试计划
+  radar-issue-bug: 缺陷
+  radar-quality: 质量
+  radar-total-quality-score: 质量总分
+  radar-bug-reopen-rate: 缺陷重开率
+  radar-code-coverage: 代码覆盖率
 en:
   issue-manage: issue manage
   issue: issue
@@ -249,3 +257,11 @@ en:
   at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
   auto-test-scene-num: Scene Number
   auto-test-api-num: Api Number
+  user-not-exist: user does not exist
+  radar-manual-test-plan: Manual Test Plan
+  radar-auto-test-plan: Auto Test Plan
+  radar-issue-bug: Bug
+  radar-quality: Quality
+  radar-total-quality-score: Total Quality Score
+  radar-bug-reopen-rate: Bug Reopen Rate
+  radar-code-coverage: Code Coverage
