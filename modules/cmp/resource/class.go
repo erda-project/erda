@@ -81,13 +81,9 @@ type Quota struct {
 	memQuota float64
 }
 
-func (r *Resource) GetPie(ordId string, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
+func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	data = make(map[string]*PieData)
-
-	req := &apistructs.GetQuotaOnClustersRequest{}
-	req.ClusterNames = request.ClusterNames
-	req.OrgID = ordId
-	resp, err := bdl.Bdl.FetchQuotaOnClusters(req)
+	resp, err := bdl.Bdl.FetchQuotaOnClusters(ordId, request.ClusterNames)
 	if err != nil {
 		return
 	}

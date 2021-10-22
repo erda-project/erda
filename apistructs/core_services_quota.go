@@ -113,3 +113,16 @@ func (q ProjectQuotaOnClusters) ReCalcu() {
 	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
 	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
 }
+
+type GetProjectsNamesapcesResponseData struct {
+	Total uint32               `json:"total"`
+	List  []*ProjectNamespaces `json:"list"`
+}
+
+type ProjectNamespaces struct {
+	ProjectID          string `json:"projectID"`
+	ProjectName        string `json:"projectName"`
+	ProjectDisplayName string `json:"projectDisplayName"`
+	// Clusters the key is cluster name, the value is the list of namespaces
+	Clusters map[string][]string `json:"clusters"`
+}

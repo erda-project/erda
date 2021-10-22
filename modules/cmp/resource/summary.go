@@ -135,7 +135,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	// 4. get all quota
 	quotaReq := &apistructs.GetQuotaOnClustersRequest{}
 	quotaReq.ClusterNames = names
-	quota, err := bdl.Bdl.FetchQuotaOnClusters(quotaReq)
+	quota, err := bdl.Bdl.FetchQuotaOnClusters(int64(orgid), names)
 	if err != nil {
 		return
 	}
@@ -145,6 +145,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 
 	// 5. get not exist quota
 	allNamespace := make([]*pb.ClusterNamespacePair, 0)
+	clusterNamespaces := make(map[string][]string)
 	for _, clusterName := range names {
 		sreq := &apistructs.SteveRequest{
 			UserID:      userID,
@@ -158,11 +159,12 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 		for _, object := range resource {
 			allNamespace = append(allNamespace, &pb.ClusterNamespacePair{Namespace: object.Data().String("metadata", "name"), ClusterName: clusterName})
+			clusterNamespaces[cluster] = append(clusterNamespaces[cluster], object.Namespace())
 		}
 	}
 	nreq := &apistructs.OrgClustersNamespaceReq{}
 	nreq.OrgID = ordId
-	nresp, err := bdl.Bdl.ListOrgNamespace(nreq)
+	nresp, err := bdl.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
 	if err != nil {
 		return
 	}
