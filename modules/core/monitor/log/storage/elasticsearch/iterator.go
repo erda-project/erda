@@ -229,7 +229,7 @@ func (it *scrollIterator) fetch(dir iteratorDir) error {
 			}
 
 			// parse result
-			it.buffer = parseHits(resp.Hits.Hits)
+			it.buffer = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End)
 			return nil
 		}()
 	}
@@ -269,7 +269,7 @@ func (it *scrollIterator) checkClosed() bool {
 	return false
 }
 
-func parseHits(hits []*elastic.SearchHit) (list []*pb.LogItem) {
+func parseHits(hits []*elastic.SearchHit, start, end int64) (list []*pb.LogItem) {
 	for _, hit := range hits {
 		if hit.Source == nil {
 			continue
@@ -278,7 +278,9 @@ func parseHits(hits []*elastic.SearchHit) (list []*pb.LogItem) {
 		if err != nil {
 			continue
 		}
-		list = append(list, data)
+		if start <= data.Timestamp && data.Timestamp < end {
+			list = append(list, data)
+		}
 	}
 	return list
 }

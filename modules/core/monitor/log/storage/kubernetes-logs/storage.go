@@ -163,6 +163,11 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 			break
 		}
 	}
+	if len(tags["cluster_name"]) <= 0 {
+		tags["cluster_name"] = clusterName
+	} else if len(clusterName) <= 0 {
+		clusterName = tags["cluster_name"]
+	}
 	for _, key := range podInfoKeys {
 		if len(tags[key]) <= 0 {
 			s.log.Debugf("not found %q for container(%q), ingore kubernetes logs query", key, id)
