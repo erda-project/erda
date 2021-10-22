@@ -39,6 +39,9 @@ var _ urlenc.URLValuesUnmarshaler = (*TraceDebugStatus)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*TraceDebugHistory)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Span)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Trace)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SpanEvent)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SpanEventRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SpanEventResponse)(nil)
 
 // GetTraceQueryConditionsRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetTraceQueryConditionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -795,5 +798,46 @@ func (m *Trace) UnmarshalURLValues(prefix string, values url.Values) error {
 			}
 		}
 	}
+	return nil
+}
+
+// SpanEvent implement urlenc.URLValuesUnmarshaler.
+func (m *SpanEvent) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "timestamp":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Timestamp = val
+			}
+		}
+	}
+	return nil
+}
+
+// SpanEventRequest implement urlenc.URLValuesUnmarshaler.
+func (m *SpanEventRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "spanID":
+				m.SpanID = vals[0]
+			case "startTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.StartTime = val
+			}
+		}
+	}
+	return nil
+}
+
+// SpanEventResponse implement urlenc.URLValuesUnmarshaler.
+func (m *SpanEventResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

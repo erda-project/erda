@@ -86,7 +86,7 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 	podStatus.Data.Labels.Color = color
 	podStatus.Data.Labels.Label = cputil.I18n(ctx, status)
 	podStatus.Props.Size = "default"
-	podStatus.Props.IsLoadMore = true
+	podStatus.Props.RequestIgnore = []string{"data"}
 	podStatus.Transfer(c)
 	return nil
 }

@@ -84,7 +84,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 		return nil, err
 	}
 	if fn != nil {
-		fn(sel)
+		sel = fn(sel)
 	}
 	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {

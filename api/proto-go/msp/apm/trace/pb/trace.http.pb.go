@@ -39,6 +39,8 @@ type TraceServiceHandler interface {
 	StopTraceDebug(context.Context, *StopTraceDebugRequest) (*StopTraceDebugResponse, error)
 	// GET /api/msp/apm/trace/debug/{requestID}/history/status
 	GetTraceDebugHistoryStatusByRequestID(context.Context, *GetTraceDebugStatusByRequestIDRequest) (*GetTraceDebugStatusByRequestIDResponse, error)
+	// GET /api/msp/apm/trace/span-events
+	GetSpanEvents(context.Context, *SpanEventRequest) (*SpanEventResponse, error)
 }
 
 // RegisterTraceServiceHandler register TraceServiceHandler to http.Router.
@@ -518,6 +520,46 @@ func RegisterTraceServiceHandler(r http.Router, srv TraceServiceHandler, opts ..
 		)
 	}
 
+	add_GetSpanEvents := func(method, path string, fn func(context.Context, *SpanEventRequest) (*SpanEventResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*SpanEventRequest))
+		}
+		var GetSpanEvents_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetSpanEvents_info = transport.NewServiceInfo("erda.msp.apm.trace.TraceService", "GetSpanEvents", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetSpanEvents_info)
+				}
+				r = r.WithContext(ctx)
+				var in SpanEventRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				params := r.URL.Query()
+				if vals := params["spanId"]; len(vals) > 0 {
+					in.SpanID = vals[0]
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_GetSpans("GET", "/api/msp/apm/traces/{traceID}/spans", srv.GetSpans)
 	add_GetSpanDashboards("GET", "/api/msp/apm/trace/span-analysis", srv.GetSpanDashboards)
 	add_GetTraces("GET", "/api/msp/apm/traces", srv.GetTraces)
@@ -527,4 +569,5 @@ func RegisterTraceServiceHandler(r http.Router, srv TraceServiceHandler, opts ..
 	add_CreateTraceDebug("POST", "/api/msp/apm/trace/debug", srv.CreateTraceDebug)
 	add_StopTraceDebug("PUT", "/api/msp/apm/trace/debug/{requestID}", srv.StopTraceDebug)
 	add_GetTraceDebugHistoryStatusByRequestID("GET", "/api/msp/apm/trace/debug/{requestID}/history/status", srv.GetTraceDebugHistoryStatusByRequestID)
+	add_GetSpanEvents("GET", "/api/msp/apm/trace/span-events", srv.GetSpanEvents)
 }

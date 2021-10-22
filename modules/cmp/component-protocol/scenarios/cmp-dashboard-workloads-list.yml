@@ -6,16 +6,27 @@ hierarchy:
     page:
       - filterContainer
       - chartContainer
+      - workloadHead
       - workloadTable
+      - addWorkloadDrawer
+    workloadHead:
+      - addWorkloadButton
     filterContainer:
       - filter
     chartContainer:
       - workloadTitle
       - workloadChart
+    addWorkloadDrawer:
+      content: addWorkloadContainer
+    addWorkloadContainer:
+      - addWorkloadFilter
+      - addWorkloadFileEditor
 
 components:
   page:
     type: Container
+  workloadHead:
+    type: RowContainer
   filterContainer:
     type: Container
   chartContainer:
@@ -28,12 +39,24 @@ components:
     type: Chart
   workloadTable:
     type: Table
+  addWorkloadFileEditor:
+    type: FileEditor
+  addWorkloadContainer:
+    type: Container
+  addWorkloadFilter:
+    type: ContractiveFilter
+  addWorkloadDrawer:
+    type: Drawer
+  addWorkloadButton:
+    type: Button
 
 rendering:
   __DefaultRendering__:
     - name: page
+    - name: workloadHead
     - name: filterContainer
     - name: chartContainer
+    - name: addWorkloadContainer
     - name: filter
       state:
         - name: "clusterName"
@@ -52,6 +75,7 @@ rendering:
       state:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
+    - name: addWorkloadButton
   filter:
     - name: workloadTable
       state:
@@ -65,3 +89,46 @@ rendering:
       state:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
+  addWorkloadButton:
+    - name: addWorkloadDrawer
+    - name: addWorkloadFilter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: addWorkloadFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadKind"
+          value: "{{ addWorkloadButton.workloadKind }}"
+        - name: "values"
+          value: "{{ addWorkloadFilter.values }}"
+  addWorkloadFilter:
+    - name: addWorkloadFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ addWorkloadFilter.values }}"
+  addWorkloadFileEditor:
+    - name: addWorkloadDrawer
+    - name: filter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: workloadTable
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ filter.values }}"
+    - name: workloadTitle
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+    - name: workloadChart
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+
+

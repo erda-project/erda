@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scene_and_api_filter
+package leftContent
 
-import (
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "scene_and_api_filter")
+	base.InitProvider("cmp-dashboard-workload-detail", "leftContent")
 }
