@@ -15,6 +15,8 @@
 package apistructs
 
 import (
+	"time"
+
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
@@ -168,4 +170,17 @@ func (p *ProjectNamespaces) Has(cluster, namespace string) bool {
 		}
 	}
 	return false
+}
+
+type ProjectNamespaceModel struct {
+	ID           uint64    `json:"id" gorm:"id"`
+	CreatedAt    time.Time `json:"createdAt" gorm:"created_at"`
+	UpdatedAt    time.Time `json:"updatedAt" gorm:"updated_at"`
+	ProjectID    uint64    `json:"projectID" gorm:"project_id"`
+	ProjectName  string    `json:"projectName" gorm:"project_name"`
+	K8sNamespace string    `json:"k8s_namespace" gorm:"k8s_namespace"`
+}
+
+func (model *ProjectNamespaceModel) TableName() string {
+	return "project_namespace"
 }

@@ -1421,3 +1421,8 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 
 	return response, nil
 }
+
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	// todo:
+	return nil, errors.New("not implement")
+}
