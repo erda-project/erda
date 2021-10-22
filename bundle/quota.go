@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -56,20 +57,35 @@ func (b *Bundle) FetchQuotaOnClusters(orgID int64, clusterNames []string) (*apis
 	return resp.Data, nil
 }
 
-func (b *Bundle) ListOrgNamespace(req *apistructs.OrgClustersNamespaceReq) (*apistructs.OrgClustersNamespaceResp, error) {
+// FetchNamespacesBelongsTo finds the project to which a given namespaces belongs to.
+// namespaces: the key is cluster name, the value is the namespaces list in the cluster.
+func (b *Bundle) FetchNamespacesBelongsTo(orgID int64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
-	var rsp = apistructs.OrgClustersNamespaceResp{}
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("")).Header(httputil.OrgHeader, req.OrgID).
-		Do().JSON(req)
+
+	var params = make(url.Values)
+	for clusterName, namespacesList := range namespaces {
+		params.Add(clusterName, strings.Join(namespacesList, ","))
+	}
+
+	type response struct {
+		apistructs.Header
+		Data *apistructs.GetProjectsNamesapcesResponseData
+	}
+	var resp response
+	httpResp, err := hc.Get(host).
+		Path("/api/projects-namespaces").
+		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Params(params).
+		Do().JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrListFileRecord.InternalError(err)
 	}
 	if !httpResp.IsOK() {
-		return nil, toAPIError(httpResp.StatusCode(), rsp.Error)
+		return nil, toAPIError(httpResp.StatusCode(), resp.Error)
 	}
-	return &rsp, nil
+	return resp.Data, nil
 }
