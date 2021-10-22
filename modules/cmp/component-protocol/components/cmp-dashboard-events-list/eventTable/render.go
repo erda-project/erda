@@ -308,7 +308,7 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
-		IsLoadMore:      true,
+		RequestIgnore:   []string{"data"},
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		Columns: []Column{
 			{

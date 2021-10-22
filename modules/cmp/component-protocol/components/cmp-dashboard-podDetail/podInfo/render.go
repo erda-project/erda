@@ -159,8 +159,8 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 		}
 	}
 	return Props{
-		IsLoadMore: true,
-		ColumnNum:  4,
+		RequestIgnore: []string{"data"},
+		ColumnNum:     4,
 		Fields: []Field{
 			{Label: podInfo.SDK.I18n("namespace"), ValueKey: "namespace"},
 			{Label: podInfo.SDK.I18n("age"), ValueKey: "age"},

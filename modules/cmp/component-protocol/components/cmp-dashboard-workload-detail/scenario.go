@@ -15,10 +15,16 @@
 package cmp_dashboard_workload_detail
 
 import (
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/leftContent"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/operationButton"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/podsTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/podsTableTitle"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/restartButton"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/rightContent"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/workloadInfo"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/workloadInfoTitle"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/workloadStatus"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/workloadTitle"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/yamlDrawer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail/yamlFileEditor"
 )

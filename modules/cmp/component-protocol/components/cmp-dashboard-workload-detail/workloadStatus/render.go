@@ -113,7 +113,7 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	s.Data.Labels.Label = s.sdk.I18n(status)
 	s.Data.Labels.Color = color
 	s.Props.Size = "default"
-	s.Props.IsLoadMore = true
+	s.Props.RequestIgnore = []string{"data"}
 	return nil
 }
 

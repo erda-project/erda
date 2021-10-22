@@ -9,14 +9,27 @@ hierarchy:
       - workloadInfo
       - podsTableTitle
       - podsTable
+      - yamlDrawer
     header:
+      left: leftContent
+      right: rightContent
+    leftContent:
       - workloadTitle
       - workloadStatus
+    rightContent:
+      - restartButton
+      - operationButton
+    yamlDrawer:
+      content: yamlFileEditor
 
 components:
   page:
     type: Container
   header:
+    type: LRContainer
+  leftContent:
+    type: RowContainer
+  rightContent:
     type: RowContainer
   workloadStatus:
     type: Tags
@@ -30,11 +43,21 @@ components:
     type: Panel
   podsTable:
     type: Table
+  operationButton:
+    type: Button
+  restartButton:
+    type: Button
+  yamlDrawer:
+    type: Drawer
+  yamlFileEditor:
+    type: FileEditor
 
 rendering:
   __DefaultRendering__:
     - name: page
     - name: header
+    - name: leftContent
+    - name: rightContent
     - name: workloadTitle
       state:
         - name: "clusterName"
@@ -63,3 +86,32 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
           value: "{{ workloadTitle.workloadId }}"
+    - name: operationButton
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
+    - name: restartButton
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
+  operationButton:
+    - name: yamlDrawer
+    - name: yamlFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
+  restartButton:
+    - name: workloadStatus
+    - name: workloadInfo
+    - name: podsTable
+  yamlFileEditor:
+    - name: yamlDrawer
+    - name: workloadStatus
+    - name: workloadInfo
+    - name: podsTable

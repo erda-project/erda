@@ -15,6 +15,11 @@
 package cmp_dashboard_pods
 
 import (
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodButton"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodContainer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodDrawer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodFileEditor"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodFilter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/chartContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/filter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/filterContainer"

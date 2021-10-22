@@ -49,9 +49,8 @@ type Data struct {
 }
 
 type Props struct {
-	IsLoadMore bool    `json:"isLoadMore,omitempty"`
-	ColumnNum  int     `json:"columnNum"`
-	Fields     []Field `json:"fields"`
+	ColumnNum int     `json:"columnNum"`
+	Fields    []Field `json:"fields"`
 }
 
 type Field struct {

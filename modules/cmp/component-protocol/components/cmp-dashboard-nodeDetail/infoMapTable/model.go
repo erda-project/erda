@@ -46,7 +46,6 @@ type StyleConfig struct {
 }
 
 type Props struct {
-	IsLoadMore bool     `json:"isLoadMore,omitempty"`
 	RowKey     string   `json:"rowKey"`
 	Bordered   bool     `json:"bordered"`
 	ShowHeader bool     `json:"showHeader"`

@@ -61,9 +61,9 @@ func TestComponentContainerTable_Transfer(t *testing.T) {
 			PodID:       "testID",
 		},
 		Props: Props{
-			IsLoadMore: true,
-			RowKey:     "id",
-			Pagination: true,
+			RequestIgnore: []string{"data"},
+			RowKey:        "id",
+			Pagination:    true,
 			Scroll: Scroll{
 				X: 1,
 			},

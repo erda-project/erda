@@ -11,14 +11,26 @@ hierarchy:
       - containerTable
       - eventTitle
       - eventTable
+      - yamlDrawer
     header:
+      left: leftContent
+      right: rightContent
+    leftContent:
       - podTitle
       - podStatus
+    rightContent:
+      - operationButton
+    yamlDrawer:
+      content: yamlFileEditor
 
 components:
   page:
     type: Container
   header:
+    type: LRContainer
+  leftContent:
+    type: RowContainer
+  rightContent:
     type: RowContainer
   podStatus:
     type: Tags
@@ -36,11 +48,19 @@ components:
     type: Table
   eventTable:
     type: Table
+  operationButton:
+    type: Button
+  yamlDrawer:
+    type: Drawer
+  yamlFileEditor:
+    type: FileEditor
 
 rendering:
   __DefaultRendering__:
     - name: page
     - name: header
+    - name: leftContent
+    - name: rightContent
     - name: podStatus
       state:
         - name: "clusterName"
@@ -72,3 +92,23 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "podId"
           value: "{{ __InParams__.podId }}"
+    - name: operationButton
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "podId"
+          value: "{{ __InParams__.podId }}"
+  operationButton:
+    - name: yamlDrawer
+    - name: yamlFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ operationButton.clusterName }}"
+        - name: "podId"
+          value: "{{ podStatus.podId }}"
+  yamlFileEditor:
+    - name: yamlDrawer
+    - name: podStatus
+    - name: podInfo
+    - name: containerTable
+    - name: eventTable
