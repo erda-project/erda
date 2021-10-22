@@ -4,8 +4,8 @@
         "${ERDA_LOG_INDEX_PREFIX:erda-logs-}*"
     ],
     "settings":{
-        "number_of_shards": ${METRIC_INDEX_SHARDS:1},
-        "number_of_replicas": ${METRIC_INDEX_REPLICAS:1},
+        "number_of_shards": ${LOG_INDEX_SHARDS:1},
+        "number_of_replicas": ${LOG_INDEX_REPLICAS:1},
         "index":{
             "refresh_interval":"15s",
             "translog.durability": "async",
