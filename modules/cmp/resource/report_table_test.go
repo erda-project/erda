@@ -16,10 +16,14 @@ package resource_test
 
 import (
 	"context"
+	"testing"
 
 	"github.com/rancher/apiserver/pkg/types"
 
+	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/resource"
 )
 
 type fakeCmp struct {
@@ -27,4 +31,17 @@ type fakeCmp struct {
 
 func (f fakeCmp) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
 	return nil, nil
+}
+
+func (f fakeCmp) GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error) {
+	return nil, nil
+}
+
+func TestNewReportTable(t *testing.T) {
+	var bdl bundle.Bundle
+	var cmp fakeCmp
+	resource.NewReportTable(
+		resource.ReportTableWithBundle(&bdl),
+		resource.ReportTableWithCMP(cmp),
+	)
 }
