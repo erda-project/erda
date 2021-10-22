@@ -21,12 +21,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent"
-	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 const (
@@ -113,26 +112,11 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 	cb.PipelineTaskID = task.ID
 
 	cbData, _ := json.Marshal(&cb)
-	var cbReq apistructs.PipelineCallbackRequest
-	cbReq.Type = string(apistructs.PipelineCallbackTypeOfAction)
-	cbReq.Data = cbData
-
-	// update task result through internal api
-	var resp apistructs.PipelineCallbackResponse
-	r, err := httpclient.New().
-		Post("localhost"+conf.ListenAddr()).
-		Path("/api/pipelines/actions/callback").
-		Header("Internal-Client", "action executor").
-		JSONBody(&cbReq).
-		Do().
-		JSON(&resp)
+	err := pipelinefunc.CallbackActionFunc(cbData)
 	if err != nil {
 		log.Errorf("failed to callback, err: %v", err)
 		return
 	}
-	if !r.IsOK() || !resp.Success {
-		log.Errorf("failed to callback, status-code %d, resp %#v", r.StatusCode(), resp)
-		return
-	}
+
 	return
 }
