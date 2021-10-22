@@ -58,10 +58,15 @@ func newPodInfoQueryer(p *provider) PodInfoQueryer {
 		if len(result) > 0 {
 			m := make(map[string]string)
 			err := json.NewDecoder(strings.NewReader(result)).Decode(&m)
-			if err == nil && len(m) > 0 {
+			if err == nil && len(m) > 0 &&
+				len(m["cluster_name"]) > 0 &&
+				len(m["container_name"]) > 0 &&
+				len(m["pod_name"]) > 0 &&
+				len(m["pod_namespace"]) > 0 {
 				return m, nil
 			}
 		}
+
 		info, err := p.queryPodInfo(cid)
 		if err != nil {
 			return nil, err
@@ -100,7 +105,13 @@ func (p *provider) queryPodInfo(cid string) (map[string]string, error) {
 
 	client := p.Loader.Client()
 	searchSource := elastic.NewSearchSource()
-	query := elastic.NewBoolQuery().Filter(elastic.NewTermQuery("tags.container_id", cid))
+	query := elastic.NewBoolQuery().Filter(
+		elastic.NewTermQuery("tags.container_id", cid),
+		elastic.NewExistsQuery("tags.cluster_name"),
+		elastic.NewExistsQuery("tags.container_name"),
+		elastic.NewExistsQuery("tags.pod_name"),
+		elastic.NewExistsQuery("tags.pod_namespace"),
+	)
 	searchSource.Query(query).Size(1)
 
 	ctx, cancel := context.WithTimeout(p.ctx, p.Loader.RequestTimeout())
