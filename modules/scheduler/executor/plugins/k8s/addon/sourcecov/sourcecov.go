@@ -63,7 +63,7 @@ func (s *SourcecovOperator) getNamespace(sg *apistructs.ServiceGroup) string {
 }
 
 func (s *SourcecovOperator) getAgentName(sg *apistructs.ServiceGroup) string {
-	return "sc-agent-" + sg.ID[:5]
+	return "sourcecov-agent-" + sg.ID[:10]
 }
 
 func (s *SourcecovOperator) Validate(sg *apistructs.ServiceGroup) error {
