@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
@@ -94,6 +95,8 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					m, ok := memberMap[userID]
 					if ok && m != nil {
 						name = m.Nick
+					} else {
+						name = cputil.I18n(ctx, "user-not-exist")
 					}
 					names = append(names, name)
 				}
