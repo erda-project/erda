@@ -463,6 +463,9 @@ func (i InterfaceValue) Size() int64 {
 }
 
 func calc(refValue reflect.Value) (int, error) {
+	if !refValue.IsValid() {
+		return 0, nil
+	}
 	refValue.Type()
 	size := 0
 	switch refValue.Kind() {
