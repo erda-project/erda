@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	jsi "github.com/json-iterator/go"
 	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -149,11 +148,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 			hasExpired = true
 		}
 		if value != nil {
-			var nar AllocatedRes
-			if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
-				logrus.Errorf("failed to unmarshal for namespace %s in GetNodeAllocatedRes, %v", namespace, err)
-				continue
-			}
+			nar := value[0].Value().(AllocatedRes)
 			nsAllocatedRes[namespace] = nar
 			continue
 		}
@@ -176,7 +171,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 			Mem:    mem,
 			PodNum: podNum,
 		}
-		value, err = cache.MarshalValue(nar)
+		value, err = cache.GetInterfaceValue(nar)
 		if err != nil {
 			logrus.Errorf("failed to marshal value for namespace %s in GetNamespaceAllocatedRes, %v", namespace, err)
 			continue
@@ -186,10 +181,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 			continue
 		}
 
-		if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
-			logrus.Errorf("failed to unmarshal for namespace %s in GetNamespaceAllocatedRes, %v", namespace, err)
-			continue
-		}
+		nar = value[0].Value().(AllocatedRes)
 		nsAllocatedRes[namespace] = nar
 	}
 	if hasExpired {
@@ -219,7 +211,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 					Mem:    mem,
 					PodNum: podNum,
 				}
-				value, err := cache.MarshalValue(nar)
+				value, err := cache.GetInterfaceValue(nar)
 				if err != nil {
 					logrus.Errorf("failed to marshal value for namespace %s in GetNamespaceAllocatedRes goroutine, %v", namespace, err)
 					continue
@@ -280,11 +272,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 			hasExpired = true
 		}
 		if value != nil {
-			var nar AllocatedRes
-			if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
-				logrus.Errorf("failed to unmarshal for node %s in GetNodeAllocatedRes, %v", nodeName, err)
-				continue
-			}
+			nar := value[0].Value().(AllocatedRes)
 			nodesAllocatedRes[nodeName] = nar
 			continue
 		}
@@ -307,7 +295,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 			Mem:    mem,
 			PodNum: podNum,
 		}
-		value, err = cache.MarshalValue(nar)
+		value, err = cache.GetInterfaceValue(nar)
 		if err != nil {
 			logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes, %v", nodeName, err)
 			continue
@@ -317,10 +305,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 			continue
 		}
 
-		if err = jsi.Unmarshal(value[0].Value().([]byte), &nar); err != nil {
-			logrus.Errorf("failed to unmarshal for node %s in GetNodeAllocatedRes, %v", nodeName, err)
-			continue
-		}
+		nar = value[0].Value().(AllocatedRes)
 		nodesAllocatedRes[nodeName] = nar
 	}
 	if hasExpired {
@@ -351,7 +336,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 					Mem:    mem,
 					PodNum: podNum,
 				}
-				value, err := cache.MarshalValue(nar)
+				value, err := cache.GetInterfaceValue(nar)
 				if err != nil {
 					logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
 					continue
