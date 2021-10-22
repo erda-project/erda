@@ -113,7 +113,8 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	if orgId == "" {
 		return nil, pkgerrors.NewNotFoundError("Org")
 	}
-	total, channels, err := s.NotifyChannelDB.ListByPage((req.Page-1)*req.PageSize, req.PageSize, orgId)
+	scopeType := "org"
+	total, channels, err := s.NotifyChannelDB.ListByPage((req.Page-1)*req.PageSize, req.PageSize, orgId, scopeType)
 	var pbChannels []*pb.NotifyChannel
 	for _, channel := range channels {
 		pbChannels = append(pbChannels, s.CovertToPbNotifyChannel(apis.Language(ctx), &channel))
