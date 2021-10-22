@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -779,4 +780,20 @@ func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars m
 	}
 
 	return httpserver.OkResp(response)
+}
+
+func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse url values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
+	}
+	value := r.URL.Query()
+	var namespaces = make(map[string][]string)
+	for k := range value {
+		namespaces[k] = strings.Split(value.Get(k), ",")
+	}
+
+	// todo:
+
+	return httpserver.OkResp(nil)
 }
