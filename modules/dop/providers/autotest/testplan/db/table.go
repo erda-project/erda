@@ -70,6 +70,8 @@ type AutoTestExecHistory struct {
 	ExecuteTime   time.Time
 	CostTimeSec   int64
 	OrgID         uint64
+	TimeBegin     time.Time
+	TimeEnd       time.Time
 }
 
 func (AutoTestExecHistory) TableName() string {

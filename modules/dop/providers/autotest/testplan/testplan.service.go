@@ -102,6 +102,17 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		executeTime = &t
 	}
 
+	timeBegin := parseExecuteTime(req.Content.TimeBegin)
+	if timeBegin == nil {
+		t := time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local)
+		timeBegin = &t
+	}
+	timeEnd := parseExecuteTime(req.Content.TimeEnd)
+	if timeEnd == nil {
+		t := time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local)
+		timeEnd = &t
+	}
+
 	project, err := s.bdl.GetProject(testPlan.ProjectID)
 	if err != nil {
 		return err
@@ -128,6 +139,8 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		ExecuteTime:   *executeTime,
 		CostTimeSec:   req.Content.CostTimeSec,
 		OrgID:         project.OrgID,
+		TimeBegin:     *timeBegin,
+		TimeEnd:       *timeEnd,
 	}
 	return s.db.CreateAutoTestExecHistory(&execHistory)
 }

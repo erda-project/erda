@@ -145,6 +145,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		IterationID:   iterationID,
 		StepID:        0,
 		CostTimeSec:   ctx.SDK.Pipeline.CostTimeSec,
+		TimeBegin:     ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
+		TimeEnd:       ctx.SDK.Pipeline.TimeEnd.Format("2006-01-02 15:04:05"),
 	}
 	if err = p.sendMessage(req, ctx); err != nil {
 		return err
@@ -191,6 +193,8 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 				StepID:        stepID,
 				IterationID:   iterationID,
 				CostTimeSec:   task.CostTimeSec,
+				TimeBegin:     task.TimeBegin.Format("2006-01-02 15:04:05"),
+				TimeEnd:       task.TimeEnd.Format("2006-01-02 15:04:05"),
 			}, ctx)
 			if err != nil {
 				return err
