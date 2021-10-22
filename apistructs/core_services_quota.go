@@ -119,10 +119,53 @@ type GetProjectsNamesapcesResponseData struct {
 	List  []*ProjectNamespaces `json:"list"`
 }
 
+func (d *GetProjectsNamesapcesResponseData) GetProjectNamespaces(id uint) (*ProjectNamespaces, bool) {
+	for _, p := range d.List {
+		if p.ProjectID == id {
+			return p, true
+		}
+	}
+	return nil, false
+}
+
 type ProjectNamespaces struct {
-	ProjectID          string `json:"projectID"`
+	ProjectID          uint   `json:"projectID"`
 	ProjectName        string `json:"projectName"`
 	ProjectDisplayName string `json:"projectDisplayName"`
+	OwnerUserID        uint   `json:"ownerUserID"`
+	OwnerUserName      string `json:"ownerUserName"`
+	OwnerUserNickname  string `json:"ownerUserNickname"`
+	CPUQuota           uint64 `json:"cpuQuota"`
+	MemQuota           uint64 `json:"memQuota"`
 	// Clusters the key is cluster name, the value is the list of namespaces
 	Clusters map[string][]string `json:"clusters"`
+
+	cpuRequest uint64
+	memRequest uint64
+}
+
+func (p *ProjectNamespaces) AddResource(cpu, mem uint64) {
+	p.cpuRequest += cpu
+	p.memRequest += mem
+}
+
+func (p *ProjectNamespaces) GetCPUReqeust() uint64 {
+	return p.cpuRequest
+}
+
+func (p *ProjectNamespaces) GetMemRequest() uint64 {
+	return p.memRequest
+}
+
+func (p *ProjectNamespaces) Has(cluster, namespace string) bool {
+	namespaces, ok := p.Clusters[cluster]
+	if !ok {
+		return false
+	}
+	for _, name := range namespaces {
+		if name == namespace {
+			return true
+		}
+	}
+	return false
 }

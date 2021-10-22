@@ -17,9 +17,11 @@ package endpoints
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -93,5 +95,32 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 
 	// todo: authentication
 
-	return httpserver.OkResp(data)
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return httpserver.ErrResp(0, "", err.Error()) // todo:
+	}
+	if err := r.ParseForm(); err != nil {
+		return httpserver.ErrResp(0, "", err.Error()) // todo:
+	}
+
+	value := r.URL.Query()
+	clusterNames := value["clusterName"]
+	cpuPerNodeStr := value.Get("cpuPerNode")
+	memPerNodeStr := value.Get("memPerNode")
+	cpuPerNode, err := strconv.ParseUint(cpuPerNodeStr, 10, 64)
+	if err != nil {
+		cpuPerNode = 8
+	}
+	memPerNode, err := strconv.ParseUint(memPerNodeStr, 10, 64)
+	if err != nil {
+		memPerNode = 32
+	}
+
+	report, err := e.reportTable.GetResourceOverviewReport(ctx, orgID, clusterNames, cpuPerNode, memPerNode)
+	if err != nil {
+		return httpserver.ErrResp(0, "", err.Error()) // todo:
+	}
+
+	return httpserver.OkResp(report)
 }

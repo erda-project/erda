@@ -54,6 +54,8 @@ type Endpoints struct {
 	SteveAggregator *steve.Aggregator
 	Resource        *resource.Resource
 	Credential      credentialpb.AccessKeyServiceServer
+
+	reportTable *resource.ReportTable
 }
 
 type Option func(*Endpoints)
