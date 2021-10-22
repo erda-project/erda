@@ -50,12 +50,12 @@ type traceService struct {
 }
 
 var EVENT_FIELD_MAP = map[string]struct{}{
-	"error":        struct{}{},
-	"stack":        struct{}{},
-	"event":        struct{}{},
-	"message":      struct{}{},
-	"error_kind":   struct{}{},
-	"error_object": struct{}{},
+	"error":        {},
+	"stack":        {},
+	"event":        {},
+	"message":      {},
+	"error_kind":   {},
+	"error_object": {},
 }
 
 func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.Status) string {
