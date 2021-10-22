@@ -39,3 +39,9 @@ type PipelineAppliedResource struct {
 	CPU      float64 `json:"cpu"`
 	MemoryMB float64 `json:"memoryMB"`
 }
+
+// PipelineOverSoldResource represents one kind of over sold resource.
+type PipelineOverSoldResource struct {
+	CPURate uint8   `json:"cpuRate"`
+	MaxCPU  float64 `json:"maxCPU"`
+}
