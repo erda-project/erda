@@ -49,7 +49,6 @@ import (
 
 const OfflineLabel = "dice/offline"
 
-
 type SteveServer interface {
 	GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
 	ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error)
