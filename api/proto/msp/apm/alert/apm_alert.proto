@@ -137,10 +137,10 @@ service AlertService {
   }
   rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
     option (google.api.http)     = {
-      get: "/api/msp/apm/alerts/conditions/value"
+      get: "/api/msp/apm/conditions/value"
     };
     option (erda.common.openapi) = {
-      path: "/api/msp/apm/alerts/conditions/value"
+      path: "/api/msp/apm/conditions/value"
     };
   }
 }
