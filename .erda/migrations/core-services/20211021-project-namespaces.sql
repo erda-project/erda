@@ -7,7 +7,6 @@ create table `project_namespace`
 
     `project_id`   BIGINT(20)   NOT NULL DEFAULT 0 COMMENT 'ps_group_projects 主键',
     `project_name` VARCHAR(50)  NOT NULL DEFAULT '' COMMENT '项目名称',
-
     `cluster_name` varchar(41)  NOT NULL DEFAULT '' comment '命名空间所在的集群',
     'k8s_namespace'    varchar(128) NOT NULL DEFAULT '' comment 'k8s 命名空间',
     Index idx_project_id (`project_id`)

@@ -178,6 +178,7 @@ type ProjectNamespaceModel struct {
 	UpdatedAt    time.Time `json:"updatedAt" gorm:"updated_at"`
 	ProjectID    uint64    `json:"projectID" gorm:"project_id"`
 	ProjectName  string    `json:"projectName" gorm:"project_name"`
+	ClusterName  string    `json:"clusterName" gorm:"cluster_name"`
 	K8sNamespace string    `json:"k8s_namespace" gorm:"k8s_namespace"`
 }
 
