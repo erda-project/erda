@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scene_rate_passed_chart
+package at_api_avg_cost_chart
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "scene_rate_passed_chart", func() servicehub.Provider {
+	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "at_api_avg_cost_chart", func() servicehub.Provider {
 		return &Chart{}
 	})
 }
@@ -43,40 +43,32 @@ type Chart struct {
 func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
 
-	scenes := h.GetAtScene()
-	sceneIDs := make([]uint64, 0, len(scenes))
-	sceneMap := make(map[uint64]string, 0)
-	for _, v := range scenes {
-		sceneMap[v.ID] = v.Name
-		sceneIDs = append(sceneIDs, v.ID)
+	sceneSteps := h.GetAtSceneStep()
+	sceneStepIDs := make([]uint64, 0, len(sceneSteps))
+	sceneStepMap := make(map[uint64]string, 0)
+	for _, v := range sceneSteps {
+		sceneStepMap[v.ID] = v.Name
+		sceneStepIDs = append(sceneStepIDs, v.ID)
 	}
 
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
-	statusCounts, err := atSvc.ExecHistorySceneApiStatusCount(sceneIDs...)
+	costTimeAvg, err := atSvc.ExecHistoryApiAvgCostTime(sceneStepIDs...)
 	if err != nil {
 		return err
 	}
-	for i := range statusCounts {
-		total := statusCounts[i].FailCount + statusCounts[i].SuccessCount
-		if total == 0 {
-			statusCounts[i].PassRate = 0
-		} else {
-			statusCounts[i].PassRate = float64(statusCounts[i].SuccessCount) / float64(total) * 100
-		}
-	}
-	sort.Slice(statusCounts, func(i, j int) bool {
-		return statusCounts[i].PassRate > statusCounts[j].PassRate
+	sort.Slice(costTimeAvg, func(i, j int) bool {
+		return costTimeAvg[i].Avg > costTimeAvg[j].Avg
 	})
 
 	var (
 		values     []int64
 		categories []string
 	)
-	for _, v := range statusCounts {
-		values = append(values, int64(v.PassRate))
-		categories = append(categories, sceneMap[v.SceneID])
+	for _, v := range costTimeAvg {
+		values = append(values, int64(v.Avg))
+		categories = append(categories, sceneStepMap[v.StepID])
 	}
 
-	c.Props = common2.NewBarProps(values, categories, "场景 - 按执行通过率分布 Top500")
+	c.Props = common2.NewBarProps(values, categories, "接口 - 按执行平均耗时分布 Top500")
 	return nil
 }

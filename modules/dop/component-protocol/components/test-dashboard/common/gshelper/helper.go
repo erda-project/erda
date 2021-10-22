@@ -132,3 +132,99 @@ func (h *GSHelper) GetMtPlanChartFilterStatusList() []apistructs.TestCaseExecSta
 	_ = assign((*h.gs)["MtPlanChartFilterStatusList"], &res)
 	return res
 }
+
+func (h *GSHelper) SetGlobalAutoTestPlanList(l []*apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAutoTestPlanList"] = l
+}
+
+func (h *GSHelper) GetGlobalAutoTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalAutoTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtBlockFilterTestPlanList(l []apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtBlockFilterTestPlanList"] = l
+}
+
+func (h *GSHelper) GetAtBlockFilterTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalAtBlockFilterTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtTestPlanExecHistoryList(l []apistructs.AutoTestExecHistoryDto) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtTestPlanExecHistoryList"] = l
+}
+
+func (h *GSHelper) GetAtTestPlanExecHistoryList() []apistructs.AutoTestExecHistoryDto {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestExecHistoryDto, 0)
+	_ = assign((*h.gs)["GlobalAtTestPlanExecHistoryList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtSceneChartTestPlanExecHistoryList(l []apistructs.AutoTestExecHistoryDto) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtSceneChartTestPlanExecHistoryList"] = l
+}
+
+func (h *GSHelper) GetAtSceneChartTestPlanExecHistoryList() []apistructs.AutoTestExecHistoryDto {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestExecHistoryDto, 0)
+	_ = assign((*h.gs)["GlobalAtSceneChartTestPlanExecHistoryList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtScene(l []apistructs.AutoTestScene) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtScene"] = l
+}
+
+func (h *GSHelper) GetAtScene() []apistructs.AutoTestScene {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestScene, 0)
+	_ = assign((*h.gs)["GlobalAtScene"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtSceneStep(l []apistructs.AutoTestSceneStep) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtSceneStep"] = l
+}
+
+func (h *GSHelper) GetAtSceneStep() []apistructs.AutoTestSceneStep {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestSceneStep, 0)
+	_ = assign((*h.gs)["GlobalAtSceneStep"], &res)
+	return res
+}

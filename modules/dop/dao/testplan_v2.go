@@ -67,6 +67,8 @@ func (tp *TestPlanV2) Convert2DTO() apistructs.TestPlanV2 {
 		ExecuteApiNum: tp.ExecuteApiNum,
 		PassRate:      tp.PassRate,
 		ExecuteTime:   tp.ExecuteTime,
+		SuccessApiNum: tp.SuccessApiNum,
+		TotalApiNum:   tp.TotalApiNum,
 	}
 }
 
@@ -160,8 +162,8 @@ func (client *DBClient) PagingTestPlanV2(req *apistructs.TestPlanV2PagingRequest
 	if req.SpaceID != 0 {
 		db = db.Where("dice_autotest_plan.space_id = ?", req.SpaceID)
 	}
-	if req.IterationID != nil {
-		db = db.Where("dice_autotest_plan.iteration_id = ?", req.IterationID)
+	if req.IterationIDs != nil {
+		db = db.Where("dice_autotest_plan.iteration_id IN (?)", req.IterationIDs)
 	}
 	if len(req.IDs) != 0 {
 		db = db.Where("dice_autotest_plan.id in (?)", req.IDs)
@@ -226,4 +228,11 @@ func (client *DBClient) CheckTestPlanV2NameExist(name string) error {
 	}
 
 	return nil
+}
+
+// ListTestPlanV2ByID .
+func (client *DBClient) ListTestPlanV2ByID(ids ...uint64) ([]TestPlanV2, error) {
+	var testPlans []TestPlanV2
+	err := client.Model(&TestPlanV2{}).Where("ids IN (?)", ids).Find(&testPlans).Error
+	return testPlans, err
 }

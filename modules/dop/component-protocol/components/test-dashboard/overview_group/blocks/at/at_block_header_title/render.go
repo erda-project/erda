@@ -15,10 +15,26 @@
 package at_block_header_title
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "at_block_header_title")
+	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "at_block_header_title", func() servicehub.Provider {
+		return &Title{}
+	})
+}
+
+type Title struct {
+	base.DefaultProvider
+}
+
+func (t *Title) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	c.Props.(map[string]interface{})["value"] = cputil.I18n(ctx, "Auto Test Case")
+	return nil
 }
