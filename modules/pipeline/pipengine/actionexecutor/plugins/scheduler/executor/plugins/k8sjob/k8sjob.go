@@ -406,6 +406,10 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 
 	cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.CPU*1000)), "m"))
 	memory := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.Memory)), "Mi"))
+	maxCPU := cpu
+	if job.MaxCPU > job.CPU {
+		maxCPU = resource.MustParse(strutil.Concat(strconv.Itoa(int(job.MaxCPU*1000)), "m"))
+	}
 
 	var (
 		vols      []corev1.Volume
@@ -462,8 +466,8 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 									//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 								},
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    cpu,
-									corev1.ResourceMemory: memory,
+									corev1.ResourceCPU:    maxCPU,
+									corev1.ResourceMemory: memory, // TODO calculate the max memory
 									//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 								},
 							},

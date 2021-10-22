@@ -163,11 +163,12 @@ const (
 	// autotest scene step
 	AutoTestSceneStepCreateOperationKey     OperationKey = "addParallelAPI"
 	AutoTestSceneStepCopyOperationKey       OperationKey = "copyParallelAPI"
-	AutoTestSceneStepCopyAsJsonOperationKey OperationKey = "copyAsJson"
 	AutoTestSceneStepMoveItemOperationKey   OperationKey = "moveItem"
 	AutoTestSceneStepMoveGroupOperationKey  OperationKey = "moveGroup"
 	AutoTestSceneStepDeleteOperationKey     OperationKey = "deleteAPI"
 	AutoTestSceneStepSplitOperationKey      OperationKey = "standalone"
+	AutoTestSceneStepSwitchOperationKey     OperationKey = "switch"
+	AutoTestSceneStepCopyAsJsonOperationKey OperationKey = "copyAsJson"
 
 	//auto-test scene set
 	ListSceneSetOperationKey          OperationKey = "ListSceneSet"

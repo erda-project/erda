@@ -124,6 +124,13 @@ zh:
   desc: 描述
   status: 状态
   result: 结果
+  radar-manual-test-plan: 手动测试计划
+  radar-auto-test-plan: 自动化测试计划
+  radar-issue-bug: 缺陷
+  radar-quality: 质量
+  radar-total-quality-score: 质量总分
+  radar-bug-reopen-rate: 缺陷重开率
+  radar-code-coverage: 代码覆盖率
 en:
   issue-manage: issue manage
   issue: issue
@@ -247,3 +254,10 @@ en:
   at-case-rate-trending-chart: Auto Test Executed&Pass Rate Trending Chart
   at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
   user-not-exist: user does not exist
+  radar-manual-test-plan: Manual Test Plan
+  radar-auto-test-plan: Auto Test Plan
+  radar-issue-bug: Bug
+  radar-quality: Quality
+  radar-total-quality-score: Total Quality Score
+  radar-bug-reopen-rate: Bug Reopen Rate
+  radar-code-coverage: Code Coverage
