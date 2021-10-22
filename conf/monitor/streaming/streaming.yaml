@@ -28,9 +28,9 @@ mysql:
 etcd:
   endpoints: "${ETCD_ENDPOINTS:http://localhost:2379}"
   tls:
-    cert_file: "/certs/etcd-client.pem"
-    cert_key_file: "/certs/etcd-client-key.pem"
-    ca_file: "/certs/etcd-ca.pem"
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
@@ -47,6 +47,8 @@ elasticsearch.index.initializer:
       path: "${CONFIG_PATH}/metric_index_template.json"
     - name: "erda-logs"
       path: "${CONFIG_PATH}/log_index_template.json"
+    - name: "erda-events"
+      path: "${CONFIG_PATH}/event_index_template.json"
 
 # elasticsearch for log
 elasticsearch.index.loader@log:
@@ -92,6 +94,50 @@ log-persist:
   buffer_size: ${LOG_BATCH_SIZE:50}
   parallelism: ${LOG_PERSIST_PARALLELISM:3}
   print_invalid_log: false
+
+# elasticsearch for event
+elasticsearch.index.loader@event:
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "1m"
+  match:
+    - prefix: "erda-events-"
+      patterns:
+        - "<event>-<namespace>-{number}"
+        - "<event>-<namespace>.<key>-{number}"
+
+elasticsearch.index.creator@event:
+  patterns:
+    - first_index: "erda-events-<event>-<namespace>-000001"
+      alias: "erda-events-<event>-<namespace>-rollover"
+    - first_index: "erda-events-<event>-<namespace>.<key>-000001"
+      alias: "erda-events-<event>-<namespace>.<key>-rollover"
+  remove_conflicting_indices: true
+
+elasticsearch.index.rollover@event:
+  check_interval: "30s"
+  body_file: "${CONFIG_PATH}/index_rollover.json"
+  patterns:
+    - index: "erda-events-<event>-<namespace>-{number}"
+      alias: "erda-events-<event>-<namespace>-rollover"
+    - index: "erda-events-<event>-<namespace>.<key>-{number}"
+      alias: "erda-events-<event>-<namespace>.<key>-rollover"
+
+storage-retention-strategy@event:
+  load_from_database: true
+  ttl_reload_interval: "3m"
+
+event-storage-elasticsearch:
+  write_timeout: "1m"
+  index_type: "events"
+
+event-persist:
+  input:
+    topics: "${EVENT_TOPICS:spot-events}"
+    group: "${EVENT_GROUP_ID:erda-events-dev}"
+  read_timeout: "5s"
+  buffer_size: ${EVENT_BATCH_SIZE:50}
+  parallelism: ${EVENT_PERSIST_PARALLELISM:3}
+  print_invalid_event: false
 
 # elasticsearch for metric
 elasticsearch.index.loader@metric:

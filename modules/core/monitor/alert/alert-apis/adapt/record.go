@@ -15,12 +15,15 @@
 package adapt
 
 import (
+	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core/monitor/event/storage"
 )
 
 type (
@@ -201,6 +204,54 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 		return nil, err
 	}
 
+	respFromCassandra, err1 := a.queryAlertHistoryFromCassandra(groupID, start, end, limit)
+	respFromES, err2 := a.queryAlertHistoryFromES(groupID, start, end, limit)
+	if err1 != nil && err2 != nil {
+		return nil, fmt.Errorf("errors: %s, %s", err1, err2)
+	}
+
+	list := a.mergeAlertHistories(limit, respFromES, respFromCassandra)
+	return list, nil
+}
+
+func (a *Adapt) mergeAlertHistories(limit uint, results ...[]*pb.AlertHistory) []*pb.AlertHistory {
+	if len(results) <= 0 {
+		return []*pb.AlertHistory{}
+	} else if len(results) == 1 {
+		return results[0]
+	}
+	var resp []*pb.AlertHistory
+	var count uint
+	for limit == 0 || count < limit {
+		var max *pb.AlertHistory
+		var idx int
+		for i, result := range results {
+			if len(result) <= 0 {
+				continue
+			}
+			first := result[0]
+			if max == nil {
+				max = first
+				idx = i
+				continue
+			}
+			if first.Timestamp > max.Timestamp {
+				max = first
+				idx = i
+				continue
+			}
+		}
+		if max == nil {
+			break
+		}
+		results[idx] = results[idx][1:]
+		resp = append(resp, max)
+		count++
+	}
+	return resp
+}
+
+func (a *Adapt) queryAlertHistoryFromCassandra(groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 	histories, err := a.cql.AlertHistory.QueryAlertHistory(groupID, start, end, limit)
 	if err != nil {
 		return nil, err
@@ -211,6 +262,43 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 		result = append(result, item)
 	}
 	return result, nil
+}
+
+func (a *Adapt) queryAlertHistoryFromES(groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+	if a.eventStorage == nil {
+		return nil, nil
+	}
+
+	sel := &storage.Selector{
+		Start: start * int64(time.Millisecond),
+		End:   end * int64(time.Millisecond),
+		Filters: []*storage.Filter{
+			{
+				Key:   "relations.res_id",
+				Op:    storage.EQ,
+				Value: groupID,
+			},
+		},
+	}
+
+	list, err := a.eventStorage.QueryPaged(context.Background(), sel, 1, int(limit))
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*pb.AlertHistory
+	for _, item := range list {
+		results = append(results, &pb.AlertHistory{
+			AlertState: item.Tags["trigger"],
+			GroupId:    item.Relations.ResID,
+			Timestamp:  item.Timestamp / int64(time.Millisecond),
+			Title:      item.Tags["alert_title"],
+			Content:    item.Content,
+			DisplayUrl: item.Tags["display_url"],
+		})
+	}
+
+	return results, nil
 }
 
 // CreateOrgAlertIssue
