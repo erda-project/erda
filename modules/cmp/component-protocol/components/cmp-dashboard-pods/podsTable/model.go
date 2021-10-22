@@ -142,6 +142,7 @@ type Column struct {
 	Title     string `json:"title,omitempty"`
 	Width     int    `json:"width"`
 	Sorter    bool   `json:"sorter"`
+	Fixed     string `json:"fixed,omitempty"`
 }
 
 type Operation struct {

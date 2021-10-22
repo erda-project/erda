@@ -641,6 +641,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		Title:     cputil.I18n(ctx, "operate"),
 		Width:     120,
 		Sorter:    false,
+		Fixed:     "right",
 	})
 	p.Operations = map[string]interface{}{
 		"changeSort": Operation{

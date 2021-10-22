@@ -15,11 +15,17 @@
 package cmp_dashboard_workloads_list
 
 import (
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadButton"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadContainer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadDrawer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadFileEditor"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadFilter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/chartContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filterContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/page"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadChart"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadHead"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadTitle"
 )
