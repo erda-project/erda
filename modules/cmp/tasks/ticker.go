@@ -20,11 +20,11 @@ import (
 )
 
 type ExitError struct {
-	msg string
+	Msg string
 }
 
 func (e ExitError) Error() string {
-	return e.msg
+	return e.Msg
 }
 
 type Task func() error
