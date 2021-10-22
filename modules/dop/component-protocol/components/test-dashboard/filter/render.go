@@ -51,6 +51,9 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	for _, sid := range f.State.Values.IterationIDs {
 		selectedIterationsByID[sid] = allIterationsByID[sid]
 	}
+	if len(f.State.Values.IterationIDs) == 0 {
+		selectedIterationsByID = allIterationsByID
+	}
 
 	// set state
 	f.State.Conditions = []filter.PropCondition{
@@ -101,8 +104,70 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	h.SetGlobalSelectedIterationIDs(selectedItrIDs)
 	h.SetGlobalSelectedIterationsByID(selectedIterationsByID)
 
-	if err := f.setToComponent(c); err != nil {
+	// set global auto test plan
+	atData, err := f.atTestPlan.PagingTestPlansV2(&apistructs.TestPlanV2PagingRequest{
+		ProjectID: f.InParams.ProjectID,
+		IterationIDs: func() []uint64 {
+			if len(f.State.Values.IterationIDs) > 0 {
+				return f.State.Values.IterationIDs
+			}
+			return allIterationIDs
+		}(),
+		IsArchived:   nil,
+		PageNo:       1,
+		PageSize:     999,
+		IdentityInfo: apistructs.IdentityInfo{InternalClient: "dop-test-dashboard"},
+	})
+	if err != nil {
 		return err
 	}
+	h.SetGlobalAutoTestPlanList(atData.List)
+	planIDs := make([]uint64, 0, len(atData.List))
+	for _, v := range atData.List {
+		planIDs = append(planIDs, v.ID)
+	}
+	h.SetGlobalAutoTestPlanIDs(planIDs)
+
+	//  set global auto test scene and step
+	if err = f.SetGlobalAtSceneAndStep(atData.List, h); err != nil {
+		return err
+	}
+
+	if err = f.setToComponent(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *Filter) SetGlobalAtSceneAndStep(List []*apistructs.TestPlanV2, h *gshelper.GSHelper) error {
+	planIDs := make([]uint64, 0, len(List))
+	for _, v := range List {
+		planIDs = append(planIDs, v.ID)
+	}
+	steps, err := f.atTestPlan.ListStepByPlanID(planIDs...)
+	if err != nil {
+		return err
+	}
+	setIDs := make([]uint64, 0, len(steps))
+	for _, v := range steps {
+		setIDs = append(setIDs, v.SceneSetID)
+	}
+	scenes, err := f.atTestPlan.ListSceneBySceneSetID(setIDs...)
+	if err != nil {
+		return err
+	}
+
+	sceneIDs := make([]uint64, 0, len(scenes))
+	for _, v := range scenes {
+		sceneIDs = append(sceneIDs, v.ID)
+	}
+
+	sceneSteps, err := f.atTestPlan.ListAutoTestSceneSteps(sceneIDs)
+	if err != nil {
+		return err
+	}
+
+	h.SetAtScene(scenes)
+	h.SetAtSceneStep(sceneSteps)
 	return nil
 }

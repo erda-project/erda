@@ -1315,3 +1315,27 @@ func (svc *Service) GetAutotestScenesByIDs(sceneIDs []uint64) (map[uint64]apistr
 	}
 	return mpRsp, nil
 }
+
+// ListSceneBySceneSetID .
+func (svc *Service) ListSceneBySceneSetID(setIDs ...uint64) (scenes []apistructs.AutoTestScene, err error) {
+	list, err := svc.db.ListSceneBySceneSetID(setIDs...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		scenes = append(scenes, v.Convert())
+	}
+	return
+}
+
+// ListAutoTestSceneSteps .
+func (svc *Service) ListAutoTestSceneSteps(sceneIDs []uint64) (sceneSteps []apistructs.AutoTestSceneStep, err error) {
+	list, err := svc.db.ListAutoTestSceneSteps(sceneIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		sceneSteps = append(sceneSteps, *v.Convert())
+	}
+	return
+}

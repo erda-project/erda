@@ -124,6 +124,8 @@ zh:
   desc: 描述
   status: 状态
   result: 结果
+  auto-test-scene-num: 场景数
+  auto-test-api-num: 接口数
   radar-manual-test-plan: 手动测试计划
   radar-auto-test-plan: 自动化测试计划
   radar-issue-bug: 缺陷
@@ -253,6 +255,8 @@ en:
   FAIL: Failed
   at-case-rate-trending-chart: Auto Test Executed&Pass Rate Trending Chart
   at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
+  auto-test-scene-num: Scene Number
+  auto-test-api-num: Api Number
   user-not-exist: user does not exist
   radar-manual-test-plan: Manual Test Plan
   radar-auto-test-plan: Auto Test Plan
