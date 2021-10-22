@@ -128,8 +128,8 @@ storage-retention-strategy@metric:
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@metric:
   key_patterns: 
-    - "<metric>-<namespace>.<key>-r-{number}"
-    - "<metric>-<namespace>.<key>-<timestamp>"
+    - "spot-<metric>-<namespace>.<key>-r-{number}"
+    - "spot-<metric>-<namespace>.<key>-<timestamp>"
 elasticsearch.index.cleaner@metric:
   check_interval: "30m"
   print_onluy: true
