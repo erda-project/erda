@@ -48,6 +48,14 @@ func (e *Endpoints) RecordTypeList(ctx context.Context, r *http.Request, vars ma
 				RawRecordType: string(dbclient.RecordTypeDeleteNodes),
 			},
 			{
+				RecordType:    i18n.Sprintf(string(dbclient.RecordTypeCreateClusterCredential)),
+				RawRecordType: string(dbclient.RecordTypeCreateClusterCredential),
+			},
+			{
+				RecordType:    i18n.Sprintf(string(dbclient.RecordTypeResetClusterCredential)),
+				RawRecordType: string(dbclient.RecordTypeResetClusterCredential),
+			},
+			{
 				RecordType:    i18n.Sprintf(string(dbclient.RecordTypeDeleteEssNodes)),
 				RawRecordType: string(dbclient.RecordTypeDeleteEssNodes),
 			},

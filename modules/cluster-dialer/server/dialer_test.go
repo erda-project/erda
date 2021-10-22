@@ -22,8 +22,11 @@ import (
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
+	"github.com/erda-project/erda/modules/cluster-dialer/auth"
 	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
 	"github.com/erda-project/erda/pkg/clusterdialer"
 )
@@ -39,7 +42,7 @@ func init() {
 
 func startServer() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	go Start(ctx, &serverconfig.Config{
+	go Start(ctx, nil, &serverconfig.Config{
 		Listen:          dialerListenAddr,
 		NeedClusterInfo: false,
 	})
@@ -47,11 +50,17 @@ func startServer() (context.Context, context.CancelFunc) {
 }
 
 func Test_DialerContext(t *testing.T) {
+	defer monkey.UnpatchAll()
+
+	authorizer := auth.New(auth.WithCredentialClient(nil))
+	monkey.Patch(authorizer.Authorizer, func(req *http.Request) (string, bool, error) {
+		return fakeClusterKey, true, nil
+	})
+
 	ctx, cancel := startServer()
 	go client.Start(context.Background(), &clientconfig.Config{
 		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
-		ClusterKey:          "test",
-		SecretKey:           "test",
+		ClusterKey:          fakeClusterKey,
 		CollectClusterInfo:  false,
 	})
 

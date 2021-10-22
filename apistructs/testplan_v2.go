@@ -42,6 +42,8 @@ type TestPlanV2 struct {
 	IsArchived    bool              `json:"isArchived"`
 	PassRate      float64           `json:"passRate"`
 	ExecuteTime   *time.Time        `json:"executeTime"`
+	SuccessApiNum int64             `json:"successApiNum"`
+	TotalApiNum   int64             `json:"totalApiNum"`
 }
 
 // TestPlanV2CreateRequest testplan v2 create request
@@ -105,14 +107,14 @@ type TestPlanV2UpdateResponse struct {
 
 // TestPlanV2PagingRequest testplan v2 query request
 type TestPlanV2PagingRequest struct {
-	Name        string   `schema:"name"`
-	Owners      []string `schema:"owners"`
-	Creator     string   `schema:"creator"`
-	Updater     string   `schema:"updater"`
-	SpaceID     uint64   `schema:"spaceID"`
-	ProjectID   uint64   `schema:"projectID"`
-	IterationID *uint64  `json:"iterationID"`
-	IsArchived  *bool    `schema:"isArchived"`
+	Name         string   `schema:"name"`
+	Owners       []string `schema:"owners"`
+	Creator      string   `schema:"creator"`
+	Updater      string   `schema:"updater"`
+	SpaceID      uint64   `schema:"spaceID"`
+	ProjectID    uint64   `schema:"projectID"`
+	IterationIDs []uint64 `json:"iterationIDs"`
+	IsArchived   *bool    `schema:"isArchived"`
 
 	// +optional default 1
 	PageNo uint64 `schema:"pageNo"`
