@@ -17,7 +17,6 @@ package at_case_rate_trending_chart_filter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -48,8 +47,6 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	timeStart := time.Unix(times[0]/1000, 0).Format("2006-01-02 15:04:05")
 	timeEnd := time.Unix(times[1]/1000, 0).Format("2006-01-02 15:04:05")
 
-	fmt.Println(timeStart)
-	fmt.Println(timeEnd)
 	atPlans := h.GetAtBlockFilterTestPlanList()
 	planIDs := make([]uint64, 0, len(atPlans))
 	for _, v := range atPlans {

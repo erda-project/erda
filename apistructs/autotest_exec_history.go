@@ -57,7 +57,7 @@ type ExecHistorySceneStatusCount struct {
 type ExecHistorySceneApiStatusCount struct {
 	SceneID      uint64  `json:"sceneID" gorm:"scene_id"`
 	SuccessCount uint64  `json:"successCount" gorm:"success_count"`
-	FailCount    uint64  `json:"failCount" gorm:"fail_count"`
+	TotalCount   uint64  `json:"failCount" gorm:"total_count"`
 	PassRate     float64 `json:"passRate"`
 }
 
@@ -71,4 +71,15 @@ type ExecHistoryApiStatusCount struct {
 	SuccessCount uint64  `json:"successCount" gorm:"success_count"`
 	FailCount    uint64  `json:"failCount" gorm:"fail_count"`
 	FailRate     float64 `json:"failRate"`
+}
+
+type StatisticsExecHistoryRequest struct {
+	ProjectID    uint64   `json:"projectID"`
+	TimeStart    string   `json:"timeStart"`
+	TimeEnd      string   `json:"timeEnd"`
+	IterationIDs []uint64 `json:"iterationIDs"`
+	PlanIDs      []uint64 `json:"planIDs"`
+	SceneSetIDs  []uint64 `json:"sceneSetIDs"`
+	SceneIDs     []uint64 `json:"sceneIDs"`
+	StepIDs      []uint64 `json:"stepIDs"`
 }

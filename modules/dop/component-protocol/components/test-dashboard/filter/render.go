@@ -51,6 +51,9 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	for _, sid := range f.State.Values.IterationIDs {
 		selectedIterationsByID[sid] = allIterationsByID[sid]
 	}
+	if len(f.State.Values.IterationIDs) == 0 {
+		selectedIterationsByID = allIterationsByID
+	}
 
 	// set state
 	f.State.Conditions = []filter.PropCondition{
@@ -119,6 +122,11 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		return err
 	}
 	h.SetGlobalAutoTestPlanList(atData.List)
+	planIDs := make([]uint64, 0, len(atData.List))
+	for _, v := range atData.List {
+		planIDs = append(planIDs, v.ID)
+	}
+	h.SetGlobalAutoTestPlanIDs(planIDs)
 
 	//  set global auto test scene and step
 	if err = f.SetGlobalAtSceneAndStep(atData.List, h); err != nil {

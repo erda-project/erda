@@ -97,6 +97,8 @@ func (tp TestPlanV2Join) Convert2DTO() *apistructs.TestPlanV2 {
 		ExecuteApiNum: tp.ExecuteApiNum,
 		PassRate:      tp.PassRate,
 		ExecuteTime:   tp.ExecuteTime,
+		SuccessApiNum: tp.SuccessApiNum,
+		TotalApiNum:   tp.TotalApiNum,
 	}
 }
 
@@ -144,6 +146,7 @@ func (client *DBClient) PagingTestPlanV2(req *apistructs.TestPlanV2PagingRequest
 		"dice_autotest_plan.updated_at, dice_autotest_plan.name, dice_autotest_plan.desc, dice_autotest_plan.creator_id, "+
 		"dice_autotest_plan.updater_id, "+"dice_autotest_plan.project_id, dice_autotest_plan.space_id, dice_autotest_plan.iteration_id, "+
 		"dice_autotest_plan.pass_rate, "+"dice_autotest_plan.execute_time, "+"dice_autotest_plan.execute_api_num, "+
+		"dice_autotest_plan.success_api_num,dice_autotest_plan.total_api_num,"+
 		"dice_iterations.title AS iteration_name,"+
 		"dice_autotest_space.name as space_name, "+"dice_autotest_plan.is_archived").
 		Joins("inner join dice_autotest_space on dice_autotest_plan.space_id = dice_autotest_space.id").

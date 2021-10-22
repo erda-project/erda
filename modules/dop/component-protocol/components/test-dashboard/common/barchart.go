@@ -29,16 +29,16 @@ type Option struct {
 }
 
 type DataZoom struct {
-	EndValue       int64  `json:"endValue,omitempty"`
-	HandleSize     int64  `json:"handleSize,omitempty"`
-	Orient         string `json:"orient,omitempty"`
-	ShowDataShadow bool   `json:"showDataShadow,omitempty"`
-	ShowDetail     bool   `json:"showDetail,omitempty"`
-	StartValue     int64  `json:"startValue,omitempty"`
-	Throttle       int64  `json:"throttle,omitempty"`
-	Type           string `json:"type,omitempty"`
-	Width          int64  `json:"width,omitempty"`
-	ZoomLock       bool   `json:"zoomLock,omitempty"`
+	EndValue       int64  `json:"endValue"`
+	HandleSize     int64  `json:"handleSize"`
+	Orient         string `json:"orient"`
+	ShowDataShadow bool   `json:"showDataShadow"`
+	ShowDetail     bool   `json:"showDetail"`
+	StartValue     int64  `json:"startValue"`
+	Throttle       int64  `json:"throttle"`
+	Type           string `json:"type"`
+	Width          int64  `json:"width"`
+	ZoomLock       bool   `json:"zoomLock"`
 }
 
 type Grid struct {
@@ -46,8 +46,8 @@ type Grid struct {
 }
 
 type Series struct {
-	Data  []Data `json:"data"`
-	Label Label  `json:"label"`
+	Data  []Data                 `json:"data"`
+	Label map[string]interface{} `json:"label"`
 }
 
 type Data struct {
@@ -69,11 +69,43 @@ type XAxis struct {
 }
 
 type YAxis struct {
-	Type string   `json:"type"`
-	Data []string `json:"data"`
+	Type    string   `json:"type"`
+	Data    []string `json:"data"`
+	Inverse bool     `json:"inverse"`
 }
 
 func NewBarProps(values []int64, categories []string, title string) BarProps {
+	zooms := make([]DataZoom, 0)
+	if len(categories) < 10 {
+		for i := 10 - len(categories); i > 0; i-- {
+			categories = append(categories, "")
+			values = append(values, 0)
+		}
+	}
+	if len(categories) > 10 {
+		zooms = []DataZoom{
+			{
+				EndValue:   10,
+				Orient:     "vertical",
+				StartValue: 0,
+				Throttle:   0,
+				Type:       "inside",
+				ZoomLock:   true,
+			},
+			{
+				EndValue:       10,
+				HandleSize:     15,
+				Orient:         "vertical",
+				ShowDataShadow: false,
+				ShowDetail:     false,
+				StartValue:     0,
+				Throttle:       0,
+				Type:           "slider",
+				Width:          15,
+				ZoomLock:       true,
+			},
+		}
+	}
 	data := make([]Data, 0, len(values))
 	for _, v := range values {
 		data = append(data, Data{
@@ -84,35 +116,14 @@ func NewBarProps(values []int64, categories []string, title string) BarProps {
 	return BarProps{
 		ChartType: "bar",
 		Option: Option{
-			DataZoom: []DataZoom{
-				{
-					EndValue:   int64(len(values)),
-					Orient:     "vertical",
-					StartValue: 10,
-					Throttle:   0,
-					Type:       "inside",
-					ZoomLock:   true,
-				},
-				{
-					EndValue:       int64(len(values)),
-					HandleSize:     15,
-					Orient:         "vertical",
-					ShowDataShadow: false,
-					ShowDetail:     false,
-					StartValue:     10,
-					Throttle:       0,
-					Type:           "slider",
-					Width:          15,
-					ZoomLock:       true,
-				},
-			},
+			DataZoom: zooms,
 			Grid: Grid{
 				Right: 30,
 			},
 			Series: []Series{
 				{
 					Data:  data,
-					Label: Label{Show: true},
+					Label: map[string]interface{}{"show": false},
 				},
 			},
 			XAxis: []XAxis{
@@ -120,8 +131,9 @@ func NewBarProps(values []int64, categories []string, title string) BarProps {
 			},
 			YAxis: []YAxis{
 				{
-					Type: "category",
-					Data: categories,
+					Type:    "category",
+					Data:    categories,
+					Inverse: true,
 				},
 			},
 		},

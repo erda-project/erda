@@ -26,8 +26,9 @@ CREATE TABLE `dice_autotest_exec_history`
     PRIMARY KEY (`id`),
     KEY               `idx_project_id` (`project_id`) USING BTREE,
     KEY               `idx_org_id` (`org_id`) USING BTREE,
-    KEY               `idx_iteration_id` (`iteration_id`,`plan_id`,`scene_set_id`,`scene_id`,`step_id`) USING BTREE,
-    KEY               `idx_plan_id` (`plan_id`,`scene_set_id`,`scene_id`,`step_id`) USING BTREE,
-    KEY               `idx_plan_id_2` (`plan_id`,`scene_id`,`step_id`) USING BTREE
+    KEY               `idx_iteration_id` (`iteration_id`,`plan_id`) USING BTREE,
+    KEY               `idx_type` (`type`) USING BTREE,
+    KEY               `idx_status` (`status`) USING BTREE,
+    KEY               `idx_execute_time` (`execute_time`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='自动化测试执行记录';

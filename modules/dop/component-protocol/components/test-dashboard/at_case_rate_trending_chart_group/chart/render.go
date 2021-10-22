@@ -122,7 +122,7 @@ func calRate(num, numTotal int64) string {
 func (ch *Chart) convertToProps() Props {
 	return Props{
 		ChartType: "line",
-		Title:     "自动化测试执行率和通过率走势",
+		Title:     "",
 		Option: Option{
 			Legend: struct {
 				Show bool `json:"show"`

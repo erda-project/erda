@@ -16,16 +16,18 @@ package scene_avg_cost_chart
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
-	common2 "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/scene_chart_group/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -53,8 +55,19 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		sceneIDs = append(sceneIDs, v.ID)
 	}
 
+	timeFilter := h.GetAtSceneAndApiTimeFilter()
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
-	costTimeAvg, err := atSvc.ExecHistorySceneAvgCostTime(sceneIDs...)
+	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectID").(string), 10, 64)
+	costTimeAvg, err := atSvc.ExecHistorySceneAvgCostTime(apistructs.StatisticsExecHistoryRequest{
+		TimeStart:    timeFilter.TimeStart,
+		TimeEnd:      timeFilter.TimeEnd,
+		IterationIDs: h.GetGlobalSelectedIterationIDs(),
+		PlanIDs:      h.GetGlobalAutoTestPlanIDs(),
+		SceneSetIDs:  nil,
+		SceneIDs:     nil,
+		StepIDs:      nil,
+		ProjectID:    projectID,
+	})
 	if err != nil {
 		return err
 	}
@@ -67,11 +80,14 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories []string
 	)
 	for _, v := range costTimeAvg {
+		if _, ok := sceneMap[v.SceneID]; !ok {
+			continue
+		}
 		values = append(values, int64(v.Avg))
 		categories = append(categories, sceneMap[v.SceneID])
 	}
 
-	c.Props = common2.NewBarProps(values, categories, "场景 - 按执行平均耗时分布 Top500")
+	c.Props = common.NewBarProps(values, categories, "场景 - 按执行平均耗时分布 Top500")
 	return nil
 }
 

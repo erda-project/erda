@@ -51,19 +51,11 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	fmt.Println(timeStart)
 	fmt.Println(timeEnd)
 
-	atPlans := h.GetAtBlockFilterTestPlanList()
-	planIDs := make([]uint64, 0, len(atPlans))
-	for _, v := range atPlans {
-		planIDs = append(planIDs, v.ID)
-	}
-	list, err := f.atTestPlan.ListAutoTestExecHistory("", "", planIDs...)
-	if err != nil {
-		return err
-	}
+	h.SetAtSceneAndApiTimeFilter(gshelper.AtSceneAndApiTimeFilter{
+		TimeStart: timeStart, TimeEnd: timeEnd,
+	})
 
-	h.SetAtSceneChartTestPlanExecHistoryList(list)
-
-	if err = f.setState(); err != nil {
+	if err := f.setState(); err != nil {
 		return err
 	}
 

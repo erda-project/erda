@@ -58,11 +58,11 @@ func (tps TestPlanV2StepJoin) Convert2DTO() *apistructs.TestPlanV2Step {
 // Convert2DTO Convert to apistructs
 func (tps TestPlanV2Step) Convert2DTO() *apistructs.TestPlanV2Step {
 	return &apistructs.TestPlanV2Step{
-		SceneSetID:   tps.SceneSetID,
-		PreID:        tps.PreID,
-		PlanID:       tps.PlanID,
-		ID:           tps.ID,
-		GroupID:      tps.GroupID,
+		SceneSetID: tps.SceneSetID,
+		PreID:      tps.PreID,
+		PlanID:     tps.PlanID,
+		ID:         tps.ID,
+		GroupID:    tps.GroupID,
 	}
 }
 

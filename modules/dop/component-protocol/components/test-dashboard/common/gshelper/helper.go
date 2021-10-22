@@ -149,6 +149,22 @@ func (h *GSHelper) GetGlobalAutoTestPlanList() []apistructs.TestPlanV2 {
 	return res
 }
 
+func (h *GSHelper) SetGlobalAutoTestPlanIDs(l []uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAutoTestPlanIDs"] = l
+}
+
+func (h *GSHelper) GetGlobalAutoTestPlanIDs() []uint64 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]uint64, 0)
+	_ = assign((*h.gs)["GlobalAutoTestPlanIDs"], &res)
+	return res
+}
+
 func (h *GSHelper) SetAtBlockFilterTestPlanList(l []apistructs.TestPlanV2) {
 	if h.gs == nil {
 		return
@@ -178,22 +194,6 @@ func (h *GSHelper) GetAtTestPlanExecHistoryList() []apistructs.AutoTestExecHisto
 	}
 	res := make([]apistructs.AutoTestExecHistoryDto, 0)
 	_ = assign((*h.gs)["GlobalAtTestPlanExecHistoryList"], &res)
-	return res
-}
-
-func (h *GSHelper) SetAtSceneChartTestPlanExecHistoryList(l []apistructs.AutoTestExecHistoryDto) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["GlobalAtSceneChartTestPlanExecHistoryList"] = l
-}
-
-func (h *GSHelper) GetAtSceneChartTestPlanExecHistoryList() []apistructs.AutoTestExecHistoryDto {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.AutoTestExecHistoryDto, 0)
-	_ = assign((*h.gs)["GlobalAtSceneChartTestPlanExecHistoryList"], &res)
 	return res
 }
 
@@ -227,4 +227,23 @@ func (h *GSHelper) GetAtSceneStep() []apistructs.AutoTestSceneStep {
 	res := make([]apistructs.AutoTestSceneStep, 0)
 	_ = assign((*h.gs)["GlobalAtSceneStep"], &res)
 	return res
+}
+
+type AtSceneAndApiTimeFilter struct {
+	TimeStart string `json:"timeStart"`
+	TimeEnd   string `json:"timeEnd"`
+}
+
+func (h *GSHelper) SetAtSceneAndApiTimeFilter(t AtSceneAndApiTimeFilter) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["AtSceneAndApiTimeFilter"] = t
+}
+
+func (h *GSHelper) GetAtSceneAndApiTimeFilter() AtSceneAndApiTimeFilter {
+	if h.gs == nil {
+		return AtSceneAndApiTimeFilter{}
+	}
+	return (*h.gs)["AtSceneAndApiTimeFilter"].(AtSceneAndApiTimeFilter)
 }
