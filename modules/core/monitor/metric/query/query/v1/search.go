@@ -25,21 +25,20 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/chartmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 )
 
 type queryer struct {
-	index  indexmanager.Index
+	index  query.IndexLoader
 	charts *chartmeta.Manager
 	meta   *metricmeta.Manager
 	t      i18n.Translator
 }
 
 // New .
-func New(index indexmanager.Index, charts *chartmeta.Manager, meta *metricmeta.Manager, t i18n.Translator) Queryer {
+func New(index query.IndexLoader, charts *chartmeta.Manager, meta *metricmeta.Manager, t i18n.Translator) Queryer {
 	return &queryer{
 		index:  index,
 		charts: charts,
@@ -239,7 +238,7 @@ func (q *queryer) doRequest(req *Request, format string, langCodes i18n.Language
 		}
 	}
 
-	indices := q.index.GetReadIndices(req.Metrics, req.ClusterNames, req.Start, req.End)
+	indices := q.index.GetIndices(req.Metrics, req.ClusterNames, req.Start, req.End)
 	if len(indices) == 1 {
 		if strings.HasSuffix(indices[0], "-empty") {
 			boolQuery.Filter(elastic.NewTermQuery(query.TagKey+".not_exist", "_not_exist"))
@@ -268,7 +267,7 @@ func (q *queryer) doRequest(req *Request, format string, langCodes i18n.Language
 		IgnoreUnavailable(true).AllowNoIndices(true).
 		SearchSource(searchSource).Do(context)
 	if err != nil || (resp != nil && resp.Error != nil) {
-		if len(indices) <= 0 || (len(indices) == 1 && indices[0] == q.index.EmptyIndex()) {
+		if len(indices) <= 0 || (len(indices) == 1 && strings.HasSuffix(indices[0], "-empty")) {
 			return result, nil
 		}
 		if resp != nil && resp.Error != nil {

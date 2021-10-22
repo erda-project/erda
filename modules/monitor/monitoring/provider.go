@@ -45,7 +45,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 
 	go p.syncStorage(newEsStorageMetric(p.metricq), metricStorageUsage, p.Cfg.UsageSyncInterval.Metric)
-	go p.syncStorage(newCassandraStorageLog(p.metricq), logStorageUsage, p.Cfg.UsageSyncInterval.Log)
+	// go p.syncStorage(newCassandraStorageLog(p.metricq), logStorageUsage, p.Cfg.UsageSyncInterval.Log)
 	return nil
 }
 

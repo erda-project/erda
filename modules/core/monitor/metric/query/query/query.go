@@ -15,6 +15,7 @@
 package query
 
 import (
+	"context"
 	"net/url"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 // metric keys
@@ -50,4 +52,29 @@ type Queryer interface {
 
 	QueryRaw(metrics, clusters []string, start, end int64, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
 	SearchRaw(indices []string, searchSource *elastic.SearchSource) (*elastic.SearchResult, error)
+}
+
+// IndexLoader .
+type IndexLoader interface {
+	indexloader.Interface
+	GetIndices(metrics, clusters []string, start, end int64) []string
+}
+
+// MetricIndexLoader .
+type MetricIndexLoader struct {
+	indexloader.Interface
+}
+
+func (mi *MetricIndexLoader) GetIndices(metrics, clusters []string, start, end int64) []string {
+	keys := make([]indexloader.KeyPath, len(metrics)+1)
+	for i, item := range metrics {
+		keys[i] = indexloader.KeyPath{
+			Keys:      []string{item},
+			Recursive: true,
+		}
+	}
+	keys[len(metrics)] = indexloader.KeyPath{}
+	start = start * int64(time.Millisecond)
+	end = end*int64(time.Millisecond) + (int64(time.Millisecond) - 1)
+	return mi.Interface.Indices(context.Background(), start, end, keys...)
 }

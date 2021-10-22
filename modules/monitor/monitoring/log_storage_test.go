@@ -14,56 +14,56 @@
 
 package monitoring
 
-import (
-	"reflect"
-	"testing"
+// import (
+// 	"reflect"
+// 	"testing"
 
-	"github.com/erda-project/erda/modules/core/monitor/log/schema"
-	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
-)
+// 	"github.com/erda-project/erda/modules/core/monitor/log/schema"
+// 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
+// )
 
-func Test_cassandraStorageLog_calculateUsage(t *testing.T) {
-	type fields struct {
-		metricQ metricq.Queryer
-	}
-	type args struct {
-		orgMap map[string]string
-		data   []*keyspaceUsage
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   map[string]uint64
-	}{
-		{
-			name: "normal",
-			args: args{
-				orgMap: map[string]string{
-					schema.KeyspaceWithOrgName("org-1"): "org-1",
-					"xxx":                               "xxx",
-				},
-				data: []*keyspaceUsage{
-					{
-						keyspace:   "spot_org_1",
-						address:    "",
-						usageBytes: 1024,
-					},
-				},
-			},
-			want: map[string]uint64{
-				"org-1": 1024,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &cassandraStorageLog{
-				metricQ: tt.fields.metricQ,
-			}
-			if got := c.calculateUsage(tt.args.orgMap, tt.args.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("calculateUsage() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// func Test_cassandraStorageLog_calculateUsage(t *testing.T) {
+// 	type fields struct {
+// 		metricQ metricq.Queryer
+// 	}
+// 	type args struct {
+// 		orgMap map[string]string
+// 		data   []*keyspaceUsage
+// 	}
+// 	tests := []struct {
+// 		name   string
+// 		fields fields
+// 		args   args
+// 		want   map[string]uint64
+// 	}{
+// 		{
+// 			name: "normal",
+// 			args: args{
+// 				orgMap: map[string]string{
+// 					schema.KeyspaceWithOrgName("org-1"): "org-1",
+// 					"xxx":                               "xxx",
+// 				},
+// 				data: []*keyspaceUsage{
+// 					{
+// 						keyspace:   "spot_org_1",
+// 						address:    "",
+// 						usageBytes: 1024,
+// 					},
+// 				},
+// 			},
+// 			want: map[string]uint64{
+// 				"org-1": 1024,
+// 			},
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			c := &cassandraStorageLog{
+// 				metricQ: tt.fields.metricQ,
+// 			}
+// 			if got := c.calculateUsage(tt.args.orgMap, tt.args.data); !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("calculateUsage() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }

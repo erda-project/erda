@@ -15,137 +15,94 @@
 package storage
 
 import (
-	"bytes"
-	"compress/gzip"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"strings"
-	"time"
-	"unsafe"
+	"context"
+	"sort"
 
-	"github.com/erda-project/erda-infra/providers/cassandra"
-	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
-	"github.com/erda-project/erda/modules/core/monitor/log/schema"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
-func (p *provider) createLogStatementBuilder() cassandra.StatementBuilder {
-	var buf bytes.Buffer
-	return &LogStatement{
-		p:          p,
-		gzipWriter: gzip.NewWriter(&buf),
-	}
-}
-
-type LogStatement struct {
-	gzipWriter *gzip.Writer
-	p          *provider
-}
-
-func (ls *LogStatement) GetStatement(data interface{}) (string, []interface{}, error) {
-	switch data.(type) {
-	case *logmodule.Log:
-		return ls.p.getLogStatement(data.(*logmodule.Log), ls.gzipWriter)
-	case *logmodule.LogMeta:
-		return ls.p.getMetaStatement(data.(*logmodule.LogMeta))
-	default:
-		return "", nil, fmt.Errorf("value %#v must be Log or LogMeta", data)
-	}
-}
-
-func (p *provider) getLogStatement(log *logmodule.Log, reusedWriter *gzip.Writer) (string, []interface{}, error) {
-	ttl := p.ttl.GetSecondByKey(log.Tags[diceOrgNameKey])
-
-	var requestID *string // request_id 字段不存在时为null，所以使用指针
-	if rid, ok := log.Tags["request-id"]; ok {
-		requestID = &rid
+type (
+	// Operator .
+	Operator int32
+	// Filter .
+	Filter struct {
+		Key   string
+		Op    Operator
+		Value interface{}
 	}
 
-	table := schema.DefaultBaseLogTable
-	if org, ok := log.Tags[diceOrgNameKey]; ok {
-		table = schema.BaseLogWithOrgName(org)
+	// Selector .
+	Selector struct {
+		Start   int64
+		End     int64
+		Scheme  string
+		Filters []*Filter
+		Debug   bool
+		Options map[string]interface{}
 	}
 
-	content, err := gzipContentV2(log.Content, reusedWriter)
-	if err != nil {
-		return "", nil, err
+	// Storage .
+	Storage interface {
+		NewWriter(ctx context.Context) (storekit.BatchWriter, error)
+		Iterator(ctx context.Context, sel *Selector) (storekit.Iterator, error)
 	}
-	// nolint
-	cql := fmt.Sprintf(`INSERT INTO %s (source, id, stream, time_bucket, timestamp, offset, content, level, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) USING TTL ?;`, table)
-	return cql, []interface{}{
-		log.Source,
-		log.ID,
-		log.Stream,
-		trncateDate(log.Timestamp),
-		log.Timestamp,
-		log.Offset,
-		content,
-		log.Tags["level"],
-		requestID,
-		ttl,
-	}, nil
-}
+)
 
-func (p *provider) getMetaStatement(meta *logmodule.LogMeta) (string, []interface{}, error) {
-	ttl := p.ttl.GetSecondByKey(meta.Tags[diceOrgNameKey])
-	cql := `INSERT INTO spot_prod.base_log_meta (source, id, tags) VALUES (?, ?, ?) USING TTL ?;`
-	return cql, []interface{}{
-		meta.Source,
-		meta.ID,
-		meta.Tags,
-		ttl,
-	}, nil
-}
+const (
+	// EQ equal
+	EQ Operator = iota
+	REGEXP
+)
 
-func trncateDate(unixNano int64) int64 {
-	const day = time.Hour * 24
-	return unixNano - unixNano%int64(day)
-}
+// Comparer .
+type Comparer struct{}
 
-func gzipContent(content string) ([]byte, error) {
-	reader, err := compressWithPipe(strings.NewReader(content))
-	if err != nil {
-		return nil, err
+// DefaultComparer
+var DefaultComparer = Comparer{}
+
+var _ storekit.Comparer = (*Comparer)(nil)
+
+func (c Comparer) Compare(a, b interface{}) int {
+	al, ok := a.(*pb.LogItem)
+	if !ok {
+		return -1
 	}
-	return ioutil.ReadAll(reader)
-}
-
-func compressWithPipe(reader io.Reader) (io.Reader, error) {
-	pipeReader, pipeWriter := io.Pipe()
-	gzipWriter := gzip.NewWriter(pipeWriter)
-
-	var err error
-	go func() {
-		_, err = io.Copy(gzipWriter, reader)
-		gzipWriter.Close()
-		// subsequent reads from the read half of the pipe will
-		// return no bytes and the error err, or EOF if err is nil.
-		pipeWriter.CloseWithError(err)
-	}()
-
-	return pipeReader, err
-}
-
-func gzipContentV2(content string, reusedWriter *gzip.Writer) ([]byte, error) {
-	reader, err := compressWithPipeV2(bytes.NewReader(*(*[]byte)(unsafe.Pointer(&content))), reusedWriter)
-	if err != nil {
-		return nil, err
+	bl, ok := b.(*pb.LogItem)
+	if !ok {
+		return -1
 	}
-	return ioutil.ReadAll(reader)
+	return Compare(al, bl)
 }
 
-func compressWithPipeV2(reader io.Reader, reusedWriter *gzip.Writer) (io.Reader, error) {
-	pipeReader, pipeWriter := io.Pipe()
-	reusedWriter.Reset(pipeWriter)
-
-	go func() {
-		_, err := io.Copy(reusedWriter, reader)
-		if err != nil {
-			fmt.Printf("gzip copy failed: %s\n", err)
+// Compare .
+func Compare(al, bl *pb.LogItem) int {
+	if al.Timestamp > bl.Timestamp {
+		return 1
+	} else if al.Timestamp < bl.Timestamp {
+		return -1
+	}
+	if (al.Offset >= 0 && bl.Offset >= 0) || (al.Offset < 0 && bl.Offset < 0) {
+		if al.Offset > bl.Offset {
+			return 1
+		} else if al.Offset < bl.Offset {
+			return -1
 		}
-		reusedWriter.Close()
-		pipeWriter.CloseWithError(err)
-	}()
+	} else if al.Offset < 0 {
+		return 1
+	} else if bl.Offset < 0 {
+		return -1
+	}
+	return 0
+}
 
-	return pipeReader, nil
+// Logs .
+type Logs []*pb.LogItem
+
+var _ sort.Interface = (Logs)(nil)
+
+func (l Logs) Len() int      { return len(l) }
+func (l Logs) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
+func (l Logs) Less(i, j int) bool {
+	return Compare(l[i], l[j]) < 0
 }

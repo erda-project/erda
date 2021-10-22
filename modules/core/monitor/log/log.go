@@ -25,6 +25,12 @@ type Log struct {
 	Tags      map[string]string `json:"tags"`
 }
 
+// LabeledLog .
+type LabeledLog struct {
+	Log
+	Labels map[string]string `json:"labels,omitempy"`
+}
+
 // LogMeta .
 type LogMeta struct {
 	Source string            `json:"source"`

@@ -30,7 +30,8 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricmeta"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -54,10 +55,10 @@ type config struct {
 type provider struct {
 	Cfg        *config
 	Log        logs.Logger
-	Register   transport.Register `autowired:"service-register" optional:"true"`
-	DB         *gorm.DB           `autowired:"mysql-client"`
-	MetricTran i18n.I18n          `autowired:"i18n@metric"`
-	Index      indexmanager.Index `autowired:"erda.core.monitor.metric.index"`
+	Register   transport.Register    `autowired:"service-register" optional:"true"`
+	DB         *gorm.DB              `autowired:"mysql-client"`
+	MetricTran i18n.I18n             `autowired:"i18n@metric"`
+	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
 
 	meta              *metricmeta.Manager
 	metricService     *metricService
@@ -86,7 +87,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.metricService = &metricService{
 		p:     p,
-		query: query.New(p.Index),
+		query: query.New(&query.MetricIndexLoader{Interface: p.Index}),
 	}
 	if p.Register != nil {
 		pb.RegisterMetricServiceImp(p.Register, p.metricService, apis.Options(),
