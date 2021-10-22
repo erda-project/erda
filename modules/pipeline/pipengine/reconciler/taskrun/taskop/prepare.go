@@ -328,45 +328,26 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 
 	// --- resource ---
 	task.Extra.RuntimeResource = spec.RuntimeResource{
-		CPU:    conf.TaskDefaultCPU(),
-		Memory: conf.TaskDefaultMEM(),
-		Disk:   0,
-	}
-	// get from applied resource
-	if cpu := task.Extra.AppliedResources.Requests.CPU; cpu > 0 {
-		task.Extra.RuntimeResource.CPU = cpu
-	}
-	if mem := task.Extra.AppliedResources.Requests.MemoryMB; mem > 0 {
-		task.Extra.RuntimeResource.Memory = mem
-	}
-
-	// -- begin -- remove these logic when 4.1, because some already running pipelines doesn't have appliedResources fields.
-	// action 定义里的资源配置
-	if diceYmlJob.Resources.CPU > 0 {
-		task.Extra.RuntimeResource.CPU = diceYmlJob.Resources.CPU
-	}
-	if diceYmlJob.Resources.Mem > 0 {
-		task.Extra.RuntimeResource.Memory = float64(diceYmlJob.Resources.Mem)
+		CPU:       task.Extra.AppliedResources.Requests.CPU,
+		Memory:    task.Extra.AppliedResources.Requests.MemoryMB,
+		MaxCPU:    task.Extra.AppliedResources.Limits.CPU,
+		MaxMemory: task.Extra.AppliedResources.Limits.MemoryMB,
+		Disk:      0,
 	}
 	if diceYmlJob.Resources.Disk > 0 {
 		task.Extra.RuntimeResource.Disk = float64(diceYmlJob.Resources.Disk)
 	}
-	// action 在 pipeline.yml 中的资源配置
-	if action.Resources.CPU > 0 {
-		task.Extra.RuntimeResource.CPU = action.Resources.CPU
-	}
-	if action.Resources.Mem > 0 {
-		task.Extra.RuntimeResource.Memory = float64(action.Resources.Mem)
-	}
 	if action.Resources.Disk > 0 {
 		task.Extra.RuntimeResource.Disk = float64(action.Resources.Disk)
 	}
-	// -- end -- remove these logic when 4.1
 
 	// resource 相关环境变量
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
-	task.Extra.PublicEnvs["PIPELINE_LIMITED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
+	task.Extra.PublicEnvs["PIPELINE_LIMITED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxCPU)
+	task.Extra.PublicEnvs["PIPELINE_LIMITED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.MaxMemory)
 	task.Extra.PublicEnvs["PIPELINE_LIMITED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
+	task.Extra.PublicEnvs["PIPELINE_REQUESTED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
+	task.Extra.PublicEnvs["PIPELINE_REQUESTED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
+	task.Extra.PublicEnvs["PIPELINE_REQUESTED_DISK"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Disk)
 
 	// 条件表达式存在
 	if jump := condition(task); jump {

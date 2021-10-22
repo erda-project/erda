@@ -5,9 +5,9 @@ hierarchy:
     page:
       - filter
       - overview_group
-      - mt_plan_chart
-      - at_case_rate_trending_chart
-      - at_plan_latest_waterfall_chart
+      - mt_plan_chart_group
+      - at_case_rate_trending_chart_group
+      - at_plan_latest_waterfall_chart_group
       - scene_and_api_filter
       - scene_chart_group
       - at_api_chart_group
@@ -43,11 +43,19 @@ hierarchy:
       - at_num_api
       - split
       - at_rate_passed
-      - at_rate_notpassed
-    mt_plan_chart:
-      extraContent: mt_plan_chart_filter
-    at_case_rate_trending_chart:
-      extraContent: at_case_rate_trending_chart_filter
+      - at_rate_executed
+    mt_plan_chart_group:
+      - mt_plan_chart_header
+      - mt_plan_chart
+    mt_plan_chart_header:
+      left: mt_plan_chart_title
+      right: mt_plan_chart_filter
+    at_case_rate_trending_chart_group:
+      - at_case_rate_trending_chart_header
+      - at_case_rate_trending_chart
+    at_case_rate_trending_chart_header:
+      left: at_case_rate_trending_chart_title
+      right: at_case_rate_trending_chart_filter
     scene_chart_group:
       - scene_avg_cost_chart
       - scene_rate_failed_chart
@@ -55,8 +63,12 @@ hierarchy:
     at_api_chart_group:
       - at_api_rate_failed_chart
       - at_api_avg_cost_chart
-    at_plan_latest_waterfall_chart:
-      extraContent: at_plan_latest_waterfall_chart_filter
+    at_plan_latest_waterfall_chart_group:
+      - at_plan_latest_waterfall_chart_header
+      - at_plan_latest_waterfall_chart
+    at_plan_latest_waterfall_chart_header:
+      left: at_plan_latest_waterfall_chart_title
+      right: at_plan_latest_waterfall_chart_filter
 components:
   filter:
     name: filter
@@ -227,7 +239,7 @@ components:
             styleConfig:
               lineHeight: 22
               color: text-desc
-  at_rate_notpassed:
+  at_rate_executed:
     type: Text
     props:
       renderType: linkText
@@ -246,81 +258,16 @@ components:
               color: text-desc
   quality_chart:
     type: Chart
+  mt_plan_chart_group:
+    type: Container
     props:
-      title: 质量总分
-      style:
-        height: 265
-      option:
-        radar:
-          indicator:
-            - name: 用例
-              max: 100
-            - name: 配置单
-              max: 100
-            - name: 计划
-              max: 100
-            - name: 代码质量
-              max: 100
-            - name: 缺陷
-              max: 100
-        tooltip:
-          trigger: item
-        series:
-          - name: 质量
-            type: radar
-            label:
-              show: true
-            areaStyle:
-              opacity: 0.2
-            data:
-              - value:
-                  - 78
-                  - 18
-                  - 24
-                  - 68
-                  - 50
-  mt_plan_chart:
-    type: Chart
-    props:
-      title: 手工测试用例分布图
-      chartType: bar
-      option:
-        yAxis:
-          type: category
-          data:
-            - 测试计划1
-            - 测试计划2
-            - 说好的测试计划3
-        legend:
-          show: true
-        xAxis:
-          type: value
-        color:
-          - red
-          - blue
-        series:
-          - name: 未通过
-            stack: total
-            data:
-              - 97
-              - null
-              - null
-              - null
-              - null
-              - null
-            label:
-              show: true
-          - name: 已通过
-            stack: total
-            data:
-              - 97
-              - 197
-              - 256
-              - 109
-              - 189
-              - 200
-            label:
-              show: true
+      border: true
+      whiteBg: true
+      spaceSize: big
+  mt_plan_chart_header:
+    type: LRContainer
+  mt_plan_chart_title:
+    type: Text
   mt_plan_chart_filter:
     name: filter
     operations:
@@ -329,40 +276,22 @@ components:
         reload: true
     props:
       delay: 1000
-    state:
-      conditions:
-        - emptyText: 全部
-          fixed: true
-          key: type
-          label: 测试计划
-          options:
-            - label: 测试计划1
-              value: '1'
-            - label: 测试计划2
-              value: '2'
-            - label: 说好的测试计划3
-              value: '3'
-          type: select
-        - emptyText: 全部
-          fixed: true
-          key: sort
-          label: 状态
-          options:
-            - label: 全部
-              value: all
-            - label: 已完成
-              value: done
-            - label: 阻塞
-              value: block
-            - label: 未通过
-              value: notpassed
-          type: select
-      values: { }
     type: ContractiveFilter
+  mt_plan_chart:
+    type: Chart
+  at_case_rate_trending_chart_group:
+    type: Container
+    props:
+      border: true
+      whiteBg: true
+      spaceSize: big
+  at_case_rate_trending_chart_header:
+    type: LRContainer
+  at_case_rate_trending_chart_title:
+    type: Text
   at_case_rate_trending_chart:
     type: Chart
     props:
-      title: 自动化测试执行率和通过率走势
       chartType: line
       option:
         xAxis:
@@ -435,10 +364,19 @@ components:
           type: rangePicker
       values: { }
     type: ContractiveFilter
+  at_plan_latest_waterfall_chart_group:
+    type: Container
+    props:
+      border: true
+      whiteBg: true
+      spaceSize: big
+  at_plan_latest_waterfall_chart_header:
+    type: LRContainer
+  at_plan_latest_waterfall_chart_title:
+    type: Text
   at_plan_latest_waterfall_chart:
     type: Chart
     props:
-      title: 自动化测试执行率和通过率走势
       chartType: bar
       option:
         xAxis:
@@ -955,3 +893,6 @@ rendering:
     - name: mt_block_detail_item@mt_case_num_notpassed
     - name: mt_block_detail_item@mt_case_rate_passed
     - name: mt_block_detail_item@mt_case_rate_executed
+
+  mt_plan_chart_filter:
+    - name: mt_plan_chart

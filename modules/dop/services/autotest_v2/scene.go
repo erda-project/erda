@@ -393,6 +393,19 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	return lists, nil
 }
 
+func (svc *Service) IsExistSceneSetName(spaceID uint64, sceneSetName string) bool {
+	sceneSets, err := svc.db.SceneSetsBySpaceID(spaceID)
+	if err != nil {
+		return false
+	}
+	for _, set := range sceneSets {
+		if set.Name == sceneSetName {
+			return true
+		}
+	}
+	return false
+}
+
 // CutAutotestScene 移除场景
 func (svc *Service) CutAutotestScene(sc *dao.AutoTestScene) error {
 	next, err := svc.db.GetAutotestSceneByPreID(sc.ID)
@@ -759,6 +772,7 @@ func StepToAction(step apistructs.AutoTestSceneStep, req apistructs.SnippetConfi
 	action.Labels[apistructs.AutotestType] = apistructs.AutotestSceneStep
 	action.Alias = pipelineyml.ActionAlias(strconv.Itoa(int(step.ID)))
 	action.If = expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder
+	action.Disable = step.IsDisabled
 
 	switch step.Type {
 	case apistructs.StepTypeCustomScript:
@@ -1300,4 +1314,28 @@ func (svc *Service) GetAutotestScenesByIDs(sceneIDs []uint64) (map[uint64]apistr
 		mpRsp[k] = v
 	}
 	return mpRsp, nil
+}
+
+// ListSceneBySceneSetID .
+func (svc *Service) ListSceneBySceneSetID(setIDs ...uint64) (scenes []apistructs.AutoTestScene, err error) {
+	list, err := svc.db.ListSceneBySceneSetID(setIDs...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		scenes = append(scenes, v.Convert())
+	}
+	return
+}
+
+// ListAutoTestSceneSteps .
+func (svc *Service) ListAutoTestSceneSteps(sceneIDs []uint64) (sceneSteps []apistructs.AutoTestSceneStep, err error) {
+	list, err := svc.db.ListAutoTestSceneSteps(sceneIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		sceneSteps = append(sceneSteps, *v.Convert())
+	}
+	return
 }

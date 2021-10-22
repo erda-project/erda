@@ -134,6 +134,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
 	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
+	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -620,7 +621,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport, apistructs.FileSceneSetActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -634,6 +635,9 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSpaceActionTypeExport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ExportFile(record)
+	case apistructs.FileSceneSetActionTypeExport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ExportSceneSetFile(record)
 	default:
 
 	}
@@ -641,7 +645,7 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 
 func importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport, apistructs.FileSceneSetActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -655,6 +659,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSpaceActionTypeImport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ImportFile(record)
+	case apistructs.FileSceneSetActionTypeImport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ImportSceneSetFile(record)
 	default:
 
 	}

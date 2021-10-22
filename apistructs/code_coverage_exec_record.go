@@ -70,13 +70,14 @@ func (req *CodeCoverageUpdateRequest) Validate() error {
 type CodeCoverageListRequest struct {
 	IdentityInfo
 
-	ProjectID uint64                   `json:"projectID"`
-	PageNo    uint64                   `json:"pageNo"`
-	PageSize  uint64                   `json:"pageSize"`
-	TimeBegin string                   `json:"timeBegin"`
-	TimeEnd   string                   `json:"timeEnd"`
-	Asc       bool                     `json:"asc"`
-	Statuses  []CodeCoverageExecStatus `json:"statuses"`
+	ProjectID      uint64                   `json:"projectID"`
+	PageNo         uint64                   `json:"pageNo"`
+	PageSize       uint64                   `json:"pageSize"`
+	TimeBegin      string                   `json:"timeBegin"`
+	TimeEnd        string                   `json:"timeEnd"`
+	Asc            bool                     `json:"asc"`
+	Statuses       []CodeCoverageExecStatus `json:"statuses"`
+	ReportStatuses []CodeCoverageExecStatus `json:"reportStatuses,omitempty"`
 }
 
 func (req *CodeCoverageListRequest) Validate() error {

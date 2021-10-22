@@ -28,16 +28,16 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 // MetaIndexGroupProvider .
 type MetaIndexGroupProvider struct {
-	index indexmanager.Index
+	index indexloader.Interface
 }
 
 // NewMetaIndexGroupProvider .
-func NewMetaIndexGroupProvider(index indexmanager.Index) (*MetaIndexGroupProvider, error) {
+func NewMetaIndexGroupProvider(index indexloader.Interface) (*MetaIndexGroupProvider, error) {
 	return &MetaIndexGroupProvider{index}, nil
 }
 
@@ -120,12 +120,12 @@ func (p *MetaIndexGroupProvider) getDynamicGroupsMetrics(group string, ms map[st
 
 // MetaIndexMetricMetaProvider .
 type MetaIndexMetricMetaProvider struct {
-	index indexmanager.Index
+	index indexloader.Interface
 	log   logs.Logger
 }
 
 // NewMetaIndexMetricMetaProvider .
-func NewMetaIndexMetricMetaProvider(index indexmanager.Index, log logs.Logger) (*MetaIndexMetricMetaProvider, error) {
+func NewMetaIndexMetricMetaProvider(index indexloader.Interface, log logs.Logger) (*MetaIndexMetricMetaProvider, error) {
 	return &MetaIndexMetricMetaProvider{
 		index: index,
 		log:   log,
@@ -154,9 +154,13 @@ func (p *MetaIndexMetricMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i
 		Aggregation("tags.metric_name", elastic.NewTermsAggregation().Field("tags.metric_name").Size(100000). //  impossible size
 															SubAggregation("topHit", elastic.NewTopHitsAggregation().Size(1).Sort("timestamp", false).
 																FetchSourceContext(elastic.NewFetchSourceContext(true).Include("*"))))
-	end := time.Now().UnixNano() / int64(time.Millisecond)
-	start := end - 7*24*int64(time.Hour)/int64(time.Millisecond)
-	indices := p.index.GetReadIndices([]string{"_metric_meta"}, nil, start, end)
+	end := time.Now().UnixNano()
+	start := end - 7*24*int64(time.Hour)
+
+	indices := p.index.Indices(context.Background(), start, end, indexloader.KeyPath{
+		Keys:      []string{"_metric_meta"},
+		Recursive: true,
+	}, indexloader.KeyPath{})
 	result, err := p.searchRaw(indices, searchSource)
 	if err != nil {
 		return nil, err

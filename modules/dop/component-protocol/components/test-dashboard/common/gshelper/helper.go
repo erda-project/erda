@@ -37,86 +37,6 @@ func assign(src, dst interface{}) error {
 	return mapstructure.Decode(src, dst)
 }
 
-func (h *GSHelper) SetIterations(l []apistructs.Iteration) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["Iterations"] = l
-}
-
-func (h *GSHelper) GetIterations() []apistructs.Iteration {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.Iteration, 0)
-	_ = assign((*h.gs)["Iterations"], &res)
-	return res
-}
-
-func (h *GSHelper) SetMembers(l []apistructs.Member) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["Members"] = l
-}
-
-func (h *GSHelper) GetMembers() []apistructs.Member {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.Member, 0)
-	_ = assign((*h.gs)["Members"], &res)
-	return res
-}
-
-func (h *GSHelper) SetIssueList(l []dao.IssueItem) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["IssueList"] = l
-}
-
-func (h *GSHelper) GetIssueList() []dao.IssueItem {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]dao.IssueItem, 0)
-	_ = assign((*h.gs)["IssueList"], &res)
-	return res
-}
-
-func (h *GSHelper) SetIssueStateList(l []dao.IssueState) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["IssueStateList"] = l
-}
-
-func (h *GSHelper) GetIssueStateList() []dao.IssueState {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]dao.IssueState, 0)
-	_ = assign((*h.gs)["IssueStateList"], &res)
-	return res
-}
-
-func (h *GSHelper) SetIssueStageList(l []apistructs.IssueStage) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["IssueStageList"] = l
-}
-
-func (h *GSHelper) GetIssueStageList() []apistructs.IssueStage {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.IssueStage, 0)
-	_ = assign((*h.gs)["IssueStageList"], &res)
-	return res
-}
-
 func (h *GSHelper) SetGlobalManualTestPlanList(l []apistructs.TestPlan) {
 	if h.gs == nil {
 		return
@@ -147,4 +67,183 @@ func (h *GSHelper) GetMtBlockFilterTestPlanList() []apistructs.TestPlan {
 	res := make([]apistructs.TestPlan, 0)
 	_ = assign((*h.gs)["MtBlockFilterTestPlanList"], &res)
 	return res
+}
+
+func (h *GSHelper) SetGlobalSelectedIterationIDs(ids []uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalSelectedIterationIDs"] = ids
+}
+
+func (h *GSHelper) GetGlobalSelectedIterationIDs() []uint64 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]uint64, 0)
+	_ = assign((*h.gs)["GlobalSelectedIterationIDs"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalSelectedIterationsByID(l map[uint64]dao.Iteration) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalSelectedIterationsByID"] = l
+}
+
+func (h *GSHelper) GetGlobalSelectedIterationsByID() map[uint64]dao.Iteration {
+	if h.gs == nil {
+		return nil
+	}
+	res := make(map[uint64]dao.Iteration, 0)
+	_ = assign((*h.gs)["GlobalSelectedIterationsByID"], &res)
+	return res
+}
+
+func (h *GSHelper) SetMtPlanChartFilterTestPlanList(l []apistructs.TestPlan) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["MtPlanChartFilterTestPlanList"] = l
+}
+
+func (h *GSHelper) GetMtPlanChartFilterTestPlanList() []apistructs.TestPlan {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlan, 0)
+	_ = assign((*h.gs)["MtPlanChartFilterTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetMtPlanChartFilterStatusList(l []apistructs.TestCaseExecStatus) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["MtPlanChartFilterStatusList"] = l
+}
+
+func (h *GSHelper) GetMtPlanChartFilterStatusList() []apistructs.TestCaseExecStatus {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestCaseExecStatus, 0)
+	_ = assign((*h.gs)["MtPlanChartFilterStatusList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalAutoTestPlanList(l []*apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAutoTestPlanList"] = l
+}
+
+func (h *GSHelper) GetGlobalAutoTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalAutoTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalAutoTestPlanIDs(l []uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAutoTestPlanIDs"] = l
+}
+
+func (h *GSHelper) GetGlobalAutoTestPlanIDs() []uint64 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]uint64, 0)
+	_ = assign((*h.gs)["GlobalAutoTestPlanIDs"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtBlockFilterTestPlanList(l []apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtBlockFilterTestPlanList"] = l
+}
+
+func (h *GSHelper) GetAtBlockFilterTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalAtBlockFilterTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtTestPlanExecHistoryList(l []apistructs.AutoTestExecHistoryDto) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtTestPlanExecHistoryList"] = l
+}
+
+func (h *GSHelper) GetAtTestPlanExecHistoryList() []apistructs.AutoTestExecHistoryDto {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestExecHistoryDto, 0)
+	_ = assign((*h.gs)["GlobalAtTestPlanExecHistoryList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtScene(l []apistructs.AutoTestScene) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtScene"] = l
+}
+
+func (h *GSHelper) GetAtScene() []apistructs.AutoTestScene {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestScene, 0)
+	_ = assign((*h.gs)["GlobalAtScene"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtSceneStep(l []apistructs.AutoTestSceneStep) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtSceneStep"] = l
+}
+
+func (h *GSHelper) GetAtSceneStep() []apistructs.AutoTestSceneStep {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestSceneStep, 0)
+	_ = assign((*h.gs)["GlobalAtSceneStep"], &res)
+	return res
+}
+
+type AtSceneAndApiTimeFilter struct {
+	TimeStart string `json:"timeStart"`
+	TimeEnd   string `json:"timeEnd"`
+}
+
+func (h *GSHelper) SetAtSceneAndApiTimeFilter(t AtSceneAndApiTimeFilter) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["AtSceneAndApiTimeFilter"] = t
+}
+
+func (h *GSHelper) GetAtSceneAndApiTimeFilter() AtSceneAndApiTimeFilter {
+	if h.gs == nil {
+		return AtSceneAndApiTimeFilter{}
+	}
+	return (*h.gs)["AtSceneAndApiTimeFilter"].(AtSceneAndApiTimeFilter)
 }
