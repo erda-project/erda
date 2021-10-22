@@ -40,17 +40,18 @@ import (
 
 const (
 	// audit template name
-	AuditCordonNode     = "cordonNode"
-	AuditUncordonNode   = "uncordonNode"
-	AuditLabelNode      = "labelNode"
-	AuditUnLabelNode    = "unLabelNode"
-	AuditDrainNode      = "drainNode"
-	AuditOfflineNode    = "offlineNode"
-	AuditOnlineNode     = "onlineNode"
-	AuditUpdateResource = "updateK8SResource"
-	AuditCreateResource = "createK8SResource"
-	AuditDeleteResource = "deleteK8SResource"
-	AuditKubectlShell   = "kubectlShell"
+	AuditCordonNode      = "cordonNode"
+	AuditUncordonNode    = "uncordonNode"
+	AuditLabelNode       = "labelNode"
+	AuditUnLabelNode     = "unLabelNode"
+	AuditDrainNode       = "drainNode"
+	AuditOfflineNode     = "offlineNode"
+	AuditOnlineNode      = "onlineNode"
+	AuditUpdateResource  = "updateK8SResource"
+	AuditCreateResource  = "createK8SResource"
+	AuditDeleteResource  = "deleteK8SResource"
+	AuditKubectlShell    = "kubectlShell"
+	AuditRestartWorkload = "restartWorkload"
 
 	// audit template params
 	AuditClusterName  = "clusterName"

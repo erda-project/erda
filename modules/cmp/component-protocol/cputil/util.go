@@ -15,6 +15,7 @@
 package cputil
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -170,4 +171,25 @@ func CalculateNodeRes(node data.Object, allocatedCPU, allocatedMem, allocatedPod
 	leftMem = allocatableMemQty.Value() - allocatedMem
 	leftPods = allocatablePodQty.Value() - allocatedPods
 	return
+}
+
+// IsJsonEqual return true if objA and objB is same after marshal by json.
+// Used for unit testing.
+func IsJsonEqual(objA, objB interface{}) (bool, error) {
+	dataA, err := json.Marshal(objA)
+	if err != nil {
+		return false, err
+	}
+
+	dataB, err := json.Marshal(objB)
+	if err != nil {
+		return false, err
+	}
+	if string(dataA) == string(dataB) {
+		return true, nil
+	}
+
+	fmt.Printf("objA:\n%s\n", string(dataA))
+	fmt.Printf("objB:\n%s\n", string(dataB))
+	return false, nil
 }
