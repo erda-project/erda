@@ -49,13 +49,13 @@ type traceService struct {
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
 }
 
-var EVENT_FIELD_MAP = map[string]interface{}{
-	"error":        nil,
-	"stack":        nil,
-	"event":        nil,
-	"message":      nil,
-	"error_kind":   nil,
-	"error_object": nil,
+var EVENT_FIELD_MAP = map[string]struct{}{
+	"error":        struct{}{},
+	"stack":        struct{}{},
+	"event":        struct{}{},
+	"message":      struct{}{},
+	"error_kind":   struct{}{},
+	"error_object": struct{}{},
 }
 
 func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.Status) string {
