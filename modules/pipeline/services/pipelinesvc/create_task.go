@@ -187,9 +187,26 @@ func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action, actionSpec *
 
 func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
 	defaultRes := apistructs.PipelineAppliedResource{CPU: conf.TaskDefaultCPU(), MemoryMB: conf.TaskDefaultMEM()}
+	overSoldRes := apistructs.PipelineOverSoldResource{CPURate: conf.TaskDefaultCPUOverSoldRate(), MaxCPU: conf.TaskMaxAllowedOverSoldCPU()}
 	return apistructs.PipelineAppliedResources{
-		Limits:   calculateNormalTaskLimitResource(action, actionDefine, defaultRes),
+		Limits:   calculateOversoldTaskLimitResource(calculateNormalTaskLimitResource(action, actionDefine, defaultRes), overSoldRes),
 		Requests: calculateNormalTaskRequestResource(action, actionDefine, defaultRes),
+	}
+}
+
+// calculateOversoldTaskLimitResource cpu multiply the default oversold rate. if larger than max cpu default,use default max cpu
+// TODO memory oversold
+func calculateOversoldTaskLimitResource(limits apistructs.PipelineAppliedResource, overSoldRes apistructs.PipelineOverSoldResource) apistructs.PipelineAppliedResource {
+	maxCPU := limits.CPU
+	maxMemoryMB := limits.MemoryMB
+	// Cpu is usually be wasted, if action and action define cpu is lower than default, use default cpu
+	maxCPU = maxCPU * float64(overSoldRes.CPURate)
+	if maxCPU > overSoldRes.MaxCPU {
+		maxCPU = overSoldRes.MaxCPU
+	}
+	return apistructs.PipelineAppliedResource{
+		CPU:      maxCPU,
+		MemoryMB: maxMemoryMB,
 	}
 }
 
