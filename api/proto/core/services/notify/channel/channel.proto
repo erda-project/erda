@@ -207,5 +207,5 @@ enum Type {
 
 // channel service provider type
 enum ProviderType {
-  ALI_SHORT_MESSAGE = 0;
+  ALIYUN_SMS = 0;
 }

@@ -16,14 +16,14 @@ package chtype
 
 import "github.com/erda-project/erda/pkg/common/errors"
 
-type AliShortMessage struct {
+type AliyunSMS struct {
 	AccessKeyId     string
 	AccessKeySecret string
 	SignName        string
 	TemplateCode    string
 }
 
-func (asm *AliShortMessage) Validate() error {
+func (asm *AliyunSMS) Validate() error {
 	if asm.SignName == "" {
 		return errors.NewMissingParameterError("signName")
 	}

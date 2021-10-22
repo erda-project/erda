@@ -37,7 +37,7 @@ func TestAliShortMessage_Validate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			asm := &AliShortMessage{
+			asm := &AliyunSMS{
 				AccessKeyId:     tt.fields.AccessKeyId,
 				AccessKeySecret: tt.fields.AccessKeySecret,
 				SignName:        tt.fields.SignName,

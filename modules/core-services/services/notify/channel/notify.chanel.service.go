@@ -29,8 +29,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/erda-project/erda/modules/core-services/services/notify/channel/chtype"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
+	"github.com/erda-project/erda/modules/core-services/services/notify/channel/type"
 	"github.com/erda-project/erda/pkg/common/apis"
 	pkgerrors "github.com/erda-project/erda/pkg/common/errors"
 )
@@ -211,8 +211,8 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 
 	var shortMessageProviderTypes []*pb.NotifyChannelProviderType
 	shortMessageProviderTypes = append(shortMessageProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String())),
+		Name:        strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_SMS.String())),
 	})
 
 	var types []*pb.NotifyChannelTypeResponse
@@ -276,12 +276,12 @@ func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, r
 
 func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) error {
 	switch channelType {
-	case strings.ToLower(pb.ProviderType_ALI_SHORT_MESSAGE.String()):
+	case strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()):
 		bytes, err := json.Marshal(c)
 		if err != nil {
 			return errors.New("Json parser failed.")
 		}
-		var asm chtype.AliShortMessage
+		var asm chtype.AliyunSMS
 		err = json.Unmarshal(bytes, &asm)
 		if err != nil {
 			return errors.New("Json parser failed.")

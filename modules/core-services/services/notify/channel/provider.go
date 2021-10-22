@@ -15,6 +15,8 @@
 package channel
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
@@ -25,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type config struct {
@@ -42,7 +45,9 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
+	p.bdl = bundle.New(bundle.WithHTTPClient(hc))
+
 	p.notifyChanelService = &notifyChannelService{
 		p:               p,
 		NotifyChannelDB: &db.NotifyChannelDB{DB: p.DB},
