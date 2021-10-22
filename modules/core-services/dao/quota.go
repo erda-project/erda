@@ -34,7 +34,7 @@ func (client *DBClient) GetWorkspaceQuota(projectID, workspace string) (int64, i
 	case "prod":
 		return projectQuota.ProdCPUQuota, projectQuota.ProdMemQuota, nil
 	case "staging":
-		return projectQuota.StagingCPUQuota, projectQuota.StagingCPUQuota, nil
+		return projectQuota.StagingCPUQuota, projectQuota.StagingMemQuota, nil
 	case "test":
 		return projectQuota.TestCPUQuota, projectQuota.TestMemQuota, nil
 	case "dev":
