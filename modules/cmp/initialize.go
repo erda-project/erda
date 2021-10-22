@@ -36,6 +36,7 @@ import (
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
 	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
+	"github.com/erda-project/erda/modules/cmp/tasks"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -132,7 +133,20 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		org_resource.WithRedisClient(redisCli),
 	)
 
-	resourceTable := resource.NewReportTable(resource.ReportTableWithBundle(bdl), resource.ReportTableWithCMP(p))
+	resourceTable := resource.NewReportTable(
+		resource.ReportTableWithBundle(bdl),
+		resource.ReportTableWithCMP(p),
+	)
+
+	// daily collector project quota and cluster resource request
+	dailyCollector := tasks.NewDailyQuotaCollector(
+		tasks.DailyQuotaCollectorWithDBClient(db),
+		tasks.DailyQuotaCollectorWithBundle(bdl),
+		tasks.DailyQuotaCollectorWithCMPAPI(p),
+	)
+	ticker := tasks.New(time.Hour, dailyCollector.Task)
+	go ticker.Run()
+
 	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
 	if err != nil {
 		return nil, err

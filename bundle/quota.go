@@ -25,6 +25,8 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
+// FetchQuotaOnClusters
+// orgID if is 0, fetch from all organizations. // todo:
 func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
@@ -58,6 +60,7 @@ func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*api
 }
 
 // FetchNamespacesBelongsTo finds the project to which a given namespaces belongs to.
+// if orgID == 0, query from all scope.
 // namespaces: the key is cluster name, the value is the namespaces list in the cluster.
 func (b *Bundle) FetchNamespacesBelongsTo(orgID int64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	host, err := b.urls.CoreServices()

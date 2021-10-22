@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
 type ReportTable struct {
@@ -127,9 +128,9 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 			OwnerUserID:        int64(projectItem.OwnerUserID),
 			OwnerUserName:      projectItem.OwnerUserName,
 			OwnerUserNickName:  projectItem.OwnerUserNickname,
-			CPUQuota:           float64(projectItem.CPUQuota),
+			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota),
 			CPUWaterLevel:      float64(projectItem.GetCPUReqeust()) / float64(projectItem.CPUQuota),
-			MemQuota:           float64(projectItem.MemQuota),
+			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota),
 			MemWaterLevel:      float64(projectItem.GetMemRequest()) / float64(projectItem.MemQuota),
 			Nodes:              0,
 		}
@@ -139,6 +140,23 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 		}
 		data.List = append(data.List, &item)
 	}
+	sharedNodes := float64(sharedResource[0]) / float64(cpuPerNode)
+	if nodes := float64(sharedResource[1]) / float64(memPerNode); nodes > sharedNodes {
+		sharedNodes = nodes
+	}
+	data.List = append(data.List, &apistructs.ResourceOverviewReportDataItem{
+		ProjectID:          0,
+		ProjectName:        "",
+		ProjectDisplayName: "共享资源", // todo: i18n
+		OwnerUserID:        0,
+		OwnerUserName:      "",
+		OwnerUserNickName:  "所有人", // todo: i18n
+		CPUQuota:           calcu.MillcoreToCore(sharedResource[0]),
+		CPUWaterLevel:      1,
+		MemQuota:           calcu.ByteToGibibyte(sharedResource[1]),
+		MemWaterLevel:      1,
+		Nodes:              sharedNodes,
+	})
 
 	return &data, nil
 }
