@@ -200,6 +200,7 @@ const (
 	ExecuteClickRowNoOperationKey   OperationKey = "clickRow"
 	ExecuteAddApiOperationKey       OperationKey = "addApi"
 	ExecuteTaskBreadcrumbSelectItem OperationKey = "selectItem"
+	ExecuteSubmitCopyOperationKey   OperationKey = "submitCopy"
 
 	//org-list
 	FilterOrgsOperationKey         OperationKey = "filter"

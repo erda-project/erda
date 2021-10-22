@@ -104,7 +104,12 @@ type AutoTestSceneStep struct {
 }
 
 func (a *AutoTestSceneStep) ToJsonCopyText() string {
-	b, _ := json.Marshal(a)
+	dat := map[string]interface{}{
+		"type":   a.Type,
+		"method": a.Method,
+		"value":  a.Value,
+	}
+	b, _ := json.MarshalIndent(dat, "", "\t")
 	return string(b)
 }
 
