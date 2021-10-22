@@ -1091,31 +1091,6 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 	}
 }
 
-func Test_traceService_EventFieldSet(t *testing.T) {
-	tests := []struct {
-		name     string
-		tag      string
-		wantResp bool
-	}{
-		{
-			"event",
-			"event",
-			true,
-		},
-		{
-			"other",
-			"service",
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			has := EventFieldSet.Contains(tt.tag)
-			assert.Equal(t, has, tt.wantResp)
-		})
-	}
-}
-
 func Test_traceService_getSpanEventQueryTime(t *testing.T) {
 	type args struct {
 		req *pb.SpanEventRequest
