@@ -80,8 +80,10 @@ type OperationBaseInfo struct {
 	Icon      string `json:"icon"`
 	HoverTip  string `json:"hoverTip"`
 	HoverShow bool   `json:"hoverShow"`
+	Group     string `json:"group"`
 	// 操作展示名称
-	Text string `json:"text"`
+	Text     string `json:"text"`
+	CopyText string `json:"copyText"`
 	// 确认提示
 	Confirm string `json:"confirm,omitempty"`
 	// 前端操作是否需要触发后端

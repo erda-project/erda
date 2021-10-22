@@ -59,11 +59,34 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
 			"text": "+ 接口",
-		}
-		c.Operations = map[string]interface{}{
-			"click": map[string]interface{}{
-				"key":    "addApi",
-				"reload": true,
+			"menu": []interface{}{
+				map[string]interface{}{
+					"key": "addApi",
+					"operations": map[string]interface{}{
+						"click": map[string]interface{}{
+							"key":    "addApi",
+							"reload": true,
+						},
+					},
+					"text": "表单添加",
+				},
+				map[string]interface{}{
+					"key":  "addByCopyText",
+					"text": "粘贴文本添加",
+					"operations": map[string]interface{}{
+						"click": map[string]interface{}{
+							"key":    "addByCopyText",
+							"reload": false,
+							"command": map[string]interface{}{
+								"key":    "set",
+								"target": "addCopyApiFormModal",
+								"state": map[string]interface{}{
+									"visible": true,
+								},
+							},
+						},
+					},
+				},
 			},
 		}
 	}

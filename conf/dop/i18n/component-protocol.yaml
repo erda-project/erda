@@ -107,6 +107,23 @@ zh:
   at-case-rate-trending-chart: 自动化测试执行率和通过率趋势
   at-plan-latest-waterfall-chart: 自动化测试计划执行详情瀑布图
   user-not-exist: 用户不存在
+  import: 导入
+  export: 导出
+  scene-set-export-confirm: 是否确认导出
+  scene-set-export-success-msg: 导出任务已创建, 请在导入导出记录表中查看进度
+  status-success: 成功
+  status-failed: 失败,
+  status-pending: 排队中
+  status-processing: 进行中
+  download-file: 下载文件
+  import-export-record: 导入导出记录
+  import-export-table: 导入导出记录表
+  type: 类型
+  operator: 操作人
+  time: 时间
+  desc: 描述
+  status: 状态
+  result: 结果
 en:
   issue-manage: issue manage
   issue: issue
@@ -195,6 +212,23 @@ en:
   board-view: Board View
   custom: Custom
   state: State
+  import: Import
+  export: Export
+  scene-set-export-confirm: Are you sure to export?
+  scene-set-export-success-msg: The export task has been created, please check the progress in the import and export record table
+  status-success: Success
+  status-failed: Failed,
+  status-pending: Pending
+  status-processing: Processing
+  download-file: Download File
+  import-export-record: Import and export records
+  import-export-table: Import and export records table
+  type: Type
+  operator: Operator
+  time: Time,
+  desc: Description
+  status: Status
+  result: Result
   test-case-num-total: Test Case Total Number
   test-case-num-done: Finished
   test-case-num-block: Block
