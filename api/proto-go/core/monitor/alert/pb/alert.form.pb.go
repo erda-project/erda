@@ -4357,7 +4357,7 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 				}
 				m.UpdateTime = val
 			case "level":
-				m.Level = vals
+				m.Level = vals[0]
 			}
 		}
 	}

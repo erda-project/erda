@@ -729,7 +729,7 @@ message AlertNotify {
   AlertNotifySilence silence     = 7;
   int64              createTime  = 8;
   int64              updateTime  = 9;
-  repeated string    level       = 10;
+  string             level       = 10;
 }
 
 message NotifyGroup {

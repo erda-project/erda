@@ -271,7 +271,7 @@ func ToPBAlertNotify(m *db.AlertNotify, notifyGroupMap map[int64]*pb.NotifyGroup
 		if !ok {
 			return nil
 		}
-		groupLevel, ok := utils.GetMapValueArr(m.NotifyTarget, "level")
+		groupLevel, ok := utils.GetMapValueString(m.NotifyTarget, "level")
 		if !ok {
 			return nil
 		}
@@ -279,9 +279,7 @@ func ToPBAlertNotify(m *db.AlertNotify, notifyGroupMap map[int64]*pb.NotifyGroup
 		n.GroupId = groupID
 		n.GroupType = groupType
 		n.NotifyGroup = notifyGroupMap[groupID]
-		for _, v := range groupLevel {
-			n.Level = append(n.Level, v.(string))
-		}
+		n.Level = groupLevel
 	} else if notifyType == "dingding" {
 		dingdingURL, ok := utils.GetMapValueString(m.NotifyTarget, "dingding_url")
 		if !ok {
