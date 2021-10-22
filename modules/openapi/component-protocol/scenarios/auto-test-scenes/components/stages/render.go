@@ -211,6 +211,15 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *apistructs.Component
 		if err != nil {
 			return err
 		}
+	case apistructs.AutoTestSceneStepSwitchOperationKey:
+		err = i.RenderDisableStagesForm(event.OperationData)
+		if err != nil {
+			return err
+		}
+		err = i.RenderListStageForm()
+		if err != nil {
+			return err
+		}
 	case "clickItem":
 		data, err := GetOpsInfo(event.OperationData)
 		if err != nil {
