@@ -132,7 +132,8 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		org_resource.WithRedisClient(redisCli),
 	)
 
-	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential)
+	resourceTable := resource.NewReportTable(resource.ReportTableWithBundle(bdl), resource.ReportTableWithCMP(p))
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 }
 
 func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
-	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer) (*endpoints.Endpoints, error) {
+	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -179,6 +180,7 @@ func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS json
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrgResource(o),
 		endpoints.WithCredential(c),
+		endpoints.WithResourceTable(rt),
 	)
 
 	// Sync org resource task status

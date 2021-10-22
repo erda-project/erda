@@ -106,6 +106,12 @@ func WithCredential(c credentialpb.AccessKeyServiceServer) Option {
 	}
 }
 
+func WithResourceTable(reportTable *resource.ReportTable) Option {
+	return func(e *Endpoints) {
+		e.reportTable = reportTable
+	}
+}
+
 // Routes Return routes
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
