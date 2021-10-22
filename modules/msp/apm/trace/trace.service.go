@@ -692,10 +692,7 @@ func (s *traceService) convertToTraceDebugHistory(ctx context.Context, dbHistory
 }
 
 func (s *traceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
-	if req.StartTime <= 0 {
-		req.StartTime = time.Now().Add(-time.Minute*15).UnixNano() / 1e6
-	}
-	endTime := req.StartTime + int64((time.Minute*15)/time.Millisecond)
+	startTime, endTime := s.getSpanEventQueryTime(req)
 	req.StartTime = req.StartTime - int64((time.Minute*15)/time.Millisecond)
 	statement := "select * from apm_span_event where span_id = $span_id order by timestamp asc limit 1000"
 	queryParams := map[string]*structpb.Value{
@@ -703,7 +700,7 @@ func (s *traceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventReque
 	}
 	queryCtx, _ := context.WithTimeout(ctx, time.Minute)
 	queryRequest := &metricpb.QueryWithTableFormatRequest{
-		Start:     strconv.FormatInt(req.StartTime, 10),
+		Start:     strconv.FormatInt(startTime, 10),
 		End:       strconv.FormatInt(endTime, 10),
 		Statement: statement,
 		Params:    queryParams,
@@ -716,6 +713,13 @@ func (s *traceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventReque
 	table := response.Data
 	events := s.handleSpanEventResponse(table)
 	return &pb.SpanEventResponse{SpanEvents: events}, nil
+}
+
+func (s *traceService) getSpanEventQueryTime(req *pb.SpanEventRequest) (int64, int64) {
+	if req.StartTime <= 0 {
+		req.StartTime = time.Now().Add(-time.Minute*15).UnixNano() / 1e6
+	}
+	return req.StartTime - int64((time.Minute*15)/time.Millisecond), req.StartTime + int64((time.Minute*15)/time.Millisecond)
 }
 
 func (s *traceService) handleSpanEventResponse(table *metricpb.TableResult) []*pb.SpanEvent {

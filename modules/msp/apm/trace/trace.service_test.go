@@ -17,6 +17,7 @@ package trace
 import (
 	"context"
 	"encoding/json"
+	"github.com/bmizerany/assert"
 	"reflect"
 	"testing"
 	"time"
@@ -1067,6 +1068,51 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("traceService.GetSpanEvents() = %v, want %v", got, tt.wantResp)
 			}
+		})
+	}
+}
+
+func Test_traceService_getSpanEventQueryTime(t *testing.T) {
+	type args struct {
+		req *pb.SpanEventRequest
+	}
+	now := time.Now()
+	tests := []struct {
+		name          string
+		service       string
+		args          args
+		wantStartTime int64
+		wantEndTime   int64
+	}{
+		{
+			"startTime 0",
+			"erda.msp.apm.trace.TraceService",
+			args{
+				&pb.SpanEventRequest{StartTime: now.UnixNano() / 1e6, SpanID: ""},
+			},
+			now.Add(-time.Minute*15).UnixNano() / 1e6,
+			now.Add(time.Minute*15).UnixNano() / 1e6,
+		},
+		{
+			"startTime 1634875807541",
+			"erda.msp.apm.trace.TraceService",
+			args{
+				&pb.SpanEventRequest{StartTime: 1634875807541, SpanID: ""},
+			},
+			1634875807541 - int64((time.Minute*15)/time.Millisecond),
+			1634875807541 + int64((time.Minute*15)/time.Millisecond),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     nil,
+				i18n:                  nil,
+				traceRequestHistoryDB: nil,
+			}
+			start, end := s.getSpanEventQueryTime(tt.args.req)
+			assert.Equal(t, start, tt.wantStartTime)
+			assert.Equal(t, end, tt.wantEndTime)
 		})
 	}
 }
