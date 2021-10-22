@@ -33,12 +33,12 @@ type State struct {
 }
 
 type Data struct {
-	Status       Status  `json:"status"`
-	Ready        string  `json:"ready"`
-	Name         string  `json:"name"`
-	Images       Images  `json:"images"`
-	RestartCount string  `json:"restartCount"`
-	Operate      Operate `json:"operate"`
+	Status       Status      `json:"status"`
+	Ready        string      `json:"ready"`
+	Name         string      `json:"name"`
+	Images       Images      `json:"images"`
+	RestartCount interface{} `json:"restartCount"`
+	Operate      Operate     `json:"operate"`
 }
 
 type Scroll struct {
@@ -83,10 +83,10 @@ type Images struct {
 }
 
 type Operation struct {
-	Key    string            `json:"key"`
-	Text   string            `json:"text"`
-	Reload bool              `json:"reload"`
-	Meta   map[string]string `json:"meta,omitempty"`
+	Key    string                 `json:"key"`
+	Text   string                 `json:"text"`
+	Reload bool                   `json:"reload"`
+	Meta   map[string]interface{} `json:"meta,omitempty"`
 }
 
 type StyleConfig struct {

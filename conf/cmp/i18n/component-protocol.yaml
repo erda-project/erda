@@ -13,6 +13,7 @@ zh:
  viewOrEditYaml: 查看/编辑YAML
  delete: 删除
  confirmDelete: 确定删除？
+ times: 次
 
  # cmp-dashboard-events-list
  lastSeen: 上次触发时间
@@ -227,6 +228,7 @@ en:
  viewOrEditYaml: View/Edit YAML
  delete: Delete
  confirmDelete: Sure to delete?
+ times: time(s)
 
  # cmp-dashboard-events-list
  lastSeen: Last Seen
