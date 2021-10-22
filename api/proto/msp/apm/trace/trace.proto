@@ -69,6 +69,20 @@ service TraceService {
       get: "/api/msp/apm/trace/debug/{requestID}/history/status?terminusKey={scopeID}",
     };
   }
+
+  rpc GetSpanEvents (SpanEventRequest) returns (SpanEventResponse)  {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/trace/span-events?spanId={spanID}",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/trace/span-events",
+      service: "msp",
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
+    };
+  }
 }
 
 message GetTraceQueryConditionsRequest{
@@ -319,4 +333,18 @@ message Trace {
   repeated string services  = 3;
   // Start time of trace
   int64           startTime = 4;
+}
+
+message SpanEvent {
+  int64               timestamp = 1;
+  map<string, string> events    = 2;
+}
+
+message SpanEventRequest {
+  string spanID = 1;
+  int64  startTime = 2;
+}
+
+message SpanEventResponse {
+  repeated SpanEvent spanEvents = 1;
 }

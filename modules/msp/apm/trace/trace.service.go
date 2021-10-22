@@ -49,6 +49,15 @@ type traceService struct {
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
 }
 
+var EventFieldSet = map[string]struct{}{
+	"error":        {},
+	"stack":        {},
+	"event":        {},
+	"message":      {},
+	"error_kind":   {},
+	"error_object": {},
+}
+
 func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.Status) string {
 	if lang == nil {
 		return ""
@@ -680,4 +689,61 @@ func (s *traceService) convertToTraceDebugHistory(ctx context.Context, dbHistory
 		CreateTime:   dbHistory.CreateTime.Format(common.Layout),
 		UpdateTime:   dbHistory.UpdateTime.Format(common.Layout),
 	}, nil
+}
+
+func (s *traceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
+	startTime, endTime := s.getSpanEventQueryTime(req)
+	req.StartTime = req.StartTime - int64((time.Minute*15)/time.Millisecond)
+	statement := "select * from apm_span_event where span_id = $span_id order by timestamp asc limit 1000"
+	queryParams := map[string]*structpb.Value{
+		"span_id": structpb.NewStringValue(req.SpanID),
+	}
+	queryCtx, _ := context.WithTimeout(ctx, time.Minute)
+	queryRequest := &metricpb.QueryWithTableFormatRequest{
+		Start:     strconv.FormatInt(startTime, 10),
+		End:       strconv.FormatInt(endTime, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	response, err := s.p.Metric.QueryWithTableFormat(queryCtx, queryRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	table := response.Data
+	events := s.handleSpanEventResponse(table)
+	return &pb.SpanEventResponse{SpanEvents: events}, nil
+}
+
+func (s *traceService) getSpanEventQueryTime(req *pb.SpanEventRequest) (int64, int64) {
+	if req.StartTime <= 0 {
+		req.StartTime = time.Now().Add(-time.Minute*15).UnixNano() / 1e6
+	}
+	return req.StartTime - int64((time.Minute*15)/time.Millisecond), req.StartTime + int64((time.Minute*15)/time.Millisecond)
+}
+
+func (s *traceService) handleSpanEventResponse(table *metricpb.TableResult) []*pb.SpanEvent {
+	spanEvents := make([]*pb.SpanEvent, 0)
+	eventNames := make(map[string]string)
+	for _, col := range table.Cols {
+		if col.Flag == "tag" {
+			key := strings.Replace(col.Key, "::tag", "", -1)
+			if _, ok := EventFieldSet[key]; ok {
+				eventNames[key] = col.Key
+			}
+		}
+	}
+	for _, data := range table.Data {
+		timestamp := int64(data.Values["timestamp"].GetNumberValue())
+		events := make(map[string]string)
+		for key, value := range eventNames {
+			events[key] = data.Values[value].GetStringValue()
+		}
+		event := &pb.SpanEvent{
+			Timestamp: timestamp,
+			Events:    events,
+		}
+		spanEvents = append(spanEvents, event)
+	}
+	return spanEvents
 }

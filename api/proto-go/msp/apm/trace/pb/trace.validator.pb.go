@@ -229,3 +229,20 @@ func (this *Span) Validate() error {
 func (this *Trace) Validate() error {
 	return nil
 }
+func (this *SpanEvent) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}
+func (this *SpanEventRequest) Validate() error {
+	return nil
+}
+func (this *SpanEventResponse) Validate() error {
+	for _, item := range this.SpanEvents {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("SpanEvents", err)
+			}
+		}
+	}
+	return nil
+}
