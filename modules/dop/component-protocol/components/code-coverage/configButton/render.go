@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cancelButton
+package configButton
 
 import (
 	"context"
@@ -46,42 +46,64 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if !ok {
 		return fmt.Errorf("workspace was empty")
 	}
+	if c.State == nil {
+		c.State = map[string]interface{}{}
+	}
 
 	var disable bool
 
 	switch event.Operation.String() {
-	case apistructs.ClickOperation.String():
-		err := svc.Cancel(apistructs.CodeCoverageCancelRequest{
+	case "config":
+		c.State["showSettingModal"] = true
+	default:
+		c.State["showSettingModal"] = false
+	}
+
+	orgIDInt, err := strconv.ParseInt(sdk.Identity.OrgID, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	hasAddon, err := svc.JudgeSourcecovAddon(projectId, uint64(orgIDInt), workspace)
+	if err != nil {
+		return err
+	}
+	if !hasAddon {
+		disable = true
+	}
+
+	if !disable {
+		list, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			ProjectID: projectId,
+			PageNo:    1,
+			PageSize:  1,
 			Workspace: workspace,
-			IdentityInfo: apistructs.IdentityInfo{
-				UserID: sdk.Identity.UserID,
-			},
 		})
 		if err != nil {
 			return err
 		}
-	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		if c.State == nil {
-			c.State = map[string]interface{}{}
-		}
 
-		disableSourcecov := c.State["disableSourcecov"]
-		if disableSourcecov != nil {
-			disable = disableSourcecov.(bool)
+		if len(list.List) > 0 {
+			record := list.List[0]
+			if record.Status == apistructs.RunningStatus.String() || record.Status == apistructs.ReadyStatus.String() {
+				disable = true
+			}
+
+			if record.Status == apistructs.EndingStatus.String() {
+				disable = true
+			}
 		}
 	}
 
 	c.Type = "Button"
 	c.Props = map[string]interface{}{
-		"text": "强制取消",
+		"text": "统计对象配置",
 		"type": "primary",
 	}
 	c.Operations = map[string]interface{}{
 		"click": map[string]interface{}{
-			"key":      "click",
+			"key":      "config",
 			"reload":   true,
-			"confirm":  "强制取消将会导致明细和报告都不会生成!",
 			"disabled": disable,
 		},
 	}
@@ -89,7 +111,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 }
 
 func init() {
-	base.InitProviderWithCreator("code-coverage", "cancelButton", func() servicehub.Provider {
+	base.InitProviderWithCreator("code-coverage", "configButton", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
 }

@@ -104,9 +104,10 @@ type ChangePageNo struct {
 }
 
 type State struct {
-	PageNo   uint64 `json:"pageNo"`
-	PageSize uint64 `json:"pageSize"`
-	Total    uint64 `json:"total"`
+	PageNo    uint64 `json:"pageNo"`
+	PageSize  uint64 `json:"pageSize"`
+	Total     uint64 `json:"total"`
+	Workspace string `json:"workspace"`
 }
 
 var statusValueMap = map[string]string{
@@ -135,7 +136,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
-	if err := ca.setData(ctx, gs); err != nil {
+	workspace := ca.State.Workspace
+	if workspace == "" {
+		return fmt.Errorf("workspace was empty")
+	}
+
+	if err := ca.setData(ctx, gs, workspace); err != nil {
 		return err
 	}
 
@@ -143,21 +149,26 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if err := ca.SetProps(); err != nil {
 		return err
 	}
+
+	ca.State.Workspace = workspace
+
 	return nil
 }
 
-func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateData) error {
+func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateData, workspace string) error {
 	sdk := cputil.SDK(ctx)
 	projectIDStr := sdk.InParams["projectId"].(string)
 	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 	if err != nil {
 		return err
 	}
+
 	data, err := ca.CodeCoverageSvc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 		IdentityInfo: apistructs.IdentityInfo{
 			UserID: sdk.Identity.GetUserID(),
 		},
 		ProjectID: projectID,
+		Workspace: workspace,
 		PageNo:    ca.State.PageNo,
 		PageSize:  ca.State.PageSize,
 	})

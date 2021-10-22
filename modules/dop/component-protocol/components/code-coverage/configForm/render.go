@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cancelButton
+package configForm
 
 import (
 	"context"
@@ -42,54 +42,93 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
+	if c.State == nil {
+		c.State = map[string]interface{}{}
+	}
+
 	workspace, ok := c.State["workspace"].(string)
 	if !ok {
 		return fmt.Errorf("workspace was empty")
 	}
 
-	var disable bool
-
 	switch event.Operation.String() {
-	case apistructs.ClickOperation.String():
-		err := svc.Cancel(apistructs.CodeCoverageCancelRequest{
-			ProjectID: projectId,
-			Workspace: workspace,
+	case "submit":
+		fromData := c.State["formData"].(map[string]interface{})
+		var saveSettingRequest = apistructs.SaveCodeCoverageSettingRequest{
+			ProjectID:    projectId,
+			Workspace:    workspace,
+			MavenSetting: fromData["maven"].(string),
+			Includes:     fromData["include"].(string),
+			Excludes:     fromData["exclude"].(string),
 			IdentityInfo: apistructs.IdentityInfo{
-				UserID: sdk.Identity.UserID,
+				UserID:         sdk.Identity.UserID,
+				InternalClient: sdk.Identity.InternalClient,
 			},
-		})
+		}
+		_, err := svc.SaveCodeCoverageSetting(saveSettingRequest)
 		if err != nil {
 			return err
 		}
-	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		if c.State == nil {
-			c.State = map[string]interface{}{}
-		}
-
-		disableSourcecov := c.State["disableSourcecov"]
-		if disableSourcecov != nil {
-			disable = disableSourcecov.(bool)
-		}
+		c.State["showSettingModal"] = false
+	case "cancel":
+		c.State["showSettingModal"] = false
 	}
 
-	c.Type = "Button"
-	c.Props = map[string]interface{}{
-		"text": "强制取消",
-		"type": "primary",
+	setting, err := svc.GetCodeCoverageSetting(projectId, workspace)
+	if err != nil {
+		return err
 	}
+
+	c.State["formData"] = map[string]interface{}{
+		"maven":   setting.MavenSetting,
+		"exclude": setting.Excludes,
+		"include": setting.Includes,
+	}
+
+	c.Type = "Form"
 	c.Operations = map[string]interface{}{
-		"click": map[string]interface{}{
-			"key":      "click",
-			"reload":   true,
-			"confirm":  "强制取消将会导致明细和报告都不会生成!",
-			"disabled": disable,
+		"submit": map[string]interface{}{
+			"key":    "submit",
+			"reload": "true",
+		},
+		"cancel": map[string]interface{}{
+			"key":    "cancel",
+			"reload": "true",
+		},
+	}
+	c.Props = map[string]interface{}{
+		"fields": []map[string]interface{}{
+			{
+				"label":     "包含",
+				"component": "input",
+				"key":       "include",
+				"componentProps": map[string]interface{}{
+					"placeholder": "请输入包含表达式",
+				},
+			},
+			{
+				"label":     "不包含",
+				"component": "input",
+				"key":       "exclude",
+				"componentProps": map[string]interface{}{
+					"placeholder": "请输入不包含表达式",
+				},
+			},
+			{
+				"label":     "maven 设置",
+				"component": "textarea",
+				"key":       "maven",
+				"componentProps": map[string]interface{}{
+					"placeholder": "请输入maven 设置表达式",
+				},
+			},
 		},
 	}
 	return nil
 }
 
 func init() {
-	base.InitProviderWithCreator("code-coverage", "cancelButton", func() servicehub.Provider {
+	base.InitProviderWithCreator("code-coverage", "configForm", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
 }

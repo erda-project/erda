@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -41,11 +42,34 @@ type CodeCoverageStartRequest struct {
 	IdentityInfo
 
 	ProjectID uint64 `json:"projectID"`
+	Workspace string `json:"workspace"`
 }
 
 func (req *CodeCoverageStartRequest) Validate() error {
 	if req.ProjectID == 0 {
 		return errors.New("the projectID is 0")
+	}
+
+	return checkWorkspace(req.Workspace)
+}
+
+func checkWorkspace(workspace string) error {
+	if workspace == "" {
+		return fmt.Errorf("workspace was empty")
+	}
+
+	var checker = false
+	for _, workEnv := range EnvList {
+		if workEnv == DefaultEnv {
+			continue
+		}
+		if workEnv == workspace {
+			checker = true
+		}
+	}
+
+	if !checker {
+		return fmt.Errorf("workspace value not ok, use %v %v %v %v", DevEnv, TestEnv, StagingEnv, ProdEnv)
 	}
 	return nil
 }
@@ -78,6 +102,7 @@ type CodeCoverageListRequest struct {
 	Asc            bool                     `json:"asc"`
 	Statuses       []CodeCoverageExecStatus `json:"statuses"`
 	ReportStatuses []CodeCoverageExecStatus `json:"reportStatuses,omitempty"`
+	Workspace      string                   `json:"workspace"`
 }
 
 func (req *CodeCoverageListRequest) Validate() error {
@@ -90,7 +115,8 @@ func (req *CodeCoverageListRequest) Validate() error {
 	if req.PageSize == 0 {
 		req.PageSize = 10
 	}
-	return nil
+
+	return checkWorkspace(req.Workspace)
 }
 
 type CodeCoverageExecRecordResponse struct {
@@ -138,11 +164,40 @@ type CodeCoverageCancelRequest struct {
 	IdentityInfo
 
 	ProjectID uint64 `json:"projectID"`
+	Workspace string `json:"workspace"`
 }
 
 func (req *CodeCoverageCancelRequest) Validate() error {
 	if req.ProjectID == 0 {
 		return errors.New("the projectID is 0")
 	}
-	return nil
+
+	return checkWorkspace(req.Workspace)
+}
+
+type CodeCoverageExecRecordDetail struct {
+	PlanID       uint64 `json:"planID"`
+	ProjectID    uint64 `json:"projectID"`
+	Status       string `json:"status"`
+	MavenSetting string `json:"mavenSetting"`
+	Includes     string `json:"includes"`
+	Excludes     string `json:"excludes"`
+}
+
+type CodeCoverageSetting struct {
+	ID           uint64 `json:"id"`
+	ProjectID    uint64 `json:"project_id"`
+	MavenSetting string `json:"maven_setting"`
+	Includes     string `json:"includes"`
+	Excludes     string `json:"excludes"`
+	Workspace    string `json:"workspace"`
+}
+
+type SaveCodeCoverageSettingRequest struct {
+	IdentityInfo
+	ProjectID    uint64 `json:"project_id"`
+	MavenSetting string `json:"maven_setting"`
+	Includes     string `json:"includes"`
+	Excludes     string `json:"excludes"`
+	Workspace    string `json:"workspace"`
 }

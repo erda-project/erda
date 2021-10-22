@@ -39,6 +39,7 @@ type CodeCoverageExecRecord struct {
 	EndExecutor   string                            `json:"end_executor"`
 	TimeBegin     time.Time                         `json:"time_begin"`
 	TimeEnd       time.Time                         `json:"time_end"`
+	Workspace     string                            `json:"workspace"`
 }
 
 type CodeCoverageNodes []*apistructs.CodeCoverageNode
@@ -139,15 +140,15 @@ func (client *DBClient) GetCodeCoverageByID(id uint64) (*CodeCoverageExecRecord,
 }
 
 // CancelCodeCoverage .
-func (client *DBClient) CancelCodeCoverage(projectID uint64, record *CodeCoverageExecRecord) error {
+func (client *DBClient) CancelCodeCoverage(projectID uint64, workspace string, record *CodeCoverageExecRecord) error {
 	return client.Model(&CodeCoverageExecRecord{}).
-		Where("project_id = ?", projectID).
+		Where("project_id = ? and workspace = ?", projectID, workspace).
 		Where("status IN (?)", apistructs.WorkingStatus).Updates(record).Error
 }
 
 // ListCodeCoverageByStatus .
-func (client *DBClient) ListCodeCoverageByStatus(projectID uint64, status []apistructs.CodeCoverageExecStatus) (records []CodeCoverageExecRecord, err error) {
-	err = client.Where("project_id = ?", projectID).Where("status IN (?)", status).Find(&records).Error
+func (client *DBClient) ListCodeCoverageByStatus(projectID uint64, status []apistructs.CodeCoverageExecStatus, workspace string) (records []CodeCoverageExecRecord, err error) {
+	err = client.Where("project_id = ?", projectID).Where("status IN (?) and workspace = ?", status, workspace).Find(&records).Error
 	return
 }
 
@@ -175,6 +176,10 @@ func (client *DBClient) ListCodeCoverage(req apistructs.CodeCoverageListRequest)
 	}
 	if req.TimeEnd != "" {
 		db = db.Where("time_begin <= ?", req.TimeEnd)
+	}
+
+	if req.Workspace != "" {
+		db = db.Where("workspace = ?", req.Workspace)
 	}
 
 	if req.Asc {
