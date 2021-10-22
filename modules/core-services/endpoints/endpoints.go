@@ -317,6 +317,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}/workspaces/{workspace}/namespaces", Method: http.MethodGet, Handler: e.GetAllNamespaces},
 		{Path: "/api/projects/{projectID}/workspaces/{workspace}/quota", Method: http.MethodGet, Handler: e.GetWorkspaceQuota},
 
+		// cmp dependencies
 		{Path: "/api/projects-quota", Method: http.MethodGet, Handler: e.GetProjectQuota},
 		{Path: "/api/projects-namespaces", Method: http.MethodGet, Handler: e.GetNamespacesBelongsTo},
 
