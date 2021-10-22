@@ -31,6 +31,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/set"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -49,14 +50,7 @@ type traceService struct {
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
 }
 
-var EVENT_FIELD_MAP = map[string]struct{}{
-	"error":        {},
-	"stack":        {},
-	"event":        {},
-	"message":      {},
-	"error_kind":   {},
-	"error_object": {},
-}
+var EventFieldSet = set.NewSet("error", "stack", "event", "message", "error_kind", "error_object")
 
 func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.Status) string {
 	if lang == nil {
@@ -728,7 +722,7 @@ func (s *traceService) handleSpanEventResponse(table *metricpb.TableResult) []*p
 	for _, col := range table.Cols {
 		if col.Flag == "tag" {
 			key := strings.Replace(col.Key, "::tag", "", -1)
-			if _, ok := EVENT_FIELD_MAP[key]; ok {
+			if EventFieldSet.Contains(key) {
 				eventNames[key] = col.Key
 			}
 		}

@@ -17,11 +17,11 @@ package trace
 import (
 	"context"
 	"encoding/json"
-	"github.com/bmizerany/assert"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/bmizerany/assert"
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -1068,6 +1068,31 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("traceService.GetSpanEvents() = %v, want %v", got, tt.wantResp)
 			}
+		})
+	}
+}
+
+func Test_traceService_EventFieldSet(t *testing.T) {
+	tests := []struct {
+		name     string
+		tag      string
+		wantResp bool
+	}{
+		{
+			"event",
+			"event",
+			true,
+		},
+		{
+			"other",
+			"service",
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			has := EventFieldSet.Contains(tt.tag)
+			assert.Equal(t, has, tt.wantResp)
 		})
 	}
 }
