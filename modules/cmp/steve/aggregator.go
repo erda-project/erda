@@ -63,6 +63,17 @@ func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
 	return a
 }
 
+func (a *Aggregator) GetAllClusters() []string {
+	var clustersNames []string
+	a.servers.Range(func(key, _ interface{}) bool {
+		if clusterName, ok := key.(string); ok {
+			clustersNames = append(clustersNames, clusterName)
+		}
+		return true
+	})
+	return clustersNames
+}
+
 func (a *Aggregator) watchClusters(ctx context.Context) {
 	for {
 		select {
