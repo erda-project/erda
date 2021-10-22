@@ -27,6 +27,7 @@ type TestFileRecord struct {
 	ProjectID   uint64          `json:"projectID"`
 	TestSetID   uint64          `json:"testSetID"`
 	ApiFileUUID string          `json:"apiFileUUID"`
+	SpaceID     uint64          `json:"spaceID"`
 	Type        FileActionType  `json:"type"`
 	State       FileRecordState `json:"state"`
 	CreatedAt   time.Time       `json:"createdAt"`
@@ -38,6 +39,7 @@ type TestFileRecordRequest struct {
 	ID          uint64          `json:"id"`
 	FileName    string          `json:"name"`
 	ProjectID   uint64          `json:"projectID"`
+	SpaceID     uint64          `json:"spaceID"`
 	Description string          `json:"description"`
 	ApiFileUUID string          `json:"apiFileUUID"`
 	Type        FileActionType  `json:"type"`
@@ -47,8 +49,9 @@ type TestFileRecordRequest struct {
 }
 
 type TestFileExtra struct {
-	ManualTestFileExtraInfo    *ManualTestFileExtraInfo    `json:"manualTestExtraFileInfo,omitempty"`
-	AutotestSpaceFileExtraInfo *AutoTestSpaceFileExtraInfo `json:"autotestSpaceFileExtraInfo,omitempty"`
+	ManualTestFileExtraInfo       *ManualTestFileExtraInfo       `json:"manualTestExtraFileInfo,omitempty"`
+	AutotestSpaceFileExtraInfo    *AutoTestSpaceFileExtraInfo    `json:"autotestSpaceFileExtraInfo,omitempty"`
+	AutotestSceneSetFileExtraInfo *AutoTestSceneSetFileExtraInfo `json:"autotestSceneSetFileExtraInfo,omitempty"`
 }
 
 type ManualTestFileExtraInfo struct {
@@ -63,24 +66,32 @@ type AutoTestSpaceFileExtraInfo struct {
 	ExportRequest *AutoTestSpaceExportRequest `json:"exportRequest,omitempty"`
 }
 
+type AutoTestSceneSetFileExtraInfo struct {
+	ExportRequest *AutoTestSceneSetExportRequest `json:"exportRequest,omitempty"`
+	ImportRequest *AutoTestSceneSetImportRequest `json:"importRequest"`
+}
+
 type FileRecordState string
 
 type FileActionType string
 
 const (
-	FileRecordStatePending    FileRecordState = "pending"
-	FileRecordStateProcessing FileRecordState = "processing"
-	FileRecordStateSuccess    FileRecordState = "success"
-	FileRecordStateFail       FileRecordState = "fail"
-	FileActionTypeCopy        FileActionType  = "copy"
-	FileActionTypeImport      FileActionType  = "import"
-	FileActionTypeExport      FileActionType  = "export"
-	FileSpaceActionTypeExport FileActionType  = "spaceExport"
-	FileSpaceActionTypeImport FileActionType  = "spaceImport"
+	FileRecordStatePending       FileRecordState = "pending"
+	FileRecordStateProcessing    FileRecordState = "processing"
+	FileRecordStateSuccess       FileRecordState = "success"
+	FileRecordStateFail          FileRecordState = "fail"
+	FileActionTypeCopy           FileActionType  = "copy"
+	FileActionTypeImport         FileActionType  = "import"
+	FileActionTypeExport         FileActionType  = "export"
+	FileSpaceActionTypeExport    FileActionType  = "spaceExport"
+	FileSpaceActionTypeImport    FileActionType  = "spaceImport"
+	FileSceneSetActionTypeExport FileActionType  = "sceneSetExport"
+	FileSceneSetActionTypeImport FileActionType  = "sceneSetImport"
 )
 
 type ListTestFileRecordsRequest struct {
 	ProjectID uint64           `json:"projectID"`
+	SpaceID   uint64           `json:"spaceID"`
 	Types     []FileActionType `json:"types"`
 	Locale    string           `json:"locale"`
 }

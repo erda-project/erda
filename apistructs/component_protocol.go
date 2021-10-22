@@ -180,6 +180,7 @@ const (
 	UpdateSceneOperationKey           OperationKey = "UpdateScene"
 	DeleteSceneOperationKey           OperationKey = "DeleteScene"
 	DeleteSceneSetOperationKey        OperationKey = "DeleteSceneSet"
+	ExportSceneSetOperationKey        OperationKey = "exportSceneSet"
 	ClickAddSceneSeButtonOperationKey OperationKey = "ClickAddSceneSet"
 	DragSceneSetOperationKey          OperationKey = "DragSceneSet"
 	CopySceneOperationKey             OperationKey = "CopyScene"

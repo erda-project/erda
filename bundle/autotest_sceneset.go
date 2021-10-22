@@ -145,3 +145,21 @@ func (b *Bundle) DragSceneSet(req apistructs.SceneSetRequest) error {
 	}
 	return nil
 }
+
+// ExportAutotestSceneSet export autotest scene set
+func (b *Bundle) ExportAutotestSceneSet(userID string, req apistructs.AutoTestSceneSetExportRequest) error {
+	host, err := b.urls.DOP()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+	var exportID uint64
+	_, err = hc.Post(host).Path("/api/autotests/scenesets/actions/export").
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&exportID)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return nil
+}
