@@ -165,7 +165,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	}
 
 	containerTable.Props.SortDirections = []string{"descend", "ascend"}
-	containerTable.Props.IsLoadMore = true
+	containerTable.Props.RequestIgnore = []string{"data"}
 	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
 	containerTable.Props.Scroll.X = 1000

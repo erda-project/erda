@@ -23,8 +23,9 @@ type ComponentYamlDrawer struct {
 	base.DefaultProvider
 
 	sdk   *cptype.SDK
-	Props Props `json:"props"`
-	State State `json:"state"`
+	Type  string `json:"type,omitempty"`
+	Props Props  `json:"props"`
+	State State  `json:"state"`
 }
 
 type Props struct {

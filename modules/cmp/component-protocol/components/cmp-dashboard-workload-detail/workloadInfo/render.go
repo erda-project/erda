@@ -129,7 +129,7 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 	}
 	i.Data.Data = data
 
-	i.Props.IsLoadMore = true
+	i.Props.RequestIgnore = []string{"data"}
 	i.Props.ColumnNum = 4
 	i.Props.Fields = []Field{
 		{

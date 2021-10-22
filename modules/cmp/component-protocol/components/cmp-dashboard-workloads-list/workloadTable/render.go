@@ -733,7 +733,7 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	w.Props.SortDirections = []string{"descend", "ascend"}
 	w.Props.RowKey = "id"
 	w.Props.PageSizeOptions = []string{"10", "20", "50", "100"}
-	w.Props.IsLoadMore = true
+	w.Props.RequestIgnore = []string{"data"}
 
 	statusColumn := Column{
 		DataIndex: "status",

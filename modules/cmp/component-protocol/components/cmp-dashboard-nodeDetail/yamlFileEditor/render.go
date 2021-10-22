@@ -91,7 +91,6 @@ func (f *ComponentYamlFileEditor) GenComponentState(component *cptype.Component)
 		return err
 	}
 	f.State = state
-	f.Transfer(component)
 	return nil
 }
 

@@ -149,9 +149,9 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
-		IsLoadMore: true,
-		RowKey:     "id",
-		Pagination: false,
+		RequestIgnore: []string{"data"},
+		RowKey:        "id",
+		Pagination:    false,
 		Columns: []Column{
 			{
 				DataIndex: "lastSeen",

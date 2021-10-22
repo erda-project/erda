@@ -46,7 +46,7 @@ type Scroll struct {
 }
 
 type Props struct {
-	IsLoadMore     bool     `json:"isLoadMore,omitempty"`
+	RequestIgnore  []string `json:"requestIgnore,omitempty"`
 	RowKey         string   `json:"rowKey"`
 	Pagination     bool     `json:"pagination"`
 	Scroll         Scroll   `json:"scroll"`
