@@ -24,6 +24,8 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/dop/services/test_report"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 
@@ -497,6 +499,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		code_coverage.WithEnvConfig(env),
 	)
 
+	testReportSvc := test_report.New(
+		test_report.WithDBClient(db),
+		test_report.WithBundle(bdl.Bdl),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -552,6 +559,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithLibReference(libReference),
 		endpoints.WithOrg(o),
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
+		endpoints.WithTestReportRecord(testReportSvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)
