@@ -64,7 +64,7 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 	}
 
 	creatorId := apis.GetUserID(ctx)
-	user, err := s.p.bdl.GetCurrentUser(creatorId)
+	user, err := s.p.uc.GetUser(creatorId)
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
@@ -315,7 +315,7 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		Name:        channel.ChannelProvider,
 		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
 	}
-	user, err := s.p.bdl.GetCurrentUser(channel.CreatorId)
+	user, err := s.p.uc.GetUser(channel.CreatorId)
 	if user != nil && user.Name != "" {
 		ncpb.CreatorName = user.Name
 	}

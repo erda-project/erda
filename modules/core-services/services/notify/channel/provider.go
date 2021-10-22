@@ -15,7 +15,7 @@
 package channel
 
 import (
-	"time"
+	"os"
 
 	"github.com/jinzhu/gorm"
 
@@ -24,10 +24,12 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core-services/conf"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
@@ -38,15 +40,25 @@ type provider struct {
 	Cfg                 *config
 	Log                 logs.Logger
 	Register            transport.Register
-	bdl                 *bundle.Bundle
+	uc                  *ucauth.UCClient
 	notifyChanelService *notifyChannelService
 	DB                  *gorm.DB        `autowired:"mysql-client"`
 	I18n                i18n.Translator `autowired:"i18n" translator:"cs-i18n"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
-	p.bdl = bundle.New(bundle.WithHTTPClient(hc))
+	ucClientId := os.Getenv("UC_CLIENT_ID")
+	ucClientSecret := os.Getenv("UC_CLIENT_SECRET")
+	p.uc = ucauth.NewUCClient(discover.UC(), ucClientId, ucClientSecret)
+	if conf.OryEnabled() {
+		ucDB, err := dao.NewDBClient()
+		if err != nil {
+			return err
+		}
+		oryKratosProvateAddr := os.Getenv("ORY_KRATOS_ADMIN_ADDR")
+		p.uc = ucauth.NewUCClient(oryKratosProvateAddr, conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		p.uc.SetDBClient(ucDB.DB)
+	}
 
 	p.notifyChanelService = &notifyChannelService{
 		p:               p,

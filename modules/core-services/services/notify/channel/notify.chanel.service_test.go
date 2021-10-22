@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
@@ -90,12 +91,12 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
-			var b *bundle.Bundle
+			var b *ucauth.UCClient
 			monkey.PatchInstanceMethod(reflect.TypeOf(b), "GetCurrentUser", func(b *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
 				return &apistructs.UserInfo{ID: "1", Name: "Test"}, nil
 			})
 
-			s := &notifyChannelService{p: &provider{bdl: b}}
+			s := &notifyChannelService{p: &provider{uc: b}}
 			_, err := s.CreateNotifyChannel(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateNotifyChannel() error = %v, wantErr %v", err, tt.wantErr)
