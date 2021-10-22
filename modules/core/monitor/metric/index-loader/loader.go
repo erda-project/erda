@@ -383,7 +383,7 @@ func (p *provider) syncIndiceToCache(ctx context.Context) {
 		p.cond.Broadcast()
 	}()
 
-	timer := time.NewTimer(p.Cfg.IndexReloadInterval / 2)
+	timer := time.NewTimer(0)
 	defer timer.Stop()
 	var notifiers []chan error
 	for {
@@ -438,7 +438,7 @@ func (p *provider) doSyncIndiceToCache(ctx context.Context) error {
 func (p *provider) runElasticSearchIndexLoader(ctx context.Context) error {
 	p.Log.Infof("start elasticsearch-indices loader")
 	defer p.Log.Info("exit elasticsearch-indices loader")
-	timer := time.NewTimer(p.Cfg.IndexReloadInterval / 2)
+	timer := time.NewTimer(0)
 	defer timer.Stop()
 	var notifiers []chan error
 	for {
