@@ -64,6 +64,9 @@ component-protocol.components.code-coverage.tip:
 component-protocol.components.code-coverage.executeHistoryButton:
 component-protocol.components.code-coverage.downloadButton:
 
+component-protocol.components.scenes-import-record.filter:
+component-protocol.components.scenes-import-record.table:
+
 
 
 

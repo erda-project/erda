@@ -93,13 +93,7 @@ func (a *AutoTestSpaceExcel) SetSceneSets() error {
 			return err
 		}
 		sceneSet.Name = setRow[1]
-		sceneSet.SpaceID, err = convertStrIDToUint64(setRow[2])
-		if err != nil {
-			return err
-		}
-		if sceneSet.SpaceID != a.Data.Space.ID {
-			return fmt.Errorf("scene set id don`t match space id")
-		}
+		sceneSet.SpaceID = a.Data.Space.ID
 		sceneSet.PreID, err = convertToUint64PermitZero(setRow[3])
 		if err != nil {
 			return err
@@ -107,6 +101,10 @@ func (a *AutoTestSpaceExcel) SetSceneSets() error {
 		sceneSet.Description = setRow[4]
 		a.Data.SceneSets[a.Data.Space.ID] = append(a.Data.SceneSets[a.Data.Space.ID], sceneSet)
 	}
+	return nil
+}
+
+func (a *AutoTestSpaceExcel) SetSingleSceneSet(setID uint64) error {
 	return nil
 }
 
@@ -137,10 +135,7 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 		if err != nil {
 			return err
 		}
-		input.SpaceID, err = convertToUint64PermitZero(inputRow[5])
-		if err != nil {
-			return err
-		}
+		input.SpaceID = a.Data.Space.ID
 		input.Description = inputRow[6]
 		inputList = append(inputList, input)
 	}
@@ -162,10 +157,7 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 		if err != nil {
 			return err
 		}
-		output.SpaceID, err = convertToUint64PermitZero(outputRow[4])
-		if err != nil {
-			return err
-		}
+		output.SpaceID = a.Data.Space.ID
 		output.Description = outputRow[5]
 		outputList = append(outputList, output)
 	}
@@ -188,13 +180,7 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 		if err != nil {
 			return err
 		}
-		scene.SpaceID, err = convertStrIDToUint64(sceneRow[3])
-		if err != nil {
-			return err
-		}
-		if scene.SpaceID != a.Data.Space.ID {
-			return fmt.Errorf("scene`s space id don not match")
-		}
+		scene.SpaceID = a.Data.Space.ID
 		scene.PreID, err = convertToUint64PermitZero(sceneRow[4])
 		if err != nil {
 			return err
@@ -252,13 +238,7 @@ func (a *AutoTestSpaceExcel) SetSceneSteps() error {
 		if err != nil {
 			return err
 		}
-		step.SpaceID, err = convertStrIDToUint64(stepRow[6])
-		if err != nil {
-			return err
-		}
-		if step.SpaceID != a.Data.Space.ID {
-			return fmt.Errorf("scene step space id don not match")
-		}
+		step.SpaceID = a.Data.Space.ID
 		step.PreType = apistructs.PreType(stepRow[7])
 		step.APISpecID, err = convertToUint64PermitZero(stepRow[8])
 		if err != nil {
@@ -432,6 +412,7 @@ func (svc *Service) ImportFile(record *dao.TestFileRecord) {
 		}
 		return
 	}
+	defer f.Close()
 
 	switch req.FileType {
 	case apistructs.TestSpaceFileTypeExcel:
@@ -481,5 +462,145 @@ func (svc *Service) ImportFile(record *dao.TestFileRecord) {
 	}
 	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess}); err != nil {
 		logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+	}
+}
+
+func (svc *Service) ImportSceneSet(req apistructs.AutoTestSceneSetImportRequest, r *http.Request) (uint64, error) {
+	if !req.FileType.Valid() {
+		return 0, apierrors.ErrImportAutotestSceneSet.InvalidParameter("fileType")
+	}
+	if req.SpaceID == 0 {
+		return 0, apierrors.ErrImportAutotestSceneSet.MissingParameter("spaceID")
+	}
+
+	space, err := svc.bdl.GetTestSpace(req.SpaceID)
+	if err != nil {
+		return 0, apierrors.ErrExportAutoTestSceneSet.InvalidParameter(fmt.Errorf("autotest space not found, id: %d", req.SpaceID))
+	}
+
+	f, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fileHeader.Filename,
+		FileReader:      f,
+		From:            "autotest-scene-set",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := svc.bdl.UploadFile(uploadReq)
+	if err != nil {
+		return 0, err
+	}
+
+	fileReq := apistructs.TestFileRecordRequest{
+		FileName:     fileHeader.Filename,
+		Description:  fmt.Sprintf("SpaceName: %s", space.Name),
+		ProjectID:    uint64(space.ProjectID),
+		Type:         apistructs.FileSceneSetActionTypeImport,
+		ApiFileUUID:  file.UUID,
+		SpaceID:      space.ID,
+		State:        apistructs.FileRecordStatePending,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			AutotestSceneSetFileExtraInfo: &apistructs.AutoTestSceneSetFileExtraInfo{
+				ImportRequest: &req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (svc *Service) ImportSceneSetFile(record *dao.TestFileRecord) {
+	extra := record.Extra.AutotestSceneSetFileExtraInfo
+	if extra == nil || extra.ImportRequest == nil {
+		logrus.Errorf("autotest scene set import missing request data")
+		return
+	}
+
+	req := extra.ImportRequest
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+		return
+	}
+	space, err := svc.GetSpace(req.SpaceID)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail, Description: fmt.Sprintf("%s, err: %v", record.Description, err)}); err != nil {
+			logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+		}
+		return
+	}
+
+	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
+	if err != nil {
+		logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail, Description: fmt.Sprintf("%s, err: %v", record.Description, err)}); err != nil {
+			logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+		}
+		return
+	}
+	defer f.Close()
+
+	switch req.FileType {
+	case apistructs.TestSceneSetFileTypeExcel:
+		baseSheets := make([][][]string, 1)
+		sheets, err := excel.Decode(f)
+		baseSheets = append(baseSheets, sheets...)
+		if err != nil {
+			logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail, Description: fmt.Sprintf("%s, err: %v", record.Description, err)}); err != nil {
+				logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+			}
+			return
+		}
+		if len(sheets) != 5 {
+			logrus.Error(apierrors.ErrImportAutotestSceneSet.InvalidParameter("sheet"))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail, Description: fmt.Sprintf("%s, invalid sheets length: %d", record.Description, len(sheets))}); err != nil {
+				logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+			}
+			return
+		}
+		spaceExcelData := AutoTestSpaceExcel{
+			sheets: baseSheets,
+			Data: &AutoTestSpaceData{
+				ProjectID:    req.ProjectID,
+				SpaceID:      req.SpaceID,
+				IdentityInfo: req.IdentityInfo,
+				svc:          svc,
+				Space:        space,
+				NewSpace:     space,
+			},
+		}
+		creator := AutoTestSpaceDirector{}
+		creator.New(&spaceExcelData)
+		if err := creator.ConstructSceneSet(); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail, Description: fmt.Sprintf("%s, err file data: %v", record.Description, err)}); err != nil {
+				logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+			}
+			return
+		}
+		data := creator.Creator.GetSpaceData()
+		err = data.CopyFromSceneSets()
+		if err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail, Description: fmt.Sprintf("%s, import sceneset data err: %v", record.Description, err)}); err != nil {
+				logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
+			}
+			return
+		}
+	default:
+
+	}
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateSuccess}); err != nil {
+		logrus.Error(apierrors.ErrImportAutotestSceneSet.InternalError(err))
 	}
 }

@@ -249,6 +249,13 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *apistructs.Component,
 		if err := i.RenderSceneSets(inParams); err != nil {
 			return err
 		}
+	case apistructs.ExportSceneSetOperationKey:
+		if err := i.RenderExportSceneSet(event, inParams); err != nil {
+			return err
+		}
+		if err := i.RenderSceneSets(inParams); err != nil {
+			return err
+		}
 	case apistructs.DragSceneSetOperationKey:
 		if err := i.RenderDragHelper(inParams); err != nil {
 			return err

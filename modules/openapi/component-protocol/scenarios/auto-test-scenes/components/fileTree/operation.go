@@ -15,11 +15,12 @@
 package fileTree
 
 type SceneSetOperation struct {
-	Key    string                `json:"key"`
-	Text   string                `json:"text"`
-	Reload bool                  `json:"reload"`
-	Show   bool                  `json:"show"`
-	Meta   SceneSetOperationMeta `json:"meta"`
+	Key        string                `json:"key"`
+	Text       string                `json:"text"`
+	Reload     bool                  `json:"reload"`
+	Show       bool                  `json:"show"`
+	SuccessMsg string                `json:"successMsg"`
+	Meta       SceneSetOperationMeta `json:"meta"`
 }
 
 type SceneSetOperationMeta struct {

@@ -12,25 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package leftHeadButton
+package autotest
 
 import (
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"net/http"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type ComponentleftHeadButtonModal struct {
-	CtxBdl     protocol.ContextBundle
-	Props      map[string]interface{} `json:"props"`
-	Operations map[string]interface{} `json:"operations"`
-	State      State                  `json:"state"`
-}
-
-type State struct {
-	ActionType  string `json:"actionType"`
-	FormVisible bool   `json:"formVisible"`
-}
-
-type Operation struct {
-	Key    string `json:"key"`
-	Reload bool   `json:"reload"`
+var SCENE_SET_IMPORT = apis.ApiSpec{
+	Path:         "/api/autotests/scenesets/actions/import",
+	BackendPath:  "/api/autotests/scenesets/actions/import",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:       "http",
+	Method:       http.MethodPost,
+	RequestType:  apistructs.AutoTestSceneSetImportRequest{},
+	ResponseType: apistructs.AutoTestSceneSetImportResponse{},
+	Doc:          "summary: 导入自动化测试场景集",
+	CheckLogin:   true,
 }

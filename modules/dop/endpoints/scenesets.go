@@ -231,3 +231,80 @@ func (e *Endpoints) CopySceneSet(ctx context.Context, r *http.Request, vars map[
 	}
 	return httpserver.OkResp(setId)
 }
+
+func (e *Endpoints) ExportAutotestSceneSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrExportAutoTestSceneSet.NotLogin().ToResp(), nil
+	}
+
+	// check body is valid
+	if r.ContentLength == 0 {
+		return apierrors.ErrExportAutoTestSceneSet.InvalidParameter("missing request body").ToResp(), nil
+	}
+
+	var req apistructs.AutoTestSceneSetExportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrExportAutoTestSceneSet.InvalidParameter(err).ToResp(), nil
+	}
+	sceneSet, err := e.autotestV2.GetSceneSet(req.ID)
+	if err != nil {
+		return apierrors.ErrExportAutoTestSceneSet.InternalError(err).ToResp(), nil
+	}
+	space, err := e.autotestV2.GetSpace(sceneSet.SpaceID)
+	if err != nil {
+		return apierrors.ErrExportAutoTestSceneSet.InternalError(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+	req.SceneSetName = sceneSet.Name
+	req.SpaceID = sceneSet.SpaceID
+	req.ProjectID = uint64(space.ProjectID)
+
+	fileID, err := e.autotestV2.ExportSceneSet(req)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSceneSetActionTypeExport)
+	if err != nil {
+		return apierrors.ErrExportAutoTestSceneSet.InternalError(err).ToResp(), nil
+	}
+	if ok {
+		e.ExportChannel <- fileID
+	}
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: fileID,
+	}, nil
+}
+
+func (e *Endpoints) ImportAutotestSceneSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrImportAutotestSceneSet.InternalError(err).ToResp(), nil
+	}
+
+	var req apistructs.AutoTestSceneSetImportRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrImportAutotestSceneSet.InvalidParameter(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	recordID, err := e.autotestV2.ImportSceneSet(req, r)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSceneSetActionTypeImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- recordID
+	}
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: recordID,
+	}, nil
+}
