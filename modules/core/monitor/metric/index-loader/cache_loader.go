@@ -26,7 +26,7 @@ import (
 func (p *provider) runCacheLoader(ctx context.Context) error {
 	p.Log.Infof("start cache-indices loader")
 	defer p.Log.Info("exit cache-indices loader")
-	timer := time.NewTimer(p.Cfg.IndexReloadInterval / 2)
+	timer := time.NewTimer(0)
 	defer timer.Stop()
 	var notifiers []chan error
 	for {

@@ -61,7 +61,7 @@ permission:
 erda.core.monitor.metric.index-loader:
   load_mode: "LoadIndicesWithCache"
   default_namespace: "full_cluster"
-  request_timeout: "30s"
+  request_timeout: "1m"
   index_prefix: "spot"
   query_index_time_range: true
   index_reload_interval: "1m"
@@ -71,15 +71,15 @@ erda.core.monitor.metric.index-manager:
   index_type: "spot"
   # index clean
   enable_index_clean: ${METRIC_INDEX_CLEAN_ENABLE:true}
-  index_clean_interval: "10s"
+  index_clean_interval: "30s"
   index_ttl: "${METRIC_INDEX_TTL:192h}"
   load_index_ttl_from_database: true
   load_index_ttl_follow_clean: true
-  ttl_reload_interval: "30s"
+  ttl_reload_interval: "3m"
   # disk clean
   disk_clean:
     enable_index_clean_by_disk: ${ENABLE_METRIC_INDEX_CLEAN_BY_DISK:true}
-    check_interval: "32s"
+    check_interval: "1m"
     high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
     low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
     min_indices_store: "10GB" # 磁盘使用率高时，保证 索引最少可以占用的容量
