@@ -164,8 +164,11 @@ func (client *DBClient) ListCodeCoverage(req apistructs.CodeCoverageListRequest)
 	db := client.Model(&CodeCoverageExecRecordShort{}).
 		Where("project_id = ?", req.ProjectID)
 
-	if req.Statuses != nil {
+	if len(req.Statuses) > 0 {
 		db = db.Where("status in (?)", req.Statuses)
+	}
+	if len(req.ReportStatuses) > 0 {
+		db = db.Where("report_status in (?)", req.ReportStatuses)
 	}
 	if req.TimeBegin != "" {
 		db = db.Where("time_begin >= ?", req.TimeBegin)

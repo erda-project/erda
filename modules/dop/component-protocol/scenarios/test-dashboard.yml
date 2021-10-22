@@ -258,39 +258,6 @@ components:
               color: text-desc
   quality_chart:
     type: Chart
-    props:
-      title: 质量总分
-      style:
-        height: 265
-      option:
-        radar:
-          indicator:
-            - name: 用例
-              max: 100
-            - name: 配置单
-              max: 100
-            - name: 计划
-              max: 100
-            - name: 代码质量
-              max: 100
-            - name: 缺陷
-              max: 100
-        tooltip:
-          trigger: item
-        series:
-          - name: 质量
-            type: radar
-            label:
-              show: true
-            areaStyle:
-              opacity: 0.2
-            data:
-              - value:
-                  - 78
-                  - 18
-                  - 24
-                  - 68
-                  - 50
   mt_plan_chart_group:
     type: Container
     props:
