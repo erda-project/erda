@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -58,12 +59,16 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 	if orgIDStr == "" {
 		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
 	}
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
+	}
 
 	err = jsi.NewDecoder(r.Body).Decode(req)
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
-	pie, err := e.Resource.GetPie(orgIDStr, userIDStr, req)
+	pie, err := e.Resource.GetPie(orgID, userIDStr, req)
 	if err != nil {
 		return nil, err
 	}
