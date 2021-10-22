@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/accesscontrol"
@@ -92,11 +93,13 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
 				logrus.Infof("[DEBUG %s] start jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				logrus.Infof("[DEBUG %s] end jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				logrus.Infof("[DEBUG %s] start get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				list = getByNamespace(allNsValues[0].Value().(types.APIObjectList), apiOp.Namespace)
-				logrus.Infof("[DEBUG %s] end get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				return list, nil
+				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
+					logrus.Infof("[DEBUG %s] end jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					logrus.Infof("[DEBUG %s] start get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					list := getByNamespace(list, apiOp.Namespace)
+					logrus.Infof("[DEBUG %s] end get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					return list, nil
+				}
 			}
 		}
 
@@ -109,7 +112,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		}
 		logrus.Infof("[DEBUG %s] end list at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		logrus.Infof("[DEBUG %s] start marshal for cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-		vals, err := cache.GetInterfaceValue(list)
+		vals, err := cache.MarshalValue(list)
 		logrus.Infof("[DEBUG %s] end marshal for cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		if err != nil {
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
@@ -141,7 +144,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 						logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
 						return
 					}
-					data, err := cache.GetInterfaceValue(list)
+					data, err := cache.MarshalValue(list)
 					if err != nil {
 						logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 						return
@@ -158,7 +161,12 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	var list types.APIObjectList
-	list = values[0].Value().(types.APIObjectList)
+	logrus.Infof("[DEBUG %s] start unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
+	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
+		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
+		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
+	}
+	logrus.Infof("[DEBUG %s] end unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	return list, nil
 }
 
