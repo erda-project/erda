@@ -15,8 +15,6 @@
 package kuberneteslogs
 
 import (
-	"fmt"
-
 	"github.com/bluele/gcache"
 	"k8s.io/client-go/kubernetes"
 
@@ -51,8 +49,5 @@ func (cm *clientManager) GetClient(clusterName string) (*kubernetes.Clientset, e
 		return nil, err
 	}
 	client, _ := val.(*kubernetes.Clientset)
-	if client == nil {
-		return nil, fmt.Errorf("not found clientset")
-	}
 	return client, nil
 }

@@ -75,29 +75,30 @@ const (
 
 func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	var err error
-	var id string
+	var id, applicationID, clusterName string
 	matcher := func(data *pb.LogItem, it *logsIterator) bool { return true }
 	for _, filter := range sel.Filters {
+		if filter.Value == nil {
+			continue
+		}
+		if filter.Key != "content" && filter.Op != storage.EQ {
+			s.log.Debugf("%s only support EQ filter, ingore kubernetes logs query", filter.Key)
+			return storekit.EmptyIterator{}, nil
+		}
 		switch filter.Key {
 		case "id":
-			if filter.Op != storage.EQ {
-				s.log.Debugf("id  only support EQ filter, ingore kubernetes logs query")
-				return storekit.EmptyIterator{}, nil
-			}
 			if len(id) <= 0 {
 				id, _ = filter.Value.(string)
 			}
 		case "source":
-			if filter.Op != storage.EQ {
-				s.log.Debugf("source only support EQ filter, ingore kubernetes logs query")
-				return storekit.EmptyIterator{}, nil
-			}
 			source, _ := filter.Value.(string)
 			if len(source) > 0 && source != "container" {
 				return storekit.EmptyIterator{}, nil
 			}
 		case "stream":
-			// ingore
+			if filter.Value != nil {
+				return storekit.EmptyIterator{}, nil
+			}
 		case "content":
 			switch filter.Op {
 			case storage.REGEXP:
@@ -120,11 +121,16 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 					}
 				}
 			}
+		case "tags.dice_application_id":
+			if len(applicationID) <= 0 {
+				applicationID, _ = filter.Value.(string)
+
+			}
+		case "tags.dice_cluster_name":
+			if len(clusterName) <= 0 {
+				clusterName, _ = filter.Value.(string)
+			}
 		}
-	}
-	if len(id) <= 0 {
-		s.log.Debugf("not found id, ingore kubernetes logs query")
-		return storekit.EmptyIterator{}, nil
 	}
 
 	tags := make(map[string]string)
@@ -135,10 +141,18 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		}
 	}
 	for _, key := range podInfoKeys {
-		if len(tags[key]) <= 0 {
+		if len(tags[key]) <= 0 || len(applicationID) > 0 {
+			if len(id) <= 0 {
+				s.log.Debugf("not found id, ingore kubernetes logs query")
+				return storekit.EmptyIterator{}, nil
+			}
 			info, err := s.pods.GetPodInfo(id, sel)
 			if err != nil {
 				s.log.Debugf("failed to query pod info for container(%q): %s, ingore kubernetes logs query", id, err)
+				return storekit.EmptyIterator{}, nil
+			}
+			if len(applicationID) > 0 && info["dice_application_id"] != applicationID {
+				s.log.Debugf("tags.dice_cluster_name(%q) != %q, ingore kubernetes logs query", applicationID, tags["dice_application_id"])
 				return storekit.EmptyIterator{}, nil
 			}
 			for k, v := range info {
@@ -155,8 +169,9 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 			return storekit.EmptyIterator{}, nil
 		}
 	}
-	clusterName := tags["cluster_name"]
-
+	if len(clusterName) <= 0 {
+		clusterName = tags["cluster_name"]
+	}
 	queryFunc, err := s.getQueryFunc(clusterName)
 	if err != nil {
 		s.log.Debugf("failed to GetClient(%q): %s, ingore kubernetes logs query", clusterName, err)
@@ -209,13 +224,15 @@ type logsIterator struct {
 
 	lastStartTime int64
 	lastEndTime   int64
-	lastStartLine string
-	lastEndLine   string
-	buffer        []*pb.LogItem
-	offset        int
-	value         *pb.LogItem
-	err           error
-	closed        bool
+
+	lastEndTimestamp int64
+	lastEndOffset    int64
+
+	buffer []*pb.LogItem
+	offset int
+	value  *pb.LogItem
+	err    error
+	closed bool
 }
 
 func (it *logsIterator) First() bool {
@@ -357,9 +374,12 @@ var stdout2 = os.Stdout
 
 var errLimited = errors.New("limited")
 
+const initialOffset = math.MinInt64
+
 func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 	it.buffer = nil
 	endTime := it.sel.End
+	var lastTimestamp, offset int64 = -1, initialOffset
 	for it.err == nil && len(it.buffer) <= 0 && startTime >= it.sel.Start {
 		func() error {
 			opts := newPodLogOptions(it.containerName, startTime)
@@ -371,16 +391,17 @@ func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 			defer reader.Close()
 			var (
 				minTime, maxTime int64 = math.MaxInt64, 0
-				first            bool  = true
-				firstLine        string
 			)
 			err = parseLines(reader, func(line []byte) error {
 				text := string(line)
-				if first {
-					first = false
-					firstLine = text
-				}
 				data, content := parseLine(text, it)
+				if data.Timestamp != lastTimestamp {
+					lastTimestamp = data.Timestamp
+					offset = initialOffset
+				} else {
+					offset++
+				}
+				data.Offset = offset
 				if data.Timestamp > 0 {
 					if data.Timestamp < minTime {
 						minTime = data.Timestamp
@@ -392,7 +413,7 @@ func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 						if data.Timestamp < it.sel.Start {
 							return io.EOF
 						}
-						if endTime <= data.Timestamp && it.lastStartLine != text {
+						if endTime <= data.Timestamp || (it.lastStartTime != 0 && it.lastStartTime <= data.Timestamp) {
 							if startTime <= it.sel.Start {
 								return io.EOF
 							}
@@ -413,11 +434,11 @@ func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 					}
 				}
 				parseContent(content, data)
-				if it.lastEndLine == text {
+				if it.lastEndTimestamp == data.Timestamp && it.lastEndOffset == data.Offset {
 					// remove duplicate
 					return nil
 				}
-				it.lastEndLine = text
+				it.lastEndTimestamp, it.lastEndOffset = data.Timestamp, data.Offset
 
 				if !it.matcher(data, it) {
 					return nil
@@ -425,7 +446,6 @@ func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 				it.buffer = append(it.buffer, data)
 				return nil
 			})
-			it.lastStartLine = firstLine
 			it.lastStartTime = minTime
 			if startTime < it.lastStartTime {
 				it.lastStartTime = startTime

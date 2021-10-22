@@ -86,7 +86,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	if fn != nil {
 		fn(sel)
 	}
-	it, err := s.getIterator(ctx, sel)
+	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -110,7 +110,7 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 	if fn != nil {
 		fn(sel)
 	}
-	it, err := s.getIterator(ctx, sel)
+	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {
 		return errors.NewInternalServerError(err)
 	}
@@ -136,8 +136,8 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 	return nil
 }
 
-func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
-	if sel.Scheme != "container" {
+func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
+	if sel.Scheme != "container" || !live {
 		if sel.Start > s.startTime || s.frozenStorageReader == nil {
 			return s.storageReader.Iterator(ctx, sel)
 		}
@@ -175,6 +175,7 @@ func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selec
 type Request interface {
 	GetStart() int64
 	GetEnd() int64
+	GetOffset() int64
 	GetCount() int64
 	GetPattern() string
 
@@ -183,6 +184,7 @@ type Request interface {
 	GetId() string
 	GetSource() string
 	GetStream() string
+	GetLive() bool
 	GetDebug() bool
 }
 
@@ -220,7 +222,12 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	}
 	if sel.Start < 0 {
 		sel.Start = 0
+	} else if sel.Start > 0 && req.GetCount() >= 0 {
+		// avoid duplicating previous log
+		// TODO: check by offset
+		sel.Start++
 	}
+
 	if sel.End < sel.Start {
 		return nil, errors.NewInvalidParameterError("(start,end]", "start must be less than end")
 	}
@@ -271,41 +278,32 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 }
 
 func toLogItems(ctx context.Context, it storekit.Iterator, forward bool, limit int) (list []*pb.LogItem, err error) {
+	if limit <= 0 {
+		return nil, nil
+	}
 	if forward {
 		for it.Next() {
-			if len(list) >= limit {
-				return list, nil
-			}
 			log, ok := it.Value().(*pb.LogItem)
 			if !ok {
 				continue
 			}
 			list = append(list, log)
-		}
-	} else {
-		for it.Prev() {
 			if len(list) >= limit {
 				break
 			}
+		}
+	} else {
+		for it.Prev() {
 			log, ok := it.Value().(*pb.LogItem)
 			if !ok {
 				continue
 			}
 			list = append(list, log)
+			if len(list) >= limit {
+				break
+			}
 		}
-		sort.Sort(Logs(list))
+		sort.Sort(storage.Logs(list))
 	}
 	return list, it.Error()
-}
-
-// Logs .
-type Logs []*pb.LogItem
-
-func (l Logs) Len() int      { return len(l) }
-func (l Logs) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
-func (l Logs) Less(i, j int) bool {
-	if l[i].Timestamp == l[j].Timestamp {
-		return l[i].Offset < l[j].Offset
-	}
-	return l[i].Timestamp < l[j].Timestamp
 }

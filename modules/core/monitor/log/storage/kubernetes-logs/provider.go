@@ -15,6 +15,7 @@
 package kuberneteslogs
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -60,6 +61,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 			client, err := p.clients.GetClient(clusterName)
 			if err != nil {
 				return nil, err
+			}
+			if client == nil {
+				return nil, fmt.Errorf("not found clientset")
 			}
 			return func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error) {
 				return client.CoreV1().Pods(it.podNamespace).GetLogs(it.podName, opts).Stream(it.ctx)

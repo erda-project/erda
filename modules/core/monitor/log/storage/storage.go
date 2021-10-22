@@ -16,7 +16,7 @@ package storage
 
 import (
 	"context"
-	"math"
+	"sort"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
@@ -72,27 +72,37 @@ func (c Comparer) Compare(a, b interface{}) int {
 	if !ok {
 		return -1
 	}
+	return Compare(al, bl)
+}
+
+// Compare .
+func Compare(al, bl *pb.LogItem) int {
 	if al.Timestamp > bl.Timestamp {
 		return 1
 	} else if al.Timestamp < bl.Timestamp {
 		return -1
 	}
-	if al.Offset != math.MaxInt64 && bl.Offset != math.MaxInt64 {
+	if (al.Offset >= 0 && bl.Offset >= 0) || (al.Offset < 0 && bl.Offset < 0) {
 		if al.Offset > bl.Offset {
 			return 1
 		} else if al.Offset < bl.Offset {
 			return -1
 		}
-	} else if al.Content != bl.Content {
-		if al.Offset > bl.Offset {
-			return 1
-		} else if al.Offset < bl.Offset {
-			return -1
-		}
-		if al.Content > bl.Content {
-			return 1
-		}
+	} else if al.Offset < 0 {
+		return 1
+	} else if bl.Offset < 0 {
 		return -1
 	}
 	return 0
+}
+
+// Logs .
+type Logs []*pb.LogItem
+
+var _ sort.Interface = (Logs)(nil)
+
+func (l Logs) Len() int      { return len(l) }
+func (l Logs) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
+func (l Logs) Less(i, j int) bool {
+	return Compare(l[i], l[j]) < 0
 }

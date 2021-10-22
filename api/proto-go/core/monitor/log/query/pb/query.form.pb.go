@@ -88,6 +88,18 @@ func (m *GetLogRequest) UnmarshalURLValues(prefix string, values url.Values) err
 				m.Count = val
 			case "pattern":
 				m.Pattern = vals[0]
+			case "offset":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Offset = val
+			case "live":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Live = val
 			case "debug":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -135,6 +147,18 @@ func (m *GetLogByRuntimeRequest) UnmarshalURLValues(prefix string, values url.Va
 				m.ApplicationId = vals[0]
 			case "pattern":
 				m.Pattern = vals[0]
+			case "offset":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Offset = val
+			case "live":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Live = val
 			case "debug":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -182,6 +206,18 @@ func (m *GetLogByOrganizationRequest) UnmarshalURLValues(prefix string, values u
 				m.ClusterName = vals[0]
 			case "pattern":
 				m.Pattern = vals[0]
+			case "offset":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Offset = val
+			case "live":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Live = val
 			case "debug":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
