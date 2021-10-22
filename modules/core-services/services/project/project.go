@@ -1377,3 +1377,128 @@ func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, pr
 	}
 	return total, res, nil
 }
+
+func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
+	var response = new(apistructs.GetQuotaOnClustersResponse)
+	response.ClusterNames = clusterNames
+
+	if len(clusterNames) == 0 {
+		logrus.Warnln("no clusters for GetQuotaOnClusters")
+		return response, nil
+	}
+
+	var clusterNamesM = make(map[string]bool)
+	for _, clusterName := range clusterNames {
+		clusterNamesM[clusterName] = true
+	}
+
+	// query all projects
+	var projects []*model.Project
+	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			logrus.WithError(err).Warnln("project record not found")
+			return response, nil
+		}
+		err = errors.Wrap(err, "failed to Find projects")
+		logrus.WithError(err).Errorln()
+		return nil, err
+	}
+
+	// query all project quota
+	var projectIDs []int64
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ID)
+	}
+	var projectsQuota []*model.ProjectQuota
+	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&projectsQuota).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			logrus.WithError(err).Warnln("quota record not found")
+			return response, nil
+		}
+		err = errors.Wrap(err, "failed to Find project quota")
+		return nil, err
+	}
+	var projectsQuotaConfigs = make(map[int64]*model.ProjectQuota)
+	for _, projectQuota := range projectsQuota {
+		projectsQuotaConfigs[int64(projectQuota.ProjectID)] = projectQuota
+	}
+
+	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
+	for _, project := range projects {
+		// query project owner
+		memberListReq := apistructs.MemberListRequest{
+			ScopeType: "project",
+			ScopeID:   project.ID,
+			Roles:     []string{"Owner"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1,
+		}
+		total, members, err := p.db.GetMembersByParam(&memberListReq)
+		if err != nil {
+			err = errors.Wrap(err, "failed to GetMembersByParam")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			return nil, err
+		}
+		if total <= 0 || len(members) == 0 {
+			err = errors.New("not found owner for the project")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			return nil, err
+		}
+		member := members[0]
+
+		owner, ok := ownerM[member.UserID]
+		if !ok {
+			userID, err := strconv.ParseInt(member.UserID, 10, 64)
+			if err != nil {
+				err = errors.Wrap(err, "the format of owner userID is not valid")
+			}
+			owner = &apistructs.OwnerQuotaOnClusters{
+				ID:       uint64(userID),
+				Name:     member.Name,
+				Nickname: member.Nick,
+				CPUQuota: 0,
+				MemQuota: 0,
+				Projects: nil,
+			}
+			ownerM[member.UserID] = owner
+		}
+
+		projectQuotaOnCluster := apistructs.ProjectQuotaOnClusters{
+			ID:          uint64(project.ID),
+			Name:        project.Name,
+			DisplayName: project.DisplayName,
+			CPUQuota:    0,
+			MemQuota:    0,
+		}
+		// if the project has quota config, accumulate it
+		if config, ok := projectsQuotaConfigs[project.ID]; ok {
+			// if a cluster of the project is in the specified clusters, its cpu and mem will be accumulated
+			for clusterName, quota := range map[string][2]uint64{
+				config.ProdClusterName:    {config.ProdCPUQuota, config.ProdMemQuota},
+				config.StagingClusterName: {config.StagingCPUQuota, config.StagingMemQuota},
+				config.TestClusterName:    {config.TestCPUQuota, config.TestMemQuota},
+				config.DevClusterName:     {config.DevCPUQuota, config.DevMemQuota},
+			} {
+				if _, ok := clusterNamesM[clusterName]; ok {
+					projectQuotaOnCluster.AccuQuota(quota[0], quota[1])
+				}
+			}
+		}
+		owner.Projects = append(owner.Projects, &projectQuotaOnCluster)
+	}
+
+	for _, owner := range ownerM {
+		response.Owners = append(response.Owners, owner)
+	}
+
+	response.ReCalcu()
+
+	return response, nil
+}
+
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	// todo:
+	return nil, errors.New("not implement")
+}

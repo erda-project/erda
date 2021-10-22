@@ -12,28 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oas3_test
+package core_services
 
 import (
-	"io/ioutil"
-	"testing"
-
-	"github.com/erda-project/erda/pkg/swagger/oas3"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-func TestExpandSchemaRef2(t *testing.T) {
-	filename := "./testdata/dop-all.yaml"
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("failed to ReadFile: %v", err)
-	}
-
-	v3, err := oas3.LoadFromData(data)
-	if err != nil {
-		t.Fatalf("failed to LoadFromData: %v", err)
-	}
-
-	if err = oas3.ExpandPaths(v3); err != nil {
-		t.Fatalf("failed to ExpandPaths: %v", err)
-	}
+var QUOTA_GET_PROJECT_QUOTA = apis.ApiSpec{
+	Path:         "/api/projects-quota",
+	BackendPath:  "/api/projects-quota",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	RequestType:  nil,
+	ResponseType: nil,
+	Doc:          "",
 }

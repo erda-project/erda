@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
 	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -51,7 +52,10 @@ type Endpoints struct {
 	JS              jsonstore.JsonStore
 	CachedJS        jsonstore.JsonStore
 	SteveAggregator *steve.Aggregator
+	Resource        *resource.Resource
 	Credential      credentialpb.AccessKeyServiceServer
+
+	reportTable *resource.ReportTable
 }
 
 type Option func(*Endpoints)
@@ -72,6 +76,7 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.metrics = ctx.Value("metrics").(*metrics.Metric)
+	e.Resource = ctx.Value("resource").(*resource.Resource)
 	e.CachedJS = cachedJS
 	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
 	return e
@@ -98,6 +103,12 @@ func WithOrgResource(o *org_resource.OrgResource) Option {
 func WithCredential(c credentialpb.AccessKeyServiceServer) Option {
 	return func(e *Endpoints) {
 		e.Credential = c
+	}
+}
+
+func WithResourceTable(reportTable *resource.ReportTable) Option {
+	return func(e *Endpoints) {
+		e.reportTable = reportTable
 	}
 }
 
@@ -229,5 +240,13 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: i18nPrinter(e.ListOrgRunningTasks)},
 		{Path: "/api/tasks", Method: http.MethodPost, Handler: i18nPrinter(e.DealTaskEvent)},
 		{Path: "/api/metrics", Method: http.MethodPost, Handler: i18nPrinter(e.MetricsQuery)},
+
+		{Path: "/api/resourceSummary", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceGauge)},
+		{Path: "/api/resourceClass", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClass)},
+		{Path: "/api/resourceTable", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceTable)},
+		{Path: "/api/resourceClusterTrend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClusterTrend)},
+		{Path: "/api/resourceProjectTrend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceProjectTrend)},
+
+		{Path: "/api/resource-overview/report-table", Method: http.MethodGet, Handler: e.ResourceOverviewReport},
 	}
 }
