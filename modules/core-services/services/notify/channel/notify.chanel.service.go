@@ -30,7 +30,7 @@ import (
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
-	"github.com/erda-project/erda/modules/core-services/services/notify/channel/type"
+	"github.com/erda-project/erda/modules/core-services/services/notify/channel/kind"
 	"github.com/erda-project/erda/pkg/common/apis"
 	pkgerrors "github.com/erda-project/erda/pkg/common/errors"
 )
@@ -281,7 +281,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		if err != nil {
 			return errors.New("Json parser failed.")
 		}
-		var asm chtype.AliyunSMS
+		var asm kind.AliyunSMS
 		err = json.Unmarshal(bytes, &asm)
 		if err != nil {
 			return errors.New("Json parser failed.")
