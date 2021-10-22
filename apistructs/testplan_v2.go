@@ -71,6 +71,9 @@ func (tp *TestPlanV2CreateRequest) Check() error {
 	if len(tp.Owners) == 0 {
 		return errors.New("owners is empty")
 	}
+	if tp.IterationID == 0 {
+		return errors.New("iterationID is empty")
+	}
 
 	return nil
 }

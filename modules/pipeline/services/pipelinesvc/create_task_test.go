@@ -107,12 +107,73 @@ func Test_calculateNormalTaskLimitResource(t *testing.T) {
 	}
 }
 
+func Test_calculateOversoldTaskLimitResource(t *testing.T) {
+	type args struct {
+		action       *pipelineyml.Action
+		actionDefine *diceyml.Job
+		defaultRes   apistructs.PipelineAppliedResource
+	}
+	tests := []struct {
+		name string
+		args args
+		want apistructs.PipelineAppliedResource
+	}{
+		{
+			name: "cpu lower than define and default",
+			args: args{
+				action:       genActionWithRes(0.1, 0, 2049),
+				actionDefine: genActionDefineWithRes(0.2, 0.4, 1024, 2048),
+				defaultRes:   apistructs.PipelineAppliedResource{CPU: 0.5, MemoryMB: 32},
+			},
+			want: apistructs.PipelineAppliedResource{
+				CPU:      0.8,
+				MemoryMB: 2049,
+			},
+		},
+		{
+			name: "cpu bigger than define but lower than default",
+			args: args{
+				action:       genActionWithRes(0.2, 0, 0),
+				actionDefine: genActionDefineWithRes(0.1, 0.5, 1024, 2048),
+				defaultRes:   apistructs.PipelineAppliedResource{CPU: 1, MemoryMB: 32},
+			},
+			want: apistructs.PipelineAppliedResource{
+				CPU:      1,
+				MemoryMB: 2048,
+			},
+		},
+		{
+			name: "cpu bigger than define and default",
+			args: args{
+				action:       genActionWithRes(3, 0, 0),
+				actionDefine: genActionDefineWithRes(2, 0, 0, 0),
+				defaultRes:   apistructs.PipelineAppliedResource{CPU: 1, MemoryMB: 32},
+			},
+			want: apistructs.PipelineAppliedResource{
+				CPU:      2,
+				MemoryMB: 32,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := calculateOversoldTaskLimitResource(calculateNormalTaskLimitResource(tt.args.action, tt.args.actionDefine, tt.args.defaultRes), apistructs.PipelineOverSoldResource{
+				CPURate: 2,
+				MaxCPU:  2,
+			}); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("calculateNormalTaskLimitResource() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_calculateNormalTaskRequestResource(t *testing.T) {
 	type args struct {
 		action       *pipelineyml.Action
 		actionDefine *diceyml.Job
 		defaultRes   apistructs.PipelineAppliedResource
 	}
+
 	tests := []struct {
 		name string
 		args args

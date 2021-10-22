@@ -45,6 +45,7 @@ type StageData struct {
 	Title      string                 `json:"title"`
 	ID         uint64                 `json:"id"`
 	GroupID    int64                  `json:"groupId"`
+	Disabled   bool                   `json:"disabled"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
@@ -80,14 +81,17 @@ type OperationBaseInfo struct {
 	Icon      string `json:"icon"`
 	HoverTip  string `json:"hoverTip"`
 	HoverShow bool   `json:"hoverShow"`
+	Group     string `json:"group"`
 	// 操作展示名称
-	Text string `json:"text"`
+	Text     string `json:"text"`
+	CopyText string `json:"copyText"`
 	// 确认提示
 	Confirm string `json:"confirm,omitempty"`
 	// 前端操作是否需要触发后端
 	Reload      bool   `json:"reload"`
 	Disabled    bool   `json:"disabled"`
 	DisabledTip string `json:"disabledTip"`
+	SuccessMsg  string `json:"successMsg"`
 }
 
 type OpMetaData struct {
@@ -97,6 +101,7 @@ type OpMetaData struct {
 	Name      string                   `json:"name"`      // 名称
 	APISpecID uint64                   `json:"apiSpecID"` // api集市id
 	ID        uint64                   `json:"id"`
+	Disable   bool                     `json:"disable"`
 }
 
 type OpMetaInfo struct {

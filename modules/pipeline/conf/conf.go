@@ -30,11 +30,13 @@ type Conf struct {
 	DiceCluster string `env:"DICE_CLUSTER" default:"local"` // 服务所在集群
 
 	// task level
-	TaskDefaultCPU      float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
-	TaskDefaultMEM      float64       `env:"TASK_DEFAULT_MEM" default:"2048"`
-	TaskDefaultTimeout  time.Duration `env:"TASK_DEFAULT_TIMEOUT" default:"1h"`
-	TaskRunWaitInterval time.Duration `env:"TASK_RUN_WAIT_INTERVAL" default:"5s"`
-	TaskQueueAlertTime  time.Duration `env:"TASK_QUEUE_ALERT_TIME" default:"10m"`
+	TaskDefaultCPU             float64       `env:"TASK_DEFAULT_CPU" default:"0.5"`
+	TaskDefaultMEM             float64       `env:"TASK_DEFAULT_MEM" default:"2048"`
+	TaskDefaultCPUOverSoldRate uint8         `env:"TASK_DEFAULT_CPU_OVER_SOLD_RATE" default:"2"`
+	TaskMaxAllowedOverSoldCPU  float64       `env:"TASK_MAC_ALLOWED_OVER_SOLD_CPU" default:"2"`
+	TaskDefaultTimeout         time.Duration `env:"TASK_DEFAULT_TIMEOUT" default:"1h"`
+	TaskRunWaitInterval        time.Duration `env:"TASK_RUN_WAIT_INTERVAL" default:"5s"`
+	TaskQueueAlertTime         time.Duration `env:"TASK_QUEUE_ALERT_TIME" default:"10m"`
 
 	// agent
 	AgentAccessibleCacheTTL int64  `env:"AGENT_ACCESSIBLE_CACHE_TTL" default:"43200"` // 默认 12 小时
@@ -137,6 +139,16 @@ func DiceCluster() string {
 // TaskDefaultCPU 返回 task 默认的 cpu 限制.
 func TaskDefaultCPU() float64 {
 	return cfg.TaskDefaultCPU
+}
+
+// TaskDefaultCPUOverSoldRate usually cpu is wasted, task will multiply the over sold rate as limit cpu
+func TaskDefaultCPUOverSoldRate() uint8 {
+	return cfg.TaskDefaultCPUOverSoldRate
+}
+
+// TaskMaxAllowedOverSoldCPU max allowed task over sold cpu limit
+func TaskMaxAllowedOverSoldCPU() float64 {
+	return cfg.TaskMaxAllowedOverSoldCPU
 }
 
 // TaskDefaultMEM 返回 task 默认的 memory 限制.

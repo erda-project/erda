@@ -17,6 +17,9 @@ package mt_block_header_filter
 import (
 	"context"
 	"encoding/json"
+	"time"
+
+	"github.com/recallsong/go-utils/container/slice"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -57,6 +60,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 
 	h := gshelper.NewGSHelper(gs)
 	globalMtPlans := h.GetGlobalManualTestPlanList()
+	selectedItrsByID := h.GetGlobalSelectedIterationsByID()
 	f.State.Conditions = []filter.PropCondition{
 		{
 			EmptyText: cputil.I18n(ctx, "all"),
@@ -64,17 +68,42 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			Key:       "mtPlanIDs",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
+				type Obj struct {
+					filter.PropConditionOption
+					itrCreateTime time.Time
+				}
+				var beforeOpts []Obj // used for order
 				for _, plan := range globalMtPlans {
-					opts = append(opts, filter.PropConditionOption{
-						Label: plan.Name,
-						Value: plan.ID,
+					itrPrefix := cputil.I18n(ctx, "[${iteration}: %s]", plan.IterationName)
+					if plan.IterationID <= 0 {
+						itrPrefix = cputil.I18n(ctx, "[${no-iteration}]")
+					}
+					beforeOpts = append(beforeOpts, Obj{
+						PropConditionOption: filter.PropConditionOption{
+							Label: cputil.I18n(ctx, "%s %s", itrPrefix, plan.Name),
+							Value: plan.ID,
+						},
+						itrCreateTime: func() time.Time {
+							itr, ok := selectedItrsByID[plan.IterationID]
+							if !ok {
+								return time.Time{}
+							}
+							return itr.CreatedAt
+						}(),
 					})
+				}
+				slice.Sort(beforeOpts, func(i, j int) bool {
+					return beforeOpts[i].itrCreateTime.After(beforeOpts[j].itrCreateTime)
+				})
+				for _, bo := range beforeOpts {
+					opts = append(opts, bo.PropConditionOption)
 				}
 				return
 			}(),
 			Type: filter.PropConditionTypeSelect,
 		},
 	}
+
 	// put selected values into global state
 	h.SetMtBlockFilterTestPlanList(func() (selectedMtPlans []apistructs.TestPlan) {
 		// not selected, return all
@@ -86,7 +115,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			globalMtPlanMap[plan.ID] = plan
 		}
 		for _, planID := range f.State.Values.MtPlanIDs {
-			selectedMtPlans = append(selectedMtPlans, globalMtPlans[planID])
+			selectedMtPlans = append(selectedMtPlans, globalMtPlanMap[planID])
 		}
 		return
 	}())
