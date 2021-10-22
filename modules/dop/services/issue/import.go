@@ -172,6 +172,18 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 				falseReason = append(falseReason, "创建任务失败, err:"+err.Error())
 				continue
 			}
+			for _, issueRelated := range req.GetRelatedIssueIDs() {
+				relatedIssue, err := svc.db.GetIssue(int64(issueRelated))
+				if err != nil {
+					continue
+				}
+				if relatedIssue.ProjectID == request.ProjectID {
+					_ = svc.db.CreateIssueRelations(&dao.IssueRelation{
+						IssueID:      issueRelated,
+						RelatedIssue: create.ID,
+					})
+				}
+			}
 			// 添加标签关联关系
 			labels, err := svc.bdl.ListLabelByNameAndProjectID(req.ProjectID, req.Labels)
 			if err != nil {

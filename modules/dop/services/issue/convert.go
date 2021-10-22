@@ -361,6 +361,19 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 		allInstance            []apistructs.IssuePropertyRelationCreateRequest
 	)
 	sheets, err := excel.Decode(r)
+	// filter empty row
+	sheetLst := make([][][]string, 0)
+	for _, rows := range sheets {
+		rowLst := make([][]string, 0)
+		for _, row := range rows {
+			if strings.Join(row, "") == "" {
+				continue
+			}
+			rowLst = append(rowLst, row)
+		}
+		sheetLst = append(sheetLst, rowLst)
+	}
+	sheets = sheetLst
 	if err != nil {
 		return nil, nil, nil, nil, nil, 0, fmt.Errorf("failed to decode excel, err: %v", err)
 	}
