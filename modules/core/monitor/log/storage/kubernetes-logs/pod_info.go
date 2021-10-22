@@ -78,7 +78,7 @@ func newPodInfoQueryer(p *provider) PodInfoQueryer {
 		json.NewEncoder(sb).Encode(info)
 		_, err = q.cache2.SetNX(cacheKey, sb.String(), p.Cfg.PodInfoCacheExpiration).Result()
 		if err != nil {
-			p.Log.Errorf("failed to SetNX pod info to redis")
+			p.Log.Errorf("failed to redis.SetNX pod info: %v", err)
 		}
 		return info, nil
 	}).Build()
