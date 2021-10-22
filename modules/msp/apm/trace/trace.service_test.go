@@ -1039,7 +1039,14 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 				},
 			},
 			&pb.SpanEventResponse{
-				// TODO: setup fields.
+				SpanEvents: []*pb.SpanEvent{
+					{
+						Timestamp: 1634875807541,
+						Events: map[string]string{
+							"event": "server send",
+						},
+					},
+				},
 			},
 			false,
 		},
@@ -1047,7 +1054,7 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var metricq *metricpb.UnimplementedMetricServiceServer
-			monkey.PatchInstanceMethod(reflect.TypeOf(metricq), "QueryWithTableFormat", func(context.Context, *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(metricq), "QueryWithTableFormat", func(*metricpb.UnimplementedMetricServiceServer, context.Context, *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
 				return &metricpb.QueryWithTableFormatResponse{
 					Data: &metricpb.TableResult{
 						Cols: []*metricpb.TableColumn{
