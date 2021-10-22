@@ -84,6 +84,9 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 				configMap, err = a.ZookeeperDeployStatus(addonIns, serviceGroup)
 			case apistructs.AddonConsul:
 				configMap, err = a.ConsulDeployStatus(addonIns, serviceGroup)
+			case apistructs.AddonSourcecov:
+				asm := &SourcecovAddonManagement{bdl: a.bdl}
+				configMap, err = asm.DeployStatus(addonIns, serviceGroup)
 			default:
 				// 非基础addon，走通用的处理逻辑
 				configMap, err = a.CommonDeployStatus(addonIns, serviceGroup, addonDice, addonSpec)
@@ -513,6 +516,12 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
 		}
 		buildErr = a.BuildRabbitmqServiceItem(params, addonIns, addonSpec, addonDice)
+	case apistructs.AddonSourcecov:
+		if !capacity.Data.SourcecovOperator {
+			return nil, errors.New("sourcecov operator not installed")
+		}
+		sam := &SourcecovAddonManagement{bdl: a.bdl}
+		buildErr = sam.BuildSourceCovServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 	default: //default case
 		buildErr = a.BuildCommonServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 	}

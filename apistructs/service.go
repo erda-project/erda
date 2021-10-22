@@ -738,6 +738,7 @@ type CapacityInfoData struct {
 	RedisOperator         bool `json:"redisOperator"`
 	MysqlOperator         bool `json:"mysqlOperator"`
 	DaemonsetOperator     bool `json:"daemonsetOperator"`
+	SourcecovOperator     bool `json:"sourcecovOperator"`
 }
 
 type ComponentInfoResponse struct {
