@@ -16,19 +16,11 @@ package quality_chart
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/opts"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
-	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -63,7 +55,7 @@ type (
 )
 
 func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (e error) {
-	defer func() {
+	/*defer func() {
 		if r := recover(); r != nil {
 			e = fmt.Errorf("%v", r)
 		}
@@ -117,7 +109,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 		RadarOption: radar.JSON(),
 		Style:       Style{Height: 265},
 		Title:       cputil.I18n(ctx, "radar-total-quality-score"),
-	}
+	}*/
 
 	return nil
 }

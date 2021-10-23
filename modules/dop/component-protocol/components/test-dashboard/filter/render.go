@@ -122,11 +122,13 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		return err
 	}
 	h.SetGlobalAutoTestPlanList(atData.List)
-	planIDs := make([]uint64, 0, len(atData.List))
-	for _, v := range atData.List {
-		planIDs = append(planIDs, v.ID)
-	}
-	h.SetGlobalAutoTestPlanIDs(planIDs)
+	h.SetGlobalAutoTestPlanIDs(func() []uint64 {
+		planIDs := make([]uint64, 0, len(atData.List))
+		for _, v := range atData.List {
+			planIDs = append(planIDs, v.ID)
+		}
+		return planIDs
+	}())
 
 	//  set global auto test scene and step
 	if err = f.SetGlobalAtSceneAndStep(atData.List, h); err != nil {
@@ -167,6 +169,7 @@ func (f *Filter) SetGlobalAtSceneAndStep(List []*apistructs.TestPlanV2, h *gshel
 		return err
 	}
 
+	h.SetAtStep(steps)
 	h.SetAtScene(scenes)
 	h.SetAtSceneStep(sceneSteps)
 	return nil

@@ -17,7 +17,6 @@ package scene_and_api_filter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -47,9 +46,6 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	}
 	timeStart := time.Unix(times[0]/1000, 0).Format("2006-01-02 15:04:05")
 	timeEnd := time.Unix(times[1]/1000, 0).Format("2006-01-02 15:04:05")
-
-	fmt.Println(timeStart)
-	fmt.Println(timeEnd)
 
 	h.SetAtSceneAndApiTimeFilter(gshelper.AtSceneAndApiTimeFilter{
 		TimeStart: timeStart, TimeEnd: timeEnd,

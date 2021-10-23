@@ -181,19 +181,19 @@ func (h *GSHelper) GetAtBlockFilterTestPlanList() []apistructs.TestPlanV2 {
 	return res
 }
 
-func (h *GSHelper) SetAtTestPlanExecHistoryList(l []apistructs.AutoTestExecHistoryDto) {
+func (h *GSHelper) SetAtStep(l []apistructs.TestPlanV2Step) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)["GlobalAtTestPlanExecHistoryList"] = l
+	(*h.gs)["GlobalAtStep"] = l
 }
 
-func (h *GSHelper) GetAtTestPlanExecHistoryList() []apistructs.AutoTestExecHistoryDto {
+func (h *GSHelper) GetAtStep() []apistructs.TestPlanV2Step {
 	if h.gs == nil {
 		return nil
 	}
-	res := make([]apistructs.AutoTestExecHistoryDto, 0)
-	_ = assign((*h.gs)["GlobalAtTestPlanExecHistoryList"], &res)
+	res := make([]apistructs.TestPlanV2Step, 0)
+	_ = assign((*h.gs)["GlobalAtStep"], &res)
 	return res
 }
 
@@ -246,4 +246,38 @@ func (h *GSHelper) GetAtSceneAndApiTimeFilter() AtSceneAndApiTimeFilter {
 		return AtSceneAndApiTimeFilter{}
 	}
 	return (*h.gs)["AtSceneAndApiTimeFilter"].(AtSceneAndApiTimeFilter)
+}
+
+func (h *GSHelper) SetAtCaseRateTrendingTimeFilter(t AtSceneAndApiTimeFilter) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["AtCaseRateTrendingTimeFilter"] = t
+}
+
+func (h *GSHelper) GetAtCaseRateTrendingTimeFilter() AtSceneAndApiTimeFilter {
+	if h.gs == nil {
+		return AtSceneAndApiTimeFilter{}
+	}
+	return (*h.gs)["AtCaseRateTrendingTimeFilter"].(AtSceneAndApiTimeFilter)
+}
+
+type SelectChartItemData struct {
+	PlanID     uint64 `json:"planId"`
+	Name       string `json:"name"`
+	PipelineID uint64 `json:"pipelineID"`
+}
+
+func (h *GSHelper) SetSelectChartItemData(t SelectChartItemData) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalSelectChartItemData"] = t
+}
+
+func (h *GSHelper) GetSelectChartHistoryData() SelectChartItemData {
+	if h.gs == nil {
+		return SelectChartItemData{}
+	}
+	return (*h.gs)["GlobalSelectChartItemData"].(SelectChartItemData)
 }

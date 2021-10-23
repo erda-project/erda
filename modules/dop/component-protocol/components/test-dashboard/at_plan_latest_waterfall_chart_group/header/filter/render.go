@@ -17,11 +17,11 @@ package filter
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
@@ -54,22 +54,18 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		return err
 	}
 
-	//h := gshelper.NewGSHelper(gs)
-	//globalAtPlans := h.GetGlobalAutoTestPlanList()
-	globalAtPlans := []apistructs.TestPlanV2{{ID: 1, Name: "2"}}
+	h := gshelper.NewGSHelper(gs)
 	f.State.Conditions = []filter.PropCondition{
 		{
 			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
-			Key:       "atPlanIDs",
+			Key:       "pipelineID",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
-				for _, plan := range globalAtPlans {
-					opts = append(opts, filter.PropConditionOption{
-						Label: plan.Name,
-						Value: plan.ID,
-					})
-				}
+				opts = append(opts, filter.PropConditionOption{
+					Label: h.GetSelectChartHistoryData().Name,
+					Value: h.GetSelectChartHistoryData().PipelineID,
+				})
 				return
 			}(),
 			Type: filter.PropConditionTypeSelect,
