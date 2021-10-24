@@ -423,7 +423,7 @@ func TestToPBAlertNotify(t *testing.T) {
 						"type":       "notify_group",
 						"group_id":   1,
 						"group_type": "external-user",
-						"level":      []interface{}{"alert"},
+						"level":      "alert",
 					},
 					NotifyTargetID: "",
 					Silence:        5,
