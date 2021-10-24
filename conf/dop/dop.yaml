@@ -111,6 +111,8 @@ component-protocol.components.issue-dashboard.labelHorizontalBarChart:
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:
 component-protocol.components.issue-dashboard.memberHorizontalBarChart:
 
+component-protocol.components.issue-dashboard.scatterPlot:
+
 component-protocol.components.issue-dashboard.chartFilter:
 component-protocol.components.issue-dashboard.chartExtra:
 component-protocol.components.issue-dashboard.reset:
