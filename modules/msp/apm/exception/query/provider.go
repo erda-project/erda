@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package query
 
 import (
 	"fmt"
-
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
+	error_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
+	event_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -37,6 +38,8 @@ type provider struct {
 	Cassandra        cassandra.Interface `autowired:"cassandra"`
 	exceptionService *exceptionService
 	cassandraSession *cassandra.Session
+	ErrorStorageReader error_storage.Storage `autowired:"error-storage-elasticsearch-reader"`
+	EventStorageReader event_storage.Storage `autowired:"event-storage-elasticsearch-reader"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -45,7 +48,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
 	p.cassandraSession = session
-	p.exceptionService = &exceptionService{p}
+	p.exceptionService = &exceptionService{
+		p:                  p,
+		EventStorageReader: p.EventStorageReader,
+		ErrorStorageReader: p.ErrorStorageReader,
+	}
 	if p.Register != nil {
 		pb.RegisterExceptionServiceImp(p.Register, p.exceptionService, apis.Options())
 	}
@@ -61,7 +68,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.msp.apm.exception", &servicehub.Spec{
+	servicehub.Register("erda.msp.apm.exception.query", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},
