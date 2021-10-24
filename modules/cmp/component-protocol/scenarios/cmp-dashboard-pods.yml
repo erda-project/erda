@@ -7,6 +7,7 @@ hierarchy:
       - filterContainer
       - chartContainer
       - tableContainer
+      - addPodDrawer
     filterContainer:
       - filter
     chartContainer:
@@ -15,8 +16,15 @@ hierarchy:
     tableContainer:
       - tableTabs
     tableTabs:
-      - podsTable
-      - podsTable
+      tabBarExtraContent: addPodButton
+      children:
+        - podsTable
+        - podsTable
+    addPodDrawer:
+      content: addPodContainer
+    addPodContainer:
+      - addPodFilter
+      - addPodFileEditor
 
 components:
   page:
@@ -37,6 +45,16 @@ components:
     type: Tabs
   podsTable:
     type: Table
+  addPodFileEditor:
+    type: FileEditor
+  addPodContainer:
+    type: Container
+  addPodFilter:
+    type: ContractiveFilter
+  addPodDrawer:
+    type: Drawer
+  addPodButton:
+    type: Button
 
 
 rendering:
@@ -45,6 +63,7 @@ rendering:
     - name: filterContainer
     - name: chartContainer
     - name: tableContainer
+    - name: addPodContainer
     - name: filter
       state:
         - name: "clusterName"
@@ -60,6 +79,7 @@ rendering:
           value: "{{ tableTabs.activeKey }}"
     - name: podTitle
     - name: podDistribution
+    - name: addPodButton
   tableTabs:
     - name: podsTable
       state:
@@ -72,3 +92,36 @@ rendering:
           value: "{{ filter.values }}"
     - name: podTitle
     - name: podDistribution
+  addPodButton:
+    - name: addPodDrawer
+    - name: addPodFilter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: addPodFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ addPodFilter.values }}"
+  addPodFilter:
+    - name: addPodFileEditor
+      state:
+        - name: "values"
+          value: "{{ addPodFilter.values }}"
+  addPodFileEditor:
+    - name: addPodDrawer
+    - name: filter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: podsTable
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "activeKey"
+          value: "{{ tableTabs.activeKey }}"
+    - name: podDistribution
+

@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"time"
 
+	jsi "github.com/json-iterator/go"
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/accesscontrol"
@@ -53,17 +54,17 @@ type cacheStore struct {
 	clusterName string
 }
 
-type cacheKey struct {
-	gvk         string
-	namespace   string
-	clusterName string
+type CacheKey struct {
+	GVK         string
+	Namespace   string
+	ClusterName string
 }
 
-func (k *cacheKey) getKey() string {
+func (k *CacheKey) GetKey() string {
 	d := sha256.New()
-	d.Write([]byte(k.gvk))
-	d.Write([]byte(k.namespace))
-	d.Write([]byte(k.clusterName))
+	d.Write([]byte(k.GVK))
+	d.Write([]byte(k.Namespace))
+	d.Write([]byte(k.ClusterName))
 	return hex.EncodeToString(d.Sum(nil))
 }
 
@@ -72,31 +73,33 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		return types.APIObjectList{}, apierror.NewAPIError(validation.PermissionDenied, "access denied")
 	}
 	gvk := attributes.GVK(schema)
-	key := cacheKey{
-		gvk:         gvk.String(),
-		namespace:   apiOp.Namespace,
-		clusterName: c.clusterName,
+	key := CacheKey{
+		GVK:         gvk.String(),
+		Namespace:   apiOp.Namespace,
+		ClusterName: c.clusterName,
 	}
 
 	logrus.Infof("[DEBUG %s] start get cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-	values, lexpired, err := c.cache.Get(key.getKey())
+	values, lexpired, err := c.cache.Get(key.GetKey())
 	logrus.Infof("[DEBUG %s] end get cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
-			key := cacheKey{
-				gvk:         gvk.String(),
-				namespace:   "",
-				clusterName: c.clusterName,
+			key := CacheKey{
+				GVK:         gvk.String(),
+				Namespace:   "",
+				ClusterName: c.clusterName,
 			}
-			allNsValues, expired, err := c.cache.Get(key.getKey())
+			allNsValues, expired, err := c.cache.Get(key.GetKey())
 			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
 				logrus.Infof("[DEBUG %s] start jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				logrus.Infof("[DEBUG %s] end jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				logrus.Infof("[DEBUG %s] start get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				list = getByNamespace(allNsValues[0].Value().(types.APIObjectList), apiOp.Namespace)
-				logrus.Infof("[DEBUG %s] end get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
-				return list, nil
+				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
+					logrus.Infof("[DEBUG %s] end jsi unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					logrus.Infof("[DEBUG %s] start get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					list := getByNamespace(list, apiOp.Namespace)
+					logrus.Infof("[DEBUG %s] end get by namespace at %s", apiOp.Type, time.Now().Format(time.StampNano))
+					return list, nil
+				}
 			}
 		}
 
@@ -109,14 +112,14 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 		}
 		logrus.Infof("[DEBUG %s] end list at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		logrus.Infof("[DEBUG %s] start marshal for cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-		vals, err := cache.GetInterfaceValue(list)
+		vals, err := cache.MarshalValue(list)
 		logrus.Infof("[DEBUG %s] end marshal for cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 		if err != nil {
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 		}
 		logrus.Infof("[DEBUG %s] start set cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
-		if err = c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30); err != nil {
+		if err = c.cache.Set(key.GetKey(), vals, time.Second.Nanoseconds()*30); err != nil {
 			logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
 		}
 		logrus.Infof("[DEBUG %s] end set cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
@@ -124,10 +127,10 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	if lexpired {
-		logrus.Infof("list data is expired, need update, key:%s", key.getKey())
+		logrus.Infof("list data is expired, need update, key:%s", key.GetKey())
 		if !cache.ExpireFreshQueue.IsFull() {
 			task := &queue.Task{
-				Key: key.getKey(),
+				Key: key.GetKey(),
 				Do: func() {
 					user, ok := request.UserFrom(apiOp.Context())
 					if !ok {
@@ -141,35 +144,39 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 						logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
 						return
 					}
-					data, err := cache.GetInterfaceValue(list)
+					data, err := cache.MarshalValue(list)
 					if err != nil {
 						logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 						return
 					}
-					if err = c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30); err != nil {
+					if err = c.cache.Set(key.GetKey(), data, time.Second.Nanoseconds()*30); err != nil {
 						logrus.Errorf("failed to set cache for %s, %v", gvk.String(), err)
 					}
 				},
 			}
 			cache.ExpireFreshQueue.Enqueue(task)
 		} else {
-			logrus.Warnf("queue size is full, task is ignored, key:%s", key.getKey())
+			logrus.Warnf("queue size is full, task is ignored, key:%s", key.GetKey())
 		}
 	}
 
 	var list types.APIObjectList
-	list = values[0].Value().(types.APIObjectList)
+	logrus.Infof("[DEBUG %s] start unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
+	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
+		logrus.Errorf("failed to marshal list %s result, %v", gvk.Kind, err)
+		return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
+	}
+	logrus.Infof("[DEBUG %s] end unmarshal data from cache at %s", apiOp.Type, time.Now().Format(time.StampNano))
 	return list, nil
 }
 
 func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, data types.APIObject) (types.APIObject, error) {
 	gvk := attributes.GVK(schema)
-	key := cacheKey{
-		gvk:         gvk.String(),
-		namespace:   apiOp.Namespace,
-		clusterName: c.clusterName,
+	key := CacheKey{
+		GVK:         gvk.String(),
+		ClusterName: c.clusterName,
 	}
-	if _, err := c.cache.Remove(key.getKey()); err != nil {
+	if _, err := c.cache.Remove(key.GetKey()); err != nil {
 		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
 	}
 	return c.Store.Create(apiOp, schema, data)
@@ -177,12 +184,11 @@ func (c *cacheStore) Create(apiOp *types.APIRequest, schema *types.APISchema, da
 
 func (c *cacheStore) Update(apiOp *types.APIRequest, schema *types.APISchema, data types.APIObject, id string) (types.APIObject, error) {
 	gvk := attributes.GVK(schema)
-	key := cacheKey{
-		gvk:         gvk.String(),
-		namespace:   apiOp.Namespace,
-		clusterName: c.clusterName,
+	key := CacheKey{
+		GVK:         gvk.String(),
+		ClusterName: c.clusterName,
 	}
-	if _, err := c.cache.Remove(key.getKey()); err != nil {
+	if _, err := c.cache.Remove(key.GetKey()); err != nil {
 		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
 	}
 	return c.Store.Update(apiOp, schema, data, id)
@@ -190,12 +196,11 @@ func (c *cacheStore) Update(apiOp *types.APIRequest, schema *types.APISchema, da
 
 func (c *cacheStore) Delete(apiOp *types.APIRequest, schema *types.APISchema, id string) (types.APIObject, error) {
 	gvk := attributes.GVK(schema)
-	key := cacheKey{
-		gvk:         gvk.String(),
-		namespace:   apiOp.Namespace,
-		clusterName: c.clusterName,
+	key := CacheKey{
+		GVK:         gvk.String(),
+		ClusterName: c.clusterName,
 	}
-	if _, err := c.cache.Remove(key.getKey()); err != nil {
+	if _, err := c.cache.Remove(key.GetKey()); err != nil {
 		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
 	}
 	return c.Store.Delete(apiOp, schema, id)

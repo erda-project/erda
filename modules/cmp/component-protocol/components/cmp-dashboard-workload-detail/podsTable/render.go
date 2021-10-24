@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"github.com/go-openapi/strfmt"
+	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
@@ -296,14 +297,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		metricsData := metrics.GetCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
+		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
 		if metricsData != nil && !cpuLimits.IsZero() {
 			usedCPUPercent := metricsData.Used
 			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		metricsData = metrics.GetCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
+		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
 		if metricsData != nil && !memLimits.IsZero() {
 			usedMemPercent := metricsData.Used
 			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
@@ -569,7 +570,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.SortDirections = []string{"descend", "ascend"}
-	p.Props.IsLoadMore = true
+	p.Props.RequestIgnore = []string{"data"}
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}
@@ -731,4 +732,20 @@ func getRange(length, pageNo, pageSize int) (int, int) {
 		r = length
 	}
 	return l, r
+}
+
+func getCache(key string) *metrics.MetricsData {
+
+	v, _, err := cache.GetFreeCache().Get(key)
+	if err != nil {
+		logrus.Errorf("get metrics %v err :%v", key, err)
+	}
+	d := &metrics.MetricsData{}
+	if v != nil {
+		err = jsi.Unmarshal(v[0].Value().([]byte), d)
+		if err != nil {
+			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
+		}
+	}
+	return d
 }
