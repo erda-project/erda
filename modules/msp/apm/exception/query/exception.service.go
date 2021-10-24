@@ -17,11 +17,6 @@ package query
 import (
 	context "context"
 	"encoding/json"
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
-	error_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
-	event_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
-	"github.com/erda-project/erda/pkg/common/errors"
 	"sort"
 	"time"
 
@@ -29,12 +24,17 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
+	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	"github.com/erda-project/erda/modules/msp/apm/exception"
+	error_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
+	event_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type exceptionService struct {
-	p *provider
-	ErrorStorageReader         error_storage.Storage
-	EventStorageReader         event_storage.Storage
+	p                  *provider
+	ErrorStorageReader error_storage.Storage
+	EventStorageReader event_storage.Storage
 }
 
 func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) (*pb.GetExceptionsResponse, error) {
@@ -86,10 +86,10 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 	}
 
 	// do es query
-	sel:= &error_storage.Selector{
-		StartTime: req.StartTime*1e6,
-		EndTime : req.EndTime*1e6,
-		TerminusKey : req.ScopeID,
+	sel := &error_storage.Selector{
+		StartTime:   req.StartTime * 1e6,
+		EndTime:     req.EndTime * 1e6,
+		TerminusKey: req.ScopeID,
 	}
 	it, err := s.ErrorStorageReader.Iterator(ctx, sel)
 	if err != nil {
@@ -118,7 +118,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 		exception.EventCount = s.EventStorageReader.Count(ctx, &event_storage.Selector{
 			StartTime: req.StartTime * 1e6,
 			EndTime:   req.EndTime * 1e6,
-			ErrorId : value.ErrorId,
+			ErrorId:   value.ErrorId,
 		})
 
 		if exception.EventCount > 0 {
@@ -144,10 +144,10 @@ func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.Get
 	}
 
 	//do es query
-	sel:= &event_storage.Selector{
-		StartTime: time.Now().Add(-time.Hour*24*7).UnixNano(),
-		EndTime : time.Now().UnixNano(),
-		ErrorId : req.ExceptionID,
+	sel := &event_storage.Selector{
+		StartTime: time.Now().Add(-time.Hour * 24 * 7).UnixNano(),
+		EndTime:   time.Now().UnixNano(),
+		ErrorId:   req.ExceptionID,
 	}
 	it, err := s.EventStorageReader.Iterator(ctx, sel)
 	if err != nil {
@@ -170,12 +170,11 @@ func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExc
 	event := pb.ExceptionEvent{}
 
 	// do es query
-	sel:= &event_storage.Selector{
-		StartTime: time.Now().Add(-time.Hour*24*7).UnixNano(),
-		EndTime : time.Now().UnixNano(),
-		EventId : req.ExceptionEventID,
-		TerminusKey : req.ScopeID,
-
+	sel := &event_storage.Selector{
+		StartTime:   time.Now().Add(-time.Hour * 24 * 7).UnixNano(),
+		EndTime:     time.Now().UnixNano(),
+		EventId:     req.ExceptionEventID,
+		TerminusKey: req.ScopeID,
 	}
 	it, err := s.EventStorageReader.Iterator(ctx, sel)
 	if err != nil {
@@ -247,7 +246,6 @@ func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExc
 	return &pb.GetExceptionEventResponse{Data: &event}, nil
 }
 
-
 func fetchErdaErrorFromES(it storekit.Iterator, forward bool, limit int) (list []*exception.Erda_error, err error) {
 	if forward {
 		for it.Next() {
@@ -283,7 +281,6 @@ func (s ErdaErrors) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s ErdaErrors) Less(i, j int) bool {
 	return s[i].Timestamp < s[j].Timestamp
 }
-
 
 func fetchErdaEventFromES(it storekit.Iterator, forward bool, limit int) (list []*exception.Erda_event, err error) {
 	if forward {

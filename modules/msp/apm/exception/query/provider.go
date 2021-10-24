@@ -16,6 +16,7 @@ package query
 
 import (
 	"fmt"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -32,12 +33,12 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg              *config
-	Log              logs.Logger
-	Register         transport.Register
-	Cassandra        cassandra.Interface `autowired:"cassandra"`
-	exceptionService *exceptionService
-	cassandraSession *cassandra.Session
+	Cfg                *config
+	Log                logs.Logger
+	Register           transport.Register
+	Cassandra          cassandra.Interface `autowired:"cassandra"`
+	exceptionService   *exceptionService
+	cassandraSession   *cassandra.Session
 	ErrorStorageReader error_storage.Storage `autowired:"error-storage-elasticsearch-reader"`
 	EventStorageReader event_storage.Storage `autowired:"event-storage-elasticsearch-reader"`
 }
