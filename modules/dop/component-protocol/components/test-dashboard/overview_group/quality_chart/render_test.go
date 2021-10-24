@@ -158,3 +158,10 @@ func TestFloatPrecision(t *testing.T) {
 	c, _ := a.Add(b).Float64()
 	assert.Equal(t, float64(0.9), c)
 }
+
+func TestFloatPrecision(t *testing.T) {
+	a := decimal.NewFromFloat(0.3)
+	b := decimal.NewFromFloat(0.6)
+	c, _ := a.Add(b).Float64()
+	assert.Equal(t, float64(0.9), c)
+}
