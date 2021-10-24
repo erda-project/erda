@@ -15,9 +15,10 @@
 package persist
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Statistics .
@@ -36,7 +37,7 @@ type statistics struct {
 	confirmErrors *prometheus.CounterVec
 	success       *prometheus.CounterVec
 
-	decodeErrors prometheus.Counter
+	decodeErrors   prometheus.Counter
 	validateErrors *prometheus.CounterVec
 	metadataError  *prometheus.CounterVec
 }

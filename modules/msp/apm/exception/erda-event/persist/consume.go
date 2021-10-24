@@ -1,11 +1,25 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package persist
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
 	"time"
-)
 
+	"github.com/erda-project/erda/modules/msp/apm/exception"
+)
 
 func (p *provider) decodeEvent(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {
 	data := &exception.Erda_event{}
@@ -18,7 +32,6 @@ func (p *provider) decodeEvent(key, value []byte, topic *string, timestamp time.
 		}
 		return nil, err
 	}
-
 
 	if err := p.validator.Validate(data); err != nil {
 		p.stats.ValidateError(data)

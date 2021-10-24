@@ -1,8 +1,26 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package elasticsearch
 
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
@@ -12,8 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/modules/msp/apm/exception"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
-	"github.com/olivere/elastic"
-	"time"
 )
 
 type (
@@ -24,13 +40,13 @@ type (
 		IndexType    string        `file:"index_type" default:"errors"`
 	}
 	provider struct {
-		Cfg          *config
-		Log          logs.Logger
-		ES           elasticsearch.Interface `autowired:"elasticsearch"`
-		Loader       loader.Interface        `autowired:"elasticsearch.index.loader@error"`
-		Creator      creator.Interface       `autowired:"elasticsearch.index.creator@error" optional:"true"`
-		Retention    retention.Interface     `autowired:"storage-retention-strategy@error" optional:"true"`
-		client       *elastic.Client
+		Cfg       *config
+		Log       logs.Logger
+		ES        elasticsearch.Interface `autowired:"elasticsearch"`
+		Loader    loader.Interface        `autowired:"elasticsearch.index.loader@error"`
+		Creator   creator.Interface       `autowired:"elasticsearch.index.creator@error" optional:"true"`
+		Retention retention.Interface     `autowired:"storage-retention-strategy@error" optional:"true"`
+		client    *elastic.Client
 	}
 )
 
@@ -69,7 +85,6 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 	})
 	return w, nil
 }
-
 
 func init() {
 	servicehub.Register("error-storage-elasticsearch", &servicehub.Spec{

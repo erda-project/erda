@@ -18,12 +18,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"strconv"
+	"time"
 
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
-	"strconv"
-	"time"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 )
 
 func (p *provider) decodeSpotSpan(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {

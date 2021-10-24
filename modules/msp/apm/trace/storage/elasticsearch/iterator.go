@@ -22,18 +22,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/olivere/elastic"
+	"github.com/recallsong/go-utils/encoding/jsonx"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
-	"github.com/olivere/elastic"
-	"github.com/recallsong/go-utils/encoding/jsonx"
 )
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
-	query := elastic.NewBoolQuery().Filter(elastic.NewQueryStringQuery("trace_id:"+sel.TraceId))
+	query := elastic.NewBoolQuery().Filter(elastic.NewQueryStringQuery("trace_id:" + sel.TraceId))
 	return searchSource.Query(query)
 }
 
@@ -52,8 +53,6 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		indices:      indices,
 	}, nil
 }
-
-
 
 type iteratorDir int8
 

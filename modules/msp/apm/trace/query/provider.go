@@ -16,8 +16,7 @@ package query
 
 import (
 	"fmt"
-	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -25,8 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -44,7 +45,7 @@ type provider struct {
 	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	DB               *gorm.DB                     `autowired:"mysql-client"`
 	Cassandra        cassandra.Interface          `autowired:"cassandra"`
-	StorageReader    storage.Storage				`autowired:"span-storage-elasticsearch-reader"`
+	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader"`
 	cassandraSession *cassandra.Session
 }
 

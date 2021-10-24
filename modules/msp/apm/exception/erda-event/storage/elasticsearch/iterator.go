@@ -1,32 +1,48 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package elasticsearch
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"strconv"
+	"time"
+
+	"github.com/olivere/elastic"
+	"github.com/recallsong/go-utils/encoding/jsonx"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/modules/msp/apm/exception"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
-	"github.com/olivere/elastic"
-	"github.com/recallsong/go-utils/encoding/jsonx"
-	"io"
-	"strconv"
-	"time"
 )
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
 	query := elastic.NewBoolQuery()
 	if len(sel.ErrorId) > 0 {
-		query = query.Filter(elastic.NewQueryStringQuery("error_id:"+sel.ErrorId))
+		query = query.Filter(elastic.NewQueryStringQuery("error_id:" + sel.ErrorId))
 	}
 	if len(sel.EventId) > 0 {
-		query = query.Filter(elastic.NewQueryStringQuery("event_id:"+sel.EventId))
+		query = query.Filter(elastic.NewQueryStringQuery("event_id:" + sel.EventId))
 	}
 	if len(sel.TerminusKey) > 0 {
-		query = query.Filter(elastic.NewQueryStringQuery("tags.terminus_key:"+sel.TerminusKey))
+		query = query.Filter(elastic.NewQueryStringQuery("tags.terminus_key:" + sel.TerminusKey))
 	}
 
 	return searchSource.Query(query)
@@ -47,8 +63,6 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		indices:      indices,
 	}, nil
 }
-
-
 
 type iteratorDir int8
 

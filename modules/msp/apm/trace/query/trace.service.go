@@ -19,10 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda-infra/pkg/set"
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
-	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"io"
 	"io/ioutil"
 	"math"
@@ -36,13 +32,17 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/set"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	mathpkg "github.com/erda-project/erda/pkg/math"
@@ -97,7 +97,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	for _, value := range items{
+	for _, value := range items {
 		var span pb.Span
 		span.Id = value.SpanId
 		span.TraceId = value.TraceId

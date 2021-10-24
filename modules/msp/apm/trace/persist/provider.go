@@ -17,24 +17,24 @@ package persist
 import (
 	"context"
 	"fmt"
-	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 )
 
 type (
 	config struct {
 		SpotInput        kafka.BatchReaderConfig `file:"spot_input"`
 		OapInput         kafka.BatchReaderConfig `file:"oap_input"`
-		Parallelism      int                  `file:"parallelism" default:"1"`
-		BufferSize       int                  `file:"buffer_size" default:"1024"`
-		ReadTimeout      time.Duration        `file:"read_timeout" default:"5s"`
-		IDKeys           []string             `file:"id_keys"`
-		PrintInvalidSpan bool                 `file:"print_invalid_span" default:"false"`
+		Parallelism      int                     `file:"parallelism" default:"1"`
+		BufferSize       int                     `file:"buffer_size" default:"1024"`
+		ReadTimeout      time.Duration           `file:"read_timeout" default:"5s"`
+		IDKeys           []string                `file:"id_keys"`
+		PrintInvalidSpan bool                    `file:"print_invalid_span" default:"false"`
 	}
 	provider struct {
 		Cfg           *config
@@ -42,8 +42,8 @@ type (
 		Kafka         kafka.Interface `autowired:"kafka"`
 		StorageWriter storage.Storage `autowired:"span-storage-writer"`
 
-		storage storage.Storage
-		stats   Statistics
+		storage   storage.Storage
+		stats     Statistics
 		validator Validator
 		metadata  MetadataProcessor
 	}
