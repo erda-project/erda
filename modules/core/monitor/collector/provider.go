@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/modules/oap/collector/authentication"
 )
 
 type config struct {
@@ -30,6 +31,7 @@ type config struct {
 		Username string `file:"username"`
 		Password string `file:"password"`
 		Force    bool   `file:"force"`
+		Skip     bool   `file:"skip"`
 	}
 	Output         kafka.ProducerConfig `file:"output"`
 	TaSamplingRate float64              `file:"ta_sampling_rate" default:"100"`
@@ -52,6 +54,9 @@ type provider struct {
 	Logger logs.Logger
 	writer writer.Writer
 	Kafka  kafka.Interface
+
+	auth      *Authenticator
+	Validator authentication.Validator `autowired:"erda.oap.collector.authentication.Validator"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -60,6 +65,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
 	p.writer = w
+
+	p.auth = NewAuthenticator(
+		WithLogger(p.Logger),
+		WithValidator(p.Validator),
+		WithConfig(p.Cfg),
+	)
 
 	r := ctx.Service("http-server",
 		// telemetry.HttpMetric(),

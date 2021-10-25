@@ -14,6 +14,10 @@
 
 package apistructs
 
+const (
+	AuthClusterKeyHeader = "X-Erda-Cluster-Key"
+)
+
 // 指标集
 type Metrics struct {
 	Metric []Metric `json:"metrics"`
