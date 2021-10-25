@@ -48,7 +48,7 @@ func NewDailyQuotaCollector(opt ...DailyQuotaCollectorOption) *DailyQuotaCollect
 	return &d
 }
 
-func (d *DailyQuotaCollector) Task() error {
+func (d *DailyQuotaCollector) Task() (bool, error) {
 	// 1) 查出所有的 clusters
 	clusterNames := d.cmp.GetAllClusters()
 
@@ -87,7 +87,7 @@ func (d *DailyQuotaCollector) Task() error {
 		logrus.WithError(err).WithField("clusters", clusterNames).Errorln()
 	}
 
-	return nil
+	return false, nil
 }
 
 func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]string) error {
