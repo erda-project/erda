@@ -260,6 +260,16 @@ func (b *Bundle) CreateGroupNotifyEvent(groupNotifyRequest apistructs.EventBoxGr
 				channelData.Template = notifyItem.MarkdownTemplate
 			}
 			eventboxReqContent.Channels = append(eventboxReqContent.Channels, channelData)
+		} else if channel == "webhook" {
+			channelData := apistructs.GroupNotifyChannel{
+				Name:     channel,
+				Template: notifyItem.MBoxTemplate, // TODO webhook template
+				Params:   params,
+			}
+			if channelData.Template == "" {
+				channelData.Template = notifyItem.MarkdownTemplate
+			}
+			eventboxReqContent.Channels = append(eventboxReqContent.Channels, channelData)
 		}
 	}
 	eventBoxRequest.Content = eventboxReqContent
