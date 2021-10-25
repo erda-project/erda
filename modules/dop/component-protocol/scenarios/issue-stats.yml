@@ -14,6 +14,7 @@ hierarchy:
       - labelHorizontalBarChart
       - chartGroup@third
       - memberHorizontalBarChart@reopenByOwner
+      - scatterPlot
     overview:
       - total
       - split
@@ -74,6 +75,12 @@ hierarchy:
         chartExtra@ownerHorizontalBar
     chartExtra@ownerHorizontalBar:
       - chartFilter@ownerHorizontalBar
+
+    scatterPlot:
+      extraContent:
+        chartExtra@scatter
+    chartExtra@scatter:
+      - chartFilter@scatter
 
 components:
   page:
@@ -184,6 +191,13 @@ components:
   memberHorizontalBarChart@reopenByOwner:
     type: Chart
 
+  scatterPlot:
+    type: Chart
+  chartExtra@scatter:
+    type: RowContainer
+  chartFilter@scatter:
+    type: ContractiveFilter
+
   reset:
     type: Container
 
@@ -195,6 +209,7 @@ rendering:
     - name: chartFilter@labelHorizontalBar
     - name: chartFilter@assigneeHorizontalBar
     - name: chartFilter@ownerHorizontalBar
+    - name: chartFilter@scatter
     - name: trendChart
       state:
         - name: "values"
@@ -258,6 +273,10 @@ rendering:
         - name: "values"
           value: "{{ chartFilter@iterationVerticalBar.values }}"
     - name: memberHorizontalBarChart@reopenByOwner
+    - name: scatterPlot
+      state:
+        - name: "values"
+          value: "{{ chartFilter@scatter.values }}"
     - name: reset
 
   trendChartFilter:
@@ -311,6 +330,15 @@ rendering:
       state:
         - name: "values"
           value: "{{ chartFilter@iterationVerticalBar.values }}"
+    - name: reset
+
+  chartFilter@scatter:
+    - name: filter
+    - name: chartFilter@scatter
+    - name: scatterPlot
+      state:
+        - name: "values"
+          value: "{{ chartFilter@scatter.values }}"
     - name: reset
   
   __DefaultRendering__:
@@ -408,4 +436,10 @@ rendering:
           value: "{{ chartFilter@ownerHorizontalBar.values }}"
     
     - name: memberHorizontalBarChart@reopenByOwner
+
+    - name: chartFilter@scatter
+    - name: scatterPlot
+      state:
+        - name: "values"
+          value: "{{ chartFilter@scatter.values }}"
     - name: reset

@@ -55,6 +55,7 @@ type Issue struct {
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
 	ReopenCount  int
+	StartTime    *time.Time
 }
 
 type ExpireType string
@@ -749,6 +750,7 @@ type IssueItem struct {
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
 	ReopenCount  int
+	StartTime    *time.Time
 
 	Name   string
 	Belong string

@@ -45,12 +45,12 @@ type ComponentFilter struct {
 type State struct {
 	Conditions           []filter.PropCondition    `json:"conditions,omitempty"`
 	Values               common.FrontendConditions `json:"values,omitempty"`
-	Base64UrlQueryParams string                    `json:"issueFilter__urlQuery,omitempty"`
+	Base64UrlQueryParams string                    `json:"filter__urlQuery,omitempty"`
 }
 
 type InParams struct {
 	FrontEndProjectID string `json:"projectId,omitempty"`
-	FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`
+	FrontendUrlQuery  string `json:"filter__urlQuery,omitempty"`
 	ProjectID         uint64
 }
 

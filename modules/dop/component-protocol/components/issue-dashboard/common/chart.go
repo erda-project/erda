@@ -36,6 +36,7 @@ type Option struct {
 type Grid struct {
 	Bottom int `json:"bottom,omitempty"`
 	Top    int `json:"top,omitempty"`
+	Right  int `json:"right,omitempty"`
 }
 
 type Legend struct {
@@ -45,11 +46,25 @@ type Legend struct {
 }
 
 type XAxis struct {
-	Data []string `json:"data,omitempty"`
+	Data      []string  `json:"data,omitempty"`
+	Scale     bool      `json:"scale,omitempty"`
+	AxisLabel AxisLabel `json:"axisLabel,omitempty"`
+	SplitLine SplitLine `json:"splitLine,omitempty"`
+	Type      string    `json:"type,omitempty"`
+	Name      string    `json:"name,omitempty"`
+}
+
+type SplitLine struct {
+	Show bool `json:"show"`
+}
+
+type AxisLabel struct {
+	Fortmatter string `json:"formatter,omitempty"`
 }
 
 type YAxis struct {
 	Max float32 `json:"max,omitempty"`
+	XAxis
 }
 
 type Item struct {
@@ -100,4 +115,24 @@ type PieChartPart struct {
 	Name  string `json:"name,omitempty"`
 	Value int    `json:"value,omitempty"`
 	Label Label  `json:"label,omitempty"`
+}
+
+type MarkPoint struct {
+	Data       []MarkItem `json:"data,omitempty"`
+	SymbolSize int        `json:"symbolSize,omitempty"`
+}
+
+type MarkLine struct {
+	LineStyle LineStyle  `json:"lineStyle,omitempty"`
+	Data      []MarkItem `json:"data,omitempty"`
+}
+
+type LineStyle struct {
+	Type string `json:"type,omitempty"`
+}
+
+type MarkItem struct {
+	Name       string `json:"name,omitempty"`
+	Type       string `json:"type,omitempty"`
+	ValueIndex int    `json:"valueIndex"`
 }
