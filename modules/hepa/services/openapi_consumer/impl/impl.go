@@ -797,6 +797,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 	}
 	if len(apiAclRules) == 0 {
 		result = packageRes
+		return
 	}
 	pack, err = impl.packageDb.Get(packageId)
 	if err != nil {
@@ -1417,6 +1418,9 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumersOfPackage(packageId st
 		if err != nil {
 			return nil, err
 		}
+		if consumer == nil {
+			continue
+		}
 		consumers = append(consumers, *consumer)
 	}
 	return consumers, nil
@@ -1432,6 +1436,9 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumersOfPackageApi(packageId
 		consumer, err := impl.consumerDb.GetById(consumerId.ConsumerId)
 		if err != nil {
 			return nil, err
+		}
+		if consumer == nil {
+			continue
 		}
 		consumers = append(consumers, *consumer)
 	}
