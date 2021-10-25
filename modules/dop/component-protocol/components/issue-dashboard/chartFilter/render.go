@@ -98,7 +98,7 @@ func (f *ComponentFilter) InitDefaultOperation(c *cptype.Component, gs *cptype.G
 			Value: stackhandlers.Severity,
 		},
 	}
-	if c.Name == "stateVerticalBar" {
+	if c.Name == "stateVerticalBar" || c.Name == "scatter" {
 		options = append(options, filter.PropConditionOption{
 			Label: "引入源",
 			Value: stackhandlers.Stage,
