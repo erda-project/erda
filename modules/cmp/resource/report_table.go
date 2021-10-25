@@ -133,10 +133,16 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 			OwnerUserName:      projectItem.OwnerUserName,
 			OwnerUserNickName:  projectItem.OwnerUserNickname,
 			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota),
-			CPUWaterLevel:      float64(projectItem.GetCPUReqeust()) / float64(projectItem.CPUQuota),
+			CPUWaterLevel:      0,
 			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota),
-			MemWaterLevel:      float64(projectItem.GetMemRequest()) / float64(projectItem.MemQuota),
+			MemWaterLevel:      0,
 			Nodes:              0,
+		}
+		if projectItem.CPUQuota != 0 {
+			item.CPUWaterLevel = float64(projectItem.GetCPUReqeust()) / float64(projectItem.CPUQuota)
+		}
+		if projectItem.MemQuota != 0 {
+			item.MemWaterLevel = float64(projectItem.GetMemRequest()) / float64(projectItem.MemQuota)
 		}
 		item.Nodes = item.CPUQuota / float64(cpuPerNode)
 		if nodes := item.MemQuota / float64(memPerNode); nodes > item.Nodes {
