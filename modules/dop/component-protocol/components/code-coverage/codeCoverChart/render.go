@@ -68,8 +68,9 @@ type PointValue struct {
 }
 
 type State struct {
-	Value    []int64 `json:"value"`
-	RecordID uint64  `json:"recordID"`
+	Value     []int64 `json:"value"`
+	RecordID  uint64  `json:"recordID"`
+	Workspace string  `json:"workspace"`
 }
 
 type Operation struct {
