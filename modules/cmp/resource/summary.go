@@ -46,7 +46,7 @@ func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.Gau
 	return data, nil
 }
 
-func (r *Resource) getGauge(request *apistructs.GaugeRequest, resp *apistructs.ResourceResp) (data map[string]*GaugeData) {
+func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.ResourceResp) (data map[string]*GaugeData) {
 	data = make(map[string]*GaugeData)
 	var (
 		nodesGauge = &GaugeData{}
@@ -60,8 +60,8 @@ func (r *Resource) getGauge(request *apistructs.GaugeRequest, resp *apistructs.R
 	if resp.MemTotal == 0 || resp.CpuTotal == 0 {
 		return nil
 	}
-	cpuBase := float64(request.CpuPerNode) * mCore
-	memBase := float64(request.MemPerNode) * G
+	cpuBase := float64(req.CpuPerNode) * mCore
+	memBase := float64(req.MemPerNode) * G
 	MemRequest := resp.MemRequest
 	CpuRequest := resp.CpuRequest
 	MemTotal := resp.MemTotal
@@ -105,23 +105,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	if err != nil {
 		return
 	}
-	queryCluster := make(map[string]bool)
-	for _, name := range clusterNames {
-		queryCluster[name] = true
-	}
 	// 1. filter cluster
-	names := make([]string, 0)
-	if len(queryCluster) == 0 {
-		for i := 0; i < len(clusters); i++ {
-			names = append(names, clusters[i].Name)
-		}
-	} else {
-		for i := 0; i < len(clusters); i++ {
-			if queryCluster[clusters[i].Name] {
-				names = append(names, clusters[i].Name)
-			}
-		}
-	}
+	names := r.FilterCluster(clusters, clusterNames)
 	// 2. query clusterInfo
 	greq := &pb.GetClustersResourcesRequest{}
 	greq.ClusterNames = names
@@ -208,4 +193,24 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	resp.MemRequest += resp.IrrelevantMemRequest
 	resp.CpuRequest += resp.IrrelevantCpuRequest
 	return
+}
+
+func (r *Resource) FilterCluster(clusters []apistructs.ClusterInfo, clusterNames []string) []string {
+	names := make([]string, 0)
+	queryCluster := make(map[string]bool)
+	for _, name := range clusterNames {
+		queryCluster[name] = true
+	}
+	if len(queryCluster) == 0 {
+		for i := 0; i < len(clusters); i++ {
+			names = append(names, clusters[i].Name)
+		}
+	} else {
+		for i := 0; i < len(clusters); i++ {
+			if queryCluster[clusters[i].Name] {
+				names = append(names, clusters[i].Name)
+			}
+		}
+	}
+	return names
 }

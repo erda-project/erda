@@ -46,8 +46,8 @@ func TestResource_getGauge(t *testing.T) {
 		request *apistructs.GaugeRequest
 		resp    *apistructs.ResourceResp
 	}
-	request := &apistructs.GaugeRequest{}
-	resp := &apistructs.ResourceResp{}
+	request := &apistructs.GaugeRequest{CpuPerNode: 1, MemPerNode: 1}
+	resp := &apistructs.ResourceResp{CpuTotal: 100, MemTotal: 1000}
 	tests := []struct {
 		name     string
 		fields   fields
@@ -71,8 +71,42 @@ func TestResource_getGauge(t *testing.T) {
 			r := &Resource{
 				I18N: tt.fields.I18N,
 			}
-			if gotData := r.getGauge(tt.args.request, tt.args.resp); !reflect.DeepEqual(gotData, tt.wantData) {
-				t.Errorf("getGauge() = %v, want %v", gotData, tt.wantData)
+			r.getGauge(tt.args.request, tt.args.resp)
+		})
+	}
+}
+
+func TestResource_FilterCluster(t *testing.T) {
+	type fields struct {
+		Ctx    context.Context
+		Server _interface.Provider
+		I18N   i18n.Translator
+		Lang   i18n.LanguageCodes
+	}
+	type args struct {
+		clusters     []apistructs.ClusterInfo
+		clusterNames []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   []string
+	}{
+		{
+			name: "test",
+			args: args{
+				clusters:     []apistructs.ClusterInfo{{Name: "terminus-dev"}},
+				clusterNames: []string{"terminus-dev"},
+			},
+			want: []string{"terminus-dev"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Resource{}
+			if got := r.FilterCluster(tt.args.clusters, tt.args.clusterNames); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FilterCluster() = %v, want %v", got, tt.want)
 			}
 		})
 	}
