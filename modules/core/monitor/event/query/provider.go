@@ -1,0 +1,55 @@
+package query
+
+import (
+	logs "github.com/erda-project/erda-infra/base/logs"
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	transport "github.com/erda-project/erda-infra/pkg/transport"
+	pb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
+	"github.com/erda-project/erda/modules/core/monitor/event/storage"
+	"github.com/erda-project/erda/pkg/common/apis"
+)
+
+type config struct {
+}
+
+// +provider
+type provider struct {
+	Cfg               *config
+	Log               logs.Logger
+	Register          transport.Register
+	StorageReader     storage.Storage `autowired:"event-storage-elasticsearch-reader"`
+	eventQueryService *eventQueryService
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	// TODO initialize something ...
+
+	p.eventQueryService = &eventQueryService{p, p.StorageReader}
+	if p.Register != nil {
+		pb.RegisterEventQueryServiceImp(p.Register, p.eventQueryService, apis.Options())
+	}
+	return nil
+}
+
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	switch {
+	case ctx.Service() == "erda.core.monitor.event.EventQueryService" || ctx.Type() == pb.EventQueryServiceServerType() || ctx.Type() == pb.EventQueryServiceHandlerType():
+		return p.eventQueryService
+	}
+	return p
+}
+
+func init() {
+	servicehub.Register("erda.core.monitor.event.query", &servicehub.Spec{
+		Services:             pb.ServiceNames(),
+		Types:                pb.Types(),
+		OptionalDependencies: []string{"service-register"},
+		Description:          "",
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
+}
