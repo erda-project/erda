@@ -78,7 +78,7 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 			err = errors.Wrap(err, "failed to ListSteveResource")
 			l.WithError(err).Warnln()
 		}
-		l.Debugln("ListSteveResource, length of resource: %v", len(resources))
+		l.Debugf("ListSteveResource, length of resource: %v", len(resources))
 		for _, resource := range resources {
 			l.Debugf("ListSteveResource resource: %+v", resource)
 			namespace := resource.Data().String("metadata", "name")
