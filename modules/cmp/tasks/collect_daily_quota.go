@@ -129,6 +129,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 
 		if projectDTO.ResourceConfig == nil {
 			l.Warnln("the ResourceConfig is nil")
+			continue
 		}
 
 		var (

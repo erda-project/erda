@@ -105,6 +105,7 @@ service-register:
 
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+  block: false
 erda.core.monitor.metric-client:
 
 # core service credential
