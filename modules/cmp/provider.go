@@ -62,7 +62,7 @@ func (p *provider) Run(ctx context.Context) error {
 	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
 	lang := cputil.Language(ctx)
-	p.Resource = resource.New(ctx, p.Tran, lang)
+	p.Resource = resource.New(ctx, p.Tran, lang, p)
 	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
 	ctxNew = context.WithValue(ctxNew, "resource", p.Resource)
 	return p.initialize(ctxNew)

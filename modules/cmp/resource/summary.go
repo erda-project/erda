@@ -22,10 +22,12 @@ import (
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/bdl"
 )
 
-const G = 1 << 30
+const (
+	G     = 1 << 30
+	mCore = 1000
+)
 
 type GaugeData struct {
 	Split []float64 `json:"split"`
@@ -57,8 +59,8 @@ func (r *Resource) getGauge(request *apistructs.GaugeRequest, resp *apistructs.R
 	if resp.MemTotal == 0 || resp.CpuTotal == 0 {
 		return nil
 	}
-	cpuBase := float64(request.CpuPerNode) / resp.CpuTotal
-	memBase := float64(request.MemPerNode*G) / resp.MemTotal
+	cpuBase := float64(request.CpuPerNode) * mCore
+	memBase := float64(request.MemPerNode) * G
 	MemRequest := resp.MemRequest
 	CpuRequest := resp.CpuRequest
 	MemTotal := resp.MemTotal
@@ -69,7 +71,7 @@ func (r *Resource) getGauge(request *apistructs.GaugeRequest, resp *apistructs.R
 	nodesGauge.Title = r.I18n("节点压力表")
 	if MemTotal/memBase > CpuTotal/cpuBase {
 		nodesGauge.Value = []float64{MemRequest / MemTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("核") + fmt.Sprintf("%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
+		nodesGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("G") + fmt.Sprintf("%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
 		nodesGauge.Split = []float64{MemQuota / MemTotal}
 	} else {
 		nodesGauge.Value = []float64{CpuRequest / CpuTotal}
@@ -98,7 +100,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	if err != nil {
 		return
 	}
-	clusters, err := bdl.Bdl.ListClusters("", orgid)
+	clusters, err := r.Bdl.ListClusters("", orgid)
 	if err != nil {
 		return
 	}
@@ -130,7 +132,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 	}
 	// 4. get all quota
-	quota, err := bdl.Bdl.FetchQuotaOnClusters(orgid, names)
+	quota, err := r.Bdl.FetchQuotaOnClusters(orgid, names)
 	if err != nil {
 		return
 	}
@@ -160,7 +162,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	}
 	nreq := &apistructs.OrgClustersNamespaceReq{}
 	nreq.OrgID = ordId
-	nresp, err := bdl.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
+	nresp, err := r.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
 	if err != nil {
 		return
 	}

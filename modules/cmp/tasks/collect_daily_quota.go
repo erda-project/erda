@@ -82,8 +82,8 @@ func (d *DailyQuotaCollector) Task() error {
 		err = errors.Wrap(err, "failed to collectProjectDaily")
 		logrus.WithError(err).WithField("namespaces", namespacesM).Errorln()
 	}
-	if err := d.collecteClusterDaily(clusterNames); err != nil {
-		err = errors.Wrap(err, "failed to collecteClusterDaily")
+	if err := d.collectClusterDaily(clusterNames); err != nil {
+		err = errors.Wrap(err, "failed to collectClusterDaily")
 		logrus.WithError(err).WithField("clusters", clusterNames).Errorln()
 	}
 
@@ -135,7 +135,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 	return nil
 }
 
-func (d *DailyQuotaCollector) collecteClusterDaily(clusterNames []string) error {
+func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	// 3) 调用本地接口，查询各 cluster 上的 request
 	req := pb.GetClustersResourcesRequest{
 		ClusterNames: clusterNames,
