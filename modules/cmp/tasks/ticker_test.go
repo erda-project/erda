@@ -15,6 +15,7 @@
 package tasks_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -30,16 +31,16 @@ func TestExitError_Error(t *testing.T) {
 
 func TestTicker_Close(t *testing.T) {
 	var times = 0
-	ticker := tasks.New(time.Second*2, func() error {
+	ticker := tasks.New(time.Millisecond*200, func() (bool, error) {
 		times++
-		if times > 3 {
-			return errors.New("normal error")
-		}
+		fmt.Println("times:", times)
 		if times > 5 {
-			return tasks.ExitError{Msg: "time over"}
+			return true, &tasks.ExitError{Msg: "time over"}
 		}
-		t.Log("times:", times)
-		return nil
+		if times > 3 {
+			return false, errors.New("normal error")
+		}
+		return false, nil
 	})
 	ticker.Run()
 }

@@ -1438,13 +1438,13 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		total, members, err := p.db.GetMembersByParam(&memberListReq)
 		if err != nil {
 			err = errors.Wrap(err, "failed to GetMembersByParam")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
 		}
 		if total <= 0 || len(members) == 0 {
 			err = errors.New("not found owner for the project")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
 		}
 		member := members[0]
 
@@ -1498,34 +1498,39 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	return response, nil
 }
 
-func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	// 1）查找 s_pod_info
+	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info, namespaces: %v", namespaces)
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
-	db := p.db.DB
-	if orgID > 0 {
-		db = db.Where(map[string]interface{}{"org_id": orgID})
-	}
-	if err := db.Find(&podInfos).Error; err != nil {
+	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")
 			logrus.WithError(err).Errorln()
 			return nil, err
 		}
 	}
+	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info count: %v", len(podInfos))
 	for _, podInfo := range podInfos {
 		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
 		if err != nil {
 			continue
 		}
-		if _, ok := projectsM[projectID]; !ok {
-			projectsM[projectID] = make(map[string][]string)
+		clusters, ok := projectsM[projectID]
+		if !ok {
+			clusters = make(map[string][]string)
 		}
 		if hasClusterAndNamespace(namespaces, podInfo.Cluster, podInfo.K8sNamespace) &&
-			!hasClusterAndNamespace(projectsM[projectID], podInfo.Cluster, podInfo.K8sNamespace) {
-			projectsM[projectID][podInfo.Cluster] = append(projectsM[projectID][podInfo.Cluster], podInfo.K8sNamespace)
+			!hasClusterAndNamespace(clusters, podInfo.Cluster, podInfo.K8sNamespace) {
+			if _, ok := clusters[podInfo.Cluster]; ok {
+				clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
+			} else {
+				clusters[podInfo.Cluster] = []string{podInfo.K8sNamespace}
+			}
 		}
+		projectsM[projectID] = clusters
 	}
+	logrus.Debugf("GetNamespacesBelongsTo, projectsM: %v", projectsM)
 
 	// 2) 查找 project_namespace
 	var projectNamespaces []*apistructs.ProjectNamespaceModel
@@ -1537,14 +1542,19 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, name
 		}
 	}
 	for _, projectNamespace := range projectNamespaces {
-		if _, ok := projectsM[projectNamespace.ProjectID]; !ok {
-			projectsM[projectNamespace.ProjectID] = make(map[string][]string)
+		clusters, ok := projectsM[projectNamespace.ProjectID]
+		if !ok {
+			clusters = make(map[string][]string)
 		}
 		if hasClusterAndNamespace(namespaces, projectNamespace.ClusterName, projectNamespace.K8sNamespace) &&
-			!hasClusterAndNamespace(projectsM[projectNamespace.ProjectID], projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
-			projectsM[projectNamespace.ProjectID][projectNamespace.ClusterName] = append(projectsM[projectNamespace.ProjectID][projectNamespace.ClusterName],
-				projectNamespace.K8sNamespace)
+			!hasClusterAndNamespace(clusters, projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
+			if _, ok := clusters[projectNamespace.ClusterName]; ok {
+				clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
+			} else {
+				clusters[projectNamespace.ClusterName] = []string{projectNamespace.K8sNamespace}
+			}
 		}
+		projectsM[projectNamespace.ProjectID] = clusters
 	}
 
 	var data apistructs.GetProjectsNamesapcesResponseData

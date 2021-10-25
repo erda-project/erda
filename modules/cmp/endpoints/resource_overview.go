@@ -19,19 +19,23 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	// todo: authentication
+	logrus.Debugln("ResourceOverviewReport")
 
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
 	if err != nil {
+		logrus.WithError(err).Errorln("failed to parse orgID")
 		return httpserver.ErrResp(0, "", err.Error()) // todo:
 	}
 	if err := r.ParseForm(); err != nil {
+		logrus.WithError(err).Errorln("failed to ParseForm")
 		return httpserver.ErrResp(0, "", err.Error()) // todo:
 	}
 
@@ -47,10 +51,12 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 	if err != nil {
 		memPerNode = 32
 	}
+	logrus.Debugf("params: orgID: %v, clusterNames: %v, cpuPerNode: %v, memPerNode: %v", orgID, clusterNames, cpuPerNode, memPerNode)
 
 	report, err := e.reportTable.GetResourceOverviewReport(ctx, orgID, clusterNames, cpuPerNode, memPerNode)
 	if err != nil {
-		return httpserver.ErrResp(0, "", err.Error()) // todo:
+		logrus.WithError(err).Errorln("failed to GetResourceOverviewReport")
+		return httpserver.ErrResp(0, "", err.Error())
 	}
 
 	return httpserver.OkResp(report)

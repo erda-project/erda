@@ -48,11 +48,17 @@ func NewDailyQuotaCollector(opt ...DailyQuotaCollectorOption) *DailyQuotaCollect
 	return &d
 }
 
-func (d *DailyQuotaCollector) Task() error {
+func (d *DailyQuotaCollector) Task() (bool, error) {
+	l := logrus.WithField("func", "DailyQuotaCollector.Task")
+
 	// 1) 查出所有的 clusters
+	l.Debugln("query all clusters")
 	clusterNames := d.cmp.GetAllClusters()
+	logrus.WithField("clusterNames", clusterNames).
+		Debugln("query all clusters")
 
 	// 2) 查出所有的 namespace
+	l.Debugln("query all namespaces")
 	var namespacesM = make(map[string][]string)
 	for _, clusterName := range clusterNames {
 		resources, err := d.cmp.ListSteveResource(context.Background(), &apistructs.SteveRequest{
@@ -77,17 +83,20 @@ func (d *DailyQuotaCollector) Task() error {
 			namespacesM[clusterName] = append(namespacesM[clusterName], namespace)
 		}
 	}
+	l.WithField("namespacesM", namespacesM).Debugln("query all namespaces")
 
+	l.Debugln("collectProjectDaily")
 	if err := d.collectProjectDaily(namespacesM); err != nil {
 		err = errors.Wrap(err, "failed to collectProjectDaily")
 		logrus.WithError(err).WithField("namespaces", namespacesM).Errorln()
 	}
-	if err := d.collecteClusterDaily(clusterNames); err != nil {
-		err = errors.Wrap(err, "failed to collecteClusterDaily")
+	l.Debugln("collecteClusterDaily")
+	if err := d.collectClusterDaily(clusterNames); err != nil {
+		err = errors.Wrap(err, "failed to collectClusterDaily")
 		logrus.WithError(err).WithField("clusters", clusterNames).Errorln()
 	}
 
-	return nil
+	return false, nil
 }
 
 func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]string) error {
@@ -135,7 +144,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 	return nil
 }
 
-func (d *DailyQuotaCollector) collecteClusterDaily(clusterNames []string) error {
+func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	// 3) 调用本地接口，查询各 cluster 上的 request
 	req := pb.GetClustersResourcesRequest{
 		ClusterNames: clusterNames,
@@ -177,11 +186,11 @@ func (d *DailyQuotaCollector) collecteClusterDaily(clusterNames []string) error 
 		switch {
 		case err == nil:
 			record.ID = existsRecord.ID
-			if err = d.db.Save(&record).Error; err != nil {
+			if err = d.db.Debug().Save(&record).Error; err != nil {
 				logrus.WithError(err).Errorln("failed to save cluster resource daily record")
 			}
 		case gorm.IsRecordNotFoundError(err):
-			if err = d.db.Create(&record).Error; err != nil {
+			if err = d.db.Debug().Create(&record).Error; err != nil {
 				logrus.WithError(err).Errorln("failed to create cluster resource daily record")
 			}
 		default:
