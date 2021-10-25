@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -783,24 +782,14 @@ func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars m
 }
 
 func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	// get org id
-	orgIDStr := r.Header.Get(httputil.OrgHeader)
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
-	}
-
 	// parse url values from request
 	if err := r.ParseForm(); err != nil {
 		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
 	}
 	value := r.URL.Query()
-	var namespaces = make(map[string][]string)
-	for k := range value {
-		namespaces[k] = strings.Split(value.Get(k), ",")
-	}
+	logrus.Debugf("GetNamespacesBelongsTo, params: %v", value)
 
-	data, err := e.project.GetNamespacesBelongsTo(ctx, orgID, namespaces)
+	data, err := e.project.GetNamespacesBelongsTo(ctx, value)
 	if err != nil {
 		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
 	}

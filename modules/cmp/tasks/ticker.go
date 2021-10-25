@@ -32,11 +32,11 @@ type Task func() error
 type Ticker struct {
 	Name     string
 	Interval time.Duration
-	Task     func() error
+	Task     func() (stop bool, err error)
 	done     chan bool
 }
 
-func New(interval time.Duration, task func() error) *Ticker {
+func New(interval time.Duration, task func() (bool, error)) *Ticker {
 	return &Ticker{
 		Interval: interval,
 		Task:     task,
@@ -52,25 +52,19 @@ func (d *Ticker) Run() error {
 	for {
 		select {
 		case <-d.done:
-			fmt.Printf("the interval task %s is done!", d.Name)
+			fmt.Printf("the interval task %s is done!\n", d.Name)
 			return err
 		case t := <-ticker.C:
-			fmt.Printf("the interval task %s is running at: %s", d.Name, t.Format(time.RFC3339))
-			err = d.Task()
-			fmt.Printf("the interval task %s is complete this time", d.Name)
-			switch err.(type) {
-			case nil:
-			case *ExitError, ExitError:
-				_ = d.Close()
-				fmt.Printf("the interval task %s is breaking: %v", d.Name, err)
-			default:
-				fmt.Printf("the interval task %s is complete with err: %v", d.Name, err)
+			fmt.Printf("the interval task %s is running at: %s\n", d.Name, t.Format(time.RFC3339))
+			stop, err := d.Task()
+			fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
+			if stop {
+				d.Close()
 			}
 		}
 	}
 }
 
-func (d *Ticker) Close() error {
+func (d *Ticker) Close() {
 	close(d.done)
-	return nil
 }
