@@ -167,6 +167,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 		MemWaterLevel:      1,
 		Nodes:              sharedNodes,
 	})
+	data.Sum()
 
 	return &data, nil
 }

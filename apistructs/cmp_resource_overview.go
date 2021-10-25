@@ -15,8 +15,9 @@
 package apistructs
 
 type ResourceOverviewReportData struct {
-	Total int                               `json:"total"`
-	List  []*ResourceOverviewReportDataItem `json:"list"`
+	Total   int                               `json:"total"`
+	List    []*ResourceOverviewReportDataItem `json:"list"`
+	Summary *ResourceOverviewReportSumary     `json:"summary"`
 }
 
 type ResourceOverviewReportDataItem struct {
@@ -31,4 +32,22 @@ type ResourceOverviewReportDataItem struct {
 	MemQuota           float64 `json:"memQuota"`
 	MemWaterLevel      float64 `json:"memWaterLevel"`
 	Nodes              float64 `json:"nodes"`
+}
+
+func (data *ResourceOverviewReportData) Sum() {
+	data.Total = len(data.List)
+	if data.Summary == nil {
+		data.Summary = new(ResourceOverviewReportSumary)
+	}
+	for _, item := range data.List {
+		data.Summary.CPU += item.CPUQuota
+		data.Summary.Memory += item.MemQuota
+		data.Summary.Node += item.Nodes
+	}
+}
+
+type ResourceOverviewReportSumary struct {
+	CPU    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+	Node   float64 `json:"node"`
 }
