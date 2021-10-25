@@ -54,6 +54,7 @@ zh:
   choose-severity: 选择严重程度
   fatal: 致命
   serious: 严重
+  ordinary: 一般
   slight: 轻微
   suggest: 建议
   creator: 创建人
@@ -189,6 +190,7 @@ en:
   choose-severity: Choose Severity
   fatal: FATAL
   serious: SERIOUS
+  ordinary: NORMAL
   slight: SLIGHT
   suggest: SUGGEST
   creator: Creator
