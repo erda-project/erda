@@ -836,12 +836,7 @@ func (fsm *DeployFSMContext) deployService() error {
 
 	// do deploy
 	if fsm.Runtime.Deployed {
-		if err = loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
-			if err = fsm.bdl.UpdateServiceGroup(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
-				return false, err
-			}
-			return true, nil
-		}); err != nil {
+		if err = fsm.UpdateServiceGroupWithLoop(group); err != nil {
 			return err
 		}
 	} else {
@@ -917,6 +912,18 @@ func (fsm *DeployFSMContext) deployService() error {
 		}
 	}
 
+	return nil
+}
+
+func (fsm *DeployFSMContext) UpdateServiceGroupWithLoop(group apistructs.ServiceGroupCreateV2Request) error {
+	if err := loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
+		if err := fsm.bdl.UpdateServiceGroup(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
+			return false, err
+		}
+		return true, nil
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
