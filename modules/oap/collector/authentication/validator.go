@@ -71,5 +71,6 @@ func (v *accessKeyValidator) Validate(scope string, scopeId string, token string
 	v.RLock()
 	defer v.RUnlock()
 	item, ok := v.collection[token]
-	return ok && item.AccessKey == token && item.ScopeId == scopeId && item.Scope == scope
+	return ok && item.AccessKey == token && item.ScopeId == scopeId && item.Scope == scope &&
+		item.Status == akpb.StatusEnum_ACTIVATE
 }

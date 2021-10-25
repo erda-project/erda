@@ -47,6 +47,7 @@ monitor-collector:
         username: "${COLLECTOR_AUTH_USERNAME:collector}"
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
+        skip: ${COLLECTOR_AUTH_SKIP:false}
 
 pprof:
 http-server@admin:

@@ -47,17 +47,16 @@ func (p *provider) intRoute(r httpserver.Router) error {
 	r.POST("/collect/analytics", p.collectAnalytics)
 
 	// logs and metrics
-	auth := p.basicAuth()
-	r.POST("/collect/:metric", p.collectMetric, auth)
-	r.POST("/collect/notify-metrics", p.collectNotifyMetric, auth)
-	r.POST("/collect/logs/:source", p.collectLogs, auth)
+	r.POST("/collect/:metric", p.collectMetric, p.auth.basicAuth)
+	r.POST("/collect/notify-metrics", p.collectNotifyMetric, p.auth.basicAuth)
+	r.POST("/collect/logs/:source", p.collectLogs, p.auth.basicAuth)
 
 	// api version one
 	// authenticate with access keys
 	groupV1 := "/api/v1"
 	{
-		r.POST(groupV1+"/collect/:metric", p.collectMetric)
-		r.POST(groupV1+"/collect/logs/:source", p.collectLogs)
+		r.POST(groupV1+"/collect/:metric", p.collectMetric, p.auth.keyAuth())
+		r.POST(groupV1+"/collect/logs/:source", p.collectLogs, p.auth.keyAuth())
 	}
 	return nil
 }
