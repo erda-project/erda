@@ -122,14 +122,16 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		return err
 	}
 	h.SetGlobalAutoTestPlanList(atData.List)
-	planIDs := make([]uint64, 0, len(atData.List))
-	for _, v := range atData.List {
-		planIDs = append(planIDs, v.ID)
-	}
-	h.SetGlobalAutoTestPlanIDs(planIDs)
+	h.SetGlobalAutoTestPlanIDs(func() []uint64 {
+		planIDs := make([]uint64, 0, len(atData.List))
+		for _, v := range atData.List {
+			planIDs = append(planIDs, v.ID)
+		}
+		return planIDs
+	}())
 
 	//  set global auto test scene and step
-	if err = f.SetGlobalAtSceneAndStep(atData.List, h); err != nil {
+	if err = f.SetGlobalAtSceneAndStep(h); err != nil {
 		return err
 	}
 
@@ -139,35 +141,36 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	return nil
 }
 
-func (f *Filter) SetGlobalAtSceneAndStep(List []*apistructs.TestPlanV2, h *gshelper.GSHelper) error {
-	planIDs := make([]uint64, 0, len(List))
-	for _, v := range List {
-		planIDs = append(planIDs, v.ID)
-	}
-	steps, err := f.atTestPlan.ListStepByPlanID(planIDs...)
-	if err != nil {
-		return err
-	}
-	setIDs := make([]uint64, 0, len(steps))
-	for _, v := range steps {
-		setIDs = append(setIDs, v.SceneSetID)
-	}
-	scenes, err := f.atTestPlan.ListSceneBySceneSetID(setIDs...)
+func (f *Filter) SetGlobalAtSceneAndStep(h *gshelper.GSHelper) error {
+	steps, err := f.atTestPlan.ListStepByPlanID(h.GetGlobalAutoTestPlanIDs()...)
 	if err != nil {
 		return err
 	}
 
-	sceneIDs := make([]uint64, 0, len(scenes))
-	for _, v := range scenes {
-		sceneIDs = append(sceneIDs, v.ID)
-	}
-
-	sceneSteps, err := f.atTestPlan.ListAutoTestSceneSteps(sceneIDs)
+	scenes, err := f.atTestPlan.ListSceneBySceneSetID(func() []uint64 {
+		setIDs := make([]uint64, 0, len(steps))
+		for _, v := range steps {
+			setIDs = append(setIDs, v.SceneSetID)
+		}
+		return setIDs
+	}()...)
 	if err != nil {
 		return err
 	}
 
-	h.SetAtScene(scenes)
-	h.SetAtSceneStep(sceneSteps)
+	sceneSteps, err := f.atTestPlan.ListAutoTestSceneSteps(func() []uint64 {
+		sceneIDs := make([]uint64, 0, len(scenes))
+		for _, v := range scenes {
+			sceneIDs = append(sceneIDs, v.ID)
+		}
+		return sceneIDs
+	}())
+	if err != nil {
+		return err
+	}
+
+	h.SetGlobalAtStep(steps)
+	h.SetGlobalAtScene(scenes)
+	h.SetGlobalAtSceneStep(sceneSteps)
 	return nil
 }

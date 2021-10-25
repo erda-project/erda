@@ -39,25 +39,24 @@ type Text struct {
 
 func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
-	atPlans := h.GetAtBlockFilterTestPlanList()
-
-	var (
-		successApiNum, totalApiNum int64
-		passRate                   float64
-	)
-	for _, v := range atPlans {
-		successApiNum += v.SuccessApiNum
-		totalApiNum += v.TotalApiNum
-	}
-	if totalApiNum == 0 {
-		passRate = 0.00
-	} else {
-		passRate = float64(successApiNum) / float64(totalApiNum) * 100
-	}
-
 	tv := pkg.TextValue{
-		Value: fmt.Sprintf("%.2f", passRate) + "%",
-		Kind:  cputil.I18n(ctx, "test-case-rate-passed"),
+		Value: func() string {
+			var (
+				successApiNum, totalApiNum int64
+				passRate                   float64
+			)
+			for _, v := range h.GetAtBlockFilterTestPlanList() {
+				successApiNum += v.SuccessApiNum
+				totalApiNum += v.TotalApiNum
+			}
+			if totalApiNum == 0 {
+				passRate = 0.00
+			} else {
+				passRate = float64(successApiNum) / float64(totalApiNum) * 100
+			}
+			return fmt.Sprintf("%.2f", passRate) + "%"
+		}(),
+		Kind: cputil.I18n(ctx, "test-case-rate-passed"),
 	}
 	c.Props = tv.ConvertToProps()
 	return nil

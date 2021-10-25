@@ -46,7 +46,7 @@ type Chart struct {
 func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
 
-	scenes := h.GetAtScene()
+	scenes := h.GetGlobalAtScene()
 	sceneIDs := make([]uint64, 0, len(scenes))
 	sceneMap := make(map[uint64]string, 0)
 	for _, v := range scenes {
@@ -93,6 +93,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, sceneMap[v.SceneID])
 	}
 
-	c.Props = common.NewBarProps(values, categories, "场景 - 按执行通过率分布 Top500")
+	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "scene-passed-rate"))
 	return nil
 }
