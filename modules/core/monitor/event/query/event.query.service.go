@@ -43,14 +43,14 @@ func (s *eventQueryService) GetEvents(ctx context.Context, req *pb.GetEventsRequ
 	}
 	if len(req.RelationType) > 0 {
 		sel.Filters = append(sel.Filters, &storage.Filter{
-			Key:   "relation_type",
+			Key:   "relations.res_type",
 			Op:    storage.EQ,
 			Value: req.RelationType,
 		})
 	}
 	if len(req.RelationId) > 0 {
 		sel.Filters = append(sel.Filters, &storage.Filter{
-			Key:   "relation_id",
+			Key:   "relations.res_id",
 			Op:    storage.EQ,
 			Value: req.RelationId,
 		})
