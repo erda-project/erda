@@ -84,6 +84,7 @@ import (
 	_ "github.com/erda-project/erda/pkg/common/permission"
 	_ "github.com/erda-project/erda/providers/audit"
 )
+
 func main() {
 	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MSPConfigFilePath,

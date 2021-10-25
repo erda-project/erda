@@ -25,5 +25,3 @@ type Erda_event struct {
 	RequestContext map[string]string `json:"request_context"`
 	RequestHeaders map[string]string `json:"request_headers"`
 }
-
-
