@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
 type DailyQuotaCollector struct {
@@ -102,50 +103,82 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 }
 
 func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]string) error {
-	// 3) 拿 namespaces 调用 core-services 反查 namespace 的项目归属
-	// 该接口查询了 namespace 项目归属，项目 quota，项目 request
 	l := logrus.WithField("func", "DailyQuotaCollector.collectProjectDaily")
-	l.Debugln("fetch namespaces belongs to")
-	projectsNamespaces, err := d.bdl.FetchNamespacesBelongsTo(0, namespacesM)
+
+	// 3) 查询 project 列表
+	l.Debugln("GetAllProjects")
+	projects, err := d.bdl.GetAllProjects()
 	if err != nil {
-		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
-		logrus.WithError(err).WithField("namespaces", namespacesM).Errorln()
+		err = errors.Wrap(err, "failed to GetAllProjects")
+		l.WithError(err).Errorln()
 		return err
 	}
-	l.Debugf("fetch namespaces belongs to. result: %+v", projectsNamespaces)
+	l.Debugln("GetAllProjects, result: %+v", projects)
 
-	for _, item := range projectsNamespaces.List {
-		record := apistructs.ProjectResourceDailyModel{
-			ID:          0,
-			CreatedAt:   time.Time{},
-			UpdatedAt:   time.Time{},
-			ProjectID:   uint64(item.ProjectID),
-			ProjectName: item.ProjectName,
-			ClusterName: "",
-			CPUQuota:    item.CPUQuota,
-			CPURequest:  item.GetCPUReqeust(),
-			MemQuota:    item.MemQuota,
-			MemRequest:  item.GetMemRequest(),
-		}
-		var existsRecord apistructs.ProjectResourceDailyModel
-		err := d.db.Where("updated_at > ? and updated_at < ?",
-			time.Now().Format("2006-01-02 00:00:00"),
-			time.Now().Add(time.Hour*24).Format("2006-01-02 00:00:00")).
-			First(&existsRecord, map[string]interface{}{"project_id": item.ProjectID}).
-			Error
-		switch {
-		case err == nil:
-			record.ID = existsRecord.ID
-			if err = d.db.Debug().Save(&record).Error; err != nil {
-				logrus.WithError(err).Errorln("failed to save project resource daily record")
+	for _, project := range projects {
+		var record apistructs.ProjectResourceDailyModel
+		record.ProjectID = project.ID
+		record.ProjectName = project.Name
+		if project.ResourceConfig != nil {
+			var (
+				clustersM   = make(map[string]bool)
+				cpuQuotaM   = make(map[string]uint64)
+				memQuotaM   = make(map[string]uint64)
+				cpuRequestM = make(map[string]uint64)
+				memRequestM = make(map[string]uint64)
+			)
+			clustersM[project.ResourceConfig.PROD.ClusterName] = true
+			clustersM[project.ResourceConfig.STAGING.ClusterName] = true
+			clustersM[project.ResourceConfig.TEST.ClusterName] = true
+			clustersM[project.ResourceConfig.DEV.ClusterName] = true
+
+			cpuQuotaM[project.ResourceConfig.PROD.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.PROD.CPUQuota)
+			cpuQuotaM[project.ResourceConfig.STAGING.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.STAGING.CPUQuota)
+			cpuQuotaM[project.ResourceConfig.TEST.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.TEST.CPUQuota)
+			cpuQuotaM[project.ResourceConfig.DEV.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.DEV.CPUQuota)
+			memQuotaM[project.ResourceConfig.PROD.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.PROD.MemQuota)
+			memQuotaM[project.ResourceConfig.STAGING.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.STAGING.MemQuota)
+			memQuotaM[project.ResourceConfig.TEST.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.TEST.MemQuota)
+			memQuotaM[project.ResourceConfig.DEV.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.DEV.MemQuota)
+
+			cpuRequestM[project.ResourceConfig.PROD.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.PROD.CPURequest)
+			cpuRequestM[project.ResourceConfig.STAGING.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.STAGING.CPURequest)
+			cpuRequestM[project.ResourceConfig.TEST.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.TEST.CPURequest)
+			cpuRequestM[project.ResourceConfig.DEV.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.DEV.CPURequest)
+			memRequestM[project.ResourceConfig.PROD.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.PROD.MemRequest)
+			memRequestM[project.ResourceConfig.STAGING.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.STAGING.MemRequest)
+			memRequestM[project.ResourceConfig.TEST.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.TEST.MemRequest)
+			memRequestM[project.ResourceConfig.DEV.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.DEV.MemRequest)
+
+			for clusterName := range clustersM {
+				record.ClusterName = clusterName
+				record.CPUQuota = cpuQuotaM[clusterName]
+				record.MemQuota = memQuotaM[clusterName]
+				record.CPURequest = cpuRequestM[clusterName]
+				record.MemRequest = memRequestM[clusterName]
+
+				// insert record
+				var existsRecord apistructs.ProjectResourceDailyModel
+				err := d.db.Where("updated_at > ? and updated_at < ?",
+					time.Now().Format("2006-01-02 00:00:00"),
+					time.Now().Add(time.Hour*24).Format("2006-01-02 00:00:00")).
+					First(&existsRecord, map[string]interface{}{"project_id": record.ProjectID, "cluster_name": record.ClusterName}).
+					Error
+				switch {
+				case err == nil:
+					record.ID = existsRecord.ID
+					if err = d.db.Debug().Save(&record).Error; err != nil {
+						logrus.WithError(err).Errorln("failed to save project resource daily record")
+					}
+				case gorm.IsRecordNotFoundError(err):
+					if err = d.db.Debug().Create(&record).Error; err != nil {
+						logrus.WithError(err).Errorln("failed to create project resource daily record")
+					}
+				default:
+					err = errors.Wrap(err, "failed to Save or Create project daily record")
+					logrus.WithError(err).WithField("project daily record", record).Errorln()
+				}
 			}
-		case gorm.IsRecordNotFoundError(err):
-			if err = d.db.Debug().Create(&record).Error; err != nil {
-				logrus.WithError(err).Errorln("failed to create project resource daily record")
-			}
-		default:
-			err = errors.Wrap(err, "failed to Save or Create project daily record")
-			logrus.WithError(err).WithField("project daily record", record).Errorln()
 		}
 	}
 
