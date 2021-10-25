@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
+	"github.com/erda-project/erda/modules/core/monitor/event/storage"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -53,6 +54,7 @@ type provider struct {
 	C                           *config
 	L                           logs.Logger
 	metricq                     metricq.Queryer `autowired:"metrics-query" optional:"true"`
+	EventStorage                storage.Storage `autowired:"event-storage-elasticsearch-reader" optional:"true"`
 	t                           i18n.Translator
 	db                          *db.DB
 	cql                         *cql.Cql
@@ -116,7 +118,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
-	p.a = adapt.New(p.L, p.metricq, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)
+	p.a = adapt.New(p.L, p.metricq, p.EventStorage, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)
 
 	p.alertService = &alertService{
 		p: p,
