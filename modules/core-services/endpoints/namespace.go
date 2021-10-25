@@ -32,9 +32,14 @@ func (e *Endpoints) GetAllNamespaces(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrInvoke.InternalError(err).ToResp(), nil
 	}
 
+	existed := make(map[string]struct{})
 	var namespaces []string
 	for _, pod := range podsInfo {
+		if _, ok := existed[pod.K8sNamespace]; ok {
+			continue
+		}
 		namespaces = append(namespaces, pod.K8sNamespace)
+		existed[pod.K8sNamespace] = struct{}{}
 	}
 	return httpserver.OkResp(namespaces)
 }
