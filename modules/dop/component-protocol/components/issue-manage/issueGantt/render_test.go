@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueGantt/gantt"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -193,5 +194,57 @@ func TestSetStateToUrlQuery(t *testing.T) {
 	// {"pageNo":1,"pageSize":10,"issueViewGroupValue":"foo","IssueType":"bar"}
 	if c.State["issueGantt__urlQuery"] != "eyJwYWdlTm8iOjEsInBhZ2VTaXplIjoxMCwiaXNzdWVWaWV3R3JvdXBWYWx1ZSI6ImZvbyIsIklzc3VlVHlwZSI6ImJhciJ9" {
 		t.Error("fail")
+	}
+}
+
+func TestGantt_Export(t *testing.T) {
+	type fields struct {
+		sdk             *cptype.SDK
+		bdl             *bundle.Bundle
+		Uids            []string
+		CommonGantt     gantt.CommonGantt
+		DefaultProvider base.DefaultProvider
+	}
+	type args struct {
+		c  *cptype.Component
+		gs *cptype.GlobalStateData
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "with default value",
+			args: args{
+				c: &cptype.Component{
+					Data: map[string]interface{}{
+						"list": []gantt.DataItem{
+							{
+								ID: 2,
+							},
+						},
+					},
+				},
+				gs: &cptype.GlobalStateData{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Gantt{
+				sdk:             tt.fields.sdk,
+				bdl:             tt.fields.bdl,
+				Uids:            tt.fields.Uids,
+				CommonGantt:     tt.fields.CommonGantt,
+				DefaultProvider: tt.fields.DefaultProvider,
+			}
+			if err := g.Export(tt.args.c, tt.args.gs); (err != nil) != tt.wantErr {
+				t.Errorf("Gantt.Export() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			assert.Equal(t, nil, tt.args.c.Data["list"])
+		})
 	}
 }
