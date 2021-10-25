@@ -1500,19 +1500,21 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 
 func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	// 1）查找 s_pod_info
+	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info, orgID: %v, namespaces: %v", orgID, namespaces)
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
 	db := p.db.DB
 	if orgID > 0 {
 		db = db.Where(map[string]interface{}{"org_id": orgID})
 	}
-	if err := db.Find(&podInfos).Error; err != nil {
+	if err := db.Debug().Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")
 			logrus.WithError(err).Errorln()
 			return nil, err
 		}
 	}
+	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info count: %v", len(podInfos))
 	for _, podInfo := range podInfos {
 		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
 		if err != nil {
@@ -1532,6 +1534,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, name
 		}
 		projectsM[projectID] = clusters
 	}
+	logrus.Debugf("GetNamespacesBelongsTo, projectsM: %v", projectsM)
 
 	// 2) 查找 project_namespace
 	var projectNamespaces []*apistructs.ProjectNamespaceModel
