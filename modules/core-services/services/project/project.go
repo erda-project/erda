@@ -403,16 +403,24 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 			orgName = fmt.Sprintf("%s(%s)", org.Name, org.DisplayName)
 		}
 		auditCtx := map[string]interface{}{
-			"orgName":     orgName,
-			"projectName": project.Name,
-			"devCPU":      calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
-			"devMem":      calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
-			"testCPU":     calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
-			"testMem":     calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
-			"stagingCPU":  calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
-			"stagingMem":  calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
-			"prodCPU":     calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
-			"prodMem":     calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
+			"orgName":       orgName,
+			"projectName":   project.Name,
+			"newDevCPU":     calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
+			"newDevMem":     calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
+			"newTestCPU":    calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
+			"newTestMem":    calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
+			"newStagingCPU": calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
+			"newStagingMem": calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
+			"newProdCPU":    calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
+			"newProdMem":    calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
+			"oldDevCPU":     calcu.ResourceToString(float64(oldQuota.DevCPUQuota), "cpu"),
+			"oldDevMem":     calcu.ResourceToString(float64(oldQuota.DevMemQuota), "memory"),
+			"oldTestCPU":    calcu.ResourceToString(float64(oldQuota.TestCPUQuota), "cpu"),
+			"oldTestMem":    calcu.ResourceToString(float64(oldQuota.TestMemQuota), "memory"),
+			"oldStagingCPU": calcu.ResourceToString(float64(oldQuota.StagingCPUQuota), "cpu"),
+			"oldStagingMem": calcu.ResourceToString(float64(oldQuota.StagingMemQuota), "memory"),
+			"oldProdCPU":    calcu.ResourceToString(float64(oldQuota.ProdCPUQuota), "cpu"),
+			"oldProdMem":    calcu.ResourceToString(float64(oldQuota.ProdMemQuota), "memory"),
 		}
 		now := time.Now().Format("2006-01-02 15:04:05")
 		audit := apistructs.Audit{
@@ -422,7 +430,7 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 			OrgID:        uint64(orgID),
 			ProjectID:    uint64(projectID),
 			Context:      auditCtx,
-			TemplateName: "updateQuota",
+			TemplateName: "updateProjectQuota",
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
