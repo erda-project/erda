@@ -67,8 +67,24 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		v := f.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
-	data := ScatterData(issues)
-	f.Props = Props{
+	f.Props = ScatterData(issues)
+	return f.SetToProtocolComponent(c)
+}
+
+func ScatterData(issues []dao.IssueItem) Props {
+	data := make([][]float32, 0)
+	for _, issue := range issues {
+		if issue.FinishTime == nil || issue.StartTime == nil {
+			continue
+		}
+		items := make([]float32, 0)
+		solveTime := (issue.FinishTime.UnixNano() - issue.StartTime.UnixNano()) / int64(time.Millisecond)
+		responseTime := (issue.StartTime.UnixNano() - issue.CreatedAt.UnixNano()) / int64(time.Millisecond)
+		items = append(items, milliToHour(solveTime), milliToHour(responseTime))
+		data = append(data, items)
+	}
+
+	return Props{
 		Title: "缺陷 - 按响应、解决时间分布",
 		Option: Option{
 			XAxis: common.XAxis{
@@ -138,23 +154,6 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			},
 		},
 	}
-
-	return f.SetToProtocolComponent(c)
-}
-
-func ScatterData(issues []dao.IssueItem) [][]float32 {
-	data := make([][]float32, 0)
-	for _, issue := range issues {
-		if issue.FinishTime == nil || issue.StartTime == nil {
-			continue
-		}
-		items := make([]float32, 0)
-		solveTime := (issue.FinishTime.UnixNano() - issue.StartTime.UnixNano()) / int64(time.Millisecond)
-		responseTime := (issue.StartTime.UnixNano() - issue.CreatedAt.UnixNano()) / int64(time.Millisecond)
-		items = append(items, milliToHour(solveTime), milliToHour(responseTime))
-		data = append(data, items)
-	}
-	return data
 }
 
 func milliToHour(m int64) float32 {
