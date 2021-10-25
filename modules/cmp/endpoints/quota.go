@@ -48,7 +48,7 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 	}
 
 	content, err := e.Resource.GetGauge(orgIDStr, userIDStr, req)
-	if err != nil {
+	if err != nil || content == nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 	return httpserver.HTTPResponse{Status: http.StatusOK, Content: content}, nil
@@ -72,8 +72,8 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 	pie, err := e.Resource.GetPie(orgID, userIDStr, req)
-	if err != nil {
-		return nil, err
+	if err != nil || pie == nil {
+		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 
 	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
@@ -92,8 +92,8 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 	pie, err := e.Resource.GetClusterTrend(orgIDStr, userIDStr, req)
-	if err != nil {
-		return nil, err
+	if err != nil || pie == nil {
+		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 
 	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
@@ -112,8 +112,8 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 	pie, err := e.Resource.GetProjectTrend(orgIDStr, userIDStr, req)
-	if err != nil {
-		return nil, err
+	if err != nil || pie == nil {
+		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
 
 	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
