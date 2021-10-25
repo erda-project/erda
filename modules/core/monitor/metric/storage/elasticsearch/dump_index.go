@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
 func (p *provider) initDummyIndex(ctx context.Context, client *elastic.Client) error {
