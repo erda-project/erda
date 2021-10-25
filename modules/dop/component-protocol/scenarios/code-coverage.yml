@@ -205,6 +205,14 @@ rendering:
           value: "{{ errText.disableSourcecov }}"
     - name: executeHistoryTable
     - name: configButton
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
   startButton:
     - name: errText
     - name: endButton
@@ -213,6 +221,14 @@ rendering:
           value: "{{ errText.disableSourcecov }}"
     - name: executeHistoryTable
     - name: configButton
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
   endButton:
     - name: errText
     - name: startButton
@@ -221,6 +237,14 @@ rendering:
           value: "{{ errText.disableSourcecov }}"
     - name: executeHistoryTable
     - name: configButton
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
   timeSelector:
     - name: codeCoverChart
       state:
