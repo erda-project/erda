@@ -128,7 +128,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		}
 
 		if projectDTO.ResourceConfig == nil {
-			l.Warnln("the ResourceConfig is nil")
+			l.Warnf("the ResourceConfig is nil. projectID: %v, projectDTO: %+v", projectDTO.ID, projectDTO)
 			continue
 		}
 
@@ -140,28 +140,22 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 			memRequestM = make(map[string]uint64)
 		)
 
-		clustersM[project.ResourceConfig.PROD.ClusterName] = true
-		clustersM[project.ResourceConfig.STAGING.ClusterName] = true
-		clustersM[project.ResourceConfig.TEST.ClusterName] = true
-		clustersM[project.ResourceConfig.DEV.ClusterName] = true
-
-		cpuQuotaM[project.ResourceConfig.PROD.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.PROD.CPUQuota)
-		cpuQuotaM[project.ResourceConfig.STAGING.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.STAGING.CPUQuota)
-		cpuQuotaM[project.ResourceConfig.TEST.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.TEST.CPUQuota)
-		cpuQuotaM[project.ResourceConfig.DEV.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.DEV.CPUQuota)
-		memQuotaM[project.ResourceConfig.PROD.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.PROD.MemQuota)
-		memQuotaM[project.ResourceConfig.STAGING.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.STAGING.MemQuota)
-		memQuotaM[project.ResourceConfig.TEST.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.TEST.MemQuota)
-		memQuotaM[project.ResourceConfig.DEV.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.DEV.MemQuota)
-
-		cpuRequestM[project.ResourceConfig.PROD.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.PROD.CPURequest)
-		cpuRequestM[project.ResourceConfig.STAGING.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.STAGING.CPURequest)
-		cpuRequestM[project.ResourceConfig.TEST.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.TEST.CPURequest)
-		cpuRequestM[project.ResourceConfig.DEV.ClusterName] += calcu.CoreToMillcore(project.ResourceConfig.DEV.CPURequest)
-		memRequestM[project.ResourceConfig.PROD.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.PROD.MemRequest)
-		memRequestM[project.ResourceConfig.STAGING.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.STAGING.MemRequest)
-		memRequestM[project.ResourceConfig.TEST.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.TEST.MemRequest)
-		memRequestM[project.ResourceConfig.DEV.ClusterName] += calcu.GibibyteToByte(project.ResourceConfig.DEV.MemRequest)
+		for workspace, resource := range map[string]*apistructs.ResourceConfigInfo{
+			"PROD":    projectDTO.ResourceConfig.PROD,
+			"STAGING": projectDTO.ResourceConfig.STAGING,
+			"TEST":    projectDTO.ResourceConfig.TEST,
+			"DEV":     projectDTO.ResourceConfig.DEV,
+		} {
+			if resource == nil {
+				l.Warnf("the ResourceConfig.%s is nil. projectID: %v, projectDTO: %+v", workspace, projectDTO.ID, projectDTO)
+				continue
+			}
+			clustersM[resource.ClusterName] = true
+			cpuQuotaM[resource.ClusterName] += calcu.CoreToMillcore(resource.CPUQuota)
+			memQuotaM[resource.ClusterName] += calcu.GibibyteToByte(resource.MemQuota)
+			cpuRequestM[resource.ClusterName] += calcu.CoreToMillcore(resource.CPURequest)
+			memRequestM[resource.ClusterName] += calcu.GibibyteToByte(resource.MemRequest)
+		}
 
 		for clusterName := range clustersM {
 			record.ClusterName = clusterName
