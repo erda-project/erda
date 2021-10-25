@@ -757,3 +757,42 @@ func (e *Endpoints) GetModelProjectsMap(ctx context.Context, r *http.Request, va
 
 	return httpserver.OkResp(projectDtos)
 }
+
+func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse usl values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+	values := r.URL.Query()
+	clusterNames := values["clusterName"]
+
+	// get org id
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strutil.Atoi64(orgIDStr)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+
+	response, err := e.project.GetQuotaOnClusters(orgID, clusterNames)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(response)
+}
+
+func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse url values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
+	}
+	value := r.URL.Query()
+	logrus.Debugf("GetNamespacesBelongsTo, params: %v", value)
+
+	data, err := e.project.GetNamespacesBelongsTo(ctx, value)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(data)
+}

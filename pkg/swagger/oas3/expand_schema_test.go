@@ -37,4 +37,3 @@ func TestExpandSchemaRef2(t *testing.T) {
 		t.Fatalf("failed to ExpandPaths: %v", err)
 	}
 }
-

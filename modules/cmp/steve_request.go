@@ -460,6 +460,10 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 	return nil
 }
 
+func (p *provider) GetAllClusters() []string {
+	return p.SteveAggregator.GetAllClusters()
+}
+
 func (p *provider) labelNode(ctx context.Context, req *apistructs.SteveRequest, labels map[string]string) error {
 	if req.ClusterName == "" || req.Name == "" {
 		return apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and name fields are required"))

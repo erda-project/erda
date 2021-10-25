@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func TestClass_genProjectNamespace(t *testing.T) {
@@ -118,6 +119,30 @@ func TestWtihI18n(t *testing.T) {
 func TestWithClusterResourceClient(t *testing.T) {
 	var cli dashboardPb.ClusterResourceServer
 	New(WithClusterResourceClient(cli))
+}
+
+func TestWithDBClient(t *testing.T) {
+	New(WithDBClient(new(dao.DBClient)))
+}
+
+func TestWithUCClient(t *testing.T) {
+	New(WithUCClient(new(ucauth.UCClient)))
+}
+
+func Test_hasClusterAndNamespace(t *testing.T) {
+	var namespaces = map[string][]string{
+		"erda-hongkong": {"default", "ns1"},
+		"erda-cloud":    {"default", "ns2"},
+	}
+	if hasClusterAndNamespace(namespaces, "erda-dev", "ns1") {
+		t.Error("err")
+	}
+	if !hasClusterAndNamespace(namespaces, "erda-hongkong", "ns1") {
+		t.Error("err")
+	}
+	if hasClusterAndNamespace(namespaces, "erda-hongkong", "ns2") {
+		t.Error("err")
+	}
 }
 
 func Test_convertAuditCreateReq2Model(t *testing.T) {

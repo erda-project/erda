@@ -1385,3 +1385,261 @@ func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, pr
 	}
 	return total, res, nil
 }
+
+func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
+	var response = new(apistructs.GetQuotaOnClustersResponse)
+	response.ClusterNames = clusterNames
+
+	if len(clusterNames) == 0 {
+		logrus.Warnln("no clusters for GetQuotaOnClusters")
+		return response, nil
+	}
+
+	var clusterNamesM = make(map[string]bool)
+	for _, clusterName := range clusterNames {
+		clusterNamesM[clusterName] = true
+	}
+
+	// query all projects
+	var projects []*model.Project
+	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			logrus.WithError(err).Warnln("project record not found")
+			return response, nil
+		}
+		err = errors.Wrap(err, "failed to Find projects")
+		logrus.WithError(err).Errorln()
+		return nil, err
+	}
+
+	// query all project quota
+	var projectIDs []int64
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ID)
+	}
+	var projectsQuota []*model.ProjectQuota
+	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&projectsQuota).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			logrus.WithError(err).Warnln("quota record not found")
+			return response, nil
+		}
+		err = errors.Wrap(err, "failed to Find project quota")
+		return nil, err
+	}
+	var projectsQuotaConfigs = make(map[int64]*model.ProjectQuota)
+	for _, projectQuota := range projectsQuota {
+		projectsQuotaConfigs[int64(projectQuota.ProjectID)] = projectQuota
+	}
+
+	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
+	for _, project := range projects {
+		// query project owner
+		memberListReq := apistructs.MemberListRequest{
+			ScopeType: "project",
+			ScopeID:   project.ID,
+			Roles:     []string{"Owner"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1,
+		}
+		total, members, err := p.db.GetMembersByParam(&memberListReq)
+		if err != nil {
+			err = errors.Wrap(err, "failed to GetMembersByParam")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
+		}
+		if total <= 0 || len(members) == 0 {
+			err = errors.New("not found owner for the project")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
+		}
+		member := members[0]
+
+		owner, ok := ownerM[member.UserID]
+		if !ok {
+			userID, err := strconv.ParseInt(member.UserID, 10, 64)
+			if err != nil {
+				err = errors.Wrap(err, "the format of owner userID is not valid")
+			}
+			owner = &apistructs.OwnerQuotaOnClusters{
+				ID:       uint64(userID),
+				Name:     member.Name,
+				Nickname: member.Nick,
+				CPUQuota: 0,
+				MemQuota: 0,
+				Projects: nil,
+			}
+			ownerM[member.UserID] = owner
+		}
+
+		projectQuotaOnCluster := apistructs.ProjectQuotaOnClusters{
+			ID:          uint64(project.ID),
+			Name:        project.Name,
+			DisplayName: project.DisplayName,
+			CPUQuota:    0,
+			MemQuota:    0,
+		}
+		// if the project has quota config, accumulate it
+		if config, ok := projectsQuotaConfigs[project.ID]; ok {
+			// if a cluster of the project is in the specified clusters, its cpu and mem will be accumulated
+			for clusterName, quota := range map[string][2]uint64{
+				config.ProdClusterName:    {config.ProdCPUQuota, config.ProdMemQuota},
+				config.StagingClusterName: {config.StagingCPUQuota, config.StagingMemQuota},
+				config.TestClusterName:    {config.TestCPUQuota, config.TestMemQuota},
+				config.DevClusterName:     {config.DevCPUQuota, config.DevMemQuota},
+			} {
+				if _, ok := clusterNamesM[clusterName]; ok {
+					projectQuotaOnCluster.AccuQuota(quota[0], quota[1])
+				}
+			}
+		}
+		owner.Projects = append(owner.Projects, &projectQuotaOnCluster)
+	}
+
+	for _, owner := range ownerM {
+		response.Owners = append(response.Owners, owner)
+	}
+
+	response.ReCalcu()
+
+	return response, nil
+}
+
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	// 1）查找 s_pod_info
+	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info, namespaces: %v", namespaces)
+	var projectsM = make(map[uint64]map[string][]string)
+	var podInfos []*apistructs.PodInfo
+	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find podInfos")
+			logrus.WithError(err).Errorln()
+			return nil, err
+		}
+	}
+	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info count: %v", len(podInfos))
+	for _, podInfo := range podInfos {
+		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
+		if err != nil {
+			continue
+		}
+		clusters, ok := projectsM[projectID]
+		if !ok {
+			clusters = make(map[string][]string)
+		}
+		if hasClusterAndNamespace(namespaces, podInfo.Cluster, podInfo.K8sNamespace) &&
+			!hasClusterAndNamespace(clusters, podInfo.Cluster, podInfo.K8sNamespace) {
+			if _, ok := clusters[podInfo.Cluster]; ok {
+				clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
+			} else {
+				clusters[podInfo.Cluster] = []string{podInfo.K8sNamespace}
+			}
+		}
+		projectsM[projectID] = clusters
+	}
+	logrus.Debugf("GetNamespacesBelongsTo, projectsM: %v", projectsM)
+
+	// 2) 查找 project_namespace
+	var projectNamespaces []*apistructs.ProjectNamespaceModel
+	if err := p.db.Find(&projectNamespaces).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find projectNamespace")
+			logrus.WithError(err).Errorln()
+			return nil, err
+		}
+	}
+	for _, projectNamespace := range projectNamespaces {
+		clusters, ok := projectsM[projectNamespace.ProjectID]
+		if !ok {
+			clusters = make(map[string][]string)
+		}
+		if hasClusterAndNamespace(namespaces, projectNamespace.ClusterName, projectNamespace.K8sNamespace) &&
+			!hasClusterAndNamespace(clusters, projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
+			if _, ok := clusters[projectNamespace.ClusterName]; ok {
+				clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
+			} else {
+				clusters[projectNamespace.ClusterName] = []string{projectNamespace.K8sNamespace}
+			}
+		}
+		projectsM[projectNamespace.ProjectID] = clusters
+	}
+
+	var data apistructs.GetProjectsNamesapcesResponseData
+
+	// 3) 查询 quota
+	for projectID, clusterNamespaces := range projectsM {
+		var project model.Project
+		if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				logrus.WithError(err).WithField("id", projectID).Warnln("failed to First project")
+				continue
+			}
+		}
+
+		// query owner
+		memberListReq := apistructs.MemberListRequest{
+			ScopeType: "project",
+			ScopeID:   project.ID,
+			Roles:     []string{"Owner"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1,
+		}
+		total, members, err := p.db.GetMembersByParam(&memberListReq)
+		if err != nil {
+			err = errors.Wrap(err, "failed to GetMembersByParam")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			return nil, err
+		}
+		if total <= 0 || len(members) == 0 {
+			err = errors.New("not found owner for the project")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			return nil, err
+		}
+		owner := members[0]
+		userID, err := strconv.ParseInt(owner.UserID, 10, 64)
+		if err != nil {
+			err = errors.Wrap(err, "the format of owner userID is not valid")
+		}
+
+		// query quota
+		var quota apistructs.ProjectQuota
+		if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
+			if !gorm.IsRecordNotFoundError(err) {
+				err = errors.Wrap(err, "failed to First project quota")
+				logrus.WithError(err).WithField("project_id", projectID).Errorln()
+				return nil, err
+			}
+		}
+		var item = apistructs.ProjectNamespaces{
+			ProjectID:          uint(project.ID),
+			ProjectName:        project.Name,
+			ProjectDisplayName: project.DisplayName,
+			OwnerUserID:        uint(userID),
+			OwnerUserName:      owner.Name,
+			OwnerUserNickname:  owner.Nick,
+			CPUQuota:           uint64(quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota),
+			MemQuota:           uint64(quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota),
+			Clusters:           clusterNamespaces,
+		}
+		data.List = append(data.List, &item)
+	}
+	data.Total = uint32(len(data.List))
+
+	return &data, nil
+}
+
+func hasClusterAndNamespace(namespaces map[string][]string, clusterName, namespace string) bool {
+	ns, ok := namespaces[clusterName]
+	if !ok {
+		return false
+	}
+	for _, name := range ns {
+		if name == namespace {
+			return true
+		}
+	}
+	return false
+}
