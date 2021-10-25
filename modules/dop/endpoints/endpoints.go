@@ -590,6 +590,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/code-coverage/actions/report-callBack", Method: http.MethodPost, Handler: e.ReportCallBack},
 		{Path: "/api/code-coverage/records/actions/list", Method: http.MethodGet, Handler: e.ListCodeCoverageRecord},
 		{Path: "/api/code-coverage/record/{id}", Method: http.MethodGet, Handler: e.GetCodeCoverageRecord},
+		{Path: "/api/code-coverage/actions/status", Method: http.MethodGet, Handler: e.GetCodeCoverageRecordStatus},
 
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},

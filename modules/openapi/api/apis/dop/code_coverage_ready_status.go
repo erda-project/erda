@@ -12,13 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package dop
 
-type SourcecovRequest struct {
-	ProjectID uint64 `json:"projectID"`
-	PlanID    uint64 `json:"planID"`
-}
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-type SourcecovResponse struct {
-	Header
+var CODE_COVERAGE_READY_STATUS = apis.ApiSpec{
+	Path:        "/api/code-coverage/actions/status",
+	BackendPath: "/api/code-coverage/actions/status",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.CodeCoverageUpdateRequest{},
+	IsOpenAPI:   true,
+	Doc:         "summary: status",
 }

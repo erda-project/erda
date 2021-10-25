@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package configTip
 
-type SourcecovRequest struct {
-	ProjectID uint64 `json:"projectID"`
-	PlanID    uint64 `json:"planID"`
-}
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-type SourcecovResponse struct {
-	Header
+func init() {
+	base.InitProvider("code-coverage", "configTip")
 }

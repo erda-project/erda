@@ -208,3 +208,20 @@ func (e *Endpoints) GetCodeCoverageRecord(ctx context.Context, r *http.Request, 
 	userIDs := []string{record.StartExecutor, record.EndExecutor}
 	return httpserver.OkResp(record, userIDs)
 }
+
+func (e *Endpoints) GetCodeCoverageRecordStatus(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	projectIDStr := r.URL.Query().Get("projectID")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetCodeCoverageExecRecord.InvalidParameter("projectID").ToResp(), nil
+	}
+
+	workspace := r.URL.Query().Get("workspace")
+
+	dto, err := e.codeCoverageSvc.GetCodeCoverageRecordStatus(projectID, workspace)
+	if err != nil {
+		return apierrors.ErrGetCodeCoverageExecRecord.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(dto)
+}

@@ -16,7 +16,10 @@ package errText
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -41,8 +44,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
-	var disableTip string
+	workspace, ok := c.State["workspace"].(string)
+	if !ok {
+		return fmt.Errorf("workspace was empty")
+	}
 
+	var disableTip string
 	var jacocoDisable bool
 
 	switch event.Operation.String() {
@@ -56,27 +63,35 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 
-		judgeApplication, err, message := svc.JudgeApplication(projectId, uint64(orgIDInt), sdk.Identity.UserID)
+		var workspace = workspace
+		hasAddon, err := svc.JudgeSourcecovAddon(projectId, uint64(orgIDInt), workspace)
 		if err != nil {
 			return err
 		}
-		jacocoDisable = !judgeApplication
-		if jacocoDisable && message != "" {
-			disableTip = message
+		if !hasAddon {
+			disableTip = fmt.Sprintf("please add %v addon to %v workspace and set application use this addon", code_coverage.SourcecovAddonName, workspace)
+			jacocoDisable = true
+			err := svc.Cancel(apistructs.CodeCoverageCancelRequest{
+				ProjectID: projectId,
+				Workspace: workspace,
+				IdentityInfo: apistructs.IdentityInfo{
+					UserID:         sdk.Identity.UserID,
+					InternalClient: sdk.Identity.InternalClient,
+				},
+			})
+			if err != nil {
+				logrus.Errorf("not have %v addon, cancel coverage plan error %v", code_coverage.SourcecovAddonName, err)
+			}
 		}
 
-		if c.State == nil {
-			c.State = map[string]interface{}{}
-		}
-
-		c.State["judgeApplication"] = judgeApplication
-		c.State["judgeApplicationMessage"] = message
+		c.State["disableSourcecov"] = jacocoDisable
 
 		if !jacocoDisable {
 			list, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 				ProjectID: projectId,
 				PageNo:    1,
 				PageSize:  1,
+				Workspace: workspace,
 			})
 			if err != nil {
 				return err
