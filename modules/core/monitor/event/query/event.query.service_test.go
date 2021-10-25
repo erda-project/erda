@@ -19,11 +19,11 @@ import (
 	reflect "reflect"
 	testing "testing"
 
-	"github.com/erda-project/erda/modules/core/monitor/event"
 	"github.com/golang/mock/gomock"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
+	"github.com/erda-project/erda/modules/core/monitor/event"
 )
 
 // -go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage
