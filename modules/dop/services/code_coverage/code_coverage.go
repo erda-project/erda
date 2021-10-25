@@ -455,6 +455,27 @@ func (svc *CodeCoverage) SaveCodeCoverageSetting(saveSettingRequest apistructs.S
 		}
 	}
 
+	list, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+		ProjectID: saveSettingRequest.ProjectID,
+		PageNo:    1,
+		PageSize:  1,
+		Workspace: saveSettingRequest.Workspace,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect whether a plan is executing, error %v", err)
+	}
+
+	if len(list.List) > 0 {
+		record := list.List[0]
+		if record.Status == apistructs.RunningStatus.String() || record.Status == apistructs.ReadyStatus.String() {
+			return nil, fmt.Errorf("there are plans was running")
+		}
+
+		if record.Status == apistructs.EndingStatus.String() {
+			return nil, fmt.Errorf("there are plans was running")
+		}
+	}
+
 	setting, err := svc.db.GetCodeCoverageSettingByProjectID(saveSettingRequest.ProjectID, saveSettingRequest.Workspace)
 	if err != nil {
 		return nil, err
