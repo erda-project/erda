@@ -176,15 +176,14 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 			record = &apistructs.ClusterResourceDailyModel{
 				ClusterName: cluster.GetClusterName(),
 			}
-			records[cluster.GetClusterName()] = record
 		}
-
 		for _, host := range cluster.Hosts {
 			record.CPUTotal += host.GetCpuTotal()
 			record.CPURequested += host.GetCpuRequest()
 			record.MemTotal += host.GetMemTotal()
 			record.MemRequested += host.GetMemRequest()
 		}
+		records[cluster.GetClusterName()] = record
 	}
 
 	// 5) 插入库表
