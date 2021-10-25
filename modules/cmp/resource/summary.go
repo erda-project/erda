@@ -19,6 +19,7 @@ import (
 	"strconv"
 
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -110,9 +111,15 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	}
 	// 1. filter cluster
 	names := make([]string, 0)
-	for i := 0; i < len(clusters); i++ {
-		if queryCluster[clusters[i].Name] {
+	if len(queryCluster) == 0 {
+		for i := 0; i < len(clusters); i++ {
 			names = append(names, clusters[i].Name)
+		}
+	} else {
+		for i := 0; i < len(clusters); i++ {
+			if queryCluster[clusters[i].Name] {
+				names = append(names, clusters[i].Name)
+			}
 		}
 	}
 	// 2. query clusterInfo
@@ -153,7 +160,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		var resource []types.APIObject
 		resource, err = r.Server.ListSteveResource(r.Ctx, sreq)
 		if err != nil {
-			return
+			logrus.Error(err)
+			continue
 		}
 		for _, object := range resource {
 			allNamespace = append(allNamespace, &pb.ClusterNamespacePair{Namespace: object.Data().String("metadata", "name"), ClusterName: clusterName})
