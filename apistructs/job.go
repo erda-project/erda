@@ -78,6 +78,8 @@ type JobFromUser struct {
 	Cmd                     string                 `json:"cmd,omitempty"`
 	CPU                     float64                `json:"cpu,omitempty"`
 	Memory                  float64                `json:"memory,omitempty"`
+	MaxCPU                  float64                `json:"maxCPU,omitempty"`
+	MaxMemory               float64                `json:"maxMemory,omitempty"`
 	Labels                  map[string]string      `json:"labels,omitempty"`
 	Extra                   map[string]string      `json:"extra,omitempty"`
 	Env                     map[string]string      `json:"env,omitempty"`

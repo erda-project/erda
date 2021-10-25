@@ -458,3 +458,10 @@ func (db *DBClient) UpdateSceneRefSetID(copyRefs apistructs.AutoTestSceneCopyRef
 		Where("ref_set_id = ?", copyRefs.PreSetID).
 		Update(map[string]interface{}{"ref_set_id": copyRefs.AfterSetID}).Error
 }
+
+// ListSceneBySceneSetID .
+func (db *DBClient) ListSceneBySceneSetID(setIDs ...uint64) ([]AutoTestScene, error) {
+	var scenes []AutoTestScene
+	err := db.Model(&AutoTestScene{}).Where("set_id IN (?)", setIDs).Find(&scenes).Error
+	return scenes, err
+}

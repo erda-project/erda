@@ -161,12 +161,14 @@ const (
 	// autotest scene output
 	AutoTestSceneOutputUpdateOperationKey OperationKey = "save"
 	// autotest scene step
-	AutoTestSceneStepCreateOperationKey    OperationKey = "addParallelAPI"
-	AutoTestSceneStepCopyOperationKey      OperationKey = "copyParallelAPI"
-	AutoTestSceneStepMoveItemOperationKey  OperationKey = "moveItem"
-	AutoTestSceneStepMoveGroupOperationKey OperationKey = "moveGroup"
-	AutoTestSceneStepDeleteOperationKey    OperationKey = "deleteAPI"
-	AutoTestSceneStepSplitOperationKey     OperationKey = "standalone"
+	AutoTestSceneStepCreateOperationKey     OperationKey = "addParallelAPI"
+	AutoTestSceneStepCopyOperationKey       OperationKey = "copyParallelAPI"
+	AutoTestSceneStepMoveItemOperationKey   OperationKey = "moveItem"
+	AutoTestSceneStepMoveGroupOperationKey  OperationKey = "moveGroup"
+	AutoTestSceneStepDeleteOperationKey     OperationKey = "deleteAPI"
+	AutoTestSceneStepSplitOperationKey      OperationKey = "standalone"
+	AutoTestSceneStepSwitchOperationKey     OperationKey = "switch"
+	AutoTestSceneStepCopyAsJsonOperationKey OperationKey = "copyAsJson"
 
 	//auto-test scene set
 	ListSceneSetOperationKey          OperationKey = "ListSceneSet"
@@ -180,6 +182,7 @@ const (
 	UpdateSceneOperationKey           OperationKey = "UpdateScene"
 	DeleteSceneOperationKey           OperationKey = "DeleteScene"
 	DeleteSceneSetOperationKey        OperationKey = "DeleteSceneSet"
+	ExportSceneSetOperationKey        OperationKey = "exportSceneSet"
 	ClickAddSceneSeButtonOperationKey OperationKey = "ClickAddSceneSet"
 	DragSceneSetOperationKey          OperationKey = "DragSceneSet"
 	CopySceneOperationKey             OperationKey = "CopyScene"
@@ -199,6 +202,7 @@ const (
 	ExecuteClickRowNoOperationKey   OperationKey = "clickRow"
 	ExecuteAddApiOperationKey       OperationKey = "addApi"
 	ExecuteTaskBreadcrumbSelectItem OperationKey = "selectItem"
+	ExecuteSubmitCopyOperationKey   OperationKey = "submitCopy"
 
 	//org-list
 	FilterOrgsOperationKey         OperationKey = "filter"

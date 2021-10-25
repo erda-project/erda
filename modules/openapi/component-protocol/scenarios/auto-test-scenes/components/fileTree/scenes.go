@@ -229,6 +229,17 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 		},
 	}
 
+	var export = SceneSetOperation{
+		Key:        "exportSceneSet",
+		Text:       "导出场景集",
+		Reload:     true,
+		Show:       true,
+		SuccessMsg: "导出完成，请在导入导出记录中下载导出结果",
+		Meta: SceneSetOperationMeta{
+			ParentKey: id,
+		},
+	}
+
 	set.Operations = map[string]interface{}{}
 	set.Operations["expand"] = expand
 	set.Operations["click"] = click
@@ -236,6 +247,7 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 	set.Operations["editScene"] = edit
 	set.Operations["delete"] = delete
 	set.Operations["refSceneSet"] = refSceneSet
+	set.Operations["exportSceneSet"] = export
 	return set
 }
 
@@ -347,6 +359,24 @@ func (i *ComponentFileTree) RenderDeleteSceneSet(event apistructs.ComponentEvent
 		return err
 	}
 	i.resetKeys()
+	return nil
+}
+
+func (i *ComponentFileTree) RenderExportSceneSet(event apistructs.ComponentEvent, inParams InParams) error {
+	var operationData SceneSetOperation
+	if err := getOperation(&operationData, event); err != nil {
+		return err
+	}
+	setId := operationData.Meta.ParentKey
+	req := apistructs.AutoTestSceneSetExportRequest{
+		ID:        uint64(setId),
+		FileType:  apistructs.TestSceneSetFileTypeExcel,
+		ProjectID: inParams.ProjectId,
+	}
+	req.UserID = i.CtxBdl.Identity.UserID
+	if err := i.CtxBdl.Bdl.ExportAutotestSceneSet(i.CtxBdl.Identity.UserID, req); err != nil {
+		return err
+	}
 	return nil
 }
 

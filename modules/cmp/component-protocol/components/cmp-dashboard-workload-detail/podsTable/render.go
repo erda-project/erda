@@ -570,7 +570,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.SortDirections = []string{"descend", "ascend"}
-	p.Props.IsLoadMore = true
+	p.Props.RequestIgnore = []string{"data"}
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}

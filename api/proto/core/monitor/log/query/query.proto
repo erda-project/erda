@@ -31,13 +31,11 @@ message LogItem {
     string id = 1;
     string source = 2;
     string stream = 3;
-    string timeBucket = 4;
-    string timestamp = 5;
-    string offset = 6;
+    int64 timestamp = 5;
+    int64 offset = 6;
     string content = 7;
     string level = 8;
     string requestId = 9;
-    string pattern = 10;
 }
 
 message GetLogRequest {
@@ -49,6 +47,9 @@ message GetLogRequest {
     int64 end = 6;
     int64 count = 7;
     string pattern = 8;
+    int64 offset = 9;
+    bool live = 10;
+    bool debug = 11;
 }
 
 message GetLogByRuntimeRequest {
@@ -61,6 +62,9 @@ message GetLogByRuntimeRequest {
     int64 count = 7;
     string applicationId = 8;
     string pattern = 9;
+    int64 offset = 10;
+    bool live = 11;
+    bool debug = 12;
 }
 
 message GetLogByOrganizationRequest {
@@ -73,6 +77,9 @@ message GetLogByOrganizationRequest {
     int64 count = 7;
     string clusterName = 8;
     string pattern = 9;
+    int64 offset = 10;
+    bool live = 11;
+    bool debug = 12;
 }
 
 message GetLogResponse {

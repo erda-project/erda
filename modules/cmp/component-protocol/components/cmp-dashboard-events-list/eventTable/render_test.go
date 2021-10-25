@@ -265,7 +265,7 @@ func TestComponentEventTable_Transfer(t *testing.T) {
 			EventTableUQLQuery: "testQuery",
 		},
 		Props: Props{
-			IsLoadMore:      true,
+			RequestIgnore:   []string{"data"},
 			PageSizeOptions: []string{"10"},
 			Columns: []Column{
 				{

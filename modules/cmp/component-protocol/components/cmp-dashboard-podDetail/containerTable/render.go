@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	data2 "github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -83,6 +84,40 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		}
 
 		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
+		restartCountStr := containerStatus.String("restartCount") + " " + cputil.I18n(ctx, "times")
+		var restartCount interface{}
+		lastContainerState := containerStatus.Map("lastState")
+		for _, v := range lastContainerState {
+			lastState, err := data2.Convert(v)
+			if err != nil {
+				continue
+			}
+			lastContainerID := strings.TrimPrefix(lastState.String("containerID"), "docker://")
+			if lastContainerID != "" {
+				restartCount = Operate{
+					Operations: map[string]Operation{
+						"log": {
+							Key:    "checkPrevlog",
+							Text:   restartCountStr,
+							Reload: false,
+							Meta: map[string]interface{}{
+								"hasRestarted":  true,
+								"containerName": containerStatus.String("name"),
+								"podName":       name,
+								"namespace":     namespace,
+								"containerId":   lastContainerID,
+							},
+						},
+					},
+					RenderType: "tableOperation",
+				}
+				break
+			}
+		}
+		if restartCount == nil {
+			restartCount = restartCountStr
+		}
+
 		data = append(data, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
@@ -93,14 +128,14 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 					Text: containerStatus.String("image"),
 				},
 			},
-			RestartCount: containerStatus.String("restartCount"),
+			RestartCount: restartCount,
 			Operate: Operate{
 				Operations: map[string]Operation{
 					"log": {
 						Key:    "checkLog",
 						Text:   cputil.I18n(ctx, "log"),
 						Reload: false,
-						Meta: map[string]string{
+						Meta: map[string]interface{}{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
 							"namespace":     namespace,
@@ -111,7 +146,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 						Key:    "checkConsole",
 						Text:   cputil.I18n(ctx, "console"),
 						Reload: false,
-						Meta: map[string]string{
+						Meta: map[string]interface{}{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
 							"namespace":     namespace,
@@ -130,7 +165,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	}
 
 	containerTable.Props.SortDirections = []string{"descend", "ascend"}
-	containerTable.Props.IsLoadMore = true
+	containerTable.Props.RequestIgnore = []string{"data"}
 	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
 	containerTable.Props.Scroll.X = 1000

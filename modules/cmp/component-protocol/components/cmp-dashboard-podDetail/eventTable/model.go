@@ -54,7 +54,7 @@ type Item struct {
 }
 
 type Props struct {
-	IsLoadMore     bool     `json:"isLoadMore,omitempty"`
+	RequestIgnore  []string `json:"requestIgnore,omitempty"`
 	RowKey         string   `json:"rowKey,omitempty''"`
 	Pagination     bool     `json:"pagination"`
 	Columns        []Column `json:"columns"`

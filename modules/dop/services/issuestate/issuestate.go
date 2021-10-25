@@ -25,8 +25,8 @@ import (
 
 // IssueState issue state service 对象
 type IssueState struct {
-	db  *dao.DBClient
 	bdl *bundle.Bundle
+	db  IssueStater
 }
 
 // Option 定义 IssueState 对象配置选项
@@ -42,7 +42,7 @@ func New(options ...Option) *IssueState {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao.DBClient) Option {
+func WithDBClient(db IssueStater) Option {
 	return func(is *IssueState) {
 		is.db = db
 	}
@@ -246,32 +246,32 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 		0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3, 1, 0, 2, 0, 3, 0, 2, 1, 3, 1, 3, 2,
 		4, 5, 5, 6,
 		7, 8, 8, 9,
-		10, 13, 14, 13, 11, 14, 12, 14, 13, 14, 10, 11, 14, 11, 10, 12, 14, 12, 11, 15, 12, 15, 13, 15,
-		16, 19, 20, 19, 17, 20, 18, 20, 19, 20, 16, 17, 20, 17, 16, 18, 20, 18, 17, 21, 18, 21, 19, 21,
+		10, 14, 15, 14, 12, 15, 13, 15, 14, 15, 10, 12, 15, 12, 10, 13, 15, 13, 12, 16, 13, 16, 14, 16, 10, 11, 11, 12, 11, 13, 11, 14, 11, 15, 15, 11,
+		17, 20, 21, 20, 18, 21, 19, 21, 20, 21, 17, 18, 21, 18, 17, 19, 21, 19, 18, 22, 19, 22, 20, 22,
 	}
 	name := []string{
 		"待处理", "进行中", "测试中", "已完成",
 		"待处理", "进行中", "已完成",
 		"待处理", "进行中", "已完成",
-		"待处理", "无需修复", "重复提交", "已解决", "重新打开", "已关闭",
+		"待处理", "进行中", "无需修复", "重复提交", "已解决", "重新打开", "已关闭",
 		"待处理", "无需修复", "重复提交", "已解决", "重新打开", "已关闭",
 	}
 	belong := []apistructs.IssueStateBelong{
 		"OPEN", "WORKING", "WORKING", "DONE",
 		"OPEN", "WORKING", "DONE",
 		"OPEN", "WORKING", "DONE",
-		"OPEN", "WONTFIX", "WONTFIX", "RESOLVED", "REOPEN", "CLOSED",
+		"OPEN", "WORKING", "WONTFIX", "WONTFIX", "RESOLVED", "REOPEN", "CLOSED",
 		"OPEN", "WONTFIX", "WONTFIX", "RESOLVED", "REOPEN", "CLOSED",
 	}
 	index := []int64{
 		0, 1, 2, 3,
 		0, 1, 2,
 		0, 1, 2,
-		0, 1, 2, 3, 4, 5,
+		0, 1, 2, 3, 4, 5, 6,
 		0, 1, 2, 3, 4, 5,
 	}
 	// state
-	for i := 0; i < 22; i++ {
+	for i := 0; i < 23; i++ {
 		states = append(states, dao.IssueState{
 			ProjectID: uint64(projectID),
 			Name:      name[i],
@@ -285,17 +285,17 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 			states[i].IssueType = apistructs.IssueTypeTask
 		} else if i < 10 {
 			states[i].IssueType = apistructs.IssueTypeEpic
-		} else if i < 16 {
+		} else if i < 17 {
 			states[i].IssueType = apistructs.IssueTypeBug
-		} else if i < 22 {
+		} else if i < 23 {
 			states[i].IssueType = apistructs.IssueTypeTicket
 		}
-		if err := is.db.CreateIssuesState(&states[i]); err != nil {
-			return err
-		}
+		//if err := is.db.CreateIssuesState(&states[i]); err != nil {
+		//	return err
+		//}
 	}
 	// state relation
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 46; i++ {
 		relations = append(relations, dao.IssueStateRelation{
 			ProjectID:    projectID,
 			StartStateID: int64(states[relation[i*2]].ID),
@@ -307,11 +307,25 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 			relations[i].IssueType = apistructs.IssueTypeTask
 		} else if i < 16 {
 			relations[i].IssueType = apistructs.IssueTypeEpic
-		} else if i < 28 {
+		} else if i < 34 {
 			relations[i].IssueType = apistructs.IssueTypeBug
-		} else if i < 40 {
+		} else if i < 46 {
 			relations[i].IssueType = apistructs.IssueTypeTicket
 		}
 	}
 	return is.db.UpdateIssueStateRelations(projectID, apistructs.IssueTypeTask, relations)
+}
+
+type IssueStater interface {
+	UpdateIssueStateRelations(projectID int64, issueType apistructs.IssueType, StateRelations []dao.IssueStateRelation) error
+	CreateIssuesState(state *dao.IssueState) error
+	GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error)
+	GetIssueStateByIDs(ID []int64) ([]dao.IssueState, error)
+	GetIssueStateByID(ID int64) (*dao.IssueState, error)
+	GetIssuesStates(req *apistructs.IssueStatesGetRequest) ([]dao.IssueState, error)
+	GetIssueByState(state int64) (*dao.Issue, error)
+	DeleteIssuesStateRelationByStartID(id int64) error
+	DeleteIssuesState(id int64) error
+	GetIssuesStateRelations(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueStateJoinSQL, error)
+	UpdateIssueState(state *dao.IssueState) error
 }
