@@ -16,6 +16,7 @@ package startButton
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -41,16 +42,21 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
+	workspace, ok := c.State["workspace"].(string)
+	if !ok {
+		return fmt.Errorf("workspace was empty")
+	}
+
 	var disable = false
 
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
-
 		err := svc.Start(apistructs.CodeCoverageStartRequest{
 			ProjectID: projectId,
 			IdentityInfo: apistructs.IdentityInfo{
 				UserID: sdk.Identity.UserID,
 			},
+			Workspace: workspace,
 		})
 		if err != nil {
 			return err
@@ -58,14 +64,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		disable = true
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		judgeApplication := c.State["judgeApplication"]
-		if judgeApplication != nil {
-			var value = judgeApplication.(bool)
-			disable = !value
+		disableSourcecov := c.State["disableSourcecov"]
+		if disableSourcecov != nil {
+			disable = disableSourcecov.(bool)
 		}
 
 		if !disable {
-			err := svc.JudgeRunningRecordExist(projectId)
+			err := svc.JudgeRunningRecordExist(projectId, workspace)
 			if err != nil {
 				disable = true
 			}
