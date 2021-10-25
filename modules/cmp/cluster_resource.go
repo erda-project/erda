@@ -241,8 +241,9 @@ func CalculateNamespaceAllocatedRes(name string, pods []types2.APIObject) (cpu, 
 	memQty := resource.NewQuantity(0, resource.BinarySI)
 	for _, obj := range pods {
 		pod := obj.Data()
-		if pod.String("metadata", "namespace") != name || pod.String("status", "phase") == "Failed" ||
-			pod.String("status", "phase") == "Succeeded" {
+		status := pod.String("status", "phase")
+		if pod.String("metadata", "namespace") != name || status == "Pending" ||
+			status == "Failed" || status == "Succeeded" {
 			continue
 		}
 		podNum++
@@ -373,8 +374,9 @@ func CalculateNodeAllocatedRes(nodeName string, pods []types2.APIObject) (cpu, m
 	memQty := resource.NewQuantity(0, resource.BinarySI)
 	for _, obj := range pods {
 		pod := obj.Data()
-		if pod.String("spec", "nodeName") != nodeName || pod.String("status", "phase") == "Failed" ||
-			pod.String("status", "phase") == "Succeeded" {
+		status := pod.String("status", "phase")
+		if pod.String("spec", "nodeName") != nodeName || status == "Pending" ||
+			status == "Failed" || status == "Succeeded" {
 			continue
 		}
 		podNum++
