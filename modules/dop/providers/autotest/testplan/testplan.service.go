@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan/db"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
+	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 type TestPlanService struct {
@@ -98,8 +99,16 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 	}
 	executeTime := parseExecuteTime(req.Content.ExecuteTime)
 	if executeTime == nil {
-		t := time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local)
-		executeTime = &t
+		executeTime = mysql_time.GetMysqlDefaultTime()
+	}
+
+	timeBegin := parseExecuteTime(req.Content.TimeBegin)
+	if timeBegin == nil {
+		timeBegin = mysql_time.GetMysqlDefaultTime()
+	}
+	timeEnd := parseExecuteTime(req.Content.TimeEnd)
+	if timeEnd == nil {
+		timeEnd = mysql_time.GetMysqlDefaultTime()
 	}
 
 	project, err := s.bdl.GetProject(testPlan.ProjectID)
@@ -128,6 +137,9 @@ func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHook
 		ExecuteTime:   *executeTime,
 		CostTimeSec:   req.Content.CostTimeSec,
 		OrgID:         project.OrgID,
+		TimeBegin:     *timeBegin,
+		TimeEnd:       *timeEnd,
+		PipelineID:    req.Content.PipelineID,
 	}
 	return s.db.CreateAutoTestExecHistory(&execHistory)
 }

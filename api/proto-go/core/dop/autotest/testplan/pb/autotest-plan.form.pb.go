@@ -186,6 +186,25 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					m.Content = &Content{}
 				}
 				m.Content.ExecuteDuration = vals[0]
+			case "content.timeBegin":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.TimeBegin = vals[0]
+			case "content.timeEnd":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.TimeEnd = vals[0]
+			case "content.pipelineID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.PipelineID = val
 			}
 		}
 	}
@@ -287,6 +306,16 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.ExecuteRate = val
 			case "executeDuration":
 				m.ExecuteDuration = vals[0]
+			case "timeBegin":
+				m.TimeBegin = vals[0]
+			case "timeEnd":
+				m.TimeEnd = vals[0]
+			case "pipelineID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PipelineID = val
 			}
 		}
 	}

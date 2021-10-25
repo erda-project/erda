@@ -46,7 +46,7 @@ type Chart struct {
 func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
 
-	sceneSteps := h.GetAtSceneStep()
+	sceneSteps := h.GetGlobalAtSceneStep()
 	sceneStepIDs := make([]uint64, 0, len(sceneSteps))
 	sceneStepMap := make(map[uint64]string, 0)
 	for _, v := range sceneSteps {
@@ -94,6 +94,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, sceneStepMap[v.StepID])
 	}
 
-	c.Props = common.NewBarProps(values, categories, "接口 - 按执行失败率分布 Top500")
+	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "api-failed-rate"))
 	return nil
 }

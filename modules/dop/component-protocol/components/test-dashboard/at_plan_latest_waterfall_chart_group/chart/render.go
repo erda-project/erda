@@ -15,10 +15,61 @@
 package chart
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "at_plan_latest_waterfall_chart")
+	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "at_plan_latest_waterfall_chart", func() servicehub.Provider {
+		return &Chart{}
+	})
+}
+
+type Chart struct {
+	base.DefaultProvider
+
+	Values     []string `json:"values"`
+	Categories []string `json:"categories"`
+}
+
+func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	h := gshelper.NewGSHelper(gs)
+
+	steps := h.GetGlobalAtStep()
+	sceneSetIDs := make([]uint64, 0, len(steps))
+	sceneSetMap := make(map[uint64]string, 0)
+	for _, v := range steps {
+		sceneSetMap[v.SceneSetID] = v.SceneSetName
+		sceneSetIDs = append(sceneSetIDs, v.SceneSetID)
+	}
+
+	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	historyList, err := atSvc.ListExecHistorySceneSetByParentPID(h.GetSelectChartHistoryData().PipelineID)
+	if err != nil {
+		return err
+	}
+	var (
+		indexes    []int64
+		values     []int64
+		categories []string
+		offset     int64
+	)
+	if len(historyList) != 0 {
+		offset = historyList[0].ExecuteTime.Unix()
+	}
+	for _, v := range historyList {
+		indexes = append(indexes, v.ExecuteTime.Unix()-offset)
+		values = append(values, v.CostTimeSec)
+		categories = append(categories, sceneSetMap[v.SceneSetID])
+	}
+
+	c.Props = NewBarProps(indexes, values, categories, "")
+	return nil
 }

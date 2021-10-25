@@ -40,19 +40,19 @@ type Text struct {
 
 func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
-	steps := h.GetAtSceneStep()
-	var count int
-	for _, v := range steps {
-		if v.Type == apistructs.StepTypeAPI {
-			count++
-		}
-	}
-
 	tv := pkg.TextValue{
-		Value: strutil.String(count),
-		Kind:  cputil.I18n(ctx, "auto-test-api-num"),
+		Value: strutil.String(func() int {
+			steps := h.GetBlockAtSceneStep()
+			var count int
+			for _, v := range steps {
+				if v.Type == apistructs.StepTypeAPI {
+					count++
+				}
+			}
+			return count
+		}()),
+		Kind: cputil.I18n(ctx, "auto-test-api-num"),
 	}
-
 	c.Props = tv.ConvertToProps()
 	return nil
 }

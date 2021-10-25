@@ -963,3 +963,18 @@ func (svc *Service) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHisto
 	err = db.Group("step_id").Find(&list).Error
 	return
 }
+
+// ListExecHistorySceneSetByParentPID .
+func (svc *Service) ListExecHistorySceneSetByParentPID(parentPID uint64) (history []apistructs.AutoTestExecHistoryDto, err error) {
+	var list []dao.AutoTestExecHistory
+	err = svc.db.Model(dao.AutoTestExecHistory{}).
+		Where("parent_p_id = ?", parentPID).
+		Where("type = ?", apistructs.AutotestSceneSet).
+		Order("execute_time ASC").
+		Find(&list).Error
+
+	for _, v := range list {
+		history = append(history, v.Convert())
+	}
+	return
+}

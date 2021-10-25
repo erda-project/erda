@@ -16,15 +16,21 @@ package chart
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+const RateTrendingSelectItemOperationKey cptype.OperationKey = "selectChartItem"
 
 func init() {
 	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "at_case_rate_trending_chart", func() servicehub.Provider {
@@ -47,7 +53,14 @@ type Props struct {
 }
 
 type Data struct {
-	Value string `json:"value"`
+	Value    string                       `json:"value"`
+	MetaData gshelper.SelectChartItemData `json:"metaData"`
+}
+
+type TestPlanV2 struct {
+	PipelineID uint64 `json:"pipelineID"`
+	PlanID     uint64 `json:"planID"`
+	Name       string `json:"name"`
 }
 
 type Option struct {
@@ -81,34 +94,89 @@ type YAxis struct {
 	AxisLabel AxisLabel `json:"axisLabel"`
 }
 
+type OperationData struct {
+	FillMeta string   `json:"fillMeta"`
+	MetaData MetaData `json:"metaData"`
+}
+
+type MetaData struct {
+	Data Data `json:"data"`
+}
+
 func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
-
-	historyList := h.GetAtTestPlanExecHistoryList()
-
-	pData := make([]Data, 0, len(historyList))
-	eData := make([]Data, 0, len(historyList))
-	xAxis := make([]string, 0, len(historyList))
-	var sucApiNum, execApiNum, totalApiNum int64
-	for _, v := range historyList {
-		if v.Type != apistructs.AutoTestPlan {
-			continue
+	switch event.Operation {
+	case RateTrendingSelectItemOperationKey:
+		opData := OperationData{}
+		b, err := json.Marshal(&event.OperationData)
+		if err != nil {
+			return err
 		}
-		sucApiNum += v.SuccessApiNum
-		execApiNum += v.ExecuteApiNum
-		totalApiNum += v.TotalApiNum
-		pData = append(pData, Data{
-			Value: calRate(sucApiNum, totalApiNum),
-		})
-		eData = append(eData, Data{
-			Value: calRate(execApiNum, totalApiNum),
-		})
-		xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
+		if err = json.Unmarshal(b, &opData); err != nil {
+			return err
+		}
+		h.SetSelectChartItemData(opData.MetaData.Data.MetaData)
+		return nil
+	case cptype.InitializeOperation, cptype.DefaultRenderingKey, cptype.RenderingOperation:
+		atPlans := h.GetRateTrendingFilterTestPlanList()
+		atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+		timeFilter := h.GetAtCaseRateTrendingTimeFilter()
+		historyList, err := atSvc.ListAutoTestExecHistory(
+			timeFilter.TimeStart,
+			timeFilter.TimeEnd,
+			func() []uint64 {
+				planIDs := make([]uint64, 0, len(atPlans))
+				for _, v := range atPlans {
+					planIDs = append(planIDs, v.ID)
+				}
+				return planIDs
+			}()...)
+		if err != nil {
+			return err
+		}
+		pData := make([]Data, 0, len(historyList))
+		eData := make([]Data, 0, len(historyList))
+		xAxis := make([]string, 0, len(historyList))
+		var sucApiNum, execApiNum, totalApiNum int64
+		for _, v := range historyList {
+			if v.Type != apistructs.AutoTestPlan {
+				continue
+			}
+			sucApiNum += v.SuccessApiNum
+			execApiNum += v.ExecuteApiNum
+			totalApiNum += v.TotalApiNum
+			pData = append(pData, Data{
+				Value: calRate(sucApiNum, totalApiNum),
+			})
+			eData = append(eData, Data{
+				Value: calRate(execApiNum, totalApiNum),
+			})
+			xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
+		}
+		ch.EData = eData
+		ch.PData = pData
+		ch.XAxis = XAxis{xAxis}
+		c.Props = ch.convertToProps(ctx)
+		c.Operations = getOperations()
+		h.SetSelectChartItemData(func() gshelper.SelectChartItemData {
+			if len(historyList) == 0 {
+				return gshelper.SelectChartItemData{}
+			}
+			return gshelper.SelectChartItemData{
+				PlanID:     historyList[len(historyList)-1].PlanID,
+				PipelineID: historyList[len(historyList)-1].PipelineID,
+				Name: func() string {
+					for _, v := range h.GetGlobalAutoTestPlanList() {
+						if v.ID == historyList[len(historyList)-1].PlanID {
+							return v.Name
+						}
+					}
+					return ""
+				}(),
+			}
+		}())
+		return nil
 	}
-	ch.EData = eData
-	ch.PData = pData
-	ch.XAxis = XAxis{xAxis}
-	c.Props = ch.convertToProps()
 	return nil
 }
 
@@ -119,7 +187,7 @@ func calRate(num, numTotal int64) string {
 	return fmt.Sprintf("%.2f", float64(num)/float64(numTotal)*100)
 }
 
-func (ch *Chart) convertToProps() Props {
+func (ch *Chart) convertToProps(ctx context.Context) Props {
 	return Props{
 		ChartType: "line",
 		Title:     "",
@@ -136,7 +204,7 @@ func (ch *Chart) convertToProps() Props {
 					Label: struct {
 						Show bool `json:"show"`
 					}{Show: true},
-					Name: "通过率",
+					Name: cputil.I18n(ctx, "test-case-rate-passed"),
 				},
 				{
 					AreaStyle: struct {
@@ -146,13 +214,31 @@ func (ch *Chart) convertToProps() Props {
 					Label: struct {
 						Show bool `json:"show"`
 					}{Show: true},
-					Name: "执行率",
+					Name: cputil.I18n(ctx, "test-case-rate-executed"),
 				},
 			},
 			XAxis: ch.XAxis,
 			YAxis: YAxis{AxisLabel: AxisLabel{
 				Formatter: "{value}%",
 			}},
+		},
+	}
+}
+
+type Operation struct {
+	Key      string                 `json:"key"`
+	Reload   bool                   `json:"reload"`
+	FillMeta string                 `json:"fillMeta"`
+	Meta     map[string]interface{} `json:"meta"`
+}
+
+func getOperations() map[string]interface{} {
+	return map[string]interface{}{
+		"click": Operation{
+			Key:      "selectChartItem",
+			Reload:   true,
+			FillMeta: "data",
+			Meta:     map[string]interface{}{"data": ""},
 		},
 	}
 }

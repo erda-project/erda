@@ -59,7 +59,8 @@ type Ranges struct {
 }
 
 type Values struct {
-	Time []int64 `json:"time"`
+	AtPlanIDs []uint64 `json:"atPlanIDs"`
+	Time      []int64  `json:"time"`
 }
 
 func (f *Filter) initFromProtocol(ctx context.Context, c *cptype.Component) error {
