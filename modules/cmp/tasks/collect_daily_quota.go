@@ -255,9 +255,9 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 
 type DailyQuotaCollectorOption func(collector *DailyQuotaCollector)
 
-func DailyQuotaCollectorWithDBClient(db *dbclient.DBClient) DailyQuotaCollectorOption {
+func DailyQuotaCollectorWithDBClient(client *dbclient.DBClient) DailyQuotaCollectorOption {
 	return func(collector *DailyQuotaCollector) {
-		collector.db = db
+		collector.db = client
 	}
 }
 
