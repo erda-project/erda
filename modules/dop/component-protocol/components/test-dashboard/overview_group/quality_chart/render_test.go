@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 )
 
 func Test_radar(t *testing.T) {
@@ -111,4 +113,42 @@ func Test_polishScore(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQ_calcAtPlanScore(t *testing.T) {
+	q := Q{}
+
+	// none at plan at all
+	hForNone := gshelper.NewGSHelper(nil)
+	scoreForNone := q.calcAtPlanScore(context.Background(), hForNone)
+	assert.Equal(t, float64(0), scoreForNone)
+
+	// normal at plans
+	gsForNormal := &cptype.GlobalStateData{}
+	hForNormal := gshelper.NewGSHelper(gsForNormal)
+	hForNormal.SetGlobalAutoTestPlanList([]*apistructs.TestPlanV2{
+		{ // some executed
+			ExecuteApiNum: 22,
+			SuccessApiNum: 17,
+			TotalApiNum:   30,
+		},
+		{ // empty plan
+			ExecuteApiNum: 0,
+			SuccessApiNum: 0,
+			TotalApiNum:   0,
+		},
+		{ // all passed
+			ExecuteApiNum: 30,
+			SuccessApiNum: 30,
+			TotalApiNum:   30,
+		},
+		{ // all failed
+			ExecuteApiNum: 30,
+			SuccessApiNum: 0,
+			TotalApiNum:   30,
+		},
+	})
+	scoreForNormal := q.calcAtPlanScore(context.Background(), hForNormal)
+	expectedScoreForNormal := (float64(22+0+30+30) / float64(30+0+30+30)) * (float64(17+0+30+0) / float64(30+0+30+30)) * 100
+	assert.Equal(t, expectedScoreForNormal, scoreForNormal)
 }
