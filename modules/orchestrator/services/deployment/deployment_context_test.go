@@ -495,3 +495,22 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 	}
 	return &fsm
 }
+
+func TestUpdateServiceGroupWithLoop(t *testing.T) {
+	var (
+		bdl *bundle.Bundle
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UpdateServiceGroup", func(*bundle.Bundle, apistructs.ServiceGroupUpdateV2Request) error {
+		return nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	fsm := DeployFSMContext{
+		bdl: bdl,
+	}
+	group := apistructs.ServiceGroupCreateV2Request{}
+	if err := fsm.UpdateServiceGroupWithLoop(group); err != nil {
+		t.Fatal(err)
+	}
+}
