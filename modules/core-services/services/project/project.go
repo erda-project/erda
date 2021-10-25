@@ -1518,13 +1518,19 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, name
 		if err != nil {
 			continue
 		}
-		if _, ok := projectsM[projectID]; !ok {
-			projectsM[projectID] = make(map[string][]string)
+		clusters, ok := projectsM[projectID]
+		if !ok {
+			clusters = make(map[string][]string)
 		}
 		if hasClusterAndNamespace(namespaces, podInfo.Cluster, podInfo.K8sNamespace) &&
-			!hasClusterAndNamespace(projectsM[projectID], podInfo.Cluster, podInfo.K8sNamespace) {
-			projectsM[projectID][podInfo.Cluster] = append(projectsM[projectID][podInfo.Cluster], podInfo.K8sNamespace)
+			!hasClusterAndNamespace(clusters, podInfo.Cluster, podInfo.K8sNamespace) {
+			if _, ok := clusters[podInfo.Cluster]; ok {
+				clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
+			} else {
+				clusters[podInfo.Cluster] = []string{podInfo.K8sNamespace}
+			}
 		}
+		projectsM[projectID] = clusters
 	}
 
 	// 2) 查找 project_namespace
@@ -1537,14 +1543,19 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, name
 		}
 	}
 	for _, projectNamespace := range projectNamespaces {
-		if _, ok := projectsM[projectNamespace.ProjectID]; !ok {
-			projectsM[projectNamespace.ProjectID] = make(map[string][]string)
+		clusters, ok := projectsM[projectNamespace.ProjectID]
+		if !ok {
+			clusters = make(map[string][]string)
 		}
 		if hasClusterAndNamespace(namespaces, projectNamespace.ClusterName, projectNamespace.K8sNamespace) &&
-			!hasClusterAndNamespace(projectsM[projectNamespace.ProjectID], projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
-			projectsM[projectNamespace.ProjectID][projectNamespace.ClusterName] = append(projectsM[projectNamespace.ProjectID][projectNamespace.ClusterName],
-				projectNamespace.K8sNamespace)
+			!hasClusterAndNamespace(clusters, projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
+			if _, ok := clusters[projectNamespace.ClusterName]; ok {
+				clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
+			} else {
+				clusters[projectNamespace.ClusterName] = []string{projectNamespace.K8sNamespace}
+			}
 		}
+		projectsM[projectNamespace.ProjectID] = clusters
 	}
 
 	var data apistructs.GetProjectsNamesapcesResponseData
