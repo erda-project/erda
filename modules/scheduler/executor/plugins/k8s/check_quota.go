@@ -54,7 +54,7 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 			return 0, 0, err
 		}
 		for _, pod := range pods.Items {
-			if pod.Status.Phase == "Succeed" || pod.Status.Phase == "Failed" {
+			if pod.Status.Phase == "Pending" || pod.Status.Phase == "Succeeded" || pod.Status.Phase == "Failed" {
 				continue
 			}
 			for _, container := range pod.Spec.Containers {
@@ -67,16 +67,30 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 		}
 	}
 
+	logrus.Infof("Requested resource for workspace %s in project %s, CPU: %d, Mem: %d\n", workspace, projectID, cpuQty.MilliValue(), memQty.Value())
+
 	leftCPU := cpuQuota - cpuQty.MilliValue()
 	leftMem := memQuota - memQty.Value()
 	return leftCPU, leftMem, nil
 }
 
+func max(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64) (bool, error) {
+	if requestsCPU <= 0 && requestsMem <= 0 {
+		return true, nil
+	}
 	leftCPU, leftMem, err := k.GetWorkspaceLeftQuota(ctx, projectID, workspace)
 	if err != nil {
 		return false, err
 	}
+	leftCPU = max(leftCPU, 0)
+	leftMem = max(leftMem, 0)
 	reqCPUStr := resourceToString(float64(requestsCPU), "cpu")
 	leftCPUStr := resourceToString(float64(leftCPU), "cpu")
 	reqMemStr := resourceToString(float64(requestsMem), "memory")
@@ -91,9 +105,9 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     runtimeID,
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog: fmt.Sprintf("当前环境资源配额不足。请求CPU：%s核，剩余%s核；请求内存：%s，剩余%s",
+				HumanLog: fmt.Sprintf("当前环境资源配额不足。请求CPU变化：%s核，剩余：%s核；请求内存变化：%s，剩余：%s",
 					reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
-				PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace. Requests CPU: %s core(s), left %s core(s). Request memroy: %s, left %s",
+				PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace. Requests CPU : %s core(s), left %s core(s). Request memroy: %s, left %s",
 					reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
 			},
 		}); err != nil {
