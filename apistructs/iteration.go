@@ -14,7 +14,10 @@
 
 package apistructs
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const UnassignedIterationID = -1
 
@@ -33,6 +36,22 @@ type IterationCreateRequest struct {
 
 	// internal use, get from *http.Request
 	IdentityInfo
+}
+
+func (itr *IterationCreateRequest) Check() error {
+	if itr.StartedAt == nil {
+		return fmt.Errorf("the startedAt is nil")
+	}
+	if itr.FinishedAt == nil {
+		return fmt.Errorf("the finishedAt is nil")
+	}
+	if itr.ProjectID == 0 {
+		return fmt.Errorf("the projectID is 0")
+	}
+	if itr.Title == "" {
+		return fmt.Errorf("the title is empty")
+	}
+	return nil
 }
 
 // IterationCreateResponse 创建迭代响应
