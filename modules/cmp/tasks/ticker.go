@@ -48,7 +48,18 @@ func (d *Ticker) Run() error {
 	ticker := time.NewTicker(d.Interval)
 	defer ticker.Stop()
 
-	var err error
+	var (
+		err  error
+		stop bool
+	)
+	fmt.Printf("the interval task %s is running right now: %s\n", d.Name, time.Now().Format(time.RFC3339))
+	stop, err = d.Task()
+	fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
+	if stop {
+		d.Close()
+		return err
+	}
+
 	for {
 		select {
 		case <-d.done:
@@ -56,7 +67,7 @@ func (d *Ticker) Run() error {
 			return err
 		case t := <-ticker.C:
 			fmt.Printf("the interval task %s is running at: %s\n", d.Name, t.Format(time.RFC3339))
-			stop, err := d.Task()
+			stop, err = d.Task()
 			fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
 			if stop {
 				d.Close()
