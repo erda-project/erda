@@ -142,6 +142,7 @@ elasticsearch.index.cleaner@event:
 event-storage-elasticsearch:
   query_timeout: "1m"
   read_page_size: 50
+erda.core.monitor.event.query:
 
 # metric
 elasticsearch.index.loader@metric:
