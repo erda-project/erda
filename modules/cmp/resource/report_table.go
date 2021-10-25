@@ -46,6 +46,7 @@ func NewReportTable(opt ...ReportTableOption) *ReportTable {
 
 func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int64, clusterNames []string,
 	cpuPerNode, memPerNode uint64) (*apistructs.ResourceOverviewReportData, error) {
+	logrus.Debugln("GetResourceOverviewReport", "query all namespaces")
 	// 1) 查找所有 namespaces
 	var namespacesM = make(map[string][]string)
 	orgIDStr := strconv.FormatInt(orgID, 10)
@@ -74,6 +75,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 	}
 
 	// 2) 调用 core-services bundle，根据 namespaces 查找各 namespaces 的归属
+	logrus.Debugln("GetResourceOverviewReport", "query namespaces belongs to")
 	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(orgID, namespacesM)
 	if err != nil {
 		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
@@ -82,6 +84,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 	}
 
 	// 3) 查找所有 namespace 下的 request 情况
+	logrus.Debugln("GetResourceOverviewReport", "fetch request for all namespaces")
 	var getNamespacesResourcesReq pb.GetNamespacesResourcesRequest
 	for clusterName, namespaceList := range namespacesM {
 		for _, namespace := range namespaceList {
@@ -99,6 +102,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 	}
 
 	// 4) request 归属到项目，归属不到项目的，算作共享资源
+	logrus.Debugln("GetResourceOverviewReport", "fetch projects' request")
 	var (
 		sharedResource [2]uint64
 	)
