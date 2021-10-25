@@ -697,17 +697,17 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
 				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
 				switch {
-				case !available.CPU.StatusOK(workspace) && !available.Mem.StatusOK(workspace):
+				case available.CPU.TotalForWorkspace(workspace) == 0 || allocatable.Mem.TotalForWorkspace(workspace) == 0:
 					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"),
 						calcu.MillcoreToCore(available.CPU.AlreadyQuota(workspace), 3), calcu.ByteToGibibyte(available.Mem.AlreadyQuota(workspace), 3),
 						calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace), 3), calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace), 3),
 					)
-				case !available.CPU.StatusOK(workspace):
+				case available.CPU.TotalForWorkspace(workspace) == 0:
 					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"),
 						calcu.MillcoreToCore(available.CPU.AlreadyQuota(workspace), 3),
 						calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace), 3),
 					)
-				case !available.Mem.StatusOK(workspace):
+				case allocatable.Mem.TotalForWorkspace(workspace) == 0:
 					resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"),
 						calcu.ByteToGibibyte(available.Mem.AlreadyQuota(workspace), 3),
 						calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace), 3),

@@ -270,14 +270,6 @@ func TestResourceCalculator_AlreadyQuota(t *testing.T) {
 	}
 }
 
-func TestResourceCalculator_StatusOK(t *testing.T) {
-	clusterName := "erda-hongkong"
-	c := calcu.New(clusterName)
-	if !c.CPU.StatusOK(calcu.Prod) {
-		t.Fatal("StatusOK error")
-	}
-}
-
 func TestResourceToString(t *testing.T) {
 	t.Log(calcu.ResourceToString(1000, "cpu"))
 	t.Log(calcu.ResourceToString(5*1024*1024*1024, "memory"))
