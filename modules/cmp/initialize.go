@@ -138,6 +138,13 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		resource.ReportTableWithCMP(p),
 	)
 
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
+	if err != nil {
+		return nil, err
+	}
+
+	p.SteveAggregator = ep.SteveAggregator
+
 	// daily collector project quota and cluster resource request
 	dailyCollector := tasks.NewDailyQuotaCollector(
 		tasks.DailyQuotaCollectorWithDBClient(db),
@@ -146,13 +153,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	)
 	ticker := tasks.New(time.Hour, dailyCollector.Task)
 	go ticker.Run()
-
-	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
-	if err != nil {
-		return nil, err
-	}
-
-	p.SteveAggregator = ep.SteveAggregator
 
 	if conf.EnableEss() {
 		initServices(ep)
