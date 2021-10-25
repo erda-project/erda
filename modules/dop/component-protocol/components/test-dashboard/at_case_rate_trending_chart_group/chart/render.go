@@ -18,8 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
@@ -154,7 +156,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		ch.EData = eData
 		ch.PData = pData
 		ch.XAxis = XAxis{xAxis}
-		c.Props = ch.convertToProps()
+		c.Props = ch.convertToProps(ctx)
 		c.Operations = getOperations()
 		h.SetSelectChartItemData(func() gshelper.SelectChartItemData {
 			if len(historyList) == 0 {
@@ -172,7 +174,6 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 					return ""
 				}(),
 			}
-
 		}())
 		return nil
 	}
@@ -186,7 +187,7 @@ func calRate(num, numTotal int64) string {
 	return fmt.Sprintf("%.2f", float64(num)/float64(numTotal)*100)
 }
 
-func (ch *Chart) convertToProps() Props {
+func (ch *Chart) convertToProps(ctx context.Context) Props {
 	return Props{
 		ChartType: "line",
 		Title:     "",
@@ -203,7 +204,7 @@ func (ch *Chart) convertToProps() Props {
 					Label: struct {
 						Show bool `json:"show"`
 					}{Show: true},
-					Name: "通过率",
+					Name: cputil.I18n(ctx, "test-case-rate-passed"),
 				},
 				{
 					AreaStyle: struct {
@@ -213,7 +214,7 @@ func (ch *Chart) convertToProps() Props {
 					Label: struct {
 						Show bool `json:"show"`
 					}{Show: true},
-					Name: "执行率",
+					Name: cputil.I18n(ctx, "test-case-rate-executed"),
 				},
 			},
 			XAxis: ch.XAxis,

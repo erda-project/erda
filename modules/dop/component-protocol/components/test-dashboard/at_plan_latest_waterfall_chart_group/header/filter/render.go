@@ -17,12 +17,12 @@ package filter
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -40,8 +40,12 @@ type Filter struct {
 }
 
 type State struct {
-	Conditions []filter.PropCondition  `json:"conditions,omitempty"`
-	Values     AtPlanFilterStateValues `json:"values,omitempty"`
+	Conditions []filter.PropCondition `json:"conditions,omitempty"`
+	Values     PipelineIDValues       `json:"values,omitempty"`
+}
+
+type PipelineIDValues struct {
+	PipelineID []uint64 `json:"pipelineID"`
 }
 
 type AtPlanFilterStateValues struct {
@@ -62,11 +66,23 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			Key:       "pipelineID",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
-				opts = append(opts, filter.PropConditionOption{
-					Label: h.GetSelectChartHistoryData().Name,
-					Value: h.GetSelectChartHistoryData().PipelineID,
-				})
+				if len(f.State.Conditions[0].Options) == 0 {
+					data := h.GetSelectChartHistoryData()
+					opts = append(opts, filter.PropConditionOption{
+						Label: data.Name,
+						Value: data.PipelineID,
+					})
+					h.SetSelectChartItemData(gshelper.SelectChartItemData{
+						PipelineID: data.PipelineID,
+					})
+				} else {
+					opts = f.State.Conditions[0].Options
+					h.SetSelectChartItemData(gshelper.SelectChartItemData{
+						PipelineID: uint64(f.State.Conditions[0].Options[0].Value.(float64)),
+					})
+				}
 				return
+
 			}(),
 			Type: filter.PropConditionTypeSelect,
 		},

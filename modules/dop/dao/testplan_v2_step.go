@@ -322,6 +322,7 @@ func (client *DBClient) ListStepByPlanID(planIDs ...uint64) ([]TestPlanV2StepJoi
 	err := client.Debug().Table("dice_autotest_plan_step").
 		Select("dice_autotest_plan_step.*,dice_autotest_scene_set.name").
 		Joins("LEFT JOIN dice_autotest_scene_set ON dice_autotest_plan_step.scene_set_id = dice_autotest_scene_set.id").
-		Where("dice_autotest_plan_step.plan_id IN (?)", planIDs).Find(&steps).Error
+		Where("dice_autotest_plan_step.plan_id IN (?)", planIDs).
+		Find(&steps).Error
 	return steps, err
 }

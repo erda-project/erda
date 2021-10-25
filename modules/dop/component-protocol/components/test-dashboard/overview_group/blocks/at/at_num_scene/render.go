@@ -39,13 +39,12 @@ type Text struct {
 
 func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
-
-	scenes := h.GetAtScene()
 	tv := pkg.TextValue{
-		Value: strutil.String(len(scenes)),
-		Kind:  cputil.I18n(ctx, "auto-test-scene-num"),
+		Value: strutil.String(func() int {
+			return len(h.GetBlockAtScene())
+		}()),
+		Kind: cputil.I18n(ctx, "auto-test-scene-num"),
 	}
-
 	c.Props = tv.ConvertToProps()
 	return nil
 }

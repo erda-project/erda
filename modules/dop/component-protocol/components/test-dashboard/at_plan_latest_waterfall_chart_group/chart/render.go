@@ -16,6 +16,7 @@ package chart
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
@@ -41,7 +42,7 @@ type Chart struct {
 func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
 
-	steps := h.GetAtStep()
+	steps := h.GetGlobalAtStep()
 	sceneSetIDs := make([]uint64, 0, len(steps))
 	sceneSetMap := make(map[uint64]string, 0)
 	for _, v := range steps {

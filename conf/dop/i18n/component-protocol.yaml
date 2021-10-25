@@ -134,6 +134,13 @@ zh:
   radar-total-quality-score: 质量总分
   radar-bug-reopen-rate: 缺陷重开率
   radar-code-coverage: 代码覆盖率
+  scene-avg-cost: 场景 - 按执行平均耗时分布 Top500
+  scene-failed-rate: 场景 - 按执行失败率分布 Top500
+  scene-passed-rate: 场景 - 按执行通过率分布 Top500
+  api-avg-cost: 接口 - 按执行平均耗时分布 Top500
+  api-failed-rate: 接口 - 按执行失败率分布 Top500
+  week: 近一周
+  month: 近一月
 en:
   issue-manage: issue manage
   issue: issue
@@ -267,3 +274,10 @@ en:
   radar-total-quality-score: Total Quality Score
   radar-bug-reopen-rate: Bug Reopen Rate
   radar-code-coverage: Code Coverage
+  scene-avg-cost: Scene - Execute Avg Cost Top500
+  scene-failed-rate: Scene - Execute Failed Rate Top500
+  scene-passed-rate: Scene - Execute Pass Rate Top500
+  api-avg-cost: Api - Execute Avg Cost Top500
+  api-failed-rate: Api - Execute Failed Rate Top500
+  week: Nearly a week
+  month: Nearly a month

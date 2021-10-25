@@ -21,10 +21,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 func init() {
@@ -51,14 +51,14 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		TimeStart: timeStart, TimeEnd: timeEnd,
 	})
 
-	if err := f.setState(); err != nil {
+	if err := f.setState(ctx); err != nil {
 		return err
 	}
 
 	return f.setToComponent(c)
 }
 
-func (f *Filter) setState() error {
+func (f *Filter) setState(ctx context.Context) error {
 	now := time.Now()
 	weekAgo := now.AddDate(0, 0, -7)
 	monthAgo := now.AddDate(0, -1, 0)
@@ -81,12 +81,8 @@ func (f *Filter) setState() error {
 		return err
 	}
 
-	if len(f.State.Conditions) == 1 {
-		f.State.Conditions[0].CustomProps = customPropsMap
-	} else if len(f.State.Conditions) == 0 {
-		f.State.Conditions = make([]filter.PropCondition, 0, 1)
-		f.State.Conditions[0].CustomProps = customPropsMap
-	}
+	f.State.Conditions[0].CustomProps = customPropsMap
+	f.State.Conditions[0].Label = cputil.I18n(ctx, "time")
 
 	return nil
 }

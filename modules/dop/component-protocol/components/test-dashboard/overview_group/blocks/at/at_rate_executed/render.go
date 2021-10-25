@@ -39,25 +39,24 @@ type Text struct {
 
 func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
-	atPlans := h.GetAtBlockFilterTestPlanList()
-
-	var (
-		executeApiNum, totalApiNum int64
-		executeRate                float64
-	)
-	for _, v := range atPlans {
-		executeApiNum += v.ExecuteApiNum
-		totalApiNum += v.TotalApiNum
-	}
-	if totalApiNum == 0 {
-		executeRate = 0
-	} else {
-		executeRate = float64(executeApiNum) / float64(totalApiNum) * 100
-	}
-
 	tv := pkg.TextValue{
-		Value: fmt.Sprintf("%.2f", executeRate) + "%",
-		Kind:  cputil.I18n(ctx, "test-case-rate-executed"),
+		Value: func() string {
+			var (
+				executeApiNum, totalApiNum int64
+				executeRate                float64
+			)
+			for _, v := range h.GetAtBlockFilterTestPlanList() {
+				executeApiNum += v.ExecuteApiNum
+				totalApiNum += v.TotalApiNum
+			}
+			if totalApiNum == 0 {
+				executeRate = 0
+			} else {
+				executeRate = float64(executeApiNum) / float64(totalApiNum) * 100
+			}
+			return fmt.Sprintf("%.2f", executeRate) + "%"
+		}(),
+		Kind: cputil.I18n(ctx, "test-case-rate-executed"),
 	}
 	c.Props = tv.ConvertToProps()
 	return nil
