@@ -1438,13 +1438,13 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		total, members, err := p.db.GetMembersByParam(&memberListReq)
 		if err != nil {
 			err = errors.Wrap(err, "failed to GetMembersByParam")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
 		}
 		if total <= 0 || len(members) == 0 {
 			err = errors.New("not found owner for the project")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
 		}
 		member := members[0]
 
