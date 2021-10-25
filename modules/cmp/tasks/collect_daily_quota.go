@@ -16,6 +16,7 @@ package tasks
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -54,12 +55,12 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 	// 1) 查出所有的 clusters
 	l.Debugln("query all clusters")
 	clusterNames := d.cmp.GetAllClusters()
-	logrus.WithField("clusterNames", clusterNames).
+	l.WithField("clusterNames", clusterNames).
 		Debugln("query all clusters")
 
 	// 2) 查出所有的 namespace
 	l.Debugln("query all namespaces")
-	var namespacesM = make(map[string][]string)
+	var namespacesM = make(url.Values)
 	for _, clusterName := range clusterNames {
 		resources, err := d.cmp.ListSteveResource(context.Background(), &apistructs.SteveRequest{
 			NoAuthentication: true,
@@ -75,12 +76,13 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 		})
 		if err != nil {
 			err = errors.Wrap(err, "failed to ListSteveResource")
-			logrus.WithError(err).Warnln()
+			l.WithError(err).Warnln()
 		}
-		namespacesM[clusterName] = nil
+		l.Debugln("ListSteveResource, length of resource: %v", len(resources))
 		for _, resource := range resources {
+			l.Debugf("ListSteveResource resource: %+v", resource)
 			namespace := resource.Data().String("metadata", "name")
-			namespacesM[clusterName] = append(namespacesM[clusterName], namespace)
+			namespacesM.Add(clusterName, namespace)
 		}
 	}
 	l.WithField("namespacesM", namespacesM).Debugln("query all namespaces")
@@ -90,7 +92,7 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 		err = errors.Wrap(err, "failed to collectProjectDaily")
 		logrus.WithError(err).WithField("namespaces", namespacesM).Errorln()
 	}
-	l.Debugln("collecteClusterDaily")
+	l.Debugln("collectClusterDaily")
 	if err := d.collectClusterDaily(clusterNames); err != nil {
 		err = errors.Wrap(err, "failed to collectClusterDaily")
 		logrus.WithError(err).WithField("clusters", clusterNames).Errorln()
@@ -102,12 +104,15 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]string) error {
 	// 3) 拿 namespaces 调用 core-services 反查 namespace 的项目归属
 	// 该接口查询了 namespace 项目归属，项目 quota，项目 request
+	l := logrus.WithField("func", "DailyQuotaCollector.collectProjectDaily")
+	l.Debugln("fetch namespaces belongs to")
 	projectsNamespaces, err := d.bdl.FetchNamespacesBelongsTo(0, namespacesM)
 	if err != nil {
 		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
 		logrus.WithError(err).WithField("namespaces", namespacesM).Errorln()
 		return err
 	}
+	l.Debugf("fetch namespaces belongs to. result: %+v", projectsNamespaces)
 
 	for _, item := range projectsNamespaces.List {
 		record := apistructs.ProjectResourceDailyModel{
@@ -128,11 +133,11 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		switch {
 		case err == nil:
 			record.ID = existsRecord.ID
-			if err = d.db.Save(&record).Error; err != nil {
+			if err = d.db.Debug().Save(&record).Error; err != nil {
 				logrus.WithError(err).Errorln("failed to save project resource daily record")
 			}
 		case gorm.IsRecordNotFoundError(err):
-			if err = d.db.Create(&record).Error; err != nil {
+			if err = d.db.Debug().Create(&record).Error; err != nil {
 				logrus.WithError(err).Errorln("failed to create project resource daily record")
 			}
 		default:
@@ -146,17 +151,21 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 
 func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	// 3) 调用本地接口，查询各 cluster 上的 request
+	l := logrus.WithField("func", "DailyQuotaCollector.collectClusterDaily")
+	l.Debugf("query clusters resources, clusterNames: %v", clusterNames)
 	req := pb.GetClustersResourcesRequest{
 		ClusterNames: clusterNames,
 	}
 	clustersResources, err := d.cmp.GetClustersResources(context.Background(), &req)
 	if err != nil {
 		err = errors.Wrap(err, "failed to GetClustersResources")
-		logrus.WithError(err).WithField("clusterNames", clusterNames).Errorln()
+		l.WithError(err).WithField("clusterNames", clusterNames).Errorln()
 		return err
 	}
+	l.Debugf("GetClustersResources result: %v", clustersResources.List)
 
 	// 4) 累计
+	l.Debugln("accumulate resource for every cluster")
 	var records = make(map[string]*apistructs.ClusterResourceDailyModel)
 	for _, cluster := range clustersResources.List {
 		record, ok := records[cluster.GetClusterName()]
@@ -176,6 +185,7 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	}
 
 	// 5) 插入库表
+	l.Debugf("create record. length of records: %v", len(records))
 	for clusterName, record := range records {
 		var existsRecord apistructs.ClusterResourceDailyModel
 		err := d.db.Where("updated_at >= ? and udpated_at < ?",

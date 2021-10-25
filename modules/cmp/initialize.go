@@ -151,7 +151,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		tasks.DailyQuotaCollectorWithBundle(bdl),
 		tasks.DailyQuotaCollectorWithCMPAPI(p),
 	)
-	ticker := tasks.New(time.Hour, dailyCollector.Task)
+	ticker := tasks.New(time.Minute*5, dailyCollector.Task)
 	go ticker.Run()
 
 	if conf.EnableEss() {
