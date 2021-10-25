@@ -28,12 +28,11 @@ func TestAliShortMessage_Validate(t *testing.T) {
 		fields  fields
 		wantErr bool
 	}{
-		{"case1", fields{AccessKeyId: "x", AccessKeySecret: "", SignName: "", TemplateCode: ""}, true},
-		{"case2", fields{AccessKeyId: "", AccessKeySecret: "x", SignName: "", TemplateCode: ""}, true},
-		{"case3", fields{AccessKeyId: "", AccessKeySecret: "", SignName: "x", TemplateCode: ""}, true},
-		{"case4", fields{AccessKeyId: "", AccessKeySecret: "", SignName: "", TemplateCode: "x"}, true},
-		{"case5", fields{AccessKeyId: "", AccessKeySecret: "", SignName: "", TemplateCode: ""}, true},
-		{"case6", fields{AccessKeyId: "x", AccessKeySecret: "x", SignName: "x", TemplateCode: "x"}, false},
+		{"case1", fields{AccessKeyId: "", AccessKeySecret: "", SignName: "", TemplateCode: ""}, true},
+		{"case2", fields{AccessKeyId: "x", AccessKeySecret: "", SignName: "", TemplateCode: ""}, true},
+		{"case3", fields{AccessKeyId: "x", AccessKeySecret: "x", SignName: "", TemplateCode: ""}, true},
+		{"case4", fields{AccessKeyId: "x", AccessKeySecret: "x", SignName: "x", TemplateCode: ""}, true},
+		{"case5", fields{AccessKeyId: "x", AccessKeySecret: "x", SignName: "x", TemplateCode: "x"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

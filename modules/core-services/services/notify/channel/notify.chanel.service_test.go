@@ -27,12 +27,9 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
@@ -46,11 +43,11 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{req: &pb.CreateNotifyChannelRequest{Name: "", Type: "ali_short_message", Config: nil}}, true},
+		{"case1", args{req: &pb.CreateNotifyChannelRequest{Name: "", Type: "aliyun_sms", Config: nil}}, true},
 		{"case2", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "", Config: map[string]*structpb.Value{}}}, true},
 		{"case3", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "error", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case4", args{req: &pb.CreateNotifyChannelRequest{Name: "create_error", Type: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case5", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "ali_short_message", Config: nil}}, true},
+		{"case4", args{req: &pb.CreateNotifyChannelRequest{Name: "create_error", Type: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case5", args{req: &pb.CreateNotifyChannelRequest{Name: "test", Type: "aliyun_sms", Config: nil}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -91,12 +88,8 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
-			var b *ucauth.UCClient
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "GetCurrentUser", func(b *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
-				return &apistructs.UserInfo{ID: "1", Name: "Test"}, nil
-			})
 
-			s := &notifyChannelService{p: &provider{uc: b}}
+			s := &notifyChannelService{}
 			_, err := s.CreateNotifyChannel(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateNotifyChannel() error = %v, wantErr %v", err, tt.wantErr)
@@ -138,7 +131,7 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 			})
 
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "ListByPage", func(ncdb *db.NotifyChannelDB, offset, pageSize int64, orgId string) (int64, []model.NotifyChannel, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "ListByPage", func(ncdb *db.NotifyChannelDB, offset, pageSize int64, scopeId, scopeType string) (int64, []model.NotifyChannel, error) {
 				var channels []model.NotifyChannel
 				for i := 0; i < 10; i++ {
 					channels = append(channels, model.NotifyChannel{Id: strconv.Itoa(i), Name: strconv.Itoa(i), Type: strconv.Itoa(i)})
@@ -166,18 +159,18 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{req: &pb.UpdateNotifyChannelRequest{Name: "create_error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case2", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "create_error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case3", args{req: &pb.UpdateNotifyChannelRequest{Id: "nil", Name: "create_error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case4", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case5", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "error", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case6", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "exist", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case7", args{req: &pb.UpdateNotifyChannelRequest{Id: "not_same", Name: "current", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
-		{"case8", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "current", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case9", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "", ChannelProviderType: "ali_short_message", Config: nil}}, false},
-		{"case10", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "short_message", ChannelProviderType: "ali_short_message", Config: nil}}, false},
-		{"case11", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
-		{"case12", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "test", Type: "short_message", ChannelProviderType: "ali_short_message", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case1", args{req: &pb.UpdateNotifyChannelRequest{Name: "create_error", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case2", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "create_error", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case3", args{req: &pb.UpdateNotifyChannelRequest{Id: "nil", Name: "create_error", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case4", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
+		{"case5", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "error", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case6", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "exist", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case7", args{req: &pb.UpdateNotifyChannelRequest{Id: "not_same", Name: "current", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
+		{"case8", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "current", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
+		{"case9", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "", ChannelProviderType: "aliyun_sms", Config: nil}}, false},
+		{"case10", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: nil}}, false},
+		{"case11", args{req: &pb.UpdateNotifyChannelRequest{Id: "test", Name: "test", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, false},
+		{"case12", args{req: &pb.UpdateNotifyChannelRequest{Id: "error", Name: "test", Type: "short_message", ChannelProviderType: "aliyun_sms", Config: map[string]*structpb.Value{"AccessKeyId": structpb.NewStringValue("xx"), "AccessKeySecret": structpb.NewStringValue("xx"), "SignName": structpb.NewStringValue("xx"), "TemplateCode": structpb.NewStringValue("xx")}}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -331,7 +324,7 @@ func Test_notifyChannelService_ConfigValidate(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{channelType: "ali_short_message", c: map[string]*structpb.Value{"accessKeyId": structpb.NewStringValue("xx"), "accessKeySecret": structpb.NewStringValue("xx"), "signName": structpb.NewStringValue("xx"), "templateCode": structpb.NewStringValue("xx")}}, false},
+		{"case1", args{channelType: "aliyun_sms", c: map[string]*structpb.Value{"accessKeyId": structpb.NewStringValue("xx"), "accessKeySecret": structpb.NewStringValue("xx"), "signName": structpb.NewStringValue("xx"), "templateCode": structpb.NewStringValue("xx")}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
