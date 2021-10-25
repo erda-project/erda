@@ -83,5 +83,5 @@ type StatisticsExecHistoryRequest struct {
 	SceneSetIDs  []uint64 `json:"sceneSetIDs"`
 	SceneIDs     []uint64 `json:"sceneIDs"`
 	StepIDs      []uint64 `json:"stepIDs"`
-	PipelineID   uint64   `json:"pipelineId"`
+	PipelineID   uint64   `json:"pipelineID"`
 }

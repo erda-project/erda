@@ -243,7 +243,7 @@ en:
   import-export-table: Import and export records table
   type: Type
   operator: Operator
-  time: Time,
+  time: Time
   desc: Description
   status: Status
   result: Result
