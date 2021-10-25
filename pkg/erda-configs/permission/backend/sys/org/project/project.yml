@@ -823,3 +823,16 @@
 
 ## code coverage end ##
 
+## test report start ##
+- role: Owner,PM,Lead,QA
+  scope: project
+  resource: testReport
+  action: CREATE
+
+- role: Owner,PM,Lead,QA
+  scope: project
+  resource: testReport
+  action: UPDATE
+
+## test report end ##
+

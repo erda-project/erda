@@ -26,7 +26,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -70,6 +69,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
@@ -497,6 +497,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		code_coverage.WithEnvConfig(env),
 	)
 
+	testReportSvc := test_report.New(
+		test_report.WithDBClient(db),
+		test_report.WithBundle(bdl.Bdl),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -552,6 +557,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithLibReference(libReference),
 		endpoints.WithOrg(o),
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
+		endpoints.WithTestReportRecord(testReportSvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)
