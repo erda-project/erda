@@ -128,13 +128,15 @@ func (t *ComponentEventTable) RenderList() error {
 			continue
 		}
 		var ts int64 = math.MaxInt64
+		lastSeen := "unknown"
 		lastSeenTimestamp, err := time.ParseDuration(fields[0])
 		if err == nil {
+			lastSeen = fields[0]
 			ts = lastSeenTimestamp.Milliseconds()
 		}
 		items = append(items, Item{
 			ID:                obj.String("metadata", "name"),
-			LastSeen:          fields[0],
+			LastSeen:          lastSeen,
 			LastSeenTimestamp: ts,
 			Type:              t.SDK.I18n(fields[1]),
 			Reason:            fields[2],
