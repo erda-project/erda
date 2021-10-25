@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -126,15 +127,15 @@ func (t *ComponentEventTable) RenderList() error {
 		if res != "pod" || refName != name {
 			continue
 		}
+		var ts int64 = math.MaxInt64
 		lastSeenTimestamp, err := time.ParseDuration(fields[0])
-		if err != nil {
-			logrus.Errorf("failed to parse timestamp for event %s, %v", fields[9], err)
-			continue
+		if err == nil {
+			ts = lastSeenTimestamp.Milliseconds()
 		}
 		items = append(items, Item{
 			ID:                obj.String("metadata", "name"),
 			LastSeen:          fields[0],
-			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
+			LastSeenTimestamp: ts,
 			Type:              t.SDK.I18n(fields[1]),
 			Reason:            fields[2],
 			Message:           fields[6],
