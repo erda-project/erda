@@ -19,12 +19,16 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/recallsong/go-utils/container/slice"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 func init() {
@@ -52,38 +56,99 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		TimeEnd:   timeEnd,
 	})
 
-	if err := f.setState(ctx); err != nil {
+	if err := f.setState(ctx, gs); err != nil {
 		return err
 	}
 
 	return f.setToComponent(c)
 }
 
-func (f *Filter) setState(ctx context.Context) error {
-	now := time.Now()
-	weekAgo := now.AddDate(0, 0, -7)
-	monthAgo := now.AddDate(0, -1, 0)
-
-	customProps := CustomProps{
-		AllowClear: false,
-		Ranges: Ranges{
-			Week:  []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
-			Month: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
+func (f *Filter) setState(ctx context.Context, gs *cptype.GlobalStateData) error {
+	h := gshelper.NewGSHelper(gs)
+	globalAtPlans := h.GetGlobalAutoTestPlanList()
+	selectedItrsByID := h.GetGlobalSelectedIterationsByID()
+	f.State.Conditions = []filter.PropCondition{
+		{
+			EmptyText: cputil.I18n(ctx, "all"),
+			Fixed:     true,
+			Key:       "atPlanIDs",
+			Label:     cputil.I18n(ctx, "Test Plan"),
+			ShowIndex: 1,
+			Options: func() (opts []filter.PropConditionOption) {
+				type Obj struct {
+					filter.PropConditionOption
+					itrCreateTime time.Time
+				}
+				var beforeOpts []Obj // used for order
+				for _, plan := range globalAtPlans {
+					itrPrefix := cputil.I18n(ctx, "[${iteration}: %s]", plan.IterationName)
+					if plan.IterationID <= 0 {
+						itrPrefix = cputil.I18n(ctx, "[${no-iteration}]")
+					}
+					beforeOpts = append(beforeOpts, Obj{
+						PropConditionOption: filter.PropConditionOption{
+							Label: cputil.I18n(ctx, "%s %s", itrPrefix, plan.Name),
+							Value: plan.ID,
+						},
+						itrCreateTime: func() time.Time {
+							itr, ok := selectedItrsByID[plan.IterationID]
+							if !ok {
+								return time.Time{}
+							}
+							return itr.CreatedAt
+						}(),
+					})
+				}
+				slice.Sort(beforeOpts, func(i, j int) bool {
+					return beforeOpts[i].itrCreateTime.After(beforeOpts[j].itrCreateTime)
+				})
+				for _, bo := range beforeOpts {
+					opts = append(opts, bo.PropConditionOption)
+				}
+				return
+			}(),
+			Type: filter.PropConditionTypeSelect,
 		},
-		SelectableTime: f.State.Values.Time,
-	}
+		{
+			CustomProps: func() map[string]interface{} {
+				now := time.Now()
+				weekAgo := now.AddDate(0, 0, -7)
+				monthAgo := now.AddDate(0, -1, 0)
 
-	b, err := json.Marshal(&customProps)
-	if err != nil {
-		return err
-	}
-	customPropsMap := make(map[string]interface{}, 0)
-	if err = json.Unmarshal(b, &customPropsMap); err != nil {
-		return err
-	}
+				customProps := CustomProps{
+					AllowClear: false,
+					Ranges: Ranges{
+						Week:  []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
+						Month: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
+					},
+				}
 
-	f.State.Conditions[0].CustomProps = customPropsMap
-	f.State.Conditions[0].Label = cputil.I18n(ctx, "time")
+				b, _ := json.Marshal(&customProps)
+				customPropsMap := make(map[string]interface{}, 0)
+				_ = json.Unmarshal(b, &customPropsMap)
+				return customPropsMap
+			}(),
+			Label:     cputil.I18n(ctx, "time"),
+			Type:      filter.PropConditionTypeRangePicker,
+			Fixed:     true,
+			ShowIndex: 2,
+			Key:       "time",
+		},
+	}
+	h.SetRateTrendingFilterTestPlanList(func() (selectedAtPlans []apistructs.TestPlanV2) {
+		// not selected, return all
+		if len(f.State.Values.AtPlanIDs) == 0 {
+			return globalAtPlans
+		}
+		globalAtPlanMap := make(map[uint64]apistructs.TestPlanV2)
+		for _, plan := range globalAtPlans {
+			globalAtPlanMap[plan.ID] = plan
+		}
+		for _, planID := range f.State.Values.AtPlanIDs {
+			selectedAtPlans = append(selectedAtPlans, globalAtPlanMap[planID])
+		}
+		return
+	}())
 
 	return nil
 }

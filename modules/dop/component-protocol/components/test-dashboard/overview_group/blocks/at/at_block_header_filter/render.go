@@ -63,7 +63,6 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 
 	h := gshelper.NewGSHelper(gs)
 	globalAtPlans := h.GetGlobalAutoTestPlanList()
-	//selectAtPlans := h.GetAtBlockFilterTestPlanList()
 	selectedItrsByID := h.GetGlobalSelectedIterationsByID()
 	f.State.Conditions = []filter.PropCondition{
 		{

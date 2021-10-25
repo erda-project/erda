@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-const CoverChartSelectItemOperationKey cptype.OperationKey = "selectChartItem"
+const RateTrendingSelectItemOperationKey cptype.OperationKey = "selectChartItem"
 
 func init() {
 	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "at_case_rate_trending_chart", func() servicehub.Provider {
@@ -106,7 +106,7 @@ type MetaData struct {
 func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
 	switch event.Operation {
-	case CoverChartSelectItemOperationKey:
+	case RateTrendingSelectItemOperationKey:
 		opData := OperationData{}
 		b, err := json.Marshal(&event.OperationData)
 		if err != nil {
@@ -117,8 +117,8 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		}
 		h.SetSelectChartItemData(opData.MetaData.Data.MetaData)
 		return nil
-	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
-		atPlans := h.GetAtBlockFilterTestPlanList()
+	case cptype.InitializeOperation, cptype.DefaultRenderingKey, cptype.RenderingOperation:
+		atPlans := h.GetRateTrendingFilterTestPlanList()
 		atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 		timeFilter := h.GetAtCaseRateTrendingTimeFilter()
 		historyList, err := atSvc.ListAutoTestExecHistory(

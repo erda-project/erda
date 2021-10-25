@@ -34,6 +34,7 @@ func assign(src, dst interface{}) error {
 	if src == nil || dst == nil {
 		return nil
 	}
+
 	return mapstructure.Decode(src, dst)
 }
 
@@ -178,6 +179,22 @@ func (h *GSHelper) GetAtBlockFilterTestPlanList() []apistructs.TestPlanV2 {
 	}
 	res := make([]apistructs.TestPlanV2, 0)
 	_ = assign((*h.gs)["GlobalAtBlockFilterTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetRateTrendingFilterTestPlanList(l []apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalRateTrendingFilterTestPlanList"] = l
+}
+
+func (h *GSHelper) GetRateTrendingFilterTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalRateTrendingFilterTestPlanList"], &res)
 	return res
 }
 

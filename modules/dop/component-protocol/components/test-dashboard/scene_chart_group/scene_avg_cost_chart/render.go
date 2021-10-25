@@ -87,7 +87,7 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, sceneMap[v.SceneID])
 	}
 
-	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "scene-failed-rate"))
+	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "scene-avg-cost"))
 	return nil
 }
 

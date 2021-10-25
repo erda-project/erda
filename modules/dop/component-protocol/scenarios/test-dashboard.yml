@@ -907,3 +907,10 @@ rendering:
   at_case_rate_trending_chart:
     - name: at_plan_latest_waterfall_chart_filter
     - name: at_plan_latest_waterfall_chart
+
+  scene_and_api_filter:
+    - name: scene_avg_cost_chart
+    - name: scene_rate_failed_chart
+    - name: scene_rate_passed_chart
+    - name: at_api_avg_cost_chart
+    - name: at_api_rate_failed_chart

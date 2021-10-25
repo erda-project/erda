@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 func init() {
@@ -59,30 +60,32 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 }
 
 func (f *Filter) setState(ctx context.Context) error {
-	now := time.Now()
-	weekAgo := now.AddDate(0, 0, -7)
-	monthAgo := now.AddDate(0, -1, 0)
+	f.State.Conditions = []filter.PropCondition{
+		{
+			CustomProps: func() map[string]interface{} {
+				now := time.Now()
+				weekAgo := now.AddDate(0, 0, -7)
+				monthAgo := now.AddDate(0, -1, 0)
 
-	customProps := CustomProps{
-		AllowClear: false,
-		Ranges: Ranges{
-			Week:  []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
-			Month: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
+				customProps := CustomProps{
+					AllowClear: false,
+					Ranges: Ranges{
+						Week:  []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
+						Month: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
+					},
+				}
+
+				b, _ := json.Marshal(&customProps)
+				customPropsMap := make(map[string]interface{}, 0)
+				_ = json.Unmarshal(b, &customPropsMap)
+				return customPropsMap
+			}(),
+			Label:     cputil.I18n(ctx, "time"),
+			Type:      filter.PropConditionTypeRangePicker,
+			Fixed:     true,
+			ShowIndex: 2,
+			Key:       "time",
 		},
-		SelectableTime: f.State.Values.Time,
 	}
-
-	b, err := json.Marshal(&customProps)
-	if err != nil {
-		return err
-	}
-	customPropsMap := make(map[string]interface{}, 0)
-	if err = json.Unmarshal(b, &customPropsMap); err != nil {
-		return err
-	}
-
-	f.State.Conditions[0].CustomProps = customPropsMap
-	f.State.Conditions[0].Label = cputil.I18n(ctx, "time")
-
 	return nil
 }
