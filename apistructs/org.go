@@ -356,6 +356,7 @@ type OrgResourceInfo struct {
 }
 
 type OrgClustersResourcesInfo struct {
+	Header
 	// deprecated:
 	AvailableCPU float64 `json:"available_cpu"`
 	// deprecated:
@@ -366,6 +367,38 @@ type OrgClustersResourcesInfo struct {
 	TotalMem float64 `json:"total_mem"`
 
 	ClusterList []ClusterResources
+}
+
+type OrgClustersResourcesResp struct {
+	Header
+	Quotas []QuotaData
+}
+
+type QuotaData struct {
+	ClusterName string
+	Principal   string
+	Project     string
+	MemoryQuota float64
+	CPUQuota    float64
+}
+
+type OrgClustersResourcesReq struct {
+	Header
+	OrgID          string
+	ClusterNames   []string
+	PrincipalNames []string
+	ProjectNames   []string
+}
+
+type OrgClustersNamespaceResp struct {
+	Header
+	Namespaces []string
+}
+
+type OrgClustersNamespaceReq struct {
+	Header
+	OrgID       string
+	ClusterName []string
 }
 
 type ClusterResources struct {
