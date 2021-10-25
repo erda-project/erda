@@ -141,11 +141,23 @@ func (q *Q) calcMtPlanScore(ctx context.Context, h *gshelper.GSHelper) float64 {
 	return score
 }
 
-// score = SUM(all_at_plan_latest_passed_rate)/NUM(at_plan) * SUM(all_at_plan_latest_passed_rate)/NUM(at_plan) * 100
+// score = (SUM(api_passed)/SUM(api_total)) * (SUM(api_executed)/SUM(api_total)) * 100
 // value range: 0-100
 func (q *Q) calcAtPlanScore(ctx context.Context, h *gshelper.GSHelper) float64 {
-	// TODO use at_block value directly
-	return 70
+	atPlans := h.GetGlobalAutoTestPlanList()
+
+	var numAPIPassed, numAPIExecuted, numAPITotal uint64
+	for _, plan := range atPlans {
+		numAPIPassed += uint64(plan.SuccessApiNum)
+		numAPIExecuted += uint64(plan.ExecuteApiNum)
+		numAPITotal += uint64(plan.TotalApiNum)
+	}
+
+	if numAPITotal == 0 {
+		return 0
+	}
+	score := (float64(numAPIPassed) / float64(numAPITotal)) * (float64(numAPIExecuted) / float64(numAPITotal)) * 100
+	return score
 }
 
 // bug score: score = 100 - DI (result must >= 0)
