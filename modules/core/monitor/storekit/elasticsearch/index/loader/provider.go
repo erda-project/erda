@@ -46,6 +46,7 @@ type (
 		QueryIndexTimeRange bool          `file:"query_index_time_range"`
 		IndexReloadInterval time.Duration `file:"index_reload_interval" default:"2m"`
 		CacheKeyPrefix      string        `file:"cache_key_prefix" default:"es-index"`
+		DefaultIndex        string        `file:"default_index" default:"index__for__not__exist"`
 	}
 	provider struct {
 		Cfg      *config

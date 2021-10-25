@@ -351,6 +351,9 @@ func (p *provider) WatchLoadEvent(f func(*IndexGroup)) {
 func (p *provider) Indices(ctx context.Context, start, end int64, paths ...KeyPath) (list []string) {
 	indices := p.WaitAndGetIndices(ctx)
 	if indices == nil {
+		if len(p.Cfg.DefaultIndex) > 0 {
+			return []string{p.Cfg.DefaultIndex}
+		}
 		return nil
 	}
 	startT := time.Unix(start/int64(time.Second), start%int64(time.Second))
@@ -358,7 +361,10 @@ func (p *provider) Indices(ctx context.Context, start, end int64, paths ...KeyPa
 	for _, path := range paths {
 		p.findIndexByPath(path.Keys, path.Recursive, indices, startT, endT, &list)
 	}
-	return
+	if len(list) <= 0 && len(p.Cfg.DefaultIndex) > 0 {
+		return []string{p.Cfg.DefaultIndex}
+	}
+	return list
 }
 
 func (p *provider) findIndexByPath(path []string, recursive bool, group *IndexGroup, start, end time.Time, list *[]string) {
