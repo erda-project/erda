@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -795,12 +794,9 @@ func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request,
 		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
 	}
 	value := r.URL.Query()
-	var namespaces = make(map[string][]string)
-	for k := range value {
-		namespaces[k] = strings.Split(value.Get(k), ",")
-	}
+	logrus.Debugf("GetNamespacesBelongsTo, params: %v", value)
 
-	data, err := e.project.GetNamespacesBelongsTo(ctx, orgID, namespaces)
+	data, err := e.project.GetNamespacesBelongsTo(ctx, orgID, value)
 	if err != nil {
 		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
 	}
