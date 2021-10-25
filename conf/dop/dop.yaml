@@ -162,3 +162,7 @@ component-protocol.components.test-dashboard.scene_rate_failed_chart:
 component-protocol.components.test-dashboard.scene_rate_passed_chart:
 component-protocol.components.test-dashboard.at_api_rate_failed_chart:
 component-protocol.components.test-dashboard.at_api_avg_cost_chart:
+
+component-protocol.components.test-report.filter:
+component-protocol.components.test-report.table:
+component-protocol.components.test-report.createReportButton:

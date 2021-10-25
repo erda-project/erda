@@ -59,6 +59,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
@@ -592,6 +593,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/code-coverage/record/{id}", Method: http.MethodGet, Handler: e.GetCodeCoverageRecord},
 		{Path: "/api/code-coverage/actions/status", Method: http.MethodGet, Handler: e.GetCodeCoverageRecordStatus},
 
+		// test report
+		{Path: "/api/projects/{projectID}/test-reports", Method: http.MethodPost, Handler: e.CreateTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports/actions/list", Method: http.MethodGet, Handler: e.ListTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -670,6 +676,7 @@ type Endpoints struct {
 	libReference    *libreference.LibReference
 	org             *org.Org
 	codeCoverageSvc *code_coverage.CodeCoverage
+	testReportSvc   *test_report.TestReport
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -1010,6 +1017,12 @@ func WithOrg(org *org.Org) Option {
 func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
 	return func(e *Endpoints) {
 		e.codeCoverageSvc = svc
+	}
+}
+
+func WithTestReportRecord(svc *test_report.TestReport) Option {
+	return func(e *Endpoints) {
+		e.testReportSvc = svc
 	}
 }
 

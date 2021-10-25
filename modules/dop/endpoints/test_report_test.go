@@ -12,13 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package endpoints
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/scenes-import-record"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-report"
+	"context"
+	"net/http"
+	"testing"
+
+	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pkg/user"
 )
+
+func TestGetTestReportRecord(t *testing.T) {
+	pm1 := monkey.Patch(user.GetIdentityInfo, func(r *http.Request) (apistructs.IdentityInfo, error) {
+		return apistructs.IdentityInfo{UserID: "1"}, nil
+	})
+	defer pm1.Unpatch()
+	ep := Endpoints{}
+	r := &http.Request{}
+	_, err := ep.GetTestReportRecord(context.Background(), r, map[string]string{"id": "abc"})
+	assert.NoError(t, err)
+}
