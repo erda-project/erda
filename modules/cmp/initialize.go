@@ -80,8 +80,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	var redisCli *redis.Client
 
 	db := dbclient.Open(dbengine.MustOpen())
-	r := ctx.Value("resource").(*resource.Resource)
-	r.DB = db
 	i18n.InitI18N()
 
 	// cache etcd
@@ -132,7 +130,10 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		org_resource.WithBundle(bdl),
 		org_resource.WithRedisClient(redisCli),
 	)
-
+	r := ctx.Value("resource").(*resource.Resource)
+	r.DB = db
+	r.Bdl = bdl
+	ctx = context.WithValue(ctx, "resource", r)
 	resourceTable := resource.NewReportTable(
 		resource.ReportTableWithBundle(bdl),
 		resource.ReportTableWithCMP(p),

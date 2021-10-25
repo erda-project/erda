@@ -19,13 +19,15 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 )
 
 type Resource struct {
+	Bdl    *bundle.Bundle
 	Ctx    context.Context
-	Server cmp_interface.Provider `autowired:"erda.cmp"`
+	Server cmp_interface.Provider
 	I18N   i18n.Translator
 	Lang   i18n.LanguageCodes
 	DB     *dbclient.DBClient
@@ -41,17 +43,16 @@ func (r *Resource) I18n(key string, args ...interface{}) string {
 	return r.I18N.Sprintf(r.Lang, key, args...)
 }
 
-func New(ctx context.Context, i18n i18n.Translator, lang i18n.LanguageCodes) *Resource {
+func New(ctx context.Context, i18n i18n.Translator, lang i18n.LanguageCodes, mServer cmp_interface.Provider) *Resource {
 	r := &Resource{}
 	r.I18N = i18n
 	r.Ctx = ctx
 	r.Lang = lang
+	r.Server = mServer
 	return r
 }
 
 func (r *Resource) Init(ctx servicehub.Context) error {
-	sServer := ctx.Service("cmp").(cmp_interface.Provider)
-	r.Server = sServer
 	r.Ctx = ctx
 	return nil
 }

@@ -17,6 +17,7 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -240,16 +241,18 @@ func (r *Resource) GetClusterTrend(ordId string, userId string, request *apistru
 	)
 
 	db := r.DB.Table("cmp_cluster_resource_daily")
+	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
+	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
 	switch request.Interval {
 	case day:
-		db.Raw("select date as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterName)
+		db.Raw("select date as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", endTime, startTime, request.ClusterName)
 		db.Group("date")
 	case week:
-		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterName)
+		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", endTime, startTime, request.ClusterName)
 		db.Group("WEEK(date, 5)")
 
 	case month:
-		db.Raw("select MONTH(date) as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterName)
+		db.Raw("select MONTH(date) as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where updated_at < ? and updated_at >= ? and cluster_name in (?)", endTime, startTime, request.ClusterName)
 		db.Group("MONTH(date)")
 	default:
 		err = errIntervalTypeNotFound
