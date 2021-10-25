@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/bdl"
 )
 
 const (
@@ -84,7 +83,7 @@ type Quota struct {
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	data = make(map[string]*PieData)
-	resp, err := bdl.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
+	resp, err := r.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
 	if err != nil {
 		return
 	}
