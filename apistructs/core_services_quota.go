@@ -52,9 +52,9 @@ func (q *GetQuotaOnClustersResponse) AccuQuota(cpu, mem uint64) {
 	q.memQuota += mem
 }
 
-func (q GetQuotaOnClustersResponse) ReCalcu() {
-	q.CPUQuota = 0
-	q.MemQuota = 0
+func (q *GetQuotaOnClustersResponse) ReCalcu() {
+	q.cpuQuota = 0
+	q.memQuota = 0
 	for _, owner := range q.Owners {
 		owner.ReCalcu()
 		q.AccuQuota(owner.cpuQuota, owner.memQuota)
@@ -82,9 +82,9 @@ func (q *OwnerQuotaOnClusters) AccuQuota(cpu, mem uint64) {
 	q.memQuota += mem
 }
 
-func (q OwnerQuotaOnClusters) ReCalcu() {
-	q.CPUQuota = 0
-	q.MemQuota = 0
+func (q *OwnerQuotaOnClusters) ReCalcu() {
+	q.cpuQuota = 0
+	q.memQuota = 0
 	for _, project := range q.Projects {
 		project.ReCalcu()
 		q.AccuQuota(project.cpuQuota, project.memQuota)
@@ -111,7 +111,7 @@ func (q *ProjectQuotaOnClusters) AccuQuota(cpu, mem uint64) {
 	q.memQuota += mem
 }
 
-func (q ProjectQuotaOnClusters) ReCalcu() {
+func (q *ProjectQuotaOnClusters) ReCalcu() {
 	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
 	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
 }

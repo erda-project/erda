@@ -24,6 +24,7 @@ type ProjectResourceDailyModel struct {
 
 	ProjectID   uint64 `json:"project_id" gorm:"project_id"`
 	ProjectName string `json:"project_name" gorm:"project_name"`
+	ClusterName string `json:"cluster_name" gorm:"cluster_name"`
 	CPUQuota    uint64 `json:"cpu_quota" gorm:"cpu_quota"`
 	CPURequest  uint64 `json:"cpu_request" gorm:"cpu_request"`
 	MemQuota    uint64 `json:"mem_quota" gorm:"mem_quota"`

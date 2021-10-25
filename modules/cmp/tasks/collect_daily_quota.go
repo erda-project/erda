@@ -117,8 +117,11 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 	for _, item := range projectsNamespaces.List {
 		record := apistructs.ProjectResourceDailyModel{
 			ID:          0,
+			CreatedAt:   time.Time{},
+			UpdatedAt:   time.Time{},
 			ProjectID:   uint64(item.ProjectID),
 			ProjectName: item.ProjectName,
+			ClusterName: "",
 			CPUQuota:    item.CPUQuota,
 			CPURequest:  item.GetCPUReqeust(),
 			MemQuota:    item.MemQuota,
