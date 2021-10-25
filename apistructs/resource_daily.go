@@ -31,7 +31,7 @@ type ProjectResourceDailyModel struct {
 }
 
 func (m ProjectResourceDailyModel) TableName() string {
-	return "cmp_prject_resource_daily"
+	return "cmp_project_resource_daily"
 }
 
 func (m ProjectResourceDailyModel) CreatedDay() string {

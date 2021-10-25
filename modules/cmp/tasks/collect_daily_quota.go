@@ -188,7 +188,7 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	l.Debugf("create record. length of records: %v", len(records))
 	for clusterName, record := range records {
 		var existsRecord apistructs.ClusterResourceDailyModel
-		err := d.db.Where("updated_at >= ? and udpated_at < ?",
+		err := d.db.Where("updated_at >= ? and updated_at < ?",
 			time.Now().Format("2006-01-02 00:00:00"),
 			time.Now().Add(time.Hour*24).Format("2006-01-02 00:00:00")).
 			First(&existsRecord, map[string]interface{}{"cluster_name": clusterName}).
