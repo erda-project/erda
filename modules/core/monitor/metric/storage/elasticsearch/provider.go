@@ -36,6 +36,7 @@ type (
 	config struct {
 		WriteTimeout time.Duration `file:"write_timeout" default:"1m"`
 		IndexType    string        `file:"index_type" default:"metric"`
+		DummyIndex   string        `file:"dummy_index"`
 	}
 	provider struct {
 		Cfg       *config
@@ -54,7 +55,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 			return nil
 		})
 	}
-	return nil
+	return p.initDummyIndex(ctx, p.ES.Client())
 }
 
 var _ storage.Storage = (*provider)(nil)

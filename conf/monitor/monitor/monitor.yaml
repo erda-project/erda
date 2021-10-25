@@ -59,6 +59,7 @@ elasticsearch.index.loader@log:
   index_reload_interval: "1m"
   query_index_time_range: true
   cache_key_prefix: "es-index-log"
+  default_index: "index__for__not__exist"
   match:
     - prefix: "erda-logs-"
       patterns:
@@ -110,6 +111,7 @@ elasticsearch.index.loader@metric:
   index_reload_interval: "1m"
   query_index_time_range: true
   cache_key_prefix: "es-index-metric"
+  default_index: "spot-empty"
   match:
     - prefix: "spot-"
       patterns:

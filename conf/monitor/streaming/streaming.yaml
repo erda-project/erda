@@ -138,6 +138,7 @@ metric-storage-elasticsearch:
   read_timeout: "1m"
   write_timeout: "1m"
   index_type: "spot"
+  dummy_index: "spot-empty"
 
 metric-persist:
   input:
