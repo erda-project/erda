@@ -113,7 +113,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		l.WithError(err).Errorln()
 		return err
 	}
-	l.Debugln("GetAllProjects, result: %+v", projects)
+	l.Debugf("GetAllProjects, result: %+v", projects)
 
 	for _, project := range projects {
 		var record apistructs.ProjectResourceDailyModel
@@ -139,6 +139,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 			cpuRequestM = make(map[string]uint64)
 			memRequestM = make(map[string]uint64)
 		)
+
 		clustersM[project.ResourceConfig.PROD.ClusterName] = true
 		clustersM[project.ResourceConfig.STAGING.ClusterName] = true
 		clustersM[project.ResourceConfig.TEST.ClusterName] = true
