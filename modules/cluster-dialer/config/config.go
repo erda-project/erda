@@ -19,6 +19,7 @@ import "time"
 type Config struct {
 	Debug           bool          `default:"false" desc:"enable debug logging"`
 	NeedClusterInfo bool          `default:"true" desc:"need agent register cluster info"`
+	AuthWhitelist   string        `desc:"auth whitelist, will skip auth"`
 	Timeout         time.Duration `default:"60s" desc:"default timeout"`
 	Listen          string        `default:":80" desc:"listen address"`
 }

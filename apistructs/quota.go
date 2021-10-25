@@ -15,25 +15,20 @@
 package apistructs
 
 type GaugeRequest struct {
-	MemoryUnit   int
-	CpuUnit      int
-	ClusterNames []string
+	MemPerNode  uint64   `json:"memPerNode"`
+	CpuPerNode  uint64   `json:"cpuPerNode"`
+	ClusterName []string `json:"clusterName"`
 }
 
 type TableRequest struct {
-	MemoryUnit   int
-	CpuUnit      int
-	ClusterNames []string
+	MemoryUnit  int
+	CpuUnit     int
+	ClusterName []string
 }
 
 type ClassRequest struct {
-	ResourceType   string
-	Start          string
-	End            string
-	interval       string
-	ProjectNames   []string
-	ClusterNames   []string
-	PrincipalNames []string
+	ResourceType string
+	ClusterName  []string
 }
 
 type TrendRequest struct {
@@ -41,8 +36,8 @@ type TrendRequest struct {
 	Start        int64
 	End          int64
 	Interval     string
-	ProjectIds   []string
-	ClusterNames []string
+	ProjectId    []string
+	ClusterName  []string
 }
 
 type ResourceResp struct {

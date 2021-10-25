@@ -19,8 +19,7 @@ import (
 	"net/http"
 	"strconv"
 
-	jsi "github.com/json-iterator/go"
-	"github.com/pkg/errors"
+	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
@@ -28,23 +27,26 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-var errParamIllegal = errors.New("param illegal")
-
 func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	newDecoder := schema.NewDecoder()
 	req := &apistructs.GaugeRequest{}
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
 		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
 	}
-	err = jsi.NewDecoder(r.Body).Decode(req)
+	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
-	if req.CpuUnit < 1 || req.MemoryUnit < 1 {
-		err = errParamIllegal
-		return
+
+	if req.CpuPerNode < 1 {
+		req.CpuPerNode = 8
 	}
+	if req.MemPerNode < 1 {
+		req.MemPerNode = 32
+	}
+
 	content, err := e.Resource.GetGauge(orgIDStr, userIDStr, req)
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
@@ -54,6 +56,7 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 
 func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.ClassRequest{}
+	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
@@ -64,7 +67,7 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
 	}
 
-	err = jsi.NewDecoder(r.Body).Decode(req)
+	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
@@ -78,12 +81,13 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 
 func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
+	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
 		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
 	}
-	err = jsi.NewDecoder(r.Body).Decode(req)
+	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
@@ -97,12 +101,13 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 
 func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
+	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
 		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
 	}
-	err = jsi.NewDecoder(r.Body).Decode(req)
+	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}

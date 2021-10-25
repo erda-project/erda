@@ -83,13 +83,13 @@ type Quota struct {
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	data = make(map[string]*PieData)
-	resp, err := bdl.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterNames)
+	resp, err := bdl.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
 	if err != nil {
 		return
 	}
 
 	greq := &pb.GetClustersResourcesRequest{}
-	greq.ClusterNames = request.ClusterNames
+	greq.ClusterNames = request.ClusterName
 	resources, err := r.Server.GetClustersResources(r.Ctx, greq)
 	if err != nil {
 		return
@@ -242,14 +242,14 @@ func (r *Resource) GetClusterTrend(ordId string, userId string, request *apistru
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	switch request.Interval {
 	case day:
-		db.Raw("select date as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterNames)
+		db.Raw("select date as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterName)
 		db.Group("date")
 	case week:
-		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterNames)
+		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterName)
 		db.Group("WEEK(date, 5)")
 
 	case month:
-		db.Raw("select MONTH(date) as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterNames)
+		db.Raw("select MONTH(date) as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where updated_at < ? and updated_at >= ? and cluster_name in (?)", request.End, request.Start, request.ClusterName)
 		db.Group("MONTH(date)")
 	default:
 		err = errIntervalTypeNotFound
@@ -296,13 +296,13 @@ func (r *Resource) GetProjectTrend(ordId string, userId string, request *apistru
 	db := r.DB.Table("cmp_project_resource_daily")
 	switch request.Interval {
 	case day:
-		db.Raw("select date as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?)", request.End, request.Start, request.ClusterNames, request.ProjectIds)
+		db.Raw("select date as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?)", request.End, request.Start, request.ClusterName, request.ProjectId)
 		db.Group("date")
 	case week:
-		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?)", request.End, request.Start, request.ClusterNames, request.ProjectIds)
+		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?)", request.End, request.Start, request.ClusterName, request.ProjectId)
 		db.Group("WEEK(date, 5)")
 	case month:
-		db.Raw("select MONTH(date) as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?) and project_id in (?)", request.End, request.Start, request.ClusterNames, request.ProjectIds)
+		db.Raw("select MONTH(date) as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?) and project_id in (?)", request.End, request.Start, request.ClusterName, request.ProjectId)
 		db.Group("MONTH(date)")
 	default:
 		err = errIntervalTypeNotFound

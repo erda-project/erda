@@ -22,12 +22,12 @@ type ProjectResourceDailyModel struct {
 	CreatedAt time.Time `json:"created_at" gorm:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
 
-	ProjectID   uint64  `json:"project_id" gorm:"project_id"`
-	ProjectName string  `json:"project_name" gorm:"project_name"`
-	CPUQuota    float64 `json:"cpu_quota" gorm:"cpu_quota"`
-	CPURequest  float64 `json:"cpu_request" gorm:"cpu_request"`
-	MemQuota    float64 `json:"mem_quota" gorm:"mem_quota"`
-	MemRequest  float64 `json:"mem_request" gorm:"mem_request"`
+	ProjectID   uint64 `json:"project_id" gorm:"project_id"`
+	ProjectName string `json:"project_name" gorm:"project_name"`
+	CPUQuota    uint64 `json:"cpu_quota" gorm:"cpu_quota"`
+	CPURequest  uint64 `json:"cpu_request" gorm:"cpu_request"`
+	MemQuota    uint64 `json:"mem_quota" gorm:"mem_quota"`
+	MemRequest  uint64 `json:"mem_request" gorm:"mem_request"`
 }
 
 func (m ProjectResourceDailyModel) TableName() string {
@@ -48,11 +48,11 @@ type ClusterResourceDailyModel struct {
 	CreatedAt time.Time `json:"created_at" gorm:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
 
-	ClusterName  string  `json:"cluster_name" gorm:"cluster_name"`
-	CPUTotal     float64 `json:"cpu_total" gorm:"cpu_total"`
-	CPURequested float64 `json:"cpu_requested" gorm:"cpu_requested"`
-	MemTotal     float64 `json:"mem_total" gorm:"mem_total"`
-	MemRequested float64 `json:"mem_requested" gorm:"mem_requested"`
+	ClusterName  string `json:"cluster_name" gorm:"cluster_name"`
+	CPUTotal     uint64 `json:"cpu_total" gorm:"cpu_total"`
+	CPURequested uint64 `json:"cpu_requested" gorm:"cpu_requested"`
+	MemTotal     uint64 `json:"mem_total" gorm:"mem_total"`
+	MemRequested uint64 `json:"mem_requested" gorm:"mem_requested"`
 }
 
 func (m ClusterResourceDailyModel) TableName() string {

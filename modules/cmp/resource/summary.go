@@ -35,7 +35,7 @@ type GaugeData struct {
 }
 
 func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
-	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterNames, nil, nil)
+	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func (r *Resource) getGauge(request *apistructs.GaugeRequest, resp *apistructs.R
 	if resp.MemTotal == 0 || resp.CpuTotal == 0 {
 		return nil
 	}
-	cpuBase := float64(request.CpuUnit) / resp.CpuTotal
-	memBase := float64(request.MemoryUnit*G) / resp.MemTotal
+	cpuBase := float64(request.CpuPerNode) / resp.CpuTotal
+	memBase := float64(request.MemPerNode*G) / resp.MemTotal
 	MemRequest := resp.MemRequest
 	CpuRequest := resp.CpuRequest
 	MemTotal := resp.MemTotal
