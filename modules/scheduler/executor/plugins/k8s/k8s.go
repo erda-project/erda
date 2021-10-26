@@ -418,7 +418,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k.mysqloperator = mysqloperator
 	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
 	k.daemonsetoperator = daemonsetoperator
-	k.sourcecovoperator = sourcecov.New(k, client, k)
+	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
 	return k, nil
 }
 
