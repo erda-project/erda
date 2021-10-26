@@ -222,7 +222,7 @@ func TestMillcoreToCore(t *testing.T) {
 		v uint64  = 1200
 		r float64 = 1.2
 	)
-	if calcu.MillcoreToCore(v) != r {
+	if calcu.MillcoreToCore(v, 3) != r {
 		t.Fatal("calculate error")
 	}
 }
@@ -242,7 +242,7 @@ func TestByteToGibibyte(t *testing.T) {
 		v uint64  = 1.5 * 1024 * 1024 * 1024
 		r float64 = 1.5
 	)
-	if calcu.ByteToGibibyte(v) != r {
+	if calcu.ByteToGibibyte(v, 3) != r {
 		t.Fatal("calculate error")
 	}
 }

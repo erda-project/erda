@@ -132,9 +132,9 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 			OwnerUserID:        int64(projectItem.OwnerUserID),
 			OwnerUserName:      projectItem.OwnerUserName,
 			OwnerUserNickName:  projectItem.OwnerUserNickname,
-			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota),
+			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota, 3),
 			CPUWaterLevel:      0,
-			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota),
+			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota, 3),
 			MemWaterLevel:      0,
 			Nodes:              0,
 		}
@@ -161,9 +161,9 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 		OwnerUserID:        0,
 		OwnerUserName:      "",
 		OwnerUserNickName:  "所有人", // todo: i18n
-		CPUQuota:           calcu.MillcoreToCore(sharedResource[0]),
+		CPUQuota:           calcu.MillcoreToCore(sharedResource[0], 3),
 		CPUWaterLevel:      1,
-		MemQuota:           calcu.ByteToGibibyte(sharedResource[1]),
+		MemQuota:           calcu.ByteToGibibyte(sharedResource[1], 3),
 		MemWaterLevel:      1,
 		Nodes:              sharedNodes,
 	})

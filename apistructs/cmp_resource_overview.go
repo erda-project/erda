@@ -26,7 +26,7 @@ type ResourceOverviewReportDataItem struct {
 	ProjectDisplayName string  `json:"projectDisplayName"`
 	OwnerUserID        int64   `json:"ownerUserID"`
 	OwnerUserName      string  `json:"ownerUserName"`
-	OwnerUserNickName  string  `json:"ownerUserNickName"`
+	OwnerUserNickName  string  `json:"ownerUserNickname"`
 	CPUQuota           float64 `json:"cpuQuota"`
 	CPUWaterLevel      float64 `json:"cpuWaterLevel"`
 	MemQuota           float64 `json:"memQuota"`
