@@ -5,7 +5,6 @@ hierarchy:
   root: page
   structure:
     page:
-      - title
       - envFilter
       - tip
       - buttonGroup
@@ -43,10 +42,6 @@ components:
     type: Container
     props:
       spaceSize: middle
-  title:
-    type: Title
-    props:
-      title: "项目代码覆盖率统计"
   buttonGroup:
     type: LRContainer
   codeCoverChart:

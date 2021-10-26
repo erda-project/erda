@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -27,7 +28,10 @@ type ComponentAction struct {
 	base.DefaultProvider
 }
 
+const urlQuery = "envFilter__urlQuery"
+
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	sdk := cputil.SDK(ctx)
 
 	if c.State == nil {
 		c.State = map[string]interface{}{}
@@ -35,9 +39,15 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	var defaultEnv string
 	if c.State["value"] == nil {
-		defaultEnv = apistructs.DevEnv
+		if sdk.InParams != nil && sdk.InParams[urlQuery] != nil {
+			defaultEnv = sdk.InParams[urlQuery].(string)
+		} else {
+			defaultEnv = apistructs.DevEnv
+			c.State[urlQuery] = defaultEnv
+		}
 	} else {
 		defaultEnv = c.State["value"].(string)
+		c.State[urlQuery] = defaultEnv
 	}
 
 	c.Type = "Radio"
@@ -47,9 +57,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			"reload": true,
 		},
 	}
-	c.State = map[string]interface{}{
-		"value": defaultEnv,
-	}
+	c.State["value"] = defaultEnv
 	c.Props = map[string]interface{}{
 		"buttonStyle": "solid",
 		"radioType":   "button",
