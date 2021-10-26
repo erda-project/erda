@@ -51,8 +51,7 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 	}
 
 	_, projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
-	cpu := int64(service.Resources.Cpu * 1000)
-	mem := int64(service.Resources.Mem * float64(1<<20))
+	cpu, mem := getRequestsResources(deployment.Spec.Template.Spec.Containers)
 	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
 	if err != nil {
 		return err
@@ -161,27 +160,11 @@ func (k *Kubernetes) getDeploymentDeltaResource(ctx context.Context, deploy *app
 	if err != nil {
 		return 0, 0, err
 	}
-	oldCPUQty := resource.NewQuantity(0, resource.DecimalSI)
-	oldMemQty := resource.NewQuantity(0, resource.BinarySI)
-	for _, container := range oldDeploy.Spec.Template.Spec.Containers {
-		if container.Resources.Requests == nil {
-			continue
-		}
-		oldCPUQty.Add(*container.Resources.Requests.Cpu())
-		oldMemQty.Add(*container.Resources.Requests.Memory())
-	}
+	oldCPU, oldMem := getRequestsResources(oldDeploy.Spec.Template.Spec.Containers)
+	newCPU, newMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
 
-	newCPUQty := resource.NewQuantity(0, resource.DecimalSI)
-	newMemQty := resource.NewQuantity(0, resource.BinarySI)
-	for _, container := range deploy.Spec.Template.Spec.Containers {
-		if container.Resources.Requests == nil {
-			continue
-		}
-		newCPUQty.Add(*container.Resources.Requests.Cpu())
-		newMemQty.Add(*container.Resources.Requests.Memory())
-	}
-	deltaCPU = newCPUQty.MilliValue() - oldCPUQty.MilliValue()
-	deltaMemory = newMemQty.Value() - oldMemQty.Value()
+	deltaCPU = newCPU - oldCPU
+	deltaMemory = newMem - oldMem
 	return
 }
 
