@@ -86,8 +86,8 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		tv = makeMtCaseNumDone(ctx, mtPlans)
 	case "mt_case_num_block":
 		tv = makeMtCaseNumBlock(ctx, mtPlans)
-	case "mt_case_num_notpassed":
-		tv = makeMtCaseNumNotpassed(ctx, mtPlans)
+	case "mt_case_num_fail":
+		tv = makeMtCaseNumFail(ctx, mtPlans)
 	case "mt_case_rate_passed":
 		tv = makeMtCaseRatePassed(ctx, mtPlans)
 	case "mt_case_rate_executed":
@@ -166,14 +166,14 @@ func makeMtCaseNumBlock(ctx context.Context, mtPlans []apistructs.TestPlan) Text
 	}
 }
 
-func makeMtCaseNumNotpassed(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
-	var notpassed uint64
+func makeMtCaseNumFail(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
+	var fail uint64
 	for _, plan := range mtPlans {
-		notpassed = notpassed + plan.RelsCount.Fail + plan.RelsCount.Block
+		fail = fail + plan.RelsCount.Fail + plan.RelsCount.Block
 	}
 	return TextValue{
-		Value:      strutil.String(notpassed),
-		Kind:       cputil.I18n(ctx, "test-case-num-notpassed"),
+		Value:      strutil.String(fail),
+		Kind:       cputil.I18n(ctx, "test-case-num-fail"),
 		ValueColor: ColorTextRed,
 	}
 }

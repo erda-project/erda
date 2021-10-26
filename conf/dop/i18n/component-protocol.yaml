@@ -93,7 +93,7 @@ zh:
   test-case-num-total: 测试用例总数
   test-case-num-done: 已完成
   test-case-num-block: 阻塞
-  test-case-num-notpassed: 未通过
+  test-case-num-fail: 未通过
   test-case-rate-passed: 通过率
   test-case-rate-executed: 执行率
   no-iteration: 未指定迭代
@@ -248,9 +248,9 @@ en:
   status: Status
   result: Result
   test-case-num-total: Test Case Total Number
-  test-case-num-done: Finished
+  test-case-num-done: Finish
   test-case-num-block: Block
-  test-case-num-notpassed: Not Passed
+  test-case-num-fail: Fail
   test-case-rate-passed: Passed Rate
   test-case-rate-executed: Executed Rate
   no-iteration: no iteration
