@@ -81,6 +81,7 @@ type DailyClusterQuota struct {
 type Quota struct {
 	cpuQuota float64
 	memQuota float64
+	nickName string
 }
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
@@ -178,6 +179,7 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 		}
 		q.cpuQuota = owner.CPUQuota
 		q.memQuota = owner.MemQuota
+		q.nickName = owner.Nickname
 		principalMap[owner.Name] = q
 	}
 	principalPie = &PieData{}
@@ -187,12 +189,12 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 	}
 	switch resType {
 	case Memory:
-		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.memQuota / G, k})
+		for _, v := range principalMap {
+			serie.Data = append(serie.Data, SerieData{v.memQuota / G, v.nickName})
 		}
 	default:
-		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
+		for _, v := range principalMap {
+			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, v.nickName})
 		}
 	}
 	r.PieSort(serie.Data)
