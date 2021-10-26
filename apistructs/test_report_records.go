@@ -16,7 +16,6 @@ package apistructs
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 )
@@ -45,20 +44,21 @@ type reportQualityScore struct {
 	QualityScore float64 `json:"qualityScore"`
 }
 
-func (t *TestReportData) GetQualityScore() (float64, error) {
+// GetQualityScore quality score can be empty
+func (t *TestReportData) GetQualityScore() float64 {
 	if t.TestDashboard == nil || t.TestDashboard.Protocol == nil || t.TestDashboard.Protocol.GlobalState == nil {
-		return 0, fmt.Errorf("missing quality score data")
+		return 0
 	}
 
 	scoreByt, err := json.Marshal(t.TestDashboard.Protocol.GlobalState)
 	if err != nil {
-		return 0, err
+		return 0
 	}
 	var score reportQualityScore
 	if err := json.Unmarshal(scoreByt, &score); err != nil {
-		return 0, err
+		return 0
 	}
-	return score.QualityScore, nil
+	return score.QualityScore
 }
 
 type TestReportRecordListRequest struct {

@@ -66,7 +66,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			Key:       "pipelineID",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
-				if len(f.State.Conditions[0].Options) == 0 {
+				if len(f.State.Conditions) == 0 || len(f.State.Conditions[0].Options) == 0 {
 					data := h.GetSelectChartHistoryData()
 					opts = append(opts, filter.PropConditionOption{
 						Label: data.Name,

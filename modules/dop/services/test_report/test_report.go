@@ -71,6 +71,9 @@ func (svc *TestReport) CreateTestReport(req apistructs.TestReportRecord) (uint64
 	if req.Name == "" {
 		return 0, apierrors.ErrCreateTestReportRecord.InvalidParameter("name")
 	}
+	if req.Summary == "" {
+		return 0, apierrors.ErrCreateTestReportRecord.InvalidParameter("summary")
+	}
 	iteration, err := svc.db.GetIteration(req.IterationID)
 	if err != nil {
 		return 0, apierrors.ErrCreateTestReportRecord.NotFound()
@@ -78,10 +81,7 @@ func (svc *TestReport) CreateTestReport(req apistructs.TestReportRecord) (uint64
 	if iteration.ProjectID != req.ProjectID {
 		return 0, apierrors.ErrCreateTestReportRecord.InvalidParameter("iterationID")
 	}
-	qualityScore, err := req.ReportData.GetQualityScore()
-	if err != nil {
-		return 0, apierrors.ErrCreateTestReportRecord.InternalError(err)
-	}
+	qualityScore := req.ReportData.GetQualityScore()
 	if qualityScore > 500 || qualityScore < 0 {
 		return 0, apierrors.ErrCreateTestReportRecord.InvalidParameter(fmt.Sprintf("qualityScore: %.2f", qualityScore))
 	}

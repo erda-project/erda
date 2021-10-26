@@ -16,22 +16,48 @@ package createReportButton
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	base.DefaultProvider
+	sdk    *cptype.SDK
+	ctxBdl *bundle.Bundle
 
 	Name       string                 `json:"name"`
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
+	InParams   InParams               `json:"-"`
+}
+
+type InParams struct {
+	ProjectID uint64 `json:"projectId,omitempty"`
+}
+
+func (i *ComponentAction) setInParams(ctx context.Context) error {
+	b, err := json.Marshal(cputil.SDK(ctx).InParams)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &i.InParams); err != nil {
+		return err
+	}
+	return err
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := ca.setInParams(ctx); err != nil {
+		return err
+	}
 	ca.Name = "addButton"
 	ca.Type = "Button"
 	ca.Operations = map[string]interface{}{
@@ -44,9 +70,22 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			},
 		},
 	}
+	ca.ctxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	ca.sdk = cputil.SDK(ctx)
+	access, err := ca.ctxBdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   ca.sdk.Identity.UserID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  ca.InParams.ProjectID,
+		Resource: "testReport",
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return err
+	}
 	ca.Props = map[string]interface{}{
-		"text": "生成测试报告",
-		"type": "primary",
+		"text":    "生成测试报告",
+		"type":    "primary",
+		"visible": access.Access,
 	}
 	return nil
 }
