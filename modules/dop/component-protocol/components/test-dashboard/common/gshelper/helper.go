@@ -296,7 +296,9 @@ func (h *GSHelper) GetSelectChartHistoryData() SelectChartItemData {
 	if h.gs == nil {
 		return SelectChartItemData{}
 	}
-	return (*h.gs)["GlobalSelectChartItemData"].(SelectChartItemData)
+	data := SelectChartItemData{}
+	_ = assign((*h.gs)["GlobalSelectChartItemData"], &data)
+	return data
 }
 
 func (h *GSHelper) SetBlockAtStep(l []apistructs.TestPlanV2Step) {

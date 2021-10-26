@@ -96,10 +96,14 @@ type YAxis struct {
 
 type OperationData struct {
 	FillMeta string   `json:"fillMeta"`
-	MetaData MetaData `json:"metaData"`
+	MetaData MetaData `json:"meta"`
 }
 
 type MetaData struct {
+	Data PData `json:"data"`
+}
+
+type PData struct {
 	Data Data `json:"data"`
 }
 
@@ -115,7 +119,8 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		if err = json.Unmarshal(b, &opData); err != nil {
 			return err
 		}
-		h.SetSelectChartItemData(opData.MetaData.Data.MetaData)
+
+		h.SetSelectChartItemData(opData.MetaData.Data.Data.MetaData)
 		return nil
 	case cptype.InitializeOperation, cptype.DefaultRenderingKey, cptype.RenderingOperation:
 		atPlans := h.GetRateTrendingFilterTestPlanList()
@@ -134,30 +139,6 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		if err != nil {
 			return err
 		}
-		pData := make([]Data, 0, len(historyList))
-		eData := make([]Data, 0, len(historyList))
-		xAxis := make([]string, 0, len(historyList))
-		var sucApiNum, execApiNum, totalApiNum int64
-		for _, v := range historyList {
-			if v.Type != apistructs.AutoTestPlan {
-				continue
-			}
-			sucApiNum += v.SuccessApiNum
-			execApiNum += v.ExecuteApiNum
-			totalApiNum += v.TotalApiNum
-			pData = append(pData, Data{
-				Value: calRate(sucApiNum, totalApiNum),
-			})
-			eData = append(eData, Data{
-				Value: calRate(execApiNum, totalApiNum),
-			})
-			xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
-		}
-		ch.EData = eData
-		ch.PData = pData
-		ch.XAxis = XAxis{xAxis}
-		c.Props = ch.convertToProps(ctx)
-		c.Operations = getOperations()
 		h.SetSelectChartItemData(func() gshelper.SelectChartItemData {
 			if len(historyList) == 0 {
 				return gshelper.SelectChartItemData{}
@@ -175,6 +156,32 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 				}(),
 			}
 		}())
+		pData := make([]Data, 0, len(historyList))
+		eData := make([]Data, 0, len(historyList))
+		xAxis := make([]string, 0, len(historyList))
+		var sucApiNum, execApiNum, totalApiNum int64
+		for _, v := range historyList {
+			if v.Type != apistructs.AutoTestPlan {
+				continue
+			}
+			sucApiNum += v.SuccessApiNum
+			execApiNum += v.ExecuteApiNum
+			totalApiNum += v.TotalApiNum
+			pData = append(pData, Data{
+				MetaData: h.GetSelectChartHistoryData(),
+				Value:    calRate(sucApiNum, totalApiNum),
+			})
+			eData = append(eData, Data{
+				MetaData: h.GetSelectChartHistoryData(),
+				Value:    calRate(execApiNum, totalApiNum),
+			})
+			xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
+		}
+		ch.EData = eData
+		ch.PData = pData
+		ch.XAxis = XAxis{xAxis}
+		c.Props = ch.convertToProps(ctx)
+		c.Operations = getOperations()
 		return nil
 	}
 	return nil
