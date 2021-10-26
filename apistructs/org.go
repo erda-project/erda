@@ -384,7 +384,7 @@ type ClusterResources struct {
 	// Nodes is nums of nodes
 	Nodes int
 	// Tips is the tip for the cluster
-	Tips string
+	Tips string `json:"tips"`
 }
 
 type OrgNexusGetRequest struct {
