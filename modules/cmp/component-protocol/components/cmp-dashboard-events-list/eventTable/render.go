@@ -115,33 +115,33 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	query, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(urlQuery["pageNo"].(float64))
-	t.State.PageSize = uint64(urlQuery["pageSize"].(float64))
-	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorterData := query["sorterData"].(map[string]interface{})
 	t.State.Sorter.Field = sorterData["field"].(string)
 	t.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = int(t.State.PageNo)
-	urlQuery["pageSize"] = int(t.State.PageSize)
-	urlQuery["sorterData"] = t.State.Sorter
+	query := make(map[string]interface{})
+	query["pageNo"] = int(t.State.PageNo)
+	query["pageSize"] = int(t.State.PageSize)
+	query["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(urlQuery)
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
@@ -375,10 +375,10 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(c *cptype.Component) {
-	c.Props = t.Props
-	c.Data = map[string]interface{}{"list": t.Data.List}
-	c.State = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(component *cptype.Component) {
+	component.Props = t.Props
+	component.Data = map[string]interface{}{"list": t.Data.List}
+	component.State = map[string]interface{}{
 		"clusterName":          t.State.ClusterName,
 		"filterValues":         t.State.FilterValues,
 		"pageNo":               t.State.PageNo,
@@ -387,7 +387,7 @@ func (t *ComponentEventTable) Transfer(c *cptype.Component) {
 		"total":                t.State.Total,
 		"eventTable__urlQuery": t.State.EventTableUQLQuery,
 	}
-	c.Operations = t.Operations
+	component.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {
