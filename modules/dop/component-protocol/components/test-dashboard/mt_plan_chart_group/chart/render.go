@@ -40,6 +40,7 @@ type (
 	Props struct {
 		ChartType string `json:"chartType"`
 		Option    Option `json:"option"`
+		PureChart bool   `json:"pureChart"`
 	}
 	Option struct {
 		Color  []string     `json:"color"`
@@ -151,5 +152,6 @@ func tableToBarChartProps(ctx context.Context, table []CategoryLine) Props {
 				}(),
 			},
 		},
+		PureChart: true,
 	}
 }
