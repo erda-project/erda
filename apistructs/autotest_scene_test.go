@@ -44,10 +44,12 @@ func TestAutoTestRunWait(t *testing.T) {
 func TestToJsonCopyText(t *testing.T) {
 	jsonStr := `{
 	"method": "",
+	"name": "abc",
 	"type": "API",
 	"value": "{\"apiSpec\":{\"asserts\":[],\"body\":{\"content\":null,\"type\":\"\"},\"headers\":null,\"id\":\"\",\"method\":\"GET\",\"name\":\"a\",\"out_params\":[],\"params\":[{\"key\":\"d\",\"value\":\"${{ params.a }}\"}],\"url\":\"www.xxx.com?d=${{ params.a }}\"},\"loop\":null}"
 }`
 	step := AutoTestSceneStep{
+		Name:      "abc",
 		SpaceID:   1,
 		SceneID:   1,
 		CreatorID: "123",

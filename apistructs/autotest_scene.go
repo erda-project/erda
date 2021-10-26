@@ -106,6 +106,7 @@ type AutoTestSceneStep struct {
 
 func (a *AutoTestSceneStep) ToJsonCopyText() string {
 	dat := map[string]interface{}{
+		"name":   a.Name,
 		"type":   a.Type,
 		"method": a.Method,
 		"value":  a.Value,
