@@ -14,6 +14,7 @@ zh:
  delete: 删除
  confirmDelete: 确定删除？
  times: 次
+ moreOperations: 更多操作
 
  # cmp-dashboard-events-list
  lastSeen: 上次触发时间
@@ -40,7 +41,6 @@ zh:
  # cmp-dashboard-pods-list
  gotoWorkload: 查看工作负载
  createPod: 创建 Pod
- defaultNamespace: 默认命名空间
 
  # cmp-dashboard-workload-detail
  cpuRequests: CPU 请求值
@@ -210,7 +210,7 @@ zh:
  undrained: 此节点中还存在未驱散的Pod！
  isOffline: 已下线
  no select: 未选择
- select labels: 选择标签
+ select labels: 筛选节点标签
  OutOfDisk: 磁盘资源不足
 
 en:
@@ -229,6 +229,7 @@ en:
  delete: Delete
  confirmDelete: Sure to delete?
  times: time(s)
+ moreOperations: More Operations
 
  # cmp-dashboard-events-list
  lastSeen: Last Seen
@@ -255,7 +256,6 @@ en:
  # cmp-dashboard-pods-list
  gotoWorkload: Goto Workload
  createPod: Create Pod
- defaultNamespace: Default namespace
 
  # cmp-dashboard-workload-detail
  cpuRequests: CPU Requests

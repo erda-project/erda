@@ -117,31 +117,31 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	case string(apistructs.K8SDeployment):
 		deploy, err := client.ClientSet.AppsV1().Deployments(namespace).Get(f.ctx, name, v1.GetOptions{})
 		if err != nil {
-			return errors.Errorf("failed to get deployment, %v", err)
+			return errors.Errorf("failed to get deployment %s:%s, %v", namespace, name, err)
 		}
 		workload = deploy
 	case string(apistructs.K8SStatefulSet):
 		sts, err := client.ClientSet.AppsV1().StatefulSets(namespace).Get(f.ctx, name, v1.GetOptions{})
 		if err != nil {
-			return errors.Errorf("failed to get statefulSet, %v", err)
+			return errors.Errorf("failed to get statefulSet %s:%s, %v", namespace, name, err)
 		}
 		workload = sts
 	case string(apistructs.K8SDaemonSet):
 		ds, err := client.ClientSet.AppsV1().DaemonSets(namespace).Get(f.ctx, name, v1.GetOptions{})
 		if err != nil {
-			return errors.Errorf("failed to get daemonSet, %v", err)
+			return errors.Errorf("failed to get daemonSet %s:%s, %v", namespace, name, err)
 		}
 		workload = ds
 	case string(apistructs.K8SJob):
 		job, err := client.ClientSet.BatchV1().Jobs(namespace).Get(f.ctx, name, v1.GetOptions{})
 		if err != nil {
-			return errors.Errorf("failed to get job, %v", err)
+			return errors.Errorf("failed to get job %s:%s, %v", namespace, name, err)
 		}
 		workload = job
 	case string(apistructs.K8SCronJob):
-		cj, err := client.ClientSet.BatchV1().CronJobs(namespace).Get(f.ctx, name, v1.GetOptions{})
+		cj, err := client.ClientSet.BatchV1beta1().CronJobs(namespace).Get(f.ctx, name, v1.GetOptions{})
 		if err != nil {
-			return errors.Errorf("failed to get deployment, %v", err)
+			return errors.Errorf("failed to get cronJob %s:%s, %v", namespace, name, err)
 		}
 		workload = cj
 	default:

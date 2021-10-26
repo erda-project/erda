@@ -198,7 +198,7 @@ func (f *ComponentAddPodFilter) SetComponentValue(ctx context.Context) error {
 		Fixed:      true,
 		HaveFilter: true,
 		Key:        "namespace",
-		Label:      cputil.I18n(ctx, "defaultNamespace"),
+		Label:      cputil.I18n(ctx, "namespace"),
 		Required:   true,
 		CustomProps: CustomProps{
 			Mode: "single",

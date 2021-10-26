@@ -93,11 +93,11 @@ func (f *ComponentFilter) DecodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-	var values Values
-	if err := json.Unmarshal(decode, &values); err != nil {
+	var v Values
+	if err := json.Unmarshal(decode, &v); err != nil {
 		return err
 	}
-	f.State.Values = values
+	f.State.Values = v
 	return nil
 }
 
