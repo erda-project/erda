@@ -16,25 +16,22 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
 	"os"
-	"os/exec"
-	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
 )
 
 var STATUS = command.Command{
 	Name:      "status",
 	ShortHelp: "Show build status",
 	Example: `
-  $ dice status -b develop
+  $ erda-cli status -b develop
 `,
 	Flags: []command.Flag{
 		command.StringFlag{Short: "b", Name: "branch", Doc: "specify branch to show pipeline status, default is current branch", DefaultValue: ""},
@@ -48,44 +45,36 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 	if _, err := os.Stat(".git"); err != nil {
 		return err
 	}
-	re := regexp.MustCompile(`\r?\n`)
 
 	if branch == "" {
-		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-		out, err := branchCmd.CombinedOutput()
+		b, err := common.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
-		branch = re.ReplaceAllString(string(out), "")
+		branch = b
 	}
 
 	// TODO gittar-adaptor 提供 API 根据 branch & git remote url 查询 pipelineID
 	// fetch appID
-	remoteCmd := exec.Command("git", "remote", "get-url", "origin")
-	out, err := remoteCmd.CombinedOutput()
+	orgName, projectName, appName, err := common.GetWorkspaceInfo()
 	if err != nil {
 		return err
-	}
-	newStr := re.ReplaceAllString(string(out), "")
-	newStr = strings.Replace(newStr, "/wb/", "/api/repo/", 1)
-	u, err := url.Parse(newStr)
-	if err != nil {
-		return err
-	}
-	u.Path += "/stats/"
-	var gitResp apistructs.GittarStatsResponse
-	resp, err := ctx.Get().Path(u.Path).Do().JSON(&gitResp)
-	if !resp.IsOK() {
-		return fmt.Errorf("faild to find app when building, status code: %d", resp.StatusCode())
-	}
-	if !gitResp.Success {
-		return fmt.Errorf("failed to find app when building, %+v", gitResp.Error)
 	}
 
+	org, err := common.GetOrgDetail(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	orgID := strconv.FormatUint(org.Data.ID, 10)
+	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	if err != nil {
+		return err
+	}
 	// fetch ymlName path
 	var pipelineCombResp apistructs.PipelineInvokedComboResponse
 	response, err := ctx.Get().Path("/api/cicds/actions/app-invoked-combos").
-		Param("appID", strconv.FormatInt(gitResp.Data.ApplicationID, 10)).
+		Param("appID", strconv.FormatInt(repoStats.Data.ApplicationID, 10)).
 		Do().JSON(&pipelineCombResp)
 	if err != nil {
 		return err
@@ -110,7 +99,7 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 	// fetch pipelineID
 	var pipelineListResp apistructs.PipelinePageListResponse
 	response, err = ctx.Get().Path("/api/cicds").
-		Param("appID", strconv.FormatInt(gitResp.Data.ApplicationID, 10)).
+		Param("appID", strconv.FormatInt(repoStats.Data.ApplicationID, 10)).
 		Param("sources", "dice").
 		Param("ymlNames", ymlName).
 		Param("branches", branch).
@@ -164,6 +153,7 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 		if !stageDone {
 			for _, task := range stage.PipelineTasks {
 				data = append(data, []string{
+					strconv.Itoa(pipelineID),
 					strconv.FormatUint(task.ID, 10),
 					task.Name,
 					task.Status.String(),
@@ -174,9 +164,10 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 		}
 	}
 
-	fmt.Printf("pipeline progress(currentStage/totalStages): %d/%d\n\n", currentStageIndex+1, len(pipelineInfoResp.Data.PipelineStages))
+	fmt.Printf("pipeline progress (currentStage/totalStages): %d/%d\n\n",
+		currentStageIndex+1, len(pipelineInfoResp.Data.PipelineStages))
 
 	return table.NewTable().Header([]string{
-		"taskID", "taskName", "taskStatus", "startedAt",
+		"pipelineID", "taskID", "taskName", "taskStatus", "startedAt",
 	}).Data(data).Flush()
 }

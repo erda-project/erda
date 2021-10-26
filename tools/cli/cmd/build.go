@@ -16,11 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
 	"os"
-	"os/exec"
-	"regexp"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -36,7 +33,7 @@ import (
 var BUILD = command.Command{
 	Name:      "build",
 	ShortHelp: "Create an pipeline and run it",
-	Example:   `$ dice build`,
+	Example:   `$ erda-cli build`,
 	Flags: []command.Flag{
 		command.StringFlag{Short: "b", Name: "branch", Doc: "branch to create pipeline, default is current branch", DefaultValue: ""},
 	},
@@ -51,44 +48,37 @@ func RunBuild(ctx *command.Context, branch string) error {
 	if _, err := os.Stat(".git"); err != nil {
 		return err
 	}
-	re := regexp.MustCompile(`\r?\n`)
 
 	if branch == "" {
-		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-		out, err := branchCmd.CombinedOutput()
+		b, err := common.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
-		branch = re.ReplaceAllString(string(out), "")
+		branch = b
 	}
 
 	// fetch appID
-	remoteCmd := exec.Command("git", "remote", "get-url", "origin")
-	out, err := remoteCmd.CombinedOutput()
+	orgName, projectName, appName, err := common.GetWorkspaceInfo()
 	if err != nil {
 		return err
 	}
-	newStr := re.ReplaceAllString(string(out), "")
-	newStr = strings.Replace(newStr, "/wb/", "/api/repo/", 1)
-	u, err := url.Parse(newStr)
+
+	org, err := common.GetOrgDetail(ctx, orgName)
 	if err != nil {
 		return err
 	}
-	u.Path += "/stats/"
-	var gitResp apistructs.GittarStatsResponse
-	resp, err := ctx.Get().Path(u.Path).Do().JSON(&gitResp)
-	if !resp.IsOK() {
-		return fmt.Errorf("faild to find app when building, status code: %d", resp.StatusCode())
-	}
-	if !gitResp.Success {
-		return fmt.Errorf("failed to find app when building, %+v", gitResp.Error)
+
+	orgID := strconv.FormatUint(org.Data.ID, 10)
+	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	if err != nil {
+		return err
 	}
 
 	var (
 		request      apistructs.PipelineCreateRequest
 		pipelineResp apistructs.PipelineCreateResponse
 	)
-	request.AppID = uint64(gitResp.Data.ApplicationID)
+	request.AppID = uint64(repoStats.Data.ApplicationID)
 	request.Branch = branch
 	request.Source = apistructs.PipelineSourceDice
 	request.PipelineYmlSource = apistructs.PipelineYmlSourceGittar
@@ -105,7 +95,7 @@ func RunBuild(ctx *command.Context, branch string) error {
 	if !pipelineResp.Success {
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
-	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via `dice status -i <pipelineID>`", branch, pipelineResp.Data.ID)
+	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via `erda-cli status -i <pipelineID>`", branch, pipelineResp.Data.ID)
 
 	return nil
 }
