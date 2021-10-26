@@ -26,9 +26,10 @@ hierarchy:
     mt_block_detail:
       - mt_block_detail_item@mt_case_num_total
       - split
-      - mt_block_detail_item@mt_case_num_done
+      - mt_block_detail_item@mt_case_num_succ
       - mt_block_detail_item@mt_case_num_block
       - mt_block_detail_item@mt_case_num_fail
+      - mt_block_detail_item@mt_case_num_init
       - split
       - mt_block_detail_item@mt_case_rate_passed
       - mt_block_detail_item@mt_case_rate_executed
@@ -125,11 +126,13 @@ components:
       contentSetting: between
   mt_block_detail_item@mt_case_num_total:
     type: Text
-  mt_block_detail_item@mt_case_num_done:
+  mt_block_detail_item@mt_case_num_succ:
     type: Text
   mt_block_detail_item@mt_case_num_block:
     type: Text
   mt_block_detail_item@mt_case_num_fail:
+    type: Text
+  mt_block_detail_item@mt_case_num_init:
     type: Text
   mt_block_detail_item@mt_case_rate_passed:
     type: Text
@@ -249,7 +252,7 @@ components:
 rendering:
   mt_block_header_filter:
     - name: mt_block_detail_item@mt_case_num_total
-    - name: mt_block_detail_item@mt_case_num_done
+    - name: mt_block_detail_item@mt_case_num_succ
     - name: mt_block_detail_item@mt_case_num_block
     - name: mt_block_detail_item@mt_case_num_fail
     - name: mt_block_detail_item@mt_case_rate_passed
@@ -263,6 +266,7 @@ rendering:
 
   mt_plan_chart_filter:
     - name: mt_plan_chart
+
   at_plan_latest_waterfall_chart_filter:
     - name: at_plan_latest_waterfall_chart
 

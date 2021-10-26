@@ -68,9 +68,12 @@ type (
 )
 
 const (
-	ColorTextMain = "text-main"
-	ColorTextDesc = "text-desc"
-	ColorTextRed  = "red"
+	ColorTextMain   = "text-main"
+	ColorTextDesc   = "text-desc"
+	ColorTextRed    = "red"
+	ColorTextGreen  = "green"
+	ColorTextOrange = "orange"
+	ColorTextGrey   = "grey"
 )
 
 func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
@@ -82,12 +85,14 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	switch c.Name {
 	case "mt_case_num_total":
 		tv = makeMtCaseNumTotal(ctx, mtPlans)
-	case "mt_case_num_done":
-		tv = makeMtCaseNumDone(ctx, mtPlans)
+	case "mt_case_num_succ":
+		tv = makeMtCaseNumSucc(ctx, mtPlans)
 	case "mt_case_num_block":
 		tv = makeMtCaseNumBlock(ctx, mtPlans)
 	case "mt_case_num_fail":
 		tv = makeMtCaseNumFail(ctx, mtPlans)
+	case "mt_case_num_init":
+		tv = makeMtCaseNumInit(ctx, mtPlans)
 	case "mt_case_rate_passed":
 		tv = makeMtCaseRatePassed(ctx, mtPlans)
 	case "mt_case_rate_executed":
@@ -142,39 +147,51 @@ func makeMtCaseNumTotal(ctx context.Context, mtPlans []apistructs.TestPlan) Text
 	}
 }
 
-func makeMtCaseNumDone(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
-	var done uint64
+func makeMtCaseNumSucc(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
+	var succ uint64
 	for _, plan := range mtPlans {
-		done = done + plan.RelsCount.Succ + plan.RelsCount.Fail + plan.RelsCount.Block
+		succ += plan.RelsCount.Succ
 	}
 	return TextValue{
-		Value:      strutil.String(done),
-		Kind:       cputil.I18n(ctx, "test-case-num-done"),
-		ValueColor: ColorTextMain,
+		Value:      strutil.String(succ),
+		Kind:       cputil.I18n(ctx, "test-case-num-succ"),
+		ValueColor: ColorTextGreen,
 	}
 }
 
 func makeMtCaseNumBlock(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
-	var done uint64
+	var block uint64
 	for _, plan := range mtPlans {
-		done = done + plan.RelsCount.Block
+		block += plan.RelsCount.Block
 	}
 	return TextValue{
-		Value:      strutil.String(done),
+		Value:      strutil.String(block),
 		Kind:       cputil.I18n(ctx, "test-case-num-block"),
-		ValueColor: ColorTextRed,
+		ValueColor: ColorTextOrange,
 	}
 }
 
 func makeMtCaseNumFail(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
 	var fail uint64
 	for _, plan := range mtPlans {
-		fail = fail + plan.RelsCount.Fail + plan.RelsCount.Block
+		fail = fail + plan.RelsCount.Fail
 	}
 	return TextValue{
 		Value:      strutil.String(fail),
 		Kind:       cputil.I18n(ctx, "test-case-num-fail"),
 		ValueColor: ColorTextRed,
+	}
+}
+
+func makeMtCaseNumInit(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
+	var init uint64
+	for _, plan := range mtPlans {
+		init = init + plan.RelsCount.Init
+	}
+	return TextValue{
+		Value:      strutil.String(init),
+		Kind:       cputil.I18n(ctx, "test-case-num-init"),
+		ValueColor: ColorTextGrey,
 	}
 }
 
