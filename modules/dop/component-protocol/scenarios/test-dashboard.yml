@@ -45,17 +45,13 @@ hierarchy:
       - at_rate_passed
       - at_rate_executed
     mt_plan_chart_group:
-      - mt_plan_chart_header
-      - mt_plan_chart
-    mt_plan_chart_header:
-      left: mt_plan_chart_title
-      right: mt_plan_chart_filter
+      extraContent: mt_plan_chart_filter
+      children:
+        - mt_plan_chart
     at_case_rate_trending_chart_group:
-      - at_case_rate_trending_chart_header
-      - at_case_rate_trending_chart
-    at_case_rate_trending_chart_header:
-      left: at_case_rate_trending_chart_title
-      right: at_case_rate_trending_chart_filter
+      extraContent: at_case_rate_trending_chart_filter
+      children:
+        - at_case_rate_trending_chart
     scene_chart_group:
       - scene_avg_cost_chart
       - scene_rate_failed_chart
@@ -64,11 +60,9 @@ hierarchy:
       - at_api_rate_failed_chart
       - at_api_avg_cost_chart
     at_plan_latest_waterfall_chart_group:
-      - at_plan_latest_waterfall_chart_header
-      - at_plan_latest_waterfall_chart
-    at_plan_latest_waterfall_chart_header:
-      left: at_plan_latest_waterfall_chart_title
-      right: at_plan_latest_waterfall_chart_filter
+      extraContent: at_plan_latest_waterfall_chart_filter
+      children:
+        - at_plan_latest_waterfall_chart
 components:
   filter:
     name: filter
@@ -259,15 +253,7 @@ components:
   quality_chart:
     type: Chart
   mt_plan_chart_group:
-    type: Container
-    props:
-      border: true
-      whiteBg: true
-      spaceSize: big
-  mt_plan_chart_header:
-    type: LRContainer
-  mt_plan_chart_title:
-    type: Text
+    type: ChartContainer
   mt_plan_chart_filter:
     name: filter
     operations:
@@ -279,16 +265,10 @@ components:
     type: ContractiveFilter
   mt_plan_chart:
     type: Chart
-  at_case_rate_trending_chart_group:
-    type: Container
     props:
-      border: true
-      whiteBg: true
-      spaceSize: big
-  at_case_rate_trending_chart_header:
-    type: LRContainer
-  at_case_rate_trending_chart_title:
-    type: Text
+      pureChart: true
+  at_case_rate_trending_chart_group:
+    type: ChartContainer
   at_case_rate_trending_chart:
     type: Chart
     props:
@@ -365,15 +345,7 @@ components:
       values: { }
     type: ContractiveFilter
   at_plan_latest_waterfall_chart_group:
-    type: Container
-    props:
-      border: true
-      whiteBg: true
-      spaceSize: big
-  at_plan_latest_waterfall_chart_header:
-    type: LRContainer
-  at_plan_latest_waterfall_chart_title:
-    type: Text
+    type: ChartContainer
   at_plan_latest_waterfall_chart:
     type: Chart
     props:
