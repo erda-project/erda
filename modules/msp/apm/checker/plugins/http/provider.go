@@ -127,8 +127,11 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 	}
 
 	// body
+	content := ""
 	bodyStruct := c.Config["body"].GetStructValue()
-	content := bodyStruct.Fields["content"].GetStringValue()
+	if bodyStruct != nil {
+		content = bodyStruct.Fields["content"].GetStringValue()
+	}
 
 	// retry
 	retryCount := int64(c.Config["retry"].GetNumberValue())

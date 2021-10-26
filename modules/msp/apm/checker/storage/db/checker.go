@@ -146,9 +146,17 @@ func (db *CheckerDB) queryScopeInfo(projectID int64, env string) (*scopeInfo, er
 
 func convertToChecker(fields *JoinFields) *pb.Checker {
 	config := make(map[string]*structpb.Value)
-	err := json.Unmarshal([]byte(fields.Config), &config)
-	if err != nil {
-		return nil
+	if fields.Config == "" {
+		// history record
+		config["url"] = structpb.NewStringValue(fields.URL)
+		config["method"] = structpb.NewStringValue("GET")
+		config["interval"] = structpb.NewNumberValue(15)
+		config["retry"] = structpb.NewNumberValue(0)
+	} else {
+		err := json.Unmarshal([]byte(fields.Config), &config)
+		if err != nil {
+			return nil
+		}
 	}
 
 	return &pb.Checker{
