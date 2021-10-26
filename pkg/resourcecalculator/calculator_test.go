@@ -15,7 +15,6 @@
 package resourcecalculator_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
@@ -45,31 +44,20 @@ func testResourceCalculator_AddValue_Case1(t *testing.T) {
 		TestQuotable:    3,
 		DevQuota:        4,
 	}
-	if err := c.Mem.Quota(calcu.Dev, 1); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Mem.Quota(calcu.Test, 1); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
-		t.Fatal(err)
-	}
-	data, _ := json.MarshalIndent(c, "", "  ")
-	t.Logf("new c: %s", string(data))
-	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
-		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
+	c.DeductionQuota(calcu.Dev, 1, 0)
+	c.DeductionQuota(calcu.Test, 1, 0)
+	c.DeductionQuota(calcu.Staging, 1, 0)
+	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
+		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
 
-	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Error("total error")
+	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable ||
+		c.QuotableCPUForWorkspace(calcu.Staging) != r.StagingQuotable ||
+		c.QuotableCPUForWorkspace(calcu.Test) != r.TestQuotable ||
+		c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
+		t.Fatal("total err")
 	}
-	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Errorf("staging error")
-	}
-	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Error("test error")
-	}
-	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Error("dev error")
+	if c.TotalQuotableCPU() != r.TotalQuotable {
+		t.Fatal("TotalQuotableCPU() error")
 	}
 }
 
@@ -82,31 +70,25 @@ func testResourceCalculator_AddValue_Case2(t *testing.T) {
 		TestQuotable:    1,
 		DevQuota:        3,
 	}
-	if err := c.Mem.Quota(calcu.Dev, 1); err != nil {
-		t.Fatal(err)
+	c.DeductionQuota(calcu.Dev, 1, 0)
+	c.DeductionQuota(calcu.Test, 3, 0)
+	c.DeductionQuota(calcu.Staging, 1, 0)
+	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
+		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	if c.TotalQuotableCPU() != r.TotalQuotable {
+		t.Fatal("TotalQuotableCPU error")
 	}
-	if err := c.Mem.Quota(calcu.Test, 3); err != nil {
-		t.Fatal(err)
+	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Prod) error")
 	}
-	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
-		t.Fatal(err)
+	if c.QuotableCPUForWorkspace(calcu.Staging) != r.StagingQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Staging) error")
 	}
-	data, _ := json.MarshalIndent(c, "", "  ")
-	t.Logf("new c: %s", string(data))
-	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
-		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
-
-	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Error("total error")
+	if c.QuotableCPUForWorkspace(calcu.Test) != r.TestQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Test) error")
 	}
-	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Error("staging error")
-	}
-	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Error("test error")
-	}
-	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Error("dev error")
+	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
 	}
 }
 
@@ -119,31 +101,25 @@ func testResourceCalculator_AddValue_Case3(t *testing.T) {
 		TestQuotable:    0,
 		DevQuota:        2,
 	}
-	if err := c.Mem.Quota(calcu.Dev, 1); err != nil {
-		t.Fatal(err)
+	c.DeductionQuota(calcu.Dev, 1, 0)
+	c.DeductionQuota(calcu.Test, 4, 0)
+	c.DeductionQuota(calcu.Staging, 1, 0)
+	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
+		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	if c.TotalQuotableCPU() != r.TotalQuotable {
+		t.Fatal("TotalQuotableCPU error")
 	}
-	if err := c.Mem.Quota(calcu.Test, 4); err != nil {
-		t.Fatal(err)
+	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Prod) error")
 	}
-	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
-		t.Fatal(err)
+	if c.QuotableCPUForWorkspace(calcu.Staging) != r.StagingQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Staging) error")
 	}
-	data, _ := json.MarshalIndent(c, "", "  ")
-	t.Logf("new c: %s", string(data))
-	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
-		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
-
-	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Error("total error")
+	if c.QuotableCPUForWorkspace(calcu.Test) != r.TestQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Test) error")
 	}
-	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Error("staging error")
-	}
-	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Error("test error")
-	}
-	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Error("dev error")
+	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
 	}
 }
 
@@ -156,45 +132,72 @@ func testResourceCalculator_AddValue_Case4(t *testing.T) {
 		TestQuotable:    0,
 		DevQuota:        1,
 	}
-	if err := c.Mem.Quota(calcu.Dev, 3); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Mem.Quota(calcu.Test, 3); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Mem.Quota(calcu.Staging, 1); err != nil {
-		t.Fatal(err)
-	}
-	data, _ := json.MarshalIndent(c, "", "  ")
-	t.Logf("new c: %s", string(data))
-	t.Logf("quotable: total: %v, dev: %v, test: %v, staging: %v",
-		c.Mem.TotalQuotable(), c.Mem.TotalForWorkspace(calcu.Dev), c.Mem.TotalForWorkspace(calcu.Test), c.Mem.TotalForWorkspace(calcu.Staging))
+	c.DeductionQuota(calcu.Dev, 3, 0)
+	c.DeductionQuota(calcu.Test, 3, 0)
+	c.DeductionQuota(calcu.Staging, 1, 0)
 
-	if c.Mem.TotalQuotable() != r.TotalQuotable {
-		t.Error("total error")
+	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
+		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	if c.TotalQuotableCPU() != r.TotalQuotable {
+		t.Fatal("TotalQuotableCPU error")
 	}
-	if c.Mem.TotalForWorkspace(calcu.Staging) != r.StagingQuotable {
-		t.Error("staging error")
+	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Prod) error")
 	}
-	if c.Mem.TotalForWorkspace(calcu.Test) != r.TestQuotable {
-		t.Error("test error")
+	if c.QuotableCPUForWorkspace(calcu.Staging) != r.StagingQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Staging) error")
 	}
-	if c.Mem.TotalForWorkspace(calcu.Dev) != r.DevQuota {
-		t.Error("dev error")
+	if c.QuotableCPUForWorkspace(calcu.Test) != r.TestQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Test) error")
+	}
+	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
+	}
+}
+
+func testResourceCalculator_AddValue_Case5(t *testing.T) {
+	c := initC(t)
+	r := result{
+		TotalQuotable:   3,
+		ProdQuotable:    1,
+		StagingQuotable: 2,
+		TestQuotable:    0,
+		DevQuota:        1,
+	}
+	c.DeductionQuota(calcu.Dev, 3, 0)
+	c.DeductionQuota(calcu.Test, 3, 0)
+	c.DeductionQuota(calcu.Staging, 1, 0)
+
+	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
+		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	if c.TotalQuotableCPU() != r.TotalQuotable {
+		t.Fatal("TotalQuotableCPU error")
+	}
+	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Prod) error")
+	}
+	if c.QuotableCPUForWorkspace(calcu.Staging) != r.StagingQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Staging) error")
+	}
+	if c.QuotableCPUForWorkspace(calcu.Test) != r.TestQuotable {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Test) error")
+	}
+	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
+		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
 	}
 }
 
 func initC(t *testing.T) *calcu.Calculator {
 	clusterName := "erda-hongkong"
 	c := calcu.New(clusterName)
-	c.Mem.AddValue(2, calcu.Dev)
-	c.Mem.AddValue(1, calcu.Dev, calcu.Test)
-	c.Mem.AddValue(1, calcu.Dev, calcu.Prod)
-	c.Mem.AddValue(1, calcu.Dev, calcu.Test, calcu.Staging)
-	c.Mem.AddValue(2, calcu.Test)
-	c.Mem.AddValue(3, calcu.Staging)
-	data, _ := json.MarshalIndent(c.Mem, "", "  ")
-	t.Logf("initC total quotable: %v, c: %s", c.Mem.TotalQuotable(), string(data))
+	c.AddValue(2, 0, calcu.Dev)
+	c.AddValue(1, 0, calcu.Dev, calcu.Test)
+	c.AddValue(1, 0, calcu.Dev, calcu.Prod)
+	c.AddValue(1, 0, calcu.Dev, calcu.Test, calcu.Staging)
+	c.AddValue(2, 0, calcu.Test)
+	c.AddValue(3, 0, calcu.Staging)
+	t.Logf("initC allocatable cpu prod: %v, staging: %v, test: %v, dev: %v",
+		c.AllocatableCPU(calcu.Prod), c.AllocatableCPU(calcu.Staging), c.AllocatableCPU(calcu.Test), c.AllocatableCPU(calcu.Dev))
 	return c
 }
 
@@ -251,22 +254,11 @@ func TestWorkspacesString(t *testing.T) {
 	t.Log(calcu.WorkspacesString([]calcu.Workspace{calcu.Prod, calcu.Dev, calcu.Staging}))
 }
 
-func TestResourceCalculator_Copy(t *testing.T) {
-	clusterName := "erda-hongkong"
-	c := calcu.New(clusterName)
-	d := c.Copy()
-	for k, v := range c.CPU.M {
-		if v != d.CPU.M[k] {
-			t.Fatal("copy error")
-		}
-	}
-}
-
 func TestResourceCalculator_AlreadyQuota(t *testing.T) {
 	clusterName := "erda-hongkong"
 	c := calcu.New(clusterName)
-	if c.CPU.AlreadyQuota(calcu.Prod) != 0 {
-		t.Fatal("AlreadyQuota error")
+	if c.AlreadyQuotaCPU(calcu.Prod) != 0 {
+		t.Fatal("alreadyQuota error")
 	}
 }
 
