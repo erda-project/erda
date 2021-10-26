@@ -1507,18 +1507,20 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 }
 
 func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	l := logrus.WithField("func", "GetNamespacesBelongsTo")
+
 	// 1）查找 s_pod_info
-	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info, namespaces: %v", namespaces)
+	l.Debugf("query s_pod_info, namespaces: %v", namespaces)
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
 	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")
-			logrus.WithError(err).Errorln()
+			l.WithError(err).Errorln()
 			return nil, err
 		}
 	}
-	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info count: %v", len(podInfos))
+	l.Debugf("query s_pod_info count: %v", len(podInfos))
 	for _, podInfo := range podInfos {
 		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
 		if err != nil {
@@ -1538,14 +1540,14 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		}
 		projectsM[projectID] = clusters
 	}
-	logrus.Debugf("GetNamespacesBelongsTo, projectsM: %v", projectsM)
+	l.Debugf("projectsM: %v", projectsM)
 
 	// 2) 查找 project_namespace
 	var projectNamespaces []*apistructs.ProjectNamespaceModel
 	if err := p.db.Find(&projectNamespaces).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find projectNamespace")
-			logrus.WithError(err).Errorln()
+			l.WithError(err).Errorln()
 			return nil, err
 		}
 	}
@@ -1572,7 +1574,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		var project model.Project
 		if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
-				logrus.WithError(err).WithField("id", projectID).Warnln("failed to First project")
+				l.WithError(err).WithField("id", projectID).Warnln("failed to First project")
 				continue
 			}
 		}
@@ -1590,13 +1592,13 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		total, members, err := p.db.GetMembersByParam(&memberListReq)
 		if err != nil {
 			err = errors.Wrap(err, "failed to GetMembersByParam")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			continue
 		}
 		if total <= 0 || len(members) == 0 {
 			err = errors.New("not found owner for the project")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			continue
 		}
 		owner := members[0]
 		userID, err := strconv.ParseInt(owner.UserID, 10, 64)
@@ -1609,7 +1611,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 			if !gorm.IsRecordNotFoundError(err) {
 				err = errors.Wrap(err, "failed to First project quota")
-				logrus.WithError(err).WithField("project_id", projectID).Errorln()
+				l.WithError(err).WithField("project_id", projectID).Errorln()
 				return nil, err
 			}
 		}
