@@ -205,7 +205,7 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 	}
 
 	respFromES, err1 := a.queryAlertHistoryFromES(groupID, start, end, limit)
-	// if got enough data from es, do not further call to cassandra
+	// if got enough data from es, no need do further call to cassandra
 	if err1 == nil && len(respFromES) >= int(limit) {
 		return respFromES, nil
 	}
