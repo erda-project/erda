@@ -44,11 +44,21 @@ func (header *Header) Render(ctx context.Context, c *cptype.Component, s cptype.
 		req apistructs.SteveRequest
 	)
 	header.SDK = cputil.SDK(ctx)
-	req.ClusterName = header.SDK.InParams["clusterName"].(string)
 	req.OrgID = header.SDK.Identity.OrgID
 	req.UserID = header.SDK.Identity.UserID
 	req.Type = apistructs.K8SNode
-	req.Name = header.SDK.InParams["nodeId"].(string)
+
+	clusterName, ok := header.SDK.InParams["clusterName"].(string)
+	if !ok {
+		return errors.New("invalid clusterName")
+	}
+	req.ClusterName = clusterName
+
+	nodeId, ok := header.SDK.InParams["nodeId"].(string)
+	if !ok {
+		return errors.New("invalid nodeID")
+	}
+	req.Name = nodeId
 
 	resp, err := steveServer.GetSteveResource(ctx, &req)
 	if err != nil {

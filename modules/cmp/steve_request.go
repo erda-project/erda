@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -142,9 +143,25 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
 
 	var (
-		user apiuser.Info
-		err  error
+		params []string
+		query  string
+		err    error
 	)
+	if len(req.LabelSelector) != 0 || len(req.FieldSelector) != 0 {
+		values := req.URLQueryString()
+		for k, v := range values {
+			for _, value := range v {
+				params = append(params, fmt.Sprintf("%s=%s", k, value))
+			}
+		}
+		query = strutil.Join(params, "&", true)
+	}
+	url, err := url.ParseRequestURI(fmt.Sprintf("%s?%s", path, query))
+	if err != nil {
+		return nil, errors.Errorf("failed to parse url, %v", err)
+	}
+
+	var user apiuser.Info
 	if req.Type == apistructs.K8SNode || req.NoAuthentication {
 		user = &apiuser.DefaultInfo{
 			Name: "admin",
@@ -162,7 +179,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 	}
 
 	withUser := request.WithUser(ctx, user)
-	r, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
+	r, err := http.NewRequestWithContext(withUser, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
