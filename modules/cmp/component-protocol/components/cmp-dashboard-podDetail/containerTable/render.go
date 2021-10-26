@@ -97,7 +97,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 				restartCount = Operate{
 					Operations: map[string]Operation{
 						"log": {
-							Key:    "checkPrevlog",
+							Key:    "checkPrevLog",
 							Text:   restartCountStr,
 							Reload: false,
 							Meta: map[string]interface{}{

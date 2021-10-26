@@ -230,11 +230,12 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		items = append(items, table.RowItem{
 			ID:      c.String("metadata", "name") + "/" + ip,
 			IP:      ip,
+			NodeID:  c.String("metadata", "name"),
 			Version: c.String("status", "nodeInfo", "kubeletVersion"),
 			Role:    role,
 			Node: table.Node{
 				RenderType: "multiple",
-				Renders:    ct.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
+				Renders:    ct.GetRenders(c.String("metadata", "name"), c.Map("metadata", "labels")),
 			},
 			Status: *status,
 			Distribution: table.Distribution{
