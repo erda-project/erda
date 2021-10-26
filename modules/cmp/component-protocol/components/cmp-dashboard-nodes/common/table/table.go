@@ -93,6 +93,7 @@ type RowItem struct {
 	IP      string      `json:"IP,omitempty"`
 	Status  SteveStatus `json:"Status,omitempty"`
 	Node    Node        `json:"Node,omitempty"`
+	NodeID  string      `json:"nodeId,omitempty"`
 	Role    string      `json:"Role,omitempty"`
 	Version string      `json:"Version,omitempty"`
 	//
@@ -118,7 +119,7 @@ type Operation struct {
 	Meta          interface{} `json:"meta,omitempty"`
 	ClickableKeys interface{} `json:"clickableKeys,omitempty"`
 	Text          string      `json:"text,omitempty"`
-	Command       Command     `json:"command"`
+	Command       *Command    `json:"command,omitempty"`
 }
 type BatchOperation struct {
 	Key       string   `json:"key,omitempty"`
@@ -554,7 +555,7 @@ func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
 		"add": {
 			Key:    "addLabel",
 			Reload: false,
-			Command: Command{
+			Command: &Command{
 				Key: "set",
 				Command: CommandState{
 					Visible:  true,
@@ -583,21 +584,12 @@ func (t *Table) GetIp(node data.Object) string {
 	return ""
 }
 
-func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
+func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
 	nl := NodeLink{
 		RenderType: "linkText",
 		Value:      id,
 		Operations: map[string]Operation{"click": {
-			Key: "gotoNodeDetail",
-			Command: Command{
-				Key:    "goto",
-				Target: "cmpClustersNodeDetail",
-				Command: CommandState{
-					Params: Params{NodeId: id, NodeIP: ip},
-					Query:  map[string]interface{}{"nodeIP": ip},
-				},
-				JumpOut: true,
-			},
+			Key:    "gotoNodeDetail",
 			Text:   t.SDK.I18n("nodeDetail"),
 			Reload: false,
 		},
@@ -623,7 +615,7 @@ func (t *Table) GetOperate(id string) Operate {
 	return Operate{
 		RenderType: "tableOperation",
 		Operations: map[string]Operation{
-			"gotoPod": {Key: "gotoPod", Command: Command{
+			"gotoPod": {Key: "gotoPod", Command: &Command{
 				Key: "goto",
 				Command: CommandState{
 					Query: map[string]interface{}{

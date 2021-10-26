@@ -113,15 +113,7 @@ type Link struct {
 }
 
 type LinkOperation struct {
-	Command Command `json:"command,omitempty"`
-	Reload  bool    `json:"reload"`
-}
-
-type Command struct {
-	Key     string       `json:"key,omitempty"`
-	Target  string       `json:"target,omitempty"`
-	State   CommandState `json:"state,omitempty"`
-	JumpOut bool         `json:"jumpOut"`
+	Reload bool `json:"reload"`
 }
 
 type CommandState struct {
