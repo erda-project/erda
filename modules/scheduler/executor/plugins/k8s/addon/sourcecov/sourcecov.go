@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -37,6 +38,7 @@ type SourcecovOperator struct {
 	k8s    addon.K8SUtil
 	client *httpclient.HTTPClient
 	oc     addon.OvercommitUtil
+	ns     addon.NamespaceUtil
 }
 
 var APIPrefix = "/apis/" + scv1.GroupVersion.String()
@@ -130,8 +132,28 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	return &spec
 }
 
+func (s *SourcecovOperator) CreateNsIfNotExists(ns string) error {
+	if err := s.ns.Exists(ns); err != nil {
+		if err != k8serror.ErrNotFound {
+			return err
+		}
+
+		if err = s.ns.Create(ns, nil); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *SourcecovOperator) Create(i interface{}) error {
 	spec := i.(*scv1.Agent)
+
+	if err := s.CreateNsIfNotExists(spec.Namespace); err != nil {
+		logrus.Errorf("failed to create ns %s when creating sourcecov addon %s", spec.Namespace, spec.Name)
+		return err
+	}
+
 	var b bytes.Buffer
 	resp, err := s.client.Post(s.k8s.GetK8SAddr()).
 		Path(fmt.Sprintf("%s/namespaces/%s/agents", APIPrefix, spec.Namespace)).
@@ -223,10 +245,11 @@ func (s *SourcecovOperator) Update(i interface{}) error {
 	return nil
 }
 
-func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, oc addon.OvercommitUtil) *SourcecovOperator {
+func New(k8s addon.K8SUtil, client *httpclient.HTTPClient, oc addon.OvercommitUtil, ns addon.NamespaceUtil) *SourcecovOperator {
 	return &SourcecovOperator{
 		k8s:    k8s,
 		client: client,
 		oc:     oc,
+		ns:     ns,
 	}
 }

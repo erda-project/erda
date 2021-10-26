@@ -37,8 +37,8 @@ type provider struct {
 	Register            transport.Register `autowired:"service-register" optional:"true"`
 	Router              httpserver.Router  `autowired:"http-router"`
 	Perm                perm.Interface     `autowired:"permission"`
-	StorageReader       storage.Storage    `autowired:"log-storage-elasticsearch-reader"`
-	K8sReader           storage.Storage    `autowired:"log-storage-kubernetes-reader"`
+	StorageReader       storage.Storage    `autowired:"log-storage-elasticsearch-reader" optional:"true"`
+	K8sReader           storage.Storage    `autowired:"log-storage-kubernetes-reader" optional:"true"`
 	FrozenStorageReader storage.Storage    `autowired:"log-storage-cassandra-reader" optional:"true"`
 
 	logQueryService *logQueryService

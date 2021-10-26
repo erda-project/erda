@@ -41,7 +41,7 @@ type TestReportData struct {
 }
 
 type reportQualityScore struct {
-	QualityScore float64 `json:"qualityScore"`
+	QualityScore float64 `json:"GlobalQualityScore"`
 }
 
 // GetQualityScore quality score can be empty

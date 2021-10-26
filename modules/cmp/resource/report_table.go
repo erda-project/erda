@@ -36,12 +36,12 @@ type ReportTable struct {
 	}
 }
 
-func NewReportTable(opt ...ReportTableOption) *ReportTable {
-	var rt ReportTable
-	for _, f := range opt {
-		f(&rt)
+func NewReportTable(opts ...ReportTableOption) *ReportTable {
+	var t ReportTable
+	for _, f := range opts {
+		f(&t)
 	}
-	return &rt
+	return &t
 }
 
 func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int64, clusterNames []string,
@@ -132,9 +132,9 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 			OwnerUserID:        int64(projectItem.OwnerUserID),
 			OwnerUserName:      projectItem.OwnerUserName,
 			OwnerUserNickName:  projectItem.OwnerUserNickname,
-			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota),
+			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota, 3),
 			CPUWaterLevel:      0,
-			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota),
+			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota, 3),
 			MemWaterLevel:      0,
 			Nodes:              0,
 		}
@@ -161,9 +161,9 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 		OwnerUserID:        0,
 		OwnerUserName:      "",
 		OwnerUserNickName:  "所有人", // todo: i18n
-		CPUQuota:           calcu.MillcoreToCore(sharedResource[0]),
+		CPUQuota:           calcu.MillcoreToCore(sharedResource[0], 3),
 		CPUWaterLevel:      1,
-		MemQuota:           calcu.ByteToGibibyte(sharedResource[1]),
+		MemQuota:           calcu.ByteToGibibyte(sharedResource[1], 3),
 		MemWaterLevel:      1,
 		Nodes:              sharedNodes,
 	})
@@ -175,8 +175,8 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 type ReportTableOption func(table *ReportTable)
 
 func ReportTableWithBundle(bdl *bundle.Bundle) ReportTableOption {
-	return func(table *ReportTable) {
-		table.bdl = bdl
+	return func(t *ReportTable) {
+		t.bdl = bdl
 	}
 }
 
@@ -184,7 +184,7 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(table *ReportTable) {
-		table.cmp = cmp
+	return func(t *ReportTable) {
+		t.cmp = cmp
 	}
 }

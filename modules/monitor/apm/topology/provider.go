@@ -15,13 +15,10 @@
 package topology
 
 import (
-	"fmt"
-
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
@@ -32,14 +29,13 @@ import (
 )
 
 type provider struct {
-	Cfg              *config
-	Log              logs.Logger
-	db               *db.DB
-	es               *elastic.Client
-	ctx              servicehub.Context
-	metricq          metricq.Queryer
-	t                i18n.Translator
-	cassandraSession *cassandra.Session
+	Cfg     *config
+	Log     logs.Logger
+	db      *db.DB
+	es      *elastic.Client
+	ctx     servicehub.Context
+	metricq metricq.Queryer
+	t       i18n.Translator
 }
 
 type define struct{}
@@ -58,9 +54,7 @@ func (d *define) Creator() servicehub.Creator {
 	}
 }
 
-type config struct {
-	Cassandra cassandra.SessionConfig `file:"cassandra"`
-}
+type config struct{}
 
 func (topology *provider) Init(ctx servicehub.Context) (err error) {
 	topology.ctx = ctx
@@ -76,13 +70,6 @@ func (topology *provider) Init(ctx servicehub.Context) (err error) {
 	topology.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())
 
 	topology.metricq = ctx.Service("metrics-query").(metricq.Queryer)
-
-	c := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := c.NewSession(&topology.Cfg.Cassandra)
-	topology.cassandraSession = session
-	if err != nil {
-		return fmt.Errorf("fail to create cassandra session: %s", err)
-	}
 
 	routes := ctx.Service("http-server", interceptors.Recover(topology.Log)).(httpserver.Router)
 	return topology.initRoutes(routes)

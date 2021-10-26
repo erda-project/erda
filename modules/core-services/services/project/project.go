@@ -614,7 +614,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	logrus.Infoln("query ProjectQuota")
 	var projectQuota model.ProjectQuota
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -631,18 +630,17 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	projectDTO.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
 	projectDTO.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
 	projectDTO.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
-	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota)
-	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota)
-	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota)
-	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota)
-	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota)
-	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota)
-	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
-	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)
-	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota + projectQuota.StagingCPUQuota + projectQuota.TestCPUQuota + projectQuota.DevCPUQuota)
-	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota + projectQuota.StagingMemQuota + projectQuota.TestMemQuota + projectQuota.DevMemQuota)
+	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota, 3)
+	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota, 3)
+	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota, 3)
+	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota, 3)
+	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota, 3)
+	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota, 3)
+	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota, 3)
+	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota, 3)
+	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota+projectQuota.StagingCPUQuota+projectQuota.TestCPUQuota+projectQuota.DevCPUQuota, 3)
+	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota+projectQuota.StagingMemQuota+projectQuota.TestMemQuota+projectQuota.DevMemQuota, 3)
 
-	logrus.Infoln("query PodInfo")
 	var podInfos []apistructs.PodInfo
 	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -682,14 +680,11 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		}
 	}
 
-	logrus.Infof("GetNamespacesResources: %+v", resourceRequest)
 	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
 		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
 	}
-	data, _ := json.Marshal(resources)
-	logrus.Infof("GetNamespacesResources response: %s", string(data))
 
 	for _, clusterItem := range resources.List {
 		if !clusterItem.GetSuccess() {
@@ -714,9 +709,9 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		}
 
 		for _, namespaceItem := range clusterItem.List {
-			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
-			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
-			source.MemRequest += calcu.ByteToGibibyte(namespaceItem.GetMemRequest())
+			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
+			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
+			source.MemRequest += calcu.ByteToGibibyte(namespaceItem.GetMemRequest(), 3)
 			if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
 				source.CPURequestByAddon += source.CPURequest
 				source.MemRequestByAddon += source.MemRequest
@@ -754,8 +749,8 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 						source = projectDTO.ResourceConfig.DEV
 					}
 					if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
-						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
+						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable()-host.GetCpuRequest(), 3)
+						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable()-host.GetMemRequest(), 3)
 					}
 				}
 			}
@@ -1507,18 +1502,19 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 }
 
 func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	l := logrus.WithField("func", "GetNamespacesBelongsTo")
+
 	// 1）查找 s_pod_info
-	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info, namespaces: %v", namespaces)
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
 	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")
-			logrus.WithError(err).Errorln()
+			l.WithError(err).Errorln()
 			return nil, err
 		}
 	}
-	logrus.Debugf("GetNamespacesBelongsTo, query s_pod_info count: %v", len(podInfos))
+
 	for _, podInfo := range podInfos {
 		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
 		if err != nil {
@@ -1538,14 +1534,13 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		}
 		projectsM[projectID] = clusters
 	}
-	logrus.Debugf("GetNamespacesBelongsTo, projectsM: %v", projectsM)
 
 	// 2) 查找 project_namespace
 	var projectNamespaces []*apistructs.ProjectNamespaceModel
 	if err := p.db.Find(&projectNamespaces).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find projectNamespace")
-			logrus.WithError(err).Errorln()
+			l.WithError(err).Errorln()
 			return nil, err
 		}
 	}
@@ -1572,7 +1567,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		var project model.Project
 		if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
-				logrus.WithError(err).WithField("id", projectID).Warnln("failed to First project")
+				l.WithError(err).WithField("id", projectID).Warnln("failed to First project")
 				continue
 			}
 		}
@@ -1590,13 +1585,13 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		total, members, err := p.db.GetMembersByParam(&memberListReq)
 		if err != nil {
 			err = errors.Wrap(err, "failed to GetMembersByParam")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			continue
 		}
 		if total <= 0 || len(members) == 0 {
 			err = errors.New("not found owner for the project")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			return nil, err
+			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			continue
 		}
 		owner := members[0]
 		userID, err := strconv.ParseInt(owner.UserID, 10, 64)
@@ -1609,7 +1604,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 			if !gorm.IsRecordNotFoundError(err) {
 				err = errors.Wrap(err, "failed to First project quota")
-				logrus.WithError(err).WithField("project_id", projectID).Errorln()
+				l.WithError(err).WithField("project_id", projectID).Errorln()
 				return nil, err
 			}
 		}

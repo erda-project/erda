@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	G     = 1 << 30
-	mCore = 1000
+	G         = 1 << 30
+	MilliCore = 1000
 )
 
 type GaugeData struct {
@@ -60,7 +60,7 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 	if resp.MemTotal == 0 || resp.CpuTotal == 0 {
 		return nil
 	}
-	cpuBase := float64(req.CpuPerNode) * mCore
+	cpuBase := float64(req.CpuPerNode) * MilliCore
 	memBase := float64(req.MemPerNode) * G
 	MemRequest := resp.MemRequest
 	CpuRequest := resp.CpuRequest
@@ -105,8 +105,11 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	if err != nil {
 		return
 	}
-	// 1. filter cluster
+	// 1. filter Cluster
 	names := r.FilterCluster(clusters, clusterNames)
+	if len(names) == 0 {
+		return nil, errNoClusterFound
+	}
 	// 2. query clusterInfo
 	greq := &pb.GetClustersResourcesRequest{}
 	greq.ClusterNames = names
@@ -129,8 +132,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		return
 	}
 	quotaMem, quotaCpu := 0.0, 0.0
-	quotaCpu += quota.CPUQuota
-	quotaMem += quota.MemQuota
+	quotaCpu += float64(quota.CPUQuotaMilliValue)
+	quotaMem += float64(quota.MemQuotaByte)
 
 	// 5. get not exist quota
 	allNamespace := make([]*pb.ClusterNamespacePair, 0)
@@ -150,7 +153,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 		for _, object := range resource {
 			allNamespace = append(allNamespace, &pb.ClusterNamespacePair{Namespace: object.Data().String("metadata", "name"), ClusterName: clusterName})
-			clusterNamespaces[cluster] = append(clusterNamespaces[cluster], object.Namespace())
+			clusterNamespaces[Cluster] = append(clusterNamespaces[Cluster], object.Namespace())
 		}
 	}
 	nreq := &apistructs.OrgClustersNamespaceReq{}
@@ -190,8 +193,6 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 
 	resp.CpuQuota += quotaCpu + resp.IrrelevantCpuRequest
 	resp.MemQuota += quotaMem + resp.IrrelevantMemRequest
-	resp.MemRequest += resp.IrrelevantMemRequest
-	resp.CpuRequest += resp.IrrelevantCpuRequest
 	return
 }
 

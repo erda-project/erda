@@ -74,11 +74,15 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 		Enc: func(val interface{}) (index, id, typ string, body interface{}, err error) {
 			data := val.(*log.LabeledLog)
 			var wait <-chan error
-			key := p.Retention.GetConfigKey(data.Source, data.Tags)
-			if len(key) > 0 {
-				wait, index = p.Creator.Ensure(data.Tags["dice_org_name"], key)
-			} else {
+			if p.Retention == nil {
 				wait, index = p.Creator.Ensure(data.Tags["dice_org_name"])
+			} else {
+				key := p.Retention.GetConfigKey(data.Source, data.Tags)
+				if len(key) > 0 {
+					wait, index = p.Creator.Ensure(data.Tags["dice_org_name"], key)
+				} else {
+					wait, index = p.Creator.Ensure(data.Tags["dice_org_name"])
+				}
 			}
 			if wait != nil {
 				select {

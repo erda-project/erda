@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -82,6 +83,10 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	cocoScore := q.calcCodeCoverage(ctx, h)
 	bugReopenScore := q.calcBugReopenRate(ctx, h)
 
+	// global score
+	globalScore := polishToFloat64Score(q.calcGlobalQualityScore(ctx, mtScore, atScore, bugScore, cocoScore, bugReopenScore))
+	h.SetGlobalQualityScore(globalScore)
+
 	// radar options
 	radar := charts.NewRadar()
 	radar.Indicator = []*opts.Indicator{
@@ -110,6 +115,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	)
 	radar.SetGlobalOptions(
 		charts.WithTooltipOpts(opts.Tooltip{Show: true, Trigger: "item"}),
+		charts.WithTitleOpts(opts.Title{Title: strutil.String(globalScore)}),
 	)
 	radar.JSON()
 
@@ -131,7 +137,7 @@ func (q *Q) calcMtPlanScore(ctx context.Context, h *gshelper.GSHelper) decimal.D
 	var numCasePassed, numCaseExecuted, numCaseTotal uint64
 	for _, plan := range mtPlans {
 		numCasePassed += plan.RelsCount.Succ
-		numCaseExecuted += plan.RelsCount.Succ + plan.RelsCount.Block + plan.RelsCount.Block
+		numCaseExecuted += plan.RelsCount.Succ + plan.RelsCount.Block + plan.RelsCount.Fail
 		numCaseTotal += plan.RelsCount.Total
 	}
 
@@ -256,4 +262,18 @@ func polishToFloat64Score(scoreDecimal decimal.Decimal) float64 {
 		score = 100
 	}
 	return numeral.Round(score, 2)
+}
+
+// calcGlobalQualityScore calc global average score according to
+func (q *Q) calcGlobalQualityScore(ctx context.Context, scores ...decimal.Decimal) decimal.Decimal {
+	if len(scores) == 0 {
+		return decimal.NewFromInt(0)
+	}
+	total := decimal.NewFromInt(0)
+	for _, score := range scores {
+		total = total.Add(score)
+	}
+	var avg decimal.Decimal
+	avg = total.Div(decimal.NewFromInt(int64(len(scores))))
+	return avg
 }
