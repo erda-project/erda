@@ -47,6 +47,9 @@ func (e *Endpoints) CreateTestPlan(ctx context.Context, r *http.Request, vars ma
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrCreateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
+	if err = req.Check(); err != nil {
+		return apierrors.ErrCreateTestPlan.InvalidParameter(err).ToResp(), nil
+	}
 	req.IdentityInfo = identityInfo
 
 	testPlanID, err := e.mttestPlan.Create(req)
@@ -74,6 +77,9 @@ func (e *Endpoints) UpdateTestPlan(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrUpdateTestPlan.MissingParameter("request body").ToResp(), nil
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
+	}
+	if err = req.Check(); err != nil {
 		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
 	req.TestPlanID = testPlanID
