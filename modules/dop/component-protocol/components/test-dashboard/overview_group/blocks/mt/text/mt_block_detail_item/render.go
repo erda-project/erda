@@ -157,7 +157,7 @@ func makeMtCaseNumDone(ctx context.Context, mtPlans []apistructs.TestPlan) TextV
 func makeMtCaseNumBlock(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {
 	var done uint64
 	for _, plan := range mtPlans {
-		done = done + plan.RelsCount.Succ + plan.RelsCount.Fail + plan.RelsCount.Block
+		done = done + plan.RelsCount.Block
 	}
 	return TextValue{
 		Value:      strutil.String(done),
