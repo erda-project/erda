@@ -57,7 +57,7 @@ type JoinFields struct {
 	ProjectID   int64  `gorm:"column:project_id"`
 	ProjectName string `gorm:"column:project_name"`
 	Env         string `gorm:"column:env"`
-	Config      string `gorm:"config"`
+	Config      string `gorm:"column:config"`
 	ScopeID     string `gorm:"column:scope_id"`
 	IsDeleted   string `gorm:"column:is_deleted"`
 }
@@ -67,26 +67,9 @@ func (f *JoinFields) Deleted() bool {
 	return f.IsDeleted != "N"
 }
 
-var joinFieldSelect = strings.Join([]string{
-	"sp_metric.id AS `id`",
-	"sp_metric.name AS `name`",
-	"sp_metric.mode AS `mode`",
-	"sp_metric.url AS `url`",
-	"sp_metric.config AS `config`",
-	"sp_project.project_id AS `project_id`",
-	// "sp_monitor.project_name AS `project_name`",
-	"sp_metric.env AS `env`",
-	// "sp_monitor.terminus_key AS `scope_id`",
-	"sp_metric.is_deleted AS `is_deleted`",
-}, ", ")
-
 func (db *CheckerDB) FullList() (checkers []*pb.Checker, deleted []int64, err error) {
 	var list []*JoinFields
-	if err := db.DB.Table(TableMetric).
-		Select(joinFieldSelect).
-		Joins("LEFT JOIN sp_project ON sp_project.id = sp_metric.project_id").
-		// Joins("LEFT JOIN sp_monitor ON sp_monitor.project_id = sp_project.project_id AND sp_monitor.workspace = sp_metric.env").
-		Find(&list).Error; err != nil {
+	if err := db.DB.Table(TableMetric).Find(&list).Error; err != nil {
 		return nil, nil, err
 	}
 	for _, item := range list {
