@@ -38,6 +38,7 @@ const (
 var (
 	errResourceTypeNotFound = errors.New("resource type not support")
 	errIntervalTypeNotFound = errors.New("date type not support")
+	errNoClusterFound       = errors.New("no cluster legal found")
 )
 
 type PieData struct {
@@ -90,6 +91,9 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 		return
 	}
 	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
+	if len(request.ClusterName) == 0 {
+		return nil, errNoClusterFound
+	}
 	resp, err := r.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
 	if err != nil {
 		return
@@ -243,7 +247,9 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 		return nil, err
 	}
 	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
-
+	if len(request.ClusterName) == 0 {
+		return nil, errNoClusterFound
+	}
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
 	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
@@ -338,6 +344,9 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		return nil, err
 	}
 	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
+	if len(request.ClusterName) == 0 {
+		return nil, errNoClusterFound
+	}
 
 	db := r.DB.Table("cmp_project_resource_daily")
 	db.Raw("select  SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?) sort by created_at desc", request.End, request.Start, request.ClusterName, request.ProjectId)

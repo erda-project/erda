@@ -107,6 +107,9 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	}
 	// 1. filter Cluster
 	names := r.FilterCluster(clusters, clusterNames)
+	if len(names) == 0 {
+		return nil, errNoClusterFound
+	}
 	// 2. query clusterInfo
 	greq := &pb.GetClustersResourcesRequest{}
 	greq.ClusterNames = names
