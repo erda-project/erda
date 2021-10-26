@@ -59,8 +59,8 @@ func (q *GetQuotaOnClustersResponse) ReCalcu() {
 		owner.ReCalcu()
 		q.AccuQuota(owner.cpuQuota, owner.memQuota)
 	}
-	q.CPUQuota = calcu.MillcoreToCore(q.CPUQuotaMilliValue)
-	q.MemQuota = calcu.ByteToGibibyte(q.MemQuotaByte)
+	q.CPUQuota = calcu.MillcoreToCore(q.CPUQuotaMilliValue, 3)
+	q.MemQuota = calcu.ByteToGibibyte(q.MemQuotaByte, 3)
 }
 
 type OwnerQuotaOnClusters struct {
@@ -89,8 +89,8 @@ func (q *OwnerQuotaOnClusters) ReCalcu() {
 		project.ReCalcu()
 		q.AccuQuota(project.cpuQuota, project.memQuota)
 	}
-	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
-	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
+	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota, 3)
+	q.MemQuota = calcu.ByteToGibibyte(q.memQuota, 3)
 }
 
 type ProjectQuotaOnClusters struct {
@@ -112,8 +112,8 @@ func (q *ProjectQuotaOnClusters) AccuQuota(cpu, mem uint64) {
 }
 
 func (q *ProjectQuotaOnClusters) ReCalcu() {
-	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
-	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
+	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota, 3)
+	q.MemQuota = calcu.ByteToGibibyte(q.memQuota, 3)
 }
 
 type GetProjectsNamesapcesResponseData struct {
