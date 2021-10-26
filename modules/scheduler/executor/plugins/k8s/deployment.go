@@ -881,7 +881,7 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	_, projectID, workspace, runtimeID := extractContainerEnvs(deploy.Spec.Template.Spec.Containers)
 	deltaCPU, deltaMem, err := k.getDeploymentDeltaResource(ctx, deploy)
 	if err != nil {
-		return errors.Errorf("faield to get delta resource for deployment %s, %v", deploy.Name, err)
+		return errors.Errorf("failed to get delta resource for deployment %s, %v", deploy.Name, err)
 	}
 	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "scale")
 	if err != nil {

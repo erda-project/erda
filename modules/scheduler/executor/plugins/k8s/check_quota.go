@@ -107,7 +107,7 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 			humanLog = "部署失败。"
 			primevalLog = " failed to deploy."
 		case "stateful":
-			humanLog = "addon 部署失败"
+			humanLog = "addon 部署失败。"
 			primevalLog = " failed to deploy addon."
 		case "update":
 			humanLog = "更新失败。"
@@ -152,13 +152,18 @@ func resourceToString(res float64, typ string) string {
 	case "cpu":
 		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
 	case "memory":
+		isNegative := 1.0
+		if res < 0 {
+			res = -res
+			isNegative = -1
+		}
 		units := []string{"B", "K", "M", "G", "T"}
 		i := 0
 		for res >= 1<<10 && i < len(units)-1 {
 			res /= 1 << 10
 			i++
 		}
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res*isNegative, 3), 'f', -1, 64), units[i])
 	default:
 		return fmt.Sprintf("%.f", res)
 	}
