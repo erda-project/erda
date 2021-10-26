@@ -750,20 +750,27 @@ func (o *Org) makeTips(langCodes i18n.LanguageCodes, resource *apistructs.Cluste
 		return
 	}
 
+	workspaceText := o.trans.Text(langCodes, strings.ToUpper(calcu.WorkspaceString(workspace)))
 	switch quotableCPU, quotableMem := calculator.QuotableCPUForWorkspace(workspace), calculator.QuotableMemForWorkspace(workspace); {
 	case quotableCPU == 0 || quotableMem == 0:
 		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"),
+			workspaceText,
 			calcu.MillcoreToCore(calculator.AlreadyQuotaCPU(workspace), 3), calcu.ByteToGibibyte(calculator.AlreadyQuotaMem(workspace), 3),
+			workspaceText,
 			calcu.MillcoreToCore(calculator.AllocatableCPU(workspace), 3), calcu.ByteToGibibyte(calculator.AllocatableMem(workspace), 3),
 		)
 	case quotableCPU == 0:
 		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"),
+			workspaceText,
 			calcu.MillcoreToCore(calculator.AlreadyQuotaCPU(workspace), 3),
+			workspaceText,
 			calcu.MillcoreToCore(calculator.AllocatableCPU(workspace), 3),
 		)
 	case quotableMem == 0:
 		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"),
+			workspaceText,
 			calcu.ByteToGibibyte(calculator.AlreadyQuotaMem(workspace), 3),
+			workspaceText,
 			calcu.ByteToGibibyte(calculator.AllocatableMem(workspace), 3),
 		)
 	}
