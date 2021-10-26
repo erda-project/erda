@@ -37,7 +37,7 @@ func TestResource_GetClusterPie(t *testing.T) {
 	}
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
-		Name: "distribution by cluster",
+		Name: "distribution by Cluster",
 		Type: "pie",
 		Data: []SerieData{{
 			Value: 0,
@@ -163,7 +163,7 @@ func TestResource_GetProjectPie(t *testing.T) {
 	}
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
-		Name: "distribution by project",
+		Name: "distribution by Project",
 		Type: "pie",
 	})
 	resp := &apistructs.GetQuotaOnClustersResponse{
