@@ -21,6 +21,7 @@ elasticsearch@logs:
   password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 cassandra:
+  _enable: ${CASSANDRA_ENABLE:true}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
@@ -54,7 +55,15 @@ redis:
 permission:
 
 # log
+elasticsearch@log:
+  _enable: ${LOG_ELASTICSEARCH_ENABLE:false}
+  urls: "${LOG_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${LOG_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
+
 elasticsearch.index.loader@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -66,13 +75,16 @@ elasticsearch.index.loader@log:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   default_ttl: "${LOG_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   key_patterns: 
     - "erda-logs-<org>.<key>-{number}"
 elasticsearch.index.cleaner@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   check_interval: "30m"
   print_onluy: true
   disk_clean:
@@ -89,16 +101,18 @@ elasticsearch.index.cleaner@log:
       - index: "erda-logs-<org>.<key>-{number}"
         alias: "erda-logs-<org>.<key>-rollover"
 log-storage-elasticsearch:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   query_timeout: "1m"
   read_page_size: 200
 kubernetes-logs-storage:
+  _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:true}
   client_cache_size: 128
   client_cache_expiration: "10m"
   pod_info_cache_size: 256
   pod_info_cache_expiration: "3h"
   buffer_lines: 200
 log-storage-cassandra:
-  _enable: ${QUERY_LOG_IN_CASSANDRA_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:false}
   read_page_size: 201
   cassandra:
     keyspace:

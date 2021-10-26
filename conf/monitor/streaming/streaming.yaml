@@ -11,13 +11,6 @@ kafka:
     options:
       go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 
-cassandra:
-  host: "${CASSANDRA_ADDR:localhost:9042}"
-  security: ${CASSANDRA_SECURITY_ENABLE:false}
-  username: ${CASSANDRA_SECURITY_USERNAME}
-  password: ${CASSANDRA_SECURITY_PASSWORD}
-  timeout: "${CASSANDRA_TIMEOUT:3s}"
-
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: ${MYSQL_PORT:3306}
@@ -35,23 +28,22 @@ etcd:
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
 
-elasticsearch:
-  urls: "${ES_URL:http://localhost:9200}"
-  security: ${ES_SECURITY_ENABLE:false}
-  username: "${ES_SECURITY_USERNAME}"
-  password: "${ES_SECURITY_PASSWORD}"
+# elasticsearch for log
+elasticsearch@log:
+  _enable: ${LOG_ELASTICSEARCH_ENABLE:false}
+  urls: "${LOG_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${LOG_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
 
-elasticsearch.index.initializer:
+elasticsearch.index.initializer@log:
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   templates:
-    - name: "spot_metric_template"
-      path: "${CONFIG_PATH}/metric_index_template.json"
     - name: "erda-logs"
       path: "${CONFIG_PATH}/log_index_template.json"
-    - name: "erda-events"
-      path: "${CONFIG_PATH}/event_index_template.json"
 
-# elasticsearch for log
 elasticsearch.index.loader@log:
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -61,6 +53,7 @@ elasticsearch.index.loader@log:
         - "<org>.<key>-{number}"
 
 elasticsearch.index.creator@log:
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   patterns:
     - first_index: "erda-logs-<org>-000001"
       alias: "erda-logs-<org>-rollover"
@@ -69,6 +62,7 @@ elasticsearch.index.creator@log:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@log:
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   check_interval: "30s"
   body_file: "${CONFIG_PATH}/index_rollover.json"
   patterns:
@@ -80,12 +74,15 @@ elasticsearch.index.rollover@log:
 storage-retention-strategy@log:
   load_from_database: true
   ttl_reload_interval: "3m"
+  default_ttl: "${LOG_TTL:168h}"
 
 log-storage-elasticsearch:
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   write_timeout: "1m"
   index_type: "logs"
 
 log-persist:
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:erda-logs-dev}"
@@ -95,8 +92,64 @@ log-persist:
   parallelism: ${LOG_PERSIST_PARALLELISM:3}
   print_invalid_log: false
 
+cassandra:
+  _enable: ${CASSANDRA_ENABLE:true}
+  host: "${CASSANDRA_ADDR:localhost:9042}"
+  security: ${CASSANDRA_SECURITY_ENABLE:false}
+  username: ${CASSANDRA_SECURITY_USERNAME}
+  password: ${CASSANDRA_SECURITY_PASSWORD}
+  timeout: "${CASSANDRA_TIMEOUT:3s}"
+etcd-mutex:
+  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
+  root_path: "/erda/streaming"
+log-persist-v1:
+  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
+  input:
+    topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
+    group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
+    parallelism: ${LOG_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+      queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
+  output:
+    id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+    log_schema:
+      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
+    cassandra:
+      writer_config:
+        parallelism: ${CASSANDRA_PARALLELISM:3}
+        batch:
+          size: ${CASSANDRA_BATCH_SIZE:50}
+          timeout: ${CASSANDRA_BATCH_TIMEOUT:10s}
+        retry: -1  # block forever. kafka will handle the issue of stream block
+      session_config:
+        keyspace:
+          name: "spot_prod"
+          auto: ${LOG_STORE_CASSANDRA_SESSION_KEYSPACE_AUTO:true} # 自动创建 keyspace
+          replication:
+            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+        reconnection:
+          check_interval: ${LOG_STORE_CASSANDRA_RECONNECTION_CHECK_INTERVAL:3m}
+      gc_grace_seconds: 86400
+
 # elasticsearch for event
+elasticsearch@event:
+  _enable: ${EVENT_ELASTICSEARCH_ENABLE:false}
+  urls: "${EVENT_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${EVENT_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
+
+elasticsearch.index.initializer@event:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
+  templates:
+    - name: "erda-events"
+      path: "${CONFIG_PATH}/event_index_template.json"
+
 elasticsearch.index.loader@event:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -106,6 +159,7 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>.<key>-{number}"
 
 elasticsearch.index.creator@event:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   patterns:
     - first_index: "erda-events-<event>-<namespace>-000001"
       alias: "erda-events-<event>-<namespace>-rollover"
@@ -114,6 +168,7 @@ elasticsearch.index.creator@event:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@event:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   check_interval: "30s"
   body_file: "${CONFIG_PATH}/index_rollover.json"
   patterns:
@@ -123,14 +178,17 @@ elasticsearch.index.rollover@event:
       alias: "erda-events-<event>-<namespace>.<key>-rollover"
 
 storage-retention-strategy@event:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   load_from_database: true
   ttl_reload_interval: "3m"
 
 event-storage-elasticsearch:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   write_timeout: "1m"
   index_type: "events"
 
 event-persist:
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   input:
     topics: "${EVENT_TOPICS:spot-events}"
     group: "${EVENT_GROUP_ID:erda-events-dev}"
@@ -140,6 +198,17 @@ event-persist:
   print_invalid_event: false
 
 # elasticsearch for metric
+elasticsearch:
+  urls: "${ES_URL:http://localhost:9200}"
+  security: ${ES_SECURITY_ENABLE:false}
+  username: "${ES_SECURITY_USERNAME}"
+  password: "${ES_SECURITY_PASSWORD}"
+
+elasticsearch.index.initializer@metric:
+  templates:
+    - name: "spot_metric_template"
+      path: "${CONFIG_PATH}/metric_index_template.json"
+
 elasticsearch.index.loader@metric:
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
