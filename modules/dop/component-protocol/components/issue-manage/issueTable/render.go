@@ -475,8 +475,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	severityCol, closedAtCol := "", ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
-		severityCol = `{ "title": "严重程度", "dataIndex": "severity", "width": 100 },`
-		closedAtCol = `,{ "title": "关闭日期", "dataIndex": "closedAt", "width": 100 }`
+		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "width": 100 },`
+		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "width": 100 }`
 	}
 	props := `{
     "columns": [
@@ -585,7 +585,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		severityOps["changeSeverityTo"+severityAuto[s]+string(s)] = map[string]interface{}{
 			"key":        "changeSeverityTo" + severityAuto[s] + string(s),
 			"reload":     true,
-			"text":       cputil.I18n(ctx, string(s)),
+			"text":       cputil.I18n(ctx, s.GetI18nKeyAlias()),
 			"prefixIcon": "ISSUE_ICON.severity." + string(s),
 			"meta": map[string]string{
 				"id":       strconv.FormatInt(data.ID, 10),
@@ -595,7 +595,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 	}
 	severity := Severity{
 		RenderType: "operationsDropdownMenu",
-		Value:      cputil.I18n(ctx, strings.ToLower(string(data.Severity))),
+		Value:      cputil.I18n(ctx, data.Severity.GetI18nKeyAlias()),
 		PrefixIcon: "ISSUE_ICON.severity." + string(data.Severity),
 		Operations: severityOps,
 		Disabled:   ca.isGuest,
