@@ -35,6 +35,13 @@ func Test_replaceOpenapiV1Path(t *testing.T) {
 			want: "/api/projects/{projectID}",
 		},
 		{
+			name: "<> path variable with space",
+			args: args{
+				path: "/api/cloud-mysql/<id or name>",
+			},
+			want: "/api/cloud-mysql/{id_or_name}",
+		},
+		{
 			name: "normal",
 			args: args{
 				path: "/api/projects",
