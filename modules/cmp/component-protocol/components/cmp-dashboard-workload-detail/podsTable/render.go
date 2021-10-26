@@ -258,11 +258,15 @@ func (p *ComponentPodsTable) RenderTable() error {
 			}
 		}
 
-		name := obj.String("metadata", "name")
-		namespace := obj.String("metadata", "namespace")
+		podName := obj.String("metadata", "name")
+		podNamespace := obj.String("metadata", "namespace")
+		if podNamespace != namespace {
+			continue
+		}
+
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 9 {
-			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
+			logrus.Errorf("length of pod %s:%s fields is invalid", podNamespace, podName)
 			continue
 		}
 
@@ -297,26 +301,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
+		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, podName, podNamespace, metrics.Cpu, metrics.Pod))
 		if metricsData != nil && !cpuLimits.IsZero() {
 			usedCPUPercent := metricsData.Used
 			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
+		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, podName, podNamespace, metrics.Memory, metrics.Pod))
 		if metricsData != nil && !memLimits.IsZero() {
 			usedMemPercent := metricsData.Used
 			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		}
 
-		id := fmt.Sprintf("%s_%s", namespace, name)
+		id := fmt.Sprintf("%s_%s", podNamespace, podName)
 		items = append(items, Item{
 			ID:     id,
 			Status: status,
 			Name: Link{
 				RenderType: "linkText",
-				Value:      name,
+				Value:      podName,
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
 						Command: Command{
@@ -327,8 +331,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 									"podId": id,
 								},
 								Query: map[string]string{
-									"namespace": namespace,
-									"podName":   name,
+									"namespace": podNamespace,
+									"podName":   podName,
 								},
 							},
 							JumpOut: true,
@@ -337,7 +341,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:      namespace,
+			Namespace:      podNamespace,
 			IP:             fields[5],
 			Age:            fields[4],
 			CPURequests:    cpuRequestStr,
