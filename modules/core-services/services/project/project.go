@@ -703,14 +703,12 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			if clusterItem.GetClusterName() != source.ClusterName {
 				continue
 			}
-
+			if _, ok := namespaces[clusterItem.GetClusterName()]; !ok {
+				continue
+			}
 			for _, namespaceItem := range clusterItem.List {
-				// 如果 namespace 不在给定的 namespace 列表中，忽略
-				if _, ok := namespaces[namespaceItem.GetNamespace()]; !ok {
-					continue
-				}
 				// 如果 namespace 不是要求的 workspace 下的，忽略
-				if w := namespaces[namespaceItem.GetNamespace()][workspace]; w != workspace {
+				if w := namespaces[clusterItem.GetClusterName()][namespaceItem.GetNamespace()]; w != workspace {
 					continue
 				}
 
