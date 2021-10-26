@@ -22,8 +22,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
+
+var resourceOverviewReportError = errorresp.New(errorresp.WithTemplateMessage("ErrResourceOverviewReport", "查询项目资源分配情况失败"))
 
 func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	logrus.Debugln("ResourceOverviewReport")
@@ -32,11 +35,11 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to parse orgID")
-		return httpserver.ErrResp(0, "", err.Error()) // todo:
+		return resourceOverviewReportError.InvalidParameter(err).ToResp(), nil
 	}
 	if err := r.ParseForm(); err != nil {
 		logrus.WithError(err).Errorln("failed to ParseForm")
-		return httpserver.ErrResp(0, "", err.Error()) // todo:
+		return resourceOverviewReportError.InvalidParameter(err).ToResp(), nil
 	}
 
 	value := r.URL.Query()
@@ -56,7 +59,7 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 	report, err := e.reportTable.GetResourceOverviewReport(ctx, orgID, clusterNames, cpuPerNode, memPerNode)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to GetResourceOverviewReport")
-		return httpserver.ErrResp(0, "", err.Error())
+		return resourceOverviewReportError.InternalError(err).ToResp(), nil
 	}
 
 	return httpserver.OkResp(report)

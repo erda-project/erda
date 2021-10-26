@@ -42,10 +42,10 @@ type DailyQuotaCollector struct {
 	}
 }
 
-func NewDailyQuotaCollector(opt ...DailyQuotaCollectorOption) *DailyQuotaCollector {
+func NewDailyQuotaCollector(opts ...DailyQuotaCollectorOption) *DailyQuotaCollector {
 	var d DailyQuotaCollector
-	for _, f := range opt {
-		f(&d)
+	for _, opt := range opts {
+		opt(&d)
 	}
 	return &d
 }
