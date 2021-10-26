@@ -30,7 +30,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/monitor/common/db"
@@ -209,14 +208,13 @@ func Test_provider_handleResult(t *testing.T) {
 	itemResult["avg_elapsed"] = 1000
 	itemResult["slow_elapsed_count"] = 2
 	type fields struct {
-		Cfg              *config
-		Log              logs.Logger
-		db               *db.DB
-		es               *elastic.Client
-		ctx              servicehub.Context
-		metricq          metricq.Queryer
-		t                i18n.Translator
-		cassandraSession *cassandra.Session
+		Cfg     *config
+		Log     logs.Logger
+		db      *db.DB
+		es      *elastic.Client
+		ctx     servicehub.Context
+		metricq metricq.Queryer
+		t       i18n.Translator
 	}
 	type args struct {
 		r         []interface{}
@@ -230,14 +228,13 @@ func Test_provider_handleResult(t *testing.T) {
 		want   map[string]interface{}
 	}{
 		{"case", fields{
-			Cfg:              nil,
-			Log:              nil,
-			db:               nil,
-			es:               nil,
-			ctx:              nil,
-			metricq:          nil,
-			t:                nil,
-			cassandraSession: nil,
+			Cfg:     nil,
+			Log:     nil,
+			db:      nil,
+			es:      nil,
+			ctx:     nil,
+			metricq: nil,
+			t:       nil,
 		}, args{
 			r: []interface{}{
 				"test-topic",
@@ -253,14 +250,13 @@ func Test_provider_handleResult(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			topology := &provider{
-				Cfg:              tt.fields.Cfg,
-				Log:              tt.fields.Log,
-				db:               tt.fields.db,
-				es:               tt.fields.es,
-				ctx:              tt.fields.ctx,
-				metricq:          tt.fields.metricq,
-				t:                tt.fields.t,
-				cassandraSession: tt.fields.cassandraSession,
+				Cfg:     tt.fields.Cfg,
+				Log:     tt.fields.Log,
+				db:      tt.fields.db,
+				es:      tt.fields.es,
+				ctx:     tt.fields.ctx,
+				metricq: tt.fields.metricq,
+				t:       tt.fields.t,
 			}
 			if got := topology.handleResult(nil, tt.args.r, tt.args.slowCount); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("handleResult() = %v, want %v", got, tt.want)
@@ -271,14 +267,13 @@ func Test_provider_handleResult(t *testing.T) {
 
 func Test_provider_mqTranslation(t *testing.T) {
 	type fields struct {
-		Cfg              *config
-		Log              logs.Logger
-		db               *db.DB
-		es               *elastic.Client
-		ctx              servicehub.Context
-		metricq          metricq.Queryer
-		t                i18n.Translator
-		cassandraSession *cassandra.Session
+		Cfg     *config
+		Log     logs.Logger
+		db      *db.DB
+		es      *elastic.Client
+		ctx     servicehub.Context
+		metricq metricq.Queryer
+		t       i18n.Translator
 	}
 	type args struct {
 		lang   i18n.LanguageCodes
@@ -294,14 +289,13 @@ func Test_provider_mqTranslation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			topology := &provider{
-				Cfg:              tt.fields.Cfg,
-				Log:              tt.fields.Log,
-				db:               tt.fields.db,
-				es:               tt.fields.es,
-				ctx:              tt.fields.ctx,
-				metricq:          tt.fields.metricq,
-				t:                tt.fields.t,
-				cassandraSession: tt.fields.cassandraSession,
+				Cfg:     tt.fields.Cfg,
+				Log:     tt.fields.Log,
+				db:      tt.fields.db,
+				es:      tt.fields.es,
+				ctx:     tt.fields.ctx,
+				metricq: tt.fields.metricq,
+				t:       tt.fields.t,
 			}
 			got, err := topology.mqTranslation(tt.args.lang, tt.args.params)
 			if (err != nil) != tt.wantErr {
@@ -317,14 +311,13 @@ func Test_provider_mqTranslation(t *testing.T) {
 
 func Test_provider_composeMqTranslationCondition(t *testing.T) {
 	type fields struct {
-		Cfg              *config
-		Log              logs.Logger
-		db               *db.DB
-		es               *elastic.Client
-		ctx              servicehub.Context
-		metricq          metricq.Queryer
-		t                i18n.Translator
-		cassandraSession *cassandra.Session
+		Cfg     *config
+		Log     logs.Logger
+		db      *db.DB
+		es      *elastic.Client
+		ctx     servicehub.Context
+		metricq metricq.Queryer
+		t       i18n.Translator
 	}
 	type args struct {
 		params translation
@@ -335,7 +328,7 @@ func Test_provider_composeMqTranslationCondition(t *testing.T) {
 		args   args
 		want2  string
 	}{
-		{"case1", fields{Cfg: nil, Log: nil, db: nil, es: nil, ctx: nil, metricq: nil, t: nil, cassandraSession: nil}, args{params: translation{
+		{"case1", fields{Cfg: nil, Log: nil, db: nil, es: nil, ctx: nil, metricq: nil, t: nil}, args{params: translation{
 			Start:             1630971092821,
 			End:               1630981892821,
 			Limit:             0,
@@ -350,7 +343,7 @@ func Test_provider_composeMqTranslationCondition(t *testing.T) {
 			"FROM application_mq WHERE  message_bus_destination::tag=~/.*topic.*/ AND ((source_service_id::tag=$serviceId AND span_kind::tag='producer' " +
 			"AND source_terminus_key::tag=$terminusKey) OR (target_service_id::tag=$serviceId AND span_kind::tag='consumer' " +
 			"AND target_terminus_key::tag=$terminusKey)) GROUP BY message_bus_destination::tag,span_kind::tag  ORDER BY avg(elapsed_mean::field) DESC"},
-		{"case2", fields{Cfg: nil, Log: nil, db: nil, es: nil, ctx: nil, metricq: nil, t: nil, cassandraSession: nil}, args{params: translation{
+		{"case2", fields{Cfg: nil, Log: nil, db: nil, es: nil, ctx: nil, metricq: nil, t: nil}, args{params: translation{
 			Start:             1630971092821,
 			End:               1630981892821,
 			Limit:             0,
@@ -365,14 +358,13 @@ func Test_provider_composeMqTranslationCondition(t *testing.T) {
 			"FROM application_mq WHERE  message_bus_destination::tag=~/.*topic.*/ AND source_service_id::tag=$serviceId AND span_kind::tag='producer' " +
 			"AND source_terminus_key::tag=$terminusKey GROUP BY message_bus_destination::tag,span_kind::tag  ORDER BY avg(elapsed_mean::field) DESC"},
 		{"case3", fields{
-			Cfg:              nil,
-			Log:              nil,
-			db:               nil,
-			es:               nil,
-			ctx:              nil,
-			metricq:          nil,
-			t:                nil,
-			cassandraSession: nil,
+			Cfg:     nil,
+			Log:     nil,
+			db:      nil,
+			es:      nil,
+			ctx:     nil,
+			metricq: nil,
+			t:       nil,
 		}, args{params: translation{
 			Start:             1630971092821,
 			End:               1630981892821,
@@ -392,14 +384,13 @@ func Test_provider_composeMqTranslationCondition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			topology := &provider{
-				Cfg:              tt.fields.Cfg,
-				Log:              tt.fields.Log,
-				db:               tt.fields.db,
-				es:               tt.fields.es,
-				ctx:              tt.fields.ctx,
-				metricq:          tt.fields.metricq,
-				t:                tt.fields.t,
-				cassandraSession: tt.fields.cassandraSession,
+				Cfg:     tt.fields.Cfg,
+				Log:     tt.fields.Log,
+				db:      tt.fields.db,
+				es:      tt.fields.es,
+				ctx:     tt.fields.ctx,
+				metricq: tt.fields.metricq,
+				t:       tt.fields.t,
 			}
 			_, _, got := topology.composeMqTranslationCondition(tt.args.params)
 

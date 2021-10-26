@@ -237,12 +237,6 @@ node-topo:
 #apm providers
 apm-runtime:
 apm-topology:
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
 apm-report:
 
 erda.core.monitor.alert:
