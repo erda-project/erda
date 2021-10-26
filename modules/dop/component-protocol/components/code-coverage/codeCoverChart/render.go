@@ -112,7 +112,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 			},
 		},
 		"grid": map[string]interface{}{
-			"top": 20,
+			"top": 40,
 		},
 		"tooltip": map[string]interface{}{
 			"formatter": "{b}<br />{a}: {c}%",
