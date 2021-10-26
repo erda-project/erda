@@ -73,6 +73,9 @@ func (f *Filter) setState(ctx context.Context) error {
 						Week:  []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
 						Month: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
 					},
+					SelectableTime: []int64{
+						0, now.Unix() * 1000,
+					},
 				}
 
 				b, _ := json.Marshal(&customProps)
