@@ -28,11 +28,11 @@ const (
 	CPU       = "cpu"
 	Memory    = "memory"
 	principal = "principal"
-	project   = "project"
-	cluster   = "cluster"
-	day       = "day"
-	week      = "week"
-	month     = "month"
+	Project   = "Project"
+	Cluster   = "Cluster"
+	Day       = "Day"
+	Week      = "week"
+	Month     = "Month"
 )
 
 var (
@@ -85,11 +85,9 @@ type Quota struct {
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	var clusters []apistructs.ClusterInfo
 	data = make(map[string]*PieData)
-	if len(request.ClusterName) == 0 {
-		clusters, err = r.Bdl.ListClusters("", uint64(ordId))
-		if err != nil {
-			return
-		}
+	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+	if err != nil {
+		return
 	}
 	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
 	resp, err := r.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
@@ -104,12 +102,12 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 		return
 	}
 
-	// project
+	// Project
 	pie, err := r.GetProjectPie(request.ResourceType, resp)
 	if err != nil {
 		return
 	}
-	data[project] = pie
+	data[Project] = pie
 
 	// principal
 	pie, err = r.GetPrincipalPie(request.ResourceType, resp)
@@ -118,12 +116,12 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	}
 	data[principal] = pie
 
-	// cluster
+	// Cluster
 	pie, err = r.GetClusterPie(request.ResourceType, resources)
 	if err != nil {
 		return
 	}
-	data[cluster] = pie
+	data[Cluster] = pie
 	return
 }
 
@@ -134,7 +132,7 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 	)
 	projectPie = &PieData{}
 	pieSerie := PieSerie{
-		Name: r.I18n("distribution by project"),
+		Name: r.I18n("distribution by Project"),
 		Type: "pie",
 	}
 	projectMap := make(map[string]Quota)
@@ -156,7 +154,7 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 		}
 	default:
 		for k, v := range projectMap {
-			pieSerie.Data = append(pieSerie.Data, SerieData{v.cpuQuota / mCore, k})
+			pieSerie.Data = append(pieSerie.Data, SerieData{v.cpuQuota / MilliCore, k})
 		}
 	}
 	projectPie.Series = append(projectPie.Series, pieSerie)
@@ -189,7 +187,7 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 		}
 	default:
 		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota / mCore, k})
+			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
 		}
 	}
 	principalPie.Series = append(principalPie.Series, serie)
@@ -199,7 +197,7 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterResourcesResponse) (clusterPie *PieData, err error) {
 	clusterPie = &PieData{}
 	serie := PieSerie{
-		Name: r.I18n("distribution by cluster"),
+		Name: r.I18n("distribution by Cluster"),
 		Type: "pie",
 	}
 	switch resourceType {
@@ -217,7 +215,7 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			for _, h := range c.Hosts {
 				cpuSum += float64(h.CpuTotal)
 			}
-			serie.Data = append(serie.Data, SerieData{cpuSum / mCore, c.ClusterName})
+			serie.Data = append(serie.Data, SerieData{cpuSum / MilliCore, c.ClusterName})
 		}
 	}
 	clusterPie.Series = append(clusterPie.Series, serie)
@@ -240,15 +238,12 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 		pd       []apistructs.ClusterResourceDailyModel
 		clusters []apistructs.ClusterInfo
 	)
-	if len(request.ClusterName) == 0 {
-		clusters, err = r.Bdl.ListClusters("", uint64(ordId))
-		if err != nil {
-			return
-		}
-		for _, info := range clusters {
-			request.ClusterName = append(request.ClusterName, info.Name)
-		}
+	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+	if err != nil {
+		return nil, err
 	}
+	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
+
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
 	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
@@ -258,7 +253,7 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	}
 	tRes := make(map[int]apistructs.ClusterResourceDailyModel)
 	switch request.Interval {
-	case week:
+	case Week:
 		for _, model := range pd {
 			_, wk := model.CreatedAt.ISOWeek()
 			if v, ok := tRes[wk]; ok {
@@ -271,7 +266,7 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 				tRes[wk] = model
 			}
 		}
-	case month:
+	case Month:
 		for _, model := range pd {
 			if v, ok := tRes[int(model.CreatedAt.Month())]; ok {
 				v.CPUTotal += model.CPUTotal
@@ -284,7 +279,7 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 			}
 		}
 	default:
-		// day
+		// Day
 		for _, model := range pd {
 			if v, ok := tRes[model.CreatedAt.Day()]; ok {
 				v.CPUTotal += model.CPUTotal
@@ -338,15 +333,11 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		pd       []apistructs.ProjectResourceDailyModel
 		clusters []apistructs.ClusterInfo
 	)
-	if len(request.ClusterName) == 0 {
-		clusters, err = r.Bdl.ListClusters("", uint64(ordId))
-		if err != nil {
-			return
-		}
-		for _, info := range clusters {
-			request.ClusterName = append(request.ClusterName, info.Name)
-		}
+	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+	if err != nil {
+		return nil, err
 	}
+	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
 
 	db := r.DB.Table("cmp_project_resource_daily")
 	db.Raw("select  SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?) sort by created_at desc", request.End, request.Start, request.ClusterName, request.ProjectId)
@@ -356,7 +347,7 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 
 	tRes := make(map[int]apistructs.ProjectResourceDailyModel)
 	switch request.Interval {
-	case week:
+	case Week:
 		for _, model := range pd {
 			_, wk := model.CreatedAt.ISOWeek()
 			if v, ok := tRes[wk]; ok {
@@ -369,7 +360,7 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 				tRes[wk] = model
 			}
 		}
-	case month:
+	case Month:
 		for _, model := range pd {
 			if v, ok := tRes[int(model.CreatedAt.Month())]; ok {
 				v.CPURequest += model.CPURequest
@@ -382,7 +373,7 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 			}
 		}
 	default:
-		// day
+		// Day
 		for _, model := range pd {
 			if v, ok := tRes[model.CreatedAt.Day()]; ok {
 				v.CPURequest += model.CPURequest
