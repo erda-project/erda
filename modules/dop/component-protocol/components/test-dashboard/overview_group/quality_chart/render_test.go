@@ -159,9 +159,14 @@ func TestFloatPrecision(t *testing.T) {
 	assert.Equal(t, float64(0.9), c)
 }
 
-func TestFloatPrecision(t *testing.T) {
-	a := decimal.NewFromFloat(0.3)
-	b := decimal.NewFromFloat(0.6)
-	c, _ := a.Add(b).Float64()
-	assert.Equal(t, float64(0.9), c)
+func TestQ_calcGlobalQualityScore(t *testing.T) {
+	q := Q{}
+
+	// none score => 0
+	scoreForNone := q.calcGlobalQualityScore(context.Background())
+	assert.Equal(t, decimal.NewFromInt(0), scoreForNone)
+
+	// some scores
+	scoreForSome := q.calcGlobalQualityScore(context.Background(), decimal.NewFromInt(0), decimal.NewFromInt(0), decimal.NewFromInt(100))
+	assert.Equal(t, decimal.NewFromFloat(float64(0+0+100)/3).Round(2), scoreForSome.Round(2))
 }
