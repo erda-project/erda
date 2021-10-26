@@ -56,7 +56,7 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 
 	timeFilter := h.GetAtSceneAndApiTimeFilter()
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
-	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectID").(string), 10, 64)
+	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	costTimeAvg, err := atSvc.ExecHistoryApiAvgCostTime(apistructs.StatisticsExecHistoryRequest{
 		TimeStart:    timeFilter.TimeStart,
 		TimeEnd:      timeFilter.TimeEnd,
