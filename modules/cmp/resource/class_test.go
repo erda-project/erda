@@ -33,12 +33,17 @@ func TestResource_GetClusterPie(t *testing.T) {
 		Lang   i18n.LanguageCodes
 	}
 	res := &pb.GetClusterResourcesResponse{
-		List: make([]*pb.ClusterResourceDetail, 0),
+		List: []*pb.ClusterResourceDetail{{ClusterName: "terminus"}},
 	}
 	pie := &PieData{}
-	pie.series = append(pie.series, PieSerie{
+	pie.Series = append(pie.Series, PieSerie{
 		Name: "distribution by cluster",
 		Type: "pie",
+		Data: []SerieData{{
+			Value: 0,
+			Name:  "terminus",
+		},
+		},
 	})
 	type args struct {
 		resourceType string
@@ -54,6 +59,15 @@ func TestResource_GetClusterPie(t *testing.T) {
 			name: "test",
 			args: args{
 				resourceType: CPU,
+				resources:    res,
+			},
+			wantProjectPie: pie,
+		},
+
+		{
+			name: "test",
+			args: args{
+				resourceType: Memory,
 				resources:    res,
 			},
 			wantProjectPie: pie,
@@ -86,11 +100,17 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 		resp         *apistructs.GetQuotaOnClustersResponse
 	}
 	pie := &PieData{}
-	pie.series = append(pie.series, PieSerie{
+	pie.Series = append(pie.Series, PieSerie{
 		Name: "distribution by principal",
 		Type: "pie",
+		Data: []SerieData{{
+			Value: 0,
+		},
+		},
 	})
-	res := &apistructs.GetQuotaOnClustersResponse{}
+	resp := &apistructs.GetQuotaOnClustersResponse{
+		Owners: []*apistructs.OwnerQuotaOnClusters{{ID: 1, Projects: []*apistructs.ProjectQuotaOnClusters{{ID: 1}}}},
+	}
 	tests := []struct {
 		name             string
 		fields           fields
@@ -103,7 +123,15 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 			name: "test",
 			args: args{
 				resourceType: CPU,
-				resp:         res,
+				resp:         resp,
+			},
+			wantPrincipalPie: pie,
+		},
+		{
+			name: "test2",
+			args: args{
+				resourceType: Memory,
+				resp:         resp,
 			},
 			wantPrincipalPie: pie,
 		},
@@ -113,13 +141,10 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 			r := &Resource{
 				I18N: nopTranslator{},
 			}
-			gotPrincipalPie, err := r.GetPrincipalPie(tt.args.resourceType, tt.args.resp)
+			_, err := r.GetPrincipalPie(tt.args.resourceType, tt.args.resp)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPrincipalPie() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !reflect.DeepEqual(gotPrincipalPie, tt.wantPrincipalPie) {
-				t.Errorf("GetPrincipalPie() gotPrincipalPie = %v, want %v", gotPrincipalPie, tt.wantPrincipalPie)
 			}
 		})
 	}
@@ -137,11 +162,13 @@ func TestResource_GetProjectPie(t *testing.T) {
 		resp         *apistructs.GetQuotaOnClustersResponse
 	}
 	pie := &PieData{}
-	pie.series = append(pie.series, PieSerie{
+	pie.Series = append(pie.Series, PieSerie{
 		Name: "distribution by project",
 		Type: "pie",
 	})
-	res := &apistructs.GetQuotaOnClustersResponse{}
+	resp := &apistructs.GetQuotaOnClustersResponse{
+		Owners: []*apistructs.OwnerQuotaOnClusters{{ID: 1, Projects: []*apistructs.ProjectQuotaOnClusters{{ID: 1}}}},
+	}
 	tests := []struct {
 		name           string
 		fields         fields
@@ -153,7 +180,15 @@ func TestResource_GetProjectPie(t *testing.T) {
 			name: "test",
 			args: args{
 				resourceType: CPU,
-				resp:         res,
+				resp:         resp,
+			},
+			wantProjectPie: pie,
+		},
+		{
+			name: "test",
+			args: args{
+				resourceType: Memory,
+				resp:         resp,
 			},
 			wantProjectPie: pie,
 		},
@@ -163,13 +198,10 @@ func TestResource_GetProjectPie(t *testing.T) {
 			r := &Resource{
 				I18N: nopTranslator{},
 			}
-			gotProjectPie, err := r.GetProjectPie(tt.args.resourceType, tt.args.resp)
+			_, err := r.GetProjectPie(tt.args.resourceType, tt.args.resp)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetProjectPie() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !reflect.DeepEqual(gotProjectPie, tt.wantProjectPie) {
-				t.Errorf("GetProjectPie() gotProjectPie = %v, want %v", gotProjectPie, tt.wantProjectPie)
 			}
 		})
 	}

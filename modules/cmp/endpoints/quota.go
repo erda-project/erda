@@ -91,7 +91,11 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
-	pie, err := e.Resource.GetClusterTrend(orgIDStr, userIDStr, req)
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
+	}
+	pie, err := e.Resource.GetClusterTrend(orgID, userIDStr, req)
 	if err != nil || pie == nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
@@ -111,7 +115,11 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 	if err != nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}
-	pie, err := e.Resource.GetProjectTrend(orgIDStr, userIDStr, req)
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
+	}
+	pie, err := e.Resource.GetProjectTrend(orgID, userIDStr, req)
 	if err != nil || pie == nil {
 		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
 	}

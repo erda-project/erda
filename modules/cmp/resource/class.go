@@ -17,6 +17,7 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
@@ -40,7 +41,7 @@ var (
 )
 
 type PieData struct {
-	series []PieSerie
+	Series []PieSerie `json:"series"`
 }
 
 type PieSerie struct {
@@ -61,19 +62,19 @@ type SerieData struct {
 }
 
 type DailyProjectQuota struct {
-	Index      int     `gorm:"column:idx"`
-	CpuQuota   float64 `gorm:"column:cpu_quota"`
-	CpuRequest float64 `gorm:"column:cpu_request"`
-	MemQuota   float64 `gorm:"column:mem_quota"`
-	MemRequest float64 `gorm:"column:mem_request"`
+	Index      int64 `gorm:"column:idx"`
+	CpuQuota   int64 `gorm:"column:cpu_quota"`
+	CpuRequest int64 `gorm:"column:cpu_request"`
+	MemQuota   int64 `gorm:"column:mem_quota"`
+	MemRequest int64 `gorm:"column:mem_request"`
 }
 
 type DailyClusterQuota struct {
-	Index      int     `gorm:"column:idx"`
-	CpuTotal   float64 `gorm:"column:cpu_total"`
-	CpuRequest float64 `gorm:"column:cpu_requested"`
-	MemTotal   float64 `gorm:"column:mem_total"`
-	MemRequest float64 `gorm:"column:mem_requested"`
+	Index      int64 `gorm:"column:idx"`
+	CpuTotal   int64 `gorm:"column:cpu_total"`
+	CpuRequest int64 `gorm:"column:cpu_requested"`
+	MemTotal   int64 `gorm:"column:mem_total"`
+	MemRequest int64 `gorm:"column:mem_requested"`
 }
 
 type Quota struct {
@@ -82,7 +83,15 @@ type Quota struct {
 }
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
+	var clusters []apistructs.ClusterInfo
 	data = make(map[string]*PieData)
+	if len(request.ClusterName) == 0 {
+		clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+		if err != nil {
+			return
+		}
+	}
+	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
 	resp, err := r.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
 	if err != nil {
 		return
@@ -118,13 +127,13 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	return
 }
 
-func (r *Resource) GetProjectPie(resourceType string, resp *apistructs.GetQuotaOnClustersResponse) (projectPie *PieData, err error) {
+func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClustersResponse) (projectPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
 	)
 	projectPie = &PieData{}
-	serie := PieSerie{
+	pieSerie := PieSerie{
 		Name: r.I18n("distribution by project"),
 		Type: "pie",
 	}
@@ -139,24 +148,22 @@ func (r *Resource) GetProjectPie(resourceType string, resp *apistructs.GetQuotaO
 			projectMap[p.Name] = q
 		}
 	}
-	switch resourceType {
-	case CPU:
-		for k, v := range projectMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota, k})
-		}
+	switch resType {
+
 	case Memory:
 		for k, v := range projectMap {
-			serie.Data = append(serie.Data, SerieData{v.memQuota, k})
+			pieSerie.Data = append(pieSerie.Data, SerieData{v.memQuota / G, k})
 		}
 	default:
-		err = errResourceTypeNotFound
-		return
+		for k, v := range projectMap {
+			pieSerie.Data = append(pieSerie.Data, SerieData{v.cpuQuota / mCore, k})
+		}
 	}
-	projectPie.series = append(projectPie.series, serie)
+	projectPie.Series = append(projectPie.Series, pieSerie)
 	return
 }
 
-func (r *Resource) GetPrincipalPie(resourceType string, resp *apistructs.GetQuotaOnClustersResponse) (principalPie *PieData, err error) {
+func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnClustersResponse) (principalPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
@@ -175,20 +182,17 @@ func (r *Resource) GetPrincipalPie(resourceType string, resp *apistructs.GetQuot
 		Name: r.I18n("distribution by principal"),
 		Type: "pie",
 	}
-	switch resourceType {
-	case CPU:
-		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota, k})
-		}
+	switch resType {
 	case Memory:
 		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.memQuota, k})
+			serie.Data = append(serie.Data, SerieData{v.memQuota / G, k})
 		}
 	default:
-		err = errResourceTypeNotFound
-		return
+		for k, v := range principalMap {
+			serie.Data = append(serie.Data, SerieData{v.cpuQuota / mCore, k})
+		}
 	}
-	principalPie.series = append(principalPie.series, serie)
+	principalPie.Series = append(principalPie.Series, serie)
 	return
 }
 
@@ -198,33 +202,30 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 		Name: r.I18n("distribution by cluster"),
 		Type: "pie",
 	}
-
 	switch resourceType {
-	case CPU:
-		for _, c := range resources.List {
-			cpuSum := 0.0
-			for _, h := range c.Hosts {
-				cpuSum += float64(h.CpuTotal)
-			}
-			serie.Data = append(serie.Data, SerieData{cpuSum, c.ClusterName})
-		}
 	case Memory:
 		for _, c := range resources.List {
 			memSum := 0.0
 			for _, h := range c.Hosts {
 				memSum += float64(h.CpuTotal)
 			}
-			serie.Data = append(serie.Data, SerieData{memSum, c.ClusterName})
+			serie.Data = append(serie.Data, SerieData{memSum / G, c.ClusterName})
 		}
 	default:
-		err = errResourceTypeNotFound
-		return
+		for _, c := range resources.List {
+			cpuSum := 0.0
+			for _, h := range c.Hosts {
+				cpuSum += float64(h.CpuTotal)
+			}
+			serie.Data = append(serie.Data, SerieData{cpuSum / mCore, c.ClusterName})
+		}
 	}
-	clusterPie.series = append(clusterPie.series, serie)
+	clusterPie.Series = append(clusterPie.Series, serie)
 	return
 }
 
-func (r *Resource) GetClusterTrend(ordId string, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+
 	td = &Histogram{}
 	td.XAixs = XAixs{
 		Type: "category",
@@ -236,51 +237,93 @@ func (r *Resource) GetClusterTrend(ordId string, userId string, request *apistru
 	td.Series[0].Name = r.I18n("quota")
 	td.Series[1].Name = r.I18n("total")
 	var (
-		pd []DailyClusterQuota
+		pd       []apistructs.ClusterResourceDailyModel
+		clusters []apistructs.ClusterInfo
 	)
-
+	if len(request.ClusterName) == 0 {
+		clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+		if err != nil {
+			return
+		}
+		for _, info := range clusters {
+			request.ClusterName = append(request.ClusterName, info.Name)
+		}
+	}
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
 	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
+	db.Raw("select SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?) sort by created_at desc", endTime, startTime, request.ClusterName)
+	if err = db.Scan(&pd).Error; err != nil {
+		return
+	}
+	tRes := make(map[int]apistructs.ClusterResourceDailyModel)
 	switch request.Interval {
-	case day:
-		db.Raw("select date as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", endTime, startTime, request.ClusterName)
-		db.Group("date")
 	case week:
-		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?)", endTime, startTime, request.ClusterName)
-		db.Group("WEEK(date, 5)")
-
-	case month:
-		db.Raw("select MONTH(date) as idx, SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where updated_at < ? and updated_at >= ? and cluster_name in (?)", endTime, startTime, request.ClusterName)
-		db.Group("MONTH(date)")
-	default:
-		err = errIntervalTypeNotFound
-		return
-	}
-	if err = db.Group("cluster_name").Scan(&pd).Error; err != nil {
-		return
-	}
-	switch request.ResourceType {
-	case CPU:
-		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toCore(quota.CpuRequest))
-			td.Series[1].Data = append(td.Series[1].Data, toCore(quota.CpuTotal))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%d", quota.Index))
+		for _, model := range pd {
+			_, wk := model.CreatedAt.ISOWeek()
+			if v, ok := tRes[wk]; ok {
+				v.CPUTotal += model.CPUTotal
+				v.MemTotal += model.MemTotal
+				v.CPURequested += model.CPURequested
+				v.MemRequested += model.MemRequested
+				v.ID = uint64(wk)
+			} else {
+				tRes[wk] = model
+			}
 		}
+	case month:
+		for _, model := range pd {
+			if v, ok := tRes[int(model.CreatedAt.Month())]; ok {
+				v.CPUTotal += model.CPUTotal
+				v.MemTotal += model.MemTotal
+				v.CPURequested += model.CPURequested
+				v.MemRequested += model.MemRequested
+				v.ID = uint64(model.CreatedAt.Month())
+			} else {
+				tRes[int(model.CreatedAt.Month())] = model
+			}
+		}
+	default:
+		// day
+		for _, model := range pd {
+			if v, ok := tRes[model.CreatedAt.Day()]; ok {
+				v.CPUTotal += model.CPUTotal
+				v.MemTotal += model.MemTotal
+				v.CPURequested += model.CPURequested
+				v.MemRequested += model.MemRequested
+				v.ID = uint64(model.CreatedAt.Day())
+			} else {
+				tRes[model.CreatedAt.Day()] = model
+			}
+		}
+	}
+	pd = make([]apistructs.ClusterResourceDailyModel, 0)
+	for _, model := range tRes {
+		pd = append(pd, model)
+	}
+	sort.Slice(pd, func(i, j int) bool {
+		return pd[i].ID < pd[i].ID
+	})
+
+	switch request.ResourceType {
+
 	case Memory:
 		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toGB(quota.MemRequest))
-			td.Series[1].Data = append(td.Series[1].Data, toGB(quota.MemTotal))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%d", quota.Index))
+			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
+			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
+			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	default:
-		err = errResourceTypeNotFound
-		return
+		for _, quota := range pd {
+			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
+			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
+			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+		}
 	}
 	return
 }
 
-func (r *Resource) GetProjectTrend(ordId string, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	td = &Histogram{}
 	td.XAixs = XAixs{
 		Type: "category",
@@ -292,40 +335,85 @@ func (r *Resource) GetProjectTrend(ordId string, userId string, request *apistru
 	td.Series[0].Name = r.I18n("request")
 	td.Series[1].Name = r.I18n("quota")
 	var (
-		pd []DailyProjectQuota
+		pd       []apistructs.ProjectResourceDailyModel
+		clusters []apistructs.ClusterInfo
 	)
+	if len(request.ClusterName) == 0 {
+		clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+		if err != nil {
+			return
+		}
+		for _, info := range clusters {
+			request.ClusterName = append(request.ClusterName, info.Name)
+		}
+	}
 
 	db := r.DB.Table("cmp_project_resource_daily")
-	switch request.Interval {
-	case day:
-		db.Raw("select date as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?)", request.End, request.Start, request.ClusterName, request.ProjectId)
-		db.Group("date")
-	case week:
-		db.Raw("select WEEK(MY_DATE, 5)+1 as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?)", request.End, request.Start, request.ClusterName, request.ProjectId)
-		db.Group("WEEK(date, 5)")
-	case month:
-		db.Raw("select MONTH(date) as idx, SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?) and project_id in (?)", request.End, request.Start, request.ClusterName, request.ProjectId)
-		db.Group("MONTH(date)")
-	default:
-		err = errIntervalTypeNotFound
+	db.Raw("select  SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?) sort by created_at desc", request.End, request.Start, request.ClusterName, request.ProjectId)
+	if err = db.Scan(&pd).Error; err != nil {
 		return
 	}
 
-	if err = db.Group("project_id").Scan(&pd).Error; err != nil {
-		return
+	tRes := make(map[int]apistructs.ProjectResourceDailyModel)
+	switch request.Interval {
+	case week:
+		for _, model := range pd {
+			_, wk := model.CreatedAt.ISOWeek()
+			if v, ok := tRes[wk]; ok {
+				v.CPURequest += model.CPURequest
+				v.CPUQuota += model.CPUQuota
+				v.MemRequest += model.MemRequest
+				v.MemQuota += model.MemQuota
+				v.ID = uint64(wk)
+			} else {
+				tRes[wk] = model
+			}
+		}
+	case month:
+		for _, model := range pd {
+			if v, ok := tRes[int(model.CreatedAt.Month())]; ok {
+				v.CPURequest += model.CPURequest
+				v.CPUQuota += model.CPUQuota
+				v.MemRequest += model.MemRequest
+				v.MemQuota += model.MemQuota
+				v.ID = uint64(model.CreatedAt.Month())
+			} else {
+				tRes[int(model.CreatedAt.Month())] = model
+			}
+		}
+	default:
+		// day
+		for _, model := range pd {
+			if v, ok := tRes[model.CreatedAt.Day()]; ok {
+				v.CPURequest += model.CPURequest
+				v.CPUQuota += model.CPUQuota
+				v.MemRequest += model.MemRequest
+				v.MemQuota += model.MemQuota
+				v.ID = uint64(model.CreatedAt.Day())
+			} else {
+				tRes[model.CreatedAt.Day()] = model
+			}
+		}
 	}
+	pd = make([]apistructs.ProjectResourceDailyModel, 0)
+	for _, model := range tRes {
+		pd = append(pd, model)
+	}
+	sort.Slice(pd, func(i, j int) bool {
+		return pd[i].ID < pd[i].ID
+	})
 	switch request.ResourceType {
 	case CPU:
 		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toCore(quota.CpuRequest))
-			td.Series[1].Data = append(td.Series[1].Data, toCore(quota.CpuQuota))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%d", quota.Index))
+			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
+			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
+			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	case Memory:
 		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toGB(quota.MemRequest))
-			td.Series[1].Data = append(td.Series[1].Data, toGB(quota.MemQuota))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%d", quota.Index))
+			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
+			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
+			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	default:
 		err = errResourceTypeNotFound
