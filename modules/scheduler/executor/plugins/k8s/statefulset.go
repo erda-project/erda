@@ -166,7 +166,8 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		return errors.Errorf("failed to get runtime ID for statefulSet %s, %v", statefulName, err)
 	}
 
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, int64(service.Resources.Cpu*1000), int64(service.Resources.Mem*float64(1<<20)))
+	reqCPU, reqMem := getRequestsResources(set.Spec.Template.Spec.Containers)
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem)
 	if err != nil {
 		return err
 	}
