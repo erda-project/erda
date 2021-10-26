@@ -138,7 +138,7 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 
 func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
 	if sel.Scheme != "container" || !live {
-		if sel.Start > s.startTime || s.frozenStorageReader == nil {
+		if s.storageReader != nil && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
 			return s.storageReader.Iterator(ctx, sel)
 		}
 		return s.tryGetIterator(ctx, sel, s.storageReader, s.frozenStorageReader)
@@ -164,7 +164,10 @@ func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selec
 		its = append(its, it)
 	}
 	if len(its) == 0 {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		return storekit.EmptyIterator{}, nil
 	} else if len(its) == 1 {
 		return its[0], nil
 	}
