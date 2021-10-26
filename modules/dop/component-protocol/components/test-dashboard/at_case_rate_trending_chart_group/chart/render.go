@@ -49,7 +49,7 @@ type Chart struct {
 type Props struct {
 	ChartType string `json:"chartType"`
 	Option    Option `json:"option"`
-	Title     string `json:"title"`
+	PureChart bool   `json:"pureChart"`
 }
 
 type Data struct {
@@ -190,7 +190,7 @@ func calRate(num, numTotal int64) string {
 func (ch *Chart) convertToProps(ctx context.Context) Props {
 	return Props{
 		ChartType: "line",
-		Title:     "",
+		PureChart: true,
 		Option: Option{
 			Legend: struct {
 				Show bool `json:"show"`

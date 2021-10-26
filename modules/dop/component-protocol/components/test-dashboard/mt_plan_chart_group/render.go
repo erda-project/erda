@@ -15,10 +15,31 @@
 package mt_plan_chart_group
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "mt_plan_chart_group")
+	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "mt_plan_chart_group",
+		func() servicehub.Provider { return &Group{} })
+}
+
+type Group struct {
+	base.DefaultProvider
+}
+
+type Props struct {
+	Title string `json:"title"`
+}
+
+func (g *Group) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	c.Props = Props{
+		Title: cputil.I18n(ctx, "mt-plan-chart"),
+	}
+	return nil
 }
