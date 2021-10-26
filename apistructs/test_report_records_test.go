@@ -44,7 +44,7 @@ func TestGetQualityScore(t *testing.T) {
 		TestDashboard: &ComponentProtocolRequest{
 			Protocol: &ComponentProtocol{
 				GlobalState: &GlobalStateData{
-					"qualityScore": 100.01,
+					"GlobalQualityScore": 100.01,
 				},
 			},
 		},
