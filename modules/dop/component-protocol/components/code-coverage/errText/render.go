@@ -17,6 +17,7 @@ package errText
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -49,7 +50,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return fmt.Errorf("workspace was empty")
 	}
 
-	var disableTip string
+	erdaVersion := os.Getenv("DICE_VERSION")
+	if erdaVersion == "" {
+		erdaVersion = "1.4"
+	}
+
+	var disableTip []string
 	var jacocoDisable bool
 
 	switch event.Operation.String() {
@@ -69,7 +75,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		if !hasAddon {
-			disableTip = fmt.Sprintf("please add %v addon to %v workspace and set application use this addon", code_coverage.SourcecovAddonName, workspace)
+
+			disableTip = append(disableTip, "当前环境未启用覆盖率插件，请参考 ")
+			disableTip = append(disableTip, "__change_cover_docs__")
+
 			jacocoDisable = true
 			err := svc.Cancel(apistructs.CodeCoverageCancelRequest{
 				ProjectID: projectId,
@@ -99,24 +108,57 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 			if len(list.List) > 0 {
 				record := list.List[0]
-				if record.Status == apistructs.RunningStatus.String() || record.Status == apistructs.ReadyStatus.String() {
-					disableTip = "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+				if record.Status == apistructs.RunningStatus.String() {
+					disableTip = append(disableTip, "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果")
 				}
 
 				if record.Status == apistructs.EndingStatus.String() {
-					disableTip = "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果"
+					disableTip = append(disableTip, "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果")
 				}
 			}
 		}
 	}
-
+	c.Type = "Text"
+	c.Name = "name"
 	c.Props = map[string]interface{}{
-		"value": disableTip,
+		"renderType": "linkText",
 		"styleConfig": map[string]interface{}{
-			"color": "red",
+			"color": "rgba(0, 0, 0, 0.4)",
+		},
+		"value": map[string]interface{}{
+			"text": getToolTip(disableTip),
+		},
+	}
+	c.Operations = map[string]interface{}{
+		"gotoDoc": map[string]interface{}{
+			"key":    "gotoDoc",
+			"reload": false,
+			"command": map[string]interface{}{
+				"key":     "goto",
+				"jumpOut": true,
+				"target":  fmt.Sprintf("https://docs.erda.cloud/%v/manual/dop/examples/deploy/e2e-code-coverage.html", erdaVersion),
+			},
 		},
 	}
 	return nil
+}
+
+func getToolTip(tips []string) []interface{} {
+	var results = []interface{}{}
+	for _, ti := range tips {
+		if ti == "__change_cover_docs__" {
+			results = append(results, map[string]interface{}{
+				"operationKey": "gotoDoc",
+				"text":         "如何启用集成测试代码覆盖率统计",
+				"styleConfig": map[string]interface{}{
+					"color": "#6a549e",
+				},
+			})
+		} else {
+			results = append(results, ti)
+		}
+	}
+	return results
 }
 
 func init() {
