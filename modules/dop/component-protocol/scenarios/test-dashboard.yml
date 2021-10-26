@@ -63,6 +63,7 @@ hierarchy:
       extraContent: at_plan_latest_waterfall_chart_filter
       children:
         - at_plan_latest_waterfall_chart
+
 components:
   filter:
     name: filter
@@ -81,10 +82,6 @@ components:
         backgroundColor: 'rgba(0, 0, 0, 0.4)'
         height: 30
         width: 1
-      value: ''
-    state: { }
-    data: { }
-    operations: { }
   page:
     type: Container
     props:
@@ -113,7 +110,6 @@ components:
       styleConfig:
         fontWeight: '500'
         fontSize: 16
-      value: 手动测试用例
   mt_block_header_filter:
     name: filter
     operations:
@@ -153,7 +149,6 @@ components:
       styleConfig:
         fontWeight: '500'
         fontSize: 16
-      value: 自动化测试用例
   at_block_header_filter:
     name: filter
     operations:
@@ -162,21 +157,6 @@ components:
         reload: true
     props:
       delay: 1000
-    state:
-      conditions:
-        - emptyText: 全部
-          fixed: true
-          key: type
-          label: 测试计划
-          options:
-            - label: 自动化计划1
-              value: '1'
-            - label: 自动化计划2
-              value: '2'
-            - label: 说好的自动化计划3
-              value: '3'
-          type: select
-      values: { }
     type: ContractiveFilter
   at_block_detail:
     type: RowContainer
@@ -186,70 +166,16 @@ components:
     type: Text
     props:
       renderType: linkText
-      value:
-        direction: col
-        text:
-          - text: 78
-            styleConfig:
-              fontSize: 20
-              lineHeight: 32
-              bold: true
-              color: text-main
-          - text: 场景数
-            styleConfig:
-              lineHeight: 22
-              color: text-desc
   at_num_api:
     type: Text
     props:
       renderType: linkText
-      value:
-        direction: col
-        text:
-          - text: 1032
-            styleConfig:
-              fontSize: 20
-              lineHeight: 32
-              bold: true
-              color: text-main
-          - text: 接口数
-            styleConfig:
-              lineHeight: 22
-              color: text-desc
   at_rate_passed:
     type: Text
-    props:
-      renderType: linkText
-      value:
-        direction: col
-        text:
-          - text: 90%
-            styleConfig:
-              fontSize: 20
-              lineHeight: 32
-              bold: true
-              color: text-main
-          - text: 通过率
-            styleConfig:
-              lineHeight: 22
-              color: text-desc
   at_rate_executed:
     type: Text
     props:
       renderType: linkText
-      value:
-        direction: col
-        text:
-          - text: 100%
-            styleConfig:
-              fontSize: 20
-              lineHeight: 32
-              bold: true
-              color: text-main
-          - text: 执行率
-            styleConfig:
-              lineHeight: 22
-              color: text-desc
   quality_chart:
     type: Chart
   mt_plan_chart_group:
@@ -271,50 +197,6 @@ components:
     type: ChartContainer
   at_case_rate_trending_chart:
     type: Chart
-    props:
-      chartType: line
-      option:
-        xAxis:
-          data:
-            - 9/1
-            - 9/2
-            - 9/3
-            - 9/4
-            - 9/5
-            - 9/6
-            - 9/7
-        legend:
-          show: true
-        yAxis:
-          axisLabel:
-            formatter: '{value}%'
-        series:
-          - name: aaa
-            label:
-              show: true
-            data:
-              - value: 23
-              - value: 32
-              - value: 90
-              - value: 34
-              - value: 0
-              - value: 30
-              - value: 20
-            areaStyle:
-              opacity: 0.1
-          - label:
-              show: true
-            name: bbb
-            data:
-              - 20
-              - 43
-              - 21
-              - 54
-              - 10
-              - 33
-              - 32
-            areaStyle:
-              opacity: 0.1
   at_case_rate_trending_chart_filter:
     name: filter
     operations:
@@ -323,124 +205,11 @@ components:
         reload: true
     props:
       delay: 1000
-    state:
-      conditions:
-        - customProps:
-            allowClear: false
-            selectableTime:
-              - 1628927525447
-              - 1634197925447
-            ranges:
-              近一周:
-                - 1628927525447
-                - 1634197925447
-              近一月:
-                - 1628927525447
-                - 1634197925447
-          emptyText: 全部
-          fixed: true
-          key: time
-          label: 时间
-          type: rangePicker
-      values: { }
     type: ContractiveFilter
   at_plan_latest_waterfall_chart_group:
     type: ChartContainer
   at_plan_latest_waterfall_chart:
     type: Chart
-    props:
-      chartType: bar
-      option:
-        xAxis:
-          data:
-            - 场景集1
-            - 场景集2
-            - 场景集3
-            - 场景集4
-            - 场景集5
-            - 场景集6
-            - 场景集7
-        legend:
-          show: true
-          data:
-            - aaa
-            - bbb
-        yAxis:
-          axisLabel:
-            formatter: '{value}s'
-        color:
-          - orange
-          - green
-        tooltip:
-          formatter: '{b}<br />{a}: {c}'
-        series:
-          - name: 辅助
-            stack: 总量
-            tooltip:
-              show: false
-            itemStyle:
-              barBorderColor: 'rgba(0,0,0,0)'
-              color: 'rgba(0,0,0,0)'
-            emphasis:
-              itemStyle:
-                barBorderColor: 'rgba(0,0,0,0)'
-                color: 'rgba(0,0,0,0)'
-            data:
-              - 0
-              - 900
-              - 1245
-              - 1530
-              - 1376
-              - 1376
-              - 1511
-              - 1689
-              - 1856
-              - 1495
-              - 1292
-            areaStyle:
-              opacity: 0.1
-          - name: aaa
-            stack: 总量
-            tooltip:
-              show: true
-            label:
-              show: true
-              position: top
-            data:
-              - 900
-              - 345
-              - 393
-              - '-'
-              - '-'
-              - 135
-              - 178
-              - 286
-              - '-'
-              - '-'
-              - '-'
-            areaStyle:
-              opacity: 0.1
-          - name: bbb
-            stack: 总量
-            tooltip:
-              show: true
-            label:
-              show: true
-              position: top
-            data:
-              - '-'
-              - '-'
-              - '-'
-              - 108
-              - 154
-              - '-'
-              - '-'
-              - '-'
-              - 119
-              - 361
-              - 203
-            areaStyle:
-              opacity: 0.1
   at_plan_latest_waterfall_chart_filter:
     name: filter
     operations:
@@ -449,15 +218,6 @@ components:
         reload: true
     props:
       delay: 1000
-    state:
-      conditions:
-        - emptyText: 全部
-          fixed: true
-          key: type
-          label: 测试计划
-          options:
-          type: select
-      values: { }
     type: ContractiveFilter
   scene_and_api_filter:
     name: filter
@@ -467,26 +227,6 @@ components:
         reload: true
     props:
       delay: 1000
-    state:
-      conditions:
-        - customProps:
-            allowClear: false
-            selectableTime:
-              - 1628927525447
-              - 1634197925447
-            ranges:
-              近一周:
-                - 1628927525447
-                - 1634197925447
-              近一月:
-                - 1628927525447
-                - 1634197925447
-          emptyText: 全部
-          fixed: true
-          key: time
-          label: 时间
-          type: rangePicker
-      values: { }
     type: ContractiveFilter
   scene_chart_group:
     type: Grid
@@ -497,359 +237,14 @@ components:
       - 16
   scene_avg_cost_chart:
     type: Chart
-    props:
-      title: 测试title
-      chartType: bar
-      option:
-        dataZoom:
-          - endValue: 29
-            orient: vertical
-            startValue: 13
-            throttle: 0
-            type: inside
-            zoomLock: true
-          - endValue: 29
-            handleSize: 15
-            orient: vertical
-            showDataShadow: false
-            showDetail: false
-            startValue: 13
-            throttle: 0
-            type: slider
-            width: 15
-            zoomLock: true
-        grid:
-          right: 30
-        series:
-          - data:
-              - value: 1
-                operations:
-                  click:
-                    key: gotoBug
-                    reload: false
-                    command:
-                      jumpOut: true
-                      key: goto
-                      target: projectIssue
-                      state:
-                        params:
-                          type: all
-                          projectId: '1'
-                        query:
-                          issueFilter__urlQuery: eyJzdGF0ZXMiOlszMDddfQ==
-              - 2
-              - 3
-              - 4
-              - 5
-              - 6
-              - 7
-              - 8
-              - 9
-              - 10
-            label:
-              show: true
-        tooltip:
-          show: true
-          trigger: axis
-        xAxis:
-          - type: value
-        yAxis:
-          - data:
-              - 数据1
-              - 数据2
-              - 数据3
-              - 数据4
-              - 数据5
-              - 数据6
-              - 数据7
-              - 数据8
-              - 数据9
-              - 数据10
-            type: category
   scene_rate_failed_chart:
     type: Chart
-    props:
-      title: 测试title
-      chartType: bar
-      option:
-        dataZoom:
-          - endValue: 29
-            orient: vertical
-            startValue: 13
-            throttle: 0
-            type: inside
-            zoomLock: true
-          - endValue: 29
-            handleSize: 15
-            orient: vertical
-            showDataShadow: false
-            showDetail: false
-            startValue: 13
-            throttle: 0
-            type: slider
-            width: 15
-            zoomLock: true
-        grid:
-          right: 30
-        series:
-          - data:
-              - value: 1
-                operations:
-                  click:
-                    key: gotoBug
-                    reload: false
-                    command:
-                      jumpOut: true
-                      key: goto
-                      target: projectIssue
-                      state:
-                        params:
-                          type: all
-                          projectId: '1'
-                        query:
-                          issueFilter__urlQuery: eyJzdGF0ZXMiOlszMDddfQ==
-              - 2
-              - 3
-              - 4
-              - 5
-              - 6
-              - 7
-              - 8
-              - 9
-              - 10
-            label:
-              show: true
-        tooltip:
-          show: true
-          trigger: axis
-        xAxis:
-          - type: value
-        yAxis:
-          - data:
-              - 数据1
-              - 数据2
-              - 数据3
-              - 数据4
-              - 数据5
-              - 数据6
-              - 数据7
-              - 数据8
-              - 数据9
-              - 数据10
-            type: category
   scene_rate_passed_chart:
     type: Chart
-    props:
-      title: 测试title
-      chartType: bar
-      option:
-        dataZoom:
-          - endValue: 29
-            orient: vertical
-            startValue: 13
-            throttle: 0
-            type: inside
-            zoomLock: true
-          - endValue: 29
-            handleSize: 15
-            orient: vertical
-            showDataShadow: false
-            showDetail: false
-            startValue: 13
-            throttle: 0
-            type: slider
-            width: 15
-            zoomLock: true
-        grid:
-          right: 30
-        series:
-          - data:
-              - value: 1
-                operations:
-                  click:
-                    key: gotoBug
-                    reload: false
-                    command:
-                      jumpOut: true
-                      key: goto
-                      target: projectIssue
-                      state:
-                        params:
-                          type: all
-                          projectId: '1'
-                        query:
-                          issueFilter__urlQuery: eyJzdGF0ZXMiOlszMDddfQ==
-              - 2
-              - 3
-              - 4
-              - 5
-              - 6
-              - 7
-              - 8
-              - 9
-              - 10
-            label:
-              show: true
-        tooltip:
-          show: true
-          trigger: axis
-        xAxis:
-          - type: value
-        yAxis:
-          - data:
-              - 数据1
-              - 数据2
-              - 数据3
-              - 数据4
-              - 数据5
-              - 数据6
-              - 数据7
-              - 数据8
-              - 数据9
-              - 数据10
-            type: category
   at_api_rate_failed_chart:
     type: Chart
-    props:
-      title: 测试title
-      chartType: bar
-      option:
-        dataZoom:
-          - endValue: 29
-            orient: vertical
-            startValue: 13
-            throttle: 0
-            type: inside
-            zoomLock: true
-          - endValue: 29
-            handleSize: 15
-            orient: vertical
-            showDataShadow: false
-            showDetail: false
-            startValue: 13
-            throttle: 0
-            type: slider
-            width: 15
-            zoomLock: true
-        grid:
-          right: 30
-        series:
-          - data:
-              - value: 1
-                operations:
-                  click:
-                    key: gotoBug
-                    reload: false
-                    command:
-                      jumpOut: true
-                      key: goto
-                      target: projectIssue
-                      state:
-                        params:
-                          type: all
-                          projectId: '1'
-                        query:
-                          issueFilter__urlQuery: eyJzdGF0ZXMiOlszMDddfQ==
-              - 2
-              - 3
-              - 4
-              - 5
-              - 6
-              - 7
-              - 8
-              - 9
-              - 10
-            label:
-              show: true
-        tooltip:
-          show: true
-          trigger: axis
-        xAxis:
-          - type: value
-        yAxis:
-          - data:
-              - 数据1
-              - 数据2
-              - 数据3
-              - 数据4
-              - 数据5
-              - 数据6
-              - 数据7
-              - 数据8
-              - 数据9
-              - 数据10
-            type: category
   at_api_avg_cost_chart:
     type: Chart
-    props:
-      title: 测试title
-      chartType: bar
-      option:
-        dataZoom:
-          - endValue: 29
-            orient: vertical
-            startValue: 13
-            throttle: 0
-            type: inside
-            zoomLock: true
-          - endValue: 29
-            handleSize: 15
-            orient: vertical
-            showDataShadow: false
-            showDetail: false
-            startValue: 13
-            throttle: 0
-            type: slider
-            width: 15
-            zoomLock: true
-        grid:
-          right: 30
-        series:
-          - data:
-              - value: 1
-                operations:
-                  click:
-                    key: gotoBug
-                    reload: false
-                    command:
-                      jumpOut: true
-                      key: goto
-                      target: projectIssue
-                      state:
-                        params:
-                          type: all
-                          projectId: '1'
-                        query:
-                          issueFilter__urlQuery: eyJzdGF0ZXMiOlszMDddfQ==
-              - 2
-              - 3
-              - 4
-              - 5
-              - 6
-              - 7
-              - 8
-              - 9
-              - 10
-            label:
-              show: true
-        tooltip:
-          show: true
-          trigger: axis
-        xAxis:
-          - type: value
-        yAxis:
-          - data:
-              - 数据1
-              - 数据2
-              - 数据3
-              - 数据4
-              - 数据5
-              - 数据6
-              - 数据7
-              - 数据8
-              - 数据9
-              - 数据10
-            type: category
 
 rendering:
   mt_block_header_filter:
