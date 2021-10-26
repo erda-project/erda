@@ -346,3 +346,21 @@ func (h *GSHelper) GetBlockAtSceneStep() []apistructs.AutoTestSceneStep {
 	_ = assign((*h.gs)["BlockAtSceneStep"], &res)
 	return res
 }
+
+func (h *GSHelper) SetGlobalQualityScore(score float64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalQualityScore"] = score
+}
+
+func (h *GSHelper) GetGlobalQualityScore() float64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["GlobalQualityScore"]
+	if !ok {
+		return 0
+	}
+	return v.(float64)
+}

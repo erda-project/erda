@@ -120,6 +120,10 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 		Title:       cputil.I18n(ctx, "radar-total-quality-score"),
 	}
 
+	// set global score to global status
+	globalScore := polishToFloat64Score(q.calcGlobalQualityScore(ctx, mtScore, atScore, bugScore, cocoScore, bugReopenScore))
+	h.SetGlobalQualityScore(globalScore)
+
 	return nil
 }
 
@@ -256,4 +260,18 @@ func polishToFloat64Score(scoreDecimal decimal.Decimal) float64 {
 		score = 100
 	}
 	return numeral.Round(score, 2)
+}
+
+// calcGlobalQualityScore calc global average score according to
+func (q *Q) calcGlobalQualityScore(ctx context.Context, scores ...decimal.Decimal) decimal.Decimal {
+	if len(scores) == 0 {
+		return decimal.NewFromInt(0)
+	}
+	total := decimal.NewFromInt(0)
+	for _, score := range scores {
+		total = total.Add(score)
+	}
+	var avg decimal.Decimal
+	avg = total.Div(decimal.NewFromInt(int64(len(scores))))
+	return avg
 }
