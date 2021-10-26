@@ -61,7 +61,6 @@ elasticsearch@log:
   security: ${LOG_ELASTICSEARCH_SECURITY_ENABLE:false}
   username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
-
 elasticsearch.index.loader@log:
   _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
@@ -120,6 +119,12 @@ log-storage-cassandra:
 erda.core.monitor.log.query:
 
 # event
+elasticsearch@event:
+  _enable: ${EVENT_ELASTICSEARCH_ENABLE:false}
+  urls: "${EVENT_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${EVENT_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@event:
   _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
