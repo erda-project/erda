@@ -61,6 +61,16 @@ func (p *provider) GetConfigKey(name string, tags map[string]string) string {
 	return ""
 }
 
+func (p *provider) GetTTLByTags(name string, tags map[string]string) time.Duration {
+	cfg := p.getConfig(context.Background())
+	matched := cfg.matcher.Find(name, tags)
+	if matched != nil {
+		c := matched.(*configItem)
+		return c.Duration
+	}
+	return p.Cfg.DefaultTTL
+}
+
 type (
 	configItem struct {
 		Duration time.Duration

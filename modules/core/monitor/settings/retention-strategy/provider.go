@@ -33,6 +33,7 @@ type Interface interface {
 	GetTTL(key string) time.Duration
 	DefaultTTL() time.Duration
 	GetConfigKey(name string, tags map[string]string) string
+	GetTTLByTags(name string, tags map[string]string) time.Duration
 	Loading(ctx context.Context)
 }
 

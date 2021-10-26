@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 )
 
 // FindElection .
-func FindElection(ctx servicehub.Context, log logs.Logger, required bool) (election.Interface, error) {
+func FindElection(ctx servicehub.Context, required bool) (election.Interface, error) {
 	const service = "etcd-election"
 	var obj interface{}
 	var name string
@@ -45,12 +45,23 @@ func FindElection(ctx servicehub.Context, log logs.Logger, required bool) (elect
 		if !ok {
 			return nil, fmt.Errorf("%q is not election.Interface", name)
 		}
-		log.Debugf("use Election(%q) for index clean", name)
+		ctx.Logger().Debugf("use Election(%q) for index clean", name)
 		return election, nil
 	} else if required {
 		return nil, fmt.Errorf("%q is required", service)
 	}
 	return nil, nil
+}
+
+// FindElasticSearch .
+func FindElasticSearch(ctx servicehub.Context, required bool) (elasticsearch.Interface, error) {
+	service, name := FindService(ctx, "elasticsearch")
+	ctx.Logger().Debugf("use ElasticSearch(%q)", name)
+	es, _ := service.(elasticsearch.Interface)
+	if es == nil && required {
+		return nil, fmt.Errorf("%q is required", "elasticsearch")
+	}
+	return es, nil
 }
 
 // FindService .

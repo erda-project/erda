@@ -97,7 +97,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.loader = loader
 
-	election, err := index.FindElection(ctx, p.Log, true)
+	election, err := index.FindElection(ctx, true)
 	if err != nil {
 		return err
 	}
