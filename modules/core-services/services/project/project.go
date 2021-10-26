@@ -614,7 +614,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	logrus.Infoln("query ProjectQuota")
 	var projectQuota model.ProjectQuota
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -642,7 +641,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota + projectQuota.StagingCPUQuota + projectQuota.TestCPUQuota + projectQuota.DevCPUQuota)
 	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota + projectQuota.StagingMemQuota + projectQuota.TestMemQuota + projectQuota.DevMemQuota)
 
-	logrus.Infoln("query PodInfo")
 	var podInfos []apistructs.PodInfo
 	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -682,14 +680,11 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		}
 	}
 
-	logrus.Infof("GetNamespacesResources: %+v", resourceRequest)
 	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
 		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
 	}
-	data, _ := json.Marshal(resources)
-	logrus.Infof("GetNamespacesResources response: %s", string(data))
 
 	for _, clusterItem := range resources.List {
 		if !clusterItem.GetSuccess() {
@@ -1510,7 +1505,6 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 	l := logrus.WithField("func", "GetNamespacesBelongsTo")
 
 	// 1）查找 s_pod_info
-	l.Debugf("query s_pod_info, namespaces: %v", namespaces)
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
 	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
@@ -1520,7 +1514,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 			return nil, err
 		}
 	}
-	l.Debugf("query s_pod_info count: %v", len(podInfos))
+
 	for _, podInfo := range podInfos {
 		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
 		if err != nil {
@@ -1540,7 +1534,6 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		}
 		projectsM[projectID] = clusters
 	}
-	l.Debugf("projectsM: %v", projectsM)
 
 	// 2) 查找 project_namespace
 	var projectNamespaces []*apistructs.ProjectNamespaceModel
