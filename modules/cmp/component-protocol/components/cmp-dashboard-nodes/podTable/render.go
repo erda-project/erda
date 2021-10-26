@@ -193,11 +193,12 @@ func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		items = append(items, table.RowItem{
 			ID:      c.String("metadata", "name"),
 			IP:      ip,
+			NodeID:  c.String("metadata", "name"),
 			Version: c.String("status", "nodeInfo", "kubeletVersion"),
 			Role:    role,
 			Node: table.Node{
 				RenderType: "multiple",
-				Renders:    pt.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
+				Renders:    pt.GetRenders(c.String("metadata", "name"), c.Map("metadata", "labels")),
 			},
 			Status: *status,
 			Usage: table.Distribution{

@@ -306,24 +306,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Value:      name,
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
-						Command: Command{
-							Key:    "goto",
-							Target: "cmpClustersPodDetail",
-							State: CommandState{
-								Params: map[string]string{
-									"podId": id,
-								},
-								Query: map[string]string{
-									"namespace": namespace,
-									"podName":   name,
-								},
-							},
-							JumpOut: true,
-						},
 						Reload: false,
 					},
 				},
 			},
+			PodName:        name,
 			Namespace:      namespace,
 			IP:             fields[5],
 			Age:            fields[4],
@@ -354,7 +341,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Value:      p.sdk.I18n("gotoWorkload"),
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
-						Command: Command{
+						Command: &Command{
 							Key:    "goto",
 							Target: "cmpClustersWorkloadDetail",
 							State: CommandState{

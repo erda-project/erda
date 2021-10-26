@@ -211,16 +211,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -291,16 +281,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -373,16 +353,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -453,16 +423,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -528,16 +488,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -731,7 +681,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 
 func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	w.Props.SortDirections = []string{"descend", "ascend"}
-	w.Props.RowKey = "id"
+	w.Props.RowKey = "workloadId"
 	w.Props.PageSizeOptions = []string{"10", "20", "50", "100"}
 	w.Props.RequestIgnore = []string{"data"}
 

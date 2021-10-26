@@ -70,6 +70,7 @@ type Item struct {
 	ID                string  `json:"id,omitempty"`
 	Status            Status  `json:"status,omitempty"`
 	Name              Link    `json:"name,omitempty"`
+	PodName           string  `json:"podName,omitempty"`
 	Namespace         string  `json:"namespace,omitempty"`
 	IP                string  `json:"ip,omitempty"`
 	Age               string  `json:"age,omitempty"`
@@ -105,8 +106,8 @@ type Link struct {
 }
 
 type LinkOperation struct {
-	Command Command `json:"command,omitempty"`
-	Reload  bool    `json:"reload"`
+	Command *Command `json:"command,omitempty"`
+	Reload  bool     `json:"reload"`
 }
 
 type Command struct {
