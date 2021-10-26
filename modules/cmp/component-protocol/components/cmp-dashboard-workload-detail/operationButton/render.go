@@ -92,7 +92,7 @@ func (b *ComponentOperationButton) GenComponentState(component *cptype.Component
 }
 
 func (b *ComponentOperationButton) SetComponentValue() {
-	b.Props.Text = b.sdk.I18n("operate")
+	b.Props.Text = b.sdk.I18n("moreOperations")
 	b.Props.Type = "primary"
 	b.Props.Menu = []Menu{
 		{
