@@ -365,7 +365,7 @@ type OrgClustersResourcesInfo struct {
 	// deprecated:
 	TotalMem float64 `json:"total_mem"`
 
-	ClusterList []ClusterResources
+	ClusterList []*ClusterResources
 }
 
 type ClusterResources struct {
