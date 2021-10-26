@@ -23,10 +23,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func Test_makeMtCaseNum(t *testing.T) {
+func Test_makeMtCaseNumAndRate(t *testing.T) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &i18n.NopTranslator{}})
 	plan1 := apistructs.TestPlan{RelsCount: apistructs.TestPlanRelsCount{Total: 10, Init: 4, Succ: 3, Fail: 2, Block: 1}}
@@ -42,4 +43,24 @@ func Test_makeMtCaseNum(t *testing.T) {
 	// block
 	blockValue := makeMtCaseNumBlock(ctx, mtPlans)
 	assert.Equal(t, strutil.String(1+4+0+1), blockValue.Value)
+
+	// succ
+	succValue := makeMtCaseNumSucc(ctx, mtPlans)
+	assert.Equal(t, strutil.String(3+2+20+28), succValue.Value)
+
+	// fail
+	failValue := makeMtCaseNumFail(ctx, mtPlans)
+	assert.Equal(t, strutil.String(2+3+0+1), failValue.Value)
+
+	// init
+	initValue := makeMtCaseNumInit(ctx, mtPlans)
+	assert.Equal(t, strutil.String(4+1+0+0), initValue.Value)
+
+	// passed rate
+	passedRateValue := makeMtCaseRatePassed(ctx, mtPlans)
+	assert.Equal(t, strutil.String(numeral.Round(float64(3+2+20+28)/float64(10+10+20+30)*100, 2))+"%", passedRateValue.Value)
+
+	// executed rate
+	executedRateValue := makeMtCaseRateExecuted(ctx, mtPlans)
+	assert.Equal(t, strutil.String(numeral.Round(float64(10+10+20+30-(4+1+0+0))/float64(10+10+20+30)*100, 2))+"%", executedRateValue.Value)
 }
