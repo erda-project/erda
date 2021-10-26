@@ -2,9 +2,9 @@ zh:
  AvailableIsLessThanQuota: 本集群上该环境实际可用资源已小于配额，请询运维人员合理分配资源
  NoResourceForTheWorkspace: 本集群上该环境的可用资源为 0, 请检查是否未正确为节点标注环境标签
  NoNodesInTheCluster: 此集群没有可用的节点，请添加节点
- ResourceSqueeze: '注意：集群在%s环境已分配资源（CPU：%.2f, 内存：%.2f）已经超过集群在%s环境总资源（CPU：%.2f, 内存：%.2f），项目资源分配会按先用先得的原则进行抢占'
- CPUResourceSqueeze: '注意：集群在%s环境已分配资源（CPU：%.2f）已经超过集群在%s环境总资源（CPU：%.2f），项目资源分配会按先用先得的原则进行抢占'
- MmeResourceSqueeze: '注意：集群在%s环境已分配资源（内存：%.2f）已经超过集群在%s环境总资源（内存：%.2f），项目资源分配会按先用先得的原则进行抢占'
+ ResourceSqueeze: '注意：该集群在%s环境已分配资源（CPU：%.2f, 内存：%.2f）已经超过该集群在%s环境总资源（CPU：%.2f, 内存：%.2f），项目资源分配会按先用先得的原则进行抢占'
+ CPUResourceSqueeze: '注意：该集群在%s环境已分配资源（CPU：%.2f）已经超过该集群在%s环境总资源（CPU：%.2f），项目资源分配会按先用先得的原则进行抢占'
+ MmeResourceSqueeze: '注意：该集群在%s环境已分配资源（内存：%.2f）已经超过该集群在%s环境总资源（内存：%.2f），项目资源分配会按先用先得的原则进行抢占'
  PROD: '生产'
  STAGING: '预发'
  TEST: '测试'
