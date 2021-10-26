@@ -38,3 +38,18 @@ func TestURLQueryString(t *testing.T) {
 	assert.Equal(t, []string{"1"}, urlQuery["projectID"])
 	assert.Equal(t, []string{"createdAt"}, urlQuery["orderBy"])
 }
+
+func TestGetQualityScore(t *testing.T) {
+	scoreRecore := TestReportData{
+		TestDashboard: &ComponentProtocolRequest{
+			Protocol: &ComponentProtocol{
+				GlobalState: &GlobalStateData{
+					"qualityScore": 100.01,
+				},
+			},
+		},
+	}
+	emptyScore := TestReportData{}
+	assert.Equal(t, float64(100.01), scoreRecore.GetQualityScore())
+	assert.Equal(t, float64(0), emptyScore.GetQualityScore())
+}
