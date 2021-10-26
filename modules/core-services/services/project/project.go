@@ -649,15 +649,16 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	}
 
 	var (
-		namespaces        = make(map[string]map[string]bool) // key: clusterName, value.key: k8s_namespace
-		addonNamespaces   = make(map[string]bool)            // key: k8s_namespace
-		serviceNamespaces = make(map[string]bool)            // key: k8s_namespace
+		// {"cluster_name": {"namespace": "workspace"}}
+		namespaces        = make(map[string]map[string]string)
+		addonNamespaces   = make(map[string]bool) // key: k8s_namespace
+		serviceNamespaces = make(map[string]bool) // key: k8s_namespace
 	)
 	for _, podInfo := range podInfos {
 		if _, ok := namespaces[podInfo.Cluster]; ok {
-			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = true
+			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = podInfo.Workspace
 		} else {
-			namespaces[podInfo.Cluster] = map[string]bool{podInfo.K8sNamespace: true}
+			namespaces[podInfo.Cluster] = map[string]string{podInfo.K8sNamespace: podInfo.Workspace}
 		}
 
 		switch podInfo.ServiceType {
@@ -693,76 +694,96 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			continue
 		}
 
-		var source *apistructs.ResourceConfigInfo
-		switch clusterItem.GetClusterName() {
-		case projectDTO.ResourceConfig.PROD.ClusterName:
-			source = projectDTO.ResourceConfig.PROD
-		case projectDTO.ResourceConfig.STAGING.ClusterName:
-			source = projectDTO.ResourceConfig.STAGING
-		case projectDTO.ResourceConfig.TEST.ClusterName:
-			source = projectDTO.ResourceConfig.TEST
-		case projectDTO.ResourceConfig.DEV.ClusterName:
-			source = projectDTO.ResourceConfig.DEV
-		}
-		if source == nil {
-			continue
-		}
-
-		for _, namespaceItem := range clusterItem.List {
-			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
-			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
-			source.MemRequest += calcu.ByteToGibibyte(namespaceItem.GetMemRequest(), 3)
-			if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
-				source.CPURequestByAddon += source.CPURequest
-				source.MemRequestByAddon += source.MemRequest
-			}
-			if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
-				source.CPURequestByService += source.CPURequest
-				source.MemRequestByService += source.MemRequest
-			}
-		}
-	}
-
-	logrus.Infof("GetClustersResourcesRequest: %+v", projectQuota.ClustersNames())
-	// 查出各环境的实际可用资源
-	// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
-	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
-	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
-		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
-		for _, clusterItem := range clustersResources.List {
-			if !clusterItem.GetSuccess() {
-				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
-					Warnln("the cluster is not valid now")
+		for workspace, source := range map[string]*apistructs.ResourceConfigInfo{
+			"prod":    projectDTO.ResourceConfig.PROD,
+			"staging": projectDTO.ResourceConfig.STAGING,
+			"test":    projectDTO.ResourceConfig.TEST,
+			"dev":     projectDTO.ResourceConfig.DEV,
+		} {
+			if clusterItem.GetClusterName() != source.ClusterName {
 				continue
 			}
-			for _, host := range clusterItem.Hosts {
-				for _, label := range host.Labels {
-					var source *apistructs.ResourceConfigInfo
-					switch strings.ToLower(label) {
-					case "dice/workspace-prod=true":
-						source = projectDTO.ResourceConfig.PROD
-					case "dice/workspace-staging=true":
-						source = projectDTO.ResourceConfig.STAGING
-					case "dice/workspace-test=true":
-						source = projectDTO.ResourceConfig.TEST
-					case "dice/workspace-dev=true":
-						source = projectDTO.ResourceConfig.DEV
-					}
-					if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable()-host.GetCpuRequest(), 3)
-						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable()-host.GetMemRequest(), 3)
-					}
+
+			for _, namespaceItem := range clusterItem.List {
+				// 如果 namespace 不在给定的 namespace 列表中，忽略
+				if _, ok := namespaces[namespaceItem.GetNamespace()]; !ok {
+					continue
+				}
+				// 如果 namespace 不是要求的 workspace 下的，忽略
+				if w := namespaces[namespaceItem.GetNamespace()][workspace]; w != workspace {
+					continue
+				}
+
+				cpuRequest := calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
+				memRequest := calcu.ByteToGibibyte(namespaceItem.GetMemRequest(), 3)
+				source.CPURequest += cpuRequest
+				source.MemRequest += memRequest
+				if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
+					source.CPURequestByAddon += cpuRequest
+					source.MemRequestByAddon += memRequest
+				}
+				if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
+					source.CPURequestByService += cpuRequest
+					source.MemRequestByService += memRequest
 				}
 			}
 		}
 	}
 
+	p.fetchAvailable(ctx, &projectDTO, projectQuota.ClustersNames())
+
 	// 根据已有统计值计算其他统计值
+	p.patchProjectDto(&projectDTO, langCodes)
+
+	return &projectDTO, nil
+}
+
+// 查出各环境的实际可用资源
+// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
+// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
+func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO, clusterNames []string) {
+	clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
+		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(clusterNames)})
+	if err != nil {
+		logrus.WithError(err).WithField("func", "fetchAvailable").
+			Errorf("failed to GetClustersResources, clusterNames: %v", clusterNames)
+		return
+	}
+	for _, clusterItem := range clustersResources.List {
+		if !clusterItem.GetSuccess() {
+			logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+		for _, host := range clusterItem.Hosts {
+			for _, label := range host.Labels {
+				var source *apistructs.ResourceConfigInfo
+				switch strings.ToLower(label) {
+				case "dice/workspace-prod=true":
+					source = dto.ResourceConfig.PROD
+				case "dice/workspace-staging=true":
+					source = dto.ResourceConfig.STAGING
+				case "dice/workspace-test=true":
+					source = dto.ResourceConfig.TEST
+				case "dice/workspace-dev=true":
+					source = dto.ResourceConfig.DEV
+				}
+				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable()-host.GetCpuRequest(), 3)
+					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable()-host.GetMemRequest(), 3)
+				}
+			}
+		}
+	}
+}
+
+// 根据已有统计值计算其他统计值
+func (p *Project) patchProjectDto(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
 	for _, source := range []*apistructs.ResourceConfigInfo{
-		projectDTO.ResourceConfig.PROD,
-		projectDTO.ResourceConfig.STAGING,
-		projectDTO.ResourceConfig.TEST,
-		projectDTO.ResourceConfig.DEV,
+		dto.ResourceConfig.PROD,
+		dto.ResourceConfig.STAGING,
+		dto.ResourceConfig.TEST,
+		dto.ResourceConfig.DEV,
 	} {
 		if source.CPUQuota != 0 {
 			source.CPURequestRate = source.CPURequest / source.CPUQuota
@@ -778,8 +799,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			source.Tips = p.trans.Text(langCodes, "AvailableIsLessThanQuota")
 		}
 	}
-
-	return &projectDTO, nil
 }
 
 // GetModelProject 获取项目
