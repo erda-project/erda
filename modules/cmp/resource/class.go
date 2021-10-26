@@ -135,7 +135,7 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 		ok bool
 	)
 	projectPie = &PieData{}
-	pieSerie := PieSerie{
+	serie := PieSerie{
 		Name: r.I18n("distribution by Project"),
 		Type: "pie",
 	}
@@ -154,14 +154,15 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 
 	case Memory:
 		for k, v := range projectMap {
-			pieSerie.Data = append(pieSerie.Data, SerieData{v.memQuota / G, k})
+			serie.Data = append(serie.Data, SerieData{v.memQuota / G, k})
 		}
 	default:
 		for k, v := range projectMap {
-			pieSerie.Data = append(pieSerie.Data, SerieData{v.cpuQuota / MilliCore, k})
+			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
 		}
 	}
-	projectPie.Series = append(projectPie.Series, pieSerie)
+	r.PieSort(serie.Data)
+	projectPie.Series = append(projectPie.Series, serie)
 	return
 }
 
@@ -194,6 +195,7 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
 		}
 	}
+	r.PieSort(serie.Data)
 	principalPie.Series = append(principalPie.Series, serie)
 	return
 }
@@ -222,8 +224,15 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			serie.Data = append(serie.Data, SerieData{cpuSum / MilliCore, c.ClusterName})
 		}
 	}
+	r.PieSort(serie.Data)
 	clusterPie.Series = append(clusterPie.Series, serie)
 	return
+}
+
+func (r *Resource) PieSort(series []SerieData) {
+	sort.Slice(series, func(i, j int) bool {
+		return series[i].Value > series[j].Value
+	})
 }
 
 func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
