@@ -129,8 +129,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		return
 	}
 	quotaMem, quotaCpu := 0.0, 0.0
-	quotaCpu += quota.CPUQuota
-	quotaMem += quota.MemQuota
+	quotaCpu += float64(quota.CPUQuotaMilliValue)
+	quotaMem += float64(quota.MemQuotaByte)
 
 	// 5. get not exist quota
 	allNamespace := make([]*pb.ClusterNamespacePair, 0)
@@ -190,8 +190,6 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 
 	resp.CpuQuota += quotaCpu + resp.IrrelevantCpuRequest
 	resp.MemQuota += quotaMem + resp.IrrelevantMemRequest
-	resp.MemRequest += resp.IrrelevantMemRequest
-	resp.CpuRequest += resp.IrrelevantCpuRequest
 	return
 }
 

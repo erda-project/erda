@@ -38,29 +38,29 @@ type WorkspaceQuotaData struct {
 type GetQuotaOnClustersResponse struct {
 	ClusterNames []string `json:"clusterNames"`
 	// CPUQuota is the total cpu quota on the clusters
-	CPUQuota float64 `json:"cpuQuota"`
-	cpuQuota uint64
+	CPUQuota           float64 `json:"cpuQuota"`
+	CPUQuotaMilliValue uint64
 	// MemQuota is hte total mem quota on the clusters
-	MemQuota float64 `json:"memQuota"`
-	memQuota uint64
-	Owners   []*OwnerQuotaOnClusters `json:"owners"`
+	MemQuota     float64 `json:"memQuota"`
+	MemQuotaByte uint64
+	Owners       []*OwnerQuotaOnClusters `json:"owners"`
 }
 
 // AccuQuota accumulate cpu and mem quota value
 func (q *GetQuotaOnClustersResponse) AccuQuota(cpu, mem uint64) {
-	q.cpuQuota += cpu
-	q.memQuota += mem
+	q.CPUQuotaMilliValue += cpu
+	q.MemQuotaByte += mem
 }
 
 func (q *GetQuotaOnClustersResponse) ReCalcu() {
-	q.cpuQuota = 0
-	q.memQuota = 0
+	q.CPUQuotaMilliValue = 0
+	q.MemQuotaByte = 0
 	for _, owner := range q.Owners {
 		owner.ReCalcu()
 		q.AccuQuota(owner.cpuQuota, owner.memQuota)
 	}
-	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota)
-	q.MemQuota = calcu.ByteToGibibyte(q.memQuota)
+	q.CPUQuota = calcu.MillcoreToCore(q.CPUQuotaMilliValue)
+	q.MemQuota = calcu.ByteToGibibyte(q.MemQuotaByte)
 }
 
 type OwnerQuotaOnClusters struct {

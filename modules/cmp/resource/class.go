@@ -27,7 +27,7 @@ import (
 const (
 	CPU       = "cpu"
 	Memory    = "memory"
-	principal = "principal"
+	Principal = "principal"
 	Project   = "Project"
 	Cluster   = "Cluster"
 	Day       = "Day"
@@ -114,7 +114,7 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	if err != nil {
 		return
 	}
-	data[principal] = pie
+	data[Principal] = pie
 
 	// Cluster
 	pie, err = r.GetClusterPie(request.ResourceType, resources)
@@ -394,12 +394,7 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		return pd[i].ID < pd[i].ID
 	})
 	switch request.ResourceType {
-	case CPU:
-		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
-			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
-		}
+
 	case Memory:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
@@ -407,8 +402,11 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	default:
-		err = errResourceTypeNotFound
-		return
+		for _, quota := range pd {
+			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
+			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
+			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+		}
 	}
 	return
 }
