@@ -82,7 +82,7 @@ func max(a, b int64) int64 {
 	return b
 }
 
-func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64) (bool, error) {
+func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64, kind string) (bool, error) {
 	if requestsCPU <= 0 && requestsMem <= 0 {
 		return true, nil
 	}
@@ -101,15 +101,30 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 		reqCPUStr, leftCPUStr, reqMemStr, leftMemStr)
 
 	if requestsCPU > leftCPU || requestsMem > leftMem {
+		humanLog, primevalLog := "", ""
+		switch kind {
+		case "stateless":
+			humanLog = "部署失败。"
+			primevalLog = " failed to deploy."
+		case "stateful":
+			humanLog = "addon 部署失败"
+			primevalLog = " failed to deploy addon."
+		case "update":
+			humanLog = "更新失败。"
+			primevalLog = " failed to update."
+		case "scale":
+			humanLog = "扩容失败。"
+			primevalLog = " failed to scale."
+		}
 		if err = k.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
 			ErrorLog: apistructs.ErrorLog{
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     runtimeID,
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog: fmt.Sprintf("当前环境资源配额不足。请求CPU变化：%s核，剩余：%s核；请求内存变化：%s，剩余：%s",
-					reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
-				PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace. Requests CPU : %s core(s), left %s core(s). Request memroy: %s, left %s",
-					reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
+				HumanLog: fmt.Sprintf("当前环境资源配额不足，%s请求CPU变化：%s核，剩余：%s核；请求内存变化：%s，剩余：%s",
+					humanLog, reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
+				PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace,%s Requests CPU : %s core(s), left %s core(s). Request memroy: %s, left %s",
+					primevalLog, reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
 			},
 		}); err != nil {
 			logrus.Errorf("failed to create error log when check quota, %v", err)
