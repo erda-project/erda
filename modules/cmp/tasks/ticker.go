@@ -45,17 +45,17 @@ func New(interval time.Duration, task func() (bool, error)) *Ticker {
 }
 
 func (d *Ticker) Run() error {
-	ticker := time.NewTicker(d.Interval)
-	defer ticker.Stop()
+	t := time.NewTicker(d.Interval)
+	defer t.Stop()
 
 	var (
 		err  error
-		stop bool
+		over bool
 	)
 	fmt.Printf("the interval task %s is running right now: %s\n", d.Name, time.Now().Format(time.RFC3339))
-	stop, err = d.Task()
+	over, err = d.Task()
 	fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
-	if stop {
+	if over {
 		d.Close()
 		return err
 	}
@@ -65,11 +65,11 @@ func (d *Ticker) Run() error {
 		case <-d.done:
 			fmt.Printf("the interval task %s is done!\n", d.Name)
 			return err
-		case t := <-ticker.C:
+		case t := <-t.C:
 			fmt.Printf("the interval task %s is running at: %s\n", d.Name, t.Format(time.RFC3339))
-			stop, err = d.Task()
+			over, err = d.Task()
 			fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
-			if stop {
+			if over {
 				d.Close()
 			}
 		}
