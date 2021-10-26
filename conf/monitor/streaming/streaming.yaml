@@ -179,7 +179,7 @@ elasticsearch.index.rollover@event:
 
 storage-retention-strategy@event:
   _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
-  load_from_database: true
+  load_from_database: false
   ttl_reload_interval: "3m"
 
 event-storage-elasticsearch:

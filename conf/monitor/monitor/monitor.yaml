@@ -121,6 +121,7 @@ erda.core.monitor.log.query:
 
 # event
 elasticsearch.index.loader@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -131,13 +132,16 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>-{number}"
         - "<event>-<namespace>.<key>-{number}"
 storage-retention-strategy@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   default_ttl: "${EVENT_TTL:168h}"
-  load_from_database: true
+  load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   key_patterns:
     - "erda-events-<event>-<namespace>.<key>-{number}"
 elasticsearch.index.cleaner@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   check_interval: "30m"
   print_onluy: true
   disk_clean:
@@ -154,6 +158,7 @@ elasticsearch.index.cleaner@event:
       - index: "erda-events-<event>-<namespace>.<key>-{number}"
         alias: "erda-events-<event>-<namespace>.<key>-rollover"
 event-storage-elasticsearch:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   query_timeout: "1m"
   read_page_size: 50
 

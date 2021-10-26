@@ -42,6 +42,7 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 cassandra:
+  _enable: ${CASSANDRA_ENABLE:true}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
