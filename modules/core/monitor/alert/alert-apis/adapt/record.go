@@ -210,8 +210,13 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 		return respFromES, nil
 	}
 	respFromCassandra, err2 := a.queryAlertHistoryFromCassandra(groupID, start, end, limit)
+
 	if err1 != nil && err2 != nil {
 		return nil, fmt.Errorf("errors: %s, %s", err1, err2)
+	}
+
+	if err1 != nil {
+		return respFromCassandra, nil
 	}
 
 	list := a.mergeAlertHistories(limit, respFromES, respFromCassandra)
