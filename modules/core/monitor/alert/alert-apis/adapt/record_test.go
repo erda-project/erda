@@ -93,6 +93,53 @@ func Test_QueryAlertHistory_WithBothSuccess_Should_Return_NoneEmpty(t *testing.T
 	}
 }
 
+func Test_QueryAlertHistory_WithEnoughFromES_Should_Skip_Call_Cassandra(t *testing.T) {
+	a := &Adapt{}
+	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromES)
+	monkey.Patch((*Adapt).queryAlertHistoryFromES, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+		return []*pb.AlertHistory{
+			{
+				Timestamp: 4,
+			},
+			{
+				Timestamp: 2,
+			},
+		}, nil
+	})
+	defer monkey.Unpatch((*Adapt).queryAlertHistoryFromCassandra)
+	monkey.Patch((*Adapt).queryAlertHistoryFromCassandra, func(a *Adapt, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
+		return []*pb.AlertHistory{
+			{
+				Timestamp: 3,
+			},
+			{
+				Timestamp: 1,
+			},
+		}, nil
+	})
+	expect := []*pb.AlertHistory{
+		{
+			Timestamp: 4,
+		},
+		{
+			Timestamp: 2,
+		},
+	}
+
+	list, err := a.QueryAlertHistory(nil, "group-1", 1, 2, 2)
+	if err != nil {
+		t.Error("assert failed, expect err, but got nil")
+	}
+	if len(list) != len(expect) {
+		t.Errorf("assert result failed, expect: %+v, but got: %+v", expect, list)
+	}
+	for i := 0; i < len(expect); i++ {
+		if list[i].Timestamp != expect[i].Timestamp {
+			t.Errorf("assert list order failed, index: %d, expect: %+v, but got: %+v", i, expect[i], list[i])
+		}
+	}
+}
+
 func Test_mergeAlertHistories_WithEmptyResults_Should_Return_Empty(t *testing.T) {
 	a := &Adapt{}
 	result := a.mergeAlertHistories(1, [][]*pb.AlertHistory{}...)
