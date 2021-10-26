@@ -79,7 +79,7 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		}
 	}
 	sort.Slice(statusCounts, func(i, j int) bool {
-		return statusCounts[i].FailRate < statusCounts[j].FailRate
+		return statusCounts[i].FailRate > statusCounts[j].FailRate
 	})
 
 	var (
