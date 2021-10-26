@@ -127,16 +127,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			return err
 		}
 
-		var iterationName string
-		if resp.Data.IterationID != 0 {
-			iteration, err := bdl.Bdl.GetIteration(resp.Data.IterationID)
-			if err != nil {
-				return err
-			}
-			iterationName = iteration.Title
-		}
-
-		formData := map[string]interface{}{"name": resp.Data.Name, "spaceId": resp.Data.SpaceID, "owners": resp.Data.Owners, "iterationId": iterationName}
+		formData := map[string]interface{}{"name": resp.Data.Name, "spaceId": resp.Data.SpaceID, "owners": resp.Data.Owners, "iterationId": resp.Data.IterationID}
 		c.State["visible"] = true
 		c.State["formData"] = formData
 		c.State["isUpdate"] = true

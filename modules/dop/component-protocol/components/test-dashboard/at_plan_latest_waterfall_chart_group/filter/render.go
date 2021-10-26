@@ -66,23 +66,12 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			Key:       "pipelineID",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
-				if len(f.State.Conditions) == 0 || len(f.State.Conditions[0].Options) == 0 {
-					data := h.GetSelectChartHistoryData()
-					opts = append(opts, filter.PropConditionOption{
-						Label: data.Name,
-						Value: data.PipelineID,
-					})
-					h.SetSelectChartItemData(gshelper.SelectChartItemData{
-						PipelineID: data.PipelineID,
-					})
-				} else {
-					opts = f.State.Conditions[0].Options
-					h.SetSelectChartItemData(gshelper.SelectChartItemData{
-						PipelineID: uint64(f.State.Conditions[0].Options[0].Value.(float64)),
-					})
-				}
+				data := h.GetSelectChartHistoryData()
+				opts = append(opts, filter.PropConditionOption{
+					Label: data.Name,
+					Value: data.PipelineID,
+				})
 				return
-
 			}(),
 			Type: filter.PropConditionTypeSelect,
 		},

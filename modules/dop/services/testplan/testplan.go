@@ -228,7 +228,6 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		t := time.Unix(int64(*req.TimestampSecEndedAt), 0)
 		testPlan.EndedAt = &t
 	}
-	testPlan.IterationID = req.IterationID
 
 	var isUpdateArchive bool
 	if req.IsArchived != nil {
@@ -236,6 +235,8 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 			isUpdateArchive = true
 		}
 		testPlan.IsArchived = *req.IsArchived
+	} else {
+		testPlan.IterationID = req.IterationID
 	}
 	if err := t.db.UpdateTestPlan(testPlan); err != nil {
 		return apierrors.ErrUpdateTestPlan.InternalError(err)
