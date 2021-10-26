@@ -25,14 +25,14 @@ import (
 )
 
 const (
-	CPU       = "cpu"
-	Memory    = "memory"
-	Principal = "principal"
-	Project   = "Project"
-	Cluster   = "Cluster"
-	Day       = "Day"
-	Week      = "week"
-	Month     = "Month"
+	CPU     = "cpu"
+	Memory  = "memory"
+	Owner   = "owner"
+	Project = "project"
+	Cluster = "cluster"
+	Day     = "day"
+	Week    = "week"
+	Month   = "month"
 )
 
 var (
@@ -58,8 +58,8 @@ type HistogramSerie struct {
 }
 
 type SerieData struct {
-	Value float64
-	Name  string
+	Value float64 `json:"value"`
+	Name  string  `json:"name"`
 }
 
 type DailyProjectQuota struct {
@@ -81,6 +81,7 @@ type DailyClusterQuota struct {
 type Quota struct {
 	cpuQuota float64
 	memQuota float64
+	nickName string
 }
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
@@ -118,7 +119,7 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	if err != nil {
 		return
 	}
-	data[Principal] = pie
+	data[Owner] = pie
 
 	// Cluster
 	pie, err = r.GetClusterPie(request.ResourceType, resources)
@@ -135,7 +136,7 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 		ok bool
 	)
 	projectPie = &PieData{}
-	pieSerie := PieSerie{
+	serie := PieSerie{
 		Name: r.I18n("distribution by Project"),
 		Type: "pie",
 	}
@@ -154,14 +155,15 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 
 	case Memory:
 		for k, v := range projectMap {
-			pieSerie.Data = append(pieSerie.Data, SerieData{v.memQuota / G, k})
+			serie.Data = append(serie.Data, SerieData{v.memQuota / G, k})
 		}
 	default:
 		for k, v := range projectMap {
-			pieSerie.Data = append(pieSerie.Data, SerieData{v.cpuQuota / MilliCore, k})
+			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
 		}
 	}
-	projectPie.Series = append(projectPie.Series, pieSerie)
+	r.PieSort(serie.Data)
+	projectPie.Series = append(projectPie.Series, serie)
 	return
 }
 
@@ -177,6 +179,7 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 		}
 		q.cpuQuota = owner.CPUQuota
 		q.memQuota = owner.MemQuota
+		q.nickName = owner.Nickname
 		principalMap[owner.Name] = q
 	}
 	principalPie = &PieData{}
@@ -186,14 +189,15 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 	}
 	switch resType {
 	case Memory:
-		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.memQuota / G, k})
+		for _, v := range principalMap {
+			serie.Data = append(serie.Data, SerieData{v.memQuota / G, v.nickName})
 		}
 	default:
-		for k, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
+		for _, v := range principalMap {
+			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, v.nickName})
 		}
 	}
+	r.PieSort(serie.Data)
 	principalPie.Series = append(principalPie.Series, serie)
 	return
 }
@@ -222,17 +226,24 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			serie.Data = append(serie.Data, SerieData{cpuSum / MilliCore, c.ClusterName})
 		}
 	}
+	r.PieSort(serie.Data)
 	clusterPie.Series = append(clusterPie.Series, serie)
 	return
+}
+
+func (r *Resource) PieSort(series []SerieData) {
+	sort.Slice(series, func(i, j int) bool {
+		return series[i].Value > series[j].Value
+	})
 }
 
 func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 
 	td = &Histogram{}
-	td.XAixs = XAixs{
+	td.XAxis = XAxis{
 		Type: "category",
 	}
-	td.YAixs = YAixs{Type: "value"}
+	td.YAxis = YAxis{Type: "value"}
 	td.Series = make([]HistogramSerie, 2)
 	td.Series[0].Type = "bar"
 	td.Series[1].Type = "bar"
@@ -250,6 +261,7 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	if len(request.ClusterName) == 0 {
 		return nil, errNoClusterFound
 	}
+
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
 	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
@@ -312,13 +324,13 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	}
 	return
@@ -326,10 +338,10 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 
 func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	td = &Histogram{}
-	td.XAixs = XAixs{
+	td.XAxis = XAxis{
 		Type: "category",
 	}
-	td.YAixs = YAixs{Type: "value"}
+	td.YAxis = YAxis{Type: "value"}
 	td.Series = make([]HistogramSerie, 2)
 	td.Series[0].Type = "bar"
 	td.Series[1].Type = "bar"
@@ -408,13 +420,13 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
-			td.XAixs.Data = append(td.XAixs.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
 		}
 	}
 	return

@@ -16,13 +16,13 @@ package endpoints
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -33,11 +33,13 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
+		errStr := fmt.Sprintf("org id is nil")
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("url param error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 
 	if req.CpuPerNode < 1 {
@@ -49,9 +51,10 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 
 	content, err := e.Resource.GetGauge(orgIDStr, userIDStr, req)
 	if err != nil || content == nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	return httpserver.HTTPResponse{Status: http.StatusOK, Content: content}, nil
+	return httpserver.OkResp(content)
 }
 
 func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
@@ -60,23 +63,25 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
+		errStr := fmt.Sprintf("org id is nil")
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
 	if err != nil {
-		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
+		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-
 	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("url param error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	pie, err := e.Resource.GetPie(orgID, userIDStr, req)
 	if err != nil || pie == nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-
-	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
+	return httpserver.OkResp(pie)
 }
 
 func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
@@ -85,22 +90,25 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
+		errStr := fmt.Sprintf("org id is nil")
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("url param error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
 	if err != nil {
-		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
+		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	pie, err := e.Resource.GetClusterTrend(orgID, userIDStr, req)
 	if err != nil || pie == nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-
-	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
+	return httpserver.OkResp(pie)
 }
 
 func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
@@ -109,20 +117,23 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
 	if orgIDStr == "" {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
+		errStr := fmt.Sprintf("org id is nil")
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("url param error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
 	if err != nil {
-		return apierrors.ErrFetchOrgResources.InvalidParameter(err).ToResp(), nil
+		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
 	pie, err := e.Resource.GetProjectTrend(orgID, userIDStr, req)
 	if err != nil || pie == nil {
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, err
+		errStr := fmt.Sprintf("get resource project trend error, err: %v", err)
+		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-
-	return httpserver.HTTPResponse{Status: http.StatusOK, Content: pie}, nil
+	return httpserver.OkResp(pie)
 }
