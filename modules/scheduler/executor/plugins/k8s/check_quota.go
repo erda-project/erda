@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -116,6 +117,19 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 		return false, nil
 	}
 	return true, nil
+}
+
+func getRequestsResources(containers []corev1.Container) (cpu, mem int64) {
+	cpuQty := resource.NewQuantity(0, resource.DecimalSI)
+	memQty := resource.NewQuantity(0, resource.BinarySI)
+	for _, container := range containers {
+		if container.Resources.Requests == nil {
+			continue
+		}
+		cpuQty.Add(*container.Resources.Requests.Cpu())
+		memQty.Add(*container.Resources.Requests.Memory())
+	}
+	return cpuQty.MilliValue(), memQty.Value()
 }
 
 func resourceToString(res float64, typ string) string {
