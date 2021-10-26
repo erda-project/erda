@@ -31,7 +31,7 @@ type provider struct {
 	Cfg               *config
 	Log               logs.Logger
 	Register          transport.Register
-	StorageReader     storage.Storage `autowired:"event-storage-elasticsearch-reader"`
+	StorageReader     storage.Storage `autowired:"event-storage-elasticsearch-reader" optional:"true"`
 	eventQueryService *eventQueryService
 }
 

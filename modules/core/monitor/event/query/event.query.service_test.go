@@ -113,3 +113,19 @@ func Test_eventQueryService_GetEvents_WithValidParams_Should_Return_NonEmptyList
 	}
 
 }
+
+func Test_eventQueryService_GetEvents_With_NilStorage_Should_Return_Error(t *testing.T) {
+	querySvc := &eventQueryService{
+		storageReader: nil,
+	}
+	result, err := querySvc.GetEvents(context.Background(), &pb.GetEventsRequest{
+		Start:        1,
+		End:          2,
+		TraceId:      "trace-id",
+		RelationId:   "res-id",
+		RelationType: "res-type",
+	})
+	if result != nil || err == nil {
+		t.Errorf("should throw error")
+	}
+}
