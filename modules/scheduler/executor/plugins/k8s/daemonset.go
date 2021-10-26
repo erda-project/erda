@@ -39,8 +39,7 @@ func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Se
 	}
 
 	_, projectID, workspace, runtimeID := extractContainerEnvs(daemonset.Spec.Template.Spec.Containers)
-	cpu := int64(service.Resources.Cpu * 1000)
-	mem := int64(service.Resources.Mem * float64(1<<20))
+	cpu, mem := getRequestsResources(daemonset.Spec.Template.Spec.Containers)
 	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
 	if err != nil {
 		return err
@@ -99,27 +98,11 @@ func (k *Kubernetes) getDaemonSetDeltaResource(ctx context.Context, ds *appsv1.D
 	if err != nil {
 		return 0, 0, err
 	}
-	oldCPUQty := resource.NewQuantity(0, resource.DecimalSI)
-	oldMemQty := resource.NewQuantity(0, resource.BinarySI)
-	for _, container := range oldDs.Spec.Template.Spec.Containers {
-		if container.Resources.Requests == nil {
-			continue
-		}
-		oldCPUQty.Add(*container.Resources.Requests.Cpu())
-		oldMemQty.Add(*container.Resources.Requests.Memory())
-	}
+	oldCPU, oldMem := getRequestsResources(oldDs.Spec.Template.Spec.Containers)
+	newCPU, newMem := getRequestsResources(ds.Spec.Template.Spec.Containers)
 
-	newCPUQty := resource.NewQuantity(0, resource.DecimalSI)
-	newMemQty := resource.NewQuantity(0, resource.BinarySI)
-	for _, container := range ds.Spec.Template.Spec.Containers {
-		if container.Resources.Requests == nil {
-			continue
-		}
-		newCPUQty.Add(*container.Resources.Requests.Cpu())
-		newMemQty.Add(*container.Resources.Requests.Memory())
-	}
-	deltaCPU = newCPUQty.MilliValue() - oldCPUQty.MilliValue()
-	deltaMemory = newMemQty.Value() - oldMemQty.Value()
+	deltaCPU = newCPU - oldCPU
+	deltaMemory = newMem - oldMem
 	return
 }
 
