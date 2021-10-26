@@ -85,8 +85,9 @@ func Test_eventQueryService_GetEvents(t *testing.T) {
 	}
 }
 
-func Test(t *testing.T) {
+func Test_eventQueryService_GetEvents_WithValidParams_Should_Return_NonEmptyList(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	storage := NewMockStorage(ctrl)
 	storage.EXPECT().
 		QueryPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
