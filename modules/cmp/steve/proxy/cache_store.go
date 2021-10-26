@@ -72,6 +72,10 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	if !c.hasAccess(apiOp, schema, "list") {
 		return types.APIObjectList{}, apierror.NewAPIError(validation.PermissionDenied, "access denied")
 	}
+	if apiOp.Query.Get("labelSelector") != "" || apiOp.Query.Get("fieldSelector") != "" {
+		return c.Store.List(apiOp, schema)
+	}
+
 	gvk := attributes.GVK(schema)
 	key := CacheKey{
 		GVK:         gvk.String(),
