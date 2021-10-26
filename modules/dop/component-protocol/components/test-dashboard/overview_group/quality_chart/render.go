@@ -70,7 +70,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	}()
 
 	h := gshelper.NewGSHelper(gs)
-	q.projectID, _ = strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectID").(string), 10, 64)
+	q.projectID, _ = strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	q.dbClient = ctx.Value(types.DBClient).(*dao.DBClient)
 	q.coco = ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 
