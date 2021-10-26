@@ -135,7 +135,7 @@ func (q *Q) calcMtPlanScore(ctx context.Context, h *gshelper.GSHelper) decimal.D
 	var numCasePassed, numCaseExecuted, numCaseTotal uint64
 	for _, plan := range mtPlans {
 		numCasePassed += plan.RelsCount.Succ
-		numCaseExecuted += plan.RelsCount.Succ + plan.RelsCount.Block + plan.RelsCount.Block
+		numCaseExecuted += plan.RelsCount.Succ + plan.RelsCount.Block + plan.RelsCount.Block + plan.RelsCount.Fail
 		numCaseTotal += plan.RelsCount.Total
 	}
 
