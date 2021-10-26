@@ -27,12 +27,12 @@ import (
 const (
 	CPU     = "cpu"
 	Memory  = "memory"
-	Owner   = "Owner"
-	Project = "Project"
-	Cluster = "Cluster"
-	Day     = "Day"
+	Owner   = "owner"
+	Project = "project"
+	Cluster = "cluster"
+	Day     = "day"
 	Week    = "week"
-	Month   = "Month"
+	Month   = "month"
 )
 
 var (
