@@ -66,17 +66,13 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 		errStr := fmt.Sprintf("org id is nil")
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
-	if err != nil {
-		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
-		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
-	}
+
 	err = newDecoder.Decode(req, r.URL.Query())
 	if err != nil {
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetPie(orgID, userIDStr, req)
+	pie, err := e.Resource.GetPie(orgIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -125,12 +121,7 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
-	if err != nil {
-		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
-		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
-	}
-	pie, err := e.Resource.GetProjectTrend(orgID, userIDStr, req)
+	pie, err := e.Resource.GetProjectTrend(userIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("get resource project trend error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)

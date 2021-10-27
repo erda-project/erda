@@ -141,11 +141,7 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 			r := &Resource{
 				I18N: nopTranslator{},
 			}
-			_, err := r.GetPrincipalPie(tt.args.resourceType, tt.args.resp)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPrincipalPie() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			r.GetPrincipalPie(tt.args.resourceType, tt.args.resp, nil)
 		})
 	}
 }
@@ -198,11 +194,7 @@ func TestResource_GetProjectPie(t *testing.T) {
 			r := &Resource{
 				I18N: nopTranslator{},
 			}
-			_, err := r.GetProjectPie(tt.args.resourceType, tt.args.resp)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetProjectPie() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			r.GetProjectPie(tt.args.resourceType, tt.args.resp, nil)
 		})
 	}
 }
