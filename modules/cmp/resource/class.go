@@ -18,7 +18,10 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -85,6 +88,8 @@ type Quota struct {
 }
 
 func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
+	logrus.Debug("func GetPie start")
+	defer logrus.Debug("func GetPie finished")
 	var clusters []apistructs.ClusterInfo
 	data = make(map[string]*PieData)
 	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
@@ -95,14 +100,19 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	if len(request.ClusterName) == 0 {
 		return nil, errNoClusterFound
 	}
+	logrus.Debug("start fetch quota ")
 	resp, err := r.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
+	logrus.Debug("func quota finished")
 	if err != nil {
 		return
 	}
 
 	greq := &pb.GetClustersResourcesRequest{}
 	greq.ClusterNames = request.ClusterName
+	logrus.Debug("start get cluster resource from steve")
 	resources, err := r.Server.GetClustersResources(r.Ctx, greq)
+	logrus.Debug("get cluster resource from steve finished ")
+
 	if err != nil {
 		return
 	}
@@ -137,7 +147,7 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 	)
 	projectPie = &PieData{}
 	serie := PieSerie{
-		Name: r.I18n("distribution by Project"),
+		Name: r.I18n("distribution by project"),
 		Type: "pie",
 	}
 	projectMap := make(map[string]Quota)
@@ -155,11 +165,13 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 
 	case Memory:
 		for k, v := range projectMap {
-			serie.Data = append(serie.Data, SerieData{v.memQuota / G, k})
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota/G), 64)
+			serie.Data = append(serie.Data, SerieData{f, k})
 		}
 	default:
 		for k, v := range projectMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, k})
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota/MilliCore), 64)
+			serie.Data = append(serie.Data, SerieData{f, k})
 		}
 	}
 	r.PieSort(serie.Data)
@@ -184,17 +196,19 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 	}
 	principalPie = &PieData{}
 	serie := PieSerie{
-		Name: r.I18n("distribution by principal"),
+		Name: r.I18n("distribution by owner"),
 		Type: "pie",
 	}
 	switch resType {
 	case Memory:
 		for _, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.memQuota / G, v.nickName})
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota/G), 64)
+			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
 	default:
 		for _, v := range principalMap {
-			serie.Data = append(serie.Data, SerieData{v.cpuQuota / MilliCore, v.nickName})
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota/MilliCore), 64)
+			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
 	}
 	r.PieSort(serie.Data)
@@ -205,7 +219,7 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterResourcesResponse) (clusterPie *PieData, err error) {
 	clusterPie = &PieData{}
 	serie := PieSerie{
-		Name: r.I18n("distribution by Cluster"),
+		Name: r.I18n("distribution by cluster"),
 		Type: "pie",
 	}
 	switch resourceType {
@@ -215,7 +229,8 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			for _, h := range c.Hosts {
 				memSum += float64(h.CpuTotal)
 			}
-			serie.Data = append(serie.Data, SerieData{memSum / G, c.ClusterName})
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", memSum/G), 64)
+			serie.Data = append(serie.Data, SerieData{f, c.ClusterName})
 		}
 	default:
 		for _, c := range resources.List {
@@ -223,7 +238,8 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			for _, h := range c.Hosts {
 				cpuSum += float64(h.CpuTotal)
 			}
-			serie.Data = append(serie.Data, SerieData{cpuSum / MilliCore, c.ClusterName})
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", cpuSum/MilliCore), 64)
+			serie.Data = append(serie.Data, SerieData{f, c.ClusterName})
 		}
 	}
 	r.PieSort(serie.Data)
@@ -238,8 +254,11 @@ func (r *Resource) PieSort(series []SerieData) {
 }
 
 func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
-
-	td = &Histogram{}
+	logrus.Debug("func GetClusterTrend start")
+	defer logrus.Debug("func GetClusterTrend finished")
+	td = &Histogram{
+		Name: r.I18n("cluster trend"),
+	}
 	td.XAxis = XAxis{
 		Type: "category",
 	}
@@ -265,10 +284,12 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
 	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
-	db.Raw("select SUM(cpu_total),SUM(cpu_requested),SUM(mem_total),SUM(mem_requested) where  updated_at < ? and updated_at >= ? and cluster_name in (?) sort by created_at desc", endTime, startTime, request.ClusterName)
+	db.Raw("select cpu_total,cpu_requested,mem_total,mem_requested where  updated_at < ? and updated_at >= ? and cluster_name in (?) sort by created_at desc", endTime, startTime, request.ClusterName)
+	logrus.Debug("cluster trend start get daily quota from db")
 	if err = db.Scan(&pd).Error; err != nil {
 		return
 	}
+	logrus.Debug("cluster trend get daily quota finished")
 	tRes := make(map[int]apistructs.ClusterResourceDailyModel)
 	switch request.Interval {
 	case Week:
@@ -324,20 +345,22 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
-			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
-			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 	}
 	return
 }
 
 func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
-	td = &Histogram{}
+	td = &Histogram{
+		Name: r.I18n("project trend"),
+	}
 	td.XAxis = XAxis{
 		Type: "category",
 	}
@@ -361,7 +384,7 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 	}
 
 	db := r.DB.Table("cmp_project_resource_daily")
-	db.Raw("select  SUM(cpu_quota),SUM(cpu_request),SUM(mem_quota),SUM(mem_request)  updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?) sort by created_at desc", request.End, request.Start, request.ClusterName, request.ProjectId)
+	db.Raw("select cpu_quota,cpu_request,mem_quota,mem_request where updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?) sort by created_at desc", request.End, request.Start, request.ClusterName, request.ProjectId)
 	if err = db.Scan(&pd).Error; err != nil {
 		return
 	}
@@ -420,13 +443,13 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
-			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
-			td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%s", quota.CreatedAt.String()))
+			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 	}
 	return

@@ -76,4 +76,5 @@ type Histogram struct {
 	XAxis  XAxis            `json:"xAxis"`
 	YAxis  YAxis            `json:"yAxis"`
 	Series []HistogramSerie `json:"series"`
+	Name   string           `json:"name"`
 }
