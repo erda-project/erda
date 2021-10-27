@@ -187,16 +187,22 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}
 	obj := resp.Data()
 
-	labelSelectors := obj.Map("spec", "selector", "matchLabels")
+	var labelSelectors []string
+	matchLabels := obj.Map("spec", "selector", "matchLabels")
 	if kind == string(apistructs.K8SCronJob) {
-		labelSelectors = obj.Map("spec", "jobTemplate", "spec", "template", "metadata", "labels")
+		matchLabels = obj.Map("spec", "jobTemplate", "spec", "template", "metadata", "labels")
+	}
+	for k, v := range matchLabels {
+		labelSelectors = append(labelSelectors, fmt.Sprintf("%s=%s", k, v))
 	}
 
 	podReq := apistructs.SteveRequest{
-		UserID:      userID,
-		OrgID:       orgID,
-		Type:        apistructs.K8SPod,
-		ClusterName: p.State.ClusterName,
+		UserID:        userID,
+		OrgID:         orgID,
+		Type:          apistructs.K8SPod,
+		Namespace:     namespace,
+		LabelSelector: labelSelectors,
+		ClusterName:   p.State.ClusterName,
 	}
 
 	var list []types2.APIObject
@@ -242,10 +248,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 	var items []Item
 	for _, item := range list {
 		obj := item.Data()
-		labels := obj.Map("metadata", "labels")
-		if !matchSelector(labelSelectors, labels) {
-			continue
-		}
 
 		if kind == string(apistructs.K8SCronJob) {
 			ok, err := p.isOwnedByTargetCronJob(obj, name)

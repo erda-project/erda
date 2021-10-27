@@ -40,7 +40,7 @@ func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Se
 
 	_, projectID, workspace, runtimeID := extractContainerEnvs(daemonset.Spec.Template.Spec.Containers)
 	cpu, mem := getRequestsResources(daemonset.Spec.Template.Spec.Containers)
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem)
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless")
 	if err != nil {
 		return err
 	}
@@ -81,14 +81,15 @@ func (k *Kubernetes) updateDaemonSet(ctx context.Context, ds *appsv1.DaemonSet) 
 	_, projectID, workspace, runtimeID := extractContainerEnvs(ds.Spec.Template.Spec.Containers)
 	deltaCPU, deltaMem, err := k.getDaemonSetDeltaResource(ctx, ds)
 	if err != nil {
-		return errors.Errorf("faield to get delta resource for daemonSet %s, %v", ds.Name, err)
-	}
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New("workspace quota is not enough")
+		logrus.Errorf("faield to get delta resource for daemonSet %s, %v", ds.Name, err)
+	} else {
+		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update")
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("workspace quota is not enough")
+		}
 	}
 	return k.ds.Update(ds)
 }

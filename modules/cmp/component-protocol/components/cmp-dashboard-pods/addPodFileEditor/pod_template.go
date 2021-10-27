@@ -18,7 +18,6 @@ const podTemplate = `apiVersion: v1
 kind: Pod
 metadata:
   name: #string
-  namespace: default
 #  annotations:
 #    key: string
 #  labels:

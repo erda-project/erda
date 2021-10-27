@@ -36,7 +36,7 @@ type TrendRequest struct {
 	Start        int64
 	End          int64
 	Interval     string
-	ProjectId    []string
+	ProjectId    []uint64
 	ClusterName  []string
 }
 
