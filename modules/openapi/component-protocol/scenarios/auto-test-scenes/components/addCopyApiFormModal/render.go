@@ -84,7 +84,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		c.State["createStepID"] = stepID
 		c.State["visible"] = false
-		c.State["apiText"] = ""
+		c.State["formData"] = map[string]string{
+			"apiText": "",
+		}
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
 		c.Props = map[string]interface{}{
 			"width": 850,
