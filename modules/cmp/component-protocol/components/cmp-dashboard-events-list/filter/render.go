@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 
 	"github.com/erda-project/erda/apistructs"
@@ -43,10 +43,10 @@ func init() {
 	})
 }
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (f *ComponentFilter) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -89,25 +89,25 @@ func (f *ComponentFilter) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	var values Values
-	if err := json.Unmarshal(decoded, &values); err != nil {
+	var v Values
+	if err := json.Unmarshal(decode, &v); err != nil {
 		return err
 	}
-	f.State.Values = values
+	f.State.Values = v
 	return nil
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
+	jsonData, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(data)
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
 	f.State.FilterURLQuery = encoded
 	return nil
 }
@@ -278,14 +278,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(component *cptype.Component) {
-	component.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(c *cptype.Component) {
+	c.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	component.Operations = f.Operations
+	c.Operations = f.Operations
 }
 
 func (f *ComponentFilter) getDisplayName(name string) (string, error) {

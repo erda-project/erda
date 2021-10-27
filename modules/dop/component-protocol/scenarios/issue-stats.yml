@@ -8,10 +8,13 @@ hierarchy:
       - issueTip
       - overview
       - trendChart
-      - chartGroup1
-      - chartGroup2
+      - stateVerticalBarChart@iteration
+      - chartGroup@first
+      - chartGroup@second
       - labelHorizontalBarChart
-      - chartGroup3
+      - chartGroup@third
+      - memberHorizontalBarChart@reopenByOwner
+      - scatterPlot
     overview:
       - total
       - split
@@ -32,40 +35,52 @@ hierarchy:
         trendChartExtra
     trendChartExtra:
       - trendChartFilter
-    chartGroup1:
+    chartGroup@first:
       - statePieChart
       - stateVerticalBarChart
-    chartGroup2:
+    chartGroup@second:
       - assigneeHorizontalBarChart
-      - ownerHorizontalBarChart
-    chartGroup3:
+      - memberHorizontalBarChart@owner
+    chartGroup@third:
       - severityPieChart
       - priorityPieChart
       - complexityPieChart
       - stagePieChart
+
+    stateVerticalBarChart@iteration:
+      extraContent:
+        chartExtra@iterationVerticalBar
+    chartExtra@iterationVerticalBar:
+      - chartFilter@iterationVerticalBar
+
     stateVerticalBarChart:
       extraContent:
-        stateVerticalBarChartExtra
-    stateVerticalBarChartExtra:
-      - stateVerticalBarChartFilter
-
+        chartExtra@stateVerticalBar
+    chartExtra@stateVerticalBar:
+      - chartFilter@stateVerticalBar
     labelHorizontalBarChart:
       extraContent:
-        labelHorizontalBarChartExtra
-    labelHorizontalBarChartExtra:
-      - labelHorizontalBarChartFilter
+        chartExtra@labelHorizontalBar
+    chartExtra@labelHorizontalBar:
+      - chartFilter@labelHorizontalBar
 
     assigneeHorizontalBarChart:
       extraContent:
-        assigneeHorizontalBarChartExtra
-    assigneeHorizontalBarChartExtra:
-      - assigneeHorizontalBarChartFilter
+        chartExtra@assigneeHorizontalBar
+    chartExtra@assigneeHorizontalBar:
+      - chartFilter@assigneeHorizontalBar
 
-    ownerHorizontalBarChart:
+    memberHorizontalBarChart@owner:
       extraContent:
-        ownerHorizontalBarChartExtra
-    ownerHorizontalBarChartExtra:
-      - ownerHorizontalBarChartFilter
+        chartExtra@ownerHorizontalBar
+    chartExtra@ownerHorizontalBar:
+      - chartFilter@ownerHorizontalBar
+
+    scatterPlot:
+      extraContent:
+        chartExtra@scatter
+    chartExtra@scatter:
+      - chartFilter@scatter
 
 components:
   page:
@@ -119,13 +134,13 @@ components:
     type: RowContainer
   trendChartFilter:
     type: ContractiveFilter
-  chartGroup1:
+  chartGroup@first:
     type: Grid
     props:
       span: [6, 18]
-  chartGroup2:
+  chartGroup@second:
     type: Grid
-  chartGroup3:
+  chartGroup@third:
     type: Grid
   statePieChart:
     type: Chart
@@ -138,32 +153,49 @@ components:
   stagePieChart:
     type: Chart
 
+  stateVerticalBarChart@iteration:
+    type: Chart
+  chartExtra@iterationVerticalBar:
+    type: RowContainer
+  chartFilter@iterationVerticalBar:
+    type: ContractiveFilter
+
   stateVerticalBarChart:
     type: Chart
-  stateVerticalBarChartExtra:
+  chartExtra@stateVerticalBar:
     type: RowContainer
-  stateVerticalBarChartFilter:
+  chartFilter@stateVerticalBar:
     type: ContractiveFilter
 
   labelHorizontalBarChart:
     type: Chart
-  labelHorizontalBarChartExtra:
+  chartExtra@labelHorizontalBar:
     type: RowContainer
-  labelHorizontalBarChartFilter:
+  chartFilter@labelHorizontalBar:
     type: ContractiveFilter
 
   assigneeHorizontalBarChart:
     type: Chart
-  assigneeHorizontalBarChartExtra:
+  chartExtra@assigneeHorizontalBar:
     type: RowContainer
-  assigneeHorizontalBarChartFilter:
+  chartFilter@assigneeHorizontalBar:
     type: ContractiveFilter
   
-  ownerHorizontalBarChart:
+  memberHorizontalBarChart@owner:
     type: Chart
-  ownerHorizontalBarChartExtra:
+  chartExtra@ownerHorizontalBar:
     type: RowContainer
-  ownerHorizontalBarChartFilter:
+  chartFilter@ownerHorizontalBar:
+    type: ContractiveFilter
+
+  memberHorizontalBarChart@reopenByOwner:
+    type: Chart
+
+  scatterPlot:
+    type: Chart
+  chartExtra@scatter:
+    type: RowContainer
+  chartFilter@scatter:
     type: ContractiveFilter
 
   reset:
@@ -172,10 +204,12 @@ components:
 rendering:
   filter:
     - name: trendChartFilter
-    - name: stateVerticalBarChartFilter
-    - name: labelHorizontalBarChartFilter
-    - name: assigneeHorizontalBarChartFilter
-    - name: ownerHorizontalBarChartFilter
+    - name: chartFilter@stateVerticalBar
+    - name: chartFilter@iterationVerticalBar
+    - name: chartFilter@labelHorizontalBar
+    - name: chartFilter@assigneeHorizontalBar
+    - name: chartFilter@ownerHorizontalBar
+    - name: chartFilter@scatter
     - name: trendChart
       state:
         - name: "values"
@@ -210,10 +244,6 @@ rendering:
       state:
         - name: "stats"
           value: "{{ total.stats }}"
-    - name: open
-      state:
-        - name: "stats"
-          value: "{{ total.stats }}"
     - name: undefined
       state:
         - name: "stats"
@@ -225,19 +255,28 @@ rendering:
     - name: stateVerticalBarChart
       state:
         - name: "values"
-          value: "{{ stateVerticalBarChartFilter.values }}"
+          value: "{{ chartFilter@stateVerticalBar.values }}"
     - name: labelHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ labelHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@labelHorizontalBar.values }}"
     - name: assigneeHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ assigneeHorizontalBarChartFilter.values }}"
-    - name: ownerHorizontalBarChart
+          value: "{{ chartFilter@assigneeHorizontalBar.values }}"
+    - name: memberHorizontalBarChart@owner
       state:
         - name: "values"
-          value: "{{ ownerHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@ownerHorizontalBar.values }}"
+    - name: stateVerticalBarChart@iteration
+      state:
+        - name: "values"
+          value: "{{ chartFilter@iterationVerticalBar.values }}"
+    - name: memberHorizontalBarChart@reopenByOwner
+    - name: scatterPlot
+      state:
+        - name: "values"
+          value: "{{ chartFilter@scatter.values }}"
     - name: reset
 
   trendChartFilter:
@@ -248,40 +287,58 @@ rendering:
           value: "{{ trendChartFilter.values }}"
     - name: reset
 
-  stateVerticalBarChartFilter:
+  chartFilter@stateVerticalBar:
     - name: filter
-    - name: stateVerticalBarChartFilter
+    - name: chartFilter@stateVerticalBar
     - name: stateVerticalBarChart
       state:
         - name: "values"
-          value: "{{ stateVerticalBarChartFilter.values }}"
+          value: "{{ chartFilter@stateVerticalBar.values }}"
     - name: reset
 
-  labelHorizontalBarChartFilter:
+  chartFilter@labelHorizontalBar:
     - name: filter
-    - name: labelHorizontalBarChartFilter
+    - name: chartFilter@labelHorizontalBar
     - name: labelHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ labelHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@labelHorizontalBar.values }}"
     - name: reset
 
-  assigneeHorizontalBarChartFilter:
+  chartFilter@assigneeHorizontalBar:
     - name: filter
-    - name: assigneeHorizontalBarChartFilter
+    - name: chartFilter@assigneeHorizontalBar
     - name: assigneeHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ assigneeHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@assigneeHorizontalBar.values }}"
     - name: reset
 
-  ownerHorizontalBarChartFilter:
+  chartFilter@ownerHorizontalBar:
     - name: filter
-    - name: ownerHorizontalBarChartFilter
-    - name: ownerHorizontalBarChart
+    - name: chartFilter@ownerHorizontalBar
+    - name: memberHorizontalBarChart@owner
       state:
         - name: "values"
-          value: "{{ ownerHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@ownerHorizontalBar.values }}"
+    - name: reset
+
+  chartFilter@iterationVerticalBar:
+    - name: filter
+    - name: chartFilter@iterationVerticalBar
+    - name: stateVerticalBarChart@iteration
+      state:
+        - name: "values"
+          value: "{{ chartFilter@iterationVerticalBar.values }}"
+    - name: reset
+
+  chartFilter@scatter:
+    - name: filter
+    - name: chartFilter@scatter
+    - name: scatterPlot
+      state:
+        - name: "values"
+          value: "{{ chartFilter@scatter.values }}"
     - name: reset
   
   __DefaultRendering__:
@@ -333,40 +390,56 @@ rendering:
       state:
         - name: "values"
           value: "{{ trendChartFilter.values }}"
-    - name: chartGroup1
-    - name: chartGroup2
-    - name: chartGroup3
+
+    - name: chartExtra@iterationVerticalBar
+    - name: chartFilter@iterationVerticalBar
+    - name: stateVerticalBarChart@iteration
+      state:
+        - name: "values"
+          value: "{{ chartFilter@iterationVerticalBar.values }}"
+
+    - name: chartGroup@first
+    - name: chartGroup@second
+    - name: chartGroup@third
     - name: statePieChart
     - name: complexityPieChart
     - name: priorityPieChart
     - name: severityPieChart
     - name: stagePieChart
 
-    - name: stateVerticalBarChartExtra
-    - name: stateVerticalBarChartFilter
+    - name: chartExtra@stateVerticalBar
+    - name: chartFilter@stateVerticalBar
     - name: stateVerticalBarChart
       state:
         - name: "values"
           value: "{{ trendChartFilter.values }}"
 
-    - name: labelHorizontalBarChartExtra
-    - name: labelHorizontalBarChartFilter
+    - name: chartExtra@labelHorizontalBar
+    - name: chartFilter@labelHorizontalBar
     - name: labelHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ labelHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@labelHorizontalBar.values }}"
 
-    - name: assigneeHorizontalBarChartExtra
-    - name: assigneeHorizontalBarChartFilter
+    - name: chartExtra@assigneeHorizontalBar
+    - name: chartFilter@assigneeHorizontalBar
     - name: assigneeHorizontalBarChart
       state:
         - name: "values"
-          value: "{{ assigneeHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@assigneeHorizontalBar.values }}"
 
-    - name: ownerHorizontalBarChartExtra
-    - name: ownerHorizontalBarChartFilter
-    - name: ownerHorizontalBarChart
+    - name: chartExtra@ownerHorizontalBar
+    - name: chartFilter@ownerHorizontalBar
+    - name: memberHorizontalBarChart@owner
       state:
         - name: "values"
-          value: "{{ ownerHorizontalBarChartFilter.values }}"
+          value: "{{ chartFilter@ownerHorizontalBar.values }}"
+    
+    - name: memberHorizontalBarChart@reopenByOwner
+
+    - name: chartFilter@scatter
+    - name: scatterPlot
+      state:
+        - name: "values"
+          value: "{{ chartFilter@scatter.values }}"
     - name: reset

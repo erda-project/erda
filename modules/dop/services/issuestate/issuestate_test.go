@@ -15,19 +15,21 @@
 package issuestate
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	gomock "github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 func TestIssueState_GetIssueStateIDs(t *testing.T) {
-	is := New()
 	db := &dao.DBClient{}
+	is := New(WithDBClient(db))
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStates",
 		func(db *dao.DBClient, req *apistructs.IssueStatesGetRequest) ([]dao.IssueState, error) {
 			return []dao.IssueState{
@@ -46,8 +48,8 @@ func TestIssueState_GetIssueStateIDs(t *testing.T) {
 }
 
 func TestIssueState_GetIssueStatesMap(t *testing.T) {
-	is := New()
 	db := &dao.DBClient{}
+	is := New(WithDBClient(db))
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStatesByProjectID",
 		func(db *dao.DBClient, projectID uint64, issuetype apistructs.IssueType) ([]dao.IssueState, error) {
 			return []dao.IssueState{
@@ -72,4 +74,26 @@ func TestIssueState_GetIssueStatesMap(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(res))
+}
+
+func TestInitProjectState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := NewMockIssueStater(ctrl)
+
+	m.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(nil)
+	m.EXPECT().UpdateIssueStateRelations(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+	is := New(WithDBClient(m))
+	if err := is.InitProjectState(1); err != nil {
+		t.Error(err)
+	}
+
+	s := NewMockIssueStater(ctrl)
+	s.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(errors.New("db error"))
+	is = New(WithDBClient(s))
+	if err := is.InitProjectState(1); err != nil {
+		assert.Error(t, err)
+	}
 }

@@ -58,7 +58,7 @@ type meta struct {
 }
 
 const (
-	DefaultPageSize = 15
+	DefaultPageSize = 1000
 	DefaultPageNo   = 1
 )
 
@@ -279,6 +279,9 @@ func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
 	if req.IsBeforePressRunButton() {
 		res["status"] = "default"
 	}
+	if req.IsDisabledStatus() {
+		res["status"] = "default"
+	}
 	return res
 }
 
@@ -311,15 +314,19 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						"renderType": "tableOperation",
 						"operations": map[string]interface{}{
 							"checkDetail": dataOperation{
-								Key:    "checkDetail",
-								Text:   "查看结果",
-								Reload: false,
-								Meta:   task.Result,
+								Key:         "checkDetail",
+								Text:        "查看结果",
+								Reload:      false,
+								DisabledTip: "禁用接口无法查看结果",
+								Disabled:    task.Status.IsDisabledStatus(),
+								Meta:        task.Result,
 							},
 							"checkLog": dataOperation{
-								Key:    "checkLog",
-								Reload: false,
-								Text:   "日志",
+								Key:         "checkLog",
+								Reload:      false,
+								Text:        "日志",
+								DisabledTip: "禁用接口无法查看日志",
+								Disabled:    task.Status.IsDisabledStatus(),
 								Meta: map[string]interface{}{
 									"logId":      task.Extra.UUID,
 									"pipelineId": a.State.PipelineID,
@@ -379,15 +386,19 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait || res.Type == apistructs.StepTypeCustomScript {
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
-							Key:    "checkDetail",
-							Text:   "查看结果",
-							Reload: false,
-							Meta:   task.Result,
+							Key:         "checkDetail",
+							Text:        "查看结果",
+							Reload:      false,
+							Disabled:    task.Status.IsDisabledStatus(),
+							DisabledTip: "禁用接口无法查看结果",
+							Meta:        task.Result,
 						},
 						"checkLog": dataOperation{
-							Key:    "checkLog",
-							Reload: false,
-							Text:   "日志",
+							Key:         "checkLog",
+							Reload:      false,
+							Text:        "日志",
+							Disabled:    task.Status.IsDisabledStatus(),
+							DisabledTip: "禁用接口无法查看日志",
 							Meta: map[string]interface{}{
 								"logId":      task.Extra.UUID,
 								"pipelineId": a.State.PipelineID,
@@ -547,10 +558,8 @@ func (a *ExecuteTaskTable) marshal(c *apistructs.Component) error {
 
 func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
 
-	if e.State.PageNo == 0 {
-		e.State.PageNo = DefaultPageNo
-		e.State.PageSize = DefaultPageSize
-	}
+	e.State.PageNo = DefaultPageNo
+	e.State.PageSize = DefaultPageSize
 
 	if e.State.PipelineDetail == nil {
 		c.Data = map[string]interface{}{}

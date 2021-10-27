@@ -47,9 +47,12 @@ func (e *Endpoints) CreateTestPlan(ctx context.Context, r *http.Request, vars ma
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrCreateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
+	if err = req.Check(); err != nil {
+		return apierrors.ErrCreateTestPlan.InvalidParameter(err).ToResp(), nil
+	}
 	req.IdentityInfo = identityInfo
 
-	testPlanID, err := e.testPlan.Create(req)
+	testPlanID, err := e.mttestPlan.Create(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -76,11 +79,14 @@ func (e *Endpoints) UpdateTestPlan(ctx context.Context, r *http.Request, vars ma
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
+	if err = req.Check(); err != nil {
+		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
+	}
 	req.TestPlanID = testPlanID
 	req.IdentityInfo = identityInfo
 
 	// 查询测试计划用于鉴权
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -103,7 +109,7 @@ func (e *Endpoints) UpdateTestPlan(ctx context.Context, r *http.Request, vars ma
 		}
 	}
 
-	if err := e.testPlan.Update(req); err != nil {
+	if err := e.mttestPlan.Update(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -122,7 +128,7 @@ func (e *Endpoints) GetTestPlan(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrGetTestPlan.InvalidParameter(err).ToResp(), nil
 	}
 
-	testPlan, err := e.testPlan.Get(testPlanID)
+	testPlan, err := e.mttestPlan.Get(testPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -144,7 +150,7 @@ func (e *Endpoints) DeleteTestPlan(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrDeleteTestPlan.InvalidParameter(err).ToResp(), nil
 	}
 
-	if err := e.testPlan.Delete(identityInfo, testPlanID); err != nil {
+	if err := e.mttestPlan.Delete(identityInfo, testPlanID); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -184,7 +190,7 @@ func (e *Endpoints) PagingTestPlans(ctx context.Context, r *http.Request, vars m
 		}
 	}
 
-	result, err := e.testPlan.Paging(req)
+	result, err := e.mttestPlan.Paging(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -212,7 +218,7 @@ func (e *Endpoints) PagingTestPlanCaseRelations(ctx context.Context, r *http.Req
 	req.IdentityInfo = identityInfo
 
 	// 查询测试计划
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -234,7 +240,7 @@ func (e *Endpoints) PagingTestPlanCaseRelations(ctx context.Context, r *http.Req
 		}
 	}
 
-	result, err := e.testPlan.PagingTestPlanCaseRels(req)
+	result, err := e.mttestPlan.PagingTestPlanCaseRels(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -255,7 +261,7 @@ func (e *Endpoints) InternalListTestPlanCaseRels(ctx context.Context, r *http.Re
 	}
 	req.IdentityInfo = identityInfo
 
-	rels, err := e.testPlan.ListTestPlanCaseRels(req)
+	rels, err := e.mttestPlan.ListTestPlanCaseRels(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -285,7 +291,7 @@ func (e *Endpoints) ExecuteTestPlanAPITest(ctx context.Context, r *http.Request,
 	req.TestPlanID = testPlanID
 	req.IdentityInfo = identityInfo
 
-	tp, err := e.testPlan.Get(req.TestPlanID)
+	tp, err := e.mttestPlan.Get(req.TestPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -307,7 +313,7 @@ func (e *Endpoints) ExecuteTestPlanAPITest(ctx context.Context, r *http.Request,
 		}
 	}
 
-	triggeredPipelineID, err := e.testPlan.ExecuteAPITest(req)
+	triggeredPipelineID, err := e.mttestPlan.ExecuteAPITest(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -334,7 +340,7 @@ func (e *Endpoints) ListTestPlanTestSets(ctx context.Context, r *http.Request, v
 	req.TestPlanID = testPlanID
 	req.IdentityInfo = identityInfo
 
-	testSets, err := e.testPlan.ListTestSet(req)
+	testSets, err := e.mttestPlan.ListTestSet(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -366,7 +372,7 @@ func (e *Endpoints) ExportTestPlanCaseRels(ctx context.Context, w http.ResponseW
 
 	// TODO:鉴权
 
-	err = e.testPlan.Export(w, req)
+	err = e.mttestPlan.Export(w, req)
 	if err != nil {
 		return apierrors.ErrExportTestCases.InternalError(err)
 	}
@@ -387,7 +393,7 @@ func (e *Endpoints) GenerateTestPlanReport(ctx context.Context, r *http.Request,
 		return apierrors.ErrGenerateTestPlanReport.InvalidParameter(err).ToResp(), nil
 	}
 
-	report, err := e.testPlan.GenerateReport(testPlanID)
+	report, err := e.mttestPlan.GenerateReport(testPlanID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

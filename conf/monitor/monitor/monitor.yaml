@@ -2,11 +2,6 @@ http-server:
   addr: ":7096"
 health:
   path: "/api/health"
-prometheus:
-monitor-monitoring:
-  usage_sync_interval:
-    metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL:1h}
-    log: ${MONITOR_MONITORING_LOG_SYNC_INTERVAL:30m}
 
 grpc-server:
   addr: ":7080"
@@ -26,6 +21,7 @@ elasticsearch@logs:
   password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 cassandra:
+  _enable: ${CASSANDRA_ENABLE:true}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
@@ -39,19 +35,182 @@ mysql:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
 
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:http://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
+etcd-election@index:
+  root_path: "/erda/monitor-index-clean-election"
+
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB:0}
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
 permission:
 
-erda.core.monitor.metric.index:
-  request_timeout: "20s"
-  default_namespace: "full_cluster"
-  index_type: "spot"
-  index_prefix: "spot"
+# log
+elasticsearch@log:
+  _enable: ${LOG_ELASTICSEARCH_ENABLE:false}
+  urls: "${LOG_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${LOG_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
+elasticsearch.index.loader@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  load_mode: "LoadWithCache"
+  index_reload_interval: "1m"
   query_index_time_range: true
-  index_reload_interval: "2m"
+  cache_key_prefix: "es-index-log"
+  default_index: "index__for__not__exist"
+  match:
+    - prefix: "erda-logs-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+storage-retention-strategy@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  default_ttl: "${LOG_TTL:168h}"
+  load_from_database: true
+  ttl_reload_interval: "3m"
+elasticsearch.index.retention-strategy@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  key_patterns: 
+    - "erda-logs-<org>.<key>-{number}"
+elasticsearch.index.cleaner@log:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  check_interval: "30m"
+  print_onluy: true
+  disk_clean:
+    enable: ${LOG_DISK_CLEAN_ENABLE:true}
+    check_interval: "1m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "${MIN_INDICES_STORE_PERCENT:10GB}" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index_rollover_min.json"
+    rollover_alias_patterns:
+      - index: "erda-logs-<org>-{number}"
+        alias: "erda-logs-<org>-rollover"
+      - index: "erda-logs-<org>.<key>-{number}"
+        alias: "erda-logs-<org>.<key>-rollover"
+log-storage-elasticsearch:
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  query_timeout: "1m"
+  read_page_size: 200
+kubernetes-logs-storage:
+  _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:true}
+  client_cache_size: 128
+  client_cache_expiration: "10m"
+  pod_info_cache_size: 256
+  pod_info_cache_expiration: "3h"
+  buffer_lines: 200
+log-storage-cassandra:
+  _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:false}
+  read_page_size: 201
+  cassandra:
+    keyspace:
+      name: "spot_prod"
+erda.core.monitor.log.query:
 
-# metric query
+# event
+elasticsearch@event:
+  _enable: ${EVENT_ELASTICSEARCH_ENABLE:false}
+  urls: "${EVENT_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${EVENT_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
+elasticsearch.index.loader@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  load_mode: "LoadWithCache"
+  index_reload_interval: "1m"
+  query_index_time_range: true
+  cache_key_prefix: "es-index-event"
+  match:
+    - prefix: "erda-events-"
+      patterns:
+        - "<event>-<namespace>-{number}"
+        - "<event>-<namespace>.<key>-{number}"
+storage-retention-strategy@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  default_ttl: "${EVENT_TTL:168h}"
+  load_from_database: false
+  ttl_reload_interval: "3m"
+elasticsearch.index.retention-strategy@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  key_patterns:
+    - "erda-events-<event>-<namespace>.<key>-{number}"
+elasticsearch.index.cleaner@event:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  check_interval: "30m"
+  print_onluy: true
+  disk_clean:
+    enable: ${EVENT_DISK_CLEAN_ENABLE:true}
+    check_interval: "1m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "${MIN_INDICES_STORE_SIZE:10GB}" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index_rollover_min.json"
+    rollover_alias_patterns:
+      - index: "erda-events-<event>-<namespace>-{number}"
+        alias: "erda-events-<event>-<namespace>-rollover"
+      - index: "erda-events-<event>-<namespace>.<key>-{number}"
+        alias: "erda-events-<event>-<namespace>.<key>-rollover"
+event-storage-elasticsearch:
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  query_timeout: "1m"
+  read_page_size: 50
+
+# metric
+elasticsearch.index.loader@metric:
+  load_mode: "LoadWithCache"
+  index_reload_interval: "1m"
+  query_index_time_range: true
+  cache_key_prefix: "es-index-metric"
+  default_index: "spot-empty"
+  match:
+    - prefix: "spot-"
+      patterns:
+        - "empty"
+        - "<metric>-<namespace>.<key>-r-{number}"
+        - "<metric>-<namespace>-r-{number}"
+        - "<metric>-<namespace>-m-{}"
+        - "<metric>-<namespace>-m-{}"
+        - "<metric>-<namespace>.<key>-<timestamp>"
+        - "<metric>-<namespace>-<timestamp>"
+        - "<metric>-<namespace>.<key>"
+        - "<metric>-<namespace>"
+storage-retention-strategy@metric:
+  default_ttl: "${METRIC_TTL:168h}"
+  load_from_database: true
+  ttl_reload_interval: "3m"
+elasticsearch.index.retention-strategy@metric:
+  key_patterns: 
+    - "spot-<metric>-<namespace>.<key>-r-{number}"
+    - "spot-<metric>-<namespace>.<key>-<timestamp>"
+elasticsearch.index.cleaner@metric:
+  check_interval: "30m"
+  print_onluy: true
+  disk_clean:
+    enable: ${METRIC_DISK_CLEAN_ENABLE:true}
+    check_interval: "1m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "${MIN_INDICES_STORE_SIZE:10GB}" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index_rollover_min.json"
+    rollover_alias_patterns:
+      - index: "spot-<metric>-<namespace>-r-{number}"
+        alias: "spot-<metric>-<namespace>-rollover"
+      - index: "spot-<metric>-<namespace>.<key>-r-{number}"
+        alias: "spot-<metric>-<namespace>.<key>-rollover"
 erda.core.monitor.metric:
-  _enable: ${METRIC_QUERY_ENABLE:true}
   chart_meta:
     path: ${CONFIG_PATH}/charts
     reload_interval: "30s"
@@ -65,25 +224,14 @@ erda.core.monitor.metric:
       - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
     metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
 
-erda.core.monitor.alertdetail:
-
 metric-query-example:
   _enable: ${METRIC_QUERY_EXAMPLE_ENABLE:false}
 metrics-query-compatibility:
   _enable: ${METRIC_QUERY_ENABLE:true}
   chart_meta:
     path: ${CONFIG_PATH}/charts
-    reload_interval: "30s"
 
-erda.core.monitor.log.query:
-  _enable: ${LOG_QUERY_ENABLE:true}
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: true
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+erda.core.monitor.alertdetail:
 
 logs-index-query:
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
@@ -94,12 +242,6 @@ node-topo:
 #apm providers
 apm-runtime:
 apm-topology:
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
 apm-report:
 
 erda.core.monitor.alert:
@@ -161,4 +303,9 @@ notify-query:
 http-server@admin:
   addr: ":7098"
 pprof:
+prometheus:
 
+monitor-monitoring:
+  usage_sync_interval:
+    metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL:1h}
+    log: ${MONITOR_MONITORING_LOG_SYNC_INTERVAL:30m}

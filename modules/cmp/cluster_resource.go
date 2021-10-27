@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	_interface "github.com/erda-project/erda/modules/cmp/cmp_interface"
 )
 
 func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error) {
@@ -136,7 +137,7 @@ const (
 )
 
 // GetNamespaceAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
-func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
+func GetNamespaceAllocatedRes(ctx context.Context, server _interface.SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nsAllocatedRes := make(map[string]AllocatedRes)
@@ -241,8 +242,9 @@ func CalculateNamespaceAllocatedRes(name string, pods []types2.APIObject) (cpu, 
 	memQty := resource.NewQuantity(0, resource.BinarySI)
 	for _, obj := range pods {
 		pod := obj.Data()
-		if pod.String("metadata", "namespace") != name || pod.String("status", "phase") == "Failed" ||
-			pod.String("status", "phase") == "Succeeded" {
+		status := pod.String("status", "phase")
+		if pod.String("metadata", "namespace") != name || status == "Pending" ||
+			status == "Failed" || status == "Succeeded" {
 			continue
 		}
 		podNum++
@@ -266,7 +268,7 @@ func CalculateNamespaceAllocatedRes(name string, pods []types2.APIObject) (cpu, 
 }
 
 // GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
-func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
+func GetNodesAllocatedRes(ctx context.Context, server _interface.SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nodesAllocatedRes := make(map[string]AllocatedRes)
@@ -373,8 +375,9 @@ func CalculateNodeAllocatedRes(nodeName string, pods []types2.APIObject) (cpu, m
 	memQty := resource.NewQuantity(0, resource.BinarySI)
 	for _, obj := range pods {
 		pod := obj.Data()
-		if pod.String("spec", "nodeName") != nodeName || pod.String("status", "phase") == "Failed" ||
-			pod.String("status", "phase") == "Succeeded" {
+		status := pod.String("status", "phase")
+		if pod.String("spec", "nodeName") != nodeName || status == "Pending" ||
+			status == "Failed" || status == "Succeeded" {
 			continue
 		}
 		podNum++

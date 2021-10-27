@@ -28,16 +28,17 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (pt *PodInfoTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -179,24 +180,25 @@ func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			} else {
 				batchOperations = append(batchOperations, "cordon")
 			}
-			if !strings.Contains(role, "lb") {
-				batchOperations = append(batchOperations, "drain")
-				if !table.IsNodeOffline(c) {
-					batchOperations = append(batchOperations, "offline")
-				} else {
-					batchOperations = append(batchOperations, "online")
-				}
+		}
+		if role == "worker" && !table.IsNodeLabelInBlacklist(c) {
+			batchOperations = append(batchOperations, "drain")
+			if !table.IsNodeOffline(c) {
+				batchOperations = append(batchOperations, "offline")
+			} else {
+				batchOperations = append(batchOperations, "online")
 			}
 		}
 
 		items = append(items, table.RowItem{
 			ID:      c.String("metadata", "name"),
 			IP:      ip,
+			NodeID:  c.String("metadata", "name"),
 			Version: c.String("status", "nodeInfo", "kubeletVersion"),
 			Role:    role,
 			Node: table.Node{
 				RenderType: "multiple",
-				Renders:    pt.GetRenders(c.String("metadata", "name"), ip, c.Map("metadata", "labels")),
+				Renders:    pt.GetRenders(c.String("metadata", "name"), c.Map("metadata", "labels")),
 			},
 			Status: *status,
 			Usage: table.Distribution{

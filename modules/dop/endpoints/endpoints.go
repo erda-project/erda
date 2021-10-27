@@ -59,8 +59,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
-	"github.com/erda-project/erda/modules/dop/services/testplan"
+	mttestplan "github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/modules/dop/services/workbench"
@@ -430,6 +431,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/scenesets/{setID}", Method: http.MethodDelete, Handler: e.DeleteSceneSet},
 		{Path: "/api/autotests/scenesets/actions/drag", Method: http.MethodPut, Handler: e.DragSceneSet},
 		{Path: "/api/autotests/scenesets/actions/copy", Method: http.MethodPost, Handler: e.CopySceneSet},
+		{Path: "/api/autotests/scenesets/actions/export", Method: http.MethodPost, Handler: e.ExportAutotestSceneSet},
+		{Path: "/api/autotests/scenesets/actions/import", Method: http.MethodPost, Handler: e.ImportAutotestSceneSet},
 
 		// migrate
 		{Path: "/api/autotests/actions/migrate-from-autotestv1", Method: http.MethodGet, Handler: e.MigrateFromAutoTestV1},
@@ -588,6 +591,12 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/code-coverage/actions/report-callBack", Method: http.MethodPost, Handler: e.ReportCallBack},
 		{Path: "/api/code-coverage/records/actions/list", Method: http.MethodGet, Handler: e.ListCodeCoverageRecord},
 		{Path: "/api/code-coverage/record/{id}", Method: http.MethodGet, Handler: e.GetCodeCoverageRecord},
+		{Path: "/api/code-coverage/actions/status", Method: http.MethodGet, Handler: e.GetCodeCoverageRecordStatus},
+
+		// test report
+		{Path: "/api/projects/{projectID}/test-reports", Method: http.MethodPost, Handler: e.CreateTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports/actions/list", Method: http.MethodGet, Handler: e.ListTestReportRecord},
+		{Path: "/api/projects/{projectID}/test-reports/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
 
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
@@ -636,7 +645,7 @@ type Endpoints struct {
 	db              *dao.DBClient
 	testcase        *testcase.Service
 	testset         *testset.Service
-	testPlan        *testplan.TestPlan
+	mttestPlan      *mttestplan.TestPlan
 	autotest        *autotest.Service
 	autotestV2      *atv2.Service
 	sonarMetricRule *sonar_metric_rule.Service
@@ -667,6 +676,7 @@ type Endpoints struct {
 	libReference    *libreference.LibReference
 	org             *org.Org
 	codeCoverageSvc *code_coverage.CodeCoverage
+	testReportSvc   *test_report.TestReport
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -818,9 +828,9 @@ func WithSonarMetricRule(sonarMetricRule *sonar_metric_rule.Service) Option {
 }
 
 // WithTestplan 设置 testplan endpoint
-func WithTestplan(testPlan *testplan.TestPlan) Option {
+func WithTestplan(testPlan *mttestplan.TestPlan) Option {
 	return func(e *Endpoints) {
-		e.testPlan = testPlan
+		e.mttestPlan = testPlan
 	}
 }
 
@@ -1010,6 +1020,12 @@ func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
 	}
 }
 
+func WithTestReportRecord(svc *test_report.TestReport) Option {
+	return func(e *Endpoints) {
+		e.testReportSvc = svc
+	}
+}
+
 var queryStringDecoder *schema.Decoder
 
 func init() {
@@ -1039,4 +1055,20 @@ func (e *Endpoints) IssueService() *issue.Issue {
 
 func (e *Endpoints) CodeCoverageService() *code_coverage.CodeCoverage {
 	return e.codeCoverageSvc
+}
+
+func (e *Endpoints) IterationService() *iteration.Iteration {
+	return e.iteration
+}
+
+func (e *Endpoints) ManualTestCaseService() *testcase.Service {
+	return e.testcase
+}
+
+func (e *Endpoints) ManualTestPlanService() *mttestplan.TestPlan {
+	return e.mttestPlan
+}
+
+func (e *Endpoints) AutoTestPlanService() *atv2.Service {
+	return e.autotestV2
 }

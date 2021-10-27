@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -43,10 +43,10 @@ func init() {
 	})
 }
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -115,23 +115,23 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	query, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	jsonData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &jsonData); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(jsonData["pageNo"].(float64))
-	t.State.PageSize = uint64(jsonData["pageSize"].(float64))
-	sorter := jsonData["sorterData"].(map[string]interface{})
-	t.State.Sorter.Field = sorter["field"].(string)
-	t.State.Sorter.Order = sorter["order"].(string)
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorterData := query["sorterData"].(map[string]interface{})
+	t.State.Sorter.Field = sorterData["field"].(string)
+	t.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
@@ -146,8 +146,8 @@ func (t *ComponentEventTable) EncodeURLQuery() error {
 		return err
 	}
 
-	decoded := base64.StdEncoding.EncodeToString(jsonData)
-	t.State.EventTableUQLQuery = decoded
+	decode := base64.StdEncoding.EncodeToString(jsonData)
+	t.State.EventTableUQLQuery = decode
 	return nil
 }
 
@@ -308,7 +308,7 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
-		IsLoadMore:      true,
+		RequestIgnore:   []string{"data"},
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		Columns: []Column{
 			{
@@ -375,10 +375,10 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(c *cptype.Component) {
-	c.Props = t.Props
-	c.Data = map[string]interface{}{"list": t.Data.List}
-	c.State = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(component *cptype.Component) {
+	component.Props = t.Props
+	component.Data = map[string]interface{}{"list": t.Data.List}
+	component.State = map[string]interface{}{
 		"clusterName":          t.State.ClusterName,
 		"filterValues":         t.State.FilterValues,
 		"pageNo":               t.State.PageNo,
@@ -387,7 +387,7 @@ func (t *ComponentEventTable) Transfer(c *cptype.Component) {
 		"total":                t.State.Total,
 		"eventTable__urlQuery": t.State.EventTableUQLQuery,
 	}
-	c.Operations = t.Operations
+	component.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

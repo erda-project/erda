@@ -199,63 +199,6 @@ func Test_checkerV1Service_DeleteCheckerV1(t *testing.T) {
 	}
 }
 
-func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *checkerpb.DescribeCheckerV1Request
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *checkerpb.DescribeCheckerV1Response
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		// 		{
-		// 			"case 1",
-		// 			"erda.msp.apm.checker.CheckerV1Service",
-		// 			`
-		// erda.msp.apm.checker:
-		// `,
-		// 			args{
-		// 				context.TODO(),
-		// 				&checkerpb.DescribeCheckerV1Request{
-		// 					// TODO: setup fields
-		// 				},
-		// 			},
-		// 			&checkerpb.DescribeCheckerV1Response{
-		// 				// TODO: setup fields.
-		// 			},
-		// 			false,
-		// 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(checkerpb.CheckerV1ServiceServer)
-			got, err := srv.DescribeCheckerV1(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("checkerV1Service.DescribeCheckerV1() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("checkerV1Service.DescribeCheckerV1() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
-
 func Test_checkerV1Service_GetCheckerStatusV1(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -398,7 +341,6 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 				}
 				return &db.Project{ID: projectID}, nil
 			})
-			//// ListByProjectIDAndEnv
 			var metricdb *db.MetricDB
 			monkey.PatchInstanceMethod(reflect.TypeOf(metricdb), "ListByProjectIDAndEnv", func(metricdb *db.MetricDB, projectID int64, env string) ([]*db.Metric, error) {
 				var ms []*db.Metric
@@ -441,6 +383,56 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 			_, err := s.DescribeCheckersV1(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DescribeCheckersV1() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *checkerpb.DescribeCheckerV1Request
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: -1, Period: ""}}, true},
+		{"case2", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: 0, Period: ""}}, false},
+		{"case3", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: 1, Period: ""}}, false},
+		{"case4", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: -2, Period: ""}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var metricdb *db.MetricDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(metricdb), "GetByID", func(metricdb *db.MetricDB, id int64) (*db.Metric, error) {
+				if id == -1 {
+					// err
+					return nil, errors.New("no metric")
+				}
+				if id == 0 {
+					// config ""
+					return &db.Metric{ID: id, ProjectID: 1, Mode: "http", Name: "test", URL: "http://xxx.com"}, nil
+				}
+				return &db.Metric{ID: id, ProjectID: 1, Mode: "http", Name: "test", URL: "http://xxx.com",
+					Config: "{\"body\":\"{'test': 'test'}\",\"frequency\":15,\"headers\":\"\",\"method\":\"GET\",\"retry\":3,\"triggering\":[{\"key\":\"http_code\",\"operate\":\"eq\",\"value\":200},{\"key\":\"body\",\"operate\":\"eq\",\"value\":\"xxx\"}],\"url\":\"http://xxx.com\"}",
+				}, nil
+			})
+
+			var cv1s *checkerV1Service
+			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
+				if metricID == -2 {
+					return errors.New("no metric")
+				}
+				return nil
+			})
+
+			s := &checkerV1Service{}
+			_, err := s.DescribeCheckerV1(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DescribeCheckerV1() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

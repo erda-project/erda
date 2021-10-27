@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -54,7 +55,7 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 			return 0, 0, err
 		}
 		for _, pod := range pods.Items {
-			if pod.Status.Phase == "Succeed" || pod.Status.Phase == "Failed" {
+			if pod.Status.Phase == "Pending" || pod.Status.Phase == "Succeeded" || pod.Status.Phase == "Failed" {
 				continue
 			}
 			for _, container := range pod.Spec.Containers {
@@ -67,16 +68,33 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 		}
 	}
 
+	logrus.Infof("Requested resource for workspace %s in project %s, CPU: %d, Mem: %d\n", workspace, projectID, cpuQty.MilliValue(), memQty.Value())
+
 	leftCPU := cpuQuota - cpuQty.MilliValue()
 	leftMem := memQuota - memQty.Value()
 	return leftCPU, leftMem, nil
 }
 
-func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64) (bool, error) {
+func max(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64, kind string) (bool, error) {
+	if projectID == "" || workspace == "" {
+		return true, nil
+	}
+	if requestsCPU <= 0 && requestsMem <= 0 {
+		return true, nil
+	}
 	leftCPU, leftMem, err := k.GetWorkspaceLeftQuota(ctx, projectID, workspace)
 	if err != nil {
 		return false, err
 	}
+	leftCPU = max(leftCPU, 0)
+	leftMem = max(leftMem, 0)
 	reqCPUStr := resourceToString(float64(requestsCPU), "cpu")
 	leftCPUStr := resourceToString(float64(leftCPU), "cpu")
 	reqMemStr := resourceToString(float64(requestsMem), "memory")
@@ -86,38 +104,73 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 		reqCPUStr, leftCPUStr, reqMemStr, leftMemStr)
 
 	if requestsCPU > leftCPU || requestsMem > leftMem {
-		if err = k.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
-			ErrorLog: apistructs.ErrorLog{
-				ResourceType:   apistructs.RuntimeError,
-				ResourceID:     runtimeID,
-				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog: fmt.Sprintf("当前环境资源配额不足。请求CPU：%s核，剩余%s核；请求内存：%s，剩余%s",
-					reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
-				PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace. Requests CPU: %s core(s), left %s core(s). Request memroy: %s, left %s",
-					reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
-			},
-		}); err != nil {
-			logrus.Errorf("failed to create error log when check quota, %v", err)
+		humanLog, primevalLog := "", ""
+		switch kind {
+		case "stateless":
+			humanLog = "部署失败。"
+			primevalLog = " failed to deploy."
+		case "stateful":
+			humanLog = "addon 部署失败。"
+			primevalLog = " failed to deploy addon."
+		case "update":
+			humanLog = "更新失败。"
+			primevalLog = " failed to update."
+		case "scale":
+			humanLog = "扩容失败。"
+			primevalLog = " failed to scale."
+		}
+		if runtimeID != "" {
+			if err = k.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
+				ErrorLog: apistructs.ErrorLog{
+					ResourceType:   apistructs.RuntimeError,
+					ResourceID:     runtimeID,
+					OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
+					HumanLog: fmt.Sprintf("当前环境资源配额不足，%s请求CPU变化：%s核，剩余：%s核；请求内存变化：%s，剩余：%s",
+						humanLog, reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
+					PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace,%s Requests CPU : %s core(s), left %s core(s). Request memroy: %s, left %s",
+						primevalLog, reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create error log when check quota, %v", err)
+			}
 		}
 		return false, nil
 	}
 	return true, nil
 }
 
-func resourceToString(res float64, typ string) string {
-	switch typ {
+func getRequestsResources(containers []corev1.Container) (cpu, mem int64) {
+	cpuQuantity := resource.NewQuantity(0, resource.DecimalSI)
+	memQuantity := resource.NewQuantity(0, resource.BinarySI)
+	for _, c := range containers {
+		if c.Resources.Requests == nil {
+			continue
+		}
+		cpuQuantity.Add(*c.Resources.Requests.Cpu())
+		memQuantity.Add(*c.Resources.Requests.Memory())
+	}
+	return cpuQuantity.MilliValue(), memQuantity.Value()
+}
+
+func resourceToString(resource float64, tp string) string {
+	switch tp {
 	case "cpu":
-		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
+		return strconv.FormatFloat(setPrec(resource/1000, 3), 'f', -1, 64)
 	case "memory":
+		isNegative := 1.0
+		if resource < 0 {
+			resource = -resource
+			isNegative = -1
+		}
 		units := []string{"B", "K", "M", "G", "T"}
 		i := 0
-		for res >= 1<<10 && i < len(units)-1 {
-			res /= 1 << 10
+		for resource >= 1<<10 && i < len(units)-1 {
+			resource /= 1 << 10
 			i++
 		}
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(resource*isNegative, 3), 'f', -1, 64), units[i])
 	default:
-		return fmt.Sprintf("%.f", res)
+		return fmt.Sprintf("%.f", resource)
 	}
 }
 

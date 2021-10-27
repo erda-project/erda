@@ -27,7 +27,7 @@ type PodDistribution struct {
 }
 
 type Props struct {
-	IsLoadMore bool `json:"isLoadMore,omitempty"`
+	RequestIgnore []string `json:"requestIgnore,omitempty"`
 }
 
 type Data struct {

@@ -18,14 +18,14 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type PodInfo struct {
 	base.DefaultProvider
 	SDK    *cptype.SDK `json:"-"`
-	server cmp.SteveServer
+	server cmp_interface.SteveServer
 	ctx    context.Context
 
 	Type  string          `json:"type,omitempty"`
@@ -35,9 +35,9 @@ type PodInfo struct {
 }
 
 type Props struct {
-	IsLoadMore bool    `json:"isLoadMore,omitempty"`
-	ColumnNum  int     `json:"columnNum"`
-	Fields     []Field `json:"fields"`
+	RequestIgnore []string `json:"requestIgnore,omitempty"`
+	ColumnNum     int      `json:"columnNum"`
+	Fields        []Field  `json:"fields"`
 }
 
 type Data struct {

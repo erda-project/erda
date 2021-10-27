@@ -69,7 +69,17 @@ func (e *Endpoints) CreateTestPlanV2(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrCreateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
 
-	// TODO: 检查测试空间是否存在
+	// check iteration
+	_, err = e.iteration.Get(req.IterationID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	// check space
+	_, err = e.autotestV2.GetSpace(req.SpaceID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
 
 	testPlanID, err := e.autotestV2.CreateTestPlanV2(req)
 	if err != nil {
@@ -117,8 +127,17 @@ func (e *Endpoints) UpdateTestPlanV2(ctx context.Context, r *http.Request, vars 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
+	if err = req.Check(); err != nil {
+		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
+	}
 	req.IdentityInfo = identityInfo
 	req.TestPlanID = testPlanID
+
+	// check iteration
+	_, err = e.iteration.Get(req.IterationID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
 
 	if err := e.autotestV2.UpdateTestPlanV2(&req); err != nil {
 		return errorresp.ErrResp(err)

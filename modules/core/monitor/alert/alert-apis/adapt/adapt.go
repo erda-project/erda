@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
+	"github.com/erda-project/erda/modules/core/monitor/event/storage"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 )
@@ -66,6 +67,7 @@ func IsAlreadyExistsError(err error) bool {
 type Adapt struct {
 	l                           logs.Logger
 	metricq                     metricq.Queryer
+	eventStorage                storage.Storage
 	t                           i18n.Translator
 	db                          *db.DB
 	cql                         *cql.Cql
@@ -82,6 +84,7 @@ type Adapt struct {
 func New(
 	l logs.Logger,
 	metricq metricq.Queryer,
+	eventStorage storage.Storage,
 	t i18n.Translator,
 	db *db.DB,
 	cql *cql.Cql,
@@ -96,6 +99,7 @@ func New(
 	return &Adapt{
 		l:                           l,
 		metricq:                     metricq,
+		eventStorage:                eventStorage,
 		t:                           t,
 		db:                          db,
 		bdl:                         bdl,

@@ -42,6 +42,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
+	workspace, ok := c.State["workspace"].(string)
+	if !ok {
+		return fmt.Errorf("workspace was empty")
+	}
+
 	var disable = false
 
 	switch event.Operation.String() {
@@ -49,6 +54,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		data, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			PageSize:  1,
 			PageNo:    1,
+			Workspace: workspace,
 			ProjectID: projectId,
 			Statuses: []apistructs.CodeCoverageExecStatus{
 				apistructs.ReadyStatus,
@@ -80,14 +86,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			c.State = map[string]interface{}{}
 		}
 
-		judgeApplication := c.State["judgeApplication"]
-		if judgeApplication != nil {
-			var value = judgeApplication.(bool)
-			disable = !value
+		disableSourcecov := c.State["disableSourcecov"]
+		if disableSourcecov != nil {
+			disable = disableSourcecov.(bool)
 		}
 
 		if !disable {
-			ok, err := svc.JudgeCanEnd(projectId)
+			ok, err := svc.JudgeCanEnd(projectId, workspace)
 			if err != nil {
 				return err
 			}

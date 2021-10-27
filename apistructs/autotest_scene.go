@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -54,19 +55,19 @@ type AutoTestSceneParams struct {
 }
 
 type AutoTestScene struct {
-	AutoTestSceneParams
-	Name        string                `json:"name"`
-	Description string                `json:"description"` // 描述
-	PreID       uint64                `json:"preID"`       // 排序的前驱ID
-	SetID       uint64                `json:"setID"`       // 场景集ID
-	CreateAt    *time.Time            `json:"createAt"`
-	UpdateAt    *time.Time            `json:"updateAt"`
-	Status      SceneStatus           `json:"status"`    // 最新运行状态
-	StepCount   uint64                `json:"stepCount"` // 步骤数量
-	Inputs      []AutoTestSceneInput  `json:"inputs"`    // 输入参数
-	Output      []AutoTestSceneOutput `json:"output"`    // 输出参数
-	Steps       []AutoTestSceneStep   `json:"steps"`     // 步骤
-	RefSetID    uint64                `json:"refSetID"`  // 引用场景集ID
+	AutoTestSceneParams `mapstructure:",squash"`
+	Name                string                `json:"name"`
+	Description         string                `json:"description"` // 描述
+	PreID               uint64                `json:"preID"`       // 排序的前驱ID
+	SetID               uint64                `json:"setID"`       // 场景集ID
+	CreateAt            *time.Time            `json:"createAt"`
+	UpdateAt            *time.Time            `json:"updateAt"`
+	Status              SceneStatus           `json:"status"`    // 最新运行状态
+	StepCount           uint64                `json:"stepCount"` // 步骤数量
+	Inputs              []AutoTestSceneInput  `json:"inputs"`    // 输入参数
+	Output              []AutoTestSceneOutput `json:"output"`    // 输出参数
+	Steps               []AutoTestSceneStep   `json:"steps"`     // 步骤
+	RefSetID            uint64                `json:"refSetID"`  // 引用场景集ID
 }
 
 type AutoTestSceneInput struct {
@@ -87,19 +88,31 @@ type AutoTestSceneOutput struct {
 }
 
 type AutoTestSceneStep struct {
-	AutoTestSceneParams
-	Type      StepAPIType         `json:"type"`    // 类型
-	Method    StepAPIMethod       `json:"method"`  // method
-	Value     string              `json:"value"`   // 值
-	Name      string              `json:"name"`    // 名称
-	PreID     uint64              `json:"preID"`   // 排序id
-	PreType   PreType             `json:"preType"` // 串行/并行类型
-	SceneID   uint64              `json:"sceneID"` // 场景ID
-	SpaceID   uint64              `json:"spaceID"` // 所属测试空间ID
-	CreatorID string              `json:"creatorID"`
-	UpdaterID string              `json:"updaterID"`
-	Children  []AutoTestSceneStep // 并行子节点
-	APISpecID uint64              `json:"apiSpecID"` // api集市id
+	AutoTestSceneParams `mapstructure:",squash"`
+	Type                StepAPIType         `json:"type"`       // 类型
+	Method              StepAPIMethod       `json:"method"`     // method
+	Value               string              `json:"value"`      // 值
+	Name                string              `json:"name"`       // 名称
+	PreID               uint64              `json:"preID"`      // 排序id
+	PreType             PreType             `json:"preType"`    // 串行/并行类型
+	SceneID             uint64              `json:"sceneID"`    // 场景ID
+	SpaceID             uint64              `json:"spaceID"`    // 所属测试空间ID
+	IsDisabled          bool                `json:"isDisabled"` // disable or enable step execute
+	CreatorID           string              `json:"creatorID"`
+	UpdaterID           string              `json:"updaterID"`
+	Children            []AutoTestSceneStep // 并行子节点
+	APISpecID           uint64              `json:"apiSpecID"` // api集市id
+}
+
+func (a *AutoTestSceneStep) ToJsonCopyText() string {
+	dat := map[string]interface{}{
+		"name":   a.Name,
+		"type":   a.Type,
+		"method": a.Method,
+		"value":  a.Value,
+	}
+	b, _ := json.MarshalIndent(dat, "", "\t")
+	return string(b)
 }
 
 type AutotestSceneRequest struct {
@@ -113,12 +126,13 @@ type AutotestSceneRequest struct {
 	APISpecID   uint64 `json:"apiSpecID,omitempty"`   // api集市id
 	RefSetID    uint64 `json:"refSetID,omitempty"`    // 引用场景集的ID
 
-	Type     StepAPIType `json:"type,omitempty"`
-	Target   int64       `json:"target,omitempty"`   // 目标位置
-	GroupID  int64       `json:"groupID,omitempty"`  // 串行ID
-	PreType  PreType     `json:"preType,omitempty"`  // 并行/并行
-	Position int64       `json:"position,omitempty"` // 插入位置 (-1为前/1为后)
-	IsGroup  bool        `json:"isGroup,omitempty"`  // 是否整组移动
+	Type       StepAPIType `json:"type,omitempty"`
+	Target     int64       `json:"target,omitempty"`     // 目标位置
+	GroupID    int64       `json:"groupID,omitempty"`    // 串行ID
+	PreType    PreType     `json:"preType,omitempty"`    // 并行/并行
+	Position   int64       `json:"position,omitempty"`   // 插入位置 (-1为前/1为后)
+	IsGroup    bool        `json:"isGroup,omitempty"`    // 是否整组移动
+	IsDisabled *bool       `json:"isDisabled,omitempty"` // disable or enable step execute
 
 	PageNo   uint64 `json:"pageNo"`
 	PageSize uint64 `json:"pageSize"`
@@ -233,6 +247,7 @@ const (
 	AutotestSceneStep                = "STEP"
 	AutotestSceneSet                 = "SCENESET"
 	AutotestScene                    = "SCENE"
+	AutoTestPlan                     = "TESTPLAN"
 )
 
 func (v StepAPIType) String() string {

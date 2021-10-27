@@ -26,7 +26,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -70,6 +69,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
@@ -130,6 +130,11 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	))
 	p.Protocol.WithContextValue(types.CodeCoverageService, ep.CodeCoverageService())
 	p.Protocol.WithContextValue(types.IssueService, ep.IssueService())
+	p.Protocol.WithContextValue(types.IterationService, ep.IterationService())
+	p.Protocol.WithContextValue(types.ManualTestCaseService, ep.ManualTestCaseService())
+	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
+	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
+	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -492,6 +497,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		code_coverage.WithEnvConfig(env),
 	)
 
+	testReportSvc := test_report.New(
+		test_report.WithDBClient(db),
+		test_report.WithBundle(bdl.Bdl),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -547,6 +557,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithLibReference(libReference),
 		endpoints.WithOrg(o),
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
+		endpoints.WithTestReportRecord(testReportSvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)
@@ -616,7 +627,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport, apistructs.FileSceneSetActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -630,6 +641,9 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSpaceActionTypeExport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ExportFile(record)
+	case apistructs.FileSceneSetActionTypeExport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ExportSceneSetFile(record)
 	default:
 
 	}
@@ -637,7 +651,7 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 
 func importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport, apistructs.FileSceneSetActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -651,6 +665,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSpaceActionTypeImport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ImportFile(record)
+	case apistructs.FileSceneSetActionTypeImport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ImportSceneSetFile(record)
 	default:
 
 	}

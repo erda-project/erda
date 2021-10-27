@@ -4,6 +4,7 @@ package proto
 
 import (
 	_ "github.com/erda-project/erda-proto-go/admin/pb"
+	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/image/pb"
@@ -43,7 +44,6 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/pb"
-	_ "github.com/erda-project/erda-proto-go/cp/pb"
 	_ "github.com/erda-project/erda-proto-go/examples/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"

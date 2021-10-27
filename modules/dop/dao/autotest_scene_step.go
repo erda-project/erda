@@ -25,16 +25,17 @@ import (
 
 type AutoTestSceneStep struct {
 	dbengine.BaseModel
-	Type      apistructs.StepAPIType `gorm:"type"`               // 类型
-	Value     string                 `gorm:"value"`              // 值
-	Name      string                 `gorm:"name"`               // 名称
-	PreID     uint64                 `gorm:"pre_id"`             // 排序id
-	PreType   apistructs.PreType     `gorm:"pre_type"`           // 串行/并行类型
-	SceneID   uint64                 `gorm:"scene_id"`           // 场景ID
-	SpaceID   uint64                 `gorm:"space_id"`           // 所属测试空间ID
-	APISpecID uint64                 `gorm:"column:api_spec_id"` // api集市id
-	CreatorID string                 `gorm:"creator_id"`
-	UpdaterID string                 `gorm:"updater_id"`
+	Type       apistructs.StepAPIType `gorm:"type"`               // 类型
+	Value      string                 `gorm:"value"`              // 值
+	Name       string                 `gorm:"name"`               // 名称
+	PreID      uint64                 `gorm:"pre_id"`             // 排序id
+	PreType    apistructs.PreType     `gorm:"pre_type"`           // 串行/并行类型
+	SceneID    uint64                 `gorm:"scene_id"`           // 场景ID
+	SpaceID    uint64                 `gorm:"space_id"`           // 所属测试空间ID
+	APISpecID  uint64                 `gorm:"column:api_spec_id"` // api集市id
+	IsDisabled bool                   `gorm:"is_disabled"`        // disable or enable step execute
+	CreatorID  string                 `gorm:"creator_id"`
+	UpdaterID  string                 `gorm:"updater_id"`
 }
 
 func (AutoTestSceneStep) TableName() string {
@@ -54,14 +55,15 @@ func (v *AutoTestSceneStep) Convert() *apistructs.AutoTestSceneStep {
 			CreatorID: v.CreatorID,
 			UpdaterID: v.UpdaterID,
 		},
-		Type:      v.Type,
-		Name:      v.Name,
-		Value:     v.Value,
-		PreID:     v.PreID,
-		PreType:   v.PreType,
-		SceneID:   v.SceneID,
-		SpaceID:   v.SpaceID,
-		APISpecID: v.APISpecID,
+		Type:       v.Type,
+		Name:       v.Name,
+		Value:      v.Value,
+		PreID:      v.PreID,
+		PreType:    v.PreType,
+		SceneID:    v.SceneID,
+		SpaceID:    v.SpaceID,
+		IsDisabled: v.IsDisabled,
+		APISpecID:  v.APISpecID,
 	}
 }
 

@@ -15,9 +15,15 @@
 package types
 
 const (
-	GlobalCtxKeyBundle   = "__bundle__"
-	IssueStateService    = "issueState"
-	IssueFilterBmService = "issueFilterBookmark"
-	CodeCoverageService  = "codeCoverage"
-	IssueService         = "issue"
+	GlobalCtxKeyBundle = "__bundle__"
+
+	IssueStateService     = "issueState"
+	IssueFilterBmService  = "issueFilterBookmark"
+	CodeCoverageService   = "codeCoverage"
+	IssueService          = "issue"
+	IterationService      = "iteration"
+	ManualTestCaseService = "manual_test_case"
+	ManualTestPlanService = "manual_test_plan"
+	AutoTestPlanService   = "auto_test_plan"
+	DBClient              = "db_client"
 )

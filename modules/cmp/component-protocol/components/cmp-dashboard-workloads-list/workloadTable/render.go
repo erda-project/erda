@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -43,10 +43,10 @@ func init() {
 	})
 }
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (w *ComponentWorkloadTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -84,32 +84,32 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	urlQuery, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 	query := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &query); err != nil {
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
 	w.State.PageNo = uint64(query["pageNo"].(float64))
 	w.State.PageSize = uint64(query["pageSize"].(float64))
 	sorter := query["sorterData"].(map[string]interface{})
-	w.State.Sorter.Field = sorter["field"].(string)
-	w.State.Sorter.Order = sorter["order"].(string)
+	w.State.Sorter.Field, _ = sorter["field"].(string)
+	w.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = w.State.PageNo
-	urlQuery["pageSize"] = w.State.PageSize
-	urlQuery["sorterData"] = w.State.Sorter
-	data, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = w.State.PageNo
+	query["pageSize"] = w.State.PageSize
+	query["sorterData"] = w.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
@@ -211,16 +211,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -291,16 +281,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -373,16 +353,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -453,16 +423,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -528,16 +488,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Value:      name,
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
-							Command: Command{
-								Key:    "goto",
-								Target: "cmpClustersWorkloadDetail",
-								State: CommandState{
-									Params: map[string]string{
-										"workloadId": id,
-									},
-								},
-								JumpOut: true,
-							},
 							Reload: false,
 						},
 					},
@@ -731,9 +681,9 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 
 func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	w.Props.SortDirections = []string{"descend", "ascend"}
-	w.Props.RowKey = "id"
+	w.Props.RowKey = "workloadId"
 	w.Props.PageSizeOptions = []string{"10", "20", "50", "100"}
-	w.Props.IsLoadMore = true
+	w.Props.RequestIgnore = []string{"data"}
 
 	statusColumn := Column{
 		DataIndex: "status",

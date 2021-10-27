@@ -76,6 +76,8 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return err
 	}
 
+	workerNs := getWorkerNamespace()
+
 	// TODO: support tag switch, current force true
 	// e.g. modules/scheduler/impl/cluster/hook.go line:136
 	req.ScheduleConfig.EnableTag = true
@@ -92,10 +94,6 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		ManageConfig:    mc,
 	}, http.Header{httputil.InternalHeader: []string{"cmp"}}); err != nil {
 		return err
-	}
-
-	if mc.Type == apistructs.ManageProxy {
-		return nil
 	}
 
 	if req.ClusterName == conf.ErdaClusterName() {
@@ -134,6 +132,17 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 				return err
 			}
 		}
+
+		_, err = c.ResetAccessKeyWithClientSet(req.ClusterName, inClusterCs)
+		if err != nil {
+			logrus.Errorf("reset accesskey error: %v", err)
+			return err
+		}
+
+		return nil
+	}
+
+	if mc.Type == apistructs.ManageProxy {
 		return nil
 	}
 
@@ -158,15 +167,13 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return nil
 	}
 
-	workNs := getWorkerNamespace()
-
 	// check resource before execute cluster init job
-	if err = c.importPreCheck(kc, workNs); err != nil {
+	if err = c.importPreCheck(kc, workerNs); err != nil {
 		return err
 	}
 
 	// check init job, if already exist, return
-	if _, err = kc.ClientSet.BatchV1().Jobs(workNs).Get(context.Background(),
+	if _, err = kc.ClientSet.BatchV1().Jobs(workerNs).Get(context.Background(),
 		generateInitJobName(req.OrgID, req.ClusterName), metav1.GetOptions{}); err == nil {
 		return nil
 	}
@@ -178,7 +185,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return err
 	}
 
-	if _, err = kc.ClientSet.BatchV1().Jobs(workNs).Create(context.Background(), initJob,
+	if _, err = kc.ClientSet.BatchV1().Jobs(workerNs).Create(context.Background(), initJob,
 		metav1.CreateOptions{}); err != nil {
 		logrus.Errorf("create cluster init job error: %v", err)
 		return err

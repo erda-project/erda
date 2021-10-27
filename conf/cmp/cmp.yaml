@@ -11,12 +11,25 @@ component-protocol.components.cmp-dashboard-workloads-list.workloadTable:
 component-protocol.components.cmp-dashboard-workloads-list.filterContainer:
 component-protocol.components.cmp-dashboard-workloads-list.chartContainer:
 component-protocol.components.cmp-dashboard-workloads-list.workloadTitle:
+component-protocol.components.cmp-dashboard-workloads-list.addWorkloadButton:
+component-protocol.components.cmp-dashboard-workloads-list.addWorkloadContainer:
+component-protocol.components.cmp-dashboard-workloads-list.addWorkloadDrawer:
+component-protocol.components.cmp-dashboard-workloads-list.addWorkloadFileEditor:
+component-protocol.components.cmp-dashboard-workloads-list.addWorkloadFilter:
+component-protocol.components.cmp-dashboard-workloads-list.workloadHead:
+
 component-protocol.components.cmp-dashboard-workload-detail.podsTable:
 component-protocol.components.cmp-dashboard-workload-detail.podsTableTitle:
 component-protocol.components.cmp-dashboard-workload-detail.workloadInfo:
 component-protocol.components.cmp-dashboard-workload-detail.workloadInfoTitle:
 component-protocol.components.cmp-dashboard-workload-detail.workloadStatus:
 component-protocol.components.cmp-dashboard-workload-detail.workloadTitle:
+component-protocol.components.cmp-dashboard-workload-detail.leftContent:
+component-protocol.components.cmp-dashboard-workload-detail.rightContent:
+component-protocol.components.cmp-dashboard-workload-detail.operationButton:
+component-protocol.components.cmp-dashboard-workload-detail.restartButton:
+component-protocol.components.cmp-dashboard-workload-detail.yamlDrawer:
+component-protocol.components.cmp-dashboard-workload-detail.yamlFileEditor:
 
 
 # component-protocol framework
@@ -46,6 +59,11 @@ component-protocol.components.cmp-dashboard-nodeDetail.nodeStatus:
 component-protocol.components.cmp-dashboard-nodeDetail.nodeTitle:
 component-protocol.components.cmp-dashboard-nodeDetail.statusBadge:
 component-protocol.components.cmp-dashboard-nodeDetail.statusTitle:
+component-protocol.components.cmp-dashboard-nodeDetail.leftContent:
+component-protocol.components.cmp-dashboard-nodeDetail.rightContent:
+component-protocol.components.cmp-dashboard-nodeDetail.operationButton:
+component-protocol.components.cmp-dashboard-nodeDetail.yamlDrawer:
+component-protocol.components.cmp-dashboard-nodeDetail.yamlFileEditor:
 
 component-protocol.components.cmp-dashboard-pods.page:
 component-protocol.components.cmp-dashboard-pods.filterContainer:
@@ -56,6 +74,11 @@ component-protocol.components.cmp-dashboard-pods.podTitle:
 component-protocol.components.cmp-dashboard-pods.podDistribution:
 component-protocol.components.cmp-dashboard-pods.tableTabs:
 component-protocol.components.cmp-dashboard-pods.podsTable:
+component-protocol.components.cmp-dashboard-pods.addPodContainer:
+component-protocol.components.cmp-dashboard-pods.addPodButton:
+component-protocol.components.cmp-dashboard-pods.addPodDrawer:
+component-protocol.components.cmp-dashboard-pods.addPodFileEditor:
+component-protocol.components.cmp-dashboard-pods.addPodFilter:
 
 component-protocol.components.cmp-dashboard-podDetail.page:
 component-protocol.components.cmp-dashboard-podDetail.header:
@@ -67,6 +90,11 @@ component-protocol.components.cmp-dashboard-podDetail.eventTitle:
 component-protocol.components.cmp-dashboard-podDetail.eventTable:
 component-protocol.components.cmp-dashboard-podDetail.podTitle:
 component-protocol.components.cmp-dashboard-podDetail.podStatus:
+component-protocol.components.cmp-dashboard-podDetail.leftContent:
+component-protocol.components.cmp-dashboard-podDetail.rightContent:
+component-protocol.components.cmp-dashboard-podDetail.operationButton:
+component-protocol.components.cmp-dashboard-podDetail.yamlDrawer:
+component-protocol.components.cmp-dashboard-podDetail.yamlFileEditor:
 
 
 i18n:
@@ -77,6 +105,7 @@ service-register:
 
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+  block: false
 erda.core.monitor.metric-client:
 
 # core service credential

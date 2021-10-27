@@ -56,7 +56,7 @@ type meta struct {
 }
 
 const (
-	DefaultPageSize = 15
+	DefaultPageSize = 1000
 	DefaultPageNo   = 1
 )
 
@@ -312,10 +312,12 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				if task.Type != apistructs.ActionTypeSnippet {
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
-							Key:    "checkDetail",
-							Text:   "查看结果",
-							Reload: false,
-							Meta:   task.Result,
+							Key:         "checkDetail",
+							Text:        "查看结果",
+							Reload:      false,
+							Meta:        task.Result,
+							DisabledTip: "禁用接口无法查看结果",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 						"checkLog": dataOperation{
 							Key:    "checkLog",
@@ -326,6 +328,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								"pipelineId": a.State.PipelineID,
 								"nodeId":     task.ID,
 							},
+							DisabledTip: "禁用接口无法查看日志",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 					}
 					taskNum = "-"
@@ -386,10 +390,12 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait || res.Type == apistructs.StepTypeCustomScript {
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
-							Key:    "checkDetail",
-							Text:   "查看结果",
-							Reload: false,
-							Meta:   task.Result,
+							Key:         "checkDetail",
+							Text:        "查看结果",
+							Reload:      false,
+							Meta:        task.Result,
+							DisabledTip: "禁用接口无法查看结果",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 						"checkLog": dataOperation{
 							Key:    "checkLog",
@@ -400,6 +406,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 								"pipelineId": a.State.PipelineID,
 								"nodeId":     task.ID,
 							},
+							DisabledTip: "禁用接口无法查看日志",
+							Disabled:    task.Status.IsDisabledStatus(),
 						},
 					}
 				}
@@ -480,10 +488,8 @@ func (a *ExecuteTaskTable) marshal(c *apistructs.Component) error {
 
 func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
 
-	if e.State.PageNo == 0 {
-		e.State.PageNo = DefaultPageNo
-		e.State.PageSize = DefaultPageSize
-	}
+	e.State.PageNo = DefaultPageNo
+	e.State.PageSize = DefaultPageSize
 
 	if e.State.PipelineID == 0 {
 		c.Data = map[string]interface{}{}

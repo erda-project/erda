@@ -70,6 +70,9 @@ openapi-v1-routes:
           - issue-manage
           - issue-dashboard
           - code-coverage
+          - scenes-import-record
+          - test-dashboard
+          - test-report
           - addon-account-manage
       - addr: http://localhost:8080
         scenarios:
@@ -114,6 +117,5 @@ erda-discover:
     erda.example: "http://localhost:8080"
 
 http-server@admin:
-  _enable: ${OPENAPI_DEV_MODE:false}
   addr: ":9432"
-  reloadable: ${OPENAPI_DEV_MODE:false}
+pprof:

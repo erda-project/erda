@@ -329,6 +329,8 @@ var (
 	ErrGetAutoTestSceneSet    = err("ErrGetAutoTestSceneSet", "获取自动化测试场景集失败")
 	ErrListAutoTestSceneSet   = err("ErrListAutoTestSceneSet", "获取自动化测试场景集列表失败")
 	ErrDragAutoTestSceneSet   = err("ErrDragAutoTestSceneSet", "拖动自动化测试场景集失败")
+	ErrExportAutoTestSceneSet = err("ErrExportAutoTestSceneSet", "导出自动化测试场景集失败")
+	ErrImportAutotestSceneSet = err("ErrImportAutotestSceneSet", "导入自动化测试场景集失败")
 
 	ErrCreateTicket = err("ErrCreateTicket", "创建工单失败")
 	ErrUpdateTicket = err("ErrUpdateTicket", "更新工单失败")
@@ -489,6 +491,11 @@ var (
 	ErrUpdateCodeCoverageExecRecord = err("ErrUpdateCodeCoverageExecRecord", "修改代码覆盖率执行记录失败")
 	ErrGetCodeCoverageExecRecord    = err("ErrUpdateCodeCoverageExecRecord", "获取代码覆盖率执行记录失败")
 	ErrListCodeCoverageExecRecord   = err("ErrUpdateCodeCoverageExecRecord", "列表获取代码覆盖率执行记录失败")
+	ErSaveCodeCoverageSetting       = err("ErSaveCodeCoverageSetting", "保存代码覆盖率配置失败")
+
+	ErrCreateTestReportRecord = err("ErrCreateTestReportRecord", "创建测试报告记录失败")
+	ErrListTestReportRecord   = err("ErrListTestReportRecord", "查询测试报告记录失败")
+	ErrGetTestReportRecord    = err("ErrGetTestReportRecord", "获取测试报告记录失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

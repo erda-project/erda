@@ -5,11 +5,12 @@ hierarchy:
   root: page
   structure:
     page:
-      - title
+      - envFilter
       - tip
       - buttonGroup
       - codeCoverChart
       - treeMapChart
+      - configModal
     buttonGroup:
       left:
         - errText
@@ -18,6 +19,7 @@ hierarchy:
         - endButton
         - cancelButton
         - executeHistory
+        - configButton
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryContent
@@ -27,6 +29,11 @@ hierarchy:
       extraContent: timeSelector
     treeMapChart:
       extraContent: downloadButton
+    configModal:
+      - configContent
+    configContent:
+      - configTip
+      - configForm
 
 components:
   errText:
@@ -35,10 +42,6 @@ components:
     type: Container
     props:
       spaceSize: middle
-  title:
-    type: Title
-    props:
-      title: "项目代码覆盖率统计"
   buttonGroup:
     type: LRContainer
   codeCoverChart:
@@ -77,41 +80,166 @@ components:
     type: Button
   timeSelector:
     type: DatePicker
+  envFilter:
+    type: Radio
+  configButton:
+    type: Button
+  configModal:
+    type: Modal
+  configContent:
+    type: Container
+  configTip:
+    type: Alert
+    name: 'tip'
+    props:
+      message: "说明：可以通过在包括和不包括中输入表达式来确定统计范围；多个表达式可以使用冒号 ( : ) 分隔, 且支持 * 通配符。\n 例子：org/apache* 将匹配所有以 org/apache 开头的源码目录, */model 将匹配所有以 model 结尾的目录, foo/*:bar/* 匹配所有以 foo 或者 bar 开头的目录"
+      showIcon: false
+      type: 'warning'
+  configForm:
+    type: Form
 
 rendering:
+  configButton:
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
+  configForm:
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configForm.showSettingModal }}"
+    - name: configButton
+      state:
+        - name: "showSettingModal"
+          value: "{{ configForm.showSettingModal }}"
+
+  envFilter:
+    - name: errText
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: startButton
+      state:
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: endButton
+      state:
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: cancelButton
+      state:
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: timeSelector
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: codeCoverChart
+      state:
+        - name: "value"
+          value: "{{ timeSelector.value }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: treeMapChart
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: downloadButton
+      state:
+        - name: "recordID"
+          value: "{{ codeCoverChart.recordID }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: executeHistoryTable
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: configForm
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: endButton
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: configButton
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
+
   cancelButton:
     - name: errText
     - name: endButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
     - name: startButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
     - name: executeHistoryTable
+    - name: configButton
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
   startButton:
     - name: errText
     - name: endButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
     - name: executeHistoryTable
+    - name: configButton
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
   endButton:
     - name: errText
     - name: startButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
     - name: executeHistoryTable
+    - name: configButton
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"
   timeSelector:
     - name: codeCoverChart
       state:
@@ -136,36 +264,72 @@ rendering:
           value: "{{ codeCoverChart.recordID }}"
 
   __DefaultRendering__:
+    - name: envFilter
     - name: errText
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: startButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: endButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: cancelButton
       state:
-        - name: "judgeApplication"
-          value: "{{ errText.judgeApplication }}"
-        - name: "judgeApplicationMessage"
-          value: "{{ errText.judgeApplicationMessage }}"
+        - name: "disableSourcecov"
+          value: "{{ errText.disableSourcecov }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: timeSelector
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: codeCoverChart
       state:
         - name: "value"
           value: "{{ timeSelector.value }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: treeMapChart
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: downloadButton
       state:
         - name: "recordID"
           value: "{{ codeCoverChart.recordID }}"
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
     - name: executeHistoryTable
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: configForm
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: endButton
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: configButton
+      state:
+        - name: "workspace"
+          value: "{{ envFilter.value }}"
+    - name: configModal
+      state:
+        - name: "visible"
+          value: "{{ configButton.showSettingModal }}"
+    - name: configForm
+      state:
+        - name: "showSettingModal"
+          value: "{{ configButton.showSettingModal }}"

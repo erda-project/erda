@@ -16,24 +16,21 @@ package code_coverage
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-
-	"io/ioutil"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/environment"
-	"github.com/erda-project/erda/pkg/loop"
 )
+
+const SourcecovAddonName = "sourcecov"
 
 type CodeCoverage struct {
 	db *dao.DBClient
@@ -89,7 +86,7 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		}
 	}
 
-	if err := svc.JudgeRunningRecordExist(req.ProjectID); err != nil {
+	if err := svc.JudgeRunningRecordExist(req.ProjectID, req.Workspace); err != nil {
 		return err
 	}
 
@@ -99,31 +96,12 @@ func (svc *CodeCoverage) Start(req apistructs.CodeCoverageStartRequest) error {
 		ReportStatus:  apistructs.RunningStatus,
 		TimeBegin:     time.Now(),
 		StartExecutor: req.UserID,
+		Workspace:     req.Workspace,
 		TimeEnd:       time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local),
 		ReportTime:    time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local),
 	}
 	tx := svc.db.Begin()
 	if err := tx.Debug().Create(&record).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	jacocoAddress := GetJacocoAddr(record.ProjectID)
-	if len(jacocoAddress) <= 0 {
-		tx.Rollback()
-		return fmt.Errorf("not find jaccoco application address")
-	}
-
-	// call jacoco start
-	if err := loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
-		if err := svc.bdl.JacocoStart(jacocoAddress, &apistructs.JacocoRequest{
-			ProjectID: record.ProjectID,
-			PlanID:    record.ID,
-		}); err != nil {
-			return false, err
-		}
-		return true, nil
-	}); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -164,25 +142,6 @@ func (svc *CodeCoverage) End(req apistructs.CodeCoverageUpdateRequest) error {
 	if err := svc.db.UpdateCodeCoverage(record); err != nil {
 		return err
 	}
-	// call jacoco end
-	jacocoAddress := GetJacocoAddr(record.ProjectID)
-	if len(jacocoAddress) <= 0 {
-		return fmt.Errorf("not find jaccoco application address")
-	}
-
-	go func() {
-		if err = loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
-			if err = svc.bdl.JacocoEnd(jacocoAddress, &apistructs.JacocoRequest{
-				ProjectID: record.ProjectID,
-				PlanID:    record.ID,
-			}); err != nil {
-				return false, err
-			}
-			return true, nil
-		}); err != nil {
-			logrus.Error(fmt.Sprintf("failed to call JacocoEnd, err: %s", err.Error()))
-		}
-	}()
 
 	return nil
 }
@@ -211,7 +170,7 @@ func (svc *CodeCoverage) Cancel(req apistructs.CodeCoverageCancelRequest) error 
 		TimeEnd:      time.Now(),
 	}
 
-	return svc.db.CancelCodeCoverage(req.ProjectID, &record)
+	return svc.db.CancelCodeCoverage(req.ProjectID, req.Workspace, &record)
 }
 
 // ReadyCallBack Record ready callBack
@@ -375,8 +334,8 @@ func (svc *CodeCoverage) GetCodeCoverageRecord(id uint64) (*apistructs.CodeCover
 }
 
 // JudgeRunningRecordExist Judge running record exist
-func (svc *CodeCoverage) JudgeRunningRecordExist(projectID uint64) error {
-	records, err := svc.db.ListCodeCoverageByStatus(projectID, apistructs.WorkingStatus)
+func (svc *CodeCoverage) JudgeRunningRecordExist(projectID uint64, workspace string) error {
+	records, err := svc.db.ListCodeCoverageByStatus(projectID, apistructs.WorkingStatus, workspace)
 	if err != nil {
 		return err
 	}
@@ -386,8 +345,8 @@ func (svc *CodeCoverage) JudgeRunningRecordExist(projectID uint64) error {
 	return nil
 }
 
-func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
-	records, err := svc.db.ListCodeCoverageByStatus(projectID, []apistructs.CodeCoverageExecStatus{apistructs.ReadyStatus})
+func (svc *CodeCoverage) JudgeCanEnd(projectID uint64, workspace string) (bool, error) {
+	records, err := svc.db.ListCodeCoverageByStatus(projectID, []apistructs.CodeCoverageExecStatus{apistructs.ReadyStatus}, workspace)
 	if err != nil {
 		return false, err
 	}
@@ -398,60 +357,151 @@ func (svc *CodeCoverage) JudgeCanEnd(projectID uint64) (bool, error) {
 	return false, nil
 }
 
-func GetJacocoAddr(projectID uint64) string {
-	return conf.JacocoAddr()[strconv.FormatUint(projectID, 10)]
+func (svc *CodeCoverage) JudgeSourcecovAddon(projectID uint64, orgID uint64, workspace string) (bool, error) {
+	resp, err := svc.bdl.ListAddonByProjectID(int64(projectID), int64(orgID))
+	if err != nil {
+		return false, err
+	}
+
+	var find = false
+	for _, addon := range resp.Data {
+		if addon.AddonName != SourcecovAddonName || addon.Workspace != workspace {
+			continue
+		}
+		if addon.AttachCount <= 0 {
+			continue
+		}
+		find = true
+	}
+
+	if find {
+		return true, nil
+	}
+
+	return false, nil
 }
 
-func (svc *CodeCoverage) JudgeApplication(projectID uint64, orgID uint64, userID string) (bool, error, string) {
-	apps, err := svc.bdl.GetAppsByProject(projectID, orgID, userID)
+func (svc *CodeCoverage) GetCodeCoverageRecordStatus(projectID uint64, workspace string) (*apistructs.CodeCoverageExecRecordDetail, error) {
+	var req = apistructs.CodeCoverageListRequest{
+		PageSize:  1,
+		PageNo:    1,
+		ProjectID: projectID,
+		Workspace: workspace,
+	}
+	records, _, err := svc.db.ListCodeCoverage(req)
 	if err != nil {
-		return false, err, ""
+		return nil, err
 	}
 
-	var findJacocoAgentEnv = false
-	var findJacocoEnv = false
+	if len(records) <= 0 {
+		return nil, fmt.Errorf("not have records")
+	}
 
-	var namespaceParams []apistructs.NamespaceParam
-	for index := range apps.List {
-		for _, envValue := range apistructs.EnvList {
-			namespaceParams = append(namespaceParams, apistructs.NamespaceParam{
-				NamespaceName: fmt.Sprintf("app-%v-%v", apps.List[index].ID, envValue),
-			})
+	setting, err := svc.db.GetCodeCoverageSettingByProjectID(projectID, workspace)
+	if err != nil {
+		return nil, err
+	}
+
+	var detail = apistructs.CodeCoverageExecRecordDetail{
+		ProjectID: projectID,
+		PlanID:    records[0].ID,
+		Status:    records[0].Status.String(),
+	}
+
+	if setting != nil {
+		detail.MavenSetting = setting.MavenSetting
+		detail.Includes = setting.Includes
+		detail.Excludes = setting.Excludes
+	}
+
+	return &detail, nil
+}
+
+func (svc *CodeCoverage) GetCodeCoverageSetting(projectID uint64, workspace string) (*apistructs.CodeCoverageSetting, error) {
+	setting, err := svc.db.GetCodeCoverageSettingByProjectID(projectID, workspace)
+	if err != nil {
+		return nil, err
+	}
+
+	if setting == nil {
+		return &apistructs.CodeCoverageSetting{}, nil
+	}
+
+	return &apistructs.CodeCoverageSetting{
+		ID:           setting.ID,
+		ProjectID:    setting.ProjectID,
+		MavenSetting: setting.MavenSetting,
+		Includes:     setting.Includes,
+		Excludes:     setting.Excludes,
+		Workspace:    setting.Workspace,
+	}, nil
+}
+
+func (svc *CodeCoverage) SaveCodeCoverageSetting(saveSettingRequest apistructs.SaveCodeCoverageSettingRequest) (*apistructs.CodeCoverageSetting, error) {
+	// check permission
+	if !saveSettingRequest.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   saveSettingRequest.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  saveSettingRequest.ProjectID,
+			Resource: "codeCoverage",
+			Action:   apistructs.UpdateAction,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !access.Access {
+			return nil, apierrors.ErSaveCodeCoverageSetting.AccessDenied()
 		}
 	}
 
-	nsConfigs, err := svc.envConfig.ListConfigs(namespaceParams)
+	list, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
+		ProjectID: saveSettingRequest.ProjectID,
+		PageNo:    1,
+		PageSize:  1,
+		Workspace: saveSettingRequest.Workspace,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect whether a plan is executing, error %v", err)
+	}
 
-	for index := range apps.List {
-		if findJacocoAgentEnv && findJacocoEnv {
-			break
+	if len(list.List) > 0 {
+		record := list.List[0]
+		if record.Status == apistructs.RunningStatus.String() || record.Status == apistructs.ReadyStatus.String() {
+			return nil, fmt.Errorf("there are plans was running")
 		}
 
-		app := apps.List[index]
-		for _, searchEnv := range apistructs.EnvList {
-			var findTwoEnv = 0
-			ns := fmt.Sprintf("app-%v-%v", app.ID, searchEnv)
-			for _, envValue := range nsConfigs[ns] {
-				if envValue.Key == "OPEN_JACOCO_AGENT" && envValue.Value == "true" {
-					findJacocoAgentEnv = true
-				}
-				if envValue.Key == "ERDA_URL" || envValue.Key == "ERDA_TOKEN" {
-					findTwoEnv++
-				}
-				if findTwoEnv >= 2 {
-					findJacocoEnv = true
-				}
-			}
+		if record.Status == apistructs.EndingStatus.String() {
+			return nil, fmt.Errorf("there are plans was running")
 		}
 	}
 
-	if !findJacocoEnv {
-		return false, nil, "not find jacoco application in project, please add jacoco application and set ERDA_URL,ERDA_TOKEN env"
+	setting, err := svc.db.GetCodeCoverageSettingByProjectID(saveSettingRequest.ProjectID, saveSettingRequest.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if setting == nil {
+		setting = &dao.CodeCoverageSetting{}
+	}
+	setting.Excludes = saveSettingRequest.Excludes
+	setting.Includes = saveSettingRequest.Includes
+	setting.MavenSetting = saveSettingRequest.MavenSetting
+	if setting.ID <= 0 {
+		setting.ProjectID = saveSettingRequest.ProjectID
+		setting.Workspace = saveSettingRequest.Workspace
 	}
 
-	if !findJacocoAgentEnv {
-		return false, nil, "not find application with jacocoAgent, please set OPEN_JACOCO_AGENT=true env and restart"
+	saveSetting, err := svc.db.SaveCodeCoverageSettingByProjectID(setting)
+	if err != nil {
+		return nil, err
 	}
 
-	return true, nil, ""
+	return &apistructs.CodeCoverageSetting{
+		ID:           saveSetting.ID,
+		ProjectID:    saveSetting.ProjectID,
+		MavenSetting: saveSetting.MavenSetting,
+		Includes:     saveSetting.Includes,
+		Excludes:     saveSetting.Excludes,
+		Workspace:    saveSetting.Workspace,
+	}, nil
 }

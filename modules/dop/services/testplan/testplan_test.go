@@ -178,3 +178,21 @@ func TestPagingWithIteration(t *testing.T) {
 		t.Error("fail")
 	}
 }
+
+func TestUpdate(t *testing.T) {
+	db := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetTestPlan", func(*dao.DBClient, uint64) (*dao.TestPlan, error) {
+		return &dao.TestPlan{}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdateTestPlan", func(*dao.DBClient, *dao.TestPlan) error {
+		return nil
+	})
+	tp := TestPlan{
+		db: db,
+	}
+	if err := tp.Update(apistructs.TestPlanUpdateRequest{}); err != nil {
+		t.Error(err)
+	}
+}

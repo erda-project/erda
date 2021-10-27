@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
@@ -43,7 +44,7 @@ type Table struct {
 	base.DefaultProvider
 	SDK        *cptype.SDK
 	Ctx        context.Context
-	Server     cmp.SteveServer
+	Server     cmp_interface.SteveServer
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
@@ -92,6 +93,7 @@ type RowItem struct {
 	IP      string      `json:"IP,omitempty"`
 	Status  SteveStatus `json:"Status,omitempty"`
 	Node    Node        `json:"Node,omitempty"`
+	NodeID  string      `json:"nodeId,omitempty"`
 	Role    string      `json:"Role,omitempty"`
 	Version string      `json:"Version,omitempty"`
 	//
@@ -117,7 +119,7 @@ type Operation struct {
 	Meta          interface{} `json:"meta,omitempty"`
 	ClickableKeys interface{} `json:"clickableKeys,omitempty"`
 	Text          string      `json:"text,omitempty"`
-	Command       Command     `json:"command"`
+	Command       *Command    `json:"command,omitempty"`
 }
 type BatchOperation struct {
 	Key       string   `json:"key,omitempty"`
@@ -553,7 +555,7 @@ func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
 		"add": {
 			Key:    "addLabel",
 			Reload: false,
-			Command: Command{
+			Command: &Command{
 				Key: "set",
 				Command: CommandState{
 					Visible:  true,
@@ -582,21 +584,12 @@ func (t *Table) GetIp(node data.Object) string {
 	return ""
 }
 
-func (t *Table) GetRenders(id, ip string, labelMap data.Object) []interface{} {
+func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
 	nl := NodeLink{
 		RenderType: "linkText",
 		Value:      id,
 		Operations: map[string]Operation{"click": {
-			Key: "gotoNodeDetail",
-			Command: Command{
-				Key:    "goto",
-				Target: "cmpClustersNodeDetail",
-				Command: CommandState{
-					Params: Params{NodeId: id, NodeIP: ip},
-					Query:  map[string]interface{}{"nodeIP": ip},
-				},
-				JumpOut: true,
-			},
+			Key:    "gotoNodeDetail",
 			Text:   t.SDK.I18n("nodeDetail"),
 			Reload: false,
 		},
@@ -622,7 +615,7 @@ func (t *Table) GetOperate(id string) Operate {
 	return Operate{
 		RenderType: "tableOperation",
 		Operations: map[string]Operation{
-			"gotoPod": {Key: "gotoPod", Command: Command{
+			"gotoPod": {Key: "gotoPod", Command: &Command{
 				Key: "goto",
 				Command: CommandState{
 					Query: map[string]interface{}{
@@ -683,6 +676,31 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 		}
 		return data[i].Status.Value > data[j].Status.Value
 	})
+}
+
+var nodeLabelBlacklist = map[string]string{
+	"dice/platform":         "true",
+	"dice/lb":               "true",
+	"dice/cassandra":        "true",
+	"dice/es":               "true",
+	"dice/kafka":            "true",
+	"dice/nexus":            "true",
+	"dice/gittar":           "true",
+	"dice/stateful-service": "true",
+}
+
+func IsNodeLabelInBlacklist(node data.Object) bool {
+	labels := node.Map("metadata", "labels")
+	for k, v := range labels {
+		value, ok := v.(string)
+		if !ok {
+			continue
+		}
+		if s, ok := nodeLabelBlacklist[k]; ok && s == value {
+			return true
+		}
+	}
+	return false
 }
 
 type State struct {

@@ -39,6 +39,10 @@ func (e *Endpoints) CreateIteration(ctx context.Context, r *http.Request, vars m
 	if err := json.NewDecoder(r.Body).Decode(&createReq); err != nil {
 		return apierrors.ErrCreateIteration.InvalidParameter(err).ToResp(), nil
 	}
+	if err := createReq.Check(); err != nil {
+		return apierrors.ErrCreateIteration.InvalidParameter(err).ToResp(), nil
+	}
+
 	// 鉴权
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {

@@ -21,20 +21,24 @@ import (
 
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-record"
-	_ "github.com/erda-project/erda/modules/core/monitor/log/storage"
-	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage"
+	_ "github.com/erda-project/erda/modules/core/monitor/event/persist"
+	_ "github.com/erda-project/erda/modules/core/monitor/event/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/core/monitor/log/persist"
+	_ "github.com/erda-project/erda/modules/core/monitor/log/persist/v1"
+	_ "github.com/erda-project/erda/modules/core/monitor/log/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/persist"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
+	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/creator"
+	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/initializer"
+	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/rollover"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
 	_ "github.com/erda-project/erda/modules/msp/apm/browser"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage"
 
 	// providers
-	_ "github.com/erda-project/erda-infra/providers/cassandra"
-	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
-	_ "github.com/erda-project/erda-infra/providers/health"
-	_ "github.com/erda-project/erda-infra/providers/kafka"
-	_ "github.com/erda-project/erda-infra/providers/mysql"
-	_ "github.com/erda-project/erda-infra/providers/pprof"
-	_ "github.com/erda-project/erda-infra/providers/prometheus"
+	_ "github.com/erda-project/erda-infra/providers"
 )
 
 func main() {

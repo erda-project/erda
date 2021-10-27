@@ -55,6 +55,7 @@ type Issue struct {
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
 	ReopenCount  int
+	StartTime    *time.Time
 }
 
 type ExpireType string
@@ -749,6 +750,7 @@ type IssueItem struct {
 	FinishTime   *time.Time // 实际结束时间
 	ExpiryStatus ExpireType
 	ReopenCount  int
+	StartTime    *time.Time
 
 	Name   string
 	Belong string
@@ -800,4 +802,53 @@ func (client *DBClient) GetIssueLabelsByProjectID(projectID uint64) ([]IssueLabe
 		return nil, err
 	}
 	return res, nil
+}
+
+func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint64) (map[apistructs.IssueSeverity]uint64, error) {
+	type Line struct {
+		Total    uint64
+		Severity apistructs.IssueSeverity
+	}
+	var results []Line
+
+	sql := client.Model(&Issue{}).Select("COUNT(*) as `total`, `severity`").Where("`type` = ?", apistructs.IssueTypeBug)
+	if projectID > 0 {
+		sql = sql.Where("project_id = ?", projectID)
+	}
+	if len(iterationIDs) > 0 {
+		sql = sql.Where("iteration_id IN (?)", iterationIDs)
+	}
+	sql = sql.Group("`severity`").Scan(&results)
+
+	if err := sql.Error; err != nil {
+		return nil, fmt.Errorf("failed to count bug by severity, err: %v", err)
+	}
+
+	m := make(map[apistructs.IssueSeverity]uint64)
+	for _, line := range results {
+		m[line.Severity] = line.Total
+	}
+
+	return m, nil
+}
+
+func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
+	sql := client.Model(&Issue{}).Where("`type` = ?", apistructs.IssueTypeBug)
+	if projectID > 0 {
+		sql = sql.Where("project_id = ?", projectID)
+	}
+	if len(iterationIDs) > 0 {
+		sql = sql.Where("iteration_id IN (?)", iterationIDs)
+	}
+
+	type Line struct {
+		Sum   uint64
+		Total uint64
+	}
+	var result Line
+	if err := sql.Select("SUM(`reopen_count`) AS sum, COUNT(*) AS total").Scan(&result).Error; err != nil {
+		return 0, 0, fmt.Errorf("failed to sum bug reopen count, err: %v", err)
+	}
+
+	return result.Sum, result.Total, nil
 }

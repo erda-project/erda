@@ -42,6 +42,8 @@ type TestPlanV2 struct {
 	IsArchived    bool              `json:"isArchived"`
 	PassRate      float64           `json:"passRate"`
 	ExecuteTime   *time.Time        `json:"executeTime"`
+	SuccessApiNum int64             `json:"successApiNum"`
+	TotalApiNum   int64             `json:"totalApiNum"`
 }
 
 // TestPlanV2CreateRequest testplan v2 create request
@@ -71,6 +73,9 @@ func (tp *TestPlanV2CreateRequest) Check() error {
 	if len(tp.Owners) == 0 {
 		return errors.New("owners is empty")
 	}
+	if tp.IterationID == 0 {
+		return errors.New("iterationID is empty")
+	}
 
 	return nil
 }
@@ -94,6 +99,25 @@ type TestPlanV2UpdateRequest struct {
 	IdentityInfo
 }
 
+// Check check create request is valid
+func (tp *TestPlanV2UpdateRequest) Check() error {
+	// req params check
+	if tp.Name == "" {
+		return errors.New("name is empty")
+	}
+	if tp.SpaceID == 0 {
+		return errors.New("spaceID is empty")
+	}
+	if len(tp.Owners) == 0 {
+		return errors.New("owners is empty")
+	}
+	if tp.IterationID == 0 {
+		return errors.New("iterationID is empty")
+	}
+
+	return nil
+}
+
 // TestPlanV2UpdateResponse testplan v2 update response
 type TestPlanV2UpdateResponse struct {
 	Header
@@ -102,14 +126,14 @@ type TestPlanV2UpdateResponse struct {
 
 // TestPlanV2PagingRequest testplan v2 query request
 type TestPlanV2PagingRequest struct {
-	Name        string   `schema:"name"`
-	Owners      []string `schema:"owners"`
-	Creator     string   `schema:"creator"`
-	Updater     string   `schema:"updater"`
-	SpaceID     uint64   `schema:"spaceID"`
-	ProjectID   uint64   `schema:"projectID"`
-	IterationID *uint64  `json:"iterationID"`
-	IsArchived  *bool    `schema:"isArchived"`
+	Name         string   `schema:"name"`
+	Owners       []string `schema:"owners"`
+	Creator      string   `schema:"creator"`
+	Updater      string   `schema:"updater"`
+	SpaceID      uint64   `schema:"spaceID"`
+	ProjectID    uint64   `schema:"projectID"`
+	IterationIDs []uint64 `json:"iterationIDs"`
+	IsArchived   *bool    `schema:"isArchived"`
 
 	// +optional default 1
 	PageNo uint64 `schema:"pageNo"`

@@ -71,11 +71,140 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Content.ApiTotalNum = val
+			case "content.costTimeSec":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.CostTimeSec = val
+			case "content.apiSuccessNum":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ApiSuccessNum = val
+			case "content.apiExecNum":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ApiExecNum = val
+			case "content.pipelineYml":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.PipelineYml = vals[0]
+			case "content.stepAPIType":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.StepAPIType = vals[0]
+			case "content.status":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.Status = vals[0]
+			case "content.sceneID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.SceneID = val
+			case "content.sceneSetID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.SceneSetID = val
+			case "content.parentID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ParentID = val
+			case "content.projectID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ProjectID = val
+			case "content.creatorID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.CreatorID = vals[0]
+			case "content.iterationID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.IterationID = val
+			case "content.stepID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.StepID = val
+			case "content.ExecuteRate":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ExecuteRate = val
 			case "content.executeDuration":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
 				m.Content.ExecuteDuration = vals[0]
+			case "content.timeBegin":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.TimeBegin = vals[0]
+			case "content.timeEnd":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				m.Content.TimeEnd = vals[0]
+			case "content.pipelineID":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.PipelineID = val
 			}
 		}
 	}
@@ -107,8 +236,86 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.ApiTotalNum = val
+			case "costTimeSec":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CostTimeSec = val
+			case "apiSuccessNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApiSuccessNum = val
+			case "apiExecNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApiExecNum = val
+			case "pipelineYml":
+				m.PipelineYml = vals[0]
+			case "stepAPIType":
+				m.StepAPIType = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "sceneID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SceneID = val
+			case "sceneSetID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SceneSetID = val
+			case "parentID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ParentID = val
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "creatorID":
+				m.CreatorID = vals[0]
+			case "iterationID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.IterationID = val
+			case "stepID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.StepID = val
+			case "ExecuteRate":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.ExecuteRate = val
 			case "executeDuration":
 				m.ExecuteDuration = vals[0]
+			case "timeBegin":
+				m.TimeBegin = vals[0]
+			case "timeEnd":
+				m.TimeEnd = vals[0]
+			case "pipelineID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PipelineID = val
 			}
 		}
 	}

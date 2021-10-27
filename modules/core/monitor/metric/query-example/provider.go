@@ -24,12 +24,12 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	indexloader "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
 type provider struct {
 	Log    logs.Logger
-	Index  indexmanager.Index         `autowired:"erda.core.monitor.metric.index"`
+	Index  indexloader.Interface      `autowired:"erda.core.monitor.metric.index-loader"`
 	Meta   pb.MetricMetaServiceServer `autowired:"erda.core.monitor.metric.MetricMetaService"`
 	Metric pb.MetricServiceServer     `autowired:"erda.core.monitor.metric.MetricService"`
 }
@@ -37,7 +37,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error { return nil }
 
 func (p *provider) Run(ctx context.Context) error {
-	p.Index.WaitIndicesLoad() // example query can be carried out after the index is loaded
+	p.Index.WaitAndGetIndices(ctx) // example query can be carried out after the index is loaded
 	return p.queryExample(ctx)
 }
 

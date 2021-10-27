@@ -1,6 +1,66 @@
+# curl 'https://erda.dev.terminus.io/api/erda/component-protocol/actions/render?scenario=code-coverage'
+POST http://localhost:9527/api/component-protocol/actions/render?scenario=code-coverage
+user-id: 2
+ORG-ID: 1
+Content-Type: application/json
+
+{
+  "scenario": {
+    "scenarioType": "code-coverage",
+    "scenarioKey": "code-coverage"
+  },
+  "inParams": {
+    "projectId": "1"
+  }
+}
+
+###
+
+### jacoco cover list
+GET http://localhost:9527/api/code-coverage/records/actions/list?projectID=1&timeBegin=2021-10-08 10:33:13&timeEnd=2021-11-09 10:33:10&workspace=TEST
+user-id: 2
+Content-Type: application/json
+
+### jacococ cover start
+POST http://localhost:9527/api/code-coverage/actions/start
+user-id: 2
+Content-Type: application/json
+
+{
+  "projectID": 1,
+  "workspace": "TEST"
+}
+
+### jacoco cover end
+
+POST http://localhost:9527/api/code-coverage/actions/end
+user-id: 2
+Content-Type: application/json
+
+{
+  "id": 14
+}
+
+### jacoco cover status
+GET http://localhost:9527/api/code-coverage/actions/status?projectID=1&workspace=DEV
+Accept: application/json
+User-ID: 2
+
+###
+
 GET http://localhost:3033/api/autotests/scenes/2/actions/list-input
 Accept: application/json
 User-ID: 2
+###
+
+PUT http://127.0.0.1:9527/api/autotests/scenes/actions/move-scene
+Content-Type: application/json
+User-ID: 2
+
+{
+  "id": 1626,
+  "target": 1627
+}
 
 ###
 PUT http://localhost:3033/api/autotests/scenes/2/actions/update-input

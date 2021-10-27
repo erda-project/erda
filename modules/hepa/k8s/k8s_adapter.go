@@ -272,11 +272,11 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
 	name = strings.ToLower(name)
-	exist, err := impl.CheckIngressExist(namespace, name)
+	existed, err := impl.CheckIngressExist(namespace, name)
 	if err != nil {
 		return err
 	}
-	if !exist {
+	if !existed {
 		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, name)
 		return nil
 	}
@@ -356,7 +356,7 @@ func (impl *K8SAdapterImpl) setOptionAnnotations(ingress interface{}, options Ro
 func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
 	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
-	exist, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	existed, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
@@ -381,7 +381,7 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 		log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
 		return false, nil
 	}
-	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
+	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(existed)
 	if err != nil {
 		return true, err
 	}

@@ -88,12 +88,17 @@ func (s *Issue) SetRelatedIssueIDs(ids string) error {
 		return nil
 	}
 	idStrs := strings.Split(ids, ",")
+	dp := map[uint64]bool{}
 	relatedIssueIDs := make([]uint64, 0)
 	for _, id := range idStrs {
 		issueID, err := strconv.Atoi(id)
 		if err != nil {
 			return err
 		}
+		if dp[uint64(issueID)] {
+			continue
+		}
+		dp[uint64(issueID)] = true
 		relatedIssueIDs = append(relatedIssueIDs, uint64(issueID))
 	}
 	s.relatedIssueIDs = relatedIssueIDs
@@ -441,6 +446,13 @@ func (is IssueSeverity) GetZhName() string {
 	default:
 		return string(is)
 	}
+}
+
+func (is IssueSeverity) GetI18nKeyAlias() string {
+	if is == IssueSeverityNormal {
+		return "ordinary"
+	}
+	return strings.ToLower(string(is))
 }
 
 var IssueSeveritys = []IssueSeverity{IssueSeverityFatal, IssueSeveritySerious, IssueSeverityNormal, IssueSeveritySlight, IssueSeverityLow}

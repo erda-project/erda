@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -89,6 +90,25 @@ type TestPlanCreateRequest struct {
 	IdentityInfo
 }
 
+func (t TestPlanCreateRequest) Check() error {
+	if t.Name == "" {
+		return fmt.Errorf("the name is empty")
+	}
+	if t.OwnerID == "" {
+		return fmt.Errorf("the ownerID is empty")
+	}
+	if len(t.PartnerIDs) == 0 {
+		return fmt.Errorf("the partnerIDs is empty")
+	}
+	if t.ProjectID == 0 {
+		return fmt.Errorf("the projectID is 0")
+	}
+	if t.IterationID == 0 {
+		return fmt.Errorf("the iterationID is 0")
+	}
+	return nil
+}
+
 // TestPlanCreateResponse 测试计划创建响应
 type TestPlanCreateResponse struct {
 	Header
@@ -112,6 +132,22 @@ type TestPlanUpdateRequest struct {
 	IdentityInfo
 }
 
+func (t TestPlanUpdateRequest) Check() error {
+	if t.Name == "" {
+		return fmt.Errorf("the name is empty")
+	}
+	if t.OwnerID == "" {
+		return fmt.Errorf("the ownerID is empty")
+	}
+	if len(t.PartnerIDs) == 0 {
+		return fmt.Errorf("the partnerIDs is empty")
+	}
+	if t.IterationID == 0 {
+		return fmt.Errorf("the iterationID is 0")
+	}
+	return nil
+}
+
 // TestPlanGetResponse 测试计划详情响应
 type TestPlanGetResponse struct {
 	Header
@@ -120,12 +156,12 @@ type TestPlanGetResponse struct {
 
 // TestPlanPagingRequest 测试计划列表请求
 type TestPlanPagingRequest struct {
-	Name        string       `schema:"name"`
-	Statuses    []TPStatus   `schema:"status"`
-	ProjectID   uint64       `schema:"projectID"`
-	IterationID *uint64      `json:"iterationID"`
-	Type        TestPlanType `schema:"type"`
-	IsArchived  *bool        `schema:"isArchived"`
+	Name         string       `schema:"name"`
+	Statuses     []TPStatus   `schema:"status"`
+	ProjectID    uint64       `schema:"projectID"`
+	IterationIDs []uint64     `schema:"iterationID"`
+	Type         TestPlanType `schema:"type"`
+	IsArchived   *bool        `schema:"isArchived"`
 
 	// member about
 	OwnerIDs   []string `schema:"ownerID"`

@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -47,6 +48,7 @@ type Org struct {
 	uc       *ucauth.UCClient
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
+	trans    i18n.Translator
 
 	clusterResourceClient dashboardPb.ClusterResourceServer
 }
@@ -92,9 +94,16 @@ func WithRedisClient(cli *redis.Client) Option {
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(client dashboardPb.ClusterResourceServer) Option {
+func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
 	return func(o *Org) {
-		o.clusterResourceClient = client
+		o.clusterResourceClient = cli
+	}
+}
+
+// WithI18n sets the translator
+func WithI18n(trans i18n.Translator) Option {
+	return func(o *Org) {
+		o.trans = trans
 	}
 }
 
@@ -574,6 +583,8 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 }
 
 func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+
 	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
 	if err != nil {
 		return nil, err
@@ -591,47 +602,15 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 
 	// 初始化所有集群的总资源 【】
 	var (
-		// 集群里的 allocatable 资源
-		clustersAllocatable = make(map[string]*calcu.Calculator)
-		// 集群里被 request 的资源
-		clustersRequest = make(map[string]*calcu.Calculator)
-		// 集群可分配的资源
-		clusterAvailable = make(map[string]*calcu.Calculator)
+		// 集群 nodes 数量
+		clusterNodes = make(map[string]int)
+		// 集群里资源计算器
+		calculators     = make(map[string]*calcu.Calculator)
+		requestResource = make(map[string]*calcu.Calculator)
 	)
-	for _, cluster := range resources.List {
-		if !cluster.GetSuccess() {
-			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
-				Warnln("the cluster is not valid now")
-			continue
-		}
-
-		var (
-			allocatable, request *calcu.Calculator
-			ok                   bool
-		)
-		// 累计此 host 上的 allocatable 资源
-		allocatable, ok = clustersAllocatable[cluster.GetClusterName()]
-		if !ok {
-			allocatable = calcu.New(cluster.GetClusterName())
-			clustersAllocatable[cluster.GetClusterName()] = allocatable
-		}
-		// 累计此 host 上的 request 资源
-		request, ok = clustersRequest[cluster.GetClusterName()]
-		if !ok {
-			request = calcu.New(cluster.GetClusterName())
-			clustersRequest[cluster.GetClusterName()] = request
-		}
-
-		for _, host := range cluster.Hosts {
-			workspaces := extractWorkspacesFromLabels(host.GetLabels())
-			allocatable.CPU.AddValue(host.GetCpuAllocatable(), workspaces...)
-			allocatable.Mem.AddValue(host.GetMemAllocatable(), workspaces...)
-			request.CPU.AddValue(host.GetCpuRequest(), workspaces...)
-			request.Mem.AddValue(host.GetMemRequest(), workspaces...)
-		}
-	}
-	// 可分配和总 allocatable 是一致的
-	copyClustersResource(clustersAllocatable, clusterAvailable)
+	countClustersNodes(clusterNodes, resources.List)
+	initClusterAllocatable(calculators, resources.List)
+	calculateRequest(requestResource, resources.List)
 
 	// 查出所有项目的 quota 记录
 	var projectsQuota []*model.ProjectQuota
@@ -639,41 +618,45 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 		return nil, errors.Wrap(err, "failed to Find all project quota")
 	}
 	// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
-	for _, workspace := range calcu.Workspaces {
-		workspaceStr := calcu.WorkspaceString(workspace)
-		for _, project := range projectsQuota {
-			if available, ok := clusterAvailable[project.GetClusterName(workspaceStr)]; ok {
-				available.CPU.Quota(workspace, project.GetCPUQuota(workspaceStr))
-				available.CPU.Quota(workspace, project.GetMemQuota(workspaceStr))
-			}
-		}
-	}
+	deductionQuota(calculators, projectsQuota)
 
 	var resourceInfo apistructs.OrgClustersResourcesInfo
 	for _, workspace := range calcu.Workspaces {
 		workspaceStr := calcu.WorkspaceString(workspace)
 
 		for _, clusterName := range getClustersResourcesRequest.ClusterNames {
-			allocatable, ok1 := clustersAllocatable[clusterName]
-			request, ok2 := clustersAllocatable[clusterName]
-			available, ok3 := clusterAvailable[clusterName]
-			if !ok1 || !ok2 || !ok3 {
+			calculator, ok := calculators[clusterName]
+			if !ok {
 				continue
 			}
-			resource := apistructs.ClusterResources{
+			resource := &apistructs.ClusterResources{
 				ClusterName:    clusterName,
 				Workspace:      workspaceStr,
-				CPUAllocatable: calcu.MillcoreToCore(allocatable.CPU.TotalForWorkspace(workspace)),
-				CPUAvailable:   calcu.MillcoreToCore(available.CPU.TotalForWorkspace(workspace)),
+				CPUAllocatable: calcu.MillcoreToCore(calculator.AllocatableCPU(workspace), 3),
+				CPUAvailable:   calcu.MillcoreToCore(calculator.QuotableCPUForWorkspace(workspace), 3),
 				CPUQuotaRate:   0,
-				CPURequest:     calcu.MillcoreToCore(request.CPU.TotalForWorkspace(workspace)),
-				MemAllocatable: calcu.ByteToGibibyte(allocatable.Mem.TotalForWorkspace(workspace)),
-				MemAvailable:   calcu.ByteToGibibyte(available.Mem.TotalForWorkspace(workspace)),
+				CPURequest:     0,
+				MemAllocatable: calcu.ByteToGibibyte(calculator.AllocatableMem(workspace), 3),
+				MemAvailable:   calcu.ByteToGibibyte(calculator.QuotableMemForWorkspace(workspace), 3),
 				MemQuotaRate:   0,
-				MemRequest:     calcu.ByteToGibibyte(request.Mem.TotalForWorkspace(workspace)),
+				MemRequest:     0,
+				Nodes:          clusterNodes[clusterName],
+				Tips:           "",
+				CPUTookUp:      calcu.MillcoreToCore(calculator.AlreadyTookUpCPU(workspace), 3),
+				MemTookUp:      calcu.ByteToGibibyte(calculator.AlreadyTookUpMem(workspace), 3),
 			}
-			resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
-			resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+			if c, ok := requestResource[clusterName]; ok {
+				resource.CPURequest = calcu.MillcoreToCore(c.AllocatableCPU(workspace), 3)
+				resource.MemRequest = calcu.ByteToGibibyte(c.AllocatableMem(workspace), 3)
+			}
+			if resource.CPUAllocatable > 0 {
+				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
+			}
+			if resource.MemAllocatable > 0 {
+				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
+			}
+			o.makeTips(langCodes, resource, calculator, workspace)
+
 			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
 			resourceInfo.TotalCPU += resource.CPUAllocatable
 			resourceInfo.TotalMem += resource.MemAllocatable
@@ -683,6 +666,102 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	}
 
 	return &resourceInfo, nil
+}
+
+func countClustersNodes(result map[string]int, list []*dashboardPb.ClusterResourceDetail) {
+	if result == nil {
+		return
+	}
+	for _, cluster := range list {
+		if !cluster.GetSuccess() {
+			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+		result[cluster.GetClusterName()] = len(cluster.GetHosts())
+	}
+}
+
+func initClusterAllocatable(result map[string]*calcu.Calculator, list []*dashboardPb.ClusterResourceDetail) {
+	if result == nil {
+		return
+	}
+	for _, cluster := range list {
+		if !cluster.GetSuccess() {
+			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+
+		// 累计此 host 上的 allocatable 资源
+		calculator, ok := result[cluster.GetClusterName()]
+		if !ok {
+			calculator = calcu.New(cluster.GetClusterName())
+		}
+		for _, host := range cluster.Hosts {
+			workspaces := extractWorkspacesFromLabels(host.GetLabels())
+			calculator.AddValue(host.GetCpuAllocatable(), host.GetMemAllocatable(), workspaces...)
+		}
+
+		result[cluster.GetClusterName()] = calculator
+	}
+}
+
+// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
+func deductionQuota(clusters map[string]*calcu.Calculator, quotaRecords []*model.ProjectQuota) {
+	for _, workspace := range calcu.Workspaces {
+		workspaceStr := calcu.WorkspaceString(workspace)
+		for _, project := range quotaRecords {
+			if available, ok := clusters[project.GetClusterName(workspaceStr)]; ok {
+				available.DeductionQuota(workspace, project.GetCPUQuota(workspaceStr), project.GetMemQuota(workspaceStr))
+			}
+		}
+	}
+}
+
+func calculateRequest(result map[string]*calcu.Calculator, list []*dashboardPb.ClusterResourceDetail) {
+	if result == nil {
+		return
+	}
+	for _, cluster := range list {
+		if !cluster.GetSuccess() {
+			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+
+		calculator, ok := result[cluster.GetClusterName()]
+		if !ok {
+			calculator = calcu.New(cluster.GetClusterName())
+		}
+		for _, host := range cluster.Hosts {
+			workspaces := extractWorkspacesFromLabels(host.GetLabels())
+			calculator.AddValue(host.GetCpuRequest(), host.GetMemRequest(), workspaces...)
+		}
+
+		result[cluster.GetClusterName()] = calculator
+	}
+}
+
+func (o *Org) makeTips(langCodes i18n.LanguageCodes, resource *apistructs.ClusterResources, calculator *calcu.Calculator,
+	workspace calcu.Workspace) {
+	if resource.CPUAllocatable == 0 && resource.MemAllocatable == 0 {
+		resource.Tips = o.trans.Text(langCodes, "NoResourceForTheWorkspace")
+		if resource.Nodes == 0 {
+			resource.Tips = o.trans.Text(langCodes, "NoNodesInTheCluster")
+		}
+		return
+	}
+
+	workspaceText := o.trans.Text(langCodes, strings.ToUpper(calcu.WorkspaceString(workspace)))
+	switch quotableCPU, quotableMem := calculator.QuotableCPUForWorkspace(workspace), calculator.QuotableMemForWorkspace(workspace); {
+	case quotableCPU == 0 || quotableMem == 0:
+		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"), workspaceText, workspaceText)
+	case quotableCPU == 0:
+		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"), workspaceText, workspaceText)
+	case quotableMem == 0:
+		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"), workspaceText, workspaceText)
+	}
 }
 
 func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
@@ -706,13 +785,6 @@ func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
 		w = append(w, k)
 	}
 	return w
-}
-
-func copyClustersResource(src, dst map[string]*calcu.Calculator) {
-	for k, v := range src {
-		vv := *v
-		dst[k] = &vv
-	}
 }
 
 // ListAllOrgClusterRelation 获取所有企业对应集群关系

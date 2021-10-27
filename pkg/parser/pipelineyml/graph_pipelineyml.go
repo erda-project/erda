@@ -220,6 +220,7 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 				resultAction.Timeout = action.Timeout
 				resultAction.Namespaces = action.Namespaces
 				resultAction.If = action.If
+				resultAction.Disable = action.Disable
 				resultAction.Loop = action.Loop
 				resultAction.Resources = apistructs.Resources{Cpu: action.Resources.CPU, Mem: float64(action.Resources.Mem), Disk: float64(action.Resources.Disk)}
 

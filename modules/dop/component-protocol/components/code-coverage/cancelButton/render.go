@@ -16,6 +16,7 @@ package cancelButton
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -41,12 +42,18 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
+	workspace, ok := c.State["workspace"].(string)
+	if !ok {
+		return fmt.Errorf("workspace was empty")
+	}
+
 	var disable bool
 
 	switch event.Operation.String() {
 	case apistructs.ClickOperation.String():
 		err := svc.Cancel(apistructs.CodeCoverageCancelRequest{
 			ProjectID: projectId,
+			Workspace: workspace,
 			IdentityInfo: apistructs.IdentityInfo{
 				UserID: sdk.Identity.UserID,
 			},
@@ -59,10 +66,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			c.State = map[string]interface{}{}
 		}
 
-		judgeApplication := c.State["judgeApplication"]
-		if judgeApplication != nil {
-			var value = judgeApplication.(bool)
-			disable = !value
+		disableSourcecov := c.State["disableSourcecov"]
+		if disableSourcecov != nil {
+			disable = disableSourcecov.(bool)
 		}
 	}
 

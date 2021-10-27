@@ -37,8 +37,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -52,12 +52,12 @@ func init() {
 }
 
 var (
-	steveServer cmp.SteveServer
+	steveServer cmp_interface.SteveServer
 	mServer     metrics.Interface
 )
 
 func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -147,8 +147,8 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 	p.State.PageNo = int(query["pageNo"].(float64))
 	p.State.PageSize = int(query["pageSize"].(float64))
 	sorter := query["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field = sorter["field"].(string)
-	p.State.Sorter.Order = sorter["order"].(string)
+	p.State.Sorter.Field, _ = sorter["field"].(string)
+	p.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
@@ -306,24 +306,11 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Value:      name,
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
-						Command: Command{
-							Key:    "goto",
-							Target: "cmpClustersPodDetail",
-							State: CommandState{
-								Params: map[string]string{
-									"podId": id,
-								},
-								Query: map[string]string{
-									"namespace": namespace,
-									"podName":   name,
-								},
-							},
-							JumpOut: true,
-						},
 						Reload: false,
 					},
 				},
 			},
+			PodName:        name,
 			Namespace:      namespace,
 			IP:             fields[5],
 			Age:            fields[4],
@@ -354,7 +341,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Value:      p.sdk.I18n("gotoWorkload"),
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
-						Command: Command{
+						Command: &Command{
 							Key:    "goto",
 							Target: "cmpClustersWorkloadDetail",
 							State: CommandState{
@@ -543,7 +530,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.SortDirections = []string{"descend", "ascend"}
-	p.Props.IsLoadMore = true
+	p.Props.RequestIgnore = []string{"data"}
 	p.Props.RowKey = "id"
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
@@ -641,6 +628,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		Title:     cputil.I18n(ctx, "operate"),
 		Width:     120,
 		Sorter:    false,
+		Fixed:     "right",
 	})
 	p.Operations = map[string]interface{}{
 		"changeSort": Operation{

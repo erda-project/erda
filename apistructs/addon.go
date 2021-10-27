@@ -315,6 +315,8 @@ const (
 	AddonCloudOss = "alicloud-oss"
 	// alicloud-gateway
 	AddonCloudGateway = "alicloud-gateway"
+	// sourcecov code coverage agent
+	AddonSourcecov = "sourcecov"
 )
 
 // AddonRes addon信息

@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
@@ -104,7 +105,12 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrUpdateProject.MissingParameter("body").ToResp(), nil
 	}
 	var projectUpdateReq apistructs.ProjectUpdateBody
-	if err := json.NewDecoder(r.Body).Decode(&projectUpdateReq); err != nil {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
+	}
+	logrus.Infof("projectUpdateReq raw body: %s", string(data))
+	if err := json.Unmarshal(data, &projectUpdateReq); err != nil {
 		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
 	}
 	logrus.Infof("request body: %+v", projectUpdateReq)
@@ -155,7 +161,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 更新项目信息至DB
-	if err = e.project.UpdateWithEvent(projectID, userID.String(), &projectUpdateReq); err != nil {
+	if err = e.project.UpdateWithEvent(orgID, projectID, userID.String(), &projectUpdateReq); err != nil {
 		return apierrors.ErrUpdateProject.InternalError(err).ToResp(), nil
 	}
 
@@ -164,6 +170,9 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 
 // GetProject 获取项目详情
 func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
+
 	// 检查projectID合法性
 	projectID, err := strutil.Atoi64(vars["projectID"])
 	if err != nil {
@@ -747,4 +756,43 @@ func (e *Endpoints) GetModelProjectsMap(ctx context.Context, r *http.Request, va
 	}
 
 	return httpserver.OkResp(projectDtos)
+}
+
+func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse usl values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+	values := r.URL.Query()
+	clusterNames := values["clusterName"]
+
+	// get org id
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strutil.Atoi64(orgIDStr)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+
+	response, err := e.project.GetQuotaOnClusters(orgID, clusterNames)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(response)
+}
+
+func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse url values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
+	}
+	value := r.URL.Query()
+	logrus.Debugf("GetNamespacesBelongsTo, params: %v", value)
+
+	data, err := e.project.GetNamespacesBelongsTo(ctx, value)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(data)
 }

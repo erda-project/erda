@@ -24,10 +24,10 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 )
 
 func getTestURLQuery() (State, string) {
@@ -118,7 +118,7 @@ func TestComponentEventTable_GenComponentState(t *testing.T) {
 }
 
 type MockSteveServer struct {
-	cmp.SteveServer
+	cmp_interface.SteveServer
 }
 
 func (m *MockSteveServer) ListSteveResource(context.Context, *apistructs.SteveRequest) ([]types.APIObject, error) {
@@ -265,7 +265,7 @@ func TestComponentEventTable_Transfer(t *testing.T) {
 			EventTableUQLQuery: "testQuery",
 		},
 		Props: Props{
-			IsLoadMore:      true,
+			RequestIgnore:   []string{"data"},
 			PageSizeOptions: []string{"10"},
 			Columns: []Column{
 				{

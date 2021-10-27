@@ -1,6 +1,7 @@
 zh:
   issue-manage: 协同管理
   issue: 事项
+  iteration: 迭代
   open: 待处理
   working: 进行中
   testing: 测试中
@@ -53,6 +54,7 @@ zh:
   choose-severity: 选择严重程度
   fatal: 致命
   serious: 严重
+  ordinary: 一般
   slight: 轻微
   suggest: 建议
   creator: 创建人
@@ -85,9 +87,65 @@ zh:
   board-view: 看板视图
   custom: 自定义
   state: 状态
+  Manual Test Case: 手动测试用例
+  Auto Test Case: 自动化测试用例
+  Test Plan: 测试计划
+  test-case-num-total: 测试用例总数
+  test-case-num-succ: 已通过
+  test-case-num-fail: 未通过
+  test-case-num-block: 阻塞
+  test-case-num-init: 未执行
+  test-case-rate-passed: 通过率
+  test-case-rate-executed: 执行率
+  no-iteration: 未指定迭代
+  test-case-status: 状态
+  block: 阻塞
+  INIT: 未执行
+  BLOCK: 阻塞
+  PASSED: 已通过
+  FAIL: 未通过
+  notpassed: 未通过
+  mt-plan-chart: 手动测试计划分布图
+  at-case-rate-trending-chart: 自动化测试执行率和通过率趋势
+  at-plan-latest-waterfall-chart: 自动化测试计划执行详情瀑布图
+  user-not-exist: 用户不存在
+  import: 导入
+  export: 导出
+  scene-set-export-confirm: 是否确认导出
+  scene-set-export-success-msg: 导出任务已创建, 请在导入导出记录表中查看进度
+  status-success: 成功
+  status-failed: 失败,
+  status-pending: 排队中
+  status-processing: 进行中
+  download-file: 下载文件
+  import-export-record: 导入导出记录
+  import-export-table: 导入导出记录表
+  type: 类型
+  operator: 操作人
+  time: 时间
+  desc: 描述
+  status: 状态
+  result: 结果
+  auto-test-scene-num: 场景数
+  auto-test-api-num: 接口数
+  radar-manual-test-plan: 手动测试计划
+  radar-auto-test-plan: 自动化测试计划
+  radar-issue-bug: 缺陷
+  radar-quality: 质量
+  radar-total-quality-score: 质量总分
+  radar-bug-reopen-rate: 缺陷重开率
+  radar-code-coverage: 代码覆盖率
+  scene-avg-cost: 场景 - 按执行平均耗时分布 Top500
+  scene-failed-rate: 场景 - 按执行失败率分布 Top500
+  scene-passed-rate: 场景 - 按执行通过率分布 Top500
+  api-avg-cost: 接口 - 按执行平均耗时分布 Top500
+  api-failed-rate: 接口 - 按执行失败率分布 Top500
+  week: 近一周
+  month: 近一月
 en:
   issue-manage: issue manage
   issue: issue
+  iteration: Iteration
   open: OPEN
   working: WORKING
   testing: TESTING
@@ -140,6 +198,7 @@ en:
   choose-severity: Choose Severity
   fatal: FATAL
   serious: SERIOUS
+  ordinary: NORMAL
   slight: SLIGHT
   suggest: SUGGEST
   creator: Creator
@@ -172,3 +231,55 @@ en:
   board-view: Board View
   custom: Custom
   state: State
+  import: Import
+  export: Export
+  scene-set-export-confirm: Are you sure to export?
+  scene-set-export-success-msg: The export task has been created, please check the progress in the import and export record table
+  status-success: Success
+  status-failed: Failed,
+  status-pending: Pending
+  status-processing: Processing
+  download-file: Download File
+  import-export-record: Import and export records
+  import-export-table: Import and export records table
+  type: Type
+  operator: Operator
+  time: Time
+  desc: Description
+  status: Status
+  result: Result
+  test-case-num-total: Test Case Total Number
+  test-case-num-succ: Pass
+  test-case-num-fail: Fail
+  test-case-num-block: Block
+  test-case-num-init: Init
+  test-case-rate-passed: Passed Rate
+  test-case-rate-executed: Executed Rate
+  no-iteration: no iteration
+  test-case-status: Status
+  block: Block
+  notpassed: Not Passed
+  mt-plan-chart: Manual Test Plan Chart
+  INIT: Not Executed
+  BLOCK: Block
+  PASSED: Success
+  FAIL: Failed
+  at-case-rate-trending-chart: Auto Test Executed&Pass Rate Trending Chart
+  at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
+  auto-test-scene-num: Scene Number
+  auto-test-api-num: Api Number
+  user-not-exist: user does not exist
+  radar-manual-test-plan: Manual Test Plan
+  radar-auto-test-plan: Auto Test Plan
+  radar-issue-bug: Bug
+  radar-quality: Quality
+  radar-total-quality-score: Total Quality Score
+  radar-bug-reopen-rate: Bug Reopen Rate
+  radar-code-coverage: Code Coverage
+  scene-avg-cost: Scene - Execute Avg Cost Top500
+  scene-failed-rate: Scene - Execute Failed Rate Top500
+  scene-passed-rate: Scene - Execute Pass Rate Top500
+  api-avg-cost: Api - Execute Avg Cost Top500
+  api-failed-rate: Api - Execute Failed Rate Top500
+  week: Nearly a week
+  month: Nearly a month

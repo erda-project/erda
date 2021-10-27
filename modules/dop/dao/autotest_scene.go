@@ -219,72 +219,161 @@ func (db *DBClient) DeleteAutoTestScene(id uint64) (err error) {
 
 // like linklist change to node index
 func (db *DBClient) MoveAutoTestScene(id, newPreID, newSetID uint64, tx *gorm.DB) (err error) {
-	return func() error {
-		var scene, next, oldNext AutoTestScene
-		// get scene
-		if err := tx.Where("id = ?", id).Find(&scene).Error; err != nil {
-			return err
-		}
-		// get next scene
-		if err := tx.Where("pre_id = ?", id).Find(&oldNext).Error; err != nil {
-			// not have next scene jump over update next scene
-			if gorm.IsRecordNotFoundError(err) {
-				goto LABEL1
-			}
-			return err
-		}
-		// next scene link this scene pre scene
-		oldNext.PreID = scene.PreID
-		if err := tx.Save(&oldNext).Error; err != nil {
+	// a < b < c < d < e
+	// to
+	// a < d < c < b < e
+
+	// a < d
+	// d < b
+	// c < e
+
+	var changeScene, nextScene AutoTestScene
+	var newPreScene, newNextScene AutoTestScene
+
+	// get d and pre_id c
+	changeScene, err = getScene(tx, id)
+	if err != nil {
+		return err
+	}
+
+	// get e
+	nextScene, err = getSceneByPreID(tx, id, 0)
+	if err != nil {
+		return err
+	}
+
+	if newPreID > 0 {
+		// get a
+		newPreScene, err = getScene(tx, newPreID)
+		if err != nil {
 			return err
 		}
 
-		defer func() {
-			err = checkSamePreID(tx, oldNext.SetID, oldNext.PreID)
+		// get b
+		newNextScene, err = getSceneByPreID(tx, newPreID, 0)
+		if err != nil {
+			return err
+		}
+	} else {
+		if newSetID != 0 {
+			// get b
+			newNextScene, err = getSceneByPreID(tx, newPreID, newSetID)
 			if err != nil {
-				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", oldNext.SetID, oldNext.PreID)
+				return err
 			}
-		}()
-
-	LABEL1:
-		// get new next scene pre scene
-		if err := tx.Where("pre_id = ?", newPreID).Where("set_id = ?", newSetID).Find(&next).Error; err != nil {
-			// not have new next scene jump over update new next scene
-			if gorm.IsRecordNotFoundError(err) {
-				goto LABEL2
-			}
-			return err
-		}
-		// new next scene link this scene
-		next.PreID = scene.ID
-		if err := tx.Save(&next).Error; err != nil {
-			return err
-		}
-
-		defer func() {
-			err = checkSamePreID(tx, next.SetID, next.PreID)
+		} else {
+			// get b
+			newNextScene, err = getSceneByPreID(tx, newPreID, changeScene.SetID)
 			if err != nil {
-				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
+				return err
 			}
-		}()
+		}
+	}
 
-	LABEL2:
-		// this scene link new next scene pre scene
-		scene.SetID = newSetID
-		scene.PreID = newPreID
-		if err := tx.Save(&scene).Error; err != nil {
-			return err
+	var a = newPreScene.ID
+	var b = newNextScene.ID
+	var c = changeScene.PreID
+	var d = changeScene.ID
+	var e = nextScene.ID
+
+	// a < d
+	if a == d {
+		return fmt.Errorf("the pre_id of the scene cannot be itself")
+	}
+
+	err = updateScenePreID(tx, d, c, a, newSetID)
+	if err != nil {
+		return err
+	}
+
+	// c < e
+	if e > 0 {
+		if c == e {
+			return fmt.Errorf("the pre_id of the scene cannot be itself")
 		}
 
-		defer func() {
-			err = checkSamePreID(tx, scene.SetID, scene.PreID)
-			if err != nil {
-				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
-			}
-		}()
+		err = updateScenePreID(tx, e, d, c, 0)
+		if err != nil {
+			return err
+		}
+	}
 
-		return nil
-	}()
+	// d < b
+	if b > 0 {
+		if d == b {
+			return fmt.Errorf("the pre_id of the scene cannot be itself")
+		}
+
+		err = updateScenePreID(tx, b, a, d, 0)
+		if err != nil {
+			return err
+		}
+	}
+
+	var setID = changeScene.SetID
+	if newSetID != 0 {
+		setID = newSetID
+	}
+
+	err = checkSceneSetNotHaveSamePreID(tx, setID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getScene(tx *gorm.DB, id uint64) (AutoTestScene, error) {
+	var scene AutoTestScene
+	if err := tx.Where("id = ?", id).Find(&scene).Error; err != nil {
+		return scene, err
+	}
+	return scene, nil
+}
+
+func getSceneByPreID(tx *gorm.DB, preID uint64, setID uint64) (AutoTestScene, error) {
+	var scene AutoTestScene
+
+	tx = tx.Where("pre_id = ?", preID)
+	if setID > 0 {
+		tx = tx.Where("set_id = ?", setID)
+	}
+
+	err := tx.First(&scene).Error
+	if !gorm.IsRecordNotFoundError(err) {
+		return scene, err
+	}
+	return scene, nil
+}
+
+func updateScenePreID(tx *gorm.DB, id uint64, preID uint64, newPreID uint64, newSetID uint64) error {
+	tx = tx.Table(AutoTestScene{}.TableName()).Where("id = ? and pre_id = ?", id, preID)
+
+	var updateMap = map[string]interface{}{}
+
+	updateMap["pre_id"] = newPreID
+	if newSetID > 0 {
+		updateMap["set_id"] = newSetID
+	}
+
+	err := tx.Updates(updateMap).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkSceneSetNotHaveSamePreID(tx *gorm.DB, setID uint64) error {
+	rows, err := tx.Table(AutoTestScene{}.TableName()).Select("count(*) as num, pre_id").Where("set_id = ?", setID).Group("pre_id").Having("num > ?", 1).Rows()
+	if err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			return err
+		}
+	}
+	if rows.Next() {
+		return fmt.Errorf("there is a broken link between scenes, please refresh the interface and try again\n")
+	}
+	return nil
 }
 
 // check sceneSet linked list not have same pre_id
@@ -368,4 +457,11 @@ func (db *DBClient) UpdateSceneRefSetID(copyRefs apistructs.AutoTestSceneCopyRef
 		Where("space_id = ?", copyRefs.AfterSpaceID).
 		Where("ref_set_id = ?", copyRefs.PreSetID).
 		Update(map[string]interface{}{"ref_set_id": copyRefs.AfterSetID}).Error
+}
+
+// ListSceneBySceneSetID .
+func (db *DBClient) ListSceneBySceneSetID(setIDs ...uint64) ([]AutoTestScene, error) {
+	var scenes []AutoTestScene
+	err := db.Model(&AutoTestScene{}).Where("set_id IN (?)", setIDs).Find(&scenes).Error
+	return scenes, err
 }
