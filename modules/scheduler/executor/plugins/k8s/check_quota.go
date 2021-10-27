@@ -132,7 +132,9 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 					DedupID: fmt.Sprintf("%s-scheduler-error", runtimeID),
 				},
 			}); err != nil {
-				logrus.Errorf("failed to create error log when check quota, %v", err)
+				logrus.Errorf("failed to create quota error log when check quota, %v", err)
+			} else {
+				logrus.Infof("Create/Update quota error log for runtime %s succeeded", runtimeID)
 			}
 		}
 		return false, nil
