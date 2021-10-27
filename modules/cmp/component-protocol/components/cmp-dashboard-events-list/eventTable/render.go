@@ -136,18 +136,18 @@ func (t *ComponentEventTable) DecodeURLQuery() error {
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = int(t.State.PageNo)
-	urlQuery["pageSize"] = int(t.State.PageSize)
-	urlQuery["sorterData"] = t.State.Sorter
+	queryData := make(map[string]interface{})
+	queryData["pageNo"] = int(t.State.PageNo)
+	queryData["pageSize"] = int(t.State.PageSize)
+	queryData["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(urlQuery)
+	jsonData, err := json.Marshal(queryData)
 	if err != nil {
 		return err
 	}
 
-	decode := base64.StdEncoding.EncodeToString(jsonData)
-	t.State.EventTableUQLQuery = decode
+	decoded := base64.StdEncoding.EncodeToString(jsonData)
+	t.State.EventTableUQLQuery = decoded
 	return nil
 }
 
@@ -375,10 +375,10 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(component *cptype.Component) {
-	component.Props = t.Props
-	component.Data = map[string]interface{}{"list": t.Data.List}
-	component.State = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(c *cptype.Component) {
+	c.Props = t.Props
+	c.Data = map[string]interface{}{"list": t.Data.List}
+	c.State = map[string]interface{}{
 		"clusterName":          t.State.ClusterName,
 		"filterValues":         t.State.FilterValues,
 		"pageNo":               t.State.PageNo,
@@ -387,7 +387,7 @@ func (t *ComponentEventTable) Transfer(component *cptype.Component) {
 		"total":                t.State.Total,
 		"eventTable__urlQuery": t.State.EventTableUQLQuery,
 	}
-	component.Operations = t.Operations
+	c.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

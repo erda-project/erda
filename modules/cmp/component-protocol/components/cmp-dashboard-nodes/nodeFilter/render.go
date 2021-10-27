@@ -254,7 +254,7 @@ func DoFilter(nodeList []data.Object, values filter.Values) []data.Object {
 					exist := false
 					for k, v := range node.Map("metadata", "labels") {
 						nl := k + "=" + v.(string)
-						if strings.Contains(nl, l) {
+						if nl == l {
 							exist = true
 							break
 						}

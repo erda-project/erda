@@ -21,7 +21,10 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apps "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -107,7 +110,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	}
 
 	kind, namespace, name := splits[0], splits[1], splits[2]
-	client, err := k8sclient.New(f.State.ClusterName)
+	cli, err := k8sclient.New(f.State.ClusterName)
 	if err != nil {
 		return err
 	}
@@ -115,33 +118,88 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	var workload interface{}
 	switch kind {
 	case string(apistructs.K8SDeployment):
-		deploy, err := client.ClientSet.AppsV1().Deployments(namespace).Get(f.ctx, name, v1.GetOptions{})
+		deploy := &apps.Deployment{}
+		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      name,
+		}, deploy)
 		if err != nil {
 			return errors.Errorf("failed to get deployment %s:%s, %v", namespace, name, err)
 		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(deploy)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			deploy.SetGroupVersionKind(gvk[0])
+		}
 		workload = deploy
 	case string(apistructs.K8SStatefulSet):
-		sts, err := client.ClientSet.AppsV1().StatefulSets(namespace).Get(f.ctx, name, v1.GetOptions{})
+		sts := &apps.StatefulSet{}
+		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      name,
+		}, sts)
 		if err != nil {
 			return errors.Errorf("failed to get statefulSet %s:%s, %v", namespace, name, err)
 		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(sts)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			sts.SetGroupVersionKind(gvk[0])
+		}
 		workload = sts
 	case string(apistructs.K8SDaemonSet):
-		ds, err := client.ClientSet.AppsV1().DaemonSets(namespace).Get(f.ctx, name, v1.GetOptions{})
+		ds := &apps.DaemonSet{}
+		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      name,
+		}, ds)
 		if err != nil {
 			return errors.Errorf("failed to get daemonSet %s:%s, %v", namespace, name, err)
 		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(ds)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			ds.SetGroupVersionKind(gvk[0])
+		}
 		workload = ds
 	case string(apistructs.K8SJob):
-		job, err := client.ClientSet.BatchV1().Jobs(namespace).Get(f.ctx, name, v1.GetOptions{})
+		job := &batchv1.Job{}
+		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      name,
+		}, job)
 		if err != nil {
 			return errors.Errorf("failed to get job %s:%s, %v", namespace, name, err)
 		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(job)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			job.SetGroupVersionKind(gvk[0])
+		}
 		workload = job
 	case string(apistructs.K8SCronJob):
-		cj, err := client.ClientSet.BatchV1beta1().CronJobs(namespace).Get(f.ctx, name, v1.GetOptions{})
+		cj := &v1beta1.CronJob{}
+		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      name,
+		}, cj)
 		if err != nil {
 			return errors.Errorf("failed to get cronJob %s:%s, %v", namespace, name, err)
+		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(cj)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			cj.SetGroupVersionKind(gvk[0])
 		}
 		workload = cj
 	default:
