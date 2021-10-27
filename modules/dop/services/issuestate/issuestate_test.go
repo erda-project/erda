@@ -15,12 +15,13 @@
 package issuestate
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-	"github.com/golang/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -87,5 +88,12 @@ func TestInitProjectState(t *testing.T) {
 	is := New(WithDBClient(m))
 	if err := is.InitProjectState(1); err != nil {
 		t.Error(err)
+	}
+
+	s := NewMockIssueStater(ctrl)
+	s.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(errors.New("db error"))
+	is = New(WithDBClient(s))
+	if err := is.InitProjectState(1); err != nil {
+		assert.Error(t, err)
 	}
 }
