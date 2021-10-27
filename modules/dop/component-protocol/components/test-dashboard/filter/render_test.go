@@ -15,6 +15,7 @@
 package filter
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,4 +35,16 @@ func TestGenerateUrlQueryParams(t *testing.T) {
 		t.Error(err)
 	}
 	assert.Equal(t, "eyJpdGVyYXRpb24iOlsxLDIsM119", base64)
+}
+
+func TestInitDefaultOperation(t *testing.T) {
+	f := Filter{
+		InParams: InParams{FrontendUrlQuery: "eyJpdGVyYXRpb24iOlsxLDIsM119"},
+	}
+	if err := f.initDefaultOperation(); err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(f.State.Values.IterationIDs, []uint64{1, 2, 3}) {
+		t.Error("fail")
+	}
 }
