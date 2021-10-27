@@ -238,7 +238,7 @@ func GibibyteToByte(v float64) uint64 {
 	return uint64(v * 1024 * 1024 * 1024)
 }
 func ByteToGibibyte(v uint64, accuracy int32) float64 {
-	return Accuracy(float64(v)/(1024*1024*1024), 3)
+	return Accuracy(float64(v)/(1024*1024*1024), accuracy)
 }
 
 func priority(workspace Workspace) []string {
