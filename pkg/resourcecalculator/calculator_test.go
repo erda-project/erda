@@ -92,7 +92,7 @@ func testResourceCalculator_AddValue_Case2(t *testing.T) {
 	t.Logf("already took up, dev: %v, test: %v, staging: %v",
 		c.AlreadyTookUpCPU(calcu.Dev), c.AlreadyTookUpCPU(calcu.Test), c.AlreadyTookUpCPU(calcu.Staging))
 	if c.TotalQuotableCPU() != r.TotalQuotable {
-		t.Fatal("TotalQuotableCPU error")
+		t.Fatal("TotalQuotableCPU error", c.TotalQuotableCPU())
 	}
 	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable {
 		t.Fatal("QuotableCPUForWorkspace(calcu.Prod) error")
@@ -311,14 +311,6 @@ func TestByteToGibibyte(t *testing.T) {
 
 func TestWorkspacesString(t *testing.T) {
 	t.Log(calcu.WorkspacesString([]calcu.Workspace{calcu.Prod, calcu.Dev, calcu.Staging}))
-}
-
-func TestResourceCalculator_AlreadyQuota(t *testing.T) {
-	clusterName := "erda-hongkong"
-	c := calcu.New(clusterName)
-	if c.AlreadyQuotaCPU(calcu.Prod) != 0 {
-		t.Fatal("alreadyQuota error")
-	}
 }
 
 func TestResourceToString(t *testing.T) {
