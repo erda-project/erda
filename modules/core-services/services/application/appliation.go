@@ -564,6 +564,7 @@ func (a *Application) Delete(applicationID int64) (*model.Application, error) {
 		// 防止有老数据不存在repoID，还是以repo路径进行删除
 		if err = a.bdl.DeleteGitRepo(application.GitRepoAbbrev); err != nil {
 			logrus.Errorf(err.Error())
+			return nil, fmt.Errorf("failed to delete repo, please try again")
 		}
 	}
 
