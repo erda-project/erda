@@ -366,7 +366,7 @@ type OrgClustersResourcesInfo struct {
 	// deprecated:
 	TotalMem float64 `json:"total_mem"`
 
-	ClusterList []*ClusterResources
+	ClusterList []*ClusterResources `json:"clusterList"`
 }
 
 type OrgClustersResourcesResp struct {
@@ -402,22 +402,24 @@ type OrgClustersNamespaceReq struct {
 }
 
 type ClusterResources struct {
-	ClusterName    string
-	Workspace      string
-	CPUAllocatable float64
+	ClusterName    string  `json:"clusterName"`
+	Workspace      string  `json:"workspace"`
+	CPUAllocatable float64 `json:"cpuAllocatable"`
 	// CPUAvailable = CPUAllocatable - CPURequest
-	CPUAvailable   float64
-	CPUQuotaRate   float64
-	CPURequest     float64
-	MemAllocatable float64
+	CPUAvailable   float64 `json:"cpuAvailable"`
+	CPUQuotaRate   float64 `json:"cpuQuotaRate"`
+	CPURequest     float64 `json:"cpuRequest"`
+	MemAllocatable float64 `json:"memAllocatable"`
 	// MemAvailable = MemAllocatable - MemRequest
-	MemAvailable float64
-	MemQuotaRate float64
-	MemRequest   float64
+	MemAvailable float64 `json:"memAvailable"`
+	MemQuotaRate float64 `json:"memQuotaRate"`
+	MemRequest   float64 `json:"memRequest"`
 	// Nodes is nums of nodes
-	Nodes int
+	Nodes int `json:"nodes"`
 	// Tips is the tip for the cluster
-	Tips string `json:"tips"`
+	Tips      string  `json:"tips"`
+	CPUTookUp float64 `json:"cpuTookUp"`
+	MemTookUp float64 `json:"memTookUp"`
 }
 
 type OrgNexusGetRequest struct {
