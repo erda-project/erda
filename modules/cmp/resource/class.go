@@ -165,12 +165,12 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 
 	case Memory:
 		for k, v := range projectMap {
-			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota/G), 64)
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, k})
 		}
 	default:
 		for k, v := range projectMap {
-			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota/MilliCore), 64)
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, k})
 		}
 	}
@@ -202,12 +202,12 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 	switch resType {
 	case Memory:
 		for _, v := range principalMap {
-			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota/G), 64)
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
 	default:
 		for _, v := range principalMap {
-			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota/MilliCore), 64)
+			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
 	}
