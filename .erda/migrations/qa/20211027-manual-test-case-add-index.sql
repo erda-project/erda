@@ -1,1 +1,1 @@
-ALTER TABLE dice_test_file_records ADD COLUMN `space_id` int(11) DEFAULT false COMMENT 'autotest space id';
+ALTER TABLE `dice_test_cases` ADD INDEX `idx_test_set_id` (`test_set_id`);
