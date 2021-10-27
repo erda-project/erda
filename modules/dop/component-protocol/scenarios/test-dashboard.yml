@@ -255,6 +255,7 @@ rendering:
     - name: mt_block_detail_item@mt_case_num_succ
     - name: mt_block_detail_item@mt_case_num_block
     - name: mt_block_detail_item@mt_case_num_fail
+    - name: mt_block_detail_item@mt_case_num_init
     - name: mt_block_detail_item@mt_case_rate_passed
     - name: mt_block_detail_item@mt_case_rate_executed
 
