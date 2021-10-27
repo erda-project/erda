@@ -56,6 +56,7 @@ type State struct {
 	PipelineID     uint64                        `json:"pipelineId"`
 	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
 	EnvData        apistructs.AutoTestAPIConfig  `json:"envData"`
+	EnvName        string                        `json:"envName"`
 }
 
 type reportNew struct {
@@ -157,6 +158,12 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 				res.Reports = append(res.Reports, v)
 			} else if v.Type == apistructs.PipelineReportTypeAutotestPlan {
 				env = v
+				config, err := convertReportToConfig(env)
+				if err != nil {
+					return err
+				}
+				i.State.EnvData = config
+				i.State.EnvName = getApiConfigName(env)
 			}
 		}
 
@@ -185,12 +192,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		}
 	}
 Label:
-	config, err := convertReportToConfig(env)
-	if err != nil {
-		return err
-	}
-	i.State.EnvData = config
-	i.Data["executeEnv"] = getApiConfigName(env)
+	i.Data["executeEnv"] = i.State.EnvName
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{
