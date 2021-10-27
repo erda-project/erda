@@ -134,6 +134,7 @@ type ProjectNamespaces struct {
 	ProjectID          uint   `json:"projectID"`
 	ProjectName        string `json:"projectName"`
 	ProjectDisplayName string `json:"projectDisplayName"`
+	ProjectDesc        string `json:"projectDesc"`
 	OwnerUserID        uint   `json:"ownerUserID"`
 	OwnerUserName      string `json:"ownerUserName"`
 	OwnerUserNickname  string `json:"ownerUserNickname"`
