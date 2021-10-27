@@ -80,10 +80,11 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
 			return o.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
 		})
+		missing, unexpected := findUnexpected(o.CreateStmt.Cols, d.CreateStmt.Cols)
 		return &Equal{
 			equal: false,
-			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v, ",
-				o.CreateStmt.Cols, d.CreateStmt.Cols),
+			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, %v != %v, missing: %v, unexpected: %v",
+				len(o.CreateStmt.Cols), len(d.CreateStmt.Cols), missing, unexpected),
 		}
 	}
 
@@ -115,4 +116,28 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 		equal:  eq,
 		reason: strings.TrimRight(reasons, ", "),
 	}
+}
+
+func findUnexpected(expected, actual []*ast.ColumnDef) (missing, unexpected []string) {
+	var (
+		expectedM = make(map[string]bool)
+		actualM   = make(map[string]bool)
+	)
+	for _, col := range expected {
+		expectedM[col.Name.String()] = true
+	}
+	for _, col := range actual {
+		actualM[col.Name.String()] = true
+	}
+	for name := range expectedM {
+		if _, ok := actualM[name]; !ok {
+			missing = append(missing, name)
+		}
+	}
+	for name := range actualM {
+		if _, ok := expectedM[name]; !ok {
+			unexpected = append(unexpected, name)
+		}
+	}
+	return
 }
