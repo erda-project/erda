@@ -181,16 +181,20 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		}
 		batchOperations := make([]string, 0)
 		if !strings.Contains(role, "master") {
-			if strings.Contains(status.Value, mt.SDK.I18n("SchedulingDisabled")) {
-				batchOperations = append(batchOperations, "uncordon")
+			if c.String("spec", "unschedulable") == "true" {
+				if !table.IsNodeOffline(c) {
+					batchOperations = append(batchOperations, "uncordon")
+				}
 			} else {
 				batchOperations = append(batchOperations, "cordon")
 			}
 		}
 		if role == "worker" && !table.IsNodeLabelInBlacklist(c) {
-			batchOperations = append(batchOperations, "drain")
 			if !table.IsNodeOffline(c) {
-				batchOperations = append(batchOperations, "offline")
+				batchOperations = append(batchOperations, "drain")
+				if c.String("spec", "unschedulable") == "true" && !table.IsNodeOffline(c) {
+					batchOperations = append(batchOperations, "offline")
+				}
 			} else {
 				batchOperations = append(batchOperations, "online")
 			}
