@@ -614,7 +614,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	logrus.Infoln("query ProjectQuota")
 	var projectQuota model.ProjectQuota
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -631,18 +630,17 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	projectDTO.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
 	projectDTO.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
 	projectDTO.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
-	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota)
-	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota)
-	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota)
-	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota)
-	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota)
-	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota)
-	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota)
-	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota)
-	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota + projectQuota.StagingCPUQuota + projectQuota.TestCPUQuota + projectQuota.DevCPUQuota)
-	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota + projectQuota.StagingMemQuota + projectQuota.TestMemQuota + projectQuota.DevMemQuota)
+	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota, 3)
+	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota, 3)
+	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota, 3)
+	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota, 3)
+	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota, 3)
+	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota, 3)
+	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota, 3)
+	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota, 3)
+	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota+projectQuota.StagingCPUQuota+projectQuota.TestCPUQuota+projectQuota.DevCPUQuota, 3)
+	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota+projectQuota.StagingMemQuota+projectQuota.TestMemQuota+projectQuota.DevMemQuota, 3)
 
-	logrus.Infoln("query PodInfo")
 	var podInfos []apistructs.PodInfo
 	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", projectID).
@@ -651,15 +649,16 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	}
 
 	var (
-		namespaces        = make(map[string]map[string]bool) // key: clusterName, value.key: k8s_namespace
-		addonNamespaces   = make(map[string]bool)            // key: k8s_namespace
-		serviceNamespaces = make(map[string]bool)            // key: k8s_namespace
+		// {"cluster_name": {"namespace": "workspace"}}
+		namespaces        = make(map[string]map[string]string)
+		addonNamespaces   = make(map[string]bool) // key: k8s_namespace
+		serviceNamespaces = make(map[string]bool) // key: k8s_namespace
 	)
 	for _, podInfo := range podInfos {
 		if _, ok := namespaces[podInfo.Cluster]; ok {
-			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = true
+			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = podInfo.Workspace
 		} else {
-			namespaces[podInfo.Cluster] = map[string]bool{podInfo.K8sNamespace: true}
+			namespaces[podInfo.Cluster] = map[string]string{podInfo.K8sNamespace: podInfo.Workspace}
 		}
 
 		switch podInfo.ServiceType {
@@ -682,14 +681,11 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		}
 	}
 
-	logrus.Infof("GetNamespacesResources: %+v", resourceRequest)
 	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
 		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
 	}
-	data, _ := json.Marshal(resources)
-	logrus.Infof("GetNamespacesResources response: %s", string(data))
 
 	for _, clusterItem := range resources.List {
 		if !clusterItem.GetSuccess() {
@@ -698,76 +694,94 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			continue
 		}
 
-		var source *apistructs.ResourceConfigInfo
-		switch clusterItem.GetClusterName() {
-		case projectDTO.ResourceConfig.PROD.ClusterName:
-			source = projectDTO.ResourceConfig.PROD
-		case projectDTO.ResourceConfig.STAGING.ClusterName:
-			source = projectDTO.ResourceConfig.STAGING
-		case projectDTO.ResourceConfig.TEST.ClusterName:
-			source = projectDTO.ResourceConfig.TEST
-		case projectDTO.ResourceConfig.DEV.ClusterName:
-			source = projectDTO.ResourceConfig.DEV
-		}
-		if source == nil {
-			continue
-		}
-
-		for _, namespaceItem := range clusterItem.List {
-			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
-			source.CPURequest += calcu.MillcoreToCore(namespaceItem.GetCpuRequest())
-			source.MemRequest += calcu.ByteToGibibyte(namespaceItem.GetMemRequest())
-			if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
-				source.CPURequestByAddon += source.CPURequest
-				source.MemRequestByAddon += source.MemRequest
-			}
-			if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
-				source.CPURequestByService += source.CPURequest
-				source.MemRequestByService += source.MemRequest
-			}
-		}
-	}
-
-	logrus.Infof("GetClustersResourcesRequest: %+v", projectQuota.ClustersNames())
-	// 查出各环境的实际可用资源
-	// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
-	// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
-	if clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
-		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(projectQuota.ClustersNames())}); err == nil {
-		for _, clusterItem := range clustersResources.List {
-			if !clusterItem.GetSuccess() {
-				logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
-					Warnln("the cluster is not valid now")
+		for workspace, source := range map[string]*apistructs.ResourceConfigInfo{
+			"prod":    projectDTO.ResourceConfig.PROD,
+			"staging": projectDTO.ResourceConfig.STAGING,
+			"test":    projectDTO.ResourceConfig.TEST,
+			"dev":     projectDTO.ResourceConfig.DEV,
+		} {
+			if clusterItem.GetClusterName() != source.ClusterName {
 				continue
 			}
-			for _, host := range clusterItem.Hosts {
-				for _, label := range host.Labels {
-					var source *apistructs.ResourceConfigInfo
-					switch strings.ToLower(label) {
-					case "dice/workspace-prod=true":
-						source = projectDTO.ResourceConfig.PROD
-					case "dice/workspace-staging=true":
-						source = projectDTO.ResourceConfig.STAGING
-					case "dice/workspace-test=true":
-						source = projectDTO.ResourceConfig.TEST
-					case "dice/workspace-dev=true":
-						source = projectDTO.ResourceConfig.DEV
-					}
-					if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-						source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable() - host.GetCpuRequest())
-						source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable() - host.GetMemRequest())
-					}
+			if _, ok := namespaces[clusterItem.GetClusterName()]; !ok {
+				continue
+			}
+			for _, namespaceItem := range clusterItem.List {
+				// 如果 namespace 不是要求的 workspace 下的，忽略
+				if w := namespaces[clusterItem.GetClusterName()][namespaceItem.GetNamespace()]; w != workspace {
+					continue
+				}
+
+				cpuRequest := calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
+				memRequest := calcu.ByteToGibibyte(namespaceItem.GetMemRequest(), 3)
+				source.CPURequest += cpuRequest
+				source.MemRequest += memRequest
+				if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
+					source.CPURequestByAddon += cpuRequest
+					source.MemRequestByAddon += memRequest
+				}
+				if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
+					source.CPURequestByService += cpuRequest
+					source.MemRequestByService += memRequest
 				}
 			}
 		}
 	}
 
+	p.fetchAvailable(ctx, &projectDTO, projectQuota.ClustersNames())
+
 	// 根据已有统计值计算其他统计值
+	p.patchProjectDto(&projectDTO, langCodes)
+
+	return &projectDTO, nil
+}
+
+// 查出各环境的实际可用资源
+// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
+// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
+func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO, clusterNames []string) {
+	clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
+		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(clusterNames)})
+	if err != nil {
+		logrus.WithError(err).WithField("func", "fetchAvailable").
+			Errorf("failed to GetClustersResources, clusterNames: %v", clusterNames)
+		return
+	}
+	for _, clusterItem := range clustersResources.List {
+		if !clusterItem.GetSuccess() {
+			logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
+				Warnln("the cluster is not valid now")
+			continue
+		}
+		for _, host := range clusterItem.Hosts {
+			for _, label := range host.Labels {
+				var source *apistructs.ResourceConfigInfo
+				switch strings.ToLower(label) {
+				case "dice/workspace-prod=true":
+					source = dto.ResourceConfig.PROD
+				case "dice/workspace-staging=true":
+					source = dto.ResourceConfig.STAGING
+				case "dice/workspace-test=true":
+					source = dto.ResourceConfig.TEST
+				case "dice/workspace-dev=true":
+					source = dto.ResourceConfig.DEV
+				}
+				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
+					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable()-host.GetCpuRequest(), 3)
+					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable()-host.GetMemRequest(), 3)
+				}
+			}
+		}
+	}
+}
+
+// 根据已有统计值计算其他统计值
+func (p *Project) patchProjectDto(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
 	for _, source := range []*apistructs.ResourceConfigInfo{
-		projectDTO.ResourceConfig.PROD,
-		projectDTO.ResourceConfig.STAGING,
-		projectDTO.ResourceConfig.TEST,
-		projectDTO.ResourceConfig.DEV,
+		dto.ResourceConfig.PROD,
+		dto.ResourceConfig.STAGING,
+		dto.ResourceConfig.TEST,
+		dto.ResourceConfig.DEV,
 	} {
 		if source.CPUQuota != 0 {
 			source.CPURequestRate = source.CPURequest / source.CPUQuota
@@ -783,8 +797,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 			source.Tips = p.trans.Text(langCodes, "AvailableIsLessThanQuota")
 		}
 	}
-
-	return &projectDTO, nil
 }
 
 // GetModelProject 获取项目
@@ -1384,4 +1396,262 @@ func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, pr
 		res = append(res, proDTO)
 	}
 	return total, res, nil
+}
+
+func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
+	var response = new(apistructs.GetQuotaOnClustersResponse)
+	response.ClusterNames = clusterNames
+
+	if len(clusterNames) == 0 {
+		logrus.Warnln("no clusters for GetQuotaOnClusters")
+		return response, nil
+	}
+
+	var clusterNamesM = make(map[string]bool)
+	for _, clusterName := range clusterNames {
+		clusterNamesM[clusterName] = true
+	}
+
+	// query all projects
+	var projects []*model.Project
+	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			logrus.WithError(err).Warnln("project record not found")
+			return response, nil
+		}
+		err = errors.Wrap(err, "failed to Find projects")
+		logrus.WithError(err).Errorln()
+		return nil, err
+	}
+
+	// query all project quota
+	var projectIDs []int64
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ID)
+	}
+	var projectsQuota []*model.ProjectQuota
+	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&projectsQuota).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			logrus.WithError(err).Warnln("quota record not found")
+			return response, nil
+		}
+		err = errors.Wrap(err, "failed to Find project quota")
+		return nil, err
+	}
+	var projectsQuotaConfigs = make(map[int64]*model.ProjectQuota)
+	for _, projectQuota := range projectsQuota {
+		projectsQuotaConfigs[int64(projectQuota.ProjectID)] = projectQuota
+	}
+
+	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
+	for _, project := range projects {
+		// query project owner
+		memberListReq := apistructs.MemberListRequest{
+			ScopeType: "project",
+			ScopeID:   project.ID,
+			Roles:     []string{"Owner"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1,
+		}
+		total, members, err := p.db.GetMembersByParam(&memberListReq)
+		if err != nil {
+			err = errors.Wrap(err, "failed to GetMembersByParam")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
+		}
+		if total <= 0 || len(members) == 0 {
+			err = errors.New("not found owner for the project")
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
+			continue
+		}
+		member := members[0]
+
+		owner, ok := ownerM[member.UserID]
+		if !ok {
+			userID, err := strconv.ParseInt(member.UserID, 10, 64)
+			if err != nil {
+				err = errors.Wrap(err, "the format of owner userID is not valid")
+			}
+			owner = &apistructs.OwnerQuotaOnClusters{
+				ID:       uint64(userID),
+				Name:     member.Name,
+				Nickname: member.Nick,
+				CPUQuota: 0,
+				MemQuota: 0,
+				Projects: nil,
+			}
+			ownerM[member.UserID] = owner
+		}
+
+		projectQuotaOnCluster := apistructs.ProjectQuotaOnClusters{
+			ID:          uint64(project.ID),
+			Name:        project.Name,
+			DisplayName: project.DisplayName,
+			CPUQuota:    0,
+			MemQuota:    0,
+		}
+		// if the project has quota config, accumulate it
+		if config, ok := projectsQuotaConfigs[project.ID]; ok {
+			// if a cluster of the project is in the specified clusters, its cpu and mem will be accumulated
+			for clusterName, quota := range map[string][2]uint64{
+				config.ProdClusterName:    {config.ProdCPUQuota, config.ProdMemQuota},
+				config.StagingClusterName: {config.StagingCPUQuota, config.StagingMemQuota},
+				config.TestClusterName:    {config.TestCPUQuota, config.TestMemQuota},
+				config.DevClusterName:     {config.DevCPUQuota, config.DevMemQuota},
+			} {
+				if _, ok := clusterNamesM[clusterName]; ok {
+					projectQuotaOnCluster.AccuQuota(quota[0], quota[1])
+				}
+			}
+		}
+		owner.Projects = append(owner.Projects, &projectQuotaOnCluster)
+	}
+
+	for _, owner := range ownerM {
+		response.Owners = append(response.Owners, owner)
+	}
+
+	response.ReCalcu()
+
+	return response, nil
+}
+
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	l := logrus.WithField("func", "GetNamespacesBelongsTo")
+
+	// 1）查找 s_pod_info
+	var projectsM = make(map[uint64]map[string][]string)
+	var podInfos []*apistructs.PodInfo
+	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find podInfos")
+			l.WithError(err).Errorln()
+			return nil, err
+		}
+	}
+
+	for _, podInfo := range podInfos {
+		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
+		if err != nil {
+			continue
+		}
+		clusters, ok := projectsM[projectID]
+		if !ok {
+			clusters = make(map[string][]string)
+		}
+		if hasClusterAndNamespace(namespaces, podInfo.Cluster, podInfo.K8sNamespace) &&
+			!hasClusterAndNamespace(clusters, podInfo.Cluster, podInfo.K8sNamespace) {
+			if _, ok := clusters[podInfo.Cluster]; ok {
+				clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
+			} else {
+				clusters[podInfo.Cluster] = []string{podInfo.K8sNamespace}
+			}
+		}
+		projectsM[projectID] = clusters
+	}
+
+	// 2) 查找 project_namespace
+	var projectNamespaces []*apistructs.ProjectNamespaceModel
+	if err := p.db.Find(&projectNamespaces).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find projectNamespace")
+			l.WithError(err).Errorln()
+			return nil, err
+		}
+	}
+	for _, projectNamespace := range projectNamespaces {
+		clusters, ok := projectsM[projectNamespace.ProjectID]
+		if !ok {
+			clusters = make(map[string][]string)
+		}
+		if hasClusterAndNamespace(namespaces, projectNamespace.ClusterName, projectNamespace.K8sNamespace) &&
+			!hasClusterAndNamespace(clusters, projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
+			if _, ok := clusters[projectNamespace.ClusterName]; ok {
+				clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
+			} else {
+				clusters[projectNamespace.ClusterName] = []string{projectNamespace.K8sNamespace}
+			}
+		}
+		projectsM[projectNamespace.ProjectID] = clusters
+	}
+
+	var data apistructs.GetProjectsNamesapcesResponseData
+
+	// 3) 查询 quota
+	for projectID, clusterNamespaces := range projectsM {
+		var project model.Project
+		if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				l.WithError(err).WithField("id", projectID).Warnln("failed to First project")
+				continue
+			}
+		}
+
+		// query owner
+		memberListReq := apistructs.MemberListRequest{
+			ScopeType: "project",
+			ScopeID:   project.ID,
+			Roles:     []string{"Owner"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1,
+		}
+		total, members, err := p.db.GetMembersByParam(&memberListReq)
+		if err != nil {
+			err = errors.Wrap(err, "failed to GetMembersByParam")
+			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			continue
+		}
+		if total <= 0 || len(members) == 0 {
+			err = errors.New("not found owner for the project")
+			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
+			continue
+		}
+		owner := members[0]
+		userID, err := strconv.ParseInt(owner.UserID, 10, 64)
+		if err != nil {
+			err = errors.Wrap(err, "the format of owner userID is not valid")
+		}
+
+		// query quota
+		var quota apistructs.ProjectQuota
+		if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
+			if !gorm.IsRecordNotFoundError(err) {
+				err = errors.Wrap(err, "failed to First project quota")
+				l.WithError(err).WithField("project_id", projectID).Errorln()
+				return nil, err
+			}
+		}
+		var item = apistructs.ProjectNamespaces{
+			ProjectID:          uint(project.ID),
+			ProjectName:        project.Name,
+			ProjectDisplayName: project.DisplayName,
+			OwnerUserID:        uint(userID),
+			OwnerUserName:      owner.Name,
+			OwnerUserNickname:  owner.Nick,
+			CPUQuota:           uint64(quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota),
+			MemQuota:           uint64(quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota),
+			Clusters:           clusterNamespaces,
+		}
+		data.List = append(data.List, &item)
+	}
+	data.Total = uint32(len(data.List))
+
+	return &data, nil
+}
+
+func hasClusterAndNamespace(namespaces map[string][]string, clusterName, namespace string) bool {
+	ns, ok := namespaces[clusterName]
+	if !ok {
+		return false
+	}
+	for _, name := range ns {
+		if name == namespace {
+			return true
+		}
+	}
+	return false
 }

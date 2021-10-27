@@ -365,7 +365,7 @@ type OrgClustersResourcesInfo struct {
 	// deprecated:
 	TotalMem float64 `json:"total_mem"`
 
-	ClusterList []ClusterResources
+	ClusterList []*ClusterResources
 }
 
 type ClusterResources struct {
@@ -384,7 +384,7 @@ type ClusterResources struct {
 	// Nodes is nums of nodes
 	Nodes int
 	// Tips is the tip for the cluster
-	Tips string
+	Tips string `json:"tips"`
 }
 
 type OrgNexusGetRequest struct {
