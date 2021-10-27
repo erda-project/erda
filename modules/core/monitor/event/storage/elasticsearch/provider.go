@@ -42,16 +42,25 @@ type (
 	provider struct {
 		Cfg       *config
 		Log       logs.Logger
-		ES        elasticsearch.Interface `autowired:"elasticsearch"`
+		ES1       elasticsearch.Interface `autowired:"elasticsearch@event" optional:"true"`
+		ES2       elasticsearch.Interface `autowired:"elasticsearch" optional:"true"`
 		Loader    loader.Interface        `autowired:"elasticsearch.index.loader@event"`
 		Creator   creator.Interface       `autowired:"elasticsearch.index.creator@event" optional:"true"`
 		Retention retention.Interface     `autowired:"storage-retention-strategy@event" optional:"true"`
+		es        elasticsearch.Interface
 		client    *elastic.Client
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	p.client = p.ES.Client()
+	if p.ES1 != nil {
+		p.es = p.ES1
+	} else if p.ES2 != nil {
+		p.es = p.ES2
+	} else {
+		return fmt.Errorf("elasticsearch is required")
+	}
+	p.client = p.es.Client()
 	if p.Retention != nil {
 		ctx.AddTask(func(c context.Context) error {
 			p.Retention.Loading(ctx)
@@ -67,7 +76,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 	if p.Creator == nil || p.Retention == nil {
 		return nil, fmt.Errorf("elasticsearch.index.creator@event and storage-retention-strategy@event is required for Writer")
 	}
-	w := p.ES.NewWriter(&elasticsearch.WriteOptions{
+	w := p.es.NewWriter(&elasticsearch.WriteOptions{
 		Timeout: p.Cfg.WriteTimeout,
 		Enc: func(val interface{}) (index, id, typ string, body interface{}, err error) {
 			data := val.(*event.Event)
@@ -111,8 +120,9 @@ func getUnixMillisecond(ts int64) int64 {
 
 func init() {
 	servicehub.Register("event-storage-elasticsearch", &servicehub.Spec{
-		Services:   []string{"event-storage-elasticsearch-reader", "event-storage-writer"},
-		ConfigFunc: func() interface{} { return &config{} },
-		Creator:    func() servicehub.Provider { return &provider{} },
+		Services:     []string{"event-storage-elasticsearch-reader", "event-storage-writer"},
+		Dependencies: []string{"elasticsearch"},
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }
