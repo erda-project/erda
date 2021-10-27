@@ -16,7 +16,6 @@ package resource
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 
 	"github.com/rancher/apiserver/pkg/types"
@@ -75,24 +74,24 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 	nodesGauge.Title = r.I18n("node pressure")
 	if MemTotal/memBase > CpuTotal/cpuBase {
 		nodesGauge.Value = []float64{MemRequest / MemTotal * 100}
-		nodesGauge.Name = fmt.Sprintf("%d", int64(math.Round(MemRequest/G+0.5))) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+		nodesGauge.Name = fmt.Sprintf("%.1f", MemRequest/G) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{MemQuota / MemTotal}
 	} else {
 		nodesGauge.Value = []float64{CpuRequest / CpuTotal * 100}
-		nodesGauge.Name = fmt.Sprintf("%d", int64(math.Round(CpuRequest/MilliCore+0.5))) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+		nodesGauge.Name = fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{CpuQuota / CpuTotal}
 	}
 	data["nodes"] = nodesGauge
 
 	cpuGauge.Title = r.I18n("cpu pressure")
 	cpuGauge.Value = []float64{CpuRequest / CpuTotal * 100}
-	cpuGauge.Name = fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n("core") + fmt.Sprintf("\n%.1f%%", cpuGauge.Value[0]) + r.I18n("quota in use")
+	cpuGauge.Name = fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n("core") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	cpuGauge.Split = []float64{CpuQuota / CpuTotal}
 	data["cpu"] = cpuGauge
 
 	memGauge.Title = r.I18n("memory pressure")
 	memGauge.Value = []float64{MemRequest / MemTotal * 100}
-	memGauge.Name = fmt.Sprintf("%.1f", MemRequest/G) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", memGauge.Value[0]) + r.I18n("quota in use")
+	memGauge.Name = fmt.Sprintf("%.1f", MemRequest/G) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	memGauge.Split = []float64{MemQuota / MemTotal}
 	data["memory"] = memGauge
 	return
@@ -168,7 +167,6 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames []
 	}
 	logrus.Debug("get all namespace finished")
 	logrus.Debug("start involved namespace")
-
 	nresp, err := r.Bdl.FetchNamespacesBelongsTo()
 	logrus.Debug("involved namespace finished")
 	if err != nil {
