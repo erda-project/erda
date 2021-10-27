@@ -49,7 +49,8 @@ func testResourceCalculator_AddValue_Case1(t *testing.T) {
 	c.DeductionQuota(calcu.Staging, 1, 0)
 	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
 		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
-
+	t.Logf("already took up, dev: %v, test: %v, staging: %v",
+		c.AlreadyTookUpCPU(calcu.Dev), c.AlreadyTookUpCPU(calcu.Test), c.AlreadyTookUpCPU(calcu.Staging))
 	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable ||
 		c.QuotableCPUForWorkspace(calcu.Staging) != r.StagingQuotable ||
 		c.QuotableCPUForWorkspace(calcu.Test) != r.TestQuotable ||
@@ -58,6 +59,19 @@ func testResourceCalculator_AddValue_Case1(t *testing.T) {
 	}
 	if c.TotalQuotableCPU() != r.TotalQuotable {
 		t.Fatal("TotalQuotableCPU() error")
+	}
+
+	if c.AllocatableCPU(calcu.Dev) != c.QuotableCPUForWorkspace(calcu.Dev)+c.AlreadyTookUpCPU(calcu.Dev) {
+		t.Fatal("took up error", c.AllocatableCPU(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Dev), c.AlreadyTookUpCPU(calcu.Dev))
+	}
+	if c.AllocatableCPU(calcu.Test) != c.QuotableCPUForWorkspace(calcu.Test)+c.AlreadyTookUpCPU(calcu.Test) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Staging) != c.QuotableCPUForWorkspace(calcu.Staging)+c.AlreadyTookUpCPU(calcu.Staging) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Prod) != c.QuotableCPUForWorkspace(calcu.Prod)+c.AlreadyTookUpCPU(calcu.Prod) {
+		t.Fatal("took up error")
 	}
 }
 
@@ -75,8 +89,10 @@ func testResourceCalculator_AddValue_Case2(t *testing.T) {
 	c.DeductionQuota(calcu.Staging, 1, 0)
 	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
 		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	t.Logf("already took up, dev: %v, test: %v, staging: %v",
+		c.AlreadyTookUpCPU(calcu.Dev), c.AlreadyTookUpCPU(calcu.Test), c.AlreadyTookUpCPU(calcu.Staging))
 	if c.TotalQuotableCPU() != r.TotalQuotable {
-		t.Fatal("TotalQuotableCPU error")
+		t.Fatal("TotalQuotableCPU error", c.TotalQuotableCPU())
 	}
 	if c.QuotableCPUForWorkspace(calcu.Prod) != r.ProdQuotable {
 		t.Fatal("QuotableCPUForWorkspace(calcu.Prod) error")
@@ -89,6 +105,19 @@ func testResourceCalculator_AddValue_Case2(t *testing.T) {
 	}
 	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
 		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
+	}
+
+	if c.AllocatableCPU(calcu.Dev) != c.QuotableCPUForWorkspace(calcu.Dev)+c.AlreadyTookUpCPU(calcu.Dev) {
+		t.Fatal("took up error", c.AllocatableCPU(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Dev), c.AlreadyTookUpCPU(calcu.Dev))
+	}
+	if c.AllocatableCPU(calcu.Test) != c.QuotableCPUForWorkspace(calcu.Test)+c.AlreadyTookUpCPU(calcu.Test) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Staging) != c.QuotableCPUForWorkspace(calcu.Staging)+c.AlreadyTookUpCPU(calcu.Staging) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Prod) != c.QuotableCPUForWorkspace(calcu.Prod)+c.AlreadyTookUpCPU(calcu.Prod) {
+		t.Fatal("took up error")
 	}
 }
 
@@ -106,6 +135,8 @@ func testResourceCalculator_AddValue_Case3(t *testing.T) {
 	c.DeductionQuota(calcu.Staging, 1, 0)
 	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
 		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	t.Logf("already took up, dev: %v, test: %v, staging: %v",
+		c.AlreadyTookUpCPU(calcu.Dev), c.AlreadyTookUpCPU(calcu.Test), c.AlreadyTookUpCPU(calcu.Staging))
 	if c.TotalQuotableCPU() != r.TotalQuotable {
 		t.Fatal("TotalQuotableCPU error")
 	}
@@ -120,6 +151,19 @@ func testResourceCalculator_AddValue_Case3(t *testing.T) {
 	}
 	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
 		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
+	}
+
+	if c.AllocatableCPU(calcu.Dev) != c.QuotableCPUForWorkspace(calcu.Dev)+c.AlreadyTookUpCPU(calcu.Dev) {
+		t.Fatal("took up error", c.AllocatableCPU(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Dev), c.AlreadyTookUpCPU(calcu.Dev))
+	}
+	if c.AllocatableCPU(calcu.Test) != c.QuotableCPUForWorkspace(calcu.Test)+c.AlreadyTookUpCPU(calcu.Test) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Staging) != c.QuotableCPUForWorkspace(calcu.Staging)+c.AlreadyTookUpCPU(calcu.Staging) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Prod) != c.QuotableCPUForWorkspace(calcu.Prod)+c.AlreadyTookUpCPU(calcu.Prod) {
+		t.Fatal("took up error")
 	}
 }
 
@@ -138,6 +182,8 @@ func testResourceCalculator_AddValue_Case4(t *testing.T) {
 
 	t.Logf("quotable cpu: %v, dev: %v, test: %v, staging: %v",
 		c.TotalQuotableCPU(), c.QuotableCPUForWorkspace(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Test), c.QuotableCPUForWorkspace(calcu.Staging))
+	t.Logf("already took up, dev: %v, test: %v, staging: %v",
+		c.AlreadyTookUpCPU(calcu.Dev), c.AlreadyTookUpCPU(calcu.Test), c.AlreadyTookUpCPU(calcu.Staging))
 	if c.TotalQuotableCPU() != r.TotalQuotable {
 		t.Fatal("TotalQuotableCPU error")
 	}
@@ -152,6 +198,19 @@ func testResourceCalculator_AddValue_Case4(t *testing.T) {
 	}
 	if c.QuotableCPUForWorkspace(calcu.Dev) != r.DevQuota {
 		t.Fatal("QuotableCPUForWorkspace(calcu.Dev) error")
+	}
+
+	if c.AllocatableCPU(calcu.Dev) != c.QuotableCPUForWorkspace(calcu.Dev)+c.AlreadyTookUpCPU(calcu.Dev) {
+		t.Fatal("took up error", c.AllocatableCPU(calcu.Dev), c.QuotableCPUForWorkspace(calcu.Dev), c.AlreadyTookUpCPU(calcu.Dev))
+	}
+	if c.AllocatableCPU(calcu.Test) != c.QuotableCPUForWorkspace(calcu.Test)+c.AlreadyTookUpCPU(calcu.Test) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Staging) != c.QuotableCPUForWorkspace(calcu.Staging)+c.AlreadyTookUpCPU(calcu.Staging) {
+		t.Fatal("took up error")
+	}
+	if c.AllocatableCPU(calcu.Prod) != c.QuotableCPUForWorkspace(calcu.Prod)+c.AlreadyTookUpCPU(calcu.Prod) {
+		t.Fatal("took up error")
 	}
 }
 
@@ -252,14 +311,6 @@ func TestByteToGibibyte(t *testing.T) {
 
 func TestWorkspacesString(t *testing.T) {
 	t.Log(calcu.WorkspacesString([]calcu.Workspace{calcu.Prod, calcu.Dev, calcu.Staging}))
-}
-
-func TestResourceCalculator_AlreadyQuota(t *testing.T) {
-	clusterName := "erda-hongkong"
-	c := calcu.New(clusterName)
-	if c.AlreadyQuotaCPU(calcu.Prod) != 0 {
-		t.Fatal("alreadyQuota error")
-	}
 }
 
 func TestResourceToString(t *testing.T) {
