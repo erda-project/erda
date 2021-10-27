@@ -479,16 +479,16 @@ func (t *Table) GetTableOperation() map[string]interface{} {
 			Text:   t.SDK.I18n("drain"),
 			Reload: true,
 		},
-		"offline": {
-			Key:    "offline",
-			Text:   t.SDK.I18n("offline"),
-			Reload: true,
-		},
-		"online": {
-			Key:    "online",
-			Text:   t.SDK.I18n("online"),
-			Reload: true,
-		},
+		//"offline": {
+		//	Key:    "offline",
+		//	Text:   t.SDK.I18n("offline"),
+		//	Reload: true,
+		//},
+		//"online": {
+		//	Key:    "online",
+		//	Text:   t.SDK.I18n("online"),
+		//	Reload: true,
+		//},
 	}
 	res := map[string]interface{}{}
 	for key, op := range ops {

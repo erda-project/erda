@@ -196,7 +196,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Title:     cputil.I18n(ctx, "restartCount"),
 		},
 		{
-			Width:     100,
+			Width:     120,
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
 			Fixed:     "right",
