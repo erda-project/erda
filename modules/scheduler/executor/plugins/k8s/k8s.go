@@ -1131,7 +1131,7 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 		return nil, fmt.Errorf("the scaling service count is not equal 1")
 	}
 
-	if err = k.scaleDeployment(sg); err != nil {
+	if err = k.scaleDeployment(ctx, sg); err != nil {
 		logrus.Error(err)
 		return nil, err
 	}
