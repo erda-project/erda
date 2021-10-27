@@ -190,14 +190,14 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 			}
 		}
 		if role == "worker" && !table.IsNodeLabelInBlacklist(c) {
-			if !table.IsNodeOffline(c) {
-				batchOperations = append(batchOperations, "drain")
-				if c.String("spec", "unschedulable") == "true" && !table.IsNodeOffline(c) {
-					batchOperations = append(batchOperations, "offline")
-				}
-			} else {
-				batchOperations = append(batchOperations, "online")
-			}
+			//if !table.IsNodeOffline(c) {
+			batchOperations = append(batchOperations, "drain")
+			//	if c.String("spec", "unschedulable") == "true" && !table.IsNodeOffline(c) {
+			//		batchOperations = append(batchOperations, "offline")
+			//	}
+			//} else {
+			//	batchOperations = append(batchOperations, "online")
+			//}
 		}
 
 		items = append(items, table.RowItem{
@@ -256,7 +256,8 @@ func (mt *MemInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
+		//"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
+		"batchOperations": []string{"cordon", "uncordon", "drain"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 
