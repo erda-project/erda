@@ -16,6 +16,8 @@ package filter
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -28,6 +30,15 @@ import (
 func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := f.initFromProtocol(ctx, c); err != nil {
 		return err
+	}
+
+	switch event.Operation {
+	case cptype.InitializeOperation, cptype.RenderingOperation:
+		if f.InParams.FrontendUrlQuery != "" {
+			if err := f.initDefaultOperation(); err != nil {
+				return err
+			}
+		}
 	}
 
 	// all iterations
@@ -135,6 +146,12 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		return err
 	}
 
+	urlParam, err := f.generateUrlQueryParams()
+	if err != nil {
+		return err
+	}
+	f.State.Base64UrlQueryParams = urlParam
+
 	if err = f.setToComponent(c); err != nil {
 		return err
 	}
@@ -172,5 +189,25 @@ func (f *Filter) SetGlobalAtSceneAndStep(h *gshelper.GSHelper) error {
 	h.SetGlobalAtStep(steps)
 	h.SetGlobalAtScene(scenes)
 	h.SetGlobalAtSceneStep(sceneSteps)
+	return nil
+}
+
+func (f *Filter) generateUrlQueryParams() (string, error) {
+	fb, err := json.Marshal(f.State.Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
+}
+
+func (f *Filter) initDefaultOperation() error {
+	b, err := base64.StdEncoding.DecodeString(f.InParams.FrontendUrlQuery)
+	if err != nil {
+		return err
+	}
+	f.State.Values = SelectedValues{}
+	if err = json.Unmarshal(b, &f.State.Values); err != nil {
+		return err
+	}
 	return nil
 }
