@@ -852,6 +852,21 @@ func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertD
 	}
 	result := &pb.GetAlertDetailResponse{}
 	result.Data = data
+	for _, v := range m.p.alertConditions {
+		if v.Scope == "msp" {
+			for _, c := range v.Conditions {
+				value, ok := data.Attributes[c.Key]
+				if ok {
+					condition := &pb.TriggerCondition{}
+					err = json.Unmarshal([]byte(value.GetStringValue()), condition)
+					if err != nil {
+						return nil, errors.NewInternalServerError(err)
+					}
+					result.Data.TriggerCondition = append(result.Data.TriggerCondition, condition)
+				}
+			}
+		}
+	}
 	return result, nil
 }
 
