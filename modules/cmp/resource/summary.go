@@ -40,7 +40,7 @@ type GaugeData struct {
 func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
 	logrus.Debug("func GetGauge start")
 	defer logrus.Debug("func GetGauge finished")
-	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName, nil, nil)
+	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 	return
 }
 
-func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, projectIds, principal []string) (resp *apistructs.ResourceResp, err error) {
+func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames []string) (resp *apistructs.ResourceResp, err error) {
 	resp = &apistructs.ResourceResp{}
 	orgid, err := strconv.ParseUint(ordId, 10, 64)
 	if err != nil {
@@ -166,9 +166,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 	}
 	logrus.Debug("get all namespace finished")
-	nreq := &apistructs.OrgClustersNamespaceReq{}
-	nreq.OrgID = ordId
 	logrus.Debug("start involved namespace")
+
 	nresp, err := r.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
 	logrus.Debug("involved namespace finished")
 	if err != nil {
@@ -181,7 +180,6 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 				involveNamespace[k][s] = true
 			}
 		}
-
 	}
 	irrelevantNamespace := make([]*pb.ClusterNamespacePair, 0)
 	for _, namespace := range allNamespace {

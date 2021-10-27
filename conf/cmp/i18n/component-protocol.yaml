@@ -229,6 +229,8 @@ zh:
  SharedResources: 共享资源
  resourceNodeCount: 个
  week: 周
+ shared resource: 共享资源
+ unused resource: 未使用资源
 
 en:
  # general

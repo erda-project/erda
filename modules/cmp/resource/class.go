@@ -87,12 +87,16 @@ type Quota struct {
 	nickName string
 }
 
-func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
+func (r *Resource) GetPie(ordId, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	logrus.Debug("func GetPie start")
 	defer logrus.Debug("func GetPie finished")
 	var clusters []apistructs.ClusterInfo
 	data = make(map[string]*PieData)
-	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+	orgID, err := strconv.ParseUint(ordId, 10, 64)
+	if err != nil {
+		return
+	}
+	clusters, err = r.Bdl.ListClusters("", orgID)
 	if err != nil {
 		return
 	}
@@ -101,7 +105,7 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 		return nil, errNoClusterFound
 	}
 	logrus.Debug("start fetch quota ")
-	resp, err := r.Bdl.FetchQuotaOnClusters(uint64(ordId), request.ClusterName)
+	resp, err := r.Bdl.FetchQuotaOnClusters(orgID, request.ClusterName)
 	logrus.Debug("func quota finished")
 	if err != nil {
 		return
@@ -113,19 +117,20 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	resources, err := r.Server.GetClustersResources(r.Ctx, greq)
 	logrus.Debug("get cluster resource from steve finished ")
 
+	irResp, err := r.GetQuotaResource(ordId, userId, request.ClusterName)
 	if err != nil {
 		return
 	}
 
 	// Project
-	pie, err := r.GetProjectPie(request.ResourceType, resp)
+	pie, err := r.GetProjectPie(request.ResourceType, resp, irResp)
 	if err != nil {
 		return
 	}
 	data[Project] = pie
 
 	// principal
-	pie, err = r.GetPrincipalPie(request.ResourceType, resp)
+	pie, err = r.GetPrincipalPie(request.ResourceType, resp, irResp)
 	if err != nil {
 		return
 	}
@@ -140,7 +145,7 @@ func (r *Resource) GetPie(ordId int64, userId string, request *apistructs.ClassR
 	return
 }
 
-func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClustersResponse) (projectPie *PieData, err error) {
+func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (projectPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
@@ -165,14 +170,34 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 	switch resType {
 
 	case Memory:
+		sum := 0.0
 		for _, v := range projectMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
+		if resource != nil {
+			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
+			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
+			sum += resource.IrrelevantCpuRequest
+			if resource.MemTotal > sum {
+				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.MemTotal-sum)/G), 64)
+				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
+			}
+		}
 	default:
+		sum := 0.0
 		for _, v := range projectMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
+		}
+		if resource != nil {
+			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
+			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
+			sum += resource.IrrelevantCpuRequest
+			if resource.CpuTotal > sum {
+				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.CpuTotal-sum)/MilliCore), 64)
+				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
+			}
 		}
 	}
 	r.PieSort(serie.Data)
@@ -180,7 +205,7 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 	return
 }
 
-func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnClustersResponse) (principalPie *PieData, err error) {
+func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (principalPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
@@ -202,14 +227,35 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 	}
 	switch resType {
 	case Memory:
+		sum := 0.0
 		for _, v := range principalMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
+		if resource != nil {
+			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
+			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
+			sum += resource.IrrelevantCpuRequest
+			if resource.MemTotal > sum {
+				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.MemTotal-sum)/G), 64)
+				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
+			}
+		}
+
 	default:
+		sum := 0.0
 		for _, v := range principalMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
+		}
+		if resource != nil {
+			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
+			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
+			sum += resource.IrrelevantCpuRequest
+			if resource.CpuTotal > sum {
+				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.CpuTotal-sum)/MilliCore), 64)
+				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
+			}
 		}
 	}
 	r.PieSort(serie.Data)
@@ -223,6 +269,7 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 		Name: r.I18n("distribution by cluster"),
 		Type: "pie",
 	}
+
 	switch resourceType {
 	case Memory:
 		for _, c := range resources.List {
@@ -321,7 +368,8 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	default:
 		// Day
 		for _, model := range pd {
-			if v, ok := tRes[model.CreatedAt.Day()]; ok {
+			// assume data not over one year
+			if v, ok := tRes[model.CreatedAt.YearDay()]; ok {
 				v.CPUTotal += model.CPUTotal
 				v.MemTotal += model.MemTotal
 				v.CPURequested += model.CPURequested
@@ -341,24 +389,39 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	})
 
 	switch request.ResourceType {
-
 	case Memory:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
-			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
+			switch request.Interval {
+			case Month:
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+			case Week:
+				_, wk := quota.CreatedAt.ISOWeek()
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
+			default:
+				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
+			}
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
-			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
+			switch request.Interval {
+			case Month:
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+			case Week:
+				_, wk := quota.CreatedAt.ISOWeek()
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
+			default:
+				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
+			}
 		}
 	}
 	return
 }
 
-func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetProjectTrend(ordId, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	td = &Histogram{
 		Name: r.I18n("project trend"),
 	}
@@ -375,7 +438,11 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		pd       []apistructs.ProjectResourceDailyModel
 		clusters []apistructs.ClusterInfo
 	)
-	clusters, err = r.Bdl.ListClusters("", uint64(ordId))
+	orgID, err := strconv.ParseUint(ordId, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	clusters, err = r.Bdl.ListClusters("", orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +490,8 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 	default:
 		// Day
 		for _, model := range pd {
-			if v, ok := tRes[model.CreatedAt.Day()]; ok {
+			// assume data not over one year
+			if v, ok := tRes[model.CreatedAt.YearDay()]; ok {
 				v.CPURequest += model.CPURequest
 				v.CPUQuota += model.CPUQuota
 				v.MemRequest += model.MemRequest
@@ -451,7 +519,8 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
 			case Week:
-				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("01")+r.I18n("week"))
+				_, wk := quota.CreatedAt.ISOWeek()
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}
@@ -465,7 +534,8 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
 			case Week:
-				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("01")+r.I18n("week"))
+				_, wk := quota.CreatedAt.ISOWeek()
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}
