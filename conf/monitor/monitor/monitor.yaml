@@ -62,7 +62,7 @@ elasticsearch@log:
   username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -74,16 +74,16 @@ elasticsearch.index.loader@log:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   default_ttl: "${LOG_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   key_patterns: 
     - "erda-logs-<org>.<key>-{number}"
 elasticsearch.index.cleaner@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   check_interval: "30m"
   print_onluy: true
   disk_clean:
@@ -100,18 +100,18 @@ elasticsearch.index.cleaner@log:
       - index: "erda-logs-<org>.<key>-{number}"
         alias: "erda-logs-<org>.<key>-rollover"
 log-storage-elasticsearch:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   query_timeout: "1m"
   read_page_size: 200
 kubernetes-logs-storage:
-  _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:false}
   client_cache_size: 128
   client_cache_expiration: "10m"
   pod_info_cache_size: 256
   pod_info_cache_expiration: "3h"
   buffer_lines: 200
 log-storage-cassandra:
-  _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:true}
   read_page_size: 201
   cassandra:
     keyspace:
@@ -126,7 +126,7 @@ elasticsearch@event:
   username: "${EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -137,16 +137,16 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>-{number}"
         - "<event>-<namespace>.<key>-{number}"
 storage-retention-strategy@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   default_ttl: "${EVENT_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   key_patterns:
     - "erda-events-<event>-<namespace>.<key>-{number}"
 elasticsearch.index.cleaner@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   check_interval: "30m"
   print_onluy: true
   disk_clean:
@@ -163,7 +163,7 @@ elasticsearch.index.cleaner@event:
       - index: "erda-events-<event>-<namespace>.<key>-{number}"
         alias: "erda-events-<event>-<namespace>.<key>-rollover"
 event-storage-elasticsearch:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   query_timeout: "1m"
   read_page_size: 50
 

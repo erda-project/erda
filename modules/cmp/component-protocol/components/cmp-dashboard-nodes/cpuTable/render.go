@@ -143,7 +143,8 @@ func (ct *CpuInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
+		//"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
+		"batchOperations": []string{"cordon", "uncordon", "drain"},
 		"scroll":          table.Scroll{X: 1200},
 	}
 	ct.Props = props
@@ -212,19 +213,23 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableTy
 		}
 		batchOperations := make([]string, 0)
 		if !strings.Contains(role, "master") {
-			if strings.Contains(status.Value, ct.SDK.I18n("SchedulingDisabled")) {
-				batchOperations = append(batchOperations, "uncordon")
+			if c.String("spec", "unschedulable") == "true" {
+				if !table.IsNodeOffline(c) {
+					batchOperations = append(batchOperations, "uncordon")
+				}
 			} else {
 				batchOperations = append(batchOperations, "cordon")
 			}
 		}
 		if role == "worker" && !table.IsNodeLabelInBlacklist(c) {
+			//if !table.IsNodeOffline(c) {
 			batchOperations = append(batchOperations, "drain")
-			if !table.IsNodeOffline(c) {
-				batchOperations = append(batchOperations, "offline")
-			} else {
-				batchOperations = append(batchOperations, "online")
-			}
+			//	if c.String("spec", "unschedulable") == "true" && !table.IsNodeOffline(c) {
+			//		batchOperations = append(batchOperations, "offline")
+			//	}
+			//} else {
+			//	batchOperations = append(batchOperations, "online")
+			//}
 		}
 
 		items = append(items, table.RowItem{

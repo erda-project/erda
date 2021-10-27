@@ -20,7 +20,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -95,14 +96,27 @@ func (f *ComponentYamlFileEditor) GenComponentState(component *cptype.Component)
 }
 
 func (f *ComponentYamlFileEditor) RenderFile() error {
-	client, err := k8sclient.New(f.State.ClusterName)
+	name := f.State.NodeID
+
+	cli, err := k8sclient.New(f.State.ClusterName)
 	if err != nil {
 		return err
 	}
 
-	node, err := client.ClientSet.CoreV1().Nodes().Get(f.ctx, f.State.NodeID, v1.GetOptions{})
+	node := &corev1.Node{}
+	err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+		Name: name,
+	}, node)
 	if err != nil {
-		return errors.Errorf("failed to get node %s, %v", f.State.NodeID, err)
+		return errors.Errorf("failed to get node %s, %v", name, err)
+	}
+
+	gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(node)
+	if err != nil {
+		return errors.Errorf("failed to get object kind, %v", err)
+	}
+	if !unversioned && len(gvk) == 1 {
+		node.SetGroupVersionKind(gvk[0])
 	}
 
 	data, err := json.Marshal(node)

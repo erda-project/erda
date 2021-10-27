@@ -231,16 +231,14 @@ func CoreToMillcore(v float64) uint64 {
 }
 
 func MillcoreToCore(v uint64, accuracy int32) float64 {
-	value, _ := decimal.NewFromFloat(float64(v) / 1000).Round(accuracy).Float64()
-	return value
+	return Accuracy(float64(v)/1000, accuracy)
 }
 
 func GibibyteToByte(v float64) uint64 {
 	return uint64(v * 1024 * 1024 * 1024)
 }
 func ByteToGibibyte(v uint64, accuracy int32) float64 {
-	value, _ := decimal.NewFromFloat(float64(v) / (1024 * 1024 * 1024)).Round(accuracy).Float64()
-	return value
+	return Accuracy(float64(v)/(1024*1024*1024), accuracy)
 }
 
 func priority(workspace Workspace) []string {
@@ -292,6 +290,11 @@ func ResourceToString(res float64, typ string) string {
 	default:
 		return fmt.Sprintf("%.f", res)
 	}
+}
+
+func Accuracy(v float64, accuracy int32) float64 {
+	v, _ = decimal.NewFromFloat(v).Round(accuracy).Float64()
+	return v
 }
 
 func setPrec(f float64, prec int) float64 {

@@ -16,10 +16,12 @@ package step
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
@@ -29,14 +31,14 @@ type APISpec struct {
 	Loop    *apistructs.PipelineTaskLoop `json:"loop"`
 }
 
-func GetStepAllOutput(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle) (map[string]map[string]string, error) {
+func GetStepAllOutput(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *apistructs.GlobalStateData) (map[string]map[string]string, error) {
 	var outputs = map[string]map[string]string{}
 	apiOutput, err := buildStepOutPut(steps)
 	if err != nil {
 		return nil, err
 	}
 
-	configSheetOutput, err := buildConfigSheetStepOutPut(steps, bdl)
+	configSheetOutput, err := buildConfigSheetStepOutPut(steps, bdl, gs)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +134,7 @@ func MakeStepOutputSelectKey(stepID string, stepName string, key string) string 
 	return "#" + stepID + "-" + stepName + ":" + key
 }
 
-func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle) (map[string]map[string]string, error) {
+func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *apistructs.GlobalStateData) (map[string]map[string]string, error) {
 
 	outputs := make(map[string]map[string]string, 0)
 
@@ -177,7 +179,7 @@ func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundl
 	req.SnippetConfigs = snippetConfigs
 	detail, err := bdl.GetPipelineActionParamsAndOutputs(req)
 	if err != nil {
-		return nil, err
+		(*gs)[protocol.GlobalInnerKeyError.String()] = fmt.Sprintf("failed to query step outputs, please check config sheets")
 	}
 
 	for alias, detail := range detail {
@@ -198,7 +200,7 @@ func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundl
 	return outputs, nil
 }
 
-func GetConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle) (map[string]map[string]string, error) {
+func GetConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *apistructs.GlobalStateData) (map[string]map[string]string, error) {
 
 	outputs := make(map[string]map[string]string, 0)
 
@@ -247,7 +249,7 @@ func GetConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.
 	req.SnippetConfigs = snippetConfigs
 	detail, err := bdl.GetPipelineActionParamsAndOutputs(req)
 	if err != nil {
-		return nil, err
+		(*gs)[protocol.GlobalInnerKeyError.String()] = fmt.Sprintf("failed to query step outputs, err: %v", err)
 	}
 
 	for alias, detail := range detail {

@@ -99,25 +99,6 @@ type TestPlanV2UpdateRequest struct {
 	IdentityInfo
 }
 
-// Check check create request is valid
-func (tp *TestPlanV2UpdateRequest) Check() error {
-	// req params check
-	if tp.Name == "" {
-		return errors.New("name is empty")
-	}
-	if tp.SpaceID == 0 {
-		return errors.New("spaceID is empty")
-	}
-	if len(tp.Owners) == 0 {
-		return errors.New("owners is empty")
-	}
-	if tp.IterationID == 0 {
-		return errors.New("iterationID is empty")
-	}
-
-	return nil
-}
-
 // TestPlanV2UpdateResponse testplan v2 update response
 type TestPlanV2UpdateResponse struct {
 	Header
