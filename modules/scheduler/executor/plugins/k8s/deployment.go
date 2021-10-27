@@ -135,14 +135,15 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	_, projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
 	deltaCPU, deltaMem, err := k.getDeploymentDeltaResource(ctx, deployment)
 	if err != nil {
-		return errors.Errorf("faield to get delta resource for deployment %s, %v", deployment.Name, err)
-	}
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update")
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New("workspace quota is not enough")
+		logrus.Errorf("faield to get delta resource for deployment %s, %v", deployment.Name, err)
+	} else {
+		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update")
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("workspace quota is not enough")
+		}
 	}
 
 	err = k.deploy.Put(deployment)
@@ -881,14 +882,15 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	_, projectID, workspace, runtimeID := extractContainerEnvs(deploy.Spec.Template.Spec.Containers)
 	deltaCPU, deltaMem, err := k.getDeploymentDeltaResource(ctx, deploy)
 	if err != nil {
-		return errors.Errorf("failed to get delta resource for deployment %s, %v", deploy.Name, err)
-	}
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "scale")
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New("workspace quota is not enough")
+		logrus.Errorf("failed to get delta resource for deployment %s, %v", deploy.Name, err)
+	} else {
+		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "scale")
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("workspace quota is not enough")
+		}
 	}
 
 	err = k.deploy.Put(deploy)
