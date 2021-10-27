@@ -1399,6 +1399,8 @@ func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, pr
 }
 
 func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apistructs.GetQuotaOnClustersResponse, error) {
+	l := logrus.WithField("func", "GetQuotaOnClusters")
+
 	var response = new(apistructs.GetQuotaOnClustersResponse)
 	response.ClusterNames = clusterNames
 
@@ -1446,27 +1448,35 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
 	for _, project := range projects {
 		// query project owner
+		var member = &model.Member{
+			UserID: "0",
+			Name:   "unknown",
+			Nick:   "unknown",
+		}
 		memberListReq := apistructs.MemberListRequest{
 			ScopeType: "project",
 			ScopeID:   project.ID,
-			Roles:     []string{"Owner"},
+			Roles:     []string{"Owner", "Lead"},
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
 			PageSize:  1,
 		}
-		total, members, err := p.db.GetMembersByParam(&memberListReq)
-		if err != nil {
-			err = errors.Wrap(err, "failed to GetMembersByParam")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
-			continue
+		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
+		case err != nil:
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln("failed to GetMembersByParam")
+		case len(members) == 0:
+			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
+		default:
+			mb, ok := getMemberFromMembers(members, "Owner")
+			if ok {
+				member = mb
+				break
+			}
+			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
+				member = mb
+			}
 		}
-		if total <= 0 || len(members) == 0 {
-			err = errors.New("not found owner for the project")
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln()
-			continue
-		}
-		member := members[0]
 
 		owner, ok := ownerM[member.UserID]
 		if !ok {
@@ -1655,4 +1665,15 @@ func hasClusterAndNamespace(namespaces map[string][]string, clusterName, namespa
 		}
 	}
 	return false
+}
+
+func getMemberFromMembers(members []model.Member, role string) (*model.Member, bool) {
+	for _, member := range members {
+		for _, role_ := range member.Roles {
+			if strings.EqualFold(role, role_) {
+				return &member, true
+			}
+		}
+	}
+	return nil, false
 }
