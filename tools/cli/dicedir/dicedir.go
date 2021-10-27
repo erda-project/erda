@@ -26,6 +26,8 @@ var (
 
 	GlobalDiceDir  = ".dice.d"
 	ProjectDiceDir = ".dice"
+
+	ProjectErdaDir = ".erda"
 )
 
 func FindGlobalDiceDir() (string, error) {
@@ -98,4 +100,35 @@ func existProjDiceDir(path string) bool {
 
 func mkProjDiceDirPath(path string) string {
 	return filepath.Join(path, ProjectDiceDir)
+}
+
+func FindProjectErdaDir() (string, error) {
+	current, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	var res string
+	for {
+		if existProjDiceDir(current) {
+			res = mkProjErdaDirPath(current)
+			return res, nil
+		}
+		origin := current
+		current = filepath.Dir(current)
+		if current == origin {
+			return "", NotExist
+		}
+	}
+}
+
+func existProjErdaDir(path string) bool {
+	f, err := os.Stat(mkProjErdaDirPath(path))
+	if os.IsNotExist(err) {
+		return false
+	}
+	return f.IsDir()
+}
+
+func mkProjErdaDirPath(path string) string {
+	return filepath.Join(path, ProjectErdaDir)
 }

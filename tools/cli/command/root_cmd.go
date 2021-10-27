@@ -60,6 +60,8 @@ var (
 		"mkpy",
 		"mkpypkg",
 		"record",
+		"pipeline",
+		"check",
 		"help",
 	}
 	loginWhiteListCmds = strings.Join(loginWhiteList, ",")

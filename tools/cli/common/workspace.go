@@ -15,7 +15,10 @@
 package common
 
 import (
+	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -42,6 +45,34 @@ func GetOriginRepo() string {
 func GetRepo(remote string) string {
 	out, _ := exec.Command("git", "config", "--get", "remote."+remote+".url").CombinedOutput()
 	return string(out)
+}
+
+func GetWorkspacePipelines(dir string) ([]string, error) {
+	var ymls []string
+	fmt.Println("dir :", dir)
+	fs, err := ioutil.ReadDir(dir + "/pipelines")
+	fmt.Println(len(fs))
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	for _, path := range fs {
+		fmt.Println(path)
+		if !path.IsDir() && (strings.HasSuffix(path.Name(), ".yml") ||
+			strings.HasSuffix(path.Name(), ".yaml")) {
+			ymls = append(ymls, path.Name())
+		}
+	}
+
+	return ymls, nil
+}
+
+func IsDir(path string) bool {
+	s, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return s.IsDir()
 }
 
 func GetWorkspaceInfo() (org string, project string, app string, err error) {
