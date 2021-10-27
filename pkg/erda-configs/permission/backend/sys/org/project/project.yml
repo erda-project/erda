@@ -642,6 +642,7 @@
   scope: project
   resource: testplan
   action: UPDATE
+  resource_role: OWNER,PARTNER
 - role: Owner,Lead,QA
   scope: project
   resource: testplan

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/c2h5oh/datasize"
@@ -97,6 +98,9 @@ type Conf struct {
 	AuditArchiveCron         string `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"`   // audit archive cron
 	SysAuditCleanInterval    int    `env:"SYS_AUDIT_CLEAN_INTERVAL" default:"-7"`      // sys audit clean interval
 	OrgAuditMaxRetentionDays uint64 `env:"ORG_AUDIT_MAX_RETENTION_DAYS" default:"180"` // org level audit max retention days
+
+	// erda-configs
+	ErdaConfigsBasePath string `env:"ERDA_CONFIGS_BASE_PATH" default:"erda-configs"`
 }
 
 var (
@@ -112,10 +116,10 @@ var (
 )
 
 func initPermissions() {
-	permissions = getAllFiles("erda-configs/permission", permissions)
+	permissions = getAllFiles(filepath.Join(cfg.ErdaConfigsBasePath, "permission"), permissions)
 }
 func initAuditTemplate() {
-	auditsTemplate = genTempFromFiles("erda-configs/audit/template.json")
+	auditsTemplate = genTempFromFiles(filepath.Join(cfg.ErdaConfigsBasePath, "audit/template.json"))
 }
 
 func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
@@ -163,9 +167,10 @@ func getAllFiles(pathname string, perms []model.RolePermission) []model.RolePerm
 
 // Load 加载配置项.
 func Load() {
+	envconf.MustLoad(&cfg)
+
 	initPermissions()
 	initAuditTemplate()
-	envconf.MustLoad(&cfg)
 
 	// parse FileMaxUploadSize
 	var fileMaxUploadByte datasize.ByteSize
