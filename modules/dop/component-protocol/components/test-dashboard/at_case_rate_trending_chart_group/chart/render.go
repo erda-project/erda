@@ -139,6 +139,44 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		if err != nil {
 			return err
 		}
+		pData := make([]Data, 0, len(historyList))
+		eData := make([]Data, 0, len(historyList))
+		xAxis := make([]string, 0, len(historyList))
+		var sucApiNum, execApiNum, totalApiNum int64
+		for _, v := range historyList {
+			if v.Type != apistructs.AutoTestPlan {
+				continue
+			}
+			sucApiNum += v.SuccessApiNum
+			execApiNum += v.ExecuteApiNum
+			totalApiNum += v.TotalApiNum
+			metaData := gshelper.SelectChartItemData{
+				PlanID: v.PlanID,
+				Name: func() string {
+					for _, v2 := range h.GetGlobalAutoTestPlanList() {
+						if v2.ID == v.PlanID {
+							return v2.Name
+						}
+					}
+					return ""
+				}(),
+				PipelineID: v.PipelineID,
+			}
+			pData = append(pData, Data{
+				MetaData: metaData,
+				Value:    calRate(sucApiNum, totalApiNum),
+			})
+			eData = append(eData, Data{
+				MetaData: metaData,
+				Value:    calRate(execApiNum, totalApiNum),
+			})
+			xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
+		}
+		ch.EData = eData
+		ch.PData = pData
+		ch.XAxis = XAxis{xAxis}
+		c.Props = ch.convertToProps(ctx)
+		c.Operations = getOperations()
 		h.SetSelectChartItemData(func() gshelper.SelectChartItemData {
 			if len(historyList) == 0 {
 				return gshelper.SelectChartItemData{}
@@ -156,32 +194,6 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 				}(),
 			}
 		}())
-		pData := make([]Data, 0, len(historyList))
-		eData := make([]Data, 0, len(historyList))
-		xAxis := make([]string, 0, len(historyList))
-		var sucApiNum, execApiNum, totalApiNum int64
-		for _, v := range historyList {
-			if v.Type != apistructs.AutoTestPlan {
-				continue
-			}
-			sucApiNum += v.SuccessApiNum
-			execApiNum += v.ExecuteApiNum
-			totalApiNum += v.TotalApiNum
-			pData = append(pData, Data{
-				MetaData: h.GetSelectChartHistoryData(),
-				Value:    calRate(sucApiNum, totalApiNum),
-			})
-			eData = append(eData, Data{
-				MetaData: h.GetSelectChartHistoryData(),
-				Value:    calRate(execApiNum, totalApiNum),
-			})
-			xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
-		}
-		ch.EData = eData
-		ch.PData = pData
-		ch.XAxis = XAxis{xAxis}
-		c.Props = ch.convertToProps(ctx)
-		c.Operations = getOperations()
 		return nil
 	}
 	return nil
