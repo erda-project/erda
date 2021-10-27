@@ -59,8 +59,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("elasticsearch.index.initializer", &servicehub.Spec{
-		Services:   []string{"elasticsearch.index.initializer"},
-		ConfigFunc: func() interface{} { return &config{} },
+		Services:     []string{"elasticsearch.index.initializer"},
+		Dependencies: []string{"elasticsearch"},
+		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
