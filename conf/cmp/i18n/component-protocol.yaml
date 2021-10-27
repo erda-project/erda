@@ -226,6 +226,7 @@ zh:
  quota in use: 配额已使用
  cluster trend: 集群资源变化趋势图
  project trend: 项目资源变化趋势图
+ resourceNodeCount: 个
 
 en:
  # general
@@ -384,3 +385,5 @@ en:
  memory-size: Memory Size
  undrained: There are still unevicted Pods in this node!
 
+ # cmp-dashboard-resource
+ resourceNodeCount: nodes
