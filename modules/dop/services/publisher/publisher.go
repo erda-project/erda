@@ -162,9 +162,11 @@ func (p *Publisher) Update(updateReq *apistructs.PublisherUpdateRequest) error {
 	}
 
 	// 保证 nexus ${repoFormat}-hosted-repo 存在
-	if err = p.ensureNexusHostedRepo(&publisher); err != nil {
-		return err
-	}
+	go func() {
+		if err = p.ensureNexusHostedRepo(&publisher); err != nil {
+			logrus.Errorf("Update publisher %v ensureNexusHostedRepo error %v", publisher, err)
+		}
+	}()
 
 	return nil
 }
