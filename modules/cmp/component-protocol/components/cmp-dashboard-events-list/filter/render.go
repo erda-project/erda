@@ -85,30 +85,30 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	query, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(query)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	var v Values
-	if err := json.Unmarshal(decode, &v); err != nil {
+	var values Values
+	if err := json.Unmarshal(decoded, &values); err != nil {
 		return err
 	}
-	f.State.Values = v
+	f.State.Values = values
 	return nil
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	jsonData, err := json.Marshal(f.State.Values)
+	data, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.FilterURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encode
 	return nil
 }
 
@@ -278,14 +278,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }
 
 func (f *ComponentFilter) getDisplayName(name string) (string, error) {
