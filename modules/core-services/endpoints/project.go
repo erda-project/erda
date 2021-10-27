@@ -223,7 +223,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 
 	if internalClient == "" {
 		// check project is located at the org in header if not from internal
-		if strconv.FormatUint(project.ID, 10) != orgIDStr {
+		if strconv.FormatUint(project.OrgID, 10) != orgIDStr {
 			return apierrors.ErrGetProject.AccessDenied().ToResp(), nil
 		}
 	}
