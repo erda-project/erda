@@ -641,6 +641,9 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 				MemQuotaRate:   0,
 				MemRequest:     0,
 				Nodes:          clusterNodes[clusterName],
+				Tips:           "",
+				CPUTookUp:      calcu.MillcoreToCore(calculator.AlreadyTookUpCPU(workspace), 3),
+				MemTookUp:      calcu.ByteToGibibyte(calculator.AlreadyTookUpMem(workspace), 3),
 			}
 			if c, ok := requestResource[clusterName]; ok {
 				resource.CPURequest = calcu.MillcoreToCore(c.AllocatableCPU(workspace), 3)
@@ -753,26 +756,11 @@ func (o *Org) makeTips(langCodes i18n.LanguageCodes, resource *apistructs.Cluste
 	workspaceText := o.trans.Text(langCodes, strings.ToUpper(calcu.WorkspaceString(workspace)))
 	switch quotableCPU, quotableMem := calculator.QuotableCPUForWorkspace(workspace), calculator.QuotableMemForWorkspace(workspace); {
 	case quotableCPU == 0 || quotableMem == 0:
-		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"),
-			workspaceText,
-			calcu.MillcoreToCore(calculator.AlreadyTookUpCPU(workspace), 3), calcu.ByteToGibibyte(calculator.AlreadyTookUpMem(workspace), 3),
-			workspaceText,
-			calcu.MillcoreToCore(calculator.AllocatableCPU(workspace), 3), calcu.ByteToGibibyte(calculator.AllocatableMem(workspace), 3),
-		)
+		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"), workspaceText, workspaceText)
 	case quotableCPU == 0:
-		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"),
-			workspaceText,
-			calcu.MillcoreToCore(calculator.AlreadyTookUpCPU(workspace), 3),
-			workspaceText,
-			calcu.MillcoreToCore(calculator.AllocatableCPU(workspace), 3),
-		)
+		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"), workspaceText, workspaceText)
 	case quotableMem == 0:
-		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"),
-			workspaceText,
-			calcu.ByteToGibibyte(calculator.AlreadyTookUpMem(workspace), 3),
-			workspaceText,
-			calcu.ByteToGibibyte(calculator.AllocatableMem(workspace), 3),
-		)
+		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"), workspaceText, workspaceText)
 	}
 }
 
