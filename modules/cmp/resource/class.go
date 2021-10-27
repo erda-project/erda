@@ -158,20 +158,21 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 			}
 			q.cpuQuota += p.CPUQuota
 			q.memQuota += p.MemQuota
+			q.nickName = p.DisplayName
 			projectMap[p.Name] = q
 		}
 	}
 	switch resType {
 
 	case Memory:
-		for k, v := range projectMap {
+		for _, v := range projectMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
-			serie.Data = append(serie.Data, SerieData{f, k})
+			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
 	default:
-		for k, v := range projectMap {
+		for _, v := range projectMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
-			serie.Data = append(serie.Data, SerieData{f, k})
+			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
 	}
 	r.PieSort(serie.Data)
@@ -227,7 +228,7 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 		for _, c := range resources.List {
 			memSum := 0.0
 			for _, h := range c.Hosts {
-				memSum += float64(h.CpuTotal)
+				memSum += float64(h.MemTotal)
 			}
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", memSum/G), 64)
 			serie.Data = append(serie.Data, SerieData{f, c.ClusterName})
@@ -345,13 +346,13 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
-			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
+			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
-			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
+			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 		}
 	}
 	return
@@ -384,7 +385,10 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 	}
 
 	db := r.DB.Table("cmp_project_resource_daily")
-	db.Raw("select cpu_quota,cpu_request,mem_quota,mem_request where updated_at < ? and updated_at >= ? and cluster_name in (?)  and project_id in (?) sort by created_at desc", request.End, request.Start, request.ClusterName, request.ProjectId)
+	db.Raw("select cpu_quota,cpu_request,mem_quota,mem_request where updated_at < ? and updated_at >= ? and cluster_name in (?)  sort by created_at desc", request.End, request.Start, request.ClusterName)
+	if len(request.ProjectId) != 0 {
+		db.Where("project_id in (?)", request.ProjectId)
+	}
 	if err = db.Scan(&pd).Error; err != nil {
 		return
 	}
@@ -443,13 +447,28 @@ func (r *Resource) GetProjectTrend(ordId int64, userId string, request *apistruc
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
-			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
+			switch request.Interval {
+			case Month:
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+			case Week:
+				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("01")+r.I18n("week"))
+			default:
+				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
+			}
+
 		}
 	default:
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
-			td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02 15:04:05"))
+			switch request.Interval {
+			case Month:
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+			case Week:
+				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("01")+r.I18n("week"))
+			default:
+				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
+			}
 		}
 	}
 	return
