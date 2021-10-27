@@ -189,6 +189,8 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		logrus.Debugf("scale service group body is %s", string(sgb))
 		// TODO: Need to increase the mechanism of failure compensation
 		if err := s.bdl.ScaleServiceGroup(sg); err != nil {
+			logrus.Errorf("err: %v", err)
+			logrus.Errorf("msg: %s", funcErrMsg)
 			return utils.ErrResp0101(err, funcErrMsg)
 		}
 	}
