@@ -179,19 +179,3 @@ func TestTrimBlockFormat(t *testing.T) {
 	trimBlockFormat := snapshot.TrimBlockFormat(blockFormatCase)
 	t.Log(trimBlockFormat)
 }
-
-// func TestParseCreateTableStmt2(t *testing.T) {
-// 	filename := "../testdata/out.sql"
-// 	data, err := ioutil.ReadFile(filename)
-// 	if err != nil {
-// 		t.Fatalf("failed to ReadFile: %v", err)
-// 	}
-//
-// 	text := snapshot.TrimBlockFormat(string(data))
-// 	text = snapshot.TrimCharacterSetFromRawCreateTableSQL(text)
-//
-// 	_, _, err = parser.New().Parse(string(data), "", "")
-// 	if err != nil {
-// 		t.Fatalf("failed to Parse: %v", err)
-// 	}
-// }
