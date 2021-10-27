@@ -56,7 +56,7 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 		cpu *= int64(*deployment.Spec.Replicas)
 		mem *= int64(*deployment.Spec.Replicas)
 	}
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless")
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless", service.Name)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	if err != nil {
 		logrus.Errorf("faield to get delta resource for deployment %s, %v", deployment.Name, err)
 	} else {
-		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update")
+		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update", service.Name)
 		if err != nil {
 			return err
 		}
@@ -884,7 +884,7 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	if err != nil {
 		logrus.Errorf("failed to get delta resource for deployment %s, %v", deploy.Name, err)
 	} else {
-		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "scale")
+		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "scale", scalingService.Name)
 		if err != nil {
 			return err
 		}
