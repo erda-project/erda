@@ -84,38 +84,38 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	urlQuery, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	qeryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &qeryData); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(query["pageNo"].(float64))
-	w.State.PageSize = uint64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
+	w.State.PageNo = uint64(qeryData["pageNo"].(float64))
+	w.State.PageSize = uint64(qeryData["pageSize"].(float64))
+	sorter := qeryData["sorterData"].(map[string]interface{})
 	w.State.Sorter.Field, _ = sorter["field"].(string)
 	w.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = w.State.PageNo
-	query["pageSize"] = w.State.PageSize
-	query["sorterData"] = w.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = w.State.PageNo
+	urlQuery["pageSize"] = w.State.PageSize
+	urlQuery["sorterData"] = w.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(data)
-	w.State.WorkloadTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(jsonData)
+	w.State.WorkloadTableURLQuery = encode
 	return nil
 }
 
@@ -805,12 +805,12 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
-	component.Props = w.Props
-	component.Data = map[string]interface{}{
+func (w *ComponentWorkloadTable) Transfer(c *cptype.Component) {
+	c.Props = w.Props
+	c.Data = map[string]interface{}{
 		"list": w.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName":             w.State.ClusterName,
 		"countValues":             w.State.CountValues,
 		"pageNo":                  w.State.PageNo,
@@ -820,7 +820,7 @@ func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
 		"values":                  w.State.Values,
 		"workloadTable__urlQuery": w.State.WorkloadTableURLQuery,
 	}
-	component.Operations = w.Operations
+	c.Operations = w.Operations
 }
 
 func getWorkloadKindMap(kinds []string) map[string]struct{} {
