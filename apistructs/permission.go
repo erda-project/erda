@@ -14,6 +14,14 @@
 
 package apistructs
 
+// Resource Role
+const (
+	ResourceRoleCreator  string = "CREATOR"
+	ResourceRoleAssignee string = "ASSIGNEE"
+	ResourceRoleOwner    string = "OWNER"
+	ResourceRolePartner  string = "PARTNER"
+)
+
 // 权限资源集
 const (
 	OrgResource                string = "org"
