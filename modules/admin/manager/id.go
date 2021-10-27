@@ -32,16 +32,24 @@ func (uid USERID) Invalid() bool {
 
 func GetOrgID(req *http.Request) (uint64, error) {
 	// get organization id
-	orgIDStr := req.URL.Query().Get("orgID")
-	if orgIDStr == "" {
-		orgIDStr = req.Header.Get(httputil.OrgHeader)
-		if orgIDStr == "" {
-			return 0, errors.Errorf("invalid param, orgID is %s", orgIDStr)
-		}
+	orgIDStr, err := GetOrgIDStr(req)
+	if err != nil {
+		return 0, err
 	}
 	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
 	if err != nil {
 		return 0, errors.Errorf("invalid param, orgID is invalid")
 	}
 	return orgID, nil
+}
+
+func GetOrgIDStr(req *http.Request) (string, error) {
+	orgIDStr := req.URL.Query().Get("orgID")
+	if orgIDStr == "" {
+		orgIDStr = req.Header.Get(httputil.OrgHeader)
+		if orgIDStr == "" {
+			return "", errors.Errorf("invalid param, orgID is empty")
+		}
+	}
+	return orgIDStr, nil
 }

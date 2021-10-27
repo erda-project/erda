@@ -15,11 +15,16 @@
 package manager
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
+
+	"bou.ke/monkey"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 func TestRemoveSensitiveInfo(t *testing.T) {
@@ -64,4 +69,75 @@ func TestRemoveSensitiveInfo(t *testing.T) {
 	assert.Equal(t, "FakeMountPoint", cluster.System.Storage.MountPoint)
 	assert.Equal(t, "FakeCredentialSource", cluster.ManageConfig.CredentialSource)
 
+}
+
+func TestIsManager(t *testing.T) {
+	var bdl *bundle.Bundle
+	// monkey patch Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ScopeRoleAccess", func(_ *bundle.Bundle, _ string, _ *apistructs.ScopeRoleAccessRequest) (*apistructs.ScopeRole, error) {
+		return &apistructs.ScopeRole{Access: true,
+			Roles: []string{"fake-role"},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckIfRoleIsManager", func(_ *bundle.Bundle, _ string) bool {
+		return true
+	})
+
+	err := IsManager(bdl, "", apistructs.OrgScope, "")
+	assert.NoError(t, err)
+}
+
+func TestNonManager(t *testing.T) {
+	var bdl *bundle.Bundle
+	// monkey patch Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ScopeRoleAccess", func(_ *bundle.Bundle, _ string, _ *apistructs.ScopeRoleAccessRequest) (*apistructs.ScopeRole, error) {
+		return &apistructs.ScopeRole{Access: false,
+			Roles: []string{"fake-role"},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckIfRoleIsManager", func(_ *bundle.Bundle, _ string) bool {
+		return false
+	})
+
+	err := IsManager(bdl, "", apistructs.OrgScope, "")
+	assert.Error(t, err)
+}
+
+func TestOrgPermission(t *testing.T) {
+	var bdl *bundle.Bundle
+	// monkey patch Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle, _ *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return &apistructs.PermissionCheckResponseData{
+			Access: true,
+		}, nil
+	})
+
+	err := OrgPermCheck(bdl, "1", "2", "GET")
+	assert.NoError(t, err)
+}
+
+func TestOrgPermissionFailed(t *testing.T) {
+	var bdl *bundle.Bundle
+	// monkey patch Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle, _ *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return &apistructs.PermissionCheckResponseData{
+			Access: false,
+		}, nil
+	})
+
+	err := OrgPermCheck(bdl, "1", "2", "GET")
+	assert.Error(t, err)
+}
+
+func TestOrgPermissionCheckFailed(t *testing.T) {
+	var bdl *bundle.Bundle
+	// monkey patch Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(_ *bundle.Bundle, _ *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return nil, fmt.Errorf("socle role access failed")
+	})
+
+	err := OrgPermCheck(bdl, "1", "2", "GET")
+	assert.Error(t, err)
 }
