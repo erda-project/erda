@@ -79,9 +79,6 @@ func (e *Endpoints) UpdateTestPlan(ctx context.Context, r *http.Request, vars ma
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
 	}
-	if err = req.Check(); err != nil {
-		return apierrors.ErrUpdateTestPlan.InvalidParameter(err).ToResp(), nil
-	}
 	req.TestPlanID = testPlanID
 	req.IdentityInfo = identityInfo
 
