@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package trace
+package query
 
 import (
 	"context"
@@ -21,8 +21,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/erda-project/erda/modules/msp/apm/trace"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+
+	"github.com/erda-project/erda/modules/core/monitor/storekit"
+
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
+	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -36,6 +42,13 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 )
 
+//go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage
+func Test_traceService_GetSpans_with_ES_And_Cassandra(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	storage := NewMockStorage(ctrl)
+	storage.EXPECT().Iterator(gomock.Any(), gomock.Any()).Return(storekit.NewListIterator("{'spanId': 'span1'}", ""), nil)
+}
 func Test_traceService_GetSpans(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -91,6 +104,50 @@ func Test_traceService_GetSpans(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_traceService_fetchSpanFromES(t *testing.T) {
+	s1 := &trace.Span{
+		TraceId:       "s1TraceId",
+		SpanId:        "s1SpanId",
+		ParentSpanId:  "s1ParentSpanId",
+		OperationName: "s1OperationName",
+		StartTime:     1,
+		EndTime:       1,
+		Tags:          map[string]string{"tagk.s1a": "tagv.s1a", "tagk.s1b": "tagv.s1b"},
+	}
+	ss := &listStorage{
+		span: s1,
+	}
+
+	tests := []struct {
+		name    string
+		ctx     context.Context
+		storage storage.Storage
+		sel     storage.Selector
+		forward bool
+		limit   int
+		want    []*trace.Span
+	}{{
+		"case 1",
+		context.TODO(),
+		ss,
+		storage.Selector{TraceId: "s1TraceId"},
+		true,
+		1,
+		[]*trace.Span{s1},
+	},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got, err := fetchSpanFromES(tt.ctx, ss, tt.sel, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
+				t.Errorf("fetchSpanFromES() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
 }
 
 func Test_traceService_GetTraces(t *testing.T) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package query
 
 import (
 	context "context"
@@ -21,6 +21,8 @@ import (
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
+	"github.com/erda-project/erda/modules/msp/apm/exception"
+	event_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
 )
 
 func Test_exceptionService_GetExceptions(t *testing.T) {
@@ -189,6 +191,97 @@ func Test_exceptionService_GetExceptionEvent(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("exceptionService.GetExceptionEvent() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_fetchSpanFromES(t *testing.T) {
+	//pbevent := &pb.ExceptionEvent{
+	//	Id:             "Id",
+	//	ExceptionID:    "ExceptionID",
+	//	Metadata:       nil,
+	//	RequestContext: nil,
+	//	RequestHeaders: nil,
+	//	RequestID:      "RequestID",
+	//	Stacks:         nil,
+	//	Tags:           nil,
+	//	Timestamp:      0,
+	//	RequestSampled: false,
+	//}
+	//
+	//pberror := &pb.Exception{
+	//	Id:               "Id",
+	//	ClassName:        "ClassName",
+	//	Method:           "Method",
+	//	Type:             "Type",
+	//	EventCount:       0,
+	//	ExceptionMessage: "ExceptionMessage",
+	//	File:             "File",
+	//	ApplicationID:    "ApplicationID",
+	//	RuntimeID:        "RuntimeID",
+	//	ServiceName:      "ServiceName",
+	//	ScopeID:          "ScopeID",
+	//	CreateTime:       "CreateTime",
+	//	UpdateTime:       "UpdateTime",
+	//}
+
+	erdaEvent := &exception.Erda_event{
+		EventId:        "Id",
+		Timestamp:      0,
+		RequestId:      "RequestID",
+		ErrorId:        "ExceptionID",
+		Stacks:         nil,
+		Tags:           nil,
+		MetaData:       nil,
+		RequestContext: nil,
+		RequestHeaders: nil,
+	}
+
+	//erdaError := &exception.Erda_error{
+	//	TerminusKey:   "ScopeID",
+	//	ApplicationId: "ApplicationID",
+	//	ServiceName:   "ServiceName",
+	//	ErrorId:       "Id",
+	//	Timestamp:     0,
+	//	Tags:          nil,
+	//}
+
+	e1 := &errorEventListStorage{
+		exceptionEvent: erdaEvent,
+	}
+	//e2 := &errorListStorage{
+	//	exception: pberror,
+	//}
+
+	tests := []struct {
+		name string
+		ctx  context.Context
+		//errorStorage error_storage.Storage
+		eventStorage event_storage.Storage
+		//errorSel     error_storage.Selector
+		eventSel event_storage.Selector
+		forward  bool
+		limit    int
+		want     []*exception.Erda_event
+	}{{
+		"case 1",
+		context.TODO(),
+		//e2,
+		e1,
+		//error_storage.Selector{},
+		event_storage.Selector{},
+		true,
+		1,
+		[]*exception.Erda_event{erdaEvent},
+	},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got, err := fetchErdaEventFromES(tt.ctx, e1, &tt.eventSel, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
+				t.Errorf("fetchSpanFromES() = %v, want %v", got, tt.want)
 			}
 		})
 	}

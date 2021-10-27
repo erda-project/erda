@@ -49,6 +49,156 @@ cassandra:
   password: ${CASSANDRA_SECURITY_PASSWORD}
   timeout: "${CASSANDRA_TIMEOUT:3s}"
 
+# span
+elasticsearch@span:
+  _enable: ${SPAN_ELASTICSEARCH_ENABLE:false}
+  urls: "${SPAN_ES_URL:http://localhost:9200}"
+  security: ${SPAN_ES_SECURITY_ENABLE:false}
+  username: "${SPAN_ES_SECURITY_USERNAME}"
+  password: "${SPAN_ES_SECURITY_PASSWORD}"
+
+elasticsearch.index.loader@span:
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "1m"
+  query_index_time_range: true
+  cache_key_prefix: "es-index-span"
+  match:
+    - prefix: "erda-spans-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+storage-retention-strategy@span:
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  default_ttl: "${SPAN_TTL:168h}"
+  load_from_database: false
+  ttl_reload_interval: "3m"
+elasticsearch.index.retention-strategy@span:
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  key_patterns:
+    - "erda-spans-<org>.<key>-{number}"
+elasticsearch.index.cleaner@span:
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  check_interval: "30m"
+  print_onluy: true
+  disk_clean:
+    enable: ${SPAN_DISK_CLEAN_ENABLE:true}
+    check_interval: "1m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "${MIN_INDICES_STORE_PERCENT:10GB}" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index_rollover_min.json"
+    rollover_alias_patterns:
+      - index: "erda-spans-<org>-{number}"
+        alias: "erda-spans-<org>-rollover"
+      - index: "erda-spans-<org>.<key>-{number}"
+        alias: "erda-spans-<org>.<key>-rollover"
+span-storage-elasticsearch:
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  query_timeout: "1m"
+  read_page_size: 200
+
+# error
+elasticsearch@error:
+  _enable: ${ERROR_ELASTICSEARCH_ENABLE:false}
+  urls: "${ERROR_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${ERROR_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${ERROR_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${ERROR_ELASTICSEARCH_SECURITY_PASSWORD}"
+
+elasticsearch.index.loader@error:
+  _enable: ${QUERY_ERROR_FROM_ES_ENABLE:true}
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "1m"
+  query_index_time_range: true
+  cache_key_prefix: "es-index-error"
+  match:
+    - prefix: "erda-errors-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+storage-retention-strategy@error:
+  _enable: ${QUERY_ERROR_FROM_ES_ENABLE:true}
+  default_ttl: "${ERROR_TTL:168h}"
+  load_from_database: false
+  ttl_reload_interval: "3m"
+elasticsearch.index.retention-strategy@error:
+  _enable: ${QUERY_ERROR_FROM_ES_ENABLE:true}
+  key_patterns:
+    - "erda-errors-<org>.<key>-{number}"
+elasticsearch.index.cleaner@error:
+  _enable: ${QUERY_ERROR_FROM_ES_ENABLE:true}
+  check_interval: "30m"
+  print_onluy: true
+  disk_clean:
+    enable: ${ERROR_DISK_CLEAN_ENABLE:true}
+    check_interval: "1m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "${MIN_INDICES_STORE_PERCENT:10GB}" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index_rollover_min.json"
+    rollover_alias_patterns:
+      - index: "erda-errors-<org>-{number}"
+        alias: "erda-errors-<org>-rollover"
+      - index: "erda-errors-<org>.<key>-{number}"
+        alias: "erda-errors-<org>.<key>-rollover"
+error-storage-elasticsearch:
+  _enable: ${QUERY_ERROR_FROM_ES_ENABLE:true}
+  query_timeout: "1m"
+  read_page_size: 200
+
+# error_event
+elasticsearch@error_event:
+  _enable: ${ERROR_EVENT_ELASTICSEARCH_ENABLE:false}
+  urls: "${ERROR_EVENT_ES_URL:http://localhost:9200}"
+  security: ${ERROR_EVENT_ES_SECURITY_ENABLE:false}
+  username: "${ERROR_EVENT_ES_SECURITY_USERNAME}"
+  password: "${ERROR_EVENT_ES_SECURITY_PASSWORD}"
+
+elasticsearch.index.loader@error_event:
+  _enable: ${QUERY_ERROR_EVENT_FROM_ES_ENABLE:true}
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "1m"
+  query_index_time_range: true
+  cache_key_prefix: "es-index-error-event"
+  match:
+    - prefix: "erda-error-events-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+storage-retention-strategy@error_event:
+  _enable: ${QUERY_ERROR_EVENT_FROM_ES_ENABLE:true}
+  default_ttl: "${EVENT_TTL:168h}"
+  load_from_database: false
+  ttl_reload_interval: "3m"
+elasticsearch.index.retention-strategy@error_event:
+  _enable: ${QUERY_ERROR_EVENT_FROM_ES_ENABLE:true}
+  key_patterns:
+    - "erda-error-events-<org>.<key>-{number}"
+elasticsearch.index.cleaner@error_event:
+  _enable: ${QUERY_ERROR_EVENT_FROM_ES_ENABLE:true}
+  check_interval: "30m"
+  print_onluy: true
+  disk_clean:
+    enable: ${ERROR_EVENT_DISK_CLEAN_ENABLE:true}
+    check_interval: "1m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "${MIN_INDICES_STORE_PERCENT:10GB}" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index_rollover_min.json"
+    rollover_alias_patterns:
+      - index: "erda-error-events-<org>-{number}"
+        alias: "erda-error-events-<org>-rollover"
+      - index: "erda-error-events-<org>.<key>-{number}"
+        alias: "erda-error-events-<org>.<key>-rollover"
+error-event-storage-elasticsearch:
+  _enable: ${QUERY_ERROR_EVENT_FROM_ES_ENABLE:true}
+  query_timeout: "1m"
+  read_page_size: 200
+
 i18n:
   common:
     - conf/common/i18n/common.yml
@@ -126,13 +276,15 @@ erda.msp.apm.checker.task.plugins.http:
 erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
-erda.msp.apm.trace:
+erda.msp.apm.trace.query:
+  query_source: cassandra,elasticsearch
   cassandra:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
 
-erda.msp.apm.exception:
+erda.msp.apm.exception.query:
+  query_source: cassandra,elasticsearch
   cassandra:
     keyspace:
       name: "spot_prod"

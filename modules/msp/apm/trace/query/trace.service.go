@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package trace
+package query
 
 import (
 	"bytes"
@@ -24,30 +24,34 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	uuid "github.com/satori/go.uuid"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/pkg/set"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	mathpkg "github.com/erda-project/erda/pkg/math"
+	"github.com/gocql/gocql"
+	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type traceService struct {
 	p                     *provider
 	i18n                  i18n.Translator
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
+	StorageReader         storage.Storage
 }
 
 var EventFieldSet = set.NewSet("error", "stack", "event", "message", "error_kind", "error_object")
@@ -77,8 +81,55 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	if req.Limit <= 0 || req.Limit > 10000 {
 		req.Limit = 10000
 	}
-	iter := s.p.cassandraSession.Session().Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()
 	spanTree := make(query.SpanTree)
+	var spans []*pb.Span
+
+	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+		// do es query
+		elasticsearchSpans, err := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
+			TraceId: req.TraceID,
+		}, true, int(req.GetLimit()))
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		for _, value := range elasticsearchSpans {
+			var span pb.Span
+			span.Id = value.SpanId
+			span.TraceId = value.TraceId
+			span.OperationName = value.OperationName
+			span.ParentSpanId = value.ParentSpanId
+			span.StartTime = value.StartTime
+			span.EndTime = value.EndTime
+			span.Tags = value.Tags
+			spans = append(spans, &span)
+		}
+	}
+
+	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+		// do cassandra query
+		cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
+		for _, span := range cassandraSpans {
+			spans = append(spans, span)
+		}
+	}
+
+	sort.Sort(Spans(spans))
+	for _, span := range spans {
+		if len(spanTree) >= int(req.GetLimit()) {
+			break
+		}
+		spanTree[span.Id] = span
+	}
+
+	response, err := s.handleSpanResponse(spanTree)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return response, nil
+}
+func (s *traceService) fetchSpanFromCassandra(session *gocql.Session, traceId string, limit int64) []*pb.Span {
+	iter := session.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", traceId, limit).Iter()
+	var items []*pb.Span
 	for {
 		row := make(map[string]interface{})
 		if !iter.MapScan(row) {
@@ -92,14 +143,54 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		span.StartTime = row["start_time"].(int64)
 		span.EndTime = row["end_time"].(int64)
 		span.Tags = row["tags"].(map[string]string)
-		spanTree[span.Id] = &span
+		items = append(items, &span)
 	}
+	return items
+}
 
-	response, err := s.handleSpanResponse(spanTree)
+func fetchSpanFromES(ctx context.Context, storage storage.Storage, sel storage.Selector, forward bool, limit int) (list []*trace.Span, err error) {
+	it, err := storage.Iterator(ctx, &sel)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return response, nil
+	defer it.Close()
+
+	if forward {
+		for it.Next() {
+			span, ok := it.Value().(*trace.Span)
+			if !ok {
+				continue
+			}
+			list = append(list, span)
+			if len(list) >= limit {
+				break
+			}
+		}
+	} else {
+		for it.Prev() {
+			span, ok := it.Value().(*trace.Span)
+			if !ok {
+				continue
+			}
+			list = append(list, span)
+			if len(list) >= limit {
+				break
+			}
+		}
+	}
+	if it.Error() != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	return list, it.Error()
+}
+
+type Spans []*pb.Span
+
+func (s Spans) Len() int      { return len(s) }
+func (s Spans) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s Spans) Less(i, j int) bool {
+	return s[i].StartTime < s[j].StartTime
 }
 
 func getSpanProcessAnalysisDashboard(metricType string) string {
@@ -259,9 +350,19 @@ func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
 }
 
 func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
-	count := 0
-	s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&count)
-	return int64(count), nil
+	var cassandraCount, elasticsearchCount int64
+
+	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+		// do cassandra query
+		s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
+	}
+
+	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+		// do cassandra query
+		elasticsearchCount = s.StorageReader.Count(ctx, traceID)
+	}
+
+	return cassandraCount + elasticsearchCount, nil
 }
 
 func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {

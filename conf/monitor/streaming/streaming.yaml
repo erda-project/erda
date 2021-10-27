@@ -197,6 +197,217 @@ event-persist:
   parallelism: ${EVENT_PERSIST_PARALLELISM:3}
   print_invalid_event: false
 
+# elasticsearch for span
+elasticsearch@span:
+  _enable: ${SPAN_ELASTICSEARCH_ENABLE:false}
+  urls: "${SPAN_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${SPAN_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${SPAN_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
+
+elasticsearch.index.initializer@span:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  templates:
+    - name: "erda-spans"
+      path: "${CONFIG_PATH}/span_index_template.json"
+
+elasticsearch.index.loader@span:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "1m"
+  match:
+    - prefix: "erda-spans-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+
+elasticsearch.index.creator@span:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  patterns:
+    - first_index: "erda-spans-<org>-000001"
+      alias: "erda-spans-<org>-rollover"
+    - first_index: "erda-spans-<org>.<key>-000001"
+      alias: "erda-spans-<org>.<key>-rollover"
+  remove_conflicting_indices: true
+
+elasticsearch.index.rollover@span:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  check_interval: "30s"
+  body_file: "${CONFIG_PATH}/index_rollover.json"
+  patterns:
+    - index: "erda-spans-<org>-{number}"
+      alias: "erda-spans-<org>-rollover"
+    - index: "erda-spans-<org>.<key>-{number}"
+      alias: "erda-spans-<org>.<key>-rollover"
+
+storage-retention-strategy@span:
+  load_from_database: true
+  ttl_reload_interval: "3m"
+  default_ttl: "${LOG_TTL:168h}"
+
+span-storage-elasticsearch:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  write_timeout: "1m"
+  index_type: "spans"
+
+span-persist:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  spot_input:
+    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${SPOT_SPOTSPAN_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  oap_input:
+    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${SPOT_OAPSPAN_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  id_keys: "${SPAN_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+  read_timeout: "5s"
+  buffer_size: ${SPAN_BATCH_SIZE:50}
+  parallelism: ${SPAN_PERSIST_PARALLELISM:3}
+  print_invalid_span: false
+
+# elasticsearch for error
+elasticsearch@error:
+  _enable: ${ERROR_ELASTICSEARCH_ENABLE:false}
+  urls: "${ERROR_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${ERROR_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${ERROR_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${ERROR_ELASTICSEARCH_SECURITY_PASSWORD}"
+
+elasticsearch.index.initializer@error:
+  _enable: ${WRITE_ERROR_TO_ES_ENABLE:true}
+  templates:
+    - name: "erda-errors"
+      path: "${CONFIG_PATH}/error_index_template.json"
+
+elasticsearch.index.loader@error:
+  _enable: ${WRITE_ERROR_TO_ES_ENABLE:true}
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "10s"
+  match:
+    - prefix: "erda-errors-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+
+elasticsearch.index.creator@error:
+  _enable: ${WRITE_ERROR_TO_ES_ENABLE:true}
+  patterns:
+    - first_index: "erda-errors-<org>-000001"
+      alias: "erda-errors-<org>-rollover"
+    - first_index: "erda-errors-<org>.<key>-000001"
+      alias: "erda-errors-<org>.<key>-rollover"
+  remove_conflicting_indices: true
+
+elasticsearch.index.rollover@error:
+  _enable: ${WRITE_ERROR_TO_ES_ENABLE:true}
+  check_interval: "30s"
+  body_file: "${CONFIG_PATH}/index_rollover.json"
+  patterns:
+    - index: "erda-errors-<org>-{number}"
+      alias: "erda-errors-<org>-rollover"
+    - index: "erda-errors-<org>.<key>-{number}"
+      alias: "erda-errors-<org>.<key>-rollover"
+
+storage-retention-strategy@error:
+  load_from_database: true
+  ttl_reload_interval: "3m"
+  default_ttl: "${LOG_TTL:168h}"
+
+error-storage-elasticsearch:
+  _enable: ${WRITE_ERROR_TO_ES_ENABLE:true}
+  write_timeout: "1m"
+  index_type: "errors"
+
+error-persist:
+  _enable: ${WRITE_ERROR_TO_ES_ENABLE:true}
+  input:
+    topics: "${SPOT_ERROR_TOPICS:spot-error-desc}"
+    group: "${ERROR_GROUP_ID:spot-error-desc-dev}"
+    parallelism: ${SPOT_ERROR_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  id_keys: "${ERROR_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+  read_timeout: "5s"
+  buffer_size: ${ERROR_BATCH_SIZE:50}
+  parallelism: ${ERROR_PERSIST_PARALLELISM:3}
+  print_invalid_error: false
+
+# elasticsearch for error_event
+elasticsearch@error_event:
+  _enable: ${ERROR_EVENT_ELASTICSEARCH_ENABLE:false}
+  urls: "${ERROR_EVENT_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${ERROR_EVENT_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${ERROR_EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${ERROR_EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
+
+elasticsearch.index.initializer@error_event:
+  _enable: ${WRITE_ERROR_EVENT_TO_ES_ENABLE:true}
+  templates:
+    - name: "erda-error-events"
+      path: "${CONFIG_PATH}/error_event_index_template.json"
+
+elasticsearch.index.loader@error_event:
+  _enable: ${WRITE_ERROR_EVENT_TO_ES_ENABLE:true}
+  load_mode: "LoadFromElasticSearchOnly"
+  index_reload_interval: "10s"
+  match:
+    - prefix: "erda-error-events-"
+      patterns:
+        - "<org>-{number}"
+        - "<org>.<key>-{number}"
+
+elasticsearch.index.creator@error_event:
+  _enable: ${WRITE_ERROR_EVENT_TO_ES_ENABLE:true}
+  patterns:
+    - first_index: "erda-error-events-<org>-000001"
+      alias: "erda-error-events-<org>-rollover"
+    - first_index: "erda-error-events-<org>.<key>-000001"
+      alias: "erda-error-events-<org>.<key>-rollover"
+  remove_conflicting_indices: true
+
+elasticsearch.index.rollover@error_event:
+  _enable: ${WRITE_ERROR_EVENT_TO_ES_ENABLE:true}
+  check_interval: "30s"
+  body_file: "${CONFIG_PATH}/index_rollover.json"
+  patterns:
+    - index: "erda-error-events-<org>-{number}"
+      alias: "erda-error-events-<org>-rollover"
+    - index: "erda-error-events-<org>.<key>-{number}"
+      alias: "erda-error-events-<org>.<key>-rollover"
+
+storage-retention-strategy@error_event:
+  load_from_database: true
+  ttl_reload_interval: "3m"
+  default_ttl: "${LOG_TTL:168h}"
+
+error-event-storage-elasticsearch:
+  _enable: ${WRITE_ERROR_EVENT_TO_ES_ENABLE:true}
+  write_timeout: "1m"
+  index_type: "error-events"
+
+error-event-persist:
+  _enable: ${WRITE_ERROR_EVENT_TO_ES_ENABLE:true}
+  input:
+    topics: "${SPOT_ERROR_EVENT_TOPICS:spot-error-event}"
+    group: "${ERROR_EVENT_GROUP_ID:spot-error-event-dev}"
+    parallelism: ${SPOT_ERROR_EVENT_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  id_keys: "${EVENT_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+  read_timeout: "5s"
+  buffer_size: ${ERROR_EVENT_BATCH_SIZE:50}
+  parallelism: ${ERROR_EVENT_PERSIST_PARALLELISM:3}
+  print_invalid_event: false
+
 # elasticsearch for metric
 elasticsearch:
   urls: "${ES_URL:http://localhost:9200}"
@@ -283,45 +494,45 @@ browser-analytics:
       timeout: "10s"
   ipdb: "${CONFIG_PATH}/ipdata.dat"
 
-trace-storage:
-  _enable: ${TRACE_ENABLE:true}
-  spot_input:
-    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
-    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${SPOT_TRACE_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-  oap_input:
-    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
-    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${OAP_TRACE_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-  output:
-    cassandra:
-      writer_config:
-        parallelism: ${CASSANDRA_PARALLELISM:3}
-        batch:
-          size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: ${TRACE_STORE_CASSANDRA_BATCH_TIMEOUT:10s}
-        retry: 2
-      session_config:
-        keyspace:
-          name: "spot_prod"
-          auto: true # 自动创建 keyspace
-          replication:
-            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-      gc_grace_seconds: 86400
-      ttl: ${TRACE_TTL:168h}
-    kafka:
-      topic: "${SPOT_TRACE_TOPICS:spot-trace}"
-      parallelism: ${KAFKA_PARALLELISM:3}
-      batch:
-        size:  ${KAFKA_BATCH_SIZE:50}
-        timeout: "10s"
+#trace-storage:
+#  _enable: ${TRACE_ENABLE:true}
+#  spot_input:
+#    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
+#    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+#    parallelism: ${SPOT_TRACE_CONSUMERS:3}
+#    options:
+#      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+#      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+#  oap_input:
+#    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
+#    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+#    parallelism: ${OAP_TRACE_CONSUMERS:3}
+#    options:
+#      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+#      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+#  output:
+#    cassandra:
+#      writer_config:
+#        parallelism: ${CASSANDRA_PARALLELISM:3}
+#        batch:
+#          size: ${CASSANDRA_BATCH_SIZE:50}
+#          timeout: ${TRACE_STORE_CASSANDRA_BATCH_TIMEOUT:10s}
+#        retry: 2
+#      session_config:
+#        keyspace:
+#          name: "spot_prod"
+#          auto: true # 自动创建 keyspace
+#          replication:
+#            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+#            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+#      gc_grace_seconds: 86400
+#      ttl: ${TRACE_TTL:168h}
+#    kafka:
+#      topic: "${SPOT_TRACE_TOPICS:spot-trace}"
+#      parallelism: ${KAFKA_PARALLELISM:3}
+#      batch:
+#        size:  ${KAFKA_BATCH_SIZE:50}
+#        timeout: "10s"
 
 alert-storage:
   input:

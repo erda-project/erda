@@ -35,7 +35,12 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/rollover"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
 	_ "github.com/erda-project/erda/modules/msp/apm/browser"
-	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage"
+	_ "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/persist"
+	_ "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/persist"
+	_ "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage/elasticsearch"
+	_ "github.com/erda-project/erda/modules/msp/apm/trace/persist"
+	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/elasticsearch"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
