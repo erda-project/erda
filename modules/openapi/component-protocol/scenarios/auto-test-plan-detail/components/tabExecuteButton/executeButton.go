@@ -123,9 +123,10 @@ type Menu struct {
 }
 
 type ClickOperation struct {
-	Key    string      `json:"key"`
-	Reload bool        `json:"reload"`
-	Meta   interface{} `json:"meta"`
+	Key     string      `json:"key"`
+	Confirm string      `json:"confirm"`
+	Reload  bool        `json:"reload"`
+	Meta    interface{} `json:"meta"`
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -226,8 +227,9 @@ func (a *ComponentAction) handleDefault() error {
 			Key:  v.Ns,
 			Operations: map[string]interface{}{
 				apistructs.ClickOperation.String(): ClickOperation{
-					Key:    "execute",
-					Reload: true,
+					Key:     "execute",
+					Confirm: "是否确认执行?",
+					Reload:  true,
 					Meta: ClientMetaData{
 						Env:        testClusterName,
 						TestPlanID: a.State.TestPlanID,
