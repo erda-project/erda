@@ -132,22 +132,6 @@ type TestPlanUpdateRequest struct {
 	IdentityInfo
 }
 
-func (t TestPlanUpdateRequest) Check() error {
-	if t.Name == "" {
-		return fmt.Errorf("the name is empty")
-	}
-	if t.OwnerID == "" {
-		return fmt.Errorf("the ownerID is empty")
-	}
-	if len(t.PartnerIDs) == 0 {
-		return fmt.Errorf("the partnerIDs is empty")
-	}
-	if t.IterationID == 0 {
-		return fmt.Errorf("the iterationID is 0")
-	}
-	return nil
-}
-
 // TestPlanGetResponse 测试计划详情响应
 type TestPlanGetResponse struct {
 	Header
