@@ -205,8 +205,9 @@ func init() {
 		Types: []reflect.Type{
 			reflect.TypeOf((*Interface)(nil)).Elem(),
 		},
-		Dependencies: []string{"elasticsearch"},
-		ConfigFunc:   func() interface{} { return &config{} },
+		Dependencies:         []string{"elasticsearch"},
+		OptionalDependencies: []string{"etcd-election"},
+		ConfigFunc:           func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			p := &provider{
 				setIndicesCh: make(chan *indicesBundle, 1),
