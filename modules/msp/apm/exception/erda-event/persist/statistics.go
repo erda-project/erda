@@ -15,9 +15,10 @@
 package persist
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/msp/apm/exception"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Statistics .

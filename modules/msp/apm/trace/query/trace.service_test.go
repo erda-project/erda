@@ -21,14 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/modules/msp/apm/trace"
-	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
-
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
-
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
-	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -36,19 +30,15 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 )
 
 //go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage
-func Test_traceService_GetSpans_with_ES_And_Cassandra(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	storage := NewMockStorage(ctrl)
-	storage.EXPECT().Iterator(gomock.Any(), gomock.Any()).Return(storekit.NewListIterator("{'spanId': 'span1'}", ""), nil)
-}
 func Test_traceService_GetSpans(t *testing.T) {
 	type args struct {
 		ctx context.Context

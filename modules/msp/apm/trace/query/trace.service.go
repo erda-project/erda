@@ -29,6 +29,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gocql/gocql"
+	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/pkg/set"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -42,9 +46,6 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	mathpkg "github.com/erda-project/erda/pkg/math"
-	"github.com/gocql/gocql"
-	uuid "github.com/satori/go.uuid"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type traceService struct {
