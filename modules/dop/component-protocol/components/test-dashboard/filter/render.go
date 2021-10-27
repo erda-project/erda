@@ -30,14 +30,13 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	if err := f.initFromProtocol(ctx, c); err != nil {
 		return err
 	}
-	if f.InParams.FrontendUrlQuery != "" {
-		b, err := base64.StdEncoding.DecodeString(f.InParams.FrontendUrlQuery)
-		if err != nil {
-			return err
-		}
-		f.State.Values = SelectedValues{}
-		if err := json.Unmarshal(b, &f.State.Values); err != nil {
-			return err
+
+	switch event.Operation {
+	case cptype.InitializeOperation, cptype.RenderingOperation:
+		if f.InParams.FrontendUrlQuery != "" {
+			if err := f.initDefaultOperation(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -198,4 +197,16 @@ func (f *Filter) generateUrlQueryParams() (string, error) {
 		return "", err
 	}
 	return base64.StdEncoding.EncodeToString(fb), nil
+}
+
+func (f *Filter) initDefaultOperation() error {
+	b, err := base64.StdEncoding.DecodeString(f.InParams.FrontendUrlQuery)
+	if err != nil {
+		return err
+	}
+	f.State.Values = SelectedValues{}
+	if err = json.Unmarshal(b, &f.State.Values); err != nil {
+		return err
+	}
+	return nil
 }
