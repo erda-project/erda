@@ -40,7 +40,10 @@ type alertService struct {
 	p *provider
 }
 
-const MicroService = "micro_service"
+const (
+	MicroService = "micro_service"
+	ClusterName  = "cluster_name"
+)
 
 func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
@@ -129,11 +132,15 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-	if len(alert.ClusterNames) <= 0 {
-		return nil, errors.NewMissingParameterError("cluster name")
-	}
-	if !m.checkOrgClusterNames(id, alert.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "create", "access denied")
+	for _, v := range alert.TriggerCondition {
+		if v.Condition == ClusterName {
+			if len(v.Values) <= 0 {
+				return nil, errors.NewMissingParameterError("cluster_names")
+			}
+			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
+				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
+			}
+		}
 	}
 	aid, err := m.p.a.CreateOrgAlert(alert, orgID)
 	if err != nil {
@@ -976,20 +983,23 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-
-	request.Attributes = make(map[string]*structpb.Value)
-	orgName := structpb.NewStringValue(org.Name)
-	request.Attributes["org_name"] = orgName
 	id, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-	if len(request.ClusterNames) <= 0 {
-		return nil, errors.NewMissingParameterError("cluster names")
+	for _, v := range request.TriggerCondition {
+		if v.Condition == ClusterName {
+			if len(v.Values) <= 0 {
+				return nil, errors.NewMissingParameterError("cluster_names")
+			}
+			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
+				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
+			}
+		}
 	}
-	if !m.checkOrgClusterNames(id, request.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
-	}
+	request.Attributes = make(map[string]*structpb.Value)
+	orgName := structpb.NewStringValue(org.Name)
+	request.Attributes["org_name"] = orgName
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

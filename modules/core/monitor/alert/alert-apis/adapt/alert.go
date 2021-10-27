@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -423,13 +424,25 @@ func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*pb.Alert
 	}
 	output := a.ValueMapToInterfaceMap(alert.Attributes)
 	if clusterNames, ok := utils.GetMapValueArr(output, "cluster_name"); ok {
+		names := make([]string, 0)
+		condition := &pb.TriggerCondition{
+			Condition: ClusterName,
+			Operator:  "in",
+		}
 		for _, v := range clusterNames {
 			if clusterName, ok := v.(string); ok {
-				alert.ClusterNames = append(alert.ClusterNames, clusterName)
+				names = append(names, clusterName)
 			}
 		}
+		condition.Values = strings.Join(names, ",")
+		alert.TriggerCondition = append(alert.TriggerCondition, condition)
 	} else if clusterName, ok := utils.GetMapValueString(output, "cluster_name"); ok {
-		alert.ClusterNames = append(alert.ClusterNames, clusterName)
+		condition := &pb.TriggerCondition{
+			Condition: ClusterName,
+			Operator:  "in",
+			Values:    clusterName,
+		}
+		alert.TriggerCondition = append(alert.TriggerCondition, condition)
 	}
 	alert.Attributes = nil
 	return alert, nil
@@ -561,11 +574,6 @@ func (a *Adapt) CreateOrgAlert(alert *pb.Alert, orgID string) (alertID uint64, e
 	alert.Attributes["alert_record_path"] = alertRecordPath
 	diceOrgId := structpb.NewStringValue(orgID)
 	alert.Attributes["dice_org_id"] = diceOrgId
-	clusterName, err := a.StringSliceToValue(alert.ClusterNames)
-	if err != nil {
-		return 0, nil
-	}
-	alert.Attributes["cluster_name"] = clusterName
 	return a.CreateAlert(alert)
 }
 
@@ -640,11 +648,6 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *pb.Alert, orgID string) er
 	alert.Attributes["alert_dashboard_path"] = alertDashboardPath
 	alertRecordPath := structpb.NewStringValue(recordPath)
 	alert.Attributes["alert_record_path"] = alertRecordPath
-	clusterName, err := a.StringSliceToValue(alert.ClusterNames)
-	if err != nil {
-		return err
-	}
-	alert.Attributes["cluster_name"] = clusterName
 
 	return a.UpdateAlert(alertID, alert)
 }
