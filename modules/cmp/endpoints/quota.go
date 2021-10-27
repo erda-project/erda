@@ -121,7 +121,7 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetProjectTrend(userIDStr, userIDStr, req)
+	pie, err := e.Resource.GetProjectTrend(orgIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("get resource project trend error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
