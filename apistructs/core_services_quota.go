@@ -57,7 +57,7 @@ func (q *GetQuotaOnClustersResponse) ReCalcu() {
 	q.MemQuotaByte = 0
 	for _, owner := range q.Owners {
 		owner.ReCalcu()
-		q.AccuQuota(owner.cpuQuota, owner.memQuota)
+		q.AccuQuota(owner.CPUQuotaMilliValue, owner.MemQuotaByte)
 	}
 	q.CPUQuota = calcu.MillcoreToCore(q.CPUQuotaMilliValue, 3)
 	q.MemQuota = calcu.ByteToGibibyte(q.MemQuotaByte, 3)
@@ -68,29 +68,29 @@ type OwnerQuotaOnClusters struct {
 	Name     string `json:"name"`
 	Nickname string `json:"nickname"`
 	// CPUQuota is the total cpu quota for the owner on the clusters
-	CPUQuota float64 `json:"cpuQuota"`
-	cpuQuota uint64
+	CPUQuota           float64 `json:"cpuQuota"`
+	CPUQuotaMilliValue uint64
 	// MemQuota is the total mem quota for the owner on the clusters
-	MemQuota float64 `json:"memQuota"`
-	memQuota uint64
-	Projects []*ProjectQuotaOnClusters `json:"projects"`
+	MemQuota     float64 `json:"memQuota"`
+	MemQuotaByte uint64
+	Projects     []*ProjectQuotaOnClusters `json:"projects"`
 }
 
 // AccuQuota accumulate cpu and mem quota value
 func (q *OwnerQuotaOnClusters) AccuQuota(cpu, mem uint64) {
-	q.cpuQuota += cpu
-	q.memQuota += mem
+	q.CPUQuotaMilliValue += cpu
+	q.MemQuotaByte += mem
 }
 
 func (q *OwnerQuotaOnClusters) ReCalcu() {
-	q.cpuQuota = 0
-	q.memQuota = 0
+	q.CPUQuotaMilliValue = 0
+	q.MemQuotaByte = 0
 	for _, project := range q.Projects {
 		project.ReCalcu()
-		q.AccuQuota(project.cpuQuota, project.memQuota)
+		q.AccuQuota(project.CPUQuotaMilliValue, project.MemQuotaByte)
 	}
-	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota, 3)
-	q.MemQuota = calcu.ByteToGibibyte(q.memQuota, 3)
+	q.CPUQuota = calcu.MillcoreToCore(q.CPUQuotaMilliValue, 3)
+	q.MemQuota = calcu.ByteToGibibyte(q.MemQuotaByte, 3)
 }
 
 type ProjectQuotaOnClusters struct {
@@ -98,22 +98,22 @@ type ProjectQuotaOnClusters struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 	// CPUQuota is the total cpu quota for the project on the clusters
-	CPUQuota float64 `json:"cpuQuota"`
-	cpuQuota uint64
+	CPUQuota           float64 `json:"cpuQuota"`
+	CPUQuotaMilliValue uint64
 	// CPUQuota is the total mem quota for the project on the clusters
-	MemQuota float64 `json:"memQuota"`
-	memQuota uint64
+	MemQuota     float64 `json:"memQuota"`
+	MemQuotaByte uint64
 }
 
 // AccuQuota accumulate cpu and mem quota value
 func (q *ProjectQuotaOnClusters) AccuQuota(cpu, mem uint64) {
-	q.cpuQuota += cpu
-	q.memQuota += mem
+	q.CPUQuotaMilliValue += cpu
+	q.MemQuotaByte += mem
 }
 
 func (q *ProjectQuotaOnClusters) ReCalcu() {
-	q.CPUQuota = calcu.MillcoreToCore(q.cpuQuota, 3)
-	q.MemQuota = calcu.ByteToGibibyte(q.memQuota, 3)
+	q.CPUQuota = calcu.MillcoreToCore(q.CPUQuotaMilliValue, 3)
+	q.MemQuota = calcu.ByteToGibibyte(q.MemQuotaByte, 3)
 }
 
 type GetProjectsNamesapcesResponseData struct {
