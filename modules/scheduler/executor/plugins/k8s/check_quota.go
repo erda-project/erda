@@ -129,9 +129,12 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 						humanLog, reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
 					PrimevalLog: fmt.Sprintf("Resource quota is not enough in current workspace,%s Requests CPU : %s core(s), left %s core(s). Request memroy: %s, left %s",
 						primevalLog, reqCPUStr, leftCPUStr, reqMemStr, leftMemStr),
+					DedupID: fmt.Sprintf("%s-scheduler-error", runtimeID),
 				},
 			}); err != nil {
-				logrus.Errorf("failed to create error log when check quota, %v", err)
+				logrus.Errorf("failed to create quota error log when check quota, %v", err)
+			} else {
+				logrus.Infof("Create/Update quota error log for runtime %s succeeded", runtimeID)
 			}
 		}
 		return false, nil
