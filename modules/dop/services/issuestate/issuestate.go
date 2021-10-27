@@ -290,9 +290,9 @@ func (is *IssueState) InitProjectState(projectID int64) error {
 		} else if i < 23 {
 			states[i].IssueType = apistructs.IssueTypeTicket
 		}
-		//if err := is.db.CreateIssuesState(&states[i]); err != nil {
-		//	return err
-		//}
+		if err := is.db.CreateIssuesState(&states[i]); err != nil {
+			return err
+		}
 	}
 	// state relation
 	for i := 0; i < 46; i++ {

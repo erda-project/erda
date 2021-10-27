@@ -38,6 +38,8 @@ type GaugeData struct {
 }
 
 func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
+	logrus.Debug("func GetGauge start")
+	defer logrus.Debug("func GetGauge finished")
 	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName, nil, nil)
 	if err != nil {
 		return nil, err
@@ -69,27 +71,27 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 	MemQuota := resp.MemQuota
 	CpuQuota := resp.CpuQuota
 
-	nodesGauge.Title = r.I18n("节点压力表")
+	nodesGauge.Title = r.I18n("node pressure")
 	if MemTotal/memBase > CpuTotal/cpuBase {
 		nodesGauge.Value = []float64{MemRequest / MemTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("G") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
+		nodesGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{MemQuota / MemTotal}
 	} else {
 		nodesGauge.Value = []float64{CpuRequest / CpuTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", CpuQuota/CpuTotal) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
+		nodesGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{CpuQuota / CpuTotal}
 	}
 	data["nodes"] = nodesGauge
 
-	cpuGauge.Title = r.I18n("CPU压力表")
+	cpuGauge.Title = r.I18n("cpu pressure")
 	cpuGauge.Value = []float64{CpuRequest / CpuTotal}
-	cpuGauge.Name = fmt.Sprintf("%.1f", CpuQuota/CpuTotal) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
+	cpuGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	cpuGauge.Split = []float64{CpuQuota / CpuTotal}
 	data["cpu"] = cpuGauge
 
-	memGauge.Title = r.I18n("内存压力表")
+	memGauge.Title = r.I18n("memory pressure")
 	memGauge.Value = []float64{MemRequest / MemTotal}
-	memGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("G") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("配额已使用")
+	memGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	memGauge.Split = []float64{MemQuota / MemTotal}
 	data["memory"] = memGauge
 	return
@@ -101,7 +103,9 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	if err != nil {
 		return
 	}
+	logrus.Debug("start list cluster")
 	clusters, err := r.Bdl.ListClusters("", orgid)
+	logrus.Debug("list cluster finished")
 	if err != nil {
 		return
 	}
@@ -113,7 +117,9 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	// 2. query clusterInfo
 	greq := &pb.GetClustersResourcesRequest{}
 	greq.ClusterNames = names
+	logrus.Debug("start get cluster resource from steve")
 	resources, err := r.Server.GetClustersResources(r.Ctx, greq)
+	logrus.Debug("get cluster resource from steve finished")
 	if err != nil {
 		return
 	}
@@ -127,7 +133,9 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 	}
 	// 4. get all quota
+	logrus.Debug("start fetch quota")
 	quota, err := r.Bdl.FetchQuotaOnClusters(orgid, names)
+	logrus.Debug("fetch quota finished")
 	if err != nil {
 		return
 	}
@@ -136,6 +144,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	quotaMem += float64(quota.MemQuotaByte)
 
 	// 5. get not exist quota
+	logrus.Debug("start get all namespace")
 	allNamespace := make([]*pb.ClusterNamespacePair, 0)
 	clusterNamespaces := make(map[string][]string)
 	for _, clusterName := range names {
@@ -156,9 +165,12 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 			clusterNamespaces[Cluster] = append(clusterNamespaces[Cluster], object.Namespace())
 		}
 	}
+	logrus.Debug("get all namespace finished")
 	nreq := &apistructs.OrgClustersNamespaceReq{}
 	nreq.OrgID = ordId
+	logrus.Debug("start involved namespace")
 	nresp, err := r.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
+	logrus.Debug("involved namespace finished")
 	if err != nil {
 		return
 	}
@@ -179,7 +191,9 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 	}
 	req := &pb.GetNamespacesResourcesRequest{}
 	req.Namespaces = irrelevantNamespace
+	logrus.Debug("get not involve request")
 	namespacesResources, err := r.Server.GetNamespacesResources(r.Ctx, req)
+	logrus.Debug("get not involve request finished")
 	if err != nil {
 		return
 	}
