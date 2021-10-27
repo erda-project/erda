@@ -1629,6 +1629,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 			ProjectID:          uint(project.ID),
 			ProjectName:        project.Name,
 			ProjectDisplayName: project.DisplayName,
+			ProjectDesc:        project.Desc,
 			OwnerUserID:        uint(userID),
 			OwnerUserName:      owner.Name,
 			OwnerUserNickname:  owner.Nick,
