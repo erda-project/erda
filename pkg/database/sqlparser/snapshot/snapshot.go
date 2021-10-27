@@ -17,6 +17,7 @@ package snapshot
 import (
 	"bytes"
 	"regexp"
+	"strings"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -77,6 +78,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 			return nil, err
 		}
 		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt)
+		stmt = TrimBlockFormat(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
 			return nil, err
@@ -213,9 +215,14 @@ func TrimCharacterSetFromRawCreateTableSQL(sql string) string {
 	return regexp.MustCompile(`(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*\w+`).ReplaceAllString(sql, "")
 }
 
+func TrimBlockFormat(sql string) string {
+	return strings.ReplaceAll(sql, "BLOCK_FORMAT=ENCRYPTED", "")
+}
+
 // ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
 func ParseCreateTableStmt(create string) (*ast.CreateTableStmt, error) {
 	create = TrimCharacterSetFromRawCreateTableSQL(create)
+	create = TrimBlockFormat(create)
 	node, err := parser.New().ParseOneStmt(create, "", "")
 	if err != nil {
 		return nil, err

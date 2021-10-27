@@ -47,6 +47,12 @@ CREATE TABLE ci_v3_build_caches (
 `
 )
 
+const blockFormatCase = `
+CREATE TABLE t1 (
+  id varchar(32) NOT NULL DEFAULT '' COMMENT '唯一id'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 BLOCK_FORMAT=ENCRYPTED COMMENT='Kong Route 配置信息'   
+`
+
 func TestTrimCollate(t *testing.T) {
 	stmt, err := parser.New().ParseOneStmt(sqlWithCollate, "", "")
 	if err != nil {
@@ -168,3 +174,24 @@ func TestParseCreateTableStmt(t *testing.T) {
 		t.Log("raw text:", sql, "\nparsed text:", stmt.Text())
 	}
 }
+
+func TestTrimBlockFormat(t *testing.T) {
+	trimBlockFormat := snapshot.TrimBlockFormat(blockFormatCase)
+	t.Log(trimBlockFormat)
+}
+
+// func TestParseCreateTableStmt2(t *testing.T) {
+// 	filename := "../testdata/out.sql"
+// 	data, err := ioutil.ReadFile(filename)
+// 	if err != nil {
+// 		t.Fatalf("failed to ReadFile: %v", err)
+// 	}
+//
+// 	text := snapshot.TrimBlockFormat(string(data))
+// 	text = snapshot.TrimCharacterSetFromRawCreateTableSQL(text)
+//
+// 	_, _, err = parser.New().Parse(string(data), "", "")
+// 	if err != nil {
+// 		t.Fatalf("failed to Parse: %v", err)
+// 	}
+// }
