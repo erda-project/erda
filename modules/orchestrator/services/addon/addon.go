@@ -2237,13 +2237,14 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		}
 		addonMap["version"] = version
 		addonMap["plan"] = createableAddonPlan[item.Name]
-		switch item.Name {
-		case "mysql":
-			addonMap["supportTenant"] = true
-			addonMap["tenantVars"] = []string{"database"}
-		default:
-			addonMap["supportTenant"] = false
-		}
+		// TODO: disable tenant support, we shall refactor later
+		//switch item.Name {
+		//case "mysql":
+		//	addonMap["supportTenant"] = true
+		//	addonMap["tenantVars"] = []string{"database"}
+		//default:
+		//	addonMap["supportTenant"] = false
+		//}
 		extensionResult = append(extensionResult, addonMap)
 	}
 	return &extensionResult, nil
