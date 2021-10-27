@@ -142,7 +142,7 @@ func setHost() error {
 		return errors.Errorf("invalid host format, it should be http[s]://<domain>")
 	}
 	hostHasOpenApi := strings.Index(host, "openapi.") != -1
-	var openAPIAddr string
+	openAPIAddr := host
 	if strings.HasPrefix(host, "https") {
 		if !hostHasOpenApi {
 			openAPIAddr = "https://openapi." + host[slashIndex+3:]
