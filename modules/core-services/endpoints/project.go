@@ -179,6 +179,12 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
 	}
 
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
+	}
+
 	internalClient := r.Header.Get(httputil.InternalHeader)
 	if internalClient == "" {
 		userID, err := user.GetUserID(r)
@@ -195,11 +201,6 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		}
 		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
 			// 若非项目管理员，判断用户是否为企业管理员(数据中心)
-			orgIDStr := r.Header.Get(httputil.OrgHeader)
-			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-			if err != nil {
-				return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
-			}
 			req := apistructs.PermissionCheckRequest{
 				UserID:   userID.String(),
 				Scope:    apistructs.OrgScope,
@@ -219,6 +220,11 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 			return apierrors.ErrGetProject.NotFound().ToResp(), nil
 		}
 		return apierrors.ErrGetProject.InternalError(err).ToResp(), nil
+	}
+
+	// project is located at the org in header
+	if project.OrgID != orgID {
+		return apierrors.ErrGetProject.AccessDenied().ToResp(), nil
 	}
 
 	return httpserver.OkResp(*project, project.Owners)
