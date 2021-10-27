@@ -40,7 +40,7 @@ type GaugeData struct {
 func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
 	logrus.Debug("func GetGauge start")
 	defer logrus.Debug("func GetGauge finished")
-	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName, nil, nil)
+	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -73,31 +73,31 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 
 	nodesGauge.Title = r.I18n("node pressure")
 	if MemTotal/memBase > CpuTotal/cpuBase {
-		nodesGauge.Value = []float64{MemRequest / MemTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+		nodesGauge.Value = []float64{MemRequest / MemTotal * 100}
+		nodesGauge.Name = fmt.Sprintf("%.1f", MemRequest/G) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{MemQuota / MemTotal}
 	} else {
-		nodesGauge.Value = []float64{CpuRequest / CpuTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+		nodesGauge.Value = []float64{CpuRequest / CpuTotal * 100}
+		nodesGauge.Name = fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{CpuQuota / CpuTotal}
 	}
 	data["nodes"] = nodesGauge
 
 	cpuGauge.Title = r.I18n("cpu pressure")
-	cpuGauge.Value = []float64{CpuRequest / CpuTotal}
-	cpuGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+	cpuGauge.Value = []float64{CpuRequest / CpuTotal * 100}
+	cpuGauge.Name = fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n("core") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	cpuGauge.Split = []float64{CpuQuota / CpuTotal}
 	data["cpu"] = cpuGauge
 
 	memGauge.Title = r.I18n("memory pressure")
-	memGauge.Value = []float64{MemRequest / MemTotal}
-	memGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+	memGauge.Value = []float64{MemRequest / MemTotal * 100}
+	memGauge.Name = fmt.Sprintf("%.1f", MemRequest/G) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	memGauge.Split = []float64{MemQuota / MemTotal}
 	data["memory"] = memGauge
 	return
 }
 
-func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, projectIds, principal []string) (resp *apistructs.ResourceResp, err error) {
+func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames []string) (resp *apistructs.ResourceResp, err error) {
 	resp = &apistructs.ResourceResp{}
 	orgid, err := strconv.ParseUint(ordId, 10, 64)
 	if err != nil {
@@ -166,9 +166,8 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 		}
 	}
 	logrus.Debug("get all namespace finished")
-	nreq := &apistructs.OrgClustersNamespaceReq{}
-	nreq.OrgID = ordId
 	logrus.Debug("start involved namespace")
+
 	nresp, err := r.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
 	logrus.Debug("involved namespace finished")
 	if err != nil {
@@ -181,7 +180,6 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames, p
 				involveNamespace[k][s] = true
 			}
 		}
-
 	}
 	irrelevantNamespace := make([]*pb.ClusterNamespacePair, 0)
 	for _, namespace := range allNamespace {
