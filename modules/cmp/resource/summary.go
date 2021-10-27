@@ -74,24 +74,24 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 	nodesGauge.Title = r.I18n("node pressure")
 	if MemTotal/memBase > CpuTotal/cpuBase {
 		nodesGauge.Value = []float64{MemRequest / MemTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+		nodesGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{MemQuota / MemTotal}
 	} else {
 		nodesGauge.Value = []float64{CpuRequest / CpuTotal}
-		nodesGauge.Name = fmt.Sprintf("%.1f", CpuQuota/CpuTotal) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+		nodesGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 		nodesGauge.Split = []float64{CpuQuota / CpuTotal}
 	}
 	data["nodes"] = nodesGauge
 
 	cpuGauge.Title = r.I18n("cpu pressure")
 	cpuGauge.Value = []float64{CpuRequest / CpuTotal}
-	cpuGauge.Name = fmt.Sprintf("%.1f", CpuQuota/CpuTotal) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+	cpuGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("核") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	cpuGauge.Split = []float64{CpuQuota / CpuTotal}
 	data["cpu"] = cpuGauge
 
 	memGauge.Title = r.I18n("memory pressure")
 	memGauge.Value = []float64{MemRequest / MemTotal}
-	memGauge.Name = fmt.Sprintf("%.1f", MemQuota/MemTotal) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
+	memGauge.Name = fmt.Sprintf("%.1f", nodesGauge.Value[0]) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
 	memGauge.Split = []float64{MemQuota / MemTotal}
 	data["memory"] = memGauge
 	return
