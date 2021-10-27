@@ -9,6 +9,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
+	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
@@ -116,6 +117,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pingcap/parser v0.0.0-20201022083903-fbe80b0c40bb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
+	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.26.0

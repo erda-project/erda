@@ -118,3 +118,8 @@ type DeployStagesServicesRequest struct {
 }
 type DeployStagesDomainsRequest struct {
 }
+
+type DeploymentStatusResponse struct {
+	Header
+	Data DeploymentStatusDTO `json:"data"`
+}
