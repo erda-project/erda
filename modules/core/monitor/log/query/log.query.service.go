@@ -62,7 +62,7 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
 	if len(req.ClusterName) <= 0 {
-		return nil, errors.NewMissingParameterError("applicationId")
+		return nil, errors.NewMissingParameterError("clusterName")
 	}
 	items, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Filters = append(sel.Filters, &storage.Filter{

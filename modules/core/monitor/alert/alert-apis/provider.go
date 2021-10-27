@@ -101,13 +101,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 	}
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
-	if err != nil {
-		return fmt.Errorf("fail to create cassandra session: %s", err)
-	}
-	p.cql = cql.New(session.Session())
-	if err := p.cql.Init(p.L, p.C.Cassandra.GCGraceSeconds); err != nil {
-		return fmt.Errorf("fail to init cassandra: %s", err)
+	if cassandra != nil {
+		session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
+		if err != nil {
+			return fmt.Errorf("fail to create cassandra session: %s", err)
+		}
+		p.cql = cql.New(session.Session())
+		if err := p.cql.Init(p.L, p.C.Cassandra.GCGraceSeconds); err != nil {
+			return fmt.Errorf("fail to init cassandra: %s", err)
+		}
 	}
 
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("alert")
