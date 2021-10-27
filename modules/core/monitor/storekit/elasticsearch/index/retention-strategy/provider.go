@@ -109,8 +109,9 @@ func (p *provider) initStrategy(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("elasticsearch.index.retention-strategy", &servicehub.Spec{
-		Services:   []string{"elasticsearch.index.retention-strategy"},
-		ConfigFunc: func() interface{} { return &config{} },
+		Services:     []string{"elasticsearch.index.retention-strategy"},
+		Dependencies: []string{"storage-retention-strategy"},
+		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
