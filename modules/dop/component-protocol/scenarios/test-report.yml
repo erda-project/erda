@@ -5,15 +5,19 @@ hierarchy:
   root: page
   structure:
     page:
-      - head
+      - filter
+      - topHead
       - table
-    head:
-      left: filter
-      right: createReportButton
+    topHead:
+      - createReportButton
 
 components:
   page:
     type: Container
+  topHead:
+    type: Container
+    props:
+      isTopHead: true
   head:
     type: LRContainer
   filter:

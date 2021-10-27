@@ -86,8 +86,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		c.Operations = map[string]interface{}{
 			"click": map[string]interface{}{
-				"key":    "cancelExecute",
-				"reload": true,
+				"key":     "cancelExecute",
+				"confirm": "是否确认取消?",
+				"reload":  true,
 			},
 		}
 	}

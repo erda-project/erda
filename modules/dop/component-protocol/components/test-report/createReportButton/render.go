@@ -83,7 +83,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 	ca.Props = map[string]interface{}{
-		"text":    "生成测试报告",
+		"text":    "创建报告",
 		"type":    "primary",
 		"visible": access.Access,
 	}
