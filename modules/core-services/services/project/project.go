@@ -1405,7 +1405,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	response.ClusterNames = clusterNames
 
 	if len(clusterNames) == 0 {
-		logrus.Warnln("no clusters for GetQuotaOnClusters")
+		l.Warnln("no clusters for GetQuotaOnClusters")
 		return response, nil
 	}
 
@@ -1422,7 +1422,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 			return response, nil
 		}
 		err = errors.Wrap(err, "failed to Find projects")
-		logrus.WithError(err).Errorln()
+		l.WithError(err).Errorln()
 		return nil, err
 	}
 
@@ -1434,7 +1434,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	var projectsQuota []*model.ProjectQuota
 	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&projectsQuota).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			logrus.WithError(err).Warnln("quota record not found")
+			l.WithError(err).Warnln("quota record not found")
 			return response, nil
 		}
 		err = errors.Wrap(err, "failed to Find project quota")
@@ -1464,9 +1464,9 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		}
 		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
 		case err != nil:
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln("failed to GetMembersByParam")
+			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("failed to GetMembersByParam")
 		case len(members) == 0:
-			logrus.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
+			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
 			mb, ok := getMemberFromMembers(members, "Owner")
 			if ok {
