@@ -802,7 +802,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 				if err != nil {
 					return err
 				}
-				if err = k.updateDaemonSet(ctx, desireDaemonSet); err != nil {
+				if err = k.updateDaemonSet(ctx, desireDaemonSet, &svc); err != nil {
 					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}

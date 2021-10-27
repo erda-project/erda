@@ -171,7 +171,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		reqCPU *= int64(*set.Spec.Replicas)
 		reqMem *= int64(*set.Spec.Replicas)
 	}
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem, "stateful")
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem, "stateful", service.Name)
 	if err != nil {
 		return err
 	}
