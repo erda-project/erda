@@ -49,8 +49,13 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 
 	// from extra
 	if p.TriggerMode == apistructs.PipelineTriggerModeCron && p.Extra.CronTriggerTime != nil {
-		result.TimeCreated = p.Extra.CronTriggerTime
-		result.TimeBegin = p.Extra.CronTriggerTime
+		// if pipeline is rerun and rerun failed, don't need to convert trigger time
+		pipelineType := p.Labels[apistructs.LabelPipelineType]
+		if pipelineType != apistructs.PipelineTypeRerun.String() &&
+			pipelineType != apistructs.PipelineTypeRerunFailed.String() {
+			result.TimeCreated = p.Extra.CronTriggerTime
+			result.TimeBegin = p.Extra.CronTriggerTime
+		}
 	}
 	result.Namespace = p.Extra.Namespace
 	result.OrgName = p.GetOrgName()
@@ -122,8 +127,12 @@ func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePip
 		TimeUpdated:      p.TimeUpdated,
 	}
 	if p.TriggerMode == apistructs.PipelineTriggerModeCron && p.Extra.CronTriggerTime != nil {
-		result.TimeCreated = p.Extra.CronTriggerTime
-		result.TimeBegin = p.Extra.CronTriggerTime
+		pipelineType := p.Labels[apistructs.LabelPipelineType]
+		if pipelineType != apistructs.PipelineTypeRerun.String() &&
+			pipelineType != apistructs.PipelineTypeRerunFailed.String() {
+			result.TimeCreated = p.Extra.CronTriggerTime
+			result.TimeBegin = p.Extra.CronTriggerTime
+		}
 	}
 	return &result
 }
