@@ -267,3 +267,85 @@ func Test_alertService_UpdateCustomizeAlert(t *testing.T) {
 		fmt.Println("should not err")
 	}
 }
+
+func Test_alertService_GetAlertConditions(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	monitorService := NewMockAlertServiceServer(ctrl)
+	monitorService.EXPECT().GetAlertConditions(gomock.Any(), gomock.Any()).AnyTimes().Return(&monitor.GetAlertConditionsResponse{
+		Data: []*monitor.Conditions{
+			{
+				Key:         "application_name",
+				DisplayName: "应用",
+			},
+			{
+				Key:         "service_name",
+				DisplayName: "服务",
+			},
+		},
+	}, nil)
+	pro := &provider{
+		C:                      &config{},
+		DB:                     &gorm.DB{},
+		Register:               nil,
+		Perm:                   nil,
+		MPerm:                  nil,
+		alertService:           &alertService{},
+		Monitor:                monitorService,
+		authDb:                 nil,
+		mspDb:                  nil,
+		bdl:                    &bundle.Bundle{},
+		microServiceFilterTags: nil,
+	}
+	pro.alertService.p = pro
+	_, err := pro.alertService.GetAlertConditions(context.Background(), &pb.GetAlertConditionsRequest{
+		ScopeType: "msp",
+	})
+	if err != nil {
+		fmt.Println("should not err,err is ", err)
+	}
+}
+
+func Test_alertService_GetAlertConditionsValue(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	monitorService := NewMockAlertServiceServer(ctrl)
+	monitorService.EXPECT().GetAlertConditionsValue(gomock.Any(), gomock.Any()).AnyTimes().Return(&monitor.GetAlertConditionsValueResponse{
+		Data: []*monitor.AlertConditionsValue{
+			{
+				Key: "application_name",
+				Options: []*structpb.Value{
+					structpb.NewStringValue("go-demo"),
+				},
+			},
+			{
+				Key: "service_name",
+				Options: []*structpb.Value{
+					structpb.NewStringValue("go-demo"),
+				},
+			},
+		},
+	}, nil)
+	pro := &provider{
+		C:                      &config{},
+		DB:                     &gorm.DB{},
+		Register:               nil,
+		Perm:                   nil,
+		MPerm:                  nil,
+		alertService:           &alertService{},
+		Monitor:                monitorService,
+		authDb:                 nil,
+		mspDb:                  nil,
+		bdl:                    &bundle.Bundle{},
+		microServiceFilterTags: nil,
+	}
+	pro.alertService.p = pro
+	_, err := pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
+		ProjectId:   "3",
+		TerminusKey: "3013939450553395c209ec92d1dda84a",
+		ScopeType:   "msp",
+	})
+	if err != nil {
+		fmt.Println("should not err,err is ", err)
+	}
+}

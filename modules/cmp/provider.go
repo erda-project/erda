@@ -29,7 +29,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
@@ -50,6 +52,7 @@ type provider struct {
 
 	Register        transport.Register `autowired:"service-register" optional:"true"`
 	Metrics         *metrics.Metric
+	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 	Protocol        componentprotocol.Interface
 	Resource        *resource.Resource
 	Tran            i18n.Translator `translator:"component-protocol"`
@@ -80,6 +83,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	))
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
+	alertpb.RegisterAlertServiceImp(p.Register, p, apis.Options())
+
 	return nil
 }
 
