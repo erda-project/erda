@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 )
 
-func (i *ComponentOutPutForm) SetProps() error {
+func (i *ComponentOutPutForm) SetProps(gs *apistructs.GlobalStateData) error {
 	paramsNameProp := PropColumn{
 		Title: "参数名",
 		Key:   PropsKeyParamsName,
@@ -58,7 +58,7 @@ func (i *ComponentOutPutForm) SetProps() error {
 			Props:    PropRenderProp{},
 		},
 	}
-	lt, err := i.RenderOnChange()
+	lt, err := i.RenderOnChange(gs)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (i *ComponentOutPutForm) SetProps() error {
 	return nil
 }
 
-func (i *ComponentOutPutForm) RenderListOutPutForm() error {
+func (i *ComponentOutPutForm) RenderListOutPutForm(gs *apistructs.GlobalStateData) error {
 	rsp, err := i.ctxBdl.Bdl.ListAutoTestSceneOutput(i.State.AutotestSceneRequest)
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (i *ComponentOutPutForm) RenderListOutPutForm() error {
 		list = append(list, pd)
 	}
 	i.Data.List = list
-	if err = i.SetProps(); err != nil {
+	if err = i.SetProps(gs); err != nil {
 		return err
 	}
 	return nil
@@ -104,7 +104,7 @@ func (i *ComponentOutPutForm) RenderUpdateOutPutForm() error {
 }
 
 // 可编辑器的初始值
-func (i *ComponentOutPutForm) RenderOnChange() ([]PropChangeOption, error) {
+func (i *ComponentOutPutForm) RenderOnChange(gs *apistructs.GlobalStateData) ([]PropChangeOption, error) {
 	list, err := i.ctxBdl.Bdl.ListAutoTestSceneStep(i.State.AutotestSceneRequest)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func (i *ComponentOutPutForm) RenderOnChange() ([]PropChangeOption, error) {
 		stepNameMap[strconv.FormatUint(s.ID, 10)] = s.Name
 	}
 
-	outputs, err := step.GetStepAllOutput(steps, i.ctxBdl.Bdl)
+	outputs, err := step.GetStepAllOutput(steps, i.ctxBdl.Bdl, gs)
 	if err != nil {
 		return nil, err
 	}

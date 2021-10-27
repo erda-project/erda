@@ -143,7 +143,7 @@ func (i *ComponentOutPutForm) Render(ctx context.Context, c *apistructs.Componen
 
 	switch event.Operation {
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
-		err = i.RenderListOutPutForm()
+		err = i.RenderListOutPutForm(gs)
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func (i *ComponentOutPutForm) Render(ctx context.Context, c *apistructs.Componen
 		if err != nil {
 			return err
 		}
-		err = i.RenderListOutPutForm()
+		err = i.RenderListOutPutForm(gs)
 		if err != nil {
 			return err
 		}

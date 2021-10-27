@@ -185,7 +185,7 @@ LABEL:
 	}
 	inputs = append(inputs, Input{Label: "前置接口出参", Value: "前置接口出参", IsLeaf: false, Children: stepChildren1})
 
-	maps, err = step.GetConfigSheetStepOutPut(steps, bdl.Bdl)
+	maps, err = step.GetConfigSheetStepOutPut(steps, bdl.Bdl, gs)
 	if err != nil {
 		return err
 	}
