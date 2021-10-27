@@ -1351,7 +1351,7 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 			if v.Scope == Org {
 				for _, cond := range v.Conditions {
 					req := &metricpb.QueryWithInfluxFormatRequest{
-						Start: "before_1h",
+						Start: "before_5h",
 						End:   "now",
 					}
 					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name GROUP BY %s::tag`, cond.Key, cond.Index, cond.Key)
@@ -1372,7 +1372,7 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 			if v.Scope == Msp {
 				for _, cond := range v.Conditions {
 					req := &metricpb.QueryWithInfluxFormatRequest{
-						Start: "before_1h",
+						Start: "before_5h",
 						End:   "now",
 					}
 					req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE org_name::tag=$org_name AND project_id::tag=$project_id AND terminus_key::tag=$terminus_key GROUP BY %s::tag`, cond.Key, cond.Index, cond.Key)
