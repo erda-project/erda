@@ -95,11 +95,12 @@ func (e *Endpoints) UpdateTestPlan(ctx context.Context, r *http.Request, vars ma
 	if !req.IsInternalClient() {
 		// Authorize
 		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   req.UserID,
-			Scope:    apistructs.ProjectScope,
-			ScopeID:  tp.ProjectID,
-			Resource: apistructs.TestPlanResource,
-			Action:   apistructs.UpdateAction,
+			UserID:       req.UserID,
+			Scope:        apistructs.ProjectScope,
+			ScopeID:      tp.ProjectID,
+			Resource:     apistructs.TestPlanResource,
+			Action:       apistructs.UpdateAction,
+			ResourceRole: strutil.Join(getUserMtPlanResourceRoles(req.UserID, *tp), ",", true),
 		})
 		if err != nil {
 			return apierrors.ErrCheckPermission.InternalError(err).ToResp(), nil
@@ -399,4 +400,19 @@ func (e *Endpoints) GenerateTestPlanReport(ctx context.Context, r *http.Request,
 	}
 
 	return httpserver.OkResp(report, report.UserIDs)
+}
+
+// getUserMtPlanResourceRoles get user's resource roles of manual test plan
+func getUserMtPlanResourceRoles(userID string, mtPlan apistructs.TestPlan) (roles []string) {
+	// owner
+	if userID == mtPlan.OwnerID {
+		roles = append(roles, apistructs.ResourceRoleOwner)
+	}
+	for _, partnerID := range mtPlan.PartnerIDs {
+		if userID == partnerID {
+			roles = append(roles, apistructs.ResourceRolePartner)
+			break
+		}
+	}
+	return
 }
