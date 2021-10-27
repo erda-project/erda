@@ -24,6 +24,7 @@ type ResourceOverviewReportDataItem struct {
 	ProjectID          int64   `json:"projectID"`
 	ProjectName        string  `json:"projectName"`
 	ProjectDisplayName string  `json:"projectDisplayName"`
+	ProjectDesc        string  `json:"projectDesc"`
 	OwnerUserID        int64   `json:"ownerUserID"`
 	OwnerUserName      string  `json:"ownerUserName"`
 	OwnerUserNickName  string  `json:"ownerUserNickname"`

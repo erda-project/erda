@@ -137,6 +137,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	resourceTable := resource.NewReportTable(
 		resource.ReportTableWithBundle(bdl),
 		resource.ReportTableWithCMP(p),
+		resource.ReportTableWithTrans(p.Tran),
 	)
 
 	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)

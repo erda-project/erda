@@ -21,6 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -29,6 +30,8 @@ import (
 var resourceOverviewReportError = errorresp.New(errorresp.WithTemplateMessage("ErrResourceOverviewReport", "查询项目资源分配情况失败"))
 
 func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
 	logrus.Debugln("ResourceOverviewReport")
 
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
