@@ -193,8 +193,8 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(t *ReportTable) {
-		t.cmp = cmp
+	return func(table *ReportTable) {
+		table.cmp = cmp
 	}
 }
 
