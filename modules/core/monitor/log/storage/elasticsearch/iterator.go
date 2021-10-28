@@ -34,14 +34,9 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
-func getSearchSource(start, end int64, includeEnd bool, sel *storage.Selector, condition func(query *elastic.BoolQuery) *elastic.BoolQuery) *elastic.SearchSource {
+func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
-	query := elastic.NewBoolQuery()
-	if includeEnd {
-		query = query.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lte(end))
-	} else {
-		query = query.Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lt(end))
-	}
+	query := elastic.NewBoolQuery().Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lt(end))
 	for _, filter := range sel.Filters {
 		val, ok := filter.Value.(string)
 		if !ok {
@@ -54,9 +49,6 @@ func getSearchSource(start, end int64, includeEnd bool, sel *storage.Selector, c
 			query = query.Filter(elastic.NewRegexpQuery(filter.Key, val))
 		}
 	}
-	if condition != nil {
-		query = condition(query)
-	}
 	return searchSource.Query(query)
 }
 
@@ -68,7 +60,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		Recursive: true,
 	})
 	if useScrollQuery {
-		searchSource := getSearchSource(sel.Start, sel.End, false, sel, nil)
+		searchSource := getSearchSource(sel.Start, sel.End, sel)
 		if sel.Debug {
 			source, _ := searchSource.Source()
 			fmt.Printf("indices: %v\nsearchSource: %s\n", strings.Join(indices, ","), jsonx.MarshalAndIndent(source))
@@ -84,15 +76,12 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		}, nil
 	}
 	return &searchIterator{
-		ctx:        ctx,
-		sel:        sel,
-		client:     p.client,
-		timeout:    p.Cfg.QueryTimeout,
-		pageSize:   p.Cfg.ReadPageSize,
-		indices:    indices,
-		lastStart:  sel.Start,
-		lastEnd:    sel.End,
-		lastOffset: 0,
+		ctx:      ctx,
+		sel:      sel,
+		client:   p.client,
+		timeout:  p.Cfg.QueryTimeout,
+		pageSize: p.Cfg.ReadPageSize,
+		indices:  indices,
 	}, nil
 }
 
@@ -248,7 +237,7 @@ func (it *scrollIterator) fetch(dir iteratorDir) error {
 			}
 
 			// parse result
-			it.buffer = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End)
+			it.buffer, _, _ = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End, "")
 			return nil
 		}()
 	}
@@ -293,9 +282,8 @@ type searchIterator struct {
 	ctx context.Context
 	sel *storage.Selector
 
-	lastStart  int64
-	lastEnd    int64
-	lastOffset int64
+	lastID         string
+	lastSortValues []interface{}
 
 	client   *elastic.Client
 	timeout  time.Duration
@@ -313,9 +301,7 @@ func (it *searchIterator) First() bool {
 	if it.checkClosed() {
 		return false
 	}
-	it.lastStart = it.sel.Start
-	it.lastEnd = it.sel.End
-	it.lastOffset = 0
+	it.lastSortValues, it.lastID = nil, ""
 	it.fetch(iteratorForward)
 	return it.yield()
 }
@@ -324,9 +310,7 @@ func (it *searchIterator) Last() bool {
 	if it.checkClosed() {
 		return false
 	}
-	it.lastStart = it.sel.Start
-	it.lastEnd = it.sel.End
-	it.lastOffset = 0
+	it.lastSortValues, it.lastID = nil, ""
 	it.fetch(iteratorBackward)
 	return it.yield()
 }
@@ -387,31 +371,16 @@ func (it *searchIterator) fetch(dir iteratorDir) error {
 
 	it.dir = dir
 	it.buffer = nil
-	for it.err == nil && len(it.buffer) <= 0 && it.lastStart < it.lastEnd {
+	for it.err == nil && len(it.buffer) <= 0 {
 		func() error {
-			// do query
 			ctx, cancel := context.WithTimeout(it.ctx, it.timeout)
 			defer cancel()
 			var resp *elastic.SearchResult
-
-			var searchSource *elastic.SearchSource
-			if ascending {
-				searchSource = getSearchSource(it.lastStart, it.lastEnd, false, it.sel, func(query *elastic.BoolQuery) *elastic.BoolQuery {
-					if it.lastOffset > 0 {
-						query.Filter(elastic.NewRangeQuery("offset").Gt(it.lastOffset))
-					}
-					return query
-				})
-			} else {
-				searchSource = getSearchSource(it.lastStart, it.lastEnd, it.lastEnd != it.sel.End, it.sel, func(query *elastic.BoolQuery) *elastic.BoolQuery {
-					if it.lastOffset > 0 {
-						query.Filter(elastic.NewRangeQuery("offset").Lt(it.lastOffset))
-					}
-					return query
-				})
-			}
+			searchSource := getSearchSource(it.sel.Start, it.sel.End, it.sel)
 			resp, it.err = it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).Timeout(timeout).
-				SearchSource(searchSource).Size(it.pageSize).Sort("timestamp", ascending).Sort("offset", ascending).Do(ctx)
+				SearchSource(searchSource).Size(it.pageSize).
+				Sort("timestamp", ascending).Sort("offset", ascending).SearchAfter(it.lastSortValues...).
+				Do(ctx)
 			if it.err != nil {
 				return it.err
 			}
@@ -419,26 +388,8 @@ func (it *searchIterator) fetch(dir iteratorDir) error {
 				it.err = io.EOF
 				return it.err
 			}
-			it.buffer = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End)
-			num := len(it.buffer)
-			if num > 0 {
-				last := it.buffer[num-1]
-				if ascending {
-					it.lastStart = last.Timestamp
-					// maybe offset is zero forever, so increase lastStart to avoid query duplicated log
-					if it.lastOffset == last.Offset {
-						it.lastStart++
-					}
-
-				} else {
-					it.lastEnd = last.Timestamp
-					// maybe offset is zero forever, so decrease lastEnd to avoid query duplicated log
-					if it.lastOffset == last.Offset {
-						it.lastEnd--
-					}
-				}
-				it.lastOffset = last.Offset
-			} else {
+			it.buffer, it.lastSortValues, it.lastID = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End, it.lastID)
+			if len(resp.Hits.Hits) < it.pageSize {
 				it.err = io.EOF
 				return it.err
 			}
@@ -480,9 +431,10 @@ func (it *searchIterator) checkClosed() bool {
 	return false
 }
 
-func parseHits(hits []*elastic.SearchHit, start, end int64) (list []*pb.LogItem) {
+func parseHits(hits []*elastic.SearchHit, start, end int64, removeID string) (list []*pb.LogItem, lastSortValue []interface{}, lastID string) {
+	checkID := len(removeID) > 0
 	for _, hit := range hits {
-		if hit.Source == nil {
+		if hit.Source == nil || (checkID && hit.Id == removeID) {
 			continue
 		}
 		data, err := parseData(*hit.Source)
@@ -492,8 +444,10 @@ func parseHits(hits []*elastic.SearchHit, start, end int64) (list []*pb.LogItem)
 		if start <= data.Timestamp && data.Timestamp < end {
 			list = append(list, data)
 		}
+		lastSortValue = hit.Sort
+		lastID = hit.Id
 	}
-	return list
+	return list, lastSortValue, lastID
 }
 
 func parseData(byts []byte) (*pb.LogItem, error) {
