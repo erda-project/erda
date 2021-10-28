@@ -705,6 +705,15 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 				return err
 			}
 			a.stepIDAssociationMap[each.ID] = newStep.ID
+			// replace value again because loop strategy may use self id
+			tmpValue := replacePreStepValue(newStep.Value, a.stepIDAssociationMap)
+			if tmpValue != newStep.Value {
+				newStep.Value = tmpValue
+				if err = a.svc.db.UpdateAutotestSceneStep(newStep); err != nil {
+					return err
+				}
+			}
+
 			head = newStep.ID
 			pHead := newStep.ID
 
@@ -728,6 +737,14 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 				}
 				pHead = newPStep.ID
 				a.stepIDAssociationMap[pv.ID] = newPStep.ID
+				// replace value again because loop strategy may use self id
+				tmpValue = replacePreStepValue(newPStep.Value, a.stepIDAssociationMap)
+				if tmpValue != newPStep.Value {
+					newPStep.Value = tmpValue
+					if err = a.svc.db.UpdateAutotestSceneStep(newPStep); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

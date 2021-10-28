@@ -122,7 +122,7 @@ func (r *RecordTable) setProps() {
 	}, Column{
 		DataIndex: "operator",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableOperator),
-		Width:     150,
+		Width:     170,
 	}, Column{
 		DataIndex: "time",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableTime),
@@ -130,6 +130,7 @@ func (r *RecordTable) setProps() {
 	}, Column{
 		DataIndex: "desc",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableDesc),
+		Width:     200,
 	}, Column{
 		DataIndex: "status",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableStatus),
@@ -199,7 +200,6 @@ func (r *RecordTable) setData() error {
 			Result: Result{
 				RenderType: "downloadUrl",
 				URL:        fmt.Sprintf("%s/api/files/%s", conf.RootDomain(), fileRecord.ApiFileUUID),
-				Value:      fileRecord.FileName,
 			},
 		})
 	}
