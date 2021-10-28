@@ -46,9 +46,10 @@ func testPlanRun(ctx context.Context, c *apistructs.Component, scenario apistruc
 
 	// get testplan
 	testPlanRequest := apistructs.TestPlanV2PagingRequest{
-		ProjectID: uint64(projectId),
-		PageNo:    1,
-		PageSize:  999,
+		ProjectID:  uint64(projectId),
+		PageNo:     1,
+		PageSize:   999,
+		IsArchived: &[]bool{false}[0],
 	}
 	testPlanRequest.UserID = bdl.Identity.UserID
 	plans, err := bdl.Bdl.PagingTestPlansV2(testPlanRequest)
