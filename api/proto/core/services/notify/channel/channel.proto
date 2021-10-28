@@ -142,7 +142,7 @@ message UpdateNotifyChannelResponse {
 }
 
 message GetNotifyChannelsRequest {
-  int64 page     = 1;
+  int64 pageNo   = 1;
   int64 pageSize = 2;
 }
 

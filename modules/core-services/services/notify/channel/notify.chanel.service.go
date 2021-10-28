@@ -100,8 +100,8 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 }
 
 func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.GetNotifyChannelsRequest) (*pb.GetNotifyChannelsResponse, error) {
-	if req.Page < 1 {
-		req.Page = 1
+	if req.PageNo < 1 {
+		req.PageNo = 1
 	}
 	if req.PageSize < 10 {
 		req.PageSize = 10
@@ -114,7 +114,7 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 		return nil, pkgerrors.NewNotFoundError("Org")
 	}
 	scopeType := "org"
-	total, channels, err := s.NotifyChannelDB.ListByPage((req.Page-1)*req.PageSize, req.PageSize, orgId, scopeType)
+	total, channels, err := s.NotifyChannelDB.ListByPage((req.PageNo-1)*req.PageSize, req.PageSize, orgId, scopeType)
 	var pbChannels []*pb.NotifyChannel
 	for _, channel := range channels {
 		pbChannels = append(pbChannels, s.CovertToPbNotifyChannel(apis.Language(ctx), &channel))
@@ -123,7 +123,7 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
-	return &pb.GetNotifyChannelsResponse{Page: req.Page, PageSize: req.PageSize, Total: total, Data: pbChannels}, nil
+	return &pb.GetNotifyChannelsResponse{Page: req.PageNo, PageSize: req.PageSize, Total: total, Data: pbChannels}, nil
 }
 
 func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.UpdateNotifyChannelRequest) (*pb.UpdateNotifyChannelResponse, error) {
