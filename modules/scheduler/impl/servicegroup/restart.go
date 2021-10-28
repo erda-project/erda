@@ -30,13 +30,13 @@ func (s ServiceGroupImpl) Restart(namespace string, name string) error {
 	sg.Extra[LastRestartTimeKey] = time.Now().String()
 	sg.LastModifiedTime = time.Now().Unix()
 
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &sg); err != nil {
-		return err
-	}
-
 	sg.Labels = appendServiceTags(sg.Labels, sg.Executor)
 
 	if _, err := s.handleServiceGroup(context.Background(), &sg, task.TaskUpdate); err != nil {
+		return err
+	}
+
+	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &sg); err != nil {
 		return err
 	}
 	return nil

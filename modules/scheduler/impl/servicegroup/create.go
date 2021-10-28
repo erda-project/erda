@@ -28,11 +28,13 @@ func (s ServiceGroupImpl) Create(req apistructs.ServiceGroupCreateV2Request) (ap
 	if err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), sg); err != nil {
-		return apistructs.ServiceGroup{}, err
-	}
+
 	sg.Labels = appendServiceTags(sg.Labels, sg.Executor)
 	if _, err := s.handleServiceGroup(context.Background(), &sg, task.TaskCreate); err != nil {
+		return apistructs.ServiceGroup{}, err
+	}
+
+	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), sg); err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
 	return sg, err
