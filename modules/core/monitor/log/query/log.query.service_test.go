@@ -31,6 +31,7 @@ func Test_toQuerySelector(t *testing.T) {
 	}{
 		{
 			req: &LogRequest{
+				ID:    "testid",
 				Start: 1,
 				End:   math.MaxInt64,
 			},
@@ -38,10 +39,30 @@ func Test_toQuerySelector(t *testing.T) {
 		},
 		{
 			req: &LogRequest{
+				ID:    "testid",
 				Start: 10,
 				End:   1,
 			},
 			wantErr: true,
+		},
+		{
+			req: &LogRequest{
+				ID:    "testid",
+				Start: 0,
+				End:   10,
+			},
+			want: &storage.Selector{
+				Start:  0,
+				End:    10,
+				Scheme: "",
+				Filters: []*storage.Filter{
+					{
+						Key:   "id",
+						Op:    storage.EQ,
+						Value: "testid",
+					},
+				},
+			},
 		},
 		{
 			req: &LogRequest{
