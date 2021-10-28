@@ -129,22 +129,6 @@ func TestWithUCClient(t *testing.T) {
 	New(WithUCClient(new(ucauth.UCClient)))
 }
 
-func Test_hasClusterAndNamespace(t *testing.T) {
-	var namespaces = map[string][]string{
-		"erda-hongkong": {"default", "ns1"},
-		"erda-cloud":    {"default", "ns2"},
-	}
-	if hasClusterAndNamespace(namespaces, "erda-dev", "ns1") {
-		t.Error("err")
-	}
-	if !hasClusterAndNamespace(namespaces, "erda-hongkong", "ns1") {
-		t.Error("err")
-	}
-	if hasClusterAndNamespace(namespaces, "erda-hongkong", "ns2") {
-		t.Error("err")
-	}
-}
-
 func Test_convertAuditCreateReq2Model(t *testing.T) {
 	var audit = apistructs.Audit{
 		ID:           0,
@@ -176,6 +160,33 @@ func Test_convertAuditCreateReq2Model(t *testing.T) {
 	audit.StartTime = "123456"
 	if _, err := convertAuditCreateReq2Model(audit); err == nil {
 		t.Fatal("err")
+	}
+}
+
+func Test_getMemberFromMembers(t *testing.T) {
+	var members = []model.Member{
+		{
+			UserID: "1",
+			Roles:  []string{"Owner"},
+		}, {
+			UserID: "2",
+			Roles:  []string{"Owner"},
+		}, {
+			UserID: "3",
+			Roles:  []string{"Owner"},
+		}, {
+			UserID: "4",
+			Roles:  []string{"Owner"},
+		},
+	}
+
+	_, ok := getMemberFromMembers(members, "Owner")
+	if !ok {
+		t.Fatal("getMemberFromMembers error: not found an Owner")
+	}
+	_, ok = getMemberFromMembers(members, "Lead")
+	if ok {
+		t.Fatal("getMemberFromMembers error: found a Lead")
 	}
 }
 
