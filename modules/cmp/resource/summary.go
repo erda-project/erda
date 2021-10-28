@@ -52,7 +52,13 @@ func (r *Resource) GetGauge(ctx context.Context, ordId string, userID string, re
 }
 
 func (r *Resource) getGauge(ctx context.Context, req *apistructs.GaugeRequest, resp *apistructs.ResourceResp) (data map[string]*GaugeData) {
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	var (
+		ok        bool
+		langCodes i18n.LanguageCodes
+	)
+	if langCodes, ok = ctx.Value(Lang).(i18n.LanguageCodes); !ok {
+		logrus.Error("i18n translator is empty")
+	}
 	data = make(map[string]*GaugeData)
 	var (
 		nodesGauge = &GaugeData{}

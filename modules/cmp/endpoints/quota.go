@@ -22,13 +22,17 @@ import (
 
 	"github.com/gorilla/schema"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	newDecoder := schema.NewDecoder()
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	req := &apistructs.GaugeRequest{}
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -59,6 +63,8 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 
 func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.ClassRequest{}
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -82,6 +88,8 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 
 func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -109,6 +117,8 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 
 func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
