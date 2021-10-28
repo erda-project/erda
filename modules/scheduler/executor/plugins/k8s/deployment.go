@@ -17,6 +17,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -42,6 +44,7 @@ const (
 	shardDirSuffix          = "-shard-dir"
 	sidecarNamePrefix       = "sidecar-"
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
+	RegistrySecretName      = "REGISTRY_SECRET_NAME"
 )
 
 func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
@@ -466,6 +469,25 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		},
 	}
 
+	// need to set the secret in default namespace which named with REGISTRY_SECRET_NAME env
+	registryName := os.Getenv(RegistrySecretName)
+	if registryName == "" {
+		registryName = AliyunRegistry
+	}
+
+	_, err := k.secret.Get(service.Namespace, registryName)
+	if err == nil {
+		deployment.Spec.Template.Spec.ImagePullSecrets = []apiv1.LocalObjectReference{
+			{
+				Name: registryName,
+			},
+		}
+	} else {
+		if !k8serror.NotFound(err) {
+			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", registryName, service.Namespace, err)
+		}
+	}
+
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
 		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
 			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
@@ -491,7 +513,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		Image: service.Image,
 	}
 
-	err := k.setContainerResources(*service, &container)
+	err = k.setContainerResources(*service, &container)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
