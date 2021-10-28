@@ -15,6 +15,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 )
@@ -87,7 +89,7 @@ type Quota struct {
 	nickName string
 }
 
-func (r *Resource) GetPie(ordId, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
+func (r *Resource) GetPie(ctx context.Context, ordId, userId string, request *apistructs.ClassRequest) (data map[string]*PieData, err error) {
 	logrus.Debug("func GetPie start")
 	defer logrus.Debug("func GetPie finished")
 	var clusters []apistructs.ClusterInfo
@@ -123,21 +125,21 @@ func (r *Resource) GetPie(ordId, userId string, request *apistructs.ClassRequest
 	}
 
 	// Project
-	pie, err := r.GetProjectPie(request.ResourceType, resp, irResp)
+	pie, err := r.GetProjectPie(ctx, request.ResourceType, resp, irResp)
 	if err != nil {
 		return
 	}
 	data[Project] = pie
 
 	// principal
-	pie, err = r.GetPrincipalPie(request.ResourceType, resp, irResp)
+	pie, err = r.GetPrincipalPie(ctx, request.ResourceType, resp, irResp)
 	if err != nil {
 		return
 	}
 	data[Owner] = pie
 
 	// Cluster
-	pie, err = r.GetClusterPie(request.ResourceType, resources)
+	pie, err = r.GetClusterPie(ctx, request.ResourceType, resources)
 	if err != nil {
 		return
 	}
@@ -145,14 +147,15 @@ func (r *Resource) GetPie(ordId, userId string, request *apistructs.ClassRequest
 	return
 }
 
-func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (projectPie *PieData, err error) {
+func (r *Resource) GetProjectPie(ctx context.Context, resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (projectPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
 	)
 	projectPie = &PieData{}
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 	serie := PieSerie{
-		Name: r.I18n("distribution by project"),
+		Name: r.I18n(langCodes, "distribution by project"),
 		Type: "pie",
 	}
 	projectMap := make(map[string]Quota)
@@ -170,42 +173,42 @@ func (r *Resource) GetProjectPie(resType string, resp *apistructs.GetQuotaOnClus
 	switch resType {
 
 	case Memory:
-		sum := 0.0
+		//sum := 0.0
 		for _, v := range projectMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
-		if resource != nil {
-			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
-			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
-			sum += resource.IrrelevantCpuRequest
-			if resource.MemTotal > sum {
-				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.MemTotal-sum)/G), 64)
-				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
-			}
-		}
+		//if resource != nil {
+		//	ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
+		//	serie.Data = append(serie.Data, SerieData{ir, r.I18n(langCodes, "shared resource")})
+		//	sum += resource.IrrelevantCpuRequest
+		//	if resource.MemTotal > sum {
+		//		unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.MemTotal-sum)/G), 64)
+		//		serie.Data = append(serie.Data, SerieData{unused, r.I18n(langCodes, "unused resource")})
+		//	}
+		//}
 	default:
-		sum := 0.0
+		//sum := 0.0
 		for _, v := range projectMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
-		if resource != nil {
-			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
-			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
-			sum += resource.IrrelevantCpuRequest
-			if resource.CpuTotal > sum {
-				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.CpuTotal-sum)/MilliCore), 64)
-				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
-			}
-		}
+		//if resource != nil {
+		//	ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
+		//	serie.Data = append(serie.Data, SerieData{ir, r.I18n(langCodes, "shared resource")})
+		//	sum += resource.IrrelevantCpuRequest
+		//	if resource.CpuTotal > sum {
+		//		unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.CpuTotal-sum)/MilliCore), 64)
+		//		serie.Data = append(serie.Data, SerieData{unused, r.I18n(langCodes, "unused resource")})
+		//	}
+		//}
 	}
 	r.PieSort(serie.Data)
 	projectPie.Series = append(projectPie.Series, serie)
 	return
 }
 
-func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (principalPie *PieData, err error) {
+func (r *Resource) GetPrincipalPie(ctx context.Context, resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (principalPie *PieData, err error) {
 	var (
 		q  Quota
 		ok bool
@@ -220,53 +223,56 @@ func (r *Resource) GetPrincipalPie(resType string, resp *apistructs.GetQuotaOnCl
 		q.nickName = owner.Nickname
 		principalMap[owner.Name] = q
 	}
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+
 	principalPie = &PieData{}
 	serie := PieSerie{
-		Name: r.I18n("distribution by owner"),
+		Name: r.I18n(langCodes, "distribution by owner"),
 		Type: "pie",
 	}
 	switch resType {
 	case Memory:
-		sum := 0.0
+		//sum := 0.0
 		for _, v := range principalMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
-		if resource != nil {
-			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
-			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
-			sum += resource.IrrelevantCpuRequest
-			if resource.MemTotal > sum {
-				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.MemTotal-sum)/G), 64)
-				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
-			}
-		}
+		//if resource != nil {
+		//	ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
+		//	serie.Data = append(serie.Data, SerieData{ir, r.I18n(langCodes, "shared resource")})
+		//	sum += resource.IrrelevantCpuRequest
+		//	if resource.MemTotal > sum {
+		//		unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.MemTotal-sum)/G), 64)
+		//		serie.Data = append(serie.Data, SerieData{unused, r.I18n(langCodes, "unused resource")})
+		//	}
+		//}
 
 	default:
-		sum := 0.0
+		//sum := 0.0
 		for _, v := range principalMap {
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
-		if resource != nil {
-			ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
-			serie.Data = append(serie.Data, SerieData{ir, r.I18n("shared resource")})
-			sum += resource.IrrelevantCpuRequest
-			if resource.CpuTotal > sum {
-				unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.CpuTotal-sum)/MilliCore), 64)
-				serie.Data = append(serie.Data, SerieData{unused, r.I18n("unused resource")})
-			}
-		}
+		//if resource != nil {
+		//	ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
+		//	serie.Data = append(serie.Data, SerieData{ir, r.I18n(langCodes, "shared resource")})
+		//	sum += resource.IrrelevantCpuRequest
+		//	if resource.CpuTotal > sum {
+		//		unused, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", (resource.CpuTotal-sum)/MilliCore), 64)
+		//		serie.Data = append(serie.Data, SerieData{unused, r.I18n(langCodes, "unused resource")})
+		//	}
+		//}
 	}
 	r.PieSort(serie.Data)
 	principalPie.Series = append(principalPie.Series, serie)
 	return
 }
 
-func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterResourcesResponse) (clusterPie *PieData, err error) {
+func (r *Resource) GetClusterPie(ctx context.Context, resourceType string, resources *pb.GetClusterResourcesResponse) (clusterPie *PieData, err error) {
 	clusterPie = &PieData{}
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 	serie := PieSerie{
-		Name: r.I18n("distribution by cluster"),
+		Name: r.I18n(langCodes, "distribution by cluster"),
 		Type: "pie",
 	}
 
@@ -277,6 +283,9 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			for _, h := range c.Hosts {
 				memSum += float64(h.MemTotal)
 			}
+			if memSum == 0.0 {
+				continue
+			}
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", memSum/G), 64)
 			serie.Data = append(serie.Data, SerieData{f, c.ClusterName})
 		}
@@ -285,6 +294,9 @@ func (r *Resource) GetClusterPie(resourceType string, resources *pb.GetClusterRe
 			cpuSum := 0.0
 			for _, h := range c.Hosts {
 				cpuSum += float64(h.CpuTotal)
+			}
+			if cpuSum == 0.0 {
+				continue
 			}
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", cpuSum/MilliCore), 64)
 			serie.Data = append(serie.Data, SerieData{f, c.ClusterName})
@@ -301,11 +313,12 @@ func (r *Resource) PieSort(series []SerieData) {
 	})
 }
 
-func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	logrus.Debug("func GetClusterTrend start")
 	defer logrus.Debug("func GetClusterTrend finished")
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 	td = &Histogram{
-		Name: r.I18n("cluster trend"),
+		Name: r.I18n(langCodes, "cluster trend"),
 	}
 	td.XAxis = XAxis{
 		Type: "category",
@@ -314,8 +327,8 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	td.Series = make([]HistogramSerie, 2)
 	td.Series[0].Type = "bar"
 	td.Series[1].Type = "bar"
-	td.Series[0].Name = r.I18n("quota")
-	td.Series[1].Name = r.I18n("total")
+	td.Series[0].Name = r.I18n(langCodes, "quota")
+	td.Series[1].Name = r.I18n(langCodes, "total")
 	var (
 		pd       []apistructs.ClusterResourceDailyModel
 		clusters []apistructs.ClusterInfo
@@ -395,10 +408,10 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
 			switch request.Interval {
 			case Month:
-				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
 				_, wk := quota.CreatedAt.ISOWeek()
-				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n(langCodes, "week"))
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}
@@ -409,10 +422,10 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
 			switch request.Interval {
 			case Month:
-				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
 				_, wk := quota.CreatedAt.ISOWeek()
-				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n(langCodes, "week"))
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}
@@ -421,9 +434,12 @@ func (r *Resource) GetClusterTrend(ordId int64, userId string, request *apistruc
 	return
 }
 
-func (r *Resource) GetProjectTrend(ordId, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+	logrus.Debug("func GetProjectTrend start")
+	defer logrus.Debug("func GetProjectTrend finished")
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 	td = &Histogram{
-		Name: r.I18n("project trend"),
+		Name: r.I18n(langCodes, "project trend"),
 	}
 	td.XAxis = XAxis{
 		Type: "category",
@@ -432,8 +448,8 @@ func (r *Resource) GetProjectTrend(ordId, userId string, request *apistructs.Tre
 	td.Series = make([]HistogramSerie, 2)
 	td.Series[0].Type = "bar"
 	td.Series[1].Type = "bar"
-	td.Series[0].Name = r.I18n("request")
-	td.Series[1].Name = r.I18n("quota")
+	td.Series[0].Name = r.I18n(langCodes, "request")
+	td.Series[1].Name = r.I18n(langCodes, "quota")
 	var (
 		pd       []apistructs.ProjectResourceDailyModel
 		clusters []apistructs.ClusterInfo
@@ -517,10 +533,10 @@ func (r *Resource) GetProjectTrend(ordId, userId string, request *apistructs.Tre
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
 			switch request.Interval {
 			case Month:
-				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
 				_, wk := quota.CreatedAt.ISOWeek()
-				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n(langCodes, "week"))
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}
@@ -532,10 +548,10 @@ func (r *Resource) GetProjectTrend(ordId, userId string, request *apistructs.Tre
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
 			switch request.Interval {
 			case Month:
-				td.XAxis.Data = append(td.XAxis.Data, r.I18n(quota.CreatedAt.Format("2006-01")))
+				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
 				_, wk := quota.CreatedAt.ISOWeek()
-				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n("week"))
+				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n(langCodes, "week"))
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}

@@ -29,25 +29,23 @@ type Resource struct {
 	Ctx    context.Context
 	Server cmp_interface.Provider
 	I18N   i18n.Translator
-	Lang   i18n.LanguageCodes
 	DB     *dbclient.DBClient
 }
 
-func (r *Resource) I18n(key string, args ...interface{}) string {
+func (r *Resource) I18n(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	if len(args) == 0 {
-		try := r.I18N.Text(r.Lang, key)
+		try := r.I18N.Text(lang, key)
 		if try != key {
 			return try
 		}
 	}
-	return r.I18N.Sprintf(r.Lang, key, args...)
+	return r.I18N.Sprintf(lang, key, args...)
 }
 
-func New(ctx context.Context, i18n i18n.Translator, lang i18n.LanguageCodes, mServer cmp_interface.Provider) *Resource {
+func New(ctx context.Context, i18n i18n.Translator, mServer cmp_interface.Provider) *Resource {
 	r := &Resource{}
 	r.I18N = i18n
 	r.Ctx = ctx
-	r.Lang = lang
 	r.Server = mServer
 	return r
 }

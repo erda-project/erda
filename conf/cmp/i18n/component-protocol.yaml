@@ -223,7 +223,8 @@ zh:
  node pressure: 节点压力图
  cpu pressure: CPU 压力图
  memory pressure: 内存压力图
- quota in use: 配额已使用
+ quota in use: 已分配
+ request in use: 已占用
  cluster trend: 集群资源变化趋势图
  project trend: 项目资源变化趋势图
  SharedResources: 共享资源
