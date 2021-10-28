@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/asaskevich/govalidator"
 	"io"
 	"io/ioutil"
 	"math"
@@ -29,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
