@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 func init() {
@@ -110,7 +110,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	}
 
 	kind, namespace, name := splits[0], splits[1], splits[2]
-	cli, err := k8sclient.New(f.State.ClusterName)
+	cli, err := cputil2.GetImpersonateClient(f.server, f.sdk.Identity.UserID, f.sdk.Identity.OrgID, f.State.ClusterName)
 	if err != nil {
 		return err
 	}
