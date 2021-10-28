@@ -788,14 +788,9 @@ func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars m
 }
 
 func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	// parse url values from request
-	if err := r.ParseForm(); err != nil {
-		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
-	}
-	value := r.URL.Query()
-	logrus.Debugf("GetNamespacesBelongsTo, params: %v", value)
-
-	data, err := e.project.GetNamespacesBelongsTo(ctx, value)
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
+	data, err := e.project.GetNamespacesBelongsTo(ctx)
 	if err != nil {
 		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
 	}
