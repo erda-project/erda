@@ -59,45 +59,45 @@ type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
 func New(options ...Option) *Project {
-	p := &Project{}
-	for _, op := range options {
-		op(p)
+	project := &Project{}
+	for _, f := range options {
+		f(project)
 	}
-	return p
+	return project
 }
 
 // WithDBClient 配置 db client
 func WithDBClient(db *dao.DBClient) Option {
-	return func(p *Project) {
-		p.db = db
+	return func(project *Project) {
+		project.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
 func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(p *Project) {
-		p.uc = uc
+	return func(project *Project) {
+		project.uc = uc
 	}
 }
 
 // WithBundle 配置 bundle
 func WithBundle(bdl *bundle.Bundle) Option {
-	return func(p *Project) {
-		p.bdl = bdl
+	return func(project *Project) {
+		project.bdl = bdl
 	}
 }
 
 // WithClusterResourceClient set the gRPC client of CMP cluster resource
 func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
-	return func(p *Project) {
-		p.clusterResourceClient = cli
+	return func(project *Project) {
+		project.clusterResourceClient = cli
 	}
 }
 
 // WithI18n set the translator
 func WithI18n(translator i18n.Translator) Option {
-	return func(p *Project) {
-		p.trans = translator
+	return func(project *Project) {
+		project.trans = translator
 	}
 }
 
