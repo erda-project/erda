@@ -179,6 +179,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
 	}
 
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	internalClient := r.Header.Get(httputil.InternalHeader)
 	if internalClient == "" {
 		userID, err := user.GetUserID(r)
@@ -194,12 +195,11 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 			Action:   apistructs.GetAction,
 		}
 		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
-			// 若非项目管理员，判断用户是否为企业管理员(数据中心)
-			orgIDStr := r.Header.Get(httputil.OrgHeader)
 			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
 			if err != nil {
 				return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
 			}
+			// 若非项目管理员，判断用户是否为企业管理员(数据中心)
 			req := apistructs.PermissionCheckRequest{
 				UserID:   userID.String(),
 				Scope:    apistructs.OrgScope,
@@ -221,6 +221,12 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrGetProject.InternalError(err).ToResp(), nil
 	}
 
+	if internalClient == "" {
+		// check project is located at the org in header if not from internal
+		if strconv.FormatUint(project.OrgID, 10) != orgIDStr {
+			return apierrors.ErrGetProject.AccessDenied().ToResp(), nil
+		}
+	}
 	return httpserver.OkResp(*project, project.Owners)
 }
 
@@ -756,4 +762,43 @@ func (e *Endpoints) GetModelProjectsMap(ctx context.Context, r *http.Request, va
 	}
 
 	return httpserver.OkResp(projectDtos)
+}
+
+func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse usl values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+	values := r.URL.Query()
+	clusterNames := values["clusterName"]
+
+	// get org id
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strutil.Atoi64(orgIDStr)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+
+	response, err := e.project.GetQuotaOnClusters(orgID, clusterNames)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(response)
+}
+
+func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// parse url values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetNamespacesBelongsTo.InvalidParameter(err).ToResp(), nil
+	}
+	value := r.URL.Query()
+	logrus.Debugf("GetNamespacesBelongsTo, params: %v", value)
+
+	data, err := e.project.GetNamespacesBelongsTo(ctx, value)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(data)
 }

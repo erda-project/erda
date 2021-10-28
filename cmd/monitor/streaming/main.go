@@ -21,7 +21,10 @@ import (
 
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-record"
+	_ "github.com/erda-project/erda/modules/core/monitor/event/persist"
+	_ "github.com/erda-project/erda/modules/core/monitor/event/storage/elasticsearch"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/persist"
+	_ "github.com/erda-project/erda/modules/core/monitor/log/persist/v1"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/storage/elasticsearch"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/persist"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage/elasticsearch"

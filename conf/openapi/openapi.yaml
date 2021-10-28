@@ -71,6 +71,8 @@ openapi-v1-routes:
           - issue-dashboard
           - code-coverage
           - scenes-import-record
+          - test-dashboard
+          - test-report
       - addr: http://localhost:8080
         scenarios:
           - demo

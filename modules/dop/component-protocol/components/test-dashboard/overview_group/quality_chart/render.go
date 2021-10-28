@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/shopspring/decimal"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -70,7 +72,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	}()
 
 	h := gshelper.NewGSHelper(gs)
-	q.projectID, _ = strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectID").(string), 10, 64)
+	q.projectID, _ = strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	q.dbClient = ctx.Value(types.DBClient).(*dao.DBClient)
 	q.coco = ctx.Value(types.CodeCoverageService).(*code_coverage.CodeCoverage)
 
@@ -80,6 +82,10 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	bugScore := q.calcBugScore(ctx, h)
 	cocoScore := q.calcCodeCoverage(ctx, h)
 	bugReopenScore := q.calcBugReopenRate(ctx, h)
+
+	// global score
+	globalScore := polishToFloat64Score(q.calcGlobalQualityScore(ctx, mtScore, atScore, bugScore, cocoScore, bugReopenScore))
+	h.SetGlobalQualityScore(globalScore)
 
 	// radar options
 	radar := charts.NewRadar()
@@ -96,11 +102,11 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 			{
 				Name: "",
 				Value: []float64{
-					polishScore(mtScore),
-					polishScore(atScore),
-					polishScore(bugScore),
-					polishScore(cocoScore),
-					polishScore(bugReopenScore),
+					polishToFloat64Score(mtScore),
+					polishToFloat64Score(atScore),
+					polishToFloat64Score(bugScore),
+					polishToFloat64Score(cocoScore),
+					polishToFloat64Score(bugReopenScore),
 				},
 			},
 		},
@@ -109,6 +115,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	)
 	radar.SetGlobalOptions(
 		charts.WithTooltipOpts(opts.Tooltip{Show: true, Trigger: "item"}),
+		charts.WithTitleOpts(opts.Title{Title: strutil.String(globalScore)}),
 	)
 	radar.JSON()
 
@@ -122,33 +129,62 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	return nil
 }
 
-// score = SUM(passed)/SUM(executed) * 100
+// score = RATE(passed) * RATE(executed) * 100
 // value range: 0-100
-func (q *Q) calcMtPlanScore(ctx context.Context, h *gshelper.GSHelper) float64 {
+func (q *Q) calcMtPlanScore(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
 	mtPlans := h.GetGlobalManualTestPlanList()
 
 	var numCasePassed, numCaseExecuted, numCaseTotal uint64
 	for _, plan := range mtPlans {
 		numCasePassed += plan.RelsCount.Succ
-		numCaseExecuted += plan.RelsCount.Succ + plan.RelsCount.Block + plan.RelsCount.Block
+		numCaseExecuted += plan.RelsCount.Succ + plan.RelsCount.Block + plan.RelsCount.Fail
 		numCaseTotal += plan.RelsCount.Total
 	}
 
-	score := float64(numCasePassed) / float64(numCaseTotal) * float64(numCaseExecuted) / float64(numCaseTotal) * 100
+	if numCaseTotal == 0 {
+		return decimal.NewFromInt(0)
+	}
+
+	numCasePassedDecimal := decimal.NewFromInt(int64(numCasePassed))
+	numCaseExecutedDecimal := decimal.NewFromInt(int64(numCaseExecuted))
+	numCaseTotalDecimal := decimal.NewFromInt(int64(numCaseTotal))
+
+	ratePassed := numCasePassedDecimal.Div(numCaseTotalDecimal)
+	rateExecuted := numCaseExecutedDecimal.Div(numCaseTotalDecimal)
+
+	score := ratePassed.Mul(rateExecuted).Mul(decimal.NewFromInt(100))
 	return score
 }
 
-// score = SUM(all_at_plan_latest_passed_rate)/NUM(at_plan) * SUM(all_at_plan_latest_passed_rate)/NUM(at_plan) * 100
+// score = (SUM(api_passed)/SUM(api_total)) * (SUM(api_executed)/SUM(api_total)) * 100
 // value range: 0-100
-func (q *Q) calcAtPlanScore(ctx context.Context, h *gshelper.GSHelper) float64 {
-	// TODO use at_block value directly
-	return 70
+func (q *Q) calcAtPlanScore(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
+	atPlans := h.GetGlobalAutoTestPlanList()
+
+	var numAPIPassed, numAPIExecuted, numAPITotal uint64
+	for _, plan := range atPlans {
+		numAPIPassed += uint64(plan.SuccessApiNum)
+		numAPIExecuted += uint64(plan.ExecuteApiNum)
+		numAPITotal += uint64(plan.TotalApiNum)
+	}
+
+	if numAPITotal == 0 {
+		return decimal.NewFromInt(0)
+	}
+
+	numAPIPassedDecimal := decimal.NewFromInt(int64(numAPIPassed))
+	numAPIExecutedDecimal := decimal.NewFromInt(int64(numAPIExecuted))
+	numAPITotalDecimal := decimal.NewFromInt(int64(numAPITotal))
+	apiPassedRate := numAPIPassedDecimal.Div(numAPITotalDecimal)
+	apiExecutedRate := numAPIExecutedDecimal.Div(numAPITotalDecimal)
+	score := apiPassedRate.Mul(apiExecutedRate).Mul(decimal.NewFromInt(100))
+	return score
 }
 
 // bug score: score = 100 - DI (result must >= 0)
 // DI = NUM(FATAL)*10 + NUM(SERIOUS)*3 + NUM(NORMAL)*1 + NUM(SLIGHT)*0.1
 // value range: 0-100
-func (q *Q) calcBugScore(ctx context.Context, h *gshelper.GSHelper) float64 {
+func (q *Q) calcBugScore(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
 	m, err := q.dbClient.CountBugBySeverity(q.projectID, h.GetGlobalSelectedIterationIDs())
 	if err != nil {
 		panic(err)
@@ -168,16 +204,20 @@ func (q *Q) calcBugScore(ctx context.Context, h *gshelper.GSHelper) float64 {
 		}
 	}
 
-	DI := float64(numFatal*10) + float64(numSlight*3) + float64(numNormal*1) + float64(numSlight)*0.1
+	numFatalDecimal := decimal.NewFromInt(int64(numFatal) * 10)
+	numSeriousDecimal := decimal.NewFromInt(int64(numSerious) * 3)
+	numNormalDecimal := decimal.NewFromInt(int64(numNormal) * 1)
+	numSlightDecimal := decimal.NewFromFloat(float64(numSlight) * 0.1)
 
-	score := 100 - DI
+	DI := numFatalDecimal.Add(numSeriousDecimal).Add(numNormalDecimal).Add(numSlightDecimal)
 
+	score := decimal.NewFromInt(100).Sub(DI)
 	return score
 }
 
 // score = code_coverage_rate * 100
 // value range: 0-100
-func (q *Q) calcCodeCoverage(ctx context.Context, h *gshelper.GSHelper) float64 {
+func (q *Q) calcCodeCoverage(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
 	// get the latest success record
 	data, err := q.coco.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 		ProjectID:      q.projectID,
@@ -190,27 +230,31 @@ func (q *Q) calcCodeCoverage(ctx context.Context, h *gshelper.GSHelper) float64 
 		panic(err)
 	}
 	if len(data.List) == 0 {
-		return 0
+		return decimal.NewFromInt(0)
 	}
 
-	score := data.List[0].Coverage
+	score := decimal.NewFromFloat(data.List[0].Coverage)
 	return score
 }
 
 // score = 100 - reopen_rate*100
 // reopen_rate =
 // value range: 0-100
-func (q *Q) calcBugReopenRate(ctx context.Context, h *gshelper.GSHelper) float64 {
+func (q *Q) calcBugReopenRate(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
 	reopenCount, totalCount, err := q.dbClient.BugReopenCount(q.projectID, h.GetGlobalSelectedIterationIDs())
 	if err != nil {
 		panic(err)
 	}
-	score := float64(reopenCount) / float64(totalCount) * 100
+	if totalCount == 0 {
+		return decimal.NewFromInt(0)
+	}
+	score := decimal.NewFromInt(int64(reopenCount)).Div(decimal.NewFromInt(int64(totalCount))).Mul(decimal.NewFromInt(100))
 	return score
 }
 
-// polishScore set precision to 2, range from 0-100
-func polishScore(score float64) float64 {
+// polishToFloat64Score set precision to 2, range from 0-100
+func polishToFloat64Score(scoreDecimal decimal.Decimal) float64 {
+	score, _ := scoreDecimal.Float64()
 	if score < 0 {
 		score = 0
 	}
@@ -218,4 +262,18 @@ func polishScore(score float64) float64 {
 		score = 100
 	}
 	return numeral.Round(score, 2)
+}
+
+// calcGlobalQualityScore calc global average score according to
+func (q *Q) calcGlobalQualityScore(ctx context.Context, scores ...decimal.Decimal) decimal.Decimal {
+	if len(scores) == 0 {
+		return decimal.NewFromInt(0)
+	}
+	total := decimal.NewFromInt(0)
+	for _, score := range scores {
+		total = total.Add(score)
+	}
+	var avg decimal.Decimal
+	avg = total.Div(decimal.NewFromInt(int64(len(scores))))
+	return avg
 }

@@ -80,7 +80,7 @@ func (p *provider) createIndices(ctx context.Context, client *elastic.Client, in
 		if len(index.Index) <= 0 {
 			continue
 		}
-		resp, err := p.ES.Client().CatIndices().Index(index.Index).Columns("index").Do(ctx)
+		resp, err := p.es.Client().CatIndices().Index(index.Index).Columns("index").Do(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to check index %q for creating", index.Index)
 		}

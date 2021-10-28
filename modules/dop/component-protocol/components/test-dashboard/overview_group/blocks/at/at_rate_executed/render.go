@@ -15,10 +15,49 @@
 package at_rate_executed
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/overview_group/blocks/at/pkg"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "at_rate_executed")
+	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "at_rate_executed", func() servicehub.Provider {
+		return &Text{}
+	})
+}
+
+type Text struct {
+	base.DefaultProvider
+}
+
+func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	h := gshelper.NewGSHelper(gs)
+	tv := pkg.TextValue{
+		Value: func() string {
+			var (
+				executeApiNum, totalApiNum int64
+				executeRate                float64
+			)
+			for _, v := range h.GetAtBlockFilterTestPlanList() {
+				executeApiNum += v.ExecuteApiNum
+				totalApiNum += v.TotalApiNum
+			}
+			if totalApiNum == 0 {
+				executeRate = 0
+			} else {
+				executeRate = float64(executeApiNum) / float64(totalApiNum) * 100
+			}
+			return fmt.Sprintf("%.2f", executeRate) + "%"
+		}(),
+		Kind: cputil.I18n(ctx, "test-case-rate-executed"),
+	}
+	c.Props = tv.ConvertToProps()
+	return nil
 }

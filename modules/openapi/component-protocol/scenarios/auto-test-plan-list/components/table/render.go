@@ -123,6 +123,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			Owners:       testplan.Data.Owners,
 			IsArchived:   &operationData.Meta.IsArchived,
 			TestPlanID:   testplan.Data.ID,
+			IterationID:  testplan.Data.IterationID,
 			IdentityInfo: apistructs.IdentityInfo{UserID: bdl.Identity.UserID},
 		}); err != nil {
 			return err

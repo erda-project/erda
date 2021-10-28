@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -41,10 +41,10 @@ func init() {
 	})
 }
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (f *ComponentFilter) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -87,17 +87,17 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	query, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decodeData, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 
 	var values Values
-	if err := json.Unmarshal(decodeData, &values); err != nil {
+	if err := json.Unmarshal(decode, &values); err != nil {
 		return err
 	}
 	f.State.Values = values
@@ -345,13 +345,13 @@ func (f *ComponentFilter) getNodes() ([]string, error) {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	jsonData, err := json.Marshal(f.State.Values)
+	data, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encodeData := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.FilterURLQuery = encodeData
+	encode := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encode
 	return nil
 }
 

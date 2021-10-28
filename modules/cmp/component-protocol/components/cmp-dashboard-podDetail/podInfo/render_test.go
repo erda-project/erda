@@ -49,8 +49,8 @@ func TestPodInfo_Transfer(t *testing.T) {
 			PodID:       "testID",
 		},
 		Props: Props{
-			IsLoadMore: true,
-			ColumnNum:  1,
+			RequestIgnore: []string{"data"},
+			ColumnNum:     1,
 			Fields: []Field{
 				{
 					Label:      "test",

@@ -36,10 +36,12 @@ type ExecuteHistoryTable struct {
 }
 
 type State struct {
-	Total      int64  `json:"total"`
-	PageSize   int64  `json:"pageSize"`
-	PageNo     int64  `json:"pageNo"`
-	PipelineID uint64 `json:"pipelineId"`
+	Total      int64                        `json:"total"`
+	PageSize   int64                        `json:"pageSize"`
+	PageNo     int64                        `json:"pageNo"`
+	PipelineID uint64                       `json:"pipelineId"`
+	EnvName    string                       `json:"envName"`
+	EnvData    apistructs.AutoTestAPIConfig `json:"envData"`
 }
 
 const (
@@ -303,6 +305,8 @@ func (e *ExecuteHistoryTable) handlerClickRowOperation(bdl protocol.ContextBundl
 		return err
 	}
 	e.State.PipelineID = res.Meta.RowData.PipelineID
+	e.State.EnvName = ""
+	e.State.EnvData = apistructs.AutoTestAPIConfig{}
 	return nil
 }
 

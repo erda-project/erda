@@ -54,6 +54,7 @@ zh:
   choose-severity: 选择严重程度
   fatal: 致命
   serious: 严重
+  ordinary: 一般
   slight: 轻微
   suggest: 建议
   creator: 创建人
@@ -90,9 +91,10 @@ zh:
   Auto Test Case: 自动化测试用例
   Test Plan: 测试计划
   test-case-num-total: 测试用例总数
-  test-case-num-done: 已完成
+  test-case-num-succ: 已通过
+  test-case-num-fail: 未通过
   test-case-num-block: 阻塞
-  test-case-num-notpassed: 未通过
+  test-case-num-init: 未执行
   test-case-rate-passed: 通过率
   test-case-rate-executed: 执行率
   no-iteration: 未指定迭代
@@ -124,6 +126,8 @@ zh:
   desc: 描述
   status: 状态
   result: 结果
+  auto-test-scene-num: 场景数
+  auto-test-api-num: 接口数
   radar-manual-test-plan: 手动测试计划
   radar-auto-test-plan: 自动化测试计划
   radar-issue-bug: 缺陷
@@ -131,6 +135,13 @@ zh:
   radar-total-quality-score: 质量总分
   radar-bug-reopen-rate: 缺陷重开率
   radar-code-coverage: 代码覆盖率
+  scene-avg-cost: 场景 - 按执行平均耗时分布 Top500
+  scene-failed-rate: 场景 - 按执行失败率分布 Top500
+  scene-passed-rate: 场景 - 按执行通过率分布 Top500
+  api-avg-cost: 接口 - 按执行平均耗时分布 Top500
+  api-failed-rate: 接口 - 按执行失败率分布 Top500
+  week: 近一周
+  month: 近一月
 en:
   issue-manage: issue manage
   issue: issue
@@ -187,6 +198,7 @@ en:
   choose-severity: Choose Severity
   fatal: FATAL
   serious: SERIOUS
+  ordinary: NORMAL
   slight: SLIGHT
   suggest: SUGGEST
   creator: Creator
@@ -232,14 +244,15 @@ en:
   import-export-table: Import and export records table
   type: Type
   operator: Operator
-  time: Time,
+  time: Time
   desc: Description
   status: Status
   result: Result
   test-case-num-total: Test Case Total Number
-  test-case-num-done: Finished
+  test-case-num-succ: Pass
+  test-case-num-fail: Fail
   test-case-num-block: Block
-  test-case-num-notpassed: Not Passed
+  test-case-num-init: Init
   test-case-rate-passed: Passed Rate
   test-case-rate-executed: Executed Rate
   no-iteration: no iteration
@@ -253,6 +266,8 @@ en:
   FAIL: Failed
   at-case-rate-trending-chart: Auto Test Executed&Pass Rate Trending Chart
   at-plan-latest-waterfall-chart: Auto Test Plan Execute Detail Waterfall Chart
+  auto-test-scene-num: Scene Number
+  auto-test-api-num: Api Number
   user-not-exist: user does not exist
   radar-manual-test-plan: Manual Test Plan
   radar-auto-test-plan: Auto Test Plan
@@ -261,3 +276,10 @@ en:
   radar-total-quality-score: Total Quality Score
   radar-bug-reopen-rate: Bug Reopen Rate
   radar-code-coverage: Code Coverage
+  scene-avg-cost: Scene - Execute Avg Cost Top500
+  scene-failed-rate: Scene - Execute Failed Rate Top500
+  scene-passed-rate: Scene - Execute Pass Rate Top500
+  api-avg-cost: Api - Execute Avg Cost Top500
+  api-failed-rate: Api - Execute Failed Rate Top500
+  week: Nearly a week
+  month: Nearly a month

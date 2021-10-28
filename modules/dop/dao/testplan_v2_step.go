@@ -55,6 +55,17 @@ func (tps TestPlanV2StepJoin) Convert2DTO() *apistructs.TestPlanV2Step {
 	}
 }
 
+// Convert2DTO Convert to apistructs
+func (tps TestPlanV2Step) Convert2DTO() *apistructs.TestPlanV2Step {
+	return &apistructs.TestPlanV2Step{
+		SceneSetID: tps.SceneSetID,
+		PreID:      tps.PreID,
+		PlanID:     tps.PlanID,
+		ID:         tps.ID,
+		GroupID:    tps.GroupID,
+	}
+}
+
 func (client *DBClient) GetTestPlanV2StepByPreID(preID uint64) (*TestPlanV2Step, error) {
 	var step TestPlanV2Step
 	if err := client.Where("pre_id = ?", preID).Find(&step).Error; err != nil {
@@ -303,4 +314,15 @@ func (client *DBClient) CheckRelatedSceneSet(setId uint64) (bool, error) {
 		return false, err
 	}
 	return res > 0, nil
+}
+
+// ListStepByPlanID .
+func (client *DBClient) ListStepByPlanID(planIDs ...uint64) ([]TestPlanV2StepJoin, error) {
+	var steps []TestPlanV2StepJoin
+	err := client.Debug().Table("dice_autotest_plan_step").
+		Select("dice_autotest_plan_step.*,dice_autotest_scene_set.name").
+		Joins("LEFT JOIN dice_autotest_scene_set ON dice_autotest_plan_step.scene_set_id = dice_autotest_scene_set.id").
+		Where("dice_autotest_plan_step.plan_id IN (?)", planIDs).
+		Find(&steps).Error
+	return steps, err
 }

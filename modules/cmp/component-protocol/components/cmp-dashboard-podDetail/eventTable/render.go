@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -29,14 +30,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -126,15 +127,17 @@ func (t *ComponentEventTable) RenderList() error {
 		if res != "pod" || refName != name {
 			continue
 		}
+		var ts int64 = math.MaxInt64
+		lastSeen := "unknown"
 		lastSeenTimestamp, err := time.ParseDuration(fields[0])
-		if err != nil {
-			logrus.Errorf("failed to parse timestamp for event %s, %v", fields[9], err)
-			continue
+		if err == nil {
+			lastSeen = fields[0]
+			ts = lastSeenTimestamp.Milliseconds()
 		}
 		items = append(items, Item{
 			ID:                obj.String("metadata", "name"),
-			LastSeen:          fields[0],
-			LastSeenTimestamp: lastSeenTimestamp.Nanoseconds(),
+			LastSeen:          lastSeen,
+			LastSeenTimestamp: ts,
 			Type:              t.SDK.I18n(fields[1]),
 			Reason:            fields[2],
 			Message:           fields[6],
@@ -149,9 +152,9 @@ func (t *ComponentEventTable) RenderList() error {
 
 func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
-		IsLoadMore: true,
-		RowKey:     "id",
-		Pagination: false,
+		RequestIgnore: []string{"data"},
+		RowKey:        "id",
+		Pagination:    false,
 		Columns: []Column{
 			{
 				DataIndex: "lastSeen",

@@ -448,6 +448,13 @@ func (is IssueSeverity) GetZhName() string {
 	}
 }
 
+func (is IssueSeverity) GetI18nKeyAlias() string {
+	if is == IssueSeverityNormal {
+		return "ordinary"
+	}
+	return strings.ToLower(string(is))
+}
+
 var IssueSeveritys = []IssueSeverity{IssueSeverityFatal, IssueSeveritySerious, IssueSeverityNormal, IssueSeveritySlight, IssueSeverityLow}
 
 // IssueButton 状态流转按钮

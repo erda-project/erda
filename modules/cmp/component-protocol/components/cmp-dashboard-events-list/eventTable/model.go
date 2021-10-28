@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -27,7 +27,7 @@ type ComponentEventTable struct {
 	base.DefaultProvider
 	sdk    *cptype.SDK
 	ctx    context.Context
-	server cmp.SteveServer
+	server cmp_interface.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
 	Props      Props                  `json:"props,omitempty"`
@@ -72,6 +72,7 @@ type Item struct {
 
 type Props struct {
 	IsLoadMore      bool     `json:"isLoadMore,omitempty"`
+	RequestIgnore   []string `json:"RequestIgnore"`
 	PageSizeOptions []string `json:"pageSizeOptions,omitempty"`
 	Columns         []Column `json:"columns,omitempty"`
 	SortDirections  []string `json:"sortDirections,omitempty"`

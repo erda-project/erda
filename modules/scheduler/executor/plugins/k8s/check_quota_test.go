@@ -14,7 +14,12 @@
 
 package k8s
 
-import "testing"
+import (
+	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+)
 
 func TestResourceToString(t *testing.T) {
 	cpu := 1000.0
@@ -26,5 +31,50 @@ func TestResourceToString(t *testing.T) {
 	}
 	if memStr != "1G" {
 		t.Errorf("test failed, expected cpu is \"1G\", got %s", memStr)
+	}
+}
+
+func TestGetRequestResources(t *testing.T) {
+	containers := []corev1.Container{
+		{
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    *resource.NewQuantity(1, resource.DecimalSI),
+					corev1.ResourceMemory: *resource.NewQuantity(1<<30, resource.DecimalSI),
+				},
+			},
+		},
+		{
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    *resource.NewMilliQuantity(500, resource.DecimalSI),
+					corev1.ResourceMemory: *resource.NewQuantity(100<<20, resource.BinarySI),
+				},
+			},
+		},
+	}
+	cpu, mem := getRequestsResources(containers)
+	if cpu != 1500 {
+		t.Errorf("test failed, expected cpu is 1500, got %d", cpu)
+	}
+	if mem != 1178599424 {
+		t.Errorf("test failed, expected mem is 1178599424, got %d", mem)
+	}
+}
+
+func TestGetLogContent(t *testing.T) {
+	requestsCPU := 1000
+	requestsMem := 1 << 10
+	leftCPU := 500
+	leftMem := 1 << 9
+
+	humanLog, primevalLog := getLogContent(int64(requestsCPU), int64(requestsMem), int64(leftCPU), int64(leftMem), "addon", "test")
+	expectedHumanLog := "当前环境资源配额不足，请求 CPU 新增 1 核，大于当前剩余 CPU 0.5 核，请求内存新增 1K，大于当前环境剩余内存 512B"
+	expectedPrimevalLog := "Resource quota is not enough in current workspace. Requests CPU added 1 core(s), which is greater than the current remaining CPU 0.5 core(s). Requests memory added 1K, which is greater than the current remaining 512B"
+	if humanLog != expectedHumanLog {
+		t.Errorf("test failed, expected humanLog is \"%s\", got \"%s\"", expectedHumanLog, humanLog)
+	}
+	if primevalLog != expectedPrimevalLog {
+		t.Errorf("test failed, expected primevalLog is \"%s\", got \"%s\"", expectedPrimevalLog, primevalLog)
 	}
 }

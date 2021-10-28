@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -28,7 +28,7 @@ type ComponentPodsTable struct {
 	sdk    *cptype.SDK
 	bdl    *bundle.Bundle
 	ctx    context.Context
-	server cmp.SteveServer
+	server cmp_interface.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`
@@ -123,7 +123,7 @@ type Percent struct {
 }
 
 type Props struct {
-	IsLoadMore      bool                   `json:"isLoadMore,omitempty"`
+	RequestIgnore   []string               `json:"requestIgnore,omitempty"`
 	PageSizeOptions []string               `json:"pageSizeOptions,omitempty"`
 	Columns         []Column               `json:"columns,omitempty"`
 	RowKey          string                 `json:"rowKey,omitempty"`

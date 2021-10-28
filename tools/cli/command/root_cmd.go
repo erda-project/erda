@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	host      string // dice host, format: http[s]://<org>.<wildcard-domain> eg: https://terminus-org.app.terminus.io
+	host      string // erda host, format: http[s]://<domain> eg: https://erda.cloud
 	username  string
 	password  string
 	debugMode bool
@@ -66,8 +66,8 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "dice",
-	Short: "Dice commandline client",
+	Use:   "erda-cli",
+	Short: "Erda commandline client",
 	Long: `
     _/_/_/_/       _/_/_/        _/_/_/          _/_/    
    _/             _/    _/      _/    _/      _/    _/   
@@ -137,23 +137,19 @@ func setHost() error {
 			host = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 		}
 	}
-	dotIndex := strings.Index(host, ".")
-	if dotIndex < 0 {
-		return errors.Errorf("invalid host format, it should be <org>.<wildcard-domain>")
+	slashIndex := strings.Index(host, "://")
+	if slashIndex < 0 {
+		return errors.Errorf("invalid host format, it should be http[s]://<domain>")
 	}
-	hostHasOpenApi := strings.Index(host, "openapi-") != -1
-	var openAPIAddr string
+	hostHasOpenApi := strings.Index(host, "openapi.") != -1
+	openAPIAddr := host
 	if strings.HasPrefix(host, "https") {
-		if hostHasOpenApi {
-			openAPIAddr = "https://" + host
-		} else {
-			openAPIAddr = "https://openapi" + host[dotIndex:]
+		if !hostHasOpenApi {
+			openAPIAddr = "https://openapi." + host[slashIndex+3:]
 		}
 	} else {
-		if hostHasOpenApi {
-			openAPIAddr = "http://" + host
-		} else {
-			openAPIAddr = "http://openapi" + host[dotIndex:]
+		if !hostHasOpenApi {
+			openAPIAddr = "http://openapi." + host[slashIndex+3:]
 		}
 	}
 	logrus.Debugf("openapi addr: %s", openAPIAddr)

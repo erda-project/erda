@@ -37,8 +37,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
@@ -53,12 +53,12 @@ func init() {
 }
 
 var (
-	steveServer cmp.SteveServer
+	steveServer cmp_interface.SteveServer
 	mServer     metrics.Interface
 )
 
 func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -187,16 +187,22 @@ func (p *ComponentPodsTable) RenderTable() error {
 	}
 	obj := resp.Data()
 
-	labelSelectors := obj.Map("spec", "selector", "matchLabels")
+	var labelSelectors []string
+	matchLabels := obj.Map("spec", "selector", "matchLabels")
 	if kind == string(apistructs.K8SCronJob) {
-		labelSelectors = obj.Map("spec", "jobTemplate", "spec", "template", "metadata", "labels")
+		matchLabels = obj.Map("spec", "jobTemplate", "spec", "template", "metadata", "labels")
+	}
+	for k, v := range matchLabels {
+		labelSelectors = append(labelSelectors, fmt.Sprintf("%s=%s", k, v))
 	}
 
 	podReq := apistructs.SteveRequest{
-		UserID:      userID,
-		OrgID:       orgID,
-		Type:        apistructs.K8SPod,
-		ClusterName: p.State.ClusterName,
+		UserID:        userID,
+		OrgID:         orgID,
+		Type:          apistructs.K8SPod,
+		Namespace:     namespace,
+		LabelSelector: labelSelectors,
+		ClusterName:   p.State.ClusterName,
 	}
 
 	var list []types2.APIObject
@@ -242,10 +248,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 	var items []Item
 	for _, item := range list {
 		obj := item.Data()
-		labels := obj.Map("metadata", "labels")
-		if !matchSelector(labelSelectors, labels) {
-			continue
-		}
 
 		if kind == string(apistructs.K8SCronJob) {
 			ok, err := p.isOwnedByTargetCronJob(obj, name)
@@ -258,11 +260,15 @@ func (p *ComponentPodsTable) RenderTable() error {
 			}
 		}
 
-		name := obj.String("metadata", "name")
-		namespace := obj.String("metadata", "namespace")
+		podName := obj.String("metadata", "name")
+		podNamespace := obj.String("metadata", "namespace")
+		if podNamespace != namespace {
+			continue
+		}
+
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 9 {
-			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
+			logrus.Errorf("length of pod %s:%s fields is invalid", podNamespace, podName)
 			continue
 		}
 
@@ -297,26 +303,26 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
+		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, podName, podNamespace, metrics.Cpu, metrics.Pod))
 		if metricsData != nil && !cpuLimits.IsZero() {
 			usedCPUPercent := metricsData.Used
 			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
+		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, podName, podNamespace, metrics.Memory, metrics.Pod))
 		if metricsData != nil && !memLimits.IsZero() {
 			usedMemPercent := metricsData.Used
 			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		}
 
-		id := fmt.Sprintf("%s_%s", namespace, name)
+		id := fmt.Sprintf("%s_%s", podNamespace, podName)
 		items = append(items, Item{
 			ID:     id,
 			Status: status,
 			Name: Link{
 				RenderType: "linkText",
-				Value:      name,
+				Value:      podName,
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
 						Command: Command{
@@ -327,8 +333,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 									"podId": id,
 								},
 								Query: map[string]string{
-									"namespace": namespace,
-									"podName":   name,
+									"namespace": podNamespace,
+									"podName":   podName,
 								},
 							},
 							JumpOut: true,
@@ -337,7 +343,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			Namespace:      namespace,
+			Namespace:      podNamespace,
 			IP:             fields[5],
 			Age:            fields[4],
 			CPURequests:    cpuRequestStr,
@@ -570,7 +576,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.SortDirections = []string{"descend", "ascend"}
-	p.Props.IsLoadMore = true
+	p.Props.RequestIgnore = []string{"data"}
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}

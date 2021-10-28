@@ -835,3 +835,146 @@ func (svc *Service) QueryScenePipelineSnippetYaml(req apistructs.SnippetConfig) 
 
 	return yml, nil
 }
+
+// ListStepByPlanID .
+func (svc *Service) ListStepByPlanID(planIDs ...uint64) (steps []apistructs.TestPlanV2Step, err error) {
+	list, err := svc.db.ListStepByPlanID(planIDs...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		steps = append(steps, *v.Convert2DTO())
+	}
+	return
+}
+
+// ListTestPlanV2ByID .
+func (svc *Service) ListTestPlanV2ByID(planIDs ...uint64) (steps []apistructs.TestPlanV2, err error) {
+	list, err := svc.db.ListTestPlanV2ByID(planIDs...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		steps = append(steps, v.Convert2DTO())
+	}
+	return
+}
+
+// ListAutoTestExecHistory .
+func (svc *Service) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs ...uint64) (history []apistructs.AutoTestExecHistoryDto, err error) {
+	list, err := svc.db.ListAutoTestExecHistory(timeStart, timeEnd, planIDs...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		history = append(history, v.Convert())
+	}
+	return
+}
+
+// ExecHistorySceneAvgCostTime .
+func (svc *Service) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneAvgCostTime, err error) {
+	db := svc.db.Debug().Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
+		Where("project_id = ?", req.ProjectID).
+		Where("iteration_id IN (?)", req.IterationIDs).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeScene)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("scene_id").Find(&list).Error
+	return
+}
+
+// ExecHistorySceneStatusCount .
+func (svc *Service) ExecHistorySceneStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneStatusCount, err error) {
+	db := svc.db.Debug().Table("dice_autotest_exec_history").
+		Select("scene_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
+			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
+		Where("project_id = ?", req.ProjectID).
+		Where("iteration_id IN (?)", req.IterationIDs).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeScene)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("scene_id").Find(&list).Error
+	return
+}
+
+// ExecHistorySceneApiStatusCount .
+func (svc *Service) ExecHistorySceneApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneApiStatusCount, err error) {
+	db := svc.db.Debug().Table("dice_autotest_exec_history").
+		Select("scene_id,SUM(`success_api_num`) AS 'success_count',"+
+			"SUM(`total_api_num`) AS 'total_count'").
+		Where("project_id = ?", req.ProjectID).
+		Where("iteration_id IN (?)", req.IterationIDs).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeScene)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("scene_id").Find(&list).Error
+	return
+}
+
+// ExecHistoryApiAvgCostTime .
+func (svc *Service) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiAvgCostTime, err error) {
+	db := svc.db.Debug().Table("dice_autotest_exec_history").
+		Select("step_id,AVG(cost_time_sec) AS avg").
+		Where("project_id = ?", req.ProjectID).
+		Where("iteration_id IN (?)", req.IterationIDs).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeAPI)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("step_id").Find(&list).Error
+	return
+}
+
+// ExecHistoryApiStatusCount .
+func (svc *Service) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiStatusCount, err error) {
+	db := svc.db.Debug().Table("dice_autotest_exec_history").
+		Select("step_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
+			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
+		Where("project_id = ?", req.ProjectID).
+		Where("iteration_id IN (?)", req.IterationIDs).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeAPI)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("step_id").Find(&list).Error
+	return
+}
+
+// ListExecHistorySceneSetByParentPID .
+func (svc *Service) ListExecHistorySceneSetByParentPID(parentPID uint64) (history []apistructs.AutoTestExecHistoryDto, err error) {
+	var list []dao.AutoTestExecHistory
+	err = svc.db.Model(dao.AutoTestExecHistory{}).
+		Where("parent_p_id = ?", parentPID).
+		Where("type = ?", apistructs.AutotestSceneSet).
+		Order("execute_time ASC").
+		Find(&list).Error
+
+	for _, v := range list {
+		history = append(history, v.Convert())
+	}
+	return
+}

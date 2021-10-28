@@ -32,7 +32,7 @@ import (
 func (p *provider) catIndices(ctx context.Context, prefix ...string) (elastic.CatIndicesResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.Cfg.RequestTimeout)
 	defer cancel()
-	return p.ES.Client().CatIndices().Index(strings.Join(prefix, ",")).Columns("index", "docs.count", "docs.deleted", "store.size").Do(ctx)
+	return p.es.Client().CatIndices().Index(strings.Join(prefix, ",")).Columns("index", "docs.count", "docs.deleted", "store.size").Do(ctx)
 }
 
 func (p *provider) getIndicesFromES(ctx context.Context, catIndices func(ctx context.Context, prefix ...string) (elastic.CatIndicesResponse, error)) (indices *IndexGroup, err error) {
@@ -196,7 +196,7 @@ func (p *provider) setupTimeRange(index *IndexEntry) {
 			searchSource.Aggregation("max_time", elastic.NewMaxAggregation().Field("timestamp"))
 			context, cancel := context.WithTimeout(context.Background(), p.Cfg.RequestTimeout)
 			defer cancel()
-			resp, err := p.ES.Client().Search(index.Index).IgnoreUnavailable(true).AllowNoIndices(true).
+			resp, err := p.es.Client().Search(index.Index).IgnoreUnavailable(true).AllowNoIndices(true).
 				SearchSource(searchSource).Do(context)
 			if err != nil {
 				p.Log.Errorf("failed to query index %q time range: %s", index.Index, err)
@@ -313,8 +313,8 @@ func (p *provider) runElasticSearchIndexLoader(ctx context.Context) error {
 
 func (p *provider) RequestTimeout() time.Duration { return p.Cfg.RequestTimeout }
 func (p *provider) QueryIndexTimeRange() bool     { return p.Cfg.QueryIndexTimeRange }
-func (p *provider) Client() *elastic.Client       { return p.ES.Client() }
-func (p *provider) URLs() string                  { return p.ES.URL() }
+func (p *provider) Client() *elastic.Client       { return p.es.Client() }
+func (p *provider) URLs() string                  { return p.es.URL() }
 func (p *provider) LoadMode() LoadMode            { return LoadMode(p.Cfg.LoadMode) }
 
 func (p *provider) WaitAndGetIndices(ctx context.Context) *IndexGroup {
@@ -351,6 +351,9 @@ func (p *provider) WatchLoadEvent(f func(*IndexGroup)) {
 func (p *provider) Indices(ctx context.Context, start, end int64, paths ...KeyPath) (list []string) {
 	indices := p.WaitAndGetIndices(ctx)
 	if indices == nil {
+		if len(p.Cfg.DefaultIndex) > 0 {
+			return []string{p.Cfg.DefaultIndex}
+		}
 		return nil
 	}
 	startT := time.Unix(start/int64(time.Second), start%int64(time.Second))
@@ -358,7 +361,10 @@ func (p *provider) Indices(ctx context.Context, start, end int64, paths ...KeyPa
 	for _, path := range paths {
 		p.findIndexByPath(path.Keys, path.Recursive, indices, startT, endT, &list)
 	}
-	return
+	if len(list) <= 0 && len(p.Cfg.DefaultIndex) > 0 {
+		return []string{p.Cfg.DefaultIndex}
+	}
+	return list
 }
 
 func (p *provider) findIndexByPath(path []string, recursive bool, group *IndexGroup, start, end time.Time, list *[]string) {

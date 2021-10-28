@@ -163,10 +163,15 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	addonID, projectID, workspace, _ := extractContainerEnvs(set.Spec.Template.Spec.Containers)
 	runtimeID, err := k.dbclient.GetRuntimeID(addonID)
 	if err != nil {
-		return errors.Errorf("failed to get runtime ID for statefulSet %s, %v", statefulName, err)
+		logrus.Errorf("failed to get runtime ID for statefulSet %s, %v", statefulName, err)
 	}
 
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, int64(service.Resources.Cpu*1000), int64(service.Resources.Mem*float64(1<<20)))
+	reqCPU, reqMem := getRequestsResources(set.Spec.Template.Spec.Containers)
+	if set.Spec.Replicas != nil {
+		reqCPU *= int64(*set.Spec.Replicas)
+		reqMem *= int64(*set.Spec.Replicas)
+	}
+	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem, "stateful", service.Name)
 	if err != nil {
 		return err
 	}

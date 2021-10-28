@@ -62,7 +62,7 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 
 func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
 	if len(req.ClusterName) <= 0 {
-		return nil, errors.NewMissingParameterError("applicationId")
+		return nil, errors.NewMissingParameterError("clusterName")
 	}
 	items, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Filters = append(sel.Filters, &storage.Filter{
@@ -84,7 +84,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 		return nil, err
 	}
 	if fn != nil {
-		fn(sel)
+		sel = fn(sel)
 	}
 	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {
@@ -138,7 +138,7 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 
 func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
 	if sel.Scheme != "container" || !live {
-		if sel.Start > s.startTime || s.frozenStorageReader == nil {
+		if s.storageReader != nil && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
 			return s.storageReader.Iterator(ctx, sel)
 		}
 		return s.tryGetIterator(ctx, sel, s.storageReader, s.frozenStorageReader)
@@ -164,7 +164,10 @@ func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selec
 		its = append(its, it)
 	}
 	if len(its) == 0 {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		return storekit.EmptyIterator{}, nil
 	} else if len(its) == 1 {
 		return its[0], nil
 	}

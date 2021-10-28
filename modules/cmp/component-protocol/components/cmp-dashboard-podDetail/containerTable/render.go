@@ -22,20 +22,21 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	data2 "github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (containerTable *ContainerTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -83,6 +84,40 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		}
 
 		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
+		restartCountStr := containerStatus.String("restartCount") + " " + cputil.I18n(ctx, "times")
+		var restartCount interface{}
+		lastContainerState := containerStatus.Map("lastState")
+		for _, v := range lastContainerState {
+			lastState, err := data2.Convert(v)
+			if err != nil {
+				continue
+			}
+			lastContainerID := strings.TrimPrefix(lastState.String("containerID"), "docker://")
+			if lastContainerID != "" {
+				restartCount = Operate{
+					Operations: map[string]Operation{
+						"log": {
+							Key:    "checkPrevLog",
+							Text:   restartCountStr,
+							Reload: false,
+							Meta: map[string]interface{}{
+								"hasRestarted":  true,
+								"containerName": containerStatus.String("name"),
+								"podName":       name,
+								"namespace":     namespace,
+								"containerId":   lastContainerID,
+							},
+						},
+					},
+					RenderType: "tableOperation",
+				}
+				break
+			}
+		}
+		if restartCount == nil {
+			restartCount = restartCountStr
+		}
+
 		data = append(data, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
@@ -93,14 +128,14 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 					Text: containerStatus.String("image"),
 				},
 			},
-			RestartCount: containerStatus.String("restartCount"),
+			RestartCount: restartCount,
 			Operate: Operate{
 				Operations: map[string]Operation{
 					"log": {
 						Key:    "checkLog",
 						Text:   cputil.I18n(ctx, "log"),
 						Reload: false,
-						Meta: map[string]string{
+						Meta: map[string]interface{}{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
 							"namespace":     namespace,
@@ -111,7 +146,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 						Key:    "checkConsole",
 						Text:   cputil.I18n(ctx, "console"),
 						Reload: false,
-						Meta: map[string]string{
+						Meta: map[string]interface{}{
 							"containerName": containerStatus.String("name"),
 							"podName":       name,
 							"namespace":     namespace,
@@ -130,7 +165,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	}
 
 	containerTable.Props.SortDirections = []string{"descend", "ascend"}
-	containerTable.Props.IsLoadMore = true
+	containerTable.Props.RequestIgnore = []string{"data"}
 	containerTable.Props.RowKey = "name"
 	containerTable.Props.Pagination = false
 	containerTable.Props.Scroll.X = 1000
@@ -161,7 +196,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Title:     cputil.I18n(ctx, "restartCount"),
 		},
 		{
-			Width:     100,
+			Width:     120,
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
 			Fixed:     "right",
@@ -191,13 +226,13 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 	return nil
 }
 
-func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
-	component.Props = containerTable.Props
-	component.Data = map[string]interface{}{}
+func (containerTable *ContainerTable) Transfer(c *cptype.Component) {
+	c.Props = containerTable.Props
+	c.Data = map[string]interface{}{}
 	for k, v := range containerTable.Data {
-		component.Data[k] = v
+		c.Data[k] = v
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": containerTable.State.ClusterName,
 		"podId":       containerTable.State.PodID,
 	}

@@ -491,6 +491,11 @@ var (
 	ErrUpdateCodeCoverageExecRecord = err("ErrUpdateCodeCoverageExecRecord", "修改代码覆盖率执行记录失败")
 	ErrGetCodeCoverageExecRecord    = err("ErrUpdateCodeCoverageExecRecord", "获取代码覆盖率执行记录失败")
 	ErrListCodeCoverageExecRecord   = err("ErrUpdateCodeCoverageExecRecord", "列表获取代码覆盖率执行记录失败")
+	ErSaveCodeCoverageSetting       = err("ErSaveCodeCoverageSetting", "保存代码覆盖率配置失败")
+
+	ErrCreateTestReportRecord = err("ErrCreateTestReportRecord", "创建测试报告记录失败")
+	ErrListTestReportRecord   = err("ErrListTestReportRecord", "查询测试报告记录失败")
+	ErrGetTestReportRecord    = err("ErrGetTestReportRecord", "获取测试报告记录失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

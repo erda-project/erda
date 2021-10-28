@@ -34,6 +34,7 @@ func assign(src, dst interface{}) error {
 	if src == nil || dst == nil {
 		return nil
 	}
+
 	return mapstructure.Decode(src, dst)
 }
 
@@ -131,4 +132,237 @@ func (h *GSHelper) GetMtPlanChartFilterStatusList() []apistructs.TestCaseExecSta
 	res := make([]apistructs.TestCaseExecStatus, 0)
 	_ = assign((*h.gs)["MtPlanChartFilterStatusList"], &res)
 	return res
+}
+
+func (h *GSHelper) SetGlobalAutoTestPlanList(l []*apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAutoTestPlanList"] = l
+}
+
+func (h *GSHelper) GetGlobalAutoTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalAutoTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalAutoTestPlanIDs(l []uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAutoTestPlanIDs"] = l
+}
+
+func (h *GSHelper) GetGlobalAutoTestPlanIDs() []uint64 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]uint64, 0)
+	_ = assign((*h.gs)["GlobalAutoTestPlanIDs"], &res)
+	return res
+}
+
+func (h *GSHelper) SetAtBlockFilterTestPlanList(l []apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtBlockFilterTestPlanList"] = l
+}
+
+func (h *GSHelper) GetAtBlockFilterTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalAtBlockFilterTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetRateTrendingFilterTestPlanList(l []apistructs.TestPlanV2) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalRateTrendingFilterTestPlanList"] = l
+}
+
+func (h *GSHelper) GetRateTrendingFilterTestPlanList() []apistructs.TestPlanV2 {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2, 0)
+	_ = assign((*h.gs)["GlobalRateTrendingFilterTestPlanList"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalAtStep(l []apistructs.TestPlanV2Step) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtStep"] = l
+}
+
+func (h *GSHelper) GetGlobalAtStep() []apistructs.TestPlanV2Step {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2Step, 0)
+	_ = assign((*h.gs)["GlobalAtStep"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalAtScene(l []apistructs.AutoTestScene) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtScene"] = l
+}
+
+func (h *GSHelper) GetGlobalAtScene() []apistructs.AutoTestScene {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestScene, 0)
+	_ = assign((*h.gs)["GlobalAtScene"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalAtSceneStep(l []apistructs.AutoTestSceneStep) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalAtSceneStep"] = l
+}
+
+func (h *GSHelper) GetGlobalAtSceneStep() []apistructs.AutoTestSceneStep {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestSceneStep, 0)
+	_ = assign((*h.gs)["GlobalAtSceneStep"], &res)
+	return res
+}
+
+type AtSceneAndApiTimeFilter struct {
+	TimeStart string `json:"timeStart"`
+	TimeEnd   string `json:"timeEnd"`
+}
+
+func (h *GSHelper) SetAtSceneAndApiTimeFilter(t AtSceneAndApiTimeFilter) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["AtSceneAndApiTimeFilter"] = t
+}
+
+func (h *GSHelper) GetAtSceneAndApiTimeFilter() AtSceneAndApiTimeFilter {
+	if h.gs == nil {
+		return AtSceneAndApiTimeFilter{}
+	}
+	return (*h.gs)["AtSceneAndApiTimeFilter"].(AtSceneAndApiTimeFilter)
+}
+
+func (h *GSHelper) SetAtCaseRateTrendingTimeFilter(t AtSceneAndApiTimeFilter) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["AtCaseRateTrendingTimeFilter"] = t
+}
+
+func (h *GSHelper) GetAtCaseRateTrendingTimeFilter() AtSceneAndApiTimeFilter {
+	if h.gs == nil {
+		return AtSceneAndApiTimeFilter{}
+	}
+	return (*h.gs)["AtCaseRateTrendingTimeFilter"].(AtSceneAndApiTimeFilter)
+}
+
+type SelectChartItemData struct {
+	PlanID     uint64 `json:"planID"`
+	Name       string `json:"name"`
+	PipelineID uint64 `json:"pipelineID"`
+}
+
+func (h *GSHelper) SetSelectChartItemData(t SelectChartItemData) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalSelectChartItemData"] = t
+}
+
+func (h *GSHelper) GetSelectChartHistoryData() SelectChartItemData {
+	if h.gs == nil {
+		return SelectChartItemData{}
+	}
+	data := SelectChartItemData{}
+	_ = assign((*h.gs)["GlobalSelectChartItemData"], &data)
+	return data
+}
+
+func (h *GSHelper) SetBlockAtStep(l []apistructs.TestPlanV2Step) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["BlockAtStep"] = l
+}
+
+func (h *GSHelper) GetBlockAtStep() []apistructs.TestPlanV2Step {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.TestPlanV2Step, 0)
+	_ = assign((*h.gs)["BlockAtStep"], &res)
+	return res
+}
+
+func (h *GSHelper) SetBlockAtScene(l []apistructs.AutoTestScene) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["BlockAtScene"] = l
+}
+
+func (h *GSHelper) GetBlockAtScene() []apistructs.AutoTestScene {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestScene, 0)
+	_ = assign((*h.gs)["BlockAtScene"], &res)
+	return res
+}
+
+func (h *GSHelper) SetBlockAtSceneStep(l []apistructs.AutoTestSceneStep) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["BlockAtSceneStep"] = l
+}
+
+func (h *GSHelper) GetBlockAtSceneStep() []apistructs.AutoTestSceneStep {
+	if h.gs == nil {
+		return nil
+	}
+	res := make([]apistructs.AutoTestSceneStep, 0)
+	_ = assign((*h.gs)["BlockAtSceneStep"], &res)
+	return res
+}
+
+func (h *GSHelper) SetGlobalQualityScore(score float64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalQualityScore"] = score
+}
+
+func (h *GSHelper) GetGlobalQualityScore() float64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["GlobalQualityScore"]
+	if !ok {
+		return 0
+	}
+	return v.(float64)
 }

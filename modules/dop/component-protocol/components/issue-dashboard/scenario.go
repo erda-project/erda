@@ -38,6 +38,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/pie/statePieChart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reopen"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/reset"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/scatterPlot"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/split"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/today"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/tomorrow"

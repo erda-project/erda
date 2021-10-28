@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon/elasticsearch"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon/mysql"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon/redis"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon/sourcecov"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/clusterinfo"
 	ds "github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/daemonset"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/deployment"
@@ -201,6 +202,7 @@ type Kubernetes struct {
 	redisoperator         addon.AddonOperator
 	mysqloperator         addon.AddonOperator
 	daemonsetoperator     addon.AddonOperator
+	sourcecovoperator     addon.AddonOperator
 
 	// instanceinfoSyncCancelFunc
 	instanceinfoSyncCancelFunc context.CancelFunc
@@ -416,6 +418,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k.mysqloperator = mysqloperator
 	daemonsetoperator := daemonset.New(k, ns, k, k, ds, k)
 	k.daemonsetoperator = daemonsetoperator
+	k.sourcecovoperator = sourcecov.New(k, client, k, ns)
 	return k, nil
 }
 
@@ -620,6 +623,7 @@ func (k *Kubernetes) CapacityInfo() apistructs.CapacityInfoData {
 	r.RedisOperator = k.redisoperator.IsSupported()
 	r.MysqlOperator = k.mysqloperator.IsSupported()
 	r.DaemonsetOperator = k.daemonsetoperator.IsSupported()
+	r.SourcecovOperator = k.sourcecovoperator.IsSupported()
 	return r
 }
 
@@ -798,7 +802,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 				if err != nil {
 					return err
 				}
-				if err = k.updateDaemonSet(ctx, desireDaemonSet); err != nil {
+				if err = k.updateDaemonSet(ctx, desireDaemonSet, &svc); err != nil {
 					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}
@@ -1072,6 +1076,8 @@ func (k *Kubernetes) whichOperator(operator string) (addon.AddonOperator, error)
 		return k.mysqloperator, nil
 	case "daemonset":
 		return k.daemonsetoperator, nil
+	case apistructs.AddonSourcecov:
+		return k.sourcecovoperator, nil
 	}
 	return nil, fmt.Errorf("not found")
 }
@@ -1131,7 +1137,7 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 		return nil, fmt.Errorf("the scaling service count is not equal 1")
 	}
 
-	if err = k.scaleDeployment(sg); err != nil {
+	if err = k.scaleDeployment(ctx, sg); err != nil {
 		logrus.Error(err)
 		return nil, err
 	}

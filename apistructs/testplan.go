@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -87,6 +88,25 @@ type TestPlanCreateRequest struct {
 	IsAutoTest bool `json:"isAutoTest"`
 
 	IdentityInfo
+}
+
+func (t TestPlanCreateRequest) Check() error {
+	if t.Name == "" {
+		return fmt.Errorf("the name is empty")
+	}
+	if t.OwnerID == "" {
+		return fmt.Errorf("the ownerID is empty")
+	}
+	if len(t.PartnerIDs) == 0 {
+		return fmt.Errorf("the partnerIDs is empty")
+	}
+	if t.ProjectID == 0 {
+		return fmt.Errorf("the projectID is 0")
+	}
+	if t.IterationID == 0 {
+		return fmt.Errorf("the iterationID is 0")
+	}
+	return nil
 }
 
 // TestPlanCreateResponse 测试计划创建响应

@@ -10,8 +10,13 @@ zh:
  annotations: 注释
  project: 项目名称
  core: 核
+ viewOrEditYaml: 查看/编辑YAML
+ delete: 删除
+ confirmDelete: 确定删除？
+ times: 次
+ moreOperations: 更多操作
 
- # cmp-dashboard-events-list.eventTable
+ # cmp-dashboard-events-list
  lastSeen: 上次触发时间
  eventType: 事件级别
  reason: 原因
@@ -20,8 +25,6 @@ zh:
  message: 事件信息
  count: 累计次数
  ago: 前
-
- # cmp-dashboard-events-list.filter
  workspace-dev: 开发环境
  workspace-test: 测试环境
  workspace-staging: 预发环境
@@ -35,10 +38,11 @@ zh:
  Warning: 警告
  eventSearchPlaceHolder: 搜索事件内容
 
- # cmp-dashboard-pods-list.podsTable
+ # cmp-dashboard-pods-list
  gotoWorkload: 查看工作负载
+ createPod: 创建 Pod
 
- # cmp-dashboard-workload-detail.podsTable
+ # cmp-dashboard-workload-detail
  cpuRequests: CPU 请求值
  cpuLimits: CPU 限制值
  cpuPercent: CPU 水位
@@ -46,15 +50,14 @@ zh:
  memoryLimits: 内存限制值
  memoryPercent: 内存水位
  ready: 就绪
-
- # cmp-dashboard-workload-detail.podsTableTitle
  workloadPods: 关联的Pods
-
- # cmp-dashboard-workload-detail.workloadTitle
  workloadDetail: 工作负载详情
  totalWorkload: 工作负载总数
+ restart: 重新调度
+ confirmRestart: 确认重新调度？
+ cannotRestart: 只有 Deployment、StatefulSet 和 Daemonset 可以被重新调度
 
- # cmp-dashboard-workloads-list.filter
+ # cmp-dashboard-workloads-list
  search: 搜索
  workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
@@ -62,8 +65,7 @@ zh:
  Error: 错误
  Succeeded: 成功
  Failed: 失败
-
- # cmp-dashboard-workloads-list.workloadTable
+ createWorkload: 创建工作负载
  upToDate: 已更新
  available: 可用
  desired: 期望
@@ -208,8 +210,27 @@ zh:
  undrained: 此节点中还存在未驱散的Pod！
  isOffline: 已下线
  no select: 未选择
- select labels: 选择标签
+ select labels: 筛选节点标签
  OutOfDisk: 磁盘资源不足
+
+ # cmp-dashboard-resource
+ distribution by project: 按项目统计
+ distribution by clutser: 按集群统计
+ distribution by owner: 按负责人统计
+ quota: 配额
+ total: 总量
+ request: 占用量
+ node pressure: 节点压力图
+ cpu pressure: CPU 压力图
+ memory pressure: 内存压力图
+ quota in use: 配额已使用
+ cluster trend: 集群资源变化趋势图
+ project trend: 项目资源变化趋势图
+ SharedResources: 共享资源
+ resourceNodeCount: 个
+ week: 周
+ shared resource: 共享资源
+ unused resource: 未使用资源
 
 en:
  # general
@@ -223,8 +244,13 @@ en:
  annotations: Annotations
  project: Project Name
  core: cores
+ viewOrEditYaml: View/Edit YAML
+ delete: Delete
+ confirmDelete: Sure to delete?
+ times: time(s)
+ moreOperations: More Operations
 
- # cmp-dashboard-events-list.eventTable
+ # cmp-dashboard-events-list
  lastSeen: Last Seen
  eventType: Event Type
  reason: Reason
@@ -233,8 +259,6 @@ en:
  message: Message
  count: Count
  ago: ago
-
- # cmp-dashboard-events-list.filter
  workspace-dev: Workspace-Dev
  workspace-test: Workspace-Test
  workspace-staging: Workspace-Staging
@@ -248,10 +272,11 @@ en:
  Warning: Warning
  eventSearchPlaceHolder: Search Events
 
- # cmp-dashboard-pods-list.podsTable
+ # cmp-dashboard-pods-list
  gotoWorkload: Goto Workload
+ createPod: Create Pod
 
- # cmp-dashboard-workload-detail.podsTable
+ # cmp-dashboard-workload-detail
  cpuRequests: CPU Requests
  cpuLimits: CPU Limits
  cpuPercent: CPU Percent
@@ -259,15 +284,16 @@ en:
  memoryLimits: Mem Limits
  memoryPercent: Mem Percent
  ready: Ready
-
- # cmp-dashboard-workload-detail.podsTableTitle
  workloadPods: Pods
+ restart: Restart
+ confirmRestart: Sure to restart ?
+ cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
 
- # cmp-dashboard-workload-detail.workloadTitle
+ # cmp-dashboard-workload-detail
  workloadDetail: Workload Detail
  totalWorkload: Total Workloads
 
- # cmp-dashboard-workloads-list.filter
+ # cmp-dashboard-workloads-list
  search: Search
  workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
@@ -275,8 +301,7 @@ en:
  Error: Error
  Succeeded: Succeeded
  Failed: Failed
-
- # cmp-dashboard-workloads-list.workloadTable
+ createWorkload: Create workload
  upToDate: Up-to-Date
  available: Available
  desired: Desired
@@ -363,3 +388,7 @@ en:
  cpu-size: CPU Cores
  memory-size: Memory Size
  undrained: There are still unevicted Pods in this node!
+ SharedResources: Shared Resources
+
+ # cmp-dashboard-resource
+ resourceNodeCount: nodes

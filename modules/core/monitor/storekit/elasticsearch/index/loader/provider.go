@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -46,14 +45,14 @@ type (
 		QueryIndexTimeRange bool          `file:"query_index_time_range"`
 		IndexReloadInterval time.Duration `file:"index_reload_interval" default:"2m"`
 		CacheKeyPrefix      string        `file:"cache_key_prefix" default:"es-index"`
+		DefaultIndex        string        `file:"default_index" default:"index__for__not__exist"`
 	}
 	provider struct {
 		Cfg      *config
 		Log      logs.Logger
-		ES       elasticsearch.Interface `autowired:"elasticsearch"`
-		Redis    *redis.Client           `autowired:"redis-client" optional:"true"`
+		Redis    *redis.Client `autowired:"redis-client" optional:"true"`
 		election election.Interface
-		es       *elastic.Client
+		es       elasticsearch.Interface
 
 		matchers     []*matcher
 		indices      atomic.Value          // *IndexGroup, loaded index
@@ -104,6 +103,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.matchers[i] = m
 	}
 
+	if es, err := index.FindElasticSearch(ctx, true); err != nil {
+		return err
+	} else {
+		p.es = es
+	}
+
 	if err := p.initElection(ctx); err != nil {
 		return err
 	}
@@ -111,7 +116,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// setup load task
 	switch LoadMode(p.Cfg.LoadMode) {
 	case LoadFromElasticSearchOnly:
-		if p.ES == nil {
+		if p.es == nil {
 			return fmt.Errorf("elasticsearch-client is required")
 		}
 		ctx.AddTask(p.runElasticSearchIndexLoader, servicehub.WithTaskName("elasticsearch index loader"))
@@ -121,7 +126,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		}
 		ctx.AddTask(p.runCacheLoader, servicehub.WithTaskName("cache index loader"))
 	case LoadWithCache:
-		if p.ES == nil || p.Redis == nil || p.election == nil {
+		if p.es == nil || p.Redis == nil || p.election == nil {
 			return fmt.Errorf("elasticsearch-client、etcd-election、redis-client are required")
 		}
 		p.election.OnLeader(p.syncIndiceToCache)
@@ -200,7 +205,9 @@ func init() {
 		Types: []reflect.Type{
 			reflect.TypeOf((*Interface)(nil)).Elem(),
 		},
-		ConfigFunc: func() interface{} { return &config{} },
+		Dependencies:         []string{"elasticsearch"},
+		OptionalDependencies: []string{"etcd-election"},
+		ConfigFunc:           func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			p := &provider{
 				setIndicesCh: make(chan *indicesBundle, 1),

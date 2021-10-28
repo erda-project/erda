@@ -63,6 +63,11 @@ component-protocol.components.code-coverage.timeSelector:
 component-protocol.components.code-coverage.tip:
 component-protocol.components.code-coverage.executeHistoryButton:
 component-protocol.components.code-coverage.downloadButton:
+component-protocol.components.code-coverage.configButton:
+component-protocol.components.code-coverage.configForm:
+component-protocol.components.code-coverage.envFilter:
+component-protocol.components.code-coverage.configModal:
+component-protocol.components.code-coverage.configTip:
 
 component-protocol.components.scenes-import-record.filter:
 component-protocol.components.scenes-import-record.table:
@@ -106,6 +111,8 @@ component-protocol.components.issue-dashboard.labelHorizontalBarChart:
 component-protocol.components.issue-dashboard.assigneeHorizontalBarChart:
 component-protocol.components.issue-dashboard.memberHorizontalBarChart:
 
+component-protocol.components.issue-dashboard.scatterPlot:
+
 component-protocol.components.issue-dashboard.chartFilter:
 component-protocol.components.issue-dashboard.chartExtra:
 component-protocol.components.issue-dashboard.reset:
@@ -136,18 +143,12 @@ component-protocol.components.test-dashboard.at_num_api:
 component-protocol.components.test-dashboard.at_rate_passed:
 component-protocol.components.test-dashboard.at_rate_executed:
 component-protocol.components.test-dashboard.mt_plan_chart_group:
-component-protocol.components.test-dashboard.mt_plan_chart_header:
-component-protocol.components.test-dashboard.mt_plan_chart_title:
 component-protocol.components.test-dashboard.mt_plan_chart_filter:
 component-protocol.components.test-dashboard.mt_plan_chart:
 component-protocol.components.test-dashboard.at_case_rate_trending_chart_group:
-component-protocol.components.test-dashboard.at_case_rate_trending_chart_header:
-component-protocol.components.test-dashboard.at_case_rate_trending_chart_title:
 component-protocol.components.test-dashboard.at_case_rate_trending_chart_filter:
 component-protocol.components.test-dashboard.at_case_rate_trending_chart:
 component-protocol.components.test-dashboard.at_plan_latest_waterfall_chart_group:
-component-protocol.components.test-dashboard.at_plan_latest_waterfall_chart_header:
-component-protocol.components.test-dashboard.at_plan_latest_waterfall_chart_title:
 component-protocol.components.test-dashboard.at_plan_latest_waterfall_chart_filter:
 component-protocol.components.test-dashboard.at_plan_latest_waterfall_chart:
 component-protocol.components.test-dashboard.scene_avg_cost_chart:
@@ -155,3 +156,7 @@ component-protocol.components.test-dashboard.scene_rate_failed_chart:
 component-protocol.components.test-dashboard.scene_rate_passed_chart:
 component-protocol.components.test-dashboard.at_api_rate_failed_chart:
 component-protocol.components.test-dashboard.at_api_avg_cost_chart:
+
+component-protocol.components.test-report.filter:
+component-protocol.components.test-report.table:
+component-protocol.components.test-report.createReportButton:

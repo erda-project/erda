@@ -34,7 +34,9 @@ import (
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
+	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
+	"github.com/erda-project/erda/modules/cmp/tasks"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -78,7 +80,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	var redisCli *redis.Client
 
 	db := dbclient.Open(dbengine.MustOpen())
-
 	i18n.InitI18N()
 
 	// cache etcd
@@ -129,13 +130,31 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		org_resource.WithBundle(bdl),
 		org_resource.WithRedisClient(redisCli),
 	)
+	r := ctx.Value("resource").(*resource.Resource)
+	r.DB = db
+	r.Bdl = bdl
+	ctx = context.WithValue(ctx, "resource", r)
+	resourceTable := resource.NewReportTable(
+		resource.ReportTableWithBundle(bdl),
+		resource.ReportTableWithCMP(p),
+		resource.ReportTableWithTrans(p.Tran),
+	)
 
-	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential)
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
 	if err != nil {
 		return nil, err
 	}
 
 	p.SteveAggregator = ep.SteveAggregator
+
+	// daily collector project quota and cluster resource request
+	dailyCollector := tasks.NewDailyQuotaCollector(
+		tasks.DailyQuotaCollectorWithDBClient(db),
+		tasks.DailyQuotaCollectorWithBundle(bdl),
+		tasks.DailyQuotaCollectorWithCMPAPI(p),
+	)
+	ticker := tasks.New(time.Hour, dailyCollector.Task)
+	go ticker.Run()
 
 	if conf.EnableEss() {
 		initServices(ep)
@@ -166,7 +185,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 }
 
 func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
-	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer) (*endpoints.Endpoints, error) {
+	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -177,6 +196,7 @@ func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS json
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrgResource(o),
 		endpoints.WithCredential(c),
+		endpoints.WithResourceTable(rt),
 	)
 
 	// Sync org resource task status

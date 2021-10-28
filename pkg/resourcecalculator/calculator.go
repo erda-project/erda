@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -36,66 +36,110 @@ var Workspaces = []Workspace{Prod, Staging, Test, Dev}
 type Workspace int
 
 type Calculator struct {
-	ClusterName string
-	CPU         *ResourceCalculator
-	Mem         *ResourceCalculator
+	ClusterName    string
+	allocatableCPU *ResourceCalculator
+	allocatableMem *ResourceCalculator
+	availableCPU   *ResourceCalculator
+	availableMem   *ResourceCalculator
 }
 
 func New(clusterName string) *Calculator {
 	return &Calculator{
 		ClusterName: clusterName,
-		CPU: &ResourceCalculator{
-			Type:   "CPU",
-			M:      make(map[string]uint64),
-			quota:  make(map[Workspace]uint64),
-			status: make(map[Workspace]int),
+		allocatableCPU: &ResourceCalculator{
+			Type:    "CPU",
+			M:       make(map[string]uint64),
+			tackUpM: make(map[Workspace]uint64),
 		},
-		Mem: &ResourceCalculator{
-			Type:   "Memory",
-			M:      make(map[string]uint64),
-			quota:  make(map[Workspace]uint64),
-			status: make(map[Workspace]int),
+		availableCPU: &ResourceCalculator{
+			Type:    "CPU",
+			M:       make(map[string]uint64),
+			tackUpM: make(map[Workspace]uint64),
+		},
+		allocatableMem: &ResourceCalculator{
+			Type:    "Memory",
+			M:       make(map[string]uint64),
+			tackUpM: make(map[Workspace]uint64),
+		},
+		availableMem: &ResourceCalculator{
+			Type:    "Memory",
+			M:       make(map[string]uint64),
+			tackUpM: make(map[Workspace]uint64),
 		},
 	}
 }
 
-func (c *Calculator) Copy() *Calculator {
-	return &Calculator{
-		ClusterName: c.ClusterName,
-		CPU:         c.CPU.Copy(),
-		Mem:         c.Mem.Copy(),
+func (c *Calculator) AddValue(cpu, mem uint64, workspace ...Workspace) {
+	c.allocatableCPU.addValue(cpu, workspace...)
+	c.availableCPU.addValue(cpu, workspace...)
+	c.allocatableMem.addValue(mem, workspace...)
+	c.availableMem.addValue(mem, workspace...)
+}
+
+func (c *Calculator) DeductionQuota(workspace Workspace, cpu, mem uint64) {
+	c.availableCPU.deductionQuota(workspace, cpu)
+	c.availableMem.deductionQuota(workspace, mem)
+}
+
+func (c *Calculator) AllocatableCPU(workspace Workspace) uint64 {
+	return c.allocatableCPU.totalForWorkspace(workspace)
+}
+
+func (c *Calculator) AllocatableMem(workspace Workspace) uint64 {
+	return c.allocatableMem.totalForWorkspace(workspace)
+}
+
+func (c *Calculator) AlreadyTookUpCPU(workspace Workspace) uint64 {
+	return c.availableCPU.alreadyTookUp(workspace)
+}
+
+func (c *Calculator) AlreadyTookUpMem(workspace Workspace) uint64 {
+	return c.availableMem.alreadyTookUp(workspace)
+}
+
+func (c *Calculator) TotalQuotableCPU() uint64 {
+	quotable := int(c.allocatableCPU.total) - int(c.availableCPU.deduction)
+	if quotable < 0 {
+		quotable = 0
 	}
+	return uint64(quotable)
+}
+
+func (c *Calculator) TotalQuotableMem() uint64 {
+	quotable := int(c.allocatableMem.total) - int(c.availableMem.deduction)
+	if quotable < 0 {
+		quotable = 0
+	}
+	return uint64(quotable)
+}
+
+func (c *Calculator) QuotableCPUForWorkspace(workspace Workspace) uint64 {
+	return c.availableCPU.totalForWorkspace(workspace)
+}
+
+func (c *Calculator) QuotableMemForWorkspace(workspace Workspace) uint64 {
+	return c.availableMem.totalForWorkspace(workspace)
 }
 
 type ResourceCalculator struct {
-	Type   string
-	M      map[string]uint64
-	quota  map[Workspace]uint64
-	status map[Workspace]int
+	Type      string
+	M         map[string]uint64
+	tackUpM   map[Workspace]uint64
+	deduction uint64
+	total     uint64
 }
 
-func (q *ResourceCalculator) AddValue(value uint64, workspace ...Workspace) {
+func (q *ResourceCalculator) addValue(value uint64, workspace ...Workspace) {
+	q.total += value
 	workspaces := WorkspacesString(workspace)
 	if length := len(workspaces); length == 0 || length > 4 {
 		return
 	}
 	w := strings.Join(workspaces, ":")
-	if _, ok := q.M[w]; ok {
-		q.M[w] += value
-	} else {
-		q.M[w] = value
-	}
+	q.M[w] += value
 }
 
-func (q ResourceCalculator) TotalQuotable() uint64 {
-	var sum uint64
-	for _, v := range q.M {
-		sum += v
-	}
-	return sum
-}
-
-func (q *ResourceCalculator) TotalForWorkspace(workspace Workspace) uint64 {
+func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
 	var (
 		sum uint64
 		w   = WorkspaceString(workspace)
@@ -111,56 +155,41 @@ func (q *ResourceCalculator) TotalForWorkspace(workspace Workspace) uint64 {
 	return sum
 }
 
-func (q *ResourceCalculator) Quota(workspace Workspace, quota uint64) error {
-	q.quota[workspace] += quota
-	if totalForWorkspace := q.TotalForWorkspace(workspace); quota > totalForWorkspace {
-		for k := range q.M {
-			if strings.Contains(k, WorkspaceString(workspace)) {
-				q.M[k] = 0
-				q.status[workspace] = -1
-			}
-		}
-		return errors.Errorf("the resource %v is not enough, total: %v, your request：%v",
-			q.Type, totalForWorkspace, quota)
-	}
-
+func (q *ResourceCalculator) deductionQuota(workspace Workspace, quota uint64) {
+	q.deduction += quota
 	// 按优先级减扣
 	p := priority(workspace)
-	for _, v := range p {
-		if q.M[v] >= quota {
-			q.M[v] -= quota
-			return nil
+	for _, workspaces := range p {
+		if q.M[workspaces] >= quota {
+			q.M[workspaces] -= quota
+			q.takeUp(workspaces, quota)
+			return
 		}
-		quota -= q.M[v]
-		q.M[v] = 0
+		quota -= q.M[workspaces]
+		q.takeUp(workspaces, q.M[workspaces])
+		q.M[workspaces] = 0
 	}
-	return nil
+
+	q.takeUp(WorkspaceString(workspace), quota)
 }
 
-func (q *ResourceCalculator) AlreadyQuota(workspace Workspace) uint64 {
-	return q.quota[workspace]
+func (q *ResourceCalculator) takeUp(workspaces string, value uint64) {
+	if strings.Contains(workspaces, "prod") {
+		q.tackUpM[Prod] += value
+	}
+	if strings.Contains(workspaces, "staging") {
+		q.tackUpM[Staging] += value
+	}
+	if strings.Contains(workspaces, "test") {
+		q.tackUpM[Test] += value
+	}
+	if strings.Contains(workspaces, "dev") {
+		q.tackUpM[Dev] += value
+	}
 }
 
-func (q *ResourceCalculator) StatusOK(workspace Workspace) bool {
-	return q.status[workspace] >= 0
-}
-
-func (q *ResourceCalculator) Copy() *ResourceCalculator {
-	var r ResourceCalculator
-	r.Type = q.Type
-	r.M = make(map[string]uint64)
-	r.quota = make(map[Workspace]uint64)
-	r.status = make(map[Workspace]int)
-	for k, v := range q.M {
-		r.M[k] = v
-	}
-	for k, v := range q.quota {
-		r.quota[k] = v
-	}
-	for k, v := range q.status {
-		r.status[k] = v
-	}
-	return &r
+func (q *ResourceCalculator) alreadyTookUp(workspace Workspace) uint64 {
+	return q.tackUpM[workspace]
 }
 
 func WorkspaceString(workspace Workspace) string {
@@ -201,15 +230,15 @@ func CoreToMillcore(v float64) uint64 {
 	return uint64(v * 1000)
 }
 
-func MillcoreToCore(v uint64) float64 {
-	return float64(v) / 1000
+func MillcoreToCore(v uint64, accuracy int32) float64 {
+	return Accuracy(float64(v)/1000, accuracy)
 }
 
 func GibibyteToByte(v float64) uint64 {
 	return uint64(v * 1024 * 1024 * 1024)
 }
-func ByteToGibibyte(v uint64) float64 {
-	return float64(v) / (1024 * 1024 * 1024)
+func ByteToGibibyte(v uint64, accuracy int32) float64 {
+	return Accuracy(float64(v)/(1024*1024*1024), accuracy)
 }
 
 func priority(workspace Workspace) []string {
@@ -261,6 +290,11 @@ func ResourceToString(res float64, typ string) string {
 	default:
 		return fmt.Sprintf("%.f", res)
 	}
+}
+
+func Accuracy(v float64, accuracy int32) float64 {
+	v, _ = decimal.NewFromFloat(v).Round(accuracy).Float64()
+	return v
 }
 
 func setPrec(f float64, prec int) float64 {

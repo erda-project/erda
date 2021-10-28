@@ -49,12 +49,14 @@ type Filter struct {
 
 type InParams struct {
 	FrontEndProjectID string `json:"projectID,omitempty"`
+	FrontendUrlQuery  string `json:"filter__urlQuery,omitempty"`
 	ProjectID         uint64
 }
 
 type State struct {
-	Conditions []filter.PropCondition `json:"conditions,omitempty"`
-	Values     SelectedValues         `json:"values,omitempty"`
+	Conditions           []filter.PropCondition `json:"conditions,omitempty"`
+	Values               SelectedValues         `json:"values,omitempty"`
+	Base64UrlQueryParams string                 `json:"filter__urlQuery,omitempty"`
 }
 
 type SelectedValues struct {

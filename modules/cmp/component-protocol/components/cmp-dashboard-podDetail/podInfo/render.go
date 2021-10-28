@@ -28,14 +28,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp.SteveServer
+var steveServer cmp_interface.SteveServer
 
 func (podInfo *PodInfo) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -159,8 +159,8 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 		}
 	}
 	return Props{
-		IsLoadMore: true,
-		ColumnNum:  4,
+		RequestIgnore: []string{"data"},
+		ColumnNum:     4,
 		Fields: []Field{
 			{Label: podInfo.SDK.I18n("namespace"), ValueKey: "namespace"},
 			{Label: podInfo.SDK.I18n("age"), ValueKey: "age"},

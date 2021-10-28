@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
+	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
 )
 
 type (
@@ -38,22 +39,29 @@ type (
 	provider struct {
 		Cfg *config
 		Log logs.Logger
-		ES  elasticsearch.Interface `autowired:"elasticsearch"`
+		es  elasticsearch.Interface `autowired:"elasticsearch"`
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	err := p.initTemplates(ctx, p.ES.Client(), p.Cfg.Templates)
+	if es, err := index.FindElasticSearch(ctx, true); err != nil {
+		return err
+	} else {
+		p.es = es
+	}
+
+	err := p.initTemplates(ctx, p.es.Client(), p.Cfg.Templates)
 	if err != nil {
 		return err
 	}
-	return p.createIndices(ctx, p.ES.Client(), p.Cfg.Creates)
+	return p.createIndices(ctx, p.es.Client(), p.Cfg.Creates)
 }
 
 func init() {
 	servicehub.Register("elasticsearch.index.initializer", &servicehub.Spec{
-		Services:   []string{"elasticsearch.index.initializer"},
-		ConfigFunc: func() interface{} { return &config{} },
+		Services:     []string{"elasticsearch.index.initializer"},
+		Dependencies: []string{"elasticsearch"},
+		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

@@ -14,11 +14,11 @@
 
 package apistructs
 
-type JacocoRequest struct {
+type SourcecovRequest struct {
 	ProjectID uint64 `json:"projectID"`
 	PlanID    uint64 `json:"planID"`
 }
 
-type JacocoResponse struct {
+type SourcecovResponse struct {
 	Header
 }

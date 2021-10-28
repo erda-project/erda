@@ -56,7 +56,7 @@ type meta struct {
 }
 
 const (
-	DefaultPageSize = 15
+	DefaultPageSize = 1000
 	DefaultPageNo   = 1
 )
 
@@ -488,10 +488,8 @@ func (a *ExecuteTaskTable) marshal(c *apistructs.Component) error {
 
 func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
 
-	if e.State.PageNo == 0 {
-		e.State.PageNo = DefaultPageNo
-		e.State.PageSize = DefaultPageSize
-	}
+	e.State.PageNo = DefaultPageNo
+	e.State.PageSize = DefaultPageSize
 
 	if e.State.PipelineID == 0 {
 		c.Data = map[string]interface{}{}

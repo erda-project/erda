@@ -68,8 +68,9 @@ type PointValue struct {
 }
 
 type State struct {
-	Value    []int64 `json:"value"`
-	RecordID uint64  `json:"recordID"`
+	Value     []int64 `json:"value"`
+	RecordID  uint64  `json:"recordID"`
+	Workspace string  `json:"workspace"`
 }
 
 type Operation struct {
@@ -111,7 +112,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 			},
 		},
 		"grid": map[string]interface{}{
-			"top": 20,
+			"top": 40,
 		},
 		"tooltip": map[string]interface{}{
 			"formatter": "{b}<br />{a}: {c}%",
@@ -187,6 +188,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
+	workspace, ok := c.State["workspace"].(string)
+	if !ok {
+		return fmt.Errorf("workspace was empty")
+	}
+
 	switch event.Operation {
 	case common.CoverChartSelectItemOperationKey:
 		var m Meta
@@ -203,6 +209,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		recordRsp, err := svc.ListCodeCoverageRecord(apistructs.CodeCoverageListRequest{
 			ProjectID: projectID,
 			TimeBegin: start,
+			Workspace: workspace,
 			TimeEnd:   end,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
@@ -221,6 +228,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			ProjectID: projectID,
 			TimeBegin: start,
 			TimeEnd:   end,
+			Workspace: workspace,
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			Asc:       true,
 			PageSize:  defaultMaxSize,
@@ -244,6 +252,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			Statuses:  []apistructs.CodeCoverageExecStatus{apistructs.SuccessStatus},
 			TimeBegin: start,
 			TimeEnd:   end,
+			Workspace: workspace,
 			Asc:       true,
 			PageSize:  defaultMaxSize,
 		})

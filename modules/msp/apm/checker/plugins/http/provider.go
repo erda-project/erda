@@ -127,7 +127,11 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 	}
 
 	// body
-	bodyStr := c.Config["body"].GetStringValue()
+	content := ""
+	bodyStruct := c.Config["body"].GetStructValue()
+	if bodyStruct != nil {
+		content = bodyStruct.Fields["content"].GetStringValue()
+	}
 
 	// retry
 	retryCount := int64(c.Config["retry"].GetNumberValue())
@@ -155,7 +159,7 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 		method:     method,
 		url:        urlstr,
 		headers:    headers,
-		body:       bodyStr,
+		body:       content,
 		retry:      retryCount,
 		triggering: triggers,
 		interval:   interval,
@@ -206,7 +210,8 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 	tags["interval"] = strconv.FormatInt(h.interval, 10)
 	tags["triggering"] = string(triggersBytes)
 
-	for i := 0; i <= int(h.retry); i++ {
+	maybeCallCount := h.retry + 1
+	for i := 0; i < int(maybeCallCount); i++ {
 
 		fields["retry"] = i
 
@@ -260,10 +265,6 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		}
 		checkerStatusHandler(resultStatus, fields, tags, resp)
 
-		// no retry
-		if i == 0 {
-			break
-		}
 		if resultStatus {
 			break
 		}

@@ -194,6 +194,7 @@ func (g *Gantt) Export(c *cptype.Component, gs *cptype.GlobalStateData) error {
 	if err != nil {
 		return err
 	}
+	c.Data = nil
 	if err := json.Unmarshal(b, c); err != nil {
 		return err
 	}

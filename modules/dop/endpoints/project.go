@@ -247,11 +247,12 @@ func (e *Endpoints) getProjectStats(projectID uint64) (*apistructs.ProjectStats,
 	runningIterations, planningIterations := make([]int64, 0), make(map[int64]bool, 0)
 	now := time.Now()
 	for i := 0; i < totalIterations; i++ {
-		if !iterations[i].StartedAt.After(now) && iterations[i].FinishedAt.After(now) {
+		if iterations[i].StartedAt != nil && iterations[i].FinishedAt != nil &&
+			!iterations[i].StartedAt.After(now) && iterations[i].FinishedAt.After(now) {
 			runningIterations = append(runningIterations, int64(iterations[i].ID))
 		}
 
-		if iterations[i].StartedAt.After(now) {
+		if iterations[i].StartedAt != nil && iterations[i].StartedAt.After(now) {
 			planningIterations[int64(iterations[i].ID)] = true
 		}
 	}

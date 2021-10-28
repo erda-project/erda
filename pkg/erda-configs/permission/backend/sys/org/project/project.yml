@@ -642,6 +642,7 @@
   scope: project
   resource: testplan
   action: UPDATE
+  resource_role: OWNER,PARTNER
 - role: Owner,Lead,QA
   scope: project
   resource: testplan
@@ -822,4 +823,17 @@
   action: UPDATE
 
 ## code coverage end ##
+
+## test report start ##
+- role: Owner,PM,Lead,QA
+  scope: project
+  resource: testReport
+  action: CREATE
+
+- role: Owner,PM,Lead,QA
+  scope: project
+  resource: testReport
+  action: UPDATE
+
+## test report end ##
 

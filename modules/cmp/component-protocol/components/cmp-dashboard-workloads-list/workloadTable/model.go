@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -27,7 +27,7 @@ type ComponentWorkloadTable struct {
 	base.DefaultProvider
 	sdk    *cptype.SDK
 	ctx    context.Context
-	server cmp.SteveServer
+	server cmp_interface.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`
@@ -113,15 +113,7 @@ type Link struct {
 }
 
 type LinkOperation struct {
-	Command Command `json:"command,omitempty"`
-	Reload  bool    `json:"reload"`
-}
-
-type Command struct {
-	Key     string       `json:"key,omitempty"`
-	Target  string       `json:"target,omitempty"`
-	State   CommandState `json:"state,omitempty"`
-	JumpOut bool         `json:"jumpOut"`
+	Reload bool `json:"reload"`
 }
 
 type CommandState struct {
@@ -130,7 +122,7 @@ type CommandState struct {
 }
 
 type Props struct {
-	IsLoadMore      bool     `json:"isLoadMore,omitempty"`
+	RequestIgnore   []string `json:"requestIgnore,omitempty"`
 	PageSizeOptions []string `json:"pageSizeOptions,omitempty"`
 	Columns         []Column `json:"columns,omitempty"`
 	RowKey          string   `json:"rowKey,omitempty"`

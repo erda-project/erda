@@ -72,3 +72,7 @@ func (s *traceServiceWrapper) StopTraceDebug(ctx context.Context, req *pb.StopTr
 func (s *traceServiceWrapper) GetTraceDebugHistoryStatusByRequestID(ctx context.Context, req *pb.GetTraceDebugStatusByRequestIDRequest) (*pb.GetTraceDebugStatusByRequestIDResponse, error) {
 	return s.client.GetTraceDebugHistoryStatusByRequestID(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *traceServiceWrapper) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
+	return s.client.GetSpanEvents(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
