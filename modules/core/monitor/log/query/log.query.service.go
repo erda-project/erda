@@ -194,6 +194,7 @@ type Request interface {
 const (
 	defaultQueryCount = 50
 	maxQueryCount     = 700
+	maxTimeRange      = 7 * 24 * int64(time.Hour)
 )
 
 func getLimit(count int64) int {
@@ -223,8 +224,11 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	if sel.End <= 0 {
 		sel.End = time.Now().UnixNano()
 	}
-	if sel.Start < 0 {
-		sel.Start = 0
+	if sel.Start <= 0 {
+		sel.Start = sel.End - maxTimeRange
+		if sel.Start < 0 {
+			sel.Start = 0
+		}
 	} else if sel.Start > 0 && req.GetCount() >= 0 {
 		// avoid duplicating previous log
 		// TODO: check by offset
@@ -233,6 +237,8 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 
 	if sel.End < sel.Start {
 		return nil, errors.NewInvalidParameterError("(start,end]", "start must be less than end")
+	} else if sel.End-sel.Start > maxTimeRange {
+		return nil, errors.NewInvalidParameterError("(start,end]", "time range is too large")
 	}
 
 	if len(req.GetRequestId()) > 0 {
