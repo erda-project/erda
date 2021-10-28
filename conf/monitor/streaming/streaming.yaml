@@ -11,6 +11,13 @@ kafka:
     options:
       go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 
+kafka.topic.initializer:
+  force: ${KAFKA_INIT_FORCE_SUCCESS:true}
+  topics:
+    - name: spot-container-log
+    - name: spot-job-log
+    - name: spot-metrics
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: ${MYSQL_PORT:3306}
