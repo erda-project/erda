@@ -110,7 +110,7 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{req: &pb.GetNotifyChannelsRequest{Page: 1, PageSize: 10}}, false},
+		{"case1", args{req: &pb.GetNotifyChannelsRequest{PageNo: 1, PageSize: 10}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
