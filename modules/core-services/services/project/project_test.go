@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -127,6 +128,11 @@ func TestWithDBClient(t *testing.T) {
 
 func TestWithUCClient(t *testing.T) {
 	New(WithUCClient(new(ucauth.UCClient)))
+}
+
+func TestWithBundle(t *testing.T) {
+	var bdl bundle.Bundle
+	New(WithBundle(&bdl))
 }
 
 func Test_convertAuditCreateReq2Model(t *testing.T) {
