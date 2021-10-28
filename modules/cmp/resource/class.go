@@ -149,11 +149,14 @@ func (r *Resource) GetPie(ctx context.Context, ordId, userId string, request *ap
 
 func (r *Resource) GetProjectPie(ctx context.Context, resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (projectPie *PieData, err error) {
 	var (
-		q  Quota
-		ok bool
+		q         Quota
+		ok        bool
+		langCodes i18n.LanguageCodes
 	)
 	projectPie = &PieData{}
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	if langCodes, ok = ctx.Value(Lang).(i18n.LanguageCodes); !ok {
+		logrus.Error("i18n translator is empty")
+	}
 	serie := PieSerie{
 		Name: r.I18n(langCodes, "distribution by project"),
 		Type: "pie",
@@ -210,9 +213,13 @@ func (r *Resource) GetProjectPie(ctx context.Context, resType string, resp *apis
 
 func (r *Resource) GetPrincipalPie(ctx context.Context, resType string, resp *apistructs.GetQuotaOnClustersResponse, resource *apistructs.ResourceResp) (principalPie *PieData, err error) {
 	var (
-		q  Quota
-		ok bool
+		q         Quota
+		langCodes i18n.LanguageCodes
+		ok        bool
 	)
+	if langCodes, ok = ctx.Value(Lang).(i18n.LanguageCodes); !ok {
+		logrus.Error("i18n translator is empty")
+	}
 	principalMap := make(map[string]Quota)
 	for _, owner := range resp.Owners {
 		if q, ok = principalMap[owner.Name]; !ok {
@@ -223,7 +230,6 @@ func (r *Resource) GetPrincipalPie(ctx context.Context, resType string, resp *ap
 		q.nickName = owner.Nickname
 		principalMap[owner.Name] = q
 	}
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
 
 	principalPie = &PieData{}
 	serie := PieSerie{
@@ -270,7 +276,13 @@ func (r *Resource) GetPrincipalPie(ctx context.Context, resType string, resp *ap
 
 func (r *Resource) GetClusterPie(ctx context.Context, resourceType string, resources *pb.GetClusterResourcesResponse) (clusterPie *PieData, err error) {
 	clusterPie = &PieData{}
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	var (
+		langCodes i18n.LanguageCodes
+		ok        bool
+	)
+	if langCodes, ok = ctx.Value(Lang).(i18n.LanguageCodes); !ok {
+		logrus.Error("i18n translator is empty")
+	}
 	serie := PieSerie{
 		Name: r.I18n(langCodes, "distribution by cluster"),
 		Type: "pie",
@@ -316,7 +328,7 @@ func (r *Resource) PieSort(series []SerieData) {
 func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	logrus.Debug("func GetClusterTrend start")
 	defer logrus.Debug("func GetClusterTrend finished")
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes := ctx.Value(Lang).(i18n.LanguageCodes)
 	td = &Histogram{
 		Name: r.I18n(langCodes, "cluster trend"),
 	}
@@ -342,10 +354,11 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 		return nil, errNoClusterFound
 	}
 
-	db := r.DB.Table("cmp_cluster_resource_daily")
 	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
 	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
-	db.Raw("select cpu_total,cpu_requested,mem_total,mem_requested where  updated_at < ? and updated_at >= ? and cluster_name in (?) sort by created_at desc", endTime, startTime, request.ClusterName)
+	db := r.DB.Table("cmp_cluster_resource_daily")
+	db = db.Where(" updated_at > ? and updated_at < ? ", startTime.Format("2006-01-02 15:01:05"), endTime.Format("2006-01-02 15:01:05"))
+	db = db.Where("cluster_name in (?)", request.ClusterName)
 	logrus.Debug("cluster trend start get daily quota from db")
 	if err = db.Scan(&pd).Error; err != nil {
 		return
@@ -362,34 +375,39 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 				v.CPURequested += model.CPURequested
 				v.MemRequested += model.MemRequested
 				v.ID = uint64(wk)
+				tRes[wk] = v
 			} else {
 				tRes[wk] = model
 			}
 		}
 	case Month:
 		for _, model := range pd {
-			if v, ok := tRes[int(model.CreatedAt.Month())]; ok {
+			m := int(model.CreatedAt.Month())
+			if v, ok := tRes[m]; ok {
 				v.CPUTotal += model.CPUTotal
 				v.MemTotal += model.MemTotal
 				v.CPURequested += model.CPURequested
 				v.MemRequested += model.MemRequested
 				v.ID = uint64(model.CreatedAt.Month())
+				tRes[m] = v
 			} else {
-				tRes[int(model.CreatedAt.Month())] = model
+				tRes[m] = model
 			}
 		}
 	default:
 		// Day
 		for _, model := range pd {
 			// assume data not over one year
-			if v, ok := tRes[model.CreatedAt.YearDay()]; ok {
+			yd := model.CreatedAt.YearDay()
+			if v, ok := tRes[yd]; ok {
 				v.CPUTotal += model.CPUTotal
 				v.MemTotal += model.MemTotal
 				v.CPURequested += model.CPURequested
 				v.MemRequested += model.MemRequested
-				v.ID = uint64(model.CreatedAt.Day())
+				v.ID = uint64(model.CreatedAt.YearDay())
+				tRes[yd] = v
 			} else {
-				tRes[model.CreatedAt.Day()] = model
+				tRes[yd] = model
 			}
 		}
 	}
@@ -398,11 +416,12 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 		pd = append(pd, model)
 	}
 	sort.Slice(pd, func(i, j int) bool {
-		return pd[i].ID < pd[i].ID
+		return pd[i].ID < pd[j].ID
 	})
 
 	switch request.ResourceType {
 	case Memory:
+		td.YAxis.Name = r.I18n(langCodes, "memory") + " (GB)"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
@@ -417,6 +436,7 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 			}
 		}
 	default:
+		td.YAxis.Name = r.I18n(langCodes, "cpu") + " (" + r.I18n(langCodes, "core") + ")"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
@@ -437,7 +457,7 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	logrus.Debug("func GetProjectTrend start")
 	defer logrus.Debug("func GetProjectTrend finished")
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes := ctx.Value(Lang).(i18n.LanguageCodes)
 	td = &Histogram{
 		Name: r.I18n(langCodes, "project trend"),
 	}
@@ -466,11 +486,13 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 	if len(request.ClusterName) == 0 {
 		return nil, errNoClusterFound
 	}
-
+	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
+	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
 	db := r.DB.Table("cmp_project_resource_daily")
-	db.Raw("select cpu_quota,cpu_request,mem_quota,mem_request where updated_at < ? and updated_at >= ? and cluster_name in (?)  sort by created_at desc", request.End, request.Start, request.ClusterName)
+	db = db.Where(" updated_at > ? and updated_at < ? ", startTime.Format("2006-01-02 15:01:05"), endTime.Format("2006-01-02 15:01:05"))
+	db = db.Where("cluster_name in (?)", request.ClusterName)
 	if len(request.ProjectId) != 0 {
-		db.Where("project_id in (?)", request.ProjectId)
+		db = db.Where("project_id in (?)", request.ProjectId)
 	}
 	if err = db.Scan(&pd).Error; err != nil {
 		return
@@ -487,34 +509,39 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 				v.MemRequest += model.MemRequest
 				v.MemQuota += model.MemQuota
 				v.ID = uint64(wk)
+				tRes[wk] = v
 			} else {
 				tRes[wk] = model
 			}
 		}
 	case Month:
 		for _, model := range pd {
-			if v, ok := tRes[int(model.CreatedAt.Month())]; ok {
+			m := int(model.CreatedAt.Month())
+			if v, ok := tRes[m]; ok {
 				v.CPURequest += model.CPURequest
 				v.CPUQuota += model.CPUQuota
 				v.MemRequest += model.MemRequest
 				v.MemQuota += model.MemQuota
 				v.ID = uint64(model.CreatedAt.Month())
+				tRes[m] = v
 			} else {
-				tRes[int(model.CreatedAt.Month())] = model
+				tRes[m] = model
 			}
 		}
 	default:
 		// Day
 		for _, model := range pd {
 			// assume data not over one year
-			if v, ok := tRes[model.CreatedAt.YearDay()]; ok {
+			yd := model.CreatedAt.YearDay()
+			if v, ok := tRes[yd]; ok {
 				v.CPURequest += model.CPURequest
 				v.CPUQuota += model.CPUQuota
 				v.MemRequest += model.MemRequest
 				v.MemQuota += model.MemQuota
-				v.ID = uint64(model.CreatedAt.Day())
+				v.ID = uint64(model.CreatedAt.YearDay())
+				tRes[yd] = v
 			} else {
-				tRes[model.CreatedAt.Day()] = model
+				tRes[yd] = model
 			}
 		}
 	}
@@ -523,11 +550,12 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 		pd = append(pd, model)
 	}
 	sort.Slice(pd, func(i, j int) bool {
-		return pd[i].ID < pd[i].ID
+		return pd[i].ID < pd[j].ID
 	})
 	switch request.ResourceType {
 
 	case Memory:
+		td.YAxis.Name = r.I18n(langCodes, "memory") + " (GB)"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
@@ -543,6 +571,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 
 		}
 	default:
+		td.YAxis.Name = r.I18n(langCodes, "cpu") + " (" + r.I18n(langCodes, "core") + ")"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
@@ -565,5 +594,6 @@ func toCore(mCores float64) float64 {
 }
 
 func toGB(b float64) float64 {
-	return b / float64(1<<30)
+	f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", b/float64(1<<30)), 64)
+	return f
 }
