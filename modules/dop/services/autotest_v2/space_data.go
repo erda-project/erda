@@ -493,54 +493,49 @@ func (a *AutoTestSpaceData) Copy() (*apistructs.AutoTestSpace, error) {
 		return nil, err
 	}
 
-	go func() {
-		var err error
-
-		defer func() {
-			// unlock source space
-			if a.IsCopy {
-				if err := a.unlockSourceSpace(); err != nil {
-					logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-					return
-				}
+	defer func() {
+		// unlock source space
+		if a.IsCopy {
+			if err := a.unlockSourceSpace(); err != nil {
+				logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+				return
 			}
-			if err != nil {
-				a.NewSpace.Status = apistructs.TestSpaceFailed
-				if _, err := a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
-					logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-					return
-				}
+		}
+		if err != nil {
+			a.NewSpace.Status = apistructs.TestSpaceFailed
+			if _, err := a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
+				logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+				return
 			}
-		}()
-
-		if err = a.CopySceneSets(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
 		}
-		if err = a.CopyScenes(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		if err = a.CopySceneSteps(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		if err = a.CopyInputs(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		if err = a.CopyOutputs(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		a.NewSpace.Status = apistructs.TestSpaceOpen
-		if _, err = a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-
-		return
 	}()
+
+	if err = a.CopySceneSets(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopyScenes(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopySceneSteps(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopyInputs(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopyOutputs(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	a.NewSpace.Status = apistructs.TestSpaceOpen
+	if _, err = a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+
 	return a.NewSpace, nil
 }
 

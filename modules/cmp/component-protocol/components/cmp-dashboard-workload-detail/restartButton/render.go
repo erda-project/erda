@@ -36,12 +36,11 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/cache"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/modules/cmp/steve/proxy"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/pkg/k8sclient"
-	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 )
 
 func init() {
@@ -175,22 +174,7 @@ func (b *ComponentRestartButton) RestartWorkload() error {
 }
 
 func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kind, namespace, name string) error {
-	user, err := b.server.Auth(userID, orgID, clusterName)
-	if err != nil {
-		return err
-	}
-
-	config, err := k8sclient.GetRestConfig(b.State.ClusterName)
-	if err != nil {
-		return errors.Errorf("failed to get rest config for cluster %s, %v", b.State.ClusterName, err)
-	}
-
-	// impersonate user
-	config.Impersonate.UserName = user.GetName()
-	config.Impersonate.Groups = user.GetGroups()
-	config.Impersonate.Extra = user.GetExtra()
-
-	client, err := k8sclient.NewForRestConfig(config, scheme.LocalSchemeBuilder...)
+	client, err := cputil2.GetImpersonateClient(b.server, userID, orgID, clusterName)
 	if err != nil {
 		return errors.Errorf("failed to get k8s client, %v", err)
 	}

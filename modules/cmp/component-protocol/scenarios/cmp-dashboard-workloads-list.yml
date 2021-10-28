@@ -76,6 +76,7 @@ rendering:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
     - name: addWorkloadButton
+  workloadTable: []
   filter:
     - name: workloadTable
       state:

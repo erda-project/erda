@@ -49,7 +49,7 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 		req.MemPerNode = 32
 	}
 
-	content, err := e.Resource.GetGauge(orgIDStr, userIDStr, req)
+	content, err := e.Resource.GetGauge(ctx, orgIDStr, userIDStr, req)
 	if err != nil || content == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -72,7 +72,7 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetPie(orgIDStr, userIDStr, req)
+	pie, err := e.Resource.GetPie(ctx, orgIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -99,7 +99,7 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetClusterTrend(orgID, userIDStr, req)
+	pie, err := e.Resource.GetClusterTrend(ctx, orgID, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -121,7 +121,7 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetProjectTrend(userIDStr, userIDStr, req)
+	pie, err := e.Resource.GetProjectTrend(ctx, orgIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("get resource project trend error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)

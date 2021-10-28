@@ -256,14 +256,14 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 type DailyQuotaCollectorOption func(collector *DailyQuotaCollector)
 
 func DailyQuotaCollectorWithDBClient(client *dbclient.DBClient) DailyQuotaCollectorOption {
-	return func(collector *DailyQuotaCollector) {
-		collector.db = client
+	return func(c *DailyQuotaCollector) {
+		c.db = client
 	}
 }
 
 func DailyQuotaCollectorWithBundle(bdl *bundle.Bundle) DailyQuotaCollectorOption {
-	return func(collector *DailyQuotaCollector) {
-		collector.bdl = bdl
+	return func(c *DailyQuotaCollector) {
+		c.bdl = bdl
 	}
 }
 
@@ -273,7 +273,7 @@ func DailyQuotaCollectorWithCMPAPI(cmp interface {
 	GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error)
 	GetAllClusters() []string
 }) DailyQuotaCollectorOption {
-	return func(collector *DailyQuotaCollector) {
-		collector.cmp = cmp
+	return func(c *DailyQuotaCollector) {
+		c.cmp = cmp
 	}
 }

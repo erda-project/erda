@@ -20,6 +20,7 @@ import (
 
 	"github.com/rancher/apiserver/pkg/types"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -40,8 +41,10 @@ func (f fakeCmp) GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespa
 func TestNewReportTable(t *testing.T) {
 	var bdl bundle.Bundle
 	var cmp fakeCmp
+	var trans i18n.Translator
 	resource.NewReportTable(
 		resource.ReportTableWithBundle(&bdl),
 		resource.ReportTableWithCMP(cmp),
+		resource.ReportTableWithTrans(trans),
 	)
 }
