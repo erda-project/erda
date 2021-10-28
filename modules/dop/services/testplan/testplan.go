@@ -368,10 +368,9 @@ func (t *TestPlan) Get(testPlanID uint64) (*apistructs.TestPlan, error) {
 
 	if testPlan.IterationID != 0 {
 		iterationDao, err := t.iterationSvc.Get(testPlan.IterationID)
-		if err != nil {
-			return nil, apierrors.ErrGetTestPlan.InternalError(err)
+		if err == nil {
+			convertedTp.IterationName = iterationDao.Title
 		}
-		convertedTp.IterationName = iterationDao.Title
 	}
 
 	return &convertedTp, nil
