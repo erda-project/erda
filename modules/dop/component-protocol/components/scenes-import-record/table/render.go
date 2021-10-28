@@ -183,7 +183,6 @@ func (ca *ComponentAction) setData() error {
 			Result: Result{
 				RenderType: "downloadUrl",
 				URL:        fmt.Sprintf("%s/api/files/%s", conf.RootDomain(), fileRecord.ApiFileUUID),
-				Value:      fileRecord.FileName,
 			},
 		})
 	}
@@ -216,10 +215,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}, Column{
 		DataIndex: "time",
 		Title:     ca.sdk.I18n("time"),
-		Width:     150,
+		Width:     170,
 	}, Column{
 		DataIndex: "desc",
 		Title:     ca.sdk.I18n("desc"),
+		Width:     200,
 	}, Column{
 		DataIndex: "status",
 		Title:     ca.sdk.I18n("status"),
