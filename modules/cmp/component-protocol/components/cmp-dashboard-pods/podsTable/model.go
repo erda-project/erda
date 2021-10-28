@@ -108,6 +108,7 @@ type Link struct {
 type LinkOperation struct {
 	Command *Command `json:"command,omitempty"`
 	Reload  bool     `json:"reload"`
+	Key     string   `json:"key,omitempty"`
 }
 
 type Command struct {

@@ -307,6 +307,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
 						Reload: false,
+						Key:    "openPodDetail",
 					},
 				},
 			},
@@ -355,6 +356,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 							JumpOut: true,
 						},
 						Reload: false,
+						Key:    "gotoWorkload",
 					},
 				},
 			},
