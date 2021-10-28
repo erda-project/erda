@@ -9,6 +9,7 @@ zh:
  STAGING: '预发'
  TEST: '测试'
  DEV: '开发'
+ OwnerUnknown: '无'
 en:
  AvailableIsLessThanQuota: The actual available resource on this workspace in the cluster is less than the quota. Please ask the Ops to allocate project resources reasonably
  NoResourceForTheWorkspace: No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes
@@ -20,3 +21,4 @@ en:
  STAGING: 'STAGING'
  TEST: 'TEST'
  DEV: 'DEV'
+ OwnerUnknown: 'Unknown'

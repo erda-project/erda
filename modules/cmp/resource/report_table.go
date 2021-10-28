@@ -81,7 +81,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 
 	// 2) 调用 core-services bundle，根据 namespaces 查找各 namespaces 的归属
 	logrus.Debugln("GetResourceOverviewReport", "query namespaces belongs to")
-	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(orgID, namespacesM)
+	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo()
 	if err != nil {
 		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
 		logrus.WithError(err).Errorln()
@@ -184,8 +184,8 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 type ReportTableOption func(table *ReportTable)
 
 func ReportTableWithBundle(bdl *bundle.Bundle) ReportTableOption {
-	return func(t *ReportTable) {
-		t.bdl = bdl
+	return func(theTable *ReportTable) {
+		theTable.bdl = bdl
 	}
 }
 
@@ -193,13 +193,13 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(t *ReportTable) {
-		t.cmp = cmp
+	return func(theTable *ReportTable) {
+		theTable.cmp = cmp
 	}
 }
 
 func ReportTableWithTrans(trans i18n.Translator) ReportTableOption {
-	return func(t *ReportTable) {
-		t.trans = trans
+	return func(theTable *ReportTable) {
+		theTable.trans = trans
 	}
 }

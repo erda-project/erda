@@ -14,6 +14,10 @@
 
 package apistructs
 
+import (
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
+)
+
 type ResourceOverviewReportData struct {
 	Total   int                               `json:"total"`
 	List    []*ResourceOverviewReportDataItem `json:"list"`
@@ -45,6 +49,9 @@ func (data *ResourceOverviewReportData) Sum() {
 		data.Summary.Memory += item.MemQuota
 		data.Summary.Node += item.Nodes
 	}
+	data.Summary.CPU = calcu.Accuracy(data.Summary.CPU, 3)
+	data.Summary.Memory = calcu.Accuracy(data.Summary.Memory, 3)
+	data.Summary.Node = calcu.Accuracy(data.Summary.Node, 1)
 }
 
 type ResourceOverviewReportSumary struct {
