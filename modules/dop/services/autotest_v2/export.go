@@ -16,6 +16,7 @@ package autotestv2
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 
@@ -256,7 +257,7 @@ func (svc *Service) ExportSceneSet(req apistructs.AutoTestSceneSetExportRequest)
 	}
 
 	l := svc.bdl.GetLocale(req.Locale)
-	fileName := l.Get(i18n.I18nKeySceneSetSheetName)
+	fileName := fmt.Sprintf("%s-%s", l.Get(i18n.I18nKeySceneSetSheetName), req.SceneSetName)
 	if req.FileType == apistructs.TestSceneSetFileTypeExcel {
 		fileName += ".xlsx"
 	}

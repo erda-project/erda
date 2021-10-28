@@ -32,7 +32,7 @@
         "tp.export.space.project.num": "项目编号",
         "tp.export.space.description": "测试空间描述",
 
-        "tp.export.scene.set.sheet.name": "自动化测试场景集",
+        "tp.export.scene.set.sheet.name": "场景集",
         "tp.export.scene.set.num": "用例编号",
         "tp.export.scene.set.name": "场景集名称",
         "tp.export.scene.set.space.num": "测试空间编号",
@@ -128,7 +128,7 @@
         "tp.export.space.project.num": "project num",
         "tp.export.space.description": "description",
 
-        "tp.export.scene.set.sheet.name": "AutoTest SceneSet",
+        "tp.export.scene.set.sheet.name": "SceneSet",
         "tp.export.scene.set.num": "scene set num",
         "tp.export.scene.set.name": "scene set name",
         "tp.export.scene.set.space.num": "space num",
