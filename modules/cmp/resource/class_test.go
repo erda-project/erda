@@ -32,7 +32,7 @@ func TestResource_GetClusterPie(t *testing.T) {
 		I18N   i18n.Translator
 		Lang   i18n.LanguageCodes
 	}
-	ctx := context.WithValue(context.Background(), "lang_codes", "zh-cn")
+	ctx := context.WithValue(context.Background(), Lang, "zh-cn")
 	res := &pb.GetClusterResourcesResponse{
 		List: []*pb.ClusterResourceDetail{{ClusterName: "terminus"}},
 	}
@@ -95,7 +95,7 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 		resourceType string
 		resp         *apistructs.GetQuotaOnClustersResponse
 	}
-	ctx := context.WithValue(context.Background(), "lang_codes", "zh-cn")
+	ctx := context.WithValue(context.Background(), Lang, "zh-cn")
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
 		Name: "distribution by principal",
@@ -150,7 +150,7 @@ func TestResource_GetProjectPie(t *testing.T) {
 		resourceType string
 		resp         *apistructs.GetQuotaOnClustersResponse
 	}
-	ctx := context.WithValue(context.Background(), "lang_codes", "zh-cn")
+	ctx := context.WithValue(context.Background(), Lang, "zh-cn")
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
 		Name: "distribution by project",
