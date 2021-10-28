@@ -169,7 +169,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames []
 	logrus.Debug("get all namespace finished")
 	logrus.Debug("start involved namespace")
 
-	nresp, err := r.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
+	nresp, err := r.Bdl.FetchNamespacesBelongsTo()
 	logrus.Debug("involved namespace finished")
 	if err != nil {
 		return
