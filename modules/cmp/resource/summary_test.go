@@ -48,6 +48,7 @@ func TestResource_getGauge(t *testing.T) {
 	}
 	request := &apistructs.GaugeRequest{CpuPerNode: 1, MemPerNode: 1}
 	resp := &apistructs.ResourceResp{CpuTotal: 100, MemTotal: 1000}
+	ctx := context.WithValue(context.Background(), "lang_codes", "zh-cn")
 	tests := []struct {
 		name     string
 		fields   fields
@@ -71,7 +72,7 @@ func TestResource_getGauge(t *testing.T) {
 			r := &Resource{
 				I18N: tt.fields.I18N,
 			}
-			r.getGauge(tt.args.request, tt.args.resp)
+			r.getGauge(ctx, tt.args.request, tt.args.resp)
 		})
 	}
 }
