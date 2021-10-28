@@ -1528,7 +1528,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	return response, nil
 }
 
-func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	l := logrus.WithField("func", "GetNamespacesBelongsTo")
 
 	// 1）查找 s_pod_info
@@ -1551,14 +1551,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		if !ok {
 			clusters = make(map[string][]string)
 		}
-		if hasClusterAndNamespace(namespaces, podInfo.Cluster, podInfo.K8sNamespace) &&
-			!hasClusterAndNamespace(clusters, podInfo.Cluster, podInfo.K8sNamespace) {
-			if _, ok := clusters[podInfo.Cluster]; ok {
-				clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
-			} else {
-				clusters[podInfo.Cluster] = []string{podInfo.K8sNamespace}
-			}
-		}
+		clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
 		projectsM[projectID] = clusters
 	}
 
@@ -1576,14 +1569,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 		if !ok {
 			clusters = make(map[string][]string)
 		}
-		if hasClusterAndNamespace(namespaces, projectNamespace.ClusterName, projectNamespace.K8sNamespace) &&
-			!hasClusterAndNamespace(clusters, projectNamespace.ClusterName, projectNamespace.K8sNamespace) {
-			if _, ok := clusters[projectNamespace.ClusterName]; ok {
-				clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
-			} else {
-				clusters[projectNamespace.ClusterName] = []string{projectNamespace.K8sNamespace}
-			}
-		}
+		clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
 		projectsM[projectNamespace.ProjectID] = clusters
 	}
 
@@ -1599,31 +1585,40 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 			}
 		}
 
-		// query owner
+		// query project owner
+		var member = &model.Member{
+			UserID: "0",
+			Name:   "unknown",
+			Nick:   "unknown",
+		}
 		memberListReq := apistructs.MemberListRequest{
 			ScopeType: "project",
 			ScopeID:   project.ID,
-			Roles:     []string{"Owner"},
+			Roles:     []string{"Owner", "Lead"},
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
 			PageSize:  1,
 		}
-		total, members, err := p.db.GetMembersByParam(&memberListReq)
-		if err != nil {
-			err = errors.Wrap(err, "failed to GetMembersByParam")
-			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			continue
+		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
+		case err != nil:
+			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("failed to GetMembersByParam")
+		case len(members) == 0:
+			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
+		default:
+			mb, ok := getMemberFromMembers(members, "Owner")
+			if ok {
+				member = mb
+				break
+			}
+			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
+				member = mb
+			}
 		}
-		if total <= 0 || len(members) == 0 {
-			err = errors.New("not found owner for the project")
-			l.WithError(err).WithField("memberListReq", memberListReq).Errorln()
-			continue
-		}
-		owner := members[0]
-		userID, err := strconv.ParseInt(owner.UserID, 10, 64)
+		userID, err := strconv.ParseUint(member.UserID, 10, 64)
 		if err != nil {
-			err = errors.Wrap(err, "the format of owner userID is not valid")
+			l.Warnln("failed to parse member.UserID")
+			continue
 		}
 
 		// query quota
@@ -1641,8 +1636,8 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 			ProjectDisplayName: project.DisplayName,
 			ProjectDesc:        project.Desc,
 			OwnerUserID:        uint(userID),
-			OwnerUserName:      owner.Name,
-			OwnerUserNickname:  owner.Nick,
+			OwnerUserName:      member.Name,
+			OwnerUserNickname:  member.Nick,
 			CPUQuota:           uint64(quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota),
 			MemQuota:           uint64(quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota),
 			Clusters:           clusterNamespaces,
@@ -1652,19 +1647,6 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, namespaces map[str
 	data.Total = uint32(len(data.List))
 
 	return &data, nil
-}
-
-func hasClusterAndNamespace(namespaces map[string][]string, clusterName, namespace string) bool {
-	ns, ok := namespaces[clusterName]
-	if !ok {
-		return false
-	}
-	for _, name := range ns {
-		if name == namespace {
-			return true
-		}
-	}
-	return false
 }
 
 func getMemberFromMembers(members []model.Member, role string) (*model.Member, bool) {
