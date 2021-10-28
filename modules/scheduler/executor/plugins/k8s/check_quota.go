@@ -146,11 +146,11 @@ func getLogContent(requestsCPU, requestsMem, leftCPU, leftMem int64, kind, servi
 		primevalLog = append(primevalLog, fmt.Sprintf("failed to scale service %s", serviceName))
 	}
 
-	if requestsCPU > 0 {
+	if requestsCPU > leftCPU {
 		humanLog = append(humanLog, fmt.Sprintf("请求 CPU 新增 %s 核，大于当前剩余 CPU %s 核", reqCPUStr, leftCPUStr))
 		primevalLog = append(primevalLog, fmt.Sprintf("Requests CPU added %s core(s), which is greater than the current remaining CPU %s core(s)", reqCPUStr, leftCPUStr))
 	}
-	if requestsMem > 0 {
+	if requestsMem > leftMem {
 		humanLog = append(humanLog, fmt.Sprintf("请求内存新增 %s，大于当前环境剩余内存 %s", reqMemStr, leftMemStr))
 		primevalLog = append(primevalLog, fmt.Sprintf("Requests memory added %s, which is greater than the current remaining %s", reqMemStr, leftMemStr))
 	}
