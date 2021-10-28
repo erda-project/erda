@@ -264,10 +264,6 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
-        - name: "envName"
-          value: "{{ executeHistoryTable.envName }}"
-        - name: "envData"
-          value: "{{ executeHistoryTable.envData }}"
     - name: executeTaskTable
       state:
         - name: "pipelineDetail"
@@ -438,10 +434,6 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
-        - name: "envName"
-          value: "{{ executeHistoryTable.envName }}"
-        - name: "envData"
-          value: "{{ executeHistoryTable.envData }}"
     - name: executeTaskTable
       state:
         - name: "pipelineDetail"

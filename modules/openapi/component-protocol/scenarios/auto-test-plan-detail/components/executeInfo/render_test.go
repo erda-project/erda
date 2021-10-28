@@ -15,18 +15,12 @@
 package executeInfo
 
 import (
-	"context"
 	"encoding/json"
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/services/autotest"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func Test_convertReportToConfig(t *testing.T) {
@@ -70,41 +64,4 @@ func TestGetApiConfigName(t *testing.T) {
 	assert.NoError(t, err)
 	executeEnv = getApiConfigName(m1)
 	assert.Equal(t, "", executeEnv)
-}
-
-func TestRender(t *testing.T) {
-	bdl := bundle.New()
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipeline",
-		func(bdl *bundle.Bundle, pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
-			return &apistructs.PipelineDetailDTO{
-				PipelineDTO: apistructs.PipelineDTO{
-					Status: apistructs.PipelineStatusSuccess,
-				},
-			}, nil
-		})
-	defer m1.Unpatch()
-
-	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineReportSet",
-		func(bdl *bundle.Bundle, pipelineID uint64, types []string) (*apistructs.PipelineReportSet, error) {
-			return &apistructs.PipelineReportSet{
-				PipelineID: 1,
-				Reports: []apistructs.PipelineReport{
-					{
-						ID:         1,
-						PipelineID: 1,
-						Type:       apistructs.PipelineReportTypeAutotestPlan,
-						Meta: map[string]interface{}{
-							"data":                        apistructs.AutoTestAPIConfig{},
-							autotest.CmsCfgKeyDisplayName: "execute-env",
-						},
-					},
-				},
-			}, nil
-		})
-	defer m2.Unpatch()
-
-	ctxBdl := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), protocol.ContextBundle{Bdl: bdl})
-	comp := ComponentFileInfo{}
-	err := comp.Render(ctxBdl, &apistructs.Component{State: map[string]interface{}{"pipelineId": 1}}, apistructs.ComponentProtocolScenario{}, apistructs.ComponentEvent{}, &apistructs.GlobalStateData{})
-	assert.Equal(t, true, err != nil)
 }
