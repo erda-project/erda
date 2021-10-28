@@ -140,6 +140,10 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
+	// 只有 DevOps 类型的项目，才能配置 quota
+	if createReq.Template != apistructs.DevopsTemplate {
+		createReq.ResourceConfigs = nil
+	}
 	var clusterConfig []byte
 	if createReq.ResourceConfigs != nil {
 		if err := createReq.ResourceConfigs.Check(); err != nil {
@@ -349,34 +353,38 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 		return nil, errors.Errorf("failed to update project")
 	}
 
+	var oldQuota = new(model.ProjectQuota)
+	err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error
+	hasOldQuota := err == nil
+
 	if updateReq.ResourceConfigs == nil {
+		if hasOldQuota {
+			return nil, errors.Errorf("cant not update project quota to empty")
+		}
 		tx.Commit()
 		return &project, nil
 	}
 
 	// create or update quota
-	var (
-		oldQuota = new(model.ProjectQuota)
-		quota    = model.ProjectQuota{
-			ProjectID:          uint64(projectID),
-			ProjectName:        updateReq.Name,
-			ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
-			StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
-			TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
-			DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
-			ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-			ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
-			StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-			StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
-			TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
-			TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
-			DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
-			DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
-			CreatorID:          userID,
-			UpdaterID:          userID,
-		}
-	)
-	if err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error; err == nil {
+	var quota = model.ProjectQuota{
+		ProjectID:          uint64(projectID),
+		ProjectName:        updateReq.Name,
+		ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
+		StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
+		TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
+		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
+		ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
+		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
+		TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
+		TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
+		DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
+		DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
+		CreatorID:          userID,
+		UpdaterID:          userID,
+	}
+	if hasOldQuota {
 		quota.ID = oldQuota.ID
 		quota.CreatorID = oldQuota.CreatorID
 		err = tx.Debug().Save(&quota).Error
@@ -614,134 +622,101 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	var projectQuota model.ProjectQuota
-	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
-		logrus.WithError(err).WithField("project_id", projectID).
-			Warnln("failed to select the quota record of the project")
-		return &projectDTO, nil
-	}
-	projectDTO.ClusterConfig = make(map[string]string)
-	projectDTO.ResourceConfig = apistructs.NewResourceConfig()
-	projectDTO.ClusterConfig["PROD"] = projectQuota.ProdClusterName
-	projectDTO.ClusterConfig["STAGING"] = projectQuota.StagingClusterName
-	projectDTO.ClusterConfig["TEST"] = projectQuota.TestClusterName
-	projectDTO.ClusterConfig["DEV"] = projectQuota.DevClusterName
-	projectDTO.ResourceConfig.PROD.ClusterName = projectQuota.ProdClusterName
-	projectDTO.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
-	projectDTO.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
-	projectDTO.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
-	projectDTO.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota, 3)
-	projectDTO.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota, 3)
-	projectDTO.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota, 3)
-	projectDTO.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota, 3)
-	projectDTO.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota, 3)
-	projectDTO.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota, 3)
-	projectDTO.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota, 3)
-	projectDTO.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota, 3)
-	projectDTO.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota+projectQuota.StagingCPUQuota+projectQuota.TestCPUQuota+projectQuota.DevCPUQuota, 3)
-	projectDTO.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota+projectQuota.StagingMemQuota+projectQuota.TestMemQuota+projectQuota.DevMemQuota, 3)
-
-	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": projectID}).Error; err != nil {
-		logrus.WithError(err).WithField("project_id", projectID).
-			Warnln("failed to Find the namespaces info in the project")
-		return &projectDTO, nil
-	}
-
-	var (
-		// {"cluster_name": {"namespace": "workspace"}}
-		namespaces        = make(map[string]map[string]string)
-		addonNamespaces   = make(map[string]bool) // key: k8s_namespace
-		serviceNamespaces = make(map[string]bool) // key: k8s_namespace
-	)
-	for _, podInfo := range podInfos {
-		if _, ok := namespaces[podInfo.Cluster]; ok {
-			namespaces[podInfo.Cluster][podInfo.K8sNamespace] = podInfo.Workspace
-		} else {
-			namespaces[podInfo.Cluster] = map[string]string{podInfo.K8sNamespace: podInfo.Workspace}
-		}
-
-		switch podInfo.ServiceType {
-		case "addon":
-			addonNamespaces[podInfo.K8sNamespace] = true
-		case "stateless-service":
-			serviceNamespaces[podInfo.K8sNamespace] = true
-		}
-	}
-	var resourceRequest dashboardPb.GetNamespacesResourcesRequest
-	for clusterName, v := range namespaces {
-		if len(v) == 0 {
-			continue
-		}
-		for namespace := range v {
-			resourceRequest.Namespaces = append(resourceRequest.Namespaces, &dashboardPb.ClusterNamespacePair{
-				ClusterName: clusterName,
-				Namespace:   namespace,
-			})
-		}
-	}
-
-	resources, err := p.clusterResourceClient.GetNamespacesResources(ctx, &resourceRequest)
-	if err != nil {
-		logrus.WithError(err).Errorln("failed to GetNamespacesResources from CMP")
-		return nil, errors.Wrap(err, "failed to GetNamespacesResources from CMP")
-	}
-
-	for _, clusterItem := range resources.List {
-		if !clusterItem.GetSuccess() {
-			logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
-				Warnln("the cluster is not valid now")
-			continue
-		}
-
-		for workspace, source := range map[string]*apistructs.ResourceConfigInfo{
-			"prod":    projectDTO.ResourceConfig.PROD,
-			"staging": projectDTO.ResourceConfig.STAGING,
-			"test":    projectDTO.ResourceConfig.TEST,
-			"dev":     projectDTO.ResourceConfig.DEV,
-		} {
-			if clusterItem.GetClusterName() != source.ClusterName {
-				continue
-			}
-			if _, ok := namespaces[clusterItem.GetClusterName()]; !ok {
-				continue
-			}
-			for _, namespaceItem := range clusterItem.List {
-				// 如果 namespace 不是要求的 workspace 下的，忽略
-				if w := namespaces[clusterItem.GetClusterName()][namespaceItem.GetNamespace()]; w != workspace {
-					continue
-				}
-
-				cpuRequest := calcu.MillcoreToCore(namespaceItem.GetCpuRequest(), 3)
-				memRequest := calcu.ByteToGibibyte(namespaceItem.GetMemRequest(), 3)
-				source.CPURequest += cpuRequest
-				source.MemRequest += memRequest
-				if _, ok := addonNamespaces[namespaceItem.GetNamespace()]; ok {
-					source.CPURequestByAddon += cpuRequest
-					source.MemRequestByAddon += memRequest
-				}
-				if _, ok := serviceNamespaces[namespaceItem.GetNamespace()]; ok {
-					source.CPURequestByService += cpuRequest
-					source.MemRequestByService += memRequest
-				}
-			}
-		}
-	}
-
-	p.fetchAvailable(ctx, &projectDTO, projectQuota.ClustersNames())
-
-	// 根据已有统计值计算其他统计值
-	p.patchProjectDto(&projectDTO, langCodes)
+	// 查询项目 quota
+	p.fetchQuota(&projectDTO)
+	// 查询项目下的 pod 的 request 数据
+	p.fetchPodInfo(&projectDTO)
+	// 根据已有统计值计算比率
+	p.calcuRequestRate(&projectDTO)
+	// 查询对应的集群实际可用资源
+	p.fetchAvailable(ctx, &projectDTO)
+	// 对比 quota 和实际可用资源，打 tips
+	p.makeProjectDtoTips(&projectDTO, langCodes)
 
 	return &projectDTO, nil
+}
+
+func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
+	var projectQuota model.ProjectQuota
+	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
+		logrus.WithError(err).WithField("project_id", dto.ID).
+			Warnln("failed to select the quota record of the project")
+		return
+	}
+	dto.ClusterConfig = make(map[string]string)
+	dto.ResourceConfig = apistructs.NewResourceConfig()
+	dto.ClusterConfig["PROD"] = projectQuota.ProdClusterName
+	dto.ClusterConfig["STAGING"] = projectQuota.StagingClusterName
+	dto.ClusterConfig["TEST"] = projectQuota.TestClusterName
+	dto.ClusterConfig["DEV"] = projectQuota.DevClusterName
+	dto.ResourceConfig.PROD.ClusterName = projectQuota.ProdClusterName
+	dto.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
+	dto.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
+	dto.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
+	dto.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota, 3)
+	dto.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota, 3)
+	dto.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota, 3)
+	dto.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota, 3)
+	dto.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota, 3)
+	dto.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota, 3)
+	dto.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota, 3)
+	dto.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota, 3)
+	dto.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota+projectQuota.StagingCPUQuota+projectQuota.TestCPUQuota+projectQuota.DevCPUQuota, 3)
+	dto.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota+projectQuota.StagingMemQuota+projectQuota.TestMemQuota+projectQuota.DevMemQuota, 3)
+}
+
+func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
+	var podInfos []apistructs.PodInfo
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
+		logrus.WithError(err).WithField("project_id", dto.ID).
+			Warnln("failed to Find the namespaces info in the project")
+		return
+	}
+
+	for _, podInfo := range podInfos {
+		for workspace, resourceConfig := range map[string]*apistructs.ResourceConfigInfo{
+			"prod":    dto.ResourceConfig.PROD,
+			"staging": dto.ResourceConfig.STAGING,
+			"test":    dto.ResourceConfig.TEST,
+			"dev":     dto.ResourceConfig.DEV,
+		} {
+			if !strings.EqualFold(podInfo.Workspace, workspace) {
+				continue
+			}
+			if podInfo.Cluster != resourceConfig.ClusterName {
+				continue
+			}
+			resourceConfig.CPURequest += podInfo.CPURequest
+			resourceConfig.MemRequest += podInfo.MemRequest / 1024
+			switch podInfo.ServiceType {
+			case "addon":
+				resourceConfig.CPURequestByAddon += podInfo.CPURequest
+				resourceConfig.MemRequestByAddon += podInfo.MemRequest / 1024
+			case "stateless-service":
+				resourceConfig.CPURequestByService += podInfo.CPURequest
+				resourceConfig.MemRequestByService += podInfo.MemRequest / 1024
+			}
+		}
+	}
 }
 
 // 查出各环境的实际可用资源
 // 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
 // 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
-func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO, clusterNames []string) {
-	clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx,
-		&dashboardPb.GetClustersResourcesRequest{ClusterNames: strutil.DedupSlice(clusterNames)})
+func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO) {
+	if dto.ResourceConfig == nil {
+		return
+	}
+	clusterNames := strutil.DedupSlice([]string{
+		dto.ResourceConfig.PROD.ClusterName,
+		dto.ResourceConfig.STAGING.ClusterName,
+		dto.ResourceConfig.TEST.ClusterName,
+		dto.ResourceConfig.DEV.ClusterName,
+	})
+	req := &dashboardPb.GetClustersResourcesRequest{ClusterNames: clusterNames}
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
+	clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx, req)
 	if err != nil {
 		logrus.WithError(err).WithField("func", "fetchAvailable").
 			Errorf("failed to GetClustersResources, clusterNames: %v", clusterNames)
@@ -775,8 +750,8 @@ func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO
 	}
 }
 
-// 根据已有统计值计算其他统计值
-func (p *Project) patchProjectDto(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
+// 根据已有统计值计算比率
+func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 	for _, source := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,
 		dto.ResourceConfig.STAGING,
@@ -793,6 +768,16 @@ func (p *Project) patchProjectDto(dto *apistructs.ProjectDTO, langCodes i18n.Lan
 			source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
 			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
 		}
+	}
+}
+
+func (p *Project) makeProjectDtoTips(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
+	for _, source := range []*apistructs.ResourceConfigInfo{
+		dto.ResourceConfig.PROD,
+		dto.ResourceConfig.STAGING,
+		dto.ResourceConfig.TEST,
+		dto.ResourceConfig.DEV,
+	} {
 		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
 			source.Tips = p.trans.Text(langCodes, "AvailableIsLessThanQuota")
 		}
