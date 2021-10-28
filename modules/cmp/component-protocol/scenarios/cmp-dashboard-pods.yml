@@ -80,6 +80,7 @@ rendering:
     - name: podTitle
     - name: podDistribution
     - name: addPodButton
+  podsTable: []
   tableTabs:
     - name: podsTable
       state:
