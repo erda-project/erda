@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -141,6 +142,45 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 		return false, nil
 	}
 	return true, nil
+}
+
+func getLogContent(requestsCPU, requestsMem, leftCPU, leftMem int64, kind, serviceName string) (string, string) {
+	leftCPU = max(leftCPU, 0)
+	leftMem = max(leftMem, 0)
+	reqCPUStr := resourceToString(float64(requestsCPU), "cpu")
+	leftCPUStr := resourceToString(float64(leftCPU), "cpu")
+	reqMemStr := resourceToString(float64(requestsMem), "memory")
+	leftMemStr := resourceToString(float64(leftMem), "memory")
+
+	logrus.Infof("Checking workspace quota, requests cpu:%s cores, left %s cores; requests memory: %s, left %s",
+		reqCPUStr, leftCPUStr, reqMemStr, leftMemStr)
+
+	humanLog := []string{"当前环境资源配额不足"}
+	primevalLog := []string{"Resource quota is not enough in current workspace"}
+	switch kind {
+	case "stateless":
+		humanLog = append(humanLog, fmt.Sprintf("服务 %s 部署失败", serviceName))
+		primevalLog = append(primevalLog, fmt.Sprintf("failed to deploy service %s", serviceName))
+	case "stateful":
+		humanLog = append(humanLog, fmt.Sprintf("addon %s 部署失败", serviceName))
+		primevalLog = append(primevalLog, fmt.Sprintf("failed to deploy addon %s.", serviceName))
+	case "update":
+		humanLog = append(humanLog, fmt.Sprintf("服务 %s 更新失败", serviceName))
+		primevalLog = append(primevalLog, fmt.Sprintf("failed to update service %s", serviceName))
+	case "scale":
+		humanLog = append(humanLog, fmt.Sprintf("服务 %s 扩容失败", serviceName))
+		primevalLog = append(primevalLog, fmt.Sprintf("failed to scale service %s", serviceName))
+	}
+
+	if requestsCPU > leftCPU {
+		humanLog = append(humanLog, fmt.Sprintf("请求 CPU 新增 %s 核，大于当前剩余 CPU %s 核", reqCPUStr, leftCPUStr))
+		primevalLog = append(primevalLog, fmt.Sprintf("Requests CPU added %s core(s), which is greater than the current remaining CPU %s core(s)", reqCPUStr, leftCPUStr))
+	}
+	if requestsMem > leftMem {
+		humanLog = append(humanLog, fmt.Sprintf("请求内存新增 %s，大于当前环境剩余内存 %s", reqMemStr, leftMemStr))
+		primevalLog = append(primevalLog, fmt.Sprintf("Requests memory added %s, which is greater than the current remaining %s", reqMemStr, leftMemStr))
+	}
+	return strings.Join(humanLog, "，"), strings.Join(primevalLog, ". ")
 }
 
 func getRequestsResources(containers []corev1.Container) (cpu, mem int64) {
