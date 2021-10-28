@@ -489,6 +489,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
