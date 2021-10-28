@@ -52,7 +52,8 @@ func TestLimitLabelsLength(t *testing.T) {
 		t.Error(err)
 	}
 	for _, v := range req3.Labels {
-		if len([]rune(v)) > 100 {
+		// end with ...
+		if len([]rune(v)) > 100+3 {
 			t.Error("fail")
 		}
 	}

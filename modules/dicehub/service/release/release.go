@@ -153,7 +153,7 @@ func limitLabelsLength(req *apistructs.ReleaseCreateRequest) error {
 	for k, v := range req.Labels {
 		runes := []rune(v)
 		if len(runes) > 100 {
-			req.Labels[k] = string(runes[:100])
+			req.Labels[k] = string(runes[:100]) + "..."
 		}
 	}
 	return nil
