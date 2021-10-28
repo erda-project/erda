@@ -60,7 +60,7 @@ func getSearchSource(start, end int64, includeEnd bool, sel *storage.Selector, c
 	return searchSource.Query(query)
 }
 
-const useScrollQuery = true
+const useScrollQuery = false
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
