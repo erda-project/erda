@@ -1531,6 +1531,9 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	l := logrus.WithField("func", "GetNamespacesBelongsTo")
 
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	unknownName := p.trans.Text(langCodes, "OwnerUnknown")
+
 	// 1）查找 s_pod_info
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
@@ -1588,8 +1591,8 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 		// query project owner
 		var member = &model.Member{
 			UserID: "0",
-			Name:   "unknown",
-			Nick:   "unknown",
+			Name:   unknownName,
+			Nick:   unknownName,
 		}
 		memberListReq := apistructs.MemberListRequest{
 			ScopeType: "project",
