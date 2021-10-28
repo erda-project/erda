@@ -107,10 +107,14 @@ func (w *channelWriter) run(bw BatchWriter, capacity int, timeout time.Duration,
 }
 
 // StdoutWriter .
-type StdoutWriter struct{}
+type StdoutWriter struct {
+	Filter func(val Data) bool
+}
 
 // DefaultStdoutWriter .
-var DefaultStdoutWriter = StdoutWriter{}
+var DefaultStdoutWriter = StdoutWriter{
+	Filter: func(val Data) bool { return true },
+}
 
 func (w StdoutWriter) Write(val Data) error {
 	w.WriteN(val)
@@ -119,6 +123,9 @@ func (w StdoutWriter) Write(val Data) error {
 
 func (w StdoutWriter) WriteN(vals ...Data) (int, error) {
 	for _, val := range vals {
+		if w.Filter != nil && !w.Filter(val) {
+			continue
+		}
 		sb := &strings.Builder{}
 		enc := json.NewEncoder(sb)
 		enc.SetIndent("", "\t")

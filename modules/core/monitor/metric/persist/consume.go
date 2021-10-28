@@ -26,7 +26,7 @@ import (
 // Skip .
 var Skip = errors.New("skip")
 
-func (p *provider) decodeLog(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {
+func (p *provider) decodeData(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {
 	data := &metric.Metric{}
 	if err := json.Unmarshal(value, data); err != nil {
 		p.stats.DecodeError(value, err)

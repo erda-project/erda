@@ -142,7 +142,10 @@ const (
 	MetricTagTTLFixed = "fixed"
 )
 
-const esMaxValue = float64(math.MaxInt64)
+const (
+	esMaxValue = float64(math.MaxInt64)
+	esMinValue = float64(math.MinInt64)
+)
 
 func processInvalidFields(m *metric.Metric) {
 	fields := m.Fields
@@ -152,7 +155,7 @@ func processInvalidFields(m *metric.Metric) {
 	for k, v := range fields {
 		switch val := v.(type) {
 		case float64:
-			if val > esMaxValue {
+			if val < esMinValue || esMaxValue < val {
 				fields[k] = strconv.FormatFloat(val, 'f', -1, 64)
 			}
 		}

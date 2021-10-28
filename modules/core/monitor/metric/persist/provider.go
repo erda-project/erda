@@ -70,7 +70,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// add consumer task
 	for i := 0; i < p.Cfg.Parallelism; i++ {
 		ctx.AddTask(func(ctx context.Context) error {
-			r, err := p.Kafka.NewBatchReader(&p.Cfg.Input, kafka.WithReaderDecoder(p.decodeLog))
+			r, err := p.Kafka.NewBatchReader(&p.Cfg.Input, kafka.WithReaderDecoder(p.decodeData))
 			if err != nil {
 				return err
 			}

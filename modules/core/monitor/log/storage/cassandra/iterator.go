@@ -99,7 +99,8 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 	if _, ok := values["id"]; !ok {
 		return nil, fmt.Errorf("id is required")
 	}
-	if _, ok := values["source"]; !ok {
+	source, ok := values["source"]
+	if !ok {
 		return nil, fmt.Errorf("source is required")
 	}
 	_, hasStream := values["stream"]
@@ -113,11 +114,13 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 		if err != nil {
 			return nil, err
 		}
-		if meta == nil {
-			return storekit.EmptyIterator{}, nil
-		}
-		if meta.Tags["dice_application_id"] != applicationID {
-			return storekit.EmptyIterator{}, nil
+		if source == "container" {
+			if meta == nil {
+				return storekit.EmptyIterator{}, nil
+			}
+			if meta.Tags["dice_application_id"] != applicationID {
+				return storekit.EmptyIterator{}, nil
+			}
 		}
 		table = p.getTableName(meta)
 	} else if len(clusterName) > 0 {
