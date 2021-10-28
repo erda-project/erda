@@ -69,22 +69,6 @@ import (
 // 	}
 // }
 //
-// func TestDBClient_GetInstanceByTaskId(t *testing.T) {
-// 	client := initDb(t)
-//
-// 	instance := RuntimeInstance{
-// 		InstanceId: "111",
-// 		Status:     "test",
-// 		Stage:      "test",
-// 	}
-// 	client.CreateInstance(&instance)
-//
-// 	found, err := client.GetInstanceByTaskId("111")
-// 	if assert.NoError(t, err) && assert.NotNil(t, found) {
-// 		assert.Equal(t, "test", found.Stage)
-// 	}
-// }
-//
 // func TestDBClient_FindRuntimesByAppId(t *testing.T) {
 // 	client := initDb(t)
 //
