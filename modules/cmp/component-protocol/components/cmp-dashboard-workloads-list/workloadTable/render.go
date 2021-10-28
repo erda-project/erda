@@ -84,38 +84,38 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	urlQuery, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	query, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	qeryData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &qeryData); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(qeryData["pageNo"].(float64))
-	w.State.PageSize = uint64(qeryData["pageSize"].(float64))
-	sorter := qeryData["sorterData"].(map[string]interface{})
-	w.State.Sorter.Field, _ = sorter["field"].(string)
-	w.State.Sorter.Order, _ = sorter["order"].(string)
+	w.State.PageNo = uint64(urlQuery["pageNo"].(float64))
+	w.State.PageSize = uint64(urlQuery["pageSize"].(float64))
+	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	w.State.Sorter.Field, _ = sorterData["field"].(string)
+	w.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = w.State.PageNo
-	urlQuery["pageSize"] = w.State.PageSize
-	urlQuery["sorterData"] = w.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = w.State.PageNo
+	query["pageSize"] = w.State.PageSize
+	query["sorterData"] = w.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	w.State.WorkloadTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	w.State.WorkloadTableURLQuery = encoded
 	return nil
 }
 
@@ -126,16 +126,16 @@ func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
 	w.server = steveServer
 }
 
-func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	w.State = state

@@ -74,7 +74,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithAllAvailableClients(),
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithTimeout(time.Second*30, time.Second*90),
 				httpclient.WithEnableAutoRetry(false),
 			)),
 	))
