@@ -321,63 +321,6 @@ func Test_traceService_GetTraceDebugByRequestID(t *testing.T) {
 	}
 }
 
-func Test_traceService_CreateTraceDebug(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.CreateTraceDebugRequest
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.CreateTraceDebugResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.msp.apm.trace.TraceService",
-		//			`
-		//erda.msp.apm.trace:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.CreateTraceDebugRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.CreateTraceDebugResponse{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.TraceServiceServer)
-			got, err := srv.CreateTraceDebug(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.CreateTraceDebug() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
-
 func Test_traceService_StopTraceDebug(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -1211,6 +1154,34 @@ func Test_traceService_handleSpanEventResponse(t *testing.T) {
 			events := s.handleSpanEventResponse(tt.args.req)
 			assert.Equal(t, len(events), len(tt.wantResp))
 			assert.Equal(t, events[0].Timestamp, tt.wantResp[0].Timestamp)
+		})
+	}
+}
+
+func Test_traceService_CreateTraceDebug(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		req *pb.CreateTraceDebugRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.CreateTraceDebugRequest{}}, true},
+		{"case2", args{req: &pb.CreateTraceDebugRequest{Url: "http://localhost:8080"}}, true},
+		{"case3", args{req: &pb.CreateTraceDebugRequest{Url: "http://localhost:8080", ScopeID: "xx"}}, true},
+		{"case4", args{req: &pb.CreateTraceDebugRequest{Url: "xxxxx", ScopeID: "xx", Method: "GET"}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{}
+			_, err := s.CreateTraceDebug(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 		})
 	}
 }
