@@ -194,7 +194,7 @@ type Request interface {
 const (
 	defaultQueryCount = 50
 	maxQueryCount     = 700
-	maxTimeRange      = 7 * 24 * int64(time.Hour)
+	maxTimeRange      = 30 * 24 * int64(time.Hour)
 )
 
 func getLimit(count int64) int {
