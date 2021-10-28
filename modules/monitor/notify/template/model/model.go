@@ -216,7 +216,7 @@ func CheckElements(formats []map[string]string, title, template []string) error 
 	lFormats, lTitle, lTemplate := len(formats), len(title), len(template)
 	if lFormats == 0 || lTitle == 0 || lTemplate == 0 {
 		return fmt.Errorf("the len of Formats is zero or the len " +
-			"of Title is zero or the len of Topics is zero")
+			"of Title is zero or the len of Templates is zero")
 	}
 	if lFormats != lTitle || lFormats != lTemplate || lTitle != lTemplate {
 		return fmt.Errorf("the Formats and Title and Template num is not equal")
