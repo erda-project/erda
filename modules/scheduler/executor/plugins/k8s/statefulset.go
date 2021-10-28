@@ -167,12 +167,16 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	}
 
 	reqCPU, reqMem := getRequestsResources(set.Spec.Template.Spec.Containers)
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem, "stateful")
+	if set.Spec.Replicas != nil {
+		reqCPU *= int64(*set.Spec.Replicas)
+		reqMem *= int64(*set.Spec.Replicas)
+	}
+	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem, "stateful", service.Name)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return errors.New("workspace quota is not enough")
+		return errors.New(reason)
 	}
 	return k.sts.Create(set)
 }
