@@ -54,6 +54,7 @@ var (
 		"init",
 		"parse",
 		"version",
+		"retag",
 		"migrate",
 		"lint",
 		"mkpy",
@@ -118,8 +119,9 @@ func setHost() error {
 			if os.IsNotExist(err) {
 				fmt.Print("Enter your dice host: ")
 				fmt.Scanln(&host)
+			} else if err != nil {
+				return err
 			}
-			return err
 		} else {
 			// fetch host from git remote url
 			cmd := exec.Command("git", "remote", "get-url", "origin")
