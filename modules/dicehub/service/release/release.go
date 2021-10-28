@@ -83,6 +83,10 @@ func WithBundle(bdl *bundle.Bundle) Option {
 
 // Create 创建 Release
 func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
+	if err := limitLabelsLength(req); err != nil {
+		return "", err
+	}
+
 	// 确保Version在应用层面唯一，若存在，则更新
 	if req.Version != "" && req.ApplicationID > 0 {
 		releases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
@@ -132,6 +136,27 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 	event.SendReleaseEvent(event.ReleaseEventCreate, release)
 
 	return release.ReleaseID, nil
+}
+
+func limitLabelsLength(req *apistructs.ReleaseCreateRequest) error {
+	if len(req.Labels) == 0 {
+		return nil
+	}
+	labelBytes, err := json.Marshal(req.Labels)
+	if err != nil {
+		return err
+	}
+	if len([]rune(string(labelBytes))) <= 1000 {
+		return nil
+	}
+
+	for k, v := range req.Labels {
+		runes := []rune(v)
+		if len(runes) > 100 {
+			req.Labels[k] = string(runes[:100])
+		}
+	}
+	return nil
 }
 
 // Update 更新 Release
