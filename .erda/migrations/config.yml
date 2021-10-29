@@ -65,7 +65,7 @@ allowed_dml:
     union_stmt: true
     load_data_stmt: false
     insert_stmt: true
-    delete_stmt: false
+    delete_stmt: true
     update_stmt: true
     show_stmt: true
     split_region_stmt: false
