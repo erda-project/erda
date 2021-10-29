@@ -166,6 +166,7 @@ event-storage-elasticsearch:
   _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   query_timeout: "1m"
   read_page_size: 50
+erda.core.monitor.event.query:
 
 # metric
 elasticsearch.index.loader@metric:
