@@ -408,27 +408,35 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 		}
 		var orgName = strconv.FormatInt(orgID, 10)
 		if org, err := p.db.GetOrg(orgID); err == nil {
-			orgName = fmt.Sprintf("%s(%s)", org.Name, org.DisplayName)
+			orgName = fmt.Sprintf("%s", org.Name)
 		}
 		auditCtx := map[string]interface{}{
-			"orgName":       orgName,
-			"projectName":   project.Name,
-			"newDevCPU":     calcu.ResourceToString(float64(quota.DevCPUQuota), "cpu"),
-			"newDevMem":     calcu.ResourceToString(float64(quota.DevMemQuota), "memory"),
-			"newTestCPU":    calcu.ResourceToString(float64(quota.TestCPUQuota), "cpu"),
-			"newTestMem":    calcu.ResourceToString(float64(quota.TestMemQuota), "memory"),
-			"newStagingCPU": calcu.ResourceToString(float64(quota.StagingCPUQuota), "cpu"),
-			"newStagingMem": calcu.ResourceToString(float64(quota.StagingMemQuota), "memory"),
-			"newProdCPU":    calcu.ResourceToString(float64(quota.ProdCPUQuota), "cpu"),
-			"newProdMem":    calcu.ResourceToString(float64(quota.ProdMemQuota), "memory"),
-			"oldDevCPU":     calcu.ResourceToString(float64(oldQuota.DevCPUQuota), "cpu"),
-			"oldDevMem":     calcu.ResourceToString(float64(oldQuota.DevMemQuota), "memory"),
-			"oldTestCPU":    calcu.ResourceToString(float64(oldQuota.TestCPUQuota), "cpu"),
-			"oldTestMem":    calcu.ResourceToString(float64(oldQuota.TestMemQuota), "memory"),
-			"oldStagingCPU": calcu.ResourceToString(float64(oldQuota.StagingCPUQuota), "cpu"),
-			"oldStagingMem": calcu.ResourceToString(float64(oldQuota.StagingMemQuota), "memory"),
-			"oldProdCPU":    calcu.ResourceToString(float64(oldQuota.ProdCPUQuota), "cpu"),
-			"oldProdMem":    calcu.ResourceToString(float64(oldQuota.ProdMemQuota), "memory"),
+			"orgName":           orgName,
+			"projectName":       project.Name,
+			"newDevCluster":     quota.DevClusterName,
+			"newDevCPU":         fmt.Sprintf("%.3f", updateReq.ResourceConfigs.DEV.CPUQuota),
+			"newDevMem":         fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.DEV.MemQuota),
+			"newTestCluster":    quota.TestClusterName,
+			"newTestCPU":        fmt.Sprintf("%.3f", updateReq.ResourceConfigs.TEST.CPUQuota),
+			"newTestMem":        fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.TEST.MemQuota),
+			"newStagingCluster": quota.StagingClusterName,
+			"newStagingCPU":     fmt.Sprintf("%.3f", updateReq.ResourceConfigs.STAGING.CPUQuota),
+			"newStagingMem":     fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.STAGING.MemQuota),
+			"newProdCluster":    quota.ProdClusterName,
+			"newProdCPU":        fmt.Sprintf("%.3f", updateReq.ResourceConfigs.PROD.CPUQuota),
+			"newProdMem":        fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.PROD.MemQuota),
+			"oldDevCluster":     oldQuota.DevClusterName,
+			"oldDevCPU":         calcu.ResourceToString(float64(oldQuota.DevCPUQuota), "cpu"),
+			"oldDevMem":         calcu.ResourceToString(float64(oldQuota.DevMemQuota), "memory"),
+			"oldTestCluster":    oldQuota.TestClusterName,
+			"oldTestCPU":        calcu.ResourceToString(float64(oldQuota.TestCPUQuota), "cpu"),
+			"oldTestMem":        calcu.ResourceToString(float64(oldQuota.TestMemQuota), "memory"),
+			"oldStagingCluster": oldQuota.StagingClusterName,
+			"oldStagingCPU":     calcu.ResourceToString(float64(oldQuota.StagingCPUQuota), "cpu"),
+			"oldStagingMem":     calcu.ResourceToString(float64(oldQuota.StagingMemQuota), "memory"),
+			"oldProdCluster":    oldQuota.ProdClusterName,
+			"oldProdCPU":        calcu.ResourceToString(float64(oldQuota.ProdCPUQuota), "cpu"),
+			"oldProdMem":        calcu.ResourceToString(float64(oldQuota.ProdMemQuota), "memory"),
 		}
 		now := time.Now().Format("2006-01-02 15:04:05")
 		audit := apistructs.Audit{
@@ -438,7 +446,7 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 			OrgID:        uint64(orgID),
 			ProjectID:    uint64(projectID),
 			Context:      auditCtx,
-			TemplateName: "updateProjectQuota",
+			TemplateName: "updateProjectResourceConfig",
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
@@ -461,7 +469,9 @@ func isQuotaChanged(oldQuota, newQuota model.ProjectQuota) bool {
 	if oldQuota.DevCPUQuota != newQuota.DevCPUQuota || oldQuota.DevMemQuota != newQuota.DevMemQuota ||
 		oldQuota.TestCPUQuota != newQuota.TestCPUQuota || oldQuota.TestMemQuota != newQuota.TestMemQuota ||
 		oldQuota.StagingCPUQuota != newQuota.StagingCPUQuota || oldQuota.StagingMemQuota != newQuota.StagingMemQuota ||
-		oldQuota.ProdCPUQuota != newQuota.ProdCPUQuota || oldQuota.ProdMemQuota != newQuota.ProdMemQuota {
+		oldQuota.ProdCPUQuota != newQuota.ProdCPUQuota || oldQuota.ProdMemQuota != newQuota.ProdMemQuota ||
+		oldQuota.DevClusterName != newQuota.DevClusterName || oldQuota.TestClusterName != newQuota.TestClusterName ||
+		oldQuota.StagingClusterName != newQuota.StagingClusterName || oldQuota.ProdClusterName != newQuota.ProdClusterName {
 		return true
 	}
 	return false
