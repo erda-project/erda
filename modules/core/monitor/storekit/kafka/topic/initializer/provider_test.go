@@ -23,8 +23,9 @@ import (
 
 func Test_getTopicList(t *testing.T) {
 	type args struct {
-		topics   []topic
-		metadata *kafka.Metadata
+		topics                           []string
+		metadata                         *kafka.Metadata
+		numPartitions, replicationFactor int
 	}
 	tests := []struct {
 		name string
@@ -34,10 +35,10 @@ func Test_getTopicList(t *testing.T) {
 		{
 			name: "normal",
 			args: args{
-				topics: []topic{
-					{Name: "abc"},
-					{Name: "edf"},
-					{Name: "xyz"},
+				topics: []string{
+					"abc",
+					"edf",
+					"xyz",
 				},
 				metadata: &kafka.Metadata{
 					Brokers: nil,
@@ -53,16 +54,18 @@ func Test_getTopicList(t *testing.T) {
 					},
 					OriginatingBroker: kafka.BrokerMetadata{},
 				},
+				numPartitions:     9,
+				replicationFactor: 1,
 			},
 			want: []kafka.TopicSpecification{
 				{
 					Topic:             "edf",
-					NumPartitions:     3,
+					NumPartitions:     9,
 					ReplicationFactor: 1,
 				},
 				{
 					Topic:             "xyz",
-					NumPartitions:     3,
+					NumPartitions:     9,
 					ReplicationFactor: 1,
 				},
 			},
@@ -70,7 +73,7 @@ func Test_getTopicList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getTopicList(tt.args.topics, tt.args.metadata); !reflect.DeepEqual(got, tt.want) {
+			if got := getTopicList(tt.args.topics, tt.args.metadata, tt.args.numPartitions, tt.args.replicationFactor); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getTopicList() = %v, want %v", got, tt.want)
 			}
 		})

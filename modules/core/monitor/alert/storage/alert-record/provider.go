@@ -35,7 +35,7 @@ func (d *define) Services() []string {
 }
 
 func (d *define) Dependencies() []string {
-	return []string{"kafka", "mysql"}
+	return []string{"kafka", "mysql", "kafka.topic.initializer"}
 }
 
 func (d *define) Summary() string {

@@ -14,9 +14,16 @@ kafka:
 kafka.topic.initializer:
   force: ${KAFKA_INIT_FORCE_SUCCESS:true}
   topics:
-    - name: spot-container-log
-    - name: spot-job-log
-    - name: spot-metrics
+    - spot-container-log
+    - spot-job-log
+    - spot-metrics
+    - spot-events
+    - msp-tracing-metrics
+    - spot-analytics
+    - spot-trace
+    - msp-jaeger-trace
+    - spot-alert-record
+    - spot-notify-record
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
@@ -34,6 +41,9 @@ etcd:
 
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
+
+etcd-mutex:
+  root_path: "/erda/streaming"
 
 # elasticsearch for log
 elasticsearch@log:
@@ -106,9 +116,7 @@ cassandra:
   username: ${CASSANDRA_SECURITY_USERNAME}
   password: ${CASSANDRA_SECURITY_PASSWORD}
   timeout: "${CASSANDRA_TIMEOUT:3s}"
-etcd-mutex:
-  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:true}
-  root_path: "/erda/streaming"
+
 log-persist-v1:
   _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:true}
   input:

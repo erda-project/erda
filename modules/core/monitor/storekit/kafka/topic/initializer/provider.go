@@ -21,30 +21,39 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	kafkaInf "github.com/erda-project/erda-infra/providers/kafka"
 )
 
 type (
-	topic struct {
-		Name string `file:"name" validated:"required"`
-	}
-
 	config struct {
-		Force          bool          `file:"force" default:"true"`
-		RequestTimeout time.Duration `file:"request_timeout" default:"2m"`
-		Topics         []topic       `file:"topics"`
+		Force             bool          `file:"force" default:"true"`
+		RequestTimeout    time.Duration `file:"request_timeout" default:"2m"`
+		Topics            []string      `file:"topics"`
+		NumPartitions     int           `file:"num_partitions" default:"9"`
+		ReplicationFactor int           `file:"replication_factor" default:"1"`
 	}
 	provider struct {
 		Cfg      *config
 		Log      logs.Logger
 		KafkaInf kafkaInf.Interface `autowired:"kafka"`
+		Lock     mutex.Mutex        `mutex-key:"kafka-topic-initializer"`
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if err := p.Lock.Lock(ctx); err != nil {
+		return fmt.Errorf("lock failed: %w", err)
+	}
+	defer func() {
+		err := p.Lock.Unlock(ctx)
+		if err != nil {
+			p.Log.Error(err)
+		}
+	}()
+
 	cli, err := p.KafkaInf.NewAdminClient()
 	if err != nil {
 		return err
@@ -57,11 +66,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("GetMetadata: %w", err)
 	}
 
-	topicList := getTopicList(p.Cfg.Topics, metadata)
+	topicList := getTopicList(p.Cfg.Topics, metadata, p.Cfg.NumPartitions, p.Cfg.ReplicationFactor)
 	if len(topicList) == 0 {
 		return nil
 	}
-
+	p.Log.Infof("topics: %+v need to be created", topicList)
 	// 1. validate
 	_, err = cli.CreateTopics(ctxTimeout, topicList, kafka.SetAdminValidateOnly(true))
 	if err != nil {
@@ -86,7 +95,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func getTopicList(topics []topic, metadata *kafka.Metadata) []kafka.TopicSpecification {
+func getTopicList(topics []string, metadata *kafka.Metadata, numPartitions, replicationFactor int) []kafka.TopicSpecification {
 	existedTopic := make(map[string]struct{})
 	for _, item := range metadata.Topics {
 		if item.Error.Code() == kafka.ErrNoError {
@@ -95,12 +104,12 @@ func getTopicList(topics []topic, metadata *kafka.Metadata) []kafka.TopicSpecifi
 	}
 
 	topicList := make([]kafka.TopicSpecification, 0)
-	for _, item := range topics {
-		if _, ok := existedTopic[item.Name]; !ok {
+	for _, name := range topics {
+		if _, ok := existedTopic[name]; !ok {
 			topicList = append(topicList, kafka.TopicSpecification{
-				Topic:             item.Name,
-				NumPartitions:     3,
-				ReplicationFactor: 1,
+				Topic:             name,
+				NumPartitions:     numPartitions,
+				ReplicationFactor: replicationFactor,
 			})
 		}
 	}
