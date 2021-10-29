@@ -3,33 +3,18 @@ package erda.cmp.alert;
 option go_package = "github.com/erda-project/erda-proto-go/cmp/alert/pb";
 
 import "core/monitor/alert/alert.proto";
-import "common/openapi.proto";
 import "google/protobuf/struct.proto";
 import "google/api/annotations.proto";
 
 service AlertService {
-  option (erda.common.openapi_service) = {
-    service: "cmp",
-    auth: {
-      check_login: true,
-      check_token: true,
-    }
-  };
-
   rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {
     option (google.api.http)     = {
       get: "/api/cmp/alerts/conditions"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/cmp/alerts/conditions"
     };
   }
   rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
     option (google.api.http)     = {
       get: "/api/cmp/alerts/conditions/value"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/cmp/alerts/conditions/value"
     };
   }
 }

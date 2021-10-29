@@ -7,7 +7,6 @@ import (
 	fmt "fmt"
 	math "math"
 
-	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	proto "github.com/golang/protobuf/proto"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
