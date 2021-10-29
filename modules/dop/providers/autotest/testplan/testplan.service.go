@@ -47,17 +47,19 @@ func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {
 func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.TestPlanUpdateByHookRequest) (*pb.TestPlanUpdateByHookResponse, error) {
 	logrus.Info("start testplan execute callback")
 
+	apiTotalNum, err := s.calcTotalApiNum(req)
+	if err != nil {
+		logrus.Errorf("failed to calcTotalApiNum,err: %s", err.Error())
+	}
+	logrus.Info("wxj: ", apiTotalNum)
+	req.Content.ApiTotalNum = apiTotalNum
+
 	if req.Content.StepAPIType == apistructs.AutoTestPlan {
 		if req.Content.TestPlanID == 0 {
 			return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
 		}
-		if req.Content.ApiTotalNum == 0 {
-			req.Content.PassRate = 0
-			req.Content.ExecuteRate = 0
-		} else {
-			req.Content.PassRate = float64(req.Content.ApiSuccessNum) / float64(req.Content.ApiTotalNum) * 100
-			req.Content.ExecuteRate = float64(req.Content.ApiExecNum) / float64(req.Content.ApiTotalNum) * 100
-		}
+		req.Content.PassRate = calcRate(req.Content.ApiSuccessNum, req.Content.ApiTotalNum)
+		req.Content.ExecuteRate = calcRate(req.Content.ApiExecNum, req.Content.ApiTotalNum)
 		req.Content.ExecuteDuration = getCostTime(req.Content.CostTimeSec)
 
 		go func() {
@@ -73,8 +75,8 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 		fields["success_api_num"] = req.Content.ApiSuccessNum
 		fields["total_api_num"] = req.Content.ApiTotalNum
 		fields["cost_time_sec"] = req.Content.CostTimeSec
-		fields["execute_rate"] = req.Content.PassRate
-		fields["pass_rate"] = req.Content.ExecuteRate
+		fields["execute_rate"] = req.Content.ExecuteRate
+		fields["pass_rate"] = req.Content.PassRate
 
 		if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
 			return nil, err
@@ -203,7 +205,7 @@ func (s *TestPlanService) ProcessEvent(req *pb.Content) error {
 			OrgID:                 int64(project.OrgID),
 		}
 
-		err := s.bdl.CreateGroupNotifyEvent(apistructs.EventBoxGroupNotifyRequest{
+		err = s.bdl.CreateGroupNotifyEvent(apistructs.EventBoxGroupNotifyRequest{
 			Sender:        "adapter",
 			GroupID:       notifyDetail.NotifyGroup.ID,
 			Channels:      notifyDetail.Channels,
@@ -238,4 +240,58 @@ func getCostTime(costTimeSec int64) string {
 		return "-"
 	}
 	return time.Unix(costTimeSec, 0).In(time.UTC).Format("15:04:05")
+}
+
+func (s *TestPlanService) calcTotalApiNum(req *pb.TestPlanUpdateByHookRequest) (int64, error) {
+	switch req.Content.StepAPIType {
+	case apistructs.AutoTestPlan:
+		planSteps, err := s.db.ListTestPlanByPlanID(req.Content.TestPlanID)
+		if err != nil {
+			return 0, err
+		}
+		sceneIDs := s.getSceneIDs(0, func() []uint64 {
+			setIDs := make([]uint64, 0, len(planSteps))
+			for _, v := range planSteps {
+				setIDs = append(setIDs, v.SceneSetID)
+			}
+			return setIDs
+		}()...)
+		return s.db.CountApiBySceneID(sceneIDs...)
+	case apistructs.AutotestSceneSet:
+		sceneIDs := s.getSceneIDs(0, req.Content.SceneSetID)
+		return s.db.CountApiBySceneID(sceneIDs...)
+	case apistructs.StepTypeScene.String():
+		return s.db.CountApiBySceneID(req.Content.SceneID)
+	case apistructs.StepTypeAPI.String():
+		return 1, nil
+	}
+	return 0, nil
+}
+
+func (s *TestPlanService) getSceneIDs(recCount int, setID ...uint64) (sceneIDs []uint64) {
+	recCount++
+	if recCount > 100 {
+		return
+	}
+	fmt.Println(recCount)
+	scenes, err := s.db.ListSceneBySceneSetID(setID...)
+	if err != nil {
+		return
+	}
+	for _, v := range scenes {
+		if v.RefSetID == 0 {
+			sceneIDs = append(sceneIDs, v.ID)
+			continue
+		}
+		ids := s.getSceneIDs(recCount, v.RefSetID)
+		sceneIDs = append(sceneIDs, ids...)
+	}
+	return
+}
+
+func calcRate(num, totalNum int64) float64 {
+	if totalNum == 0 {
+		return 0
+	}
+	return float64(num) / float64(totalNum) * 100
 }

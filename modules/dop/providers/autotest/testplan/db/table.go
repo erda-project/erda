@@ -95,3 +95,16 @@ type AutoTestScene struct {
 func (AutoTestScene) TableName() string {
 	return "dice_autotest_scene"
 }
+
+
+type TestPlanV2Step struct {
+	dbengine.BaseModel
+	PlanID     uint64
+	SceneSetID uint64
+	PreID      uint64
+	GroupID    uint64
+}
+
+func (TestPlanV2Step) TableName() string {
+	return "dice_autotest_plan_step"
+}

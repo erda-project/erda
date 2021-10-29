@@ -15,6 +15,7 @@
 package db
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/jinzhu/gorm"
 )
 
@@ -46,4 +47,28 @@ func (db *TestPlanDB) GetTestPlan(id uint64) (*TestPlanV2, error) {
 	var testPlan TestPlanV2
 	err := db.Model(&TestPlanV2{}).First(&testPlan, id).Error
 	return &testPlan, err
+}
+
+// CountApiBySceneID .
+func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (count int64, err error) {
+	err = db.Table("dice_autotest_scene_step").
+		Where("scene_id IN (?)", sceneID).
+		Where("type = ?", apistructs.StepTypeAPI).Count(&count).Error
+	return
+}
+
+// ListSceneBySceneSetID .
+func (db *TestPlanDB) ListSceneBySceneSetID(setID ...uint64) (scenes []AutoTestScene, err error) {
+	err = db.Model(&AutoTestScene{}).
+		Where("set_id IN (?)", setID).
+		Find(&scenes).Error
+	return
+}
+
+// ListTestPlanByPlanID .
+func (db *TestPlanDB) ListTestPlanByPlanID(planID ...uint64) (testPlans []TestPlanV2Step, err error) {
+	err = db.Model(&TestPlanV2Step{}).
+		Where("plan_id IN (?)", planID).
+		Find(&testPlans).Error
+	return
 }

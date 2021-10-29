@@ -15,6 +15,7 @@
 package testplan
 
 import (
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"reflect"
 	"testing"
 	"time"
@@ -179,5 +180,183 @@ func TestCreateTestPlanExecHistory(t *testing.T) {
 	})
 	if err != nil {
 		t.Error("fail")
+	}
+}
+
+func TestGetSceneIDs(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "ListSceneBySceneSetID", func(DB *db.TestPlanDB, setID ...uint64) (scenes []db.AutoTestScene, err error) {
+		if setID[0] == 1 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 2,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 3,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 4,
+					},
+					RefSetID: 2,
+				},
+			}, nil
+		}
+		if setID[0] == 2 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 5,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 6,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 7,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 8,
+					},
+					RefSetID: 3,
+				},
+			}, nil
+		}
+		if setID[0] == 3 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 9,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 10,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 11,
+					},
+					RefSetID: 0,
+				},
+			}, nil
+		}
+		return []db.AutoTestScene{}, nil
+	})
+	svc := TestPlanService{
+		db: DB,
+	}
+	sceneIDs := svc.getSceneIDs(0, 1)
+	if !reflect.DeepEqual([]uint64{1, 2, 3, 5, 6, 7, 9, 10, 11}, sceneIDs) {
+		t.Error("fail")
+	}
+}
+
+func TestGetSceneIDsWithDeadCycle(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "ListSceneBySceneSetID", func(DB *db.TestPlanDB, setID ...uint64) (scenes []db.AutoTestScene, err error) {
+		if setID[0] == 1 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 2,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 3,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 4,
+					},
+					RefSetID: 2,
+				},
+			}, nil
+		}
+		if setID[0] == 2 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 5,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 6,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 7,
+					},
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 8,
+					},
+					RefSetID: 1,
+				},
+			}, nil
+		}
+		return []db.AutoTestScene{}, nil
+	})
+	svc := TestPlanService{
+		db: DB,
+	}
+	var limitCount int
+	svc.getSceneIDs(limitCount, 1)
+	if limitCount > 100 {
+		t.Error("fail")
+	}
+}
+
+func TestCalcRate(t *testing.T) {
+	tt := []struct {
+		num   int64
+		total int64
+		want  float64
+	}{
+		{2, 0, 0},
+		{2, 3, 66.66666666666666},
+		{2, 5, 40},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, calcRate(v.num, v.total))
 	}
 }
