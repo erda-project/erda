@@ -853,7 +853,7 @@ func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertD
 	result := &pb.GetAlertDetailResponse{}
 	result.Data = data
 	for _, v := range m.p.alertConditions {
-		if v.Scope == "msp" {
+		if v.Scope == Msp {
 			for _, c := range v.Conditions {
 				value, ok := data.Attributes[c.Key]
 				if ok {
@@ -889,6 +889,24 @@ func (m *alertService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertR
 		return nil, errors.NewInternalServerError(err)
 	}
 	alertRequest.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	//TODO 将原先attributes中的msp的触发条件删除，将新的触发条件插入
+	for _, v := range m.p.alertConditions {
+		if v.Scope == Msp {
+			for _, cond := range v.Conditions {
+				if _, ok := alertRequest.Attributes[cond.Key]; ok {
+					delete(alertRequest.Attributes, cond.Key)
+				}
+			}
+		}
+	}
+	// 将新的触发条件放入{
+	for _, v := range request.TriggerCondition {
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		request.Attributes[v.Condition] = structpb.NewStringValue(string(data))
+	}
 	if err := m.p.a.UpdateAlert(request.Id, alertRequest); err != nil {
 		if adapt.IsInvalidParameterError(err) {
 			return nil, errors.NewInternalServerError(err)

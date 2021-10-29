@@ -574,6 +574,14 @@ func (a *Adapt) CreateOrgAlert(alert *pb.Alert, orgID string) (alertID uint64, e
 	alert.Attributes["alert_record_path"] = alertRecordPath
 	diceOrgId := structpb.NewStringValue(orgID)
 	alert.Attributes["dice_org_id"] = diceOrgId
+	//TODO 将触发条件插入attributes
+	for _, v := range alert.TriggerCondition {
+		data, err := json.Marshal(v)
+		if err != nil {
+			return 0, err
+		}
+		alert.Attributes[v.Condition] = structpb.NewStringValue(string(data))
+	}
 	return a.CreateAlert(alert)
 }
 
