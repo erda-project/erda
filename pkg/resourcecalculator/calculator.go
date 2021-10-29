@@ -155,22 +155,22 @@ func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
 	return sum
 }
 
-func (q *ResourceCalculator) deductionQuota(workspace Workspace, quota uint64) {
-	q.deduction += quota
+func (q *ResourceCalculator) deductionQuota(workspace Workspace, value uint64) {
+	q.deduction += value
 	// 按优先级减扣
 	p := priority(workspace)
 	for _, workspaces := range p {
-		if q.WorkspacesValues[workspaces] >= quota {
-			q.WorkspacesValues[workspaces] -= quota
-			q.takeUp(workspaces, quota)
+		if q.WorkspacesValues[workspaces] >= value {
+			q.WorkspacesValues[workspaces] -= value
+			q.takeUp(workspaces, value)
 			return
 		}
-		quota -= q.WorkspacesValues[workspaces]
+		value -= q.WorkspacesValues[workspaces]
 		q.takeUp(workspaces, q.WorkspacesValues[workspaces])
 		q.WorkspacesValues[workspaces] = 0
 	}
 
-	q.takeUp(WorkspaceString(workspace), quota)
+	q.takeUp(WorkspaceString(workspace), value)
 }
 
 func (q *ResourceCalculator) takeUp(workspaces string, value uint64) {
@@ -226,19 +226,19 @@ func WorkspacesString(workspaces []Workspace) []string {
 	return result
 }
 
-func CoreToMillcore(v float64) uint64 {
-	return uint64(v * 1000)
+func CoreToMillcore(value float64) uint64 {
+	return uint64(value * 1000)
 }
 
-func MillcoreToCore(v uint64, accuracy int32) float64 {
-	return Accuracy(float64(v)/1000, accuracy)
+func MillcoreToCore(value uint64, accuracy int32) float64 {
+	return Accuracy(float64(value)/1000, accuracy)
 }
 
-func GibibyteToByte(v float64) uint64 {
-	return uint64(v * 1024 * 1024 * 1024)
+func GibibyteToByte(value float64) uint64 {
+	return uint64(value * 1024 * 1024 * 1024)
 }
-func ByteToGibibyte(v uint64, accuracy int32) float64 {
-	return Accuracy(float64(v)/(1024*1024*1024), accuracy)
+func ByteToGibibyte(value uint64, accuracy int32) float64 {
+	return Accuracy(float64(value)/(1024*1024*1024), accuracy)
 }
 
 func priority(workspace Workspace) []string {
@@ -292,9 +292,9 @@ func ResourceToString(res float64, typ string) string {
 	}
 }
 
-func Accuracy(value float64, accuracy int32) float64 {
-	value, _ = decimal.NewFromFloat(value).Round(accuracy).Float64()
-	return value
+func Accuracy(v float64, accuracy int32) float64 {
+	v, _ = decimal.NewFromFloat(v).Round(accuracy).Float64()
+	return v
 }
 
 func setPrec(f float64, prec int) float64 {
