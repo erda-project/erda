@@ -90,7 +90,7 @@ func (p *provider) Close() error {
 func init() {
 	servicehub.Register("trace-storage", &servicehub.Spec{
 		Services:     []string{"trace-storage"},
-		Dependencies: []string{"kafka", "cassandra"},
+		Dependencies: []string{"kafka", "cassandra", "kafka.topic.initializer"},
 		Description:  "trace storage",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
