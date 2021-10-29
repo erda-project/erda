@@ -752,6 +752,9 @@ func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO
 
 // 根据已有统计值计算比率
 func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
+	if dto.ResourceConfig == nil {
+		return
+	}
 	for _, source := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,
 		dto.ResourceConfig.STAGING,
@@ -772,6 +775,9 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 }
 
 func (p *Project) makeProjectDtoTips(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
+	if dto.ResourceConfig == nil {
+		return
+	}
 	for _, source := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,
 		dto.ResourceConfig.STAGING,
@@ -925,6 +931,7 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 		if v, ok := projectOwnerMap[projectDTOs[i].ID]; ok {
 			projectDTOs[i].Owners = v
 		}
+		p.fetchQuota(&projectDTOs[i])
 	}
 
 	return &apistructs.PagingProjectDTO{Total: total, List: projectDTOs}, nil
