@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-func Test_(t *testing.T) {
+func Test_NotifyChannelDTO_Deserialization(t *testing.T) {
 	var jsonStr = `{
         "id": "85fe1f9e-7cc4-4d65-baab-be0346d53849",
         "name": "test_channel18",
