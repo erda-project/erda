@@ -173,22 +173,17 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 
 	config := map[string]string{}
 
-	if tmcInstance.Az == mainClusterName {
-		config["HEPA_GATEWAY_HOST"] = "http://hepa.default.svc.cluster.local" // todo may be not in the default namespace?
-		config["HEPA_GATEWAY_PORT"] = "8080"
-	} else {
-		schema := mainClusterScheme
-		var port string
-		if strings.Contains(schema, "https") {
-			schema = "https"
-			port = mainClusterHTTPSPort
-		} else if strings.Contains(schema, "http") {
-			schema = "http"
-			port = mainClusterHTTPPort
-		}
-		config["HEPA_GATEWAY_HOST"] = schema + "://hepa." + mainClusterDomain
-		config["HEPA_GATEWAY_PORT"] = port
+	schema := mainClusterScheme
+	var port string
+	if strings.Contains(schema, "https") {
+		schema = "https"
+		port = mainClusterHTTPSPort
+	} else if strings.Contains(schema, "http") {
+		schema = "http"
+		port = mainClusterHTTPPort
 	}
+	config["HEPA_GATEWAY_HOST"] = schema + "://hepa." + mainClusterDomain
+	config["HEPA_GATEWAY_PORT"] = port
 
 	config["VIP_KONG_HOST"] = "http://" + vip
 	config["PROXY_KONG_PORT"] = "8000"
