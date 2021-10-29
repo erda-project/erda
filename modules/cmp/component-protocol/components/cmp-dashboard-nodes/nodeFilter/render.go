@@ -178,7 +178,7 @@ func (nf *NodeFilter) getState(labels map[string]struct{}) {
 			Value: "env",
 			Label: nf.SDK.I18n("env-label"),
 			Children: []filter.Option{
-				{Label: nf.SDK.I18n("dev"), Value: "dice/workspace-dev"},
+				{Label: nf.SDK.I18n("dev"), Value: "dice/workspace-dev=true"},
 				{Label: nf.SDK.I18n("test"), Value: "dice/workspace-test=true"},
 				{Label: nf.SDK.I18n("staging"), Value: "dice/workspace-staging=true"},
 				{Label: nf.SDK.I18n("prod"), Value: "dice/workspace-prod=true"},
@@ -205,8 +205,8 @@ func (nf *NodeFilter) getState(labels map[string]struct{}) {
 			Value: "other-label",
 			Label: nf.SDK.I18n("other-label"),
 			Children: append([]filter.Option{
-				{Label: nf.SDK.I18n("lb"), Value: "dice/lb"},
-				{Label: nf.SDK.I18n("platform"), Value: "dice/platform"},
+				{Label: nf.SDK.I18n("lb"), Value: "dice/lb=true"},
+				{Label: nf.SDK.I18n("platform"), Value: "dice/platform=true"},
 			}, customOps...),
 		},
 	}...,
