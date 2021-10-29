@@ -33,7 +33,7 @@ type (
 		Force             bool          `file:"force" default:"true"`
 		RequestTimeout    time.Duration `file:"request_timeout" default:"2m"`
 		Topics            []string      `file:"topics"`
-		NumPartitions     int           `file:"num_partitions" default:"9"`
+		NumPartitions     int           `file:"num_partitions" default:"15"`
 		ReplicationFactor int           `file:"replication_factor" default:"1"`
 	}
 	provider struct {
