@@ -25,6 +25,7 @@ import (
 	"github.com/recallsong/go-utils/conv"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	"github.com/erda-project/erda/modules/msp/apm/exception"
 	error_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
@@ -36,6 +37,7 @@ type exceptionService struct {
 	p                  *provider
 	ErrorStorageReader error_storage.Storage
 	EventStorageReader event_storage.Storage
+	Metric             metricpb.MetricServiceServer
 }
 
 func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) (*pb.GetExceptionsResponse, error) {
@@ -43,13 +45,13 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 
 	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
 		// do cassandra query
-		exceptionsFromCassandra := fetchErdaErrorFromCassandra(s.p.cassandraSession.Session(), req)
+		exceptionsFromCassandra := fetchErdaErrorFromCassandra(ctx, s.Metric, s.p.cassandraSession.Session(), req)
 		for _, exception := range exceptionsFromCassandra {
 			exceptions = append(exceptions, exception)
 		}
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
 		// do es query
 		exceptionsFromElasticsearch, _ := fetchErdaErrorFromES(ctx, s.ErrorStorageReader, s.EventStorageReader, req, true, 1000)
 		for _, exception := range exceptionsFromElasticsearch {
@@ -60,7 +62,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 	return &pb.GetExceptionsResponse{Data: exceptions}, nil
 }
 
-func fetchErdaErrorFromCassandra(session *gocql.Session, req *pb.GetExceptionsRequest) []*pb.Exception {
+func fetchErdaErrorFromCassandra(ctx context.Context, metric metricpb.MetricServiceServer, session *gocql.Session, req *pb.GetExceptionsRequest) []*pb.Exception {
 	iter := session.Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.ScopeID).Iter()
 
 	var exceptions []*pb.Exception
@@ -81,32 +83,71 @@ func fetchErdaErrorFromCassandra(session *gocql.Session, req *pb.GetExceptionsRe
 		exception.ServiceName = conv.ToString(tags["service_name"])
 		exception.ApplicationID = conv.ToString(tags["application_id"])
 		exception.RuntimeID = conv.ToString(tags["runtime_id"])
-		layout := "2006-01-02 15:04:05"
 
-		stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC"
-		iterCount := session.Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).Iter()
-		count := int64(0)
-		index := 0
-		for {
-			rowCount := make(map[string]interface{})
-			if !iterCount.MapScan(rowCount) {
-				break
-			}
-			if index == 0 {
-				exception.CreateTime = time.Unix(conv.ToInt64(rowCount["timestamp"], 0)/1e9, 10).Format(layout)
-			}
-			count += conv.ToInt64(rowCount["count"], 0)
-			index++
-			if index == iterCount.NumRows() {
-				exception.UpdateTime = time.Unix(conv.ToInt64(rowCount["timestamp"], 0)/1e9, 10).Format(layout)
-			}
-		}
-		exception.EventCount = count
+		fetchErdaErrorEventCount(ctx, metric, session, req, &exception)
 		if exception.EventCount > 0 {
 			exceptions = append(exceptions, &exception)
 		}
 	}
 	return exceptions
+}
+
+func fetchErdaErrorEventCount(ctx context.Context, metric metricpb.MetricServiceServer, session *gocql.Session, req *pb.GetExceptionsRequest, exception *pb.Exception) {
+	layout := "2006-01-02 15:04:05"
+	count := int64(0)
+
+	stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC"
+	iterCount := session.Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).Iter()
+	index := 0
+	for {
+		rowCount := make(map[string]interface{})
+		if !iterCount.MapScan(rowCount) {
+			break
+		}
+		if index == 0 {
+			exception.CreateTime = time.Unix(conv.ToInt64(rowCount["timestamp"], 0)/1e9, 10).Format(layout)
+		}
+		count += conv.ToInt64(rowCount["count"], 0)
+		index++
+		if index == iterCount.NumRows() {
+			exception.UpdateTime = time.Unix(conv.ToInt64(rowCount["timestamp"], 0)/1e9, 10).Format(layout)
+		}
+	}
+
+	metricreq := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     conv.ToString(req.StartTime * 1e6), // or timestamp
+		End:       conv.ToString(req.EndTime * 1e6),   // or timestamp
+		Statement: `SELECT timestamp, count::field FROM error_count WHERE error_id::tag=$error_id ORDER BY timestamp`,
+		Params: map[string]*structpb.Value{
+			"error_id": structpb.NewStringValue(exception.Id),
+		},
+	}
+	//metricreq := &metricpb.QueryWithInfluxFormatRequest{
+	//	Start:     conv.ToString(req.StartTime * 1e6), // or timestamp
+	//	End:       conv.ToString(req.EndTime * 1e6),   // or timestamp
+	//	Statement: `SELECT timestamp, count::field FROM error_count WHERE terminus_key::tag=$terminus_key ORDER BY timestamp`,
+	//	Params: map[string]*structpb.Value{
+	//		"terminus_key": structpb.NewStringValue("c393550824b3d50aa758fee4593d6e31"),
+	//	},
+	//}
+
+	resp, err := metric.QueryWithInfluxFormat(ctx, metricreq)
+	if err != nil {
+		exception.UpdateTime = exception.CreateTime
+	} else {
+		rows := resp.Results[0].Series[0].Rows
+		for index, row := range rows {
+			if index == 0 && exception.CreateTime == "" {
+				exception.CreateTime = time.Unix(int64(row.Values[0].GetNumberValue())/1e9, 10).Format(layout)
+			}
+			if index == len(rows)-1 {
+				exception.UpdateTime = time.Unix(int64(row.Values[0].GetNumberValue())/1e9, 10).Format(layout)
+			}
+			count = count + int64(row.Values[1].GetNumberValue())
+		}
+	}
+
+	exception.EventCount = count
 }
 
 func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) (*pb.GetExceptionEventIdsResponse, error) {

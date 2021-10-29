@@ -21,6 +21,7 @@ import (
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	error_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
 	event_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
@@ -40,8 +41,9 @@ type provider struct {
 	Cassandra          cassandra.Interface `autowired:"cassandra"`
 	exceptionService   *exceptionService
 	cassandraSession   *cassandra.Session
-	ErrorStorageReader error_storage.Storage `autowired:"error-storage-elasticsearch-reader"`
-	EventStorageReader event_storage.Storage `autowired:"error-event-storage-elasticsearch-reader"`
+	Metric             metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	ErrorStorageReader error_storage.Storage        `autowired:"error-storage-elasticsearch-reader"`
+	EventStorageReader event_storage.Storage        `autowired:"error-event-storage-elasticsearch-reader"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -54,6 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p:                  p,
 		EventStorageReader: p.EventStorageReader,
 		ErrorStorageReader: p.ErrorStorageReader,
+		Metric:             p.Metric,
 	}
 	if p.Register != nil {
 		pb.RegisterExceptionServiceImp(p.Register, p.exceptionService, apis.Options())
