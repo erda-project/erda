@@ -157,7 +157,6 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 	clusterConfig map[string]string, additionalConfig map[string]string) map[string]string {
 
 	serviceGroup := serviceGroupDeployResult.(*apistructs.ServiceGroup)
-	mainClusterName := p.Cfg.MainClusterInfo.Name
 	mainClusterDomain := p.Cfg.MainClusterInfo.RootDomain
 	mainClusterScheme := p.Cfg.MainClusterInfo.Protocol
 	mainClusterHTTPPort := p.Cfg.MainClusterInfo.HttpPort
