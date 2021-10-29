@@ -21,6 +21,7 @@ import (
 
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda/apistructs"
@@ -354,8 +355,8 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 	var stages []*spec.PipelineStage
 	_, err = s.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
 		// create pipeline
-		if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(session)); err != nil {
-			return nil, apierrors.ErrCreatePipeline.InternalError(err)
+		if err := s.createPipelineAndCheckNotEndStatus(p, session); err != nil {
+			return nil, err
 		}
 		// create pipeline stages
 		stages, err = s.createPipelineGraphStage(p, pipelineYml, dbclient.WithTxSession(session))
@@ -392,6 +393,26 @@ func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
 
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
+	return nil
+}
+
+func (s *PipelineSvc) createPipelineAndCheckNotEndStatus(p *spec.Pipeline, session *xorm.Session) error {
+	// Check whether the parent pipeline has an end state
+	for _, parentPipelineID := range p.Extra.SnippetChain {
+		parentPipeline, _, err := s.dbClient.GetPipelineBase(parentPipelineID, dbclient.WithTxSession(session))
+		if err != nil {
+			logrus.Errorf("check whether the parent pipeline has an end state, error %v", err)
+			continue
+		}
+		if parentPipeline.Status.IsEndStatus() {
+			return fmt.Errorf("parent pipeline was end status")
+		}
+	}
+
+	// create pipeline
+	if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(session)); err != nil {
+		return apierrors.ErrCreatePipeline.InternalError(err)
+	}
 	return nil
 }
 
