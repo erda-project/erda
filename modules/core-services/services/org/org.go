@@ -370,6 +370,24 @@ func (o *Org) ListByIDsAndName(orgIDs []int64, name string, pageNo, pageSize int
 	return o.db.GetOrgsByIDsAndName(orgIDs, name, pageNo, pageSize)
 }
 
+func (o *Org) ListOrgs(orgIDs []int64, req *apistructs.OrgSearchRequest, all bool) (int, []model.Org, error) {
+	var (
+		total int
+		orgs  []model.Org
+		err   error
+	)
+	if all {
+		total, orgs, err = o.SearchByName(req.Q, req.PageNo, req.PageSize)
+	} else {
+		total, orgs, err = o.ListByIDsAndName(orgIDs, req.Q, req.PageNo, req.PageSize)
+	}
+	if err != nil {
+		logrus.Warnf("failed to get orgs, (%v)", err)
+		return 0, nil, err
+	}
+	return total, orgs, nil
+}
+
 // ChangeCurrentOrg 切换用户当前所属企业
 func (o *Org) ChangeCurrentOrg(userID string, req *apistructs.OrgChangeRequest) error {
 	// 检查用户是否匹配
