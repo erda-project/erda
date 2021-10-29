@@ -95,7 +95,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("metric-persist", &servicehub.Spec{
-		ConfigFunc: func() interface{} { return &config{} },
+		ConfigFunc:   func() interface{} { return &config{} },
+		Dependencies: []string{"kafka.topic.initializer"},
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
