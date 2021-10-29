@@ -17,6 +17,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -42,6 +44,7 @@ const (
 	shardDirSuffix          = "-shard-dir"
 	sidecarNamePrefix       = "sidecar-"
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
+	RegistrySecretName      = "REGISTRY_SECRET_NAME"
 )
 
 func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
@@ -56,12 +59,12 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 		cpu *= int64(*deployment.Spec.Replicas)
 		mem *= int64(*deployment.Spec.Replicas)
 	}
-	ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless", service.Name)
+	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless", service.Name)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return errors.New("workspace quota is not enough")
+		return errors.New(reason)
 	}
 
 	err = k.deploy.Create(deployment)
@@ -137,12 +140,12 @@ func (k *Kubernetes) putDeployment(ctx context.Context, deployment *appsv1.Deplo
 	if err != nil {
 		logrus.Errorf("faield to get delta resource for deployment %s, %v", deployment.Name, err)
 	} else {
-		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update", service.Name)
+		ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "update", service.Name)
 		if err != nil {
 			return err
 		}
 		if !ok {
-			return errors.New("workspace quota is not enough")
+			return errors.New(reason)
 		}
 	}
 
@@ -173,7 +176,7 @@ func (k *Kubernetes) getDeploymentDeltaResource(ctx context.Context, deploy *app
 	newCPU, newMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
 	if deploy.Spec.Replicas != nil {
 		newCPU *= int64(*deploy.Spec.Replicas)
-		oldMem *= int64(*deploy.Spec.Replicas)
+		newMem *= int64(*deploy.Spec.Replicas)
 	}
 
 	deltaCPU = newCPU - oldCPU
@@ -478,6 +481,25 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		},
 	}
 
+	// need to set the secret in default namespace which named with REGISTRY_SECRET_NAME env
+	registryName := os.Getenv(RegistrySecretName)
+	if registryName == "" {
+		registryName = AliyunRegistry
+	}
+
+	_, err := k.secret.Get(service.Namespace, registryName)
+	if err == nil {
+		deployment.Spec.Template.Spec.ImagePullSecrets = []apiv1.LocalObjectReference{
+			{
+				Name: registryName,
+			},
+		}
+	} else {
+		if !k8serror.NotFound(err) {
+			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", registryName, service.Namespace, err)
+		}
+	}
+
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
 		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
 			strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.TestWorkspace.String()) {
@@ -503,7 +525,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		Image: service.Image,
 	}
 
-	err := k.setContainerResources(*service, &container)
+	err = k.setContainerResources(*service, &container)
 	if err != nil {
 		errMsg := fmt.Sprintf("set container resource err: %v", err)
 		logrus.Errorf(errMsg)
@@ -866,6 +888,12 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		return getErr
 	}
 
+	oldCPU, oldMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
+	if deploy.Spec.Replicas != nil {
+		oldCPU *= int64(*deploy.Spec.Replicas)
+		oldMem *= int64(*deploy.Spec.Replicas)
+	}
+
 	deploy.Spec.Replicas = func(i int32) *int32 { return &i }(int32(scalingService.Scale))
 
 	// only support one container on Erda currently
@@ -879,18 +907,17 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 
 	deploy.Spec.Template.Spec.Containers[0] = container
 
+	newCPU, newMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
+	newCPU *= int64(*deploy.Spec.Replicas)
+	newMem *= int64(*deploy.Spec.Replicas)
+
 	_, projectID, workspace, runtimeID := extractContainerEnvs(deploy.Spec.Template.Spec.Containers)
-	deltaCPU, deltaMem, err := k.getDeploymentDeltaResource(ctx, deploy)
+	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, newCPU-oldCPU, newMem-oldMem, "scale", scalingService.Name)
 	if err != nil {
-		logrus.Errorf("failed to get delta resource for deployment %s, %v", deploy.Name, err)
-	} else {
-		ok, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, deltaCPU, deltaMem, "scale", scalingService.Name)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return errors.New("workspace quota is not enough")
-		}
+		return err
+	}
+	if !ok {
+		return errors.New(reason)
 	}
 
 	err = k.deploy.Put(deploy)

@@ -43,11 +43,11 @@ type DailyQuotaCollector struct {
 }
 
 func NewDailyQuotaCollector(opts ...DailyQuotaCollectorOption) *DailyQuotaCollector {
-	var d DailyQuotaCollector
-	for _, opt := range opts {
-		opt(&d)
+	var collector DailyQuotaCollector
+	for _, f := range opts {
+		f(&collector)
 	}
-	return &d
+	return &collector
 }
 
 func (d *DailyQuotaCollector) Task() (bool, error) {
@@ -261,19 +261,19 @@ func DailyQuotaCollectorWithDBClient(client *dbclient.DBClient) DailyQuotaCollec
 	}
 }
 
-func DailyQuotaCollectorWithBundle(bdl *bundle.Bundle) DailyQuotaCollectorOption {
-	return func(c *DailyQuotaCollector) {
-		c.bdl = bdl
+func DailyQuotaCollectorWithBundle(bndl *bundle.Bundle) DailyQuotaCollectorOption {
+	return func(collector *DailyQuotaCollector) {
+		collector.bdl = bndl
 	}
 }
 
-func DailyQuotaCollectorWithCMPAPI(cmp interface {
+func DailyQuotaCollectorWithCMPAPI(cmpCli interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 	GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error)
 	GetAllClusters() []string
 }) DailyQuotaCollectorOption {
-	return func(c *DailyQuotaCollector) {
-		c.cmp = cmp
+	return func(collector *DailyQuotaCollector) {
+		collector.cmp = cmpCli
 	}
 }
