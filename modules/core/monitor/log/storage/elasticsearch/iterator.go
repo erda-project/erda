@@ -34,9 +34,9 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 )
 
-func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
+func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
-	query := elastic.NewBoolQuery().Filter(elastic.NewRangeQuery("timestamp").Gte(sel.Start).Lt(sel.End))
+	query := elastic.NewBoolQuery().Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lt(end))
 	for _, filter := range sel.Filters {
 		val, ok := filter.Value.(string)
 		if !ok {
@@ -52,24 +52,36 @@ func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource 
 	return searchSource.Query(query)
 }
 
+const useScrollQuery = false
+
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
 	indices := p.Loader.Indices(ctx, sel.Start, sel.End, loader.KeyPath{
 		Recursive: true,
 	})
-	searchSource := p.getSearchSource(sel)
-	if sel.Debug {
-		source, _ := searchSource.Source()
-		fmt.Printf("indices: %v\nsearchSource: %s\n", strings.Join(indices, ","), jsonx.MarshalAndIndent(source))
+	if useScrollQuery {
+		searchSource := getSearchSource(sel.Start, sel.End, sel)
+		if sel.Debug {
+			source, _ := searchSource.Source()
+			fmt.Printf("indices: %v\nsearchSource: %s\n", strings.Join(indices, ","), jsonx.MarshalAndIndent(source))
+		}
+		return &scrollIterator{
+			ctx:          ctx,
+			sel:          sel,
+			searchSource: searchSource,
+			client:       p.client,
+			timeout:      p.Cfg.QueryTimeout,
+			pageSize:     p.Cfg.ReadPageSize,
+			indices:      indices,
+		}, nil
 	}
-	return &scrollIterator{
-		ctx:          ctx,
-		sel:          sel,
-		searchSource: searchSource,
-		client:       p.client,
-		timeout:      p.Cfg.QueryTimeout,
-		pageSize:     p.Cfg.ReadPageSize,
-		indices:      indices,
+	return &searchIterator{
+		ctx:      ctx,
+		sel:      sel,
+		client:   p.client,
+		timeout:  p.Cfg.QueryTimeout,
+		pageSize: p.Cfg.ReadPageSize,
+		indices:  indices,
 	}, nil
 }
 
@@ -199,20 +211,16 @@ func (it *scrollIterator) fetch(dir iteratorDir) error {
 				if it.dir != iteratorBackward {
 					ascending = true
 				}
-
 				resp, it.err = it.client.Scroll(it.indices...).KeepAlive(keepalive).
 					IgnoreUnavailable(true).AllowNoIndices(true).
 					SearchSource(it.searchSource).Size(it.pageSize).Sort("timestamp", ascending).Sort("offset", ascending).Do(ctx)
-				if it.err != nil {
-					return it.err
-				}
 			} else {
 				resp, it.err = it.client.Scroll(it.indices...).ScrollId(it.lastScrollID).KeepAlive(keepalive).
 					IgnoreUnavailable(true).AllowNoIndices(true).
 					Size(it.pageSize).Do(ctx)
-				if it.err != nil {
-					return it.err
-				}
+			}
+			if it.err != nil {
+				return it.err
 			}
 
 			// save scrollID
@@ -229,7 +237,7 @@ func (it *scrollIterator) fetch(dir iteratorDir) error {
 			}
 
 			// parse result
-			it.buffer = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End)
+			it.buffer, _, _ = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End, "")
 			return nil
 		}()
 	}
@@ -269,9 +277,164 @@ func (it *scrollIterator) checkClosed() bool {
 	return false
 }
 
-func parseHits(hits []*elastic.SearchHit, start, end int64) (list []*pb.LogItem) {
+type searchIterator struct {
+	log logs.Logger
+	ctx context.Context
+	sel *storage.Selector
+
+	lastID         string
+	lastSortValues []interface{}
+
+	client   *elastic.Client
+	timeout  time.Duration
+	pageSize int
+	indices  []string
+
+	dir    iteratorDir
+	buffer []*pb.LogItem
+	value  *pb.LogItem
+	err    error
+	closed bool
+}
+
+func (it *searchIterator) First() bool {
+	if it.checkClosed() {
+		return false
+	}
+	it.lastSortValues, it.lastID = nil, ""
+	it.fetch(iteratorForward)
+	return it.yield()
+}
+
+func (it *searchIterator) Last() bool {
+	if it.checkClosed() {
+		return false
+	}
+	it.lastSortValues, it.lastID = nil, ""
+	it.fetch(iteratorBackward)
+	return it.yield()
+}
+
+func (it *searchIterator) Next() bool {
+	if it.checkClosed() {
+		return false
+	}
+	if it.dir == iteratorBackward {
+		it.err = storekit.ErrOpNotSupported
+		return false
+	}
+	if it.yield() {
+		return true
+	}
+	it.fetch(iteratorForward)
+	return it.yield()
+}
+
+func (it *searchIterator) Prev() bool {
+	if it.checkClosed() {
+		return false
+	}
+	if it.dir == iteratorForward {
+		it.err = storekit.ErrOpNotSupported
+		return false
+	}
+	if it.yield() {
+		return true
+	}
+	it.fetch(iteratorBackward)
+	return it.yield()
+}
+
+func (it *searchIterator) Value() storekit.Data { return it.value }
+func (it *searchIterator) Error() error {
+	if it.err == io.EOF {
+		return nil
+	}
+	return it.err
+}
+
+func (it *searchIterator) fetch(dir iteratorDir) error {
+	if len(it.indices) <= 0 {
+		it.err = io.EOF
+		return it.err
+	}
+	ms := int64(it.timeout.Milliseconds())
+	if ms < 1 {
+		ms = 1
+	}
+	timeout := strconv.FormatInt(ms, 10) + "ms"
+
+	var ascending bool
+	if dir != iteratorBackward {
+		ascending = true
+	}
+
+	it.dir = dir
+	it.buffer = nil
+	for it.err == nil && len(it.buffer) <= 0 {
+		func() error {
+			ctx, cancel := context.WithTimeout(it.ctx, it.timeout)
+			defer cancel()
+			var resp *elastic.SearchResult
+			searchSource := getSearchSource(it.sel.Start, it.sel.End, it.sel)
+			resp, it.err = it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).Timeout(timeout).
+				SearchSource(searchSource).Size(it.pageSize).
+				Sort("timestamp", ascending).Sort("offset", ascending).SearchAfter(it.lastSortValues...).
+				Do(ctx)
+			if it.err != nil {
+				return it.err
+			}
+			if resp == nil || resp.Hits == nil || len(resp.Hits.Hits) <= 0 {
+				it.err = io.EOF
+				return it.err
+			}
+			it.buffer, it.lastSortValues, it.lastID = parseHits(resp.Hits.Hits, it.sel.Start, it.sel.End, it.lastID)
+			if len(resp.Hits.Hits) < it.pageSize {
+				it.err = io.EOF
+				return it.err
+			}
+			return nil
+		}()
+	}
+	return nil
+}
+
+func (it *searchIterator) yield() bool {
+	if len(it.buffer) > 0 {
+		it.value = it.buffer[0]
+		it.buffer = it.buffer[1:]
+		return true
+	}
+	return false
+}
+
+func (it *searchIterator) Close() error {
+	it.closed = true
+	return nil
+}
+
+func (it *searchIterator) checkClosed() bool {
+	if it.closed {
+		if it.err == nil {
+			it.err = storekit.ErrIteratorClosed
+		}
+		return true
+	}
+	select {
+	case <-it.ctx.Done():
+		if it.err == nil {
+			it.err = storekit.ErrIteratorClosed
+		}
+		return true
+	default:
+	}
+	return false
+}
+
+func parseHits(hits []*elastic.SearchHit, start, end int64, removeID string) (list []*pb.LogItem, lastSortValue []interface{}, lastID string) {
+	checkID := len(removeID) > 0
 	for _, hit := range hits {
-		if hit.Source == nil {
+		if hit.Source == nil || (checkID && hit.Id == removeID) {
 			continue
 		}
 		data, err := parseData(*hit.Source)
@@ -281,8 +444,10 @@ func parseHits(hits []*elastic.SearchHit, start, end int64) (list []*pb.LogItem)
 		if start <= data.Timestamp && data.Timestamp < end {
 			list = append(list, data)
 		}
+		lastSortValue = hit.Sort
+		lastID = hit.Id
 	}
-	return list
+	return list, lastSortValue, lastID
 }
 
 func parseData(byts []byte) (*pb.LogItem, error) {
