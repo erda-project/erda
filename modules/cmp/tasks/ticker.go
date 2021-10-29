@@ -20,11 +20,11 @@ import (
 )
 
 type ExitError struct {
-	Msg string
+	Message string
 }
 
 func (e ExitError) Error() string {
-	return e.Msg
+	return e.Message
 }
 
 type Task func() error
@@ -36,26 +36,26 @@ type Ticker struct {
 	done     chan bool
 }
 
-func New(interval time.Duration, task func() (bool, error)) *Ticker {
+func New(intervals time.Duration, f func() (bool, error)) *Ticker {
 	return &Ticker{
-		Interval: interval,
-		Task:     task,
+		Interval: intervals,
+		Task:     f,
 		done:     make(chan bool),
 	}
 }
 
 func (d *Ticker) Run() error {
-	t := time.NewTicker(d.Interval)
-	defer t.Stop()
+	tick := time.NewTicker(d.Interval)
+	defer tick.Stop()
 
 	var (
 		err  error
-		over bool
+		done bool
 	)
 	fmt.Printf("the interval task %s is running right now: %s\n", d.Name, time.Now().Format(time.RFC3339))
-	over, err = d.Task()
+	done, err = d.Task()
 	fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
-	if over {
+	if done {
 		d.Close()
 		return err
 	}
@@ -65,11 +65,11 @@ func (d *Ticker) Run() error {
 		case <-d.done:
 			fmt.Printf("the interval task %s is done!\n", d.Name)
 			return err
-		case t := <-t.C:
+		case t := <-tick.C:
 			fmt.Printf("the interval task %s is running at: %s\n", d.Name, t.Format(time.RFC3339))
-			over, err = d.Task()
+			done, err = d.Task()
 			fmt.Printf("the interval task %s is complete this time, err: %v\n", d.Name, err)
-			if over {
+			if done {
 				d.Close()
 			}
 		}

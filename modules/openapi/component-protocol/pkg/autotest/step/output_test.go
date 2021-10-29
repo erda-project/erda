@@ -187,13 +187,14 @@ func TestGetStepAllOutput(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var bdl = &bundle.Bundle{}
 			var patch *monkey.PatchGuard
+			var gs = &apistructs.GlobalStateData{}
 			if tt.args.ConfigOutput != nil {
 				patch = monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineActionParamsAndOutputs", func(b *bundle.Bundle, req apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
 					return tt.args.ConfigOutput, nil
 				})
 			}
 
-			got, err := GetStepAllOutput(tt.args.steps, bdl)
+			got, err := GetStepAllOutput(tt.args.steps, bdl, gs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetStepAllOutput() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -288,13 +289,14 @@ func TestGetConfigSheetStepOutPut(t *testing.T) {
 
 			var bdl = &bundle.Bundle{}
 			var patch *monkey.PatchGuard
+			var gs = &apistructs.GlobalStateData{}
 			if tt.args.ConfigOutput != nil {
 				patch = monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineActionParamsAndOutputs", func(b *bundle.Bundle, req apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
 					return tt.args.ConfigOutput, nil
 				})
 			}
 
-			got, err := GetConfigSheetStepOutPut(tt.args.steps, bdl)
+			got, err := GetConfigSheetStepOutPut(tt.args.steps, bdl, gs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetConfigSheetStepOutPut() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -113,7 +113,8 @@ func (e *Endpoints) ListAudits(ctx context.Context, r *http.Request, vars map[st
 	if err != nil {
 		return apierrors.ErrListAudit.NotLogin().ToResp(), nil
 	}
-	if !identityInfo.IsInternalClient() {
+
+	if identityInfo.UserID != "" || !identityInfo.IsInternalClient() {
 		access, err := e.permission.CheckPermission(getPermissionBody(&listReq, identityInfo))
 		if err != nil {
 			return apierrors.ErrListAudit.InternalError(err).ToResp(), nil
@@ -180,7 +181,7 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 	if err != nil {
 		return apierrors.ErrExportExcelAudit.NotLogin()
 	}
-	if !identityInfo.IsInternalClient() {
+	if identityInfo.UserID != "" || !identityInfo.IsInternalClient() {
 		access, err := e.permission.CheckPermission(getPermissionBody(&listReq, identityInfo))
 		if err != nil {
 			return apierrors.ErrExportExcelAudit.InternalError(err)

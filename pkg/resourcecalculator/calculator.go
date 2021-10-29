@@ -47,24 +47,24 @@ func New(clusterName string) *Calculator {
 	return &Calculator{
 		ClusterName: clusterName,
 		allocatableCPU: &ResourceCalculator{
-			Type:  "CPU",
-			M:     make(map[string]uint64),
-			quota: make(map[Workspace]uint64),
+			Type:             "CPU",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
 		availableCPU: &ResourceCalculator{
-			Type:  "CPU",
-			M:     make(map[string]uint64),
-			quota: make(map[Workspace]uint64),
+			Type:             "CPU",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
 		allocatableMem: &ResourceCalculator{
-			Type:  "Memory",
-			M:     make(map[string]uint64),
-			quota: make(map[Workspace]uint64),
+			Type:             "Memory",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
 		availableMem: &ResourceCalculator{
-			Type:  "Memory",
-			M:     make(map[string]uint64),
-			quota: make(map[Workspace]uint64),
+			Type:             "Memory",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
 	}
 }
@@ -89,34 +89,28 @@ func (c *Calculator) AllocatableMem(workspace Workspace) uint64 {
 	return c.allocatableMem.totalForWorkspace(workspace)
 }
 
-func (c *Calculator) AlreadyQuotaCPU(workspace Workspace) uint64 {
-	return c.availableCPU.alreadyQuota(workspace)
+func (c *Calculator) AlreadyTookUpCPU(workspace Workspace) uint64 {
+	return c.availableCPU.alreadyTookUp(workspace)
 }
 
-func (c *Calculator) AlreadyQuotaMem(workspace Workspace) uint64 {
-	return c.availableMem.alreadyQuota(workspace)
+func (c *Calculator) AlreadyTookUpMem(workspace Workspace) uint64 {
+	return c.availableMem.alreadyTookUp(workspace)
 }
 
 func (c *Calculator) TotalQuotableCPU() uint64 {
-	var total = int(c.allocatableCPU.total)
-	for _, v := range c.availableCPU.quota {
-		total -= int(v)
+	quotable := int(c.allocatableCPU.total) - int(c.availableCPU.deduction)
+	if quotable < 0 {
+		quotable = 0
 	}
-	if total < 0 {
-		total = 0
-	}
-	return uint64(total)
+	return uint64(quotable)
 }
 
 func (c *Calculator) TotalQuotableMem() uint64 {
-	var total = int(c.allocatableMem.total)
-	for _, v := range c.availableMem.M {
-		total -= int(v)
+	quotable := int(c.allocatableMem.total) - int(c.availableMem.deduction)
+	if quotable < 0 {
+		quotable = 0
 	}
-	if total < 0 {
-		total = 0
-	}
-	return uint64(total)
+	return uint64(quotable)
 }
 
 func (c *Calculator) QuotableCPUForWorkspace(workspace Workspace) uint64 {
@@ -128,10 +122,11 @@ func (c *Calculator) QuotableMemForWorkspace(workspace Workspace) uint64 {
 }
 
 type ResourceCalculator struct {
-	Type  string
-	M     map[string]uint64
-	quota map[Workspace]uint64
-	total uint64
+	Type             string
+	WorkspacesValues map[string]uint64
+	tackUpM          map[Workspace]uint64
+	deduction        uint64
+	total            uint64
 }
 
 func (q *ResourceCalculator) addValue(value uint64, workspace ...Workspace) {
@@ -141,7 +136,7 @@ func (q *ResourceCalculator) addValue(value uint64, workspace ...Workspace) {
 		return
 	}
 	w := strings.Join(workspaces, ":")
-	q.M[w] += value
+	q.WorkspacesValues[w] += value
 }
 
 func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
@@ -152,7 +147,7 @@ func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
 	if w == "" {
 		return 0
 	}
-	for k, v := range q.M {
+	for k, v := range q.WorkspacesValues {
 		if strings.Contains(k, w) {
 			sum += v
 		}
@@ -160,31 +155,41 @@ func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
 	return sum
 }
 
-func (q *ResourceCalculator) deductionQuota(workspace Workspace, quota uint64) {
-	q.quota[workspace] += quota
-	if totalForWorkspace := q.totalForWorkspace(workspace); quota > totalForWorkspace {
-		for k := range q.M {
-			if strings.Contains(k, WorkspaceString(workspace)) {
-				q.M[k] = 0
-			}
-		}
-		return
-	}
-
+func (q *ResourceCalculator) deductionQuota(workspace Workspace, value uint64) {
+	q.deduction += value
 	// 按优先级减扣
 	p := priority(workspace)
-	for _, v := range p {
-		if q.M[v] >= quota {
-			q.M[v] -= quota
+	for _, workspaces := range p {
+		if q.WorkspacesValues[workspaces] >= value {
+			q.WorkspacesValues[workspaces] -= value
+			q.takeUp(workspaces, value)
 			return
 		}
-		quota -= q.M[v]
-		q.M[v] = 0
+		value -= q.WorkspacesValues[workspaces]
+		q.takeUp(workspaces, q.WorkspacesValues[workspaces])
+		q.WorkspacesValues[workspaces] = 0
+	}
+
+	q.takeUp(WorkspaceString(workspace), value)
+}
+
+func (q *ResourceCalculator) takeUp(workspaces string, value uint64) {
+	if strings.Contains(workspaces, "prod") {
+		q.tackUpM[Prod] += value
+	}
+	if strings.Contains(workspaces, "staging") {
+		q.tackUpM[Staging] += value
+	}
+	if strings.Contains(workspaces, "test") {
+		q.tackUpM[Test] += value
+	}
+	if strings.Contains(workspaces, "dev") {
+		q.tackUpM[Dev] += value
 	}
 }
 
-func (q *ResourceCalculator) alreadyQuota(workspace Workspace) uint64 {
-	return q.quota[workspace]
+func (q *ResourceCalculator) alreadyTookUp(workspace Workspace) uint64 {
+	return q.tackUpM[workspace]
 }
 
 func WorkspaceString(workspace Workspace) string {
@@ -221,25 +226,19 @@ func WorkspacesString(workspaces []Workspace) []string {
 	return result
 }
 
-func CoreToMillcore(v float64) uint64 {
-	return uint64(v * 1000)
+func CoreToMillcore(value float64) uint64 {
+	return uint64(value * 1000)
 }
 
-func MillcoreToCore(v uint64, accuracy int32) float64 {
-	value, _ := decimal.NewFromFloat(float64(v) / 1000).Round(accuracy).Float64()
-	return value
+func MillcoreToCore(value uint64, accuracy int32) float64 {
+	return Accuracy(float64(value)/1000, accuracy)
 }
 
-func GibibyteToByte(v float64) uint64 {
-	return uint64(v * 1024 * 1024 * 1024)
+func GibibyteToByte(value float64) uint64 {
+	return uint64(value * 1024 * 1024 * 1024)
 }
-func ByteToGibibyte(v uint64, accuracy int32) float64 {
-	value, _ := decimal.NewFromFloat(float64(v) / (1024 * 1024 * 1024)).Round(accuracy).Float64()
-	return value
-}
-
-func accuracy() {
-
+func ByteToGibibyte(value uint64, accuracy int32) float64 {
+	return Accuracy(float64(value)/(1024*1024*1024), accuracy)
 }
 
 func priority(workspace Workspace) []string {
@@ -291,6 +290,11 @@ func ResourceToString(res float64, typ string) string {
 	default:
 		return fmt.Sprintf("%.f", res)
 	}
+}
+
+func Accuracy(v float64, accuracy int32) float64 {
+	v, _ = decimal.NewFromFloat(v).Round(accuracy).Float64()
+	return v
 }
 
 func setPrec(f float64, prec int) float64 {

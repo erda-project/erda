@@ -175,7 +175,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component,
 			return err
 		}
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
-		err := ca.handleDefault()
+		err := ca.handleDefault(gs)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component,
 	return nil
 }
 
-func (i *ComponentAction) handleDefault() error {
+func (i *ComponentAction) handleDefault(gs *apistructs.GlobalStateData) error {
 	// 选中的 step
 	var configSheetID string
 	var autotestGetSceneStepReq apistructs.AutotestGetSceneStepReq
@@ -233,7 +233,8 @@ func (i *ComponentAction) handleDefault() error {
 	}
 	result, err := i.CtxBdl.Bdl.GetFileTreeNode(req, uint64(orgID))
 	if err != nil {
-		return err
+		(*gs)[protocol.GlobalInnerKeyError.String()] = fmt.Sprintf("failed to query file tree nodes, please check config sheets")
+		result = &apistructs.UnifiedFileTreeNode{Meta: map[string]interface{}{}}
 	}
 	_, ok := result.Meta[apistructs.AutoTestFileTreeNodeMetaKeyPipelineYml]
 	if ok {

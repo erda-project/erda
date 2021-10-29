@@ -84,23 +84,23 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	query, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(query["pageNo"].(float64))
-	w.State.PageSize = uint64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	w.State.Sorter.Field, _ = sorter["field"].(string)
-	w.State.Sorter.Order, _ = sorter["order"].(string)
+	w.State.PageNo = uint64(urlQuery["pageNo"].(float64))
+	w.State.PageSize = uint64(urlQuery["pageSize"].(float64))
+	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	w.State.Sorter.Field, _ = sorterData["field"].(string)
+	w.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
@@ -126,16 +126,16 @@ func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
 	w.server = steveServer
 }
 
-func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	w.State = state
@@ -489,6 +489,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -805,12 +806,12 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
-	component.Props = w.Props
-	component.Data = map[string]interface{}{
+func (w *ComponentWorkloadTable) Transfer(c *cptype.Component) {
+	c.Props = w.Props
+	c.Data = map[string]interface{}{
 		"list": w.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName":             w.State.ClusterName,
 		"countValues":             w.State.CountValues,
 		"pageNo":                  w.State.PageNo,
@@ -820,7 +821,7 @@ func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
 		"values":                  w.State.Values,
 		"workloadTable__urlQuery": w.State.WorkloadTableURLQuery,
 	}
-	component.Operations = w.Operations
+	c.Operations = w.Operations
 }
 
 func getWorkloadKindMap(kinds []string) map[string]struct{} {

@@ -21,15 +21,16 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 func init() {
@@ -108,14 +109,26 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	}
 
 	namespace, name := splits[0], splits[1]
-	client, err := k8sclient.New(f.State.ClusterName)
+	cli, err := cputil2.GetImpersonateClient(f.server, f.sdk.Identity.UserID, f.sdk.Identity.OrgID, f.State.ClusterName)
 	if err != nil {
 		return err
 	}
 
-	pod, err := client.ClientSet.CoreV1().Pods(namespace).Get(f.ctx, name, v1.GetOptions{})
+	pod := &corev1.Pod{}
+	err = cli.CRClient.Get(f.ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}, pod)
 	if err != nil {
 		return errors.Errorf("failed to get pod %s:%s, %v", namespace, name, err)
+	}
+
+	gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(pod)
+	if err != nil {
+		return errors.Errorf("failed to get object kind, %v", err)
+	}
+	if !unversioned && len(gvk) == 1 {
+		pod.SetGroupVersionKind(gvk[0])
 	}
 
 	data, err := json.Marshal(pod)

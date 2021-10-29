@@ -32,18 +32,14 @@ func TestResource_GetClusterPie(t *testing.T) {
 		I18N   i18n.Translator
 		Lang   i18n.LanguageCodes
 	}
+	ctx := context.WithValue(context.Background(), Lang, "zh-cn")
 	res := &pb.GetClusterResourcesResponse{
 		List: []*pb.ClusterResourceDetail{{ClusterName: "terminus"}},
 	}
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
-		Name: "distribution by Cluster",
+		Name: "distribution by cluster",
 		Type: "pie",
-		Data: []SerieData{{
-			Value: 0,
-			Name:  "terminus",
-		},
-		},
 	})
 	type args struct {
 		resourceType string
@@ -76,7 +72,7 @@ func TestResource_GetClusterPie(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Resource{I18N: nopTranslator{}}
-			gotProjectPie, err := r.GetClusterPie(tt.args.resourceType, tt.args.resources)
+			gotProjectPie, err := r.GetClusterPie(ctx, tt.args.resourceType, tt.args.resources)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetClusterPie() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -99,14 +95,11 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 		resourceType string
 		resp         *apistructs.GetQuotaOnClustersResponse
 	}
+	ctx := context.WithValue(context.Background(), Lang, "zh-cn")
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
 		Name: "distribution by principal",
 		Type: "pie",
-		Data: []SerieData{{
-			Value: 0,
-		},
-		},
 	})
 	resp := &apistructs.GetQuotaOnClustersResponse{
 		Owners: []*apistructs.OwnerQuotaOnClusters{{ID: 1, Projects: []*apistructs.ProjectQuotaOnClusters{{ID: 1}}}},
@@ -141,11 +134,7 @@ func TestResource_GetPrincipalPie(t *testing.T) {
 			r := &Resource{
 				I18N: nopTranslator{},
 			}
-			_, err := r.GetPrincipalPie(tt.args.resourceType, tt.args.resp)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPrincipalPie() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			r.GetPrincipalPie(ctx, tt.args.resourceType, tt.args.resp, nil)
 		})
 	}
 }
@@ -161,9 +150,10 @@ func TestResource_GetProjectPie(t *testing.T) {
 		resourceType string
 		resp         *apistructs.GetQuotaOnClustersResponse
 	}
+	ctx := context.WithValue(context.Background(), Lang, "zh-cn")
 	pie := &PieData{}
 	pie.Series = append(pie.Series, PieSerie{
-		Name: "distribution by Project",
+		Name: "distribution by project",
 		Type: "pie",
 	})
 	resp := &apistructs.GetQuotaOnClustersResponse{
@@ -198,11 +188,7 @@ func TestResource_GetProjectPie(t *testing.T) {
 			r := &Resource{
 				I18N: nopTranslator{},
 			}
-			_, err := r.GetProjectPie(tt.args.resourceType, tt.args.resp)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetProjectPie() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			r.GetProjectPie(ctx, tt.args.resourceType, tt.args.resp, nil)
 		})
 	}
 }

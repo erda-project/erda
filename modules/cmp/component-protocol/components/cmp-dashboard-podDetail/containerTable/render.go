@@ -196,7 +196,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			Title:     cputil.I18n(ctx, "restartCount"),
 		},
 		{
-			Width:     100,
+			Width:     120,
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
 			Fixed:     "right",
@@ -226,13 +226,13 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 	return nil
 }
 
-func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
-	component.Props = containerTable.Props
-	component.Data = map[string]interface{}{}
+func (containerTable *ContainerTable) Transfer(c *cptype.Component) {
+	c.Props = containerTable.Props
+	c.Data = map[string]interface{}{}
 	for k, v := range containerTable.Data {
-		component.Data[k] = v
+		c.Data[k] = v
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": containerTable.State.ClusterName,
 		"podId":       containerTable.State.PodID,
 	}

@@ -16,15 +16,16 @@ package autotestv2
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/dop/services/i18n"
 )
 
 type AutoTestSpaceDB struct {
@@ -158,8 +159,7 @@ func (svc *Service) Export(req apistructs.AutoTestSpaceExportRequest) (uint64, e
 		return 0, apierrors.ErrExportAutoTestSpace.InvalidParameter("fileType")
 	}
 
-	l := svc.bdl.GetLocale(req.Locale)
-	fileName := l.Get(i18n.I18nKeySpaceSheetName)
+	fileName := svc.MakeAutotestFileName(req.SpaceName)
 	if req.FileType == apistructs.TestSpaceFileTypeExcel {
 		fileName += ".xlsx"
 	}
@@ -255,8 +255,7 @@ func (svc *Service) ExportSceneSet(req apistructs.AutoTestSceneSetExportRequest)
 		return 0, apierrors.ErrExportAutoTestSceneSet.InvalidParameter("fileType")
 	}
 
-	l := svc.bdl.GetLocale(req.Locale)
-	fileName := l.Get(i18n.I18nKeySceneSetSheetName)
+	fileName := svc.MakeAutotestFileName(req.SceneSetName)
 	if req.FileType == apistructs.TestSceneSetFileTypeExcel {
 		fileName += ".xlsx"
 	}
@@ -343,4 +342,8 @@ func (svc *Service) ExportSceneSetFile(record *dao.TestFileRecord) {
 		logrus.Error(apierrors.ErrExportAutoTestSceneSet.InternalError(err))
 		return
 	}
+}
+
+func (svc *Service) MakeAutotestFileName(origin string) string {
+	return fmt.Sprintf("%s_%s", origin, time.Now().Format("20060102150405"))
 }

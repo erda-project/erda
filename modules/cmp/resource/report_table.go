@@ -22,6 +22,7 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -34,19 +35,23 @@ type ReportTable struct {
 		ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 		GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 	}
+	trans i18n.Translator
 }
 
 func NewReportTable(opts ...ReportTableOption) *ReportTable {
-	var t ReportTable
-	for _, f := range opts {
-		f(&t)
+	var table ReportTable
+	for _, opt := range opts {
+		opt(&table)
 	}
-	return &t
+	return &table
 }
 
 func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int64, clusterNames []string,
 	cpuPerNode, memPerNode uint64) (*apistructs.ResourceOverviewReportData, error) {
 	logrus.Debugln("GetResourceOverviewReport", "query all namespaces")
+
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+
 	// 1) 查找所有 namespaces
 	var namespacesM = make(map[string][]string)
 	orgIDStr := strconv.FormatInt(orgID, 10)
@@ -76,7 +81,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 
 	// 2) 调用 core-services bundle，根据 namespaces 查找各 namespaces 的归属
 	logrus.Debugln("GetResourceOverviewReport", "query namespaces belongs to")
-	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(orgID, namespacesM)
+	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo()
 	if err != nil {
 		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
 		logrus.WithError(err).Errorln()
@@ -129,6 +134,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 			ProjectID:          int64(projectItem.ProjectID),
 			ProjectName:        projectItem.ProjectName,
 			ProjectDisplayName: projectItem.ProjectDisplayName,
+			ProjectDesc:        projectItem.ProjectDesc,
 			OwnerUserID:        int64(projectItem.OwnerUserID),
 			OwnerUserName:      projectItem.OwnerUserName,
 			OwnerUserNickName:  projectItem.OwnerUserNickname,
@@ -139,32 +145,35 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 			Nodes:              0,
 		}
 		if projectItem.CPUQuota != 0 {
-			item.CPUWaterLevel = float64(projectItem.GetCPUReqeust()) / float64(projectItem.CPUQuota)
+			item.CPUWaterLevel = float64(projectItem.GetCPUReqeust()) / float64(projectItem.CPUQuota) * 100
 		}
 		if projectItem.MemQuota != 0 {
-			item.MemWaterLevel = float64(projectItem.GetMemRequest()) / float64(projectItem.MemQuota)
+			item.MemWaterLevel = float64(projectItem.GetMemRequest()) / float64(projectItem.MemQuota) * 100
 		}
 		item.Nodes = item.CPUQuota / float64(cpuPerNode)
 		if nodes := item.MemQuota / float64(memPerNode); nodes > item.Nodes {
 			item.Nodes = nodes
 		}
+		item.Nodes = calcu.Accuracy(item.Nodes, 1)
 		data.List = append(data.List, &item)
 	}
-	sharedNodes := float64(sharedResource[0]) / float64(cpuPerNode)
-	if nodes := float64(sharedResource[1]) / float64(memPerNode); nodes > sharedNodes {
+	sharedNodes := float64(sharedResource[0]) / float64(cpuPerNode*1000)
+	if nodes := float64(sharedResource[1]) / float64(memPerNode*1024*1024*1024); nodes > sharedNodes {
 		sharedNodes = nodes
 	}
+	sharedNodes = calcu.Accuracy(sharedNodes, 1)
 	data.List = append(data.List, &apistructs.ResourceOverviewReportDataItem{
 		ProjectID:          0,
-		ProjectName:        "",
-		ProjectDisplayName: "共享资源", // todo: i18n
+		ProjectName:        "-",
+		ProjectDisplayName: "-",
+		ProjectDesc:        rt.trans.Text(langCodes, "SharedResources"),
 		OwnerUserID:        0,
 		OwnerUserName:      "",
-		OwnerUserNickName:  "所有人", // todo: i18n
+		OwnerUserNickName:  "-",
 		CPUQuota:           calcu.MillcoreToCore(sharedResource[0], 3),
-		CPUWaterLevel:      1,
+		CPUWaterLevel:      100,
 		MemQuota:           calcu.ByteToGibibyte(sharedResource[1], 3),
-		MemWaterLevel:      1,
+		MemWaterLevel:      100,
 		Nodes:              sharedNodes,
 	})
 	data.Sum()
@@ -175,8 +184,8 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 type ReportTableOption func(table *ReportTable)
 
 func ReportTableWithBundle(bdl *bundle.Bundle) ReportTableOption {
-	return func(t *ReportTable) {
-		t.bdl = bdl
+	return func(theTable *ReportTable) {
+		theTable.bdl = bdl
 	}
 }
 
@@ -184,7 +193,13 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(t *ReportTable) {
-		t.cmp = cmp
+	return func(table *ReportTable) {
+		table.cmp = cmp
+	}
+}
+
+func ReportTableWithTrans(trans i18n.Translator) ReportTableOption {
+	return func(table *ReportTable) {
+		table.trans = trans
 	}
 }

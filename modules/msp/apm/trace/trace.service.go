@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -469,6 +470,19 @@ func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.Get
 }
 
 func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
+	if req.Url == "" {
+		return nil, errors.NewMissingParameterError("Url")
+	}
+	if req.ScopeID == "" {
+		return nil, errors.NewMissingParameterError("TerminusKey")
+	}
+	if req.Method == "" {
+		return nil, errors.NewMissingParameterError("Method")
+	}
+	if !govalidator.IsURL(req.Url) {
+		return nil, errors.NewParameterTypeError("Url invalid")
+	}
+
 	bodyValid := bodyCheck(req.Body)
 	if !bodyValid {
 		return nil, errors.NewParameterTypeError("body")
