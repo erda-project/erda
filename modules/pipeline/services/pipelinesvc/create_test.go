@@ -514,3 +514,46 @@ func TestPipelineSvc_MergePipelineYmlTasks(t *testing.T) {
 		})
 	}
 }
+
+func TestPipelineSvc_createPipelineAndCheckNotEndStatus(t *testing.T) {
+	type args struct {
+		p *spec.Pipeline
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test_end_status_error",
+			args: args{
+				p: &spec.Pipeline{
+					PipelineExtra: spec.PipelineExtra{
+						Extra: spec.PipelineExtraInfo{
+							SnippetChain: []uint64{1},
+						},
+						PipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          params:\n            build_type: maven\n            container_type: spring-boot\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n          caches:\n            - path: /root/.m2/repository\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n  - stage:\n      - snippet:\n          alias: snippet\n",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &PipelineSvc{}
+
+			var db = &dbclient.Client{}
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineBase", func(db *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.PipelineBase, bool, error) {
+				return spec.PipelineBase{
+					Status: apistructs.PipelineStatusSuccess,
+				}, true, nil
+			})
+			defer patch2.Unpatch()
+
+			if err := s.createPipelineAndCheckNotEndStatus(tt.args.p, nil); (err != nil) != tt.wantErr {
+				t.Errorf("createPipelineAndCheckNotEndStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
