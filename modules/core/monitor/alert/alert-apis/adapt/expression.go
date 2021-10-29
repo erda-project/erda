@@ -109,6 +109,7 @@ var (
 		"null":     OperatorTypeNone,
 		"match":    OperatorTypeOne,
 		"notMatch": OperatorTypeOne,
+		"all":      OperatorTypeOne,
 	}
 	functionOperatorRel = map[string]string{
 		"all":      OperatorTypeOne,
