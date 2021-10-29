@@ -931,6 +931,7 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 		if v, ok := projectOwnerMap[projectDTOs[i].ID]; ok {
 			projectDTOs[i].Owners = v
 		}
+		p.fetchQuota(&projectDTOs[i])
 	}
 
 	return &apistructs.PagingProjectDTO{Total: total, List: projectDTOs}, nil

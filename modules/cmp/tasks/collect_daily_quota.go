@@ -99,6 +99,8 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 		logrus.WithError(err).WithField("clusters", clusterNames).Errorln()
 	}
 
+	d.clearExpire()
+
 	return false, nil
 }
 
@@ -251,6 +253,16 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	}
 
 	return nil
+}
+
+func (d *DailyQuotaCollector) clearExpire() {
+	lastYear := time.Now().AddDate(-1, 0, 0).Format("2006-01-02 00:00:00")
+	if err := d.db.Where("created_at < ?", lastYear).Delete(new(apistructs.ClusterResourceDailyModel)).Error; err != nil {
+		logrus.Warnln("failed to clear expire data from ClusterResourceDailyModel")
+	}
+	if err := d.db.Where("created_at < ?", lastYear).Delete(new(apistructs.ProjectResourceDailyModel)).Error; err != nil {
+		logrus.Warnln("failed to clear expire data from ProjectResourceDailyModel")
+	}
 }
 
 type DailyQuotaCollectorOption func(collector *DailyQuotaCollector)
