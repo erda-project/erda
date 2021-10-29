@@ -455,14 +455,156 @@ func (b BoolValue) Value() interface{} {
 }
 
 type InterfaceValue struct {
-	o interface{}
+	o    interface{}
+	size int64
 }
 
 func (i InterfaceValue) Size() int64 {
-	return interfaceGetSize(i.o)
+	if i.size == 0 {
+		return 0
+	}
+	if size, err := calc(reflect.ValueOf(i.o)); err != nil {
+		logrus.Error(err)
+		return -1
+	} else {
+		return int64(size)
+	}
 }
 
+// Copy creates a deep copy of whatever is passed to it and returns the copy
+// in an interface{}.  The returned value will need to be asserted to the
+// correct type.
+func copy(src interface{}) interface{} {
+	if src == nil {
+		return nil
+	}
+
+	// Make the interface a reflect.Value
+	original := reflect.ValueOf(src)
+
+	// Make a copy of the same type as the original.
+	cpy := reflect.New(original.Type()).Elem()
+
+	// Recursively copy the original.
+	copyAndCalcRecursive(original, cpy)
+
+	// Return the copy as an interface.
+	return cpy.Interface()
+}
+
+// copyAndCalcRecursive does the actual copying of the interface. It currently has
+// limited support for what it can handle. Add as needed.
+func copyAndCalcRecursive(original, cpy reflect.Value) (int, error) {
+	size := 0
+	// handle according to original's Kind
+	switch original.Kind() {
+	case reflect.Ptr:
+		// Get the actual value being pointed to.
+		originalValue := original.Elem()
+
+		// if  it isn't valid, return.
+		if !originalValue.IsValid() {
+			return 0, nil
+		}
+		cpy.Set(reflect.New(originalValue.Type()))
+		s, err := copyAndCalcRecursive(originalValue, cpy.Elem())
+		if err != nil {
+			return 0, err
+		}
+		size += s
+
+	case reflect.Interface:
+		// If this is a nil, don't do anything
+		if original.IsNil() {
+			return 0, nil
+		}
+		// Get the value for the interface, not the pointer.
+		originalValue := original.Elem()
+
+		// Get the value by calling Elem().
+		copyValue := reflect.New(originalValue.Type()).Elem()
+		s, err := copyAndCalcRecursive(originalValue, copyValue)
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		cpy.Set(copyValue)
+
+	case reflect.Struct:
+		t, ok := original.Interface().(time.Time)
+		if ok {
+			cpy.Set(reflect.ValueOf(t))
+			return 0, nil
+		}
+		// Go through each field of the struct and copy it.
+		for i := 0; i < original.NumField(); i++ {
+			// The Type's StructField for a given field is checked to see if StructField.PkgPath
+			// is set to determine if the field is exported or not because CanSet() returns false
+			// for settable fields.  I'm not sure why.  -mohae
+			if original.Type().Field(i).PkgPath != "" {
+				continue
+			}
+			s, err := copyAndCalcRecursive(original.Field(i), cpy.Field(i))
+			if err != nil {
+				return 0, err
+			}
+			size += s
+		}
+
+	case reflect.Slice:
+		if original.IsNil() {
+			return 0, nil
+		}
+		// Make a new slice and copy each element.
+		cpy.Set(reflect.MakeSlice(original.Type(), original.Len(), original.Cap()))
+		for i := 0; i < original.Len(); i++ {
+			s, err := copyAndCalcRecursive(original.Index(i), cpy.Index(i))
+			if err != nil {
+				return 0, err
+			}
+			size += s
+		}
+
+	case reflect.Map:
+		if original.IsNil() {
+			return 0, nil
+		}
+		cpy.Set(reflect.MakeMap(original.Type()))
+		for _, key := range original.MapKeys() {
+			originalValue := original.MapIndex(key)
+			copyValue := reflect.New(originalValue.Type()).Elem()
+			s, err := copyAndCalcRecursive(originalValue, copyValue)
+			if err != nil {
+				return 0, err
+			}
+			size += s
+			copyKey := copy(key.Interface())
+			cpy.SetMapIndex(reflect.ValueOf(copyKey), copyValue)
+		}
+
+	default:
+		switch original.Kind() {
+		case reflect.Int8, reflect.Bool, reflect.Uint8:
+			size += 1
+		case reflect.Int16, reflect.Uint16:
+			size += 2
+		case reflect.Int, reflect.Int32, reflect.Uint32, reflect.Float32:
+			size += 4
+		case reflect.Int64, reflect.Uint64, reflect.Float64:
+			size += 8
+		case reflect.String:
+			size += original.Len()
+		default:
+			return -1, ValueNotSupportError
+		}
+		cpy.Set(original)
+	}
+	return size, nil
+}
 func calc(refValue reflect.Value) (int, error) {
+	if !refValue.IsValid() {
+		return 0, nil
+	}
 	refValue.Type()
 	size := 0
 	switch refValue.Kind() {
@@ -518,14 +660,27 @@ func calc(refValue reflect.Value) (int, error) {
 	return size, nil
 }
 
-func interfaceGetSize(o interface{}) int64 {
-	refValue := reflect.ValueOf(o)
-	size, err := calc(refValue)
-	if err != nil {
-		logrus.Error(err)
-		return -1
+func getInterfaceValue(src interface{}) (InterfaceValue, error) {
+	i := InterfaceValue{}
+	if src == nil {
+		return i, nil
 	}
-	return int64(size)
+
+	// Make the interface a reflect.Value
+	original := reflect.ValueOf(src)
+
+	// Make a copy of the same type as the original.
+	cpy := reflect.New(original.Type()).Elem()
+
+	// Recursively copy the original.
+	s, err := copyAndCalcRecursive(original, cpy)
+	if err != nil {
+		return i, err
+	}
+	i.size = int64(s)
+
+	// Return the copy as an interface.
+	return i, nil
 }
 
 func (i InterfaceValue) String() string {
@@ -689,7 +844,16 @@ func MarshalValue(o interface{}) (Values, error) {
 }
 
 func GetInterfaceValue(o interface{}) (Values, error) {
-	return Values{InterfaceValue{o: o}}, nil
+	refValue := reflect.ValueOf(o)
+	s, err := calc(refValue)
+	if err != nil {
+		return nil, err
+	}
+	ifv := InterfaceValue{
+		o:    o,
+		size: int64(s),
+	}
+	return Values{ifv}, nil
 }
 
 func GetByteValue(d byte) (Values, error) {

@@ -17,11 +17,14 @@ package cmp
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -38,6 +41,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/queue"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
@@ -49,6 +54,16 @@ import (
 )
 
 const OfflineLabel = "dice/offline"
+
+var queryQueue *queue.QueryQueue
+
+func init() {
+	queueSize := 10
+	if size, err := strconv.Atoi(os.Getenv("LIST_QUEUE_SIZE")); err == nil && size > queueSize {
+		queueSize = size
+	}
+	queryQueue = queue.NewQueryQueue(queueSize)
+}
 
 type SteveServer interface {
 	GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error)
@@ -65,7 +80,6 @@ type SteveServer interface {
 	OfflineNode(context.Context, string, string, string, []string) error
 	OnlineNode(context.Context, *apistructs.SteveRequest) error
 	Auth(userID, orgID, clusterName string) (apiuser.Info, error)
-	RestartWorkload(context.Context, *apistructs.SteveRequest) error
 }
 
 // GetSteveResource gets k8s resource from steve server.
@@ -133,73 +147,12 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	return obj, nil
 }
 
-// ListSteveResource lists k8s resource from steve server.
-// Required fields: ClusterName, Type.
-func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
-	if req.Type == "" || req.ClusterName == "" {
-		return nil, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
-	}
-
-	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
-
-	var (
-		params []string
-		query  string
-		err    error
-	)
-	if len(req.LabelSelector) != 0 || len(req.FieldSelector) != 0 {
-		values := req.URLQueryString()
-		for k, v := range values {
-			for _, value := range v {
-				params = append(params, fmt.Sprintf("%s=%s", k, value))
-			}
-		}
-		query = strutil.Join(params, "&", true)
-	}
-	url, err := url.ParseRequestURI(fmt.Sprintf("%s?%s", path, query))
-	if err != nil {
-		return nil, errors.Errorf("failed to parse url, %v", err)
-	}
-
-	var user apiuser.Info
-	if req.Type == apistructs.K8SNode || req.NoAuthentication {
-		user = &apiuser.DefaultInfo{
-			Name: "admin",
-			UID:  "admin",
-			Groups: []string{
-				"system:masters",
-				"system:authenticated",
-			},
-		}
-	} else {
-		user, err = p.Auth(req.UserID, req.OrgID, req.ClusterName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	withUser := request.WithUser(ctx, user)
-	r, err := http.NewRequestWithContext(withUser, http.MethodGet, url.String(), nil)
-	if err != nil {
+func (p *provider) list(apiOp *types.APIRequest, resp *steve.Response, clusterName string) ([]types.APIObject, error) {
+	logrus.Infof("[DEBUG %s] start request steve aggregator at %s", apiOp.Type, time.Now().Format(time.StampNano))
+	if err := p.SteveAggregator.Serve(clusterName, apiOp); err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-
-	resp := &steve.Response{}
-	apiOp := &types.APIRequest{
-		Name:           req.Name,
-		Type:           string(req.Type),
-		Method:         http.MethodGet,
-		Namespace:      req.Namespace,
-		ResponseWriter: resp,
-		Request:        r,
-		Response:       &steve.StatusCodeGetter{Response: resp},
-	}
-
-	logrus.Infof("[DEBUG %s] start request steve aggregator at %s", req.Type, time.Now().Format(time.StampNano))
-	if err := p.SteveAggregator.Serve(req.ClusterName, apiOp); err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	logrus.Infof("[DEBUG %s] end request steve aggregator at %s", req.Type, time.Now().Format(time.StampNano))
+	logrus.Infof("[DEBUG %s] end request steve aggregator at %s", apiOp.Type, time.Now().Format(time.StampNano))
 
 	collection, ok := resp.ResponseData.(*types.GenericCollection)
 	if !ok {
@@ -219,6 +172,184 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		objects = append(objects, obj.APIObject)
 	}
 	return objects, nil
+}
+
+func (p *provider) getApiRequest(ctx context.Context, req *apistructs.SteveRequest) (*types.APIRequest, *steve.Response, error) {
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
+
+	var (
+		params []string
+		query  string
+		err    error
+	)
+	if len(req.LabelSelector) != 0 || len(req.FieldSelector) != 0 {
+		values := req.URLQueryString()
+		for k, v := range values {
+			for _, value := range v {
+				params = append(params, fmt.Sprintf("%s=%s", k, value))
+			}
+		}
+		query = strutil.Join(params, "&", true)
+	}
+	url, err := url.ParseRequestURI(fmt.Sprintf("%s?%s", path, query))
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to parse url, %v", err)
+	}
+
+	var user apiuser.Info
+	if req.Type == apistructs.K8SNode || req.NoAuthentication {
+		user = &apiuser.DefaultInfo{
+			Name: "admin",
+			UID:  "admin",
+			Groups: []string{
+				"system:masters",
+				"system:authenticated",
+			},
+		}
+	} else {
+		user, err = p.Auth(req.UserID, req.OrgID, req.ClusterName)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	withUser := request.WithUser(ctx, user)
+	r, err := http.NewRequestWithContext(withUser, http.MethodGet, url.String(), nil)
+	if err != nil {
+		return nil, nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	resp := &steve.Response{}
+	apiOp := &types.APIRequest{
+		Type:           string(req.Type),
+		Method:         http.MethodGet,
+		Namespace:      req.Namespace,
+		ResponseWriter: resp,
+		Request:        r,
+		Response:       &steve.StatusCodeGetter{Response: resp},
+	}
+	return apiOp, resp, nil
+}
+
+type CacheKey struct {
+	Kind        string
+	Namespace   string
+	ClusterName string
+}
+
+func (k *CacheKey) GetKey() string {
+	d := sha256.New()
+	d.Write([]byte(k.Kind))
+	d.Write([]byte(k.Namespace))
+	d.Write([]byte(k.ClusterName))
+	return hex.EncodeToString(d.Sum(nil))
+}
+
+// ListSteveResource lists k8s resource from steve server.
+// Required fields: ClusterName, Type.
+func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error) {
+	if req.Type == "" || req.ClusterName == "" {
+		return nil, apierrors.ErrInvoke.InvalidParameter(errors.New("clusterName and type fields are required"))
+	}
+
+	apiOp, resp, err := p.getApiRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if !p.SteveAggregator.IsServerReady(req.ClusterName) {
+		return p.list(apiOp, resp, req.ClusterName)
+	}
+
+	hasAccess, err := p.SteveAggregator.HasAccess(req.ClusterName, apiOp, "list")
+	if err != nil {
+		return nil, err
+	}
+	if !hasAccess {
+		return nil, apierrors.ErrInvoke.AccessDenied()
+	}
+
+	key := CacheKey{
+		Kind:        apiOp.Type,
+		Namespace:   apiOp.Namespace,
+		ClusterName: req.ClusterName,
+	}
+	values, lexpired, err := cache.GetFreeCache().Get(key.GetKey())
+	if values == nil || err != nil {
+		if apiOp.Namespace != "" {
+			key := CacheKey{
+				Kind:        apiOp.Type,
+				Namespace:   "",
+				ClusterName: req.ClusterName,
+			}
+			allNsValues, expired, err := cache.GetFreeCache().Get(key.GetKey())
+			if allNsValues != nil && err == nil && !expired {
+				return getByNamespace(allNsValues[0].Value().([]types.APIObject), apiOp.Namespace), nil
+			}
+		}
+
+		queryQueue.Acquire(req.ClusterName, 1)
+		list, err := p.list(apiOp, resp, req.ClusterName)
+		queryQueue.Release(req.ClusterName, 1)
+		if err != nil {
+			return nil, err
+		}
+		vals, err := cache.GetInterfaceValue(list)
+		if err != nil {
+			return nil, errors.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
+		}
+		if err = cache.GetFreeCache().Set(key.GetKey(), vals, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for %s", apiOp.Type)
+		}
+		return list, nil
+	}
+
+	if lexpired {
+		if !cache.ExpireFreshQueue.IsFull() {
+			task := &queue.Task{
+				Key: key.GetKey(),
+				Do: func() {
+					ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+					defer cancel()
+					apiOp, resp, err := p.getApiRequest(ctx, req)
+					if err != nil {
+						logrus.Errorf("failed to get api request in task, %v", err)
+						return
+					}
+
+					list, err := p.list(apiOp, resp, req.ClusterName)
+					if err != nil {
+						logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
+						return
+					}
+					value, err := cache.GetInterfaceValue(list)
+					if err != nil {
+						logrus.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
+						return
+					}
+					if err = cache.GetFreeCache().Set(key.GetKey(), value, time.Second.Nanoseconds()*30); err != nil {
+						logrus.Errorf("failed to set cache for %s, %v", apiOp.Type, err)
+					}
+				},
+			}
+			cache.ExpireFreshQueue.Enqueue(task)
+		} else {
+			logrus.Warnf("queue size is full, task is ignored, key:%s", key.GetKey())
+		}
+	}
+
+	list := values[0].Value().([]types.APIObject)
+	return list, nil
+}
+
+func getByNamespace(list []types.APIObject, namespace string) []types.APIObject {
+	var res []types.APIObject
+	for _, apiObj := range list {
+		if apiObj.Namespace() == namespace {
+			res = append(res, apiObj)
+		}
+	}
+	return res
 }
 
 func newReadCloser(obj interface{}) (io.ReadCloser, error) {
@@ -281,6 +412,14 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 	objData := obj.Data()
 	if objData.String("type") == "error" {
 		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
+	}
+
+	cacheKey := CacheKey{
+		Kind:        apiOp.Type,
+		ClusterName: req.ClusterName,
+	}
+	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
 	}
 
 	auditCtx := map[string]interface{}{
@@ -347,6 +486,14 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
+	cacheKey := CacheKey{
+		Kind:        apiOp.Type,
+		ClusterName: req.ClusterName,
+	}
+	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
+	}
+
 	reqObj, err := data.Convert(req.Obj)
 	if err != nil {
 		logrus.Errorf("failed to convert obj in request to data.Object, %v", err)
@@ -410,6 +557,14 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		}
 	}
 
+	cacheKey := CacheKey{
+		Kind:        apiOp.Type,
+		ClusterName: req.ClusterName,
+	}
+	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
+	}
+
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  req.ClusterName,
 		middleware.AuditResourceType: req.Type,
@@ -452,7 +607,6 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		Name:           req.Name,
 		Type:           string(req.Type),
 		Method:         http.MethodPatch,
-		Namespace:      req.Namespace,
 		ResponseWriter: resp,
 		Request:        r,
 		Response:       &steve.StatusCodeGetter{Response: resp},
@@ -474,6 +628,15 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 	if objData.String("type") == "error" {
 		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
+
+	cacheKey := CacheKey{
+		Kind:        apiOp.Type,
+		ClusterName: req.ClusterName,
+	}
+	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
+	}
+
 	return nil
 }
 
@@ -761,40 +924,6 @@ func (p *provider) OnlineNode(ctx context.Context, req *apistructs.SteveRequest)
 	}
 	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditOnlineNode, auditCtx); err != nil {
 		logrus.Errorf("failed to audit when online node, %v", err)
-	}
-	return nil
-}
-
-func (p *provider) RestartWorkload(ctx context.Context, req *apistructs.SteveRequest) error {
-	if req.Type != apistructs.K8SDeployment && req.Type != apistructs.K8SStatefulSet &&
-		req.Type != apistructs.K8SDaemonSet {
-		return errors.New("only deployment, statefulSet and daemonSet can be restarted")
-	}
-
-	patchBody := map[string]interface{}{
-		"spec": map[string]interface{}{
-			"template": map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"annotations": map[string]interface{}{
-						"kubectl.kubernetes.io/restartedAt": time.Now().Format("2006-01-02T15:04:05+07:00"),
-					},
-				},
-			},
-		},
-	}
-	req.Obj = patchBody
-	if err := p.PatchNode(ctx, req); err != nil {
-		return err
-	}
-
-	auditCtx := map[string]interface{}{
-		middleware.AuditClusterName:  req.ClusterName,
-		middleware.AuditResourceName: req.Name,
-		middleware.AuditNamespace:    req.Namespace,
-		middleware.AuditResourceType: req.Type,
-	}
-	if err := p.Audit(req.UserID, req.OrgID, middleware.AuditRestartWorkload, auditCtx); err != nil {
-		logrus.Errorf("failed to audit when offline node, %v", err)
 	}
 	return nil
 }

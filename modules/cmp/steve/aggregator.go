@@ -24,6 +24,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/steve/pkg/attributes"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -72,6 +73,46 @@ func (a *Aggregator) GetAllClusters() []string {
 		return true
 	})
 	return clustersNames
+}
+
+func (a *Aggregator) IsServerReady(clusterName string) bool {
+	s, ok := a.servers.Load(clusterName)
+	if !ok {
+		return false
+	}
+	g := s.(*group)
+	return g.ready
+}
+
+// HasAccess set schemas for apiOp and check access for user in apiOp
+func (a *Aggregator) HasAccess(clusterName string, apiOp *types.APIRequest, verb string) (bool, error) {
+	g, ok := a.servers.Load(clusterName)
+	if !ok {
+		return false, errors.Errorf("steve server not found for cluster %s", clusterName)
+	}
+
+	server := g.(*group).server
+	if err := server.SetSchemas(apiOp); err != nil {
+		return false, err
+	}
+
+	schema := apiOp.Schemas.LookupSchema(apiOp.Type)
+	if schema == nil {
+		return false, errors.Errorf("steve server for cluster %s is not ready", clusterName)
+	}
+
+	user, ok := request.UserFrom(apiOp.Context())
+	if !ok {
+		return false, nil
+	}
+
+	access := server.AccessSetLookup.AccessFor(user)
+	gr := attributes.GR(schema)
+	ns := apiOp.Namespace
+	if ns == "" {
+		ns = "*"
+	}
+	return access.Grants(verb, gr, ns, attributes.Resource(schema)), nil
 }
 
 func (a *Aggregator) watchClusters(ctx context.Context) {
@@ -343,7 +384,14 @@ func (a *Aggregator) Serve(clusterName string, apiOp *types.APIRequest) error {
 	if !group.ready {
 		return apierrors2.ErrInvoke.InternalError(errors.Errorf("k8s API for cluster %s is not ready, please wait", clusterName))
 	}
-	return group.server.Handle(apiOp)
+
+	if apiOp.Schemas == nil {
+		if err := group.server.SetSchemas(apiOp); err != nil {
+			return err
+		}
+	}
+	group.server.Handle(apiOp)
+	return nil
 }
 
 func (a *Aggregator) createSteve(clusterInfo apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
@@ -414,9 +462,10 @@ func (a *Aggregator) list(server *Server, resType string) int {
 	}
 
 	apiOp.Request = req
-	if err = server.Handle(apiOp); err != nil {
+	if err = server.SetSchemas(apiOp); err != nil {
 		logrus.Errorf("failed to preload cache for %s, %v", resType, err)
 	}
+	server.Handle(apiOp)
 	return resp.StatusCode
 }
 

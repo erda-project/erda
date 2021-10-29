@@ -40,8 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
-
-	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
 var (
@@ -59,14 +57,8 @@ type Store struct {
 
 func NewProxyStore(ctx context.Context, clusterName string, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
 	return &errorStore{
-		Store: &cacheStore{
-			Store: &Store{
-				clientGetter: clientGetter,
-			},
-			ctx:         ctx,
-			asl:         asl,
-			cache:       cache.GetFreeCache(),
-			clusterName: clusterName,
+		Store: &Store{
+			clientGetter: clientGetter,
 		},
 	}
 }

@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -39,7 +38,6 @@ import (
 	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
-	"github.com/erda-project/erda/modules/cmp/steve/proxy"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -196,19 +194,12 @@ func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kin
 		return errors.Errorf("failed to marshal body, %v", err)
 	}
 
-	gvk := schema.GroupVersionKind{
-		Group:   "apps",
-		Version: "v1",
-	}
 	switch kind {
 	case string(apistructs.K8SDeployment):
-		gvk.Kind = "Deployment"
 		_, err = client.ClientSet.AppsV1().Deployments(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
 	case string(apistructs.K8SStatefulSet):
-		gvk.Kind = "StatefulSet"
 		_, err = client.ClientSet.AppsV1().StatefulSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
 	case string(apistructs.K8SDaemonSet):
-		gvk.Kind = "DaemonSet"
 		_, err = client.ClientSet.AppsV1().StatefulSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
 	default:
 		return errors.Errorf("invalid workload kind %s (only deployment, statefulSet and daemonSet can be restarted)", kind)
@@ -217,12 +208,12 @@ func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kin
 		return err
 	}
 
-	cacheKey := proxy.CacheKey{
-		GVK:         gvk.String(),
+	cacheKey := cmp.CacheKey{
+		Kind:        kind,
 		ClusterName: clusterName,
 	}
 	if _, err := cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache for %s, %v", gvk.String(), err)
+		logrus.Errorf("failed to remove cache for %s, %v", kind, err)
 	}
 	return nil
 }

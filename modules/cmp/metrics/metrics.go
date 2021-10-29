@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"time"
 
-	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -223,7 +222,7 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *M
 }
 
 func SetCache(k string, d interface{}) {
-	data, err := cache.MarshalValue(d)
+	data, err := cache.GetInterfaceValue(d)
 	if err != nil {
 		logrus.Errorf("cache marshal metrics %v err: %v", k, err)
 	} else {
@@ -240,12 +239,14 @@ func GetCache(key string) *MetricsData {
 		logrus.Errorf("get metrics %v err :%v", key, err)
 		return nil
 	}
-	var d *MetricsData
+	var (
+		d  *MetricsData
+		ok bool
+	)
 	if v != nil {
-		d = &MetricsData{}
-		err = jsi.Unmarshal(v[0].Value().([]byte), d)
-		if err != nil {
-			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
+		d, ok = v[0].Value().(*MetricsData)
+		if !ok {
+			logrus.Errorf("get metrics %v assert err", key)
 		}
 	}
 	return d

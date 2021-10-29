@@ -159,6 +159,7 @@ func setup(ctx context.Context, server *Server) error {
 	asl := server.AccessSetLookup
 	if asl == nil {
 		asl = accesscontrol.NewAccessStore(ctx, true, server.controllers.RBAC)
+		server.AccessSetLookup = asl
 	}
 
 	sf := schema.NewCollection(ctx, server.BaseSchemas, asl)
@@ -228,17 +229,20 @@ func (c *Server) ListenAndServe(ctx context.Context, httpsPort, httpPort int, op
 	return ctx.Err()
 }
 
-func (c *Server) Handle(apiOp *types.APIRequest) error {
+func (c *Server) SetSchemas(apiOp *types.APIRequest) error {
 	user, ok := request.UserFrom(apiOp.Request.Context())
 	if !ok {
 		return fmt.Errorf("user can not be empty in apiRequest")
 	}
 	schemas, err := c.SchemaFactory.Schemas(user)
 	if err != nil {
-		logrus.Errorf("handle failed, %v", err)
+		logrus.Errorf("set schemas failed, %v", err)
 		return err
 	}
 	apiOp.Schemas = schemas
-	c.APIServer.Handle(apiOp)
 	return nil
+}
+
+func (c *Server) Handle(apiOp *types.APIRequest) {
+	c.APIServer.Handle(apiOp)
 }
