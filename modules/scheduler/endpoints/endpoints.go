@@ -1218,7 +1218,7 @@ func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, var
 			Header: apistructs.Header{
 				Success: false,
 				Error: apistructs.ErrorResponse{
-					Msg: fmt.Sprintf("scale service %s error: %v", sg.Services[0].Name, err),
+					Msg: err.Error(),
 				}},
 		})
 	}
