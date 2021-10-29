@@ -905,6 +905,8 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 		return setContainerErr
 	}
 
+	k.UpdateContainerResourceEnv(scalingService.Resources, &container)
+
 	deploy.Spec.Template.Spec.Containers[0] = container
 
 	newCPU, newMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
@@ -976,4 +978,33 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	}
 
 	return nil
+}
+func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resources, container *apiv1.Container) {
+	for index, env := range container.Env {
+		var needToUpdate = false
+		switch env.Name {
+		case "DICE_CPU_ORIGIN":
+			needToUpdate = true
+			env.Value = fmt.Sprintf("%f", originResource.Cpu)
+		case "DICE_CPU_REQUEST":
+			needToUpdate = true
+			env.Value = container.Resources.Requests.Cpu().AsDec().String()
+		case "DICE_CPU_LIMIT":
+			needToUpdate = true
+			env.Value = container.Resources.Limits.Cpu().AsDec().String()
+		case "DICE_MEM_ORIGIN":
+			needToUpdate = true
+			env.Value = fmt.Sprintf("%f", originResource.Mem)
+		case "DICE_MEM_REQUEST":
+			needToUpdate = true
+			env.Value = fmt.Sprintf("%d", container.Resources.Requests.Memory().Value()/1024/1024)
+		case "DICE_MEM_LIMIT":
+			needToUpdate = true
+			env.Value = fmt.Sprintf("%d", container.Resources.Limits.Memory().Value()/1024/1024)
+		}
+		if needToUpdate {
+			container.Env[index] = env
+		}
+	}
+	return
 }

@@ -21,6 +21,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
@@ -95,4 +96,58 @@ func TestNewDeployment(t *testing.T) {
 	})
 	_, err := k.newDeployment(service, servicegroup)
 	assert.Equal(t, err, nil)
+}
+
+func TestUpdateContainerResourceEnv(t *testing.T) {
+	k := Kubernetes{}
+
+	container := apiv1.Container{
+		Name:       "",
+		Image:      "",
+		Command:    nil,
+		Args:       nil,
+		WorkingDir: "",
+		Ports:      nil,
+		EnvFrom:    nil,
+		Env: []apiv1.EnvVar{
+			{
+				Name:  "DICE_CPU_ORIGIN",
+				Value: "0.100000",
+			},
+			{
+				Name:  "DICE_CPU_REQUEST",
+				Value: "0.010",
+			},
+			{
+				Name:  "DICE_CPU_LIMIT",
+				Value: "0.100",
+			},
+			{
+				Name:  "DICE_MEM_ORIGIN",
+				Value: "1024.000000",
+			},
+			{
+				Name:  "DICE_MEM_REQUEST",
+				Value: "1024",
+			},
+			{
+				Name:  "DICE_MEM_LIMIT",
+				Value: "1024",
+			},
+		},
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				"cpu":    resource.MustParse("100m"),
+				"memory": resource.MustParse("1024Mi"),
+			},
+			Requests: apiv1.ResourceList{
+				"cpu":    resource.MustParse("10m"),
+				"memory": resource.MustParse("1024Mi"),
+			},
+		},
+	}
+	originResource := apistructs.Resources{Cpu: 0.1, Mem: 1024}
+	k.UpdateContainerResourceEnv(originResource, &container)
+	assert.Equal(t, container.Env[0].Value, "0.100000")
+	assert.Equal(t, container.Env[5].Value, "1024")
 }
