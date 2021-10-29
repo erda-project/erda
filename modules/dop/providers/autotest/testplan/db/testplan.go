@@ -49,11 +49,19 @@ func (db *TestPlanDB) GetTestPlan(id uint64) (*TestPlanV2, error) {
 	return &testPlan, err
 }
 
+type ApiCount struct {
+	Count   int64  `json:"count"`
+	SceneID uint64 `json:"sceneID" gorm:"scene_id"`
+}
+
 // CountApiBySceneID .
-func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (count int64, err error) {
+func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (counts []ApiCount, err error) {
 	err = db.Table("dice_autotest_scene_step").
+		Select("scene_id,count(1) AS count").
 		Where("scene_id IN (?)", sceneID).
-		Where("type = ?", apistructs.StepTypeAPI).Count(&count).Error
+		Where("type = ?", apistructs.StepTypeAPI).
+		Group("scene_id").
+		Find(&counts).Error
 	return
 }
 

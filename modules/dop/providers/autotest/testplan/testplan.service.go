@@ -256,16 +256,31 @@ func (s *TestPlanService) calcTotalApiNum(req *pb.TestPlanUpdateByHookRequest) (
 			}
 			return setIDs
 		}()...)
-		return s.db.CountApiBySceneID(sceneIDs...)
+		return s.countApiBySceneIDRepeat(sceneIDs...)
 	case apistructs.AutotestSceneSet:
 		sceneIDs := s.getSceneIDs(0, req.Content.SceneSetID)
-		return s.db.CountApiBySceneID(sceneIDs...)
+		return s.countApiBySceneIDRepeat(sceneIDs...)
 	case apistructs.StepTypeScene.String():
-		return s.db.CountApiBySceneID(req.Content.SceneID)
+		return s.countApiBySceneIDRepeat(req.Content.SceneID)
 	case apistructs.StepTypeAPI.String():
 		return 1, nil
 	}
 	return 0, nil
+}
+
+func (s *TestPlanService) countApiBySceneIDRepeat(sceneID ...uint64) (total int64, err error) {
+	apiCounts, err := s.db.CountApiBySceneID(sceneID...)
+	if err != nil {
+		return 0, err
+	}
+	apiCountMap := make(map[uint64]int64)
+	for _, v := range apiCounts {
+		apiCountMap[v.SceneID] = v.Count
+	}
+	for _, v := range sceneID {
+		total += apiCountMap[v]
+	}
+	return
 }
 
 func (s *TestPlanService) getSceneIDs(recCount int, setID ...uint64) (sceneIDs []uint64) {
@@ -273,11 +288,27 @@ func (s *TestPlanService) getSceneIDs(recCount int, setID ...uint64) (sceneIDs [
 	if recCount > 100 {
 		return
 	}
-	fmt.Println(recCount)
+
+	setIDMap := make(map[uint64]int)
+	for _, v := range setID {
+		setIDMap[v] = setIDMap[v] + 1
+	}
 	scenes, err := s.db.ListSceneBySceneSetID(setID...)
 	if err != nil {
 		return
 	}
+	sceneMap := make(map[uint64][]db.AutoTestScene)
+	for _, v := range scenes {
+		sceneMap[v.SetID] = append(sceneMap[v.SetID], v)
+	}
+	for k, v := range setIDMap {
+		if v > 1 {
+			for i := 0; i < v-1; i++ {
+				scenes = append(scenes, sceneMap[k]...)
+			}
+		}
+	}
+
 	for _, v := range scenes {
 		if v.RefSetID == 0 {
 			sceneIDs = append(sceneIDs, v.ID)

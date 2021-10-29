@@ -15,7 +15,6 @@
 package testplan
 
 import (
-	"github.com/erda-project/erda/pkg/database/dbengine"
 	"reflect"
 	"testing"
 	"time"
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan/db"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 func Test_convertTime(t *testing.T) {
@@ -192,24 +192,28 @@ func TestGetSceneIDs(t *testing.T) {
 					BaseModel: dbengine.BaseModel{
 						ID: 1,
 					},
+					SetID:    1,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 2,
 					},
+					SetID:    1,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 3,
 					},
+					SetID:    1,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 4,
 					},
+					SetID:    1,
 					RefSetID: 2,
 				},
 			}, nil
@@ -218,26 +222,30 @@ func TestGetSceneIDs(t *testing.T) {
 			return []db.AutoTestScene{
 				{
 					BaseModel: dbengine.BaseModel{
-						ID: 5,
+						ID: 1,
 					},
+					SetID:    2,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 6,
 					},
+					SetID:    2,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 7,
 					},
+					SetID:    2,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 8,
 					},
+					SetID:    2,
 					RefSetID: 3,
 				},
 			}, nil
@@ -248,18 +256,21 @@ func TestGetSceneIDs(t *testing.T) {
 					BaseModel: dbengine.BaseModel{
 						ID: 9,
 					},
+					SetID:    3,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 10,
 					},
+					SetID:    3,
 					RefSetID: 0,
 				},
 				{
 					BaseModel: dbengine.BaseModel{
 						ID: 11,
 					},
+					SetID:    3,
 					RefSetID: 0,
 				},
 			}, nil
@@ -269,8 +280,8 @@ func TestGetSceneIDs(t *testing.T) {
 	svc := TestPlanService{
 		db: DB,
 	}
-	sceneIDs := svc.getSceneIDs(0, 1)
-	if !reflect.DeepEqual([]uint64{1, 2, 3, 5, 6, 7, 9, 10, 11}, sceneIDs) {
+	sceneIDs := svc.getSceneIDs(0, 1, 1)
+	if len(sceneIDs) != 18 {
 		t.Error("fail")
 	}
 }
@@ -336,6 +347,7 @@ func TestGetSceneIDsWithDeadCycle(t *testing.T) {
 		}
 		return []db.AutoTestScene{}, nil
 	})
+	defer monkey.UnpatchAll()
 	svc := TestPlanService{
 		db: DB,
 	}
@@ -358,5 +370,36 @@ func TestCalcRate(t *testing.T) {
 	}
 	for _, v := range tt {
 		assert.Equal(t, v.want, calcRate(v.num, v.total))
+	}
+}
+
+func TestCountApiBySceneIDRepeat(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "CountApiBySceneID", func(*db.TestPlanDB, ...uint64) (apiCounts []db.ApiCount, err error) {
+		return []db.ApiCount{
+			{
+				Count:   10,
+				SceneID: 1,
+			},
+			{
+				Count:   5,
+				SceneID: 2,
+			},
+			{
+				Count:   2,
+				SceneID: 3,
+			},
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+	svc := TestPlanService{
+		db: DB,
+	}
+	count, err := svc.countApiBySceneIDRepeat(1, 2, 2, 3, 3, 3)
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 1*10+2*5+3*2 {
+		t.Error("fail")
 	}
 }
