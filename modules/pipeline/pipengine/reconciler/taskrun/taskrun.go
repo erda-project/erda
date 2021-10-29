@@ -72,9 +72,9 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 ) *TaskRun {
 	// make executor has buffer, don't block task framework
-	executorCH := make(chan interface{}, 1)
+	executorCh := make(chan interface{}, 1)
 	return &TaskRun{
-		Ctx:       context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCH),
+		Ctx:       context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCh),
 		Task:      task,
 		Executor:  executor,
 		Throttler: throttler,
@@ -92,7 +92,7 @@ func New(ctx context.Context, task *spec.PipelineTask,
 
 		PExitCh:        pExitCh,
 		PExitChCancel:  pExitChCancel,
-		ExecutorDoneCh: executorCH,
+		ExecutorDoneCh: executorCh,
 
 		ActionAgentSvc: actionAgentSvc,
 		ExtMarketSvc:   extMarketSvc,

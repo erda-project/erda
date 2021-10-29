@@ -17,6 +17,7 @@ package apitest
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -30,9 +31,10 @@ import (
 var Kind = types.Kind(spec.PipelineTaskExecutorKindAPITest)
 
 type define struct {
-	name     types.Name
-	options  map[string]string
-	dbClient *dbclient.Client
+	name        types.Name
+	options     map[string]string
+	dbClient    *dbclient.Client
+	runningAPIs sync.Map
 }
 
 func (d *define) Kind() types.Kind { return Kind }
@@ -46,7 +48,11 @@ func (d *define) Exist(ctx context.Context, task *spec.PipelineTask) (created bo
 	case status == apistructs.PipelineStatusCreated:
 		return true, false, nil
 	case status == apistructs.PipelineStatusQueue, status == apistructs.PipelineStatusRunning:
-		return true, true, nil
+		// if apitest task is not procesing, should make status-started false
+		if _, alreadyProcessing := d.runningAPIs.Load(d.makeRunningApiKey(task)); alreadyProcessing {
+			return true, true, nil
+		}
+		return true, false, nil
 	case status.IsEndStatus():
 		return true, true, nil
 	default:
@@ -61,6 +67,10 @@ func (d *define) Create(ctx context.Context, task *spec.PipelineTask) (interface
 func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
 
 	go func(ctx context.Context, task *spec.PipelineTask) {
+		if _, alreadyProcessing := d.runningAPIs.LoadOrStore(d.makeRunningApiKey(task), task); alreadyProcessing {
+			logrus.Warnf("apitest: task: %d already processing", task.ID)
+			return
+		}
 		executorDoneCh, ok := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan interface{})
 		if !ok {
 			logrus.Warnf("apitest: failed to get executor channel, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
@@ -75,6 +85,7 @@ func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{
 			if executorDoneCh != nil {
 				executorDoneCh <- apistructs.PipelineStatusDesc{Status: status}
 			}
+			d.runningAPIs.Delete(d.makeRunningApiKey(task))
 		}()
 
 		logic.Do(ctx, task)
@@ -112,7 +123,7 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 		return apistructs.PipelineStatusDesc{Status: task.Status}, nil
 	}
 
-	created, _, err := d.Exist(ctx, task)
+	created, started, err := d.Exist(ctx, task)
 	if err != nil {
 		return apistructs.PipelineStatusDesc{}, err
 	}
@@ -121,16 +132,22 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 		return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusAnalyzed}, nil
 	}
 
+	if !started && len(latestTask.Result.Metadata) == 0 {
+		return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusBorn}, nil
+	}
+
 	// status according to api success or not
 	meta := latestTask.Result.Metadata
+	var status = apistructs.PipelineStatusFailed
 	for _, metaField := range meta {
 		if metaField.Name == logic.MetaKeyResult {
 			if metaField.Value == logic.ResultSuccess {
-				return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}, nil
+				status = apistructs.PipelineStatusSuccess
 			}
 			if metaField.Value == logic.ResultFailed {
-				return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusFailed}, nil
+				status = apistructs.PipelineStatusFailed
 			}
+			return apistructs.PipelineStatusDesc{Status: status}, nil
 		}
 	}
 
@@ -154,6 +171,10 @@ func (d *define) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) 
 	return nil, nil
 }
 
+func (d *define) makeRunningApiKey(task *spec.PipelineTask) string {
+	return fmt.Sprintf("%d-%d", task.PipelineID, task.ID)
+}
+
 func init() {
 	types.MustRegister(Kind, func(name types.Name, options map[string]string) (types.ActionExecutor, error) {
 		dbClient, err := dbclient.New()
@@ -161,9 +182,10 @@ func init() {
 			return nil, fmt.Errorf("failed to init dbclient, err: %v", err)
 		}
 		return &define{
-			name:     name,
-			options:  options,
-			dbClient: dbClient,
+			name:        name,
+			options:     options,
+			dbClient:    dbClient,
+			runningAPIs: sync.Map{},
 		}, nil
 	})
 }

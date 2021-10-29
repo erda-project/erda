@@ -17,6 +17,7 @@ package taskop
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -29,6 +30,11 @@ import (
 )
 
 var err4EnableDeclineRatio = errors.New("enable decline ratio")
+
+var (
+	declineRatio float64       = 1.5
+	declineLimit time.Duration = 10 * time.Second
+)
 
 type wait taskrun.TaskRun
 
@@ -46,13 +52,12 @@ func (w *wait) TaskRun() *taskrun.TaskRun {
 
 func (w *wait) Processing() (interface{}, error) {
 	var (
-		data          interface{}
-		lastSleepTime float64 = 1
-		declineRatio          = 1.5
-		declineLimit  int     = 10
+		data        interface{}
+		loopedTimes uint64
 	)
 
-	timer := time.NewTimer(time.Duration(lastSleepTime) * time.Second)
+	timer := time.NewTimer(w.calculateNextLoopTimeDuration(loopedTimes))
+	defer timer.Stop()
 	for {
 		select {
 		case doneData := <-w.ExecutorDoneCh:
@@ -77,11 +82,9 @@ func (w *wait) Processing() (interface{}, error) {
 			if statusDesc.Status == apistructs.PipelineStatusUnknown {
 				logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q wait get status %q, retry", w.P.ID, w.Task.Name, apistructs.PipelineStatusUnknown)
 			}
-			lastSleepTime = lastSleepTime * declineRatio
-			if lastSleepTime > float64(declineLimit) {
-				lastSleepTime = float64(declineLimit)
-			}
-			timer.Reset(time.Duration(lastSleepTime) * time.Second)
+
+			loopedTimes++
+			timer.Reset(w.calculateNextLoopTimeDuration(loopedTimes))
 		}
 	}
 }
@@ -173,4 +176,13 @@ func (w *wait) TuneTriggers() taskrun.TaskOpTuneTriggers {
 		BeforeProcessing: aoptypes.TuneTriggerTaskBeforeWait,
 		AfterProcessing:  aoptypes.TuneTriggerTaskAfterWait,
 	}
+}
+
+func (w *wait) calculateNextLoopTimeDuration(loopedTimes uint64) time.Duration {
+	lastSleepTime := time.Second
+	lastSleepTime = time.Duration(float64(lastSleepTime) * math.Pow(declineRatio, float64(loopedTimes)))
+	if lastSleepTime > declineLimit {
+		return declineLimit
+	}
+	return lastSleepTime
 }
