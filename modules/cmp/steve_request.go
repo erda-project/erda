@@ -30,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
@@ -285,10 +284,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 			}
 			allNsValues, expired, err := cache.GetFreeCache().Get(key.GetKey())
 			if allNsValues != nil && err == nil && !expired {
-				var list []types.APIObject
-				if err = jsi.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
-					return getByNamespace(list, apiOp.Namespace), nil
-				}
+				return getByNamespace(allNsValues[0].Value().([]types.APIObject), apiOp.Namespace), nil
 			}
 		}
 
@@ -298,7 +294,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		if err != nil {
 			return nil, err
 		}
-		vals, err := cache.MarshalValue(list)
+		vals, err := cache.GetInterfaceValue(list)
 		if err != nil {
 			return nil, errors.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
 		}
@@ -326,12 +322,12 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 						logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
 						return
 					}
-					data, err := cache.MarshalValue(list)
+					value, err := cache.GetInterfaceValue(list)
 					if err != nil {
 						logrus.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
 						return
 					}
-					if err = cache.GetFreeCache().Set(key.GetKey(), data, time.Second.Nanoseconds()*30); err != nil {
+					if err = cache.GetFreeCache().Set(key.GetKey(), value, time.Second.Nanoseconds()*30); err != nil {
 						logrus.Errorf("failed to set cache for %s, %v", apiOp.Type, err)
 					}
 				},
@@ -342,10 +338,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		}
 	}
 
-	var list []types.APIObject
-	if err = jsi.Unmarshal(values[0].Value().([]byte), &list); err != nil {
-		return nil, errors.Errorf("failed to marshal list %s result, %v", apiOp.Type, err)
-	}
+	list := values[0].Value().([]types.APIObject)
 	return list, nil
 }
 
