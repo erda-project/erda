@@ -196,6 +196,34 @@ func Test_getMemberFromMembers(t *testing.T) {
 	}
 }
 
+func Test_calcuRequestRate(t *testing.T) {
+	var (
+		prod = apistructs.ResourceConfigInfo{
+			CPUQuota:            100,
+			CPURequest:          50,
+			CPURequestByAddon:   30,
+			CPURequestByService: 10,
+			MemQuota:            100,
+			MemRequest:          500,
+			MemRequestByAddon:   30,
+			MemRequestByService: 10,
+		}
+		staging = prod
+		test    = prod
+		dev     = prod
+	)
+	var dto = &apistructs.ProjectDTO{
+		ResourceConfig: &apistructs.ResourceConfigsInfo{
+			PROD:    &prod,
+			STAGING: &staging,
+			TEST:    &test,
+			DEV:     &dev,
+		},
+	}
+	p := new(Project)
+	p.calcuRequestRate(dto)
+}
+
 // TODO We need to turn this ut on after adding the delete portal to the UI
 // func TestDeleteProjectWhenAddonExists(t *testing.T) {
 // 	db := &dao.DBClient{}

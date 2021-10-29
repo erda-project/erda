@@ -39,11 +39,11 @@ type ReportTable struct {
 }
 
 func NewReportTable(opts ...ReportTableOption) *ReportTable {
-	var t ReportTable
-	for _, f := range opts {
-		f(&t)
+	var table ReportTable
+	for _, opt := range opts {
+		opt(&table)
 	}
-	return &t
+	return &table
 }
 
 func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int64, clusterNames []string,
@@ -193,13 +193,13 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(theTable *ReportTable) {
-		theTable.cmp = cmp
+	return func(table *ReportTable) {
+		table.cmp = cmp
 	}
 }
 
 func ReportTableWithTrans(trans i18n.Translator) ReportTableOption {
-	return func(theTable *ReportTable) {
-		theTable.trans = trans
+	return func(table *ReportTable) {
+		table.trans = trans
 	}
 }

@@ -36,69 +36,69 @@ var Workspaces = []Workspace{Prod, Staging, Test, Dev}
 type Workspace int
 
 type Calculator struct {
-	ClusterName       string
-	allocatableCpu    *ResourceCalculator
-	allocatableMemory *ResourceCalculator
-	availableCpu      *ResourceCalculator
-	availableMemory   *ResourceCalculator
+	ClusterName    string
+	allocatableCPU *ResourceCalculator
+	allocatableMem *ResourceCalculator
+	availableCPU   *ResourceCalculator
+	availableMem   *ResourceCalculator
 }
 
 func New(clusterName string) *Calculator {
 	return &Calculator{
 		ClusterName: clusterName,
-		allocatableCpu: &ResourceCalculator{
-			Type:       "CPU",
-			Container:  make(map[string]uint64),
-			tackUpMmap: make(map[Workspace]uint64),
+		allocatableCPU: &ResourceCalculator{
+			Type:             "CPU",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
-		availableCpu: &ResourceCalculator{
-			Type:       "CPU",
-			Container:  make(map[string]uint64),
-			tackUpMmap: make(map[Workspace]uint64),
+		availableCPU: &ResourceCalculator{
+			Type:             "CPU",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
-		allocatableMemory: &ResourceCalculator{
-			Type:       "Memory",
-			Container:  make(map[string]uint64),
-			tackUpMmap: make(map[Workspace]uint64),
+		allocatableMem: &ResourceCalculator{
+			Type:             "Memory",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
-		availableMemory: &ResourceCalculator{
-			Type:       "Memory",
-			Container:  make(map[string]uint64),
-			tackUpMmap: make(map[Workspace]uint64),
+		availableMem: &ResourceCalculator{
+			Type:             "Memory",
+			WorkspacesValues: make(map[string]uint64),
+			tackUpM:          make(map[Workspace]uint64),
 		},
 	}
 }
 
 func (c *Calculator) AddValue(cpu, mem uint64, workspace ...Workspace) {
-	c.allocatableCpu.addValue(cpu, workspace...)
-	c.availableCpu.addValue(cpu, workspace...)
-	c.allocatableMemory.addValue(mem, workspace...)
-	c.availableMemory.addValue(mem, workspace...)
+	c.allocatableCPU.addValue(cpu, workspace...)
+	c.availableCPU.addValue(cpu, workspace...)
+	c.allocatableMem.addValue(mem, workspace...)
+	c.availableMem.addValue(mem, workspace...)
 }
 
 func (c *Calculator) DeductionQuota(workspace Workspace, cpu, mem uint64) {
-	c.availableCpu.deductionQuota(workspace, cpu)
-	c.availableMemory.deductionQuota(workspace, mem)
+	c.availableCPU.deductionQuota(workspace, cpu)
+	c.availableMem.deductionQuota(workspace, mem)
 }
 
 func (c *Calculator) AllocatableCPU(workspace Workspace) uint64 {
-	return c.allocatableCpu.totalForWorkspace(workspace)
+	return c.allocatableCPU.totalForWorkspace(workspace)
 }
 
 func (c *Calculator) AllocatableMem(workspace Workspace) uint64 {
-	return c.allocatableMemory.totalForWorkspace(workspace)
+	return c.allocatableMem.totalForWorkspace(workspace)
 }
 
 func (c *Calculator) AlreadyTookUpCPU(workspace Workspace) uint64 {
-	return c.availableCpu.alreadyTookUp(workspace)
+	return c.availableCPU.alreadyTookUp(workspace)
 }
 
 func (c *Calculator) AlreadyTookUpMem(workspace Workspace) uint64 {
-	return c.availableMemory.alreadyTookUp(workspace)
+	return c.availableMem.alreadyTookUp(workspace)
 }
 
 func (c *Calculator) TotalQuotableCPU() uint64 {
-	quotable := int(c.allocatableCpu.total) - int(c.availableCpu.deduction)
+	quotable := int(c.allocatableCPU.total) - int(c.availableCPU.deduction)
 	if quotable < 0 {
 		quotable = 0
 	}
@@ -106,7 +106,7 @@ func (c *Calculator) TotalQuotableCPU() uint64 {
 }
 
 func (c *Calculator) TotalQuotableMem() uint64 {
-	quotable := int(c.allocatableMemory.total) - int(c.availableMemory.deduction)
+	quotable := int(c.allocatableMem.total) - int(c.availableMem.deduction)
 	if quotable < 0 {
 		quotable = 0
 	}
@@ -114,19 +114,19 @@ func (c *Calculator) TotalQuotableMem() uint64 {
 }
 
 func (c *Calculator) QuotableCPUForWorkspace(workspace Workspace) uint64 {
-	return c.availableCpu.totalForWorkspace(workspace)
+	return c.availableCPU.totalForWorkspace(workspace)
 }
 
 func (c *Calculator) QuotableMemForWorkspace(workspace Workspace) uint64 {
-	return c.availableMemory.totalForWorkspace(workspace)
+	return c.availableMem.totalForWorkspace(workspace)
 }
 
 type ResourceCalculator struct {
-	Type       string
-	Container  map[string]uint64
-	tackUpMmap map[Workspace]uint64
-	deduction  uint64
-	total      uint64
+	Type             string
+	WorkspacesValues map[string]uint64
+	tackUpM          map[Workspace]uint64
+	deduction        uint64
+	total            uint64
 }
 
 func (q *ResourceCalculator) addValue(value uint64, workspace ...Workspace) {
@@ -136,7 +136,7 @@ func (q *ResourceCalculator) addValue(value uint64, workspace ...Workspace) {
 		return
 	}
 	w := strings.Join(workspaces, ":")
-	q.Container[w] += value
+	q.WorkspacesValues[w] += value
 }
 
 func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
@@ -147,7 +147,7 @@ func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
 	if w == "" {
 		return 0
 	}
-	for k, v := range q.Container {
+	for k, v := range q.WorkspacesValues {
 		if strings.Contains(k, w) {
 			sum += v
 		}
@@ -160,14 +160,14 @@ func (q *ResourceCalculator) deductionQuota(workspace Workspace, quota uint64) {
 	// 按优先级减扣
 	p := priority(workspace)
 	for _, workspaces := range p {
-		if q.Container[workspaces] >= quota {
-			q.Container[workspaces] -= quota
+		if q.WorkspacesValues[workspaces] >= quota {
+			q.WorkspacesValues[workspaces] -= quota
 			q.takeUp(workspaces, quota)
 			return
 		}
-		quota -= q.Container[workspaces]
-		q.takeUp(workspaces, q.Container[workspaces])
-		q.Container[workspaces] = 0
+		quota -= q.WorkspacesValues[workspaces]
+		q.takeUp(workspaces, q.WorkspacesValues[workspaces])
+		q.WorkspacesValues[workspaces] = 0
 	}
 
 	q.takeUp(WorkspaceString(workspace), quota)
@@ -175,21 +175,21 @@ func (q *ResourceCalculator) deductionQuota(workspace Workspace, quota uint64) {
 
 func (q *ResourceCalculator) takeUp(workspaces string, value uint64) {
 	if strings.Contains(workspaces, "prod") {
-		q.tackUpMmap[Prod] += value
+		q.tackUpM[Prod] += value
 	}
 	if strings.Contains(workspaces, "staging") {
-		q.tackUpMmap[Staging] += value
+		q.tackUpM[Staging] += value
 	}
 	if strings.Contains(workspaces, "test") {
-		q.tackUpMmap[Test] += value
+		q.tackUpM[Test] += value
 	}
 	if strings.Contains(workspaces, "dev") {
-		q.tackUpMmap[Dev] += value
+		q.tackUpM[Dev] += value
 	}
 }
 
 func (q *ResourceCalculator) alreadyTookUp(workspace Workspace) uint64 {
-	return q.tackUpMmap[workspace]
+	return q.tackUpM[workspace]
 }
 
 func WorkspaceString(workspace Workspace) string {
@@ -292,9 +292,9 @@ func ResourceToString(res float64, typ string) string {
 	}
 }
 
-func Accuracy(v float64, accuracy int32) float64 {
-	v, _ = decimal.NewFromFloat(v).Round(accuracy).Float64()
-	return v
+func Accuracy(value float64, accuracy int32) float64 {
+	value, _ = decimal.NewFromFloat(value).Round(accuracy).Float64()
+	return value
 }
 
 func setPrec(f float64, prec int) float64 {

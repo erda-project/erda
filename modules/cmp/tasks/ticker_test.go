@@ -25,7 +25,7 @@ import (
 )
 
 func TestExitError_Error(t *testing.T) {
-	var e = tasks.ExitError{Msg: "something wrong"}
+	var e = tasks.ExitError{Message: "something wrong"}
 	t.Log(e.Error())
 }
 
@@ -35,7 +35,7 @@ func TestTicker_Close(t *testing.T) {
 		times++
 		fmt.Println("times:", times)
 		if times > 5 {
-			return true, &tasks.ExitError{Msg: "time over"}
+			return true, &tasks.ExitError{Message: "time over"}
 		}
 		if times > 3 {
 			return false, errors.New("normal error")
