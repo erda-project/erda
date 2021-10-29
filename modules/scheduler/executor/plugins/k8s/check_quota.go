@@ -36,7 +36,7 @@ func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, works
 		Workspace: workspace,
 	})
 	if err != nil {
-		return 0, 0, err
+		return
 	}
 	logrus.Infof("get workspace %s of project %s quota: cpu: %d. mem: %d", workspace, projectID, cpuQuota, memQuota)
 
@@ -83,21 +83,21 @@ func max(a, b int64) int64 {
 	return b
 }
 
-func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64, kind, serviceName string) (bool, error) {
+func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64, kind, serviceName string) (bool, string, error) {
 	if projectID == "" || workspace == "" {
-		return true, nil
+		return true, "", nil
 	}
 	if requestsCPU <= 0 && requestsMem <= 0 {
-		return true, nil
+		return true, "", nil
 	}
 	leftCPU, leftMem, err := k.GetWorkspaceLeftQuota(ctx, projectID, workspace)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	if requestsCPU > leftCPU || requestsMem > leftMem {
+		humanLog, primevalLog := getLogContent(requestsCPU, requestsMem, leftCPU, leftMem, kind, serviceName)
 		if runtimeID != "" {
-			humanLog, primevalLog := getLogContent(requestsCPU, requestsMem, leftCPU, leftMem, kind, serviceName)
 			if err = k.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
 				ErrorLog: apistructs.ErrorLog{
 					ResourceType:   apistructs.RuntimeError,
@@ -113,48 +113,48 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 				logrus.Infof("Create/Update quota error log for runtime %s succeeded", runtimeID)
 			}
 		}
-		return false, nil
+		return false, primevalLog, nil
 	}
-	return true, nil
+	return true, "", nil
 }
 
-func getLogContent(requestsCPU, requestsMem, leftCPU, leftMem int64, kind, serviceName string) (string, string) {
+func getLogContent(deltaCPU, deltaMem, leftCPU, leftMem int64, kind, serviceName string) (string, string) {
 	leftCPU = max(leftCPU, 0)
 	leftMem = max(leftMem, 0)
-	reqCPUStr := resourceToString(float64(requestsCPU), "cpu")
+	reqCPUStr := resourceToString(float64(deltaCPU), "cpu")
 	leftCPUStr := resourceToString(float64(leftCPU), "cpu")
-	reqMemStr := resourceToString(float64(requestsMem), "memory")
+	reqMemStr := resourceToString(float64(deltaMem), "memory")
 	leftMemStr := resourceToString(float64(leftMem), "memory")
 
 	logrus.Infof("Checking workspace quota, requests cpu:%s cores, left %s cores; requests memory: %s, left %s",
 		reqCPUStr, leftCPUStr, reqMemStr, leftMemStr)
 
-	humanLog := []string{"当前环境资源配额不足"}
-	primevalLog := []string{"Resource quota is not enough in current workspace"}
+	humanLogs := []string{"当前环境资源配额不足"}
+	primevalLogs := []string{"Resource quota is not enough in current workspace"}
 	switch kind {
 	case "stateless":
-		humanLog = append(humanLog, fmt.Sprintf("服务 %s 部署失败", serviceName))
-		primevalLog = append(primevalLog, fmt.Sprintf("failed to deploy service %s", serviceName))
+		humanLogs = append(humanLogs, fmt.Sprintf("服务 %s 部署失败", serviceName))
+		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to deploy service %s", serviceName))
 	case "stateful":
-		humanLog = append(humanLog, fmt.Sprintf("addon %s 部署失败", serviceName))
-		primevalLog = append(primevalLog, fmt.Sprintf("failed to deploy addon %s.", serviceName))
+		humanLogs = append(humanLogs, fmt.Sprintf("addon %s 部署失败", serviceName))
+		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to deploy addon %s.", serviceName))
 	case "update":
-		humanLog = append(humanLog, fmt.Sprintf("服务 %s 更新失败", serviceName))
-		primevalLog = append(primevalLog, fmt.Sprintf("failed to update service %s", serviceName))
+		humanLogs = append(humanLogs, fmt.Sprintf("服务 %s 更新失败", serviceName))
+		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to update service %s", serviceName))
 	case "scale":
-		humanLog = append(humanLog, fmt.Sprintf("服务 %s 扩容失败", serviceName))
-		primevalLog = append(primevalLog, fmt.Sprintf("failed to scale service %s", serviceName))
+		humanLogs = append(humanLogs, fmt.Sprintf("服务 %s 扩容失败", serviceName))
+		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to scale service %s", serviceName))
 	}
 
-	if requestsCPU > leftCPU {
-		humanLog = append(humanLog, fmt.Sprintf("请求 CPU 新增 %s 核，大于当前剩余 CPU %s 核", reqCPUStr, leftCPUStr))
-		primevalLog = append(primevalLog, fmt.Sprintf("Requests CPU added %s core(s), which is greater than the current remaining CPU %s core(s)", reqCPUStr, leftCPUStr))
+	if deltaCPU > leftCPU {
+		humanLogs = append(humanLogs, fmt.Sprintf("请求 CPU 新增 %s 核，大于当前剩余 CPU %s 核", reqCPUStr, leftCPUStr))
+		primevalLogs = append(primevalLogs, fmt.Sprintf("Requests CPU added %s core(s), which is greater than the current remaining CPU %s core(s)", reqCPUStr, leftCPUStr))
 	}
-	if requestsMem > leftMem {
-		humanLog = append(humanLog, fmt.Sprintf("请求内存新增 %s，大于当前环境剩余内存 %s", reqMemStr, leftMemStr))
-		primevalLog = append(primevalLog, fmt.Sprintf("Requests memory added %s, which is greater than the current remaining %s", reqMemStr, leftMemStr))
+	if deltaMem > leftMem {
+		humanLogs = append(humanLogs, fmt.Sprintf("请求内存新增 %s，大于当前环境剩余内存 %s", reqMemStr, leftMemStr))
+		primevalLogs = append(primevalLogs, fmt.Sprintf("Requests memory added %s, which is greater than the current remaining %s", reqMemStr, leftMemStr))
 	}
-	return strings.Join(humanLog, "，"), strings.Join(primevalLog, ". ")
+	return strings.Join(humanLogs, "，"), strings.Join(primevalLogs, ". ")
 }
 
 func getRequestsResources(containers []corev1.Container) (cpu, mem int64) {
@@ -170,30 +170,30 @@ func getRequestsResources(containers []corev1.Container) (cpu, mem int64) {
 	return cpuQuantity.MilliValue(), memQuantity.Value()
 }
 
-func resourceToString(resource float64, tp string) string {
+func resourceToString(res float64, tp string) string {
 	switch tp {
 	case "cpu":
-		return strconv.FormatFloat(setPrec(resource/1000, 3), 'f', -1, 64)
+		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
 	case "memory":
 		isNegative := 1.0
-		if resource < 0 {
-			resource = -resource
+		if res < 0 {
+			res = -res
 			isNegative = -1
 		}
 		units := []string{"B", "K", "M", "G", "T"}
 		i := 0
-		for resource >= 1<<10 && i < len(units)-1 {
-			resource /= 1 << 10
+		for res >= 1<<10 && i < len(units)-1 {
+			res /= 1 << 10
 			i++
 		}
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(resource*isNegative, 3), 'f', -1, 64), units[i])
+		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res*isNegative, 3), 'f', -1, 64), units[i])
 	default:
-		return fmt.Sprintf("%.f", resource)
+		return fmt.Sprintf("%.f", res)
 	}
 }
 
-func setPrec(f float64, prec int) float64 {
-	pow := math.Pow10(prec)
-	f = float64(int64(f*pow)) / pow
-	return f
+func setPrec(v float64, p int) float64 {
+	pow := math.Pow10(p)
+	v = float64(int64(v*pow)) / pow
+	return v
 }
