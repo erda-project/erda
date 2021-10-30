@@ -297,33 +297,42 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	var (
+		total int
+		orgs  []model.Org
+	)
+	total, orgs, err = e.org.ListOrgs(orgIDs, req, all)
+	if err != nil {
+		logrus.Warnf("failed to get orgs, (%v)", err)
+		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
+	}
+
+	orgDTOs, err := e.coverOrgsToDto(r, orgs)
+	if err != nil {
+		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(apistructs.PagingOrgDTO{
+		List:  orgDTOs,
+		Total: total,
+	})
+}
+
+func (e *Endpoints) coverOrgsToDto(r *http.Request, orgs []model.Org) ([]apistructs.OrgDTO, error) {
 	var currentOrgID int64
+	var err error
 	v := r.Header.Get(httputil.OrgHeader)
 	if v != "" {
 		// ignore convert error
 		currentOrgID, err = strutil.Atoi64(v)
 		if err != nil {
-			return apierrors.ErrListOrg.InvalidParameter(strutil.Concat("orgID: ", v)).ToResp(), nil
+			return nil, err
 		}
 	}
 	if currentOrgID == 0 {
 		// compatible TODO: refactor it
 		userID, _ := user.GetUserID(r)
 		currentOrgID, _ = e.org.GetCurrentOrgByUser(userID.String())
-	}
-	var (
-		total int
-		orgs  []model.Org
-	)
-	// TODO: move this logic to service layer
-	if all {
-		total, orgs, err = e.org.SearchByName(req.Q, req.PageNo, req.PageSize)
-	} else {
-		total, orgs, err = e.org.ListByIDsAndName(orgIDs, req.Q, req.PageNo, req.PageSize)
-	}
-	if err != nil {
-		logrus.Warnf("failed to get orgs, (%v)", err)
-		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
 
 	// 封装成API所需格式
@@ -342,10 +351,7 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 		orgDTOs[0].Selected = true
 	}
 
-	return httpserver.OkResp(apistructs.PagingOrgDTO{
-		List:  orgDTOs,
-		Total: total,
-	})
+	return orgDTOs, nil
 }
 
 // ListPublicOrg Get public orgs
@@ -587,8 +593,13 @@ func (e *Endpoints) getOrgPermissions(r *http.Request) (bool, []int64, error) {
 		return true, nil, nil
 	}
 
+	orgIDStr := r.URL.Query().Get("orgId")
+	if orgIDStr == "" {
+		orgIDStr = r.Header.Get("Org-ID")
+	}
+
 	// 操作鉴权, 系统管理员可查询企业
-	if e.member.IsAdmin(userID.String()) { // 系统管理员可查看所有企业列表
+	if e.member.IsAdmin(userID.String()) && orgIDStr == "" { // 系统管理员可查看所有企业列表
 		return true, nil, nil
 	} else { // 非系统管理员只能查看有权限的企业列表
 		members, err := e.member.ListByScopeTypeAndUser(apistructs.OrgScope, userID.String())
