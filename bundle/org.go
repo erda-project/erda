@@ -77,6 +77,7 @@ func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest, orgID string) (*apis
 		Header(httputil.UserHeader, req.UserID).
 		Header(httputil.OrgHeader, orgID).
 		Param("q", req.Q).
+		Param("orgId", req.OrgID).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
 		Do().

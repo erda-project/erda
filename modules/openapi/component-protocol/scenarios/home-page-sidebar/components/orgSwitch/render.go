@@ -180,8 +180,9 @@ func (this *OrgSwitch) RenderList() error {
 	req := &apistructs.OrgSearchRequest{
 		IdentityInfo: identity,
 		PageSize:     DefaultPageSize,
+		OrgID:        this.ctxBdl.Identity.OrgID,
 	}
-	pagingOrgDTO, err := this.ctxBdl.Bdl.ListDopOrgs(req)
+	pagingOrgDTO, err := this.ctxBdl.Bdl.ListOrgs(req, req.OrgID)
 	if err != nil {
 		return err
 	}
