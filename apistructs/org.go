@@ -75,6 +75,7 @@ type OrgSearchRequest struct {
 	PageNo   int `query:"pageNo"`
 	PageSize int `query:"pageSize"`
 
+	OrgID string
 	IdentityInfo
 }
 
