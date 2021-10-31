@@ -248,7 +248,7 @@ type ProjectDTO struct {
 	ClusterConfig map[string]string `json:"clusterConfig"`
 	// ResourceConfig shows the relationship between clusters and workspaces,
 	// and contains the quota info for every workspace .
-	ResourceConfig *ResourceConfigsInfo `json:"resourceConfig"`
+	ResourceConfig *ResourceConfigsInfo `json:"resourceConfig,omitempty"`
 	RollbackConfig map[string]int       `json:"rollbackConfig"`
 	// Deprecated: to retrieve the quota for every workspace, prefer to use ResourceConfig
 	CpuQuota float64 `json:"cpuQuota"`
@@ -304,7 +304,7 @@ type ResourceConfigInfo struct {
 	CPURequestByAddonRate   float64 `json:"cpuRequestByAddonRate"`
 	CPURequestByService     float64 `json:"cpuRequestByService"`
 	CPURequestByServiceRate float64 `json:"cpuRequestByServiceRate"`
-	CPUAvailable            float64 `json:"cpuAvailable"`
+	CPUAvailable            float64 `json:"cpuAvailable,omitempty"`
 	MemQuota                float64 `json:"memQuota"`
 	MemRequest              float64 `json:"memRequest"`
 	MemRequestRate          float64 `json:"memRequestRate"`
@@ -312,7 +312,7 @@ type ResourceConfigInfo struct {
 	MemRequestByAddonRate   float64 `json:"memRequestByAddonRate"`
 	MemRequestByService     float64 `json:"memRequestByService"`
 	MemRequestByServiceRate float64 `json:"memRequestByServiceRate"`
-	MemAvailable            float64 `json:"memAvailable"`
+	MemAvailable            float64 `json:"memAvailable,omitempty"`
 	Tips                    string  `json:"tips"`
 }
 

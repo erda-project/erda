@@ -33,6 +33,11 @@ grpc-client@erda.core.pipeline.definition:
 erda.core.pipeline.definition-client:
 erda.core.pipeline.definition-process-client:
 
+grpc-client@erda.cmp.dashboard.resource:
+  addr: "${CMP_GRPC_ADDR:cmp:9029}"
+  block: false
+erda.cmp.dashboard.resource-client:
+
 erda.core.dop.autotest.testplan:
 
 # component-protocol framework

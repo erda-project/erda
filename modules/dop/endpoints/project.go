@@ -24,6 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -155,6 +157,62 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	return httpserver.OkResp(project)
+}
+
+// GetProject gets the project info
+func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	l := logrus.WithField("func", "*Endpoints.GetProject")
+
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
+
+	// 检查projectID合法性
+	projectID, err := strutil.Atoi64(vars["projectID"])
+	if err != nil {
+		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
+	}
+
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	internalClient := r.Header.Get(httputil.InternalHeader)
+	if internalClient == "" {
+		userID, err := user.GetUserID(r)
+		if err != nil {
+			return apierrors.ErrGetProject.NotLogin().ToResp(), nil
+		}
+		// 操作鉴权
+		req := apistructs.PermissionCheckRequest{
+			UserID:   userID.String(),
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(projectID),
+			Resource: apistructs.ProjectResource,
+			Action:   apistructs.GetAction,
+		}
+		if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+			if err != nil {
+				return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
+			}
+			// 若非项目管理员，判断用户是否为企业管理员(数据中心)
+			req := apistructs.PermissionCheckRequest{
+				UserID:   userID.String(),
+				Scope:    apistructs.OrgScope,
+				ScopeID:  orgID,
+				Resource: apistructs.ProjectResource,
+				Action:   apistructs.GetAction,
+			}
+			if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+				return apierrors.ErrGetProject.AccessDenied().ToResp(), nil
+			}
+		}
+	}
+
+	dto, apiError := e.project.Get(ctx, uint64(projectID))
+	if apiError != nil {
+		l.Errorf("failed to Get: %s", apiError.Error())
+		return apiError.ToResp(), nil
+	}
+
+	return httpserver.OkResp(dto)
 }
 
 // ListProject list project
