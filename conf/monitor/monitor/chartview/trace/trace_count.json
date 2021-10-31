@@ -11,7 +11,6 @@
       "x": 0,
       "y": 0,
       "i": "view-trace-count",
-      "chartType": "chart:bar",
       "view": {
         "api": {
           "body": {
@@ -22,7 +21,14 @@
               "time()"
             ],
             "where": [
-              "{{condition}}"
+              "{{durationLeft}}",
+              "{{durationRight}}",
+              "{{serviceName}}",
+              "{{traceId}}",
+              "{{dubboMethod}}",
+              "{{httpPath}}",
+              "{{statusSuccess}}",
+              "{{statusError}}"
             ],
             "select": [
               {
@@ -49,6 +55,7 @@
           },
           "url": "/api/tmc/metrics-query"
         },
+        "chartType": "chart:bar",
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
