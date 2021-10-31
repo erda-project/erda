@@ -224,6 +224,98 @@ func Test_calcuRequestRate(t *testing.T) {
 	p.calcuRequestRate(dto)
 }
 
+func Test_setQuotaFromResourceConfig(t *testing.T) {
+	setQuotaFromResourceConfig(nil, nil)
+
+	var (
+		prodClusterName           = "the-prod"
+		prodCPU            uint64 = 1 * 1000
+		prodMem            uint64 = 5 * 1024 * 1024 * 1024
+		stagingClusterName        = "the-staging"
+		stagingCPU         uint64 = 2 * 1000
+		stagingMem         uint64 = 6 * 1024 * 1024 * 1024
+		testClusterName           = "the-test"
+		testCPU            uint64 = 3 * 1000
+		testMem            uint64 = 7 * 1024 * 1024 * 1024
+		devClusterName            = "the-dev"
+		devCPU             uint64 = 4 * 1000
+		devMem             uint64 = 8 * 1024 * 1024 * 1024
+	)
+	var quota = new(model.ProjectQuota)
+	var resource = &apistructs.ResourceConfigs{
+		PROD: &apistructs.ResourceConfig{
+			ClusterName: prodClusterName,
+			CPUQuota:    1,
+			MemQuota:    5,
+		},
+		STAGING: &apistructs.ResourceConfig{
+			ClusterName: stagingClusterName,
+			CPUQuota:    2,
+			MemQuota:    6,
+		},
+		TEST: &apistructs.ResourceConfig{
+			ClusterName: testClusterName,
+			CPUQuota:    3,
+			MemQuota:    7,
+		},
+		DEV: &apistructs.ResourceConfig{
+			ClusterName: devClusterName,
+			CPUQuota:    4,
+			MemQuota:    8,
+		},
+	}
+
+	setQuotaFromResourceConfig(quota, resource)
+
+	if !(quota.ProdClusterName == prodClusterName && quota.ProdCPUQuota == prodCPU && quota.ProdMemQuota == prodMem) {
+		t.Fatal("sets error")
+	}
+	if !(quota.StagingClusterName == stagingClusterName && quota.StagingCPUQuota == stagingCPU && quota.StagingMemQuota == stagingMem) {
+		t.Fatal("sets error")
+	}
+	if !(quota.TestClusterName == testClusterName && quota.TestCPUQuota == testCPU && quota.TestMemQuota == testMem) {
+		t.Fatal("sets error")
+	}
+	if !(quota.DevClusterName == devClusterName && quota.DevCPUQuota == devCPU && quota.DevMemQuota == devMem) {
+		t.Fatal("sets error")
+	}
+}
+
+func Test_setProjectDtoQuotaFromModel(t *testing.T) {
+	setProjectDtoQuotaFromModel(nil, nil)
+
+	var quota = model.ProjectQuota{
+		ProdClusterName:    "the-prod",
+		StagingClusterName: "the-staging",
+		TestClusterName:    "the-test",
+		DevClusterName:     "the-dev",
+		ProdCPUQuota:       1 * 1000,
+		ProdMemQuota:       1 * 1024 * 1024 * 1024,
+		StagingCPUQuota:    2 * 1000,
+		StagingMemQuota:    2 * 1024 * 1024 * 1024,
+		TestCPUQuota:       3 * 1000,
+		TestMemQuota:       3 * 1024 * 1024 * 1024,
+		DevCPUQuota:        4 * 1000,
+		DevMemQuota:        4 * 1024 * 1024 * 1024,
+	}
+	var dto = new(apistructs.ProjectDTO)
+	setProjectDtoQuotaFromModel(dto, &quota)
+	rc := dto.ResourceConfig
+	if !(rc.PROD.ClusterName == quota.ProdClusterName && rc.PROD.CPUQuota == float64(quota.ProdCPUQuota)/1000 && rc.PROD.MemQuota == float64(quota.ProdMemQuota)/1024/1024/1024) {
+		t.Fatal("setProjectDtoQuotaFromModel error")
+	}
+	if !(rc.STAGING.ClusterName == quota.StagingClusterName && rc.STAGING.CPUQuota == float64(quota.StagingCPUQuota)/1000 && rc.STAGING.MemQuota == float64(quota.StagingMemQuota)/1024/1024/1024) {
+		t.Fatal("setProjectDtoQuotaFromModel error")
+	}
+	if !(rc.TEST.ClusterName == quota.TestClusterName && rc.TEST.CPUQuota == float64(quota.TestCPUQuota)/1000 && rc.TEST.MemQuota == float64(quota.TestMemQuota)/1024/1024/1024) {
+		t.Fatal("setProjectDtoQuotaFromModel error")
+	}
+	if !(rc.DEV.ClusterName == quota.DevClusterName && rc.DEV.CPUQuota == float64(quota.DevCPUQuota)/1000 && rc.DEV.MemQuota == float64(quota.DevMemQuota)/1024/1024/1024) {
+		t.Fatal("setProjectDtoQuotaFromModel error")
+	}
+
+}
+
 // TODO We need to turn this ut on after adding the delete portal to the UI
 // func TestDeleteProjectWhenAddonExists(t *testing.T) {
 // 	db := &dao.DBClient{}
