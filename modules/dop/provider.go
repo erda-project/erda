@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -48,16 +49,18 @@ var scenarioFS embed.FS
 type provider struct {
 	Log logs.Logger
 
-	PipelineCms cmspb.CmsServiceServer      `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
-	PipelineDs  definition_client.Processor `autowired:"erda.core.pipeline.definition-process-client" optional:"true"`
-	TestPlanSvc *testplan.TestPlanService   `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
+	PipelineCms cmspb.CmsServiceServer            `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineDs  definition_client.Processor       `autowired:"erda.core.pipeline.definition-process-client" optional:"true"`
+	TestPlanSvc *testplan.TestPlanService         `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
+	Cmp         dashboardPb.ClusterResourceServer `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
 
-	Protocol   componentprotocol.Interface
-	Tran       i18n.Translator  `translator:"component-protocol"`
-	IssueTan   i18n.Translator  `translator:"issue-manage"`
-	DB         *gorm.DB         `autowired:"mysql-client"`
-	ETCD       etcd.Interface   // autowired
-	EtcdClient *clientv3.Client // autowired
+	Protocol    componentprotocol.Interface
+	Tran        i18n.Translator  `translator:"component-protocol"`
+	IssueTan    i18n.Translator  `translator:"issue-manage"`
+	ProjectTran i18n.Translator  `translator:"project-trans"`
+	DB          *gorm.DB         `autowired:"mysql-client"`
+	ETCD        etcd.Interface   // autowired
+	EtcdClient  *clientv3.Client // autowired
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

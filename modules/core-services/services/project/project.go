@@ -40,7 +40,6 @@ import (
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -366,24 +365,12 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 	}
 
 	// create or update quota
-	var quota = model.ProjectQuota{
-		ProjectID:          uint64(projectID),
-		ProjectName:        updateReq.Name,
-		ProdClusterName:    updateReq.ResourceConfigs.PROD.ClusterName,
-		StagingClusterName: updateReq.ResourceConfigs.STAGING.ClusterName,
-		TestClusterName:    updateReq.ResourceConfigs.TEST.ClusterName,
-		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
-		ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
-		ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
-		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.STAGING.CPUQuota),
-		StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
-		TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
-		TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
-		DevCPUQuota:        calcu.CoreToMillcore(updateReq.ResourceConfigs.DEV.CPUQuota),
-		DevMemQuota:        calcu.GibibyteToByte(updateReq.ResourceConfigs.DEV.MemQuota),
-		CreatorID:          userID,
-		UpdaterID:          userID,
-	}
+	var quota = new(model.ProjectQuota)
+	quota.ProjectID = uint64(projectID)
+	quota.ProjectName = updateReq.Name
+	quota.CreatorID = userID
+	quota.UpdaterID = userID
+	setQuotaFromResourceConfig(quota, updateReq.ResourceConfigs)
 	if hasOldQuota {
 		quota.ID = oldQuota.ID
 		quota.CreatorID = oldQuota.CreatorID
@@ -403,7 +390,10 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 
 	// audit
 	go func() {
-		if !isQuotaChanged(*oldQuota, quota) {
+		if quota == nil {
+			return
+		}
+		if !isQuotaChanged(*oldQuota, *quota) {
 			return
 		}
 		var orgName = strconv.FormatInt(orgID, 10)
@@ -463,6 +453,32 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 	}()
 
 	return &project, nil
+}
+
+func setQuotaFromResourceConfig(quota *model.ProjectQuota, resource *apistructs.ResourceConfigs) {
+	if quota == nil || resource == nil {
+		return
+	}
+	if resource.PROD != nil {
+		quota.ProdClusterName = resource.PROD.ClusterName
+		quota.ProdCPUQuota = calcu.CoreToMillcore(resource.PROD.CPUQuota)
+		quota.ProdMemQuota = calcu.GibibyteToByte(resource.PROD.MemQuota)
+	}
+	if resource.STAGING != nil {
+		quota.StagingClusterName = resource.STAGING.ClusterName
+		quota.StagingCPUQuota = calcu.CoreToMillcore(resource.STAGING.CPUQuota)
+		quota.StagingMemQuota = calcu.GibibyteToByte(resource.STAGING.MemQuota)
+	}
+	if resource.TEST != nil {
+		quota.TestClusterName = resource.TEST.ClusterName
+		quota.TestCPUQuota = calcu.CoreToMillcore(resource.TEST.CPUQuota)
+		quota.TestMemQuota = calcu.GibibyteToByte(resource.TEST.MemQuota)
+	}
+	if resource.DEV != nil {
+		quota.DevClusterName = resource.DEV.ClusterName
+		quota.DevCPUQuota = calcu.CoreToMillcore(resource.DEV.CPUQuota)
+		quota.DevMemQuota = calcu.GibibyteToByte(resource.DEV.MemQuota)
+	}
 }
 
 func isQuotaChanged(oldQuota, newQuota model.ProjectQuota) bool {
@@ -616,8 +632,6 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 
 // Get 获取项目
 func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
-
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -638,10 +652,6 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 	p.fetchPodInfo(&projectDTO)
 	// 根据已有统计值计算比率
 	p.calcuRequestRate(&projectDTO)
-	// 查询对应的集群实际可用资源
-	p.fetchAvailable(ctx, &projectDTO)
-	// 对比 quota 和实际可用资源，打 tips
-	p.makeProjectDtoTips(&projectDTO, langCodes)
 
 	return &projectDTO, nil
 }
@@ -653,26 +663,34 @@ func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
 			Warnln("failed to select the quota record of the project")
 		return
 	}
+	setProjectDtoQuotaFromModel(dto, &projectQuota)
+}
+
+func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *model.ProjectQuota) {
+	if dto == nil || quota == nil {
+		return
+	}
+
 	dto.ClusterConfig = make(map[string]string)
 	dto.ResourceConfig = apistructs.NewResourceConfig()
-	dto.ClusterConfig["PROD"] = projectQuota.ProdClusterName
-	dto.ClusterConfig["STAGING"] = projectQuota.StagingClusterName
-	dto.ClusterConfig["TEST"] = projectQuota.TestClusterName
-	dto.ClusterConfig["DEV"] = projectQuota.DevClusterName
-	dto.ResourceConfig.PROD.ClusterName = projectQuota.ProdClusterName
-	dto.ResourceConfig.STAGING.ClusterName = projectQuota.StagingClusterName
-	dto.ResourceConfig.TEST.ClusterName = projectQuota.TestClusterName
-	dto.ResourceConfig.DEV.ClusterName = projectQuota.DevClusterName
-	dto.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota, 3)
-	dto.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(projectQuota.StagingCPUQuota, 3)
-	dto.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(projectQuota.TestCPUQuota, 3)
-	dto.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(projectQuota.DevCPUQuota, 3)
-	dto.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota, 3)
-	dto.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(projectQuota.StagingMemQuota, 3)
-	dto.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(projectQuota.TestMemQuota, 3)
-	dto.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(projectQuota.DevMemQuota, 3)
-	dto.CpuQuota = calcu.MillcoreToCore(projectQuota.ProdCPUQuota+projectQuota.StagingCPUQuota+projectQuota.TestCPUQuota+projectQuota.DevCPUQuota, 3)
-	dto.MemQuota = calcu.ByteToGibibyte(projectQuota.ProdMemQuota+projectQuota.StagingMemQuota+projectQuota.TestMemQuota+projectQuota.DevMemQuota, 3)
+	dto.ClusterConfig["PROD"] = quota.ProdClusterName
+	dto.ClusterConfig["STAGING"] = quota.StagingClusterName
+	dto.ClusterConfig["TEST"] = quota.TestClusterName
+	dto.ClusterConfig["DEV"] = quota.DevClusterName
+	dto.ResourceConfig.PROD.ClusterName = quota.ProdClusterName
+	dto.ResourceConfig.STAGING.ClusterName = quota.StagingClusterName
+	dto.ResourceConfig.TEST.ClusterName = quota.TestClusterName
+	dto.ResourceConfig.DEV.ClusterName = quota.DevClusterName
+	dto.ResourceConfig.PROD.CPUQuota = calcu.MillcoreToCore(quota.ProdCPUQuota, 3)
+	dto.ResourceConfig.STAGING.CPUQuota = calcu.MillcoreToCore(quota.StagingCPUQuota, 3)
+	dto.ResourceConfig.TEST.CPUQuota = calcu.MillcoreToCore(quota.TestCPUQuota, 3)
+	dto.ResourceConfig.DEV.CPUQuota = calcu.MillcoreToCore(quota.DevCPUQuota, 3)
+	dto.ResourceConfig.PROD.MemQuota = calcu.ByteToGibibyte(quota.ProdMemQuota, 3)
+	dto.ResourceConfig.STAGING.MemQuota = calcu.ByteToGibibyte(quota.StagingMemQuota, 3)
+	dto.ResourceConfig.TEST.MemQuota = calcu.ByteToGibibyte(quota.TestMemQuota, 3)
+	dto.ResourceConfig.DEV.MemQuota = calcu.ByteToGibibyte(quota.DevMemQuota, 3)
+	dto.CpuQuota = calcu.MillcoreToCore(quota.ProdCPUQuota+quota.StagingCPUQuota+quota.TestCPUQuota+quota.DevCPUQuota, 3)
+	dto.MemQuota = calcu.ByteToGibibyte(quota.ProdMemQuota+quota.StagingMemQuota+quota.TestMemQuota+quota.DevMemQuota, 3)
 }
 
 func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
@@ -710,56 +728,6 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 	}
 }
 
-// 查出各环境的实际可用资源
-// 各环境的实际可用资源 = 有该环境标签的所有集群的可用资源之和
-// 每台机器的可用资源 = 该机器的 allocatable - 该机器的 request
-func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO) {
-	if dto.ResourceConfig == nil {
-		return
-	}
-	clusterNames := strutil.DedupSlice([]string{
-		dto.ResourceConfig.PROD.ClusterName,
-		dto.ResourceConfig.STAGING.ClusterName,
-		dto.ResourceConfig.TEST.ClusterName,
-		dto.ResourceConfig.DEV.ClusterName,
-	})
-	req := &dashboardPb.GetClustersResourcesRequest{ClusterNames: clusterNames}
-	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
-	defer cancel()
-	clustersResources, err := p.clusterResourceClient.GetClustersResources(ctx, req)
-	if err != nil {
-		logrus.WithError(err).WithField("func", "fetchAvailable").
-			Errorf("failed to GetClustersResources, clusterNames: %v", clusterNames)
-		return
-	}
-	for _, clusterItem := range clustersResources.List {
-		if !clusterItem.GetSuccess() {
-			logrus.WithField("cluster_name", clusterItem.GetClusterName()).WithField("err", clusterItem.GetErr()).
-				Warnln("the cluster is not valid now")
-			continue
-		}
-		for _, host := range clusterItem.Hosts {
-			for _, label := range host.Labels {
-				var source *apistructs.ResourceConfigInfo
-				switch strings.ToLower(label) {
-				case "dice/workspace-prod=true":
-					source = dto.ResourceConfig.PROD
-				case "dice/workspace-staging=true":
-					source = dto.ResourceConfig.STAGING
-				case "dice/workspace-test=true":
-					source = dto.ResourceConfig.TEST
-				case "dice/workspace-dev=true":
-					source = dto.ResourceConfig.DEV
-				}
-				if source != nil && source.ClusterName == clusterItem.GetClusterName() {
-					source.CPUAvailable += calcu.MillcoreToCore(host.GetCpuAllocatable()-host.GetCpuRequest(), 3)
-					source.MemAvailable += calcu.ByteToGibibyte(host.GetMemAllocatable()-host.GetMemRequest(), 3)
-				}
-			}
-		}
-	}
-}
-
 // 根据已有统计值计算比率
 func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 	if dto.ResourceConfig == nil {
@@ -780,22 +748,6 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 			source.MemRequestRate = source.MemRequest / source.MemQuota
 			source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
 			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
-		}
-	}
-}
-
-func (p *Project) makeProjectDtoTips(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
-	if dto.ResourceConfig == nil {
-		return
-	}
-	for _, source := range []*apistructs.ResourceConfigInfo{
-		dto.ResourceConfig.PROD,
-		dto.ResourceConfig.STAGING,
-		dto.ResourceConfig.TEST,
-		dto.ResourceConfig.DEV,
-	} {
-		if source.CPUAvailable < source.CPUQuota || source.MemAvailable < source.MemQuota {
-			source.Tips = p.trans.Text(langCodes, "AvailableIsLessThanQuota")
 		}
 	}
 }

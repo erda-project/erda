@@ -65,6 +65,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/org"
 	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	`github.com/erda-project/erda/modules/dop/services/project`
 	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
@@ -523,6 +524,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAssetSvc(assetsvc.New(assetsvc.WithBranchRuleSvc(branchRule))),
 		endpoints.WithFileTreeSvc(filetreeSvc),
+		endpoints.WithProject(project.New(project.WithBundle(bdl.Bdl), project.WithTrans(p.ProjectTran), project.WithCMP(p.Cmp))),
 
 		endpoints.WithDB(db),
 		endpoints.WithTestcase(testCaseSvc),
