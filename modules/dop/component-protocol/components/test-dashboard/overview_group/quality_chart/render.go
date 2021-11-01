@@ -254,13 +254,8 @@ func (q *Q) calcBugReopenRate(ctx context.Context, h *gshelper.GSHelper) decimal
 
 // polishToFloat64Score set precision to 2, range from 0-100
 func polishToFloat64Score(scoreDecimal decimal.Decimal) float64 {
+	scoreDecimal = polishScore(scoreDecimal)
 	score, _ := scoreDecimal.Float64()
-	if score < 0 {
-		score = 0
-	}
-	if score > 100 {
-		score = 100
-	}
 	return numeral.Round(score, 2)
 }
 
@@ -271,9 +266,20 @@ func (q *Q) calcGlobalQualityScore(ctx context.Context, scores ...decimal.Decima
 	}
 	total := decimal.NewFromInt(0)
 	for _, score := range scores {
-		total = total.Add(score)
+		total = total.Add(polishScore(score))
 	}
 	var avg decimal.Decimal
 	avg = total.Div(decimal.NewFromInt(int64(len(scores))))
 	return avg
+}
+
+// polishScore range from 0-100
+func polishScore(scoreDecimal decimal.Decimal) decimal.Decimal {
+	if scoreDecimal.LessThan(decimal.NewFromInt(0)) {
+		scoreDecimal = decimal.NewFromInt(0)
+	}
+	if scoreDecimal.GreaterThan(decimal.NewFromInt(100)) {
+		scoreDecimal = decimal.NewFromInt(100)
+	}
+	return scoreDecimal
 }
