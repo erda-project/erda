@@ -319,7 +319,8 @@ type PipelinePageListRequest struct {
 	// 直接构造对象 请赋值该字段
 	AnyMatchLabels map[string][]string `schema:"-"`
 
-	PageNum       int  `schema:"pageNum"`
+	PageNum       int  `schema:"pageNum"` // still use this field to handle page number
+	PageNo        int  `schema:"pageNo"`  // UI standard compatible, same with PageNum (transfer to pageNum)
 	PageSize      int  `schema:"pageSize"`
 	LargePageSize bool `schema:"largePageSize"` // 允许 pageSize 超过默认值(100)，由内部调用方保证数据量大小
 
