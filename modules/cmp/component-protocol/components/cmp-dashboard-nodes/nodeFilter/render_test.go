@@ -20,6 +20,8 @@ import (
 
 	"github.com/rancher/wrangler/pkg/data"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 )
 
@@ -48,6 +50,51 @@ func TestDoFilter(t *testing.T) {
 			if got := DoFilter(tt.args.nodeList, tt.args.values); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("DoFilter() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
+func TestNodeFilter_getState(t *testing.T) {
+	type fields struct {
+		Filter      filter.Filter
+		clusterName string
+	}
+	type args struct {
+		labels map[string]struct{}
+	}
+	sdk := &cptype.SDK{
+		Tran:     &MockTran{},
+		Identity: nil,
+		InParams: nil,
+		Lang:     nil,
+	}
+	f := &NodeFilter{Filter: filter.Filter{SDK: sdk}}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			name:   "test",
+			fields: fields{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f.getState(tt.args.labels)
 		})
 	}
 }

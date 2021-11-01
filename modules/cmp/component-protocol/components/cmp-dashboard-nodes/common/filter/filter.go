@@ -32,7 +32,7 @@ type Filter struct {
 
 var DefaultLabels = []string{"dice/workspace-dev=true", "dice/workspace-test=true", "dice/workspace-staging=true",
 	"dice/workspace-prod=true", "dice/stateful-service=true", "dice/stateless-service=true",
-	"dice/location-cluster-service=true", "dice/job=true", "dice/bigdata-job=true", "dice/lb", "dice/platform"}
+	"dice/location-cluster-service=true", "dice/job=true", "dice/bigdata-job=true", "dice/lb=true", "dice/platform=true"}
 
 func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 	p := Props{
