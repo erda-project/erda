@@ -82,13 +82,13 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	case cptype.InitializeOperation:
 		p.State.PageNo = 1
 		p.State.PageSize = 20
+		if err := p.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
+		}
 	case "changePageSize", "changeSort":
 		p.State.PageNo = 1
 	}
 
-	if err := p.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
-	}
 	if err := p.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render podsTable component, %v", err)
 	}
@@ -126,37 +126,37 @@ func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) erro
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	queryData, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
+	query, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &urlQuery); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
-	p.State.PageNo = int(urlQuery["pageNo"].(float64))
-	p.State.PageSize = int(urlQuery["pageSize"].(float64))
-	sorter := urlQuery["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field = sorter["field"].(string)
-	p.State.Sorter.Order = sorter["order"].(string)
+	p.State.PageNo = int(queryData["pageNo"].(float64))
+	p.State.PageSize = int(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field = sorterData["field"].(string)
+	p.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = p.State.PageNo
-	query["pageSize"] = p.State.PageSize
-	query["sorterData"] = p.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = p.State.PageNo
+	urlQuery["pageSize"] = p.State.PageSize
+	urlQuery["sorterData"] = p.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
-	encoded := base64.StdEncoding.EncodeToString(data)
-	p.State.PodsTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(jsonData)
+	p.State.PodsTableURLQuery = encode
 	return nil
 }
 

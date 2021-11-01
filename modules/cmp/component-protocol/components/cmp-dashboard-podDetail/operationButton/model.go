@@ -50,10 +50,11 @@ type Menu struct {
 }
 
 type Operation struct {
-	Key     string  `json:"key,omitempty"`
-	Reload  bool    `json:"reload"`
-	Confirm string  `json:"confirm,omitempty"`
-	Command Command `json:"command,omitempty"`
+	Key        string  `json:"key,omitempty"`
+	Reload     bool    `json:"reload"`
+	SuccessMsg string  `json:"successMsg,omitempty"`
+	Confirm    string  `json:"confirm,omitempty"`
+	Command    Command `json:"command,omitempty"`
 }
 
 type Command struct {

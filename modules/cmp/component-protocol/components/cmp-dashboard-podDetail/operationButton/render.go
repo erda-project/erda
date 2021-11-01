@@ -110,9 +110,10 @@ func (b *ComponentOperationButton) SetComponentValue() {
 			Text: b.sdk.I18n("delete"),
 			Operations: map[string]interface{}{
 				"click": Operation{
-					Key:     "delete",
-					Reload:  true,
-					Confirm: b.sdk.I18n("confirmDelete"),
+					Key:        "delete",
+					Reload:     true,
+					SuccessMsg: b.sdk.I18n("deletedPodSuccessfully"),
+					Confirm:    b.sdk.I18n("confirmDelete"),
 					Command: Command{
 						Key:    "goto",
 						Target: "cmpClustersPods",

@@ -43,6 +43,9 @@ zh:
  createPod: 创建 Pod
  createdPodSuccessfully: Pod 创建成功
 
+ # cmp-dashboard-pod-detail
+ deletedPodSuccessfully: Pod 删除成功
+
  # cmp-dashboard-workload-detail
  cpuRequests: CPU 请求值
  cpuLimits: CPU 限制值
@@ -57,6 +60,7 @@ zh:
  restart: 重新调度
  confirmRestart: 确认重新调度？
  cannotRestart: 只有 Deployment、StatefulSet 和 Daemonset 可以被重新调度
+ deletedWorkloadSuccessfully: Workload 删除成功
 
  # cmp-dashboard-workloads-list
  createWorkloadSuccessfully: 创建工作负载成功
@@ -281,6 +285,9 @@ en:
  createPod: Create Pod
  createdPodSuccessfully: Created Pod successfully
 
+ # cmp-dashboard-pod-detail
+ deletedPodSuccessfully: Deleted Pod successfully
+
  # cmp-dashboard-workload-detail
  cpuRequests: CPU Requests
  cpuLimits: CPU Limits
@@ -297,6 +304,7 @@ en:
  # cmp-dashboard-workload-detail
  workloadDetail: Workload Detail
  totalWorkload: Total Workloads
+ deletedWorkloadSuccessfully: Deleted Workload successfully
 
  # cmp-dashboard-workloads-list
  createWorkloadSuccessfully: Created Workload successfully
