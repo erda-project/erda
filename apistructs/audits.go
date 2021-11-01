@@ -57,10 +57,10 @@ const (
 	DeleteIterationTemplate TemplateName = "deleteIteration"
 	UpdateIterationTemplate TemplateName = "updateIteration"
 	// =====================Org============================
-	CreateOrgTemplate    TemplateName = "createOrg"
-	DeleteOrgTemplate    TemplateName = "deleteOrg"
-	UpdateOrgTemplate    TemplateName = "updateOrg"
-	UpdateOrgTemplateNew TemplateName = "updateOrgNew"
+	CreateOrgTemplate   TemplateName = "createOrg"
+	DeleteOrgTemplate   TemplateName = "deleteOrg"
+	UpdateOrgTemplate   TemplateName = "updateOrg"
+	UpdateOrgTemplateV2 TemplateName = "updateOrgV2"
 	// =====================Project==============================
 	CreateProjectLabelTemplate TemplateName = "createProjectLabel"
 	DeleteProjectLabelTemplate TemplateName = "deleteProjectLabel"
