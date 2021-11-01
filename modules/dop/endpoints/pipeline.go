@@ -188,8 +188,9 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 		}
 	}
 
+	oriReq.EnsurePageNo()
 	req := apistructs.PipelinePageListRequest{
-		PageNum:                    oriReq.PageNum,
+		PageNum:                    oriReq.EnsurePageNo(),
 		PageSize:                   oriReq.PageSize,
 		YmlNames:                   make([]string, 0),
 		Sources:                    []apistructs.PipelineSource{apistructs.PipelineSource(oriReq.Sources)},
