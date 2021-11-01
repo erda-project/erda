@@ -215,6 +215,15 @@ func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kin
 	if _, err := cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
 		logrus.Errorf("failed to remove cache for %s, %v", kind, err)
 	}
+
+	podCacheKey := cmp.CacheKey{
+		Kind:        string(apistructs.K8SPod),
+		Namespace:   namespace,
+		ClusterName: clusterName,
+	}
+	if _, err := cache.GetFreeCache().Remove(podCacheKey.GetKey()); err != nil {
+		logrus.Errorf("failed to remove cache for pods in %s, %v", namespace, err)
+	}
 	return nil
 }
 
