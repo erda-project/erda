@@ -104,6 +104,7 @@ func (b *ComponentRestartButton) SetComponentValue() {
 
 	b.Props.Text = b.sdk.I18n("restart")
 	b.Props.Type = "primary"
+	b.Props.TipProps.Placement = "bottom"
 
 	operation := Operation{
 		Key:     "restart",

@@ -42,8 +42,13 @@ type State struct {
 }
 
 type Props struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type     string   `json:"type"`
+	Text     string   `json:"text"`
+	TipProps TipProps `json:"tipProps"`
+}
+
+type TipProps struct {
+	Placement string `json:"placement,omitempty"`
 }
 
 type Operation struct {
