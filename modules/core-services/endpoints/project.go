@@ -800,3 +800,13 @@ func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request,
 
 	return httpserver.OkResp(data)
 }
+
+// ListQuotaRecords is an internal API for bundle
+func (e *Endpoints) ListQuotaRecords(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	records, err := e.project.ListQuotaRecords(ctx)
+	if err != nil {
+		logrus.Errorf("failed to project.ListQuotaRecords: %v", err)
+		return apierrors.ErrListQuotaRecords.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(map[string]interface{}{"total": len(records), "list": records})
+}
