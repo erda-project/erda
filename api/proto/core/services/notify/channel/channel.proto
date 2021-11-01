@@ -147,7 +147,7 @@ message GetNotifyChannelsRequest {
 }
 
 message GetNotifyChannelsResponse {
-  int64                  page     = 1;
+  int64                  pageNo   = 1;
   int64                  pageSize = 2;
   int64                  total    = 3;
   repeated NotifyChannel data     = 4;

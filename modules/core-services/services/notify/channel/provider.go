@@ -15,6 +15,7 @@
 package channel
 
 import (
+	"github.com/erda-project/erda/bundle"
 	"os"
 
 	"github.com/jinzhu/gorm"
@@ -42,11 +43,13 @@ type provider struct {
 	Register            transport.Register
 	uc                  *ucauth.UCClient
 	notifyChanelService *notifyChannelService
+	bdl                 *bundle.Bundle
 	DB                  *gorm.DB        `autowired:"mysql-client"`
 	I18n                i18n.Translator `autowired:"i18n" translator:"cs-i18n"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.bdl = bundle.New(bundle.WithKMS())
 	ucClientId := os.Getenv("UC_CLIENT_ID")
 	ucClientSecret := os.Getenv("UC_CLIENT_SECRET")
 	p.uc = ucauth.NewUCClient(discover.UC(), ucClientId, ucClientSecret)

@@ -30,6 +30,7 @@ type NotifyChannel struct {
 	CreatorId       string    `gorm:"column:creator_id" db:"creator_id" json:"creator_id" form:"creator_id"`                         //创建人Id
 	ChannelProvider string    `gorm:"column:channel_provider" db:"channel_provider" json:"channel_provider" form:"channel_provider"` //渠道提供商类型
 	IsEnabled       bool      `gorm:"column:is_enabled" db:"is_enabled" json:"is_enabled" form:"is_enabled"`                         //是否启用
+	KmsKey          string    `gorm:"column:kms_key" db:"kms_key" json:"kms_key" form:"kms_key"`                                     //kms key
 	CreatedAt       time.Time `gorm:"column:created_at" db:"created_at" json:"created_at" form:"created_at"`                         //创建时间
 	UpdatedAt       time.Time `gorm:"column:updated_at" db:"updated_at" json:"updated_at" form:"updated_at"`                         //更新时间
 	IsDeleted       bool      `gorm:"column:is_deleted" db:"is_deleted" json:"is_deleted" form:"is_deleted"`                         //是否删除

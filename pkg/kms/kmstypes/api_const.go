@@ -24,6 +24,7 @@ const (
 
 const (
 	PluginKind_DICE_KMS   PluginKind = "DICE_KMS"
+	PluginKind_ERDA_KMS   PluginKind = "DICE_KMS"
 	PluginKind_AWS_KMS    PluginKind = "AWS_KMS"
 	PluginKind_ALIYUN_KMS PluginKind = "ALIYUN_KMS"
 

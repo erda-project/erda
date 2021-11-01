@@ -16,6 +16,7 @@ package channel
 
 import (
 	context "context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -28,11 +29,13 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/kind"
 	"github.com/erda-project/erda/pkg/common/apis"
 	pkgerrors "github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
 type notifyChannelService struct {
@@ -50,10 +53,31 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 	if req.ChannelProviderType == "" {
 		return nil, pkgerrors.NewMissingParameterError("channelProviderType")
 	}
-	err := s.ConfigValidate(req.ChannelProviderType, req.Config)
+	c, err := s.ConfigValidate(req.ChannelProviderType, req.Config)
 	if err != nil {
 		return nil, err
 	}
+	req.Config = c
+	kmsKey, err := s.p.bdl.KMSCreateKey(apistructs.KMSCreateKeyRequest{
+		CreateKeyRequest: kmstypes.CreateKeyRequest{
+			PluginKind: kmstypes.PluginKind_ERDA_KMS,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	encryptSecret, err := s.p.bdl.KMSEncrypt(apistructs.KMSEncryptRequest{
+		EncryptRequest: kmstypes.EncryptRequest{
+			KeyID:           kmsKey.KeyMetadata.KeyID,
+			PlaintextBase64: base64.StdEncoding.EncodeToString([]byte(req.Config["need_kms_data"].GetStringValue())),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	req.Config[c["need_kms_key"].GetStringValue()] = structpb.NewStringValue(encryptSecret.CiphertextBase64)
+	delete(req.Config, "need_kms_key")
+	delete(req.Config, "need_kms_data")
 
 	ch, err := s.NotifyChannelDB.GetByName(req.Name)
 	if err != nil {
@@ -90,6 +114,7 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 		CreatorId:       creatorId,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
+		KmsKey:          kmsKey.KeyMetadata.KeyID,
 		IsEnabled:       false, // default no enable
 		IsDeleted:       false,
 	})
@@ -103,11 +128,11 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	if req.PageNo < 1 {
 		req.PageNo = 1
 	}
-	if req.PageSize < 10 {
-		req.PageSize = 10
+	if req.PageSize < 15 {
+		req.PageSize = 15
 	}
-	if req.PageSize > 50 {
-		req.PageSize = 50
+	if req.PageSize > 60 {
+		req.PageSize = 60
 	}
 	orgId := apis.GetOrgID(ctx)
 	if orgId == "" {
@@ -117,13 +142,33 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	total, channels, err := s.NotifyChannelDB.ListByPage((req.PageNo-1)*req.PageSize, req.PageSize, orgId, scopeType)
 	var pbChannels []*pb.NotifyChannel
 	for _, channel := range channels {
-		pbChannels = append(pbChannels, s.CovertToPbNotifyChannel(apis.Language(ctx), &channel))
+		notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), &channel)
+		c, err := s.ConfigValidate(notifyChannel.ChannelProviderType.Name, notifyChannel.Config)
+		if err != nil {
+			return nil, err
+		}
+		decrypt, err := s.p.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
+			DecryptRequest: kmstypes.DecryptRequest{
+				KeyID:            channel.KmsKey,
+				CiphertextBase64: c["need_kms_data"].GetStringValue(),
+			}})
+		decodeString, err := base64.StdEncoding.DecodeString(decrypt.PlaintextBase64)
+		if err != nil {
+			return nil, err
+		}
+		notifyChannel.Config[c["need_kms_key"].GetStringValue()] = structpb.NewStringValue(string(decodeString))
+		delete(notifyChannel.Config, "need_kms_key")
+		delete(notifyChannel.Config, "need_kms_data")
+		if err != nil {
+			return nil, err
+		}
+		pbChannels = append(pbChannels, notifyChannel)
 	}
 
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
-	return &pb.GetNotifyChannelsResponse{Page: req.PageNo, PageSize: req.PageSize, Total: total, Data: pbChannels}, nil
+	return &pb.GetNotifyChannelsResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, Data: pbChannels}, nil
 }
 
 func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.UpdateNotifyChannelRequest) (*pb.UpdateNotifyChannelResponse, error) {
@@ -163,11 +208,28 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 		channel.ChannelProvider = req.ChannelProviderType
 	}
 
+	needKmsKey := ""
+	needKmsData := ""
 	if req.Config != nil {
-		err := s.ConfigValidate(req.ChannelProviderType, req.Config)
+		c, err := s.ConfigValidate(req.ChannelProviderType, req.Config)
 		if err != nil {
 			return nil, err
 		}
+		encryptSecret, err := s.p.bdl.KMSEncrypt(apistructs.KMSEncryptRequest{
+			EncryptRequest: kmstypes.EncryptRequest{
+				KeyID:           channel.KmsKey,
+				PlaintextBase64: base64.StdEncoding.EncodeToString([]byte(c["need_kms_data"].GetStringValue())),
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		needKmsKey = c["need_kms_key"].GetStringValue()
+		needKmsData = c["need_kms_data"].GetStringValue()
+		req.Config[needKmsKey] = structpb.NewStringValue(encryptSecret.CiphertextBase64)
+		delete(req.Config, "need_kms_key")
+		delete(req.Config, "need_kms_data")
+
 		config, err := json.Marshal(req.Config)
 		if err != nil {
 			return nil, err
@@ -180,7 +242,11 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, pkgerrors.NewDatabaseError(err)
 	}
-	return &pb.UpdateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), update)}, nil
+	notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), update)
+	if needKmsData != "" && needKmsKey != "" {
+		notifyChannel.Config[needKmsKey] = structpb.NewStringValue(needKmsData)
+	}
+	return &pb.UpdateNotifyChannelResponse{Data: notifyChannel}, nil
 }
 
 func (s *notifyChannelService) GetNotifyChannel(ctx context.Context, req *pb.GetNotifyChannelRequest) (*pb.GetNotifyChannelResponse, error) {
@@ -191,6 +257,35 @@ func (s *notifyChannelService) GetNotifyChannel(ctx context.Context, req *pb.Get
 	if err != nil {
 		return nil, err
 	}
+
+	c := map[string]*structpb.Value{}
+	err = json.Unmarshal([]byte(channel.Config), &c)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+
+	cTemp, err := s.ConfigValidate(channel.ChannelProvider, c)
+	decrypt, err := s.p.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
+		DecryptRequest: kmstypes.DecryptRequest{
+			KeyID:            channel.KmsKey,
+			CiphertextBase64: cTemp["need_kms_data"].GetStringValue(),
+		}})
+	decodeString, err := base64.StdEncoding.DecodeString(decrypt.PlaintextBase64)
+	if err != nil {
+		return nil, err
+	}
+	cTemp[cTemp["need_kms_key"].GetStringValue()] = structpb.NewStringValue(string(decodeString))
+	delete(cTemp, "need_kms_key")
+	delete(cTemp, "need_kms_data")
+	bytes, err := json.Marshal(cTemp)
+	if err != nil {
+		return nil, err
+	}
+	channel.Config = string(bytes)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+
 	return &pb.GetNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel)}, nil
 }
 
@@ -218,11 +313,11 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 	var types []*pb.NotifyChannelTypeResponse
 	types = append(types, &pb.NotifyChannelTypeResponse{
 		Name:        strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
-		DisplayName: strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_SHORT_MESSAGE.String())),
 		Providers:   shortMessageProviderTypes,
 	})
 
-	return &pb.GetNotifyChannelTypesResponse{Data: nil}, nil
+	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
 }
 
 func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req *pb.GetNotifyChannelEnabledRequest) (*pb.GetNotifyChannelEnabledResponse, error) {
@@ -237,6 +332,36 @@ func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req 
 	}
 
 	data, err := s.NotifyChannelDB.GetByScopeAndType(req.ScopeId, req.ScopeType, req.Type)
+
+	var c map[string]*structpb.Value
+	err = json.Unmarshal([]byte(data.Config), &c)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+
+	cTemp, err := s.ConfigValidate(data.ChannelProvider, c)
+	decrypt, err := s.p.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
+		DecryptRequest: kmstypes.DecryptRequest{
+			KeyID:            data.KmsKey,
+			CiphertextBase64: cTemp["need_kms_data"].GetStringValue(),
+		}})
+
+	decodeString, err := base64.StdEncoding.DecodeString(decrypt.PlaintextBase64)
+	if err != nil {
+		return nil, err
+	}
+	cTemp[cTemp["need_kms_key"].GetStringValue()] = structpb.NewStringValue(string(decodeString))
+	delete(cTemp, "need_kms_key")
+	delete(cTemp, "need_kms_data")
+	bytes, err := json.Marshal(cTemp)
+	if err != nil {
+		return nil, err
+	}
+	data.Config = string(bytes)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
@@ -262,7 +387,7 @@ func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, r
 			return nil, pkgerrors.NewInternalServerError(err)
 		}
 		if enabledCount >= 1 {
-			return nil, errors.New(fmt.Sprintf("There are other enabled channel of this type (%s)", channel.Type))
+			return nil, pkgerrors.NewWarnError(fmt.Sprintf(s.p.I18n.Text(apis.Language(ctx), "enabled_exception"), channel.Type))
 		}
 	}
 	channel.IsEnabled = req.Enable
@@ -274,21 +399,27 @@ func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, r
 	return &pb.UpdateNotifyChannelEnabledResponse{Id: updated.Id, Enable: updated.IsEnabled}, nil
 }
 
-func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) error {
+func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
 	switch channelType {
 	case strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()):
 		bytes, err := json.Marshal(c)
 		if err != nil {
-			return errors.New("Json parser failed.")
+			return nil, errors.New("Json parser failed.")
 		}
 		var asm kind.AliyunSMS
 		err = json.Unmarshal(bytes, &asm)
 		if err != nil {
-			return errors.New("Json parser failed.")
+			return nil, errors.New("Json parser failed.")
 		}
-		return asm.Validate()
+		err = asm.Validate()
+		if err != nil {
+			return nil, err
+		}
+		c["need_kms_key"] = structpb.NewStringValue("accessKeySecret")
+		c["need_kms_data"] = structpb.NewStringValue(asm.AccessKeySecret)
+		return c, nil
 	default:
-		return errors.New("Not support notify channel type")
+		return nil, errors.New("Not support notify channel type")
 	}
 }
 

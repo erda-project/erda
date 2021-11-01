@@ -495,12 +495,12 @@ func (m *GetNotifyChannelsResponse) UnmarshalURLValues(prefix string, values url
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "page":
+			case "pageNo":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.Page = val
+				m.PageNo = val
 			case "pageSize":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
