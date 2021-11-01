@@ -23,8 +23,8 @@ import (
 )
 
 type provider struct {
-	Cms  cmspb.CmsServiceServer            `autowired:"erda.core.pipeline.cms.CmsService"`
-	Tran i18n.Translator                   `translator:"i18n"`
+	Cms  cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	Tran i18n.Translator        `translator:"i18n"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
