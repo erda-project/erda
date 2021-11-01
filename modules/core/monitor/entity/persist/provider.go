@@ -26,8 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
-const serviceIndexManager = "erda.core.monitor.metric.index-manager"
-
 type config struct {
 	Input            kafka.BatchReaderConfig `file:"input"`
 	Parallelism      int                     `file:"parallelism" default:"1"`
