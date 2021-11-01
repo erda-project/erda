@@ -257,7 +257,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		return nil, err
 	}
 
-	if !p.SteveAggregator.IsServerReady(req.ClusterName) {
+	if !p.SteveAggregator.IsServerReady(req.ClusterName) || len(req.LabelSelector) != 0 || len(req.FieldSelector) != 0 {
 		return p.list(apiOp, resp, req.ClusterName)
 	}
 
@@ -415,13 +415,8 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
-	cacheKey := CacheKey{
-		Kind:        apiOp.Type,
-		ClusterName: req.ClusterName,
-	}
-	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
-	}
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  req.ClusterName,
@@ -487,13 +482,8 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
-	cacheKey := CacheKey{
-		Kind:        apiOp.Type,
-		ClusterName: req.ClusterName,
-	}
-	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
-	}
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	reqObj, err := data.Convert(req.Obj)
 	if err != nil {
@@ -558,13 +548,8 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		}
 	}
 
-	cacheKey := CacheKey{
-		Kind:        apiOp.Type,
-		ClusterName: req.ClusterName,
-	}
-	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
-	}
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  req.ClusterName,
@@ -630,13 +615,8 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
-	cacheKey := CacheKey{
-		Kind:        apiOp.Type,
-		ClusterName: req.ClusterName,
-	}
-	if _, err = cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache for %s, %v", apiOp.Type, err)
-	}
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	return nil
 }
@@ -1024,4 +1004,16 @@ func (p *provider) listClusterByType(orgID uint64, types ...string) ([]apistruct
 		result = append(result, clusters...)
 	}
 	return result, nil
+}
+
+func RemoveCache(clusterName, namespace, kind string) {
+	key := CacheKey{
+		Kind:        kind,
+		Namespace:   namespace,
+		ClusterName: clusterName,
+	}
+	if _, err := cache.GetFreeCache().Remove(key.GetKey()); err != nil {
+		logrus.Errorf("failed to remove cache for %s (namespace: %s) in cluster %s, %v",
+			key.Kind, key.Namespace, key.ClusterName, err)
+	}
 }

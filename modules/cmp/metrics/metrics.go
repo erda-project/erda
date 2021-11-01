@@ -184,7 +184,6 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 				if row.Values[0].GetKind() != nil {
 					k = cache.GenerateKey(Pod, Memory, row.Values[3].GetStringValue(), metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -193,7 +192,6 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 			case Node:
 				if row.Values[1].GetKind() != nil {
@@ -203,7 +201,6 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 				if row.Values[0].GetKind() != nil {
 					k = cache.GenerateKey(Node, Memory, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -212,7 +209,6 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 			}
 		}

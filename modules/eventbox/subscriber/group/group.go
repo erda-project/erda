@@ -100,6 +100,9 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 		}
 		// 监控的sms，vms需要
 		channel.Params["message"] = groupNotifyContent.NotifyItemDisplayName
+		if _, ok = channel.Params["content"]; !ok {
+			channel.Params["content"] = channel.Template
+		}
 		request := map[string]interface{}{
 			"template":         channel.Template,
 			"type":             channel.Type,
