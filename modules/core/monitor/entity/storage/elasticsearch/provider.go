@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
@@ -28,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/entity/storage"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type (
