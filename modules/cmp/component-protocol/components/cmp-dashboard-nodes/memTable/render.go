@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 
 	"github.com/erda-project/erda/apistructs"
@@ -66,6 +67,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	mt.Table.TableComponent = mt
 	mt.Ctx = ctx
 	mt.Server = steveServer
+	mt.Metrics = mServer
 	mt.getProps()
 	activeKey := (*gs)["activeKey"].(string)
 	// Tab name not equal this component name
@@ -110,11 +112,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
 	}
-	nodes, err := mt.GetNodes(ctx, gs)
-	if err != nil {
-		return err
-	}
-	if err = mt.RenderList(c, table.Memory, nodes); err != nil {
+	if err = mt.RenderList(c, table.Memory, gs); err != nil {
 		return err
 	}
 	if err = mt.SetComponentValue(c); err != nil {
@@ -123,49 +121,30 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	return nil
 }
 
-func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
+func (mt *MemInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, requests map[string]cmp.AllocatedRes) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
 		distribution, dr, usage table.DistributionValue
-		resp                    map[string]*metrics.MetricsData
+		clusterName             string
 		items                   []table.RowItem
 	)
-	clusterName := ""
 	if mt.SDK.InParams["clusterName"] != nil {
 		clusterName = mt.SDK.InParams["clusterName"].(string)
 	} else {
 		return nil, common.ClusterNotFoundErr
 	}
-	req := &metrics.MetricsRequest{
-		Cluster: mt.SDK.InParams["clusterName"].(string),
-		Type:    metrics.Memory,
-		Kind:    metrics.Node,
-	}
-	for _, node := range nodes {
-		req.NodeRequests = append(req.NodeRequests, &metrics.MetricsNodeRequest{
-			MetricsRequest: req,
-			Ip:             node.StringSlice("metadata", "fields")[5],
-		})
-	}
-	if resp, err = mServer.NodeMetrics(mt.Ctx, req); err != nil || resp == nil {
-		logrus.Errorf("metrics error: %v", err)
-		resp = make(map[string]*metrics.MetricsData)
-	}
-	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(mt.Ctx, steveServer, false, clusterName, mt.SDK.Identity.UserID, mt.SDK.Identity.OrgID, nodes)
-	if err != nil {
-		return nil, err
-	}
-	for i, c := range nodes {
+	for _, c := range nodes {
 		if status, err = mt.GetItemStatus(c); err != nil {
 			return nil, err
 		}
+		Ip := c.StringSlice("metadata", "fields")[5]
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		memRequest := nodesAllocatedRes[nodeName].Mem
+		memRequest := requests[nodeName].Mem
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "memory"))
 
-		key := req.NodeRequests[i].CacheKey()
 		distribution = mt.GetDistributionValue(float64(memRequest), float64(requestQty.Value()), table.Memory)
+		key := cache.GenerateKey(metrics.Memory, metrics.Node, clusterName, Ip)
 		metricsData := metrics.GetCache(key)
 		used := 0.0
 		if metricsData != nil {
