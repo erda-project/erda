@@ -415,8 +415,8 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
-	RemoveCache(req.ClusterName, "", apiOp.Type)
-	RemoveCache(req.ClusterName, req.Namespace, apiOp.Type)
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  req.ClusterName,
@@ -482,8 +482,8 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
-	RemoveCache(req.ClusterName, "", apiOp.Type)
-	RemoveCache(req.ClusterName, req.Namespace, apiOp.Type)
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	reqObj, err := data.Convert(req.Obj)
 	if err != nil {
@@ -548,8 +548,8 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		}
 	}
 
-	RemoveCache(req.ClusterName, "", apiOp.Type)
-	RemoveCache(req.ClusterName, req.Namespace, apiOp.Type)
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  req.ClusterName,
@@ -615,8 +615,8 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
 	}
 
-	RemoveCache(req.ClusterName, "", apiOp.Type)
-	RemoveCache(req.ClusterName, req.Namespace, apiOp.Type)
+	RemoveCache(req.ClusterName, "", string(req.Type))
+	RemoveCache(req.ClusterName, req.Namespace, string(req.Type))
 
 	return nil
 }
