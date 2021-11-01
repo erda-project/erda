@@ -392,6 +392,10 @@ func getAuditMessage(org model.Org, req apistructs.OrgUpdateRequestBody) apistru
 			}())
 		}
 	}
+	if messageZH.Len() == 0 {
+		messageZH.WriteString("无信息变更")
+		messageEN.WriteString("no message changed")
+	}
 	return apistructs.AuditMessage{
 		MessageZH: messageZH.String(),
 		MessageEN: messageEN.String(),

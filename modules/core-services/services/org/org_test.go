@@ -258,6 +258,26 @@ func TestGetAuditMessage(t *testing.T) {
 				MessageEN: "block network opened in dev environment block network opened in test environment block network closed in staging environment block network closed in prod environment ",
 			},
 		},
+		{
+			model.Org{BlockoutConfig: model.BlockoutConfig{
+				BlockDEV:   true,
+				BlockTEST:  true,
+				BlockStage: true,
+				BlockProd:  true,
+			},
+				DisplayName: "dice", Locale: "en-US", IsPublic: true, Logo: "", Desc: ""},
+			apistructs.OrgUpdateRequestBody{BlockoutConfig: &apistructs.BlockoutConfig{
+				BlockDEV:   true,
+				BlockTEST:  true,
+				BlockStage: true,
+				BlockProd:  true,
+			},
+				DisplayName: "dice", Locale: "en-US", IsPublic: true, Logo: "", Desc: ""},
+			apistructs.AuditMessage{
+				MessageZH: "无信息变更",
+				MessageEN: "no message changed",
+			},
+		},
 	}
 	for _, v := range tt {
 		message := getAuditMessage(v.org, v.req)
