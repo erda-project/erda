@@ -51,7 +51,6 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 	if err != nil {
 		logrus.Errorf("failed to calcTotalApiNum,err: %s", err.Error())
 	}
-	logrus.Info("wxj: ", apiTotalNum)
 	req.Content.ApiTotalNum = apiTotalNum
 
 	if req.Content.StepAPIType == apistructs.AutoTestPlan {
@@ -249,7 +248,7 @@ func (s *TestPlanService) calcTotalApiNum(req *pb.TestPlanUpdateByHookRequest) (
 		if err != nil {
 			return 0, err
 		}
-		sceneIDs := s.getSceneIDs(0, func() []uint64 {
+		sceneIDs := s.getSceneIDsNotIncludeRef(func() []uint64 {
 			setIDs := make([]uint64, 0, len(planSteps))
 			for _, v := range planSteps {
 				setIDs = append(setIDs, v.SceneSetID)
@@ -258,7 +257,7 @@ func (s *TestPlanService) calcTotalApiNum(req *pb.TestPlanUpdateByHookRequest) (
 		}()...)
 		return s.countApiBySceneIDRepeat(sceneIDs...)
 	case apistructs.AutotestSceneSet:
-		sceneIDs := s.getSceneIDs(0, req.Content.SceneSetID)
+		sceneIDs := s.getSceneIDsNotIncludeRef(req.Content.SceneSetID)
 		return s.countApiBySceneIDRepeat(sceneIDs...)
 	case apistructs.StepTypeScene.String():
 		return s.countApiBySceneIDRepeat(req.Content.SceneID)
@@ -283,25 +282,55 @@ func (s *TestPlanService) countApiBySceneIDRepeat(sceneID ...uint64) (total int6
 	return
 }
 
-func (s *TestPlanService) getSceneIDs(recCount int, setID ...uint64) (sceneIDs []uint64) {
-	recCount++
-	if recCount > 100 {
-		return
-	}
+func (s *TestPlanService) getSceneIDsNotIncludeRef(setID ...uint64) (sceneIDs []uint64) {
+	setIDCountMap := make(map[uint64]int)           // key: setID, value: the count of setID
+	sceneMap := make(map[uint64][]db.AutoTestScene) // key: setID, value: []db.AutoTestScene
 
-	setIDMap := make(map[uint64]int)
 	for _, v := range setID {
-		setIDMap[v] = setIDMap[v] + 1
+		setIDCountMap[v] = setIDCountMap[v] + 1
 	}
 	scenes, err := s.db.ListSceneBySceneSetID(setID...)
 	if err != nil {
 		return
 	}
-	sceneMap := make(map[uint64][]db.AutoTestScene)
 	for _, v := range scenes {
 		sceneMap[v.SetID] = append(sceneMap[v.SetID], v)
 	}
-	for k, v := range setIDMap {
+	for k, v := range setIDCountMap {
+		if v > 1 {
+			for i := 0; i < v-1; i++ {
+				scenes = append(scenes, sceneMap[k]...)
+			}
+		}
+	}
+
+	for _, v := range scenes {
+		// not include reference
+		if v.RefSetID != 0 {
+			continue
+		}
+		sceneIDs = append(sceneIDs, v.ID)
+	}
+	return
+}
+
+func (s *TestPlanService) getSceneIDsIncludeRef(setRefMap map[uint64]uint64, setID ...uint64) (sceneIDs []uint64) {
+	setIDCountMap := make(map[uint64]int)           // key: setID, value: the count of setID
+	sceneSetMap := make(map[uint64]uint64)          // key: sceneID, value: setID
+	sceneMap := make(map[uint64][]db.AutoTestScene) // key: setID, value: []db.AutoTestScene
+
+	for _, v := range setID {
+		setIDCountMap[v] = setIDCountMap[v] + 1
+	}
+	scenes, err := s.db.ListSceneBySceneSetID(setID...)
+	if err != nil {
+		return
+	}
+	for _, v := range scenes {
+		sceneMap[v.SetID] = append(sceneMap[v.SetID], v)
+		sceneSetMap[v.ID] = v.SetID
+	}
+	for k, v := range setIDCountMap {
 		if v > 1 {
 			for i := 0; i < v-1; i++ {
 				scenes = append(scenes, sceneMap[k]...)
@@ -314,7 +343,18 @@ func (s *TestPlanService) getSceneIDs(recCount int, setID ...uint64) (sceneIDs [
 			sceneIDs = append(sceneIDs, v.ID)
 			continue
 		}
-		ids := s.getSceneIDs(recCount, v.RefSetID)
+		// check if has circular reference
+		// 1. reference itself
+		if v.RefSetID == sceneSetMap[v.ID] {
+			return
+		}
+		// 2. circular reference
+		if setRefMap[v.RefSetID] == sceneSetMap[v.ID] {
+			return
+		}
+		setRefMap[sceneSetMap[v.ID]] = v.RefSetID
+
+		ids := s.getSceneIDsIncludeRef(setRefMap, v.RefSetID)
 		sceneIDs = append(sceneIDs, ids...)
 	}
 	return
