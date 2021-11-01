@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
@@ -115,11 +114,6 @@ func TestGetModelProjectsMap(t *testing.T) {
 func TestWtihI18n(t *testing.T) {
 	var translator i18n.Translator
 	New(WithI18n(translator))
-}
-
-func TestWithClusterResourceClient(t *testing.T) {
-	var cli dashboardPb.ClusterResourceServer
-	New(WithClusterResourceClient(cli))
 }
 
 func TestWithDBClient(t *testing.T) {
@@ -241,7 +235,7 @@ func Test_setQuotaFromResourceConfig(t *testing.T) {
 		devCPU             uint64 = 4 * 1000
 		devMem             uint64 = 8 * 1024 * 1024 * 1024
 	)
-	var quota = new(model.ProjectQuota)
+	var quota = new(apistructs.ProjectQuota)
 	var resource = &apistructs.ResourceConfigs{
 		PROD: &apistructs.ResourceConfig{
 			ClusterName: prodClusterName,
@@ -284,7 +278,7 @@ func Test_setQuotaFromResourceConfig(t *testing.T) {
 func Test_setProjectDtoQuotaFromModel(t *testing.T) {
 	setProjectDtoQuotaFromModel(nil, nil)
 
-	var quota = model.ProjectQuota{
+	var quota = apistructs.ProjectQuota{
 		ProdClusterName:    "the-prod",
 		StagingClusterName: "the-staging",
 		TestClusterName:    "the-test",

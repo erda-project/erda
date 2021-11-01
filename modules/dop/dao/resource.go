@@ -12,24 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project
+package dao
 
 import (
-	"github.com/erda-project/erda-infra/providers/i18n"
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core-services/model"
 )
 
-type Project struct {
-	bdl   *bundle.Bundle
-	trans i18n.Translator
-	cmp   dashboardPb.ClusterResourceServer
-}
-
-func New(options ...Option) *Project {
-	p := new(Project)
-	for _, f := range options {
-		f(p)
+// GetOrgClusterRelationsByOrg 根据 orgID 获取企业对应集群关系
+func (client *DBClient) GetOrgClusterRelationsByOrg(orgID uint64) ([]model.OrgClusterRelation, error) {
+	var relations []model.OrgClusterRelation
+	if err := client.Where("org_id = ?", orgID).Find(&relations).Error; err != nil {
+		return nil, err
 	}
-	return p
+	return relations, nil
 }
