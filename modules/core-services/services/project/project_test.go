@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -129,20 +130,9 @@ func TestWithUCClient(t *testing.T) {
 	New(WithUCClient(new(ucauth.UCClient)))
 }
 
-func Test_hasClusterAndNamespace(t *testing.T) {
-	var namespaces = map[string][]string{
-		"erda-hongkong": {"default", "ns1"},
-		"erda-cloud":    {"default", "ns2"},
-	}
-	if hasClusterAndNamespace(namespaces, "erda-dev", "ns1") {
-		t.Error("err")
-	}
-	if !hasClusterAndNamespace(namespaces, "erda-hongkong", "ns1") {
-		t.Error("err")
-	}
-	if hasClusterAndNamespace(namespaces, "erda-hongkong", "ns2") {
-		t.Error("err")
-	}
+func TestWithBundle(t *testing.T) {
+	var bdl bundle.Bundle
+	New(WithBundle(&bdl))
 }
 
 func Test_convertAuditCreateReq2Model(t *testing.T) {
@@ -177,6 +167,61 @@ func Test_convertAuditCreateReq2Model(t *testing.T) {
 	if _, err := convertAuditCreateReq2Model(audit); err == nil {
 		t.Fatal("err")
 	}
+}
+
+func Test_getMemberFromMembers(t *testing.T) {
+	var members = []model.Member{
+		{
+			UserID: "1",
+			Roles:  []string{"Owner"},
+		}, {
+			UserID: "2",
+			Roles:  []string{"Owner"},
+		}, {
+			UserID: "3",
+			Roles:  []string{"Owner"},
+		}, {
+			UserID: "4",
+			Roles:  []string{"Owner"},
+		},
+	}
+
+	_, ok := getMemberFromMembers(members, "Owner")
+	if !ok {
+		t.Fatal("getMemberFromMembers error: not found an Owner")
+	}
+	_, ok = getMemberFromMembers(members, "Lead")
+	if ok {
+		t.Fatal("getMemberFromMembers error: found a Lead")
+	}
+}
+
+func Test_calcuRequestRate(t *testing.T) {
+	var (
+		prod = apistructs.ResourceConfigInfo{
+			CPUQuota:            100,
+			CPURequest:          50,
+			CPURequestByAddon:   30,
+			CPURequestByService: 10,
+			MemQuota:            100,
+			MemRequest:          500,
+			MemRequestByAddon:   30,
+			MemRequestByService: 10,
+		}
+		staging = prod
+		test    = prod
+		dev     = prod
+	)
+	var dto = &apistructs.ProjectDTO{
+		ResourceConfig: &apistructs.ResourceConfigsInfo{
+			PROD:    &prod,
+			STAGING: &staging,
+			TEST:    &test,
+			DEV:     &dev,
+		},
+	}
+	p := new(Project)
+	p.calcuRequestRate(dto)
 }
 
 // TODO We need to turn this ut on after adding the delete portal to the UI

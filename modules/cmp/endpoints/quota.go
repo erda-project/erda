@@ -22,13 +22,17 @@ import (
 
 	"github.com/gorilla/schema"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/resource"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	newDecoder := schema.NewDecoder()
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	req := &apistructs.GaugeRequest{}
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -49,7 +53,7 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 		req.MemPerNode = 32
 	}
 
-	content, err := e.Resource.GetGauge(orgIDStr, userIDStr, req)
+	content, err := e.Resource.GetGauge(ctx, orgIDStr, userIDStr, req)
 	if err != nil || content == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -59,6 +63,8 @@ func (e *Endpoints) GetResourceGauge(ctx context.Context, r *http.Request, vars 
 
 func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.ClassRequest{}
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -72,7 +78,7 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetPie(orgIDStr, userIDStr, req)
+	pie, err := e.Resource.GetPie(ctx, orgIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -82,6 +88,8 @@ func (e *Endpoints) GetResourceClass(ctx context.Context, r *http.Request, vars 
 
 func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -99,7 +107,7 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 		errStr := fmt.Sprintf("orgID parse error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetClusterTrend(orgID, userIDStr, req)
+	pie, err := e.Resource.GetClusterTrend(ctx, orgID, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
@@ -109,6 +117,8 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 
 func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	req := &apistructs.TrendRequest{}
+	lang := i18n.Language(r)
+	ctx = context.WithValue(ctx, resource.Lang, lang)
 	newDecoder := schema.NewDecoder()
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	userIDStr := r.Header.Get(httputil.UserHeader)
@@ -121,7 +131,7 @@ func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request
 		errStr := fmt.Sprintf("url param error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
 	}
-	pie, err := e.Resource.GetProjectTrend(orgIDStr, userIDStr, req)
+	pie, err := e.Resource.GetProjectTrend(ctx, orgIDStr, userIDStr, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("get resource project trend error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)

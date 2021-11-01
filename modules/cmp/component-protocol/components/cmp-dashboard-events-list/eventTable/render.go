@@ -115,33 +115,33 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	urlQuery, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	queryData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &queryData); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(queryData["pageNo"].(float64))
-	t.State.PageSize = uint64(queryData["pageSize"].(float64))
-	sorterData := queryData["sorterData"].(map[string]interface{})
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorterData := query["sorterData"].(map[string]interface{})
 	t.State.Sorter.Field = sorterData["field"].(string)
 	t.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	queryData := make(map[string]interface{})
-	queryData["pageNo"] = int(t.State.PageNo)
-	queryData["pageSize"] = int(t.State.PageSize)
-	queryData["sorterData"] = t.State.Sorter
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = int(t.State.PageNo)
+	urlQuery["pageSize"] = int(t.State.PageSize)
+	urlQuery["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(queryData)
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}

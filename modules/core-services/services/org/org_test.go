@@ -15,6 +15,7 @@
 package org
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 )
@@ -100,4 +102,94 @@ func TestWithI18n(t *testing.T) {
 func TestWithClusterResourceClient(t *testing.T) {
 	var cli dashboardPb.ClusterResourceServer
 	New(WithClusterResourceClient(cli))
+}
+
+func TestOrg_ListOrgs(t *testing.T) {
+	type args struct {
+		orgIDs []int64
+		req    *apistructs.OrgSearchRequest
+		all    bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		want1   []model.Org
+		wantErr bool
+	}{
+		{
+			name: "test_return_error",
+			args: args{
+				orgIDs: []int64{1},
+				req:    &apistructs.OrgSearchRequest{},
+				all:    false,
+			},
+			want:    0,
+			want1:   nil,
+			wantErr: true,
+		},
+		{
+			name: "test_all",
+			args: args{
+				orgIDs: []int64{1},
+				req:    &apistructs.OrgSearchRequest{},
+				all:    true,
+			},
+			want: 1,
+			want1: []model.Org{
+				{
+					Name: "1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_not_all",
+			args: args{
+				orgIDs: []int64{1},
+				req:    &apistructs.OrgSearchRequest{},
+				all:    false,
+			},
+			want: 2,
+			want1: []model.Org{
+				{
+					Name: "2",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &Org{}
+
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(o), "SearchByName", func(o *Org, name string, pageNo, pageSize int) (int, []model.Org, error) {
+				if tt.wantErr {
+					return 0, nil, fmt.Errorf("error")
+				}
+				return tt.want, tt.want1, nil
+			})
+			defer patch1.Unpatch()
+
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(o), "ListByIDsAndName", func(o *Org, orgIDs []int64, name string, pageNo, pageSize int) (int, []model.Org, error) {
+				if tt.wantErr {
+					return 0, nil, fmt.Errorf("error")
+				}
+				return tt.want, tt.want1, nil
+			})
+			defer patch2.Unpatch()
+
+			got, got1, err := o.ListOrgs(tt.args.orgIDs, tt.args.req, tt.args.all)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListOrgs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ListOrgs() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("ListOrgs() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
 }

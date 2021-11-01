@@ -18,36 +18,50 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 )
 
+const Lang = "Lang"
+
 type Resource struct {
 	Bdl    *bundle.Bundle
 	Ctx    context.Context
 	Server cmp_interface.Provider
 	I18N   i18n.Translator
-	Lang   i18n.LanguageCodes
 	DB     *dbclient.DBClient
 }
 
-func (r *Resource) I18n(key string, args ...interface{}) string {
+func (r *Resource) I18n(lang i18n.LanguageCodes, key string, args ...interface{}) string {
 	if len(args) == 0 {
-		try := r.I18N.Text(r.Lang, key)
+		try := r.I18N.Text(lang, key)
 		if try != key {
 			return try
 		}
 	}
-	return r.I18N.Sprintf(r.Lang, key, args...)
+	return r.I18N.Sprintf(lang, key, args...)
 }
 
-func New(ctx context.Context, i18n i18n.Translator, lang i18n.LanguageCodes, mServer cmp_interface.Provider) *Resource {
+// GetHeader .
+func GetHeader(ctx context.Context, key string) string {
+	header := transport.ContextHeader(ctx)
+	if header != nil {
+		for _, v := range header.Get(key) {
+			if len(v) > 0 {
+				return v
+			}
+		}
+	}
+	return ""
+}
+
+func New(ctx context.Context, i18n i18n.Translator, mServer cmp_interface.Provider) *Resource {
 	r := &Resource{}
 	r.I18N = i18n
 	r.Ctx = ctx
-	r.Lang = lang
 	r.Server = mServer
 	return r
 }
@@ -64,6 +78,7 @@ type XAxis struct {
 
 type YAxis struct {
 	Type string `json:"type"`
+	Name string `json:"name"`
 }
 
 type Series struct {

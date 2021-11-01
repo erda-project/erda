@@ -15,11 +15,16 @@
 package action
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func Test_fillTestPlanFields(t *testing.T) {
@@ -135,6 +140,62 @@ func Test_fillTestPlanFields(t *testing.T) {
 			if got := fillTestPlanFields(tt.args.field, tt.args.testPlans, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
 				fmt.Println(got)
 				fmt.Println(tt.want)
+			}
+		})
+	}
+}
+
+func Test_testPlanRun(t *testing.T) {
+	type args struct {
+		ctx             context.Context
+		c               *apistructs.Component
+		scenario        apistructs.ComponentProtocolScenario
+		event           apistructs.ComponentEvent
+		globalStateData *apistructs.GlobalStateData
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "test empty plan",
+			wantErr: false,
+			args: args{
+				c: &apistructs.Component{
+					Props: map[string]interface{}{
+						"fields": []apistructs.FormPropItem{},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var contextBundle = protocol.ContextBundle{}
+			var bdl = &bundle.Bundle{}
+			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PagingTestPlansV2", func(bdl *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
+				return &apistructs.TestPlanV2PagingResponseData{
+					Total: 0,
+					List:  []*apistructs.TestPlanV2{},
+				}, nil
+			})
+			defer patch1.Unpatch()
+
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListAutoTestGlobalConfig", func(bdl *bundle.Bundle, req apistructs.AutoTestGlobalConfigListRequest) ([]apistructs.AutoTestGlobalConfig, error) {
+				return []apistructs.AutoTestGlobalConfig{}, nil
+			})
+			defer patch2.Unpatch()
+
+			contextBundle.Bdl = bdl
+			contextBundle.InParams = map[string]interface{}{
+				"projectId": "1",
+			}
+
+			tt.args.ctx = context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), contextBundle)
+
+			if err := testPlanRun(tt.args.ctx, tt.args.c, tt.args.scenario, tt.args.event, tt.args.globalStateData); (err != nil) != tt.wantErr {
+				t.Errorf("testPlanRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

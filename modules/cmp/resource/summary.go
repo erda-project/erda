@@ -15,6 +15,7 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strconv"
@@ -22,6 +23,7 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 )
@@ -38,18 +40,25 @@ type GaugeData struct {
 	Name  string    `json:"name"`
 }
 
-func (r *Resource) GetGauge(ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
+func (r *Resource) GetGauge(ctx context.Context, ordId string, userID string, request *apistructs.GaugeRequest) (data map[string]*GaugeData, err error) {
 	logrus.Debug("func GetGauge start")
 	defer logrus.Debug("func GetGauge finished")
 	resp, err := r.GetQuotaResource(ordId, userID, request.ClusterName)
 	if err != nil {
 		return nil, err
 	}
-	data = r.getGauge(request, resp)
+	data = r.getGauge(ctx, request, resp)
 	return data, nil
 }
 
-func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.ResourceResp) (data map[string]*GaugeData) {
+func (r *Resource) getGauge(ctx context.Context, req *apistructs.GaugeRequest, resp *apistructs.ResourceResp) (data map[string]*GaugeData) {
+	var (
+		ok        bool
+		langCodes i18n.LanguageCodes
+	)
+	if langCodes, ok = ctx.Value(Lang).(i18n.LanguageCodes); !ok {
+		logrus.Error("i18n translator is empty")
+	}
 	data = make(map[string]*GaugeData)
 	var (
 		nodesGauge = &GaugeData{}
@@ -72,28 +81,40 @@ func (r *Resource) getGauge(req *apistructs.GaugeRequest, resp *apistructs.Resou
 	MemQuota := resp.MemQuota
 	CpuQuota := resp.CpuQuota
 
-	nodesGauge.Title = r.I18n("node pressure")
+	nodesGauge.Title = r.I18n(langCodes, "node pressure")
 	if MemTotal/memBase > CpuTotal/cpuBase {
-		nodesGauge.Value = []float64{MemRequest / MemTotal * 100}
-		nodesGauge.Name = fmt.Sprintf("%d", int64(math.Round(MemRequest/G+0.5))) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
-		nodesGauge.Split = []float64{MemQuota / MemTotal}
+		quotaPercent := MemQuota / MemTotal
+		requestPercent := MemRequest / MemTotal
+		nodesGauge.Value = []float64{requestPercent * 100}
+		nodesGauge.Name += fmt.Sprintf("%d", int64(math.Round(MemQuota/G+0.5))) + r.I18n(langCodes, "resourceNodeCount") + fmt.Sprintf("(%.1f%%)", quotaPercent) + r.I18n(langCodes, "quota in use") + "\n"
+		nodesGauge.Name += fmt.Sprintf("%d", int64(math.Round(MemRequest/G+0.5))) + r.I18n(langCodes, "resourceNodeCount") + fmt.Sprintf("(%.1f%%)", requestPercent) + r.I18n(langCodes, "request in use")
+		nodesGauge.Split = []float64{quotaPercent}
 	} else {
-		nodesGauge.Value = []float64{CpuRequest / CpuTotal * 100}
-		nodesGauge.Name = fmt.Sprintf("%d", int64(math.Round(CpuRequest/MilliCore+0.5))) + r.I18n("resourceNodeCount") + fmt.Sprintf("\n%.1f%%", nodesGauge.Value[0]) + r.I18n("quota in use")
-		nodesGauge.Split = []float64{CpuQuota / CpuTotal}
+		quotaPercent := CpuQuota / CpuTotal
+		requestPercent := CpuRequest / MemTotal
+		nodesGauge.Value = []float64{requestPercent * 100}
+		nodesGauge.Name += fmt.Sprintf("%d", int64(math.Round(CpuQuota/MilliCore+0.5))) + r.I18n(langCodes, "resourceNodeCount") + fmt.Sprintf("(%.1f%%)", quotaPercent) + r.I18n(langCodes, "quota in use") + "\n"
+		nodesGauge.Name += fmt.Sprintf("%d", int64(math.Round(CpuRequest/MilliCore+0.5))) + r.I18n(langCodes, "resourceNodeCount") + fmt.Sprintf("(%.1f%%)", requestPercent) + r.I18n(langCodes, "request in use")
+		nodesGauge.Split = []float64{quotaPercent}
 	}
 	data["nodes"] = nodesGauge
 
-	cpuGauge.Title = r.I18n("cpu pressure")
-	cpuGauge.Value = []float64{CpuRequest / CpuTotal * 100}
-	cpuGauge.Name = fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n("core") + fmt.Sprintf("\n%.1f%%", cpuGauge.Value[0]) + r.I18n("quota in use")
-	cpuGauge.Split = []float64{CpuQuota / CpuTotal}
+	quotaPercent := CpuQuota / CpuTotal
+	requestPercent := CpuRequest / CpuTotal
+	cpuGauge.Title = r.I18n(langCodes, "cpu pressure")
+	cpuGauge.Value = []float64{requestPercent * 100}
+	cpuGauge.Name += fmt.Sprintf("%.1f", CpuQuota/MilliCore) + r.I18n(langCodes, "core") + fmt.Sprintf("(%.1f%%)", quotaPercent) + r.I18n(langCodes, "quota in use") + "\n"
+	cpuGauge.Name += fmt.Sprintf("%.1f", CpuRequest/MilliCore) + r.I18n(langCodes, "core") + fmt.Sprintf("(%.1f%%)", requestPercent) + r.I18n(langCodes, "request in use")
+	cpuGauge.Split = []float64{quotaPercent}
 	data["cpu"] = cpuGauge
 
-	memGauge.Title = r.I18n("memory pressure")
-	memGauge.Value = []float64{MemRequest / MemTotal * 100}
-	memGauge.Name = fmt.Sprintf("%.1f", MemRequest/G) + r.I18n("GB") + fmt.Sprintf("\n%.1f%%", memGauge.Value[0]) + r.I18n("quota in use")
-	memGauge.Split = []float64{MemQuota / MemTotal}
+	quotaPercent = MemQuota / MemTotal
+	requestPercent = MemRequest / MemTotal
+	memGauge.Title = r.I18n(langCodes, "memory pressure")
+	memGauge.Value = []float64{requestPercent * 100}
+	memGauge.Name += fmt.Sprintf("%.1f", MemQuota/G) + r.I18n(langCodes, "GB") + fmt.Sprintf("(%.1f%%)", quotaPercent) + r.I18n(langCodes, "quota in use") + "\n"
+	memGauge.Name += fmt.Sprintf("%.1f", MemRequest/G) + r.I18n(langCodes, "GB") + fmt.Sprintf("(%.1f%%)", requestPercent) + r.I18n(langCodes, "request in use")
+	memGauge.Split = []float64{quotaPercent}
 	data["memory"] = memGauge
 	return
 }
@@ -169,7 +190,7 @@ func (r *Resource) GetQuotaResource(ordId string, userID string, clusterNames []
 	logrus.Debug("get all namespace finished")
 	logrus.Debug("start involved namespace")
 
-	nresp, err := r.Bdl.FetchNamespacesBelongsTo(int64(orgid), clusterNamespaces)
+	nresp, err := r.Bdl.FetchNamespacesBelongsTo()
 	logrus.Debug("involved namespace finished")
 	if err != nil {
 		return

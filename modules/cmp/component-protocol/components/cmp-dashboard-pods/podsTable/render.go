@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/go-openapi/strfmt"
-	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/sirupsen/logrus"
@@ -284,14 +283,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
+		metricsData := metrics.GetCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
 		if metricsData != nil && !cpuLimits.IsZero() {
 			usedCPUPercent := metricsData.Used
 			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
+		metricsData = metrics.GetCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
 		if metricsData != nil && !memLimits.IsZero() {
 			usedMemPercent := metricsData.Used
 			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
@@ -307,6 +306,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
 						Reload: false,
+						Key:    "openPodDetail",
 					},
 				},
 			},
@@ -355,6 +355,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 							JumpOut: true,
 						},
 						Reload: false,
+						Key:    "gotoWorkload",
 					},
 				},
 			},
@@ -703,19 +704,4 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 	}
 	res, _ := resource.ParseQuantity(str)
 	return &res
-}
-
-func getCache(key string) *metrics.MetricsData {
-	v, _, err := cache.GetFreeCache().Get(key)
-	if err != nil {
-		logrus.Errorf("get metrics %v err :%v", key, err)
-	}
-	d := &metrics.MetricsData{}
-	if v != nil {
-		err = jsi.Unmarshal(v[0].Value().([]byte), d)
-		if err != nil {
-			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
-		}
-	}
-	return d
 }

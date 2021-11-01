@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -61,8 +60,7 @@ func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
 	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
-	lang := cputil.Language(ctx)
-	p.Resource = resource.New(ctx, p.Tran, lang, p)
+	p.Resource = resource.New(ctx, p.Tran, p)
 	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
 	ctxNew = context.WithValue(ctxNew, "resource", p.Resource)
 	return p.initialize(ctxNew)
@@ -74,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithAllAvailableClients(),
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithTimeout(time.Second*30, time.Second*90),
 				httpclient.WithEnableAutoRetry(false),
 			)),
 	))

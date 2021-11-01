@@ -57,9 +57,8 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 	}
 	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
 	if err != nil {
-		errMsg := fmt.Sprintf("scale service %s err: %v", sg.ID, err)
-		logrus.Error(errMsg)
-		return *sg, fmt.Errorf(errMsg)
+		logrus.Errorf("scale service %s err: %v", sg.ID, err)
+		return *sg, err
 	}
 	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, err
