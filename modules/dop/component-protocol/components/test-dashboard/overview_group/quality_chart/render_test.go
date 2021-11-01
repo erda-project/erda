@@ -17,6 +17,7 @@ package quality_chart
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -169,4 +170,62 @@ func TestQ_calcGlobalQualityScore(t *testing.T) {
 	// some scores
 	scoreForSome := q.calcGlobalQualityScore(context.Background(), decimal.NewFromInt(0), decimal.NewFromInt(0), decimal.NewFromInt(100))
 	assert.Equal(t, decimal.NewFromFloat(float64(0+0+100)/3).Round(2), scoreForSome.Round(2))
+
+	// very bad scores
+	scoreForVeryBad := q.calcGlobalQualityScore(context.Background(), decimal.NewFromFloat(-100.25), decimal.NewFromInt(0), decimal.NewFromInt(1))
+	assert.Equal(t, decimal.NewFromFloat(float64(0+0+1)/3).Round(2), scoreForVeryBad.Round(2))
+}
+
+func Test_polishScore(t *testing.T) {
+	type args struct {
+		scoreDecimal decimal.Decimal
+	}
+	tests := []struct {
+		name string
+		args args
+		want decimal.Decimal
+	}{
+		{
+			name: "< 0",
+			args: args{
+				decimal.NewFromInt(-1),
+			},
+			want: decimal.NewFromInt(0),
+		},
+		{
+			name: "= 0",
+			args: args{
+				decimal.NewFromInt(0),
+			},
+			want: decimal.NewFromInt(0),
+		},
+		{
+			name: "normal",
+			args: args{
+				decimal.NewFromFloat(12.34),
+			},
+			want: decimal.NewFromFloat(12.34),
+		},
+		{
+			name: "= 100",
+			args: args{
+				decimal.NewFromInt(100),
+			},
+			want: decimal.NewFromInt(100),
+		},
+		{
+			name: "> 100",
+			args: args{
+				decimal.NewFromInt(200),
+			},
+			want: decimal.NewFromInt(100),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := polishScore(tt.args.scoreDecimal); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("polishScore() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
