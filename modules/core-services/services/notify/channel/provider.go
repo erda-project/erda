@@ -15,7 +15,6 @@
 package channel
 
 import (
-	"github.com/erda-project/erda/bundle"
 	"os"
 
 	"github.com/jinzhu/gorm"
@@ -25,6 +24,7 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
