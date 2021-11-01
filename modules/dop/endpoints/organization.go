@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	`github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n`
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -358,6 +359,44 @@ func (e *Endpoints) CreateOrgPublisher(ctx context.Context, r *http.Request, var
 	}
 
 	return httpserver.OkResp("")
+}
+
+func (e *Endpoints) FetchOrgResources(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
+	}
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	if orgIDStr == "" {
+		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
+	}
+	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrFetchOrgResources.InvalidParameter("org id header").ToResp(), nil
+	}
+
+	if !identityInfo.IsInternalClient() {
+		// 操作鉴权
+		req := apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  orgID,
+			Resource: apistructs.ResourceInfoResource,
+			Action:   apistructs.GetAction,
+		}
+		if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+			return apierrors.ErrFetchOrgResources.AccessDenied().ToResp(), nil
+		}
+	}
+
+	resource, err := e.org.FetchOrgClusterResource(ctx, orgID)
+	if err != nil {
+		return apierrors.ErrFetchOrgResources.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(resource)
 }
 
 // getOrgListParam get org params

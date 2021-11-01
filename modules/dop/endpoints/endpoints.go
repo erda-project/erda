@@ -607,6 +607,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs", Method: http.MethodGet, Handler: e.ListOrg},
 		{Path: "/api/orgs/actions/list-public", Method: http.MethodGet, Handler: e.ListPublicOrg},
 		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
+		{Path: "/api/orgs/actions/fetch-resources", Method: http.MethodGet, Handler: e.FetchOrgResources},
+
 		// core-services project
 		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},

@@ -10,6 +10,7 @@ grpc-server:
 i18n:
   files:
     - conf/dop/i18n/component-protocol.yaml
+    - conf/dop/i18n/resource-trans.yaml
 mysql:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"

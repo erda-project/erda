@@ -29,7 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -49,8 +48,6 @@ type Project struct {
 	uc    *ucauth.UCClient
 	bdl   *bundle.Bundle
 	trans i18n.Translator
-
-	clusterResourceClient dashboardPb.ClusterResourceServer
 }
 
 // Option 定义 Project 对象的配置选项
@@ -83,13 +80,6 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(project *Project) {
 		project.bdl = bdl
-	}
-}
-
-// WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
-	return func(project *Project) {
-		project.clusterResourceClient = cli
 	}
 }
 
