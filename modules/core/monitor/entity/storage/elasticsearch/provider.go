@@ -69,6 +69,9 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 }
 
 func (p *provider) initIndexPattern() error {
+	if len(p.Cfg.Pattern) <= 0 {
+		return fmt.Errorf("pattern is required")
+	}
 	ptn, err := index.BuildPattern(p.Cfg.Pattern)
 	if err != nil {
 		return err

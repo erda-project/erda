@@ -242,6 +242,7 @@ elasticsearch@entity:
 entity-storage-elasticsearch:
   query_timeout: "1m"
   index_type: "entity"
+  pattern: "erda-entity-<type>"
 erda.oap.entity:
 
 erda.core.monitor.alertdetail:

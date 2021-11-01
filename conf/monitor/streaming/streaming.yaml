@@ -355,6 +355,7 @@ entity-storage-elasticsearch:
   write_timeout: "1m"
   query_timeout: "1m"
   index_type: "entity"
+  pattern: "erda-entity-<type>"
 entity-persist:
   input:
     topics: "${ENTITY_TOPICS:spot-entity}"
