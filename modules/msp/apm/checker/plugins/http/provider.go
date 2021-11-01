@@ -219,6 +219,7 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		req.Header = h.headers
 
 		if err != nil {
+			fields["latency"] = 0
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
 			continue
 		}
@@ -247,13 +248,13 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		start := time.Now()
 		resp, err := client.Do(req)
 		if err != nil {
+			fields["latency"] = 0
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
 			continue
 		}
 
 		latency := time.Now().Sub(start).Milliseconds()
 		fields["latency"] = latency
-
 		// strategy of triggering condition
 		triggers := h.triggering
 		resultStatus := true
@@ -270,18 +271,19 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 		}
 	}
 
-	ctx.Report(&plugins.Metric{
+	err = ctx.Report(&plugins.Metric{
 		Name:   "status_page",
 		Tags:   tags,
 		Fields: fields,
 	})
-
+	if err != nil {
+		_ = fmt.Errorf("report metric failed. err: %s", err)
+	}
 	return nil
 }
 
 func checkerStatusHandler(resultStatus bool, fields map[string]interface{}, tags map[string]string, resp *http.Response) {
 	if !resultStatus {
-		fields["latency"] = 0
 		checkerStatusMetric("2", apis.StatusRED, resp.StatusCode, tags, fields)
 	} else {
 		checkerStatusMetric("1", apis.StatusGreen, resp.StatusCode, tags, fields)
