@@ -278,9 +278,9 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 }
 
 // UpdateWithEvent 更新项目 & 发送事件
-func (p *Project) UpdateWithEvent(orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
+func (p *Project) UpdateWithEvent(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) error {
 	// 更新项目
-	project, err := p.Update(orgID, projectID, userID, updateReq)
+	project, err := p.Update(ctx, orgID, projectID, userID, updateReq)
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,7 @@ func (p *Project) UpdateWithEvent(orgID, projectID int64, userID string, updateR
 }
 
 // Update 更新项目
-func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
 	data, _ := json.Marshal(updateReq)
 	logrus.Infof("updateReq: %s", string(data))
 	if updateReq.ResourceConfigs != nil {
@@ -361,6 +361,17 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 	quota.CreatorID = userID
 	quota.UpdaterID = userID
 	setQuotaFromResourceConfig(quota, updateReq.ResourceConfigs)
+
+	// check new quota is less than reqeust
+	var dto = new(apistructs.ProjectDTO)
+	dto.ID = quota.ProjectID
+	setProjectDtoQuotaFromModel(dto, quota)
+	p.fetchPodInfo(dto)
+	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto); !ok {
+		logrus.Errorf("checkNewQuotaIsLessThanRequest is not ok: %s", msg)
+		return nil, errors.New(msg)
+	}
+
 	if hasOldQuota {
 		quota.ID = oldQuota.ID
 		quota.CreatorID = oldQuota.CreatorID
@@ -1605,4 +1616,35 @@ func getMemberFromMembers(members []model.Member, role string) (*model.Member, b
 		}
 	}
 	return nil, false
+}
+
+func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO) (string, bool) {
+	if dto == nil || dto.ResourceConfig == nil {
+		return "", true
+	}
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	var messages []string
+	for workspace, resource := range map[string]*apistructs.ResourceConfigInfo{
+		"PROD":    dto.ResourceConfig.PROD,
+		"STAGING": dto.ResourceConfig.STAGING,
+		"TEST":    dto.ResourceConfig.TEST,
+		"DEV":     dto.ResourceConfig.DEV,
+	} {
+		if resource == nil {
+			continue
+		}
+		if resource.CPUQuota < resource.CPURequest {
+			workspaceStr := p.trans.Text(langCodes, workspace)
+			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "QuotaISLessThanRequest"), workspaceStr, " CPU ", resource.CPUQuota, resource.MemRequest))
+		}
+		if resource.MemQuota < resource.MemRequest {
+			memStr := p.trans.Text(langCodes, "Mem")
+			workspaceStr := p.trans.Text(langCodes, workspace)
+			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "QuotaISLessThanRequest"), workspaceStr, memStr, resource.CPUQuota, resource.MemRequest))
+		}
+	}
+	if len(messages) == 0 {
+		return "", true
+	}
+	return strings.Join(messages, "; "), false
 }
