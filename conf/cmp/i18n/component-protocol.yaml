@@ -130,7 +130,8 @@ zh:
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
  Evicted: 驱逐
- ImagePullBackOff: 镜像拉取失败
+ ImagePullBackOff: 镜像拉取失败重试中
+ ErrImagePull: 镜像拉取失败
  Pending: 挂起
  Running: 运行中
  memUsed: Mem 使用率
