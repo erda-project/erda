@@ -20,15 +20,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
@@ -254,13 +251,6 @@ func (bot *BatchOperationTipModal) DrainNode(nodeIDs []string) error {
 		if err := steveServer.DrainNode(bot.ctx, req); err != nil {
 			return err
 		}
-	}
-	cacheKey := cmp.CacheKey{
-		Kind:        string(apistructs.K8SNode),
-		ClusterName: bot.SDK.InParams["clusterName"].(string),
-	}
-	if _, err := cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache key for pod, %v", err)
 	}
 	return nil
 }
