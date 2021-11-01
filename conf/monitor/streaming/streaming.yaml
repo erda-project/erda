@@ -24,6 +24,7 @@ kafka.topic.initializer:
     - msp-jaeger-trace
     - spot-alert-record
     - spot-notify-record
+    - spot-entity
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
@@ -337,6 +338,30 @@ trace-storage:
       batch:
         size:  ${KAFKA_BATCH_SIZE:50}
         timeout: "10s"
+
+# entity
+elasticsearch@entity:
+  _enable: ${ENTITY_ELASTICSEARCH_ENABLE:false}
+  urls: "${ENTITY_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${ENTITY_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${ENTITY_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${ENTITY_ELASTICSEARCH_SECURITY_PASSWORD}"
+elasticsearch.index.initializer@entity:
+  _enable: ${WRITE_ENTITY_TO_ES_ENABLE:true}
+  templates:
+    - name: "erda-entity"
+      path: "${CONFIG_PATH}/entity_index_template.json"
+entity-storage-elasticsearch:
+  write_timeout: "1m"
+  query_timeout: "1m"
+  index_type: "entity"
+entity-persist:
+  input:
+    topics: "${METRIC_TOPICS:spot-entity}"
+    group: "${METRIC_GROUP_ID:spot-entity-dev}"
+  read_timeout: "5s"
+  buffer_size: ${METRIC_BATCH_SIZE:10}
+  parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
 
 alert-storage:
   input:

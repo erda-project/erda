@@ -17,7 +17,7 @@ package persist
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda-proto-go/oap/entity/pb"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
@@ -26,9 +26,7 @@ type Statistics interface {
 	storekit.ConsumeStatistics
 
 	DecodeError(value []byte, err error)
-	ValidateError(data *metric.Metric)
-	MetadataError(data *metric.Metric, err error)
-	MetadataUpdates(v int)
+	ValidateError(data *pb.Entity)
 }
 
 type statistics struct {
@@ -40,9 +38,6 @@ type statistics struct {
 
 	decodeErrors   prometheus.Counter
 	validateErrors *prometheus.CounterVec
-	metadataError  *prometheus.CounterVec
-
-	metadataUpdates prometheus.Counter
 }
 
 var sharedStatistics = newStatistics()
@@ -92,18 +87,6 @@ func newStatistics() Statistics {
 				Subsystem: subSystem,
 			}, distinguishingKeys,
 		),
-		metadataError: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name:      "metadata_errors",
-				Subsystem: subSystem,
-			}, distinguishingKeys,
-		),
-		metadataUpdates: prometheus.NewCounter(
-			prometheus.CounterOpts{
-				Name:      "metadata_updates",
-				Subsystem: subSystem,
-			},
-		),
 	}
 
 	// only register once
@@ -115,8 +98,6 @@ func newStatistics() Statistics {
 		s.success,
 		s.decodeErrors,
 		s.validateErrors,
-		s.metadataError,
-		s.metadataUpdates,
 	)
 	return s
 }
@@ -131,43 +112,32 @@ func (s *statistics) DecodeError(value []byte, err error) {
 
 func (s *statistics) WriteError(list []interface{}, err error) {
 	for _, item := range list {
-		s.writeErrors.WithLabelValues(getStatisticsLabels(item.(*metric.Metric))...).Inc()
+		s.writeErrors.WithLabelValues(getStatisticsLabels(item.(*pb.Entity))...).Inc()
 	}
 }
 
 func (s *statistics) ConfirmError(list []interface{}, err error) {
 	for _, item := range list {
-		s.confirmErrors.WithLabelValues(getStatisticsLabels(item.(*metric.Metric))...).Inc()
+		s.confirmErrors.WithLabelValues(getStatisticsLabels(item.(*pb.Entity))...).Inc()
 	}
 }
 
 func (s *statistics) Success(list []interface{}) {
 	for _, item := range list {
-		s.success.WithLabelValues(getStatisticsLabels(item.(*metric.Metric))...).Inc()
+		s.success.WithLabelValues(getStatisticsLabels(item.(*pb.Entity))...).Inc()
 	}
 }
 
-func (s *statistics) ValidateError(data *metric.Metric) {
+func (s *statistics) ValidateError(data *pb.Entity) {
 	s.validateErrors.WithLabelValues(getStatisticsLabels(data)...).Inc()
 }
 
-func (s *statistics) MetadataError(data *metric.Metric, err error) {
-	s.metadataError.WithLabelValues(getStatisticsLabels(data)...).Inc()
-}
-
-func (s *statistics) MetadataUpdates(v int) {
-	s.metadataUpdates.Add(float64(v))
-}
-
 var distinguishingKeys = []string{
-	"metric",
-	"org_name", "cluster_name",
+	"type",
 }
 
-func getStatisticsLabels(data *metric.Metric) []string {
+func getStatisticsLabels(data *pb.Entity) []string {
 	return []string{
-		data.Name,
-		data.Tags["org_name"],
-		data.Tags["cluster_name"],
+		data.Type,
 	}
 }

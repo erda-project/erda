@@ -12,31 +12,256 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
-var _ urlenc.URLValuesUnmarshaler = (*EntityRow)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Entity)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SetEntityRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SetEntityResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RemoveEntityRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RemoveEntityResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetEntityRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetEntityResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListEntitiesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListEntitiesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*EntityList)(nil)
 
-// EntityRow implement urlenc.URLValuesUnmarshaler.
-func (m *EntityRow) UnmarshalURLValues(prefix string, values url.Values) error {
+// Entity implement urlenc.URLValuesUnmarshaler.
+func (m *Entity) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "entityID":
-				m.EntityID = vals[0]
-			case "table":
-				m.Table = vals[0]
-			case "rowID":
-				m.RowID = vals[0]
+			case "id":
+				m.Id = vals[0]
+			case "type":
+				m.Type = vals[0]
+			case "key":
+				m.Key = vals[0]
 			case "createTimeUnixNano":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
 				m.CreateTimeUnixNano = val
 			case "updateTimeUnixNano":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
 				m.UpdateTimeUnixNano = val
+			}
+		}
+	}
+	return nil
+}
+
+// SetEntityRequest implement urlenc.URLValuesUnmarshaler.
+func (m *SetEntityRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+			case "data.id":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				m.Data.Id = vals[0]
+			case "data.type":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				m.Data.Type = vals[0]
+			case "data.key":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				m.Data.Key = vals[0]
+			case "data.createTimeUnixNano":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.CreateTimeUnixNano = val
+			case "data.updateTimeUnixNano":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.UpdateTimeUnixNano = val
+			}
+		}
+	}
+	return nil
+}
+
+// SetEntityResponse implement urlenc.URLValuesUnmarshaler.
+func (m *SetEntityResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				m.Data = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// RemoveEntityRequest implement urlenc.URLValuesUnmarshaler.
+func (m *RemoveEntityRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "type":
+				m.Type = vals[0]
+			case "key":
+				m.Key = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// RemoveEntityResponse implement urlenc.URLValuesUnmarshaler.
+func (m *RemoveEntityResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ok":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Ok = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetEntityRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetEntityRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "type":
+				m.Type = vals[0]
+			case "key":
+				m.Key = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetEntityResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetEntityResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+			case "data.id":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				m.Data.Id = vals[0]
+			case "data.type":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				m.Data.Type = vals[0]
+			case "data.key":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				m.Data.Key = vals[0]
+			case "data.createTimeUnixNano":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.CreateTimeUnixNano = val
+			case "data.updateTimeUnixNano":
+				if m.Data == nil {
+					m.Data = &Entity{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.UpdateTimeUnixNano = val
+			}
+		}
+	}
+	return nil
+}
+
+// ListEntitiesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListEntitiesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "type":
+				m.Type = vals[0]
+			case "limit":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Limit = val
+			}
+		}
+	}
+	return nil
+}
+
+// ListEntitiesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListEntitiesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &EntityList{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &EntityList{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// EntityList implement urlenc.URLValuesUnmarshaler.
+func (m *EntityList) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
 			}
 		}
 	}
