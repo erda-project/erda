@@ -17,7 +17,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -173,27 +172,21 @@ func getRequestsResources(containers []corev1.Container) (cpu, mem int64) {
 func resourceToString(res float64, tp string) string {
 	switch tp {
 	case "cpu":
-		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
+		return fmt.Sprintf("%.3f", res/1000)
 	case "memory":
 		isNegative := 1.0
 		if res < 0 {
 			res = -res
 			isNegative = -1
 		}
-		units := []string{"B", "K", "M", "G", "T"}
+		units := []string{"B", "KB", "MB", "GB", "TB"}
 		i := 0
 		for res >= 1<<10 && i < len(units)-1 {
 			res /= 1 << 10
 			i++
 		}
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res*isNegative, 3), 'f', -1, 64), units[i])
+		return fmt.Sprintf("%.3f%s", res*isNegative, units[i])
 	default:
 		return fmt.Sprintf("%.f", res)
 	}
-}
-
-func setPrec(v float64, p int) float64 {
-	pow := math.Pow10(p)
-	v = float64(int64(v*pow)) / pow
-	return v
 }

@@ -19,7 +19,7 @@ require (
 	github.com/andrianbdn/iospng v0.0.0-20180730113000-dccef1992541
 	github.com/apache/thrift v0.14.2
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/bluele/gcache v0.0.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
