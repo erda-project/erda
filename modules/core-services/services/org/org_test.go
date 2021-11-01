@@ -193,3 +193,80 @@ func TestOrg_ListOrgs(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAuditMessage(t *testing.T) {
+	tt := []struct {
+		org  model.Org
+		req  apistructs.OrgUpdateRequestBody
+		want apistructs.AuditMessage
+	}{
+		{
+			model.Org{DisplayName: "dice"},
+			apistructs.OrgUpdateRequestBody{DisplayName: "erda"},
+			apistructs.AuditMessage{
+				MessageZH: "组织名称由 dice 改为 erda ",
+				MessageEN: "org name updated from dice to erda ",
+			},
+		},
+		{
+			model.Org{Locale: "en-US"},
+			apistructs.OrgUpdateRequestBody{Locale: "zh-CN"},
+			apistructs.AuditMessage{
+				MessageZH: "通知语言改为中文 ",
+				MessageEN: "language updated to zh-CN ",
+			},
+		},
+		{
+			model.Org{IsPublic: true},
+			apistructs.OrgUpdateRequestBody{IsPublic: false},
+			apistructs.AuditMessage{
+				MessageZH: "改为私有组织 ",
+				MessageEN: "org updated to private ",
+			},
+		},
+		{
+			model.Org{Logo: ""},
+			apistructs.OrgUpdateRequestBody{Logo: "foo.png"},
+			apistructs.AuditMessage{
+				MessageZH: "组织Logo发生变更 ",
+				MessageEN: "org Logo changed ",
+			},
+		},
+		{
+			model.Org{Desc: ""},
+			apistructs.OrgUpdateRequestBody{Desc: "bar"},
+			apistructs.AuditMessage{
+				MessageZH: "组织描述信息发生变更 ",
+				MessageEN: "org desc changed ",
+			},
+		},
+		{
+			model.Org{BlockoutConfig: model.BlockoutConfig{
+				BlockDEV:   false,
+				BlockTEST:  false,
+				BlockStage: true,
+				BlockProd:  true,
+			}},
+			apistructs.OrgUpdateRequestBody{BlockoutConfig: &apistructs.BlockoutConfig{
+				BlockDEV:   true,
+				BlockTEST:  true,
+				BlockStage: false,
+				BlockProd:  false,
+			}},
+			apistructs.AuditMessage{
+				MessageZH: "开发环境开启封网 测试环境开启封网 预发环境关闭封网 生产环境关闭封网 ",
+				MessageEN: "block network opened in dev environment block network opened in test environment block network closed in staging environment block network closed in prod environment ",
+			},
+		},
+	}
+	for _, v := range tt {
+		message := getAuditMessage(v.org, v.req)
+		if v.want.MessageEN != message.MessageEN {
+			t.Error("fail")
+		}
+		if v.want.MessageZH != message.MessageZH {
+			t.Error("fail")
+		}
+
+	}
+}

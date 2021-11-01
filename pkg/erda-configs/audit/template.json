@@ -904,8 +904,8 @@
   "updateOrg": {
     "desc": "更新企业",
     "success": {
-      "zh": "更新了企业[@orgName]",
-      "en": "Company updated [@orgName]"
+      "zh": "更新了企业[@orgName], [@contentZH]",
+      "en": "Company updated [@orgName], [@contentEN]"
     },
     "fail": {
       "zh": "",

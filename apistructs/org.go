@@ -187,6 +187,13 @@ type OrgDTO struct {
 	Version   int       `json:"version"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+
+	AuditMessage AuditMessage `json:"auditMessage"`
+}
+
+type AuditMessage struct {
+	MessageZH string `json:"messageZH"`
+	MessageEN string `json:"messageEN"`
 }
 
 func (org *OrgDTO) HidePassword() {
