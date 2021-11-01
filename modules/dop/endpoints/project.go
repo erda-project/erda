@@ -24,11 +24,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
