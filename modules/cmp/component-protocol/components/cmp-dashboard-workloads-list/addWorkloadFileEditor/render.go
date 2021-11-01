@@ -105,8 +105,9 @@ func (e *ComponentAddWorkloadFileEditor) SetComponentValue() {
 	e.Props.MinLines = 22
 	e.Operations = map[string]interface{}{
 		"submit": Operation{
-			Key:    "submit",
-			Reload: true,
+			Key:        "submit",
+			Reload:     true,
+			SuccessMsg: e.sdk.I18n("createWorkloadSuccessfully"),
 		},
 	}
 }
