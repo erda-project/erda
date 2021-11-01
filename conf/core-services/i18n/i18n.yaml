@@ -10,6 +10,9 @@ zh:
  TEST: '测试'
  DEV: '开发'
  OwnerUnknown: '无'
+ CPU: ' CPU '
+ Mem: ' 内存 '
+ QuotaISLessThanRequest: '调整后的%环境的%s配额%.2f小于实际请求之%0.2f，请重新设置'
 en:
  AvailableIsLessThanQuota: The actual available resource on this workspace in the cluster is less than the quota. Please ask the Ops to allocate project resources reasonably
  NoResourceForTheWorkspace: No allocatable resources on this workspace in the cluster, please check the workspace labels for the nodes
@@ -22,3 +25,6 @@ en:
  TEST: 'TEST'
  DEV: 'DEV'
  OwnerUnknown: 'Unknown'
+ CPU: ' CPU '
+ Mem: ' Mem '
+ QuotaISLessThanRequest: "The env %s's new %s quota %.2f is less than the actual request %.2f, please reset it"
