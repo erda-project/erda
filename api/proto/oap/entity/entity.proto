@@ -1,31 +1,88 @@
 syntax = "proto3";
 
 package erda.oap.entity;
-
 option go_package = "github.com/erda-project/erda-proto-go/oap/entity/pb";
-
 import "google/protobuf/struct.proto";
-import "oap/common/common.proto";
+import "google/api/annotations.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
 
-// The Entity data model 
-//   of the observability analysis platform.
+// The Entity data model of the observability analysis platform.
 // Unlike time series data, entity data has a unique ID,
-//   and data can be inserted, updated, and deleted according to the unique ID.
-message EntityRow {
+// and data can be inserted, updated, and deleted according to the unique ID.
+message Entity {
+    string id = 1;
+    string type = 2 [(validator.field) = {string_not_empty : true}];
+    string key = 3 [(validator.field) = {string_not_empty : true}];
+    map<string, google.protobuf.Value> values = 4;
+    map<string, string> labels = 5;
+    int64 createTimeUnixNano = 6;
+    int64 updateTimeUnixNano = 7;
+}
 
-    // unique
-    string entityID = 1;
+service EntityService {
+    rpc SetEntity (SetEntityRequest) returns (SetEntityResponse)  {
+      option (google.api.http) = {
+        post: "/api/oap/entities",
+        body: "data",
+      };
+    }
 
-    string table = 2;
+    rpc RemoveEntity (RemoveEntityRequest) returns (RemoveEntityResponse)  {
+      option (google.api.http) = {
+        delete: "/api/oap/entities/{type}/{key}",
+      };
+    }
+  
+    rpc GetEntity (GetEntityRequest) returns (GetEntityResponse)  {
+      option (google.api.http) = {
+        get: "/api/oap/entities/{type}/{key}",
+      };
+    }
 
-    string rowID = 3; 
+    rpc ListEntities (ListEntitiesRequest) returns (ListEntitiesResponse)  {
+      option (google.api.http) = {
+        get: "/api/oap/entities",
+      };
+    }
+}
 
-    map<string, google.protobuf.Value> rowData = 4;
+message SetEntityRequest {
+    Entity data = 1 [(validator.field) = {msg_exists : true}];
+}
 
-    // Including label, attributes and resource 
-    map<string, string> attributes = 5;
+message SetEntityResponse {
+    string data = 1;
+}
 
-    fixed64 createTimeUnixNano = 6;
+message RemoveEntityRequest {
+    string type = 1 [(validator.field) = {string_not_empty : true}];
+    string key = 2 [(validator.field) = {string_not_empty : true}];
+}
 
-    fixed64 updateTimeUnixNano = 7;
+message RemoveEntityResponse {
+    bool ok = 1;
+}
+
+message GetEntityRequest {
+    string type = 1 [(validator.field) = {string_not_empty : true}];
+    string key = 2 [(validator.field) = {string_not_empty : true}];
+}
+
+message GetEntityResponse {
+    Entity data = 1;
+}
+
+message ListEntitiesRequest {
+    string type = 1;
+    map<string, string> labels = 2;
+    int64 limit = 3;
+}
+
+message ListEntitiesResponse {
+    EntityList data = 1;
+}
+
+message EntityList {
+  repeated Entity list = 1;
+  int64 total = 2;
 }
