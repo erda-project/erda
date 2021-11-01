@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -36,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -44,6 +46,7 @@ type Table struct {
 	base.DefaultProvider
 	SDK        *cptype.SDK
 	Ctx        context.Context
+	Metrics    metrics.Interface
 	Server     cmp_interface.SteveServer
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
@@ -192,7 +195,7 @@ type LabelsValue struct {
 }
 
 type GetRowItem interface {
-	GetRowItems(c []data.Object, resName TableType) ([]RowItem, error)
+	GetRowItems(c []data.Object, resName TableType, requests map[string]cmp.AllocatedRes) ([]RowItem, error)
 }
 
 func (t *Table) GetUsageValue(used, total float64, resourceType TableType) DistributionValue {
@@ -259,17 +262,17 @@ func (t *Table) GetDistributionValue(req, total float64, resourceType TableType)
 	}
 }
 
-func (t *Table) GetUnusedRate(unallocate, requst float64, resourceType TableType) DistributionValue {
+func (t *Table) GetUnusedRate(unallocate, request float64, resourceType TableType) DistributionValue {
 	return DistributionValue{
-		Text:    t.GetScaleValue(unallocate, requst, resourceType),
-		Percent: common.GetPercent(unallocate, requst),
+		Text:    t.GetScaleValue(unallocate, request, resourceType),
+		Percent: common.GetPercent(unallocate, request),
 	}
 }
 
-func (t *Table) GetScaleValue(a, b float64, resourceType TableType) string {
+func (t *Table) GetScaleValue(a, b float64, Type TableType) string {
 	level := []string{"", "K", "M", "G", "T"}
 	i := 0
-	switch resourceType {
+	switch Type {
 	case Memory:
 		for ; a >= 1024 && b >= 1024 && i < 4; i++ {
 			a /= 1024
@@ -304,13 +307,43 @@ func (t *Table) SetComponentValue(c *cptype.Component) error {
 	return nil
 }
 
-func (t *Table) RenderList(component *cptype.Component, tableType TableType, nodes []data.Object) error {
+func (t *Table) RenderList(component *cptype.Component, tableType TableType, gs *cptype.GlobalStateData) error {
 	var (
 		err        error
 		sortColumn string
 		asc        bool
 		items      []RowItem
+		nodes      []data.Object
+		request    map[string]cmp.AllocatedRes
 	)
+	clusterName := ""
+	if t.SDK.InParams["clusterName"] != nil {
+		clusterName = t.SDK.InParams["clusterName"].(string)
+	} else {
+		return common.ClusterNotFoundErr
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	nodes, err = t.GetNodes(t.Ctx, gs)
+	if err != nil {
+		logrus.Error(err)
+	}
+	go func() {
+		request, err = cmp.GetNodesAllocatedRes(t.Ctx, t.Server, false, clusterName, t.SDK.Identity.UserID, t.SDK.Identity.OrgID, nodes)
+		if err != nil {
+			logrus.Error(err)
+		}
+		wg.Done()
+	}()
+	if tableType != Pod {
+		go func() {
+			t.GetMetrics(t.Ctx)
+			wg.Done()
+		}()
+	} else {
+		wg.Done()
+	}
+	wg.Wait()
 	//if t.State.PageNo == 0 {
 	//	t.State.PageNo = DefaultPageNo
 	//}
@@ -322,7 +355,7 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 		asc = strings.ToLower(t.State.Sorter.Order) == "ascend"
 	}
 
-	if items, err = t.SetData(nodes, tableType); err != nil {
+	if items, err = t.SetData(nodes, tableType, request); err != nil {
 		return err
 	}
 	if sortColumn != "" {
@@ -352,8 +385,8 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, nod
 }
 
 // SetData assemble rowItem of table
-func (t *Table) SetData(nodes []data.Object, tableType TableType) ([]RowItem, error) {
-	return t.TableComponent.GetRowItems(nodes, tableType)
+func (t *Table) SetData(nodes []data.Object, tableType TableType, requests map[string]cmp.AllocatedRes) ([]RowItem, error) {
+	return t.TableComponent.GetRowItems(nodes, tableType, requests)
 }
 
 func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]data.Object, error) {
@@ -381,6 +414,19 @@ func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]dat
 		nodes = (*gs)["nodes"].([]data.Object)
 	}
 	return nodes, nil
+}
+
+func (t *Table) GetMetrics(ctx context.Context) {
+	// Get all nodes by cluster name
+	req := &metrics.MetricsRequest{
+		Cluster: t.SDK.InParams["clusterName"].(string),
+		Type:    metrics.Cpu,
+		Kind:    metrics.Node,
+	}
+	_, err := t.Metrics.NodeMetrics(ctx, req)
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 func (t *Table) GetPods(ctx context.Context) (map[string][]data.Object, error) {
@@ -633,11 +679,11 @@ func (t *Table) GetOperate(id string) Operate {
 }
 
 // SortByString sort by string value
-func SortByString(data []RowItem, sortColumn string, ascend bool) {
+func SortByString(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
-		if ascend {
+		if asc {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
@@ -645,9 +691,9 @@ func SortByString(data []RowItem, sortColumn string, ascend bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, ascend bool) {
+func SortByNode(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if ascend {
+		if asc {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -655,13 +701,13 @@ func SortByNode(data []RowItem, _ string, ascend bool) {
 }
 
 // SortByDistribution sort by percent
-func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
+func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
-		if ascend {
+		if asc {
 			return aValue < bValue
 		}
 		return aValue > bValue
