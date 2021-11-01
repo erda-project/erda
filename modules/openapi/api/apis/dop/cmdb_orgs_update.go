@@ -33,20 +33,23 @@ var CMDB_ORG_UPDATE = apis.ApiSpec{
 	ResponseType: apistructs.OrgUpdateRequestBody{},
 	Doc:          "summary: 更新组织",
 	Audit: func(ctx *spec.AuditContext) error {
-		orgID, err := ctx.GetParamInt64("orgID")
-		if err != nil {
+		var (
+			resp struct{ Data apistructs.OrgDTO }
+		)
+		if err := ctx.BindResponseData(&resp); err != nil {
 			return err
 		}
-		org, err := ctx.GetOrg(orgID)
-		if err != nil {
-			return err
-		}
+
 		return ctx.CreateAudit(&apistructs.Audit{
 			ScopeType:    apistructs.SysScope,
 			ScopeID:      1,
-			OrgID:        uint64(orgID),
+			OrgID:        resp.Data.ID,
 			TemplateName: apistructs.UpdateOrgTemplate,
-			Context:      map[string]interface{}{"orgName": org.Name},
+			Context: map[string]interface{}{
+				"orgName":   resp.Data.Name,
+				"contentZH": resp.Data.AuditMessage.MessageZH,
+				"contentEN": resp.Data.AuditMessage.MessageEN,
+			},
 		})
 	},
 }
