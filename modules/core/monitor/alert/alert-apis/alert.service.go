@@ -1034,17 +1034,10 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-	id, err := strconv.ParseUint(orgID, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
-	}
 	for _, v := range request.TriggerCondition {
 		if v.Condition == ClusterName {
 			if len(v.Values) <= 0 {
 				return nil, errors.NewMissingParameterError("cluster_names")
-			}
-			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
-				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
 			}
 		}
 	}
