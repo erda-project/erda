@@ -21,9 +21,9 @@ import (
 )
 
 type Project struct {
-	bdl *bundle.Bundle
+	bdl   *bundle.Bundle
 	trans i18n.Translator
-	cmp dashboardPb.ClusterResourceServer
+	cmp   dashboardPb.ClusterResourceServer
 }
 
 func New(options ...Option) *Project {
@@ -33,6 +33,3 @@ func New(options ...Option) *Project {
 	}
 	return p
 }
-
-
-
