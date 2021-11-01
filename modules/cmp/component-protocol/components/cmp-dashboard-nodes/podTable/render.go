@@ -104,11 +104,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
 	}
-	nodes, err := pt.GetNodes(ctx, gs)
-	if err != nil {
-		return err
-	}
-	if err = pt.RenderList(c, table.Pod, nodes); err != nil {
+	if err = pt.RenderList(c, table.Pod, gs); err != nil {
 		return err
 	}
 	if err = pt.SetComponentValue(c); err != nil {
@@ -141,7 +137,7 @@ func (pt *PodInfoTable) getProps() {
 	pt.Props = p
 }
 
-func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
+func (pt *PodInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, requests map[string]cmp.AllocatedRes) ([]table.RowItem, error) {
 	var (
 		status *table.SteveStatus
 		items  []table.RowItem
