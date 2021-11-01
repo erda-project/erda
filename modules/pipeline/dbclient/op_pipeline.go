@@ -281,6 +281,9 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	)
 
 	// default pageNum = 1
+	if req.PageNo > 0 {
+		req.PageNum = req.PageNo
+	}
 	if req.PageNum <= 0 {
 		req.PageNum = 1
 	}

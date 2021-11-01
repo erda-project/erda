@@ -21,8 +21,19 @@ type CICDPipelineListRequest struct {
 	YmlNames string `schema:"ymlNames"`
 	Statuses string `schema:"statuses"`
 	AppID    uint64 `schema:"appID"`
-	PageNum  int    `schema:"pageNum"`
+	PageNum  int    `schema:"pageNum"` // deprecated, use PageNo
+	PageNo   int    `schema:"pageNo"`  // UI standard compatible, same with PageNum
 	PageSize int    `schema:"pageSize"`
+}
+
+func (r *CICDPipelineListRequest) EnsurePageNo() int {
+	// pageNo first
+	if r.PageNo > 0 {
+		r.PageNum = r.PageNo
+		return r.PageNo
+	}
+	r.PageNo = r.PageNum
+	return r.PageNum
 }
 
 // CICD pipeline detail
