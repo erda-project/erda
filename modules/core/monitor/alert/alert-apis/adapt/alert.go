@@ -142,6 +142,8 @@ const (
 
 	dashboardPath = "/dataCenter/customDashboard"
 	recordPath    = "/dataCenter/alarm/record"
+
+	TriggerCondition = "trigger_condition"
 )
 
 // QueryAlertRule .
@@ -462,7 +464,7 @@ func (a *Adapt) CreateAlert(alert *pb.Alert) (alertID uint64, err error) {
 		}
 	}()
 	orgName := alert.Attributes["org_name"].AsInterface().(string)
-	delete(alert.Attributes, "org_name")
+	//delete(alert.Attributes, "org_name")
 	dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeId, alert.Name)
 	if err != nil {
 		return 0, err
@@ -574,14 +576,14 @@ func (a *Adapt) CreateOrgAlert(alert *pb.Alert, orgID string) (alertID uint64, e
 	alert.Attributes["alert_record_path"] = alertRecordPath
 	diceOrgId := structpb.NewStringValue(orgID)
 	alert.Attributes["dice_org_id"] = diceOrgId
-	//TODO 将触发条件插入attributes
-	for _, v := range alert.TriggerCondition {
-		data, err := json.Marshal(v)
-		if err != nil {
-			return 0, err
-		}
-		alert.Attributes[v.Condition] = structpb.NewStringValue(string(data))
-	}
+	////TODO 将触发条件插入attributes
+	//for _, v := range alert.TriggerCondition {
+	//	data, err := json.Marshal(v)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	alert.Attributes[v.Condition] = structpb.NewStringValue(string(data))
+	//}
 	return a.CreateAlert(alert)
 }
 
@@ -657,6 +659,17 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *pb.Alert, orgID string) er
 	alertRecordPath := structpb.NewStringValue(recordPath)
 	alert.Attributes["alert_record_path"] = alertRecordPath
 
+	//TODO update trigger condition in attribute
+	if len(alert.TriggerCondition) > 0 {
+		data, err := json.Marshal(alert.TriggerCondition)
+		if err != nil {
+			return err
+		}
+		alert.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
+	} else {
+		delete(alert.Attributes, TriggerCondition)
+	}
+
 	return a.UpdateAlert(alertID, alert)
 }
 
@@ -674,7 +687,6 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *pb.Alert) (err error) {
 		}
 	}()
 	orgName := alert.Attributes["org_name"].AsInterface().(string)
-	delete(alert.Attributes, "org_name")
 	if alert.Name != "" {
 		dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeId, alert.Name)
 		if err != nil {

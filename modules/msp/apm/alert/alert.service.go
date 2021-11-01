@@ -178,17 +178,17 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	alertData.Attributes[TargetWorkspace] = structpb.NewStringValue(workspace)
 	alertData.Attributes[TK] = structpb.NewStringValue(tk)
 	alertData.Attributes[TkAlias] = structpb.NewStringValue(tk)
-	for _, v := range request.TriggerCondition {
-		conditionStr, err := json.Marshal(v)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		alertData.Attributes[v.Condition] = structpb.NewStringValue(string(conditionStr))
-	}
 	alertData.Attributes[DashboardPath] =
 		structpb.NewStringValue(fmt.Sprintf(DashboardPathFormat, projectId, workspace, request.TenantGroup, tk))
 	alertData.Attributes[RecordPath] =
 		structpb.NewStringValue(fmt.Sprintf(RecordPathFormat, projectId, workspace, request.TenantGroup, tk))
+	if len(request.TriggerCondition) > 0 {
+		data, err := json.Marshal(request.TriggerCondition)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		alertData.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
+	}
 	ma, err := a.AlertToMonitor(alertData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -269,16 +269,16 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 			alertData.Attributes[k] = v
 		}
 	}
-	if request.AppIds != nil && len(request.AppIds) > 0 {
-		alertData.Attributes["application_id"], err = a.p.StringSliceToValue(request.AppIds)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		alertData.Attributes["target_application_id"], err = a.p.StringSliceToValue(request.AppIds)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-	}
+	//if request.AppIds != nil && len(request.AppIds) > 0 {
+	//	alertData.Attributes["application_id"], err = a.p.StringSliceToValue(request.AppIds)
+	//	if err != nil {
+	//		return nil, errors.NewInternalServerError(err)
+	//	}
+	//	alertData.Attributes["target_application_id"], err = a.p.StringSliceToValue(request.AppIds)
+	//	if err != nil {
+	//		return nil, errors.NewInternalServerError(err)
+	//	}
+	//}
 	if request.Domain != "" && len(request.Domain) > 0 {
 		alertData.Attributes["alert_domain"] = structpb.NewStringValue(request.Domain)
 	}
@@ -286,6 +286,15 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	recordPath := fmt.Sprintf(RecordPathFormat, projectId, workspace, request.TenantGroup, tk)
 	alertData.Attributes[DashboardPath] = structpb.NewStringValue(dashboardPath)
 	alertData.Attributes[RecordPath] = structpb.NewStringValue(recordPath)
+	if len(request.TriggerCondition) > 0 {
+		data, err := json.Marshal(request.TriggerCondition)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		alertData.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
+	} else {
+		delete(alertData.Attributes, TriggerCondition)
+	}
 	data, err := json.Marshal(alertData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
