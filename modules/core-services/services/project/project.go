@@ -897,6 +897,8 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 	}
 
 	for i := range projectDTOs {
+		projectDTOs[i].CpuQuota = calcu.MillcoreToCore(uint64(projectDTOs[i].CpuQuota), 3)
+		projectDTOs[i].MemQuota = calcu.ByteToGibibyte(uint64(projectDTOs[i].MemQuota), 3)
 		if v, ok := resp.Data[projectDTOs[i].ID]; ok {
 			projectDTOs[i].CpuServiceUsed = v.CpuServiceUsed
 			projectDTOs[i].MemServiceUsed = v.MemServiceUsed
@@ -1646,12 +1648,11 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 		}
 		if resource.CPUQuota < resource.CPURequest {
 			workspaceStr := p.trans.Text(langCodes, workspace)
-			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "QuotaISLessThanRequest"), workspaceStr, " CPU ", resource.CPUQuota, resource.MemRequest))
+			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "CPUQuotaIsLessThanRequest"), workspaceStr, resource.CPUQuota, resource.MemRequest))
 		}
 		if resource.MemQuota < resource.MemRequest {
-			memStr := p.trans.Text(langCodes, "Mem")
 			workspaceStr := p.trans.Text(langCodes, workspace)
-			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "QuotaISLessThanRequest"), workspaceStr, memStr, resource.CPUQuota, resource.MemRequest))
+			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "MemQuotaIsLessThanRequest"), workspaceStr, resource.CPUQuota, resource.MemRequest))
 		}
 	}
 	if len(messages) == 0 {
