@@ -314,15 +314,6 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	recordPath := fmt.Sprintf(RecordPathFormat, projectId, workspace, request.TenantGroup, tk)
 	alertData.Attributes[DashboardPath] = structpb.NewStringValue(dashboardPath)
 	alertData.Attributes[RecordPath] = structpb.NewStringValue(recordPath)
-	if len(request.TriggerCondition) > 0 {
-		data, err := json.Marshal(request.TriggerCondition)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		alertData.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
-	} else {
-		delete(alertData.Attributes, TriggerCondition)
-	}
 	data, err := json.Marshal(alertData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

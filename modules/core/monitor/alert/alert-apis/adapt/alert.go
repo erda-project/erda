@@ -576,14 +576,6 @@ func (a *Adapt) CreateOrgAlert(alert *pb.Alert, orgID string) (alertID uint64, e
 	alert.Attributes["alert_record_path"] = alertRecordPath
 	diceOrgId := structpb.NewStringValue(orgID)
 	alert.Attributes["dice_org_id"] = diceOrgId
-	////TODO 将触发条件插入attributes
-	//for _, v := range alert.TriggerCondition {
-	//	data, err := json.Marshal(v)
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	//	alert.Attributes[v.Condition] = structpb.NewStringValue(string(data))
-	//}
 	return a.CreateAlert(alert)
 }
 
@@ -710,6 +702,15 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *pb.Alert) (err error) {
 	}
 	for k, v := range alert.Attributes {
 		attributes[k] = v.AsInterface()
+	}
+	if len(alert.TriggerCondition) > 0 {
+		data, err := json.Marshal(alert.TriggerCondition)
+		if err != nil {
+			return err
+		}
+		attributes[TriggerCondition] = structpb.NewStringValue(string(data))
+	} else {
+		delete(attributes, TriggerCondition)
 	}
 	alert.Id = alertID
 	for k, v := range attributes {
