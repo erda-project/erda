@@ -21,11 +21,13 @@ type BarProps struct {
 }
 
 type Option struct {
-	DataZoom []DataZoom `json:"dataZoom"`
-	Grid     Grid       `json:"grid"`
-	Series   []Series   `json:"series"`
-	XAxis    []XAxis    `json:"xAxis"`
-	YAxis    []YAxis    `json:"yAxis"`
+	Animation bool                   `json:"animation"`
+	DataZoom  []DataZoom             `json:"dataZoom"`
+	Grid      Grid                   `json:"grid"`
+	Series    []Series               `json:"series"`
+	XAxis     []XAxis                `json:"xAxis"`
+	YAxis     []YAxis                `json:"yAxis"`
+	Style     map[string]interface{} `json:"style"`
 }
 
 type DataZoom struct {
@@ -65,16 +67,18 @@ type Tooltip struct {
 }
 
 type XAxis struct {
-	Type string `json:"type"`
+	Type      string                 `json:"type"`
+	AxisLabel map[string]interface{} `json:"axisLabel"`
 }
 
 type YAxis struct {
-	Type    string   `json:"type"`
-	Data    []string `json:"data"`
-	Inverse bool     `json:"inverse"`
+	Type      string                 `json:"type"`
+	Data      []string               `json:"data"`
+	Inverse   bool                   `json:"inverse"`
+	AxisLabel map[string]interface{} `json:"axisLabel"`
 }
 
-func NewBarProps(values []int64, categories []string, title string) BarProps {
+func NewBarProps(values []int64, categories []string, title, xFormatter string) BarProps {
 	zooms := make([]DataZoom, 0)
 	if len(categories) < 10 {
 		for i := 10 - len(categories); i > 0; i-- {
@@ -85,7 +89,7 @@ func NewBarProps(values []int64, categories []string, title string) BarProps {
 	if len(categories) > 10 {
 		zooms = []DataZoom{
 			{
-				EndValue:   10,
+				EndValue:   9,
 				Orient:     "vertical",
 				StartValue: 0,
 				Throttle:   0,
@@ -93,7 +97,7 @@ func NewBarProps(values []int64, categories []string, title string) BarProps {
 				ZoomLock:   true,
 			},
 			{
-				EndValue:       10,
+				EndValue:       9,
 				HandleSize:     15,
 				Orient:         "vertical",
 				ShowDataShadow: false,
@@ -116,7 +120,8 @@ func NewBarProps(values []int64, categories []string, title string) BarProps {
 	return BarProps{
 		ChartType: "bar",
 		Option: Option{
-			DataZoom: zooms,
+			Animation: false,
+			DataZoom:  zooms,
 			Grid: Grid{
 				Right: 30,
 			},
@@ -127,13 +132,17 @@ func NewBarProps(values []int64, categories []string, title string) BarProps {
 				},
 			},
 			XAxis: []XAxis{
-				{Type: "value"},
+				{
+					Type:      "value",
+					AxisLabel: map[string]interface{}{"formatter": xFormatter},
+				},
 			},
 			YAxis: []YAxis{
 				{
-					Type:    "category",
-					Data:    categories,
-					Inverse: true,
+					Type:      "category",
+					Data:      categories,
+					Inverse:   true,
+					AxisLabel: map[string]interface{}{"interval": 0},
 				},
 			},
 		},
