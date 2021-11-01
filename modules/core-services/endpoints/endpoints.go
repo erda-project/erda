@@ -21,7 +21,6 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
 
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
@@ -56,7 +55,6 @@ type Endpoints struct {
 	db                    *dao.DBClient
 	uc                    *ucauth.UCClient
 	bdl                   *bundle.Bundle
-	clusterResourceClient dashboardPb.ClusterResourceClient
 	org                   *org.Org
 	project               *project.Project
 	approve               *approve.Approve
@@ -292,9 +290,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/actions/get-notify-config", Method: http.MethodGet, Handler: e.GetNotifyConfig},
 		{Path: "/api/orgs/clusters/relations/{orgID}", Method: http.MethodGet, Handler: e.GetOrgClusterRelationsByOrg},
 		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: e.DereferenceCluster},
-
-		// 获取企业可用资源
-		{Path: "/api/orgs/actions/fetch-resources", Method: http.MethodGet, Handler: e.FetchOrgResources},
 
 		// the interface of project
 		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},

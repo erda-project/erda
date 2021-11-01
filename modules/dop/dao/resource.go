@@ -12,24 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package dao
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	`github.com/erda-project/erda/modules/core-services/model`
 )
 
-var CMDB_ORG_RESOURCE_GET = apis.ApiSpec{
-	Path:         "/api/orgs/actions/fetch-resources",
-	BackendPath:  "/api/orgs/actions/fetch-resources",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	ResponseType: apistructs.OrgResourceInfo{},
-	IsOpenAPI:    true,
-	Doc:          "summary: 获取企业资源使用",
+// GetOrgClusterRelationsByOrg 根据 orgID 获取企业对应集群关系
+func (client *DBClient) GetOrgClusterRelationsByOrg(orgID uint64) ([]model.OrgClusterRelation, error) {
+	var relations []model.OrgClusterRelation
+	if err := client.Where("org_id = ?", orgID).Find(&relations).Error; err != nil {
+		return nil, err
+	}
+	return relations, nil
 }

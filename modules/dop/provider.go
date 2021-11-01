@@ -56,11 +56,11 @@ type provider struct {
 
 	Protocol    componentprotocol.Interface
 	Tran        i18n.Translator  `translator:"component-protocol"`
-	IssueTan    i18n.Translator  `translator:"issue-manage"`
-	ProjectTran i18n.Translator  `translator:"project-trans"`
-	DB          *gorm.DB         `autowired:"mysql-client"`
-	ETCD        etcd.Interface   // autowired
-	EtcdClient  *clientv3.Client // autowired
+	IssueTan      i18n.Translator `translator:"issue-manage"`
+	ResourceTrans i18n.Translator `translator:"resource-trans"`
+	DB            *gorm.DB        `autowired:"mysql-client"`
+	ETCD        etcd.Interface    // autowired
+	EtcdClient  *clientv3.Client  // autowired
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
