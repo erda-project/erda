@@ -257,7 +257,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		return nil, err
 	}
 
-	if !p.SteveAggregator.IsServerReady(req.ClusterName) {
+	if !p.SteveAggregator.IsServerReady(req.ClusterName) || len(req.LabelSelector) != 0 || len(req.FieldSelector) != 0 {
 		return p.list(apiOp, resp, req.ClusterName)
 	}
 
