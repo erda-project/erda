@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -636,45 +635,6 @@ func (e *Endpoints) getPermOrgs(r *http.Request) (bool, []int64, error) {
 		}
 		return false, orgIDs, nil
 	}
-}
-
-// FetchOrgResources 获取企业资源情况
-func (e *Endpoints) FetchOrgResources(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	langCodes := i18n.Language(r)
-	ctx = context.WithValue(ctx, "lang_codes", langCodes)
-
-	identityInfo, err := user.GetIdentityInfo(r)
-	if err != nil {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
-	}
-	orgIDStr := r.Header.Get(httputil.OrgHeader)
-	if orgIDStr == "" {
-		return apierrors.ErrFetchOrgResources.NotLogin().ToResp(), nil
-	}
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrFetchOrgResources.InvalidParameter("org id header").ToResp(), nil
-	}
-
-	if !identityInfo.IsInternalClient() {
-		// 操作鉴权
-		req := apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.OrgScope,
-			ScopeID:  orgID,
-			Resource: apistructs.ResourceInfoResource,
-			Action:   apistructs.GetAction,
-		}
-		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
-			return apierrors.ErrFetchOrgResources.AccessDenied().ToResp(), nil
-		}
-	}
-
-	resource, err := e.org.FetchOrgClusterResource(ctx, orgID)
-	if err != nil {
-		return apierrors.ErrFetchOrgResources.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp(resource)
 }
 
 func (e *Endpoints) SetReleaseCrossCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

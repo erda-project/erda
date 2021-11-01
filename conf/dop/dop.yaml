@@ -10,6 +10,7 @@ grpc-server:
 i18n:
   files:
     - conf/dop/i18n/component-protocol.yaml
+    - conf/dop/i18n/resource-trans.yaml
 mysql:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"
@@ -32,6 +33,11 @@ grpc-client@erda.core.pipeline.definition:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.definition-client:
 erda.core.pipeline.definition-process-client:
+
+grpc-client@erda.cmp.dashboard.resource:
+  addr: "${CMP_GRPC_ADDR:cmp:9029}"
+  block: false
+erda.cmp.dashboard.resource-client:
 
 erda.core.dop.autotest.testplan:
 
