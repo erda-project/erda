@@ -85,33 +85,33 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	query, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
 
-	var v Values
-	if err := json.Unmarshal(decoded, &v); err != nil {
+	var values Values
+	if err := json.Unmarshal(decode, &values); err != nil {
 		return err
 	}
-	f.State.Values = v
+	f.State.Values = values
 	return nil
 }
 
-func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	f.State = state
