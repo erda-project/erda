@@ -1663,11 +1663,11 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 		}
 		if resource.CPUQuota < resource.CPURequest {
 			workspaceStr := p.trans.Text(langCodes, workspace)
-			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "CPUQuotaIsLessThanRequest"), workspaceStr, resource.CPUQuota, resource.MemRequest))
+			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "CPUQuotaIsLessThanRequest"), workspaceStr, resource.CPUQuota, resource.CPURequest))
 		}
 		if resource.MemQuota < resource.MemRequest {
 			workspaceStr := p.trans.Text(langCodes, workspace)
-			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "MemQuotaIsLessThanRequest"), workspaceStr, resource.CPUQuota, resource.MemRequest))
+			messages = append(messages, fmt.Sprintf(p.trans.Text(langCodes, "MemQuotaIsLessThanRequest"), workspaceStr, resource.MemQuota, resource.MemRequest))
 		}
 	}
 	if len(messages) == 0 {
