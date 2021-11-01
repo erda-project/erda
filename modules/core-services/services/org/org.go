@@ -219,13 +219,13 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 }
 
 // UpdateWithEvent 更新企业 & 发送更新事件
-func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, error) {
+func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, apistructs.AuditMessage, error) {
 	if updateReq.DisplayName == "" {
 		updateReq.DisplayName = updateReq.Name
 	}
-	org, err := o.Update(orgID, updateReq)
+	org, auditMessage, err := o.Update(orgID, updateReq)
 	if err != nil {
-		return nil, err
+		return nil, apistructs.AuditMessage{}, err
 	}
 
 	ev := &apistructs.EventCreateRequest{
@@ -245,17 +245,18 @@ func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequest
 		logrus.Warnf("failed to send org update event, (%v)", err)
 	}
 
-	return org, nil
+	return org, auditMessage, nil
 }
 
 // Update 更新企业
-func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, error) {
+func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, apistructs.AuditMessage, error) {
 	// 检查待更新的org是否存在
 	org, err := o.db.GetOrg(orgID)
 	if err != nil {
 		logrus.Warnf("failed to find org when update org, (%v)", err)
-		return nil, errors.Errorf("failed to find org when update org")
+		return nil, apistructs.AuditMessage{}, errors.Errorf("failed to find org when update org")
 	}
+	auditMessage := getAuditMessage(org, updateReq)
 
 	// 更新企业元信息，企业名称暂不可更改
 	org.Desc = updateReq.Desc
@@ -287,10 +288,114 @@ func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*m
 	// 更新企业信息至DB
 	if err = o.db.UpdateOrg(&org); err != nil {
 		logrus.Warnf("failed to update org, (%v)", err)
-		return nil, errors.Errorf("failed to update org")
+		return nil, apistructs.AuditMessage{}, errors.Errorf("failed to update org")
 	}
+	return &org, auditMessage, nil
+}
 
-	return &org, nil
+func getAuditMessage(org model.Org, req apistructs.OrgUpdateRequestBody) apistructs.AuditMessage {
+	var messageZH, messageEN strings.Builder
+	if org.DisplayName != req.DisplayName {
+		messageZH.WriteString(fmt.Sprintf("组织名称由 %s 改为 %s ", org.DisplayName, req.DisplayName))
+		messageEN.WriteString(fmt.Sprintf("org name updated from %s to %s ", org.DisplayName, req.DisplayName))
+	}
+	if org.Locale != req.Locale {
+		messageZH.WriteString(fmt.Sprintf("通知语言改为%s ", func() string {
+			switch req.Locale {
+			case "en-US":
+				return "英文"
+			case "zh-CN":
+				return "中文"
+			default:
+				return ""
+			}
+		}()))
+		messageEN.WriteString(fmt.Sprintf("language updated to %s ", req.Locale))
+	}
+	if org.IsPublic != req.IsPublic {
+		messageZH.WriteString(func() string {
+			if req.IsPublic {
+				return "改为公开组织 "
+			}
+			return "改为私有组织 "
+		}())
+		messageEN.WriteString(func() string {
+			if req.IsPublic {
+				return "org updated to public "
+			}
+			return "org updated to private "
+		}())
+	}
+	if org.Logo != req.Logo {
+		messageZH.WriteString("组织Logo发生变更 ")
+		messageEN.WriteString("org Logo changed ")
+	}
+	if org.Desc != req.Desc {
+		messageZH.WriteString("组织描述信息发生变更 ")
+		messageEN.WriteString("org desc changed ")
+	}
+	if req.BlockoutConfig != nil {
+		if org.BlockoutConfig.BlockDEV != req.BlockoutConfig.BlockDEV {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockDEV {
+					return "开发环境开启封网 "
+				}
+				return "开发环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockDEV {
+					return "block network opened in dev environment "
+				}
+				return "block network closed in dev environment "
+			}())
+		}
+		if org.BlockoutConfig.BlockTEST != req.BlockoutConfig.BlockTEST {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockTEST {
+					return "测试环境开启封网 "
+				}
+				return "测试环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockTEST {
+					return "block network opened in test environment "
+				}
+				return "block network closed in test environment "
+			}())
+		}
+		if org.BlockoutConfig.BlockStage != req.BlockoutConfig.BlockStage {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockStage {
+					return "预发环境开启封网 "
+				}
+				return "预发环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockStage {
+					return "block network opened in staging environment "
+				}
+				return "block network closed in staging environment "
+			}())
+		}
+		if org.BlockoutConfig.BlockProd != req.BlockoutConfig.BlockProd {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockProd {
+					return "生产环境开启封网 "
+				}
+				return "生产环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockProd {
+					return "block network opened in prod environment "
+				}
+				return "block network closed in prod environment "
+			}())
+		}
+	}
+	return apistructs.AuditMessage{
+		MessageZH: messageZH.String(),
+		MessageEN: messageEN.String(),
+	}
 }
 
 // Get 获取企业
