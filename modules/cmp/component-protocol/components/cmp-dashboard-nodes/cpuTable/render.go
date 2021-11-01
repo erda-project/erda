@@ -27,8 +27,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
@@ -65,6 +67,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	ct.Operations = ct.GetTableOperation()
 	ct.Ctx = ctx
 	ct.Table.Server = steveServer
+	ct.Table.Metrics = mServer
 	ct.getProps()
 	ct.TableComponent = ct
 	ct.Ctx = ctx
@@ -111,11 +114,8 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
 	}
-	nodes, err := ct.GetNodes(ctx, gs)
-	if err != nil {
-		return err
-	}
-	if err = ct.RenderList(c, table.Cpu, nodes); err != nil {
+
+	if err = ct.RenderList(c, table.Cpu, gs); err != nil {
 		return err
 	}
 	if err = ct.SetComponentValue(c); err != nil {
@@ -150,54 +150,37 @@ func (ct *CpuInfoTable) getProps() {
 	ct.Props = props
 }
 
-func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType) ([]table.RowItem, error) {
+func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, tableType table.TableType, requests map[string]cmp.AllocatedRes) ([]table.RowItem, error) {
 	var (
 		err                     error
 		status                  *table.SteveStatus
 		distribution, dr, usage table.DistributionValue
-		resp                    map[string]*metrics.MetricsData
+		clusterName             string
 		nodeLabels              []string
 		items                   []table.RowItem
 	)
-	clusterName := ""
 	if ct.SDK.InParams["clusterName"] != nil {
 		clusterName = ct.SDK.InParams["clusterName"].(string)
 	} else {
 		return nil, common.ClusterNotFoundErr
 	}
-	req := &metrics.MetricsRequest{
-		Cluster: ct.SDK.InParams["clusterName"].(string),
-		Type:    metrics.Cpu,
-		Kind:    metrics.Node,
-	}
-	for _, node := range nodes {
-		req.NodeRequests = append(req.NodeRequests, &metrics.MetricsNodeRequest{
-			MetricsRequest: req,
-			Ip:             node.StringSlice("metadata", "fields")[5],
-		})
-	}
-	if resp, err = mServer.NodeMetrics(ct.Ctx, req); err != nil || resp == nil {
-		logrus.Errorf("metrics error: %v", err)
-	}
-	nodesAllocatedRes, err := cmp.GetNodesAllocatedRes(ct.Ctx, steveServer, false, clusterName, ct.SDK.Identity.UserID, ct.SDK.Identity.OrgID, nodes)
-	if err != nil {
-		return nil, err
-	}
-	for i, c := range nodes {
+	for _, c := range nodes {
 		nodeLabelsData := c.Map("metadata", "labels")
+
 		for k := range nodeLabelsData {
 			nodeLabels = append(nodeLabels, k)
 		}
 		if status, err = ct.GetItemStatus(c); err != nil {
 			return nil, err
 		}
+		Ip := c.StringSlice("metadata", "fields")[5]
 		//request := c.Map("status", "allocatable").String("cpu")
 		nodeName := c.StringSlice("metadata", "fields")[0]
-		cpuRequest := nodesAllocatedRes[nodeName].CPU
 		requestQty, _ := resource.ParseQuantity(c.String("status", "allocatable", "cpu"))
+		cpuRequest := requests[nodeName].CPU
 
-		key := req.NodeRequests[i].CacheKey()
 		distribution = ct.GetDistributionValue(float64(cpuRequest), float64(requestQty.ScaledValue(resource.Milli)), table.Cpu)
+		key := cache.GenerateKey(metrics.Cpu, metrics.Node, clusterName, Ip)
 		metricsData := metrics.GetCache(key)
 		used := 0.0
 		if metricsData != nil {
