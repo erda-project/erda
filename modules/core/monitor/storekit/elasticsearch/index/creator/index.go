@@ -142,7 +142,7 @@ func (p *provider) FixedIndex(keys ...string) (string, error) {
 	keylen := len(keys)
 	for _, ptn := range p.fixedPatterns {
 		if ptn.KeyNum == keylen {
-			list := make([]string, len(keys))
+			list := make([]string, keylen)
 			for i, k := range keys {
 				list[i] = index.NormalizeKey(k)
 			}
