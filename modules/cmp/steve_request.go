@@ -306,18 +306,19 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 
 	if lexpired {
 		if !cache.ExpireFreshQueue.IsFull() {
+			tmp := *req
 			task := &queue.Task{
 				Key: key.GetKey(),
 				Do: func() {
 					ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 					defer cancel()
-					apiOp, resp, err := p.getApiRequest(ctx, req)
+					apiOp, resp, err := p.getApiRequest(ctx, &tmp)
 					if err != nil {
 						logrus.Errorf("failed to get api request in task, %v", err)
 						return
 					}
 
-					list, err := p.list(apiOp, resp, req.ClusterName)
+					list, err := p.list(apiOp, resp, tmp.ClusterName)
 					if err != nil {
 						logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
 						return
