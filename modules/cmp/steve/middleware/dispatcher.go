@@ -15,6 +15,8 @@
 package middleware
 
 import (
+	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -28,6 +30,7 @@ type Queue interface {
 	pushBack(cmd string) error
 	Size() int
 	Get(i int) (string, error)
+	Begin() int
 }
 
 var (
@@ -38,8 +41,16 @@ const (
 	startIdx   = 1
 	maxBufSize = 2048
 )
+const (
+	// state
+	normal = iota
+	reverseSearch
+	reverseSearched
+)
 
+// start with index 1
 type commandQueue struct {
+	// cmds contains each cmd of history, start from startIdx
 	cmds    []string
 	length  int
 	maxSize int
@@ -48,18 +59,20 @@ type commandQueue struct {
 func (c *commandQueue) Front() string {
 	return c.cmds[0]
 }
-
+func (c *commandQueue) Begin() int {
+	return startIdx
+}
 func (c *commandQueue) pushFront(cmd string) error {
 	c.length = mathutil.Min(c.maxSize, c.length+1)
-	for i := c.length - 2; i >= 0; i-- {
+	for i := c.length - 1; i > 0; i-- {
 		c.cmds[i+1] = c.cmds[i]
 	}
-	c.cmds[0] = cmd
+	c.cmds[startIdx] = cmd
 	return nil
 }
 
 func (c *commandQueue) Back() string {
-	return c.cmds[c.length-1]
+	return c.cmds[c.length]
 }
 
 func (c *commandQueue) pushBack(cmd string) error {
@@ -73,103 +86,179 @@ func (c *commandQueue) Size() int {
 }
 
 func (c *commandQueue) Get(i int) (string, error) {
-	if i < c.length && i >= 0 {
+	if i <= c.length && i >= 0 {
 		return c.cmds[i], nil
 	}
 	return "", errors.Errorf("queue index out of range")
 }
 
 type dispatcher struct {
+	ctx            context.Context
+	closeChan      chan struct{}
 	queue          Queue
 	cursorLine     int
 	cursorIdx      int
 	length         int
 	buf            []byte
+	searchBuf      []byte
+	searchIdx      int
 	BufferMaxSize  int
 	executeCommand string
-	cmds           []*cmdWithTimestamp
+	auditReqChan   chan *cmdWithTimestamp
+	state          int
 }
 
 func (d *dispatcher) Print(b byte) error {
 	if b == 127 {
-		d.buf = append(d.buf[:d.cursorIdx-1], d.buf[d.cursorIdx:]...)
-		d.cursorIdx = mathutil.Max(d.cursorIdx-1, 1)
-		d.length = mathutil.Max(d.length-1, 0)
-		return nil
+		d.state = normal
 	}
-	if d.cursorIdx >= d.BufferMaxSize {
-		return OutOfLengthSize
+	switch d.state {
+	case reverseSearch:
+		return d.reverseSearch(b)
+	case normal:
+		// DEL
+		if b == 127 {
+			d.buf = append(d.buf[:d.cursorIdx-1], d.buf[d.cursorIdx:]...)
+			d.cursorIdx = mathutil.Max(d.cursorIdx-1, 1)
+			d.length = mathutil.Max(d.length-1, 0)
+			return nil
+		}
+		if d.length >= d.BufferMaxSize {
+			d.reset()
+			return OutOfLengthSize
+		}
+		for i := d.length; i >= d.cursorIdx; i-- {
+			d.buf[i+1] = d.buf[i]
+		}
+		d.buf[d.cursorIdx] = b
+		d.cursorIdx++
+		d.length++
 	}
-	for i := d.length; i >= d.cursorIdx; i-- {
-		d.buf[i+1] = d.buf[i]
-	}
-	d.buf[d.cursorIdx] = b
-	d.cursorIdx++
-	d.length++
 	return nil
 }
 
 func (d *dispatcher) Execute(b byte) error {
-	d.executeCommand = string(d.buf[startIdx : startIdx+d.length])
 	switch b {
+	// ctrl a
 	case 1:
 		return d.CUB(len(d.buf))
+	// ctrl c
+	case 3:
+		d.state = normal
+		d.reset()
+		return nil
+	case 4:
+		d.closeChan <- struct{}{}
+	// ctrl e
 	case 5:
 		return d.CUF(len(d.buf))
+	case 13:
+		err := d.sendAuditReq()
+		if err != nil {
+			return err
+		}
+	// ctrl r
+	case 18:
+		d.searchIdx = 0
+		d.state = reverseSearch
 	}
+	d.reset()
+	recover()
+	return nil
+}
+
+func (d *dispatcher) sendAuditReq() error {
+	d.state = normal
+	d.executeCommand = string(d.buf[startIdx : startIdx+d.length])
 	if d.executeCommand == "" {
 		return nil
 	}
 	err := d.queue.pushFront(d.executeCommand)
 	if err != nil {
+		d.reset()
 		return err
 	}
-	d.cursorLine = -1
-	d.cursorIdx = 1
-	d.length = 0
-	d.cmds = append(d.cmds, &cmdWithTimestamp{
+	d.auditReqChan <- &cmdWithTimestamp{
 		start: time.Now(),
 		cmd:   d.executeCommand,
-	})
+	}
+	return nil
+}
+
+func (d *dispatcher) reset() {
+	d.cursorLine = 0
+	d.cursorIdx = startIdx
+	d.length = 0
 	d.executeCommand = ""
-	recover()
+}
+
+func (d *dispatcher) reverseSearch(b byte) error {
+	d.searchBuf[d.searchIdx] = b
+	d.searchIdx++
+	if d.searchIdx >= d.BufferMaxSize {
+		d.reset()
+		return OutOfLengthSize
+	}
+	searchStr := string(d.searchBuf[:d.searchIdx])
+	for i := d.queue.Begin(); i <= d.queue.Size(); i++ {
+		str, _ := d.queue.Get(i)
+		if strings.Contains(str, searchStr) {
+			copy(d.buf[startIdx:], str)
+			d.cursorIdx = len(str) + 1
+			d.length = len(str)
+			d.cursorLine = i
+			return nil
+		}
+	}
 	return nil
 }
 
 func (d *dispatcher) CUU(i int) error {
-	c, err := d.queue.Get(d.cursorLine + i)
+	switch d.state {
+	case reverseSearch:
+		d.state = normal
+	}
+	d.cursorLine = mathutil.Min(d.queue.Size(), d.cursorLine+i)
+	c, err := d.queue.Get(d.cursorLine)
 	if err != nil {
 		return err
 	}
-	d.cursorLine += i
-	for i := 0; i < len(c); i++ {
-		d.buf[startIdx+i] = c[i]
-	}
+	copy(d.buf[startIdx:], c)
 	d.length = len(c)
 	d.cursorIdx = len(c)
 	return nil
 }
 
 func (d *dispatcher) CUD(i int) error {
-	c, err := d.queue.Get(d.cursorLine - i)
+	switch d.state {
+	case reverseSearch:
+		d.state = normal
+	}
+	d.cursorLine = mathutil.Max(0, d.cursorLine-i)
+	c, err := d.queue.Get(d.cursorLine)
 	if err != nil {
 		return err
 	}
-	d.cursorLine -= i
-	for i := 0; i < len(c); i++ {
-		d.buf[startIdx+i] = c[i]
-	}
+	copy(d.buf[startIdx:], c)
 	d.length = len(c)
 	d.cursorIdx = len(c)
 	return nil
 }
 
 func (d *dispatcher) CUF(i int) error {
+	switch d.state {
+	case reverseSearch:
+		d.state = normal
+	}
 	d.cursorIdx = mathutil.Min(d.cursorIdx+i, d.length)
 	return nil
 }
 
 func (d *dispatcher) CUB(i int) error {
+	switch d.state {
+	case reverseSearch:
+		d.state = normal
+	}
 	d.cursorIdx = mathutil.Max(d.cursorIdx-i, 1)
 	return nil
 }
@@ -266,15 +355,20 @@ func (d *dispatcher) Flush() error {
 	return nil
 }
 
-func NewDispatcher() *dispatcher {
+func NewDispatcher(auditReqChan chan *cmdWithTimestamp, closeChan chan struct{}) *dispatcher {
 	maxSize := 100
-	return &dispatcher{queue: &commandQueue{
+
+	d := &dispatcher{queue: &commandQueue{
 		cmds:    make([]string, maxSize+1),
 		length:  0,
 		maxSize: maxSize,
 	},
 		BufferMaxSize: maxBufSize,
-		cursorIdx:     1,
+		cursorIdx:     startIdx,
 		buf:           make([]byte, maxBufSize+1),
+		searchBuf:     make([]byte, maxBufSize+1),
+		auditReqChan:  auditReqChan,
+		closeChan:     closeChan,
 	}
+	return d
 }
