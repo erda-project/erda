@@ -41,6 +41,7 @@ zh:
  # cmp-dashboard-pods-list
  gotoWorkload: 查看工作负载
  createPod: 创建 Pod
+ createdPodSuccessfully: Pod 创建成功
 
  # cmp-dashboard-workload-detail
  cpuRequests: CPU 请求值
@@ -58,6 +59,7 @@ zh:
  cannotRestart: 只有 Deployment、StatefulSet 和 Daemonset 可以被重新调度
 
  # cmp-dashboard-workloads-list
+ createWorkloadSuccessfully: 创建工作负载成功
  search: 搜索
  workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
@@ -130,7 +132,8 @@ zh:
  ContainerCreating: 容器创建中
  CrashLoopBackOff: 崩溃重启中
  Evicted: 驱逐
- ImagePullBackOff: 镜像拉取失败
+ ImagePullBackOff: 镜像拉取失败重试中
+ ErrImagePull: 镜像拉取失败
  Pending: 挂起
  Running: 运行中
  memUsed: Mem 使用率
@@ -276,6 +279,7 @@ en:
  # cmp-dashboard-pods-list
  gotoWorkload: Goto Workload
  createPod: Create Pod
+ createdPodSuccessfully: Created Pod successfully
 
  # cmp-dashboard-workload-detail
  cpuRequests: CPU Requests
@@ -295,6 +299,7 @@ en:
  totalWorkload: Total Workloads
 
  # cmp-dashboard-workloads-list
+ createWorkloadSuccessfully: Created Workload successfully
  search: Search
  workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
