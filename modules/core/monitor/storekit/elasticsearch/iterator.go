@@ -21,8 +21,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
 // SortItem .
