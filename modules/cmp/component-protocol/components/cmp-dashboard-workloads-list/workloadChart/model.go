@@ -51,7 +51,6 @@ type Props struct {
 
 type Option struct {
 	Tooltip Tooltip  `json:"tooltip,omitempty"`
-	Grid    Grid     `json:"grid,omitempty"`
 	Color   []string `json:"color,omitempty"`
 	Legend  Legend   `json:"legend,omitempty"`
 	XAxis   Axis     `json:"xAxis,omitempty"`
@@ -68,14 +67,6 @@ type AxisPointer struct {
 	Type string `json:"type,omitempty"`
 }
 
-type Grid struct {
-	Left         string `json:"left,omitempty"`
-	Right        string `json:"right,omitempty"`
-	Bottom       string `json:"bottom,omitempty"`
-	Top          string `json:"top,omitempty"`
-	ContainLabel bool   `json:"containLabel,omitempty"`
-}
-
 type Legend struct {
 	Data []string `json:"data,omitempty"`
 }
@@ -90,11 +81,5 @@ type Series struct {
 	Type     string `json:"type,omitempty"`
 	Stack    string `json:"stack,omitempty"`
 	BarWidth string `json:"barWidth,omitempty"`
-	Label    Label  `json:"label,omitempty"`
 	Data     []*int `json:"data,omitempty"`
-}
-
-type Label struct {
-	Show     bool   `json:"show,omitempty"`
-	Position string `json:"position,omitempty"`
 }

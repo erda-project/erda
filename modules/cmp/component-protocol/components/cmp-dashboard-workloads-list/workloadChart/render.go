@@ -67,13 +67,6 @@ func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
 func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	w.Props.Option.Tooltip.Trigger = "axis"
 	w.Props.Option.Tooltip.AxisPointer.Type = "shadow"
-	w.Props.Option.Grid = Grid{
-		Left:         "3%",
-		Right:        "4%",
-		Bottom:       "3%",
-		Top:          "15%",
-		ContainLabel: true,
-	}
 	w.Props.Option.Color = []string{
 		"green", "red", "steelblue", "maroon",
 	}
