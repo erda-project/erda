@@ -82,16 +82,15 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	case cptype.InitializeOperation:
 		p.State.PageNo = 1
 		p.State.PageSize = 20
+		if err := p.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
+		}
 	case cptype.RenderingOperation, "changePageSize", "changeSort":
 		if event.Component == "tableTabs" {
 			return nil
 		} else {
 			p.State.PageNo = 1
 		}
-	}
-
-	if err := p.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
 	}
 	if err := p.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render podsTable component, %v", err)
@@ -663,9 +662,11 @@ var PodStatusToColor = map[string]string{
 	"Error":             "maroon",
 	"Evicted":           "darkgoldenrod",
 	"ImagePullBackOff":  "darksalmon",
+	"ErrImagePull":      "darksalmon",
 	"Pending":           "teal",
 	"Running":           "green",
 	"Terminating":       "brown",
+	"OOMKilled":         "purple",
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {

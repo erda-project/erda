@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/cache"
 	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
@@ -208,13 +207,8 @@ func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kin
 		return err
 	}
 
-	cacheKey := cmp.CacheKey{
-		Kind:        kind,
-		ClusterName: clusterName,
-	}
-	if _, err := cache.GetFreeCache().Remove(cacheKey.GetKey()); err != nil {
-		logrus.Errorf("failed to remove cache for %s, %v", kind, err)
-	}
+	cmp.RemoveCache(b.State.ClusterName, "", kind)
+	cmp.RemoveCache(b.State.ClusterName, namespace, kind)
 	return nil
 }
 

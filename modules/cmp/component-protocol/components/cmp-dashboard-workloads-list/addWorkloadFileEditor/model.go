@@ -48,8 +48,9 @@ type State struct {
 }
 
 type Operation struct {
-	Key    string `json:"key,omitempty"`
-	Reload bool   `json:"reload"`
+	Key        string `json:"key,omitempty"`
+	Reload     bool   `json:"reload"`
+	SuccessMsg string `json:"successMsg,omitempty"`
 }
 
 type Values struct {

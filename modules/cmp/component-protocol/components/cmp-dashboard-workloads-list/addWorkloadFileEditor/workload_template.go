@@ -30,7 +30,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      erda/workloadselector: apps.deployment-default-#name
+      erda/workloadselector: apps.deployment-#namespace-#name
 #      key: string
 #    matchExpressions:
 #      - key: string
@@ -40,7 +40,7 @@ spec:
   template:
     metadata:
       labels:
-        erda/workloadselector: apps.deployment-default-#name
+        erda/workloadselector: apps.deployment-#namespace-#name
 #        key: string
 #      annotations:
 #        key: string
@@ -993,7 +993,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      erda/workloadselector: apps.statefulset-default-#name
+      erda/workloadselector: apps.statefulset-#namespace-#name
 #      key: string
 #    matchExpressions:
 #      - key: string
@@ -1003,7 +1003,7 @@ spec:
   template:
     metadata:
       labels:
-        erda/workloadselector: apps.statefulset-default-#name
+        erda/workloadselector: apps.statefulset-#namespace-#name
 #        key: string
 #      annotations:
 #        key: string
@@ -1956,7 +1956,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      erda/workloadselector: apps.daemonset-default-#name
+      erda/workloadselector: apps.daemonset-#namespace-#name
 #      key: string
 #    matchExpressions:
 #      - key: string
@@ -1966,7 +1966,7 @@ spec:
   template:
     metadata:
       labels:
-        erda/workloadselector: apps.daemonset-default-#name
+        erda/workloadselector: apps.daemonset-#namespace-#name
 #        key: string
 #      annotations:
 #        key: string

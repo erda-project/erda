@@ -105,8 +105,9 @@ func (e *ComponentAddWorkloadFileEditor) SetComponentValue() {
 	e.Props.MinLines = 22
 	e.Operations = map[string]interface{}{
 		"submit": Operation{
-			Key:    "submit",
-			Reload: true,
+			Key:        "submit",
+			Reload:     true,
+			SuccessMsg: e.sdk.I18n("createWorkloadSuccessfully"),
 		},
 	}
 }
@@ -114,6 +115,23 @@ func (e *ComponentAddWorkloadFileEditor) SetComponentValue() {
 func (e *ComponentAddWorkloadFileEditor) RenderFile() error {
 	e.State.Value = workloadTemplates[e.State.WorkloadKind]
 	return nil
+}
+
+func isWorkloadKindMatched(kind, targetKind string) (bool, string) {
+	switch targetKind {
+	case string(apistructs.K8SDeployment):
+		return kind == "Deployment", "Deployment"
+	case string(apistructs.K8SStatefulSet):
+		return kind == "StatefulSet", "StatefulSet"
+	case string(apistructs.K8SDaemonSet):
+		return kind == "DaemonSet", "DaemonSet"
+	case string(apistructs.K8SJob):
+		return kind == "Job", "Job"
+	case string(apistructs.K8SCronJob):
+		return kind == "CronJob", "CronJob"
+	default:
+		return false, ""
+	}
 }
 
 func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
@@ -126,9 +144,15 @@ func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 		return err
 	}
 
-	if workload.String("metadata", "namespace") == "" {
-		workload.SetNested(e.State.Values.Namespace, "metadata", "namespace")
+	kind := workload.String("kind")
+	ok, targetKind := isWorkloadKindMatched(kind, e.State.WorkloadKind)
+	if !ok {
+		return errors.Errorf("Expected kind is %s, got %s", targetKind, kind)
 	}
+
+	// use selected namespace
+	// ignore namespace in yaml
+	workload.SetNested(e.State.Values.Namespace, "metadata", "namespace")
 
 	req := &apistructs.SteveRequest{
 		NoAuthentication: false,
