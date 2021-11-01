@@ -33,6 +33,7 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/initializer"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/rollover"
+	_ "github.com/erda-project/erda/modules/core/monitor/storekit/kafka/topic/initializer"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
 	_ "github.com/erda-project/erda/modules/msp/apm/browser"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage"

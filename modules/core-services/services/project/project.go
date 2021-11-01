@@ -375,7 +375,7 @@ func (p *Project) Update(orgID, projectID int64, userID string, updateReq *apist
 		DevClusterName:     updateReq.ResourceConfigs.DEV.ClusterName,
 		ProdCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
 		ProdMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.PROD.MemQuota),
-		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.PROD.CPUQuota),
+		StagingCPUQuota:    calcu.CoreToMillcore(updateReq.ResourceConfigs.STAGING.CPUQuota),
 		StagingMemQuota:    calcu.GibibyteToByte(updateReq.ResourceConfigs.STAGING.MemQuota),
 		TestCPUQuota:       calcu.CoreToMillcore(updateReq.ResourceConfigs.TEST.CPUQuota),
 		TestMemQuota:       calcu.GibibyteToByte(updateReq.ResourceConfigs.TEST.MemQuota),
@@ -468,13 +468,13 @@ func isQuotaChanged(oldQuota, newQuota model.ProjectQuota) bool {
 }
 
 func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
-	clusterConfig, err := json.Marshal(updateReq.ResourceConfigs)
+	clusterConf, err := json.Marshal(updateReq.ResourceConfigs)
 	if err != nil {
 		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
 		return errors.Errorf("failed to marshal clusterConfig")
 	}
 
-	rollbackConfig, err := json.Marshal(updateReq.RollbackConfig)
+	rollbackConf, err := json.Marshal(updateReq.RollbackConfig)
 	if err != nil {
 		logrus.Errorf("failed to marshal rollbackConfig, (%v)", err)
 		return errors.Errorf("failed to marshal rollbackConfig")
@@ -485,11 +485,11 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 	}
 
 	if updateReq.ResourceConfigs != nil {
-		project.ClusterConfig = string(clusterConfig)
+		project.ClusterConfig = string(clusterConf)
 	}
 
 	if len(updateReq.RollbackConfig) != 0 {
-		project.RollbackConfig = string(rollbackConfig)
+		project.RollbackConfig = string(rollbackConf)
 	}
 
 	project.Desc = updateReq.Desc
@@ -752,6 +752,9 @@ func (p *Project) fetchAvailable(ctx context.Context, dto *apistructs.ProjectDTO
 
 // 根据已有统计值计算比率
 func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
+	if dto.ResourceConfig == nil {
+		return
+	}
 	for _, source := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,
 		dto.ResourceConfig.STAGING,
@@ -772,6 +775,9 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 }
 
 func (p *Project) makeProjectDtoTips(dto *apistructs.ProjectDTO, langCodes i18n.LanguageCodes) {
+	if dto.ResourceConfig == nil {
+		return
+	}
 	for _, source := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,
 		dto.ResourceConfig.STAGING,
@@ -1232,9 +1238,9 @@ func (p *Project) UpdateProjectActiveTime(req *apistructs.ProjectActiveTimeUpdat
 	return nil
 }
 
-func checkRollbackConfig(rollbackConfig *map[string]int) error {
+func checkRollbackConfig(rollbackConf *map[string]int) error {
 	// DEV/TEST/STAGING/PROD
-	l := len(*rollbackConfig)
+	l := len(*rollbackConf)
 
 	// if empty then don't update
 	if l == 0 {
@@ -1246,7 +1252,7 @@ func checkRollbackConfig(rollbackConfig *map[string]int) error {
 		return errors.Errorf("invalid param(clusterConfig is empty)")
 	}
 
-	for key := range *rollbackConfig {
+	for key := range *rollbackConf {
 		switch key {
 		case string(types.DevWorkspace), string(types.TestWorkspace), string(types.StagingWorkspace),
 			string(types.ProdWorkspace):
