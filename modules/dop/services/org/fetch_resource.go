@@ -200,7 +200,7 @@ func (o *Org) makeTips(ctx context.Context, resource *apistructs.ClusterResource
 
 	workspaceText := o.trans.Text(langCodes, strings.ToUpper(calcu.WorkspaceString(workspace)))
 	switch quotableCPU, quotableMem := calculator.QuotableCPUForWorkspace(workspace), calculator.QuotableMemForWorkspace(workspace); {
-	case quotableCPU == 0 || quotableMem == 0:
+	case quotableCPU == 0 && quotableMem == 0:
 		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"), workspaceText, workspaceText)
 	case quotableCPU == 0:
 		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"), workspaceText, workspaceText)
