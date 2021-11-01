@@ -22,6 +22,7 @@ var CMP_ALERT_CONDITIONS_VALUE = apis.ApiSpec{
 	Path:        "/api/cmp/alerts/conditions/value",
 	BackendPath: "/api/cmp/alerts/conditions/value",
 	Host:        "cmp.marathon.l4lb.thisdcos.directory:9028",
+	CheckLogin:  true,
 	Scheme:      "http",
 	Method:      "GET",
 }
