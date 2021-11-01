@@ -28,7 +28,6 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/storage"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/storage/elasticsearch"
-	_ "github.com/erda-project/erda/modules/core/monitor/event/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/event/storage/elasticsearch"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/storage/cassandra"
