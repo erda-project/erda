@@ -132,6 +132,34 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 		UpdateTime:       resp.Data.UpdateTime,
 		TriggerCondition: resp.Data.TriggerCondition,
 	}
+
+	apps := make([]string, 0)
+	appIdStr, ok := resp.Data.Attributes["application_id"]
+	if ok {
+		idData := appIdStr.GetListValue().AsSlice()
+		for _, v := range idData {
+			appid, err := strconv.Atoi(v.(string))
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			app, err := a.p.bdl.GetApp(uint64(appid))
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			apps = append(apps, app.Name)
+		}
+	}
+
+	if len(resp.Data.TriggerCondition) == 0 && len(apps) > 0 {
+		triggerCondition := []*monitor.TriggerCondition{
+			{
+				Condition: "application_name",
+				Operator:  "in",
+				Values:    strings.Join(apps, ","),
+			},
+		}
+		getAlertData.TriggerCondition = triggerCondition
+	}
 	result := &alert.GetAlertResponse{
 		Data: getAlertData,
 	}
