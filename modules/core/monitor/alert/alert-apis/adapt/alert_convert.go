@@ -272,9 +272,6 @@ func ToPBAlertNotify(m *db.AlertNotify, notifyGroupMap map[int64]*pb.NotifyGroup
 			return nil
 		}
 		groupLevel, _ := utils.GetMapValueString(m.NotifyTarget, "level")
-		//if !ok {
-		//	return nil
-		//}
 		n.Type = notifyType
 		n.GroupId = groupID
 		n.GroupType = groupType

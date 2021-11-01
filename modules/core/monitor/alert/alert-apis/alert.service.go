@@ -41,11 +41,8 @@ type alertService struct {
 }
 
 const (
-	MicroService    = "micro_service"
-	ClusterName     = "cluster_name"
-	HostIp          = "host_ip"
-	ApplicationName = "application_name"
-	ServiceName     = "service_name"
+	MicroService = "micro_service"
+	ClusterName  = "cluster_name"
 
 	Org = "org"
 	Msp = "msp"
@@ -137,7 +134,6 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	alert.Attributes = make(map[string]*structpb.Value)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
 	data, err = json.Marshal(request.TriggerCondition)
-	//TODO add triggerconditions to attributes
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -863,11 +859,6 @@ func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertD
 	conditions := make([]*pb.TriggerCondition, 0)
 	conditionStr, ok := data.Attributes[TriggerCondition]
 	if ok {
-		//triggerData, err := json.Marshal(conditionStr)
-		//if err != nil {
-		//	return nil, errors.NewInternalServerError(err)
-		//}
-		//err = json.Unmarshal(triggerData, &conditions)
 		err = json.Unmarshal([]byte(conditionStr.GetStringValue()), &conditions)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
@@ -896,29 +887,6 @@ func (m *alertService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertR
 		return nil, errors.NewInternalServerError(err)
 	}
 	alertRequest.Attributes["org_name"] = structpb.NewStringValue(org.Name)
-	////TODO 将原先attributes中的msp的触发条件删除，将新的触发条件插入
-	//data, err = json.Marshal(request.TriggerCondition)
-	//if err != nil {
-	//	return nil, errors.NewInternalServerError(err)
-	//}
-	//request.Attributes["trigger_condition"] = structpb.NewStringValue(string(data))
-	//for _, v := range m.p.alertConditions {
-	//	if v.Scope == Msp {
-	//		for _, cond := range v.Conditions {
-	//			if _, ok := alertRequest.Attributes[cond.Key]; ok {
-	//				delete(alertRequest.Attributes, cond.Key)
-	//			}
-	//		}
-	//	}
-	//}
-	//// 将新的触发条件放入{
-	//for _, v := range request.TriggerCondition {
-	//	data, err := json.Marshal(v)
-	//	if err != nil {
-	//		return nil, errors.NewInternalServerError(err)
-	//	}
-	//	request.Attributes[v.Condition] = structpb.NewStringValue(string(data))
-	//}
 	if err := m.p.a.UpdateAlert(request.Id, alertRequest); err != nil {
 		if adapt.IsInvalidParameterError(err) {
 			return nil, errors.NewInternalServerError(err)
