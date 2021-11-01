@@ -20,11 +20,13 @@ import (
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
 )
 
+// Writer .
 type Writer struct {
 	p   *provider
 	ctx context.Context
 }
 
+// WriteN .
 func (w *Writer) WriteN(vals ...interface{}) (n int, err error) {
 	for _, val := range vals {
 		e := w.Write(val)
@@ -37,6 +39,7 @@ func (w *Writer) WriteN(vals ...interface{}) (n int, err error) {
 	return n, err
 }
 
+// Write .
 func (w *Writer) Write(val interface{}) error {
 	if val == nil {
 		return nil
@@ -44,4 +47,5 @@ func (w *Writer) Write(val interface{}) error {
 	return w.p.SetEntity(w.ctx, val.(*pb.Entity))
 }
 
+// Close .
 func (w *Writer) Close() error { return nil }
