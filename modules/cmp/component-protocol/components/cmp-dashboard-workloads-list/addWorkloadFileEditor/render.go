@@ -117,6 +117,23 @@ func (e *ComponentAddWorkloadFileEditor) RenderFile() error {
 	return nil
 }
 
+func isWorkloadKindMatched(kind, targetKind string) (bool, string) {
+	switch targetKind {
+	case string(apistructs.K8SDeployment):
+		return kind == "Deployment", "Deployment"
+	case string(apistructs.K8SStatefulSet):
+		return kind == "StatefulSet", "StatefulSet"
+	case string(apistructs.K8SDaemonSet):
+		return kind == "DaemonSet", "DaemonSet"
+	case string(apistructs.K8SJob):
+		return kind == "Job", "Job"
+	case string(apistructs.K8SCronJob):
+		return kind == "CronJob", "CronJob"
+	default:
+		return false, ""
+	}
+}
+
 func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 	var workload data.Object
 	jsonData, err := yaml.ToJSON([]byte(e.State.Value))
@@ -125,6 +142,12 @@ func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 	}
 	if err := json.Unmarshal(jsonData, &workload); err != nil {
 		return err
+	}
+
+	kind := workload.String("kind")
+	ok, targetKind := isWorkloadKindMatched(kind, e.State.WorkloadKind)
+	if !ok {
+		return errors.Errorf("Expected kind is %s, got %s", targetKind, kind)
 	}
 
 	// use selected namespace

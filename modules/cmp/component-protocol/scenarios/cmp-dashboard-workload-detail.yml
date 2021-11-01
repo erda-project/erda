@@ -98,6 +98,7 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
           value: "{{ workloadTitle.workloadId }}"
+  podsTable: []
   operationButton:
     - name: yamlDrawer
     - name: yamlFileEditor
