@@ -46,13 +46,11 @@ func (p *provider) SetEntity(ctx context.Context, data *pb.Entity) error {
 	// 	Do(ctx)
 
 	// upsert
-	values := data.Values
-	if values == nil {
-		values = map[string]*structpb.Value{}
+	if data.Values == nil {
+		data.Values = map[string]*structpb.Value{}
 	}
-	labels := data.Labels
-	if labels == nil {
-		labels = map[string]string{}
+	if data.Labels == nil {
+		data.Labels = map[string]string{}
 	}
 	_, err = p.es.Client().Update().Index(index).
 		Type(typ).
@@ -62,8 +60,8 @@ func (p *provider) SetEntity(ctx context.Context, data *pb.Entity) error {
 			"id":                 data.Id,
 			"type":               data.Type,
 			"key":                data.Key,
-			"values":             values,
-			"labels":             labels,
+			"values":             data.Values,
+			"labels":             data.Labels,
 			"updateTimeUnixNano": data.UpdateTimeUnixNano,
 		}).
 		Timeout(p.writeTimeoutMS).

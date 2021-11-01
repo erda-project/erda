@@ -43,7 +43,7 @@ type statistics struct {
 var sharedStatistics = newStatistics()
 
 func newStatistics() Statistics {
-	const subSystem = "metric_persist"
+	const subSystem = "entity_persist"
 	s := &statistics{
 		readErrors: prometheus.NewCounter(
 			prometheus.CounterOpts{

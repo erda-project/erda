@@ -357,8 +357,8 @@ entity-storage-elasticsearch:
   index_type: "entity"
 entity-persist:
   input:
-    topics: "${METRIC_TOPICS:spot-entity}"
-    group: "${METRIC_GROUP_ID:spot-entity-dev}"
+    topics: "${ENTITY_TOPICS:spot-entity}"
+    group: "${ENTITY_GROUP_ID:spot-entity-dev}"
   read_timeout: "5s"
   buffer_size: ${METRIC_BATCH_SIZE:10}
   parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
