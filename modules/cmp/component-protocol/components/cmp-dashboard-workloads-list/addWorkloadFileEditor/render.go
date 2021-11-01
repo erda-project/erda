@@ -127,9 +127,9 @@ func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 		return err
 	}
 
-	if workload.String("metadata", "namespace") == "" {
-		workload.SetNested(e.State.Values.Namespace, "metadata", "namespace")
-	}
+	// use selected namespace
+	// ignore namespace in yaml
+	workload.SetNested(e.State.Values.Namespace, "metadata", "namespace")
 
 	req := &apistructs.SteveRequest{
 		NoAuthentication: false,
