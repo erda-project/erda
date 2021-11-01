@@ -705,7 +705,7 @@ func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *apistructs.P
 }
 
 func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
-	if dto == nil {
+	if dto == nil || dto.ResourceConfig == nil {
 		return
 	}
 	var podInfos []apistructs.PodInfo
@@ -715,56 +715,66 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 
-	for _, podInfo := range podInfos {
-		for workspace, resourceConfig := range map[string]*apistructs.ResourceConfigInfo{
-			"prod":    dto.ResourceConfig.PROD,
-			"staging": dto.ResourceConfig.STAGING,
-			"test":    dto.ResourceConfig.TEST,
-			"dev":     dto.ResourceConfig.DEV,
-		} {
-			if resourceConfig == nil {
-				continue
-			}
+	for workspace, rc := range map[string]*apistructs.ResourceConfigInfo{
+		"prod":    dto.ResourceConfig.PROD,
+		"staging": dto.ResourceConfig.STAGING,
+		"test":    dto.ResourceConfig.TEST,
+		"dev":     dto.ResourceConfig.DEV,
+	} {
+		if rc == nil {
+			continue
+		}
+		for _, podInfo := range podInfos {
 			if !strings.EqualFold(podInfo.Workspace, workspace) {
 				continue
 			}
-			if podInfo.Cluster != resourceConfig.ClusterName {
+			if podInfo.Cluster != rc.ClusterName {
 				continue
 			}
-			resourceConfig.CPURequest += podInfo.CPURequest
-			resourceConfig.MemRequest += podInfo.MemRequest / 1024
+			rc.CPURequest += podInfo.CPURequest
+			rc.MemRequest += podInfo.MemRequest / 1024
 			switch podInfo.ServiceType {
 			case "addon":
-				resourceConfig.CPURequestByAddon += podInfo.CPURequest
-				resourceConfig.MemRequestByAddon += podInfo.MemRequest / 1024
+				rc.CPURequestByAddon += podInfo.CPURequest
+				rc.MemRequestByAddon += podInfo.MemRequest / 1024
 			case "stateless-service":
-				resourceConfig.CPURequestByService += podInfo.CPURequest
-				resourceConfig.MemRequestByService += podInfo.MemRequest / 1024
+				rc.CPURequestByService += podInfo.CPURequest
+				rc.MemRequestByService += podInfo.MemRequest / 1024
 			}
 		}
+
+		rc.CPURequest = calcu.Accuracy(rc.CPURequest, 3)
+		rc.CPURequestByAddon = calcu.Accuracy(rc.CPURequestByAddon, 3)
+		rc.CPURequestByService = calcu.Accuracy(rc.CPURequestByService, 3)
+		rc.MemRequest = calcu.Accuracy(rc.MemRequest, 3)
+		rc.MemRequestByAddon = calcu.Accuracy(rc.MemRequestByAddon, 3)
+		rc.MemRequestByService = calcu.Accuracy(rc.MemRequestByService, 3)
 	}
 }
 
 // 根据已有统计值计算比率
 func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
-	if dto.ResourceConfig == nil {
+	if dto == nil || dto.ResourceConfig == nil {
 		return
 	}
-	for _, source := range []*apistructs.ResourceConfigInfo{
+	for _, rc := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,
 		dto.ResourceConfig.STAGING,
 		dto.ResourceConfig.TEST,
 		dto.ResourceConfig.DEV,
 	} {
-		if source.CPUQuota != 0 {
-			source.CPURequestRate = source.CPURequest / source.CPUQuota
-			source.CPURequestByAddonRate = source.CPURequestByAddon / source.CPUQuota
-			source.CPURequestByServiceRate = source.CPURequestByService / source.CPUQuota
+		if rc == nil {
+			continue
 		}
-		if source.MemQuota != 0 {
-			source.MemRequestRate = source.MemRequest / source.MemQuota
-			source.MemRequestByAddonRate = source.MemRequestByAddon / source.MemQuota
-			source.MemRequestByServiceRate = source.MemRequestByService / source.MemQuota
+		if rc.CPUQuota != 0 {
+			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota, 4)
+			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota, 4)
+			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota, 4)
+		}
+		if rc.MemQuota != 0 {
+			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota, 4)
+			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota, 4)
+			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota, 4)
 		}
 	}
 }
