@@ -231,6 +231,19 @@ metrics-query-compatibility:
   chart_meta:
     path: ${CONFIG_PATH}/charts
 
+# entity
+elasticsearch@entity:
+  _enable: ${ENTITY_ELASTICSEARCH_ENABLE:false}
+  urls: "${ENTITY_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${ENTITY_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${ENTITY_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${ENTITY_ELASTICSEARCH_SECURITY_PASSWORD}"
+entity-storage-elasticsearch:
+  query_timeout: "1m"
+  index_type: "entity"
+  pattern: "erda-entity-<type>"
+erda.oap.entity:
+
 erda.core.monitor.alertdetail:
 
 logs-index-query:
