@@ -18,7 +18,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 
-	`github.com/erda-project/erda-infra/providers/i18n`
+	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -35,7 +35,7 @@ type Org struct {
 	nexusSvc  *nexussvc.NexusSvc
 	redisCli  *redis.Client
 	cmp       dashboardPb.ClusterResourceServer
-	trans i18n.Translator
+	trans     i18n.Translator
 }
 
 // Option 定义 Org 对象的配置选项

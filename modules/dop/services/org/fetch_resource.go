@@ -15,18 +15,18 @@
 package org
 
 import (
-	`context`
-	`fmt`
-	`strings`
+	"context"
+	"fmt"
+	"strings"
 
-	`github.com/pkg/errors`
-	`github.com/sirupsen/logrus`
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
-	`github.com/erda-project/erda-infra/providers/i18n`
-	dashboardPb `github.com/erda-project/erda-proto-go/cmp/dashboard/pb`
-	`github.com/erda-project/erda/apistructs`
-	`github.com/erda-project/erda/modules/core-services/model`
-	calcu `github.com/erda-project/erda/pkg/resourcecalculator`
+	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core-services/model"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
 func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
@@ -112,7 +112,6 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 
 	return &resourceInfo, nil
 }
-
 
 func countClustersNodes(result map[string]int, list []*dashboardPb.ClusterResourceDetail) {
 	if result == nil {

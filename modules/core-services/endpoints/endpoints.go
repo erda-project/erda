@@ -49,30 +49,30 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	store                 jsonstore.JsonStore
-	etcdStore             *etcd.Store
-	ossClient             *oss.Client
-	db                    *dao.DBClient
-	uc                    *ucauth.UCClient
-	bdl                   *bundle.Bundle
-	org                   *org.Org
-	project               *project.Project
-	approve               *approve.Approve
-	app                   *application.Application
-	member                *member.Member
-	ManualReview          *manual_review.ManualReview
-	activity              *activity.Activity
-	permission            *permission.Permission
-	license               *license.License
-	notifyGroup           *notify.NotifyGroup
-	mbox                  *mbox.MBox
-	label                 *label.Label
-	notice                *notice.Notice
-	queryStringDecoder    *schema.Decoder
-	audit                 *audit.Audit
-	errorbox              *errorbox.ErrorBox
-	fileSvc               *filesvc.FileService
-	user                  *user.User
+	store              jsonstore.JsonStore
+	etcdStore          *etcd.Store
+	ossClient          *oss.Client
+	db                 *dao.DBClient
+	uc                 *ucauth.UCClient
+	bdl                *bundle.Bundle
+	org                *org.Org
+	project            *project.Project
+	approve            *approve.Approve
+	app                *application.Application
+	member             *member.Member
+	ManualReview       *manual_review.ManualReview
+	activity           *activity.Activity
+	permission         *permission.Permission
+	license            *license.License
+	notifyGroup        *notify.NotifyGroup
+	mbox               *mbox.MBox
+	label              *label.Label
+	notice             *notice.Notice
+	queryStringDecoder *schema.Decoder
+	audit              *audit.Audit
+	errorbox           *errorbox.ErrorBox
+	fileSvc            *filesvc.FileService
+	user               *user.User
 }
 
 type Option func(*Endpoints)
