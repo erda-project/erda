@@ -310,7 +310,7 @@ func getAllNamespaces(ctx context.Context, steveServer cmp.SteveServer, userID, 
 	var namespaces []string
 	list, err := client.ClientSet.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
 	if err != nil {
-		return nil, errors.Errorf("failed to list namespace, %v", err)
+		return nil, err
 	}
 
 	for _, namespace := range list.Items {
@@ -347,9 +347,12 @@ func GetAllNamespacesFromCache(ctx context.Context, steveServer cmp.SteveServer,
 	}
 	if expired {
 		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+			defer cancel()
 			namespaces, err := getAllNamespaces(ctx, steveServer, userID, orgID, clusterName)
 			if err != nil {
 				logrus.Errorf("failed to get all namespaces from cahce in goroutine, %v", err)
+				return
 			}
 			comb := strings.Join(namespaces, ",")
 			value, err := cache.GetStringValue(comb)

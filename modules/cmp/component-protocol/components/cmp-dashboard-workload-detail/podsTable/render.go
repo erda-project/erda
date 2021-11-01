@@ -109,12 +109,12 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.server = steveServer
 }
 
-func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var tableState State
-	jsonData, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -134,13 +134,13 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	p.State.PageNo = int(query["pageNo"].(float64))
-	p.State.PageSize = int(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
+	p.State.PageNo = int(urlQuery["pageNo"].(float64))
+	p.State.PageSize = int(urlQuery["pageSize"].(float64))
+	sorter := urlQuery["sorterData"].(map[string]interface{})
 	p.State.Sorter.Field = sorter["field"].(string)
 	p.State.Sorter.Order = sorter["order"].(string)
 	return nil
@@ -155,9 +155,8 @@ func (p *ComponentPodsTable) EncodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-
-	encode := base64.StdEncoding.EncodeToString(data)
-	p.State.PodsTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	p.State.PodsTableURLQuery = encoded
 	return nil
 }
 
