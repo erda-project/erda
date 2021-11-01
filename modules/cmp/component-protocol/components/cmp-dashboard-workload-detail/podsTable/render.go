@@ -109,12 +109,12 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.server = steveServer
 }
 
-func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var tableState State
-	jsonData, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -126,38 +126,37 @@ func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	query, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
 	p.State.PageNo = int(urlQuery["pageNo"].(float64))
 	p.State.PageSize = int(urlQuery["pageSize"].(float64))
-	sorterData := urlQuery["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field = sorterData["field"].(string)
-	p.State.Sorter.Order = sorterData["order"].(string)
+	sorter := urlQuery["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field = sorter["field"].(string)
+	p.State.Sorter.Order = sorter["order"].(string)
 	return nil
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = p.State.PageNo
-	urlQuery["pageSize"] = p.State.PageSize
-	urlQuery["sorterData"] = p.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = p.State.PageNo
+	query["pageSize"] = p.State.PageSize
+	query["sorterData"] = p.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
-
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	p.State.PodsTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	p.State.PodsTableURLQuery = encoded
 	return nil
 }
 

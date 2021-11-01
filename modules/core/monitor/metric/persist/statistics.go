@@ -115,6 +115,8 @@ func newStatistics() Statistics {
 		s.success,
 		s.decodeErrors,
 		s.validateErrors,
+		s.metadataError,
+		s.metadataUpdates,
 	)
 	return s
 }
@@ -158,7 +160,7 @@ func (s *statistics) MetadataUpdates(v int) {
 }
 
 var distinguishingKeys = []string{
-	"source",
+	"metric",
 	"org_name", "cluster_name",
 }
 

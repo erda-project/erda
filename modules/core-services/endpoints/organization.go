@@ -181,11 +181,12 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrUpdateOrg.AccessDenied().ToResp(), nil
 	}
 	// 更新企业信息至DB
-	org, err := e.org.UpdateWithEvent(orgID, orgUpdateReq)
+	org, auditMessage, err := e.org.UpdateWithEvent(orgID, orgUpdateReq)
 	if err != nil {
 		return apierrors.ErrUpdateOrg.InternalError(err).ToResp(), nil
 	}
 	orgDTO := e.convertToOrgDTO(*org)
+	orgDTO.AuditMessage = auditMessage
 
 	return httpserver.OkResp(orgDTO)
 }
