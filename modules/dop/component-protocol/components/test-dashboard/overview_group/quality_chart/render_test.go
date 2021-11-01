@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/shopspring/decimal"
@@ -28,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 func Test_radar(t *testing.T) {
@@ -228,4 +230,48 @@ func Test_polishScore(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQ_calcBugReopenRate(t *testing.T) {
+	q := Q{}
+	h := gshelper.NewGSHelper(nil)
+
+	// no bug, score is 100
+	dbClientForNoBug := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForNoBug), "BugReopenCount",
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
+			return 0, 0, nil
+		},
+	)
+	defer monkey.Unpatch(dbClientForNoBug)
+	q.dbClient = dbClientForNoBug
+	scoreForNoBug := q.calcBugReopenRate(context.Background(), h)
+	scoreForNoBugF, _ := scoreForNoBug.Float64()
+	assert.Equal(t, float64(100), scoreForNoBugF)
+
+	// some bug, score > 0
+	dbClientForSomeBug := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForSomeBug), "BugReopenCount",
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
+			return 5, 10, nil
+		},
+	)
+	defer monkey.Unpatch(dbClientForSomeBug)
+	q.dbClient = dbClientForSomeBug
+	scoreForSomeBug := q.calcBugReopenRate(context.Background(), h)
+	scoreForSomeBugF, _ := scoreForSomeBug.Float64()
+	assert.Equal(t, float64(100)-float64(5)/float64(10)*100, scoreForSomeBugF)
+
+	// bad bugs, score < 0
+	dbClientForBadBug := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForBadBug), "BugReopenCount",
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
+			return 100, 10, nil
+		},
+	)
+	defer monkey.Unpatch(dbClientForBadBug)
+	q.dbClient = dbClientForBadBug
+	scoreForBadBug := q.calcBugReopenRate(context.Background(), h)
+	scoreForBadBugF, _ := scoreForBadBug.Float64()
+	assert.Equal(t, float64(100)-float64(100)/float64(10)*100, scoreForBadBugF)
 }
