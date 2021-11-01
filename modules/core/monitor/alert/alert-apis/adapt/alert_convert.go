@@ -450,14 +450,6 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	for _, item := range []string{"alert_domain", "alert_dashboard_id", "alert_dashboard_path", "alert_record_path"} {
 		delete(attributes, item)
 	}
-	//TODO 将triggerconditions放入attributes中，用于get triggerconditions
-	//if len(alert.TriggerCondition) > 0 {
-	//	data,err := json.Marshal(alert.TriggerCondition)
-	//	if err != nil {
-	//		return nil,err
-	//	}
-	//	attributes[TriggerCondition] = string(data)
-	//}
 
 	expression := rule.Template
 	window := structpb.NewNumberValue(float64(e.Window))
