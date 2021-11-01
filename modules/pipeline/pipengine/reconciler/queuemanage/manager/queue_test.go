@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
@@ -47,5 +48,28 @@ func TestSendPipelineIDS(t *testing.T) {
 	mgr := New(context.Background(), WithJsClient(js))
 	t.Run("Send", func(t *testing.T) {
 		mgr.SendUpdatePriorityPipelineIDsToEtcd(1, []uint64{1, 2, 3})
+	})
+}
+
+func TestParseIDFromWatchedKey(t *testing.T) {
+	queueID, err := parseIDFromWatchedKey("/devops/pipeline/queue_manager/actions/update/123", etcdQueueWatchPrefix)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(123), queueID)
+
+	pipelineID, err := parseIDFromWatchedKey("/devops/pipeline/queue_manager/actions/pop-out-pipeline/1001", etcdQueuePopOutPipelineWatchPrefix)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1001), pipelineID)
+}
+
+func TestSendPopOutPipelineIDToEtcd(t *testing.T) {
+	js := &jsonstore.JsonStoreImpl{}
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(js), "Put", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string, object interface{}) error {
+		return nil
+	})
+	defer pm.Unpatch()
+
+	mgr := New(context.Background(), WithJsClient(js))
+	t.Run("SendPopOutPipelineIDToEtcd", func(t *testing.T) {
+		mgr.SendPopOutPipelineIDToEtcd(123)
 	})
 }
