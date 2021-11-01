@@ -21,7 +21,6 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
 
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
@@ -50,31 +49,30 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	store                 jsonstore.JsonStore
-	etcdStore             *etcd.Store
-	ossClient             *oss.Client
-	db                    *dao.DBClient
-	uc                    *ucauth.UCClient
-	bdl                   *bundle.Bundle
-	clusterResourceClient dashboardPb.ClusterResourceClient
-	org                   *org.Org
-	project               *project.Project
-	approve               *approve.Approve
-	app                   *application.Application
-	member                *member.Member
-	ManualReview          *manual_review.ManualReview
-	activity              *activity.Activity
-	permission            *permission.Permission
-	license               *license.License
-	notifyGroup           *notify.NotifyGroup
-	mbox                  *mbox.MBox
-	label                 *label.Label
-	notice                *notice.Notice
-	queryStringDecoder    *schema.Decoder
-	audit                 *audit.Audit
-	errorbox              *errorbox.ErrorBox
-	fileSvc               *filesvc.FileService
-	user                  *user.User
+	store              jsonstore.JsonStore
+	etcdStore          *etcd.Store
+	ossClient          *oss.Client
+	db                 *dao.DBClient
+	uc                 *ucauth.UCClient
+	bdl                *bundle.Bundle
+	org                *org.Org
+	project            *project.Project
+	approve            *approve.Approve
+	app                *application.Application
+	member             *member.Member
+	ManualReview       *manual_review.ManualReview
+	activity           *activity.Activity
+	permission         *permission.Permission
+	license            *license.License
+	notifyGroup        *notify.NotifyGroup
+	mbox               *mbox.MBox
+	label              *label.Label
+	notice             *notice.Notice
+	queryStringDecoder *schema.Decoder
+	audit              *audit.Audit
+	errorbox           *errorbox.ErrorBox
+	fileSvc            *filesvc.FileService
+	user               *user.User
 }
 
 type Option func(*Endpoints)
@@ -293,9 +291,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/clusters/relations/{orgID}", Method: http.MethodGet, Handler: e.GetOrgClusterRelationsByOrg},
 		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: e.DereferenceCluster},
 
-		// 获取企业可用资源
-		{Path: "/api/orgs/actions/fetch-resources", Method: http.MethodGet, Handler: e.FetchOrgResources},
-
 		// the interface of project
 		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodPut, Handler: e.UpdateProject},
@@ -320,6 +315,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// cmp dependencies
 		{Path: "/api/projects-quota", Method: http.MethodGet, Handler: e.GetProjectQuota},
 		{Path: "/api/projects-namespaces", Method: http.MethodGet, Handler: e.GetNamespacesBelongsTo},
+		{Path: "/api/quota-records", Method: http.MethodGet, Handler: e.ListQuotaRecords},
 
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},

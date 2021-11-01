@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core-services/model"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
@@ -59,7 +58,7 @@ func TestProjectCreateRequest(t *testing.T) {
 	}
 	t.Logf("project: %+v", project)
 
-	quota := &model.ProjectQuota{
+	quota := &apistructs.ProjectQuota{
 		ProjectID:          0,
 		ProjectName:        project.Name,
 		ProdClusterName:    project.ResourceConfigs.PROD.ClusterName,
@@ -74,8 +73,8 @@ func TestProjectCreateRequest(t *testing.T) {
 		TestMemQuota:       calcu.GibibyteToByte(project.ResourceConfigs.TEST.MemQuota),
 		DevCPUQuota:        calcu.CoreToMillcore(project.ResourceConfigs.DEV.CPUQuota),
 		DevMemQuota:        calcu.GibibyteToByte(project.ResourceConfigs.DEV.MemQuota),
-		CreatorID:          "0",
-		UpdaterID:          "0",
+		CreatorID:          0,
+		UpdaterID:          0,
 	}
 	data, _ := json.MarshalIndent(quota, "", "  ")
 	t.Log(string(data))

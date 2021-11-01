@@ -18,6 +18,8 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/nexussvc"
@@ -32,6 +34,8 @@ type Org struct {
 	publisher *publisher.Publisher
 	nexusSvc  *nexussvc.NexusSvc
 	redisCli  *redis.Client
+	cmp       dashboardPb.ClusterResourceServer
+	trans     i18n.Translator
 }
 
 // Option 定义 Org 对象的配置选项
@@ -85,6 +89,21 @@ func WithNexusSvc(svc *nexussvc.NexusSvc) Option {
 func WithRedisClient(cli *redis.Client) Option {
 	return func(o *Org) {
 		o.redisCli = cli
+	}
+}
+
+// WithCMP sets the gRPC client to invoke CMP service
+// Todo: the dependency on CMP will be moved to a service which is more suitable
+func WithCMP(cmp dashboardPb.ClusterResourceServer) Option {
+	return func(org *Org) {
+		org.cmp = cmp
+	}
+}
+
+// WithTrans sets the i18n.Translator
+func WithTrans(trans i18n.Translator) Option {
+	return func(org *Org) {
+		org.trans = trans
 	}
 }
 

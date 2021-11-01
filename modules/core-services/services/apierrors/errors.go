@@ -40,6 +40,7 @@ var (
 	ErrGetProject                           = err("ErrGetProject", "获取项目失败")
 	ErrGetProjectQuota                      = err("ErrGetProjectQuota", "获取项目配额失败")
 	ErrGetNamespacesBelongsTo               = err("ErrGetNamespacesBelongsTo", "查询命令空间的项目归属失败")
+	ErrListQuotaRecords                     = err("ErrListQuotaRecords", "查询项目资源配额列表失败")
 	ErrListProject                          = err("ErrListProject", "获取项目列表失败")
 	ErrListProjectByStates                  = err("ErrListProjectByStates", "通过state获取项目列表失败")
 	ErrListProjectID                        = err("ErrListProjectID", "获取项目ID列表失败")

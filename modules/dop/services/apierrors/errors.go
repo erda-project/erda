@@ -454,6 +454,7 @@ var (
 	ErrListOrg            = err("ErrListOrg", "获取企业列表失败")
 	ErrListPublicOrg      = err("ErrListPublicOrg", "获取公开企业列表失败")
 	ErrCreateOrgPublisher = err("ErrCreateOrgPublisher", "创建企业发布商")
+	ErrFetchOrgResources  = err("ErrFetchOrgResources", "获取企业资源失败")
 
 	ErrCreateProject = err("ErrCreateProject", "创建项目失败")
 	ErrDeleteProject = err("ErrDeleteProject", "删除项目失败")
