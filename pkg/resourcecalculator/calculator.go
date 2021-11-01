@@ -16,9 +16,7 @@ package resourcecalculator
 
 import (
 	"fmt"
-	"math"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/shopspring/decimal"
@@ -278,15 +276,9 @@ func priority(workspace Workspace) []string {
 func ResourceToString(res float64, typ string) string {
 	switch typ {
 	case "cpu":
-		return strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64)
+		return fmt.Sprintf("%.3f", res/1000)
 	case "memory":
-		units := []string{"B", "KB", "MB", "GB", "TB"}
-		i := 0
-		for res >= 1<<10 && i < len(units)-1 {
-			res /= 1 << 10
-			i++
-		}
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
+		return fmt.Sprintf("%.3fGB", res/float64(1<<30))
 	default:
 		return fmt.Sprintf("%.f", res)
 	}
@@ -295,10 +287,4 @@ func ResourceToString(res float64, typ string) string {
 func Accuracy(v float64, accuracy int32) float64 {
 	v, _ = decimal.NewFromFloat(v).Round(accuracy).Float64()
 	return v
-}
-
-func setPrec(f float64, prec int) float64 {
-	pow := math.Pow10(prec)
-	f = float64(int64(f*pow)) / pow
-	return f
 }
