@@ -20,7 +20,7 @@ const _ = http.SupportPackageIsVersion1
 type AlertServiceHandler interface {
 	// GET /api/cmp/alerts/conditions
 	GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)
-	// GET /api/cmp/alerts/conditions/value
+	// POST /api/cmp/alerts/conditions/value
 	GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)
 }
 
@@ -120,5 +120,5 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	}
 
 	add_GetAlertConditions("GET", "/api/cmp/alerts/conditions", srv.GetAlertConditions)
-	add_GetAlertConditionsValue("GET", "/api/cmp/alerts/conditions/value", srv.GetAlertConditionsValue)
+	add_GetAlertConditionsValue("POST", "/api/cmp/alerts/conditions/value", srv.GetAlertConditionsValue)
 }

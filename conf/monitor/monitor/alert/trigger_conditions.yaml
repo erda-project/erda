@@ -2,15 +2,23 @@
   conditions:
     - key: cluster_name
       index: host_summary
-      displayName: 集群
+      filters:
+        - org_name
     - key: host_ip
       index: host_summary
-      displayName: 机器ip
+      filters:
+        - org_name
 - scope: msp
   conditions:
     - key: application_name
-      index: docker_container_summary
-      displayName: 应用
+      index: application_service_node
+      filters:
+        - org_name
+        - project_id
+        - terminus_key
     - key: service_name
-      index: docker_container_summary
-      displayName: 服务
+      index: application_service_node
+      filters:
+        - org_name
+        - project_id
+        - terminus_key

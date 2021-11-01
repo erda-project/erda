@@ -8,13 +8,13 @@ import "google/api/annotations.proto";
 
 service AlertService {
   rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {
-    option (google.api.http)     = {
+    option (google.api.http) = {
       get: "/api/cmp/alerts/conditions"
     };
   }
   rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
-    option (google.api.http)     = {
-      get: "/api/cmp/alerts/conditions/value"
+    option (google.api.http) = {
+      post: "/api/cmp/alerts/conditions/value"
     };
   }
 }
@@ -28,11 +28,11 @@ message GetAlertConditionsResponse {
 }
 
 message GetAlertConditionsValueRequest {
-  string projectId   = 1;
-  string terminusKey = 2;
-  string scopeType   = 3;
+  string              condition = 1;
+  map<string, string> filters   = 2;
+  string              index     = 3;
 }
 
 message GetAlertConditionsValueResponse {
-  repeated erda.core.monitor.alert.AlertConditionsValue data = 1;
+  erda.core.monitor.alert.AlertConditionsValue data = 1;
 }

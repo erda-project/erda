@@ -135,6 +135,9 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 
 	apps := make([]string, 0)
 	appIdStr, ok := resp.Data.Attributes["application_id"]
+	if !ok {
+		appIdStr, ok = resp.Data.Attributes["target_application_id"]
+	}
 	if ok {
 		idData := appIdStr.GetListValue().AsSlice()
 		for _, v := range idData {
@@ -1104,7 +1107,8 @@ func (a *alertService) GetAlertConditions(ctx context.Context, request *alert.Ge
 	conditionReq := &monitor.GetAlertConditionsRequest{
 		ScopeType: request.ScopeType,
 	}
-	result, err := a.p.Monitor.GetAlertConditions(ctx, conditionReq)
+	context := utils.NewContextWithHeader(ctx)
+	result, err := a.p.Monitor.GetAlertConditions(context, conditionReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -1112,9 +1116,7 @@ func (a *alertService) GetAlertConditions(ctx context.Context, request *alert.Ge
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp := &alert.GetAlertConditionsResponse{
-		Data: make([]*monitor.Conditions, 0),
-	}
+	resp := &alert.GetAlertConditionsResponse{}
 	err = json.Unmarshal(data, &resp.Data)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -1124,9 +1126,9 @@ func (a *alertService) GetAlertConditions(ctx context.Context, request *alert.Ge
 
 func (a *alertService) GetAlertConditionsValue(ctx context.Context, request *alert.GetAlertConditionsValueRequest) (*alert.GetAlertConditionsValueResponse, error) {
 	conditionReq := &monitor.GetAlertConditionsValueRequest{
-		ProjectId:   request.ProjectId,
-		TerminusKey: request.TerminusKey,
-		ScopeType:   request.ScopeType,
+		Condition: request.Condition,
+		Filters:   request.Filters,
+		Index:     request.Index,
 	}
 	context := utils.NewContextWithHeader(ctx)
 	result, err := a.p.Monitor.GetAlertConditionsValue(context, conditionReq)
@@ -1138,7 +1140,7 @@ func (a *alertService) GetAlertConditionsValue(ctx context.Context, request *ale
 		return nil, errors.NewInternalServerError(err)
 	}
 	resp := &alert.GetAlertConditionsValueResponse{
-		Data: make([]*monitor.AlertConditionsValue, 0),
+		Data: &monitor.AlertConditionsValue{},
 	}
 	err = json.Unmarshal(data, &resp.Data)
 	if err != nil {

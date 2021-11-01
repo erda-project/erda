@@ -2239,12 +2239,10 @@ func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, value
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "projectId":
-				m.ProjectId = vals[0]
-			case "terminusKey":
-				m.TerminusKey = vals[0]
-			case "scopeType":
-				m.ScopeType = vals[0]
+			case "condition":
+				m.Condition = vals[0]
+			case "index":
+				m.Index = vals[0]
 			}
 		}
 	}
@@ -2253,5 +2251,20 @@ func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, value
 
 // GetAlertConditionsValueResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetAlertConditionsValueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &pb.AlertConditionsValue{}
+				}
+			case "data.key":
+				if m.Data == nil {
+					m.Data = &pb.AlertConditionsValue{}
+				}
+				m.Data.Key = vals[0]
+			}
+		}
+	}
 	return nil
 }

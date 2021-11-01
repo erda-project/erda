@@ -68,7 +68,7 @@ type AlertServiceHandler interface {
 	DashboardPreview(context.Context, *DashboardPreviewRequest) (*DashboardPreviewResponse, error)
 	// GET /api/msp/apm/conditions
 	GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)
-	// GET /api/msp/apm/conditions/value
+	// POST /api/msp/apm/conditions/value
 	GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)
 }
 
@@ -1544,5 +1544,5 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	add_UpdateAlertRecordIssue("PUT", "/api/msp/apm/{tenantGroup}/alert-records/{groupId}/issues", srv.UpdateAlertRecordIssue)
 	add_DashboardPreview("POST", "/api/msp/apm/{tenantGroup}/alert-records/custom-alerts/dash-preview/query", srv.DashboardPreview)
 	add_GetAlertConditions("GET", "/api/msp/apm/conditions", srv.GetAlertConditions)
-	add_GetAlertConditionsValue("GET", "/api/msp/apm/conditions/value", srv.GetAlertConditionsValue)
+	add_GetAlertConditionsValue("POST", "/api/msp/apm/conditions/value", srv.GetAlertConditionsValue)
 }

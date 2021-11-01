@@ -1208,18 +1208,20 @@ message GetAlertConditionsResponse {
 }
 
 message Conditions {
-  string key         = 1;
-  string displayName = 2;
+  string          key         = 1;
+  repeated string filters     = 2;
+  string          displayName = 3;
+  string          index       = 4;
 }
 
 message GetAlertConditionsValueRequest {
-  string projectId   = 1;
-  string terminusKey = 2;
-  string scopeType   = 3;
+  string              condition = 1;
+  map<string, string> filters   = 2;
+  string              index     = 3;
 }
 
 message GetAlertConditionsValueResponse {
-  repeated AlertConditionsValue data = 1;
+  AlertConditionsValue data = 1;
 }
 
 message AlertConditionsValue {

@@ -20,12 +20,7 @@ type AlertConditions struct {
 }
 
 type Conditions struct {
-	Key         string `json:"key"`
-	Index       string `json:"index"`
-	DisplayName string `json:"displayName"`
-}
-
-type ConditionIndex struct {
-	Condition string `json:"condition"`
-	Index     string `json:"index"`
+	Key     string   `json:"key"`
+	Index   string   `json:"index"`
+	Filters []string `json:"filters"`
 }
