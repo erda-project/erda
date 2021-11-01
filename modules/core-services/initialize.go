@@ -85,7 +85,8 @@ func (p *provider) Initialize() error {
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
-	return server.ListenAndServe()
+	p.Router.Any("/**", server.Router().ServeHTTP)
+	return nil
 }
 
 // 初始化 Endpoints
