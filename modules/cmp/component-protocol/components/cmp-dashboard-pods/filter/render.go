@@ -271,6 +271,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 				Value: "ImagePullBackOff",
 			},
 			{
+				Label: cputil.I18n(ctx, "ErrImagePull"),
+				Value: "ErrImagePull",
+			},
+			{
 				Label: cputil.I18n(ctx, "Pending"),
 				Value: "Pending",
 			},

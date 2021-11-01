@@ -97,7 +97,7 @@ rendering:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
-          value: "{{ __InParams__.workloadId }}"
+          value: "{{ workloadTitle.workloadId }}"
   operationButton:
     - name: yamlDrawer
     - name: yamlFileEditor

@@ -666,6 +666,7 @@ var PodStatusToColor = map[string]string{
 	"Pending":           "teal",
 	"Running":           "green",
 	"Terminating":       "brown",
+	"OOMKilled":         "purple",
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
