@@ -522,10 +522,22 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 	project.Desc = updateReq.Desc
 	project.Logo = updateReq.Logo
 	project.DDHook = updateReq.DdHook
-	project.CpuQuota = updateReq.CpuQuota
-	project.MemQuota = updateReq.MemQuota
 	project.ActiveTime = time.Now()
 	project.IsPublic = updateReq.IsPublic
+	if updateReq.ResourceConfigs != nil {
+		for _, resource := range []*apistructs.ResourceConfig {
+			updateReq.ResourceConfigs.PROD,
+			updateReq.ResourceConfigs.STAGING,
+			updateReq.ResourceConfigs.TEST,
+			updateReq.ResourceConfigs.DEV,
+		} {
+			if resource == nil {
+				continue
+			}
+			project.CpuQuota += resource.CPUQuota
+			project.MemQuota += resource.MemQuota
+		}
+	}
 
 	return nil
 }
@@ -894,7 +906,6 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 		if v, ok := projectOwnerMap[projectDTOs[i].ID]; ok {
 			projectDTOs[i].Owners = v
 		}
-		p.fetchQuota(&projectDTOs[i])
 	}
 
 	return &apistructs.PagingProjectDTO{Total: total, List: projectDTOs}, nil
