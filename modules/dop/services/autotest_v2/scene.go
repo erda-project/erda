@@ -770,6 +770,7 @@ func StepToAction(step apistructs.AutoTestSceneStep, req apistructs.SnippetConfi
 	action.Labels = map[string]string{}
 	action.Labels[apistructs.AutotestSceneStep] = base64.StdEncoding.EncodeToString(stepJson)
 	action.Labels[apistructs.AutotestType] = apistructs.AutotestSceneStep
+	action.Labels[apistructs.AutotestSceneStepType] = step.Type.String()
 	action.Alias = pipelineyml.ActionAlias(strconv.Itoa(int(step.ID)))
 	action.If = expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder
 	action.Disable = step.IsDisabled

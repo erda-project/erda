@@ -185,7 +185,7 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 				ApiSuccessNum: apiSuccessNum,
 				ApiExecNum:    1,
 				PipelineYml:   "",
-				StepAPIType:   apistructs.StepTypeAPI.String(),
+				StepAPIType:   task.Extra.Labels[apistructs.AutotestSceneStepType],
 				Status:        task.Status.String(),
 				SceneID:       sceneID,
 				SceneSetID:    sceneSetID,
