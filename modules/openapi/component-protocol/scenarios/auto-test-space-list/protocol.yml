@@ -7,16 +7,18 @@ hierarchy:
   root: spaceManage
   structure:
     spaceManage:
-      - head
+      # - head
+      - filter
       - spaceList
       - topHead
       - spaceFormModal
       - recordDrawer
     topHead:
       - spaceAddButton
-    head:
-      - importButton
-      - recordButton
+      - moreButton
+    # head:
+    #   - importButton
+    #   - recordButton
     recordDrawer:
       content: recordContent
     recordContent:
@@ -25,12 +27,12 @@ hierarchy:
 
 
 components:
-  head:
-    type: RowContainer
-  importButton:
-    type: Button
-  recordButton:
-    type: Button
+  # head:
+  #   type: RowContainer
+  # importButton:
+  #   type: Button
+  # recordButton:
+  #   type: Button
   recordContent:
     type: Container
   refreshButton:
@@ -46,11 +48,15 @@ components:
     props:
       isTopHead: true
   spaceList:
-    type: Table
+    type: List
   spaceAddButton:
     type: Button
   spaceFormModal:
     type: FormModal
+  moreButton:
+    type: Button
+  filter:
+    type: ContractiveFilter
 
 rendering:
   spaceFormModal:
@@ -69,3 +75,9 @@ rendering:
       state:
         - name: "autoRefresh"
           value: "{{ refreshButton.autoRefresh }}"
+  
+  filter:
+    - name: spaceList
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"

@@ -60,6 +60,7 @@ func (svc *Service) CreateSpace(req apistructs.AutoTestSpaceCreateRequest) (*api
 		CreatorID:     req.UserID,
 		UpdaterID:     req.UserID,
 		Status:        apistructs.TestSpaceOpen,
+		ArchiveStatus: apistructs.TestSpaceInit,
 		SourceSpaceID: req.SourceSpaceID,
 	}
 	res, err := svc.db.CreateAutoTestSpace(&autoTestSpace)
@@ -81,8 +82,8 @@ func (svc *Service) GetSpace(id uint64) (*apistructs.AutoTestSpace, error) {
 }
 
 // GetSpaceList 返回autoTestSpace列表
-func (svc *Service) GetSpaceList(projectID int64, pageNo, pageSize int) (*apistructs.AutoTestSpaceList, error) {
-	res, total, err := svc.db.ListAutoTestSpaceByProject(projectID, pageNo, pageSize)
+func (svc *Service) GetSpaceList(req apistructs.AutoTestSpaceListRequest) (*apistructs.AutoTestSpaceList, error) {
+	res, total, err := svc.db.ListAutoTestSpaceByProject(req)
 	if err != nil {
 		return nil, apierrors.ErrListAutoTestSpace.InternalError(err)
 	}
@@ -98,7 +99,11 @@ func (svc *Service) GetSpaceList(projectID int64, pageNo, pageSize int) (*apistr
 
 func (svc *Service) validateSpace(req dao.AutoTestSpace) error {
 	var res []dao.AutoTestSpace
-	res, total, err := svc.db.ListAutoTestSpaceByProject(req.ProjectID, 1, 100)
+	res, total, err := svc.db.ListAutoTestSpaceByProject(apistructs.AutoTestSpaceListRequest{
+		ProjectID: req.ProjectID,
+		PageNo:    1,
+		PageSize:  100,
+	})
 	if err != nil {
 		return err
 	}
@@ -128,6 +133,9 @@ func (svc *Service) UpdateAutoTestSpace(req apistructs.AutoTestSpace, UserID str
 	}
 	if len(req.Name) > 0 {
 		autoTestSpace.Name = req.Name
+	}
+	if len(req.ArchiveStatus) > 0 {
+		autoTestSpace.ArchiveStatus = req.ArchiveStatus
 	}
 	autoTestSpace.Description = req.Description
 	if err := svc.validateSpace(*autoTestSpace); err != nil {
@@ -193,6 +201,7 @@ func convertToUnifiedFileSpace(req *dao.AutoTestSpace) *apistructs.AutoTestSpace
 		CreatedAt:     req.CreatedAt,
 		UpdatedAt:     req.UpdatedAt,
 		DeletedAt:     req.DeletedAt,
+		ArchiveStatus: req.ArchiveStatus,
 	}
 }
 
@@ -258,4 +267,25 @@ func (svc *Service) GenerateSpaceName(name string, projectID int64) (string, err
 			return "", err
 		}
 	}
+}
+
+func (svc *Service) SpaceStatRetriever(spaceIDs []uint64) (map[uint64]*apistructs.AutoTestSpaceStats, error) {
+	set, scene, step, err := svc.db.GetAutoTestSpaceStats(spaceIDs)
+	if err != nil {
+		return nil, err
+	}
+	statsMap := make(map[uint64]*apistructs.AutoTestSpaceStats)
+	for _, i := range spaceIDs {
+		statsMap[i] = &apistructs.AutoTestSpaceStats{}
+	}
+	for _, i := range set {
+		statsMap[i.SpaceID].SetNum = i.SetNum
+	}
+	for _, i := range scene {
+		statsMap[i.SpaceID].SceneNum = i.SceneNum
+	}
+	for _, i := range step {
+		statsMap[i.SpaceID].StepNum = i.StepNum
+	}
+	return statsMap, nil
 }

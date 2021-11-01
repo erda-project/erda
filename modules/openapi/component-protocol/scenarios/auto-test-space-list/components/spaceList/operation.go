@@ -17,6 +17,7 @@ package spaceList
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -76,7 +77,7 @@ type operationData struct {
 	Meta meta `json:"meta"`
 }
 
-func setCommand(space spaceList) map[string]interface{} {
+func setCommand(space spaceItem) map[string]interface{} {
 	return map[string]interface{}{
 		"key": "set",
 		"state": spaceFormModal.State{
@@ -84,15 +85,15 @@ func setCommand(space spaceList) map[string]interface{} {
 			Visible: true,
 			FormData: map[string]interface{}{
 				"id":   space.ID,
-				"name": space.Name,
-				"desc": space.Desc,
+				"name": space.Title,
+				"desc": space.Description,
 			},
 		},
 		"target": "spaceFormModal",
 	}
 }
 
-func setMeta(space spaceList) map[string]interface{} {
+func setMeta(space spaceItem) map[string]interface{} {
 	return map[string]interface{}{
 		"id": space.ID,
 	}
@@ -107,13 +108,30 @@ func (a *ComponentSpaceList) handlerListOperation(bdl protocol.ContextBundle, c 
 	} else if a.State.PageSize != 10 && a.State.PageSize != 20 && a.State.PageSize != 50 && a.State.PageSize != 100 {
 		return fmt.Errorf("无效的pageSize")
 	}
-	spaceList, err := bdl.Bdl.ListTestSpace(inParams.ProjectID, a.State.PageSize, a.State.PageNo)
+	// spaceList, err := bdl.Bdl.ListTestSpace(inParams.ProjectID, a.State.PageSize, a.State.PageNo, a.State.Values.Order)
+	spaceList, err := bdl.Bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
+		ProjectID:     inParams.ProjectID,
+		PageNo:        a.State.PageNo,
+		PageSize:      a.State.PageSize,
+		Order:         a.State.Values.Order,
+		Name:          a.State.Values.SpaceName,
+		ArchiveStatus: a.State.Values.ArchiveStatus,
+	})
 	if err != nil {
 		return err
 	}
 	a.State.Total = int64(spaceList.Total)
 
-	if err = a.setData(inParams.ProjectID, *spaceList); err != nil {
+	var spaceIDs []string
+	for _, i := range spaceList.List {
+		spaceIDs = append(spaceIDs, strconv.FormatUint(i.ID, 10))
+	}
+
+	statsMap, err := bdl.Bdl.GetAutoTestSpaceStats(spaceIDs)
+	if err != nil {
+		return err
+	}
+	if err = a.setData(inParams.ProjectID, *spaceList, statsMap); err != nil {
 		return err
 	}
 	return nil
