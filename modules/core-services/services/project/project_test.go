@@ -235,7 +235,7 @@ func Test_setQuotaFromResourceConfig(t *testing.T) {
 		devCPU             uint64 = 4 * 1000
 		devMem             uint64 = 8 * 1024 * 1024 * 1024
 	)
-	var quota = new(model.ProjectQuota)
+	var quota = new(apistructs.ProjectQuota)
 	var resource = &apistructs.ResourceConfigs{
 		PROD: &apistructs.ResourceConfig{
 			ClusterName: prodClusterName,
@@ -278,7 +278,7 @@ func Test_setQuotaFromResourceConfig(t *testing.T) {
 func Test_setProjectDtoQuotaFromModel(t *testing.T) {
 	setProjectDtoQuotaFromModel(nil, nil)
 
-	var quota = model.ProjectQuota{
+	var quota = apistructs.ProjectQuota{
 		ProdClusterName:    "the-prod",
 		StagingClusterName: "the-staging",
 		TestClusterName:    "the-test",
