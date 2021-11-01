@@ -84,3 +84,26 @@ func (b *Bundle) FetchNamespacesBelongsTo() (*apistructs.GetProjectsNamesapcesRe
 	}
 	return resp.Data, nil
 }
+
+func (b *Bundle) ListQuotaRecords() ([]*apistructs.ProjectQuota, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	type response struct {
+		apistructs.Header
+		Data struct{
+			Total uint64`json:"total"`
+			List []*apistructs.ProjectQuota`json:"list"`
+		}
+	}
+	var resp response
+	httpResp, err := b.hc.Get(host).Path("/api/quota-records").Do().JSON(&resp)
+	if err != nil {
+		return nil, err
+	}
+	if !httpResp.IsOK(){
+		return nil, toAPIError(httpResp.StatusCode(), resp.Error)
+	}
+	return resp.Data.List, nil
+}

@@ -129,6 +129,10 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
+	userIDuint, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse userID")
+	}
 	// 只有 DevOps 类型的项目，才能配置 quota
 	if createReq.Template != apistructs.DevopsTemplate {
 		createReq.ResourceConfigs = nil
@@ -205,7 +209,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	// record quota if it is configured
 	logrus.WithField("createReq.ResourceConfigs", createReq.ResourceConfigs).Infoln()
 	if createReq.ResourceConfigs != nil {
-		quota := &model.ProjectQuota{
+		quota := &apistructs.ProjectQuota{
 			ProjectID:          uint64(project.ID),
 			ProjectName:        createReq.Name,
 			ProdClusterName:    createReq.ResourceConfigs.PROD.ClusterName,
@@ -220,8 +224,8 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			TestMemQuota:       calcu.GibibyteToByte(createReq.ResourceConfigs.TEST.MemQuota),
 			DevCPUQuota:        calcu.CoreToMillcore(createReq.ResourceConfigs.DEV.CPUQuota),
 			DevMemQuota:        calcu.GibibyteToByte(createReq.ResourceConfigs.DEV.MemQuota),
-			CreatorID:          userID,
-			UpdaterID:          userID,
+			CreatorID:          userIDuint,
+			UpdaterID:          userIDuint,
 		}
 		if err := tx.Debug().Create(&quota).Error; err != nil {
 			logrus.WithError(err).WithField("model", quota.TableName()).
@@ -307,6 +311,10 @@ func (p *Project) UpdateWithEvent(ctx context.Context, orgID, projectID int64, u
 
 // Update 更新项目
 func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
+	userIDuint, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse userID")
+	}
 	data, _ := json.Marshal(updateReq)
 	logrus.Infof("updateReq: %s", string(data))
 	if updateReq.ResourceConfigs != nil {
@@ -342,7 +350,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return nil, errors.Errorf("failed to update project")
 	}
 
-	var oldQuota = new(model.ProjectQuota)
+	var oldQuota = new(apistructs.ProjectQuota)
 	err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error
 	hasOldQuota := err == nil
 
@@ -355,11 +363,11 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	}
 
 	// create or update quota
-	var quota = new(model.ProjectQuota)
+	var quota = new(apistructs.ProjectQuota)
 	quota.ProjectID = uint64(projectID)
 	quota.ProjectName = updateReq.Name
-	quota.CreatorID = userID
-	quota.UpdaterID = userID
+	quota.CreatorID = userIDuint
+	quota.UpdaterID = userIDuint
 	setQuotaFromResourceConfig(quota, updateReq.ResourceConfigs)
 
 	// check new quota is less than reqeust
@@ -456,7 +464,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	return &project, nil
 }
 
-func setQuotaFromResourceConfig(quota *model.ProjectQuota, resource *apistructs.ResourceConfigs) {
+func setQuotaFromResourceConfig(quota *apistructs.ProjectQuota, resource *apistructs.ResourceConfigs) {
 	if quota == nil || resource == nil {
 		return
 	}
@@ -482,7 +490,7 @@ func setQuotaFromResourceConfig(quota *model.ProjectQuota, resource *apistructs.
 	}
 }
 
-func isQuotaChanged(oldQuota, newQuota model.ProjectQuota) bool {
+func isQuotaChanged(oldQuota, newQuota apistructs.ProjectQuota) bool {
 	if oldQuota.DevCPUQuota != newQuota.DevCPUQuota || oldQuota.DevMemQuota != newQuota.DevMemQuota ||
 		oldQuota.TestCPUQuota != newQuota.TestCPUQuota || oldQuota.TestMemQuota != newQuota.TestMemQuota ||
 		oldQuota.StagingCPUQuota != newQuota.StagingCPUQuota || oldQuota.StagingMemQuota != newQuota.StagingMemQuota ||
@@ -670,7 +678,7 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 }
 
 func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
-	var projectQuota model.ProjectQuota
+	var projectQuota apistructs.ProjectQuota
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to select the quota record of the project")
@@ -679,7 +687,7 @@ func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
 	setProjectDtoQuotaFromModel(dto, &projectQuota)
 }
 
-func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *model.ProjectQuota) {
+func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *apistructs.ProjectQuota) {
 	if dto == nil || quota == nil {
 		return
 	}
@@ -1399,7 +1407,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	for _, project := range projects {
 		projectIDs = append(projectIDs, project.ID)
 	}
-	var projectsQuota []*model.ProjectQuota
+	var projectsQuota []*apistructs.ProjectQuota
 	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&projectsQuota).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			l.WithError(err).Warnln("quota record not found")
@@ -1408,7 +1416,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		err = errors.Wrap(err, "failed to Find project quota")
 		return nil, err
 	}
-	var projectsQuotaConfigs = make(map[int64]*model.ProjectQuota)
+	var projectsQuotaConfigs = make(map[int64]*apistructs.ProjectQuota)
 	for _, projectQuota := range projectsQuota {
 		projectsQuotaConfigs[int64(projectQuota.ProjectID)] = projectQuota
 	}
@@ -1618,6 +1626,17 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 	data.Total = uint32(len(data.List))
 
 	return &data, nil
+}
+
+func (p *Project) ListQuotaRecords(ctx context.Context) ([]*apistructs.ProjectQuota, error) {
+	var records []*apistructs.ProjectQuota
+	if err := p.db.Find(&records).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return records, nil
 }
 
 func getMemberFromMembers(members []model.Member, role string) (*model.Member, bool) {

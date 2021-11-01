@@ -315,6 +315,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// cmp dependencies
 		{Path: "/api/projects-quota", Method: http.MethodGet, Handler: e.GetProjectQuota},
 		{Path: "/api/projects-namespaces", Method: http.MethodGet, Handler: e.GetNamespacesBelongsTo},
+		{Path: "/api/quota-records", Method: http.MethodGet, Handler: e.ListQuotaRecords},
 
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},

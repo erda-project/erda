@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core-services/model"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
@@ -58,8 +57,8 @@ func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apist
 	calculateRequest(requestResource, resources.List)
 
 	// 查出所有项目的 quota 记录
-	var projectsQuota []*model.ProjectQuota
-	if err = o.db.Find(&projectsQuota).Error; err != nil {
+	projectsQuota, err := o.bdl.ListQuotaRecords()
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to Find all project quota")
 	}
 	// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
@@ -153,7 +152,7 @@ func initClusterAllocatable(result map[string]*calcu.Calculator, list []*dashboa
 }
 
 // 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
-func deductionQuota(clusters map[string]*calcu.Calculator, quotaRecords []*model.ProjectQuota) {
+func deductionQuota(clusters map[string]*calcu.Calculator, quotaRecords []*apistructs.ProjectQuota) {
 	for _, workspace := range calcu.Workspaces {
 		workspaceStr := calcu.WorkspaceString(workspace)
 		for _, project := range quotaRecords {
