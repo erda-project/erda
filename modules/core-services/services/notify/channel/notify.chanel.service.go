@@ -332,7 +332,9 @@ func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req 
 	}
 
 	data, err := s.NotifyChannelDB.GetByScopeAndType(req.ScopeId, req.ScopeType, req.Type)
-
+	if err != nil {
+		return nil, err
+	}
 	var c map[string]*structpb.Value
 	err = json.Unmarshal([]byte(data.Config), &c)
 	if err != nil {
