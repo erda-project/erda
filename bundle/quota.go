@@ -92,9 +92,9 @@ func (b *Bundle) ListQuotaRecords() ([]*apistructs.ProjectQuota, error) {
 	}
 	type response struct {
 		apistructs.Header
-		Data struct{
-			Total uint64`json:"total"`
-			List []*apistructs.ProjectQuota`json:"list"`
+		Data struct {
+			Total uint64                     `json:"total"`
+			List  []*apistructs.ProjectQuota `json:"list"`
 		}
 	}
 	var resp response
@@ -102,7 +102,7 @@ func (b *Bundle) ListQuotaRecords() ([]*apistructs.ProjectQuota, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !httpResp.IsOK(){
+	if !httpResp.IsOK() {
 		return nil, toAPIError(httpResp.StatusCode(), resp.Error)
 	}
 	return resp.Data.List, nil
