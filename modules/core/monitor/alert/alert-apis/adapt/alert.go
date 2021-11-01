@@ -445,6 +445,15 @@ func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*pb.Alert
 			Values:    clusterName,
 		}
 		alert.TriggerCondition = append(alert.TriggerCondition, condition)
+	} else {
+		if condition, ok := output[TriggerCondition]; ok {
+			conditions := make([]*pb.TriggerCondition, 0)
+			err = json.Unmarshal([]byte(condition.(string)), &conditions)
+			if err != nil {
+				return nil, err
+			}
+			alert.TriggerCondition = conditions
+		}
 	}
 	alert.Attributes = nil
 	return alert, nil
