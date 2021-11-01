@@ -708,7 +708,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *pb.Alert) (err error) {
 		if err != nil {
 			return err
 		}
-		attributes[TriggerCondition] = structpb.NewStringValue(string(data))
+		attributes[TriggerCondition] = string(data)
 	} else {
 		delete(attributes, TriggerCondition)
 	}
