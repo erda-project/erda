@@ -138,17 +138,19 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		createReq.ResourceConfigs = nil
 	}
 	var clusterConfig []byte
-	if createReq.ResourceConfigs != nil {
-		if err := createReq.ResourceConfigs.Check(); err != nil {
+	if rc := createReq.ResourceConfigs; rc != nil {
+		if err := rc.Check(); err != nil {
 			return nil, err
 		}
 		createReq.ClusterConfig = map[string]string{
-			"PROD":    createReq.ResourceConfigs.PROD.ClusterName,
-			"STAGING": createReq.ResourceConfigs.STAGING.ClusterName,
-			"TEST":    createReq.ResourceConfigs.TEST.ClusterName,
-			"DEV":     createReq.ResourceConfigs.DEV.ClusterName,
+			"PROD":    rc.PROD.ClusterName,
+			"STAGING": rc.STAGING.ClusterName,
+			"TEST":    rc.TEST.ClusterName,
+			"DEV":     rc.DEV.ClusterName,
 		}
 		clusterConfig, _ = json.Marshal(createReq.ClusterConfig)
+		createReq.CpuQuota = float64(calcu.CoreToMillcore(rc.PROD.CPUQuota + rc.STAGING.CPUQuota + rc.TEST.CPUQuota + rc.DEV.CPUQuota))
+		createReq.MemQuota = float64(calcu.GibibyteToByte(rc.PROD.MemQuota + rc.STAGING.MemQuota + rc.TEST.MemQuota + rc.DEV.MemQuota))
 	}
 
 	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
@@ -315,9 +317,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse userID")
 	}
-	data, _ := json.Marshal(updateReq)
-	logrus.Infof("updateReq: %s", string(data))
-	if updateReq.ResourceConfigs != nil {
+	if rc := updateReq.ResourceConfigs; rc != nil {
 		updateReq.ClusterConfig = map[string]string{
 			"PROD":    updateReq.ResourceConfigs.PROD.ClusterName,
 			"STAGING": updateReq.ResourceConfigs.STAGING.ClusterName,
@@ -327,6 +327,8 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		if err := updateReq.ResourceConfigs.Check(); err != nil {
 			return nil, err
 		}
+		updateReq.CpuQuota = float64(calcu.CoreToMillcore(rc.PROD.CPUQuota + rc.STAGING.CPUQuota + rc.TEST.CPUQuota + rc.DEV.CPUQuota))
+		updateReq.MemQuota = float64(calcu.GibibyteToByte(rc.PROD.MemQuota + rc.STAGING.MemQuota + rc.TEST.MemQuota + rc.DEV.MemQuota))
 	}
 	if err := checkRollbackConfig(&updateReq.RollbackConfig); err != nil {
 		return nil, err
@@ -532,20 +534,8 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 	project.DDHook = updateReq.DdHook
 	project.ActiveTime = time.Now()
 	project.IsPublic = updateReq.IsPublic
-	if updateReq.ResourceConfigs != nil {
-		for _, resource := range []*apistructs.ResourceConfig {
-			updateReq.ResourceConfigs.PROD,
-			updateReq.ResourceConfigs.STAGING,
-			updateReq.ResourceConfigs.TEST,
-			updateReq.ResourceConfigs.DEV,
-		} {
-			if resource == nil {
-				continue
-			}
-			project.CpuQuota += resource.CPUQuota
-			project.MemQuota += resource.MemQuota
-		}
-	}
+	project.CpuQuota = updateReq.CpuQuota
+	project.MemQuota = updateReq.MemQuota
 
 	return nil
 }

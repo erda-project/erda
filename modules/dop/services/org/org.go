@@ -93,6 +93,7 @@ func WithRedisClient(cli *redis.Client) Option {
 }
 
 // WithCMP sets the gRPC client to invoke CMP service
+// Todo: the dependency on CMP will be moved to a service which is more suitable
 func WithCMP(cmp dashboardPb.ClusterResourceServer) Option {
 	return func(org *Org) {
 		org.cmp = cmp
