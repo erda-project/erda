@@ -705,6 +705,9 @@ func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *apistructs.P
 }
 
 func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
+	if dto == nil {
+		return
+	}
 	var podInfos []apistructs.PodInfo
 	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
@@ -719,6 +722,9 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 			"test":    dto.ResourceConfig.TEST,
 			"dev":     dto.ResourceConfig.DEV,
 		} {
+			if resourceConfig == nil {
+				continue
+			}
 			if !strings.EqualFold(podInfo.Workspace, workspace) {
 				continue
 			}
