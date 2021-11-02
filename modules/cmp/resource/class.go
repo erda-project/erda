@@ -119,7 +119,7 @@ func (r *Resource) GetPie(ctx context.Context, ordId, userId string, request *ap
 	resources, err := r.Server.GetClustersResources(r.Ctx, greq)
 	logrus.Debug("get cluster resource from steve finished ")
 
-	irResp, err := r.GetQuotaResource(ordId, userId, request.ClusterName)
+	irResp, err := r.GetQuotaResource(ctx, ordId, userId, request.ClusterName)
 	if err != nil {
 		return
 	}

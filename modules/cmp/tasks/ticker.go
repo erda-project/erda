@@ -36,10 +36,10 @@ type Ticker struct {
 	done     chan bool
 }
 
-func New(intervals time.Duration, f func() (bool, error)) *Ticker {
+func New(interval time.Duration, task func() (bool, error)) *Ticker {
 	return &Ticker{
-		Interval: intervals,
-		Task:     f,
+		Interval: interval,
+		Task:     task,
 		done:     make(chan bool),
 	}
 }
