@@ -156,35 +156,16 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		if rsp.Status == apistructs.PipelineStatusNoNeedBySystem {
 			i.Data["status"] = "无需执行"
 		}
-		res, err := i.CtxBdl.Bdl.GetPipelineReportSet(i.State.PipelineID, []string{"api-test"})
+
+		res, err := i.CtxBdl.Bdl.GetAutoTestExecHistory(i.State.PipelineID)
 		if err != nil {
-			return err
-		}
-		if res != nil && len(res.Reports) > 0 && res.Reports[0].Meta != nil {
-			value, err := json.Marshal(res.Reports[0].Meta)
-			if err != nil {
-				i.Data["autoTestExecPercent"] = "-"
-				i.Data["autoTestSuccessPercent"] = "-"
-				goto Label
-			}
-			var report reportNew
-			err = json.Unmarshal(value, &report)
-			if err != nil {
-				i.Data["autoTestExecPercent"] = "-"
-				i.Data["autoTestSuccessPercent"] = "-"
-				goto Label
-			}
-			i.Data["autoTestNum"] = report.APITotalNum
-			if report.APITotalNum == 0 {
-				i.Data["autoTestExecPercent"] = "0.00%"
-				i.Data["autoTestSuccessPercent"] = "0.00%"
-			} else {
-				i.Data["autoTestExecPercent"] = strconv.FormatFloat(100-float64(report.APINotExecNum)/float64(report.APITotalNum)*100, 'f', 2, 64) + "%"
-				i.Data["autoTestSuccessPercent"] = strconv.FormatFloat(float64(report.APISuccessNum)/float64(report.APITotalNum)*100, 'f', 2, 64) + "%"
-			}
+			i.Data["autoTestExecPercent"] = "-"
+			i.Data["autoTestSuccessPercent"] = "-"
+		} else {
+			i.Data["autoTestExecPercent"] = fmt.Sprintf("%.2f", res.ExecuteRate)
+			i.Data["autoTestSuccessPercent"] = fmt.Sprintf("%.2f", res.PassRate)
 		}
 	}
-Label:
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{

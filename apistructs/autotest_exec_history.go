@@ -43,6 +43,11 @@ type AutoTestExecHistoryDto struct {
 	PipelineID    uint64         `json:"pipelineID"`
 }
 
+type AutoTestExecHistoryResp struct {
+	Header
+	Data AutoTestExecHistoryDto `json:"data"`
+}
+
 type ExecHistorySceneAvgCostTime struct {
 	SceneID uint64  `json:"sceneID" gorm:"scene_id"`
 	Avg     float64 `json:"avg" gorm:"avg"`

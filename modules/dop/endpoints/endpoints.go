@@ -411,6 +411,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/testplans-step/{stepID}", Method: http.MethodGet, Handler: e.GetTestPlanV2Step},
 		{Path: "/api/autotests/testplans-step/{stepID}", Method: http.MethodPut, Handler: e.UpdateTestPlanV2Step},
 		{Path: "/api/autotests/testplans/{testPlanID}/steps/actions/list-by-group-id", Method: http.MethodGet, Handler: e.ListTestPlanV2Step},
+		{Path: "/api/autotests/testplans/history/actions/by-pipeline-id", Method: http.MethodGet, Handler: e.GetAutoTestExecHistory},
 
 		{Path: "/api/reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryReportSets},
 

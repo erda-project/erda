@@ -85,7 +85,7 @@ func (AutoTestExecHistory) TableName() string {
 // ListAutoTestExecHistory .
 func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs ...uint64) ([]AutoTestExecHistory, error) {
 	var list []AutoTestExecHistory
-	db := client.Debug().Model(&AutoTestExecHistory{}).
+	db := client.Model(&AutoTestExecHistory{}).
 		Where("plan_id IN (?)", planIDs)
 	if timeStart != "" {
 		db = db.Where("execute_time >= ?", timeStart)
@@ -96,4 +96,11 @@ func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, planI
 	}
 	err := db.Find(&list).Order("execute_time ASC").Error
 	return list, err
+}
+
+// GetAutoTestExecHistoryByPipelineID .
+func (client *DBClient) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (AutoTestExecHistory, error) {
+	var execHistory AutoTestExecHistory
+	err := client.Model(&AutoTestExecHistory{}).Where("pipeline_id = ?", pipelineID).First(&execHistory).Error
+	return execHistory, err
 }

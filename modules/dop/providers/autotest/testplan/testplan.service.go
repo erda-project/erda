@@ -46,12 +46,10 @@ func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {
 
 func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.TestPlanUpdateByHookRequest) (*pb.TestPlanUpdateByHookResponse, error) {
 	logrus.Info("start testplan execute callback")
-	logrus.Infof("wxj req.Content: %v", req.Content)
 	apiTotalNum, err := s.calcTotalApiNum(req)
 	if err != nil {
 		logrus.Errorf("failed to calcTotalApiNum,err: %s", err.Error())
 	}
-	logrus.Infof("wxj apiTotalNum: %d", apiTotalNum)
 	req.Content.ApiTotalNum = apiTotalNum
 	// not include ref set
 	req.Content.ApiExecNum = req.Content.ApiExecNum - req.Content.ApiRefExecNum

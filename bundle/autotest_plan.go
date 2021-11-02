@@ -305,3 +305,24 @@ func (b *Bundle) ListAutoTestGlobalConfig(req apistructs.AutoTestGlobalConfigLis
 
 	return cfgResp.Data, nil
 }
+
+func (b *Bundle) GetAutoTestExecHistory(pipelineID uint64) (*apistructs.AutoTestExecHistoryDto, error) {
+	host, err := b.urls.DOP()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var getResp apistructs.AutoTestExecHistoryResp
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/autotests/testplans/history/actions/by-pipeline-id?pipelineID=%d", pipelineID)).
+		Header(httputil.InternalHeader, "bundle").Do().JSON(&getResp)
+
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !getResp.Success {
+		return nil, toAPIError(resp.StatusCode(), getResp.Error)
+	}
+
+	return &getResp.Data, nil
+}

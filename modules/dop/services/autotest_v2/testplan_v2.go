@@ -885,6 +885,16 @@ func (svc *Service) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs .
 	return
 }
 
+// GetAutoTestExecHistoryByPipelineID .
+func (svc *Service) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (*apistructs.AutoTestExecHistoryDto, error) {
+	history, err := svc.db.GetAutoTestExecHistoryByPipelineID(pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	historyDto := history.Convert()
+	return &historyDto, nil
+}
+
 // ExecHistorySceneAvgCostTime .
 func (svc *Service) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneAvgCostTime, err error) {
 	db := svc.db.Debug().Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").

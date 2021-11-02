@@ -465,3 +465,26 @@ func (e *Endpoints) QueryPipelineSnippetYamlV2(ctx context.Context, r *http.Requ
 
 	return errorresp.ErrResp(fmt.Errorf("not found snippet pipelineYaml"))
 }
+
+// GetAutoTestExecHistory .
+func (e *Endpoints) GetAutoTestExecHistory(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrGetAutoTestExecHistory.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		return apierrors.ErrGetAutoTestExecHistory.AccessDenied().ToResp(), nil
+	}
+
+	pipelineIDStr := r.URL.Query().Get("pipelineID")
+	pipelineID, err := strconv.ParseUint(pipelineIDStr, 10, 64)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	history, err := e.autotestV2.GetAutoTestExecHistoryByPipelineID(pipelineID)
+	if err != nil {
+		return apierrors.ErrGetAutoTestExecHistory.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(history)
+}
