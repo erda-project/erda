@@ -168,39 +168,40 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 	}
 	allTasks := result.Tasks
 	for _, task := range allTasks {
-		if task.Type == apistructs.ActionTypeAPITest &&
-			task.Extra.Action.Version == "2.0" {
-			var (
-				apiSuccessNum int64
-			)
-			if task.Status.IsSuccessStatus() {
-				apiSuccessNum = 1
-			}
-			stepID, _ := strconv.ParseUint(task.Name, 10, 64)
+		if task.Type != apistructs.ActionTypeAPITest ||
+			task.Extra.Action.Version != "2.0" {
+			continue
+		}
+		var (
+			apiSuccessNum int64
+		)
+		if task.Status.IsSuccessStatus() {
+			apiSuccessNum = 1
+		}
+		stepID, _ := strconv.ParseUint(task.Name, 10, 64)
 
-			err = p.sendMessage(testplanpb.Content{
-				TestPlanID:    testPlanID,
-				ExecuteTime:   task.TimeBegin.Format("2006-01-02 15:04:05"),
-				ApiTotalNum:   1,
-				ApiSuccessNum: apiSuccessNum,
-				ApiExecNum:    1,
-				PipelineYml:   "",
-				StepAPIType:   task.Extra.Labels[apistructs.AutotestSceneStepType],
-				Status:        task.Status.String(),
-				SceneID:       sceneID,
-				SceneSetID:    sceneSetID,
-				ParentID:      parentPipelineID,
-				PipelineID:    task.PipelineID,
-				CreatorID:     userID,
-				StepID:        stepID,
-				IterationID:   iterationID,
-				CostTimeSec:   task.CostTimeSec,
-				TimeBegin:     task.TimeBegin.Format("2006-01-02 15:04:05"),
-				TimeEnd:       task.TimeEnd.Format("2006-01-02 15:04:05"),
-			}, ctx)
-			if err != nil {
-				return err
-			}
+		err = p.sendMessage(testplanpb.Content{
+			TestPlanID:    testPlanID,
+			ExecuteTime:   task.TimeBegin.Format("2006-01-02 15:04:05"),
+			ApiTotalNum:   1,
+			ApiSuccessNum: apiSuccessNum,
+			ApiExecNum:    1,
+			PipelineYml:   "",
+			StepAPIType:   task.Extra.Labels[apistructs.AutotestSceneStepType],
+			Status:        task.Status.String(),
+			SceneID:       sceneID,
+			SceneSetID:    sceneSetID,
+			ParentID:      parentPipelineID,
+			PipelineID:    task.PipelineID,
+			CreatorID:     userID,
+			StepID:        stepID,
+			IterationID:   iterationID,
+			CostTimeSec:   task.CostTimeSec,
+			TimeBegin:     task.TimeBegin.Format("2006-01-02 15:04:05"),
+			TimeEnd:       task.TimeEnd.Format("2006-01-02 15:04:05"),
+		}, ctx)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

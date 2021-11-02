@@ -934,7 +934,7 @@ func (svc *Service) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHisto
 		Where("project_id = ?", req.ProjectID).
 		Where("iteration_id IN (?)", req.IterationIDs).
 		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeAPI)
+		Where("type IN (?)", apistructs.EffectiveStepType)
 	if req.TimeStart != "" {
 		db = db.Where("execute_time >= ?", req.TimeStart)
 	}
@@ -953,7 +953,7 @@ func (svc *Service) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHisto
 		Where("project_id = ?", req.ProjectID).
 		Where("iteration_id IN (?)", req.IterationIDs).
 		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeAPI)
+		Where("type IN (?)", apistructs.EffectiveStepType)
 	if req.TimeStart != "" {
 		db = db.Where("execute_time >= ?", req.TimeStart)
 	}

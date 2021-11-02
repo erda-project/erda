@@ -59,7 +59,8 @@ func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (counts []ApiCount, e
 	err = db.Table("dice_autotest_scene_step").
 		Select("scene_id,count(1) AS count").
 		Where("scene_id IN (?)", sceneID).
-		Where("type = ?", apistructs.StepTypeAPI).
+		Where("type IN (?)", apistructs.EffectiveStepType).
+		Where("is_disable = 0").
 		Group("scene_id").
 		Find(&counts).Error
 	return
