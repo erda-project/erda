@@ -17,6 +17,7 @@ package taskop
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -25,12 +26,15 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
-	"github.com/erda-project/erda/pkg/loop"
 )
 
 var err4EnableDeclineRatio = errors.New("enable decline ratio")
+
+var (
+	declineRatio float64       = 1.5
+	declineLimit time.Duration = 10 * time.Second
+)
 
 type wait taskrun.TaskRun
 
@@ -47,55 +51,42 @@ func (w *wait) TaskRun() *taskrun.TaskRun {
 }
 
 func (w *wait) Processing() (interface{}, error) {
-	stopWaitCh := make(chan struct{})
-	defer func() {
-		stopWaitCh <- struct{}{}
-	}()
-	go func() {
-		select {
-		case <-w.Ctx.Done():
-			w.StopWaitLoop = true
-			return
-		case <-w.PExitCh:
-			logrus.Warnf("reconciler: pipeline exit, stop wait, pipelineID: %d, taskID: %d", w.P.ID, w.Task.ID)
-			return
-		case <-stopWaitCh:
-			rlog.TDebugf(w.P.ID, w.Task.ID, "stop wait")
-			close(stopWaitCh)
-			return
-		}
-	}()
-
 	var (
-		data interface{}
+		data        interface{}
+		loopedTimes uint64
 	)
 
-	err := loop.New(loop.WithDeclineRatio(1.5), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
-		if w.QuitWaitTimeout {
-			return true, nil
+	timer := time.NewTimer(w.calculateNextLoopTimeDuration(loopedTimes))
+	defer timer.Stop()
+	for {
+		select {
+		case doneData := <-w.ExecutorDoneCh:
+			logrus.Infof("%s: accept signal from executor %s, data: %v", w.Op(), w.Executor.Name(), doneData)
+			return doneData, nil
+		case <-w.Ctx.Done():
+			return data, nil
+		case <-w.PExitCh:
+			logrus.Warnf("reconciler: pipeline exit, stop wait, pipelineID: %d, taskID: %d", w.P.ID, w.Task.ID)
+			return data, nil
+		case <-timer.C:
+			statusDesc, err := w.Executor.Status(w.Ctx, w.Task)
+			if err != nil {
+				logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q wait get status failed, err: %v",
+					w.P.ID, w.Task.Name, err)
+				return nil, err
+			}
+			if statusDesc.Status.IsEndStatus() {
+				data = statusDesc
+				return data, nil
+			}
+			if statusDesc.Status == apistructs.PipelineStatusUnknown {
+				logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q wait get status %q, retry", w.P.ID, w.Task.Name, apistructs.PipelineStatusUnknown)
+			}
+
+			loopedTimes++
+			timer.Reset(w.calculateNextLoopTimeDuration(loopedTimes))
 		}
-
-		statusDesc, err := w.Executor.Status(w.Ctx, w.Task)
-		if err != nil {
-			logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q wait get status failed, err: %v",
-				w.P.ID, w.Task.Name, err)
-			return true, err
-		}
-
-		if statusDesc.Status == apistructs.PipelineStatusUnknown {
-			logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q wait get status %q, retry", w.P.ID, w.Task.Name, apistructs.PipelineStatusUnknown)
-			return false, err4EnableDeclineRatio
-		}
-
-		if statusDesc.Status.IsEndStatus() {
-			data = statusDesc
-			return true, nil
-		}
-
-		return w.StopWaitLoop, err4EnableDeclineRatio
-	})
-
-	return data, err
+	}
 }
 
 func (w *wait) WhenDone(data interface{}) error {
@@ -185,4 +176,13 @@ func (w *wait) TuneTriggers() taskrun.TaskOpTuneTriggers {
 		BeforeProcessing: aoptypes.TuneTriggerTaskBeforeWait,
 		AfterProcessing:  aoptypes.TuneTriggerTaskAfterWait,
 	}
+}
+
+func (w *wait) calculateNextLoopTimeDuration(loopedTimes uint64) time.Duration {
+	lastSleepTime := time.Second
+	lastSleepTime = time.Duration(float64(lastSleepTime) * math.Pow(declineRatio, float64(loopedTimes)))
+	if lastSleepTime > declineLimit {
+		return declineLimit
+	}
+	return lastSleepTime
 }
