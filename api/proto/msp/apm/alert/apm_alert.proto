@@ -6,8 +6,17 @@ import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "core/monitor/alert/alert.proto";
+import "common/openapi.proto";
 
 service AlertService {
+  option (erda.common.openapi_service) = {
+    service: "msp",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
   rpc QueryAlertRule (QueryAlertRuleRequest) returns (QueryAlertRuleResponse) {
     option (google.api.http) = {
       get: "/api/msp/apm/{tenantGroup}/alert-rules",
@@ -118,6 +127,22 @@ service AlertService {
       post: "/api/msp/apm/{tenantGroup}/alert-records/custom-alerts/dash-preview/query"
     };
   }
+  rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/conditions"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/conditions"
+    };
+  }
+  rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {
+    option (google.api.http)     = {
+      post: "/api/msp/apm/conditions/value"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/conditions/value"
+    };
+  }
 }
 
 message QueryAlertRuleRequest {
@@ -153,33 +178,35 @@ message GetAlertResponse {
 }
 
 message ApmAlertData {
-  int64                                            id           = 1;
-  string                                           name         = 2;
-  string                                           alertScope   = 3;
-  string                                           alertScopeId = 4;
-  bool                                             enable       = 5;
-  repeated erda.core.monitor.alert.AlertExpression rules        = 6;
-  repeated erda.core.monitor.alert.AlertNotify     notifies     = 7;
-  repeated string                                  appIds       = 8;
-  string                                           domain       = 9;
-  map<string, google.protobuf.Value>               attributes   = 10;
-  int64                                            createTime   = 11;
-  int64                                            updateTime   = 12;
+  int64                                             id               = 1;
+  string                                            name             = 2;
+  string                                            alertScope       = 3;
+  string                                            alertScopeId     = 4;
+  bool                                              enable           = 5;
+  repeated erda.core.monitor.alert.AlertExpression  rules            = 6;
+  repeated erda.core.monitor.alert.AlertNotify      notifies         = 7;
+  repeated string                                   appIds           = 8;
+  string                                            domain           = 9;
+  map<string, google.protobuf.Value>                attributes       = 10;
+  int64                                             createTime       = 11;
+  int64                                             updateTime       = 12;
+  repeated erda.core.monitor.alert.TriggerCondition triggerCondition = 13;
 }
 
 message CreateAlertRequest {
-  string                                           tenantGroup  = 1;
-  string                                           name         = 2;
-  repeated string                                  appIds       = 3;
-  repeated erda.core.monitor.alert.AlertExpression rules        = 4;
-  repeated erda.core.monitor.alert.AlertNotify     notifies     = 5;
-  string                                           domain       = 6;
-  int64                                            createTime   = 7;
-  int64                                            updateTime   = 8;
-  string                                           alertScope   = 9;
-  string                                           alertScopeId = 10;
-  bool                                             enable       = 11;
-  map<string, google.protobuf.Value>               attributes   = 12;
+  string                                            tenantGroup      = 1;
+  string                                            name             = 2;
+  repeated string                                   appIds           = 3;
+  repeated erda.core.monitor.alert.AlertExpression  rules            = 4;
+  repeated erda.core.monitor.alert.AlertNotify      notifies         = 5;
+  string                                            domain           = 6;
+  int64                                             createTime       = 7;
+  int64                                             updateTime       = 8;
+  string                                            alertScope       = 9;
+  string                                            alertScopeId     = 10;
+  bool                                              enable           = 11;
+  map<string, google.protobuf.Value>                attributes       = 12;
+  repeated erda.core.monitor.alert.TriggerCondition triggerCondition = 13;
 }
 
 message CreateAlertResponse {
@@ -191,19 +218,20 @@ message CreateAlertData {
 }
 
 message UpdateAlertRequest {
-  string                                           tenantGroup  = 1;
-  uint64                                           id           = 2;
-  string                                           name         = 3;
-  string                                           alertScope   = 4;
-  string                                           alertScopeId = 5;
-  bool                                             enable       = 6;
-  repeated erda.core.monitor.alert.AlertExpression rules        = 7;
-  repeated erda.core.monitor.alert.AlertNotify     notifies     = 8;
-  map<string, google.protobuf.Value>               attributes   = 9;
-  repeated string                                  appIds       = 10;
-  string                                           domain       = 11;
-  int64                                            createTime   = 12;
-  int64                                            updateTime   = 13;
+  string                                            tenantGroup      = 1;
+  uint64                                            id               = 2;
+  string                                            name             = 3;
+  string                                            alertScope       = 4;
+  string                                            alertScopeId     = 5;
+  bool                                              enable           = 6;
+  repeated erda.core.monitor.alert.AlertExpression  rules            = 7;
+  repeated erda.core.monitor.alert.AlertNotify      notifies         = 8;
+  map<string, google.protobuf.Value>                attributes       = 9;
+  repeated string                                   appIds           = 10;
+  string                                            domain           = 11;
+  int64                                             createTime       = 12;
+  int64                                             updateTime       = 13;
+  repeated erda.core.monitor.alert.TriggerCondition triggerCondition = 14;
 }
 
 message UpdateAlertResponse {
@@ -417,4 +445,22 @@ message DashboardPreviewRequest {
 
 message DashboardPreviewResponse {
   erda.core.monitor.alert.View data = 1;
+}
+
+message GetAlertConditionsRequest {
+  string scopeType = 1;
+}
+
+message GetAlertConditionsResponse {
+  repeated erda.core.monitor.alert.Conditions data = 1 [json_name = "conditions"];
+}
+
+message GetAlertConditionsValueRequest {
+  string              condition = 1;
+  map<string, string> filters   = 2;
+  string              index     = 3;
+}
+
+message GetAlertConditionsValueResponse {
+  erda.core.monitor.alert.AlertConditionsValue data = 1;
 }

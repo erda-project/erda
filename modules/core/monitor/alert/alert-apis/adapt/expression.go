@@ -74,6 +74,7 @@ const (
 const (
 	ClusterName   = "cluster_name"
 	ApplicationId = "application_id"
+	HostIP        = "host_ip"
 )
 
 type (
@@ -108,6 +109,7 @@ var (
 		"null":     OperatorTypeNone,
 		"match":    OperatorTypeOne,
 		"notMatch": OperatorTypeOne,
+		"all":      OperatorTypeOne,
 	}
 	functionOperatorRel = map[string]string{
 		"all":      OperatorTypeOne,
