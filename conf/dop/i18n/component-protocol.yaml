@@ -142,6 +142,25 @@ zh:
   api-failed-rate: 接口 - 按执行失败率分布 Top500
   week: 近一周
   month: 近一月
+  quality_score_tip--title: 质量分的计算公式（分值 0-100）
+  quality_score_tip--mt_plan: 手动测试计划
+  quality_score_tip--mt_plan_rate_passed: 通过率：所有测试计划中通过的用例数 / 所有测试计划中的用例数
+  quality_score_tip--mt_plan_rate_executed: 执行率：所有测试计划中执行过的用例数 / 所有测试计划中的用例数
+  quality_score_tip--mt_plan_score_formula: 计算公式：通过率 * 执行率 * 100
+  quality_score_tip--at_plan: 自动化测试计划
+  quality_score_tip--at_plan_rate_passed: 成功率：所有计划最近一次执行成功的用例数 / 所有计划最近一次执行的用例总数
+  quality_score_tip--at_plan_rate_executed: 执行率：所有计划最近一次执行过的用例数 / 所有计划最近一次执行的用例总数
+  quality_score_tip--at_plan_score_formula: 计算公式：执行率 * 成功率 * 100
+  quality_score_tip--bug: 缺陷
+  quality_score_tip--bug_DI: DI值：致命缺陷数*10 + 严重缺陷数*3 + 一般缺陷数*1 + 轻微缺陷数*0.1
+  quality_score_tip--bug_score_formula: 计算公式：100 - DI
+  quality_score_tip--bug_reopen: 缺陷重开率
+  quality_score_tip--bug_reopen_rate: 重开率：迭代所有缺陷重开次数之和 / 迭代所有缺陷数
+  quality_score_tip--bug_reopen_score_formula: 计算公式： 100 - 重开率*100
+  quality_score_tip--coco: 代码覆盖率
+  quality_score_tip--coco_score_formula: 计算公式：代码发覆盖率 * 100
+  quality_score_tip--total: 总分
+  quality_score_tip--total_score_formula: 计算公式：(手动测试计划 + 自动化测试计划 + 缺陷 DI + 缺陷重开率 + 代码覆盖率) / 5
 en:
   issue-manage: issue manage
   issue: issue
@@ -283,3 +302,22 @@ en:
   api-failed-rate: Api - Execute Failed Rate Top500
   week: Nearly a week
   month: Nearly a month
+  quality_score_tip--title: Quqality Score Formula (Score 0-100)
+  quality_score_tip--mt_plan: Manual Test Plan
+  quality_score_tip--mt_plan_rate_passed: Pass Rate：NUM(all PASSED cases in all test plans) / NUM(all cases in all test plans)
+  quality_score_tip--mt_plan_rate_executed: Execute Rate：NUM(all EXECUTED cases in all test plans) / NUM(all cases in all test plans)
+  quality_score_tip--mt_plan_score_formula: Formula：Pass-Rate * Execute-Rate * 100
+  quality_score_tip--at_plan: Auto Test Plan
+  quality_score_tip--at_plan_rate_passed: Pass Rate：NUM(all PASSED cases in all test plans) / NUM(all cases in all test plans)
+  quality_score_tip--at_plan_rate_executed: Execute Rate：NUM(all EXECUTED cases in all test plans) / NUM(all cases in all test plans)
+  quality_score_tip--at_plan_score_formula: Formula：Pass-Rate * Execute-Rate * 100
+  quality_score_tip--bug: Bug
+  quality_score_tip--bug_DI: DI：NUM(Fatal)*10 + NUM(Serious)*3 + NUM(Normal)*1 + NUM(Slight)*0.1
+  quality_score_tip--bug_score_formula: Formula：100 - DI
+  quality_score_tip--coco: Code Coverage
+  quality_score_tip--coco_score_formula: Formula：Code-Coverage * 100
+  quality_score_tip--bug_reopen: Bug Reopen Rate
+  quality_score_tip--bug_reopen_rate: Bug Reopen Rate：NUM(all REOPENED bug count in iterations) / NUM(all cases in iterations)
+  quality_score_tip--bug_reopen_score_formula: Formula：100 - Bug-Reopen-Rate * 100
+  quality_score_tip--total: Total Score
+  quality_score_tip--total_score_formula: Formula：(Score(Manual Test Plan) + Score(Auto Test Plan) + Score(Bug) + Score(Bug Reopen Rate) + Score(Code Coverage)) / 5

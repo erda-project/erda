@@ -38,5 +38,8 @@ func (r *Reconciler) beforeListen(ctx context.Context) error {
 	go func() {
 		r.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd(ctx)
 	}()
+	go func() {
+		r.QueueManager.ListenPopOutPipelineIDFromEtcd(ctx)
+	}()
 	return nil
 }
