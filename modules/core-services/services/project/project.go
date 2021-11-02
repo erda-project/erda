@@ -357,7 +357,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	hasOldQuota := err == nil
 
 	if updateReq.ResourceConfigs == nil {
-		if hasOldQuota {
+		if hasOldQuota && len(updateReq.RollbackConfig) == 0 {
 			return nil, errors.Errorf("cant not update project quota to empty")
 		}
 		tx.Commit()
