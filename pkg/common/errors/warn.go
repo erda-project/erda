@@ -44,7 +44,7 @@ func (e *WarnError) Error() string {
 	return fmt.Sprintf(e.Name)
 }
 
-func (e *WarnError) HTTPStatus() int { return http.StatusOK }
+func (e *WarnError) HTTPStatus() int { return http.StatusInternalServerError }
 
 func (e *WarnError) Translate(t i18n.Translator, langs i18n.LanguageCodes) string {
 	if len(e.Message) > 0 {

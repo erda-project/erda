@@ -16,8 +16,11 @@ package apis
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
+
+	"github.com/ghodss/yaml"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -26,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
@@ -44,6 +48,7 @@ type config struct {
 	MicroServiceFilterTags      string `file:"micro_service_filter_tags"`
 	MicroServiceOtherFilterTags string `file:"micro_service_other_filter_tags"`
 	SilencePolicy               string `file:"silence_policy"`
+	AlertConditions             string `file:"alert_conditions"`
 	Cassandra                   struct {
 		cassandra.SessionConfig `file:"session"`
 		GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
@@ -65,9 +70,11 @@ type provider struct {
 	orgFilterTags               map[string]bool
 	microServiceFilterTags      map[string]bool
 	microServiceOtherFilterTags map[string]bool
+	alertConditions             []*AlertConditions
 
-	Register     transport.Register `autowired:"service-register" optional:"true"`
-	Perm         perm.Interface     `autowired:"permission"`
+	Register     transport.Register           `autowired:"service-register" optional:"true"`
+	Metric       metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	Perm         perm.Interface               `autowired:"permission"`
 	alertService *alertService
 }
 
@@ -100,6 +107,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.microServiceOtherFilterTags[k] = true
 		}
 	}
+	p.alertConditions = make([]*AlertConditions, 0)
+	f, err := ioutil.ReadFile(p.C.AlertConditions)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(f, &p.alertConditions)
+	if err != nil {
+		return err
+	}
+
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
 	if cassandra != nil {
 		session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
@@ -176,6 +193,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(MonitorService.QueryOrgAlertHistory, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
 			perm.Method(MonitorService.CreateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
 			perm.Method(MonitorService.UpdateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+			perm.NoPermMethod(MonitorService.GetAlertConditions),
+			perm.NoPermMethod(MonitorService.GetAlertConditionsValue),
 		))
 	}
 	return nil

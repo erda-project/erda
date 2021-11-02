@@ -110,6 +110,7 @@ const (
 	TypeRedis          = "Redis"
 	TypeRocketMQ       = "RocketMQ"
 	TypeExternal       = "ExternalService"
+	TypeInternal       = "InternalService"
 	TypeDubbo          = "Dubbo"
 	TypeSidecar        = "SideCar"
 	TypeGateway        = "APIGateway"
@@ -1561,6 +1562,9 @@ func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRe
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
+					if targetNodeType.Type == TargetOtherNode && node.Type == TypeInternal {
+						continue
+					}
 
 					// aggs
 					metric := metricParser(targetNodeType, target)
@@ -1785,6 +1789,9 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		}
 		if tags.PeerServiceScope == "external" {
 			node.Type = TypeExternal
+		}
+		if tags.PeerServiceScope == "internal" {
+			node.Type = TypeInternal
 		}
 		node.Name = tags.HttpUrl
 		node.Id = encodeTypeToKey(node.Name + apm.Sep1 + node.Type)

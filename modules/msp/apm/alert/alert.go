@@ -52,6 +52,8 @@ const (
 	DashboardPathFormat = "/microService/%s/%s/%s/alarm-management/%s/custom-dashboard"
 	RecordPathFormat    = "/microService/%s/%s/%s/alarm-management/%s/alarm-record"
 
+	TriggerCondition = "trigger_condition"
+
 	NotifyTemplateSample = `【服务HTTP慢事务异常告警】
 
 项目: {{project_name}}

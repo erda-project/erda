@@ -66,6 +66,10 @@ type AlertServiceHandler interface {
 	UpdateAlertRecordIssue(context.Context, *UpdateAlertRecordIssueRequest) (*UpdateAlertRecordIssueResponse, error)
 	// POST /api/msp/apm/{tenantGroup}/alert-records/custom-alerts/dash-preview/query
 	DashboardPreview(context.Context, *DashboardPreviewRequest) (*DashboardPreviewResponse, error)
+	// GET /api/msp/apm/conditions
+	GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)
+	// POST /api/msp/apm/conditions/value
+	GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)
 }
 
 // RegisterAlertServiceHandler register AlertServiceHandler to http.Router.
@@ -1445,6 +1449,78 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 		)
 	}
 
+	add_GetAlertConditions := func(method, path string, fn func(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertConditionsRequest))
+		}
+		var GetAlertConditions_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertConditions_info = transport.NewServiceInfo("erda.msp.apm.alert.AlertService", "GetAlertConditions", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertConditions_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertConditionsRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetAlertConditionsValue := func(method, path string, fn func(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertConditionsValueRequest))
+		}
+		var GetAlertConditionsValue_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertConditionsValue_info = transport.NewServiceInfo("erda.msp.apm.alert.AlertService", "GetAlertConditionsValue", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertConditionsValue_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertConditionsValueRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_QueryAlertRule("GET", "/api/msp/apm/{tenantGroup}/alert-rules", srv.QueryAlertRule)
 	add_QueryAlert("GET", "/api/msp/apm/{tenantGroup}/alerts", srv.QueryAlert)
 	add_GetAlert("GET", "/api/msp/apm/{tenantGroup}/alerts/{id}", srv.GetAlert)
@@ -1467,4 +1543,6 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	add_CreateAlertRecordIssue("POST", "/api/msp/apm/{tenantGroup}/alert-records/{groupId}/issues", srv.CreateAlertRecordIssue)
 	add_UpdateAlertRecordIssue("PUT", "/api/msp/apm/{tenantGroup}/alert-records/{groupId}/issues", srv.UpdateAlertRecordIssue)
 	add_DashboardPreview("POST", "/api/msp/apm/{tenantGroup}/alert-records/custom-alerts/dash-preview/query", srv.DashboardPreview)
+	add_GetAlertConditions("GET", "/api/msp/apm/conditions", srv.GetAlertConditions)
+	add_GetAlertConditionsValue("POST", "/api/msp/apm/conditions/value", srv.GetAlertConditionsValue)
 }
