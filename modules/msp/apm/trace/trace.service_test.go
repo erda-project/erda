@@ -1185,3 +1185,50 @@ func Test_traceService_CreateTraceDebug(t *testing.T) {
 		})
 	}
 }
+
+func Test_calculateDepth(t *testing.T) {
+	type args struct {
+		spanTree query.SpanTree
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{name: "case1", args: args{spanTree: query.SpanTree{
+			"4f861481-0c15-4664-bce1-1be574270b8c": &pb.Span{Id: "4f861481-0c15-4664-bce1-1be574270b8c", ParentSpanId: "8b3a6fd6-5089-41c6-a4af-ce71e0b2a64f"},
+			"682cddc0-2b87-4927-8ee1-8cde1aa0c65c": &pb.Span{Id: "682cddc0-2b87-4927-8ee1-8cde1aa0c65c", ParentSpanId: "3cf58797-d350-4ad8-8486-2f19fb1a0bf5"},
+			"1ca09d00-c6c1-4f9a-ae0b-a633b623a8c4": &pb.Span{Id: "1ca09d00-c6c1-4f9a-ae0b-a633b623a8c4", ParentSpanId: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4"},
+			"8b3a6fd6-5089-41c6-a4af-ce71e0b2a64f": &pb.Span{Id: "8b3a6fd6-5089-41c6-a4af-ce71e0b2a64f", ParentSpanId: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4"},
+			"8cb8602c-26d7-4c6d-96a1-8a620479c21c": &pb.Span{Id: "8cb8602c-26d7-4c6d-96a1-8a620479c21c", ParentSpanId: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4"},
+			"498bb75f-8edd-4a79-a3dd-31ebeaa60ee4": &pb.Span{Id: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4", ParentSpanId: "                                    "},
+			"86d28c98-1399-4bf6-b214-dc3c8e1f413f": &pb.Span{Id: "86d28c98-1399-4bf6-b214-dc3c8e1f413f", ParentSpanId: "610b655f-ba97-4725-8c3f-e51f8430ac02"},
+			"52e75fdf-6d2c-48af-954c-c6b05b2c6cf2": &pb.Span{Id: "52e75fdf-6d2c-48af-954c-c6b05b2c6cf2", ParentSpanId: "566630e3-b0b1-4f76-ae6d-c53c62a5aa23"},
+			"9008cddd-cade-489b-a731-550bbfe50cff": &pb.Span{Id: "9008cddd-cade-489b-a731-550bbfe50cff", ParentSpanId: "6f7f569a-592f-43e7-be69-aaf8a1a2fa63"},
+			"566630e3-b0b1-4f76-ae6d-c53c62a5aa23": &pb.Span{Id: "566630e3-b0b1-4f76-ae6d-c53c62a5aa23", ParentSpanId: "6f7f569a-592f-43e7-be69-aaf8a1a2fa63"},
+			"6f7f569a-592f-43e7-be69-aaf8a1a2fa63": &pb.Span{Id: "6f7f569a-592f-43e7-be69-aaf8a1a2fa63", ParentSpanId: "                                    "},
+		}}, want: 3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			depth := int64(0)
+			if len(tt.args.spanTree) > 0 {
+				depth = int64(1)
+			}
+			for _, span := range tt.args.spanTree {
+				if span.ParentSpanId == span.Id {
+					span.ParentSpanId = ""
+				}
+				tempDepth := int64(1)
+				tempDepth = calculateDepth(tempDepth, span, tt.args.spanTree)
+				if tempDepth > depth {
+					depth = tempDepth
+				}
+			}
+			if depth != tt.want {
+				t.Errorf("This trace depth is %v, want %v", depth, tt.want)
+				return
+			}
+		})
+	}
+}
