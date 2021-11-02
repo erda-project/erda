@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
+	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition_client"

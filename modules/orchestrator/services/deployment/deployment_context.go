@@ -635,6 +635,10 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 		return err
 	}
 
+	if err := fsm.clearPreviousMySQLAccountState(); err != nil {
+		fsm.d.Log(fmt.Sprintf("clear previous MySQL Account fialed, error (%v)", err))
+	}
+
 	fsm.d.Log(`Deployment Is READY`)
 	fsm.Deployment.Status = apistructs.DeploymentStatusOK
 	now := time.Now()
@@ -1720,4 +1724,30 @@ func (fsm *DeployFSMContext) ExportLogInfoDetail(level apistructs.ErrorLogLevel,
 	}); err != nil {
 		logrus.Errorf("[ExportLogInfo] %v", err)
 	}
+}
+
+func (fsm *DeployFSMContext) clearPreviousMySQLAccountState() error {
+	attachments, err := fsm.db.GetAttachMentsByRuntimeID(fsm.Runtime.ID)
+	if err != nil {
+		return err
+	}
+	if attachments == nil {
+		return nil
+	}
+	var failedAccounts []string
+	for _, attach := range *attachments {
+		if attach.PreviousMySQLAccountID != "" && attach.MySQLAccountState == "PRE" {
+			attach.MySQLAccountState = "CUR"
+			if err := fsm.db.UpdateAttachment(&attach); err != nil {
+				failedAccounts = append(failedAccounts, attach.PreviousMySQLAccountID)
+				continue
+			}
+		}
+	}
+	if len(failedAccounts) > 0 {
+		errText := fmt.Sprintf("clear attach previous account failed: %v", failedAccounts)
+		fsm.d.Log(errText)
+		return errors.New(errText)
+	}
+	return nil
 }

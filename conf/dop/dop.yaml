@@ -26,12 +26,19 @@ etcd:
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.cms-client:
 
 grpc-client@erda.core.pipeline.definition:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+  block: false
 erda.core.pipeline.definition-client:
 erda.core.pipeline.definition-process-client:
+
+## orchestrator addon mysql
+grpc-client@erda.orchestrator.addon.mysql:
+  addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
+erda.orchestrator.addon.mysql-client:
 
 erda.core.dop.autotest.testplan:
 
@@ -162,13 +169,20 @@ component-protocol.components.test-report.table:
 component-protocol.components.test-report.createReportButton:
 
 
-## addon-account-manage
-component-protocol.components.addon-account-manage.accountTable:
-component-protocol.components.addon-account-manage.accountFormModal:
-component-protocol.components.addon-account-manage.addAccountButton:
-component-protocol.components.addon-account-manage.deleteModal:
-component-protocol.components.addon-account-manage.deleteTip:
-component-protocol.components.addon-account-manage.forceDeleteButton:
-component-protocol.components.addon-account-manage.referenceModal:
-component-protocol.components.addon-account-manage.referenceTable:
-component-protocol.components.addon-account-manage.referenceTip:
+## addon-mysql-account
+component-protocol.components.addon-mysql-account.accountTable:
+component-protocol.components.addon-mysql-account.addAccountButton:
+component-protocol.components.addon-mysql-account.filter:
+component-protocol.components.addon-mysql-account.root:
+component-protocol.components.addon-mysql-account.viewPassword:
+component-protocol.components.addon-mysql-account.viewPasswordModal:
+
+## addon-mysql-attachment
+component-protocol.components.addon-mysql-consumer.attachmentTable:
+component-protocol.components.addon-mysql-consumer.configContent:
+component-protocol.components.addon-mysql-consumer.configCopyParams:
+component-protocol.components.addon-mysql-consumer.configDrawer:
+component-protocol.components.addon-mysql-consumer.configPanel:
+component-protocol.components.addon-mysql-consumer.editFormModal:
+component-protocol.components.addon-mysql-consumer.filter:
+component-protocol.components.addon-mysql-consumer.root:

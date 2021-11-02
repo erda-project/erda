@@ -15,7 +15,8 @@
 package components
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-account-manage"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"

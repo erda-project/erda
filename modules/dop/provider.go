@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -51,6 +52,8 @@ type provider struct {
 	PipelineCms cmspb.CmsServiceServer      `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
 	PipelineDs  definition_client.Processor `autowired:"erda.core.pipeline.definition-process-client" optional:"true"`
 	TestPlanSvc *testplan.TestPlanService   `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
+
+	AddonMySQLSvc addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 
 	Protocol   componentprotocol.Interface
 	Tran       i18n.Translator  `translator:"component-protocol"`
@@ -92,6 +95,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bdl.Bdl)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	p.Log.Info("init component-protocol done")
+
+	p.Protocol.WithContextValue(types.AddonMySQLService, p.AddonMySQLSvc)
 
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,

@@ -1,0 +1,23 @@
+ALTER TABLE tb_addon_attachment
+    add column mysql_account_id varchar(36) NOT NULL DEFAULT '' COMMENT 'mysql account in use';
+ALTER TABLE tb_addon_attachment
+    add column previous_mysql_account_id varchar(36) NOT NULL DEFAULT '' COMMENT 'mysql account previously in use';
+ALTER TABLE tb_addon_attachment
+    add column mysql_account_state varchar(10) NOT NULL DEFAULT 'CUR' COMMENT 'use state of mysql account';
+
+CREATE TABLE `erda_addon_mysql_account`
+(
+    `id`                  varchar(36)  NOT NULL COMMENT 'primary key',
+    `created_at`          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'entity create time',
+    `updated_at`          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'entity update time',
+    `username`            varchar(100) NOT NULL COMMENT 'mysql username',
+    `password`            text         NOT NULL COMMENT 'mysql password',
+    `kms_key`             varchar(64)  NOT NULL DEFAULT '' COMMENT 'kms key id',
+    `instance_id`         varchar(64)  NOT NULL DEFAULT '' COMMENT 'real instance',
+    `routing_instance_id` varchar(64)  NOT NULL DEFAULT '' COMMENT 'routing instance',
+    `creator`             varchar(36)  NOT NULL COMMENT 'user who create',
+    `is_deleted`          TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'is deleted',
+    PRIMARY KEY (`id`),
+    KEY `idx_routing_instance_id` (`routing_instance_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT ='mysql account (tenant) for addon';

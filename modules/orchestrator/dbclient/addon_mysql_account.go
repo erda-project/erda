@@ -1,0 +1,71 @@
+package dbclient
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+)
+
+type MySQLAccount struct {
+	ID                string `gorm:"primary_key"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	Username          string
+	Password          string
+	KMSKey            string
+	InstanceID        string
+	RoutingInstanceID string
+	Creator           string
+	IsDeleted         bool
+}
+
+func (MySQLAccount) TableName() string {
+	return "erda_addon_mysql_account"
+}
+
+// GetMySQLAccountByID returns a MySQLAccount by ID
+func (db *DBClient) GetMySQLAccountByID(id string) (*MySQLAccount, error) {
+	var account MySQLAccount
+	err := db.Find(&account, "id = ? AND is_deleted = 0", id).Error
+	if err != nil {
+		return nil, errors.Wrapf(err, "GetMySQLAccountByID: %s", id)
+	}
+	return &account, nil
+}
+
+// GetMySQLAccountListByRoutingInstanceID returns a list of MySQLAccount for a given routing instance
+func (db *DBClient) GetMySQLAccountListByRoutingInstanceID(routingInstanceID string) ([]MySQLAccount, error) {
+	if routingInstanceID == "" {
+		return nil, nil
+	}
+	var accounts []MySQLAccount
+	if err := db.
+		Where("routing_instance_id = ?", routingInstanceID).
+		Where("is_deleted = 0").
+		Find(&accounts).Error; err != nil {
+		return nil, errors.Wrapf(err, "GetMySQLAccountListByRoutingInstanceID: %s", routingInstanceID)
+	}
+	return accounts, nil
+}
+
+// CreateMySQLAccount creates a new MySQLAccount
+func (db *DBClient) CreateMySQLAccount(account *MySQLAccount) error {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	account.ID = id.String()
+	if err := db.Create(account).Error; err != nil {
+		return errors.Wrapf(err, "CreateMySQLAccount: %+v", account)
+	}
+	return nil
+}
+
+// UpdateMySQLAccount updates an existing MySQLAccount
+func (db *DBClient) UpdateMySQLAccount(account *MySQLAccount) error {
+	if err := db.Save(account).Error; err != nil {
+		return errors.Wrapf(err, "UpdateMySQLAccount: %+v", account)
+	}
+	return nil
+}

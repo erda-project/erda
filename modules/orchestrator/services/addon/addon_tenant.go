@@ -116,7 +116,7 @@ func (a *Addon) CreateMysqlTenant(name string, addoninsRouting *dbclient.AddonIn
 	}
 	sqls = append(sqls, FLUSH)
 
-	addonconfig, err := a.getAddonConfig(addonins.ID)
+	addonconfig, err := a.getAddonConfig(addonins.ID, nil)
 	if err != nil {
 		return "", err
 	}

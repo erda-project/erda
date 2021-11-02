@@ -16,6 +16,8 @@ service-register:
 
 erda.orchestrator.runtime:
 erda.orchestrator.events:
+erda.orchestrator.addon.mysql:
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: ${MYSQL_PORT:3306}

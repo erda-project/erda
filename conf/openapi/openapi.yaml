@@ -73,7 +73,8 @@ openapi-v1-routes:
           - scenes-import-record
           - test-dashboard
           - test-report
-          - addon-account-manage
+          - addon-mysql-account
+          - addon-mysql-consumer
       - addr: http://localhost:8080
         scenarios:
           - demo

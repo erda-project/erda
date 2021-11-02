@@ -29,6 +29,11 @@ type AddonAttachment struct {
 	RoutingInstanceID string `gorm:"type:varchar(64)"` // AddonInstanceRouting 主键
 	TenantInstanceID  string `gorm:"type:varchar(64)"`
 
+	MySQLAccountID         string `gorm:"column:mysql_account_id"`
+	PreviousMySQLAccountID string `gorm:"column:previous_mysql_account_id"`
+	// MySQLAccountState CUR, PRE
+	MySQLAccountState string `gorm:"column:mysql_account_state"`
+
 	Options       string `gorm:"type:text"`
 	OrgID         string
 	ProjectID     string
@@ -125,6 +130,17 @@ func (db *DBClient) GetAttachmentCountByInstanceID(instanceID string) (int64, er
 		return 0, err
 	}
 	return total, nil
+}
+
+func (db *DBClient) GetAttachmentByID(id uint64) (*AddonAttachment, error) {
+	var addonAttachment AddonAttachment
+	if err := db.
+		Where("id = ?", id).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		First(&addonAttachment).Error; err != nil {
+		return nil, err
+	}
+	return &addonAttachment, nil
 }
 
 // GetAttachMentsByRuntimeID 根据runtimeID获取attachment信息
