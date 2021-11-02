@@ -228,6 +228,7 @@ func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCu
 		"Desc":       req.Desc,
 		"ViewConfig": string(blocks),
 		"DataConfig": string(data),
+		"UpdatedAt":  time.Now(),
 	})
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
