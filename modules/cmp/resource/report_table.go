@@ -184,8 +184,8 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 type ReportTableOption func(table *ReportTable)
 
 func ReportTableWithBundle(bdl *bundle.Bundle) ReportTableOption {
-	return func(theTable *ReportTable) {
-		theTable.bdl = bdl
+	return func(t *ReportTable) {
+		t.bdl = bdl
 	}
 }
 
@@ -193,13 +193,13 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(table *ReportTable) {
-		table.cmp = cmp
+	return func(t *ReportTable) {
+		t.cmp = cmp
 	}
 }
 
 func ReportTableWithTrans(trans i18n.Translator) ReportTableOption {
-	return func(table *ReportTable) {
-		table.trans = trans
+	return func(t *ReportTable) {
+		t.trans = trans
 	}
 }
