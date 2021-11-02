@@ -83,6 +83,9 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 
 // UpdateProject 更新项目
 func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	langCodes := i18n.Language(r)
+	ctx = context.WithValue(ctx, "lang_codes", langCodes)
+
 	// 获取当前用户
 	userID, err := user.GetUserID(r)
 	if err != nil {
@@ -161,7 +164,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 更新项目信息至DB
-	if err = e.project.UpdateWithEvent(orgID, projectID, userID.String(), &projectUpdateReq); err != nil {
+	if err = e.project.UpdateWithEvent(ctx, orgID, projectID, userID.String(), &projectUpdateReq); err != nil {
 		return apierrors.ErrUpdateProject.InternalError(err).ToResp(), nil
 	}
 
@@ -796,4 +799,14 @@ func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request,
 	}
 
 	return httpserver.OkResp(data)
+}
+
+// ListQuotaRecords is an internal API for bundle
+func (e *Endpoints) ListQuotaRecords(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	records, err := e.project.ListQuotaRecords(ctx)
+	if err != nil {
+		logrus.Errorf("failed to project.ListQuotaRecords: %v", err)
+		return apierrors.ErrListQuotaRecords.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(map[string]interface{}{"total": len(records), "list": records})
 }

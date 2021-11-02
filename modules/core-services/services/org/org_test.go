@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -97,11 +96,6 @@ func TestOrgNameRetriever(t *testing.T) {
 func TestWithI18n(t *testing.T) {
 	var trans i18n.Translator
 	New(WithI18n(trans))
-}
-
-func TestWithClusterResourceClient(t *testing.T) {
-	var cli dashboardPb.ClusterResourceServer
-	New(WithClusterResourceClient(cli))
 }
 
 func TestOrg_ListOrgs(t *testing.T) {
@@ -256,6 +250,26 @@ func TestGetAuditMessage(t *testing.T) {
 			apistructs.AuditMessage{
 				MessageZH: "开发环境开启封网 测试环境开启封网 预发环境关闭封网 生产环境关闭封网 ",
 				MessageEN: "block network opened in dev environment block network opened in test environment block network closed in staging environment block network closed in prod environment ",
+			},
+		},
+		{
+			model.Org{BlockoutConfig: model.BlockoutConfig{
+				BlockDEV:   true,
+				BlockTEST:  true,
+				BlockStage: true,
+				BlockProd:  true,
+			},
+				DisplayName: "dice", Locale: "en-US", IsPublic: true, Logo: "", Desc: ""},
+			apistructs.OrgUpdateRequestBody{BlockoutConfig: &apistructs.BlockoutConfig{
+				BlockDEV:   true,
+				BlockTEST:  true,
+				BlockStage: true,
+				BlockProd:  true,
+			},
+				DisplayName: "dice", Locale: "en-US", IsPublic: true, Logo: "", Desc: ""},
+			apistructs.AuditMessage{
+				MessageZH: "无信息变更",
+				MessageEN: "no message changed",
 			},
 		},
 	}

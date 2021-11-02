@@ -58,10 +58,25 @@ type (
 		RadarOption map[string]interface{} `json:"option"`
 		Style       Style                  `json:"style"`
 		Title       string                 `json:"title"`
+		Tip         []TipLine              `json:"tip"`
 	}
 	Style struct {
 		Height uint64 `json:"height"`
 	}
+	TipLine struct {
+		Text  string       `json:"text"`
+		Style TipLineStyle `json:"style"`
+	}
+	TipLineStyle struct {
+		FontWeight  FontWeight `json:"fontWeight,omitempty"`  // bold
+		PaddingLeft uint64     `json:"paddingLeft,omitempty"` // such as: 16
+	}
+	FontWeight string
+)
+
+const (
+	fontWeightBold   FontWeight = "bold"
+	fontWeightNormal FontWeight = ""
 )
 
 func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (e error) {
@@ -124,6 +139,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 		RadarOption: radar.JSON(),
 		Style:       Style{Height: 265},
 		Title:       cputil.I18n(ctx, "radar-total-quality-score"),
+		Tip:         genTip(ctx),
 	}
 
 	return nil

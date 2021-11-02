@@ -12,23 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package project
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	"github.com/erda-project/erda/bundle"
 )
 
-var CMDB_PROJECT_DETAIL = apis.ApiSpec{
-	Path:         "/api/projects/<projectIdOrName>",
-	BackendPath:  "/api/projects/<projectIdOrName>",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.ProjectDetailRequest{},
-	ResponseType: apistructs.ProjectDetailResponse{},
-	Doc:          "summary: 获取项目详情",
+type Project struct {
+	bdl   *bundle.Bundle
+	trans i18n.Translator
+	cmp   dashboardPb.ClusterResourceServer
+}
+
+func New(options ...Option) *Project {
+	p := new(Project)
+	for _, f := range options {
+		f(p)
+	}
+	return p
 }

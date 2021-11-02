@@ -17,39 +17,18 @@ package dop
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
-	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
-var CMDB_ORG_UPDATE = apis.ApiSpec{
-	Path:         "/api/orgs/<orgID>",
-	BackendPath:  "/api/orgs/<orgID>",
+var CMDB_PROJECT_DETAIL = apis.ApiSpec{
+	Path:         "/api/projects/<projectIdOrName>",
+	BackendPath:  "/api/projects/<projectIdOrName>",
 	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
-	Method:       "PUT",
+	Method:       "GET",
 	CheckLogin:   true,
 	CheckToken:   true,
 	IsOpenAPI:    true,
-	RequestType:  apistructs.OrgUpdateRequest{},
-	ResponseType: apistructs.OrgUpdateRequestBody{},
-	Doc:          "summary: 更新组织",
-	Audit: func(ctx *spec.AuditContext) error {
-		var (
-			resp struct{ Data apistructs.OrgDTO }
-		)
-		if err := ctx.BindResponseData(&resp); err != nil {
-			return err
-		}
-
-		return ctx.CreateAudit(&apistructs.Audit{
-			ScopeType:    apistructs.SysScope,
-			ScopeID:      1,
-			OrgID:        resp.Data.ID,
-			TemplateName: apistructs.UpdateOrgTemplateV2,
-			Context: map[string]interface{}{
-				"orgName":   resp.Data.Name,
-				"contentZH": resp.Data.AuditMessage.MessageZH,
-				"contentEN": resp.Data.AuditMessage.MessageEN,
-			},
-		})
-	},
+	RequestType:  apistructs.ProjectDetailRequest{},
+	ResponseType: apistructs.ProjectDetailResponse{},
+	Doc:          "summary: 获取项目详情",
 }

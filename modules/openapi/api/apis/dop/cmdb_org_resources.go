@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package dop
 
 import (
 	"net/http"
@@ -24,7 +24,7 @@ import (
 var CMDB_ORG_RESOURCE_GET = apis.ApiSpec{
 	Path:         "/api/orgs/actions/fetch-resources",
 	BackendPath:  "/api/orgs/actions/fetch-resources",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,
