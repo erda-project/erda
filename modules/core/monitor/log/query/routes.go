@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/recallsong/go-utils/reflectx"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
@@ -80,6 +82,8 @@ func (r *LogRequest) GetDebug() bool       { return r.Debug }
 
 var lineBreak = []byte("\n")
 
+const maxDownloadTimeRange = 1 * int64(time.Hour)
+
 func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogRequest) interface{} {
 	filename := getFilename(req)
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -92,7 +96,10 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 
 	var count int
 	err := p.logQueryService.walkLogItems(r.Context(), req,
-		func(sel *storage.Selector) *storage.Selector {
+		func(sel *storage.Selector) (*storage.Selector, error) {
+			if sel.End-sel.Start > maxDownloadTimeRange {
+				return sel, errors.NewInvalidParameterError("(start,end]", "time range is too large for download")
+			}
 			if len(req.ClusterName) > 0 {
 				sel.Filters = append(sel.Filters, &storage.Filter{
 					Key:   "tags.dice_cluster_name",
@@ -107,7 +114,7 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 					Value: req.ApplicationID,
 				})
 			}
-			return sel
+			return sel, nil
 		},
 		func(item *pb.LogItem) error {
 			w.Write(reflectx.StringToBytes(item.Content))

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/olivere/elastic"
@@ -33,12 +34,38 @@ import (
 )
 
 const useScrollQuery = false
+const useInMemContentFilter = true
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
 	indices := p.Loader.Indices(ctx, sel.Start, sel.End, loader.KeyPath{
 		Recursive: true,
 	})
+	var matcher func(data *pb.LogItem) bool
+	if useInMemContentFilter {
+		for _, filter := range sel.Filters {
+			val, _ := filter.Value.(string)
+			if filter.Key != "content" || len(val) <= 0 {
+				continue
+			}
+			switch filter.Op {
+			case storage.EQ:
+				matcher = func(data *pb.LogItem) bool {
+					return data.Content == val
+				}
+			case storage.REGEXP:
+				regex, err := regexp.Compile(val)
+				if err != nil {
+					p.Log.Debugf("invalid regexp %q", val)
+					return storekit.EmptyIterator{}, nil
+				}
+				matcher = func(data *pb.LogItem) bool {
+					return regex.MatchString(data.Content)
+				}
+			}
+		}
+	}
+
 	if useScrollQuery {
 		searchSource := getSearchSource(sel.Start, sel.End, sel)
 		if sel.Debug {
@@ -58,7 +85,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 				},
 			},
 			func() (*elastic.SearchSource, error) { return searchSource, nil },
-			decodeFunc(sel.Start, sel.End),
+			decodeFunc(sel.Start, sel.End, matcher),
 		)
 	}
 	if sel.Debug {
@@ -81,7 +108,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 		func() (*elastic.SearchSource, error) {
 			return getSearchSource(sel.Start, sel.End, sel), nil
 		},
-		decodeFunc(sel.Start, sel.End),
+		decodeFunc(sel.Start, sel.End, matcher),
 	)
 }
 
@@ -92,6 +119,11 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 		val, ok := filter.Value.(string)
 		if !ok {
 			continue
+		}
+		if useInMemContentFilter {
+			if filter.Key == "content" {
+				continue
+			}
 		}
 		switch filter.Op {
 		case storage.EQ:
@@ -105,7 +137,7 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 
 var skip = errors.New("skip")
 
-func decodeFunc(start, end int64) func(body []byte) (interface{}, error) {
+func decodeFunc(start, end int64, matcher func(data *pb.LogItem) bool) func(body []byte) (interface{}, error) {
 	return func(body []byte) (interface{}, error) {
 		var data log.Log
 		err := json.Unmarshal(body, &data)
@@ -115,7 +147,7 @@ func decodeFunc(start, end int64) func(body []byte) (interface{}, error) {
 		if data.Timestamp < start || data.Timestamp >= end {
 			return nil, skip
 		}
-		return &pb.LogItem{
+		item := &pb.LogItem{
 			Source:    data.Source,
 			Id:        data.ID,
 			Stream:    data.Stream,
@@ -124,6 +156,10 @@ func decodeFunc(start, end int64) func(body []byte) (interface{}, error) {
 			Content:   data.Content,
 			Level:     data.Tags["level"],
 			RequestId: data.Tags["request_id"],
-		}, nil
+		}
+		if matcher != nil && !matcher(item) {
+			return nil, skip
+		}
+		return item, nil
 	}
 }

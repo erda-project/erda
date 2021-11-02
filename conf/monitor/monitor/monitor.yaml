@@ -85,7 +85,6 @@ elasticsearch.index.retention-strategy@log:
 elasticsearch.index.cleaner@log:
   _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
   check_interval: "30m"
-  print_onluy: true
   disk_clean:
     enable: ${LOG_DISK_CLEAN_ENABLE:true}
     check_interval: "1m"
@@ -148,7 +147,6 @@ elasticsearch.index.retention-strategy@event:
 elasticsearch.index.cleaner@event:
   _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
   check_interval: "30m"
-  print_onluy: true
   disk_clean:
     enable: ${EVENT_DISK_CLEAN_ENABLE:true}
     check_interval: "1m"
@@ -197,7 +195,6 @@ elasticsearch.index.retention-strategy@metric:
     - "spot-<metric>-<namespace>.<key>-<timestamp>"
 elasticsearch.index.cleaner@metric:
   check_interval: "30m"
-  print_onluy: true
   disk_clean:
     enable: ${METRIC_DISK_CLEAN_ENABLE:true}
     check_interval: "1m"
