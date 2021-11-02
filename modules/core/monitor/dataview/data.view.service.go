@@ -220,15 +220,7 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 }
 
 func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCustomViewRequest) (*pb.UpdateCustomViewResponse, error) {
-	blocks, _ := json.Marshal(req.Blocks)
-	data, _ := json.Marshal(req.Data)
-	// TODO: support update some field
-	err := s.custom.UpdateView(req.Id, map[string]interface{}{
-		"Name":       req.Name,
-		"Desc":       req.Desc,
-		"ViewConfig": string(blocks),
-		"DataConfig": string(data),
-	})
+	err := s.custom.UpdateView(req.Id, fieldsForUpdate(req))
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
@@ -241,4 +233,16 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 		return nil, errors.NewDatabaseError(err)
 	}
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
+}
+
+func fieldsForUpdate(req *pb.UpdateCustomViewRequest) map[string]interface{} {
+	blocks, _ := json.Marshal(req.Blocks)
+	data, _ := json.Marshal(req.Data)
+	return map[string]interface{}{
+		"Name":       req.Name,
+		"Desc":       req.Desc,
+		"ViewConfig": string(blocks),
+		"DataConfig": string(data),
+		"UpdatedAt":  time.Now(),
+	}
 }
