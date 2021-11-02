@@ -31,8 +31,9 @@ import (
 )
 
 const (
-	etcdQueueWatchPrefix         = "/devops/pipeline/queue_manager/actions/update/"
-	etcdQueuePipelineWatchPrefix = "/devops/pipeline/queue_manager/actions/batch-update/"
+	etcdQueueWatchPrefix               = "/devops/pipeline/queue_manager/actions/update/"
+	etcdQueuePipelineWatchPrefix       = "/devops/pipeline/queue_manager/actions/batch-update/"
+	etcdQueuePopOutPipelineWatchPrefix = "/devops/pipeline/queue_manager/actions/pop-out-pipeline/"
 )
 
 var (
@@ -75,6 +76,18 @@ func (mgr *defaultManager) SendQueueToEtcd(queueID uint64) {
 	})
 }
 
+func (mgr *defaultManager) SendPopOutPipelineIDToEtcd(pipelineID uint64) {
+	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*60)).Do(func() (abort bool, err error) {
+		err = mgr.js.Put(context.Background(), fmt.Sprintf("%s%d", etcdQueuePopOutPipelineWatchPrefix, pipelineID), nil)
+		if err != nil {
+			logrus.Errorf("%s: send pop out pipeline to etcd failed, pipelineID: %d, err: %v", defaultQueueManagerLogPrefix, pipelineID, err)
+			return false, err
+		}
+		logrus.Infof("%s: send pop out pipeline to etcd successfully, pipelineID: %d", defaultQueueManagerLogPrefix, pipelineID)
+		return true, nil
+	})
+}
+
 func (mgr *defaultManager) SendUpdatePriorityPipelineIDsToEtcd(queueID uint64, pipelineIDS []uint64) {
 	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*60)).Do(func() (abort bool, err error) {
 		err = mgr.js.Put(context.Background(), fmt.Sprintf("%s%d", etcdQueuePipelineWatchPrefix, queueID), pipelineIDS)
@@ -99,7 +112,7 @@ func (mgr *defaultManager) ListenInputQueueFromEtcd(ctx context.Context) {
 				func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
 					go func() {
 						logrus.Infof("%s: watched a key change: %s, changeType", key, t.String())
-						queueID, err := parseQueueIDFromWatchedKey(key, etcdQueueWatchPrefix)
+						queueID, err := parseIDFromWatchedKey(key, etcdQueueWatchPrefix)
 						if err != nil {
 							logrus.Errorf("%s: failed to parse queueID from watched key, key: %s, err: %v", defaultQueueManagerLogPrefix, key, err)
 							return
@@ -133,7 +146,7 @@ func (mgr *defaultManager) ListenUpdatePriorityPipelineIDsFromEtcd(ctx context.C
 			_ = mgr.js.IncludeWatch().Watch(ctx, etcdQueuePipelineWatchPrefix, true, true, false, []uint64{},
 				func(key string, value interface{}, t storetypes.ChangeType) (_ error) {
 					logrus.Infof("%s: watched a key change: %s, value: %v, changeType", key, value, t.String())
-					queueID, err := parseQueueIDFromWatchedKey(key, etcdQueuePipelineWatchPrefix)
+					queueID, err := parseIDFromWatchedKey(key, etcdQueuePipelineWatchPrefix)
 					if err != nil {
 						logrus.Errorf("%s: failed to parse queueID from watched key, key: %s, err: %v", defaultQueueManagerLogPrefix, key, err)
 						return
@@ -164,7 +177,39 @@ func (mgr *defaultManager) ListenUpdatePriorityPipelineIDsFromEtcd(ctx context.C
 	}
 }
 
-func parseQueueIDFromWatchedKey(key string, prefixKey string) (uint64, error) {
-	pipelineIDStr := strutil.TrimPrefixes(key, prefixKey)
-	return strconv.ParseUint(pipelineIDStr, 10, 64)
+func (mgr *defaultManager) ListenPopOutPipelineIDFromEtcd(ctx context.Context) {
+	logrus.Infof("%s: start listen pop out pipeline id", defaultQueueManagerLogPrefix)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_ = mgr.js.IncludeWatch().Watch(ctx, etcdQueuePopOutPipelineWatchPrefix, true, true, true, nil,
+				func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
+					go func() {
+						defer func() {
+							if err := mgr.js.Remove(ctx, key, nil); err != nil {
+								logrus.Errorf("%s: failed to delete pop out pipeline key, key: %s, err: %v", defaultQueueManagerLogPrefix, key, err)
+							}
+						}()
+						logrus.Infof("%s: watched a key change: %s, changeType", key, t.String())
+						pipelineID, err := parseIDFromWatchedKey(key, etcdQueuePopOutPipelineWatchPrefix)
+						if err != nil {
+							logrus.Errorf("%s: failed to parse pipelineID from watched key, key: %s, err: %v", defaultQueueManagerLogPrefix, key, err)
+							return
+						}
+
+						mgr.PopOutPipelineFromQueue(pipelineID)
+						logrus.Infof("%s: pop out pipeline from queue successfully, pipeline id: %d", defaultQueueManagerLogPrefix, pipelineID)
+					}()
+
+					return nil
+				})
+		}
+	}
+}
+
+func parseIDFromWatchedKey(key string, prefixKey string) (uint64, error) {
+	IDStr := strutil.TrimPrefixes(key, prefixKey)
+	return strconv.ParseUint(IDStr, 10, 64)
 }

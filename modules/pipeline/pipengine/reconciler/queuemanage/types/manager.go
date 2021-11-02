@@ -34,5 +34,7 @@ type QueueManager interface {
 	ListenInputQueueFromEtcd(ctx context.Context)
 	SendUpdatePriorityPipelineIDsToEtcd(queueID uint64, pipelineIDS []uint64)
 	ListenUpdatePriorityPipelineIDsFromEtcd(ctx context.Context)
+	SendPopOutPipelineIDToEtcd(pipelineID uint64)
+	ListenPopOutPipelineIDFromEtcd(ctx context.Context)
 	snapshot.Snapshot
 }
