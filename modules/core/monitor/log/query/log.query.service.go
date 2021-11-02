@@ -99,7 +99,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	return items, nil
 }
 
-func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, walk func(item *pb.LogItem) error) error {
+func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
 	if req.GetCount() < 0 {
 		return errors.NewInvalidParameterError("count", "not allowed negative")
 	}
@@ -108,23 +108,21 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 		return err
 	}
 	if fn != nil {
-		fn(sel)
+		sel, err = fn(sel)
+		if err != nil {
+			return err
+		}
 	}
 	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {
 		return errors.NewInternalServerError(err)
 	}
 	defer it.Close()
-	num, limit := 0, getLimit(req.GetCount())
 	for it.Next() {
-		if num >= limit {
-			break
-		}
 		log, ok := it.Value().(*pb.LogItem)
 		if !ok {
 			continue
 		}
-		num++
 		err := walk(log)
 		if err != nil {
 			return err
