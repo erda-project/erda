@@ -43,11 +43,11 @@ type DailyQuotaCollector struct {
 }
 
 func NewDailyQuotaCollector(opts ...DailyQuotaCollectorOption) *DailyQuotaCollector {
-	var d DailyQuotaCollector
-	for _, opt := range opts {
-		opt(&d)
+	var collector DailyQuotaCollector
+	for _, f := range opts {
+		f(&collector)
 	}
-	return &d
+	return &collector
 }
 
 func (d *DailyQuotaCollector) Task() (bool, error) {
@@ -98,6 +98,8 @@ func (d *DailyQuotaCollector) Task() (bool, error) {
 		err = errors.Wrap(err, "failed to collectClusterDaily")
 		logrus.WithError(err).WithField("clusters", clusterNames).Errorln()
 	}
+
+	d.clearExpire()
 
 	return false, nil
 }
@@ -253,17 +255,27 @@ func (d *DailyQuotaCollector) collectClusterDaily(clusterNames []string) error {
 	return nil
 }
 
-type DailyQuotaCollectorOption func(collector *DailyQuotaCollector)
-
-func DailyQuotaCollectorWithDBClient(client *dbclient.DBClient) DailyQuotaCollectorOption {
-	return func(collector *DailyQuotaCollector) {
-		collector.db = client
+func (d *DailyQuotaCollector) clearExpire() {
+	lastYear := time.Now().AddDate(-1, 0, 0).Format("2006-01-02 00:00:00")
+	if err := d.db.Where("created_at < ?", lastYear).Delete(new(apistructs.ClusterResourceDailyModel)).Error; err != nil {
+		logrus.Warnln("failed to clear expire data from ClusterResourceDailyModel")
+	}
+	if err := d.db.Where("created_at < ?", lastYear).Delete(new(apistructs.ProjectResourceDailyModel)).Error; err != nil {
+		logrus.Warnln("failed to clear expire data from ProjectResourceDailyModel")
 	}
 }
 
-func DailyQuotaCollectorWithBundle(bdl *bundle.Bundle) DailyQuotaCollectorOption {
-	return func(collector *DailyQuotaCollector) {
-		collector.bdl = bdl
+type DailyQuotaCollectorOption func(collector *DailyQuotaCollector)
+
+func DailyQuotaCollectorWithDBClient(db *dbclient.DBClient) DailyQuotaCollectorOption {
+	return func(daily *DailyQuotaCollector) {
+		daily.db = db
+	}
+}
+
+func DailyQuotaCollectorWithBundle(bndl *bundle.Bundle) DailyQuotaCollectorOption {
+	return func(daily *DailyQuotaCollector) {
+		daily.bdl = bndl
 	}
 }
 
@@ -273,7 +285,7 @@ func DailyQuotaCollectorWithCMPAPI(cmp interface {
 	GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error)
 	GetAllClusters() []string
 }) DailyQuotaCollectorOption {
-	return func(collector *DailyQuotaCollector) {
-		collector.cmp = cmp
+	return func(daily *DailyQuotaCollector) {
+		daily.cmp = cmp
 	}
 }

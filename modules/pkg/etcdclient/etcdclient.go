@@ -94,10 +94,10 @@ func NewEtcdClient() (*clientv3.Client, error) {
 	return cli, err
 }
 
-func getEnvOrDefault(env, v string) string {
-	t := os.Getenv(env)
-	if t == "" {
-		return v
+func getEnvOrDefault(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
 	}
-	return t
+
+	return defaultVal
 }

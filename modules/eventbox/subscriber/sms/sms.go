@@ -23,6 +23,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
@@ -76,11 +77,25 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		logrus.Errorf("failed to get org info err:%s", err)
 	}
 
+	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mobileData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE)
+	if err != nil {
+		logrus.Errorf("failed to get notifychannel, err: %s", err)
+	}
+
+	if notifyChannel.ChannelProviderType.Name != "" && notifyChannel.ChannelProviderType.Name != apistructs.NOTIFY_CHANNEL_PROVIDER_TYPE_ALIYUN {
+		logrus.Errorf("do not support channel provider: %s", notifyChannel.ChannelProviderType.Name)
+	}
+
 	accessKeyID, accessSecret, signName := d.accessKeyId, d.accessSecret, d.signName
 	if err == nil && org.Config != nil && org.Config.SMSKeyID != "" && org.Config.SMSKeySecret != "" {
 		accessKeyID = org.Config.SMSKeyID
 		accessSecret = org.Config.SMSKeySecret
 		signName = org.Config.SMSSignName
+	}
+	if err == nil && notifyChannel.Config != nil && notifyChannel.Config.AccessKeyId != "" && notifyChannel.Config.AccessKeySecret != "" {
+		accessKeyID = notifyChannel.Config.AccessKeyId
+		accessSecret = notifyChannel.Config.AccessKeySecret
+		signName = notifyChannel.Config.SignName
 	}
 
 	sdkClient, err := sdk.NewClientWithAccessKey("cn-hangzhou", accessKeyID, accessSecret)
@@ -95,6 +110,9 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		templateCode = d.monitorTemplateCode
 		if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
 			templateCode = org.Config.SMSMonitorTemplateCode
+		}
+		if err == nil && notifyChannel.Config != nil && notifyChannel.Config.TemplateCode != "" {
+			templateCode = notifyChannel.Config.TemplateCode
 		}
 	}
 

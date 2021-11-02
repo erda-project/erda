@@ -41,7 +41,7 @@ func (client *DBClient) DeleteProject(projectID int64) error {
 }
 
 func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
-	return client.Delete(new(model.ProjectQuota), map[string]interface{}{"project_id": projectID}).Error
+	return client.Delete(new(apistructs.ProjectQuota), map[string]interface{}{"project_id": projectID}).Error
 }
 
 // GetProjectByID 根据projectID获取项目信息
@@ -54,6 +54,18 @@ func (client *DBClient) GetProjectByID(projectID int64) (model.Project, error) {
 		return project, err
 	}
 	return project, nil
+}
+
+func (client *DBClient) GetQuotaByProjectID(projectID int64) (*apistructs.ProjectQuota, error) {
+	var quota = new(apistructs.ProjectQuota)
+	err := client.First(quota, map[string]interface{}{"project_id": projectID}).Error
+	if err == nil {
+		return quota, nil
+	}
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, nil
+	}
+	return nil, err
 }
 
 // GetProjectsByOrgIDAndName 根据orgID与名称获取项目列表

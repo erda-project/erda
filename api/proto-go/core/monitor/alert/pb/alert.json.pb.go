@@ -201,6 +201,8 @@ var _ json.Marshaler = (*GetOrgAlertDetailResponse)(nil)
 var _ json.Unmarshaler = (*GetOrgAlertDetailResponse)(nil)
 var _ json.Marshaler = (*CreateOrgAlertRequest)(nil)
 var _ json.Unmarshaler = (*CreateOrgAlertRequest)(nil)
+var _ json.Marshaler = (*TriggerCondition)(nil)
+var _ json.Unmarshaler = (*TriggerCondition)(nil)
 var _ json.Marshaler = (*CreateOrgAlertResponse)(nil)
 var _ json.Unmarshaler = (*CreateOrgAlertResponse)(nil)
 var _ json.Marshaler = (*UpdateOrgAlertRequest)(nil)
@@ -277,6 +279,18 @@ var _ json.Marshaler = (*UpdateOrgAlertIssueRequest)(nil)
 var _ json.Unmarshaler = (*UpdateOrgAlertIssueRequest)(nil)
 var _ json.Marshaler = (*UpdateOrgAlertIssueResponse)(nil)
 var _ json.Unmarshaler = (*UpdateOrgAlertIssueResponse)(nil)
+var _ json.Marshaler = (*GetAlertConditionsRequest)(nil)
+var _ json.Unmarshaler = (*GetAlertConditionsRequest)(nil)
+var _ json.Marshaler = (*GetAlertConditionsResponse)(nil)
+var _ json.Unmarshaler = (*GetAlertConditionsResponse)(nil)
+var _ json.Marshaler = (*Conditions)(nil)
+var _ json.Unmarshaler = (*Conditions)(nil)
+var _ json.Marshaler = (*GetAlertConditionsValueRequest)(nil)
+var _ json.Unmarshaler = (*GetAlertConditionsValueRequest)(nil)
+var _ json.Marshaler = (*GetAlertConditionsValueResponse)(nil)
+var _ json.Unmarshaler = (*GetAlertConditionsValueResponse)(nil)
+var _ json.Marshaler = (*AlertConditionsValue)(nil)
+var _ json.Unmarshaler = (*AlertConditionsValue)(nil)
 
 // QueryCustomizeMetricRequest implement json.Marshaler.
 func (m *QueryCustomizeMetricRequest) MarshalJSON() ([]byte, error) {
@@ -1970,6 +1984,24 @@ func (m *CreateOrgAlertRequest) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// TriggerCondition implement json.Marshaler.
+func (m *TriggerCondition) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TriggerCondition implement json.Marshaler.
+func (m *TriggerCondition) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // CreateOrgAlertResponse implement json.Marshaler.
 func (m *CreateOrgAlertResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -2649,6 +2681,114 @@ func (m *UpdateOrgAlertIssueResponse) MarshalJSON() ([]byte, error) {
 
 // UpdateOrgAlertIssueResponse implement json.Marshaler.
 func (m *UpdateOrgAlertIssueResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertConditionsRequest implement json.Marshaler.
+func (m *GetAlertConditionsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertConditionsRequest implement json.Marshaler.
+func (m *GetAlertConditionsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertConditionsResponse implement json.Marshaler.
+func (m *GetAlertConditionsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertConditionsResponse implement json.Marshaler.
+func (m *GetAlertConditionsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Conditions implement json.Marshaler.
+func (m *Conditions) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Conditions implement json.Marshaler.
+func (m *Conditions) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertConditionsValueRequest implement json.Marshaler.
+func (m *GetAlertConditionsValueRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertConditionsValueRequest implement json.Marshaler.
+func (m *GetAlertConditionsValueRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertConditionsValueResponse implement json.Marshaler.
+func (m *GetAlertConditionsValueResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertConditionsValueResponse implement json.Marshaler.
+func (m *GetAlertConditionsValueResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AlertConditionsValue implement json.Marshaler.
+func (m *AlertConditionsValue) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AlertConditionsValue implement json.Marshaler.
+func (m *AlertConditionsValue) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

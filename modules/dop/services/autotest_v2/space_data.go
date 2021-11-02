@@ -493,54 +493,49 @@ func (a *AutoTestSpaceData) Copy() (*apistructs.AutoTestSpace, error) {
 		return nil, err
 	}
 
-	go func() {
-		var err error
-
-		defer func() {
-			// unlock source space
-			if a.IsCopy {
-				if err := a.unlockSourceSpace(); err != nil {
-					logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-					return
-				}
+	defer func() {
+		// unlock source space
+		if a.IsCopy {
+			if err := a.unlockSourceSpace(); err != nil {
+				logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+				return
 			}
-			if err != nil {
-				a.NewSpace.Status = apistructs.TestSpaceFailed
-				if _, err := a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
-					logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-					return
-				}
+		}
+		if err != nil {
+			a.NewSpace.Status = apistructs.TestSpaceFailed
+			if _, err := a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
+				logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+				return
 			}
-		}()
-
-		if err = a.CopySceneSets(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
 		}
-		if err = a.CopyScenes(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		if err = a.CopySceneSteps(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		if err = a.CopyInputs(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		if err = a.CopyOutputs(); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		a.NewSpace.Status = apistructs.TestSpaceOpen
-		if _, err = a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-
-		return
 	}()
+
+	if err = a.CopySceneSets(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopyScenes(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopySceneSteps(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopyInputs(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	if err = a.CopyOutputs(); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+	a.NewSpace.Status = apistructs.TestSpaceOpen
+	if _, err = a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
+		logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+		return a.NewSpace, err
+	}
+
 	return a.NewSpace, nil
 }
 
@@ -710,6 +705,15 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 				return err
 			}
 			a.stepIDAssociationMap[each.ID] = newStep.ID
+			// replace value again because loop strategy may use self id
+			tmpValue := replacePreStepValue(newStep.Value, a.stepIDAssociationMap)
+			if tmpValue != newStep.Value {
+				newStep.Value = tmpValue
+				if err = a.svc.db.UpdateAutotestSceneStep(newStep); err != nil {
+					return err
+				}
+			}
+
 			head = newStep.ID
 			pHead := newStep.ID
 
@@ -733,6 +737,14 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 				}
 				pHead = newPStep.ID
 				a.stepIDAssociationMap[pv.ID] = newPStep.ID
+				// replace value again because loop strategy may use self id
+				tmpValue = replacePreStepValue(newPStep.Value, a.stepIDAssociationMap)
+				if tmpValue != newPStep.Value {
+					newPStep.Value = tmpValue
+					if err = a.svc.db.UpdateAutotestSceneStep(newPStep); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

@@ -15,17 +15,28 @@
 package cputil
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 )
 
 // ParseWorkloadStatus get status for workloads from .metadata.fields
@@ -192,4 +203,169 @@ func IsJsonEqual(objA, objB interface{}) (bool, error) {
 	fmt.Printf("objA:\n%s\n", string(dataA))
 	fmt.Printf("objB:\n%s\n", string(dataB))
 	return false, nil
+}
+
+// GetImpersonateClient authenticate user by steve server and return an impersonate k8s client
+func GetImpersonateClient(steveServer cmp.SteveServer, userID, orgID, clusterName string) (*k8sclient.K8sClient, error) {
+	user, err := steveServer.Auth(userID, orgID, clusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := k8sclient.GetRestConfig(clusterName)
+	if err != nil {
+		return nil, errors.Errorf("failed to get rest config for cluster %s, %v", clusterName, err)
+	}
+
+	// impersonate user
+	config.Impersonate.UserName = user.GetName()
+	config.Impersonate.Groups = user.GetGroups()
+	config.Impersonate.Extra = user.GetExtra()
+
+	client, err := k8sclient.NewForRestConfig(config, scheme.LocalSchemeBuilder...)
+	if err != nil {
+		return nil, errors.Errorf("failed to get k8s client, %v", err)
+	}
+	return client, nil
+}
+
+const (
+	ProjectsDisplayNameCache = "projectDisplayName"
+	NamespacesCache          = "allNamespaces"
+)
+
+func getAllProjectsDisplayName(bdl *bundle.Bundle, orgID string) (map[uint64]string, error) {
+	scopeID, err := strconv.ParseUint(orgID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InvalidParameter(fmt.Sprintf("invalid org id %s, %v", orgID, err))
+	}
+	projects, err := bdl.GetAllProjects()
+	if err != nil {
+		return nil, err
+	}
+
+	id2displayName := make(map[uint64]string)
+	for _, project := range projects {
+		if project.OrgID != scopeID {
+			continue
+		}
+		id2displayName[project.ID] = project.DisplayName
+	}
+	return id2displayName, nil
+}
+
+// GetAllProjectsDisplayNameFromCache get all projects in org and return a project id to project display name map with cache
+func GetAllProjectsDisplayNameFromCache(bdl *bundle.Bundle, orgID string) (map[uint64]string, error) {
+	logrus.Infof("start get all projects display name")
+	defer func() {
+		logrus.Infof("end get all projects display name")
+	}()
+	cacheKey := cache.GenerateKey(orgID, ProjectsDisplayNameCache)
+	values, expired, err := cache.GetFreeCache().Get(cacheKey)
+	if err != nil {
+		return nil, errors.Errorf("failed to get project displayName from cache, %v", err)
+	}
+	if values == nil {
+		id2displayName, err := getAllProjectsDisplayName(bdl, orgID)
+		if err != nil {
+			return nil, err
+		}
+		values, err := cache.GetInterfaceValue(id2displayName)
+		if err != nil {
+			return nil, errors.Errorf("failed to marshal cache value for projects dispalyName, %v", err)
+		}
+		if err := cache.GetFreeCache().Set(cacheKey, values, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for projects displayName, %v", err)
+		}
+		return id2displayName, nil
+	}
+	if expired {
+		go func() {
+			id2displayName, err := getAllProjectsDisplayName(bdl, orgID)
+			if err != nil {
+				logrus.Errorf("failed to get all projects displayName in goroutine, %v", err)
+				return
+			}
+			values, err := cache.GetInterfaceValue(id2displayName)
+			if err != nil {
+				logrus.Errorf("failed to marshal cache value for projects displayName in goroutine, %v", err)
+				return
+			}
+			if err := cache.GetFreeCache().Set(cacheKey, values, time.Second.Nanoseconds()*30); err != nil {
+				logrus.Errorf("failed to set cache for projects displayName in goroutinue, %v", err)
+				return
+			}
+		}()
+	}
+	id2displayName := values[0].Value().(map[uint64]string)
+	return id2displayName, nil
+}
+
+func getAllNamespaces(ctx context.Context, steveServer cmp.SteveServer, userID, orgID, clusterName string) ([]string, error) {
+	client, err := GetImpersonateClient(steveServer, userID, orgID, clusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	var namespaces []string
+	list, err := client.ClientSet.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, namespace := range list.Items {
+		namespaces = append(namespaces, namespace.Name)
+	}
+	return namespaces, nil
+}
+
+// GetAllNamespacesFromCache get all namespaces name list by k8s client with cache
+func GetAllNamespacesFromCache(ctx context.Context, steveServer cmp.SteveServer, userID, orgID, clusterName string) ([]string, error) {
+	logrus.Infof("start get all namespaces")
+	defer func() {
+		logrus.Infof("end get all namespaces")
+	}()
+	cacheKey := cache.GenerateKey(clusterName, NamespacesCache)
+	values, expired, err := cache.GetFreeCache().Get(cacheKey)
+	if err != nil {
+		return nil, errors.Errorf("failed to get namespaces from cache, %v", err)
+	}
+	if values == nil {
+		namespaces, err := getAllNamespaces(ctx, steveServer, userID, orgID, clusterName)
+		if err != nil {
+			return nil, err
+		}
+		comb := strings.Join(namespaces, ",")
+		value, err := cache.GetStringValue(comb)
+		if err != nil {
+			return nil, errors.Errorf("failed to get cache string value, %v", err)
+		}
+		if err := cache.GetFreeCache().Set(cacheKey, value, time.Second.Nanoseconds()*30); err != nil {
+			logrus.Errorf("failed to set cache for all namespaces, %v", err)
+		}
+		return namespaces, nil
+	}
+	if expired {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+			defer cancel()
+			namespaces, err := getAllNamespaces(ctx, steveServer, userID, orgID, clusterName)
+			if err != nil {
+				logrus.Errorf("failed to get all namespaces from cahce in goroutine, %v", err)
+				return
+			}
+			comb := strings.Join(namespaces, ",")
+			value, err := cache.GetStringValue(comb)
+			if err != nil {
+				logrus.Errorf("failed to get cache string value in goroutine, %v", err)
+				return
+			}
+			if err := cache.GetFreeCache().Set(cacheKey, value, time.Second.Nanoseconds()*30); err != nil {
+				logrus.Errorf("failed to set cache for all namespaces, %v", err)
+			}
+		}()
+	}
+	comb := values[0].String()
+	namespaces := strings.Split(comb, ",")
+	return namespaces, nil
 }

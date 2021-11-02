@@ -58,10 +58,25 @@ type (
 		RadarOption map[string]interface{} `json:"option"`
 		Style       Style                  `json:"style"`
 		Title       string                 `json:"title"`
+		Tip         []TipLine              `json:"tip"`
 	}
 	Style struct {
 		Height uint64 `json:"height"`
 	}
+	TipLine struct {
+		Text  string       `json:"text"`
+		Style TipLineStyle `json:"style"`
+	}
+	TipLineStyle struct {
+		FontWeight  FontWeight `json:"fontWeight,omitempty"`  // bold
+		PaddingLeft uint64     `json:"paddingLeft,omitempty"` // such as: 16
+	}
+	FontWeight string
+)
+
+const (
+	fontWeightBold   FontWeight = "bold"
+	fontWeightNormal FontWeight = ""
 )
 
 func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (e error) {
@@ -124,6 +139,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 		RadarOption: radar.JSON(),
 		Style:       Style{Height: 265},
 		Title:       cputil.I18n(ctx, "radar-total-quality-score"),
+		Tip:         genTip(ctx),
 	}
 
 	return nil
@@ -238,29 +254,31 @@ func (q *Q) calcCodeCoverage(ctx context.Context, h *gshelper.GSHelper) decimal.
 }
 
 // score = 100 - reopen_rate*100
-// reopen_rate =
+// reopen_rate = reopen_count / total_count
 // value range: 0-100
 func (q *Q) calcBugReopenRate(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
 	reopenCount, totalCount, err := q.dbClient.BugReopenCount(q.projectID, h.GetGlobalSelectedIterationIDs())
 	if err != nil {
 		panic(err)
 	}
+
+	// reopen_rate
+	var reopenRate decimal.Decimal
 	if totalCount == 0 {
-		return decimal.NewFromInt(0)
+		reopenRate = decimal.NewFromInt(0)
+	} else {
+		reopenRate = decimal.NewFromInt(int64(reopenCount)).Div(decimal.NewFromInt(int64(totalCount)))
 	}
-	score := decimal.NewFromInt(int64(reopenCount)).Div(decimal.NewFromInt(int64(totalCount))).Mul(decimal.NewFromInt(100))
+
+	// score = 100 - reopen_rate*100
+	score := decimal.NewFromInt(100).Sub(reopenRate.Mul(decimal.NewFromInt(100)))
 	return score
 }
 
 // polishToFloat64Score set precision to 2, range from 0-100
 func polishToFloat64Score(scoreDecimal decimal.Decimal) float64 {
+	scoreDecimal = polishScore(scoreDecimal)
 	score, _ := scoreDecimal.Float64()
-	if score < 0 {
-		score = 0
-	}
-	if score > 100 {
-		score = 100
-	}
 	return numeral.Round(score, 2)
 }
 
@@ -271,9 +289,20 @@ func (q *Q) calcGlobalQualityScore(ctx context.Context, scores ...decimal.Decima
 	}
 	total := decimal.NewFromInt(0)
 	for _, score := range scores {
-		total = total.Add(score)
+		total = total.Add(polishScore(score))
 	}
 	var avg decimal.Decimal
 	avg = total.Div(decimal.NewFromInt(int64(len(scores))))
 	return avg
+}
+
+// polishScore range from 0-100
+func polishScore(scoreDecimal decimal.Decimal) decimal.Decimal {
+	if scoreDecimal.LessThan(decimal.NewFromInt(0)) {
+		scoreDecimal = decimal.NewFromInt(0)
+	}
+	if scoreDecimal.GreaterThan(decimal.NewFromInt(100)) {
+		scoreDecimal = decimal.NewFromInt(100)
+	}
+	return scoreDecimal
 }

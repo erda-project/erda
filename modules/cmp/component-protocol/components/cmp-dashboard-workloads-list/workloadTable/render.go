@@ -88,12 +88,12 @@ func (w *ComponentWorkloadTable) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
 	w.State.PageNo = uint64(query["pageNo"].(float64))
@@ -105,11 +105,11 @@ func (w *ComponentWorkloadTable) DecodeURLQuery() error {
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = w.State.PageNo
-	query["pageSize"] = w.State.PageSize
-	query["sorterData"] = w.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = w.State.PageNo
+	urlQuery["pageSize"] = w.State.PageSize
+	urlQuery["sorterData"] = w.State.Sorter
+	data, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
@@ -126,16 +126,16 @@ func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
 	w.server = steveServer
 }
 
-func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	w.State = state
@@ -212,6 +212,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -282,6 +283,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -354,6 +356,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -424,6 +427,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -489,6 +493,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -805,12 +810,12 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
-	component.Props = w.Props
-	component.Data = map[string]interface{}{
+func (w *ComponentWorkloadTable) Transfer(c *cptype.Component) {
+	c.Props = w.Props
+	c.Data = map[string]interface{}{
 		"list": w.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName":             w.State.ClusterName,
 		"countValues":             w.State.CountValues,
 		"pageNo":                  w.State.PageNo,
@@ -820,7 +825,7 @@ func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
 		"values":                  w.State.Values,
 		"workloadTable__urlQuery": w.State.WorkloadTableURLQuery,
 	}
-	component.Operations = w.Operations
+	c.Operations = w.Operations
 }
 
 func getWorkloadKindMap(kinds []string) map[string]struct{} {

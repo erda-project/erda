@@ -36,12 +36,12 @@ func (s ServiceGroupImpl) Update(req apistructs.ServiceGroupUpdateV2Request) (ap
 	}
 	diffAndPatchRuntime(&sg, &oldSg)
 
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
+	oldSg.Labels = appendServiceTags(oldSg.Labels, oldSg.Executor)
+	if _, err := s.handleServiceGroup(context.Background(), &oldSg, task.TaskUpdate); err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
 
-	oldSg.Labels = appendServiceTags(oldSg.Labels, oldSg.Executor)
-	if _, err := s.handleServiceGroup(context.Background(), &oldSg, task.TaskUpdate); err != nil {
+	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
 	return oldSg, nil

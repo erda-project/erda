@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -40,10 +42,21 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		err   error
 	)
 
+	// get user info
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
+	}
+	orgIDStr, err := GetOrgIDStr(req)
+	if err != nil {
+		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
+	}
+	// check permission
+	err = PermissionCheck(am.bundle, userID, orgIDStr, "", apistructs.GetAction)
+	if err != nil {
+		logrus.Errorf("list cluster failed, error: %v", err)
+		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 	}
 
 	clusterType := req.URL.Query().Get("clusterType")

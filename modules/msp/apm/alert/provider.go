@@ -93,6 +93,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(AlertService.CreateAlertRecordIssue, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.MPerm.TenantToProjectID("TenantGroup", "TenantID")),
 			perm.Method(AlertService.UpdateAlertRecordIssue, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.MPerm.TenantToProjectID("TenantGroup", "TenantID")),
 			perm.Method(AlertService.DashboardPreview, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.MPerm.TenantToProjectID("TenantGroup", "TenantID")),
+			perm.NoPermMethod(AlertService.GetAlertConditions),
+			perm.NoPermMethod(AlertService.GetAlertConditionsValue),
 		))
 	}
 	return nil

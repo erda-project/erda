@@ -12,24 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package cmp
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_ORG_RESOURCE_GET = apis.ApiSpec{
-	Path:         "/api/orgs/actions/fetch-resources",
-	BackendPath:  "/api/orgs/actions/fetch-resources",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	ResponseType: apistructs.OrgResourceInfo{},
-	IsOpenAPI:    true,
-	Doc:          "summary: 获取企业资源使用",
+var CMP_ALERT_CONDITIONS_VALUE = apis.ApiSpec{
+	Path:        "/api/cmp/alerts/conditions/value",
+	BackendPath: "/api/cmp/alerts/conditions/value",
+	Host:        "cmp.marathon.l4lb.thisdcos.directory:9028",
+	CheckLogin:  true,
+	Scheme:      "http",
+	Method:      "GET",
 }

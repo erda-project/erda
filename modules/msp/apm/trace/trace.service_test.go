@@ -321,63 +321,6 @@ func Test_traceService_GetTraceDebugByRequestID(t *testing.T) {
 	}
 }
 
-func Test_traceService_CreateTraceDebug(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.CreateTraceDebugRequest
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.CreateTraceDebugResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.msp.apm.trace.TraceService",
-		//			`
-		//erda.msp.apm.trace:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.CreateTraceDebugRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.CreateTraceDebugResponse{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.TraceServiceServer)
-			got, err := srv.CreateTraceDebug(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.CreateTraceDebug() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
-
 func Test_traceService_StopTraceDebug(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -1211,6 +1154,81 @@ func Test_traceService_handleSpanEventResponse(t *testing.T) {
 			events := s.handleSpanEventResponse(tt.args.req)
 			assert.Equal(t, len(events), len(tt.wantResp))
 			assert.Equal(t, events[0].Timestamp, tt.wantResp[0].Timestamp)
+		})
+	}
+}
+
+func Test_traceService_CreateTraceDebug(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		req *pb.CreateTraceDebugRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.CreateTraceDebugRequest{}}, true},
+		{"case2", args{req: &pb.CreateTraceDebugRequest{Url: "http://localhost:8080"}}, true},
+		{"case3", args{req: &pb.CreateTraceDebugRequest{Url: "http://localhost:8080", ScopeID: "xx"}}, true},
+		{"case4", args{req: &pb.CreateTraceDebugRequest{Url: "xxxxx", ScopeID: "xx", Method: "GET"}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{}
+			_, err := s.CreateTraceDebug(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_calculateDepth(t *testing.T) {
+	type args struct {
+		spanTree query.SpanTree
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{name: "case1", args: args{spanTree: query.SpanTree{
+			"4f861481-0c15-4664-bce1-1be574270b8c": &pb.Span{Id: "4f861481-0c15-4664-bce1-1be574270b8c", ParentSpanId: "8b3a6fd6-5089-41c6-a4af-ce71e0b2a64f"},
+			"682cddc0-2b87-4927-8ee1-8cde1aa0c65c": &pb.Span{Id: "682cddc0-2b87-4927-8ee1-8cde1aa0c65c", ParentSpanId: "3cf58797-d350-4ad8-8486-2f19fb1a0bf5"},
+			"1ca09d00-c6c1-4f9a-ae0b-a633b623a8c4": &pb.Span{Id: "1ca09d00-c6c1-4f9a-ae0b-a633b623a8c4", ParentSpanId: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4"},
+			"8b3a6fd6-5089-41c6-a4af-ce71e0b2a64f": &pb.Span{Id: "8b3a6fd6-5089-41c6-a4af-ce71e0b2a64f", ParentSpanId: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4"},
+			"8cb8602c-26d7-4c6d-96a1-8a620479c21c": &pb.Span{Id: "8cb8602c-26d7-4c6d-96a1-8a620479c21c", ParentSpanId: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4"},
+			"498bb75f-8edd-4a79-a3dd-31ebeaa60ee4": &pb.Span{Id: "498bb75f-8edd-4a79-a3dd-31ebeaa60ee4", ParentSpanId: "                                    "},
+			"86d28c98-1399-4bf6-b214-dc3c8e1f413f": &pb.Span{Id: "86d28c98-1399-4bf6-b214-dc3c8e1f413f", ParentSpanId: "610b655f-ba97-4725-8c3f-e51f8430ac02"},
+			"52e75fdf-6d2c-48af-954c-c6b05b2c6cf2": &pb.Span{Id: "52e75fdf-6d2c-48af-954c-c6b05b2c6cf2", ParentSpanId: "566630e3-b0b1-4f76-ae6d-c53c62a5aa23"},
+			"9008cddd-cade-489b-a731-550bbfe50cff": &pb.Span{Id: "9008cddd-cade-489b-a731-550bbfe50cff", ParentSpanId: "6f7f569a-592f-43e7-be69-aaf8a1a2fa63"},
+			"566630e3-b0b1-4f76-ae6d-c53c62a5aa23": &pb.Span{Id: "566630e3-b0b1-4f76-ae6d-c53c62a5aa23", ParentSpanId: "6f7f569a-592f-43e7-be69-aaf8a1a2fa63"},
+			"6f7f569a-592f-43e7-be69-aaf8a1a2fa63": &pb.Span{Id: "6f7f569a-592f-43e7-be69-aaf8a1a2fa63", ParentSpanId: "                                    "},
+		}}, want: 3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			depth := int64(0)
+			if len(tt.args.spanTree) > 0 {
+				depth = int64(1)
+			}
+			for _, span := range tt.args.spanTree {
+				if span.ParentSpanId == span.Id {
+					span.ParentSpanId = ""
+				}
+				tempDepth := int64(1)
+				tempDepth = calculateDepth(tempDepth, span, tt.args.spanTree)
+				if tempDepth > depth {
+					depth = tempDepth
+				}
+			}
+			if depth != tt.want {
+				t.Errorf("This trace depth is %v, want %v", depth, tt.want)
+				return
+			}
 		})
 	}
 }

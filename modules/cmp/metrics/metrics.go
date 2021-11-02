@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"time"
 
-	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -168,14 +167,14 @@ func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan map[stri
 	c <- res
 }
 
-func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *MetricsReq) map[string]*MetricsData {
-	if !isEmptyResponse(resp) {
+func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsRequest *MetricsReq) map[string]*MetricsData {
+	if !isEmptyResponse(response) {
 		var (
 			k   = ""
 			d   *MetricsData
 			res = make(map[string]*MetricsData)
 		)
-		for _, row := range resp.Results[0].Series[0].Rows {
+		for _, row := range response.Results[0].Series[0].Rows {
 			switch metricsRequest.resKind {
 			case Pod:
 				k = cache.GenerateKey(Pod, Cpu, row.Values[3].GetStringValue(), metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -185,7 +184,6 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *M
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 				if row.Values[0].GetKind() != nil {
 					k = cache.GenerateKey(Pod, Memory, row.Values[3].GetStringValue(), metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -194,7 +192,6 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *M
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 			case Node:
 				if row.Values[1].GetKind() != nil {
@@ -204,7 +201,6 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *M
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 				if row.Values[0].GetKind() != nil {
 					k = cache.GenerateKey(Node, Memory, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
@@ -213,7 +209,6 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *M
 					}
 					SetCache(k, d)
 					res[k] = d
-					logrus.Infof("update cache %v", k)
 				}
 			}
 		}
@@ -223,7 +218,7 @@ func (m *Metric) Store(resp *pb.QueryWithInfluxFormatResponse, metricsRequest *M
 }
 
 func SetCache(k string, d interface{}) {
-	data, err := cache.MarshalValue(d)
+	data, err := cache.GetInterfaceValue(d)
 	if err != nil {
 		logrus.Errorf("cache marshal metrics %v err: %v", k, err)
 	} else {
@@ -240,12 +235,14 @@ func GetCache(key string) *MetricsData {
 		logrus.Errorf("get metrics %v err :%v", key, err)
 		return nil
 	}
-	var d *MetricsData
+	var (
+		d  *MetricsData
+		ok bool
+	)
 	if v != nil {
-		d = &MetricsData{}
-		err = jsi.Unmarshal(v[0].Value().([]byte), d)
-		if err != nil {
-			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
+		d, ok = v[0].Value().(*MetricsData)
+		if !ok {
+			logrus.Errorf("get metrics %v assert err", key)
 		}
 	}
 	return d
@@ -319,16 +316,16 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[strin
 	return noNeed, nil
 }
 
-func (m *Metric) ToInfluxReq(req *MetricsRequest, kind string) (*MetricsReq, map[string]*MetricsData, error) {
-	cluster := req.ClusterName()
-	if req.Cluster == "" {
-		return nil, nil, errors.New(fmt.Sprintf("parameter %s not found", req.Cluster))
+func (m *Metric) ToInfluxReq(request *MetricsRequest, kind string) (*MetricsReq, map[string]*MetricsData, error) {
+	cluster := request.ClusterName()
+	if request.Cluster == "" {
+		return nil, nil, errors.New(fmt.Sprintf("parameter %s not found", request.Cluster))
 	}
 	switch kind {
 	case Node:
-		return m.toInfluxReq(req.NodeRequests, cluster, req.ResourceType(), req.ResourceKind(), NodeResourceUsageSelectStatement)
+		return m.toInfluxReq(request.NodeRequests, cluster, request.ResourceType(), request.ResourceKind(), NodeResourceUsageSelectStatement)
 	case Pod:
-		return m.toInfluxReq(req.PodRequests, cluster, req.ResourceType(), req.ResourceKind(), PodResourceUsageSelectStatement)
+		return m.toInfluxReq(request.PodRequests, cluster, request.ResourceType(), request.ResourceKind(), PodResourceUsageSelectStatement)
 	default:
 		logrus.Errorf("query metrics kind %v, %v", kind, ResourceNotSupport)
 		return nil, nil, ResourceNotSupport

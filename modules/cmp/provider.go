@@ -27,9 +27,10 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	alertpb "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	pb2 "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
@@ -50,6 +51,7 @@ type provider struct {
 
 	Register        transport.Register `autowired:"service-register" optional:"true"`
 	Metrics         *metrics.Metric
+	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 	Protocol        componentprotocol.Interface
 	Resource        *resource.Resource
 	Tran            i18n.Translator `translator:"component-protocol"`
@@ -61,8 +63,7 @@ func (p *provider) Run(ctx context.Context) error {
 	runtime.GOMAXPROCS(2)
 	p.Metrics = metrics.New(p.Server, ctx)
 	logrus.Info("cmp provider is running...")
-	lang := cputil.Language(ctx)
-	p.Resource = resource.New(ctx, p.Tran, lang, p)
+	p.Resource = resource.New(ctx, p.Tran, p)
 	ctxNew := context.WithValue(ctx, "metrics", p.Metrics)
 	ctxNew = context.WithValue(ctxNew, "resource", p.Resource)
 	return p.initialize(ctxNew)
@@ -74,12 +75,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithAllAvailableClients(),
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithTimeout(time.Second*30, time.Second*90),
 				httpclient.WithEnableAutoRetry(false),
 			)),
 	))
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	pb2.RegisterClusterResourceImp(p.Register, p, apis.Options())
+	alertpb.RegisterAlertServiceImp(p.Register, p, apis.Options())
+
 	return nil
 }
 

@@ -15,11 +15,12 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -62,16 +63,16 @@ func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*api
 // FetchNamespacesBelongsTo finds the project to which a given namespaces belongs to.
 // if orgID == 0, query from all scope.
 // namespaces: the key is cluster name, the value is the namespaces list in the cluster.
-func (b *Bundle) FetchNamespacesBelongsTo(orgID int64, namespaces map[string][]string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	var params = make(url.Values)
-	for clusterName, namespacesList := range namespaces {
-		params.Add(clusterName, strings.Join(namespacesList, ","))
+	lang := "zh-CN"
+	if langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes); len(langCodes) > 0 {
+		lang = langCodes[0].String()
 	}
 
 	type response struct {
@@ -80,9 +81,8 @@ func (b *Bundle) FetchNamespacesBelongsTo(orgID int64, namespaces map[string][]s
 	}
 	var resp response
 	httpResp, err := hc.Get(host).
+		Header("lang", lang).
 		Path("/api/projects-namespaces").
-		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
-		Params(params).
 		Do().JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrListFileRecord.InternalError(err)
@@ -91,4 +91,27 @@ func (b *Bundle) FetchNamespacesBelongsTo(orgID int64, namespaces map[string][]s
 		return nil, toAPIError(httpResp.StatusCode(), resp.Error)
 	}
 	return resp.Data, nil
+}
+
+func (b *Bundle) ListQuotaRecords() ([]*apistructs.ProjectQuota, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	type response struct {
+		apistructs.Header
+		Data struct {
+			Total uint64                     `json:"total"`
+			List  []*apistructs.ProjectQuota `json:"list"`
+		}
+	}
+	var resp response
+	httpResp, err := b.hc.Get(host).Path("/api/quota-records").Do().JSON(&resp)
+	if err != nil {
+		return nil, err
+	}
+	if !httpResp.IsOK() {
+		return nil, toAPIError(httpResp.StatusCode(), resp.Error)
+	}
+	return resp.Data.List, nil
 }

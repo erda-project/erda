@@ -99,7 +99,7 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	return items, nil
 }
 
-func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, walk func(item *pb.LogItem) error) error {
+func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
 	if req.GetCount() < 0 {
 		return errors.NewInvalidParameterError("count", "not allowed negative")
 	}
@@ -108,23 +108,21 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 		return err
 	}
 	if fn != nil {
-		fn(sel)
+		sel, err = fn(sel)
+		if err != nil {
+			return err
+		}
 	}
 	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {
 		return errors.NewInternalServerError(err)
 	}
 	defer it.Close()
-	num, limit := 0, getLimit(req.GetCount())
 	for it.Next() {
-		if num >= limit {
-			break
-		}
 		log, ok := it.Value().(*pb.LogItem)
 		if !ok {
 			continue
 		}
-		num++
 		err := walk(log)
 		if err != nil {
 			return err
@@ -194,6 +192,7 @@ type Request interface {
 const (
 	defaultQueryCount = 50
 	maxQueryCount     = 700
+	maxTimeRange      = 30 * 24 * int64(time.Hour)
 )
 
 func getLimit(count int64) int {
@@ -223,8 +222,11 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	if sel.End <= 0 {
 		sel.End = time.Now().UnixNano()
 	}
-	if sel.Start < 0 {
-		sel.Start = 0
+	if sel.Start <= 0 {
+		sel.Start = sel.End - maxTimeRange
+		if sel.Start < 0 {
+			sel.Start = 0
+		}
 	} else if sel.Start > 0 && req.GetCount() >= 0 {
 		// avoid duplicating previous log
 		// TODO: check by offset
@@ -233,6 +235,8 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 
 	if sel.End < sel.Start {
 		return nil, errors.NewInvalidParameterError("(start,end]", "start must be less than end")
+	} else if sel.End-sel.Start > maxTimeRange {
+		return nil, errors.NewInvalidParameterError("(start,end]", "time range is too large")
 	}
 
 	if len(req.GetRequestId()) > 0 {

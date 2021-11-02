@@ -107,7 +107,7 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		Workspace:     workspace,
 		Name:          runtimeName,
 	}
-	funcErrMsg := fmt.Sprintf("failed to update Overlay, uniqueId: %v", uniqueId)
+	funcErrMsg := fmt.Sprintf("failed to update Overlay, runtimeName: %s", runtimeName)
 	pre, err := s.db.FindPreDeployment(uniqueId)
 	if err != nil {
 		return utils.ErrResp0101(err, funcErrMsg)
@@ -189,7 +189,7 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		logrus.Debugf("scale service group body is %s", string(sgb))
 		// TODO: Need to increase the mechanism of failure compensation
 		if err := s.bdl.ScaleServiceGroup(sg); err != nil {
-			return utils.ErrResp0101(err, funcErrMsg)
+			return utils.ErrRespIllegalParam(err, "Request Invalid")
 		}
 	}
 

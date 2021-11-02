@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -217,7 +218,8 @@ func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpans
 		if span.ParentSpanId == span.Id {
 			span.ParentSpanId = ""
 		}
-		tempDepth := calculateDepth(depth, span, spanTree)
+		tempDepth := int64(1)
+		tempDepth = calculateDepth(tempDepth, span, spanTree)
 		if tempDepth > depth {
 			depth = tempDepth
 		}
@@ -253,7 +255,7 @@ func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
 	}
 	if span.ParentSpanId != "" && spanTree[span.ParentSpanId] != nil {
 		depth += 1
-		calculateDepth(depth, spanTree[span.ParentSpanId], spanTree)
+		depth = calculateDepth(depth, spanTree[span.ParentSpanId], spanTree)
 	}
 	return depth
 }
@@ -469,6 +471,19 @@ func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.Get
 }
 
 func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
+	if req.Url == "" {
+		return nil, errors.NewMissingParameterError("Url")
+	}
+	if req.ScopeID == "" {
+		return nil, errors.NewMissingParameterError("TerminusKey")
+	}
+	if req.Method == "" {
+		return nil, errors.NewMissingParameterError("Method")
+	}
+	if !govalidator.IsURL(req.Url) {
+		return nil, errors.NewParameterTypeError("Url invalid")
+	}
+
 	bodyValid := bodyCheck(req.Body)
 	if !bodyValid {
 		return nil, errors.NewParameterTypeError("body")

@@ -4,6 +4,7 @@ package proto
 
 import (
 	_ "github.com/erda-project/erda-proto-go/admin/pb"
+	_ "github.com/erda-project/erda-proto-go/cmp/alert/pb"
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
@@ -28,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/collector/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
@@ -43,6 +45,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/trigger/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/pb"
+	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/pb"
 	_ "github.com/erda-project/erda-proto-go/examples/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"

@@ -85,7 +85,8 @@ func (p *provider) Initialize() error {
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
-	return server.ListenAndServe()
+	p.Router.Any("/**", server.Router().ServeHTTP)
+	return nil
 }
 
 // 初始化 Endpoints
@@ -177,7 +178,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		org.WithUCClient(uc),
 		org.WithBundle(bdl),
 		org.WithRedisClient(redisCli),
-		org.WithClusterResourceClient(p.Cmp),
 		org.WithI18n(p.Tran),
 	)
 
@@ -186,7 +186,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithDBClient(db),
 		project.WithUCClient(uc),
 		project.WithBundle(bdl),
-		project.WithClusterResourceClient(p.Cmp),
 		project.WithI18n(p.Tran),
 	)
 

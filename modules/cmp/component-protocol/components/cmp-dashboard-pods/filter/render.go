@@ -30,7 +30,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -41,10 +42,10 @@ func init() {
 	})
 }
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func (f *ComponentFilter) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -124,14 +125,11 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	userID := f.sdk.Identity.UserID
 	orgID := f.sdk.Identity.OrgID
 
-	req := apistructs.SteveRequest{
-		UserID:      userID,
-		OrgID:       orgID,
-		Type:        apistructs.K8SNamespace,
-		ClusterName: f.State.ClusterName,
+	namespaces, err := cputil2.GetAllNamespacesFromCache(ctx, f.server, userID, orgID, f.State.ClusterName)
+	if err != nil {
+		return err
 	}
-
-	list, err := f.server.ListSteveResource(f.ctx, &req)
+	projectID2displayName, err := cputil2.GetAllProjectsDisplayNameFromCache(f.bdl, orgID)
 	if err != nil {
 		return err
 	}
@@ -173,16 +171,24 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Value: "others",
 	}
 
-	for _, item := range list {
-		obj := item.Data()
-		name := obj.String("metadata", "name")
+	for _, name := range namespaces {
 		option := Option{
 			Label: name,
 			Value: name,
 		}
 		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
-			displayName, err := f.getDisplayName(name)
-			if err == nil {
+			splits := strings.Split(name, "-")
+			if len(splits) != 3 {
+				return errors.New("invalid name")
+			}
+			id := splits[1]
+			num, err := strconv.ParseInt(id, 10, 64)
+			if err != nil {
+				return errors.Errorf("failed to parse project id %s, %v", id, err)
+			}
+
+			displayName, ok := projectID2displayName[uint64(num)]
+			if ok {
 				option.Label = fmt.Sprintf("%s (%s: %s)", name, cputil.I18n(ctx, "project"), displayName)
 				switch suf {
 				case "-dev":
@@ -263,6 +269,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 			{
 				Label: cputil.I18n(ctx, "ImagePullBackOff"),
 				Value: "ImagePullBackOff",
+			},
+			{
+				Label: cputil.I18n(ctx, "ErrImagePull"),
+				Value: "ErrImagePull",
 			},
 			{
 				Label: cputil.I18n(ctx, "Pending"),

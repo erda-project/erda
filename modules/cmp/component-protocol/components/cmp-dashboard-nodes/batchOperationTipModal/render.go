@@ -235,6 +235,9 @@ func (bot *BatchOperationTipModal) UncordonNode(nodeIDs []string) error {
 }
 
 func (bot *BatchOperationTipModal) DrainNode(nodeIDs []string) error {
+	if len(nodeIDs) == 0 {
+		return nil
+	}
 	for _, id := range nodeIDs {
 		splits := strings.Split(id, "/")
 		name := splits[0]
