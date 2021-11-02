@@ -19,6 +19,7 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 func (this *GetEventsRequest) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *GetEventsResponse) Validate() error {
