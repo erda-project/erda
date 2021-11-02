@@ -94,6 +94,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, sceneStepMap[v.StepID])
 	}
 
-	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "api-failed-rate"))
+	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "api-failed-rate"), "{value}%")
 	return nil
 }

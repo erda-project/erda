@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
@@ -271,7 +270,7 @@ func GetAllProjectsDisplayNameFromCache(bdl *bundle.Bundle, orgID string) (map[u
 		if err != nil {
 			return nil, err
 		}
-		values, err := cache.MarshalValue(id2displayName)
+		values, err := cache.GetInterfaceValue(id2displayName)
 		if err != nil {
 			return nil, errors.Errorf("failed to marshal cache value for projects dispalyName, %v", err)
 		}
@@ -287,7 +286,7 @@ func GetAllProjectsDisplayNameFromCache(bdl *bundle.Bundle, orgID string) (map[u
 				logrus.Errorf("failed to get all projects displayName in goroutine, %v", err)
 				return
 			}
-			values, err := cache.MarshalValue(id2displayName)
+			values, err := cache.GetInterfaceValue(id2displayName)
 			if err != nil {
 				logrus.Errorf("failed to marshal cache value for projects displayName in goroutine, %v", err)
 				return
@@ -298,10 +297,7 @@ func GetAllProjectsDisplayNameFromCache(bdl *bundle.Bundle, orgID string) (map[u
 			}
 		}()
 	}
-	id2displayName := make(map[uint64]string)
-	if err := jsi.Unmarshal(values[0].Value().([]byte), &id2displayName); err != nil {
-		return nil, err
-	}
+	id2displayName := values[0].Value().(map[uint64]string)
 	return id2displayName, nil
 }
 
@@ -314,7 +310,7 @@ func getAllNamespaces(ctx context.Context, steveServer cmp.SteveServer, userID, 
 	var namespaces []string
 	list, err := client.ClientSet.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
 	if err != nil {
-		return nil, errors.Errorf("failed to list namespace, %v", err)
+		return nil, err
 	}
 
 	for _, namespace := range list.Items {
@@ -351,9 +347,12 @@ func GetAllNamespacesFromCache(ctx context.Context, steveServer cmp.SteveServer,
 	}
 	if expired {
 		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+			defer cancel()
 			namespaces, err := getAllNamespaces(ctx, steveServer, userID, orgID, clusterName)
 			if err != nil {
 				logrus.Errorf("failed to get all namespaces from cahce in goroutine, %v", err)
+				return
 			}
 			comb := strings.Join(namespaces, ",")
 			value, err := cache.GetStringValue(comb)

@@ -14,6 +14,13 @@
 
 package etcdclient
 
+import (
+	"os"
+	"testing"
+
+	"bou.ke/monkey"
+)
+
 //import (
 //	"sync"
 //	"testing"
@@ -44,3 +51,42 @@ package etcdclient
 //	}
 //
 //}
+
+func Test_getEnvOrDefault(t *testing.T) {
+	nonExistsKey := "none_exists_key"
+	defaultValue := "default_value"
+	existsKey := "exists_key"
+	existsValue := "exists_value"
+
+	defer monkey.Unpatch(os.Getenv)
+	monkey.Patch(os.Getenv, func(key string) string {
+		if key == nonExistsKey {
+			return ""
+		}
+
+		return existsValue
+	})
+
+	val := getEnvOrDefault(nonExistsKey, defaultValue)
+	if val != defaultValue {
+		t.Errorf("with %s should return %s, but got: %s", nonExistsKey, defaultValue, val)
+	}
+
+	val = getEnvOrDefault(existsKey, defaultValue)
+	if val != existsValue {
+		t.Errorf("with %s should return %s, but got: %s", existsKey, existsValue, val)
+	}
+}
+
+func Test_NewEtcdClient_ReadCertFromEnv(t *testing.T) {
+
+	defer monkey.Unpatch(os.Getenv)
+	monkey.Patch(os.Getenv, func(key string) string {
+		return "mock"
+	})
+
+	_, err := NewEtcdClient()
+	if err != nil {
+		t.Errorf("should not throw error")
+	}
+}

@@ -17,6 +17,7 @@ package middleware
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/Azure/go-ansiterm"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -78,24 +80,15 @@ func NewAuditor(bdl *bundle.Bundle) *Auditor {
 func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		vars, _ := req.Context().Value(varsKey).(map[string]string)
-		var body []byte
+		var (
+			body []byte
+			ctx  map[string]interface{}
+		)
 		if req.Body != nil {
 			body, _ = ioutil.ReadAll(req.Body)
 		}
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
-		writer := &wrapWriter{
-			ResponseWriter: resp,
-			statusCode:     http.StatusOK,
-		}
-		next.ServeHTTP(writer, req)
-
-		if body == nil {
-			return
-		}
-		if writer.statusCode < 200 || writer.statusCode >= 300 {
-			return
-		}
+		_, _ = req.Body.Read(body)
 
 		clusterName := vars["clusterName"]
 		typ := vars["type"]
@@ -108,39 +101,39 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		scopeID, _ := strconv.ParseUint(orgID, 10, 64)
 		now := strconv.FormatInt(time.Now().Unix(), 10)
 
+		ctx = map[string]interface{}{
+			AuditClusterName: clusterName,
+		}
 		auditReq := apistructs.AuditCreateRequest{
 			Audit: apistructs.Audit{
-				UserID:    userID,
-				ScopeType: apistructs.OrgScope,
-				ScopeID:   scopeID,
-				OrgID:     scopeID,
-				Result:    "success",
-				StartTime: now,
-				EndTime:   now,
-				ClientIP:  getRealIP(req),
-				UserAgent: req.UserAgent(),
+				UserID:       userID,
+				ScopeType:    apistructs.OrgScope,
+				ScopeID:      scopeID,
+				OrgID:        scopeID,
+				Result:       "success",
+				StartTime:    now,
+				EndTime:      now,
+				ClientIP:     getRealIP(req),
+				UserAgent:    req.UserAgent(),
+				Context:      ctx,
+				TemplateName: AuditKubectlShell,
 			},
 		}
 
-		ctx := map[string]interface{}{
-			AuditClusterName: clusterName,
+		writer := &wrapWriter{
+			ResponseWriter: resp,
+			statusCode:     http.StatusOK,
+			auditReq:       auditReq,
+			bdl:            a.bdl,
+			ctx:            req.Context(),
 		}
-		if vars["kubectl-shell"] == "true" {
-			auditReq.TemplateName = AuditKubectlShell
-			var cmds []string
-			for _, cwt := range writer.wc.cmds {
-				cmd := fmt.Sprintf("%s: %s", cwt.start.Format(time.RFC3339), cwt.cmd)
-				cmds = append(cmds, cmd)
-			}
-			if len(cmds) == 0 {
-				return
-			}
-			res := fmt.Sprintf("\n%s", strings.Join(cmds, "\n"))
-			if len(res) > maxAuditLength {
-				res = res[:maxAuditLength] + "..."
-			}
-			ctx[AuditCommands] = res
-		} else {
+
+		next.ServeHTTP(writer, req)
+		if writer.statusCode < 200 || writer.statusCode >= 300 {
+			return
+		}
+
+		if vars["kubectl-shell"] != "true" {
 			if typ == "" {
 				return
 			}
@@ -214,11 +207,11 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			default:
 				return
 			}
+			if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
+				logrus.Errorf("faild to audit in steve audit, %v", err)
+			}
 		}
-		auditReq.Context = ctx
-		if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
-			logrus.Errorf("faild to audit in steve audit, %v", err)
-		}
+
 	})
 }
 
@@ -229,9 +222,11 @@ type reqBody struct {
 
 type wrapWriter struct {
 	http.ResponseWriter
+	ctx        context.Context
 	statusCode int
 	buf        bytes.Buffer
-	wc         *wrapConn
+	auditReq   apistructs.AuditCreateRequest
+	bdl        *bundle.Bundle
 }
 
 func (w *wrapWriter) WriteHeader(statusCode int) {
@@ -253,14 +248,57 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	d := NewDispatcher()
+	closeChan := make(chan struct{})
+	auditReqChan := make(chan *cmdWithTimestamp)
+	d := NewDispatcher(auditReqChan, closeChan)
 	parser := ansiterm.CreateParser("Ground", d)
 	wc := &wrapConn{
 		Conn:       conn,
 		parser:     parser,
 		dispatcher: d,
+		auditReq:   w.auditReq,
+		ctx:        w.ctx,
 	}
-	w.wc = wc
+	go func(w *wrapWriter) {
+		limiter := rate.NewLimiter(1, 1)
+		for {
+			select {
+			case <-w.ctx.Done():
+				return
+			case <-closeChan:
+				return
+			default:
+				err = limiter.Wait(w.ctx)
+				if err != nil {
+					logrus.Errorf("audit with websocket limiter error, %v", err)
+					return
+				}
+				auditStr := ""
+				ticker := time.NewTicker(1 * time.Second)
+			LOOP:
+				for {
+					select {
+					case <-ticker.C:
+						break LOOP
+					case cmd := <-d.auditReqChan:
+						auditStr += fmt.Sprintf("%s: %s\n", cmd.start.Format(time.RFC3339), cmd.cmd)
+						if len(auditStr) > 1024 {
+							break LOOP
+						}
+					default:
+					}
+				}
+				if len(auditStr) > 0 {
+					w.auditReq.Context[AuditCommands] = auditStr
+					if err := w.bdl.CreateAuditEvent(&w.auditReq); err != nil {
+						logrus.Errorf("faild to audit in steve audit, %v", err)
+					} else {
+						logrus.Infof("send audit message with websocket : %s", auditStr)
+					}
+				}
+			}
+		}
+	}(w)
 	return wc, rw, nil
 }
 
@@ -268,7 +306,9 @@ type wrapConn struct {
 	net.Conn
 	parser     *ansiterm.AnsiParser
 	dispatcher *dispatcher
-	cmds       []*cmdWithTimestamp
+	auditReq   apistructs.AuditCreateRequest
+	bdl        *bundle.Bundle
+	ctx        context.Context
 }
 
 type cmdWithTimestamp struct {
@@ -297,7 +337,6 @@ func (w *wrapConn) Read(p []byte) (n int, err error) {
 			return 0, err
 		}
 	}
-	w.cmds = w.dispatcher.cmds
 	return
 }
 

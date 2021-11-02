@@ -84,32 +84,32 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	query, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(query)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &urlQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(urlQuery["pageNo"].(float64))
-	w.State.PageSize = uint64(urlQuery["pageSize"].(float64))
-	sorterData := urlQuery["sorterData"].(map[string]interface{})
-	w.State.Sorter.Field, _ = sorterData["field"].(string)
-	w.State.Sorter.Order, _ = sorterData["order"].(string)
+	w.State.PageNo = uint64(query["pageNo"].(float64))
+	w.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
+	w.State.Sorter.Field, _ = sorter["field"].(string)
+	w.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = w.State.PageNo
-	query["pageSize"] = w.State.PageSize
-	query["sorterData"] = w.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = w.State.PageNo
+	urlQuery["pageSize"] = w.State.PageSize
+	urlQuery["sorterData"] = w.State.Sorter
+	data, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
@@ -212,6 +212,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -282,6 +283,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -354,6 +356,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},
@@ -424,6 +427,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					Operations: map[string]interface{}{
 						"click": LinkOperation{
 							Reload: false,
+							Key:    "openWorkloadDetail",
 						},
 					},
 				},

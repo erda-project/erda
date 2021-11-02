@@ -16,7 +16,6 @@
 package org
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -27,7 +26,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -37,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/numeral"
-	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -49,8 +46,6 @@ type Org struct {
 	bdl      *bundle.Bundle
 	redisCli *redis.Client
 	trans    i18n.Translator
-
-	clusterResourceClient dashboardPb.ClusterResourceServer
 }
 
 // Option 定义 Org 对象的配置选项
@@ -90,13 +85,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithRedisClient(cli *redis.Client) Option {
 	return func(o *Org) {
 		o.redisCli = cli
-	}
-}
-
-// WithClusterResourceClient set the gRPC client of CMP cluster resource
-func WithClusterResourceClient(cli dashboardPb.ClusterResourceServer) Option {
-	return func(o *Org) {
-		o.clusterResourceClient = cli
 	}
 }
 
@@ -219,13 +207,13 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 }
 
 // UpdateWithEvent 更新企业 & 发送更新事件
-func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, error) {
+func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, apistructs.AuditMessage, error) {
 	if updateReq.DisplayName == "" {
 		updateReq.DisplayName = updateReq.Name
 	}
-	org, err := o.Update(orgID, updateReq)
+	org, auditMessage, err := o.Update(orgID, updateReq)
 	if err != nil {
-		return nil, err
+		return nil, apistructs.AuditMessage{}, err
 	}
 
 	ev := &apistructs.EventCreateRequest{
@@ -245,17 +233,18 @@ func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequest
 		logrus.Warnf("failed to send org update event, (%v)", err)
 	}
 
-	return org, nil
+	return org, auditMessage, nil
 }
 
 // Update 更新企业
-func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, error) {
+func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*model.Org, apistructs.AuditMessage, error) {
 	// 检查待更新的org是否存在
 	org, err := o.db.GetOrg(orgID)
 	if err != nil {
 		logrus.Warnf("failed to find org when update org, (%v)", err)
-		return nil, errors.Errorf("failed to find org when update org")
+		return nil, apistructs.AuditMessage{}, errors.Errorf("failed to find org when update org")
 	}
+	auditMessage := getAuditMessage(org, updateReq)
 
 	// 更新企业元信息，企业名称暂不可更改
 	org.Desc = updateReq.Desc
@@ -287,10 +276,114 @@ func (o *Org) Update(orgID int64, updateReq apistructs.OrgUpdateRequestBody) (*m
 	// 更新企业信息至DB
 	if err = o.db.UpdateOrg(&org); err != nil {
 		logrus.Warnf("failed to update org, (%v)", err)
-		return nil, errors.Errorf("failed to update org")
+		return nil, apistructs.AuditMessage{}, errors.Errorf("failed to update org")
 	}
+	return &org, auditMessage, nil
+}
 
-	return &org, nil
+func getAuditMessage(org model.Org, req apistructs.OrgUpdateRequestBody) apistructs.AuditMessage {
+	var messageZH, messageEN strings.Builder
+	if org.DisplayName != req.DisplayName {
+		messageZH.WriteString(fmt.Sprintf("组织名称由 %s 改为 %s ", org.DisplayName, req.DisplayName))
+		messageEN.WriteString(fmt.Sprintf("org name updated from %s to %s ", org.DisplayName, req.DisplayName))
+	}
+	if org.Locale != req.Locale {
+		messageZH.WriteString(fmt.Sprintf("通知语言改为%s ", func() string {
+			switch req.Locale {
+			case "en-US":
+				return "英文"
+			case "zh-CN":
+				return "中文"
+			default:
+				return ""
+			}
+		}()))
+		messageEN.WriteString(fmt.Sprintf("language updated to %s ", req.Locale))
+	}
+	if org.IsPublic != req.IsPublic {
+		messageZH.WriteString(func() string {
+			if req.IsPublic {
+				return "改为公开组织 "
+			}
+			return "改为私有组织 "
+		}())
+		messageEN.WriteString(func() string {
+			if req.IsPublic {
+				return "org updated to public "
+			}
+			return "org updated to private "
+		}())
+	}
+	if org.Logo != req.Logo {
+		messageZH.WriteString("组织Logo发生变更 ")
+		messageEN.WriteString("org Logo changed ")
+	}
+	if org.Desc != req.Desc {
+		messageZH.WriteString("组织描述信息发生变更 ")
+		messageEN.WriteString("org desc changed ")
+	}
+	if req.BlockoutConfig != nil {
+		if org.BlockoutConfig.BlockDEV != req.BlockoutConfig.BlockDEV {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockDEV {
+					return "开发环境开启封网 "
+				}
+				return "开发环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockDEV {
+					return "block network opened in dev environment "
+				}
+				return "block network closed in dev environment "
+			}())
+		}
+		if org.BlockoutConfig.BlockTEST != req.BlockoutConfig.BlockTEST {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockTEST {
+					return "测试环境开启封网 "
+				}
+				return "测试环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockTEST {
+					return "block network opened in test environment "
+				}
+				return "block network closed in test environment "
+			}())
+		}
+		if org.BlockoutConfig.BlockStage != req.BlockoutConfig.BlockStage {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockStage {
+					return "预发环境开启封网 "
+				}
+				return "预发环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockStage {
+					return "block network opened in staging environment "
+				}
+				return "block network closed in staging environment "
+			}())
+		}
+		if org.BlockoutConfig.BlockProd != req.BlockoutConfig.BlockProd {
+			messageZH.WriteString(func() string {
+				if req.BlockoutConfig.BlockProd {
+					return "生产环境开启封网 "
+				}
+				return "生产环境关闭封网 "
+			}())
+			messageEN.WriteString(func() string {
+				if req.BlockoutConfig.BlockProd {
+					return "block network opened in prod environment "
+				}
+				return "block network closed in prod environment "
+			}())
+		}
+	}
+	return apistructs.AuditMessage{
+		MessageZH: messageZH.String(),
+		MessageEN: messageEN.String(),
+	}
 }
 
 // Get 获取企业
@@ -368,6 +461,24 @@ func (o *Org) SearchPublicOrgsByName(name string, pageNo, pageSize int) (int, []
 // ListByIDsAndName 根据IDs列表 & name 获取企业列表
 func (o *Org) ListByIDsAndName(orgIDs []int64, name string, pageNo, pageSize int) (int, []model.Org, error) {
 	return o.db.GetOrgsByIDsAndName(orgIDs, name, pageNo, pageSize)
+}
+
+func (o *Org) ListOrgs(orgIDs []int64, req *apistructs.OrgSearchRequest, all bool) (int, []model.Org, error) {
+	var (
+		total int
+		orgs  []model.Org
+		err   error
+	)
+	if all {
+		total, orgs, err = o.SearchByName(req.Q, req.PageNo, req.PageSize)
+	} else {
+		total, orgs, err = o.ListByIDsAndName(orgIDs, req.Q, req.PageNo, req.PageSize)
+	}
+	if err != nil {
+		logrus.Warnf("failed to get orgs, (%v)", err)
+		return 0, nil, err
+	}
+	return total, orgs, nil
 }
 
 // ChangeCurrentOrg 切换用户当前所属企业
@@ -580,211 +691,6 @@ func (o *Org) FetchOrgResources(orgID uint64) (*apistructs.OrgResourceInfo, erro
 		AvailableCpu: numeral.Round(totalCpu-usedCpu, 2),
 		AvailableMem: numeral.Round(totalMem-usedMem, 2),
 	}, nil
-}
-
-func (o *Org) FetchOrgClusterResource(ctx context.Context, orgID uint64) (*apistructs.OrgClustersResourcesInfo, error) {
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
-
-	clusters, err := o.GetOrgClusterRelationsByOrg(orgID)
-	if err != nil {
-		return nil, err
-	}
-
-	var getClustersResourcesRequest dashboardPb.GetClustersResourcesRequest
-	for _, cluster := range clusters {
-		getClustersResourcesRequest.ClusterNames = append(getClustersResourcesRequest.ClusterNames, cluster.ClusterName)
-	}
-	// cmp gRPC 接口查询给定集群所有集群的资源和标签情况
-	resources, err := o.clusterResourceClient.GetClustersResources(ctx, &getClustersResourcesRequest)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to GetClusterResources, clusters: %v", getClustersResourcesRequest.GetClusterNames())
-	}
-
-	// 初始化所有集群的总资源 【】
-	var (
-		// 集群 nodes 数量
-		clusterNodes = make(map[string]int)
-		// 集群里资源计算器
-		calculators     = make(map[string]*calcu.Calculator)
-		requestResource = make(map[string]*calcu.Calculator)
-	)
-	countClustersNodes(clusterNodes, resources.List)
-	initClusterAllocatable(calculators, resources.List)
-	calculateRequest(requestResource, resources.List)
-
-	// 查出所有项目的 quota 记录
-	var projectsQuota []*model.ProjectQuota
-	if err = o.db.Find(&projectsQuota).Error; err != nil {
-		return nil, errors.Wrap(err, "failed to Find all project quota")
-	}
-	// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
-	deductionQuota(calculators, projectsQuota)
-
-	var resourceInfo apistructs.OrgClustersResourcesInfo
-	for _, workspace := range calcu.Workspaces {
-		workspaceStr := calcu.WorkspaceString(workspace)
-
-		for _, clusterName := range getClustersResourcesRequest.ClusterNames {
-			calculator, ok := calculators[clusterName]
-			if !ok {
-				continue
-			}
-			resource := &apistructs.ClusterResources{
-				ClusterName:    clusterName,
-				Workspace:      workspaceStr,
-				CPUAllocatable: calcu.MillcoreToCore(calculator.AllocatableCPU(workspace), 3),
-				CPUAvailable:   calcu.MillcoreToCore(calculator.QuotableCPUForWorkspace(workspace), 3),
-				CPUQuotaRate:   0,
-				CPURequest:     0,
-				MemAllocatable: calcu.ByteToGibibyte(calculator.AllocatableMem(workspace), 3),
-				MemAvailable:   calcu.ByteToGibibyte(calculator.QuotableMemForWorkspace(workspace), 3),
-				MemQuotaRate:   0,
-				MemRequest:     0,
-				Nodes:          clusterNodes[clusterName],
-				Tips:           "",
-				CPUTookUp:      calcu.MillcoreToCore(calculator.AlreadyTookUpCPU(workspace), 3),
-				MemTookUp:      calcu.ByteToGibibyte(calculator.AlreadyTookUpMem(workspace), 3),
-			}
-			if c, ok := requestResource[clusterName]; ok {
-				resource.CPURequest = calcu.MillcoreToCore(c.AllocatableCPU(workspace), 3)
-				resource.MemRequest = calcu.ByteToGibibyte(c.AllocatableMem(workspace), 3)
-			}
-			if resource.CPUAllocatable > 0 {
-				resource.CPUQuotaRate = 1 - resource.CPUAvailable/resource.CPUAllocatable
-			}
-			if resource.MemAllocatable > 0 {
-				resource.MemQuotaRate = 1 - resource.MemAvailable/resource.MemAllocatable
-			}
-			o.makeTips(langCodes, resource, calculator, workspace)
-
-			resourceInfo.ClusterList = append(resourceInfo.ClusterList, resource)
-			resourceInfo.TotalCPU += resource.CPUAllocatable
-			resourceInfo.TotalMem += resource.MemAllocatable
-			resourceInfo.AvailableCPU += resource.CPUAvailable
-			resourceInfo.AvailableMem += resource.MemAvailable
-		}
-	}
-
-	return &resourceInfo, nil
-}
-
-func countClustersNodes(result map[string]int, list []*dashboardPb.ClusterResourceDetail) {
-	if result == nil {
-		return
-	}
-	for _, cluster := range list {
-		if !cluster.GetSuccess() {
-			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
-				Warnln("the cluster is not valid now")
-			continue
-		}
-		result[cluster.GetClusterName()] = len(cluster.GetHosts())
-	}
-}
-
-func initClusterAllocatable(result map[string]*calcu.Calculator, list []*dashboardPb.ClusterResourceDetail) {
-	if result == nil {
-		return
-	}
-	for _, cluster := range list {
-		if !cluster.GetSuccess() {
-			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
-				Warnln("the cluster is not valid now")
-			continue
-		}
-
-		// 累计此 host 上的 allocatable 资源
-		calculator, ok := result[cluster.GetClusterName()]
-		if !ok {
-			calculator = calcu.New(cluster.GetClusterName())
-		}
-		for _, host := range cluster.Hosts {
-			workspaces := extractWorkspacesFromLabels(host.GetLabels())
-			calculator.AddValue(host.GetCpuAllocatable(), host.GetMemAllocatable(), workspaces...)
-		}
-
-		result[cluster.GetClusterName()] = calculator
-	}
-}
-
-// 遍历所有项目和环境, 扣减对应集群的资源, 以计算出集群剩余资源
-func deductionQuota(clusters map[string]*calcu.Calculator, quotaRecords []*model.ProjectQuota) {
-	for _, workspace := range calcu.Workspaces {
-		workspaceStr := calcu.WorkspaceString(workspace)
-		for _, project := range quotaRecords {
-			if available, ok := clusters[project.GetClusterName(workspaceStr)]; ok {
-				available.DeductionQuota(workspace, project.GetCPUQuota(workspaceStr), project.GetMemQuota(workspaceStr))
-			}
-		}
-	}
-}
-
-func calculateRequest(result map[string]*calcu.Calculator, list []*dashboardPb.ClusterResourceDetail) {
-	if result == nil {
-		return
-	}
-	for _, cluster := range list {
-		if !cluster.GetSuccess() {
-			logrus.WithField("cluster_name", cluster.GetClusterName()).WithField("err", cluster.GetErr()).
-				Warnln("the cluster is not valid now")
-			continue
-		}
-
-		calculator, ok := result[cluster.GetClusterName()]
-		if !ok {
-			calculator = calcu.New(cluster.GetClusterName())
-		}
-		for _, host := range cluster.Hosts {
-			workspaces := extractWorkspacesFromLabels(host.GetLabels())
-			calculator.AddValue(host.GetCpuRequest(), host.GetMemRequest(), workspaces...)
-		}
-
-		result[cluster.GetClusterName()] = calculator
-	}
-}
-
-func (o *Org) makeTips(langCodes i18n.LanguageCodes, resource *apistructs.ClusterResources, calculator *calcu.Calculator,
-	workspace calcu.Workspace) {
-	if resource.CPUAllocatable == 0 && resource.MemAllocatable == 0 {
-		resource.Tips = o.trans.Text(langCodes, "NoResourceForTheWorkspace")
-		if resource.Nodes == 0 {
-			resource.Tips = o.trans.Text(langCodes, "NoNodesInTheCluster")
-		}
-		return
-	}
-
-	workspaceText := o.trans.Text(langCodes, strings.ToUpper(calcu.WorkspaceString(workspace)))
-	switch quotableCPU, quotableMem := calculator.QuotableCPUForWorkspace(workspace), calculator.QuotableMemForWorkspace(workspace); {
-	case quotableCPU == 0 || quotableMem == 0:
-		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "ResourceSqueeze"), workspaceText, workspaceText)
-	case quotableCPU == 0:
-		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "CPUResourceSqueeze"), workspaceText, workspaceText)
-	case quotableMem == 0:
-		resource.Tips = fmt.Sprintf(o.trans.Text(langCodes, "MemResourceSqueeze"), workspaceText, workspaceText)
-	}
-}
-
-func extractWorkspacesFromLabels(labels []string) []calcu.Workspace {
-	var (
-		m = make(map[calcu.Workspace]bool)
-		w []calcu.Workspace
-	)
-	for _, label := range labels {
-		switch strings.ToLower(label) {
-		case "dice/workspace-prod=true":
-			m[calcu.Prod] = true
-		case "dice/workspace-staging=true":
-			m[calcu.Staging] = true
-		case "dice/workspace-test=true":
-			m[calcu.Test] = true
-		case "dice/workspace-dev=true":
-			m[calcu.Dev] = true
-		}
-	}
-	for k := range m {
-		w = append(w, k)
-	}
-	return w
 }
 
 // ListAllOrgClusterRelation 获取所有企业对应集群关系

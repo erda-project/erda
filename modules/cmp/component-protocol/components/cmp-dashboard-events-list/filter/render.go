@@ -112,14 +112,14 @@ func (f *ComponentFilter) EncodeURLQuery() error {
 	return nil
 }
 
-func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	cont, err := json.Marshal(c.State)
+	cont, err := json.Marshal(component.State)
 	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", component.State, err)
 		return err
 	}
 	err = json.Unmarshal(cont, &state)

@@ -12,24 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package elasticsearch
 
 import (
-	"net/http"
+	"context"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda-proto-go/oap/entity/pb"
 )
 
-var CMDB_ORG_RESOURCE_GET = apis.ApiSpec{
-	Path:         "/api/orgs/actions/fetch-resources",
-	BackendPath:  "/api/orgs/actions/fetch-resources",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	ResponseType: apistructs.OrgResourceInfo{},
-	IsOpenAPI:    true,
-	Doc:          "summary: 获取企业资源使用",
+// Writer .
+type Writer struct {
+	p   *provider
+	ctx context.Context
 }
+
+// WriteN .
+func (w *Writer) WriteN(vals ...interface{}) (n int, err error) {
+	for _, val := range vals {
+		e := w.Write(val)
+		if e != nil {
+			err = e
+		} else {
+			n++
+		}
+	}
+	return n, err
+}
+
+// Write .
+func (w *Writer) Write(val interface{}) error {
+	if val == nil {
+		return nil
+	}
+	return w.p.SetEntity(w.ctx, val.(*pb.Entity))
+}
+
+// Close .
+func (w *Writer) Close() error { return nil }

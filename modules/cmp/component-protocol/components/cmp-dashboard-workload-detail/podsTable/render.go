@@ -25,7 +25,6 @@ import (
 	"sync"
 
 	"github.com/go-openapi/strfmt"
-	jsi "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	types2 "github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
@@ -83,13 +82,13 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	case cptype.InitializeOperation:
 		p.State.PageNo = 1
 		p.State.PageSize = 20
+		if err := p.DecodeURLQuery(); err != nil {
+			return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
+		}
 	case "changePageSize", "changeSort":
 		p.State.PageNo = 1
 	}
 
-	if err := p.DecodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
-	}
 	if err := p.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render podsTable component, %v", err)
 	}
@@ -110,12 +109,12 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.server = steveServer
 }
 
-func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var tableState State
-	jsonData, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -135,13 +134,13 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
-	p.State.PageNo = int(urlQuery["pageNo"].(float64))
-	p.State.PageSize = int(urlQuery["pageSize"].(float64))
-	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	p.State.PageNo = int(queryData["pageNo"].(float64))
+	p.State.PageSize = int(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
 	p.State.Sorter.Field = sorterData["field"].(string)
 	p.State.Sorter.Order = sorterData["order"].(string)
 	return nil
@@ -156,7 +155,6 @@ func (p *ComponentPodsTable) EncodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-
 	encode := base64.StdEncoding.EncodeToString(jsonData)
 	p.State.PodsTableURLQuery = encode
 	return nil
@@ -303,14 +301,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 		}
 
 		cpuStatus, cpuValue, cpuTip := "success", "0", "N/A"
-		metricsData := getCache(cache.GenerateKey(p.State.ClusterName, podName, podNamespace, metrics.Cpu, metrics.Pod))
+		metricsData := metrics.GetCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Cpu, metrics.Pod))
 		if metricsData != nil && !cpuLimits.IsZero() {
 			usedCPUPercent := metricsData.Used
 			cpuStatus, cpuValue, cpuTip = p.parseResPercent(usedCPUPercent, cpuLimits, resource.DecimalSI)
 		}
 
 		memStatus, memValue, memTip := "success", "0", "N/A"
-		metricsData = getCache(cache.GenerateKey(p.State.ClusterName, podName, podNamespace, metrics.Memory, metrics.Pod))
+		metricsData = metrics.GetCache(cache.GenerateKey(p.State.ClusterName, name, namespace, metrics.Memory, metrics.Pod))
 		if metricsData != nil && !memLimits.IsZero() {
 			usedMemPercent := metricsData.Used
 			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
@@ -738,20 +736,4 @@ func getRange(length, pageNo, pageSize int) (int, int) {
 		r = length
 	}
 	return l, r
-}
-
-func getCache(key string) *metrics.MetricsData {
-
-	v, _, err := cache.GetFreeCache().Get(key)
-	if err != nil {
-		logrus.Errorf("get metrics %v err :%v", key, err)
-	}
-	d := &metrics.MetricsData{}
-	if v != nil {
-		err = jsi.Unmarshal(v[0].Value().([]byte), d)
-		if err != nil {
-			logrus.Errorf("get metrics %v unmarshal to json err :%v", key, err)
-		}
-	}
-	return d
 }

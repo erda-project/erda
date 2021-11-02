@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -109,7 +110,7 @@ func (a *ComponentNodeFormModal) handlerSubmitOperation(ctxBdl protocol.ContextB
 	if formData.Branch == "" || formData.Name == "" {
 		return fmt.Errorf("name %s or branch %s error: value is empty", formData.Name, formData.Branch)
 	}
-	if formData.Name == "pipeline.yml" {
+	if formData.Name == "pipeline.yml" || formData.Name == "pipeline" || formData.Name == "pipeline.yaml" {
 		return fmt.Errorf("can not add pipeline.yml yml already exists")
 	} else {
 		pinode := fmt.Sprintf("%s/%s/tree/%s/.dice/pipelines", inParams.ProjectId, inParams.AppId, formData.Branch)
@@ -117,6 +118,12 @@ func (a *ComponentNodeFormModal) handlerSubmitOperation(ctxBdl protocol.ContextB
 		req.Scope = apistructs.FileTreeScopeProjectApp
 		req.ScopeID = inParams.ProjectId
 		req.Name = formData.Name
+
+		// assuming that the user did not fill in the .yml suffix, it will be filled in automatically when creating
+		req.Name = strings.TrimSuffix(req.Name, ".yaml")
+		if !strings.HasSuffix(req.Name, ".yml") {
+			req.Name += ".yml"
+		}
 		req.UserID = ctxBdl.Identity.UserID
 		req.Type = apistructs.UnifiedFileTreeNodeTypeFile
 		req.Pinode = base64.StdEncoding.EncodeToString([]byte(pinode))

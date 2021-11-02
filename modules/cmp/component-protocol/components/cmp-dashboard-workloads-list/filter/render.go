@@ -308,13 +308,13 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	jsonData, err := json.Marshal(f.State.Values)
+	data, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.FilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encoded
 	return nil
 }
 

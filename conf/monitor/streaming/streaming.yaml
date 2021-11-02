@@ -11,6 +11,21 @@ kafka:
     options:
       go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 
+kafka.topic.initializer:
+  force: ${KAFKA_INIT_FORCE_SUCCESS:true}
+  topics:
+    - spot-container-log
+    - spot-job-log
+    - spot-metrics
+    - spot-events
+    - msp-tracing-metrics
+    - spot-analytics
+    - spot-trace
+    - msp-jaeger-trace
+    - spot-alert-record
+    - spot-notify-record
+    - spot-entity
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: ${MYSQL_PORT:3306}
@@ -27,6 +42,9 @@ etcd:
 
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
+
+etcd-mutex:
+  root_path: "/erda/streaming"
 
 # elasticsearch for log
 elasticsearch@log:
@@ -99,9 +117,7 @@ cassandra:
   username: ${CASSANDRA_SECURITY_USERNAME}
   password: ${CASSANDRA_SECURITY_PASSWORD}
   timeout: "${CASSANDRA_TIMEOUT:3s}"
-etcd-mutex:
-  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:true}
-  root_path: "/erda/streaming"
+
 log-persist-v1:
   _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:true}
   input:
@@ -322,6 +338,31 @@ trace-storage:
       batch:
         size:  ${KAFKA_BATCH_SIZE:50}
         timeout: "10s"
+
+# entity
+elasticsearch@entity:
+  _enable: ${ENTITY_ELASTICSEARCH_ENABLE:false}
+  urls: "${ENTITY_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${ENTITY_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${ENTITY_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${ENTITY_ELASTICSEARCH_SECURITY_PASSWORD}"
+elasticsearch.index.initializer@entity:
+  _enable: ${WRITE_ENTITY_TO_ES_ENABLE:true}
+  templates:
+    - name: "erda-entity"
+      path: "${CONFIG_PATH}/entity_index_template.json"
+entity-storage-elasticsearch:
+  write_timeout: "1m"
+  query_timeout: "1m"
+  index_type: "entity"
+  pattern: "erda-entity-<type>"
+entity-persist:
+  input:
+    topics: "${ENTITY_TOPICS:spot-entity}"
+    group: "${ENTITY_GROUP_ID:spot-entity-dev}"
+  read_timeout: "5s"
+  buffer_size: ${METRIC_BATCH_SIZE:10}
+  parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
 
 alert-storage:
   input:
