@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
@@ -25,10 +26,12 @@ import (
 
 var PIPELINE = command.Command{
 	Name: "pipeline",
-	ShortHelp: "List pipelines in .dice/pipelines directory (current repo)",
+	ShortHelp: "List pipelines in .erda/pipelines directory (current repo)",
 	Example: "erda-cli pipeline",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers",
+			Doc: "When using the default or custom-column output format, don't print headers (default print headers)",
+			DefaultValue: false},
 	},
 	Run: GetPipelines,
 }
@@ -42,31 +45,33 @@ func GetPipelines(ctx *command.Context, noHeaders bool) error {
 	var pipelineymls []string
 
 	erdaDir, err := dicedir.FindProjectErdaDir()
-	if err != nil {
+	if err != nil && err != dicedir.NotExist {
 		return err
-	}
-	// compatible to dice
-	ymls, err := common.GetWorkspacePipelines(erdaDir)
-	if err != nil {
-		return err
-	}
-	for _, y := range ymls {
-		pipelineymls = append(pipelineymls, ".erda/pipelines/" + y)
+	} else if err == nil {
+		ymls, err := common.GetWorkspacePipelines(erdaDir)
+		if err != nil {
+			return err
+		}
+		for _, y := range ymls {
+			pipelineymls = append(pipelineymls, ".erda/pipelines/" + y)
+		}
 	}
 
+	// compatible to dice
 	diceDir, err := dicedir.FindProjectDiceDir()
-	if err != nil {
+	if err != nil && err != dicedir.NotExist {
 		return err
-	}
-	ymls, err = common.GetWorkspacePipelines(diceDir)
-	if err != nil {
-		return err
-	}
-	if len(ymls) > 0 {
-		fmt.Println(color_str.Yellow("Warning! Should rename .dice to .erda"))
-	}
-	for _, y := range ymls {
-		pipelineymls = append(pipelineymls, ".dice/pipelines/" + y)
+	} else if err == nil {
+		ymls, err := common.GetWorkspacePipelines(diceDir)
+		if err != nil {
+			return err
+		}
+		if len(ymls) > 0 {
+			fmt.Println(color_str.Yellow("Warning! Should rename .dice to .erda"))
+		}
+		for _, y := range ymls {
+			pipelineymls = append(pipelineymls, ".dice/pipelines/" + y)
+		}
 	}
 
 	var data [][]string

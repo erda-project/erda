@@ -16,12 +16,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/terminal/color_str"
-	"github.com/erda-project/erda/tools/cli/command"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/terminal/color_str"
+	"github.com/erda-project/erda/tools/cli/command"
 )
 
 var PIPELINECHECK = command.Command{
@@ -29,28 +30,40 @@ var PIPELINECHECK = command.Command{
 	ParentName: "PIPELINE",
 	ShortHelp: "check pipeline",
 	Example: `
-  $ erda-cli pipeline check .erda/pipelines/pipeline.yml
+  $ erda-cli pipeline check -f .erda/pipelines/pipeline.yml
 `,
-	Args: []command.Arg{
-		command.StringArg{}.Name("pipeline"),
+	Flags: []command.Flag{
+		command.StringFlag{"f", "file",
+			"Specify the path of pipeline.yml file, default: .erda/pipelines/pipeline.yml",
+			".erda/pipelines/pipeline.yml"},
 	},
-	Run: RunPipelineCheck,
+	Run: PipelineCheck,
 }
 
-func RunPipelineCheck(ctx *command.Context, pipeline string) error {
-	wd, err :=os.Getwd()
-	if err != nil {
-		return err
+func PipelineCheck(ctx *command.Context, ymlfile string) error {
+	var b []byte
+	if ymlfile == "-" {
+		bytes, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return err
+		}
+		b = bytes
+	} else {
+		wd, err :=os.Getwd()
+		if err != nil {
+			return err
+		}
+		b, err = ioutil.ReadFile(filepath.Join(wd, ymlfile))
+		if err != nil {
+			return err
+		}
 	}
-	b, err := ioutil.ReadFile(filepath.Join(wd, pipeline))
-	if err != nil {
-		return err
-	}
-	_, err = pipelineyml.New(b)
+
+	_, err := pipelineyml.New(b)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(color_str.Green("✔ "), pipeline, "ok!")
+	fmt.Println(color_str.Green("✔ "), ymlfile, "ok!")
 	return nil
 }

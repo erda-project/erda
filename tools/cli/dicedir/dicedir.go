@@ -109,7 +109,7 @@ func FindProjectErdaDir() (string, error) {
 	}
 	var res string
 	for {
-		if existProjDiceDir(current) {
+		if existProjErdaDir(current) {
 			res = mkProjErdaDirPath(current)
 			return res, nil
 		}
@@ -119,6 +119,18 @@ func FindProjectErdaDir() (string, error) {
 			return "", NotExist
 		}
 	}
+}
+
+func CreateProjectErdaDir() (string, error) {
+	current, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	pdir := mkProjErdaDirPath(current)
+	if err := os.Mkdir(pdir, 0755); err != nil && !os.IsExist(err) {
+		return "", err
+	}
+	return pdir, nil
 }
 
 func existProjErdaDir(path string) bool {

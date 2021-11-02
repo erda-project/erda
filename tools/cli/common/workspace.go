@@ -49,9 +49,7 @@ func GetRepo(remote string) string {
 
 func GetWorkspacePipelines(dir string) ([]string, error) {
 	var ymls []string
-	fmt.Println("dir :", dir)
 	fs, err := ioutil.ReadDir(dir + "/pipelines")
-	fmt.Println(len(fs))
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
