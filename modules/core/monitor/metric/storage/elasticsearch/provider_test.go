@@ -18,8 +18,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
 func Test_processInvalidFields(t *testing.T) {
