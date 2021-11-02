@@ -15,10 +15,12 @@
 package bundle
 
 import (
+	`context`
 	"fmt"
 	"net/url"
 	"strconv"
 
+	`github.com/erda-project/erda-infra/providers/i18n`
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -61,12 +63,17 @@ func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*api
 // FetchNamespacesBelongsTo finds the project to which a given namespaces belongs to.
 // if orgID == 0, query from all scope.
 // namespaces: the key is cluster name, the value is the namespaces list in the cluster.
-func (b *Bundle) FetchNamespacesBelongsTo() (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
+
+	lang := "zh-CN"
+	if langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes); len(langCodes) > 0 {
+		lang = langCodes[0].String()
+	}
 
 	type response struct {
 		apistructs.Header
@@ -74,6 +81,7 @@ func (b *Bundle) FetchNamespacesBelongsTo() (*apistructs.GetProjectsNamesapcesRe
 	}
 	var resp response
 	httpResp, err := hc.Get(host).
+		Header("lang", lang).
 		Path("/api/projects-namespaces").
 		Do().JSON(&resp)
 	if err != nil {
