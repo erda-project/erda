@@ -200,7 +200,7 @@ func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kin
 	case string(apistructs.K8SStatefulSet):
 		_, err = client.ClientSet.AppsV1().StatefulSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
 	case string(apistructs.K8SDaemonSet):
-		_, err = client.ClientSet.AppsV1().StatefulSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
+		_, err = client.ClientSet.AppsV1().DaemonSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
 	default:
 		return errors.Errorf("invalid workload kind %s (only deployment, statefulSet and daemonSet can be restarted)", kind)
 	}
