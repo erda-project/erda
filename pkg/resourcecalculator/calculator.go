@@ -127,14 +127,14 @@ type ResourceCalculator struct {
 	total            uint64
 }
 
-func (q *ResourceCalculator) addValue(value uint64, workspace ...Workspace) {
-	q.total += value
+func (q *ResourceCalculator) addValue(v uint64, workspace ...Workspace) {
+	q.total += v
 	workspaces := WorkspacesString(workspace)
 	if length := len(workspaces); length == 0 || length > 4 {
 		return
 	}
 	w := strings.Join(workspaces, ":")
-	q.WorkspacesValues[w] += value
+	q.WorkspacesValues[w] += v
 }
 
 func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
@@ -153,36 +153,36 @@ func (q *ResourceCalculator) totalForWorkspace(workspace Workspace) uint64 {
 	return sum
 }
 
-func (q *ResourceCalculator) deductionQuota(workspace Workspace, value uint64) {
-	q.deduction += value
+func (q *ResourceCalculator) deductionQuota(workspace Workspace, v uint64) {
+	q.deduction += v
 	// 按优先级减扣
 	p := priority(workspace)
 	for _, workspaces := range p {
-		if q.WorkspacesValues[workspaces] >= value {
-			q.WorkspacesValues[workspaces] -= value
-			q.takeUp(workspaces, value)
+		if q.WorkspacesValues[workspaces] >= v {
+			q.WorkspacesValues[workspaces] -= v
+			q.takeUp(workspaces, v)
 			return
 		}
-		value -= q.WorkspacesValues[workspaces]
+		v -= q.WorkspacesValues[workspaces]
 		q.takeUp(workspaces, q.WorkspacesValues[workspaces])
 		q.WorkspacesValues[workspaces] = 0
 	}
 
-	q.takeUp(WorkspaceString(workspace), value)
+	q.takeUp(WorkspaceString(workspace), v)
 }
 
-func (q *ResourceCalculator) takeUp(workspaces string, value uint64) {
+func (q *ResourceCalculator) takeUp(workspaces string, v uint64) {
 	if strings.Contains(workspaces, "prod") {
-		q.tackUpM[Prod] += value
+		q.tackUpM[Prod] += v
 	}
 	if strings.Contains(workspaces, "staging") {
-		q.tackUpM[Staging] += value
+		q.tackUpM[Staging] += v
 	}
 	if strings.Contains(workspaces, "test") {
-		q.tackUpM[Test] += value
+		q.tackUpM[Test] += v
 	}
 	if strings.Contains(workspaces, "dev") {
-		q.tackUpM[Dev] += value
+		q.tackUpM[Dev] += v
 	}
 }
 
@@ -224,20 +224,20 @@ func WorkspacesString(workspaces []Workspace) []string {
 	return result
 }
 
-func CoreToMillcore(value float64) uint64 {
-	return uint64(Accuracy(value*1000, 0))
+func CoreToMillcore(v float64) uint64 {
+	return uint64(Accuracy(v*1000, 0))
 }
 
-func MillcoreToCore(value uint64, accuracy int32) float64 {
-	return Accuracy(float64(value)/1000, accuracy)
+func MillcoreToCore(v uint64, accuracy int32) float64 {
+	return Accuracy(float64(v)/1000, accuracy)
 }
 
-func GibibyteToByte(value float64) uint64 {
-	return uint64(Accuracy(value*1024*1024*1024, 0))
+func GibibyteToByte(v float64) uint64 {
+	return uint64(Accuracy(v*1024*1024*1024, 0))
 }
 
-func ByteToGibibyte(value uint64, accuracy int32) float64 {
-	return Accuracy(float64(value)/(1024*1024*1024), accuracy)
+func ByteToGibibyte(v uint64, accuracy int32) float64 {
+	return Accuracy(float64(v)/(1024*1024*1024), accuracy)
 }
 
 func priority(workspace Workspace) []string {

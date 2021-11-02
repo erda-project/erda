@@ -344,7 +344,10 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return nil, errors.Wrap(err, "failed to GetQuotaByProjectID")
 	}
 	hasOldQuota := oldQuota != nil
-	project.Quota = oldQuota
+	if hasOldQuota {
+		project.Quota = new(apistructs.ProjectQuota)
+		*project.Quota = *oldQuota
+	}
 
 	if err := patchProject(&project, updateReq, userIDuint); err != nil {
 		return nil, err
@@ -392,6 +395,9 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	go func() {
 		if project.Quota == nil {
 			return
+		}
+		if oldQuota == nil {
+			oldQuota = new(apistructs.ProjectQuota)
 		}
 		if !isQuotaChanged(*oldQuota, *project.Quota) {
 			return
