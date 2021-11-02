@@ -1354,8 +1354,13 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 		Params: make(map[string]*structpb.Value),
 	}
 	req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE `, request.Condition, request.Index)
+	count := 0
 	for k, v := range request.Filters {
 		req.Statement += fmt.Sprintf(`%s::tag=$%s`, k, k)
+		count++
+		if count < len(request.Filters) {
+			req.Statement += " and "
+		}
 		req.Params[k] = structpb.NewStringValue(v)
 	}
 	req.Statement += fmt.Sprintf(` GROUP BY %s::tag`, request.Condition)
