@@ -464,3 +464,54 @@ func Test_getScopeScopeID(t *testing.T) {
 		})
 	}
 }
+
+func Test_updateFields(t *testing.T) {
+	tests := []struct {
+		name string
+		req  *pb.UpdateCustomViewRequest
+	}{
+		{
+			req: &pb.UpdateCustomViewRequest{
+				Id:     "test-id",
+				Name:   "test-name",
+				Desc:   "test-desc",
+				Blocks: nil,
+				Data:   nil,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := fieldsForUpdate(tt.req)
+			if _, ok := got["UpdatedAt"]; !ok {
+				t.Errorf("fieldsForUpdate() = %v, must contains UpdatedAt", got)
+			}
+			if _, ok := got["ViewConfig"]; !ok {
+				t.Errorf("fieldsForUpdate() = %v, must contains ViewConfig", got)
+			}
+			if _, ok := got["DataConfig"]; !ok {
+				t.Errorf("fieldsForUpdate() = %v, must contains DataConfig", got)
+			}
+		})
+	}
+}
+
+func Test_fieldsForUpdate(t *testing.T) {
+	type args struct {
+		req *pb.UpdateCustomViewRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]interface{}
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := fieldsForUpdate(tt.args.req); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
