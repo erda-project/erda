@@ -188,7 +188,7 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 			return nil, pkgerrors.NewDatabaseError(err)
 		}
 		if countByName > 1 {
-			return nil, pkgerrors.NewAlreadyExistsError("name")
+			return nil, pkgerrors.NewAlreadyExistsError(req.Name)
 		}
 		if countByName == 1 {
 			byName, err := s.NotifyChannelDB.GetByName(req.Name)
@@ -196,7 +196,7 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 				return nil, pkgerrors.NewDatabaseError(err)
 			}
 			if byName != nil && byName.Id != req.Id {
-				return nil, pkgerrors.NewAlreadyExistsError("name")
+				return nil, pkgerrors.NewAlreadyExistsError(req.Name)
 			}
 		}
 		channel.Name = req.Name
@@ -389,7 +389,7 @@ func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, r
 			return nil, pkgerrors.NewInternalServerError(err)
 		}
 		if enabledCount >= 1 {
-			return nil, pkgerrors.NewWarnError(fmt.Sprintf(s.p.I18n.Text(apis.Language(ctx), "enabled_exception"), channel.Type))
+			return &pb.UpdateNotifyChannelEnabledResponse{}, pkgerrors.NewWarnError(fmt.Sprintf(s.p.I18n.Text(apis.Language(ctx), "enabled_exception"), s.p.I18n.Text(apis.Language(ctx), channel.Type)))
 		}
 	}
 	channel.IsEnabled = req.Enable
