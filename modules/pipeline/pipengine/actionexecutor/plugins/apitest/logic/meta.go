@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
+	"github.com/erda-project/erda/pkg/loop"
 )
 
 const (
@@ -112,11 +114,15 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 	cb.PipelineTaskID = task.ID
 
 	cbData, _ := json.Marshal(&cb)
-	err := pipelinefunc.CallbackActionFunc(cbData)
-	if err != nil {
-		log.Errorf("failed to callback, err: %v", err)
-		return
-	}
-
+	// apitest should ensure that callback to pipeline after doing request
+	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(10*time.Second)).
+		Do(func() (bool, error) {
+			err := pipelinefunc.CallbackActionFunc(cbData)
+			if err != nil {
+				log.Errorf("failed to callback, err: %v", err)
+				return false, err
+			}
+			return true, nil
+		})
 	return
 }
