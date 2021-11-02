@@ -56,6 +56,18 @@ func (client *DBClient) GetProjectByID(projectID int64) (model.Project, error) {
 	return project, nil
 }
 
+func (client *DBClient) GetQuotaByProjectID(projectID int64) (*apistructs.ProjectQuota, error) {
+	var quota = new(apistructs.ProjectQuota)
+	err := client.First(quota, map[string]interface{}{"project_id": projectID}).Error
+	if err == nil {
+		return quota, nil
+	}
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, nil
+	}
+	return nil, err
+}
+
 // GetProjectsByOrgIDAndName 根据orgID与名称获取项目列表
 func (client *DBClient) GetProjectsByOrgIDAndName(orgID int64, params *apistructs.ProjectListRequest) (
 	int, []model.Project, error) {
