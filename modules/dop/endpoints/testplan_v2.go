@@ -485,6 +485,5 @@ func (e *Endpoints) GetAutoTestExecHistory(ctx context.Context, r *http.Request,
 	if err != nil {
 		return apierrors.ErrGetAutoTestExecHistory.InternalError(err).ToResp(), nil
 	}
-
 	return httpserver.OkResp(history)
 }

@@ -729,7 +729,7 @@ func SceneToPipelineYml(inputs []apistructs.AutoTestSceneInput, outputs []apistr
 			Ref:  output.Value,
 		}
 	}
-
+	logrus.Info("wxj scene3: ", req)
 	var stagesValue []*pipelineyml.Stage
 	for _, stage := range stages {
 		var specStage pipelineyml.Stage
@@ -770,6 +770,7 @@ func StepToAction(step apistructs.AutoTestSceneStep, req apistructs.SnippetConfi
 	action.Labels = map[string]string{}
 	action.Labels[apistructs.AutotestSceneStep] = base64.StdEncoding.EncodeToString(stepJson)
 	action.Labels[apistructs.AutotestType] = apistructs.AutotestSceneStep
+	action.Labels[apistructs.LabelIsRefSet] = req.Labels[apistructs.LabelIsRefSet]
 	action.Alias = pipelineyml.ActionAlias(strconv.Itoa(int(step.ID)))
 	action.If = expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder
 	action.Disable = step.IsDisabled

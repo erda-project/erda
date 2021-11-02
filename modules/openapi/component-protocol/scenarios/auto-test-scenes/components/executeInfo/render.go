@@ -157,13 +157,13 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 			i.Data["status"] = "无需执行"
 		}
 
-		res, err := i.CtxBdl.Bdl.GetAutoTestExecHistory(i.State.PipelineID)
+		execHistory, err := i.CtxBdl.Bdl.GetAutoTestExecHistory(i.State.PipelineID)
 		if err != nil {
 			i.Data["autoTestExecPercent"] = "-"
 			i.Data["autoTestSuccessPercent"] = "-"
 		} else {
-			i.Data["autoTestExecPercent"] = fmt.Sprintf("%.2f", res.ExecuteRate)
-			i.Data["autoTestSuccessPercent"] = fmt.Sprintf("%.2f", res.PassRate)
+			i.Data["autoTestExecPercent"] = fmt.Sprintf("%.2f", execHistory.ExecuteRate)
+			i.Data["autoTestSuccessPercent"] = fmt.Sprintf("%.2f", execHistory.PassRate)
 		}
 	}
 	i.Props = make(map[string]interface{})

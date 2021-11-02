@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -649,6 +650,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 								apistructs.LabelSceneSetID:       strconv.Itoa(int(v.RefSetID)),
 								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
 								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
+								//apistructs.LabelIsRefSet:         "true",
 							},
 						},
 					},
@@ -794,6 +796,7 @@ func (svc *Service) BatchQueryScenePipelineSnippetYaml(configs []apistructs.Snip
 		setIds = append(setIds, uint64(sceneSetIDInt))
 		configsMap[uint64(sceneSetIDInt)] = req
 	}
+	logrus.Info("wxj scene2: ", configsMap)
 
 	results, err := svc.GetAutotestScenesByIDs(setIds)
 	if err != nil {
@@ -807,7 +810,10 @@ func (svc *Service) BatchQueryScenePipelineSnippetYaml(configs []apistructs.Snip
 	}
 
 	var resultConfigs []apistructs.BatchSnippetConfigYml
+
 	for key, v := range results {
+		logrus.Info("wxj scene2: ", v.ID)
+		logrus.Info("wxj scene2: ", configsMap[v.ID])
 		yml, err := svc.DoSceneToYml(v.Steps, v.Inputs, v.Output, configsMap[v.ID])
 		if err != nil {
 			return nil, err
