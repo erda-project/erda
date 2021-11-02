@@ -59,7 +59,7 @@ func TestClaas_patchProject(t *testing.T) {
 	var body apistructs.ProjectUpdateBody
 	err := json.Unmarshal([]byte(b), &body)
 
-	patchProject(oldPrj, &body)
+	patchProject(oldPrj, &body, 0)
 
 	assert.NoError(t, err)
 	assert.Equal(t, oldPrj.DisplayName, "displayName")
