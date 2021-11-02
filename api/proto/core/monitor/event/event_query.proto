@@ -22,6 +22,7 @@ message GetEventsRequest {
   int64 pageNo = 7;
   int64 pageSize = 8;
   bool debug = 9;
+  map<string,string> tags = 10;
 }
 
 message GetEventsResponse {

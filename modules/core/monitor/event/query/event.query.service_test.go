@@ -104,6 +104,38 @@ func Test_eventQueryService_GetEvents_WithValidParams_Should_Return_NonEmptyList
 		TraceId:      "trace-id",
 		RelationId:   "res-id",
 		RelationType: "res-type",
+		Tags: map[string]string{
+			"key-1": "val-1",
+		},
+	})
+	if err != nil {
+		t.Errorf("should not throw error")
+	}
+	if result == nil || len(result.Data.Items) != 1 {
+		t.Errorf("assert result failed")
+	}
+
+}
+
+func Test_eventQueryService_GetEvents_WithNilTags_Should_Not_Throw(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	storage := NewMockStorage(ctrl)
+	storage.EXPECT().
+		QueryPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]*event.Event{
+			{EventID: "event-id-1"},
+		}, nil)
+
+	querySvc := &eventQueryService{
+		storageReader: storage,
+	}
+	result, err := querySvc.GetEvents(context.Background(), &pb.GetEventsRequest{
+		Start:        1,
+		End:          2,
+		TraceId:      "trace-id",
+		RelationId:   "res-id",
+		RelationType: "res-type",
 	})
 	if err != nil {
 		t.Errorf("should not throw error")
