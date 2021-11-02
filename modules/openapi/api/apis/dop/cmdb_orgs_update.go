@@ -44,7 +44,7 @@ var CMDB_ORG_UPDATE = apis.ApiSpec{
 			ScopeType:    apistructs.SysScope,
 			ScopeID:      1,
 			OrgID:        resp.Data.ID,
-			TemplateName: apistructs.UpdateOrgTemplate,
+			TemplateName: apistructs.UpdateOrgTemplateV2,
 			Context: map[string]interface{}{
 				"orgName":   resp.Data.Name,
 				"contentZH": resp.Data.AuditMessage.MessageZH,
