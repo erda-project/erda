@@ -31,6 +31,9 @@ import (
 const (
 	OperationKeyClickBranchExpandChildren = "branchExpandChildren"
 
+	mobileInitBranchKey = "mobile_init_branch_key"
+	mobileInitKey       = "mobile_init_key"
+
 	I18nLocalePrefixKey                = "wb.content.pipeline.file.tree."
 	defaultPipelineI18nKey             = "defaultPipeline"
 	addDefaultPipelineI18nKey          = "addDefaultPipeline"
@@ -40,6 +43,9 @@ const (
 	canNotDeleteDefaultPipelineI18nKey = "canNotDeleteDefaultPipeline"
 	addPipelineI18nKey                 = "addPipeline"
 	openI18nKey                        = "open"
+
+	mobileInitBranch   = "mobileInitBranch"
+	mobileInitializing = "mobileInitializing"
 )
 
 // GetUserPermission  check Guest permission
@@ -372,6 +378,55 @@ func (a *ComponentFileTree) handlerDefaultValue(ctxBdl protocol.ContextBundle, i
 	if err != nil {
 		return err
 	}
+
+	// when the branch list here is empty and it is still a mobile application,
+	// simulate a virtual branch and pipeline so that the front end can view the log of application initialization
+	if len(fileTreeData) <= 0 {
+		appID, err := strconv.ParseUint(inParams.AppId, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		dto, err := ctxBdl.Bdl.GetApp(appID)
+		if err != nil {
+			return err
+		}
+
+		if dto.Mode == string(apistructs.ApplicationModeMobile) {
+			i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+
+			var node = Data{}
+			node.Key = mobileInitBranchKey
+			node.Icon = "fz"
+			node.ClickToExpand = true
+			node.IsLeaf = false
+			node.Title = i18nLocale.Get(I18nLocalePrefixKey + mobileInitBranch)
+			node.Selectable = false
+			var clickToExpand = ClickBranchNodeOperation{
+				Key:    OperationKeyClickBranchExpandChildren,
+				Text:   i18nLocale.Get(I18nLocalePrefixKey + openI18nKey),
+				Reload: true,
+				Show:   false,
+				Meta: ClickBranchNodeOperationMeta{
+					ParentKey: mobileInitBranchKey,
+				},
+			}
+			node.Operations = map[string]interface{}{}
+			node.Operations["click"] = clickToExpand
+
+			var childNode = Data{
+				Key:        mobileInitKey,
+				Title:      i18nLocale.Get(I18nLocalePrefixKey + mobileInitializing),
+				Selectable: true,
+				Icon:       "dm",
+				IsLeaf:     true,
+				Operations: nil,
+			}
+			node.Children = append(node.Children, childNode)
+			fileTreeData = append(fileTreeData, node)
+		}
+	}
+
 	selectKey, expandedKeys := findSelectedKeysExpandedKeys(fileTreeData, inParams.SelectedKeys)
 
 	a.Type = "FileTree"
