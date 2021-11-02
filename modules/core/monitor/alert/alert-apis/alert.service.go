@@ -40,7 +40,15 @@ type alertService struct {
 	p *provider
 }
 
-const MicroService = "micro_service"
+const (
+	MicroService = "micro_service"
+	ClusterName  = "cluster_name"
+
+	Org = "org"
+	Msp = "msp"
+
+	TriggerCondition = "trigger_condition"
+)
 
 func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
@@ -125,15 +133,24 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	}
 	alert.Attributes = make(map[string]*structpb.Value)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	data, err = json.Marshal(request.TriggerCondition)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	alert.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
 	id, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-	if len(alert.ClusterNames) <= 0 {
-		return nil, errors.NewMissingParameterError("cluster name")
-	}
-	if !m.checkOrgClusterNames(id, alert.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "create", "access denied")
+	for _, v := range alert.TriggerCondition {
+		if v.Condition == ClusterName {
+			if len(v.Values) <= 0 {
+				return nil, errors.NewMissingParameterError("cluster_names")
+			}
+			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
+				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
+			}
+		}
 	}
 	aid, err := m.p.a.CreateOrgAlert(alert, orgID)
 	if err != nil {
@@ -839,6 +856,15 @@ func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertD
 	}
 	result := &pb.GetAlertDetailResponse{}
 	result.Data = data
+	conditions := make([]*pb.TriggerCondition, 0)
+	conditionStr, ok := data.Attributes[TriggerCondition]
+	if ok {
+		err = json.Unmarshal([]byte(conditionStr.GetStringValue()), &conditions)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		result.Data.TriggerCondition = conditions
+	}
 	return result, nil
 }
 
@@ -976,20 +1002,16 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
-
+	for _, v := range request.TriggerCondition {
+		if v.Condition == ClusterName {
+			if len(v.Values) <= 0 {
+				return nil, errors.NewMissingParameterError("cluster_names")
+			}
+		}
+	}
 	request.Attributes = make(map[string]*structpb.Value)
 	orgName := structpb.NewStringValue(org.Name)
 	request.Attributes["org_name"] = orgName
-	id, err := strconv.ParseUint(orgID, 10, 64)
-	if err != nil {
-		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
-	}
-	if len(request.ClusterNames) <= 0 {
-		return nil, errors.NewMissingParameterError("cluster names")
-	}
-	if !m.checkOrgClusterNames(id, request.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
-	}
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -1299,4 +1321,68 @@ func (m *alertService) UpdateOrgAlertIssue(ctx context.Context, request *pb.Upda
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.UpdateOrgAlertIssueResponse{}, nil
+}
+
+func (m *alertService) GetAlertConditions(ctx context.Context, request *pb.GetAlertConditionsRequest) (*pb.GetAlertConditionsResponse, error) {
+	lang := apis.Language(ctx)
+	resp := &pb.GetAlertConditionsResponse{
+		Data: make([]*pb.Conditions, 0),
+	}
+	for _, v := range m.p.alertConditions {
+		if v.Scope == request.ScopeType {
+			data, err := json.Marshal(v.Conditions)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			err = json.Unmarshal(data, &resp.Data)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			for _, cond := range resp.Data {
+				cond.DisplayName = m.p.t.Text(lang, cond.Key)
+			}
+			return resp, nil
+		}
+	}
+	return resp, nil
+}
+
+func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
+	req := &metricpb.QueryWithInfluxFormatRequest{
+		Start:  "before_3h",
+		End:    "now",
+		Params: make(map[string]*structpb.Value),
+	}
+	req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE `, request.Condition, request.Index)
+	for k, v := range request.Filters {
+		req.Statement += fmt.Sprintf(`%s::tag=$%s`, k, k)
+		req.Params[k] = structpb.NewStringValue(v)
+	}
+	req.Statement += fmt.Sprintf(` GROUP BY %s::tag`, request.Condition)
+	resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	conditions := getResultValue(resp.Results)
+	result := &pb.GetAlertConditionsValueResponse{
+		Data: &pb.AlertConditionsValue{
+			Key:     request.Condition,
+			Options: conditions,
+		},
+	}
+	return result, nil
+}
+
+func getResultValue(result []*metricpb.Result) []*structpb.Value {
+	value := make([]*structpb.Value, 0)
+	for _, v := range result {
+		for _, s := range v.Series {
+			for _, r := range s.Rows {
+				for _, c := range r.Values {
+					value = append(value, c)
+				}
+			}
+		}
+	}
+	return value
 }

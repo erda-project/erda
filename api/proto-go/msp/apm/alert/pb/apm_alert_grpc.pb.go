@@ -43,6 +43,8 @@ type AlertServiceClient interface {
 	CreateAlertRecordIssue(ctx context.Context, in *CreateAlertRecordIssueRequest, opts ...grpc.CallOption) (*CreateAlertRecordIssueResponse, error)
 	UpdateAlertRecordIssue(ctx context.Context, in *UpdateAlertRecordIssueRequest, opts ...grpc.CallOption) (*UpdateAlertRecordIssueResponse, error)
 	DashboardPreview(ctx context.Context, in *DashboardPreviewRequest, opts ...grpc.CallOption) (*DashboardPreviewResponse, error)
+	GetAlertConditions(ctx context.Context, in *GetAlertConditionsRequest, opts ...grpc.CallOption) (*GetAlertConditionsResponse, error)
+	GetAlertConditionsValue(ctx context.Context, in *GetAlertConditionsValueRequest, opts ...grpc.CallOption) (*GetAlertConditionsValueResponse, error)
 }
 
 type alertServiceClient struct {
@@ -251,6 +253,24 @@ func (c *alertServiceClient) DashboardPreview(ctx context.Context, in *Dashboard
 	return out, nil
 }
 
+func (c *alertServiceClient) GetAlertConditions(ctx context.Context, in *GetAlertConditionsRequest, opts ...grpc.CallOption) (*GetAlertConditionsResponse, error) {
+	out := new(GetAlertConditionsResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.apm.alert.AlertService/GetAlertConditions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *alertServiceClient) GetAlertConditionsValue(ctx context.Context, in *GetAlertConditionsValueRequest, opts ...grpc.CallOption) (*GetAlertConditionsValueResponse, error) {
+	out := new(GetAlertConditionsValueResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.apm.alert.AlertService/GetAlertConditionsValue", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AlertServiceServer is the server API for AlertService service.
 // All implementations should embed UnimplementedAlertServiceServer
 // for forward compatibility
@@ -277,6 +297,8 @@ type AlertServiceServer interface {
 	CreateAlertRecordIssue(context.Context, *CreateAlertRecordIssueRequest) (*CreateAlertRecordIssueResponse, error)
 	UpdateAlertRecordIssue(context.Context, *UpdateAlertRecordIssueRequest) (*UpdateAlertRecordIssueResponse, error)
 	DashboardPreview(context.Context, *DashboardPreviewRequest) (*DashboardPreviewResponse, error)
+	GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)
+	GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)
 }
 
 // UnimplementedAlertServiceServer should be embedded to have forward compatible implementations.
@@ -348,6 +370,12 @@ func (*UnimplementedAlertServiceServer) UpdateAlertRecordIssue(context.Context, 
 }
 func (*UnimplementedAlertServiceServer) DashboardPreview(context.Context, *DashboardPreviewRequest) (*DashboardPreviewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DashboardPreview not implemented")
+}
+func (*UnimplementedAlertServiceServer) GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertConditions not implemented")
+}
+func (*UnimplementedAlertServiceServer) GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertConditionsValue not implemented")
 }
 
 func RegisterAlertServiceServer(s grpc1.ServiceRegistrar, srv AlertServiceServer, opts ...grpc1.HandleOption) {
@@ -564,6 +592,24 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_AlertService_DashboardPreview_info = transport.NewServiceInfo("erda.msp.apm.alert.AlertService", "DashboardPreview", srv)
 		_AlertService_DashboardPreview_Handler = h.Interceptor(_AlertService_DashboardPreview_Handler)
+	}
+
+	_AlertService_GetAlertConditions_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetAlertConditions(ctx, req.(*GetAlertConditionsRequest))
+	}
+	var _AlertService_GetAlertConditions_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_GetAlertConditions_info = transport.NewServiceInfo("erda.msp.apm.alert.AlertService", "GetAlertConditions", srv)
+		_AlertService_GetAlertConditions_Handler = h.Interceptor(_AlertService_GetAlertConditions_Handler)
+	}
+
+	_AlertService_GetAlertConditionsValue_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetAlertConditionsValue(ctx, req.(*GetAlertConditionsValueRequest))
+	}
+	var _AlertService_GetAlertConditionsValue_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_GetAlertConditionsValue_info = transport.NewServiceInfo("erda.msp.apm.alert.AlertService", "GetAlertConditionsValue", srv)
+		_AlertService_GetAlertConditionsValue_Handler = h.Interceptor(_AlertService_GetAlertConditionsValue_Handler)
 	}
 
 	var serviceDesc = _AlertService_serviceDesc
@@ -1072,6 +1118,52 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.msp.apm.alert.AlertService/DashboardPreview",
 				}
 				return interceptor(ctx, in, info, _AlertService_DashboardPreview_Handler)
+			},
+		},
+		{
+			MethodName: "GetAlertConditions",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetAlertConditionsRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).GetAlertConditions(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_GetAlertConditions_info)
+				}
+				if interceptor == nil {
+					return _AlertService_GetAlertConditions_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.apm.alert.AlertService/GetAlertConditions",
+				}
+				return interceptor(ctx, in, info, _AlertService_GetAlertConditions_Handler)
+			},
+		},
+		{
+			MethodName: "GetAlertConditionsValue",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetAlertConditionsValueRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).GetAlertConditionsValue(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_GetAlertConditionsValue_info)
+				}
+				if interceptor == nil {
+					return _AlertService_GetAlertConditionsValue_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.apm.alert.AlertService/GetAlertConditionsValue",
+				}
+				return interceptor(ctx, in, info, _AlertService_GetAlertConditionsValue_Handler)
 			},
 		},
 	}

@@ -271,10 +271,12 @@ func ToPBAlertNotify(m *db.AlertNotify, notifyGroupMap map[int64]*pb.NotifyGroup
 		if !ok {
 			return nil
 		}
+		groupLevel, _ := utils.GetMapValueString(m.NotifyTarget, "level")
 		n.Type = notifyType
 		n.GroupId = groupID
 		n.GroupType = groupType
 		n.NotifyGroup = notifyGroupMap[groupID]
+		n.Level = groupLevel
 	} else if notifyType == "dingding" {
 		dingdingURL, ok := utils.GetMapValueString(m.NotifyTarget, "dingding_url")
 		if !ok {
@@ -338,6 +340,7 @@ func FromDBAlertToModel(n *pb.AlertNotify, alert *pb.Alert, silencePolicies map[
 		target["type"] = "notify_group"
 		target["group_id"] = n.GroupId
 		target["group_type"] = n.GroupType
+		target["level"] = n.Level
 	} else if n.DingdingUrl != "" {
 		target["type"] = "dingding"
 		target["dingding_url"] = n.DingdingUrl
@@ -380,6 +383,11 @@ func ToPBAlertExpressionModel(expression *db.AlertExpression) *pb.AlertExpressio
 		return nil
 	}
 	e.Window = window
+	level, ok := utils.GetMapValueString(expression.Attributes, "level")
+	if !ok {
+		return nil
+	}
+	e.Level = level
 	functions, ok := utils.GetMapValueArr(expression.Expression, "functions")
 	if !ok {
 		return nil
@@ -437,6 +445,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	attributes["alert_scope"] = alert.AlertScope
 	attributes["alert_scope_id"] = alert.AlertScopeId
 	attributes["recover"] = strconv.FormatBool(e.IsRecover)
+	attributes["level"] = e.Level
 	// remove some fields that are not needed by flink to avoid too long attributes
 	for _, item := range []string{"alert_domain", "alert_dashboard_id", "alert_dashboard_path", "alert_record_path"} {
 		delete(attributes, item)
@@ -466,14 +475,6 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
-		if tag == ClusterName || tag == ApplicationId {
-			v, ok := value.(string)
-			if ok {
-				if !strings.HasPrefix(v, "$") {
-					continue
-				}
-			}
-		}
 		if attr, ok := attributes[tag]; ok {
 			val, err := formatOperatorValue(opType, utils.StringType, attr)
 			if err != nil {
@@ -482,6 +483,21 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 			value = val
 		}
 		filterMap["value"] = value
+	}
+	for _, v := range alert.TriggerCondition {
+		filterMap := make(map[string]interface{})
+		tag := v.Condition
+		operator := v.Operator
+		value := v.Values
+		opType := filterOperatorRel[operator]
+		val, err := formatOperatorValue(opType, utils.StringType, value)
+		if err != nil {
+			return nil, err
+		}
+		filterMap["tag"] = tag
+		filterMap["operator"] = operator
+		filterMap["value"] = val
+		filters = append(filters, filterMap)
 	}
 	filtersValue, err := structpb.NewList(filters)
 	if err != nil {

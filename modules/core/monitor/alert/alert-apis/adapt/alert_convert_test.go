@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
@@ -325,6 +326,18 @@ func TestToDBAlertExpressionModel(t *testing.T) {
 					Domain:       "https://erda.test.terminus.io",
 					CreateTime:   0,
 					UpdateTime:   0,
+					TriggerCondition: []*pb.TriggerCondition{
+						{
+							Condition: "cluster_name",
+							Operator:  "in",
+							Values:    "erda-dev,erda-test",
+						},
+						{
+							Condition: "host_ip",
+							Operator:  "eq",
+							Values:    "127.0.0.1",
+						},
+					},
 				},
 				rule: &pb.AlertRule{
 					Id:         44,
@@ -384,6 +397,59 @@ func TestToDBAlertExpressionModel(t *testing.T) {
 			}
 			if got == nil {
 				t.Errorf("ToDBAlertExpressionModel() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToPBAlertNotify(t *testing.T) {
+	type args struct {
+		m              *db.AlertNotify
+		notifyGroupMap map[int64]*pb.NotifyGroup
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pb.AlertNotify
+	}{
+		{
+			name: "test",
+			args: args{
+				m: &db.AlertNotify{
+					ID:        1,
+					AlertID:   1,
+					NotifyKey: "",
+					NotifyTarget: jsonmap.JSONMap{
+						"type":       "notify_group",
+						"group_id":   1,
+						"group_type": "external-user",
+						"level":      "alert",
+					},
+					NotifyTargetID: "",
+					Silence:        5,
+					SilencePolicy:  "fixed",
+					Enable:         false,
+					Created:        time.Time{},
+					Updated:        time.Time{},
+				},
+				notifyGroupMap: map[int64]*pb.NotifyGroup{
+					1: {
+						Id:        1,
+						Name:      "test",
+						ScopeType: "project",
+						ScopeId:   "ss",
+						Targets:   []*pb.NotifyTarget{},
+						CreatedAt: &timestamppb.Timestamp{},
+						Creator:   "",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToPBAlertNotify(tt.args.m, tt.args.notifyGroupMap); got == nil {
+				t.Errorf("ToPBAlertNotify() = %v, want %v", got, tt.want)
 			}
 		})
 	}

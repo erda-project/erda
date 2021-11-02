@@ -80,7 +80,7 @@ storage-retention-strategy@log:
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@log:
   _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
-  key_patterns: 
+  key_patterns:
     - "erda-logs-<org>.<key>-{number}"
 elasticsearch.index.cleaner@log:
   _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
@@ -192,7 +192,7 @@ storage-retention-strategy@metric:
   load_from_database: true
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@metric:
-  key_patterns: 
+  key_patterns:
     - "spot-<metric>-<namespace>.<key>-r-{number}"
     - "spot-<metric>-<namespace>.<key>-<timestamp>"
 elasticsearch.index.cleaner@metric:
@@ -265,6 +265,7 @@ erda.core.monitor.alert:
   org_filter_tags: "${ORG_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
   micro_service_other_filter_tags: "${MICRO_SERVICE_OTHER_FILTER_TAGS:application_id}"
   silence_policy: "${SILENCE_POLICY:fixed,doubled}"
+  alert_conditions: "${CONFIG_PATH}/alert/trigger_conditions.yaml"
   cassandra:
     session:
       keyspace:

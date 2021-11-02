@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/mwitkow/go-proto-validators"
@@ -91,6 +92,13 @@ func (this *ApmAlertData) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.TriggerCondition {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("TriggerCondition", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *CreateAlertRequest) Validate() error {
@@ -109,6 +117,13 @@ func (this *CreateAlertRequest) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.TriggerCondition {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("TriggerCondition", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *CreateAlertResponse) Validate() error {
@@ -138,6 +153,13 @@ func (this *UpdateAlertRequest) Validate() error {
 		}
 	}
 	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.TriggerCondition {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("TriggerCondition", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *UpdateAlertResponse) Validate() error {
@@ -393,6 +415,31 @@ func (this *DashboardPreviewRequest) Validate() error {
 	return nil
 }
 func (this *DashboardPreviewResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *GetAlertConditionsRequest) Validate() error {
+	return nil
+}
+func (this *GetAlertConditionsResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *GetAlertConditionsValueRequest) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}
+func (this *GetAlertConditionsValueResponse) Validate() error {
 	if this.Data != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)

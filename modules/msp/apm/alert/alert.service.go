@@ -117,25 +117,51 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 	if resp.Data.AlertScope != MicroServiceScope || resp.Data.AlertScopeId != request.TenantGroup {
 		return nil, errors.NewPermissionError("monitor_project_alert", "GET", "alertScope or alertScopeId is invalidate")
 	}
-	appIdStr := resp.Data.Attributes["application_id"]
-	idData := appIdStr.GetListValue().AsSlice()
-	appIds := make([]string, 0)
-	for _, v := range idData {
-		appIds = append(appIds, v.(string))
-	}
+
 	getAlertData := &alert.ApmAlertData{
-		Id:           int64(resp.Data.Id),
-		Name:         resp.Data.Name,
-		AlertScope:   resp.Data.AlertScope,
-		AlertScopeId: resp.Data.AlertScopeId,
-		Enable:       resp.Data.Enable,
-		Rules:        resp.Data.Rules,
-		Notifies:     resp.Data.Notifies,
-		AppIds:       appIds,
-		Domain:       resp.Data.Domain,
-		Attributes:   resp.Data.Attributes,
-		CreateTime:   resp.Data.CreateTime,
-		UpdateTime:   resp.Data.UpdateTime,
+		Id:               int64(resp.Data.Id),
+		Name:             resp.Data.Name,
+		AlertScope:       resp.Data.AlertScope,
+		AlertScopeId:     resp.Data.AlertScopeId,
+		Enable:           resp.Data.Enable,
+		Rules:            resp.Data.Rules,
+		Notifies:         resp.Data.Notifies,
+		Domain:           resp.Data.Domain,
+		Attributes:       resp.Data.Attributes,
+		CreateTime:       resp.Data.CreateTime,
+		UpdateTime:       resp.Data.UpdateTime,
+		TriggerCondition: resp.Data.TriggerCondition,
+	}
+
+	apps := make([]string, 0)
+	appIdStr, ok := resp.Data.Attributes["application_id"]
+	if !ok {
+		appIdStr, ok = resp.Data.Attributes["target_application_id"]
+	}
+	if ok {
+		idData := appIdStr.GetListValue().AsSlice()
+		for _, v := range idData {
+			appid, err := strconv.Atoi(v.(string))
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			app, err := a.p.bdl.GetApp(uint64(appid))
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			apps = append(apps, app.Name)
+		}
+	}
+
+	if len(resp.Data.TriggerCondition) == 0 && len(apps) > 0 {
+		triggerCondition := []*monitor.TriggerCondition{
+			{
+				Condition: "application_name",
+				Operator:  "in",
+				Values:    strings.Join(apps, ","),
+			},
+		}
+		getAlertData.TriggerCondition = triggerCondition
 	}
 	result := &alert.GetAlertResponse{
 		Data: getAlertData,
@@ -170,6 +196,7 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	alertData.AlertScope = MicroServiceScope
 	alertData.AlertScopeId = request.TenantGroup
 	alertData.Attributes = request.Attributes
+	alertData.TriggerCondition = request.TriggerCondition
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
 	}
@@ -182,18 +209,17 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	alertData.Attributes[TargetWorkspace] = structpb.NewStringValue(workspace)
 	alertData.Attributes[TK] = structpb.NewStringValue(tk)
 	alertData.Attributes[TkAlias] = structpb.NewStringValue(tk)
-	if request.AppIds != nil && len(request.AppIds) > 0 {
-		applicationId, err := (&adapt.Adapt{}).StringSliceToValue(request.AppIds)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		alertData.Attributes[ApplicationId] = applicationId
-		alertData.Attributes[TargetApplicationId] = applicationId
-	}
 	alertData.Attributes[DashboardPath] =
 		structpb.NewStringValue(fmt.Sprintf(DashboardPathFormat, projectId, workspace, request.TenantGroup, tk))
 	alertData.Attributes[RecordPath] =
 		structpb.NewStringValue(fmt.Sprintf(RecordPathFormat, projectId, workspace, request.TenantGroup, tk))
+	if len(request.TriggerCondition) > 0 {
+		data, err := json.Marshal(request.TriggerCondition)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		alertData.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
+	}
 	ma, err := a.AlertToMonitor(alertData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -265,6 +291,7 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	alertData.UpdateTime = request.UpdateTime
 	alertData.Attributes = request.Attributes
 	alertData.Domain = request.Domain
+	alertData.TriggerCondition = request.TriggerCondition
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
 	}
@@ -273,16 +300,16 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 			alertData.Attributes[k] = v
 		}
 	}
-	if request.AppIds != nil && len(request.AppIds) > 0 {
-		alertData.Attributes["application_id"], err = a.p.StringSliceToValue(request.AppIds)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		alertData.Attributes["target_application_id"], err = a.p.StringSliceToValue(request.AppIds)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-	}
+	//if request.AppIds != nil && len(request.AppIds) > 0 {
+	//	alertData.Attributes["application_id"], err = a.p.StringSliceToValue(request.AppIds)
+	//	if err != nil {
+	//		return nil, errors.NewInternalServerError(err)
+	//	}
+	//	alertData.Attributes["target_application_id"], err = a.p.StringSliceToValue(request.AppIds)
+	//	if err != nil {
+	//		return nil, errors.NewInternalServerError(err)
+	//	}
+	//}
 	if request.Domain != "" && len(request.Domain) > 0 {
 		alertData.Attributes["alert_domain"] = structpb.NewStringValue(request.Domain)
 	}
@@ -1074,4 +1101,50 @@ func (a *alertService) DashboardPreview(ctx context.Context, request *alert.Dash
 		Data: view.Data,
 	}
 	return result, nil
+}
+
+func (a *alertService) GetAlertConditions(ctx context.Context, request *alert.GetAlertConditionsRequest) (*alert.GetAlertConditionsResponse, error) {
+	conditionReq := &monitor.GetAlertConditionsRequest{
+		ScopeType: request.ScopeType,
+	}
+	context := utils.NewContextWithHeader(ctx)
+	result, err := a.p.Monitor.GetAlertConditions(context, conditionReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	data, err := json.Marshal(result.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	resp := &alert.GetAlertConditionsResponse{}
+	err = json.Unmarshal(data, &resp.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return resp, nil
+}
+
+func (a *alertService) GetAlertConditionsValue(ctx context.Context, request *alert.GetAlertConditionsValueRequest) (*alert.GetAlertConditionsValueResponse, error) {
+	conditionReq := &monitor.GetAlertConditionsValueRequest{
+		Condition: request.Condition,
+		Filters:   request.Filters,
+		Index:     request.Index,
+	}
+	context := utils.NewContextWithHeader(ctx)
+	result, err := a.p.Monitor.GetAlertConditionsValue(context, conditionReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	data, err := json.Marshal(result.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	resp := &alert.GetAlertConditionsValueResponse{
+		Data: &monitor.AlertConditionsValue{},
+	}
+	err = json.Unmarshal(data, &resp.Data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return resp, nil
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
@@ -557,5 +558,76 @@ func TestAdapt_UpdateOrgAlert(t *testing.T) {
 	})
 	if err != nil {
 		fmt.Println("should not err")
+	}
+}
+
+func TestAdapt_GetOrgAlertDetail(t *testing.T) {
+	defer monkey.UnpatchAll()
+	monkey.Patch((*Adapt).GetAlertDetail, func(_ *Adapt, lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
+		return &pb.Alert{
+			Id:               1,
+			Name:             "erdatest",
+			AlertScope:       "object",
+			AlertScopeId:     "1",
+			Enable:           false,
+			Rules:            nil,
+			Notifies:         nil,
+			Filters:          nil,
+			ClusterNames:     []string{"erda-dev", "erda-test"},
+			Domain:           "",
+			CreateTime:       0,
+			UpdateTime:       0,
+			TriggerCondition: nil,
+		}, nil
+	})
+	monkey.Patch(utils.GetMapValueArr, func(m map[string]interface{}, key string) ([]interface{}, bool) {
+		return []interface{}{"erda-dev", "erda-test"}, true
+	})
+	monkey.Patch((*Adapt).ValueMapToInterfaceMap, func(_ *Adapt, input map[string]*structpb.Value) map[string]interface{} {
+		return map[string]interface{}{
+			"cluster_name": []interface{}{"erda-dev", "erda-test"},
+		}
+	})
+	a := &Adapt{}
+	_, err := a.GetOrgAlertDetail(i18n.LanguageCodes{}, 1)
+	if err != nil {
+		fmt.Println("should not err,err is ", err)
+	}
+}
+
+func TestAdapt_GetOrgAlertDetail2(t *testing.T) {
+	defer monkey.UnpatchAll()
+	monkey.Patch((*Adapt).GetAlertDetail, func(_ *Adapt, lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
+		return &pb.Alert{
+			Id:               1,
+			Name:             "erdatest",
+			AlertScope:       "object",
+			AlertScopeId:     "1",
+			Enable:           false,
+			Rules:            nil,
+			Notifies:         nil,
+			Filters:          nil,
+			ClusterNames:     []string{"erda-dev", "erda-test"},
+			Domain:           "",
+			CreateTime:       0,
+			UpdateTime:       0,
+			TriggerCondition: nil,
+		}, nil
+	})
+	monkey.Patch(utils.GetMapValueArr, func(m map[string]interface{}, key string) ([]interface{}, bool) {
+		return nil, false
+	})
+	monkey.Patch(utils.GetMapValueString, func(m map[string]interface{}, key string) (string, bool) {
+		return "erda-dev", true
+	})
+	monkey.Patch((*Adapt).ValueMapToInterfaceMap, func(_ *Adapt, input map[string]*structpb.Value) map[string]interface{} {
+		return map[string]interface{}{
+			"cluster_name": "erda-dev",
+		}
+	})
+	a := &Adapt{}
+	_, err := a.GetOrgAlertDetail(i18n.LanguageCodes{}, 1)
+	if err != nil {
+		fmt.Println("should not err,err is ", err)
 	}
 }
