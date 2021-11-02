@@ -1,8 +1,8 @@
 en:
     aliyun_sms: "Ali Short Message Service"
     short_message: "Short Message"
-    enabled_exception: "There are other enabled channel of this type (%s)"
+    enabled_exception: "There are other enabled channel of this type %s"
 zh:
     aliyun_sms: "阿里云短信服务"
     short_message: "短信"
-    enabled_exception: " (%s) 类型渠道已经存在开启状态的渠道"
+    enabled_exception: "%s类型已经存在开启状态的渠道"
