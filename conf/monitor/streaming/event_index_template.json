@@ -35,9 +35,31 @@
                             "ignore_above": 10240
                         }
                     }
+                },
+                {
+                    "relations": {
+                        "match": "*",
+                        "match_mapping_type": "string",
+                        "mapping": {
+                            "type": "keyword",
+                            "ignore_above": 10240
+                        }
+                    }
                 }
             ],
             "properties":{
+                "event_id":{
+                    "type":"keyword",
+                    "ignore_above": 10240
+                },
+                "name":{
+                    "type":"keyword",
+                    "ignore_above": 10240
+                },
+                "kind":{
+                    "type":"keyword",
+                    "ignore_above": 10240
+                },
                 "@timestamp":{
                     "type":"date"
                 },
