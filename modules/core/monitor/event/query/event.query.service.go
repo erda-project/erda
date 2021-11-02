@@ -59,6 +59,15 @@ func (s *eventQueryService) GetEvents(ctx context.Context, req *pb.GetEventsRequ
 			Value: req.RelationId,
 		})
 	}
+	if len(req.Tags) > 0 {
+		for key, val := range req.Tags {
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "tags." + key,
+				Op:    storage.EQ,
+				Value: val,
+			})
+		}
+	}
 	list, err := s.storageReader.QueryPaged(ctx, sel, int(req.PageNo), int(req.PageSize))
 	if err != nil {
 		return nil, err

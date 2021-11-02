@@ -200,6 +200,36 @@ func (mr *MockAlertServiceServerMockRecorder) GetAlert(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlert", reflect.TypeOf((*MockAlertServiceServer)(nil).GetAlert), arg0, arg1)
 }
 
+// GetAlertConditions mocks base method.
+func (m *MockAlertServiceServer) GetAlertConditions(arg0 context.Context, arg1 *pb.GetAlertConditionsRequest) (*pb.GetAlertConditionsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAlertConditions", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetAlertConditionsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAlertConditions indicates an expected call of GetAlertConditions.
+func (mr *MockAlertServiceServerMockRecorder) GetAlertConditions(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlertConditions", reflect.TypeOf((*MockAlertServiceServer)(nil).GetAlertConditions), arg0, arg1)
+}
+
+// GetAlertConditionsValue mocks base method.
+func (m *MockAlertServiceServer) GetAlertConditionsValue(arg0 context.Context, arg1 *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAlertConditionsValue", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetAlertConditionsValueResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAlertConditionsValue indicates an expected call of GetAlertConditionsValue.
+func (mr *MockAlertServiceServerMockRecorder) GetAlertConditionsValue(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlertConditionsValue", reflect.TypeOf((*MockAlertServiceServer)(nil).GetAlertConditionsValue), arg0, arg1)
+}
+
 // GetAlertDetail mocks base method.
 func (m *MockAlertServiceServer) GetAlertDetail(arg0 context.Context, arg1 *pb.GetAlertDetailRequest) (*pb.GetAlertDetailResponse, error) {
 	m.ctrl.T.Helper()

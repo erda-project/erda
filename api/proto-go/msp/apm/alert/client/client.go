@@ -124,3 +124,11 @@ func (s *alertServiceWrapper) UpdateAlertRecordIssue(ctx context.Context, req *p
 func (s *alertServiceWrapper) DashboardPreview(ctx context.Context, req *pb.DashboardPreviewRequest) (*pb.DashboardPreviewResponse, error) {
 	return s.client.DashboardPreview(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *alertServiceWrapper) GetAlertConditions(ctx context.Context, req *pb.GetAlertConditionsRequest) (*pb.GetAlertConditionsResponse, error) {
+	return s.client.GetAlertConditions(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) GetAlertConditionsValue(ctx context.Context, req *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
+	return s.client.GetAlertConditionsValue(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

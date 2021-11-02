@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -35,8 +34,7 @@ import (
 func (tr *TaskRun) Do(itr TaskOp) error {
 	logrus.Infof("reconciler: pipelineID: %d, task %q begin %s", tr.P.ID, tr.Task.Name, itr.Op())
 
-	executorDoneCh := tr.Ctx.Value(spec.MakeTaskExecutorCtxKey(tr.Task)).(chan interface{})
-	o := &Elem{ErrCh: make(chan error), DoneCh: make(chan interface{}), ExitCh: make(chan struct{}), ExecutorDoneCh: executorDoneCh}
+	o := &Elem{ErrCh: make(chan error), DoneCh: make(chan interface{}), ExitCh: make(chan struct{})}
 	o.TimeoutCh, o.Cancel, o.Timeout = itr.TimeoutConfig()
 
 	// define op handle func
@@ -159,14 +157,6 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 			errs = append(errs, err.Error())
 		}
 		// aop
-		_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, itr.TuneTriggers().AfterProcessing))
-
-	case data := <-o.ExecutorDoneCh:
-		tr.LogStep(itr.Op(), fmt.Sprintf("framework accept signal from executor %s, begin do WhenDone", tr.Executor.Name()))
-		defer tr.LogStep(itr.Op(), fmt.Sprintf("framework accept signal from executor %s, end do WhenDone", tr.Executor.Name()))
-		if err := itr.WhenDone(data); err != nil {
-			errs = append(errs, err.Error())
-		}
 		_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, itr.TuneTriggers().AfterProcessing))
 
 	case err := <-o.ErrCh:
