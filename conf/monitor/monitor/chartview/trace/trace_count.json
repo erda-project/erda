@@ -55,7 +55,7 @@
           },
           "url": "/api/tmc/metrics-query"
         },
-        "chartType": "chart:bar",
+        "chartType": "chart:line",
         "config": {
           "dataSourceConfig": {
             "activedMetricGroups": [
