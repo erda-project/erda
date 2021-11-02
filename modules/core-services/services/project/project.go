@@ -337,10 +337,16 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	// 检查待更新的project是否存在
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to update project")
+		return nil, errors.Wrap(err, "failed to GetProjectByID")
 	}
+	oldQuota, err := p.db.GetQuotaByProjectID(projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to GetQuotaByProjectID")
+	}
+	hasOldQuota := oldQuota != nil
+	project.Quota = oldQuota
 
-	if err := patchProject(&project, updateReq); err != nil {
+	if err := patchProject(&project, updateReq, userIDuint); err != nil {
 		return nil, err
 	}
 
@@ -352,30 +358,15 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return nil, errors.Errorf("failed to update project")
 	}
 
-	var oldQuota = new(apistructs.ProjectQuota)
-	err = p.db.First(oldQuota, map[string]interface{}{"project_id": projectID}).Error
-	hasOldQuota := err == nil
-
-	if updateReq.ResourceConfigs == nil {
-		if hasOldQuota && len(updateReq.RollbackConfig) == 0 {
-			return nil, errors.Errorf("cant not update project quota to empty")
-		}
+	if project.Quota == nil {
 		tx.Commit()
 		return &project, nil
 	}
 
-	// create or update quota
-	var quota = new(apistructs.ProjectQuota)
-	quota.ProjectID = uint64(projectID)
-	quota.ProjectName = updateReq.Name
-	quota.CreatorID = userIDuint
-	quota.UpdaterID = userIDuint
-	setQuotaFromResourceConfig(quota, updateReq.ResourceConfigs)
-
 	// check new quota is less than reqeust
 	var dto = new(apistructs.ProjectDTO)
-	dto.ID = quota.ProjectID
-	setProjectDtoQuotaFromModel(dto, quota)
+	dto.ID = uint64(project.ID)
+	setProjectDtoQuotaFromModel(dto, project.Quota)
 	p.fetchPodInfo(dto)
 	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto); !ok {
 		logrus.Errorf("checkNewQuotaIsLessThanRequest is not ok: %s", msg)
@@ -383,11 +374,9 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	}
 
 	if hasOldQuota {
-		quota.ID = oldQuota.ID
-		quota.CreatorID = oldQuota.CreatorID
-		err = tx.Debug().Save(&quota).Error
+		err = tx.Debug().Save(project.Quota).Error
 	} else {
-		err = tx.Debug().Create(&quota).Error
+		err = tx.Debug().Create(project.Quota).Error
 	}
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to update project quota")
@@ -401,10 +390,10 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 
 	// audit
 	go func() {
-		if quota == nil {
+		if project.Quota == nil {
 			return
 		}
-		if !isQuotaChanged(*oldQuota, *quota) {
+		if !isQuotaChanged(*oldQuota, *project.Quota) {
 			return
 		}
 		var orgName = strconv.FormatInt(orgID, 10)
@@ -414,16 +403,16 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		auditCtx := map[string]interface{}{
 			"orgName":           orgName,
 			"projectName":       project.Name,
-			"newDevCluster":     quota.DevClusterName,
+			"newDevCluster":     project.Quota.DevClusterName,
 			"newDevCPU":         fmt.Sprintf("%.3f", updateReq.ResourceConfigs.DEV.CPUQuota),
 			"newDevMem":         fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.DEV.MemQuota),
-			"newTestCluster":    quota.TestClusterName,
+			"newTestCluster":    project.Quota.TestClusterName,
 			"newTestCPU":        fmt.Sprintf("%.3f", updateReq.ResourceConfigs.TEST.CPUQuota),
 			"newTestMem":        fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.TEST.MemQuota),
-			"newStagingCluster": quota.StagingClusterName,
+			"newStagingCluster": project.Quota.StagingClusterName,
 			"newStagingCPU":     fmt.Sprintf("%.3f", updateReq.ResourceConfigs.STAGING.CPUQuota),
 			"newStagingMem":     fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.STAGING.MemQuota),
-			"newProdCluster":    quota.ProdClusterName,
+			"newProdCluster":    project.Quota.ProdClusterName,
 			"newProdCPU":        fmt.Sprintf("%.3f", updateReq.ResourceConfigs.PROD.CPUQuota),
 			"newProdMem":        fmt.Sprintf("%.3fGB", updateReq.ResourceConfigs.PROD.MemQuota),
 			"oldDevCluster":     oldQuota.DevClusterName,
@@ -504,8 +493,8 @@ func isQuotaChanged(oldQuota, newQuota apistructs.ProjectQuota) bool {
 	return false
 }
 
-func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
-	clusterConf, err := json.Marshal(updateReq.ResourceConfigs)
+func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody, userID uint64) error {
+	clusterConf, err := json.Marshal(updateReq.ClusterConfig)
 	if err != nil {
 		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
 		return errors.Errorf("failed to marshal clusterConfig")
@@ -527,6 +516,17 @@ func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBod
 
 	if len(updateReq.RollbackConfig) != 0 {
 		project.RollbackConfig = string(rollbackConf)
+	}
+
+	if updateReq.ResourceConfigs != nil {
+		if project.Quota == nil {
+			project.Quota = new(apistructs.ProjectQuota)
+			project.Quota.ProjectID = uint64(project.ID)
+			project.Quota.ProjectName = updateReq.Name
+			project.Quota.CreatorID = userID
+		}
+		setQuotaFromResourceConfig(project.Quota, updateReq.ResourceConfigs)
+		project.Quota.UpdaterID = userID
 	}
 
 	project.Desc = updateReq.Desc

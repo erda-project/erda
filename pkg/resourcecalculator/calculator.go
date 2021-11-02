@@ -225,7 +225,7 @@ func WorkspacesString(workspaces []Workspace) []string {
 }
 
 func CoreToMillcore(value float64) uint64 {
-	return uint64(value * 1000)
+	return uint64(Accuracy(value*1000, 0))
 }
 
 func MillcoreToCore(value uint64, accuracy int32) float64 {
@@ -233,8 +233,9 @@ func MillcoreToCore(value uint64, accuracy int32) float64 {
 }
 
 func GibibyteToByte(value float64) uint64 {
-	return uint64(value * 1024 * 1024 * 1024)
+	return uint64(Accuracy(value*1024*1024*1024, 0))
 }
+
 func ByteToGibibyte(value uint64, accuracy int32) float64 {
 	return Accuracy(float64(value)/(1024*1024*1024), accuracy)
 }

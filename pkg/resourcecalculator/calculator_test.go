@@ -318,3 +318,26 @@ func TestResourceToString(t *testing.T) {
 	t.Log(calcu.ResourceToString(5*1024*1024*1024, "memory"))
 	t.Log(calcu.ResourceToString(1000, "error key"))
 }
+
+func TestAccuracy(t *testing.T) {
+	var (
+		PROD            = 0.01
+		STAGING float64 = 200
+		TEST            = 0.007
+		DEV             = 0.7
+	)
+	prod := calcu.CoreToMillcore(PROD)
+	staging := calcu.CoreToMillcore(STAGING)
+	test := calcu.CoreToMillcore(TEST)
+	dev := calcu.CoreToMillcore(DEV)
+
+	total := prod + staging + test + dev
+	TOTAL := calcu.MillcoreToCore(total, 3)
+
+	t.Log(PROD, STAGING, TEST, DEV)
+	t.Log(prod, staging, test, dev)
+	t.Log(total, TOTAL)
+	t.Log(PROD+STAGING+TEST+DEV, calcu.CoreToMillcore(PROD+STAGING+TEST+DEV))
+
+	t.Logf("%f, %v", 0.001*1024*1024*1024, calcu.ByteToGibibyte(calcu.GibibyteToByte(0.001), 3))
+}
