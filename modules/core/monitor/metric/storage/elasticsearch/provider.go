@@ -16,9 +16,9 @@ package elasticsearch
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -143,10 +143,21 @@ const (
 )
 
 const (
-	esMaxValue = float64(math.MaxInt64)
-	esMinValue = float64(math.MinInt64)
+	esMaxLongValue = float64(math.MaxInt64)
+	esMinLongValue = float64(math.MinInt64)
 )
 
+func toNumber(f float64) json.Number {
+	var s string
+	if f == float64(int64(f)) {
+		s = fmt.Sprintf("%.1f", f) // 1 decimal if integer
+	} else {
+		s = fmt.Sprint(f)
+	}
+	return json.Number(s)
+}
+
+// https://www.elastic.co/guide/en/elasticsearch/reference/6.8/dynamic-templates.html#match-mapping-type
 func processInvalidFields(m *metric.Metric) {
 	fields := m.Fields
 	if fields == nil {
@@ -155,8 +166,8 @@ func processInvalidFields(m *metric.Metric) {
 	for k, v := range fields {
 		switch val := v.(type) {
 		case float64:
-			if val < esMinValue || esMaxValue < val {
-				fields[k] = strconv.FormatFloat(val, 'f', -1, 64)
+			if (val <= esMinLongValue || esMaxLongValue <= val) && val == math.Trunc(val) {
+				fields[k] = toNumber(val)
 			}
 		}
 	}
