@@ -478,3 +478,35 @@ func Test_handlerTranslationConditions(t *testing.T) {
 		})
 	}
 }
+
+func Test_columnsParser(t *testing.T) {
+	type args struct {
+		nodeType     string
+		nodeRelation *TopologyNodeRelation
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Node
+	}{
+		{"case1", args{TargetServiceNode, &TopologyNodeRelation{}}, &Node{Type: TypeService}},
+		{"case2", args{SourceServiceNode, &TopologyNodeRelation{}}, &Node{Type: TypeService}},
+		{"case3-1", args{TargetAddonNode, &TopologyNodeRelation{Tags: Tag{Component: "Http"}}}, &Node{Type: TypeElasticsearch}},
+		{"case3-2", args{TargetAddonNode, &TopologyNodeRelation{Tags: Tag{TargetAddonType: "Test"}}}, &Node{Type: "Test"}},
+		{"case4", args{SourceAddonNode, &TopologyNodeRelation{Tags: Tag{SourceAddonType: "Test"}}}, &Node{Type: "Test"}},
+		{"case5", args{TargetComponentNode, &TopologyNodeRelation{Tags: Tag{Component: "Test"}}}, &Node{Type: "Test"}},
+		{"case6", args{TargetOtherNode, &TopologyNodeRelation{Tags: Tag{Component: "Test"}}}, &Node{Type: "Test"}},
+		{"case7", args{SourceMQNode, &TopologyNodeRelation{Tags: Tag{Component: "Test"}}}, &Node{Type: "Test"}},
+		{"case8", args{TargetMQNode, &TopologyNodeRelation{Tags: Tag{Component: "Test"}}}, &Node{Type: "Test"}},
+		{"case9", args{TargetMQServiceNode, &TopologyNodeRelation{}}, &Node{Type: TypeService}},
+		{"case10", args{OtherNode, &TopologyNodeRelation{}}, &Node{Type: TypeService}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := columnsParser(tt.args.nodeType, tt.args.nodeRelation)
+			if got.Type != tt.want.Type {
+				t.Errorf("columnsParser() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
