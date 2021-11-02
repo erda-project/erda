@@ -15,8 +15,9 @@
 package db
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 // TestPlanDB .
@@ -60,7 +61,7 @@ func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (counts []ApiCount, e
 		Select("scene_id,count(1) AS count").
 		Where("scene_id IN (?)", sceneID).
 		Where("type IN (?)", apistructs.EffectiveStepType).
-		Where("is_disable = 0").
+		Where("is_disabled = 0").
 		Group("scene_id").
 		Find(&counts).Error
 	return

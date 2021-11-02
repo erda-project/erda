@@ -15,6 +15,7 @@
 package apitest_report
 
 import (
+	"encoding/base64"
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
@@ -32,10 +33,13 @@ const (
 )
 
 type ApiReportMeta struct {
-	ApiTotalNum   int `json:"apiTotalNum"`
-	ApiSuccessNum int `json:"apiSuccessNum"`
-	ApiFailedNum  int `json:"apiFailedNum"`
-	ApiNotExecNum int `json:"apiNotExecNum"`
+	ApiTotalNum      int `json:"apiTotalNum"`
+	ApiSuccessNum    int `json:"apiSuccessNum"`
+	ApiFailedNum     int `json:"apiFailedNum"`
+	ApiNotExecNum    int `json:"apiNotExecNum"`
+	ApiRefTotalNum   int `json:"apiRefTotalNum"`
+	ApiRefSuccessNum int `json:"apiRefSuccessNum"`
+	ApiRefFailedNum  int `json:"apiRefFailedNum"`
 }
 
 // +provider
@@ -68,10 +72,31 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	var apiTestTasks []*spec.PipelineTask
 	var snippetTaskPipelineIDs []uint64
 	for _, task := range allTasks {
-		if task.Type == actionTypeAPITest && task.Extra.Action.Version == version2 {
+		if task.Type == apistructs.ActionTypeAPITest ||
+			task.Type == apistructs.ActionTypeCustomScript {
 			apiTestTasks = append(apiTestTasks, task)
 			continue
 		}
+
+		// Config Sheet
+		if task.Type == apistructs.ActionTypeSnippet &&
+			task.Extra.Action.Labels[apistructs.AutotestType] == apistructs.AutotestSceneStep {
+			b, err := base64.StdEncoding.DecodeString(task.Extra.Action.Labels[apistructs.AutotestSceneStep])
+			if err != nil {
+				logrus.Errorf("failed to DecodeString, err: %s", err.Error())
+				continue
+			}
+			step := apistructs.AutoTestSceneStep{}
+			if err = json.Unmarshal(b, &step); err != nil {
+				logrus.Errorf("failed to Unmarshal, err: %s", err.Error())
+				continue
+			}
+			if step.Type == apistructs.StepTypeConfigSheet {
+				apiTestTasks = append(apiTestTasks, task)
+				continue
+			}
+		}
+
 		if task.Type == apistructs.ActionTypeSnippet {
 			if task.SnippetPipelineID != nil {
 				snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
@@ -83,6 +108,9 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	apiTotalNum := 0
 	apiSuccessNum := 0
 	apiFailedNum := 0
+	apiRefTotalNum := 0
+	apiRefSuccessNum := 0
+	apiRefFailedNum := 0
 
 	// snippetTask 从对应的 snippetPipeline api-test 报告里获取接口执行情况
 	snippetReports, err := ctx.SDK.DBClient.BatchListPipelineReportsByPipelineID(
@@ -96,14 +124,24 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	for _, apiTestTask := range apiTestTasks {
 		// 总数
 		apiTotalNum++
+		if apiTestTask.Extra.Labels[apistructs.LabelIsRefSet] == "true" {
+			apiRefTotalNum++
+		}
 		// 执行成功
 		if apiTestTask.Status.IsSuccessStatus() {
 			apiSuccessNum++
+			if apiTestTask.Extra.Labels[apistructs.LabelIsRefSet] == "true" {
+				apiRefSuccessNum++
+			}
 		}
 		// 执行失败
 		if apiTestTask.Status.IsFailedStatus() {
 			apiFailedNum++
+			if apiTestTask.Extra.Labels[apistructs.LabelIsRefSet] == "true" {
+				apiRefFailedNum++
+			}
 		}
+
 	}
 	for pipelineID, reports := range snippetReports {
 		for _, report := range reports {
@@ -123,6 +161,9 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 			apiTotalNum += meta.ApiTotalNum
 			apiSuccessNum += meta.ApiSuccessNum
 			apiFailedNum += meta.ApiFailedNum
+			apiRefTotalNum += meta.ApiRefTotalNum
+			apiRefSuccessNum += meta.ApiRefSuccessNum
+			apiRefFailedNum += meta.ApiRefFailedNum
 		}
 	}
 
@@ -131,10 +172,13 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 	// 构造 reportMeta
 	reportMeta := ApiReportMeta{
-		ApiTotalNum:   apiTotalNum,
-		ApiSuccessNum: apiSuccessNum,
-		ApiFailedNum:  apiFailedNum,
-		ApiNotExecNum: apiNotExecNum,
+		ApiTotalNum:      apiTotalNum,
+		ApiSuccessNum:    apiSuccessNum,
+		ApiFailedNum:     apiFailedNum,
+		ApiNotExecNum:    apiNotExecNum,
+		ApiRefTotalNum:   apiRefTotalNum,
+		ApiRefSuccessNum: apiRefSuccessNum,
+		ApiRefFailedNum:  apiRefFailedNum,
 	}
 	var reqMeta map[string]interface{}
 	b, _ := json.Marshal(reportMeta)

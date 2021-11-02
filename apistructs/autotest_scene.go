@@ -238,17 +238,16 @@ func (ats *AutotestSceneRequest) URLQueryString() map[string][]string {
 type StepAPIType string
 
 const (
-	StepTypeWait          StepAPIType = "WAIT"
-	StepTypeAPI           StepAPIType = "API"
-	StepTypeScene         StepAPIType = "SCENE"
-	StepTypeCustomScript  StepAPIType = "CUSTOM"
-	StepTypeConfigSheet   StepAPIType = "CONFIGSHEET"
-	AutotestType                      = "AUTOTESTTYPE"
-	AutotestSceneStep                 = "STEP"
-	AutotestSceneSet                  = "SCENESET"
-	AutotestScene                     = "SCENE"
-	AutoTestPlan                      = "TESTPLAN"
-	AutotestSceneStepType             = "STEPTYPE"
+	StepTypeWait         StepAPIType = "WAIT"
+	StepTypeAPI          StepAPIType = "API"
+	StepTypeScene        StepAPIType = "SCENE"
+	StepTypeCustomScript StepAPIType = "CUSTOM"
+	StepTypeConfigSheet  StepAPIType = "CONFIGSHEET"
+	AutotestType                     = "AUTOTESTTYPE"
+	AutotestSceneStep                = "STEP"
+	AutotestSceneSet                 = "SCENESET"
+	AutotestScene                    = "SCENE"
+	AutoTestPlan                     = "TESTPLAN"
 )
 
 var EffectiveStepType = []StepAPIType{StepTypeAPI, StepTypeCustomScript, StepTypeConfigSheet}

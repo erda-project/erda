@@ -96,7 +96,6 @@ func (AutoTestScene) TableName() string {
 	return "dice_autotest_scene"
 }
 
-
 type TestPlanV2Step struct {
 	dbengine.BaseModel
 	PlanID     uint64

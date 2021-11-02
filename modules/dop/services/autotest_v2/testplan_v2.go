@@ -581,6 +581,7 @@ func (svc *Service) CancelDiceAutotestTestPlan(req apistructs.AutotestCancelTest
 func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.SnippetConfig) ([]apistructs.BatchSnippetConfigYml, error) {
 
 	var setIds []uint64
+	isRefSetMap := make(map[uint64]string)
 	for _, conf := range configs {
 		sceneSetIDStr := conf.Labels[apistructs.LabelSceneSetID]
 		if sceneSetIDStr == "" {
@@ -591,6 +592,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 			return nil, err
 		}
 		setIds = append(setIds, uint64(sceneSetIDInt))
+		isRefSetMap[uint64(sceneSetIDInt)] = isRefSet(conf)
 	}
 	results, err := svc.ListAutotestScenes(setIds)
 	if err != nil {
@@ -669,6 +671,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 								apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
 								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
 								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+								apistructs.LabelIsRefSet:         isRefSetMap[key],
 							},
 						},
 					},
@@ -816,6 +819,16 @@ func (svc *Service) BatchQueryScenePipelineSnippetYaml(configs []apistructs.Snip
 	}
 
 	return resultConfigs, nil
+}
+
+func isRefSet(config apistructs.SnippetConfig) string {
+	if config.Labels[apistructs.LabelAutotestExecType] != apistructs.SceneSetsAutotestExecType {
+		return "false"
+	}
+	if config.Labels[apistructs.LabelSceneID] == "" {
+		return "false"
+	}
+	return "true"
 }
 
 func (svc *Service) QueryScenePipelineSnippetYaml(req apistructs.SnippetConfig) (string, error) {

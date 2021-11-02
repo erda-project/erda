@@ -48,6 +48,8 @@ message Content {
   string timeBegin = 20;
   string timeEnd = 21;
   uint64 pipelineID = 22;
+  int64  apiRefSuccessNum = 23;
+  int64  apiRefExecNum = 24;
 }
 
 message TestPlanUpdateByHookResponse {

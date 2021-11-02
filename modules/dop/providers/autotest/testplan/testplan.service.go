@@ -46,19 +46,23 @@ func (s *TestPlanService) WithAutoTestSvc(sv *autotestv2.Service) {
 
 func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.TestPlanUpdateByHookRequest) (*pb.TestPlanUpdateByHookResponse, error) {
 	logrus.Info("start testplan execute callback")
-
+	logrus.Infof("wxj req.Content: %v", req.Content)
 	apiTotalNum, err := s.calcTotalApiNum(req)
 	if err != nil {
 		logrus.Errorf("failed to calcTotalApiNum,err: %s", err.Error())
 	}
+	logrus.Infof("wxj apiTotalNum: %d", apiTotalNum)
 	req.Content.ApiTotalNum = apiTotalNum
+	// not include ref set
+	req.Content.ApiExecNum = req.Content.ApiExecNum - req.Content.ApiRefExecNum
+	req.Content.ApiSuccessNum = req.Content.ApiSuccessNum - req.Content.ApiRefSuccessNum
+	req.Content.PassRate = calcRate(req.Content.ApiSuccessNum, req.Content.ApiTotalNum)
+	req.Content.ExecuteRate = calcRate(req.Content.ApiExecNum, req.Content.ApiTotalNum)
 
 	if req.Content.StepAPIType == apistructs.AutoTestPlan {
 		if req.Content.TestPlanID == 0 {
 			return nil, apierrors.ErrUpdateTestPlan.MissingParameter("testPlanID")
 		}
-		req.Content.PassRate = calcRate(req.Content.ApiSuccessNum, req.Content.ApiTotalNum)
-		req.Content.ExecuteRate = calcRate(req.Content.ApiExecNum, req.Content.ApiTotalNum)
 		req.Content.ExecuteDuration = getCostTime(req.Content.CostTimeSec)
 
 		go func() {
@@ -261,7 +265,8 @@ func (s *TestPlanService) calcTotalApiNum(req *pb.TestPlanUpdateByHookRequest) (
 		return s.countApiBySceneIDRepeat(sceneIDs...)
 	case apistructs.StepTypeScene.String():
 		return s.countApiBySceneIDRepeat(req.Content.SceneID)
-	case apistructs.StepTypeAPI.String():
+	case apistructs.StepTypeAPI.String(), apistructs.StepTypeWait.String(),
+		apistructs.StepTypeCustomScript.String(), apistructs.StepTypeConfigSheet.String():
 		return 1, nil
 	}
 	return 0, nil

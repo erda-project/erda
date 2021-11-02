@@ -15,6 +15,7 @@
 package testplan_after
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -122,32 +123,31 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		parentPipelineID = *ctx.SDK.Pipeline.ParentPipelineID
 	}
 
-	statics, err := statistics(ctx, ctx.SDK.Pipeline.ID)
+	statics, err := getExecApiNum(ctx, ctx.SDK.Pipeline.ID)
 	if err != nil {
 		return err
 	}
-	apiExecNum := statics.ApiExecNum
-	apiSuccessNum := statics.ApiSuccessNum
 
 	var req = testplanpb.Content{
-		TestPlanID:    testPlanID,
-		ExecuteTime:   ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
-		ApiTotalNum:   int64(apiExecNum),
-		ApiSuccessNum: int64(apiSuccessNum),
-		ApiExecNum:    int64(apiExecNum),
-		PipelineYml:   ctx.SDK.Pipeline.PipelineYml,
-		StepAPIType:   stepType.String(),
-		Status:        ctx.SDK.Pipeline.Status.String(),
-		SceneID:       sceneID,
-		SceneSetID:    sceneSetID,
-		ParentID:      parentPipelineID,
-		PipelineID:    ctx.SDK.Pipeline.PipelineID,
-		CreatorID:     userID,
-		IterationID:   iterationID,
-		StepID:        0,
-		CostTimeSec:   ctx.SDK.Pipeline.CostTimeSec,
-		TimeBegin:     ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
-		TimeEnd:       ctx.SDK.Pipeline.TimeEnd.Format("2006-01-02 15:04:05"),
+		TestPlanID:       testPlanID,
+		ExecuteTime:      ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
+		ApiSuccessNum:    int64(statics.ApiSuccessNum),
+		ApiExecNum:       int64(statics.ApiExecNum),
+		ApiRefExecNum:    int64(statics.ApiRefExecNum),
+		ApiRefSuccessNum: int64(statics.ApiRefSuccessNum),
+		PipelineYml:      ctx.SDK.Pipeline.PipelineYml,
+		StepAPIType:      stepType.String(),
+		Status:           ctx.SDK.Pipeline.Status.String(),
+		SceneID:          sceneID,
+		SceneSetID:       sceneSetID,
+		ParentID:         parentPipelineID,
+		PipelineID:       ctx.SDK.Pipeline.PipelineID,
+		CreatorID:        userID,
+		IterationID:      iterationID,
+		StepID:           0,
+		CostTimeSec:      ctx.SDK.Pipeline.CostTimeSec,
+		TimeBegin:        ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
+		TimeEnd:          ctx.SDK.Pipeline.TimeEnd.Format("2006-01-02 15:04:05"),
 	}
 	if err = p.sendMessage(req, ctx); err != nil {
 		return err
@@ -168,48 +168,100 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 	}
 	allTasks := result.Tasks
 	for _, task := range allTasks {
-		if task.Type != apistructs.ActionTypeAPITest ||
-			task.Extra.Action.Version != "2.0" {
+		if task.Type != apistructs.ActionTypeWait &&
+			task.Type != apistructs.ActionTypeAPITest &&
+			task.Type != apistructs.ActionTypeSnippet &&
+			task.Type != apistructs.ActionTypeCustomScript {
 			continue
 		}
-		var (
-			apiSuccessNum int64
-		)
-		if task.Status.IsSuccessStatus() {
-			apiSuccessNum = 1
+		if task.Extra.Action.Labels[apistructs.AutotestType] != apistructs.AutotestSceneStep {
+			continue
 		}
-		stepID, _ := strconv.ParseUint(task.Name, 10, 64)
+		b, err := base64.StdEncoding.DecodeString(task.Extra.Action.Labels[apistructs.AutotestSceneStep])
+		if err != nil {
+			logrus.Errorf("failed to DecodeString, err: %s", err.Error())
+			continue
+		}
+		step := apistructs.AutoTestSceneStep{}
+		if err = json.Unmarshal(b, &step); err != nil {
+			logrus.Errorf("failed to Unmarshal, err: %s", err.Error())
+			continue
+		}
 
 		err = p.sendMessage(testplanpb.Content{
-			TestPlanID:    testPlanID,
-			ExecuteTime:   task.TimeBegin.Format("2006-01-02 15:04:05"),
-			ApiTotalNum:   1,
-			ApiSuccessNum: apiSuccessNum,
-			ApiExecNum:    1,
-			PipelineYml:   "",
-			StepAPIType:   task.Extra.Labels[apistructs.AutotestSceneStepType],
-			Status:        task.Status.String(),
-			SceneID:       sceneID,
-			SceneSetID:    sceneSetID,
-			ParentID:      parentPipelineID,
-			PipelineID:    task.PipelineID,
-			CreatorID:     userID,
-			StepID:        stepID,
-			IterationID:   iterationID,
-			CostTimeSec:   task.CostTimeSec,
-			TimeBegin:     task.TimeBegin.Format("2006-01-02 15:04:05"),
-			TimeEnd:       task.TimeEnd.Format("2006-01-02 15:04:05"),
+			TestPlanID:  testPlanID,
+			ExecuteTime: task.TimeBegin.Format("2006-01-02 15:04:05"),
+			ApiTotalNum: 1,
+			ApiSuccessNum: func() int64 {
+				if task.Status.IsSuccessStatus() {
+					return 1
+				}
+				return 0
+			}(),
+			ApiExecNum:  1,
+			PipelineYml: "",
+			StepAPIType: step.Type.String(),
+			Status:      task.Status.String(),
+			SceneID:     sceneID,
+			SceneSetID:  sceneSetID,
+			ParentID:    parentPipelineID,
+			PipelineID:  task.PipelineID,
+			CreatorID:   userID,
+			StepID: func() uint64 {
+				stepID, _ := strconv.ParseUint(task.Name, 10, 64)
+				return stepID
+			}(),
+			IterationID: iterationID,
+			CostTimeSec: task.CostTimeSec,
+			TimeBegin:   task.TimeBegin.Format("2006-01-02 15:04:05"),
+			TimeEnd:     task.TimeEnd.Format("2006-01-02 15:04:05"),
 		}, ctx)
 		if err != nil {
-			return err
+			logrus.Errorf("failed to sendMessage, err: %s", err.Error())
+			continue
 		}
 	}
 	return nil
 }
 
 type ApiNumStatistics struct {
-	ApiExecNum    int
-	ApiSuccessNum int
+	ApiExecNum       int
+	ApiSuccessNum    int
+	ApiRefExecNum    int
+	ApiRefSuccessNum int
+}
+
+func getExecApiNum(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
+	snippetReports, err := ctx.SDK.DBClient.BatchListPipelineReportsByPipelineID(
+		[]uint64{pipelineID},
+		[]string{string(apistructs.PipelineReportTypeAPITest)},
+	)
+	if err != nil {
+		return nil, err
+	}
+	apiExecNum := 0
+	apiSuccessNum := 0
+	apiRefExecNum := 0
+	apiRefSuccessNum := 0
+
+	for id, reports := range snippetReports {
+		for _, report := range reports {
+			meta, err := convertReport(id, report)
+			if err != nil {
+				continue
+			}
+			apiExecNum += meta.ApiTotalNum
+			apiSuccessNum += meta.ApiSuccessNum
+			apiRefExecNum += meta.ApiRefTotalNum
+			apiRefSuccessNum += meta.ApiRefSuccessNum
+		}
+	}
+	return &ApiNumStatistics{
+		ApiExecNum:       apiExecNum,
+		ApiSuccessNum:    apiSuccessNum,
+		ApiRefExecNum:    apiRefExecNum,
+		ApiRefSuccessNum: apiRefSuccessNum,
+	}, nil
 }
 
 func statistics(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics, error) {
@@ -283,8 +335,10 @@ func filterPipelineTask(allTasks []*spec.PipelineTask) ([]*spec.PipelineTask, []
 }
 
 type ApiReportMeta struct {
-	ApiTotalNum   int `json:"apiTotalNum"`
-	ApiSuccessNum int `json:"apiSuccessNum"`
+	ApiTotalNum      int `json:"apiTotalNum"`
+	ApiSuccessNum    int `json:"apiSuccessNum"`
+	ApiRefTotalNum   int `json:"apiRefTotalNum"`
+	ApiRefSuccessNum int `json:"apiRefSuccessNum"`
 }
 
 func convertReport(pipelineID uint64, report spec.PipelineReport) (ApiReportMeta, error) {
