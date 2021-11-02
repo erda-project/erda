@@ -85,7 +85,6 @@
               },
               {
                 "alias": "调用次数",
-                "width": 300,
                 "i18n": {
                   "alias": {
                     "en": "Request Count",
