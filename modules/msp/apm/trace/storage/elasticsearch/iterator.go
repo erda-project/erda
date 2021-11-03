@@ -34,7 +34,7 @@ import (
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
-	query := elastic.NewBoolQuery().Filter(elastic.NewQueryStringQuery("trace_id:" + sel.TraceId))
+	query := elastic.NewBoolQuery().Filter(elastic.NewQueryStringQuery("trace_id.raw:" + sel.TraceId))
 	return searchSource.Query(query)
 }
 
