@@ -94,8 +94,10 @@ func TestNewDeployment(t *testing.T) {
 		secretvolmounts []apiv1.VolumeMount, secretvolumes []apiv1.Volume) error {
 		return nil
 	})
-	_, err := k.newDeployment(service, servicegroup)
+	deploy, err := k.newDeployment(service, servicegroup)
 	assert.Equal(t, err, nil)
+	k.setDeploymentZeroReplica(deploy)
+	assert.Equal(t, *deploy.Spec.Replicas, int32(0))
 }
 
 func TestUpdateContainerResourceEnv(t *testing.T) {
