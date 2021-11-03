@@ -66,7 +66,7 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 	var quotaErr error
 	if !ok {
 		k.setDeploymentZeroReplica(deployment)
-		quotaErr = errors.New(reason)
+		quotaErr = NewQuotaError(reason)
 	}
 
 	err = k.deploy.Create(deployment)
