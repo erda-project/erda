@@ -131,10 +131,10 @@ func tableToBarChartProps(ctx context.Context, table []CategoryLine) Props {
 					Stack: "total",
 				}
 				for _, line := range table {
-					succ.Data = append(succ.Data, strutil.String(line.Data.NumSucc))
-					block.Data = append(block.Data, strutil.String(line.Data.NumBlock))
-					fail.Data = append(fail.Data, strutil.String(line.Data.NumFail))
-					init.Data = append(init.Data, strutil.String(line.Data.NumInit))
+					succ.Data = append(succ.Data, polishData(line.Data.NumSucc))
+					block.Data = append(block.Data, polishData(line.Data.NumBlock))
+					fail.Data = append(fail.Data, polishData(line.Data.NumFail))
+					init.Data = append(init.Data, polishData(line.Data.NumInit))
 				}
 				return []SeriesItem{succ, block, fail, init}
 			}(),
@@ -154,4 +154,14 @@ func tableToBarChartProps(ctx context.Context, table []CategoryLine) Props {
 		},
 		PureChart: true,
 	}
+}
+
+// polishData polish data for exhibition.
+func polishData(num uint64) string {
+	// not return 0
+	if num == 0 {
+		return ""
+	}
+	// normal
+	return strutil.String(num)
 }

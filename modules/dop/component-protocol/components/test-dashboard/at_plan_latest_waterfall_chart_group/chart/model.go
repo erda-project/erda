@@ -18,6 +18,7 @@ type BarProps struct {
 	ChartType string `json:"chartType"`
 	Option    Option `json:"option"`
 	Title     string `json:"title"`
+	PureChart bool   `json:"pureChart"`
 }
 
 type Option struct {
@@ -184,6 +185,7 @@ func NewBarProps(values1, values2 []int64, categories []string, title string) Ba
 				},
 			},
 		},
-		Title: title,
+		Title:     title,
+		PureChart: true,
 	}
 }
