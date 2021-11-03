@@ -24,11 +24,9 @@ CREATE TABLE `erda_addon_mysql_account`
 
 -- prepare mysql account
 insert into erda_addon_mysql_account
-(`id`, `created_at`, `updated_at`, `username`, `password`, `kms_key`, `instance_id`, `routing_instance_id`, `creator`,
+(`id`, `username`, `password`, `kms_key`, `instance_id`, `routing_instance_id`, `creator`,
  `is_deleted`)
 select uuid(),
-       now(),
-       now(),
        'mysql',
        e.value,
        i.kms_key,
