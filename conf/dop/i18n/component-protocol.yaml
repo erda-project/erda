@@ -130,7 +130,7 @@ zh:
   auto-test-api-num: 接口数
   radar-manual-test-plan: 手动测试计划
   radar-auto-test-plan: 自动化测试计划
-  radar-issue-bug: 缺陷
+  radar-unclosed-bug: 未关闭缺陷
   radar-quality: 质量
   radar-total-quality-score: 质量总分
   radar-bug-reopen-rate: 缺陷重开率
@@ -151,9 +151,9 @@ zh:
   quality_score_tip--at_plan_rate_passed: 成功率：所有计划最近一次执行成功的用例数 / 所有计划最近一次执行的用例总数
   quality_score_tip--at_plan_rate_executed: 执行率：所有计划最近一次执行过的用例数 / 所有计划最近一次执行的用例总数
   quality_score_tip--at_plan_score_formula: 计算公式：执行率 * 成功率 * 100
-  quality_score_tip--bug: 缺陷
-  quality_score_tip--bug_DI: DI值：致命缺陷数*10 + 严重缺陷数*3 + 一般缺陷数*1 + 轻微缺陷数*0.1
-  quality_score_tip--bug_score_formula: 计算公式：100 - DI
+  quality_score_tip--unclosed_bug: 未关闭缺陷
+  quality_score_tip--unclosed_bug_DI: DI值：致命缺陷数*10 + 严重缺陷数*3 + 一般缺陷数*1 + 轻微缺陷数*0.1
+  quality_score_tip--unclosed_bug_score_formula: 计算公式：100 - DI
   quality_score_tip--bug_reopen: 缺陷重开率
   quality_score_tip--bug_reopen_rate: 重开率：迭代所有缺陷重开次数之和 / 迭代所有缺陷数
   quality_score_tip--bug_reopen_score_formula: 计算公式： 100 - 重开率*100
@@ -290,7 +290,7 @@ en:
   user-not-exist: user does not exist
   radar-manual-test-plan: Manual Test Plan
   radar-auto-test-plan: Auto Test Plan
-  radar-issue-bug: Bug
+  radar-unclosed-bug: Unclosed Bug
   radar-quality: Quality
   radar-total-quality-score: Total Quality Score
   radar-bug-reopen-rate: Bug Reopen Rate
@@ -311,9 +311,9 @@ en:
   quality_score_tip--at_plan_rate_passed: Pass Rate：NUM(all PASSED cases in all test plans) / NUM(all cases in all test plans)
   quality_score_tip--at_plan_rate_executed: Execute Rate：NUM(all EXECUTED cases in all test plans) / NUM(all cases in all test plans)
   quality_score_tip--at_plan_score_formula: Formula：Pass-Rate * Execute-Rate * 100
-  quality_score_tip--bug: Bug
-  quality_score_tip--bug_DI: DI：NUM(Fatal)*10 + NUM(Serious)*3 + NUM(Normal)*1 + NUM(Slight)*0.1
-  quality_score_tip--bug_score_formula: Formula：100 - DI
+  quality_score_tip--unclosed_bug: Unclosed Bug
+  quality_score_tip--unclosed_bug_DI: DI：NUM(Fatal)*10 + NUM(Serious)*3 + NUM(Normal)*1 + NUM(Slight)*0.1
+  quality_score_tip--unclosed_bug_score_formula: Formula：100 - DI
   quality_score_tip--coco: Code Coverage
   quality_score_tip--coco_score_formula: Lastet-Code-Coverage(not distinguish environment) * 100
   quality_score_tip--bug_reopen: Bug Reopen Rate

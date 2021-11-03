@@ -56,9 +56,9 @@ func genTip(ctx context.Context) []TipLine {
 		genNormalTipLine(ctx, "at_plan_score_formula"),
 
 		// bug score
-		genBoldTipLine(ctx, "bug"),
-		genNormalTipLine(ctx, "bug_DI"),
-		genNormalTipLine(ctx, "bug_score_formula"),
+		genBoldTipLine(ctx, "unclosed_bug"),
+		genNormalTipLine(ctx, "unclosed_bug_DI"),
+		genNormalTipLine(ctx, "unclosed_bug_score_formula"),
 
 		// bug reopen
 		genBoldTipLine(ctx, "bug_reopen"),

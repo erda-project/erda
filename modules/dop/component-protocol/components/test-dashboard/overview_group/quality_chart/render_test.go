@@ -275,3 +275,57 @@ func TestQ_calcBugReopenRate(t *testing.T) {
 	scoreForBadBugF, _ := scoreForBadBug.Float64()
 	assert.Equal(t, float64(100)-float64(100)/float64(10)*100, scoreForBadBugF)
 }
+
+func TestQ_calcUnclosedBug(t *testing.T) {
+	q := Q{}
+	h := gshelper.NewGSHelper(nil)
+
+	// no bug, score is 100
+	dbClientForNoBug := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForNoBug), "CountBugBySeverity",
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64, onlyUnclosed bool) (map[apistructs.IssueSeverity]uint64, error) {
+			return nil, nil
+		},
+	)
+	defer monkey.Unpatch(dbClientForNoBug)
+	q.dbClient = dbClientForNoBug
+	scoreForNoBug := q.calcUnclosedBugScore(context.Background(), h)
+	scoreForNoBugF, _ := scoreForNoBug.Float64()
+	assert.Equal(t, float64(100), scoreForNoBugF)
+
+	// some bug, score > 0
+	dbClientForSomeBug := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForSomeBug), "CountBugBySeverity",
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64, onlyUnclosed bool) (map[apistructs.IssueSeverity]uint64, error) {
+			return map[apistructs.IssueSeverity]uint64{
+				apistructs.IssueSeverityFatal:   1,
+				apistructs.IssueSeveritySerious: 1,
+				apistructs.IssueSeverityNormal:  1,
+				apistructs.IssueSeveritySlight:  1,
+			}, nil
+		},
+	)
+	defer monkey.Unpatch(dbClientForSomeBug)
+	q.dbClient = dbClientForSomeBug
+	scoreForSomeBug := q.calcUnclosedBugScore(context.Background(), h)
+	scoreForSomeBugF, _ := scoreForSomeBug.Float64()
+	assert.Equal(t, float64(100)-float64(1)*10-float64(1)*3-float64(1)*1-float64(1)*0.1, scoreForSomeBugF)
+
+	// bad bugs, score < 0
+	dbClientForBadBug := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbClientForBadBug), "CountBugBySeverity",
+		func(db *dao.DBClient, projectID uint64, iterationIDs []uint64, onlyUnclosed bool) (map[apistructs.IssueSeverity]uint64, error) {
+			return map[apistructs.IssueSeverity]uint64{
+				apistructs.IssueSeverityFatal:   10,
+				apistructs.IssueSeveritySerious: 1,
+				apistructs.IssueSeverityNormal:  1,
+				apistructs.IssueSeveritySlight:  1,
+			}, nil
+		},
+	)
+	defer monkey.Unpatch(dbClientForBadBug)
+	q.dbClient = dbClientForBadBug
+	scoreForBadBug := q.calcUnclosedBugScore(context.Background(), h)
+	scoreForBadBugF, _ := scoreForBadBug.Float64()
+	assert.Equal(t, float64(100)-float64(10)*10-float64(1)*3-float64(1)*1-float64(1)*0.1, scoreForBadBugF)
+}

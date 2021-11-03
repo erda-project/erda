@@ -64,3 +64,12 @@ var UnfinishedStateBelongs = []IssueStateBelong{
 	IssueStateBelongReopen,
 	IssueStateBelongResloved,
 }
+
+var UnclosedStateBelongs = []IssueStateBelong{
+	IssueStateBelongOpen,
+	IssueStateBelongWorking,
+	IssueStateBelongDone,
+	IssueStateBelongWontfix,
+	IssueStateBelongReopen,
+	IssueStateBelongResloved,
+}
