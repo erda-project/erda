@@ -34,7 +34,7 @@ type AccountData struct {
 	AccountMap      map[string]*addonmysqlpb.MySQLAccount
 	AccountRefCount map[string]int
 	Apps            []apistructs.ApplicationDTO
-	appNameMap      map[string]string
+	AppMap          map[string]*apistructs.ApplicationDTO
 }
 
 func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (*AccountData, error) {
@@ -71,9 +71,9 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 	if err != nil {
 		return nil, err
 	}
-	appNames := make(map[string]string)
+	appMap := make(map[string]*apistructs.ApplicationDTO)
 	for _, a := range rap.List {
-		appNames[fmt.Sprintf("%d", a.ID)] = a.Name
+		appMap[a.Name] = &a
 	}
 
 	counter := map[string]int{}
@@ -93,7 +93,7 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 		AccountMap:      accountMap,
 		AccountRefCount: counter,
 		Apps:            rap.List,
-		appNameMap:      appNames,
+		AppMap:          appMap,
 	}
 
 	ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["accountData"] = data
@@ -121,6 +121,14 @@ func (d *AccountData) GetAccountName(accountID string) string {
 	return accountID
 }
 
+func (d *AccountData) GetApp(appID string) *apistructs.ApplicationDTO {
+	return d.AppMap[appID]
+}
+
 func (d *AccountData) GetAppName(appID string) string {
-	return d.appNameMap[appID]
+	app := d.GetApp(appID)
+	if app == nil {
+		return ""
+	}
+	return app.Name
 }

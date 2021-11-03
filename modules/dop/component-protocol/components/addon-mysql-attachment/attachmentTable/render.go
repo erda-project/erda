@@ -196,11 +196,18 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 			Command: &table.OperationCommand{
 				Key: "goto",
 				State: map[string]interface{}{
-					"params": map[string]interface{}{
-						"projectId": "TODO",
-						"appId":     "",
-						"runtimeId": "",
-					},
+					"params": func() map[string]interface{} {
+						app := f.ac.GetApp(item.AppId)
+						projectID := "0"
+						if app != nil {
+							projectID = fmt.Sprintf("%d", app.ProjectID)
+						}
+						return map[string]interface{}{
+							"projectId": projectID,
+							"appId":     item.AppId,
+							"runtimeId": item.RuntimeId,
+						}
+					}(),
 				},
 				Target: "runtimeDetailRoot",
 			},

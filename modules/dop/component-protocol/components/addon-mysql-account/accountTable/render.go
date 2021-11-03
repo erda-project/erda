@@ -182,6 +182,8 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 					"params": map[string]interface{}{
 						"projectId":  fmt.Sprintf("%d", f.pg.ProjectID),
 						"instanceId": f.pg.InstanceID,
+					},
+					"query": map[string]interface{}{
 						"filter__urlQuery": base64.StdEncoding.EncodeToString(
 							[]byte(fmt.Sprintf(`{"account":["%s"]}`, item.Id))),
 					},
