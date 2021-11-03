@@ -268,14 +268,14 @@ func (d *DailyQuotaCollector) clearExpire() {
 type DailyQuotaCollectorOption func(collector *DailyQuotaCollector)
 
 func DailyQuotaCollectorWithDBClient(db *dbclient.DBClient) DailyQuotaCollectorOption {
-	return func(daily *DailyQuotaCollector) {
-		daily.db = db
+	return func(c *DailyQuotaCollector) {
+		c.db = db
 	}
 }
 
 func DailyQuotaCollectorWithBundle(bndl *bundle.Bundle) DailyQuotaCollectorOption {
-	return func(daily *DailyQuotaCollector) {
-		daily.bdl = bndl
+	return func(c *DailyQuotaCollector) {
+		c.bdl = bndl
 	}
 }
 
@@ -285,7 +285,7 @@ func DailyQuotaCollectorWithCMPAPI(cmp interface {
 	GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error)
 	GetAllClusters() []string
 }) DailyQuotaCollectorOption {
-	return func(daily *DailyQuotaCollector) {
-		daily.cmp = cmp
+	return func(c *DailyQuotaCollector) {
+		c.cmp = cmp
 	}
 }
