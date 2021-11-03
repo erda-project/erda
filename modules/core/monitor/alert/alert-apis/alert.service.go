@@ -138,7 +138,7 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 		return nil, errors.NewInternalServerError(err)
 	}
 	alert.Attributes[TriggerCondition] = structpb.NewStringValue(string(data))
-	id, err := strconv.ParseUint(orgID, 10, 64)
+	_, err = strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
