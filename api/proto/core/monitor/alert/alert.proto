@@ -1215,13 +1215,17 @@ message Conditions {
 }
 
 message GetAlertConditionsValueRequest {
+  repeated ConditionsValueRequest conditionsArr = 1;
+}
+
+message ConditionsValueRequest {
   string              condition = 1;
   map<string, string> filters   = 2;
   string              index     = 3;
 }
 
 message GetAlertConditionsValueResponse {
-  AlertConditionsValue data = 1;
+  repeated AlertConditionsValue data = 1;
 }
 
 message AlertConditionsValue {

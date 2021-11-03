@@ -48,9 +48,7 @@ func (p *provider) GetAlertConditions(ctx context.Context, request *alertpb.GetA
 
 func (p *provider) GetAlertConditionsValue(ctx context.Context, request *alertpb.GetAlertConditionsValueRequest) (*alertpb.GetAlertConditionsValueResponse, error) {
 	conditionReq := &monitor.GetAlertConditionsValueRequest{
-		Condition: request.Condition,
-		Filters:   request.Filters,
-		Index:     request.Index,
+		ConditionsArr: request.ConditionsArr,
 	}
 	context := utils.NewContextWithHeader(ctx)
 	result, err := p.Monitor.GetAlertConditionsValue(context, conditionReq)
@@ -62,7 +60,7 @@ func (p *provider) GetAlertConditionsValue(ctx context.Context, request *alertpb
 		return nil, errors.NewInternalServerError(err)
 	}
 	resp := &alertpb.GetAlertConditionsValueResponse{
-		Data: &monitor.AlertConditionsValue{},
+		Data: make([]*monitor.AlertConditionsValue, 0),
 	}
 	err = json.Unmarshal(data, &resp.Data)
 	if err != nil {

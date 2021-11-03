@@ -1348,32 +1348,40 @@ func (m *alertService) GetAlertConditions(ctx context.Context, request *pb.GetAl
 }
 
 func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
+	conditionsMap := make(map[string]*pb.ConditionsValueRequest)
+	for _, v := range request.ConditionsArr {
+		conditionsMap[v.Condition] = v
+	}
 	req := &metricpb.QueryWithInfluxFormatRequest{
 		Start:  "before_3h",
 		End:    "now",
 		Params: make(map[string]*structpb.Value),
 	}
-	req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE `, request.Condition, request.Index)
-	count := 0
-	for k, v := range request.Filters {
-		req.Statement += fmt.Sprintf(`%s::tag=$%s`, k, k)
-		count++
-		if count < len(request.Filters) {
-			req.Statement += " and "
-		}
-		req.Params[k] = structpb.NewStringValue(v)
-	}
-	req.Statement += fmt.Sprintf(` GROUP BY %s::tag`, request.Condition)
-	resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	conditions := getResultValue(resp.Results)
 	result := &pb.GetAlertConditionsValueResponse{
-		Data: &pb.AlertConditionsValue{
-			Key:     request.Condition,
-			Options: conditions,
-		},
+		Data: make([]*pb.AlertConditionsValue, 0),
+	}
+	for _, conditions := range conditionsMap {
+		req.Statement = fmt.Sprintf(`SELECT %s::tag FROM %s WHERE `, conditions.Condition, conditions.Index)
+		count := 0
+		for k, v := range conditions.Filters {
+			req.Statement += fmt.Sprintf(`%s::tag=$%s`, k, k)
+			count++
+			if count < len(conditions.Filters) {
+				req.Statement += " and "
+			}
+			req.Params[k] = structpb.NewStringValue(v)
+		}
+		req.Statement += fmt.Sprintf(` GROUP BY %s::tag`, conditions.Condition)
+		resp, err := m.p.Metric.QueryWithInfluxFormat(ctx, req)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		conditionValue := getResultValue(resp.Results)
+		value := &pb.AlertConditionsValue{
+			Key:     conditions.Condition,
+			Options: conditionValue,
+		}
+		result.Data = append(result.Data, value)
 	}
 	return result, nil
 }

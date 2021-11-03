@@ -33,13 +33,21 @@ func (this *GetAlertConditionsResponse) Validate() error {
 	return nil
 }
 func (this *GetAlertConditionsValueRequest) Validate() error {
-	// Validation of proto3 map<> fields is unsupported.
+	for _, item := range this.ConditionsArr {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ConditionsArr", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *GetAlertConditionsValueResponse) Validate() error {
-	if this.Data != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
 		}
 	}
 	return nil

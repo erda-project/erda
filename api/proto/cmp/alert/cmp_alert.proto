@@ -28,11 +28,9 @@ message GetAlertConditionsResponse {
 }
 
 message GetAlertConditionsValueRequest {
-  string              condition = 1;
-  map<string, string> filters   = 2;
-  string              index     = 3;
+  repeated erda.core.monitor.alert.ConditionsValueRequest conditionsArr = 1;
 }
 
 message GetAlertConditionsValueResponse {
-  erda.core.monitor.alert.AlertConditionsValue data = 1;
+  repeated erda.core.monitor.alert.AlertConditionsValue data = 1;
 }
