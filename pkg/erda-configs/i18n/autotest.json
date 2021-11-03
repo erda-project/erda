@@ -58,7 +58,11 @@
     "wb.content.autotest.space.table.title.time": "时间",
     "wb.content.autotest.space.table.title.desc": "描述",
     "wb.content.autotest.space.table.title.status": "状态",
-    "wb.content.autotest.space.table.title.result": "结果"
+    "wb.content.autotest.space.table.title.result": "结果",
+
+    "autoTestSpaceInit": "未开始",
+    "autoTestSpaceInprogress": "进行中",
+    "autoTestSpaceCompleted":"已完成"
   },
   "en-US": {
     "wb.content.autotest.scene.string": "random string like abc",
@@ -119,7 +123,11 @@
     "wb.content.autotest.space.table.title.time": "Time",
     "wb.content.autotest.space.table.title.desc": "Description",
     "wb.content.autotest.space.table.title.status": "Status",
-    "wb.content.autotest.space.table.title.result": "Result"
+    "wb.content.autotest.space.table.title.result": "Result",
+
+    "autoTestSpaceInit": "init",
+    "autoTestSpaceInprogress": "inprogress",
+    "autoTestSpaceCompleted": "completed"
   }
 }
 

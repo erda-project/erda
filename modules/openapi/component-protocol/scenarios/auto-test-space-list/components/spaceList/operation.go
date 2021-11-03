@@ -84,9 +84,10 @@ func setCommand(space spaceItem) map[string]interface{} {
 			Reload:  false,
 			Visible: true,
 			FormData: map[string]interface{}{
-				"id":   space.ID,
-				"name": space.Title,
-				"desc": space.Description,
+				"id":            space.ID,
+				"name":          space.Title,
+				"desc":          space.Description,
+				"archiveStatus": space.ArchiveStatus.Status,
 			},
 		},
 		"target": "spaceFormModal",

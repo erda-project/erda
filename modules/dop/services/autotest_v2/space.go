@@ -83,6 +83,12 @@ func (svc *Service) GetSpace(id uint64) (*apistructs.AutoTestSpace, error) {
 
 // GetSpaceList 返回autoTestSpace列表
 func (svc *Service) GetSpaceList(req apistructs.AutoTestSpaceListRequest) (*apistructs.AutoTestSpaceList, error) {
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
 	res, total, err := svc.db.ListAutoTestSpaceByProject(req)
 	if err != nil {
 		return nil, apierrors.ErrListAutoTestSpace.InternalError(err)

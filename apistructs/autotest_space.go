@@ -40,9 +40,9 @@ var (
 type AutoTestSpaceArchiveStatus string
 
 const (
-	TestSpaceInit       AutoTestSpaceArchiveStatus = "init"
-	TestSpaceInProgress AutoTestSpaceArchiveStatus = "inprogress"
-	TestSpaceCompleted  AutoTestSpaceArchiveStatus = "completed"
+	TestSpaceInit       AutoTestSpaceArchiveStatus = "autoTestSpaceInit"
+	TestSpaceInProgress AutoTestSpaceArchiveStatus = "autoTestSpaceInprogress"
+	TestSpaceCompleted  AutoTestSpaceArchiveStatus = "autoTestSpaceCompleted"
 )
 
 // AutoTestSpace 测试空间

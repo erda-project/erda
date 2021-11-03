@@ -58,7 +58,6 @@ func (db *DBClient) ListAutoTestSpaceByProject(req apistructs.AutoTestSpaceListR
 	)
 	offset := (req.PageNo - 1) * req.PageSize
 	sql := db.Where("project_id = ?", req.ProjectID)
-	sql.LogMode(true)
 	if req.Order == "" {
 		req.Order = "updated_at desc"
 	}
@@ -173,7 +172,6 @@ type AutoTestSpaceSceneStepStats struct {
 func (db *DBClient) GetAutoTestSpaceStats(spaceIDs []uint64) ([]AutoTestSpaceSceneSetStats, []AutoTestSpaceSceneStats, []AutoTestSpaceSceneStepStats, error) {
 	sql := db.Where("space_id IN (?)", spaceIDs).Group("space_id")
 	var set []AutoTestSpaceSceneSetStats
-	sql.LogMode(true)
 	if err := sql.Table("dice_autotest_scene_set").Select("space_id, count(id) as set_num").Find(&set).Error; err != nil {
 		return nil, nil, nil, err
 	}

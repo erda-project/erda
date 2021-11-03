@@ -232,6 +232,14 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 				Disabled:  false,
 				ShowIndex: 5,
 			}
+			click = dataOperation{
+				Key:    "click",
+				Reload: false,
+				Command: map[string]interface{}{
+					"key":    "goto",
+					"target": "project_test_spaceDetail_scenes",
+				},
+			}
 		)
 		updatedAt := each.UpdatedAt.Format("2006-01-02 15:04:05")
 		text, _ := list.CountActiveTime(updatedAt)
@@ -243,7 +251,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			ArchiveStatus: ArchiveStatus{
 				Color:  "red",
 				Status: each.ArchiveStatus,
-				Text:   string(each.ArchiveStatus),
+				Text:   i18nLocale.Get(string(each.ArchiveStatus)),
 			},
 			Operations: map[string]interface{}{},
 			ExtraInfos: []ExtraInfos{
@@ -293,6 +301,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			item.Operations["export"] = export
 			item.Operations["delete"] = deleteOp
 		}
+		item.Operations["click"] = click
 		lists = append(lists, item)
 	}
 	a.Data["list"] = lists

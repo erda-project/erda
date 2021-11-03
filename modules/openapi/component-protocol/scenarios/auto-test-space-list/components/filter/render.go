@@ -25,6 +25,7 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
 )
 
 type ComponentFilter struct {
@@ -54,7 +55,7 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 		return err
 	}
 
-	// i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = filter.Props{Delay: 1000}
 	i.Operations = map[filter.OperationKey]filter.Operation{
 		"filter": {
@@ -91,15 +92,15 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 			Label:     "状态",
 			Options: []filter.PropConditionOption{
 				{
-					Label: "未开始",
+					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
 					Value: apistructs.TestSpaceInit,
 				},
 				{
-					Label: "进行中",
+					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInprogress),
 					Value: apistructs.TestSpaceInProgress,
 				},
 				{
-					Label: "已完成",
+					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceCompleted),
 					Value: apistructs.TestSpaceCompleted,
 				},
 			},

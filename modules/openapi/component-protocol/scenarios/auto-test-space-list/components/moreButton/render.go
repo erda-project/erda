@@ -30,6 +30,11 @@ type MoreButton struct {
 	ctxBdl protocol.ContextBundle
 
 	Props button.Props `json:"props"`
+	State State        `json:"state"`
+}
+
+type State struct {
+	Visible bool `json:"visible"`
 }
 
 func (i *MoreButton) SetCtxBundle(ctx context.Context) error {
@@ -47,6 +52,9 @@ func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenar
 		return err
 	}
 
+	if event.Operation == "autoRefresh" || event.Operation == "openRecord" {
+		i.State.Visible = true
+	}
 	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = button.Props{
 		Text:  "更多操作",
@@ -58,7 +66,7 @@ func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenar
 				Text: i18nLocale.Get(i18n.I18nKeyImport),
 				Operations: map[string]interface{}{
 					"click": map[string]interface{}{
-						"key":    "openRecord",
+						"key":    "import",
 						"reload": false,
 					},
 				},

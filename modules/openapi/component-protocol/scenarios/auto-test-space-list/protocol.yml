@@ -61,15 +61,15 @@ components:
 rendering:
   spaceFormModal:
     - name: spaceList
-  recordButton:
+  moreButton:
     - name: recordDrawer
       state:
         - name: "visible"
-          value: "{{ recordButton.visible }}"
+          value: "{{ moreButton.visible }}"
     - name: recordTable
       state:
         - name: "visible"
-          value: "{{ recordButton.visible }}"
+          value: "{{ moreButton.visible }}"
   refreshButton:
     - name: recordTable
       state:

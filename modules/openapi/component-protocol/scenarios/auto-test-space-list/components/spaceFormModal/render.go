@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/form_modal"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -63,6 +64,7 @@ const (
 
 func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	a.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	a.Props.Fields = []spec.Field{
 		{
 			Key:       "name",
@@ -87,15 +89,15 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 			ComponentProps: spec.ComponentProps{
 				Options: []spec.Option{
 					{
-						Name:  "未开始",
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
 						Value: apistructs.TestSpaceInit,
 					},
 					{
-						Name:  "进行中",
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInprogress),
 						Value: apistructs.TestSpaceInProgress,
 					},
 					{
-						Name:  "已完成",
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceCompleted),
 						Value: apistructs.TestSpaceCompleted,
 					},
 				},
