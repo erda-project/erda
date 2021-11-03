@@ -226,6 +226,7 @@ func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, 
 
 	// slave节点信息
 	var mysqlExec mysqlhelper.Request
+	// Tips: 对于基础版本，不需要 check slave status
 	for _, valueItem := range serviceGroup.Dice.Services {
 		if valueItem.Name != masterName {
 			mysqlExec.ClusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
@@ -238,22 +239,22 @@ func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, 
 				return errors.New("InstanceInfos为空")
 			}
 			mysqlExec.Url = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.Vip, ":", apistructs.AddonMysqlDefaultPort}, "")
+
+			logrus.Infof("start checkMysqlHa, request: %+v", mysqlExec)
+
+			// 请求init 接口
+			status, err := mysqlExec.GetSlaveState()
+			if err != nil {
+				return err
+			}
+
+			if !strings.EqualFold(status.IORunning, "connecting") &&
+				!strings.EqualFold(status.IORunning, "yes") ||
+				!strings.EqualFold(status.SQLRunning, "connecting") &&
+					!strings.EqualFold(status.SQLRunning, "yes") {
+				return fmt.Errorf("slave status error")
+			}
 		}
-	}
-
-	logrus.Infof("start checkMysqlHa, request: %+v", mysqlExec)
-
-	// 请求init 接口
-	status, err := mysqlExec.GetSlaveState()
-	if err != nil {
-		return err
-	}
-
-	if !strings.EqualFold(status.IORunning, "connecting") &&
-		!strings.EqualFold(status.IORunning, "yes") ||
-		!strings.EqualFold(status.SQLRunning, "connecting") &&
-			!strings.EqualFold(status.SQLRunning, "yes") {
-		return fmt.Errorf("slave status error")
 	}
 
 	return nil
@@ -484,6 +485,9 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	case apistructs.AddonMySQL:
 		if !capacity.Data.MysqlOperator {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
+
+			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
+
 			buildErr = a.BuildMysqlServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
 		} else {
 			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
@@ -559,6 +563,16 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	}
 	addonDeployGroup.DiceYml = *addonDice
 	return &addonDeployGroup, nil
+}
+
+func mysqlPreProcess(params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDeployGroup *apistructs.ServiceGroupCreateV2Request) {
+	if params.Plan == apistructs.AddonBasic {
+		addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
+		if p, ok := addonSpec.Plan[params.Plan]; ok {
+			p.Nodes = 1
+			addonSpec.Plan[params.Plan] = p
+		}
+	}
 }
 
 // FailAndDelete addon发布失败后，更新表状态
