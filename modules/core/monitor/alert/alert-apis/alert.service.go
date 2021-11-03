@@ -147,9 +147,9 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 			if len(v.Values) <= 0 {
 				return nil, errors.NewMissingParameterError("cluster_names")
 			}
-			if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
-				return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
-			}
+			//if !m.checkOrgClusterNames(id, strings.Split(v.Values, ",")) {
+			//	return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
+			//}
 		}
 	}
 	aid, err := m.p.a.CreateOrgAlert(alert, orgID)
