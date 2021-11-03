@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 )
 
@@ -38,10 +39,14 @@ func (MySQLAccount) TableName() string {
 	return "erda_addon_mysql_account"
 }
 
+func NotDeleted(db *gorm.DB) *gorm.DB {
+	return db.Where("is_deleted = 0")
+}
+
 // GetMySQLAccountByID returns a MySQLAccount by ID
 func (db *DBClient) GetMySQLAccountByID(id string) (*MySQLAccount, error) {
 	var account MySQLAccount
-	err := db.Find(&account, "id = ? AND is_deleted = 0", id).Error
+	err := db.Scopes(NotDeleted).Find(&account, "id = ?", id).Error
 	if err != nil {
 		return nil, errors.Wrapf(err, "GetMySQLAccountByID: %s", id)
 	}
@@ -54,9 +59,8 @@ func (db *DBClient) GetMySQLAccountListByRoutingInstanceID(routingInstanceID str
 		return nil, nil
 	}
 	var accounts []MySQLAccount
-	if err := db.
+	if err := db.Scopes(NotDeleted).
 		Where("routing_instance_id = ?", routingInstanceID).
-		Where("is_deleted = 0").
 		Find(&accounts).Error; err != nil {
 		return nil, errors.Wrapf(err, "GetMySQLAccountListByRoutingInstanceID: %s", routingInstanceID)
 	}
