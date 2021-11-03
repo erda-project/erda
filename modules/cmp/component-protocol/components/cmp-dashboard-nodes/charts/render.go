@@ -82,6 +82,9 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 			(*gs)[resourceName+"Chart"] = []chart.DataItem{}
 		}
 		for _, node := range nodes {
+			if cmp.IsVirtualNode(node) {
+				continue
+			}
 			nodeName := node.StringSlice("metadata", "fields")[0]
 			nar := nodesAllocatedRes[nodeName]
 			cpu, mem, pod := nar.CPU, nar.Mem, nar.PodNum
