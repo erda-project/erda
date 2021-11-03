@@ -23,7 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition_client/deftype"
+	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 )
 
 func TestGetBranch(t *testing.T) {
@@ -162,3 +164,200 @@ func TestPipeline_reportPipelineDefinition(t *testing.T) {
 		})
 	}
 }
+
+func Test_getWorkspaceMainBranch(t *testing.T) {
+	type args struct {
+		workspace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "invalid workspace",
+			args: args{
+				workspace: "xxx",
+			},
+			want: "",
+		},
+		{
+			name: "dev",
+			args: args{
+				workspace: "dev",
+			},
+			want: "feature",
+		},
+		{
+			name: "Dev",
+			args: args{
+				workspace: "Dev",
+			},
+			want: "feature",
+		},
+		{
+			name: "test",
+			args: args{
+				workspace: "test",
+			},
+			want: "develop",
+		},
+		{
+			name: "staging",
+			args: args{
+				workspace: "staging",
+			},
+			want: "release",
+		},
+		{
+			name: "prOD",
+			args: args{
+				workspace: "prOD",
+			},
+			want: "master",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getWorkspaceMainBranch(tt.args.workspace); got != tt.want {
+				t.Errorf("getWorkspaceMainBranch() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_makeAppDefaultCmsNs(t *testing.T) {
+	type args struct {
+		appID uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "app 1",
+			args: args{
+				appID: 1,
+			},
+			want: "app-1-default",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makeAppDefaultCmsNs(tt.args.appID); got != tt.want {
+				t.Errorf("makeAppDefaultCmsNs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_makeAppWorkspaceCmsNs(t *testing.T) {
+	type args struct {
+		appID     uint64
+		workspace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "app 1 dev",
+			args: args{
+				appID:     1,
+				workspace: gitflowutil.DevWorkspace,
+			},
+			want: "app-1-dev",
+		},
+		{
+			name: "app 1 prod",
+			args: args{
+				appID:     1,
+				workspace: gitflowutil.ProdWorkspace,
+			},
+			want: "app-1-prod",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makeAppWorkspaceCmsNs(tt.args.appID, tt.args.workspace); got != tt.want {
+				t.Errorf("makeAppWorkspaceCmsNs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_makeBranchWorkspaceLevelCmsNs(t *testing.T) {
+	type args struct {
+		appID     uint64
+		workspace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "invalid workspace",
+			args: args{
+				appID:     1,
+				workspace: "xxx",
+			},
+			want: []string{cms.MakeAppDefaultSecretNamespace("1")},
+		},
+		{
+			name: "staging",
+			args: args{
+				appID:     1,
+				workspace: "STAGING",
+			},
+			want: []string{cms.MakeAppDefaultSecretNamespace("1"), cms.MakeAppBranchPrefixSecretNamespaceByBranchPrefix("1", "release")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makeBranchWorkspaceLevelCmsNs(tt.args.appID, tt.args.workspace); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makeBranchWorkspaceLevelCmsNs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_makeAppWorkspaceLevelCmsNs(t *testing.T) {
+	type args struct {
+		appID     uint64
+		workspace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "invalid workspace",
+			args: args{
+				appID:     1,
+				workspace: "xxx",
+			},
+			want: []string{"app-1-default", "app-1-xxx"},
+		},
+		{
+			name: "staging",
+			args: args{
+				appID:     1,
+				workspace: "staging",
+			},
+			want: []string{"app-1-default", "app-1-staging"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makeAppWorkspaceLevelCmsNs(tt.args.appID, tt.args.workspace); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makeAppWorkspaceLevelCmsNs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+

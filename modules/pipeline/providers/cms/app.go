@@ -31,5 +31,9 @@ func MakeAppBranchPrefixSecretNamespace(appID, branch string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s-%s-%s", PipelineAppConfigNameSpacePrefix, appID, branchPrefix), nil
+	return MakeAppBranchPrefixSecretNamespaceByBranchPrefix(appID, branchPrefix), nil
+}
+
+func MakeAppBranchPrefixSecretNamespaceByBranchPrefix(appID, branchPrefix string) string {
+	return fmt.Sprintf("%s-%s-%s", PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
 }
