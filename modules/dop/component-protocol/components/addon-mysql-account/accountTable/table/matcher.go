@@ -31,11 +31,6 @@ func (m *AndMatcher) Match(v interface{}) bool {
 	return true
 }
 
-func (m *AndMatcher) Append(o Matcher) *AndMatcher {
-	m.matchers = append(m.matchers, o)
-	return m
-}
-
 type OrMatcher struct {
 	matchers []Matcher
 }
@@ -47,11 +42,6 @@ func (m *OrMatcher) Match(v interface{}) bool {
 		}
 	}
 	return false
-}
-
-func (m *OrMatcher) Append(o Matcher) *OrMatcher {
-	m.matchers = append(m.matchers, o)
-	return m
 }
 
 type NotMatcher struct {
