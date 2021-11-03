@@ -15,13 +15,9 @@
 package topology
 
 import (
-	"bou.ke/monkey"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
-	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
-	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"log"
 	"net/http"
 	"net/url"
@@ -30,6 +26,7 @@ import (
 	"strconv"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic"
 	"github.com/stretchr/testify/assert"
@@ -37,8 +34,11 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 	"github.com/erda-project/erda/modules/monitor/common/db"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func TestSpliceIndexByTime(t *testing.T) {
