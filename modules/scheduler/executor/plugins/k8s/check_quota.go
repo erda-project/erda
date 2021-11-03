@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -28,6 +29,23 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 )
+
+type QuotaError struct {
+	err error
+}
+
+func (e QuotaError) Error() string {
+	return e.err.Error()
+}
+
+func NewQuotaError(msg string) error {
+	return QuotaError{errors.New(msg)}
+}
+
+func IsQuotaError(err error) bool {
+	_, ok := err.(QuotaError)
+	return ok
+}
 
 func (k *Kubernetes) GetWorkspaceLeftQuota(ctx context.Context, projectID, workspace string) (cpu, mem int64, err error) {
 	cpuQuota, memQuota, err := k.bdl.GetWorkspaceQuota(&apistructs.GetWorkspaceQuotaRequest{

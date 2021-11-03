@@ -63,8 +63,10 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 	if err != nil {
 		return err
 	}
+	var quotaErr error
 	if !ok {
-		return errors.New(reason)
+		k.setDeploymentZeroReplica(deployment)
+		quotaErr = NewQuotaError(reason)
 	}
 
 	err = k.deploy.Create(deployment)
@@ -72,13 +74,13 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 		return errors.Errorf("failed to create deployment, name: %s, (%v)", service.Name, err)
 	}
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
-		return nil
+		return quotaErr
 	}
 	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
-	return nil
+	return quotaErr
 }
 
 func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, deployments map[string]appsv1.Deployment) (apistructs.StatusDesc, error) {
@@ -445,10 +447,15 @@ func podAnnotations(service *apistructs.Service, podannotations map[string]strin
 	}
 }
 
-func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.Deployment, error) {
+func (k *Kubernetes) setDeploymentZeroReplica(deploy *appsv1.Deployment) {
+	var zero int32
+	deploy.Spec.Replicas = &zero
+}
+
+func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *apistructs.ServiceGroup) (*appsv1.Deployment, error) {
 	deploymentName := getDeployName(service)
 	enableServiceLinks := false
-	if _, ok := sg.Labels[EnableServiceLinks]; ok {
+	if _, ok := serviceGroup.Labels[EnableServiceLinks]; ok {
 		enableServiceLinks = true
 	}
 	deployment := &appsv1.Deployment{
@@ -506,7 +513,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{Type: "Recreate"}
 	}
 
-	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
+	affinity := constraintbuilders.K8S(&serviceGroup.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
 
 	if v, ok := service.Env[DiceWorkSpace]; ok {
@@ -556,7 +563,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	deployment.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["app"] = service.Name
 
-	setDeploymentLabels(service, deployment, sg.ID)
+	setDeploymentLabels(service, deployment, serviceGroup.ID)
 
 	if deployment.Spec.Template.Annotations == nil {
 		deployment.Spec.Template.Annotations = make(map[string]string)
@@ -576,7 +583,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	// Configure health check
 	SetHealthCheck(&deployment.Spec.Template.Spec.Containers[0], service)
 
-	if err := k.AddContainersEnv(containers, service, sg); err != nil {
+	if err := k.AddContainersEnv(containers, service, serviceGroup); err != nil {
 		return nil, err
 	}
 

@@ -17,6 +17,7 @@ package k8s
 import (
 	"testing"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -70,5 +71,38 @@ func TestGetLogContent(t *testing.T) {
 	}
 	if primevalLog != expectedPrimevalLog {
 		t.Errorf("test failed, expected primevalLog is \"%s\", got \"%s\"", expectedPrimevalLog, primevalLog)
+	}
+}
+
+func TestIsQuotaError(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"case1",
+			args{
+				NewQuotaError("test"),
+			},
+			true,
+		},
+		{
+			"case2",
+			args{
+				errors.New("test"),
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsQuotaError(tt.args.err); got != tt.want {
+				t.Errorf("IsQuotaError() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

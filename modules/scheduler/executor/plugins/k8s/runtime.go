@@ -156,6 +156,7 @@ func (k *Kubernetes) createStatelessGroup(ctx context.Context, sg *apistructs.Se
 		ns = sg.ProjectNamespace
 	}
 
+	var errOccurred error
 	var err error
 	for _, layer := range layers {
 		// services in one layer could be create in parallel, BUT NO NEED
@@ -167,10 +168,12 @@ func (k *Kubernetes) createStatelessGroup(ctx context.Context, sg *apistructs.Se
 			if err = k.createOne(ctx, service, sg); err == nil {
 				continue
 			}
-
+			errOccurred = err
 			logrus.Errorf("failed to create serivce and going to destroy servicegroup, name: %s, ns: %s, (%v)",
 				service.Name, service.Namespace, err)
-
+			if IsQuotaError(err) {
+				continue
+			}
 			defer func() {
 				logrus.Debugf("revert resource when create runtime %s failed", sg.ID)
 				var delErr error
@@ -195,7 +198,7 @@ func (k *Kubernetes) createStatelessGroup(ctx context.Context, sg *apistructs.Se
 			return err
 		}
 	}
-	return nil
+	return errOccurred
 }
 
 // CreateStatefulGroup create statefull group
