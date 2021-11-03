@@ -180,8 +180,8 @@ func (nf *NodeFilter) getState(labels map[string]struct{}) {
 			Children: []filter.Option{
 				{Label: nf.SDK.I18n("dev") + "(dice/workspace-dev=true)", Value: "dice/workspace-dev=true"},
 				{Label: nf.SDK.I18n("test") + "(dice/workspace-test=true)", Value: "dice/workspace-test=true"},
-				{Label: nf.SDK.I18n("staging" + "(dice/workspace-staging=true)"), Value: "dice/workspace-staging=true"},
-				{Label: nf.SDK.I18n("prod" + "(dice/workspace-prod=true)"), Value: "dice/workspace-prod=true"},
+				{Label: nf.SDK.I18n("staging") + "(dice/workspace-staging=true)", Value: "dice/workspace-staging=true"},
+				{Label: nf.SDK.I18n("prod") + "(dice/workspace-prod=true)", Value: "dice/workspace-prod=true"},
 			},
 		},
 		{
@@ -189,24 +189,24 @@ func (nf *NodeFilter) getState(labels map[string]struct{}) {
 			Label: nf.SDK.I18n("service-label"),
 			Children: []filter.Option{
 				{Label: nf.SDK.I18n("stateful-service") + "(dice/stateful-service=true)", Value: "dice/stateful-service=true"},
-				{Label: nf.SDK.I18n("stateless-service" + "(dice/stateless-service=true)"), Value: "dice/stateless-service=true"},
-				{Label: nf.SDK.I18n("location-cluster-service" + "(dice/location-cluster-service=true)"), Value: "dice/location-cluster-service=true"},
+				{Label: nf.SDK.I18n("stateless-service") + "(dice/stateless-service=true)", Value: "dice/stateless-service=true"},
+				{Label: nf.SDK.I18n("location-cluster-service") + "(dice/location-cluster-service=true)", Value: "dice/location-cluster-service=true"},
 			},
 		},
 		{
 			Value: "job-label",
 			Label: nf.SDK.I18n("job-label"),
 			Children: []filter.Option{
-				{Label: nf.SDK.I18n("cicd-job" + "(dice/job=true)"), Value: "dice/job=true"},
-				{Label: nf.SDK.I18n("bigdata-job" + "(dice/bigdata-job=true)"), Value: "dice/bigdata-job=true"},
+				{Label: nf.SDK.I18n("cicd-job") + "(dice/job=true)", Value: "dice/job=true"},
+				{Label: nf.SDK.I18n("bigdata-job") + "(dice/bigdata-job=true)", Value: "dice/bigdata-job=true"},
 			},
 		},
 		{
 			Value: "other-label",
 			Label: nf.SDK.I18n("other-label"),
 			Children: append([]filter.Option{
-				{Label: nf.SDK.I18n("lb" + "(dice/lb=true)"), Value: "dice/lb=true"},
-				{Label: nf.SDK.I18n("platform" + "(dice/platform=true)"), Value: "dice/platform=true"},
+				{Label: nf.SDK.I18n("lb") + "(dice/lb=true)", Value: "dice/lb=true"},
+				{Label: nf.SDK.I18n("platform") + "(dice/platform=true)", Value: "dice/platform=true"},
 			}, customOps...),
 		},
 	}...,
