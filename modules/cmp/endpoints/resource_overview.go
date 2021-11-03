@@ -49,6 +49,7 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 	clusterNames := value["clusterName"]
 	cpuPerNodeStr := value.Get("cpuPerNode")
 	memPerNodeStr := value.Get("memPerNode")
+	groupBy := value.Get("groupBy")
 	cpuPerNode, err := strconv.ParseUint(cpuPerNodeStr, 10, 64)
 	if err != nil {
 		cpuPerNode = 8
@@ -59,7 +60,7 @@ func (e *Endpoints) ResourceOverviewReport(ctx context.Context, r *http.Request,
 	}
 	logrus.Debugf("params: orgID: %v, clusterNames: %v, cpuPerNode: %v, memPerNode: %v", orgID, clusterNames, cpuPerNode, memPerNode)
 
-	report, err := e.reportTable.GetResourceOverviewReport(ctx, orgID, clusterNames, cpuPerNode, memPerNode)
+	report, err := e.reportTable.GetResourceOverviewReport(ctx, orgID, clusterNames, cpuPerNode, memPerNode, groupBy)
 	if err != nil {
 		logrus.WithError(err).Errorln("failed to GetResourceOverviewReport")
 		return resourceOverviewReportError.InternalError(err).ToResp(), nil

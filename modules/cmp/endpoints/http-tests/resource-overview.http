@@ -1,0 +1,16 @@
+// 资源报表 按项目聚合
+GET http://openapi.dev.terminus.io/api/resource-overview/report-table?clusterName=terminus-dev&cpuPerNode=8&memPerNode=32&groupBy=project
+lang: zh-CN
+org: erda
+accept-language: zh-CN,zh;q=0.9
+cookie:
+
+###
+
+GET http://openapi.dev.terminus.io/api/resource-overview/report-table?clusterName=terminus-dev&cpuPerNode=8&memPerNode=32&groupBy=owner
+Accept: application/json
+accept: application/vnd.dice+json;version=1.0
+lang: zh-CN
+org: erda
+accept-language: zh-CN,zh;q=0.9
+cookie:
