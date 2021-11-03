@@ -153,20 +153,7 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 		data.List = append(data.List, &item)
 	}
 	sharedText := rt.trans.Text(langCodes, "SharedResources")
-	sharedItem := &apistructs.ResourceOverviewReportDataItem{
-		ProjectID:          0,
-		ProjectName:        "-",
-		ProjectDisplayName: "-",
-		ProjectDesc:        sharedText,
-		OwnerUserID:        0,
-		OwnerUserName:      "-",
-		OwnerUserNickName:  "-",
-		CPUQuota:           calcu.MillcoreToCore(sharedResource[0], 3),
-		CPUWaterLevel:      100,
-		MemQuota:           calcu.ByteToGibibyte(sharedResource[1], 3),
-		MemWaterLevel:      100,
-		Nodes:              0,
-	}
+	sharedItem := newSharedItem(sharedResource, sharedText)
 	data.List = append(data.List, sharedItem)
 
 	if groupBy == "owner" {
@@ -181,8 +168,8 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 type ReportTableOption func(table *ReportTable)
 
 func ReportTableWithBundle(bdl *bundle.Bundle) ReportTableOption {
-	return func(t *ReportTable) {
-		t.bdl = bdl
+	return func(table *ReportTable) {
+		table.bdl = bdl
 	}
 }
 
@@ -190,13 +177,34 @@ func ReportTableWithCMP(cmp interface {
 	ListSteveResource(ctx context.Context, req *apistructs.SteveRequest) ([]types.APIObject, error)
 	GetNamespacesResources(ctx context.Context, nReq *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error)
 }) ReportTableOption {
-	return func(t *ReportTable) {
-		t.cmp = cmp
+	return func(table *ReportTable) {
+		table.cmp = cmp
 	}
 }
 
 func ReportTableWithTrans(trans i18n.Translator) ReportTableOption {
-	return func(t *ReportTable) {
-		t.trans = trans
+	return func(table *ReportTable) {
+		table.trans = trans
+	}
+}
+
+func newSharedItem(shared [2]uint64, sharedText string) *apistructs.ResourceOverviewReportDataItem {
+	cpu := calcu.MillcoreToCore(shared[0], 3)
+	mem := calcu.ByteToGibibyte(shared[1], 3)
+	return &apistructs.ResourceOverviewReportDataItem{
+		ProjectID:          0,
+		ProjectName:        "-",
+		ProjectDisplayName: "-",
+		ProjectDesc:        sharedText,
+		OwnerUserID:        0,
+		OwnerUserName:      "-",
+		OwnerUserNickName:  "-",
+		CPUQuota:           cpu,
+		CPURequest:         cpu,
+		CPUWaterLevel:      100,
+		MemQuota:           mem,
+		MemRequest:         mem,
+		MemWaterLevel:      100,
+		Nodes:              0,
 	}
 }
