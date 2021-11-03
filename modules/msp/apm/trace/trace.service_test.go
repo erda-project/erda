@@ -23,9 +23,6 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
-	uuid "github.com/satori/go.uuid"
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -34,6 +31,8 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Test_traceService_GetSpans(t *testing.T) {
@@ -1156,6 +1155,38 @@ func Test_traceService_CreateTraceDebug(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func Test_getAdjustTime(t *testing.T) {
+	tests := []struct {
+		name string
+		time int64
+		want int64
+	}{
+		{
+			time: 1011111,
+			want: 1000000,
+		},
+		{
+			time: 1111111,
+			want: 1111111,
+		},
+		{
+			time: 1100001,
+			want: 1100001,
+		},
+		{
+			time: 1000001,
+			want: 1000000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getAdjustTime(tt.time); got != tt.want {
+				t.Errorf("getAdjustTime() = %v, want %v", got, tt.want)
 			}
 		})
 	}

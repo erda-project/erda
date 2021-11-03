@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
+	"github.com/erda-project/erda/modules/pkg/monitor"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestMetricToSpan .
@@ -143,4 +143,79 @@ func TestToInt64(t *testing.T) {
 		log.Fatal(err)
 	}
 	assert.Equal(t, num, int64(10))
+}
+
+func Test_getTimeRange(t *testing.T) {
+	tests := []struct {
+		name          string
+		span          *monitor.Span
+		wantStartTime int64
+		wantEndTime   int64
+	}{
+		{
+			span: &monitor.Span{
+				SpanID:    "bc703bc4-9ba4-40d5-a092-533183290cb0",
+				StartTime: 1635906581184000000,
+				EndTime:   1635906581186000000,
+			},
+			wantStartTime: 1635906581184064675,
+			wantEndTime:   1635906581186064675,
+		},
+		{
+			span: &monitor.Span{
+				SpanID:    "165c3f71-730b-4843-8da7-d000b08575b4",
+				StartTime: 1635906581185000000,
+				EndTime:   1635906581185000000,
+			},
+			wantStartTime: 1635906581185019809,
+			wantEndTime:   1635906581185019809,
+		},
+		{
+			span: &monitor.Span{
+				SpanID:    "dc76bc0a-40f3-4dbc-9f26-962fb3bd7556",
+				StartTime: 1635906581232000000,
+				EndTime:   1635906581237000000,
+			},
+			wantStartTime: 1635906581232019363,
+			wantEndTime:   1635906581237019363,
+		},
+		{
+			span: &monitor.Span{
+				SpanID:    "314287dd-bdaf-4ea3-9caa-035655b82355",
+				StartTime: 1635906581232000000,
+				EndTime:   1635906581237000000,
+			},
+			wantStartTime: 1635906581232043715,
+			wantEndTime:   1635906581237043715,
+		},
+		{
+			span: &monitor.Span{
+				SpanID:    "314287dd-bdaf-4ea3-9caa-035655b82355",
+				StartTime: 1635906581232000001,
+				EndTime:   1635906581237000001,
+			},
+			wantStartTime: 1635906581232000001,
+			wantEndTime:   1635906581237000001,
+		},
+		{
+			span: &monitor.Span{
+				SpanID:    "314287dd-bdaf-4ea3-9caa-035655b82355",
+				StartTime: 100 * millisecond,
+				EndTime:   200 * millisecond,
+			},
+			wantStartTime: 100043715,
+			wantEndTime:   200043715,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			startTime, endTime := getTimeRange(tt.span)
+			if startTime != tt.wantStartTime {
+				t.Errorf("getTimePair() got startTime = %v, want %v", startTime, tt.wantStartTime)
+			}
+			if endTime != tt.wantEndTime {
+				t.Errorf("getTimePair() got endTime = %v, want %v", endTime, tt.wantEndTime)
+			}
+		})
+	}
 }
