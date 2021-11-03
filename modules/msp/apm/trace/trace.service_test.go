@@ -23,6 +23,9 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
+	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -31,8 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
-	uuid "github.com/satori/go.uuid"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Test_traceService_GetSpans(t *testing.T) {
