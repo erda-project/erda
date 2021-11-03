@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -143,14 +144,8 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 			if err == nil {
 				userIDs := getUserIDs(data)
 				if userIDs != nil {
-					user, err := p.getUsers(userIDs, false)
-					if err != nil {
-						p.Log.Error(err)
-					} else {
-						data["userInfo"] = user
-						if newbody, err := json.Marshal(data); err == nil {
-							body = newbody
-						}
+					if newBody := p.userInfoRetriever(r, data, userIDs); newBody != nil {
+						body = newBody
 					}
 				}
 			}
@@ -167,6 +162,20 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{}, userIDs []string) []byte {
+	desensitized, _ := strconv.ParseBool(httputil.UserInfoDesensitizedHeader)
+	user, err := p.getUsers(userIDs, desensitized)
+	if err != nil {
+		p.Log.Error(err)
+	} else {
+		data["userInfo"] = user
+		if newbody, err := json.Marshal(data); err == nil {
+			return newbody
+		}
+	}
+	return nil
 }
 
 func getUserIDs(body map[string]interface{}) []string {

@@ -24,12 +24,11 @@ import (
 	jsi "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -129,13 +128,8 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 		panic(err)
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
-	userInfos, err := posthandle.GetUsers(userIDs, true)
-	if err != nil {
-		return err
-	}
 	// inject to response body
 	erdaResp.UserIDs = userIDs
-	erdaResp.UserInfo = userInfos
 
 	// update response body
 	newErdaBody, err := jsi.Marshal(erdaResp)

@@ -32,7 +32,6 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -172,13 +171,6 @@ func RenderResponse(req *apistructs.ComponentProtocolRequest) *apistructs.Compon
 		rsp.UserIDs = userIDs.([]string)
 		rsp.UserIDs = strutil.DedupSlice(rsp.UserIDs, true)
 		delete(*req.Protocol.GlobalState, protocol.GlobalInnerKeyUserIDs.String())
-	}
-	if rsp.UserIDs != nil {
-		userInfo, err := posthandle.GetUsers(rsp.UserIDs, false)
-		if err != nil {
-			logrus.Warnf("component protocol get users failed, err:%v", err)
-		}
-		rsp.UserInfo = userInfo
 	}
 
 	err := protocol.GetGlobalStateKV(req.Protocol, protocol.GlobalInnerKeyError.String())
