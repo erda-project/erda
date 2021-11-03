@@ -11,8 +11,9 @@ hierarchy:
       - configDrawer
     configDrawer:
       content: configContent
+      footer:
+        - configCopyParams
     configContent:
-      - configCopyParams
       - configPanel
 
 components:
@@ -23,7 +24,7 @@ components:
   configPanel:
     type: Panel
   configCopyParams:
-    type: Text
+    type: CopyButton
   configDrawer:
     type: Drawer
   editFormModal:

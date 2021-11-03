@@ -62,10 +62,10 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	props := make(map[string]interface{})
-	props["renderType"] = "copyText"
 	props["value"] = map[string]interface{}{
-		"text":     "复制参数",
-		"copyText": string(b),
+		"copyText":   string(b),
+		"copyTip":    "参数",
+		"buttonText": "复制参数",
 	}
 	c.Props = props
 
