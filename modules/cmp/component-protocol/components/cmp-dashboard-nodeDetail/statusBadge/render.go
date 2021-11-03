@@ -16,6 +16,7 @@ package statusBadge
 
 import (
 	"context"
+	"sort"
 
 	"github.com/rancher/wrangler/pkg/data"
 
@@ -56,6 +57,9 @@ func (statusBadge *StatusBadge) Render(ctx context.Context, c *cptype.Component,
 			Tip:     v[1],
 		})
 	}
+	sort.Slice(bars, func(i, j int) bool {
+		return bars[i].Text < bars[j].Text
+	})
 	c.Data = map[string]interface{}{"list": bars}
 	c.Type = statusBadge.Type
 	return nil

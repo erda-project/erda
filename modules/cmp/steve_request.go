@@ -48,6 +48,7 @@ import (
 	httpapi "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -142,7 +143,7 @@ func (p *provider) GetSteveResource(ctx context.Context, req *apistructs.SteveRe
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
+		return types.APIObject{}, getAPIError(objData)
 	}
 	return obj, nil
 }
@@ -412,7 +413,7 @@ func (p *provider) UpdateSteveResource(ctx context.Context, req *apistructs.Stev
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
+		return types.APIObject{}, getAPIError(objData)
 	}
 
 	RemoveCache(req.ClusterName, "", string(req.Type))
@@ -479,7 +480,7 @@ func (p *provider) CreateSteveResource(ctx context.Context, req *apistructs.Stev
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return types.APIObject{}, apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
+		return types.APIObject{}, getAPIError(objData)
 	}
 
 	RemoveCache(req.ClusterName, "", string(req.Type))
@@ -544,7 +545,7 @@ func (p *provider) DeleteSteveResource(ctx context.Context, req *apistructs.Stev
 		obj := rawRes.APIObject
 		objData := obj.Data()
 		if objData.String("type") == "error" {
-			return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
+			return getAPIError(objData)
 		}
 	}
 
@@ -612,7 +613,7 @@ func (p *provider) PatchNode(ctx context.Context, req *apistructs.SteveRequest) 
 	obj := rawRes.APIObject
 	objData := obj.Data()
 	if objData.String("type") == "error" {
-		return apierrors.ErrInvoke.InternalError(errors.New(objData.String("message")))
+		return getAPIError(objData)
 	}
 
 	RemoveCache(req.ClusterName, "", string(req.Type))
@@ -1016,4 +1017,14 @@ func RemoveCache(clusterName, namespace, kind string) {
 		logrus.Errorf("failed to remove cache for %s (namespace: %s) in cluster %s, %v",
 			key.Kind, key.Namespace, key.ClusterName, err)
 	}
+}
+
+func getAPIError(err data.Object) *errorresp.APIError {
+	status, ok := err["status"].(int)
+	if !ok {
+		status = 500
+	}
+	code := err.String("code")
+	msg := err.String("message")
+	return errorresp.New(errorresp.WithCode(status, code), errorresp.WithMessage(fmt.Sprintf("%s: %s", code, msg)))
 }
