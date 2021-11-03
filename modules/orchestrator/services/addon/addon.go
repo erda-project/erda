@@ -875,20 +875,17 @@ func (a *Addon) GetRuntimeAddonConfig(runtimeID uint64) (*[]apistructs.AddonConf
 	var configResList = make([]apistructs.AddonConfigRes, 0, len(*attchAddons)+1)
 	// 获取zk addon信息
 	hasZookeeper := false
+	var routingIDs []string
+	for _, att := range *attchAddons {
+		routingIDs = append(routingIDs, att.RoutingInstanceID)
+	}
+	routings, err := a.db.GetInstanceRoutingsByIDs(routingIDs)
+	if err != nil {
+		return nil, err
+	}
 	routingMap := make(map[string]*dbclient.AddonInstanceRouting)
-	for _, attchItem := range *attchAddons {
-		routingIns, err := a.db.GetInstanceRouting(attchItem.RoutingInstanceID)
-		if err != nil {
-			return nil, err
-		}
-		if routingIns == nil {
-			continue
-		}
-		routingMap[routingIns.RealInstance] = routingIns
-		if attchItem.InsideAddon != apistructs.INSIDE && routingIns.AddonName == apistructs.AddonZookeeper {
-			hasZookeeper = true
-			break
-		}
+	for _, r := range *routings {
+		routingMap[r.ID] = &r
 	}
 	for _, attchItem := range *attchAddons {
 		routingIns := routingMap[attchItem.RoutingInstanceID]

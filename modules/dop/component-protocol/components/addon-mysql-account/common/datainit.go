@@ -72,8 +72,9 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 		return nil, err
 	}
 	appMap := make(map[string]*apistructs.ApplicationDTO)
-	for _, a := range rap.List {
-		appMap[a.Name] = &a
+	for i := range rap.List {
+		a := rap.List[i]
+		appMap[strutil.String(a.ID)] = &a
 	}
 
 	counter := map[string]int{}
