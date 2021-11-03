@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/endpoints"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pexpr/pexpr_params"
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
@@ -92,7 +93,7 @@ func (p *provider) do() error {
 
 	// TODO metric
 	// // metrics
-	// metrics.Initialize()
+	metrics.Initialize(p.Report)
 
 	// db client
 	dbClient, err := dbclient.New()

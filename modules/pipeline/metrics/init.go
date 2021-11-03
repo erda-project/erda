@@ -14,25 +14,18 @@
 
 package metrics
 
-// import (
-// 	"github.com/sirupsen/logrus"
+import (
+	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/providers/metrics/report"
+)
 
-// 	"terminus.io/dice/telemetry/metrics"
-// )
+// disableMetrics 是否禁用 metric 相关操作
+var disableMetrics bool
 
-// // disableMetrics 是否禁用 metric 相关操作
-// var disableMetrics bool
+//var reportClient *report.MetricReport
+var reportClient report.MetricReport
 
-// var bulkClient *metrics.BulkAction
-
-// func Initialize() {
-// 	client := metrics.NewClient()
-// 	bulk, err := client.NewBulk()
-// 	if err != nil {
-// 		logrus.Errorf("[alert] failed to init event bulk client, disable metric report, err: %v", err)
-// 		disableMetrics = true
-// 		return
-// 	}
-// 	bulkClient = bulk
-// 	logrus.Info("metrics enabled")
-// }
+func Initialize(client report.MetricReport) {
+	disableMetrics = conf.DisableMetrics()
+	reportClient = client
+}
