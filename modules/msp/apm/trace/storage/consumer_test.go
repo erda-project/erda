@@ -20,9 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/pkg/monitor"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestMetricToSpan .
