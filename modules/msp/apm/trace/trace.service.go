@@ -41,7 +41,6 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
-	mathpkg "github.com/erda-project/erda/pkg/math"
 )
 
 type traceService struct {
@@ -234,21 +233,28 @@ func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpans
 		if traceEndTime == 0 || traceEndTime < span.EndTime {
 			traceEndTime = span.EndTime
 		}
-		span.Duration = mathpkg.AbsInt64(span.EndTime - span.StartTime)
-		span.SelfDuration = mathpkg.AbsInt64(span.Duration - childSpanDuration(id, spanTree))
+		span.Duration = positiveInt64(span.EndTime - span.StartTime)
+		span.SelfDuration = positiveInt64(span.Duration - childSpanDuration(id, spanTree))
 		spans = append(spans, span)
 	}
 
 	serviceCount := int64(len(services))
 
-	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: mathpkg.AbsInt64(traceEndTime - traceStartTime), SpanCount: spanCount}, nil
+	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: positiveInt64(traceEndTime - traceStartTime), SpanCount: spanCount}, nil
+}
+
+func positiveInt64(v int64) int64 {
+	if v > 0 {
+		return v
+	}
+	return 0
 }
 
 func childSpanDuration(id string, spanTree query.SpanTree) int64 {
 	duration := int64(0)
 	for _, span := range spanTree {
 		if span.ParentSpanId == id {
-			duration += mathpkg.AbsInt64(span.EndTime - span.StartTime)
+			duration += positiveInt64(span.EndTime - span.StartTime)
 		}
 	}
 	return duration
