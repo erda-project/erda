@@ -53,7 +53,7 @@ type provider struct {
 	Index      indexloader.Interface `autowired:"elasticsearch.index.loader@metric"`
 	DB         *gorm.DB              `autowired:"mysql-client"`
 	ChartTrans i18n.Translator       `autowired:"i18n" translator:"charts"`
-	q          *metricq
+	q          *Metricq
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -63,7 +63,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to start charts manager: %s", err)
 	}
 
-	p.q = &metricq{
+	p.q = &Metricq{
 		Queryer:   query.New(&query.MetricIndexLoader{Interface: p.Index}),
 		queryv1:   queryv1.New(&query.MetricIndexLoader{Interface: p.Index}, charts, p.Meta, p.ChartTrans),
 		index:     p.Index,
