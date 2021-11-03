@@ -257,7 +257,7 @@ func (q *Q) calcCodeCoverage(ctx context.Context, h *gshelper.GSHelper) decimal.
 // reopen_rate = reopen_count / total_count
 // value range: 0-100
 func (q *Q) calcBugReopenRate(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
-	reopenCount, totalCount, err := q.dbClient.BugReopenCount(q.projectID, h.GetGlobalSelectedIterationIDs())
+	reopenCount, totalCount, err := q.dbClient.BugReopenCount(q.projectID, h.GetGlobalSelectedIterationIDs(), true)
 	if err != nil {
 		panic(err)
 	}

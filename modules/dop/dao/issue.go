@@ -832,13 +832,17 @@ func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint
 	return m, nil
 }
 
-func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) (reopenCount, totalCount uint64, err error) {
+func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64, excludeDone bool) (reopenCount, totalCount uint64, err error) {
 	sql := client.Model(&Issue{}).Where("`type` = ?", apistructs.IssueTypeBug)
 	if projectID > 0 {
 		sql = sql.Where("project_id = ?", projectID)
 	}
 	if len(iterationIDs) > 0 {
 		sql = sql.Where("iteration_id IN (?)", iterationIDs)
+	}
+	if excludeDone {
+		// exclude-done -> not-finish -> finish_time IS NULL
+		sql = sql.Where("finish_time IS NULL")
 	}
 
 	type Line struct {
