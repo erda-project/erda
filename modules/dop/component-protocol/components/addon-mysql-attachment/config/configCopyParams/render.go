@@ -61,13 +61,11 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		return err
 	}
 
-	props := make(map[string]interface{})
-	props["value"] = map[string]interface{}{
+	c.Props = map[string]interface{}{
 		"copyText":   string(b),
 		"copyTip":    "参数",
 		"buttonText": "复制参数",
 	}
-	c.Props = props
 
 	state := make(map[string]interface{})
 	state["visible"] = true

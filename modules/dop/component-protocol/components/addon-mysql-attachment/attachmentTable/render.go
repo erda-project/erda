@@ -73,6 +73,7 @@ func getTitles() []*table.ColumnTitle {
 		{
 			Title:     "应用",
 			DataIndex: "appName",
+			Width:     180,
 		},
 		{
 			Title:     "实例",
@@ -83,17 +84,9 @@ func getTitles() []*table.ColumnTitle {
 			DataIndex: "account",
 		},
 		{
-			Title:     "服务参数",
-			DataIndex: "config",
-		},
-		{
-			Title:     "应用部署详情",
-			DataIndex: "detail",
-		},
-		{
 			Title:     "操作",
 			DataIndex: "operate",
-			Width:     180,
+			Width:     260,
 		},
 	}
 }
@@ -178,20 +171,19 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 		datum["runtime"] = table.ColumnData{RenderType: "text", Value: item.RuntimeName}
 	}
 
-	datum["config"] = table.ColumnData{RenderType: "tableOperation", Operations: map[string]*table.Operation{
+	datum["operate"] = table.ColumnData{RenderType: "tableOperation", Operations: map[string]*table.Operation{
 		"showConfig": {
 			Key:    "showConfig",
-			Text:   "查看详情",
+			Text:   "查看服务参数",
 			Reload: true,
 			Meta: map[string]string{
 				"id": fmt.Sprintf("%d", item.Id),
 			},
+			ShowIndex: 1,
 		},
-	}}
-	datum["detail"] = table.ColumnData{RenderType: "linkText", Value: "部署详情", Operations: map[string]*table.Operation{
 		"click": {
 			Key:    "gotoRuntimeDetail",
-			Text:   "查看详情",
+			Text:   "跳转部署详情",
 			Reload: false,
 			Command: &table.OperationCommand{
 				Key: "goto",
@@ -211,9 +203,8 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 				},
 				Target: "runtimeDetailRoot",
 			},
+			ShowIndex: 2,
 		},
-	}}
-	datum["operate"] = table.ColumnData{RenderType: "tableOperation", Operations: map[string]*table.Operation{
 		"edit": {
 			Key:    "editAttachment",
 			Text:   "编辑",
@@ -221,6 +212,7 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 			Meta: map[string]string{
 				"id": fmt.Sprintf("%d", item.Id),
 			},
+			ShowIndex: 3,
 		},
 	}}
 	return datum
