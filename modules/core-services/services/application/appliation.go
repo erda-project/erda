@@ -353,9 +353,8 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 	if err != nil {
 		return 0, err
 	}
-	domain := strutil.Concat(strutil.ToLower(org.Name), "-org.", conf.RootDomain())
 	u, _ := url.Parse(conf.UIPublicURL())
-	remoteUrl := fmt.Sprintf("%s://git:%s@%s/wb/%s/%s", u.Scheme, token, domain, app.ProjectName, app.Name)
+	remoteUrl := fmt.Sprintf("%s://git:%s@%s/%s/dop/%s/%s", u.Scheme, token, conf.UIDomain(), org.Name, app.ProjectName, app.Name)
 
 	// generate git push action
 	gitPushStage := &apistructs.PipelineYmlAction{
