@@ -1,0 +1,63 @@
+{
+  "index_patterns": [
+    "${ERDA_SPAN_INDEX_PREFIX:erda-spans-}*"
+  ],
+  "settings": {
+    "number_of_shards": ${SPAN_INDEX_SHARDS:5},
+    "number_of_replicas": ${SPAN_INDEX_REPLICAS:1},
+    "index": {
+      "refresh_interval": "15s",
+      "translog.durability": "async",
+      "translog.sync_interval": "15s",
+      "translog.flush_threshold_size": "1024mb"
+    }
+  },
+  "mappings": {
+    "spans": {
+      "dynamic": "true",
+      "properties": {
+        "trace_id": {
+          "type": "text",
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "span_id": {
+          "type": "text",
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "parent_span_id": {
+          "type": "text",
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "operation_name": {
+          "type": "text",
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "start_time": {
+          "type": "date"
+        },
+        "end_time": {
+          "type": "date"
+        },
+        "tags": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}
