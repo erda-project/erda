@@ -58,6 +58,9 @@ func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetCluster
 			continue
 		}
 		for _, node := range nodes {
+			if IsVirtualNode(node) {
+				continue
+			}
 			nodeName := node.String("metadata", "name")
 			allocatableCPUQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "cpu"))
 			allocatableMemQty, _ := resource.ParseQuantity(node.String("status", "allocatable", "memory"))
@@ -259,12 +262,28 @@ func CalculateNamespaceAllocatedRes(name string, pods []types2.APIObject) (cpu, 
 	return cpuQty.MilliValue(), memQty.Value(), podNum
 }
 
+func IsVirtualNode(node data.Object) bool {
+	labels := node.Map("metadata", "labels")
+	v, ok := labels["type"]
+	if !ok {
+		return false
+	}
+	s, ok := v.(string)
+	if !ok {
+		return false
+	}
+	return s == "virtual-kubelet"
+}
+
 // GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
 func GetNodesAllocatedRes(ctx context.Context, server _interface.SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nodesAllocatedRes := make(map[string]AllocatedRes)
 	for _, node := range nodes {
+		if IsVirtualNode(node) {
+			continue
+		}
 		nodeName := node.String("metadata", "name")
 		value, expired, err := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, nodeName, nodeCacheType))
 		if err != nil {
@@ -331,6 +350,9 @@ func GetNodesAllocatedRes(ctx context.Context, server _interface.SteveServer, no
 				}
 			}
 			for _, node := range nodes {
+				if IsVirtualNode(node) {
+					continue
+				}
 				nodeName := node.String("metadata", "name")
 				cpu, mem, podNum := CalculateNodeAllocatedRes(nodeName, pods)
 				nar := AllocatedRes{
