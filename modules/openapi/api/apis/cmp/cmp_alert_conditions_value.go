@@ -24,5 +24,5 @@ var CMP_ALERT_CONDITIONS_VALUE = apis.ApiSpec{
 	Host:        "cmp.marathon.l4lb.thisdcos.directory:9028",
 	CheckLogin:  true,
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 }
