@@ -31,8 +31,8 @@ import (
 const (
 	OperationKeyClickBranchExpandChildren = "branchExpandChildren"
 
-	mobileInitBranchKey = "mobile_init_branch_key"
-	mobileInitKey       = "mobile_init_key"
+	mobileInitBranchKey = "mobile_init_branch"
+	mobileInitKey       = "mobile_init"
 
 	I18nLocalePrefixKey                = "wb.content.pipeline.file.tree."
 	defaultPipelineI18nKey             = "defaultPipeline"
