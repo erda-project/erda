@@ -18,10 +18,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/openapi/api"
+	util "github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func NewReverseProxy(director func(*http.Request),
@@ -51,6 +53,7 @@ func (r *ReverseProxyWithCustom) ServeHTTP(rw http.ResponseWriter, req *http.Req
 		}
 	}()
 	spec := api.API.Find(req)
+	req.Header.Add(util.UserInfoDesensitizedHeader, strconv.FormatBool(spec.NeedDesensitize))
 	if spec != nil && spec.Custom != nil {
 		spec.Custom(rw, req)
 		return
