@@ -21,3 +21,31 @@ CREATE TABLE `erda_addon_mysql_account`
     KEY `idx_routing_instance_id` (`routing_instance_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='mysql account (tenant) for addon';
+
+-- prepare mysql account
+insert into erda_addon_mysql_account
+select uuid(),
+       now(),
+       now(),
+       'mysql',
+       e.value,
+       i.kms_key,
+       i.id,
+       r.id,
+       '',
+       0
+from tb_addon_instance_routing as r
+         inner join tb_addon_instance as i on r.real_instance = i.id
+         inner join tb_middle_instance_extra as e on r.real_instance = e.instance_id
+where r.is_deleted = 'N'
+  and r.addon_name = 'mysql'
+  and r.status = 'ATTACHED'
+  and e.field = 'password';
+
+-- fix attachment
+update tb_addon_attachment as att
+    inner join erda_addon_mysql_account as acc on att.routing_instance_id = acc.routing_instance_id
+set att.mysql_account_state       = 'CUR',
+    att.mysql_account_id          = acc.id,
+    att.previous_mysql_account_id = ''
+where att.is_deleted = 'N';
