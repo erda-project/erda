@@ -116,7 +116,12 @@ func (q *queue) WhenDone(data interface{}) error {
 	q.Task.Status = apistructs.PipelineStatusRunning
 	q.Task.Extra.TimeEndQueue = time.Now()
 	q.Task.QueueTimeSec = costtimeutil.CalculateTaskQueueTimeSec(q.Task)
+	beforeTimeBegin := q.Task.TimeBegin
 	q.Task.TimeBegin = time.Now()
+	// loop task timeBegin not reset
+	if q.Task.Extra.LoopOptions != nil && !beforeTimeBegin.IsZero() {
+		q.Task.TimeBegin = beforeTimeBegin
+	}
 	logrus.Infof("reconciler: pipelineID: %d, task %q end queue (%s -> %s, queue: %ds)",
 		q.P.ID, q.Task.Name, apistructs.PipelineStatusQueue, apistructs.PipelineStatusRunning, q.Task.QueueTimeSec)
 	return nil
