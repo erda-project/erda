@@ -556,6 +556,9 @@ func (t *Table) GetNodeLabels(labels data.Object) []label.Label {
 		labelValues = append(labelValues, lv)
 	}
 	sort.Slice(labelValues, func(i, j int) bool {
+		if labelValues[i].Group == labelValues[j].Group {
+			return labelValues[i].Value < labelValues[j].Value
+		}
 		return labelValues[i].Group < labelValues[j].Group
 	})
 	return labelValues
@@ -580,20 +583,9 @@ func (t *Table) GetLabelGroupAndDisplayName(label string) (string, string) {
 	groups["dice/platform=true"] = t.SDK.I18n("other-label")
 
 	if group, ok := groups[label]; ok {
-		idx := strings.Index(label, "=true")
-		return t.SDK.I18n(group), t.SDK.I18n(label[5:idx])
+		return group, label
 	}
-
-	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
-		idx := strings.Index(label, "=true")
-		return t.SDK.I18n("organization-label"), t.SDK.I18n(label[5:idx])
-	}
-	otherDisplayName := label
-	if label == "dice/lb=true" || label == "dice/platform=true" {
-		idx := strings.Index(label, "=true")
-		otherDisplayName = t.SDK.I18n(label[5:idx])
-	}
-	return t.SDK.I18n("other-label"), otherDisplayName
+	return t.SDK.I18n("other-label"), label
 }
 
 func (t *Table) GetLabelOperation(rowId string) map[string]Operation {

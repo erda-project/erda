@@ -17,6 +17,7 @@ package infoDetail
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -55,7 +56,7 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 		req.UserID = infoDetail.SDK.Identity.UserID
 		req.Type = apistructs.K8SNode
 		req.Name = recordId
-		labelKey := strings.Split(label, ":")[0]
+		labelKey := strings.Split(label, "=")[0]
 		err := steveServer.UnlabelNode(ctx, &req, []string{labelKey})
 		if err != nil {
 			return err
@@ -98,36 +99,25 @@ func (infoDetail *InfoDetail) GetLabelGroupAndDisplayName(label string) (string,
 	//	"dice/workspace-dev", "dice/workspace-test", "staging", "prod", "stateful", "stateless", "packJob", "cluster-service", "mono", "cordon", "drain", "platform",
 	//}
 	groups := make(map[string]string)
-	groups["dice/workspace-dev=true"] = infoDetail.SDK.I18n("env")
-	groups["dice/workspace-test=true"] = infoDetail.SDK.I18n("env")
-	groups["dice/workspace-staging=true"] = infoDetail.SDK.I18n("env")
-	groups["dice/workspace-prod=true"] = infoDetail.SDK.I18n("env")
+	groups["dice/workspace-dev=true"] = infoDetail.SDK.I18n("env-label")
+	groups["dice/workspace-test=true"] = infoDetail.SDK.I18n("env-label")
+	groups["dice/workspace-staging=true"] = infoDetail.SDK.I18n("env-label")
+	groups["dice/workspace-prod=true"] = infoDetail.SDK.I18n("env-label")
 
-	groups["dice/stateful-service=true"] = infoDetail.SDK.I18n("service")
-	groups["dice/stateless-service=true"] = infoDetail.SDK.I18n("service")
-	groups["dice/location-cluster-service=true"] = infoDetail.SDK.I18n("service")
+	groups["dice/stateful-service=true"] = infoDetail.SDK.I18n("service-label")
+	groups["dice/stateless-service=true"] = infoDetail.SDK.I18n("service-label")
+	groups["dice/location-cluster-service=true"] = infoDetail.SDK.I18n("service-label")
 
-	groups["dice/job=true"] = infoDetail.SDK.I18n("job")
-	groups["dice/bigdata-job=true"] = infoDetail.SDK.I18n("job")
+	groups["dice/job=true"] = infoDetail.SDK.I18n("job-label")
+	groups["dice/bigdata-job=true"] = infoDetail.SDK.I18n("job-label")
 
-	groups["dice/lb=true"] = infoDetail.SDK.I18n("other")
-	groups["dice/platform=true"] = infoDetail.SDK.I18n("other")
+	groups["dice/lb=true"] = infoDetail.SDK.I18n("other-label")
+	groups["dice/platform=true"] = infoDetail.SDK.I18n("other-label")
 
 	if group, ok := groups[label]; ok {
-		idx := strings.Index(label, "=true")
-		return infoDetail.SDK.I18n(group), infoDetail.SDK.I18n(label[5:idx])
+		return group, label
 	}
-
-	if strings.HasPrefix(label, "dice/org-") && strings.HasSuffix(label, "=true") {
-		idx := strings.Index(label, "=true")
-		return infoDetail.SDK.I18n("organization"), infoDetail.SDK.I18n(label[5:idx])
-	}
-	otherDisplayName := label
-	if label == "dice/lb=true" || label == "dice/platform=true" {
-		idx := strings.Index(label, "=true")
-		otherDisplayName = infoDetail.SDK.I18n(label[5:idx])
-	}
-	return infoDetail.SDK.I18n("other"), otherDisplayName
+	return infoDetail.SDK.I18n("other-label"), label
 }
 
 func (infoDetail *InfoDetail) getTags(node data.Object) []Field {
@@ -145,6 +135,12 @@ func (infoDetail *InfoDetail) getTags(node data.Object) []Field {
 			Label: fmt.Sprintf(infoDetail.SDK.I18n("none")),
 		})
 	}
+	sort.Slice(tag, func(i, j int) bool {
+		if tag[i].Group == tag[j].Group {
+			return tag[i].Label < tag[j].Label
+		}
+		return tag[i].Group < tag[j].Group
+	})
 	return tag
 }
 
