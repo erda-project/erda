@@ -1,0 +1,28 @@
+// 资源报表 按项目聚合
+GET http://openapi.dev.terminus.io/api/resource-overview/report-table?clusterName=terminus-dev&cpuPerNode=8&memPerNode=32&groupBy=project
+Accept: application/json
+authority: {{openapi}}
+pragma: no-cache
+cache-control: no-cache
+sec-ch-ua: "Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"
+accept: application/vnd.dice+json;version=1.0
+lang: zh-CN
+sec-ch-ua-mobile: ?0
+org: erda
+accept-language: zh-CN,zh;q=0.9
+cookie: L2FwaS91Yw_csrf_token=Zv0l1bCSFIp75nQRybSRu/ZlXSgs+eJJ7qMOYI97Zj0=; taid=8fc91b69-d1a1-44ae-8ed1-b0f32be927a8; u_c_captain_hkci_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiI5MjA3YmFlYWQ3OTIxMzFkZWViYjVlNTk1MjVjYTEyYmE0NmVhOTNiMmE1NDMyYzE4NmVkYWFkZTg5NTk1YjI0IiwibmJmIjoxNjM1NzM3MDYxLCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTYzNjM0MTg2MSwiaWF0IjoxNjM1NzM3MDYxfQ.dk84C03i65Eed-bhdfJJY6YoCjsYiLwIEed3oGeLiaY; u_c_captain_dev_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiI3MjU0MDQzN2Y5NjAxZjg0NDJhNzJlMzRiZTI1NDU1YWE2MjFkMTliYTQxNDExMjlkMjVkYTM3NGYzYmFkNWNiIiwibmJmIjoxNjM1ODE4ODExLCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTYzNjQyMzYxMSwiaWF0IjoxNjM1ODE4ODExfQ.C6O3ZLjEVg-MFcClgOPgihV0EfLmiWLJv_iY8h7w2Dk; OPENAPISESSION=c818dd42-cc8d-4a9a-a26f-e61c295a98b3; OPENAPI-CSRF-TOKEN=YCk2sTO4S8bIYYrv8RFgfJrMAVfpvh8S
+
+###
+
+GET http://openapi.dev.terminus.io/api/resource-overview/report-table?clusterName=terminus-dev&cpuPerNode=8&memPerNode=32&groupBy=owner
+Accept: application/json
+authority: {{openapi}}
+pragma: no-cache
+cache-control: no-cache
+sec-ch-ua: "Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"
+accept: application/vnd.dice+json;version=1.0
+lang: zh-CN
+sec-ch-ua-mobile: ?0
+org: erda
+accept-language: zh-CN,zh;q=0.9
+cookie: L2FwaS91Yw_csrf_token=Zv0l1bCSFIp75nQRybSRu/ZlXSgs+eJJ7qMOYI97Zj0=; taid=8fc91b69-d1a1-44ae-8ed1-b0f32be927a8; u_c_captain_hkci_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiI5MjA3YmFlYWQ3OTIxMzFkZWViYjVlNTk1MjVjYTEyYmE0NmVhOTNiMmE1NDMyYzE4NmVkYWFkZTg5NTk1YjI0IiwibmJmIjoxNjM1NzM3MDYxLCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTYzNjM0MTg2MSwiaWF0IjoxNjM1NzM3MDYxfQ.dk84C03i65Eed-bhdfJJY6YoCjsYiLwIEed3oGeLiaY; u_c_captain_dev_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiI3MjU0MDQzN2Y5NjAxZjg0NDJhNzJlMzRiZTI1NDU1YWE2MjFkMTliYTQxNDExMjlkMjVkYTM3NGYzYmFkNWNiIiwibmJmIjoxNjM1ODE4ODExLCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTYzNjQyMzYxMSwiaWF0IjoxNjM1ODE4ODExfQ.C6O3ZLjEVg-MFcClgOPgihV0EfLmiWLJv_iY8h7w2Dk; OPENAPISESSION=c818dd42-cc8d-4a9a-a26f-e61c295a98b3; OPENAPI-CSRF-TOKEN=YCk2sTO4S8bIYYrv8RFgfJrMAVfpvh8S
