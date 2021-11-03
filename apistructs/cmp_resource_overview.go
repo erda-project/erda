@@ -48,10 +48,10 @@ type ResourceOverviewReportDataItem struct {
 func (data *ResourceOverviewReportData) GroupByOwner() {
 	var (
 		list []*ResourceOverviewReportDataItem
-		m    = make(map[int64]*ResourceOverviewReportDataItem)
+		m    = make(map[string]*ResourceOverviewReportDataItem)
 	)
 	for _, item := range data.List {
-		owner, ok := m[item.OwnerUserID]
+		owner, ok := m[item.OwnerUserName]
 		if !ok {
 			owner = &ResourceOverviewReportDataItem{
 				OwnerUserID:       item.OwnerUserID,
@@ -63,7 +63,7 @@ func (data *ResourceOverviewReportData) GroupByOwner() {
 		owner.CPURequest += item.CPURequest
 		owner.MemQuota += item.MemQuota
 		owner.MemRequest += item.MemRequest
-		m[owner.OwnerUserID] = owner
+		m[owner.OwnerUserName] = owner
 	}
 	for _, item := range m {
 		list = append(list, item)

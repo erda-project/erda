@@ -52,7 +52,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 	// 1) 查找所有 namespaces
 	var (
 		namespacesM = make(map[string][]string)
-		orgIDStr = strconv.FormatInt(orgID, 10)
+		orgIDStr    = strconv.FormatInt(orgID, 10)
 	)
 	rt.fetchAllNamespaces(ctx, namespacesM, orgIDStr, clusterNames)
 
@@ -112,7 +112,7 @@ func (rt *ReportTable) fetchRequestOnNamespaces(ctx context.Context, namespaces 
 func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNamespacesResourcesResponse, namespaces *apistructs.GetProjectsNamesapcesResponseData,
 	cpuPerNode, memPerNode uint64, groupBy string) *apistructs.ResourceOverviewReportData {
 	var (
-		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
+		langCodes, _   = ctx.Value("lang_codes").(i18n.LanguageCodes)
 		sharedResource [2]uint64
 	)
 	for _, clusterItem := range resources.List {
