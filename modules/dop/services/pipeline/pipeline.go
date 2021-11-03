@@ -350,11 +350,8 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		}
 	}
 
-	// make config namespace
-	ns, err := p.makeNamespace(pv1.AppID, pv1.Branch, validBranch.Workspace)
-	if err != nil {
-		return nil, apierrors.ErrMakeConfigNamespace.InternalError(err)
-	}
+	// make config namespaces
+	ns := p.makeCmsNamespaces(pv1.AppID, validBranch.Workspace)
 	ns = append(ns, utils.MakeUserOrgPipelineCmsNs(pv1.UserID, app.OrgID))
 	pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, ns...)
 
@@ -395,64 +392,82 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	return pv2, nil
 }
 
-func (p *Pipeline) makeNamespace(appID uint64, branch string, workspace string) ([]string, error) {
-	ns, err := p.generatorPipelineNS(appID, branch, workspace)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := generatorWorkspaceNS(appID, workspace)
-	if err != nil {
-		return nil, err
-	}
-	ns = append(ns, ws...)
-
-	return ns, err
+// workspace <-> main-branch mapping:
+//   DEV     -> feature
+//   TEST    -> develop
+//   STAGING -> release
+//   PROD    -> master
+var nsWorkspaceMainBranchMapping = map[string]string{
+	gitflowutil.DevWorkspace:     gitflowutil.FEATURE_WITHOUT_SLASH,
+	gitflowutil.TestWorkspace:    gitflowutil.DEVELOP,
+	gitflowutil.StagingWorkspace: gitflowutil.RELEASE_WITHOUT_SLASH,
+	gitflowutil.ProdWorkspace:    gitflowutil.MASTER,
 }
 
-func generatorWorkspaceNS(appID uint64, workspace string) ([]string, error) {
-	wsList := []string{
-		fmt.Sprintf("app-%d-%s", appID, strings.ToLower(string(apistructs.DefaultWorkspace))),
+func getWorkspaceMainBranch(workspace string) string {
+	workspace = strutil.ToUpper(workspace)
+	if branch, ok := nsWorkspaceMainBranchMapping[workspace]; ok {
+		return branch
 	}
-	wsList = append(wsList, fmt.Sprintf("app-%d-%s", appID, strings.ToLower(workspace)))
-
-	return wsList, nil
+	return ""
 }
 
-func (p *Pipeline) generatorPipelineNS(appID uint64, branch string, workspace string) ([]string, error) {
-	var cmNamespaces []string
-	// 创建 default namespace
-	cmNamespaces = append(cmNamespaces, fmt.Sprintf("%s-%d-default", cms.PipelineAppConfigNameSpacePrefix, appID))
+func (p *Pipeline) makeCmsNamespaces(appID uint64, workspace string) []string {
+	var results []string
 
-	// TODO 直接使用workspace，不用映射 support hotfix
-	// hotfix support 兼容判断,如果有历史遗留参数,使用历史分支级配置 不用workspace
-	if gitflowutil.IsHotfix(branch) || gitflowutil.IsSupport(branch) {
-		branchPrefix, _ := gitflowutil.GetReferencePrefix(branch)
-		ns := fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
-		configs, err := p.cms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()),
-			&cmspb.CmsNsConfigsGetRequest{
-				Ns:             ns,
-				PipelineSource: apistructs.PipelineSourceDice.String(),
-			})
-		if err == nil {
-			if len(configs.Data) > 0 {
-				cmNamespaces = append(cmNamespaces, ns)
-			}
-		}
-	} else {
-		workspaceConfig := map[string]string{
-			"PROD":    "master",
-			"STAGING": "release",
-			"TEST":    "develop",
-			"DEV":     "feature",
-		}
-		// 创建 branch namespace
-		pipelineNs, ok := workspaceConfig[workspace]
-		if ok {
-			cmNamespaces = append(cmNamespaces, fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, pipelineNs))
-		}
+	// branch-workspace level cms ns
+	results = append(results, makeBranchWorkspaceLevelCmsNs(appID, workspace)...)
+
+	// app-workspace level cms ns
+	results = append(results, makeAppWorkspaceLevelCmsNs(appID, workspace)...)
+
+	return results
+}
+
+// makeBranchWorkspaceLevelCmsNs generate pipeline branch level cms namespaces
+// for history reason, there is a mapping between workspace and branch, see nsWorkspaceMainBranchMapping
+// history reason: we use branch-level namespace, but now we use workspace-level namespace, and use main-branch to represent workspace
+//
+// process:
+//   (branch)   ->  workspace(from project branch-rule)  ->  main-branch  ->  corresponding ns
+// examples:
+//   master     ->  PROD                                 ->  master         ->  ${prefix}-master
+//   support/a  ->  PROD                                 ->  master         ->  ${prefix}-master
+//   release    ->  STAGING                              ->  release        ->  ${prefix}-release
+//   hotfix/b   ->  STAGING                              ->  release        ->  ${prefix}-release
+//   develop    ->  TEST                                 ->  develop        ->  ${prefix}-develop
+//   feature/c  ->  DEV                                  ->  feature        ->  ${prefix}-feature
+func makeBranchWorkspaceLevelCmsNs(appID uint64, workspace string) []string {
+	var results []string
+
+	// branch-workspace level cms ns
+	// default need be added before custom
+	results = append(results, cms.MakeAppDefaultSecretNamespace(strutil.String(appID)))
+	// get main branch
+	mainBranch := getWorkspaceMainBranch(workspace)
+	if mainBranch != "" {
+		masterBranchNs := cms.MakeAppBranchPrefixSecretNamespaceByBranchPrefix(strutil.String(appID), mainBranch)
+		results = append(results, masterBranchNs)
 	}
-	return cmNamespaces, nil
+
+	return results
+}
+
+// makeAppWorkspaceLevelCmsNs generate app level cms namespaces, such as publisher, etc.
+func makeAppWorkspaceLevelCmsNs(appID uint64, workspace string) []string {
+	// default need be added before custom
+	return []string{
+		makeAppDefaultCmsNs(appID),
+		makeAppWorkspaceCmsNs(appID, workspace),
+	}
+}
+
+func makeAppDefaultCmsNs(appID uint64) string {
+	return makeAppWorkspaceCmsNs(appID, "default")
+}
+
+func makeAppWorkspaceCmsNs(appID uint64, workspace string) string {
+	return fmt.Sprintf("app-%d-%s", appID, strutil.ToLower(workspace))
 }
 
 // GenerateV1UniquePipelineYmlName 为 v1 pipeline 返回 pipelineYmlName，该 name 在 source 下唯一
