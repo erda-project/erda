@@ -18,9 +18,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rancher/apiserver/pkg/builtin"
+	"github.com/rancher/apiserver/pkg/parse"
 	"github.com/rancher/apiserver/pkg/server"
 	apiserver "github.com/rancher/apiserver/pkg/server"
+	"github.com/rancher/apiserver/pkg/subscribe"
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/apiserver/pkg/writer"
 	"github.com/rancher/steve/pkg/accesscontrol"
 	"github.com/rancher/steve/pkg/attributes"
 	"github.com/rancher/steve/pkg/auth"
@@ -49,7 +53,7 @@ func NewHandler(cfg *rest.Config, sf schema.Factory, authMiddleware auth.Middlew
 
 	a := &apiServer{
 		sf:     sf,
-		server: server.DefaultAPIServer(),
+		server: DefaultAPIServer(),
 	}
 	a.server.AccessControl = accesscontrol.NewAccessControl()
 
@@ -150,4 +154,38 @@ func k8sAPI(sf schema.Factory, apiOp *types.APIRequest) {
 
 func apiRoot(sf schema.Factory, apiOp *types.APIRequest) {
 	apiOp.Type = "apiRoot"
+}
+
+func DefaultAPIServer() *server.Server {
+	s := &server.Server{
+		Schemas: types.EmptyAPISchemas().MustAddSchemas(builtin.Schemas),
+		ResponseWriters: map[string]types.ResponseWriter{
+			"json": &writer.GzipWriter{
+				ResponseWriter: &writer.EncodingResponseWriter{
+					ContentType: "application/json",
+					Encoder:     types.JSONEncoder,
+				},
+			},
+			"html": &writer.GzipWriter{
+				ResponseWriter: &writer.HTMLResponseWriter{
+					EncodingResponseWriter: writer.EncodingResponseWriter{
+						Encoder:     types.JSONEncoder,
+						ContentType: "application/json",
+					},
+				},
+			},
+			"yaml": &writer.GzipWriter{
+				ResponseWriter: &writer.EncodingResponseWriter{
+					ContentType: "application/yaml",
+					Encoder:     types.YAMLEncoder,
+				},
+			},
+		},
+		AccessControl: &server.SchemaBasedAccess{},
+		Parser:        Parse,
+		URLParser:     parse.MuxURLParser,
+	}
+
+	subscribe.Register(s.Schemas)
+	return s
 }

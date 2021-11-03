@@ -152,30 +152,29 @@ func (bot *BatchOperationTipModal) Render(ctx context.Context, c *cptype.Compone
 		case common.CMPDashboardCordonNode:
 			err := bot.CordonNode(selectRowKeys)
 			if err != nil {
-				return bot.SetComponent(c)
+				return err
 			}
 		case common.CMPDashboardUncordonNode:
 			err := bot.UncordonNode(selectRowKeys)
 			if err != nil {
-				return bot.SetComponent(c)
+				return err
 			}
 		case common.CMPDashboardDrainNode:
 			err := bot.DrainNode(selectRowKeys)
 			if err != nil {
-				return bot.SetComponent(c)
+				return err
 			}
 		case common.CMPDashboardOfflineNode:
 			err := bot.OfflineNode(selectRowKeys)
 			if err != nil {
-				return bot.SetComponent(c)
+				return err
 			}
 		case common.CMPDashboardOnlineNode:
 			err := bot.OnlineNode(selectRowKeys)
 			if err != nil {
-				return bot.SetComponent(c)
+				return err
 			}
 		}
-
 	}
 	return bot.SetComponent(c)
 }
