@@ -32,11 +32,13 @@ func (m *LogItem) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "stream":
 				m.Stream = vals[0]
 			case "timestamp":
+				m.Timestamp = vals[0]
+			case "unixNano":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.Timestamp = val
+				m.UnixNano = val
 			case "offset":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {

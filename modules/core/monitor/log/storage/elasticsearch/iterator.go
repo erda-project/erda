@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/olivere/elastic"
@@ -151,7 +152,8 @@ func decodeFunc(start, end int64, matcher func(data *pb.LogItem) bool) func(body
 			Source:    data.Source,
 			Id:        data.ID,
 			Stream:    data.Stream,
-			Timestamp: data.Timestamp,
+			Timestamp: strconv.FormatInt(data.Timestamp, 10),
+			UnixNano:  data.Timestamp,
 			Offset:    data.Offset,
 			Content:   data.Content,
 			Level:     data.Tags["level"],

@@ -400,50 +400,50 @@ func (it *logsIterator) fetch(startTime, limit int64, backward bool) {
 			err = parseLines(reader, func(line []byte) error {
 				text := string(line)
 				data, content := parseLine(text, it)
-				if data.Timestamp != lastTimestamp {
-					lastTimestamp = data.Timestamp
+				if data.UnixNano != lastTimestamp {
+					lastTimestamp = data.UnixNano
 					offset = initialOffset
 				} else {
 					offset++
 				}
 				data.Offset = offset
-				if data.Timestamp > 0 {
-					if data.Timestamp < minTime {
-						minTime = data.Timestamp
+				if data.UnixNano > 0 {
+					if data.UnixNano < minTime {
+						minTime = data.UnixNano
 					}
-					if data.Timestamp > maxTime {
-						maxTime = data.Timestamp
+					if data.UnixNano > maxTime {
+						maxTime = data.UnixNano
 					}
 					if backward {
-						if data.Timestamp < it.sel.Start {
+						if data.UnixNano < it.sel.Start {
 							return io.EOF
 						}
-						if endTime <= data.Timestamp || (it.lastStartTime != 0 && it.lastStartTime <= data.Timestamp) {
+						if endTime <= data.UnixNano || (it.lastStartTime != 0 && it.lastStartTime <= data.UnixNano) {
 							if startTime <= it.sel.Start {
 								return io.EOF
 							}
 							return errLimited
 						}
 					} else {
-						if data.Timestamp < it.sel.Start {
+						if data.UnixNano < it.sel.Start {
 							// continue
 							return nil
 						}
-						if it.sel.End <= data.Timestamp {
+						if it.sel.End <= data.UnixNano {
 							return io.EOF
 						}
 					}
 					if int(limit) > 0 && len(it.buffer) >= int(limit) &&
-						data.Timestamp != it.buffer[len(it.buffer)-1].Timestamp {
+						data.UnixNano != it.buffer[len(it.buffer)-1].UnixNano {
 						return errLimited
 					}
 				}
 				parseContent(content, data)
-				if it.lastEndTimestamp == data.Timestamp && it.lastEndOffset == data.Offset {
+				if it.lastEndTimestamp == data.UnixNano && it.lastEndOffset == data.Offset {
 					// remove duplicate
 					return nil
 				}
-				it.lastEndTimestamp, it.lastEndOffset = data.Timestamp, data.Offset
+				it.lastEndTimestamp, it.lastEndOffset = data.UnixNano, data.Offset
 
 				if !it.matcher(data, it) {
 					return nil

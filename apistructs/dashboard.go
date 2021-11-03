@@ -62,7 +62,7 @@ type DashboardSpotLogLine struct {
 	ID        string `json:"id"`
 	Source    string `json:"source"`
 	Stream    string `json:"stream"`
-	TimeStamp int64  `json:"timestamp"`
+	TimeStamp string `json:"timestamp"`
 	Content   string `json:"content"`
 	Offset    int64  `json:"offset"`
 	Level     string `json:"level"`

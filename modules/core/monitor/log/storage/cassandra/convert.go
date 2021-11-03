@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
@@ -46,7 +47,8 @@ func wrapToLogItem(sl *SavedLog) (*pb.LogItem, error) {
 		Id:        sl.ID,
 		Source:    sl.Source,
 		Stream:    sl.Stream,
-		Timestamp: sl.Timestamp,
+		Timestamp: strconv.FormatInt(sl.Timestamp, 10),
+		UnixNano:  sl.Timestamp,
 		Offset:    sl.Offset,
 		Content:   content,
 		Level:     sl.Level,

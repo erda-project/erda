@@ -19,6 +19,7 @@ import (
 	"io"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,7 +68,8 @@ func parseLine(line string, it *logsIterator) (*pb.LogItem, string) {
 	}
 	data := &pb.LogItem{
 		Id:        it.id,
-		Timestamp: ts,
+		Timestamp: strconv.FormatInt(ts, 10),
+		UnixNano:  ts,
 		Source:    "container",
 		Offset:    math.MaxInt64,
 	}

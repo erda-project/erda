@@ -31,11 +31,12 @@ message LogItem {
     string id = 1;
     string source = 2;
     string stream = 3;
-    int64 timestamp = 5;
-    int64 offset = 6;
-    string content = 7;
-    string level = 8;
-    string requestId = 9;
+    string timestamp = 5;
+    int64 unixNano = 6;
+    int64 offset = 7;
+    string content = 8;
+    string level = 9;
+    string requestId = 10;
 }
 
 message GetLogRequest {
