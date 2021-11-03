@@ -14,115 +14,122 @@
 
 package metrics
 
-// import (
-// 	"strconv"
+import (
+	"strconv"
+	"time"
 
-// 	"github.com/erda-project/erda/modules/pipeline/spec"
-// 	"terminus.io/dice/telemetry/metrics"
-// 	"terminus.io/dice/telemetry/promxp"
-// )
+	"github.com/prometheus/client_golang/prometheus"
 
-// const (
-// 	fieldTaskTotal      = "task_total"
-// 	fieldTaskProcessing = "task_processing"
+	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/providers/metrics/report"
+)
 
-// 	labelTaskID     = "task_id"
-// 	labelActionType = "action_type"
+const (
+	fieldTaskTotal      = "task_total"
+	fieldTaskProcessing = "task_processing"
 
-// 	labelTaskStatus = "task_status"
-// )
+	labelTaskID     = "task_id"
+	labelActionType = "action_type"
 
-// var (
-// 	taskCounterLabels    = []string{"task_status", "execute_cluster", "action_type"}
-// 	taskProcessingLabels = []string{"execute_cluster", "action_type"}
-// )
+	labelTaskStatus = "task_status"
+)
 
-// // TaskCounterTotalAdd 某时间段内累计执行次数、成功次数、失败次数
-// var TaskCounterTotalAdd = func(task spec.PipelineTask, value float64) {
-// 	if disableMetrics {
-// 		return
-// 	}
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			taskErrorLog(task, "[alert] failed to do metric TaskCounterTotalAdd, err: %v", r)
-// 		}
-// 	}()
-// 	labelValues := []string{task.Status.String(), task.Extra.ClusterName, task.Type}
-// 	taskCounterTotal.WithLabelValues(labelValues...).Add(value)
-// 	taskDebugLog(task, "metric: TaskCounterTotalAdd, value: %v, labelValues: %v", value, labelValues)
-// }
+var (
+	taskCounterLabels    = []string{"task_status", "execute_cluster", "action_type"}
+	taskProcessingLabels = []string{"execute_cluster", "action_type"}
+)
 
-// var taskCounterTotal = promxp.RegisterAutoResetCounterVec(
-// 	fieldTaskTotal,
-// 	"task total counter",
-// 	map[string]string{},
-// 	taskCounterLabels,
-// )
+// TaskCounterTotalAdd 某时间段内累计执行次数、成功次数、失败次数
+var TaskCounterTotalAdd = func(task spec.PipelineTask, value float64) {
+	if disableMetrics {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			taskErrorLog(task, "[alert] failed to do metric TaskCounterTotalAdd, err: %v", r)
+		}
+	}()
+	labelValues := []string{task.Status.String(), task.Extra.ClusterName, task.Type}
+	taskCounterTotal.WithLabelValues(labelValues...).Add(value)
+	taskDebugLog(task, "metric: TaskCounterTotalAdd, value: %v, labelValues: %v", value, labelValues)
+}
 
-// // TaskGaugeProcessingAdd 正在处理中的个数
-// var TaskGaugeProcessingAdd = func(task spec.PipelineTask, value float64) {
-// 	if disableMetrics {
-// 		return
-// 	}
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			taskErrorLog(task, "[alert] failed to do metric TaskGaugeProcessingAdd, err: %v", r)
-// 		}
-// 	}()
-// 	labelValues := []string{task.Extra.ClusterName, task.Type}
-// 	taskGaugeProcessing.WithLabelValues(labelValues...).Add(value)
-// 	taskDebugLog(task, "metric: TaskGaugeProcessingAdd, value: %v, labelValues: %v", value, labelValues)
-// }
+var taskCounterTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name:      "task total counter",
+	Subsystem: fieldTaskTotal,
+}, taskCounterLabels)
 
-// var taskGaugeProcessing = promxp.RegisterGaugeVec(
-// 	fieldTaskProcessing,
-// 	"processing task",
-// 	nil,
-// 	taskProcessingLabels,
-// )
+// TaskGaugeProcessingAdd 正在处理中的个数
+var TaskGaugeProcessingAdd = func(task spec.PipelineTask, value float64) {
+	if disableMetrics {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			taskErrorLog(task, "[alert] failed to do metric TaskGaugeProcessingAdd, err: %v", r)
+		}
+	}()
+	labelValues := []string{task.Extra.ClusterName, task.Type}
+	taskGaugeProcessing.WithLabelValues(labelValues...).Add(value)
+	taskDebugLog(task, "metric: TaskGaugeProcessingAdd, value: %v, labelValues: %v", value, labelValues)
+}
 
-// // TaskEndEvent 终态时推送事件
-// var TaskEndEvent = func(task spec.PipelineTask, p *spec.Pipeline) {
-// 	if disableMetrics {
-// 		return
-// 	}
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			taskErrorLog(task, "[alert] failed to do event TaskEndEvent, err: %v", r)
-// 		}
-// 	}()
-// 	request := metrics.CreateBulkMetricRequest()
-// 	request.Add("dice_pipeline_task", generateActionEventTags(task, p), generateActionEventFields(task))
-// 	if err := bulkClient.Push(request); err != nil {
-// 		taskErrorLog(task, "[alert] failed to push task bulk event, err: %v", err)
-// 	}
-// 	taskDebugLog(task, "send task end event success")
-// }
+var taskGaugeProcessing = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Name:      "processing task",
+	Subsystem: fieldTaskProcessing,
+}, taskProcessingLabels)
 
-// func generateActionEventTags(task spec.PipelineTask, p *spec.Pipeline) map[string]string {
-// 	tags := map[string]string{
-// 		labelPipelineID:     strconv.FormatUint(task.PipelineID, 10),
-// 		labelTaskID:         strconv.FormatUint(task.ID, 10),
-// 		labelActionType:     task.Type,
-// 		labelExecuteCluster: task.Extra.ClusterName,
-// 		labelTaskStatus:     task.Status.String(),
+// TaskEndEvent 终态时推送事件
+var TaskEndEvent = func(task spec.PipelineTask, p *spec.Pipeline) {
+	if disableMetrics {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			taskErrorLog(task, "[alert] failed to do event TaskEndEvent, err: %v", r)
+		}
+	}()
+	if err := reportClient.Send([]*report.Metric{{
+		Name:      "dice_pipeline_task",
+		Timestamp: time.Now().UnixNano(),
+		Tags:      generateActionEventTags(task, p),
+		Fields:    generateActionEventFields(task),
+	}}); err != nil {
+		taskErrorLog(task, "[alert] failed to push task bulk event, err: %v", err)
+	}
+	taskDebugLog(task, "send task end event success")
+}
 
-// 		labelPipelineSource:  labelPipelineSource,
-// 		labelPipelineYmlName: p.PipelineYmlName,
-// 	}
-// 	envs := task.Extra.PrivateEnvs
-// 	if envs == nil {
-// 		return tags
-// 	}
+func generateActionEventTags(task spec.PipelineTask, p *spec.Pipeline) map[string]string {
+	tags := map[string]string{
+		"_meta":             "true",
+		"_metric_scope":     "org",
+		"_metric_scope_id":  conf.DiceCluster(),
+		labelOrgName:        p.GetOrgName(),
+		labelClusterName:    p.ClusterName,
+		labelPipelineID:     strconv.FormatUint(task.PipelineID, 10),
+		labelTaskID:         strconv.FormatUint(task.ID, 10),
+		labelActionType:     task.Type,
+		labelExecuteCluster: task.Extra.ClusterName,
+		labelTaskStatus:     task.Status.String(),
 
-// 	for k, v := range envs {
-// 		tags[k] = v
-// 	}
-// 	return tags
-// }
+		labelPipelineSource:  labelPipelineSource,
+		labelPipelineYmlName: p.PipelineYmlName,
+	}
+	envs := task.Extra.PrivateEnvs
+	if envs == nil {
+		return tags
+	}
 
-// func generateActionEventFields(task spec.PipelineTask) map[string]interface{} {
-// 	return map[string]interface{}{
-// 		num: 1,
-// 	}
-// }
+	for k, v := range envs {
+		tags[k] = v
+	}
+	return tags
+}
+
+func generateActionEventFields(task spec.PipelineTask) map[string]interface{} {
+	return map[string]interface{}{
+		num: 1,
+	}
+}

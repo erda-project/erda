@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun/taskop"
@@ -36,11 +37,11 @@ var (
 func reconcileTask(tr *taskrun.TaskRun) error {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "start reconcile task")
 	defer rlog.TDebugf(tr.P.ID, tr.Task.ID, "end reconcile task")
-	// // do metric
-	// go metrics.TaskGaugeProcessingAdd(*tr.Task, 1)
-	// defer func() {
-	// 	go metrics.TaskGaugeProcessingAdd(*tr.Task, -1)
-	// }()
+	// do metric
+	go metrics.TaskGaugeProcessingAdd(*tr.Task, 1)
+	defer func() {
+		go metrics.TaskGaugeProcessingAdd(*tr.Task, -1)
+	}()
 	// do aop
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "start do task aop")
 	if err := aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskBeforeExec)); err != nil {

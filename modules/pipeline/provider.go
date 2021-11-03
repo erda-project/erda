@@ -26,10 +26,12 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
 	"github.com/erda-project/erda/modules/pipeline/providers/trigger"
+	"github.com/erda-project/erda/providers/metrics/report"
 )
 
 type provider struct {
 	CmsService         pb.CmsServiceServer     `autowired:"erda.core.pipeline.cms.CmsService"`
+	Report             report.MetricReport     `autowired:"metric-report-client" optional:"true"`
 	ReconcilerElection election.Interface      `autowired:"etcd-election@reconciler"`
 	GcElection         election.Interface      `autowired:"etcd-election@gc"`
 	Router             httpserver.Router       `autowired:"http-router"`
