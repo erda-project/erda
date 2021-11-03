@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -163,10 +162,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 		return nil, err
 	}
 
-	now := time.Now()
 	account := &dbclient.MySQLAccount{
-		CreatedAt:         now,
-		UpdatedAt:         now,
 		Username:          user,
 		Password:          encryptData.CiphertextBase64,
 		KMSKey:            kr.KeyMetadata.KeyID,

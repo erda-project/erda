@@ -74,6 +74,10 @@ func (db *DBClient) CreateMySQLAccount(account *MySQLAccount) error {
 		return err
 	}
 	account.ID = id.String()
+	now := time.Now()
+	account.CreatedAt = now
+	account.UpdatedAt = now
+	account.IsDeleted = false
 	if err := db.Create(account).Error; err != nil {
 		return errors.Wrapf(err, "CreateMySQLAccount: %+v", account)
 	}

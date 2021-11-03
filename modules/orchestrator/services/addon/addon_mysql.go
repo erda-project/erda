@@ -15,7 +15,10 @@
 package addon
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
@@ -36,4 +39,26 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 	config["MYSQL_USERNAME"] = account.Username
 	config["MYSQL_PASSWORD"] = dr.PlaintextBase64
 	return nil
+}
+
+func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting) error {
+	if addonIns.AddonName != "mysql" {
+		return nil
+	}
+	extra, err := a.db.GetByInstanceIDAndField(addonInsRouting.RealInstance, "password")
+	if err != nil {
+		return err
+	}
+	if extra == nil {
+		return fmt.Errorf("not found extra for instance: %s", addonInsRouting.RealInstance)
+	}
+	account := dbclient.MySQLAccount{
+		Username:          "mysql",
+		Password:          extra.Value,
+		KMSKey:            addonIns.KmsKey,
+		InstanceID:        addonIns.ID,
+		RoutingInstanceID: addonInsRouting.ID,
+		Creator:           "",
+	}
+	return a.db.CreateMySQLAccount(&account)
 }
