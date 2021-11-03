@@ -96,8 +96,8 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		span.TraceId = row["trace_id"].(string)
 		span.OperationName = row["operation_name"].(string)
 		span.ParentSpanId = row["parent_span_id"].(string)
-		span.StartTime = getAdjustTime(row["start_time"].(int64))
-		span.EndTime = getAdjustTime(row["end_time"].(int64))
+		span.StartTime = row["start_time"].(int64)
+		span.EndTime = row["end_time"].(int64)
 		span.Tags = row["tags"].(map[string]string)
 		spanTree[span.Id] = &span
 	}
@@ -107,17 +107,6 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		return nil, errors.NewInternalServerError(err)
 	}
 	return response, nil
-}
-
-const millisecond = int64(time.Millisecond)
-const timeTailMask = millisecond / 10
-
-func getAdjustTime(t int64) int64 {
-	// maybe t is adjusted by span_id
-	if (t/timeTailMask)%10 == 0 {
-		return t - t%timeTailMask
-	}
-	return t
 }
 
 func getSpanProcessAnalysisDashboard(metricType string) string {

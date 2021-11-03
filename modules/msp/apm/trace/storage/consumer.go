@@ -104,7 +104,7 @@ const timeTailMask = millisecond / 10
 
 func getTimeRange(span *monitor.Span) (int64, int64) {
 	startTime, endTime := span.StartTime, span.EndTime
-	if startTime%millisecond == 0 && endTime%millisecond == 0 {
+	if startTime%millisecond == 0 {
 		tail := int64(convertToIntID(span.SpanID)) % timeTailMask
 		startTime = startTime + tail
 		endTime = endTime + tail

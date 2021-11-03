@@ -1160,35 +1160,3 @@ func Test_traceService_CreateTraceDebug(t *testing.T) {
 		})
 	}
 }
-
-func Test_getAdjustTime(t *testing.T) {
-	tests := []struct {
-		name string
-		time int64
-		want int64
-	}{
-		{
-			time: 1011111,
-			want: 1000000,
-		},
-		{
-			time: 1111111,
-			want: 1111111,
-		},
-		{
-			time: 1100001,
-			want: 1100001,
-		},
-		{
-			time: 1000001,
-			want: 1000000,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getAdjustTime(tt.time); got != tt.want {
-				t.Errorf("getAdjustTime() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
