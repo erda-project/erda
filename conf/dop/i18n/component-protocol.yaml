@@ -158,7 +158,7 @@ zh:
   quality_score_tip--bug_reopen_rate: 重开率：迭代所有缺陷重开次数之和 / 迭代所有缺陷数
   quality_score_tip--bug_reopen_score_formula: 计算公式： 100 - 重开率*100
   quality_score_tip--coco: 代码覆盖率
-  quality_score_tip--coco_score_formula: 计算公式：代码发覆盖率 * 100
+  quality_score_tip--coco_score_formula: 计算公式：最近一次代码覆盖率(不区分环境) * 100
   quality_score_tip--total: 总分
   quality_score_tip--total_score_formula: 计算公式：(手动测试计划 + 自动化测试计划 + 缺陷 DI + 缺陷重开率 + 代码覆盖率) / 5
 en:
@@ -315,7 +315,7 @@ en:
   quality_score_tip--bug_DI: DI：NUM(Fatal)*10 + NUM(Serious)*3 + NUM(Normal)*1 + NUM(Slight)*0.1
   quality_score_tip--bug_score_formula: Formula：100 - DI
   quality_score_tip--coco: Code Coverage
-  quality_score_tip--coco_score_formula: Formula：Code-Coverage * 100
+  quality_score_tip--coco_score_formula: Formula：Lastet-Code-Coverage(not distinguish environment) * 100
   quality_score_tip--bug_reopen: Bug Reopen Rate
   quality_score_tip--bug_reopen_rate: Bug Reopen Rate：NUM(all REOPENED bug count in iterations) / NUM(all cases in iterations)
   quality_score_tip--bug_reopen_score_formula: Formula：100 - Bug-Reopen-Rate * 100
