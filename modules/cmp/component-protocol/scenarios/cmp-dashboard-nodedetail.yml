@@ -83,8 +83,7 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
     - name: nodeStatus
     - name: operationButton
-  infoDetail:
-    - name: infoDetail
+  infoDetail: []
   addLabelModal:
     - name: page
     - name: header
