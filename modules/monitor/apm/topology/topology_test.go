@@ -15,10 +15,16 @@
 package topology
 
 import (
+	"bou.ke/monkey"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"log"
+	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -512,4 +518,57 @@ func Test_columnsParser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_provider_slowTranslationTrace(t *testing.T) {
+	type params struct {
+		Start       int64  `query:"start" validate:"required"`
+		End         int64  `query:"end" validate:"required"`
+		ServiceName string `query:"serviceName" validate:"required"`
+		TerminusKey string `query:"terminusKey" validate:"required"`
+		Operation   string `query:"operation" validate:"required"`
+		ServiceId   string `query:"serviceId" validate:"required"`
+		Limit       int64  `query:"limit" default:"100"`
+		Sort        string `default:"duration:DESC" query:"sort"`
+	}
+
+	type args struct {
+		r      *http.Request
+		params params
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{r: &http.Request{}, params: params{Sort: "duration:DESC"}}, false},
+		{"case2", args{r: &http.Request{}, params: params{Sort: "timestamp:ASC"}}, false},
+		{"case3", args{r: &http.Request{}, params: params{Sort: "duration:ASC"}}, false},
+		{"case4", args{r: &http.Request{}, params: params{Sort: "timestamp DESC"}}, false},
+		{"case5", args{r: &http.Request{}, params: params{Limit: 15000}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topology := &provider{
+				metricq: &metricq.Metricq{},
+				t:       &MockTran{},
+			}
+			monkey.Patch(api.Language, func(r *http.Request) i18n.LanguageCodes {
+				return i18n.LanguageCodes{{Code: "zh"}}
+			})
+			var m *metricq.Metricq
+			monkey.PatchInstanceMethod(reflect.TypeOf(m), "Query", func(m *metricq.Metricq, ql, statement string, params map[string]interface{}, options url.Values) (*query.ResultSet, error) {
+				return &query.ResultSet{ResultSet: &tsql.ResultSet{Rows: [][]interface{}{}}}, nil
+			})
+			topology.slowTranslationTrace(tt.args.r, tt.args.params)
+		})
+	}
+}
+
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
 }
