@@ -336,9 +336,9 @@ func (it *logsIterator) fetch(dir iteratorDir) error {
 			}
 		} else {
 			if lognum > 0 {
-				first := logs[0]
-				it.end = first.Timestamp
-				it.offset = first.Offset
+				last := logs[lognum-1]
+				it.end = last.Timestamp
+				it.offset = last.Offset
 			} else {
 				it.end = bucket - 1
 			}
