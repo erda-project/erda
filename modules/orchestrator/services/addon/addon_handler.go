@@ -367,6 +367,14 @@ func (a *Addon) addonAttach(addonSpec *apistructs.AddonExtension, addonDice *dic
 			logrus.Errorf("failed to create addon: %s, err: %+v", addonIns.ID, err)
 			a.FailAndDelete(addonIns)
 		}
+
+		// prepare attachment for mysql account
+		if a.prepareAttachment(addonInsRouting, addonAttach) && addonAttach.ID != 0 {
+			if err := a.db.UpdateAttachment(addonAttach); err != nil {
+				logrus.Errorf("update attachment failed: %+v", err)
+			}
+		}
+
 		nodes := 0
 		for _, s := range addonDice.Services {
 			nodes += s.Deployments.Replicas
@@ -471,6 +479,7 @@ func (a *Addon) existAttachAddon(params *apistructs.AddonHandlerCreateItem, addo
 	if !attachExist {
 		logrus.Info("existAttachAddon 未关联，开始关联")
 		addonAttach := a.buildAddonAttachments(params, existInstanceRouting)
+		a.prepareAttachment(existInstanceRouting, addonAttach)
 		if err := a.db.CreateAttachment(addonAttach); err != nil {
 			return nil, err
 		}

@@ -17,6 +17,8 @@ package addon
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -61,4 +63,20 @@ func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouti
 		Creator:           "",
 	}
 	return a.db.CreateMySQLAccount(&account)
+}
+
+func (a *Addon) prepareAttachment(addonInsRouting *dbclient.AddonInstanceRouting, addonAttach *dbclient.AddonAttachment) bool {
+	if addonInsRouting.AddonName != "mysql" {
+		return false
+	}
+	accounts, err := a.db.GetMySQLAccountListByRoutingInstanceID(addonInsRouting.ID)
+	if err != nil {
+		logrus.Errorf("get account list failed, %+v", err)
+	}
+	if len(accounts) == 0 {
+		return false
+	}
+	addonAttach.MySQLAccountID = accounts[0].ID
+	addonAttach.MySQLAccountState = "CUR"
+	return true
 }

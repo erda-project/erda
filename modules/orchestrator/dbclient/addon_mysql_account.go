@@ -61,6 +61,7 @@ func (db *DBClient) GetMySQLAccountListByRoutingInstanceID(routingInstanceID str
 	var accounts []MySQLAccount
 	if err := db.Scopes(NotDeleted).
 		Where("routing_instance_id = ?", routingInstanceID).
+		Order("created_at desc").
 		Find(&accounts).Error; err != nil {
 		return nil, errors.Wrapf(err, "GetMySQLAccountListByRoutingInstanceID: %s", routingInstanceID)
 	}
