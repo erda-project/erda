@@ -257,9 +257,6 @@ func getValue(typ string, value interface{}) *structpb.Value {
 }
 
 func (s *settingsService) getOrgName(id int64) (string, error) {
-	if true {
-		return "terminus", nil
-	}
 	resp, err := s.bundle.GetOrg(int(id))
 	if err != nil {
 		return "", fmt.Errorf("fail to get orgName: %s", err)
