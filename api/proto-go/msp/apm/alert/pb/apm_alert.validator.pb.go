@@ -436,10 +436,10 @@ func (this *GetAlertConditionsResponse) Validate() error {
 	return nil
 }
 func (this *GetAlertConditionsValueRequest) Validate() error {
-	for _, item := range this.ConditionsArr {
+	for _, item := range this.Conditions {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("ConditionsArr", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("Conditions", err)
 			}
 		}
 	}

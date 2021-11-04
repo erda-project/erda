@@ -1126,7 +1126,7 @@ func (a *alertService) GetAlertConditions(ctx context.Context, request *alert.Ge
 
 func (a *alertService) GetAlertConditionsValue(ctx context.Context, request *alert.GetAlertConditionsValueRequest) (*alert.GetAlertConditionsValueResponse, error) {
 	conditionReq := &monitor.GetAlertConditionsValueRequest{
-		ConditionsArr: request.ConditionsArr,
+		Conditions: request.Conditions,
 	}
 	context := utils.NewContextWithHeader(ctx)
 	result, err := a.p.Monitor.GetAlertConditionsValue(context, conditionReq)

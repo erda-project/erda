@@ -1349,7 +1349,7 @@ func (m *alertService) GetAlertConditions(ctx context.Context, request *pb.GetAl
 
 func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
 	conditionsMap := make(map[string]*pb.ConditionsValueRequest)
-	for _, v := range request.ConditionsArr {
+	for _, v := range request.Conditions {
 		conditionsMap[v.Condition] = v
 	}
 	req := &metricpb.QueryWithInfluxFormatRequest{

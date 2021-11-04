@@ -1215,7 +1215,7 @@ message Conditions {
 }
 
 message GetAlertConditionsValueRequest {
-  repeated ConditionsValueRequest conditionsArr = 1;
+  repeated ConditionsValueRequest conditions = 1;
 }
 
 message ConditionsValueRequest {

@@ -48,7 +48,7 @@ func (p *provider) GetAlertConditions(ctx context.Context, request *alertpb.GetA
 
 func (p *provider) GetAlertConditionsValue(ctx context.Context, request *alertpb.GetAlertConditionsValueRequest) (*alertpb.GetAlertConditionsValueResponse, error) {
 	conditionReq := &monitor.GetAlertConditionsValueRequest{
-		ConditionsArr: request.ConditionsArr,
+		Conditions: request.Conditions,
 	}
 	context := utils.NewContextWithHeader(ctx)
 	result, err := p.Monitor.GetAlertConditionsValue(context, conditionReq)

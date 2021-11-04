@@ -456,7 +456,7 @@ message GetAlertConditionsResponse {
 }
 
 message GetAlertConditionsValueRequest {
-  repeated erda.core.monitor.alert.ConditionsValueRequest conditionsArr = 1;
+  repeated erda.core.monitor.alert.ConditionsValueRequest conditions = 1;
 }
 
 message GetAlertConditionsValueResponse {

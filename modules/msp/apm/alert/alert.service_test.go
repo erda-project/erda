@@ -335,7 +335,7 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	}
 	pro.alertService.p = pro
 	_, err := pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
-		ConditionsArr: []*monitor.ConditionsValueRequest{
+		Conditions: []*monitor.ConditionsValueRequest{
 			{
 				Condition: "application-name",
 				Filters: map[string]string{

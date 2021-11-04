@@ -74,7 +74,7 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	}
 
 	_, err := pro.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
-		ConditionsArr: []*monitor.ConditionsValueRequest{
+		Conditions: []*monitor.ConditionsValueRequest{
 			{
 				Condition: "cluster_name",
 				Filters: map[string]string{
