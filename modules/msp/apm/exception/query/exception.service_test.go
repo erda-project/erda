@@ -15,17 +15,18 @@
 package query
 
 import (
-	context "context"
+	"context"
+	"reflect"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
 	eventpb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
+	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
 	entitypb "github.com/erda-project/erda-proto-go/oap/entity/pb"
 	oapPb "github.com/erda-project/erda-proto-go/oap/event/pb"
-	"github.com/golang/mock/gomock"
-	reflect "reflect"
-	testing "testing"
-
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 )
 
 func Test_exceptionService_GetExceptions(t *testing.T) {
