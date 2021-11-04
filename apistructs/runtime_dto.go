@@ -100,19 +100,6 @@ type RuntimeServiceResourceDTO struct {
 	Disk int     `json:"disk"`
 }
 
-// TODO: same as spec.RuntimeInstance, need to combine two
-type RuntimeInstanceDTO struct {
-	ID          uint64    `json:"id"`
-	InstanceID  string    `json:"instanceId"`
-	RuntimeID   uint64    `json:"runtimeId"`
-	ServiceName string    `json:"serviceName"`
-	IP          string    `json:"ip"`
-	Status      string    `json:"status"`
-	Stage       string    `json:"stage"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
 type DeploymentStatusDTO struct {
 	// 发布Id
 	DeploymentID uint64 `json:"deploymentId"`

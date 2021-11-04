@@ -974,6 +974,12 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 		return err
 	}
 
+	// after deployed
+	// init first mysql account
+	if err := a.initMySQLAccount(addonIns, addonInsRouting); err != nil {
+		return err
+	}
+
 	return nil
 }
 

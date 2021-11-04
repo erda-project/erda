@@ -159,26 +159,6 @@ func (RuntimeService) TableName() string {
 	return "ps_runtime_services"
 }
 
-type RuntimeInstance struct {
-	dbengine.BaseModel
-	InstanceId string `gorm:"not null;unique_index:idx_instance_id"`
-	RuntimeId  uint64 `gorm:"not null"`
-	ServiceId  uint64 `gorm:"not null;index:idx_service_id"`
-	Ip         string
-	Status     string
-	// stage记录容器退出的阶段, 只体现在增量事件中的退出(Killed, Failed, Finished)事件
-	// 当前分的阶段为：
-	// a) 容器启动阶段（健康检查超时之前退出）,"BeforeHealthCheckTimeout"
-	// b) 健康检查超时阶段（被健康检查所杀）,"HealthCheckTimeout"
-	// c) 后健康检查阶段（健康检查完成后退出）,"AfterHealthCheckTimeout"
-	Stage string
-}
-
-// TableName runtime instance 表名
-func (RuntimeInstance) TableName() string {
-	return "ps_runtime_instances"
-}
-
 // RuntimeDomain indicated default and custom domain for endpoints
 type RuntimeDomain struct {
 	dbengine.BaseModel
@@ -415,63 +395,6 @@ func (db *DBClient) SetRuntimeServiceErrors(serviceId uint64, errs []apistructs.
 			serviceId, errs)
 	}
 	return nil
-}
-
-func (db *DBClient) GetInstanceCountByServiceId(serviceId uint64) (int, error) {
-	var count int
-	if err := db.Table("ps_runtime_instances").
-		Where("service_id = ?", serviceId).
-		Count(&count).Error; err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (db *DBClient) DeleteOldest(serviceId uint64, count int) error {
-	return db.Where("service_id = ?", serviceId).
-		Order("updated_at asc").
-		Limit(count).
-		Delete(&RuntimeInstance{}).Error
-}
-
-func (db *DBClient) GetRunningInstancesByServiceId(serviceId uint64) ([]RuntimeInstance, error) {
-	var runtimeInstances []RuntimeInstance
-	if err := db.Table("ps_runtime_instances").
-		Where("service_id = ?", serviceId).
-		Where("status in (?)", []string{
-			apistructs.InstanceStatusHealthy,
-			apistructs.InstanceStatusUnHealthy,
-			apistructs.InstanceStatusStarting}).
-		Find(&runtimeInstances).Error; err != nil {
-		return nil, err
-	}
-	return runtimeInstances, nil
-}
-
-func (db *DBClient) CreateInstance(instance *RuntimeInstance) error {
-	if err := db.Table("ps_runtime_instances").Create(&instance).Error; err != nil {
-		return errors.Wrapf(err, "failed to create instance: %v", instance)
-	}
-	return nil
-}
-
-func (db *DBClient) UpdateInstance(instance *RuntimeInstance) error {
-	if err := db.Table("ps_runtime_instances").Save(&instance).Error; err != nil {
-		return errors.Wrapf(err, "failed to update instance: %v", instance)
-	}
-	return nil
-}
-
-func (db *DBClient) GetInstanceByTaskId(taskId string) (*RuntimeInstance, error) {
-	var runtimeInstance RuntimeInstance
-	result := db.Where("instance_id = ?", taskId).Last(&runtimeInstance)
-	if result.Error != nil {
-		if result.RecordNotFound() {
-			return nil, nil
-		}
-		return nil, errors.Wrapf(result.Error, "failed to get instance by taskId: %v", taskId)
-	}
-	return &runtimeInstance, nil
 }
 
 func (db *DBClient) FindRuntimeServices(runtimeId uint64) ([]RuntimeService, error) {

@@ -105,9 +105,9 @@ func New(lockKey string, locklostCallback func(), ops ...OpOption) (*DLock, erro
 	}
 	if url.Scheme == "https" {
 		tlsInfo := transport.TLSInfo{
-			CertFile:      "/certs/etcd-client.pem",
-			KeyFile:       "/certs/etcd-client-key.pem",
-			TrustedCAFile: "/certs/etcd-ca.pem",
+			CertFile:      getEnvOrDefault("ETCD_CERT_FILE", "/certs/etcd-client.pem"),
+			KeyFile:       getEnvOrDefault("ETCD_CERT_KEY_FILE", "/certs/etcd-client-key.pem"),
+			TrustedCAFile: getEnvOrDefault("ETCD_CA_FILE", "/certs/etcd-ca.pem"),
 		}
 		tlsConfig, err = tlsInfo.ClientConfig()
 		if err != nil {
@@ -196,4 +196,12 @@ func (l *DLock) IsOwner() (bool, error) {
 		return false, err
 	}
 	return r.Succeeded, nil
+}
+
+func getEnvOrDefault(env, v string) string {
+	t := os.Getenv(env)
+	if t == "" {
+		return v
+	}
+	return t
 }
