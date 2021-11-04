@@ -195,6 +195,7 @@ type logsIterator struct {
 	start     int64
 	end       int64
 	offset    int64
+	timestamp int64
 
 	buffer []interface{}
 	value  interface{}
@@ -320,8 +321,8 @@ func (it *logsIterator) fetch(dir iteratorDir) error {
 			logs, it.err = it.fetchWithStream(order, "", it.offset, &bucket)
 		}
 		lognum := len(logs)
-		if it.offset >= 0 {
-			for lognum > 0 && logs[0].Offset == it.offset {
+		if it.timestamp > 0 && it.offset >= 0 {
+			for lognum > 0 && logs[0].Timestamp == it.timestamp && logs[0].Offset == it.offset {
 				logs = logs[1:]
 				lognum--
 			}
@@ -330,7 +331,7 @@ func (it *logsIterator) fetch(dir iteratorDir) error {
 			if lognum > 0 {
 				last := logs[lognum-1]
 				it.start = last.Timestamp
-				it.offset = last.Offset
+				it.timestamp, it.offset = last.Timestamp, last.Offset
 			} else {
 				it.start = bucket + dayDuration
 			}
@@ -338,7 +339,7 @@ func (it *logsIterator) fetch(dir iteratorDir) error {
 			if lognum > 0 {
 				last := logs[lognum-1]
 				it.end = last.Timestamp
-				it.offset = last.Offset
+				it.timestamp, it.offset = last.Timestamp, last.Offset
 			} else {
 				it.end = bucket - 1
 			}
