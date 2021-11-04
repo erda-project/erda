@@ -94,7 +94,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	// calc score
 	mtScore := q.calcMtPlanScore(ctx, h)
 	atScore := q.calcAtPlanScore(ctx, h)
-	bugScore := q.calcBugScore(ctx, h)
+	bugScore := q.calcUnclosedBugScore(ctx, h)
 	cocoScore := q.calcCodeCoverage(ctx, h)
 	bugReopenScore := q.calcBugReopenRate(ctx, h)
 
@@ -107,7 +107,7 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	radar.Indicator = []*opts.Indicator{
 		{Name: cputil.I18n(ctx, "radar-manual-test-plan"), Max: 100, Min: 0, Color: ""},
 		{Name: cputil.I18n(ctx, "radar-auto-test-plan"), Max: 100, Min: 0, Color: ""},
-		{Name: cputil.I18n(ctx, "radar-issue-bug"), Max: 100, Min: 0, Color: ""},
+		{Name: cputil.I18n(ctx, "radar-unclosed-bug"), Max: 100, Min: 0, Color: ""},
 		{Name: cputil.I18n(ctx, "radar-code-coverage"), Max: 100, Min: 0, Color: ""},
 		{Name: cputil.I18n(ctx, "radar-bug-reopen-rate"), Max: 100, Min: 0, Color: ""},
 	}
@@ -197,11 +197,11 @@ func (q *Q) calcAtPlanScore(ctx context.Context, h *gshelper.GSHelper) decimal.D
 	return score
 }
 
-// bug score: score = 100 - DI (result must >= 0)
+// unclosed bug score: score = 100 - DI (result must >= 0)
 // DI = NUM(FATAL)*10 + NUM(SERIOUS)*3 + NUM(NORMAL)*1 + NUM(SLIGHT)*0.1
 // value range: 0-100
-func (q *Q) calcBugScore(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
-	m, err := q.dbClient.CountBugBySeverity(q.projectID, h.GetGlobalSelectedIterationIDs())
+func (q *Q) calcUnclosedBugScore(ctx context.Context, h *gshelper.GSHelper) decimal.Decimal {
+	m, err := q.dbClient.CountBugBySeverity(q.projectID, h.GetGlobalSelectedIterationIDs(), true)
 	if err != nil {
 		panic(err)
 	}
