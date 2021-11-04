@@ -76,7 +76,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		if !hasAddon {
 
-			disableTip = append(disableTip, "当前环境未启用覆盖率插件，请参考 ")
+			disableTip = append(disableTip, cputil.I18n(ctx, "coverage-plugin-not-enable-tip"))
 			disableTip = append(disableTip, "__change_cover_docs__")
 
 			jacocoDisable = true
@@ -109,11 +109,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			if len(list.List) > 0 {
 				record := list.List[0]
 				if record.Status == apistructs.RunningStatus.String() {
-					disableTip = append(disableTip, "代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果")
+					disableTip = append(disableTip, cputil.I18n(ctx, "coverage-processing-tip"))
 				}
 
 				if record.Status == apistructs.EndingStatus.String() {
-					disableTip = append(disableTip, "代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果")
+					disableTip = append(disableTip, cputil.I18n(ctx, "coverage-generating-tip"))
 				}
 			}
 		}
@@ -126,7 +126,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			"color": "rgba(0, 0, 0, 0.4)",
 		},
 		"value": map[string]interface{}{
-			"text": getToolTip(disableTip),
+			"text": getToolTip(ctx, disableTip),
 		},
 	}
 	c.Operations = map[string]interface{}{
@@ -143,13 +143,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	return nil
 }
 
-func getToolTip(tips []string) []interface{} {
+func getToolTip(ctx context.Context, tips []string) []interface{} {
 	var results = []interface{}{}
 	for _, ti := range tips {
 		if ti == "__change_cover_docs__" {
 			results = append(results, map[string]interface{}{
 				"operationKey": "gotoDoc",
-				"text":         "如何启用集成测试代码覆盖率统计",
+				"text":         cputil.I18n(ctx, "enable-coverage-docs"),
 				"styleConfig": map[string]interface{}{
 					"color": "#6a549e",
 				},

@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -76,8 +77,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"size":       "small",
 		"borderTime": true,
 		"ranges": map[string]interface{}{
-			"一周内": oneWeekRange,
-			"一月内": oneMonthRange,
+			cputil.I18n(ctx, "within-a-week"):  oneWeekRange,
+			cputil.I18n(ctx, "within-a-month"): oneMonthRange,
 		},
 	}
 	ca.Operations = map[string]interface{}{

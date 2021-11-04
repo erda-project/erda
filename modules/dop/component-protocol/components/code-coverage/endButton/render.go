@@ -102,7 +102,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	c.Type = "Button"
 	c.Props = map[string]interface{}{
-		"text": "结束",
+		"text": cputil.I18n(ctx, "end"),
 		"type": "primary",
 	}
 

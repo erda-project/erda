@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -68,9 +69,9 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
-func (c *ComponentAction) setProps(recordID uint64) error {
+func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 	var data []*apistructs.CodeCoverageNode
-	title := "报告详情"
+	title := cputil.I18n(ctx, "report-details")
 	projectName := ""
 	if recordID != 0 {
 		record, err := c.svc.GetCodeCoverageRecord(recordID)
@@ -174,7 +175,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	ca.ctxBdl = bdl
 	ca.Type = "Chart"
 	recordID := ca.State.RecordID
-	if err := ca.setProps(recordID); err != nil {
+	if err := ca.setProps(ctx, recordID); err != nil {
 		return err
 	}
 	return nil

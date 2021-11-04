@@ -64,19 +64,19 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"options": []map[string]interface{}{
 			{
 				"key":  apistructs.DevEnv,
-				"text": "开发环境",
+				"text": cputil.I18n(ctx, "dev-env"),
 			},
 			{
 				"key":  apistructs.TestEnv,
-				"text": "测试环境",
+				"text": cputil.I18n(ctx, "test-env"),
 			},
 			{
 				"key":  apistructs.StagingEnv,
-				"text": "预发环境",
+				"text": cputil.I18n(ctx, "feature-env"),
 			},
 			{
 				"key":  apistructs.ProdEnv,
-				"text": "生产环境",
+				"text": cputil.I18n(ctx, "prod-env"),
 			},
 		},
 	}

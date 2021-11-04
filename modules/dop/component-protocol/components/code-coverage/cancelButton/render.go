@@ -74,14 +74,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	c.Type = "Button"
 	c.Props = map[string]interface{}{
-		"text": "强制取消",
+		"text": cputil.I18n(ctx, "forced-cancel"),
 		"type": "primary",
 	}
 	c.Operations = map[string]interface{}{
 		"click": map[string]interface{}{
 			"key":      "click",
 			"reload":   true,
-			"confirm":  "强制取消将会导致明细和报告都不会生成!",
+			"confirm":  cputil.I18n(ctx, "cancel-confirm"),
 			"disabled": disable,
 		},
 	}
