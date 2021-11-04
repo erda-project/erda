@@ -17,6 +17,7 @@ package adapt
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
@@ -44,8 +45,12 @@ const (
 	routeFormatStatusDetail = "/microService/%s/%s/%s/monitor/%s/status/%s"
 	routeFormatBI           = "/microService/%s/%s/%s/monitor/%s/bi/%s"
 	routeFormatSI           = "/microService/%s/%s/%s/topology/%s/%s/%s/%s/si/%s"
-	routeFormatOrgAddon     = "/dataCenter/alarm/middleware-chart?addon_id=%s&cluster_name=%s&timestamp=%s"
-	routeFormatOrgPod       = "/dataCenter/alarm/pod?pod_name=%s&cluster_name=%s&timestamp=%s"
+
+	routeFormatProcess     = "/microService/%s/%s/%s/synopsis/%s/service-list/%s/%s/%s/process"
+	routeFormatTransaction = "/microService/%s/%s/%s/synopsis/%s/service-list/%s/%s/%s/transaction?type=%s"
+
+	routeFormatOrgAddon = "/dataCenter/alarm/middleware-chart?addon_id=%s&cluster_name=%s&timestamp=%s"
+	routeFormatOrgPod   = "/dataCenter/alarm/pod?pod_name=%s&cluster_name=%s&timestamp=%s"
 
 	routeOrgAddonId          = "org_addon"
 	routeOrgPodId            = "org_pod"
@@ -192,68 +197,66 @@ var routeMap = map[string]routeFunc{
 		routeParamOrigin("page"),
 	),
 	routeMicroSiJvmId: newRoute(
-		routeFormatSI,
+		routeFormatProcess,
 		routeParamConvert("project_id"),
 		routeParamConvert("workspace"),
 		routeParamConvert("tenant_group"),
 		routeParamConvert("terminus_key"),
 		routeParamConvert("application_id"),
-		routeParamConvert("runtime_name"),
+		routeParamsConvert("application_id", "runtime_name", "service_name"),
 		routeParamConvert("service_name"),
-		routeParamOrigin("jvm"),
 	),
 	routeMicroSiNodeJsId: newRoute(
-		routeFormatSI,
+		routeFormatProcess,
 		routeParamConvert("project_id"),
 		routeParamConvert("workspace"),
 		routeParamConvert("tenant_group"),
 		routeParamConvert("terminus_key"),
 		routeParamConvert("application_id"),
-		routeParamConvert("runtime_name"),
+		routeParamsConvert("application_id", "runtime_name", "service_name"),
 		routeParamConvert("service_name"),
-		routeParamOrigin("nodejs"),
 	),
 	routeMicroSiWebId: newRoute(
-		routeFormatSI,
+		routeFormatTransaction,
 		routeParamConvert("project_id"),
 		routeParamConvert("workspace"),
 		routeParamConvert("tenant_group"),
 		routeParamConvert("terminus_key"),
 		routeParamConvert("application_id"),
-		routeParamConvert("runtime_name"),
+		routeParamsConvert("application_id", "runtime_name", "service_name"),
 		routeParamConvert("service_name"),
 		routeParamOrigin("web"),
 	),
 	routeMicroSiRPCId: newRoute(
-		routeFormatSI,
+		routeFormatTransaction,
 		routeParamConvert("project_id"),
 		routeParamConvert("workspace"),
 		routeParamConvert("tenant_group"),
 		routeParamConvert("terminus_key"),
 		routeParamConvert("application_id"),
-		routeParamConvert("runtime_name"),
+		routeParamsConvert("application_id", "runtime_name", "service_name"),
 		routeParamConvert("service_name"),
 		routeParamOrigin("rpc"),
 	),
 	routeMicroSiDbId: newRoute(
-		routeFormatSI,
+		routeFormatTransaction,
 		routeParamConvert("project_id"),
 		routeParamConvert("workspace"),
 		routeParamConvert("tenant_group"),
 		routeParamConvert("terminus_key"),
 		routeParamConvert("application_id"),
-		routeParamConvert("runtime_name"),
+		routeParamsConvert("application_id", "runtime_name", "service_name"),
 		routeParamConvert("service_name"),
 		routeParamOrigin("db"),
 	),
 	routeMicroSiCacheId: newRoute(
-		routeFormatSI,
+		routeFormatTransaction,
 		routeParamConvert("project_id"),
 		routeParamConvert("workspace"),
 		routeParamConvert("tenant_group"),
 		routeParamConvert("terminus_key"),
 		routeParamConvert("application_id"),
-		routeParamConvert("runtime_name"),
+		routeParamsConvert("application_id", "runtime_name", "service_name"),
 		routeParamConvert("service_name"),
 		routeParamOrigin("cache"),
 	),
@@ -289,6 +292,22 @@ func routeParamConvert(key string) routeParamFunc {
 			value = url.QueryEscape(value)
 		}
 		return value
+	}
+}
+
+func routeParamsConvert(keys ...string) routeParamFunc {
+	return func(params map[string]interface{}) string {
+		serviceId := make([]string, 0)
+		for _, key := range keys {
+			value, ok := utils.GetMapValueString(params, key)
+			if !ok {
+				value = "{{" + key + "}}"
+			} else {
+				value = url.QueryEscape(value)
+			}
+			serviceId = append(serviceId, value)
+		}
+		return strings.Join(serviceId, "_")
 	}
 }
 
