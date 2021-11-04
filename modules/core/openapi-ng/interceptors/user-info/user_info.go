@@ -165,7 +165,7 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (p *provider) userInfoRetriever(r *http.Request, data map[string]interface{}, userIDs []string) []byte {
-	desensitized, _ := strconv.ParseBool(httputil.UserInfoDesensitizedHeader)
+	desensitized, _ := strconv.ParseBool(r.Header.Get(httputil.UserInfoDesensitizedHeader))
 	user, err := p.getUsers(userIDs, desensitized)
 	if err != nil {
 		p.Log.Error(err)
