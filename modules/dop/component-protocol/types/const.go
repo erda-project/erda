@@ -25,5 +25,6 @@ const (
 	ManualTestCaseService = "manual_test_case"
 	ManualTestPlanService = "manual_test_plan"
 	AutoTestPlanService   = "auto_test_plan"
+	AddonMySQLService     = "addon_mysql"
 	DBClient              = "db_client"
 )

@@ -180,6 +180,9 @@ func (db *DBClient) GetInstanceRoutingsByProjectIDs(platformServiceType int, pro
 // GetInstanceRoutingsByIDs 根据 ID 查询实例路由
 func (db *DBClient) GetInstanceRoutingsByIDs(ids []string) (*[]AddonInstanceRouting, error) {
 	var instanceRoutings []AddonInstanceRouting
+	if len(ids) == 0 {
+		return &instanceRoutings, nil
+	}
 	if err := db.Where("id in (?)", ids).
 		Where("is_deleted = ?", apistructs.AddonNotDeleted).
 		Find(&instanceRoutings).Error; err != nil {

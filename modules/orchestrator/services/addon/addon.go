@@ -875,26 +875,20 @@ func (a *Addon) GetRuntimeAddonConfig(runtimeID uint64) (*[]apistructs.AddonConf
 	var configResList = make([]apistructs.AddonConfigRes, 0, len(*attchAddons)+1)
 	// 获取zk addon信息
 	hasZookeeper := false
-	routingMap := make(map[string]dbclient.AddonInstanceRouting)
-	for _, attchItem := range *attchAddons {
-		routingIns, err := a.db.GetInstanceRouting(attchItem.RoutingInstanceID)
-		if err != nil {
-			return nil, err
-		}
-		if routingIns == nil {
-			continue
-		}
-		routingMap[routingIns.RealInstance] = *routingIns
-		if attchItem.InsideAddon != apistructs.INSIDE && routingIns.AddonName == apistructs.AddonZookeeper {
-			hasZookeeper = true
-			break
-		}
+	var routingIDs []string
+	for _, att := range *attchAddons {
+		routingIDs = append(routingIDs, att.RoutingInstanceID)
+	}
+	routings, err := a.db.GetInstanceRoutingsByIDs(routingIDs)
+	if err != nil {
+		return nil, err
+	}
+	routingMap := make(map[string]*dbclient.AddonInstanceRouting)
+	for _, r := range *routings {
+		routingMap[r.ID] = &r
 	}
 	for _, attchItem := range *attchAddons {
-		routingIns, err := a.db.GetInstanceRouting(attchItem.RoutingInstanceID)
-		if err != nil {
-			return nil, err
-		}
+		routingIns := routingMap[attchItem.RoutingInstanceID]
 		if routingIns == nil || routingIns.ID == "" {
 			continue
 		}
@@ -911,7 +905,7 @@ func (a *Addon) GetRuntimeAddonConfig(runtimeID uint64) (*[]apistructs.AddonConf
 			continue
 		}
 		// 获取addon config信息
-		configResult, err := a.getAddonConfig(attchItem.InstanceID)
+		configResult, err := a.getAddonConfig(attchItem.InstanceID, &attchItem)
 		if err != nil {
 			return nil, err
 		}
@@ -927,7 +921,7 @@ func (a *Addon) GetRuntimeAddonConfig(runtimeID uint64) (*[]apistructs.AddonConf
 			if insideRelations != nil {
 				for _, item := range *insideRelations {
 					// 获取addon config信息
-					configResultItem, err := a.getAddonConfig(item.InsideInstanceID)
+					configResultItem, err := a.getAddonConfig(item.InsideInstanceID, nil)
 					if err != nil {
 						return nil, err
 					}
@@ -1017,12 +1011,23 @@ func (a *Addon) GetAddonConfig(ins *dbclient.AddonInstance) (*apistructs.AddonCo
 	return nil, nil
 }
 
-func (a *Addon) getAddonConfig(instanceID string) (*apistructs.AddonConfigRes, error) {
+func (a *Addon) getAddonConfig(instanceID string, attachment *dbclient.AddonAttachment) (*apistructs.AddonConfigRes, error) {
 	ins, err := a.db.GetAddonInstance(instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return a.GetAddonConfig(ins)
+	res, err := a.GetAddonConfig(ins)
+	if err != nil {
+		return nil, err
+	}
+	if ins.AddonName == apistructs.AddonMySQL && attachment != nil && attachment.MySQLAccountID != "" {
+		// TODO: too hack
+		err := a.toOverrideConfigFromMySQLAccount(res.Config, attachment.MySQLAccountID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 // UpdateCustom 更新自定义 addon
@@ -2237,13 +2242,14 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 		}
 		addonMap["version"] = version
 		addonMap["plan"] = createableAddonPlan[item.Name]
-		switch item.Name {
-		case "mysql":
-			addonMap["supportTenant"] = true
-			addonMap["tenantVars"] = []string{"database"}
-		default:
-			addonMap["supportTenant"] = false
-		}
+		// TODO: disable tenant support, we shall refactor later
+		//switch item.Name {
+		//case "mysql":
+		//	addonMap["supportTenant"] = true
+		//	addonMap["tenantVars"] = []string{"database"}
+		//default:
+		//	addonMap["supportTenant"] = false
+		//}
 		extensionResult = append(extensionResult, addonMap)
 	}
 	return &extensionResult, nil

@@ -30,8 +30,7 @@ const (
 	// runtime status
 	RuntimeStatusChanged EventName = "RuntimeStatusChanged"
 	// service
-	RuntimeServiceStatusChanged    EventName = "RuntimeServiceStatusChanged"
-	RuntimeServiceInstancesChanged EventName = "RuntimeServiceInstancesChanged"
+	RuntimeServiceStatusChanged EventName = "RuntimeServiceStatusChanged"
 	// deploy
 	RuntimeDeployStart         EventName = "RuntimeDeployStart"
 	RuntimeDeployStatusChanged EventName = "RuntimeDeployStatusChanged"
@@ -59,8 +58,6 @@ type RuntimeEvent struct {
 	Runtime   *apistructs.RuntimeDTO `json:"runtime,omitempty"`
 	// only used for RuntimeService* events
 	Service *apistructs.RuntimeServiceDTO `json:"service,omitempty"`
-	// only used for RuntimeServiceInstancesChanged
-	Instances []*apistructs.RuntimeInstanceDTO `json:"instance,omitempty"`
 	// only used for RuntimeDeploy* events
 	Deployment *apistructs.Deployment `json:"deployment,omitempty"`
 }
