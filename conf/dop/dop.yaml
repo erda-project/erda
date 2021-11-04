@@ -74,6 +74,7 @@ component-protocol.components.code-coverage.configForm:
 component-protocol.components.code-coverage.envFilter:
 component-protocol.components.code-coverage.configModal:
 component-protocol.components.code-coverage.configTip:
+component-protocol.components.code-coverage.executeHistory:
 
 component-protocol.components.scenes-import-record.filter:
 component-protocol.components.scenes-import-record.table:

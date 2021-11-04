@@ -161,6 +161,49 @@ zh:
   quality_score_tip--coco_score_formula: 计算公式：代码发覆盖率 * 100
   quality_score_tip--total: 总分
   quality_score_tip--total_score_formula: 计算公式：(手动测试计划 + 自动化测试计划 + 缺陷 DI + 缺陷重开率 + 代码覆盖率) / 5
+  forced-cancel: 强制取消
+  cancel-confirm: 强制取消将会导致明细和报告都不会生成!
+  project-code-coverage-trend: 项目代码覆盖率趋势
+  line-coverage: 行覆盖率
+  statistics-object-configuration: 统计对象配置
+  contain: 包含
+  enter-contain-expression: 请输入包含表达式
+  enter-not-contain-expression: 请输入不包含表达式
+  enter-maven-expression: 请输入maven设置表达式
+  code-coverage-statistics-range: 代码覆盖率统计范围设置
+  download-report: 下载报告
+  end: 结束
+  dev-env: 开发环境
+  test-env: 测试环境
+  feature-env: 预发环境
+  prod-env: 生产环境
+  coverage-plugin-not-enable-tip: 当前环境未启用覆盖率插件，请参考
+  coverage-processing-tip: 代码覆盖率统计进行中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果
+  coverage-generating-tip: 代码覆盖率统计明细生成中，开始和结束按钮不可用, 请等待(耗时取决于应用多少和大小)，手动刷新后查看结果
+  enable-coverage-docs: 如何启用集成测试代码覆盖率统计
+  report-generating: 报告生成中
+  stop-by-user: 用户取消
+  coverage-processing: 进行中
+  coverage-ready: 进行中
+  coverage-ending: 明细生成中
+  coverage-success: 成功
+  coverage-fail: 失败
+  coverage-cancel: 用户取消
+  current-line-coverage: 当前行覆盖率
+  log: 日志
+  statistics-starter: 统计开始者
+  start-time: 开始时间
+  statistics-finisher: 统计结束者
+  statistics-end-time: 统计结束时间
+  operate: 操作
+  statistics-start: 开始
+  within-a-week: 一周内
+  within-a-month: 一个月内
+  report-details: 报告详情
+  coverage-statistics-record: 项目代码覆盖率统计执行记录
+  execute-record: 执行记录
+  tip-message: '说明: 代码覆盖率趋势主要反映测试用例覆盖项目（非单个或部分应用）的代码行数'
+  config-tip-message: '说明：可以通过在包括和不包括中输入表达式来确定统计范围；多个表达式可以使用冒号 ( : ) 分隔, 且支持 * 通配符。\n 例子：org/apache* 将匹配所有以 org/apache 开头的源码目录, */model 将匹配所有以 model 结尾的目录, foo/*:bar/* 匹配所有以 foo 或者 bar 开头的目录'
 en:
   issue-manage: issue manage
   issue: issue
@@ -321,3 +364,46 @@ en:
   quality_score_tip--bug_reopen_score_formula: Formula：100 - Bug-Reopen-Rate * 100
   quality_score_tip--total: Total Score
   quality_score_tip--total_score_formula: Formula：(Score(Manual Test Plan) + Score(Auto Test Plan) + Score(Bug) + Score(Bug Reopen Rate) + Score(Code Coverage)) / 5
+  forced-cancel: Force Cancel
+  cancel-confirm: Forced cancellation will result in neither the details nor the report being generated!
+  project-code-coverage-trend: Project code coverage trends
+  line-coverage: Line coverage
+  statistics-object-configuration: Statistics object configuration
+  contain: Contain
+  enter-contain-expression: Please enter an expression containing
+  enter-not-contain-expression: Please enter an expression non-containing
+  enter-maven-expression: Please enter maven setting expression
+  code-coverage-statistics-range: Code coverage statistics range setting
+  download-report: Download Report
+  end: End
+  dev-env: Development Environment
+  test-env: Test Environment
+  feature-env: Pre-release Environment
+  prod-env: Production Environment
+  coverage-plugin-not-enable-tip: The coverage plugin is not enabled in the current environment, please refer to
+  coverage-processing-tip: Code coverage statistics are in progress, start and end buttons are unavailable, please wait (time-consuming depends on the number and size of the application), and check the results after manual refresh
+  coverage-generating-tip: During code coverage statistics generation, the start and end buttons are unavailable, please wait (time-consuming depends on the number and size of the application), and check the results after manual refresh
+  enable-coverage-docs: How to enable integration test code coverage statistics
+  report-generating: Report generating
+  stop-by-user: Stop By User
+  coverage-processing: Processing
+  coverage-ready: Processing
+  coverage-ending: Detail generation
+  coverage-success: Successfully
+  coverage-fail: Failed
+  coverage-cancel: User canceled
+  current-line-coverage: Current line coverage
+  log: Log
+  statistics-starter: Statistics Starter
+  start-time: Start Time
+  statistics-finisher: Statistics Finisher
+  statistics-end-time: Statistics End Time
+  operate: Operate
+  statistics-start: Start
+  within-a-week: Within a week
+  within-a-month: Within a month
+  report-details: Report details
+  coverage-statistics-record: Project code coverage statistics execution record
+  execute-record: Execution record
+  tip-message: 'Note: The trend of code coverage mainly reflects the number of lines of code of a project (not a single or partial application) covered by test cases'
+  config-tip-message: 'Note: The statistical range can be determined by entering expressions in include and exclude; multiple expressions can be separated by colons (: ), and * wildcards are supported. \n Example: org/apache* will match all source directories starting with org/apache, */model will match all directories ending with model, and foo/*:bar/* will match all directories starting with foo or bar'
