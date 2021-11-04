@@ -124,6 +124,7 @@ func (f *Filter) setState(ctx context.Context, gs *cptype.GlobalStateData) error
 					SelectableTime: []int64{
 						0, now.Unix() * 1000,
 					},
+					BorderTime: true,
 				}
 
 				b, _ := json.Marshal(&customProps)

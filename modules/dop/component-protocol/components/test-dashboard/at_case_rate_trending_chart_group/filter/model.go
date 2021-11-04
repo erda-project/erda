@@ -51,6 +51,7 @@ type CustomProps struct {
 	AllowClear     bool    `json:"allowClear"`
 	Ranges         Ranges  `json:"ranges"`
 	SelectableTime []int64 `json:"selectableTime"`
+	BorderTime     bool    `json:"borderTime"`
 }
 
 type Ranges struct {
