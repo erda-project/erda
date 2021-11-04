@@ -221,7 +221,12 @@ func (g GetByUserAndScopePermissionProcess) GetAllRoles(ctx context.Context) ([]
 	}
 	if len(roles) == 0 {
 		logrus.Warningf("nil role, scope: %s, scopeID: %d, memberInfo: %v", g.Adaptor.GetScopeType(ctx), g.Adaptor.GetScopeID(ctx), members)
-		return nil, nil
+		// members without resouce value, try to issue guest
+		isPublic, err := g.Adaptor.CheckPublicScope(g.Adaptor.GetUserID(ctx), g.Adaptor.GetScopeType(ctx), g.Adaptor.GetScopeID(ctx))
+		if err != nil || !isPublic {
+			return nil, err
+		}
+		roles = append(roles, types.RoleGuest)
 	}
 	return roles, nil
 }
