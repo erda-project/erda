@@ -87,8 +87,7 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		if req.Body != nil {
 			body, _ = ioutil.ReadAll(req.Body)
 		}
-
-		_, _ = req.Body.Read(body)
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 		clusterName := vars["clusterName"]
 		typ := vars["type"]
@@ -130,6 +129,10 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 
 		next.ServeHTTP(writer, req)
 		if writer.statusCode < 200 || writer.statusCode >= 300 {
+			return
+		}
+
+		if body == nil {
 			return
 		}
 
