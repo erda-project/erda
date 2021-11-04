@@ -14,25 +14,24 @@
 
 package metrics
 
-// import (
-// 	"github.com/sirupsen/logrus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
 
-// 	"terminus.io/dice/telemetry/metrics"
-// )
+	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/providers/metrics/report"
+)
 
-// // disableMetrics 是否禁用 metric 相关操作
-// var disableMetrics bool
+// disableMetrics 是否禁用 metric 相关操作
+var disableMetrics bool
 
-// var bulkClient *metrics.BulkAction
+//var reportClient *report.MetricReport
+var reportClient report.MetricReport
 
-// func Initialize() {
-// 	client := metrics.NewClient()
-// 	bulk, err := client.NewBulk()
-// 	if err != nil {
-// 		logrus.Errorf("[alert] failed to init event bulk client, disable metric report, err: %v", err)
-// 		disableMetrics = true
-// 		return
-// 	}
-// 	bulkClient = bulk
-// 	logrus.Info("metrics enabled")
-// }
+func Initialize(client report.MetricReport) {
+	disableMetrics = conf.DisableMetrics()
+	reportClient = client
+	// if enable metrics, need register pipeline, task counter to metrics
+	if !disableMetrics {
+		prometheus.MustRegister(pipelineGaugeProcessing, pipelineCounterTotal, taskGaugeProcessing, taskCounterTotal)
+	}
+}
