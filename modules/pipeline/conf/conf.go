@@ -82,6 +82,9 @@ type Conf struct {
 	// DisablePipelineVolume default is false, means enable context volumes
 	DisablePipelineVolume bool `env:"DISABLE_PIPELINE_VOLUME" default:"false"`
 
+	// disableMetrics default false, means enable pipeline metrics
+	DisableMetrics bool `env:"DISABLE_METRICS" default:"false"`
+
 	// queue handle loop interval
 	QueueLoopHandleIntervalSec uint64 `env:"QUEUE_LOOP_HANDLE_INTERVAL_SEC" default:"10"`
 
@@ -292,6 +295,11 @@ func OpenapiOAuth2TokenClientSecret() string {
 // DisablePipelineVolume 返回 是否关闭 pipeline volume，只有值引用.
 func DisablePipelineVolume() bool {
 	return cfg.DisablePipelineVolume
+}
+
+// DisableMetrics default false, means enable pipeline metrics
+func DisableMetrics() bool {
+	return cfg.DisableMetrics
 }
 
 // QueueLoopHandleIntervalSec return reconciler queueManager loop handle interval second.

@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
+	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -50,9 +51,9 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
 	defer func() {
 		// // metrics
-		// go metrics.PipelineCounterTotalAdd(*p.Pipeline, 1)
-		// go metrics.PipelineGaugeProcessingAdd(*p.Pipeline, -1)
-		// go metrics.PipelineEndEvent(*p.Pipeline)
+		go metrics.PipelineCounterTotalAdd(*p.Pipeline, 1)
+		go metrics.PipelineGaugeProcessingAdd(*p.Pipeline, -1)
+		go metrics.PipelineEndEvent(*p.Pipeline)
 		// aop
 		_ = aop.Handle(aop.NewContextForPipeline(*p.Pipeline, aoptypes.TuneTriggerPipelineAfterExec))
 	}()
