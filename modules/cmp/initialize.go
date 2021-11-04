@@ -17,12 +17,14 @@ package cmp
 
 import (
 	"context"
+	"flag"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
+	"k8s.io/klog/v2"
 
 	"github.com/erda-project/erda-infra/base/version"
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
@@ -50,6 +52,8 @@ import (
 func (p *provider) initialize(ctx context.Context) error {
 	conf.Load()
 
+	initKlog()
+
 	// set log formatter
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
@@ -74,6 +78,16 @@ func (p *provider) initialize(ctx context.Context) error {
 	}
 
 	return server.ListenAndServe()
+}
+
+func initKlog() {
+	if !conf.Debug() {
+		return
+	}
+
+	klog.InitFlags(nil)
+	os.Args = append(os.Args, "-v=8")
+	flag.Parse()
 }
 
 func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
