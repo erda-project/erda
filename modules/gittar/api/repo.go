@@ -840,7 +840,7 @@ func SearchRepoTree(ctx *webcontext.Context) {
 		pattern = "*"
 	}
 	var depth int64
-	depth = 5
+	depth = conf.GitRepoTreeSearchDepth()
 	commit, err := ctx.Repository.GetCommitByAny(ref)
 	if err != nil {
 		ctx.Abort(err)

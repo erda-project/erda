@@ -50,9 +50,10 @@ type Conf struct {
 	GitGCCronExpression      string `env:"GIT_GC_CRON_EXPRESSION" default:"0 0 1 * * ?"`
 
 	// ory/kratos config
-	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos-public" env:"ORY_KRATOS_ADDR"`
-	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
+	OryEnabled             bool   `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr          string `default:"kratos-public" env:"ORY_KRATOS_ADDR"`
+	OryKratosPrivateAddr   string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
+	GitRepoTreeSearchDepth int64  `default:"5" env:"GIT_REPO_TREE_SEARCH_DEPTH"`
 }
 
 var cfg Conf
@@ -189,4 +190,8 @@ func OryCompatibleClientSecret() string {
 
 func OryKratosPrivateAddr() string {
 	return cfg.OryKratosPrivateAddr
+}
+
+func GitRepoTreeSearchDepth() int64 {
+	return cfg.GitRepoTreeSearchDepth
 }
