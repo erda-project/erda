@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package executeHistoryButton
+package executeHistory
 
 import (
 	"context"
@@ -28,16 +28,18 @@ type ComponentAction struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	c.Type = "Button"
+	c.Type = "Popover"
 	c.Props = map[string]interface{}{
-		"text": cputil.I18n(ctx, "execute-record"),
-		"type": "primary",
+		"placement": "leftBottom",
+		"size":      "xl",
+		"title":     cputil.I18n(ctx, "coverage-statistics-record"),
+		"trigger":   "click",
 	}
 	return nil
 }
 
 func init() {
-	base.InitProviderWithCreator("code-coverage", "executeHistoryButton", func() servicehub.Provider {
+	base.InitProviderWithCreator("code-coverage", "executeHistory", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
 }

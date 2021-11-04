@@ -99,11 +99,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	c.Props = map[string]interface{}{
 		"fields": []map[string]interface{}{
 			{
-				"label":     "包含",
+				"label":     cputil.I18n(ctx, "contain"),
 				"component": "input",
 				"key":       "include",
 				"componentProps": map[string]interface{}{
-					"placeholder": "请输入包含表达式",
+					"placeholder": cputil.I18n(ctx, "enter-contain-expression"),
 				},
 			},
 			{
@@ -111,7 +111,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 				"component": "input",
 				"key":       "exclude",
 				"componentProps": map[string]interface{}{
-					"placeholder": "请输入不包含表达式",
+					"placeholder": cputil.I18n(ctx, "enter-not-contain-expression"),
 				},
 			},
 			{
@@ -119,7 +119,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 				"component": "textarea",
 				"key":       "maven",
 				"componentProps": map[string]interface{}{
-					"placeholder": "请输入maven 设置表达式",
+					"placeholder": cputil.I18n(ctx, "enter-maven-expression"),
 				},
 			},
 		},

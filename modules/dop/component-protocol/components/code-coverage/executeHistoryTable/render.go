@@ -110,15 +110,6 @@ type State struct {
 	Workspace string `json:"workspace"`
 }
 
-var statusValueMap = map[string]string{
-	"running": "进行中",
-	"ready":   "进行中",
-	"ending":  "明细生成中",
-	"success": "成功",
-	"fail":    "失败",
-	"cancel":  "用户取消",
-}
-
 var statusMap = map[string]string{
 	"running": "processing",
 	"ready":   "processing",
@@ -126,6 +117,17 @@ var statusMap = map[string]string{
 	"success": "success",
 	"fail":    "error",
 	"cancel":  "default",
+}
+
+func (ca *ComponentAction) getStatusValueMap(ctx context.Context) map[string]string {
+	return map[string]string{
+		"running": cputil.I18n(ctx, "coverage-processing"),
+		"ready":   cputil.I18n(ctx, "coverage-ready"),
+		"ending":  cputil.I18n(ctx, "coverage-ending"),
+		"success": cputil.I18n(ctx, "coverage-success"),
+		"fail":    cputil.I18n(ctx, "coverage-fail"),
+		"cancel":  cputil.I18n(ctx, "coverage-cancel"),
+	}
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
@@ -146,7 +148,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 
 	ca.SetOperations()
-	if err := ca.SetProps(); err != nil {
+	if err := ca.SetProps(ctx); err != nil {
 		return err
 	}
 
@@ -188,22 +190,23 @@ func (ca *ComponentAction) setData(ctx context.Context, gs *cptype.GlobalStateDa
 		}
 
 		var (
-			reportText     = "下载报告"
+			reportText     = cputil.I18n(ctx, "download-report")
 			reportTip      = v.ReportMsg
 			reportDisabled bool
 		)
 		if v.ReportStatus == apistructs.RunningStatus.String() {
-			reportText = "报告生成中"
+			reportText = cputil.I18n(ctx, "report-generating")
 			reportDisabled = true
 		}
 		if v.ReportStatus == apistructs.CancelStatus.String() {
-			reportTip = "用户取消"
+			reportTip = cputil.I18n(ctx, "stop-by-user")
 			reportDisabled = true
 		}
 		if v.ReportStatus == apistructs.FailStatus.String() {
 			reportDisabled = true
 		}
 
+		statusValueMap := ca.getStatusValueMap(ctx)
 		userIDs = append(userIDs, v.StartExecutor, v.EndExecutor)
 		list = append(list, ExecuteHistory{
 			ID: v.ID,
@@ -279,8 +282,8 @@ func (ca *ComponentAction) SetOperations() {
 	}}
 }
 
-func (ca *ComponentAction) SetProps() error {
-	props := `
+func (ca *ComponentAction) SetProps(ctx context.Context) error {
+	props := fmt.Sprintf(`
 	{
     "pageSizeOptions":[
         "10",
@@ -294,48 +297,51 @@ func (ca *ComponentAction) SetProps() error {
     "columns":[
         {
             "dataIndex":"status",
-            "title":"状态",
+            "title":"%s",
             "width":100
         },
         {
             "dataIndex":"coverRate",
-            "title":"当前行覆盖率",
+            "title":"%s",
             "width":100
         },
         {
             "dataIndex":"reason",
-            "title":"日志"
+            "title":"%s"
         },
         {
             "dataIndex":"starter",
-            "title":"统计开始者",
+            "title":"%s",
             "width":90
         },
         {
             "dataIndex":"startTime",
-            "title":"开始时间",
+            "title":"%s",
             "width":150
         },
         {
             "dataIndex":"ender",
-            "title":"统计结束者",
+            "title":"%s",
             "width":90
         },
         {
             "dataIndex":"endTime",
-            "title":"统计结束时间",
+            "title":"%s",
             "width":150
         },
         {
             "dataIndex":"operate",
             "fixed":"right",
-            "title":"操作",
+            "title":"%s",
             "width":100
         }
     ],
     "rowKey":"id"
 }
-`
+`, cputil.I18n(ctx, "status"), cputil.I18n(ctx, "current-line-coverage"), cputil.I18n(ctx, "log"),
+		cputil.I18n(ctx, "statistics-starter"), cputil.I18n(ctx, "start-time"),
+		cputil.I18n(ctx, "statistics-finisher"), cputil.I18n(ctx, "statistics-end-time"),
+		cputil.I18n(ctx, "operate"))
 	ca.Props = make(map[string]interface{})
 	return json.Unmarshal([]byte(props), &ca.Props)
 }

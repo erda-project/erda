@@ -80,10 +80,10 @@ type Operation struct {
 	Meta     map[string]interface{} `json:"meta"`
 }
 
-func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) {
+func (ca *ComponentAction) setProps(ctx context.Context, data apistructs.CodeCoverageExecRecordData) {
 	ca.Type = "Chart"
 	ca.Props = make(map[string]interface{})
-	ca.Props["title"] = "项目代码覆盖率趋势"
+	ca.Props["title"] = cputil.I18n(ctx, "project-code-coverage-trend")
 	ca.Props["chartType"] = "line"
 	var timeList []string
 	var valueLst []PointValue
@@ -120,7 +120,7 @@ func (ca *ComponentAction) setProps(data apistructs.CodeCoverageExecRecordData) 
 		},
 		"series": []interface{}{
 			map[string]interface{}{
-				"name": "行覆盖率",
+				"name": cputil.I18n(ctx, "line-coverage"),
 				"data": valueLst,
 				"label": map[string]interface{}{
 					"normal": map[string]interface{}{
@@ -218,7 +218,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if err != nil {
 			return err
 		}
-		ca.setProps(recordRsp)
+		ca.setProps(ctx, recordRsp)
 	case cptype.InitializeOperation, cptype.DefaultRenderingKey:
 		if len(ca.State.Value) < 2 {
 			ca.setDefaultTimeRange()
@@ -240,7 +240,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if len(recordRsp.List) > 0 {
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
-		ca.setProps(recordRsp)
+		ca.setProps(ctx, recordRsp)
 		ca.Operations = getOperations()
 	case cptype.RenderingOperation:
 		if len(ca.State.Value) < 2 {
@@ -263,7 +263,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if len(recordRsp.List) > 0 {
 			ca.State.RecordID = recordRsp.List[len(recordRsp.List)-1].ID
 		}
-		ca.setProps(recordRsp)
+		ca.setProps(ctx, recordRsp)
 	}
 	return nil
 }
