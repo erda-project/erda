@@ -79,6 +79,8 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 	// TODO: support tag switch, current force true
 	// e.g. modules/scheduler/impl/cluster/hook.go line:136
 	req.ScheduleConfig.EnableTag = true
+	enableWorkspace := true
+	req.ScheduleConfig.EnableWorkspace = &enableWorkspace
 
 	// create cluster request to cluster-manager and core-service
 	if err = c.bdl.CreateClusterWithOrg(userID, req.OrgID, &apistructs.ClusterCreateRequest{
