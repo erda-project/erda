@@ -17,6 +17,7 @@ package snapshot
 import (
 	"bytes"
 	"regexp"
+	"strings"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -77,6 +78,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 			return nil, err
 		}
 		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt)
+		stmt = TrimBlockFormat(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
 			return nil, err
@@ -174,55 +176,60 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 	return nil
 }
 
-func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
-	if create == nil {
+func TrimCollateOptionFromCols(createStmt *ast.CreateTableStmt) {
+	if createStmt == nil {
 		return
 	}
-	for i := range create.Cols {
-		for j := len(create.Cols[i].Options) - 1; j >= 0; j-- {
-			if create.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
-				create.Cols[i].Options = append(create.Cols[i].Options[:j], create.Cols[i].Options[j+1:]...)
+	for i := range createStmt.Cols {
+		for j := len(createStmt.Cols[i].Options) - 1; j >= 0; j-- {
+			if createStmt.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
+				createStmt.Cols[i].Options = append(createStmt.Cols[i].Options[:j], createStmt.Cols[i].Options[j+1:]...)
 			}
 		}
 	}
 }
 
-func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
-	if create == nil {
+func TrimCollateOptionFromCreateTable(createStmt *ast.CreateTableStmt) {
+	if createStmt == nil {
 		return
 	}
-	for i := len(create.Options) - 1; i >= 0; i-- {
-		if create.Options[i].Tp == ast.TableOptionCollate {
-			create.Options = append(create.Options[:i], create.Options[i+1:]...)
+	for i := len(createStmt.Options) - 1; i >= 0; i-- {
+		if createStmt.Options[i].Tp == ast.TableOptionCollate {
+			createStmt.Options = append(createStmt.Options[:i], createStmt.Options[i+1:]...)
 		}
 	}
 }
 
-func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
-	if create == nil {
+func TrimConstraintCheckFromCreateTable(createStmt *ast.CreateTableStmt) {
+	if createStmt == nil {
 		return
 	}
-	for i := len(create.Constraints) - 1; i >= 0; i-- {
-		if create.Constraints[i].Tp == ast.ConstraintCheck {
-			create.Constraints = append(create.Constraints[:i], create.Constraints[i+1:]...)
+	for i := len(createStmt.Constraints) - 1; i >= 0; i-- {
+		if createStmt.Constraints[i].Tp == ast.ConstraintCheck {
+			createStmt.Constraints = append(createStmt.Constraints[:i], createStmt.Constraints[i+1:]...)
 		}
 	}
 }
 
-func TrimCharacterSetFromRawCreateTableSQL(sql string) string {
-	return regexp.MustCompile(`(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*\w+`).ReplaceAllString(sql, "")
+func TrimCharacterSetFromRawCreateTableSQL(createStmt string) string {
+	return regexp.MustCompile(`(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*\w+`).ReplaceAllString(createStmt, "")
+}
+
+func TrimBlockFormat(createStmt string) string {
+	return strings.ReplaceAll(createStmt, "BLOCK_FORMAT=ENCRYPTED", "")
 }
 
 // ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
-func ParseCreateTableStmt(create string) (*ast.CreateTableStmt, error) {
-	create = TrimCharacterSetFromRawCreateTableSQL(create)
-	node, err := parser.New().ParseOneStmt(create, "", "")
+func ParseCreateTableStmt(createStmt string) (*ast.CreateTableStmt, error) {
+	createStmt = TrimCharacterSetFromRawCreateTableSQL(createStmt)
+	createStmt = TrimBlockFormat(createStmt)
+	node, err := parser.New().ParseOneStmt(createStmt, "", "")
 	if err != nil {
 		return nil, err
 	}
 	createTableStmt, ok := node.(*ast.CreateTableStmt)
 	if !ok {
-		return nil, errors.Errorf("the text is not CreateTableStmt, text: %s", create)
+		return nil, errors.Errorf("the text is not CreateTableStmt, text: %s", createStmt)
 	}
 	return createTableStmt, nil
 }
