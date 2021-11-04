@@ -50,7 +50,7 @@ type labelscontent struct {
 func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
 	var data labelscontent
 	err := json.Unmarshal(value, &data)
-	if err != nil || data.Tags == nil || data.Labels == nil {
+	if err != nil || data.Tags == nil {
 		c.log.Warnf("invalid log message: %s", err)
 		return nil
 	}
