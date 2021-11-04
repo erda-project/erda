@@ -38,7 +38,7 @@ func (p *provider) Count(ctx context.Context, traceId string) int64 {
 	defer cancel()
 
 	count, err := p.client.Count(indices...).
-		IgnoreUnavailable(true).AllowNoIndices(true).Q("trace_id:" + traceId).Do(ctx)
+		IgnoreUnavailable(true).AllowNoIndices(true).Q("trace_id.raw:" + traceId).Do(ctx)
 	if err != nil {
 		return 0
 	}
