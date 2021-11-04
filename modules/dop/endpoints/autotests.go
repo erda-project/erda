@@ -17,7 +17,6 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
@@ -287,7 +286,6 @@ func (e *Endpoints) BatchQueryPipelineSnippetYaml(ctx context.Context, r *http.R
 	for k, v := range configLabelMap {
 		switch k {
 		case apistructs.SceneSetsAutotestExecType:
-			logrus.Info("wxj set: ", v)
 			result, err := e.autotestV2.BatchQuerySceneSetPipelineSnippetYaml(v)
 			if err != nil {
 				return errorresp.ErrResp(err)
@@ -296,7 +294,6 @@ func (e *Endpoints) BatchQueryPipelineSnippetYaml(ctx context.Context, r *http.R
 				results = append(results, result...)
 			}
 		case apistructs.SceneAutotestExecType:
-			logrus.Info("wxj scene: ", v)
 			result, err := e.autotestV2.BatchQueryScenePipelineSnippetYaml(v)
 			if err != nil {
 				return errorresp.ErrResp(err)

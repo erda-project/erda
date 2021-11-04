@@ -124,20 +124,20 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	for _, apiTestTask := range apiTestTasks {
 		// 总数
 		apiTotalNum++
-		if apiTestTask.Extra.Labels[apistructs.LabelIsRefSet] == "true" {
+		if apiTestTask.Extra.Action.Labels[apistructs.LabelIsRefSet] == "true" {
 			apiRefTotalNum++
 		}
 		// 执行成功
 		if apiTestTask.Status.IsSuccessStatus() {
 			apiSuccessNum++
-			if apiTestTask.Extra.Labels[apistructs.LabelIsRefSet] == "true" {
+			if apiTestTask.Extra.Action.Labels[apistructs.LabelIsRefSet] == "true" {
 				apiRefSuccessNum++
 			}
 		}
 		// 执行失败
 		if apiTestTask.Status.IsFailedStatus() {
 			apiFailedNum++
-			if apiTestTask.Extra.Labels[apistructs.LabelIsRefSet] == "true" {
+			if apiTestTask.Extra.Action.Labels[apistructs.LabelIsRefSet] == "true" {
 				apiRefFailedNum++
 			}
 		}

@@ -50,6 +50,7 @@ message Content {
   uint64 pipelineID = 22;
   int64  apiRefSuccessNum = 23;
   int64  apiRefExecNum = 24;
+  repeated Content subContents = 25;
 }
 
 message TestPlanUpdateByHookResponse {

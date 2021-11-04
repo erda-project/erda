@@ -79,16 +79,95 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 		fields["execute_rate"] = req.Content.ExecuteRate
 		fields["pass_rate"] = req.Content.PassRate
 
-		if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
+		if err = s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := s.createTestPlanExecHistory(req); err != nil {
-		return nil, err
+	// scene has api exec content
+	if req.Content.StepAPIType == apistructs.StepTypeScene.String() {
+		if err = s.BatchCreateTestPlanExecHistory(req); err != nil {
+			return nil, err
+		}
+	} else {
+		if err = s.createTestPlanExecHistory(req); err != nil {
+			return nil, err
+		}
 	}
 
 	return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, nil
+}
+
+func (s *TestPlanService) BatchCreateTestPlanExecHistory(req *pb.TestPlanUpdateByHookRequest) error {
+	contents := make([]*pb.Content, 0)
+	contents = append(contents, req.Content)
+	for _, v := range req.Content.SubContents {
+		contents = append(contents, v)
+	}
+
+	testPlan, err := s.db.GetTestPlan(req.Content.TestPlanID)
+	if err != nil {
+		return err
+	}
+	iterationID := req.Content.IterationID
+	if iterationID == 0 {
+		iterationID = testPlan.IterationID
+	}
+	project, err := s.bdl.GetProject(testPlan.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	execHistories := make([]db.AutoTestExecHistory, 0)
+	for _, v := range contents {
+		if v.StepAPIType != apistructs.StepTypeScene.String() {
+			v.ApiTotalNum = 1
+			v.ApiExecNum = 1
+			v.PassRate = calcRate(v.ApiSuccessNum, v.ApiTotalNum)
+			v.ExecuteRate = calcRate(v.ApiExecNum, v.ApiTotalNum)
+		}
+
+		executeTime := parseExecuteTime(v.ExecuteTime)
+		if executeTime == nil {
+			executeTime = mysql_time.GetMysqlDefaultTime()
+		}
+
+		timeBegin := parseExecuteTime(v.TimeBegin)
+		if timeBegin == nil {
+			timeBegin = mysql_time.GetMysqlDefaultTime()
+		}
+		timeEnd := parseExecuteTime(v.TimeEnd)
+		if timeEnd == nil {
+			timeEnd = mysql_time.GetMysqlDefaultTime()
+		}
+		execHistory := db.AutoTestExecHistory{
+			CreatorID:     v.CreatorID,
+			ProjectID:     testPlan.ProjectID,
+			SpaceID:       testPlan.SpaceID,
+			IterationID:   iterationID,
+			PlanID:        v.TestPlanID,
+			SceneID:       v.SceneID,
+			SceneSetID:    v.SceneSetID,
+			StepID:        v.StepID,
+			ParentPID:     v.ParentID,
+			Type:          apistructs.StepAPIType(v.StepAPIType),
+			Status:        apistructs.PipelineStatus(v.Status),
+			PipelineYml:   v.PipelineYml,
+			ExecuteApiNum: v.ApiExecNum,
+			SuccessApiNum: v.ApiSuccessNum,
+			PassRate:      v.PassRate,
+			ExecuteRate:   v.ExecuteRate,
+			TotalApiNum:   v.ApiTotalNum,
+			ExecuteTime:   *executeTime,
+			CostTimeSec:   v.CostTimeSec,
+			OrgID:         project.OrgID,
+			TimeBegin:     *timeBegin,
+			TimeEnd:       *timeEnd,
+			PipelineID:    v.PipelineID,
+		}
+		execHistories = append(execHistories, execHistory)
+	}
+	return s.db.BatchCreateAutoTestExecHistory(execHistories)
 }
 
 func (s *TestPlanService) createTestPlanExecHistory(req *pb.TestPlanUpdateByHookRequest) error {

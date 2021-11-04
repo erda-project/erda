@@ -729,7 +729,6 @@ func SceneToPipelineYml(inputs []apistructs.AutoTestSceneInput, outputs []apistr
 			Ref:  output.Value,
 		}
 	}
-	logrus.Info("wxj scene3: ", req)
 	var stagesValue []*pipelineyml.Stage
 	for _, stage := range stages {
 		var specStage pipelineyml.Stage

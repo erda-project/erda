@@ -149,22 +149,24 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		TimeBegin:        ctx.SDK.Pipeline.TimeBegin.Format("2006-01-02 15:04:05"),
 		TimeEnd:          ctx.SDK.Pipeline.TimeEnd.Format("2006-01-02 15:04:05"),
 	}
-	if err = p.sendMessage(req, ctx); err != nil {
-		return err
-	}
 	if stepType == apistructs.StepTypeScene {
-		if err = p.sendStepMessage(ctx, testPlanID, sceneID, sceneSetID, iterationID, ctx.SDK.Pipeline.PipelineID, userID); err != nil {
+		contents, err := p.getSubContents(ctx, testPlanID, sceneID, sceneSetID, iterationID, ctx.SDK.Pipeline.PipelineID, userID)
+		if err != nil {
 			return err
 		}
+		req.SubContents = contents
+	}
+	if err = p.sendMessage(req, ctx); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID uint64, userID string) error {
+func (p *provider) getSubContents(ctx *aoptypes.TuneContext, testPlanID, sceneID, sceneSetID, iterationID, parentPipelineID uint64, userID string) (contents []*testplanpb.Content, err error) {
 	result, err := ctx.SDK.DBClient.GetPipelineWithTasks(ctx.SDK.Pipeline.PipelineID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	allTasks := result.Tasks
 	for _, task := range allTasks {
@@ -188,7 +190,7 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 			continue
 		}
 
-		err = p.sendMessage(testplanpb.Content{
+		contents = append(contents, &testplanpb.Content{
 			TestPlanID:  testPlanID,
 			ExecuteTime: task.TimeBegin.Format("2006-01-02 15:04:05"),
 			ApiTotalNum: 1,
@@ -215,13 +217,9 @@ func (p *provider) sendStepMessage(ctx *aoptypes.TuneContext, testPlanID, sceneI
 			CostTimeSec: task.CostTimeSec,
 			TimeBegin:   task.TimeBegin.Format("2006-01-02 15:04:05"),
 			TimeEnd:     task.TimeEnd.Format("2006-01-02 15:04:05"),
-		}, ctx)
-		if err != nil {
-			logrus.Errorf("failed to sendMessage, err: %s", err.Error())
-			continue
-		}
+		})
 	}
-	return nil
+	return
 }
 
 type ApiNumStatistics struct {

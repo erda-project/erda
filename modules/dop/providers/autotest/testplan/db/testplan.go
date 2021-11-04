@@ -15,22 +15,21 @@
 package db
 
 import (
-	"github.com/jinzhu/gorm"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 // TestPlanDB .
 type TestPlanDB struct {
-	*gorm.DB
+	*dao.DBClient
 }
 
 // UpdateTestPlanV2 Update test plan
-func (client *TestPlanDB) UpdateTestPlanV2(testPlanID uint64, fields map[string]interface{}) error {
+func (db *TestPlanDB) UpdateTestPlanV2(testPlanID uint64, fields map[string]interface{}) error {
 	tp := TestPlanV2{}
 	tp.ID = testPlanID
 
-	return client.Model(&tp).Updates(fields).Error
+	return db.Model(&tp).Updates(fields).Error
 }
 
 // CreateAutoTestExecHistory .
@@ -40,7 +39,7 @@ func (db *TestPlanDB) CreateAutoTestExecHistory(execHistory *AutoTestExecHistory
 
 // BatchCreateAutoTestExecHistory .
 func (db *TestPlanDB) BatchCreateAutoTestExecHistory(list []AutoTestExecHistory) error {
-	return db.Create(list).Error
+	return db.BulkInsert(list)
 }
 
 // GetTestPlan .

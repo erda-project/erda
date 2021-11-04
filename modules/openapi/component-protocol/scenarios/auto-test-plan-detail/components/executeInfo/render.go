@@ -206,7 +206,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		{
 			Label:    "接口总数",
 			ValueKey: "autoTestNum",
-			Tips:     "接口总数不包括禁用接口以及等待类型",
+			Tips:     "接口总数不包括禁用接口、引用场景集以及等待类型",
 		},
 		{
 			Label:    "接口执行率",
