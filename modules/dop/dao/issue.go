@@ -804,7 +804,7 @@ func (client *DBClient) GetIssueLabelsByProjectID(projectID uint64) ([]IssueLabe
 	return res, nil
 }
 
-func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint64) (map[apistructs.IssueSeverity]uint64, error) {
+func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint64, onlyUnclosed bool) (map[apistructs.IssueSeverity]uint64, error) {
 	type Line struct {
 		Total    uint64
 		Severity apistructs.IssueSeverity
@@ -817,6 +817,22 @@ func (client *DBClient) CountBugBySeverity(projectID uint64, iterationIDs []uint
 	}
 	if len(iterationIDs) > 0 {
 		sql = sql.Where("iteration_id IN (?)", iterationIDs)
+	}
+	if onlyUnclosed {
+		// get state ids by state belong
+		bugStates, err := client.GetIssuesStates(&apistructs.IssueStatesGetRequest{
+			ProjectID:    projectID,
+			IssueType:    apistructs.IssueTypeBug,
+			StateBelongs: apistructs.UnclosedStateBelongs,
+		})
+		if err != nil {
+			return nil, err
+		}
+		var bugStateIDs []uint64
+		for _, state := range bugStates {
+			bugStateIDs = append(bugStateIDs, state.ID)
+		}
+		sql = sql.Where("state IN (?)", bugStateIDs)
 	}
 	sql = sql.Group("`severity`").Scan(&results)
 
