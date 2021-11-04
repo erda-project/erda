@@ -301,6 +301,38 @@ func TestInvoke_WithNoneMatchFilterKey_Should_Not_Call_Output(t *testing.T) {
 	}
 }
 
+func TestInvoke_WithNilTags_Should_Not_Call_Output(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := NewMockLogger(ctrl)
+	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
+
+	c := &consumer{
+		filters: map[string]string{
+			"msp_env_id":      "n4e4d034460114086b2a2b203312f5522",
+			"_not_exist_key_": "",
+		},
+		log:    logger,
+		output: nil,
+	}
+
+	topic := "topic"
+	err := c.Invoke(nil, []byte(`{
+		"source": "container",
+		"id": "3eb75b2ba0d1560c6148f3023e63c16915e32b077857591dbdb42beca98d997f",
+		"stream": "stdout",
+		"content": "\u001b[37mDEBU\u001b[0m[2021-08-24 09:50:02.404177939] service: core-services endpoint acquired: core-services.project-387-test.svc.cluster.local:9526 ",
+		"offset": 8403051,
+		"timestamp": 1629769802404,
+		"uniId": "5"
+	}`), &topic, time.Now())
+
+	if err != nil {
+		t.Errorf("should not throw error")
+	}
+}
+
 // MockLogger is a mock of Logger interface.
 type MockLogger struct {
 	ctrl     *gomock.Controller
