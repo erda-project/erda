@@ -1,5 +1,20 @@
 version: "3"
 services:
+
+  gateway:
+    image: nginx:latest
+    container_name: gateway
+    depends_on:
+      - ui
+    ports:
+      - "80:80"
+    volumes:
+      - type: bind
+        source: ./nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+    restart: always
+    platform: linux/amd64
+
   ui:
     image: erdaproject/ui-ce:1.2-20210824-ba7fad81b8bcdd06501e4c8e0244b970c7fcf51d
     container_name: erda-ui
@@ -16,7 +31,7 @@ services:
       - TERMINUS_KEY=123
       - FDP_UI_ADDR=www.erda.cloud
     ports:
-      - "80:80"
+      - "80"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always

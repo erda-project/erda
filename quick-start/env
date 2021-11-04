@@ -57,11 +57,11 @@ GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 # public urls
 UC_PUBLIC_URL=http://uc.erda.local:8080
 UC_PUBLIC_ADDR=uc.erda.local:8080
-COLLECTOR_PUBLIC_ADDR=host.docker.internal:7076
-OPENAPI_PUBLIC_ADDR=host.docker.internal:9529
-OPENAPI_PUBLIC_URL=http://host.docker.internal:9529
-GITTAR_PUBLIC_ADDR=host.docker.internal:5566
-GITTAR_PUBLIC_URL=http://host.docker.internal:5566
+COLLECTOR_PUBLIC_ADDR=collector.erda.local
+OPENAPI_PUBLIC_ADDR=openapi.erda.local
+OPENAPI_PUBLIC_URL=http://openapi.erda.local
+GITTAR_PUBLIC_ADDR=gittar.erda.local
+GITTAR_PUBLIC_URL=http://gittar.erda.local
 
 NEXUS_PUBLIC_URL=http://nexus-sys.dev.terminus.io
 NEXUS_PASSWORD=e9FCb8h5cz1960rHLSPGq7H5k85eE9
@@ -71,7 +71,7 @@ UI_PUBLIC_ADDR=one.erda.local
 UI_PUBLIC_URL=http://one.erda.local
 UC_CLIENT_ID=dice
 UC_CLIENT_SECRET=secret
-COLLECTOR_PUBLIC_URL=https://host.docker.internal:7076
+COLLECTOR_PUBLIC_URL=https://collector.erda.local
 DICE_ROOT_DOMAIN=erda.local
 
 # k8s
