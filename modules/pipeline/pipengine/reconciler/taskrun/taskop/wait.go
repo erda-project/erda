@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/pkg/loop"
@@ -99,7 +100,9 @@ func (w *wait) Processing() (interface{}, error) {
 }
 
 func (w *wait) WhenDone(data interface{}) error {
-	// go metrics.TaskEndEvent(*w.Task, w.P)
+	defer func() {
+		go metrics.TaskEndEvent(*w.Task, w.P)
+	}()
 	if data == nil {
 		return nil
 	}
