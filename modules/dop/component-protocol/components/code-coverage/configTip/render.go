@@ -14,8 +14,32 @@
 
 package configTip
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
+
+type ComponentAction struct {
+	base.DefaultProvider
+}
+
+func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	c.Type = "Alert"
+	c.Name = "tip"
+	c.Props = map[string]interface{}{
+		"type":     "warning",
+		"showIcon": false,
+		"message":  cputil.I18n(ctx, "config-tip-message"),
+	}
+	return nil
+}
 
 func init() {
-	base.InitProvider("code-coverage", "configTip")
+	base.InitProviderWithCreator("code-coverage", "configTip", func() servicehub.Provider {
+		return &ComponentAction{}
+	})
 }

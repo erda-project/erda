@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -29,7 +30,7 @@ type ComponentAction struct {
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	c.Type = "Modal"
 	c.Props = map[string]interface{}{
-		"title":  "代码覆盖率统计范围设置",
+		"title":  cputil.I18n(ctx, "code-coverage-statistics-range"),
 		"size":   "big",
 		"footer": nil,
 	}
