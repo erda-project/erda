@@ -7,7 +7,6 @@ import (
 	url "net/url"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
-	pb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -37,35 +36,10 @@ func (m *GetAlertConditionsResponse) UnmarshalURLValues(prefix string, values ur
 
 // GetAlertConditionsValueRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "condition":
-				m.Condition = vals[0]
-			case "index":
-				m.Index = vals[0]
-			}
-		}
-	}
 	return nil
 }
 
 // GetAlertConditionsValueResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetAlertConditionsValueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "data":
-				if m.Data == nil {
-					m.Data = &pb.AlertConditionsValue{}
-				}
-			case "data.key":
-				if m.Data == nil {
-					m.Data = &pb.AlertConditionsValue{}
-				}
-				m.Data.Key = vals[0]
-			}
-		}
-	}
 	return nil
 }

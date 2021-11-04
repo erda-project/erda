@@ -153,6 +153,7 @@ var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Conditions)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ConditionsValueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertConditionsValue)(nil)
 
@@ -6767,6 +6768,11 @@ func (m *Conditions) UnmarshalURLValues(prefix string, values url.Values) error 
 
 // GetAlertConditionsValueRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ConditionsValueRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ConditionsValueRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
@@ -6782,21 +6788,6 @@ func (m *GetAlertConditionsValueRequest) UnmarshalURLValues(prefix string, value
 
 // GetAlertConditionsValueResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetAlertConditionsValueResponse) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "data":
-				if m.Data == nil {
-					m.Data = &AlertConditionsValue{}
-				}
-			case "data.key":
-				if m.Data == nil {
-					m.Data = &AlertConditionsValue{}
-				}
-				m.Data.Key = vals[0]
-			}
-		}
-	}
 	return nil
 }
 

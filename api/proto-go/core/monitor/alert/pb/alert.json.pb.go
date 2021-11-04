@@ -287,6 +287,8 @@ var _ json.Marshaler = (*Conditions)(nil)
 var _ json.Unmarshaler = (*Conditions)(nil)
 var _ json.Marshaler = (*GetAlertConditionsValueRequest)(nil)
 var _ json.Unmarshaler = (*GetAlertConditionsValueRequest)(nil)
+var _ json.Marshaler = (*ConditionsValueRequest)(nil)
+var _ json.Unmarshaler = (*ConditionsValueRequest)(nil)
 var _ json.Marshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Unmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Marshaler = (*AlertConditionsValue)(nil)
@@ -2753,6 +2755,24 @@ func (m *GetAlertConditionsValueRequest) MarshalJSON() ([]byte, error) {
 
 // GetAlertConditionsValueRequest implement json.Marshaler.
 func (m *GetAlertConditionsValueRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ConditionsValueRequest implement json.Marshaler.
+func (m *ConditionsValueRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ConditionsValueRequest implement json.Marshaler.
+func (m *ConditionsValueRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
