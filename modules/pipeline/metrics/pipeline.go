@@ -52,6 +52,10 @@ const (
 	labelClusterName     = "cluster_name"
 	labelOrgName         = "org_name"
 
+	labelMeta          = "_meta"
+	labelMetricScope   = "_metric_scope"
+	labelMetricScopeID = "_metric_scope_id"
+
 	num = "num"
 )
 
@@ -63,9 +67,9 @@ func generatePipelineMetricLabels(p spec.Pipeline) ([]string, []string, map[stri
 
 	metricLabelMap := map[string]string{
 		// pipeline base
-		"_meta":                             "true",
-		"_metric_scope":                     "org",
-		"_metric_scope_id":                  conf.DiceCluster(),
+		labelMeta:                           "true",
+		labelMetricScope:                    "org",
+		labelMetricScopeID:                  conf.DiceCluster(),
 		labelOrgName:                        p.GetOrgName(),
 		labelClusterName:                    p.ClusterName,
 		labelPipelineID:                     strconv.FormatUint(p.ID, 10),
@@ -112,12 +116,11 @@ var pipelineGaugeProcessing *prometheus.GaugeVec
 func init() {
 	labelKeys, _, _ := generatePipelineMetricLabels(spec.Pipeline{})
 	pipelineCounterTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: fieldPipelineTotal,
-		Name:      "pipeline total counter",
+		//Subsystem: "pipeline total counter",
+		Name: fieldPipelineTotal,
 	}, labelKeys)
 	pipelineGaugeProcessing = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Subsystem: fieldPipelineProcessing,
-		Name:      "processing pipeline",
+		Name: fieldPipelineProcessing,
 	}, labelKeys)
 }
 

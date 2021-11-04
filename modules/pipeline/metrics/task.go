@@ -20,6 +20,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/providers/metrics/report"
@@ -56,8 +57,7 @@ var TaskCounterTotalAdd = func(task spec.PipelineTask, value float64) {
 }
 
 var taskCounterTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-	Name:      "task total counter",
-	Subsystem: fieldTaskTotal,
+	Name: fieldTaskTotal,
 }, taskCounterLabels)
 
 // TaskGaugeProcessingAdd 正在处理中的个数
@@ -76,8 +76,8 @@ var TaskGaugeProcessingAdd = func(task spec.PipelineTask, value float64) {
 }
 
 var taskGaugeProcessing = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-	Name:      "processing task",
-	Subsystem: fieldTaskProcessing,
+	//Subsystem: "processing task",
+	Name: fieldTaskProcessing,
 }, taskProcessingLabels)
 
 // TaskEndEvent 终态时推送事件
@@ -103,16 +103,17 @@ var TaskEndEvent = func(task spec.PipelineTask, p *spec.Pipeline) {
 
 func generateActionEventTags(task spec.PipelineTask, p *spec.Pipeline) map[string]string {
 	tags := map[string]string{
-		"_meta":             "true",
-		"_metric_scope":     "org",
-		"_metric_scope_id":  conf.DiceCluster(),
-		labelOrgName:        p.GetOrgName(),
-		labelClusterName:    p.ClusterName,
-		labelPipelineID:     strconv.FormatUint(task.PipelineID, 10),
-		labelTaskID:         strconv.FormatUint(task.ID, 10),
-		labelActionType:     task.Type,
-		labelExecuteCluster: task.Extra.ClusterName,
-		labelTaskStatus:     task.Status.String(),
+		labelMeta:               "true",
+		labelMetricScope:        "org",
+		labelMetricScopeID:      conf.DiceCluster(),
+		labelOrgName:            p.GetOrgName(),
+		labelClusterName:        p.ClusterName,
+		labelPipelineID:         strconv.FormatUint(task.PipelineID, 10),
+		labelTaskID:             strconv.FormatUint(task.ID, 10),
+		labelActionType:         task.Type,
+		labelExecuteCluster:     task.Extra.ClusterName,
+		labelTaskStatus:         task.Status.String(),
+		apistructs.LabelOrgName: p.GetOrgName(),
 
 		labelPipelineSource:  labelPipelineSource,
 		labelPipelineYmlName: p.PipelineYmlName,

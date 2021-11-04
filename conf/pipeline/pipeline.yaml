@@ -2,8 +2,11 @@ pipeline:
 
 service-register:
 
-http-server:
+# prometheus provider only recognize http-server@admin
+http-server@admin:
   addr: ":3081"
+prometheus:
+
 grpc-server:
   addr: ":30810"
 
