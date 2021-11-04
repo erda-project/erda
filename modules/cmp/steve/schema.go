@@ -23,7 +23,6 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/accesscontrol"
 	"github.com/rancher/steve/pkg/attributes"
-	"github.com/rancher/steve/pkg/client"
 	"github.com/rancher/steve/pkg/resources/apigroups"
 	"github.com/rancher/steve/pkg/resources/formatters"
 	"github.com/rancher/steve/pkg/schema"
@@ -42,7 +41,7 @@ func DefaultSchemas(baseSchema *types.APISchemas) {
 	apiroot.Register(baseSchema, []string{"v1"}, "proxy:/apis")
 }
 
-func DefaultSchemaTemplates(ctx context.Context, clusterName string, cf *client.Factory,
+func DefaultSchemaTemplates(ctx context.Context, clusterName string, cf *Factory,
 	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup) []schema.Template {
 	ctx = context.WithValue(ctx, "clusterName", clusterName)
 	return []schema.Template{

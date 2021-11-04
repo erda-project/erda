@@ -27,13 +27,11 @@ import (
 	"github.com/rancher/steve/pkg/accesscontrol"
 	"github.com/rancher/steve/pkg/aggregation"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/rancher/steve/pkg/client"
 	"github.com/rancher/steve/pkg/clustercache"
 	schemacontroller "github.com/rancher/steve/pkg/controllers/schema"
 	"github.com/rancher/steve/pkg/resources/common"
 	"github.com/rancher/steve/pkg/resources/schemas"
 	"github.com/rancher/steve/pkg/schema"
-	steveserver "github.com/rancher/steve/pkg/server"
 	"github.com/rancher/steve/pkg/server/router"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apiserver/pkg/endpoints/request"
@@ -45,7 +43,7 @@ var ErrConfigRequired = errors.New("rest config is required")
 type Server struct {
 	http.Handler
 
-	ClientFactory   *client.Factory
+	ClientFactory   *Factory
 	ClusterCache    clustercache.ClusterCache
 	SchemaFactory   schema.Factory
 	RESTConfig      *rest.Config
@@ -57,7 +55,7 @@ type Server struct {
 	ClusterName     string
 
 	authMiddleware      auth.Middleware
-	controllers         *steveserver.Controllers
+	controllers         *Controllers
 	needControllerStart bool
 	next                http.Handler
 	router              router.RouterFunc
@@ -68,8 +66,8 @@ type Server struct {
 
 type Options struct {
 	// Controllers If the controllers are passed in the caller must also start the controllers
-	Controllers                *steveserver.Controllers
-	ClientFactory              *client.Factory
+	Controllers                *Controllers
+	ClientFactory              *Factory
 	AccessSetLookup            accesscontrol.AccessSetLookup
 	AuthMiddleware             auth.Middleware
 	Next                       http.Handler
@@ -123,7 +121,7 @@ func setDefaults(server *Server) error {
 
 	if server.controllers == nil {
 		var err error
-		server.controllers, err = steveserver.NewController(server.RESTConfig, nil)
+		server.controllers, err = NewController(server.RESTConfig, nil)
 		server.needControllerStart = true
 		if err != nil {
 			return err
@@ -149,7 +147,7 @@ func setup(ctx context.Context, server *Server) error {
 
 	cf := server.ClientFactory
 	if cf == nil {
-		cf, err = client.NewFactory(server.RESTConfig, server.authMiddleware != nil)
+		cf, err = NewFactory(server.RESTConfig, server.authMiddleware != nil)
 		if err != nil {
 			return err
 		}
