@@ -71,7 +71,9 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 
 func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 	var data []*apistructs.CodeCoverageNode
+	var root *apistructs.CodeCoverageNode
 	title := cputil.I18n(ctx, "report-details")
+	var maxDepth int
 	projectName := ""
 	if recordID != 0 {
 		record, err := c.svc.GetCodeCoverageRecord(recordID)
@@ -80,7 +82,9 @@ func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 		}
 		reportContent := record.ReportContent
 		if len(reportContent) > 0 {
+			maxDepth = reportContent[0].MaxDepth()
 			data = reportContent[0].Nodes
+			root = reportContent[0]
 		}
 		// mysql default time 1000-01-01
 		if record.ReportTime.Year() != 1000 {
@@ -91,6 +95,30 @@ func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 			return err
 		}
 		projectName = project.DisplayName
+	}
+	levels := []interface{}{
+		map[string]interface{}{
+			"itemStyle": map[string]interface{}{
+				"borderWidth": 0,
+				"gapWidth":    5,
+			},
+			"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
+		},
+		map[string]interface{}{
+			"itemStyle": map[string]interface{}{
+				"gapWidth": 1,
+			},
+			"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
+		},
+	}
+	for i := 2; i < maxDepth; i++ {
+		levels = append(levels, map[string]interface{}{
+			"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
+			"itemStyle": map[string]interface{}{
+				"gapWidth":              1,
+				"borderColorSaturation": 0.6,
+			},
+		})
 	}
 	c.Props = map[string]interface{}{
 		//"requestIgnore": []string{"props"},
@@ -112,7 +140,10 @@ func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 					"name":            projectName,
 					"type":            "treemap",
 					"roam":            false,
-					"leafDepth":       2,
+					"leafDepth":       maxDepth,
+					"tooltip":         root.ToolTip,
+					"value":           root.Value,
+					"path":            root.Path,
 					"bottom":          30,
 					"width":           "100%",
 					"height":          "90%",
@@ -127,37 +158,7 @@ func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 					},
 					"data": data,
 					//"color":           []string{"#808080", "#C0C0C0", "#87CEFA", "#00FF00", "#228B22"},
-					"levels": []interface{}{
-						map[string]interface{}{
-							"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
-						},
-						map[string]interface{}{
-							"color": []string{"#EC7D32", "#FEC100", "#4FAED4", "#A7BA64", "#36A47C"},
-						},
-					},
-					//"levels": []interface{}{
-					//	map[string]interface{}{
-					//		"colorSaturation": []interface{}{0.3, 0.6},
-					//		"itemStyle": map[string]interface{}{
-					//			"gapWidth": 4,
-					//		},
-					//	},
-					//	map[string]interface{}{
-					//		"colorSaturation": []interface{}{0.3, 0.6},
-					//		"itemStyle": map[string]interface{}{
-					//			"gapWidth": 2,
-					//		},
-					//	},
-					//	map[string]interface{}{
-					//		"colorSaturation": []interface{}{0.3, 0.5},
-					//		"itemStyle": map[string]interface{}{
-					//			"gapWidth": 1,
-					//		},
-					//	},
-					//	map[string]interface{}{
-					//		"colorSaturation": []interface{}{0.3, 0.5},
-					//	},
-					//},
+					"levels": levels,
 				},
 			},
 		},
