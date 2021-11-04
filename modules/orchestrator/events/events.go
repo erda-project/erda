@@ -42,7 +42,6 @@ func NewEventManager(cap int, queue *queue.PusherQueue, db *dbclient.DBClient, b
 		NewEventboxPublisher(m),
 		NewWsPublisher(m),
 		NewDeployPusher(m, queue),
-		NewDeployErrorCollector(m, db, bdl),
 		NewDeployTimeCollector(m, db),
 	}
 	return m

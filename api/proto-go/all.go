@@ -68,5 +68,6 @@ import (
 	_ "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/trace/pb"
+	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 )

@@ -3,7 +3,7 @@ module github.com/erda-project/erda-proto-go
 go 1.14
 
 require (
-	github.com/erda-project/erda-infra v0.0.0-20211102130717-7cc17a59e3a9
+	github.com/erda-project/erda-infra v0.0.0-20211103123843-dd949cf5688a
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
