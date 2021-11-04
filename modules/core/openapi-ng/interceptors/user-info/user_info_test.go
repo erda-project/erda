@@ -17,6 +17,7 @@ package userinfo
 import (
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"bou.ke/monkey"
@@ -70,10 +71,12 @@ func Test_provider_userInfoRetriever(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	expected := []string{`"id":""`, `"id":"1"`}
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body := p.userInfoRetriever(tt.args.r, tt.args.data, tt.args.userIDs)
 			assert.NotNil(t, body)
+			assert.Equal(t, true, strings.Contains(string(body), expected[i]))
 		})
 	}
 }
