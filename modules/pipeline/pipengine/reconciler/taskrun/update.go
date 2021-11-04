@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/loop"
 )
@@ -59,7 +60,7 @@ func (tr *TaskRun) Update() {
 	// metrics
 	rlog.TDebugf(tr.Task.PipelineID, tr.Task.ID, "taskRun: start emit task metrics")
 	defer rlog.TDebugf(tr.Task.PipelineID, tr.Task.ID, "taskRun: end emit task metrics")
-	// go metrics.TaskCounterTotalAdd(*tr.Task, 1)
+	go metrics.TaskCounterTotalAdd(*tr.Task, 1)
 }
 
 func (tr *TaskRun) AppendLastMsg(msg string) error {
