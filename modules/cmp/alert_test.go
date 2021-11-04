@@ -60,10 +60,12 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	defer ctrl.Finish()
 	monitorService := NewMockAlertServiceServer(ctrl)
 	monitorService.EXPECT().GetAlertConditionsValue(gomock.Any(), gomock.Any()).AnyTimes().Return(&monitor.GetAlertConditionsValueResponse{
-		Data: &monitor.AlertConditionsValue{
-			Key: "cluster_name",
-			Options: []*structpb.Value{
-				structpb.NewStringValue("terminus-dev"),
+		Data: []*monitor.AlertConditionsValue{
+			{
+				Key: "cluster_name",
+				Options: []*structpb.Value{
+					structpb.NewStringValue("terminus-dev"),
+				},
 			},
 		},
 	}, nil)
@@ -72,11 +74,15 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	}
 
 	_, err := pro.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
-		Condition: "cluster_name",
-		Filters: map[string]string{
-			"org_name": "terminus",
+		Conditions: []*monitor.ConditionsValueRequest{
+			{
+				Condition: "cluster_name",
+				Filters: map[string]string{
+					"org_name": "terminus",
+				},
+				Index: "host_summary",
+			},
 		},
-		Index: "host_summary",
 	})
 	if err != nil {
 		fmt.Println("should not err,err is ", err)
