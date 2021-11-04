@@ -274,15 +274,6 @@ func Test_logsIterator_Prev(t *testing.T) {
 					list := dest.(*[]*SavedLog)
 					*list = append(*list,
 						&SavedLog{
-							ID:        "1",
-							Source:    "container",
-							Stream:    "stdout",
-							Timestamp: 100,
-							Offset:    0,
-							Level:     "info",
-							Content:   gzipContent("test"),
-						},
-						&SavedLog{
 							ID:        "2",
 							Source:    "container",
 							Stream:    "stdout",
@@ -290,6 +281,15 @@ func Test_logsIterator_Prev(t *testing.T) {
 							Offset:    1,
 							Level:     "info",
 							Content:   gzipContent("test 2"),
+						},
+						&SavedLog{
+							ID:        "1",
+							Source:    "container",
+							Stream:    "stdout",
+							Timestamp: 100,
+							Offset:    0,
+							Level:     "info",
+							Content:   gzipContent("test"),
 						},
 					)
 					return nil
@@ -306,16 +306,6 @@ func Test_logsIterator_Prev(t *testing.T) {
 			},
 			want: []*pb.LogItem{
 				{
-					Id:        "1",
-					Source:    "container",
-					Stream:    "stdout",
-					Timestamp: "100",
-					UnixNano:  100,
-					Offset:    0,
-					Level:     "info",
-					Content:   "test",
-				},
-				{
 					Id:        "2",
 					Source:    "container",
 					Stream:    "stdout",
@@ -324,6 +314,16 @@ func Test_logsIterator_Prev(t *testing.T) {
 					Offset:    1,
 					Level:     "info",
 					Content:   "test 2",
+				},
+				{
+					Id:        "1",
+					Source:    "container",
+					Stream:    "stdout",
+					Timestamp: "100",
+					UnixNano:  100,
+					Offset:    0,
+					Level:     "info",
+					Content:   "test",
 				},
 			},
 		},
