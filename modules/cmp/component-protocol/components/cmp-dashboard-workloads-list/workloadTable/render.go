@@ -161,8 +161,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	failedCount := map[apistructs.K8SResType]int{}
 
 	for _, kind := range []apistructs.K8SResType{apistructs.K8SDeployment, apistructs.K8SStatefulSet,
-		apistructs.K8SDeployment, apistructs.K8SJob, apistructs.K8SCronJob} {
-		if _, ok := kinds[string(kind)]; !ok {
+		apistructs.K8SDaemonSet, apistructs.K8SJob, apistructs.K8SCronJob} {
+		if _, ok := kinds[string(kind)]; !ok && len(kinds) != 0 {
 			continue
 		}
 		steveRequest.Type = kind
