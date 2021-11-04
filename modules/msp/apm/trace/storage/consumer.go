@@ -15,6 +15,7 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -97,15 +98,17 @@ func (p *provider) getStatement(data interface{}) (string, []interface{}, error)
 func (p *provider) spotSpanConsumer(key []byte, value []byte, topic *string, timestamp time.Time) error {
 	// write spot span to cassandra
 	metric := &metrics.Metric{}
-	if err := json.Unmarshal(value, metric); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(value))
+	dec.UseNumber()
+	if err := dec.Decode(&metric); err != nil {
 		return err
 	}
 	span, err := metricToSpan(metric)
 	if err != nil {
 		return err
 	}
-	//metric = toSpan(span)
-	//err = p.output.kafka.Write(metric)
+	// metric = toSpan(span)
+	// err = p.output.kafka.Write(metric)
 	if err != nil {
 		p.Log.Errorf("fail to push kafka: %s", err)
 		return err
@@ -209,6 +212,8 @@ func toInt64(obj interface{}) (int64, error) {
 		return int64(val), nil
 	case float64:
 		return int64(val), nil
+	case json.Number:
+		return val.Int64()
 	case string:
 		v, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
