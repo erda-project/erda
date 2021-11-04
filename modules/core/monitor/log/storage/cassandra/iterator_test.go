@@ -15,8 +15,16 @@
 package cassandra
 
 import (
-	reflect "reflect"
+	"bytes"
+	"compress/gzip"
+	"context"
+	"reflect"
 	"testing"
+
+	"github.com/scylladb/gocqlx/qb"
+
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 )
 
 func Test_mergeSavedLog(t *testing.T) {
@@ -247,4 +255,97 @@ func Test_mergeSavedLog(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_logsIterator_Prev(t *testing.T) {
+	tests := []struct {
+		name string
+		it   *logsIterator
+		want []*pb.LogItem
+	}{
+		{
+			it: &logsIterator{
+				ctx: context.TODO(),
+				sel: &storage.Selector{
+					Start: 100,
+					End:   200,
+				},
+				queryFunc: func(builder *qb.SelectBuilder, binding qb.M, dest interface{}) error {
+					list := dest.(*[]*SavedLog)
+					*list = append(*list,
+						&SavedLog{
+							ID:        "1",
+							Source:    "container",
+							Stream:    "stdout",
+							Timestamp: 100,
+							Offset:    0,
+							Level:     "info",
+							Content:   gzipContent("test"),
+						},
+						&SavedLog{
+							ID:        "2",
+							Source:    "container",
+							Stream:    "stdout",
+							Timestamp: 101,
+							Offset:    1,
+							Level:     "info",
+							Content:   gzipContent("test 2"),
+						},
+					)
+					return nil
+				},
+				table:     DefaultBaseLogTable,
+				cmps:      nil,
+				values:    qb.M{},
+				matcher:   func(data *pb.LogItem) bool { return true },
+				pageSize:  10,
+				allStream: false,
+				start:     100,
+				end:       200,
+				offset:    -1,
+			},
+			want: []*pb.LogItem{
+				{
+					Id:        "1",
+					Source:    "container",
+					Stream:    "stdout",
+					Timestamp: "100",
+					UnixNano:  100,
+					Offset:    0,
+					Level:     "info",
+					Content:   "test",
+				},
+				{
+					Id:        "2",
+					Source:    "container",
+					Stream:    "stdout",
+					Timestamp: "101",
+					UnixNano:  101,
+					Offset:    1,
+					Level:     "info",
+					Content:   "test 2",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got []*pb.LogItem
+			for tt.it.Prev() {
+				got = append(got, tt.it.Value().(*pb.LogItem))
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("logsIterator.Prev() got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func gzipContent(content string) []byte {
+	buf := &bytes.Buffer{}
+	w := gzip.NewWriter(buf)
+	w.Write([]byte(content))
+	w.Flush()
+	w.Close()
+	return buf.Bytes()
 }
