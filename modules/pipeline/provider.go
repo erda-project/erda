@@ -31,7 +31,7 @@ import (
 
 type provider struct {
 	CmsService         pb.CmsServiceServer     `autowired:"erda.core.pipeline.cms.CmsService"`
-	Report             report.MetricReport     `autowired:"metric-report-client" optional:"true"`
+	MetricReport       report.MetricReport     `autowired:"metric-report-client" optional:"true"`
 	ReconcilerElection election.Interface      `autowired:"etcd-election@reconciler"`
 	GcElection         election.Interface      `autowired:"etcd-election@gc"`
 	Router             httpserver.Router       `autowired:"http-router"`

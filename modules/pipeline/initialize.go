@@ -91,9 +91,8 @@ func (p *provider) Initialize() error {
 
 func (p *provider) do() error {
 
-	// TODO metric
-	// // metrics
-	metrics.Initialize(p.Report)
+	// metrics
+	metrics.Initialize(p.MetricReport)
 
 	// db client
 	dbClient, err := dbclient.New()

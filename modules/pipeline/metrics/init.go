@@ -15,6 +15,8 @@
 package metrics
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
@@ -28,4 +30,8 @@ var reportClient report.MetricReport
 func Initialize(client report.MetricReport) {
 	disableMetrics = conf.DisableMetrics()
 	reportClient = client
+	// if enable metrics, need register pipeline, task counter to metrics
+	if !disableMetrics {
+		prometheus.MustRegister(pipelineGaugeProcessing, pipelineCounterTotal, taskGaugeProcessing, taskCounterTotal)
+	}
 }
