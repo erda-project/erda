@@ -311,10 +311,12 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	defer ctrl.Finish()
 	monitorService := NewMockAlertServiceServer(ctrl)
 	monitorService.EXPECT().GetAlertConditionsValue(gomock.Any(), gomock.Any()).AnyTimes().Return(&monitor.GetAlertConditionsValueResponse{
-		Data: &monitor.AlertConditionsValue{
-			Key: "application-name",
-			Options: []*structpb.Value{
-				structpb.NewStringValue("erda"),
+		Data: []*monitor.AlertConditionsValue{
+			{
+				Key: "application-name",
+				Options: []*structpb.Value{
+					structpb.NewStringValue("erda"),
+				},
 			},
 		},
 	}, nil)
@@ -333,13 +335,17 @@ func Test_alertService_GetAlertConditionsValue(t *testing.T) {
 	}
 	pro.alertService.p = pro
 	_, err := pro.alertService.GetAlertConditionsValue(context.Background(), &pb.GetAlertConditionsValueRequest{
-		Condition: "application-name",
-		Filters: map[string]string{
-			"org_name":     "erda",
-			"project_id":   "12",
-			"terminus_key": "c393550824b3d50aa758fee4593d6e31",
+		ConditionsArr: []*monitor.ConditionsValueRequest{
+			{
+				Condition: "application-name",
+				Filters: map[string]string{
+					"org_name":     "erda",
+					"project_id":   "12",
+					"terminus_key": "c393550824b3d50aa758fee4593d6e31",
+				},
+				Index: "application_service_node",
+			},
 		},
-		Index: "application_service_node",
 	})
 	if err != nil {
 		fmt.Println("should not err,err is ", err)
