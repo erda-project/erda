@@ -97,7 +97,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	c.Type = "Button"
 	c.Props = map[string]interface{}{
-		"text": "统计对象配置",
+		"text": cputil.I18n(ctx, "statistics-object-configuration"),
 		"type": "primary",
 	}
 	c.Operations = map[string]interface{}{
