@@ -291,13 +291,13 @@ elasticsearch@span:
   password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   templates:
     - name: "erda-spans"
       path: "${CONFIG_PATH}/span_index_template.json"
 
 elasticsearch.index.loader@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -307,7 +307,7 @@ elasticsearch.index.loader@span:
         - "<org>.<key>-{number}"
 
 elasticsearch.index.creator@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   patterns:
     - first_index: "erda-spans-<org>-000001"
       alias: "erda-spans-<org>-rollover"
@@ -316,7 +316,7 @@ elasticsearch.index.creator@span:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   check_interval: "30s"
   body_file: "${CONFIG_PATH}/index_rollover.json"
   patterns:
@@ -326,17 +326,18 @@ elasticsearch.index.rollover@span:
       alias: "erda-spans-<org>.<key>-rollover"
 
 storage-retention-strategy@span:
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   load_from_database: true
   ttl_reload_interval: "3m"
   default_ttl: "${LOG_TTL:168h}"
 
 span-storage-elasticsearch:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   write_timeout: "1m"
   index_type: "spans"
 
 span-persist:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
   spot_input:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
@@ -374,45 +375,45 @@ browser-analytics:
       timeout: "10s"
   ipdb: "${CONFIG_PATH}/ipdata.dat"
 
-#trace-storage:
-#  _enable: ${TRACE_ENABLE:true}
-#  spot_input:
-#    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
-#    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-#    parallelism: ${SPOT_TRACE_CONSUMERS:3}
-#    options:
-#      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-#      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-#  oap_input:
-#    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
-#    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-#    parallelism: ${OAP_TRACE_CONSUMERS:3}
-#    options:
-#      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-#      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-#  output:
-#    cassandra:
-#      writer_config:
-#        parallelism: ${CASSANDRA_PARALLELISM:3}
-#        batch:
-#          size: ${CASSANDRA_BATCH_SIZE:50}
-#          timeout: ${TRACE_STORE_CASSANDRA_BATCH_TIMEOUT:10s}
-#        retry: 2
-#      session_config:
-#        keyspace:
-#          name: "spot_prod"
-#          auto: true # 自动创建 keyspace
-#          replication:
-#            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-#            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-#      gc_grace_seconds: 86400
-#      ttl: ${TRACE_TTL:168h}
-#    kafka:
-#      topic: "${SPOT_TRACE_TOPICS:spot-trace}"
-#      parallelism: ${KAFKA_PARALLELISM:3}
-#      batch:
-#        size:  ${KAFKA_BATCH_SIZE:50}
-#        timeout: "10s"
+trace-storage:
+  _enable: ${WRITE_SPAN_TO_CASSANDRA_ENABLE:true}
+  spot_input:
+    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${SPOT_TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  oap_input:
+    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${OAP_TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  output:
+    cassandra:
+      writer_config:
+        parallelism: ${CASSANDRA_PARALLELISM:3}
+        batch:
+          size: ${CASSANDRA_BATCH_SIZE:50}
+          timeout: ${TRACE_STORE_CASSANDRA_BATCH_TIMEOUT:10s}
+        retry: 2
+      session_config:
+        keyspace:
+          name: "spot_prod"
+          auto: true # 自动创建 keyspace
+          replication:
+            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+      gc_grace_seconds: 86400
+      ttl: ${TRACE_TTL:168h}
+    kafka:
+      topic: "${SPOT_TRACE_TOPICS:spot-trace}"
+      parallelism: ${KAFKA_PARALLELISM:3}
+      batch:
+        size:  ${KAFKA_BATCH_SIZE:50}
+        timeout: "10s"
 
 # entity
 elasticsearch@entity:

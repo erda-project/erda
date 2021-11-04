@@ -46,7 +46,6 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
-	mathpkg "github.com/erda-project/erda/pkg/math"
 )
 
 type traceService struct {
@@ -86,14 +85,19 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	spanTree := make(query.SpanTree)
 	var spans []*pb.Span
 
+	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+		// do cassandra query
+		cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
+		for _, span := range cassandraSpans {
+			spans = append(spans, span)
+		}
+	}
+
 	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
 		// do es query
-		elasticsearchSpans, err := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
+		elasticsearchSpans, _ := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
 			TraceId: req.TraceID,
 		}, true, int(req.GetLimit()))
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
 		for _, value := range elasticsearchSpans {
 			var span pb.Span
 			span.Id = value.SpanId
@@ -104,14 +108,6 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 			span.EndTime = value.EndTime
 			span.Tags = value.Tags
 			spans = append(spans, &span)
-		}
-	}
-
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
-		// do cassandra query
-		cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
-		for _, span := range cassandraSpans {
-			spans = append(spans, span)
 		}
 	}
 
@@ -321,21 +317,28 @@ func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpans
 		if traceEndTime == 0 || traceEndTime < span.EndTime {
 			traceEndTime = span.EndTime
 		}
-		span.Duration = mathpkg.AbsInt64(span.EndTime - span.StartTime)
-		span.SelfDuration = mathpkg.AbsInt64(span.Duration - childSpanDuration(id, spanTree))
+		span.Duration = positiveInt64(span.EndTime - span.StartTime)
+		span.SelfDuration = positiveInt64(span.Duration - childSpanDuration(id, spanTree))
 		spans = append(spans, span)
 	}
 
 	serviceCount := int64(len(services))
 
-	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: mathpkg.AbsInt64(traceEndTime - traceStartTime), SpanCount: spanCount}, nil
+	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: positiveInt64(traceEndTime - traceStartTime), SpanCount: spanCount}, nil
+}
+
+func positiveInt64(v int64) int64 {
+	if v > 0 {
+		return v
+	}
+	return 0
 }
 
 func childSpanDuration(id string, spanTree query.SpanTree) int64 {
 	duration := int64(0)
 	for _, span := range spanTree {
 		if span.ParentSpanId == id {
-			duration += span.EndTime - span.StartTime
+			duration += positiveInt64(span.EndTime - span.StartTime)
 		}
 	}
 	return duration
@@ -360,7 +363,7 @@ func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64,
 		s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
 		// do cassandra query
 		elasticsearchCount = s.StorageReader.Count(ctx, traceID)
 	}

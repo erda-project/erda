@@ -12,27 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cassandra
+package cassandra_v2
 
-import "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+import (
+	"context"
 
-func convertToPbSpans(list []*SavedSpan) []interface{} {
-	spans := make([]interface{}, 0, len(list))
-	for _, log := range list {
-		data := wrapToPbSpan(log)
-		spans = append(spans, data)
+	"github.com/scylladb/gocqlx/qb"
+)
+
+func (p *provider) Count(ctx context.Context, traceId string) int64 {
+	var count int64
+
+	var cmps []qb.Cmp
+	values := make(qb.M)
+	cmps = append(cmps, qb.Eq("trace_id"))
+	values["trace_id"] = traceId
+
+	builder := qb.Select(DefaultSpanTable).Where(cmps...).Count("trace_id")
+	err := p.queryFunc(builder, values, &count)
+	if err != nil {
+		return 0
 	}
-	return spans
-}
-
-func wrapToPbSpan(ss *SavedSpan) *pb.Span {
-	return &pb.Span{
-		Id:            ss.SpanId,
-		TraceId:       ss.TraceId,
-		OperationName: ss.OperationName,
-		ParentSpanId:  ss.ParentSpanId,
-		StartTime:     ss.StartTime,
-		EndTime:       ss.EndTime,
-		Tags:          ss.Tags,
-	}
+	return count
 }

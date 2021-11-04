@@ -186,14 +186,14 @@ erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
 erda.msp.apm.trace.query:
-  query_source: cassandra,elasticsearch
+  query_source: "${TRACE_QUERY_SOURCE:cassandra,elasticsearch}"
   cassandra:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
 
 erda.msp.apm.exception.query:
-  query_source: cassandra,elasticsearch
+  query_source: "${EXCEPTION_QUERY_SOURCE:cassandra,elasticsearch}"
   cassandra:
     keyspace:
       name: "spot_prod"

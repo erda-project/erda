@@ -16,14 +16,16 @@ package query
 
 import (
 	context "context"
+	eventpb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
+	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
+	entitypb "github.com/erda-project/erda-proto-go/oap/entity/pb"
+	oapPb "github.com/erda-project/erda-proto-go/oap/event/pb"
+	"github.com/golang/mock/gomock"
 	reflect "reflect"
 	testing "testing"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
-	error_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
-	event_storage "github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
 )
 
 func Test_exceptionService_GetExceptions(t *testing.T) {
@@ -197,178 +199,72 @@ func Test_exceptionService_GetExceptionEvent(t *testing.T) {
 	}
 }
 
-func Test_exceptionService_fetchErdaEventFromES(t *testing.T) {
-	//pbevent := &pb.ExceptionEvent{
-	//	Id:             "Id",
-	//	ExceptionID:    "ExceptionID",
-	//	Metadata:       nil,
-	//	RequestContext: nil,
-	//	RequestHeaders: nil,
-	//	RequestID:      "RequestID",
-	//	Stacks:         nil,
-	//	Tags:           nil,
-	//	Timestamp:      0,
-	//	RequestSampled: false,
-	//}
-	//
-	//pberror := &pb.Exception{
-	//	Id:               "Id",
-	//	ClassName:        "ClassName",
-	//	Method:           "Method",
-	//	Type:             "Type",
-	//	EventCount:       0,
-	//	ExceptionMessage: "ExceptionMessage",
-	//	File:             "File",
-	//	ApplicationID:    "ApplicationID",
-	//	RuntimeID:        "RuntimeID",
-	//	ServiceName:      "ServiceName",
-	//	ScopeID:          "ScopeID",
-	//	CreateTime:       "CreateTime",
-	//	UpdateTime:       "UpdateTime",
-	//}
+//go:generate mockgen -destination=./mock_event_query_grpc.go -package query -source=../../../../../api/proto-go/core/monitor/event/pb/event_query_grpc.pb.go EventQueryServiceServer
+//go:generate mockgen -destination=./mock_entity_query_grpc.go -package query -source=../../../../../api/proto-go/oap/entity/pb/entity_grpc.pb.go EntityServiceServer
+func TestExceptionService_fetchErdaErrorFromES(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	entityGrpcServer := NewMockEntityServiceServer(ctrl)
+	exceptionEntity := entitypb.Entity{
+		Id:                 "error_exception/0f82da3be2e1c7070c269471fa7aa4a5",
+		Type:               "error_exception",
+		Key:                "0f82da3be2e1c7070c269471fa7aa4a5",
+		Values:             nil,
+		Labels:             nil,
+		CreateTimeUnixNano: 1635845334935110000,
+		UpdateTimeUnixNano: 1635851825720883700,
+	}
+	entityList := entitypb.EntityList{
+		List:  []*entitypb.Entity{&exceptionEntity},
+		Total: 1,
+	}
+	listEntitiesResponse := entitypb.ListEntitiesResponse{
+		Data: &entityList,
+	}
+	entityGrpcServer.EXPECT().ListEntities(gomock.Any(), gomock.Any()).Return(&listEntitiesResponse, nil)
 
-	erdaEvent := &exception.Erda_event{
-		EventId:        "Id",
-		Timestamp:      0,
-		RequestId:      "RequestID",
-		ErrorId:        "ExceptionID",
-		Stacks:         nil,
-		Tags:           nil,
-		MetaData:       nil,
-		RequestContext: nil,
-		RequestHeaders: nil,
+	eventGrpcServer := NewMockEventQueryServiceServer(ctrl)
+	att := make(map[string]string)
+	att["terminusKey"] = "fc1f8c074e46a9df505a15c1a94d62cc"
+	spanEvent := oapPb.Event{
+		EventID:      "335415fe-0c9f-4905-ab7f-434032a5c3ab",
+		Severity:     "",
+		Name:         "exception",
+		Kind:         0,
+		TimeUnixNano: 1635845334935610000,
+		Relations:    &commonPb.Relation{
+			TraceID:      "",
+			ResID:        "0f82da3be2e1c7070c269471fa7aa4a5",
+			ResType:      "exception",
+			ResourceKeys: nil,
+		},
+		Attributes:   att,
+		Message:      "",
+	}
+	eventsResult := eventpb.GetEventsResult{
+		Items: []*oapPb.Event{&spanEvent},
+	}
+	eventsResponse := eventpb.GetEventsResponse{
+		Data: &eventsResult,
+	}
+	eventGrpcServer.EXPECT().GetEvents(gomock.Any(), gomock.Any()).Return(&eventsResponse, nil)
+
+	conditions := map[string]string{
+		"terminusKey": "fc1f8c074e46a9df505a15c1a94d62cc",
+	}
+	entityReq := &entitypb.ListEntitiesRequest{
+		Type:   "error_exception",
+		Labels: conditions,
+		Limit:  int64(1000),
 	}
 
-	//erdaError := &exception.Erda_error{
-	//	TerminusKey:   "ScopeID",
-	//	ApplicationId: "ApplicationID",
-	//	ServiceName:   "ServiceName",
-	//	ErrorId:       "Id",
-	//	Timestamp:     0,
-	//	Tags:          nil,
-	//}
+	items, err := fetchErdaErrorFromES(context.Background(), eventGrpcServer, entityGrpcServer, entityReq, 1635845334935, 1635851825720)
 
-	e1 := &errorEventListStorage{
-		exceptionEvent: erdaEvent,
+	if err != nil {
+		t.Errorf("should not throw error")
 	}
-	//e2 := &errorListStorage{
-	//	exception: pberror,
-	//}
-
-	tests := []struct {
-		name string
-		ctx  context.Context
-		//errorStorage error_storage.Storage
-		eventStorage event_storage.Storage
-		//errorSel     error_storage.Selector
-		eventSel event_storage.Selector
-		forward  bool
-		limit    int
-		want     []*exception.Erda_event
-	}{{
-		"case 1",
-		context.TODO(),
-		//e2,
-		e1,
-		//error_storage.Selector{},
-		event_storage.Selector{},
-		true,
-		1,
-		[]*exception.Erda_event{erdaEvent},
-	},
+	if items == nil || len(items) != 1 {
+		t.Errorf("assert result failed")
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if got, err := fetchErdaEventFromES(tt.ctx, e1, &tt.eventSel, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
-				t.Errorf("fetchErdaEventFromES() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_exceptionService_fetchErdaErrorFromES(t *testing.T) {
-	req := &pb.GetExceptionsRequest{
-		StartTime: 0,
-		EndTime:   0,
-		ScopeID:   "",
-	}
-
-	resp := &pb.Exception{
-		Id:               "Id",
-		ClassName:        "",
-		Method:           "",
-		Type:             "",
-		EventCount:       1,
-		ExceptionMessage: "",
-		File:             "",
-		ApplicationID:    "",
-		RuntimeID:        "",
-		ServiceName:      "",
-		ScopeID:          "ScopeID",
-		CreateTime:       "1970-01-01 08:00:00",
-		UpdateTime:       "1970-01-01 08:00:00",
-	}
-
-	erdaEvent := &exception.Erda_event{
-		EventId:        "Id",
-		Timestamp:      0,
-		RequestId:      "RequestID",
-		ErrorId:        "ExceptionID",
-		Stacks:         nil,
-		Tags:           nil,
-		MetaData:       nil,
-		RequestContext: nil,
-		RequestHeaders: nil,
-	}
-
-	erdaError := &exception.Erda_error{
-		TerminusKey:   "ScopeID",
-		ApplicationId: "ApplicationID",
-		ServiceName:   "ServiceName",
-		ErrorId:       "Id",
-		Timestamp:     0,
-		Tags:          nil,
-	}
-
-	errorEventListStorage := &errorEventListStorage{
-		exceptionEvent: erdaEvent,
-	}
-	errorListStorage := &errorListStorage{
-		exception: erdaError,
-	}
-
-	tests := []struct {
-		name         string
-		ctx          context.Context
-		errorStorage error_storage.Storage
-		eventStorage event_storage.Storage
-		errorSel     error_storage.Selector
-		eventSel     event_storage.Selector
-		forward      bool
-		limit        int
-		want         []*pb.Exception
-	}{{
-		"case 1",
-		context.TODO(),
-		//e2,
-		errorListStorage,
-		errorEventListStorage,
-		error_storage.Selector{},
-		event_storage.Selector{},
-		true,
-		1,
-		[]*pb.Exception{resp},
-	},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if got, err := fetchErdaErrorFromES(tt.ctx, errorListStorage, errorEventListStorage, req, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
-				t.Errorf("fetchErdaErrorFromES() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+		
 }
