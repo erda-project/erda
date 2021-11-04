@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type PageDataAccount struct {
@@ -60,7 +61,7 @@ func (v FilterValues) StringSlice(key string) []string {
 	case []interface{}:
 		var strOpts []string
 		for _, o := range opt {
-			strOpts = append(strOpts, o.(string))
+			strOpts = append(strOpts, strutil.String(o))
 		}
 		return strOpts
 	}
@@ -68,7 +69,11 @@ func (v FilterValues) StringSlice(key string) []string {
 }
 
 func InitPageDataAccount(ctx context.Context) (*PageDataAccount, error) {
-	inParams := cputil.SDK(ctx).InParams
+	sdk := cputil.SDK(ctx)
+	if sdk == nil {
+		return nil, fmt.Errorf("bad sdk")
+	}
+	inParams := sdk.InParams
 	instanceID := inParams.String("instanceId")
 	projectID := inParams.Uint64("projectId")
 	if instanceID == "" || projectID == 0 {
@@ -86,16 +91,32 @@ func InitPageDataAccount(ctx context.Context) (*PageDataAccount, error) {
 		InstanceID:   instanceID,
 		FilterValues: v,
 	}
-	ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["pageDataAccount"] = d
+	state, ok := ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("bad state")
+	}
+	state["pageDataAccount"] = d
 	return d, nil
 }
 
 func LoadPageDataAccount(ctx context.Context) *PageDataAccount {
-	return ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["pageDataAccount"].(*PageDataAccount)
+	if ctx == nil {
+		return nil
+	}
+	v := ctx.Value(cptype.GlobalInnerKeyStateTemp)
+	if m, ok := v.(map[string]interface{}); ok {
+		r, _ := m["pageDataAccount"].(*PageDataAccount)
+		return r
+	}
+	return nil
 }
 
 func InitPageDataAttachment(ctx context.Context) (*PageDataAttachment, error) {
-	inParams := cputil.SDK(ctx).InParams
+	sdk := cputil.SDK(ctx)
+	if sdk == nil {
+		return nil, fmt.Errorf("bad sdk")
+	}
+	inParams := sdk.InParams
 	instanceID := inParams.String("instanceId")
 	projectID := inParams.Uint64("projectId")
 	if instanceID == "" || projectID == 0 {
@@ -113,12 +134,28 @@ func InitPageDataAttachment(ctx context.Context) (*PageDataAttachment, error) {
 		InstanceID:   instanceID,
 		FilterValues: v,
 	}
-	ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["pageDataAttachment"] = d
+	state, ok := ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("bad state")
+	}
+	state["pageDataAttachment"] = d
 	return d, nil
 }
 
 func LoadPageDataAttachment(ctx context.Context) *PageDataAttachment {
-	return ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["pageDataAttachment"].(*PageDataAttachment)
+	if ctx == nil {
+		return nil
+	}
+	v := ctx.Value(cptype.GlobalInnerKeyStateTemp)
+	if v == nil {
+		return nil
+	}
+	if m, ok := v.(map[string]interface{}); ok {
+		if r, ok := m["pageDataAttachment"]; ok {
+			return r.(*PageDataAttachment)
+		}
+	}
+	return nil
 }
 
 func GetFilterBase64(ctx context.Context) string {
