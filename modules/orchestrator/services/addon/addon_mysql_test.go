@@ -18,7 +18,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/log"
+	"github.com/erda-project/erda/modules/orchestrator/services/resource"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func Test_buildMySQLAccount(t *testing.T) {
@@ -62,6 +67,54 @@ func Test_buildMySQLAccount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := buildMySQLAccount(tt.args.addonIns, tt.args.addonInsRouting, tt.args.extra, tt.args.operator); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("buildMySQLAccount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddon_prepareAttachment(t *testing.T) {
+	type fields struct {
+		db       *dbclient.DBClient
+		bdl      *bundle.Bundle
+		hc       *httpclient.HTTPClient
+		encrypt  *encryption.EnvEncrypt
+		resource *resource.Resource
+		Logger   *log.DeployLogHelper
+	}
+	type args struct {
+		addonInsRouting *dbclient.AddonInstanceRouting
+		addonAttach     *dbclient.AddonAttachment
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "t1",
+			fields: fields{},
+			args:   args{
+				addonInsRouting: &dbclient.AddonInstanceRouting{
+					AddonName: "not mysql",
+				},
+				addonAttach:     nil,
+			},
+			want:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Addon{
+				db:       tt.fields.db,
+				bdl:      tt.fields.bdl,
+				hc:       tt.fields.hc,
+				encrypt:  tt.fields.encrypt,
+				resource: tt.fields.resource,
+				Logger:   tt.fields.Logger,
+			}
+			if got := a.prepareAttachment(tt.args.addonInsRouting, tt.args.addonAttach); got != tt.want {
+				t.Errorf("prepareAttachment() = %v, want %v", got, tt.want)
 			}
 		})
 	}
