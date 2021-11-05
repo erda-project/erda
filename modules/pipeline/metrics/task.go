@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
@@ -105,7 +104,7 @@ func generateActionEventTags(task spec.PipelineTask, p *spec.Pipeline) map[strin
 	tags := map[string]string{
 		labelMeta:               "true",
 		labelMetricScope:        "org",
-		labelMetricScopeID:      conf.DiceCluster(),
+		labelMetricScopeID:      p.GetOrgName(),
 		labelOrgName:            p.GetOrgName(),
 		labelClusterName:        p.ClusterName,
 		labelPipelineID:         strconv.FormatUint(task.PipelineID, 10),
