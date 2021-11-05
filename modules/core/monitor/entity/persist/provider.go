@@ -82,7 +82,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func init() {
 	servicehub.Register("entity-persist", &servicehub.Spec{
 		Dependencies: []string{"kafka.topic.initializer"},
-		ConfigFunc: func() interface{} { return &config{} },
+		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
