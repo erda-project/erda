@@ -460,15 +460,7 @@ type InterfaceValue struct {
 }
 
 func (i InterfaceValue) Size() int64 {
-	if i.size == 0 {
-		return 0
-	}
-	if size, err := calc(reflect.ValueOf(i.o)); err != nil {
-		logrus.Error(err)
-		return -1
-	} else {
-		return int64(size)
-	}
+	return i.size
 }
 
 // Copy creates a deep copy of whatever is passed to it and returns the copy
