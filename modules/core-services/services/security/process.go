@@ -221,7 +221,7 @@ func (g GetByUserAndScopePermissionProcess) GetAllRoles(ctx context.Context) ([]
 	}
 	if len(roles) == 0 {
 		logrus.Warningf("nil role, scope: %s, scopeID: %d, memberInfo: %v", g.Adaptor.GetScopeType(ctx), g.Adaptor.GetScopeID(ctx), members)
-		// members without resouce value, try to issue guest
+		// members without resource value, give guest permission if scope is public
 		isPublic, err := g.Adaptor.CheckPublicScope(g.Adaptor.GetUserID(ctx), g.Adaptor.GetScopeType(ctx), g.Adaptor.GetScopeID(ctx))
 		if err != nil || !isPublic {
 			return nil, err
