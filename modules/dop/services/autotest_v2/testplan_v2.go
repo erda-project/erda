@@ -581,6 +581,7 @@ func (svc *Service) CancelDiceAutotestTestPlan(req apistructs.AutotestCancelTest
 func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.SnippetConfig) ([]apistructs.BatchSnippetConfigYml, error) {
 
 	var setIds []uint64
+	isRefSetMap := make(map[uint64]string)
 	for _, conf := range configs {
 		sceneSetIDStr := conf.Labels[apistructs.LabelSceneSetID]
 		if sceneSetIDStr == "" {
@@ -591,6 +592,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 			return nil, err
 		}
 		setIds = append(setIds, uint64(sceneSetIDInt))
+		isRefSetMap[uint64(sceneSetIDInt)] = isRefSet(conf)
 	}
 	results, err := svc.ListAutotestScenes(setIds)
 	if err != nil {
@@ -647,6 +649,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 								apistructs.LabelSceneSetID:       strconv.Itoa(int(v.RefSetID)),
 								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
 								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
+								//apistructs.LabelIsRefSet:         "true",
 							},
 						},
 					},
@@ -669,6 +672,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 								apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
 								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
 								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+								apistructs.LabelIsRefSet:         isRefSetMap[key],
 							},
 						},
 					},
@@ -804,8 +808,9 @@ func (svc *Service) BatchQueryScenePipelineSnippetYaml(configs []apistructs.Snip
 	}
 
 	var resultConfigs []apistructs.BatchSnippetConfigYml
+
 	for key, v := range results {
-		yml, err := svc.DoSceneToYml(v.Steps, v.Inputs, v.Output, configsMap[v.ID])
+		yml, err := svc.DoSceneToYml(v.Steps, v.Inputs, v.Output, configsMap[key])
 		if err != nil {
 			return nil, err
 		}
@@ -816,6 +821,16 @@ func (svc *Service) BatchQueryScenePipelineSnippetYaml(configs []apistructs.Snip
 	}
 
 	return resultConfigs, nil
+}
+
+func isRefSet(config apistructs.SnippetConfig) string {
+	if config.Labels[apistructs.LabelAutotestExecType] != apistructs.SceneSetsAutotestExecType {
+		return "false"
+	}
+	if config.Labels[apistructs.LabelSceneID] == "" {
+		return "false"
+	}
+	return "true"
 }
 
 func (svc *Service) QueryScenePipelineSnippetYaml(req apistructs.SnippetConfig) (string, error) {
@@ -870,6 +885,16 @@ func (svc *Service) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs .
 		history = append(history, v.Convert())
 	}
 	return
+}
+
+// GetAutoTestExecHistoryByPipelineID .
+func (svc *Service) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (*apistructs.AutoTestExecHistoryDto, error) {
+	history, err := svc.db.GetAutoTestExecHistoryByPipelineID(pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	historyDto := history.Convert()
+	return &historyDto, nil
 }
 
 // ExecHistorySceneAvgCostTime .
@@ -934,7 +959,7 @@ func (svc *Service) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHisto
 		Where("project_id = ?", req.ProjectID).
 		Where("iteration_id IN (?)", req.IterationIDs).
 		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeAPI)
+		Where("type IN (?)", apistructs.EffectiveStepType)
 	if req.TimeStart != "" {
 		db = db.Where("execute_time >= ?", req.TimeStart)
 	}
@@ -953,7 +978,7 @@ func (svc *Service) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHisto
 		Where("project_id = ?", req.ProjectID).
 		Where("iteration_id IN (?)", req.IterationIDs).
 		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeAPI)
+		Where("type IN (?)", apistructs.EffectiveStepType)
 	if req.TimeStart != "" {
 		db = db.Where("execute_time >= ?", req.TimeStart)
 	}
