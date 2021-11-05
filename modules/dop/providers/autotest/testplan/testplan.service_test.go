@@ -16,6 +16,7 @@ package testplan
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan/db"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 func Test_convertTime(t *testing.T) {
@@ -178,6 +180,348 @@ func TestCreateTestPlanExecHistory(t *testing.T) {
 		},
 	})
 	if err != nil {
+		t.Error("fail")
+	}
+}
+
+func TestGetSceneIDsIncludeRef(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "ListSceneBySceneSetID", func(DB *db.TestPlanDB, setID ...uint64) (scenes []db.AutoTestScene, err error) {
+		if len(setID) > 1 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					SetID:    1,
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 2,
+					},
+					SetID:    1,
+					RefSetID: 2,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 3,
+					},
+					SetID:    1,
+					RefSetID: 3,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 4,
+					},
+					SetID:    2,
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 5,
+					},
+					SetID:    2,
+					RefSetID: 3,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 6,
+					},
+					SetID:    3,
+					RefSetID: 0,
+				},
+			}, nil
+		} else if setID[0] == 1 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					SetID:    1,
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 2,
+					},
+					SetID:    1,
+					RefSetID: 2,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 3,
+					},
+					SetID:    1,
+					RefSetID: 3,
+				},
+			}, nil
+		} else if setID[0] == 2 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 4,
+					},
+					SetID:    2,
+					RefSetID: 0,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 5,
+					},
+					SetID:    2,
+					RefSetID: 3,
+				},
+			}, nil
+		} else if setID[0] == 3 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 6,
+					},
+					SetID:    3,
+					RefSetID: 0,
+				},
+			}, nil
+		}
+		return []db.AutoTestScene{}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	svc := TestPlanService{
+		db: DB,
+	}
+	sceneIDs := svc.getSceneIDsIncludeRef(map[uint64]uint64{}, 1, 1, 2, 3)
+	sort.Slice(sceneIDs, func(i, j int) bool {
+		return sceneIDs[i] < sceneIDs[j]
+	})
+	if !reflect.DeepEqual([]uint64{1, 1, 4, 4, 4, 6, 6, 6, 6, 6, 6}, sceneIDs) {
+		t.Error("fail")
+	}
+}
+
+func TestGetSceneIDsIncludeRefWithCircularRef(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "ListSceneBySceneSetID", func(DB *db.TestPlanDB, setID ...uint64) (scenes []db.AutoTestScene, err error) {
+		if len(setID) > 1 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					RefSetID: 0,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 2,
+					},
+					RefSetID: 2,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 3,
+					},
+					RefSetID: 1,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 4,
+					},
+					RefSetID: 0,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 5,
+					},
+					RefSetID: 0,
+					SetID:    2,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 6,
+					},
+					RefSetID: 1,
+					SetID:    2,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 7,
+					},
+					RefSetID: 0,
+					SetID:    2,
+				},
+			}, nil
+		} else if setID[0] == 1 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 1,
+					},
+					RefSetID: 0,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 2,
+					},
+					RefSetID: 2,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 3,
+					},
+					RefSetID: 1,
+					SetID:    1,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 4,
+					},
+					RefSetID: 0,
+					SetID:    1,
+				},
+			}, nil
+		} else if setID[0] == 2 {
+			return []db.AutoTestScene{
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 5,
+					},
+					RefSetID: 0,
+					SetID:    2,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 6,
+					},
+					RefSetID: 1,
+					SetID:    2,
+				},
+				{
+					BaseModel: dbengine.BaseModel{
+						ID: 7,
+					},
+					RefSetID: 0,
+					SetID:    2,
+				},
+			}, nil
+		}
+		return []db.AutoTestScene{}, nil
+	})
+	defer monkey.UnpatchAll()
+	svc := TestPlanService{
+		db: DB,
+	}
+	sceneIDs := svc.getSceneIDsIncludeRef(map[uint64]uint64{}, 1, 2)
+	sort.Slice(sceneIDs, func(i, j int) bool {
+		return sceneIDs[i] < sceneIDs[j]
+	})
+	if !reflect.DeepEqual([]uint64{1, 5}, sceneIDs) {
+		t.Error("fail")
+	}
+}
+
+func TestCalcRate(t *testing.T) {
+	tt := []struct {
+		num   int64
+		total int64
+		want  float64
+	}{
+		{2, 0, 0},
+		{2, 3, 66.66666666666666},
+		{2, 5, 40},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, calcRate(v.num, v.total))
+	}
+}
+
+func TestCountApiBySceneIDRepeat(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "CountApiBySceneID", func(*db.TestPlanDB, ...uint64) (apiCounts []db.ApiCount, err error) {
+		return []db.ApiCount{
+			{
+				Count:   10,
+				SceneID: 1,
+			},
+			{
+				Count:   5,
+				SceneID: 2,
+			},
+			{
+				Count:   2,
+				SceneID: 3,
+			},
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+	svc := TestPlanService{
+		db: DB,
+	}
+	count, err := svc.countApiBySceneIDRepeat(1, 2, 2, 3, 3, 3)
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 1*10+2*5+3*2 {
+		t.Error("fail")
+	}
+}
+
+func TestGetSceneIDsNotIncludeRef(t *testing.T) {
+	var DB db.TestPlanDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "ListSceneBySceneSetID", func(DB *db.TestPlanDB, setID ...uint64) (scenes []db.AutoTestScene, err error) {
+		return []db.AutoTestScene{
+			{
+				BaseModel: dbengine.BaseModel{
+					ID: 1,
+				},
+				SetID:    1,
+				RefSetID: 0,
+			},
+			{
+				BaseModel: dbengine.BaseModel{
+					ID: 2,
+				},
+				SetID:    1,
+				RefSetID: 0,
+			},
+			{
+				BaseModel: dbengine.BaseModel{
+					ID: 3,
+				},
+				SetID:    1,
+				RefSetID: 3,
+			},
+			{
+				BaseModel: dbengine.BaseModel{
+					ID: 4,
+				},
+				SetID:    2,
+				RefSetID: 2,
+			},
+			{
+				BaseModel: dbengine.BaseModel{
+					ID: 5,
+				},
+				SetID:    2,
+				RefSetID: 0,
+			},
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	svc := TestPlanService{db: DB}
+
+	sceneIDs := svc.getSceneIDsNotIncludeRef(1, 1, 2)
+	sort.Slice(sceneIDs, func(i, j int) bool {
+		return sceneIDs[i] < sceneIDs[j]
+	})
+	if !reflect.DeepEqual([]uint64{1, 1, 2, 2, 5}, sceneIDs) {
 		t.Error("fail")
 	}
 }

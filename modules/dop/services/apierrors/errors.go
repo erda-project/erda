@@ -279,6 +279,7 @@ var (
 	ErrUpdateAutoTestGlobalConfig        = err("ErrUpdateAutoTestGlobalConfig", "更新自动化测试全局配置失败")
 	ErrDeleteAutoTestGlobalConfig        = err("ErrDeleteAutoTestGlobalConfig", "删除自动化测试全局配置失败")
 	ErrListAutoTestGlobalConfigs         = err("ErrListAutoTestGlobalConfigs", "查询自动化测试全局配置列表失败")
+	ErrGetAutoTestExecHistory            = err("ErrGetAutoTestExecHistory", "获取自动化测试历史执行记录失败")
 
 	ErrCreateAutoTestSpace = err("ErrCreateAutoTestSpace", "创建自动化测试空间失败")
 	ErrUpdateAutoTestSpace = err("ErrUpdateAutoTestSpace", "更新自动化测试空间失败")

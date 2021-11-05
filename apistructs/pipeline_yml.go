@@ -26,6 +26,7 @@ const (
 	ActionTypeAPITest      = "api-test"
 	ActionTypeSnippet      = "snippet"
 	ActionTypeCustomScript = "custom-script"
+	ActionTypeWait         = "wait"
 
 	SnippetSourceLocal = "local"
 )

@@ -22,7 +22,9 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan/db"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type config struct {
@@ -41,10 +43,15 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithEventBox(), bundle.WithCoreServices())
+
 	p.TestPlanService = &TestPlanService{
 		p: p,
 		db: db.TestPlanDB{
-			DB: p.DB,
+			DBClient: &dao.DBClient{
+				DBEngine: &dbengine.DBEngine{
+					p.DB,
+				},
+			},
 		},
 		bdl: p.bundle,
 	}

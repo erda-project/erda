@@ -205,6 +205,24 @@ func (m *TestPlanUpdateByHookRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Content.PipelineID = val
+			case "content.apiRefSuccessNum":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ApiRefSuccessNum = val
+			case "content.apiRefExecNum":
+				if m.Content == nil {
+					m.Content = &Content{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Content.ApiRefExecNum = val
 			}
 		}
 	}
@@ -316,6 +334,18 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.PipelineID = val
+			case "apiRefSuccessNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApiRefSuccessNum = val
+			case "apiRefExecNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApiRefExecNum = val
 			}
 		}
 	}

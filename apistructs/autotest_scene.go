@@ -250,6 +250,8 @@ const (
 	AutoTestPlan                     = "TESTPLAN"
 )
 
+var EffectiveStepType = []StepAPIType{StepTypeAPI, StepTypeCustomScript, StepTypeConfigSheet}
+
 func (v StepAPIType) String() string {
 	return string(v)
 }
