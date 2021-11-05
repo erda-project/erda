@@ -220,7 +220,8 @@ func (p *provider) getESClientsFromLogAnalyticsByLogDeployment(addon string, log
 			clients = append(clients, c)
 
 			if p.C.IndexPreload && indices != nil && len(addons) > 0 {
-				if indexAddons, ok := indices[d.ClusterName]; ok {
+				cacheKey := p.calcIndexCacheBucketKey(c.Cluster, c.URLs)
+				if indexAddons, ok := indices[cacheKey]; ok {
 					for _, addon := range addons {
 						c.Entrys = append(c.Entrys, indexAddons[addon]...)
 					}
