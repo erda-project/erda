@@ -218,7 +218,7 @@ func TrimConstraintCheckFromCreateTable(createStmt *ast.CreateTableStmt) {
 }
 
 func TrimCharacterSetFromRawCreateTableSQL(createStmt string, except ...string) string {
-	pat := `(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*(?P<charset>\w+)`
+	pat := `(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*(\w+)`
 	re := regexp.MustCompile(pat)
 	found := re.FindStringSubmatch(createStmt)
 	if len(found) == 0 {
