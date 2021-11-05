@@ -38,7 +38,7 @@ type Snapshot struct {
 	tables map[string]*table.Table
 }
 
-func (s *Snapshot) From(tx *gorm.DB, ignore ...string) (err error) {
+func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 	s = &Snapshot{tables: make(map[string]*table.Table)}
 	ignores := make(map[string]bool, len(ignore))
 	for _, ig := range ignore {
@@ -54,14 +54,14 @@ func (s *Snapshot) From(tx *gorm.DB, ignore ...string) (err error) {
 	tx = tx.Raw("SHOW TABLES")
 	if err = tx.Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil
+			return s, nil
 		}
-		return err
+		return nil, err
 	}
 
 	rows, err := tx.Rows()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for rows.Next() {
@@ -70,7 +70,7 @@ func (s *Snapshot) From(tx *gorm.DB, ignore ...string) (err error) {
 			stmt      string
 		)
 		if err = rows.Scan(&tableName); err != nil {
-			return err
+			return nil, err
 		}
 		if _, ok := ignores[tableName]; ok {
 			continue
@@ -78,23 +78,23 @@ func (s *Snapshot) From(tx *gorm.DB, ignore ...string) (err error) {
 
 		tx := tx.Raw("SHOW CREATE TABLE " + tableName)
 		if err = tx.Error; err != nil {
-			return err
+			return nil, err
 		}
 		if err = tx.Row().Scan(&tableName, &stmt); err != nil {
-			return err
+			return nil, err
 		}
 		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt, CharsetWhite()...)
 		stmt = TrimBlockFormat(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
-			return err
+			return nil, err
 		}
 		t := new(table.Table)
 		t.Append(node.(ast.DDLNode))
 		s.tables[tableName] = t
 	}
 
-	return err
+	return s, err
 }
 
 func (s *Snapshot) DDLNodes() []ast.DDLNode {
