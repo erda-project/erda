@@ -40,8 +40,9 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	userID := apis.GetUserID(ctx)
 	fmt.Println("userID:", userID)
 	c.Props = map[string]interface{}{
-		"text": "一键创建账号",
-		"type": "primary",
+		"text":          "一键创建账号",
+		"type":          "primary",
+		"requestIgnore": []string{"props", "data", "operations"},
 	}
 	c.Operations = map[string]interface{}{
 		"click": cptype.Operation{

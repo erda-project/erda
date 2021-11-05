@@ -19,6 +19,7 @@ envs:
   CORE_SERVICES_ADDR: core-services:9526
   OPENAPI_ADDR: openapi:9529
   CMP_ADDR: cmp:9027
+  ORCHESTRATOR_ADDR: orchestrator:8081
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"

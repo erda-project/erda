@@ -45,6 +45,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 
 	props := make(map[string]interface{})
 	props["title"] = "服务参数"
+	props["requestIgnore"] = []string{"props", "data", "operations"}
 	c.Props = props
 
 	state := make(map[string]interface{})

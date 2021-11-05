@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
@@ -138,6 +139,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithBundle(bdl),
 		addon.WithResource(resource),
 		addon.WithEnvEncrypt(encrypt),
+		addon.WithKMSWrapper(mysql.NewKMSWrapper(bdl)),
 		addon.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*60),
 		)),

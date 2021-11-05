@@ -113,7 +113,8 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	c.Props = map[string]interface{}{
-		"delay": 1000,
+		"delay":         1000,
+		"requestIgnore": []string{"props", "data", "operations"},
 	}
 	c.Operations = map[string]interface{}{
 		"filter": cptype.Operation{

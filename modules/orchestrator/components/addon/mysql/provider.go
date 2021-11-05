@@ -45,7 +45,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Bdl = bundle.New(bundle.WithKMS())
 	p.addonMySQLService = &mysqlService{
 		logger: p.Logger,
-		bdl:    p.Bdl,
+		kms:    NewKMSWrapper(p.Bdl),
 		db: &dbclient.DBClient{
 			DBEngine: &dbengine.DBEngine{
 				DB: p.DB,

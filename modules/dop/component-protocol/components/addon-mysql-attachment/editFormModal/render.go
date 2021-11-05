@@ -85,6 +85,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	props := make(map[string]interface{})
+	props["requestIgnore"] = []string{"props", "data"}
 	props["title"] = "编辑"
 	props["fields"] = []form.Field{
 		{

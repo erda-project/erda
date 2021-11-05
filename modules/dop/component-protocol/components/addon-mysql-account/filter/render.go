@@ -20,7 +20,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -60,17 +63,35 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		c.State["filter__urlQuery"] = ft
 	}
 
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	var userIDs []string
 	for _, u := range ac.Accounts {
 		userIDs = append(userIDs, u.Creator)
 	}
 	userIDs = strutil.DedupSlice(userIDs, true)
 	var userOpt []filter.PropConditionOption
-	for _, u := range userIDs {
-		userOpt = append(userOpt, filter.PropConditionOption{
-			Value: u,
-			Label: u,
+	if len(userIDs) > 0 {
+		r, err := bdl.ListUsers(apistructs.UserListRequest{
+			Plaintext: true,
+			UserIDs:   userIDs,
 		})
+		if err != nil {
+			return err
+		}
+		m := map[string]string{}
+		for _, u := range r.Users {
+			m[u.ID] = u.Nick
+		}
+		for _, id := range userIDs {
+			name := m[id]
+			if name == "" {
+				name = id
+			}
+			userOpt = append(userOpt, filter.PropConditionOption{
+				Value: id,
+				Label: name,
+			})
+		}
 	}
 
 	c.State["conditions"] = []filter.PropCondition{
@@ -96,7 +117,8 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	c.Props = map[string]interface{}{
-		"delay": 1000,
+		"delay":         1000,
+		"requestIgnore": []string{"props", "data", "operations"},
 	}
 	c.Operations = map[string]interface{}{
 		"filter": cptype.Operation{

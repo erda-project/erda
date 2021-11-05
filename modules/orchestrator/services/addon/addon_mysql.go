@@ -15,11 +15,12 @@
 package addon
 
 import (
+	"encoding/base64"
 	"fmt"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
-	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
 func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, mySQLAccountID string) error {
@@ -27,21 +28,25 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 	if err != nil {
 		return err
 	}
-	dr, err := a.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
-		DecryptRequest: kmstypes.DecryptRequest{
-			KeyID:            account.KMSKey,
-			CiphertextBase64: account.Password,
-		},
-	})
+	return a._toOverrideConfigFromMySQLAccount(config, account)
+}
+
+func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{}, account *dbclient.MySQLAccount) error {
+	dr, err := a.kms.Decrypt(account.Password, account.KMSKey)
 	if err != nil {
 		return err
 	}
+	rawSecret, err := base64.StdEncoding.DecodeString(dr.PlaintextBase64)
+	if err != nil {
+		return err
+	}
+	password := string(rawSecret)
 	config["MYSQL_USERNAME"] = account.Username
-	config["MYSQL_PASSWORD"] = dr.PlaintextBase64
+	config["MYSQL_PASSWORD"] = password
 	return nil
 }
 
-func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting) error {
+func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
 	if addonIns.AddonName != "mysql" {
 		return nil
 	}
@@ -52,13 +57,38 @@ func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouti
 	if extra == nil {
 		return fmt.Errorf("not found extra for instance: %s", addonInsRouting.RealInstance)
 	}
-	account := dbclient.MySQLAccount{
+	account := buildMySQLAccount(addonIns, addonInsRouting, extra, operator)
+	return a.db.CreateMySQLAccount(account)
+}
+
+func buildMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
+	extra *dbclient.AddonInstanceExtra, operator string) *dbclient.MySQLAccount {
+	return &dbclient.MySQLAccount{
 		Username:          "mysql",
 		Password:          extra.Value,
 		KMSKey:            addonIns.KmsKey,
 		InstanceID:        addonIns.ID,
 		RoutingInstanceID: addonInsRouting.ID,
-		Creator:           "",
+		Creator:           operator,
 	}
-	return a.db.CreateMySQLAccount(&account)
+}
+
+func (a *Addon) prepareAttachment(addonInsRouting *dbclient.AddonInstanceRouting, addonAttach *dbclient.AddonAttachment) bool {
+	if addonInsRouting.AddonName != "mysql" {
+		return false
+	}
+	accounts, err := a.db.GetMySQLAccountListByRoutingInstanceID(addonInsRouting.ID)
+	if err != nil {
+		logrus.Errorf("get account list failed, %+v", err)
+	}
+	return a._prepareAttachment(addonAttach, accounts)
+}
+
+func (a *Addon) _prepareAttachment(addonAttach *dbclient.AddonAttachment, accounts []dbclient.MySQLAccount) bool {
+	if len(accounts) == 0 {
+		return false
+	}
+	addonAttach.MySQLAccountID = accounts[0].ID
+	addonAttach.MySQLAccountState = "CUR"
+	return true
 }
