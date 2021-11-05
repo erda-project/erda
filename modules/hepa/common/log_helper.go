@@ -16,11 +16,13 @@ package common
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
+	"net/http"
+	"net/http/httptest"
+	"net/textproto"
 	"os"
 	"time"
 
@@ -31,8 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-infra/pkg/transport/http"
-	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	erdaHttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
 )
@@ -88,14 +89,15 @@ func InitLogger() {
 }
 
 func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
-	return transport.WithHTTPOptions(http.WithInterceptor(func(h interceptor.Handler) interceptor.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			httpReq := http.ContextRequest(ctx)
+	return transport.WithHTTPOptions(erdaHttp.WithHTTPInterceptor(func(h http.HandlerFunc) http.HandlerFunc {
+		return func(httpResp http.ResponseWriter, httpReq *http.Request) {
+			recorder := httptest.NewRecorder()
+			recorder.Code = 502
 			path := httpReq.URL.RequestURI()
 			start := time.Now()
 			reqBody, err := ioutil.ReadAll(httpReq.Body)
 			if err != nil {
-				return nil, err
+				return
 			}
 			httpReq.Body = io.NopCloser(bytes.NewReader(reqBody))
 			defer func() {
@@ -108,18 +110,26 @@ func AccessLogWrap(log *logrus.Logger) transport.ServiceOption {
 				if err != nil {
 					hostname = "unknow"
 				}
+				result := recorder.Result()
+				headers := httpResp.Header()
+				for key, values := range result.Header {
+					headers[textproto.CanonicalMIMEHeaderKey(key)] = values
+				}
+				httpResp.WriteHeader(result.StatusCode)
+				io.Copy(httpResp, result.Body)
 				entry := logrus.NewEntry(log).WithFields(logrus.Fields{
-					"hostname":  hostname,
-					"latency":   latency, // time to process
-					"method":    httpReq.Method,
-					"path":      path,
-					"referer":   referer,
-					"userAgent": clientUserAgent,
+					"hostname":   hostname,
+					"statusCode": result.StatusCode,
+					"latency":    latency, // time to process
+					"method":     httpReq.Method,
+					"path":       path,
+					"referer":    referer,
+					"userAgent":  clientUserAgent,
 				})
-				msg := fmt.Sprintf(`[%s %s] [%s]`, httpReq.Method, path, reqBody)
+				msg := fmt.Sprintf(`[%s %s] [%s] [%s]`, httpReq.Method, path, reqBody, recorder.Body.Bytes())
 				entry.Info(msg)
 			}()
-			return h(ctx, req)
+			h(recorder, httpReq)
 		}
 
 	}))
