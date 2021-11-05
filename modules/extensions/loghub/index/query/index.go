@@ -16,6 +16,9 @@ package query
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,22 +47,35 @@ type IndexEntry struct {
 
 var requestTimeout = 120 * time.Second
 
+func (p *provider) calcIndexCacheBucketKey(cluster, esUrl string) string {
+	return fmt.Sprintf("%s-%s", cluster, p.md5V(esUrl))
+}
+
+func (p *provider) md5V(str string) string {
+	h := md5.New() // #nosec G401
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func (p *provider) reloadAllIndices() {
 	clients := p.getAllESClients()
 	indices := make(map[string]map[string][]*IndexEntry)
 	clusters := make(map[string]bool)
 	for _, client := range clients {
-		clusters[client.Cluster] = true
+
+		cacheKey := p.calcIndexCacheBucketKey(client.Cluster, client.URLs)
+
+		clusters[cacheKey] = true
 		addons, err := p.reloadIndices(client.Client)
 		if err != nil {
 			p.L.Errorf("fail to load indices for cluster %s :", client.Cluster, err)
 			continue
 		}
 		// 查询索引时间范围
-		timeRanges := p.timeRanges[client.Cluster]
+		timeRanges := p.timeRanges[cacheKey]
 		if timeRanges == nil {
 			timeRanges = make(map[string]*timeRange)
-			p.timeRanges[client.Cluster] = timeRanges
+			p.timeRanges[cacheKey] = timeRanges
 		}
 		set := make(map[string]bool)
 		for _, list := range addons {
@@ -83,11 +99,11 @@ func (p *provider) reloadAllIndices() {
 				delete(timeRanges, index)
 			}
 		}
-		indices[client.Cluster] = addons
+		indices[cacheKey] = addons
 	}
-	for cluster := range p.timeRanges {
-		if !clusters[cluster] {
-			delete(p.timeRanges, cluster)
+	for cacheKey := range p.timeRanges {
+		if !clusters[cacheKey] {
+			delete(p.timeRanges, cacheKey)
 		}
 	}
 	for _, addons := range indices {
