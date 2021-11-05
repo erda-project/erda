@@ -190,6 +190,7 @@ func TestCache_Write(t *testing.T) {
 	type args struct {
 		pairs map[string]Values
 	}
+	interValue, _ := GetInterfaceValue(nil)
 	bytes := make([]byte, 1024*1024)
 	rand.Read(bytes)
 	tests := []struct {
@@ -334,6 +335,10 @@ func TestCache_Write(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "GetInterfaceValue",
+			args: args{pairs: map[string]Values{"interface": interValue}},
 		},
 	}
 
