@@ -28,6 +28,8 @@ func False() *bool {
 }
 
 type Props struct {
+	ShowHeader      *bool                  `json:"showHeader,omitempty"`
+	ShowPagination  *bool                  `json:"pagination,omitempty"`
 	PageSizeOptions []string               `json:"pageSizeOptions"`
 	Columns         []*ColumnTitle         `json:"columns"`
 	RowKey          string                 `json:"rowKey"`
@@ -37,6 +39,7 @@ type Props struct {
 	Visible         *bool                  `json:"visible,omitempty"`
 	Bordered        *bool                  `json:"bordered,omitempty"`
 	RowSelection    map[string]interface{} `json:"rowSelection"`
+	RequestIgnore   []string               `json:"requestIgnore,omitempty"`
 }
 
 type ColumnTitle struct {
