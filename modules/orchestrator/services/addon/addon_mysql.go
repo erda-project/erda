@@ -60,7 +60,13 @@ func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouti
 	if extra == nil {
 		return fmt.Errorf("not found extra for instance: %s", addonInsRouting.RealInstance)
 	}
-	account := dbclient.MySQLAccount{
+	account := buildMySQLAccount(addonIns, addonInsRouting, extra, operator)
+	return a.db.CreateMySQLAccount(account)
+}
+
+func buildMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
+	extra *dbclient.AddonInstanceExtra, operator string) *dbclient.MySQLAccount {
+	return &dbclient.MySQLAccount{
 		Username:          "mysql",
 		Password:          extra.Value,
 		KMSKey:            addonIns.KmsKey,
@@ -68,7 +74,6 @@ func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouti
 		RoutingInstanceID: addonInsRouting.ID,
 		Creator:           operator,
 	}
-	return a.db.CreateMySQLAccount(&account)
 }
 
 func (a *Addon) prepareAttachment(addonInsRouting *dbclient.AddonInstanceRouting, addonAttach *dbclient.AddonAttachment) bool {
