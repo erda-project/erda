@@ -207,7 +207,7 @@ func (p *provider) getSubContents(ctx *aoptypes.TuneContext, testPlanID, sceneID
 			SceneID:     sceneID,
 			SceneSetID:  sceneSetID,
 			ParentID:    parentPipelineID,
-			PipelineID:  task.PipelineID,
+			PipelineID:  0,
 			CreatorID:   userID,
 			StepID: func() uint64 {
 				stepID, _ := strconv.ParseUint(task.Name, 10, 64)

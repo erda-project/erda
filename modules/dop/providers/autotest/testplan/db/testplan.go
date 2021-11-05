@@ -58,6 +58,7 @@ type ApiCount struct {
 func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (counts []ApiCount, err error) {
 	err = db.Table("dice_autotest_scene_step").
 		Select("scene_id,count(1) AS count").
+		Where("name != ''").
 		Where("scene_id IN (?)", sceneID).
 		Where("type IN (?)", apistructs.EffectiveStepType).
 		Where("is_disabled = 0").
