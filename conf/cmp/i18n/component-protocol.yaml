@@ -61,6 +61,7 @@ zh:
  confirmRestart: 确认重新调度？
  cannotRestart: 只有 Deployment、StatefulSet 和 Daemonset 可以被重新调度
  deletedWorkloadSuccessfully: Workload 删除成功
+ canNotDeleteSystemWorkload: 系统资源不可删除
 
  # cmp-dashboard-workloads-list
  createWorkloadSuccessfully: 创建工作负载成功
@@ -300,6 +301,7 @@ en:
  restart: Restart
  confirmRestart: Sure to restart ?
  cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
+ canNotDeleteSystemWorkload: System Workoad can not be deleted
 
  # cmp-dashboard-workload-detail
  workloadDetail: Workload Detail
