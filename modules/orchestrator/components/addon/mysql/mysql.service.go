@@ -25,10 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
-	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -36,7 +33,7 @@ import (
 type mysqlService struct {
 	logger logs.Logger
 
-	bdl *bundle.Bundle
+	kms KMSWrapper
 	db  *dbclient.DBClient
 }
 
@@ -58,7 +55,9 @@ func (s *mysqlService) ToDTO(acc *dbclient.MySQLAccount, decrypt bool) *pb.MySQL
 	if decrypt {
 		p, err := s.decrypt(acc)
 		if err != nil {
-			s.logger.Errorf("pass decrypt failed, mySQLAccountID: %s, err: %+v", acc.ID, err)
+			if s.logger != nil {
+				s.logger.Errorf("pass decrypt failed, MySQLAccountID: %s, err: %+v", acc.ID, err)
+			}
 		}
 		pass = p
 	}
@@ -72,41 +71,47 @@ func (s *mysqlService) ToDTO(acc *dbclient.MySQLAccount, decrypt bool) *pb.MySQL
 	}
 }
 
+type connConfig struct {
+	Host string `json:"MYSQL_HOST"`
+	Port string `json:"MYSQL_PORT"`
+	User string `json:"MYSQL_USERNAME"`
+	Pass string `json:"MYSQL_PASSWORD"`
+}
+
+func (s *mysqlService) getConnConfig(ins *dbclient.AddonInstance) (*connConfig, error) {
+	var mysqlConfig connConfig
+	if err := json.Unmarshal([]byte(ins.Config), &mysqlConfig); err != nil {
+		return nil, err
+	}
+	if mysqlConfig.Host == "" || mysqlConfig.Port == "" || mysqlConfig.User == "" || mysqlConfig.Pass == "" {
+		return nil, fmt.Errorf("missing key MYSQL_HOST | MYSQL_PASSWORD | MYSQL_PORT | MYSQL_USERNAME")
+	}
+	decryptData, err := s.kms.Decrypt(mysqlConfig.Pass, ins.KmsKey)
+	if err != nil {
+		return nil, err
+	}
+	b, err := base64.StdEncoding.DecodeString(decryptData.PlaintextBase64)
+	if err != nil {
+		return nil, err
+	}
+	pass := string(b)
+	mysqlConfig.Pass = pass
+	return &mysqlConfig, nil
+}
+
 func (s *mysqlService) execSql(ins *dbclient.AddonInstance, sql ...string) error {
 	if len(sql) == 0 {
 		return nil
 	}
-	var mysqlConfig struct {
-		Host string `json:"MYSQL_HOST"`
-		Port string `json:"MYSQL_PORT"`
-		User string `json:"MYSQL_USERNAME"`
-		Pass string `json:"MYSQL_PASSWORD"`
-	}
-	if err := json.Unmarshal([]byte(ins.Config), &mysqlConfig); err != nil {
-		return err
-	}
-	if mysqlConfig.Host == "" || mysqlConfig.Port == "" || mysqlConfig.User == "" || mysqlConfig.Pass == "" {
-		return fmt.Errorf("missing key MYSQL_HOST | MYSQL_PASSWORD | MYSQL_PORT | MYSQL_USERNAME")
-	}
-	decryptData, err := s.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
-		DecryptRequest: kmstypes.DecryptRequest{
-			KeyID:            ins.KmsKey,
-			CiphertextBase64: mysqlConfig.Pass,
-		},
-	})
+	mysqlConfig, err := s.getConnConfig(ins)
 	if err != nil {
 		return err
 	}
-	b, err := base64.StdEncoding.DecodeString(decryptData.PlaintextBase64)
-	if err != nil {
-		return err
-	}
-	pass := string(b)
 
 	var req mysqlhelper.Request
 	req.Url = mysqlConfig.Host + ":" + mysqlConfig.Port
 	req.User = mysqlConfig.User
-	req.Password = pass
+	req.Password = mysqlConfig.Pass
 	req.Sqls = sql
 	req.ClusterKey = ins.Cluster
 	return req.Exec()
@@ -144,20 +149,11 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 		return nil, err
 	}
 
-	kr, err := s.bdl.KMSCreateKey(apistructs.KMSCreateKeyRequest{
-		CreateKeyRequest: kmstypes.CreateKeyRequest{
-			PluginKind: kmstypes.PluginKind_DICE_KMS,
-		},
-	})
+	kr, err := s.kms.CreateKey()
 	if err != nil {
 		return nil, err
 	}
-	encryptData, err := s.bdl.KMSEncrypt(apistructs.KMSEncryptRequest{
-		EncryptRequest: kmstypes.EncryptRequest{
-			KeyID:           kr.KeyMetadata.KeyID,
-			PlaintextBase64: base64.StdEncoding.EncodeToString([]byte(pass)),
-		},
-	})
+	encryptData, err := s.kms.Encrypt(pass, kr.KeyMetadata.KeyID)
 	if err != nil {
 		return nil, err
 	}
@@ -270,12 +266,7 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 
 func (s *mysqlService) decrypt(acc *dbclient.MySQLAccount) (string, error) {
 	pass := "***fail***"
-	r, err := s.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
-		DecryptRequest: kmstypes.DecryptRequest{
-			KeyID:            acc.KMSKey,
-			CiphertextBase64: acc.Password,
-		},
-	})
+	r, err := s.kms.Decrypt(acc.Password, acc.KMSKey)
 	if err != nil {
 		return pass, err
 	}
