@@ -147,11 +147,11 @@ func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
 			fields: fields{
 				kms: &MockKMS{},
 			},
-			args:    args{
-				config:  map[string]interface{}{},
+			args: args{
+				config: map[string]interface{}{},
 				account: &dbclient.MySQLAccount{
-					Username:          "uuu",
-					Password:          "***",
+					Username: "uuu",
+					Password: "***",
 				},
 			},
 			wantErr: false,
@@ -195,4 +195,65 @@ func (k *MockKMS) Decrypt(ciphertext, keyID string) (*kmstypes.DecryptResponse, 
 	return &kmstypes.DecryptResponse{
 		PlaintextBase64: "MjIy",
 	}, nil
+}
+
+func TestAddon__prepareAttachment(t *testing.T) {
+	type fields struct {
+		db       *dbclient.DBClient
+		bdl      *bundle.Bundle
+		hc       *httpclient.HTTPClient
+		encrypt  *encryption.EnvEncrypt
+		resource *resource.Resource
+		kms      mysql.KMSWrapper
+		Logger   *log.DeployLogHelper
+	}
+	type args struct {
+		addonAttach *dbclient.AddonAttachment
+		accounts    []dbclient.MySQLAccount
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "t1",
+			fields: fields{},
+			args: args{
+				addonAttach: &dbclient.AddonAttachment{},
+				accounts:    []dbclient.MySQLAccount{},
+			},
+			want: false,
+		},
+		{
+			name:   "t2",
+			fields: fields{},
+			args: args{
+				addonAttach: &dbclient.AddonAttachment{},
+				accounts: []dbclient.MySQLAccount{
+					{
+						ID: "123",
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Addon{
+				db:       tt.fields.db,
+				bdl:      tt.fields.bdl,
+				hc:       tt.fields.hc,
+				encrypt:  tt.fields.encrypt,
+				resource: tt.fields.resource,
+				kms:      tt.fields.kms,
+				Logger:   tt.fields.Logger,
+			}
+			if got := a._prepareAttachment(tt.args.addonAttach, tt.args.accounts); got != tt.want {
+				t.Errorf("_prepareAttachment() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

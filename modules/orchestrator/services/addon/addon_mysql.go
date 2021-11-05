@@ -81,6 +81,10 @@ func (a *Addon) prepareAttachment(addonInsRouting *dbclient.AddonInstanceRouting
 	if err != nil {
 		logrus.Errorf("get account list failed, %+v", err)
 	}
+	return a._prepareAttachment(addonAttach, accounts)
+}
+
+func (a *Addon) _prepareAttachment(addonAttach *dbclient.AddonAttachment, accounts []dbclient.MySQLAccount) bool {
 	if len(accounts) == 0 {
 		return false
 	}
