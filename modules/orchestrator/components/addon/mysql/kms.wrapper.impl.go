@@ -26,6 +26,10 @@ type kmsWrapperImpl struct {
 	bdl *bundle.Bundle
 }
 
+func NewKMSWrapper(bdl *bundle.Bundle) KMSWrapper {
+	return &kmsWrapperImpl{bdl: bdl}
+}
+
 func (k *kmsWrapperImpl) CreateKey() (*kmstypes.CreateKeyResponse, error) {
 	return k.bdl.KMSCreateKey(apistructs.KMSCreateKeyRequest{
 		CreateKeyRequest: kmstypes.CreateKeyRequest{

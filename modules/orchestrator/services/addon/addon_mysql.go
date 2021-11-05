@@ -20,9 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
-	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
 func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, mySQLAccountID string) error {
@@ -30,12 +28,11 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 	if err != nil {
 		return err
 	}
-	dr, err := a.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
-		DecryptRequest: kmstypes.DecryptRequest{
-			KeyID:            account.KMSKey,
-			CiphertextBase64: account.Password,
-		},
-	})
+	return a._toOverrideConfigFromMySQLAccount(config, account)
+}
+
+func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{}, account *dbclient.MySQLAccount) error {
+	dr, err := a.kms.Decrypt(account.Password, account.KMSKey)
 	if err != nil {
 		return err
 	}

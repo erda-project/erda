@@ -19,11 +19,13 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
 func Test_buildMySQLAccount(t *testing.T) {
@@ -94,13 +96,13 @@ func TestAddon_prepareAttachment(t *testing.T) {
 		{
 			name:   "t1",
 			fields: fields{},
-			args:   args{
+			args: args{
 				addonInsRouting: &dbclient.AddonInstanceRouting{
 					AddonName: "not mysql",
 				},
-				addonAttach:     nil,
+				addonAttach: nil,
 			},
-			want:   false,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
@@ -118,4 +120,79 @@ func TestAddon_prepareAttachment(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
+	type fields struct {
+		db       *dbclient.DBClient
+		bdl      *bundle.Bundle
+		hc       *httpclient.HTTPClient
+		encrypt  *encryption.EnvEncrypt
+		resource *resource.Resource
+		kms      mysql.KMSWrapper
+		Logger   *log.DeployLogHelper
+	}
+	type args struct {
+		config  map[string]interface{}
+		account *dbclient.MySQLAccount
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "t1",
+			fields: fields{
+				kms: &MockKMS{},
+			},
+			args:    args{
+				config:  map[string]interface{}{},
+				account: &dbclient.MySQLAccount{
+					Username:          "uuu",
+					Password:          "***",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Addon{
+				db:       tt.fields.db,
+				bdl:      tt.fields.bdl,
+				hc:       tt.fields.hc,
+				encrypt:  tt.fields.encrypt,
+				resource: tt.fields.resource,
+				kms:      tt.fields.kms,
+				Logger:   tt.fields.Logger,
+			}
+			if err := a._toOverrideConfigFromMySQLAccount(tt.args.config, tt.args.account); (err != nil) != tt.wantErr {
+				t.Errorf("_toOverrideConfigFromMySQLAccount() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+type MockKMS struct {
+}
+
+func (k *MockKMS) CreateKey() (*kmstypes.CreateKeyResponse, error) {
+	return &kmstypes.CreateKeyResponse{KeyMetadata: kmstypes.KeyMetadata{
+		KeyID: "123",
+	}}, nil
+}
+
+func (k *MockKMS) Encrypt(plaintext, keyID string) (*kmstypes.EncryptResponse, error) {
+	return &kmstypes.EncryptResponse{
+		KeyID:            "123",
+		CiphertextBase64: "***",
+	}, nil
+}
+
+func (k *MockKMS) Decrypt(ciphertext, keyID string) (*kmstypes.DecryptResponse, error) {
+	return &kmstypes.DecryptResponse{
+		PlaintextBase64: "MjIy",
+	}, nil
 }
