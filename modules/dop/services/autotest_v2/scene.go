@@ -1323,7 +1323,10 @@ func (svc *Service) ListSceneBySceneSetID(setIDs ...uint64) (scenes []apistructs
 		return nil, err
 	}
 	for _, v := range list {
-		scenes = append(scenes, v.Convert())
+		// not include ref set
+		if v.RefSetID == 0 {
+			scenes = append(scenes, v.Convert())
+		}
 	}
 	return
 }
