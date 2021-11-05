@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/go-ansiterm"
+	"github.com/bugaolengdeyuxiaoer/go-ansiterm"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
@@ -326,18 +326,20 @@ func (w *wrapConn) Read(p []byte) (n int, err error) {
 			logrus.Error(r)
 		}
 	}()
-	data := websocket.DecodeFrame(p)
-	if len(data) <= 1 || data[0] != '0' {
-		return
-	}
-	for _, d := range strings.Split(string(data), "\n") {
-		decoded, _ := base64.StdEncoding.DecodeString(d[1:])
-		if err != nil || len(decoded) == 0 {
+	data := websocket.DecodeFrames(p[:n])
+	for _, datum := range data {
+		if datum[0] != '0' {
 			return
 		}
-		_, err = w.parser.Parse(decoded)
-		if err != nil {
-			return 0, err
+		for _, d := range strings.Split(string(datum), "\n") {
+			decoded, _ := base64.StdEncoding.DecodeString(d[1:])
+			if len(decoded) == 0 {
+				continue
+			}
+			_, err = w.parser.Parse(decoded)
+			if err != nil {
+				logrus.Errorf("audit message parse err :%v", err)
+			}
 		}
 	}
 	return
