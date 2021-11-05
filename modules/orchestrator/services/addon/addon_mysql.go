@@ -43,7 +43,7 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 	return nil
 }
 
-func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting) error {
+func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
 	if addonIns.AddonName != "mysql" {
 		return nil
 	}
@@ -60,7 +60,7 @@ func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouti
 		KMSKey:            addonIns.KmsKey,
 		InstanceID:        addonIns.ID,
 		RoutingInstanceID: addonInsRouting.ID,
-		Creator:           "",
+		Creator:           operator,
 	}
 	return a.db.CreateMySQLAccount(&account)
 }
