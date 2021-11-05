@@ -12,15 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package query
 
 import (
-	context "context"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
 
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
+	"github.com/golang/mock/gomock"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	eventpb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
+	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
+	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
+	entitypb "github.com/erda-project/erda-proto-go/oap/entity/pb"
+	oapPb "github.com/erda-project/erda-proto-go/oap/event/pb"
 )
 
 func Test_exceptionService_GetExceptions(t *testing.T) {
@@ -192,4 +198,74 @@ func Test_exceptionService_GetExceptionEvent(t *testing.T) {
 			}
 		})
 	}
+}
+
+//go:generate mockgen -destination=./mock_event_query_grpc.go -package query -source=../../../../../api/proto-go/core/monitor/event/pb/event_query_grpc.pb.go EventQueryServiceServer
+//go:generate mockgen -destination=./mock_entity_query_grpc.go -package query -source=../../../../../api/proto-go/oap/entity/pb/entity_grpc.pb.go EntityServiceServer
+func TestExceptionService_fetchErdaErrorFromES(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	entityGrpcServer := NewMockEntityServiceServer(ctrl)
+	exceptionEntity := entitypb.Entity{
+		Id:                 "error_exception/0f82da3be2e1c7070c269471fa7aa4a5",
+		Type:               "error_exception",
+		Key:                "0f82da3be2e1c7070c269471fa7aa4a5",
+		Values:             nil,
+		Labels:             nil,
+		CreateTimeUnixNano: 1635845334935110000,
+		UpdateTimeUnixNano: 1635851825720883700,
+	}
+	entityList := entitypb.EntityList{
+		List:  []*entitypb.Entity{&exceptionEntity},
+		Total: 1,
+	}
+	listEntitiesResponse := entitypb.ListEntitiesResponse{
+		Data: &entityList,
+	}
+	entityGrpcServer.EXPECT().ListEntities(gomock.Any(), gomock.Any()).Return(&listEntitiesResponse, nil)
+
+	eventGrpcServer := NewMockEventQueryServiceServer(ctrl)
+	att := make(map[string]string)
+	att["terminusKey"] = "fc1f8c074e46a9df505a15c1a94d62cc"
+	spanEvent := oapPb.Event{
+		EventID:      "335415fe-0c9f-4905-ab7f-434032a5c3ab",
+		Severity:     "",
+		Name:         "exception",
+		Kind:         0,
+		TimeUnixNano: 1635845334935610000,
+		Relations:    &commonPb.Relation{
+			TraceID:      "",
+			ResID:        "0f82da3be2e1c7070c269471fa7aa4a5",
+			ResType:      "exception",
+			ResourceKeys: nil,
+		},
+		Attributes:   att,
+		Message:      "",
+	}
+	eventsResult := eventpb.GetEventsResult{
+		Items: []*oapPb.Event{&spanEvent},
+	}
+	eventsResponse := eventpb.GetEventsResponse{
+		Data: &eventsResult,
+	}
+	eventGrpcServer.EXPECT().GetEvents(gomock.Any(), gomock.Any()).Return(&eventsResponse, nil)
+
+	conditions := map[string]string{
+		"terminusKey": "fc1f8c074e46a9df505a15c1a94d62cc",
+	}
+	entityReq := &entitypb.ListEntitiesRequest{
+		Type:   "error_exception",
+		Labels: conditions,
+		Limit:  int64(1000),
+	}
+
+	items, err := fetchErdaErrorFromES(context.Background(), eventGrpcServer, entityGrpcServer, entityReq, 1635845334935, 1635851825720)
+
+	if err != nil {
+		t.Errorf("should not throw error")
+	}
+	if items == nil || len(items) != 1 {
+		t.Errorf("assert result failed")
+	}
+		
 }
