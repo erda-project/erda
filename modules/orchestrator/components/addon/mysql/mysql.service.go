@@ -181,11 +181,28 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 }
 
 func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMySQLAccountRequest) (*pb.DeleteMySQLAccountResponse, error) {
-	// TODO: do real delete mysql account
+	routing, err := s.db.GetInstanceRouting(req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	ins, err := s.db.GetAddonInstance(routing.RealInstance)
+	if err != nil {
+		return nil, err
+	}
 	account, err := s.db.GetMySQLAccountByID(req.Id)
 	if err != nil {
 		return nil, err
 	}
+
+	sql := []string{
+		fmt.Sprintf(`DROP USER IF EXISTS '%s'@'%%';`, account.Username),
+		"flush privileges;",
+	}
+
+	if err := s.execSql(ins, sql...); err != nil {
+		return nil, err
+	}
+
 	account.IsDeleted = true
 	if err := s.db.UpdateMySQLAccount(account); err != nil {
 		return nil, err
