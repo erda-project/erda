@@ -21,12 +21,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
-	"github.com/olivere/elastic"
 )
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
