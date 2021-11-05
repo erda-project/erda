@@ -143,7 +143,7 @@ func ShowCreateTable(tx *gorm.DB, tableName string) (create string, err error) {
 	if err = tx.Row().Scan(&tableName, &create); err != nil {
 		return "", err
 	}
-	create = snapshot.TrimCharacterSetFromRawCreateTableSQL(create)
+	create = snapshot.TrimCharacterSetFromRawCreateTableSQL(create, snapshot.CharsetWhite()...)
 	create = snapshot.TrimBlockFormat(create)
 	return create, nil
 }
