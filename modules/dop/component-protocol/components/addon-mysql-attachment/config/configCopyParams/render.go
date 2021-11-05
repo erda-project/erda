@@ -62,9 +62,10 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	c.Props = map[string]interface{}{
-		"copyText":   string(b),
-		"copyTip":    "参数",
-		"buttonText": "复制参数",
+		"copyText":      string(b),
+		"copyTip":       "参数",
+		"buttonText":    "复制参数",
+		"requestIgnore": []string{"props", "data", "operations"},
 	}
 
 	state := make(map[string]interface{})

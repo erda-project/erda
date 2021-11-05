@@ -68,6 +68,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	props := make(map[string]interface{})
 	props["columnNum"] = 1
 	props["fields"] = fields
+	props["requestIgnore"] = []string{"props", "data", "operations"}
 	c.Props = props
 
 	state := make(map[string]interface{})

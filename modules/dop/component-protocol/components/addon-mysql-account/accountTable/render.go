@@ -83,6 +83,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	var props table.Props
 	props.Columns = getTitles()
 	props.RowKey = "id"
+	props.RequestIgnore = []string{"props", "data", "operations"}
 	c.Props = props
 
 	c.Data = make(map[string]interface{})
