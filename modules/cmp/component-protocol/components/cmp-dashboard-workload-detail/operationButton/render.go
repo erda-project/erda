@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -105,28 +106,85 @@ func (b *ComponentOperationButton) SetComponentValue() {
 				},
 			},
 		},
-		{
-			Key:  "delete",
-			Text: b.sdk.I18n("delete"),
-			Operations: map[string]interface{}{
-				"click": Operation{
-					Key:        "delete",
-					Reload:     true,
-					SuccessMsg: b.sdk.I18n("deletedWorkloadSuccessfully"),
-					Confirm:    b.sdk.I18n("confirmDelete"),
-					Command: Command{
-						Key:    "goto",
-						Target: "cmpClustersWorkload",
-						State: CommandState{
-							Params: map[string]string{
-								"clusterName": b.State.ClusterName,
-							},
-						},
-					},
+	}
+	clickOperation := Operation{
+		Key:        "delete",
+		Reload:     true,
+		SuccessMsg: b.sdk.I18n("deletedWorkloadSuccessfully"),
+		Confirm:    b.sdk.I18n("confirmDelete"),
+		Command: Command{
+			Key:    "goto",
+			Target: "cmpClustersWorkload",
+			State: CommandState{
+				Params: map[string]string{
+					"clusterName": b.State.ClusterName,
 				},
 			},
 		},
 	}
+	deleteMenu := Menu{
+		Key:        "delete",
+		Text:       b.sdk.I18n("delete"),
+		Operations: map[string]interface{}{},
+	}
+
+	splits := strings.Split(b.State.WorkloadID, "_")
+	if len(splits) != 3 {
+		logrus.Errorf("invalid workload id, %s", b.State.WorkloadID)
+		return
+	}
+	kind, namespace, name := splits[0], splits[1], splits[2]
+
+	if namespace == "kube-system" || namespace == "erda-system" || b.isSystemWorkload(kind, namespace, name) {
+		clickOperation.Disabled = true
+		clickOperation.DisabledTip = b.sdk.I18n("canNotDeleteSystemWorkload")
+	}
+	deleteMenu.Operations["click"] = clickOperation
+	b.Props.Menu = append(b.Props.Menu, deleteMenu)
+}
+
+func (b *ComponentOperationButton) isSystemWorkload(kind, namespace, name string) bool {
+	req := &apistructs.SteveRequest{
+		UserID:      b.sdk.Identity.UserID,
+		OrgID:       b.sdk.Identity.OrgID,
+		Type:        apistructs.K8SResType(kind),
+		ClusterName: b.State.ClusterName,
+		Name:        name,
+		Namespace:   namespace,
+	}
+	workload, err := b.server.GetSteveResource(b.ctx, req)
+	if err != nil {
+		logrus.Errorf("failed to get workload %s:%s:%s, %v", kind, namespace, name, err)
+		return false
+	}
+
+	nodeSelectorTerms := workload.Data().Slice("spec", "template", "spec", "affinity", "nodeAffinity",
+		"requiredDuringSchedulingIgnoredDuringExecution", "nodeSelectorTerms")
+	for _, obj := range nodeSelectorTerms {
+		matchExpressions := obj.Slice("matchExpressions")
+		if len(matchExpressions) == 0 {
+			continue
+		}
+		for _, obj := range matchExpressions {
+			key := obj.String("key")
+			operator := obj.String("operator")
+			if key != "dice/platform" {
+				continue
+			}
+			if operator == "Exists" {
+				return true
+			}
+			if operator == "In" {
+				values := obj.StringSlice("values")
+				for _, value := range values {
+					if value == "true" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (b *ComponentOperationButton) DeleteWorkload() error {
