@@ -252,6 +252,16 @@ const (
 
 var EffectiveStepType = []StepAPIType{StepTypeAPI, StepTypeCustomScript, StepTypeConfigSheet}
 
+// IsEffectiveStepType Check is effective stepType or not
+func (s StepAPIType) IsEffectiveStepType() bool {
+	for _, v := range EffectiveStepType {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
 func (v StepAPIType) String() string {
 	return string(v)
 }
