@@ -15,20 +15,21 @@
 package db
 
 import (
-	"github.com/jinzhu/gorm"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 // TestPlanDB .
 type TestPlanDB struct {
-	*gorm.DB
+	*dao.DBClient
 }
 
 // UpdateTestPlanV2 Update test plan
-func (client *TestPlanDB) UpdateTestPlanV2(testPlanID uint64, fields map[string]interface{}) error {
+func (db *TestPlanDB) UpdateTestPlanV2(testPlanID uint64, fields map[string]interface{}) error {
 	tp := TestPlanV2{}
 	tp.ID = testPlanID
 
-	return client.Model(&tp).Updates(fields).Error
+	return db.Model(&tp).Updates(fields).Error
 }
 
 // CreateAutoTestExecHistory .
@@ -38,7 +39,7 @@ func (db *TestPlanDB) CreateAutoTestExecHistory(execHistory *AutoTestExecHistory
 
 // BatchCreateAutoTestExecHistory .
 func (db *TestPlanDB) BatchCreateAutoTestExecHistory(list []AutoTestExecHistory) error {
-	return db.Create(list).Error
+	return db.BulkInsert(list)
 }
 
 // GetTestPlan .
@@ -46,4 +47,38 @@ func (db *TestPlanDB) GetTestPlan(id uint64) (*TestPlanV2, error) {
 	var testPlan TestPlanV2
 	err := db.Model(&TestPlanV2{}).First(&testPlan, id).Error
 	return &testPlan, err
+}
+
+type ApiCount struct {
+	Count   int64  `json:"count"`
+	SceneID uint64 `json:"sceneID" gorm:"scene_id"`
+}
+
+// CountApiBySceneID .
+func (db *TestPlanDB) CountApiBySceneID(sceneID ...uint64) (counts []ApiCount, err error) {
+	err = db.Table("dice_autotest_scene_step").
+		Select("scene_id,count(1) AS count").
+		Where("name != ''").
+		Where("scene_id IN (?)", sceneID).
+		Where("type IN (?)", apistructs.EffectiveStepType).
+		Where("is_disabled = 0").
+		Group("scene_id").
+		Find(&counts).Error
+	return
+}
+
+// ListSceneBySceneSetID .
+func (db *TestPlanDB) ListSceneBySceneSetID(setID ...uint64) (scenes []AutoTestScene, err error) {
+	err = db.Model(&AutoTestScene{}).
+		Where("set_id IN (?)", setID).
+		Find(&scenes).Error
+	return
+}
+
+// ListTestPlanByPlanID .
+func (db *TestPlanDB) ListTestPlanByPlanID(planID ...uint64) (testPlans []TestPlanV2Step, err error) {
+	err = db.Model(&TestPlanV2Step{}).
+		Where("plan_id IN (?)", planID).
+		Find(&testPlans).Error
+	return
 }
