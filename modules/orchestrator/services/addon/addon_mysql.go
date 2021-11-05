@@ -15,6 +15,7 @@
 package addon
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -38,8 +39,13 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 	if err != nil {
 		return err
 	}
+	rawSecret, err := base64.StdEncoding.DecodeString(dr.PlaintextBase64)
+	if err != nil {
+		return err
+	}
+	password := string(rawSecret)
 	config["MYSQL_USERNAME"] = account.Username
-	config["MYSQL_PASSWORD"] = dr.PlaintextBase64
+	config["MYSQL_PASSWORD"] = password
 	return nil
 }
 
