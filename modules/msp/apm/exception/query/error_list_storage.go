@@ -22,17 +22,17 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
 )
 
-// Data .
+// Error .
 type Error = interface{}
 
-// ListIterator .
+// ErrorListIterator .
 type ErrorListIterator struct {
 	list []Error
 	i    int
 	data Error
 }
 
-// NewListIterator .
+// NewErrorListIterator .
 func NewErrorListIterator(list ...Error) storekit.Iterator {
 	return &ErrorListIterator{list: list, i: -1}
 }

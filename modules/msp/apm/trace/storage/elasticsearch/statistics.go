@@ -16,7 +16,6 @@ package elasticsearch
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
@@ -26,8 +25,6 @@ func (p *provider) Count(ctx context.Context, traceId string) int64 {
 	indices := p.Loader.Indices(ctx, time.Now().Add(-time.Hour*24*7).UnixNano(), time.Now().UnixNano(), loader.KeyPath{
 		Recursive: true,
 	})
-
-	fmt.Println(indices)
 
 	if len(indices) <= 0 {
 		return 0

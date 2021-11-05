@@ -96,6 +96,7 @@ func (p *provider) Run(ctx context.Context) error {
 
 func init() {
 	servicehub.Register("log-persist-v1", &servicehub.Spec{
+		Dependencies: []string{"kafka.topic.initializer"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}

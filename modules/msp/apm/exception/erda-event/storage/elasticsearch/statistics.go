@@ -16,7 +16,6 @@ package elasticsearch
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
@@ -27,7 +26,6 @@ func (p *provider) Count(ctx context.Context, sel *storage.Selector) int64 {
 	indices := p.Loader.Indices(ctx, sel.StartTime, sel.EndTime, loader.KeyPath{
 		Recursive: true,
 	})
-	fmt.Println(indices)
 
 	if len(indices) <= 0 {
 		return 0

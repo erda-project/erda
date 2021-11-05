@@ -17,19 +17,16 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strconv"
 	"time"
-
-	"github.com/olivere/elastic"
-	"github.com/recallsong/go-utils/encoding/jsonx"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+	"github.com/olivere/elastic"
 )
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
@@ -159,9 +156,6 @@ func (it *scrollIterator) release() (err error) {
 }
 
 func (it *scrollIterator) fetch(dir iteratorDir) error {
-	fmt.Println(it.indices)
-	source, _ := it.searchSource.Source()
-	fmt.Println(jsonx.MarshalAndIndent(source))
 
 	if len(it.indices) <= 0 {
 		it.err = io.EOF
