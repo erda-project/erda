@@ -16,6 +16,7 @@ package snapshot
 
 import (
 	"bytes"
+	"os"
 	"regexp"
 	"strings"
 
@@ -28,12 +29,17 @@ import (
 	"github.com/erda-project/erda/pkg/database/sqlparser/table"
 )
 
+var (
+	charsetWhiteEnv     = "MIGRATION_CHARSET_WHITE"
+	defaultCharsetWhite = []string{"utf8", "utf8mb4"}
+)
+
 type Snapshot struct {
 	tables map[string]*table.Table
 }
 
 func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
-	s = &Snapshot{tables: make(map[string]*table.Table, 0)}
+	s = &Snapshot{tables: make(map[string]*table.Table)}
 	ignores := make(map[string]bool, len(ignore))
 	for _, ig := range ignore {
 		ignores[ig] = true
@@ -77,7 +83,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 		if err = tx.Row().Scan(&tableName, &stmt); err != nil {
 			return nil, err
 		}
-		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt)
+		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt, CharsetWhite()...)
 		stmt = TrimBlockFormat(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
@@ -211,8 +217,19 @@ func TrimConstraintCheckFromCreateTable(createStmt *ast.CreateTableStmt) {
 	}
 }
 
-func TrimCharacterSetFromRawCreateTableSQL(createStmt string) string {
-	return regexp.MustCompile(`(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*\w+`).ReplaceAllString(createStmt, "")
+func TrimCharacterSetFromRawCreateTableSQL(createStmt string, except ...string) string {
+	pat := `(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*(\w+)`
+	re := regexp.MustCompile(pat)
+	found := re.FindStringSubmatch(createStmt)
+	if len(found) == 0 {
+		return createStmt
+	}
+	for _, ex := range except {
+		if strings.EqualFold(ex, found[len(found)-1]) {
+			return createStmt
+		}
+	}
+	return re.ReplaceAllString(createStmt, "")
 }
 
 func TrimBlockFormat(createStmt string) string {
@@ -221,7 +238,7 @@ func TrimBlockFormat(createStmt string) string {
 
 // ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
 func ParseCreateTableStmt(createStmt string) (*ast.CreateTableStmt, error) {
-	createStmt = TrimCharacterSetFromRawCreateTableSQL(createStmt)
+	createStmt = TrimCharacterSetFromRawCreateTableSQL(createStmt, CharsetWhite()...)
 	createStmt = TrimBlockFormat(createStmt)
 	node, err := parser.New().ParseOneStmt(createStmt, "", "")
 	if err != nil {
@@ -232,4 +249,12 @@ func ParseCreateTableStmt(createStmt string) (*ast.CreateTableStmt, error) {
 		return nil, errors.Errorf("the text is not CreateTableStmt, text: %s", createStmt)
 	}
 	return createTableStmt, nil
+}
+
+func CharsetWhite() []string {
+	charsetWhite := strings.Split(os.Getenv(charsetWhiteEnv), ",")
+	if len(charsetWhite) == 0 {
+		return defaultCharsetWhite
+	}
+	return charsetWhite
 }
