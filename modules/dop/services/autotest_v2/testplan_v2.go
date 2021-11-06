@@ -899,7 +899,7 @@ func (svc *Service) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (*apis
 
 // ExecHistorySceneAvgCostTime .
 func (svc *Service) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneAvgCostTime, err error) {
-	db := svc.db.Debug().Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
+	db := svc.db.Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
 		Where("project_id = ?", req.ProjectID).
 		Where("iteration_id IN (?)", req.IterationIDs).
 		Where("plan_id IN (?)", req.PlanIDs).
@@ -916,7 +916,7 @@ func (svc *Service) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHis
 
 // ExecHistorySceneStatusCount .
 func (svc *Service) ExecHistorySceneStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneStatusCount, err error) {
-	db := svc.db.Debug().Table("dice_autotest_exec_history").
+	db := svc.db.Table("dice_autotest_exec_history").
 		Select("scene_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
 			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
 		Where("project_id = ?", req.ProjectID).
@@ -935,7 +935,7 @@ func (svc *Service) ExecHistorySceneStatusCount(req apistructs.StatisticsExecHis
 
 // ExecHistorySceneApiStatusCount .
 func (svc *Service) ExecHistorySceneApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneApiStatusCount, err error) {
-	db := svc.db.Debug().Table("dice_autotest_exec_history").
+	db := svc.db.Table("dice_autotest_exec_history").
 		Select("scene_id,SUM(`success_api_num`) AS 'success_count',"+
 			"SUM(`total_api_num`) AS 'total_count'").
 		Where("project_id = ?", req.ProjectID).
@@ -954,7 +954,7 @@ func (svc *Service) ExecHistorySceneApiStatusCount(req apistructs.StatisticsExec
 
 // ExecHistoryApiAvgCostTime .
 func (svc *Service) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiAvgCostTime, err error) {
-	db := svc.db.Debug().Table("dice_autotest_exec_history").
+	db := svc.db.Table("dice_autotest_exec_history").
 		Select("step_id,AVG(cost_time_sec) AS avg").
 		Where("project_id = ?", req.ProjectID).
 		Where("iteration_id IN (?)", req.IterationIDs).
@@ -972,7 +972,7 @@ func (svc *Service) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHisto
 
 // ExecHistoryApiStatusCount .
 func (svc *Service) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiStatusCount, err error) {
-	db := svc.db.Debug().Table("dice_autotest_exec_history").
+	db := svc.db.Table("dice_autotest_exec_history").
 		Select("step_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
 			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
 		Where("project_id = ?", req.ProjectID).
