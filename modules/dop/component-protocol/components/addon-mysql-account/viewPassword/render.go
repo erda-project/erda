@@ -54,9 +54,12 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	f.ac = ac
 
 	var props table.Props
-	props.Bordered = table.False()
+	props.RequestIgnore = []string{"props", "data", "operations"}
 	props.Columns = getTitles()
 	props.RowKey = "label"
+	props.Bordered = table.False()
+	props.ShowPagination = table.False()
+	props.ShowHeader = table.False()
 	c.Props = props
 
 	c.Data = make(map[string]interface{})

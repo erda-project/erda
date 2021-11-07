@@ -29,6 +29,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
@@ -65,6 +66,7 @@ type Addon struct {
 	hc       *httpclient.HTTPClient
 	encrypt  *encryption.EnvEncrypt
 	resource *resource.Resource
+	kms      mysql.KMSWrapper
 	Logger   *log.DeployLogHelper
 }
 
@@ -113,6 +115,13 @@ func WithEnvEncrypt(encrypt *encryption.EnvEncrypt) Option {
 func WithResource(resource *resource.Resource) Option {
 	return func(a *Addon) {
 		a.resource = resource
+	}
+}
+
+// WithKMSWrapper .
+func WithKMSWrapper(kms mysql.KMSWrapper) Option {
+	return func(a *Addon) {
+		a.kms = kms
 	}
 }
 
