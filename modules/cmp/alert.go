@@ -28,7 +28,8 @@ func (p *provider) GetAlertConditions(ctx context.Context, request *alertpb.GetA
 	conditionReq := &monitor.GetAlertConditionsRequest{
 		ScopeType: request.ScopeType,
 	}
-	result, err := p.Monitor.GetAlertConditions(ctx, conditionReq)
+	context := utils.NewContextWithHeader(ctx)
+	result, err := p.Monitor.GetAlertConditions(context, conditionReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
