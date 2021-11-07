@@ -997,7 +997,6 @@ func (svc *Service) ListExecHistorySceneSetByParentPID(parentPID uint64) (histor
 		Where("type = ?", apistructs.AutotestSceneSet).
 		Order("execute_time ASC").
 		Find(&list).Error
-
 	for _, v := range list {
 		history = append(history, v.Convert())
 	}
