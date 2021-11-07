@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // TestSet 测试集
@@ -160,7 +161,7 @@ func (db *DBClient) ListTestSets(req apistructs.TestSetListRequest) ([]TestSet, 
 		sql = sql.Where("`parent_id` = ?", *req.ParentID)
 	}
 	if len(req.TestSetIDs) > 0 {
-		sql = sql.Where("`id` IN (?)", req.TestSetIDs)
+		sql = sql.Where("`id` IN (?)", strutil.DedupUint64Slice(req.TestSetIDs, true))
 	}
 
 	sql = sql.Order("`order_num` DESC")

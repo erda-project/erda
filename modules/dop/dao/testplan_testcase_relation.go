@@ -15,9 +15,14 @@
 package dao
 
 import (
+	"fmt"
+	"sync"
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -247,4 +252,248 @@ func (client *DBClient) ListTestPlanCaseRelsCount(testPlanIDs []uint64) (map[uin
 	}
 
 	return result, nil
+}
+
+type TestPlanCaseRelDetail struct {
+	TestPlanCaseRel
+	Name           string
+	ProjectID      uint64
+	Priority       apistructs.TestCasePriority
+	PreCondition   string
+	StepAndResults TestCaseStepAndResults
+	Desc           string
+	Recycled       *bool
+	From           apistructs.TestCaseFrom
+}
+
+func (rel TestPlanCaseRelDetail) ConvertForPaging() apistructs.TestPlanCaseRel {
+	return apistructs.TestPlanCaseRel{
+		ID:         rel.ID,
+		Name:       rel.Name,
+		Priority:   rel.Priority,
+		TestPlanID: rel.TestPlanID,
+		TestSetID:  rel.TestSetID,
+		TestCaseID: rel.TestCaseID,
+		ExecStatus: rel.ExecStatus,
+		CreatorID:  rel.CreatorID,
+		UpdaterID:  rel.UpdaterID,
+		ExecutorID: rel.ExecutorID,
+		CreatedAt:  rel.CreatedAt,
+		UpdatedAt:  rel.UpdatedAt,
+	}
+}
+
+func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseRelPagingRequest) ([]TestPlanCaseRelDetail, uint64, error) {
+	// validate request
+	if err := validateTestPlanCaseRelPagingRequest(req); err != nil {
+		return nil, 0, err
+	}
+	// set default for request
+	setDefaultForTestPlanCaseRelPagingRequest(&req)
+	// query base test set if necessary, then use `directory` to do `like` query
+	var baseTestSet TestSet
+	if req.TestSetID > 0 {
+		ts, err := client.GetTestSetByID(req.TestSetID)
+		if err != nil {
+			return nil, 0, err
+		}
+		baseTestSet = *ts
+	}
+
+	baseSQL := client.DB.Table(TestPlanCaseRel{}.TableName() + " AS `rel`").Select("*")
+	baseSQL = baseSQL.Joins("LEFT JOIN " + TestCase{}.TableName() + " AS `tc` ON `rel`.`test_case_id` = `tc`.`id`")
+	// left join test_sets
+	// use left join because test_set with id = 0 is not exists in test_sets table
+	baseSQL = baseSQL.Joins("LEFT JOIN " + TestSet{}.TableName() + " AS `ts` ON `rel`.`test_set_id` = `ts`.`id`")
+
+	// where clauses
+	// testplan
+	baseSQL = baseSQL.Where("`rel`.`test_plan_id` = ?", req.TestPlanID)
+	// testset
+	if req.TestSetID > 0 {
+		baseSQL = baseSQL.Where("`ts`.`directory` LIKE '" + baseTestSet.Directory + "%'")
+	}
+	// name
+	if req.Query != "" {
+		baseSQL = baseSQL.Where("`tc`.`name` LIKE ?", strutil.Concat("%", req.Query, "%"))
+	}
+	// priority
+	if len(req.Priorities) > 0 {
+		baseSQL = baseSQL.Where("`tc`.`priority` IN (?)", req.Priorities)
+	}
+	// updater
+	if len(req.UpdaterIDs) > 0 {
+		baseSQL = baseSQL.Where("`tc`.`updater_id` IN (?)", req.UpdaterIDs)
+	}
+	// updatedAtBegin (Left closed Section)
+	if req.TimestampSecUpdatedAtBegin != nil {
+		t := time.Unix(int64(*req.TimestampSecUpdatedAtBegin), 0)
+		req.UpdatedAtBeginInclude = &t
+	}
+	if req.UpdatedAtBeginInclude != nil {
+		baseSQL = baseSQL.Where("`tc`.`updated_at` >= ?", req.UpdatedAtBeginInclude)
+	}
+	// updatedAtEnd (Right closed Section)
+	if req.TimestampSecUpdatedAtEnd != nil {
+		t := time.Unix(int64(*req.TimestampSecUpdatedAtEnd), 0)
+		req.UpdatedAtEndInclude = &t
+	}
+	if req.UpdatedAtEndInclude != nil {
+		baseSQL = baseSQL.Where("`tc`.`updated_at` <= ?", req.UpdatedAtEndInclude)
+	}
+	// executor
+	if len(req.ExecutorIDs) > 0 {
+		baseSQL = baseSQL.Where("`rel`.`executor_id` IN (?)", req.ExecutorIDs)
+	}
+	// executorStatus
+	if len(req.ExecStatuses) > 0 {
+		baseSQL = baseSQL.Where("`rel`.`exec_status` IN (?)", req.ExecStatuses)
+	}
+	// relIDs
+	if len(req.RelIDs) > 0 {
+		baseSQL = baseSQL.Where("`rel`.`id` IN (?)", req.RelIDs)
+	}
+
+	pagingSQL := baseSQL.NewScope(nil).DB()
+	countSQL := baseSQL.NewScope(nil).DB()
+
+	// order by fields
+	for _, orderField := range req.OrderFields {
+		switch orderField {
+		case tcFieldID:
+			if req.OrderByIDAsc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`id` ASC")
+			}
+			if req.OrderByIDDesc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`id` DESC")
+			}
+		case tcFieldTestSetID:
+			if req.OrderByTestSetIDAsc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`test_set_id` ASC")
+			}
+			if req.OrderByTestSetIDDesc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`test_set_id` DESC")
+			}
+		case tcFieldPriority:
+			if req.OrderByPriorityAsc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`priority` ASC")
+			}
+			if req.OrderByPriorityDesc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`priority` DESC")
+			}
+		case tcFieldUpdaterID:
+			if req.OrderByUpdaterIDAsc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`updater_id` ASC")
+			}
+			if req.OrderByUpdaterIDDesc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`updater_id` DESC")
+			}
+		case tcFieldUpdatedAt:
+			if req.OrderByUpdaterIDAsc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`updated_at` ASC")
+			}
+			if req.OrderByUpdaterIDDesc != nil {
+				pagingSQL = pagingSQL.Order("`tc`.`updated_at` DESC")
+			}
+		}
+	}
+
+	// concurrent do paging and count
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// result
+	var (
+		planCaseRels        []TestPlanCaseRelDetail
+		total               uint64
+		pagingErr, countErr error
+	)
+
+	// do paging
+	go func() {
+		defer wg.Done()
+
+		// offset, limit
+		offset := (req.PageNo - 1) * req.PageSize
+		limit := req.PageSize
+		pagingErr = pagingSQL.Offset(offset).Limit(limit).Find(&planCaseRels).Error
+	}()
+
+	// do count
+	go func() {
+		defer wg.Done()
+
+		// reset offset & limit before count
+		countErr = countSQL.Offset(0).Limit(-1).Count(&total).Error
+	}()
+
+	// wait
+	wg.Wait()
+
+	if pagingErr != nil {
+		return nil, 0, apierrors.ErrPagingTestPlanCaseRels.InternalError(pagingErr)
+	}
+	if countErr != nil {
+		return nil, 0, apierrors.ErrPagingTestPlanCaseRels.InternalError(countErr)
+	}
+
+	return planCaseRels, total, nil
+}
+
+func validateTestPlanCaseRelPagingRequest(req apistructs.TestPlanCaseRelPagingRequest) error {
+	if req.TestPlanID == 0 {
+		return apierrors.ErrPagingTestPlanCaseRels.MissingParameter("testPlanID")
+	}
+	for _, priority := range req.Priorities {
+		if !priority.IsValid() {
+			return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter(fmt.Sprintf("priority: %s", priority))
+		}
+	}
+	if req.OrderByPriorityAsc != nil && req.OrderByPriorityDesc != nil {
+		return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter("order by priority ASC or DESC?")
+	}
+	if req.OrderByUpdaterIDAsc != nil && req.OrderByUpdaterIDDesc != nil {
+		return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter("order by updaterID ASC or DESC?")
+	}
+	if req.OrderByUpdatedAtAsc != nil && req.OrderByUpdatedAtDesc != nil {
+		return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter("order by updatedAt ASC or DESC?")
+	}
+	if req.OrderByIDAsc != nil && req.OrderByIDDesc != nil {
+		return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter("order by id ASC or DESC?")
+	}
+	if req.OrderByTestSetIDAsc != nil && req.OrderByTestSetIDDesc != nil {
+		return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter("order by testSetID ASC or DESC?")
+	}
+	if req.OrderByTestSetNameAsc != nil && req.OrderByTestSetNameDesc != nil {
+		return apierrors.ErrPagingTestPlanCaseRels.InvalidParameter("order by testSetName ASC or DESC?")
+	}
+
+	return nil
+}
+
+func setDefaultForTestPlanCaseRelPagingRequest(req *apistructs.TestPlanCaseRelPagingRequest) {
+	// must order by testSet
+	if req.OrderByTestSetIDAsc == nil && req.OrderByTestSetIDDesc == nil &&
+		req.OrderByTestSetNameAsc == nil && req.OrderByTestSetNameDesc == nil {
+		// default order by `test_set_id` ASC
+		req.OrderByTestSetIDAsc = &[]bool{true}[0]
+		req.OrderFields = append(req.OrderFields, tcFieldTestSetID)
+	}
+
+	// set default order inside a testSet
+	if req.OrderByPriorityAsc == nil && req.OrderByPriorityDesc == nil &&
+		req.OrderByUpdaterIDAsc == nil && req.OrderByUpdaterIDDesc == nil &&
+		req.OrderByUpdatedAtAsc == nil && req.OrderByUpdatedAtDesc == nil &&
+		req.OrderByIDAsc == nil && req.OrderByIDDesc == nil {
+		// default order by `id` ASC
+		req.OrderByIDAsc = &[]bool{true}[0]
+		req.OrderFields = append(req.OrderFields, tcFieldID)
+	}
+
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
 }
