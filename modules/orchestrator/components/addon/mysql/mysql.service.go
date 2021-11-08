@@ -25,7 +25,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -33,12 +35,20 @@ import (
 type mysqlService struct {
 	logger logs.Logger
 
-	kms KMSWrapper
-	db  *dbclient.DBClient
+	kms  KMSWrapper
+	perm PermissionWrapper
+	db   *dbclient.DBClient
 }
 
 // ListMySQLAccount returns a list of MySQL accounts
 func (s *mysqlService) ListMySQLAccount(ctx context.Context, req *pb.ListMySQLAccountRequest) (*pb.ListMySQLAccountResponse, error) {
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("user not login")
+	}
+	if err := s.checkPerm(userID, req.InstanceId, "addon", "GET"); err != nil {
+		return nil, err
+	}
 	accounts, err := s.db.GetMySQLAccountListByRoutingInstanceID(req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -118,14 +128,13 @@ func (s *mysqlService) execSql(ins *dbclient.AddonInstance, sql ...string) error
 }
 
 func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.GenerateMySQLAccountRequest) (*pb.GenerateMySQLAccountResponse, error) {
-	//userID := apis.GetUserID(ctx)
-	// TODO: apis.GetUserID(ctx) not working
-	userID := req.UserID
+	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, errors.Errorf("user not login")
 	}
-	// TODO: check permission
-	// (userID) has permission to operate on (instanceID) in (orgID)
+	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
+		return nil, err
+	}
 
 	routingInstance, err := s.db.GetInstanceRouting(req.InstanceId)
 	if err != nil {
@@ -177,6 +186,14 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 }
 
 func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMySQLAccountRequest) (*pb.DeleteMySQLAccountResponse, error) {
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("user not login")
+	}
+	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
+		return nil, err
+	}
+	// TODO: optimize
 	routing, err := s.db.GetInstanceRouting(req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -207,6 +224,13 @@ func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMyS
 }
 
 func (s *mysqlService) ListAttachment(ctx context.Context, req *pb.ListAttachmentRequest) (*pb.ListAttachmentResponse, error) {
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("user not login")
+	}
+	if err := s.checkPerm(userID, req.InstanceId, "addon", "GET"); err != nil {
+		return nil, err
+	}
 	attachments, err := s.db.GetAttachmentsByRoutingInstanceID(req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -233,6 +257,13 @@ func (s *mysqlService) ListAttachment(ctx context.Context, req *pb.ListAttachmen
 }
 
 func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.UpdateAttachmentAccountRequest) (*pb.UpdateAttachmentAccountResponse, error) {
+	userID := apis.GetUserID(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("user not login")
+	}
+	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
+		return nil, err
+	}
 	att, err := s.db.GetAttachmentByID(req.Id)
 	if err != nil {
 		return nil, err
@@ -300,4 +331,29 @@ func (s *mysqlService) getConfig(att *dbclient.AddonAttachment) (map[string]stri
 		configMap["MYSQL_PASSWORD"] = "******"
 	}
 	return configMap, nil
+}
+
+func (s *mysqlService) checkPerm(userID string, instanceID string, resource string, action string) error {
+	routing, err := s.db.GetInstanceRouting(instanceID)
+	if err != nil {
+		return err
+	}
+	projectID, err := strutil.Atoi64(routing.ProjectID)
+	if err != nil {
+		return err
+	}
+	pr, err := s.perm.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  uint64(projectID),
+		Resource: resource,
+		Action:   action,
+	})
+	if err != nil {
+		return err
+	}
+	if !pr.Access {
+		return fmt.Errorf("user %s does not have permission", userID)
+	}
+	return nil
 }
