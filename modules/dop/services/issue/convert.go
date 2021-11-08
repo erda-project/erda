@@ -269,6 +269,10 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			Type:  i.Type,
 			Value: i.GetStage(),
 		}
+		finishTime := ""
+		if i.FinishTime != nil {
+			finishTime = i.FinishTime.Format("2006-01-02 15:04:05")
+		}
 
 		_, relatedIssueIDs, err := svc.issueRelated.GetIssueRelationsByIssueIDs(uint64(i.ID))
 		if err != nil {
@@ -318,6 +322,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			i.CreatedAt.Format("2006-01-02 15:04:05"),
 			strings.Join(relatedIssueIDStrs, ","),
 			i.ManHour.GetFormartTime("EstimateTime"),
+			finishTime,
 		}))
 		relations := propertyMap[i.ID]
 		// 获取每个自定义字段的值
@@ -478,15 +483,26 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			falseReason = append(falseReason, fmt.Sprintf("failed to convert related issue ids: %s, err: %v", row[17], err))
 			continue
 		}
-		// row[17] EstimateTime, jump over
+		// row[17] EstimateTime
+		if row[17] != "" {
+			manHour, err := apistructs.NewManhour(row[17])
+			if err != nil {
+				falseExcel = append(falseExcel, i+1)
+				falseReason = append(falseReason, fmt.Sprintf("failed to counvert estimate time: %s, err: %v", row[17], err))
+				continue
+			}
+			issue.ManHour = manHour
+		}
+
+		// row[18] finish time, jump over
 
 		// 获取自定义字段
 		relation := apistructs.IssuePropertyRelationCreateRequest{
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		for indexx, line := range row[18:] {
-			index := indexx + 18
+		for indexx, line := range row[19:] {
+			index := indexx + 19
 			// 获取字段名对应的字段
 			instance := apistructs.IssuePropertyInstance{
 				IssuePropertyIndex: propertyNameMap[rows[0][index]],

@@ -19,6 +19,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/magiconair/properties/assert"
@@ -50,11 +51,11 @@ func TestDecodeFromExcelFile(t *testing.T) {
 	tm := monkey.Patch(excel.Decode, func(r io.Reader) ([][][]string, error) {
 		return [][][]string{
 			[][]string{
-				[]string{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联", "预估时间"},
-				[]string{"1", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", ""},
-				[]string{"a", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", ""},
-				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "a,b", "", "", ""},
-				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", ""},
+				[]string{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联", "预估时间", "关闭时间", ""},
+				[]string{"1", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "", "", ""},
+				[]string{"a", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "", "", ""},
+				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "a,b", "", "", "3h", "", ""},
+				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "3d", "", ""},
 			},
 		}, nil
 	})
@@ -149,6 +150,7 @@ func TestConvertIssueToExcelList(t *testing.T) {
 	defer p5.Unpatch()
 
 	svc := New(WithDBClient(db), WithIssueRelated(related), WithBundle(bdl))
-	_, err := svc.convertIssueToExcelList([]apistructs.Issue{}, []apistructs.IssuePropertyIndex{}, 1, false, map[issueStage]string{}, "cn")
+	finishTime := time.Now()
+	_, err := svc.convertIssueToExcelList([]apistructs.Issue{{ID: 1, FinishTime: &finishTime}}, []apistructs.IssuePropertyIndex{}, 1, false, map[issueStage]string{}, "cn")
 	assert.Equal(t, err, nil)
 }
