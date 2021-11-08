@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/editFormModal/form"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -52,7 +53,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		if accID == "" {
 			return errors.Errorf("account not found, attachemnt: %v", c.State["attachmentId"])
 		}
-		_, err = addonMySQLSvc.UpdateAttachmentAccount(ctx, &addonmysqlpb.UpdateAttachmentAccountRequest{
+		_, err = addonMySQLSvc.UpdateAttachmentAccount(utils.NewContextWithHeader(ctx), &addonmysqlpb.UpdateAttachmentAccountRequest{
 			InstanceId: pg.InstanceID,
 			Id:         uint64(attID),
 			AccountId:  accID,

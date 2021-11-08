@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -60,7 +61,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		//f.pg.ShowDeleteModal = true
 		accountID := event.OperationData["meta"].(map[string]interface{})["id"].(string)
 		addonMySQLSvc := ctx.Value(types.AddonMySQLService).(addonmysqlpb.AddonMySQLServiceServer)
-		_, err := addonMySQLSvc.DeleteMySQLAccount(ctx, &addonmysqlpb.DeleteMySQLAccountRequest{
+		_, err := addonMySQLSvc.DeleteMySQLAccount(utils.NewContextWithHeader(ctx), &addonmysqlpb.DeleteMySQLAccountRequest{
 			InstanceId: f.pg.InstanceID,
 			Id:         accountID,
 		})
