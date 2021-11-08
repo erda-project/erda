@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cassandra_v1
+package storage
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"strconv"
 	"time"
 
 	"github.com/gocql/gocql"
-	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
@@ -84,14 +81,11 @@ func (p *provider) getStatement(data interface{}) (string, []interface{}, error)
 	if !ok {
 		return "", nil, fmt.Errorf("value %#v must be Span", data)
 	}
-
-	// PRIMARY KEY is (trace_id, start_time), avoid the same start_time in the same trace_id
-	startTime, endTime := getTimeRange(span)
 	const cql = `INSERT INTO spans (trace_id, start_time, end_time, operation_name, parent_span_id, span_id, tags) VALUES (?, ?, ?, ?, ?, ?, ?) USING TTL ?;`
 	return cql, []interface{}{
 		span.TraceID,
-		startTime,
-		endTime,
+		span.StartTime,
+		span.EndTime,
 		span.OperationName,
 		span.ParentSpanID,
 		span.SpanID,
@@ -100,39 +94,18 @@ func (p *provider) getStatement(data interface{}) (string, []interface{}, error)
 	}, nil
 }
 
-const millisecond = int64(time.Millisecond)
-const timeTailMask = millisecond / 10
-
-func getTimeRange(span *monitor.Span) (int64, int64) {
-	startTime, endTime := span.StartTime, span.EndTime
-	if startTime%millisecond == 0 {
-		tail := int64(convertToIntID(span.SpanID)) % timeTailMask
-		startTime = startTime + tail
-		endTime = endTime + tail
-	}
-	return startTime, endTime
-}
-
-func convertToIntID(id string) uint32 {
-	hash := fnv.New32()
-	hash.Write(reflectx.StringToBytes(id))
-	return hash.Sum32()
-}
-
 func (p *provider) spotSpanConsumer(key []byte, value []byte, topic *string, timestamp time.Time) error {
 	// write spot span to cassandra
 	metric := &metrics.Metric{}
-	dec := json.NewDecoder(bytes.NewReader(value))
-	dec.UseNumber()
-	if err := dec.Decode(&metric); err != nil {
+	if err := json.Unmarshal(value, metric); err != nil {
 		return err
 	}
 	span, err := metricToSpan(metric)
 	if err != nil {
 		return err
 	}
-	// metric = toSpan(span)
-	// err = p.output.kafka.Write(metric)
+	//metric = toSpan(span)
+	//err = p.output.kafka.Write(metric)
 	if err != nil {
 		p.Log.Errorf("fail to push kafka: %s", err)
 		return err
@@ -236,8 +209,6 @@ func toInt64(obj interface{}) (int64, error) {
 		return int64(val), nil
 	case float64:
 		return int64(val), nil
-	case json.Number:
-		return val.Int64()
 	case string:
 		v, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {

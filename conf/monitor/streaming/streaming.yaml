@@ -282,82 +282,6 @@ metric-persist:
     generate_meta: true
     machine_summary: true
 
-# elasticsearch for span
-elasticsearch@span:
-  _enable: ${SPAN_ELASTICSEARCH_ENABLE:false}
-  urls: "${SPAN_ELASTICSEARCH_URL:http://localhost:9200}"
-  security: ${SPAN_ELASTICSEARCH_SECURITY_ENABLE:false}
-  username: "${SPAN_ELASTICSEARCH_SECURITY_USERNAME}"
-  password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
-
-elasticsearch.index.initializer@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  templates:
-    - name: "erda-spans"
-      path: "${CONFIG_PATH}/span_index_template.json"
-
-elasticsearch.index.loader@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  load_mode: "LoadFromElasticSearchOnly"
-  index_reload_interval: "1m"
-  match:
-    - prefix: "erda-spans-"
-      patterns:
-        - "<org>-{number}"
-        - "<org>.<key>-{number}"
-
-elasticsearch.index.creator@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  patterns:
-    - first_index: "erda-spans-<org>-000001"
-      alias: "erda-spans-<org>-rollover"
-    - first_index: "erda-spans-<org>.<key>-000001"
-      alias: "erda-spans-<org>.<key>-rollover"
-  remove_conflicting_indices: true
-
-elasticsearch.index.rollover@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  check_interval: "30s"
-  body_file: "${CONFIG_PATH}/index_rollover.json"
-  patterns:
-    - index: "erda-spans-<org>-{number}"
-      alias: "erda-spans-<org>-rollover"
-    - index: "erda-spans-<org>.<key>-{number}"
-      alias: "erda-spans-<org>.<key>-rollover"
-
-storage-retention-strategy@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  load_from_database: true
-  ttl_reload_interval: "3m"
-  default_ttl: "${LOG_TTL:168h}"
-
-span-storage-elasticsearch:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  write_timeout: "1m"
-  index_type: "spans"
-
-span-persist:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
-  spot_input:
-    topics: "${SPOT_TRACE_TOPICS:spot-trace}"
-    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${SPOT_SPOTSPAN_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-  oap_input:
-    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
-    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${SPOT_OAPSPAN_CONSUMERS:3}
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-  id_keys: "${SPAN_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
-  read_timeout: "5s"
-  buffer_size: ${SPAN_BATCH_SIZE:50}
-  parallelism: ${SPAN_PERSIST_PARALLELISM:3}
-  print_invalid_span: false
-
 browser-analytics:
   _enable: ${BROWSER_ENABLE:true}
   input:
@@ -376,7 +300,7 @@ browser-analytics:
   ipdb: "${CONFIG_PATH}/ipdata.dat"
 
 trace-storage:
-  _enable: ${WRITE_SPAN_TO_CASSANDRA_ENABLE:true}
+  _enable: ${TRACE_ENABLE:true}
   spot_input:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
