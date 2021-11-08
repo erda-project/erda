@@ -65,6 +65,7 @@ const (
 	LabelSceneID          = "sceneID"          // 新版自动化测试的场景的 id
 	LabelSpaceID          = "spaceID"          // 空间 id
 	LabelIterationID      = "iterationID"
+	LabelIsRefSet         = "isRefSet"
 	// FDP
 	LabelFdpWorkflowID          = "CDP_WF_ID"
 	LabelFdpWorkflowName        = "CDP_WF_NAME"

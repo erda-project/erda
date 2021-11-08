@@ -59,3 +59,19 @@ func TestToJsonCopyText(t *testing.T) {
 
 	assert.Equal(t, jsonStr, step.ToJsonCopyText())
 }
+
+func TestIsEffectiveStepType(t *testing.T) {
+	tt := []struct {
+		t    StepAPIType
+		want bool
+	}{
+		{StepTypeAPI, true},
+		{StepTypeCustomScript, true},
+		{StepTypeConfigSheet, true},
+		{StepTypeWait, false},
+		{"", false},
+	}
+	for _, v := range tt {
+		assert.Equal(t, v.want, v.t.IsEffectiveStepType())
+	}
+}

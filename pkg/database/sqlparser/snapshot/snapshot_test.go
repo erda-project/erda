@@ -45,6 +45,31 @@ CREATE TABLE ci_v3_build_caches (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb3 COMMENT='buildpack action 使用的构建缓存';
 `
+	sqlWithUtf8 = `
+CREATE TABLE ci_v3_build_caches (
+  id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  name varchar(200) DEFAULT NULL COMMENT '缓存名',
+  cluster_name varchar(200) DEFAULT NULL COMMENT '集群名',
+  last_pull_at datetime DEFAULT NULL COMMENT '缓存最近一次被拉取的时间',
+  created_at datetime DEFAULT NULL COMMENT '创建时间',
+  updated_at datetime DEFAULT NULL COMMENT '更新时间',
+  deleted_at datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET utf8 COMMENT='buildpack action 使用的构建缓存';
+`
+
+	sqlWithUtf8mb4 = `
+CREATE TABLE ci_v3_build_caches (
+  id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  name varchar(200) DEFAULT NULL COMMENT '缓存名',
+  cluster_name varchar(200) DEFAULT NULL COMMENT '集群名',
+  last_pull_at datetime DEFAULT NULL COMMENT '缓存最近一次被拉取的时间',
+  created_at datetime DEFAULT NULL COMMENT '创建时间',
+  updated_at datetime DEFAULT NULL COMMENT '更新时间',
+  deleted_at datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COMMENT='buildpack action 使用的构建缓存';
+`
 )
 
 const blockFormatCase = `
@@ -154,7 +179,7 @@ func TestTrimConstraintCheckFromCreateTable(t *testing.T) {
 
 func TestTrimCharacterSetFromRawCreateTableSQL(t *testing.T) {
 	for _, sql := range []string{sqlWithUtf32_1, sqlWithUtf32_2, sqlWithUtf8mb3} {
-		sql := snapshot.TrimCharacterSetFromRawCreateTableSQL(sql)
+		sql := snapshot.TrimCharacterSetFromRawCreateTableSQL(sql, "utf8", "utf8mb4")
 		if strings.Contains(strings.ToLower(sql), "utf32") {
 			t.Fatal("failed to trim character from sql")
 		}
@@ -162,6 +187,22 @@ func TestTrimCharacterSetFromRawCreateTableSQL(t *testing.T) {
 			t.Fatalf("err: %v, sql: %s", err, sql)
 		}
 		t.Log(sql)
+	}
+}
+
+func TestTrimCharacterSetFromRawCreateTableSQL2(t *testing.T) {
+	for charset, sql := range map[string]string{
+		"utf8":    sqlWithUtf8,
+		"utf8mb4": sqlWithUtf8mb4,
+	} {
+		sql := snapshot.TrimCharacterSetFromRawCreateTableSQL(sql, "utf8", "utf8mb4")
+		t.Logf("sql: %s", sql)
+		if !strings.Contains(sql, charset) {
+			t.Fatal("failed to trim character from sql")
+		}
+		if _, err := parser.New().ParseOneStmt(sql, "", ""); err != nil {
+			t.Fatalf("failed to parse create table stmt: %v", err)
+		}
 	}
 }
 
