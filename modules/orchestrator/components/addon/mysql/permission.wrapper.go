@@ -18,4 +18,6 @@ import "github.com/erda-project/erda/apistructs"
 
 type PermissionWrapper interface {
 	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
+	CreateAuditEvent(audits *apistructs.AuditCreateRequest) error
+	GetProject(id uint64) (*apistructs.ProjectDTO, error)
 }

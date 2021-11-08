@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -180,6 +181,13 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 	}
 	dto := s.ToDTO(account, false)
 	dto.Password = pass
+
+	s.auditNoError(userID, apis.GetOrgID(ctx), routingInstance, nil, apistructs.CreateMysqlAccountTemplate,
+		map[string]interface{}{
+			"mysqlUsername": dto.Username,
+		},
+	)
+
 	return &pb.GenerateMySQLAccountResponse{
 		Account: dto,
 	}, nil
@@ -220,6 +228,13 @@ func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMyS
 	if err := s.db.UpdateMySQLAccount(account); err != nil {
 		return nil, err
 	}
+
+	s.auditNoError(userID, apis.GetOrgID(ctx), routing, nil, apistructs.DeleteMySQLAddonAccountTemplate,
+		map[string]interface{}{
+			"mysqlUsername": account.Username,
+		},
+	)
+
 	return &pb.DeleteMySQLAccountResponse{}, nil
 }
 
@@ -264,6 +279,11 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
 		return nil, err
 	}
+	// TODO: optimize
+	routing, err := s.db.GetInstanceRouting(req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
 	att, err := s.db.GetAttachmentByID(req.Id)
 	if err != nil {
 		return nil, err
@@ -271,6 +291,14 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	if req.AccountId == att.MySQLAccountID {
 		// no need to update
 		return &pb.UpdateAttachmentAccountResponse{}, nil
+	}
+	preAcc, err := s.db.GetMySQLAccountByID(att.PreviousMySQLAccountID)
+	if err != nil {
+		return nil, err
+	}
+	nextAcc, err := s.db.GetMySQLAccountByID(att.MySQLAccountID)
+	if err != nil {
+		return nil, err
 	}
 	if att.MySQLAccountState == "PRE" {
 		// in switching
@@ -292,6 +320,14 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	if err := s.db.UpdateAttachment(att); err != nil {
 		return nil, err
 	}
+
+	s.auditNoError(userID, apis.GetOrgID(ctx), routing, att, apistructs.DeleteMySQLAddonAccountTemplate,
+		map[string]interface{}{
+			"mysqlUsername":    preAcc.Username,
+			"preMysqlUsername": nextAcc.Username,
+		},
+	)
+
 	return &pb.UpdateAttachmentAccountResponse{}, nil
 }
 
@@ -338,6 +374,9 @@ func (s *mysqlService) checkPerm(userID string, instanceID string, resource stri
 	if err != nil {
 		return err
 	}
+	if routing == nil {
+		return fmt.Errorf("instance %s not found", instanceID)
+	}
 	projectID, err := strutil.Atoi64(routing.ProjectID)
 	if err != nil {
 		return err
@@ -356,4 +395,56 @@ func (s *mysqlService) checkPerm(userID string, instanceID string, resource stri
 		return fmt.Errorf("user %s does not have permission", userID)
 	}
 	return nil
+}
+
+func (s *mysqlService) auditNoError(userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
+	tmplName apistructs.TemplateName, tmplCtx map[string]interface{}) {
+	err := s.audit(userID, orgID, routing, att, tmplName, tmplCtx)
+	if err != nil {
+		s.logger.Errorf("audit %s failed, err: %+v", tmplName, err)
+	}
+}
+
+func (s *mysqlService) audit(userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
+	tmplName apistructs.TemplateName, tmplCtx map[string]interface{}) error {
+	oid, err := strutil.Atoi64(orgID)
+	if err != nil {
+		return err
+	}
+
+	pid, err := strutil.Atoi64(routing.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	project, err := s.perm.GetProject(uint64(pid))
+	if err != nil {
+		return err
+	}
+	tmplCtx["projectId"] = routing.ProjectID
+	tmplCtx["projectName"] = project.Name
+	tmplCtx["instanceId"] = routing.ID
+	tmplCtx["workspace"] = routing.Workspace
+
+	if att != nil {
+		tmplCtx["appId"] = att.ApplicationID
+		tmplCtx["runtimeId"] = att.RuntimeID
+		tmplCtx["runtimeName"] = att.RuntimeName
+	}
+
+	// TODO: direct use time.Time
+	now := time.Now().Format("2006-01-02 15:04:05")
+	audit := apistructs.Audit{
+		UserID:       userID,
+		ScopeType:    apistructs.ProjectScope,
+		ScopeID:      uint64(pid),
+		OrgID:        uint64(oid),
+		ProjectID:    uint64(pid),
+		Result:       "success",
+		StartTime:    now,
+		EndTime:      now,
+		TemplateName: tmplName,
+		Context:      tmplCtx,
+	}
+	return s.perm.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit})
 }
