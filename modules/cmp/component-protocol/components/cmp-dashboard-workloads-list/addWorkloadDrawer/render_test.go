@@ -12,11 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package label
+package addWorkloadDrawer
 
-type Label struct {
-	RenderType string `json:"renderType"`
-	Name       string `json:"name"`
-	Value      string `json:"value"`
-	Group      string `json:"group"`
+import (
+	"testing"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
+)
+
+func TestComponentAddWorkloadDrawer_Transfer(t *testing.T) {
+	component := &ComponentAddWorkloadDrawer{
+		Props: Props{
+			Title: "testTitle",
+			Size:  "small",
+		},
+		State: State{
+			Visible: true,
+		},
+	}
+	c := &cptype.Component{}
+	component.Transfer(c)
+	ok, err := cputil.IsJsonEqual(c, component)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
+	}
 }

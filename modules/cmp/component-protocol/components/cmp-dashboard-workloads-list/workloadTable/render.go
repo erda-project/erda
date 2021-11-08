@@ -155,377 +155,163 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	var items []Item
 	kinds := getWorkloadKindMap(w.State.Values.Kind)
 
-	// deployment
-	var activeDeploy, errorDeploy int
-	if _, ok := kinds[filter.DeploymentType]; ok || len(kinds) == 0 {
-		steveRequest.Type = apistructs.K8SDeployment
+	activeCount := map[apistructs.K8SResType]int{}
+	errorCount := map[apistructs.K8SResType]int{}
+	succeededCount := map[apistructs.K8SResType]int{}
+	failedCount := map[apistructs.K8SResType]int{}
+
+	for _, kind := range []apistructs.K8SResType{apistructs.K8SDeployment, apistructs.K8SStatefulSet,
+		apistructs.K8SDaemonSet, apistructs.K8SJob, apistructs.K8SCronJob} {
+		if _, ok := kinds[string(kind)]; !ok && len(kinds) != 0 {
+			continue
+		}
+		steveRequest.Type = kind
 		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}
 
-		for _, item := range list {
-			obj := item.Data()
-			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
+		for _, obj := range list {
+			workload := obj.Data()
+			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, workload.String("metadata", "namespace")) {
 				continue
 			}
-			if w.State.Values.Search != "" && !strings.Contains(obj.String("metadata", "name"), w.State.Values.Search) {
-				continue
-			}
-
-			fields := obj.StringSlice("metadata", "fields")
-			if len(fields) != 8 {
-				logrus.Errorf("deployment %s has invalid fields length", obj.String("metadata", "name"))
+			if w.State.Values.Search != "" && !strings.Contains(workload.String("metadata", "name"), w.State.Values.Search) {
 				continue
 			}
 
-			value, color, err := cmpcputil.ParseWorkloadStatus(obj)
+			statusValue, statusColor, err := cmpcputil.ParseWorkloadStatus(workload)
 			if err != nil {
 				logrus.Error(err)
 				continue
 			}
-			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
+			if w.State.Values.Status != nil && !contain(w.State.Values.Status, statusValue) {
 				continue
-			}
-			if value == "Active" {
-				activeDeploy++
-			} else {
-				errorDeploy++
 			}
 			status := Status{
 				RenderType: "text",
-				Value:      w.sdk.I18n(value),
+				Value:      w.sdk.I18n(statusValue),
 				StyleConfig: StyleConfig{
-					Color: color,
+					Color: statusColor,
 				},
 			}
 
-			name := fields[0]
-			namespace := obj.String("metadata", "namespace")
-			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SDeployment, namespace, name)
-			items = append(items, Item{
-				ID:     id,
-				Status: status,
-				Name: Link{
-					RenderType: "linkText",
-					Value:      name,
-					Operations: map[string]interface{}{
-						"click": LinkOperation{
-							Reload: false,
-							Key:    "openWorkloadDetail",
-						},
+			name := workload.String("metadata", "name")
+			namespace := workload.String("metadata", "namespace")
+			id := fmt.Sprintf("%s_%s_%s", kind, namespace, name)
+			link := Link{
+				RenderType: "linkText",
+				Value:      name,
+				Operations: map[string]interface{}{
+					"click": LinkOperation{
+						Reload: false,
+						Key:    "openWorkloadDetail",
 					},
 				},
+			}
+
+			fields := workload.StringSlice("metadata", "fields")
+			item := Item{
+				ID:        id,
+				Status:    status,
+				Name:      link,
 				Namespace: namespace,
-				Kind:      obj.String("kind"),
-				Age:       fields[4],
-				Ready:     fields[1],
-				UpToDate:  fields[2],
-				Available: fields[3],
-			})
-		}
-	}
-
-	// daemonSet
-	var activeDs, errorDs int
-	if _, ok := kinds[filter.DaemonSetType]; ok || len(kinds) == 0 {
-		steveRequest.Type = apistructs.K8SDaemonSet
-		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
-		if err != nil {
-			return err
-		}
-
-		for _, item := range list {
-			obj := item.Data()
-			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
-				continue
-			}
-			if w.State.Values.Search != "" && !strings.Contains(obj.String("metadata", "name"), w.State.Values.Search) {
-				continue
+				Kind:      workload.String("kind"),
 			}
 
-			fields := obj.StringSlice("metadata", "fields")
-			if len(fields) != 11 {
-				logrus.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
-				continue
+			switch kind {
+			case apistructs.K8SDeployment:
+				if len(fields) != 8 {
+					logrus.Errorf("deployment %s:%s has invalid fields length %d", namespace, name, len(fields))
+					continue
+				}
+				if statusValue == "Active" {
+					activeCount[kind]++
+				} else {
+					errorCount[kind]++
+				}
+				item.Age = fields[4]
+				item.Ready = fields[1]
+				item.UpToDate = fields[2]
+				item.Available = fields[3]
+			case apistructs.K8SDaemonSet:
+				if len(fields) != 11 {
+					logrus.Errorf("daemonset %s:%s has invalid fields length %d", namespace, name, len(fields))
+					continue
+				}
+				if statusValue == "Active" {
+					activeCount[kind]++
+				} else {
+					errorCount[kind]++
+				}
+				item.Age = fields[7]
+				item.Ready = fields[3]
+				item.UpToDate = fields[4]
+				item.Available = fields[5]
+				item.Desired = fields[1]
+				item.Current = fields[2]
+			case apistructs.K8SStatefulSet:
+				if len(fields) != 5 {
+					logrus.Errorf("statefulSet %s:%s has invalid fields length %d", namespace, name, len(fields))
+					continue
+				}
+				if statusValue == "Active" {
+					activeCount[kind]++
+				} else {
+					errorCount[kind]++
+				}
+				item.Age = fields[2]
+				item.Ready = fields[1]
+			case apistructs.K8SJob:
+				if len(fields) != 7 {
+					logrus.Errorf("job %s:%s has invalid fields length %d", namespace, name, len(fields))
+					continue
+				}
+				switch statusValue {
+				case "Active":
+					activeCount[kind]++
+				case "Succeeded":
+					succeededCount[kind]++
+				case "Failed":
+					failedCount[kind]++
+				}
+				item.Age = fields[3]
+				item.Completions = fields[1]
+				item.Duration = fields[2]
+			case apistructs.K8SCronJob:
+				if len(fields) != 9 {
+					logrus.Errorf("cronJob %s:%s has invalid fields length %d", namespace, name, len(fields))
+					continue
+				}
+				activeCount[kind]++
+				item.Age = fields[5]
+				item.Schedule = fields[1]
+				item.LastSchedule = fields[4]
 			}
-
-			value, color, err := cmpcputil.ParseWorkloadStatus(obj)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
-				continue
-			}
-			if value == "Active" {
-				activeDs++
-			} else {
-				errorDs++
-			}
-			status := Status{
-				RenderType: "text",
-				Value:      w.sdk.I18n(value),
-				StyleConfig: StyleConfig{
-					Color: color,
-				},
-			}
-
-			name := fields[0]
-			namespace := obj.String("metadata", "namespace")
-			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SDaemonSet, namespace, name)
-			items = append(items, Item{
-				ID:     id,
-				Status: status,
-				Name: Link{
-					RenderType: "linkText",
-					Value:      name,
-					Operations: map[string]interface{}{
-						"click": LinkOperation{
-							Reload: false,
-							Key:    "openWorkloadDetail",
-						},
-					},
-				},
-				Namespace: namespace,
-				Kind:      obj.String("kind"),
-				Age:       fields[7],
-				Ready:     fields[3],
-				UpToDate:  fields[4],
-				Available: fields[5],
-				Desired:   fields[1],
-				Current:   fields[2],
-			})
-		}
-	}
-
-	// statefulSet
-	var activeSs, errorSs int
-	if _, ok := kinds[filter.StatefulSetType]; ok || len(kinds) == 0 {
-		steveRequest.Type = apistructs.K8SStatefulSet
-		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
-		if err != nil {
-			return err
-		}
-
-		for _, item := range list {
-			obj := item.Data()
-			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
-				continue
-			}
-			if w.State.Values.Search != "" && !strings.Contains(obj.String("metadata", "name"), w.State.Values.Search) {
-				continue
-			}
-
-			fields := obj.StringSlice("metadata", "fields")
-			if len(fields) != 5 {
-				logrus.Errorf("statefulSet %s has invalid fields length", obj.String("metadata", "name"))
-				continue
-			}
-
-			value, color, err := cmpcputil.ParseWorkloadStatus(obj)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
-				continue
-			}
-			if value == "Active" {
-				activeSs++
-			} else {
-				errorSs++
-			}
-			status := Status{
-				RenderType: "text",
-				Value:      w.sdk.I18n(value),
-				StyleConfig: StyleConfig{
-					Color: color,
-				},
-			}
-
-			name := fields[0]
-			namespace := obj.String("metadata", "namespace")
-			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SStatefulSet, namespace, name)
-			items = append(items, Item{
-				ID:     id,
-				Status: status,
-				Name: Link{
-					RenderType: "linkText",
-					Value:      name,
-					Operations: map[string]interface{}{
-						"click": LinkOperation{
-							Reload: false,
-							Key:    "openWorkloadDetail",
-						},
-					},
-				},
-				Namespace: namespace,
-				Kind:      obj.String("kind"),
-				Age:       fields[2],
-				Ready:     fields[1],
-			})
-		}
-	}
-
-	// job
-	var activeJob, succeededJob, failedJob int
-	if _, ok := kinds[filter.JobType]; ok || len(kinds) == 0 {
-		steveRequest.Type = apistructs.K8SJob
-		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
-		if err != nil {
-			return err
-		}
-
-		for _, item := range list {
-			obj := item.Data()
-			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
-				continue
-			}
-			if w.State.Values.Search != "" && !strings.Contains(obj.String("metadata", "name"), w.State.Values.Search) {
-				continue
-			}
-
-			fields := obj.StringSlice("metadata", "fields")
-			if len(fields) != 7 {
-				logrus.Errorf("job %s has invalid fields length", obj.String("metadata", "name"))
-				continue
-			}
-
-			value, color, err := cmpcputil.ParseWorkloadStatus(obj)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
-				continue
-			}
-			if value == "Active" {
-				activeJob++
-			} else if value == "Succeeded" {
-				succeededJob++
-			} else {
-				failedJob++
-			}
-			status := Status{
-				RenderType: "text",
-				Value:      w.sdk.I18n(value),
-				StyleConfig: StyleConfig{
-					Color: color,
-				},
-			}
-
-			name := fields[0]
-			namespace := obj.String("metadata", "namespace")
-			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SJob, namespace, name)
-			items = append(items, Item{
-				ID:     id,
-				Status: status,
-				Name: Link{
-					RenderType: "linkText",
-					Value:      name,
-					Operations: map[string]interface{}{
-						"click": LinkOperation{
-							Reload: false,
-							Key:    "openWorkloadDetail",
-						},
-					},
-				},
-				Namespace:   namespace,
-				Kind:        obj.String("kind"),
-				Age:         fields[3],
-				Completions: fields[1],
-				Duration:    fields[2],
-			})
-		}
-	}
-
-	// cronjob
-	var activeCronJob int
-	if _, ok := kinds[filter.CronJobType]; ok || len(kinds) == 0 {
-		steveRequest.Type = apistructs.K8SCronJob
-		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
-		if err != nil {
-			return err
-		}
-
-		for _, item := range list {
-			obj := item.Data()
-			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, obj.String("metadata", "namespace")) {
-				continue
-			}
-			if w.State.Values.Search != "" && !strings.Contains(obj.String("metadata", "name"), w.State.Values.Search) {
-				continue
-			}
-
-			fields := obj.StringSlice("metadata", "fields")
-			if len(fields) != 9 {
-				logrus.Errorf("cronjob %s has invalid fields length", obj.String("metadata", "name"))
-				continue
-			}
-
-			value, color, err := cmpcputil.ParseWorkloadStatus(obj)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
-				continue
-			}
-			activeCronJob++
-			status := Status{
-				RenderType: "text",
-				Value:      w.sdk.I18n(value),
-				StyleConfig: StyleConfig{
-					Color: color,
-				},
-			}
-
-			name := fields[0]
-			namespace := obj.String("metadata", "namespace")
-			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SCronJob, namespace, name)
-			items = append(items, Item{
-				ID:     id,
-				Status: status,
-				Name: Link{
-					RenderType: "linkText",
-					Value:      name,
-					Operations: map[string]interface{}{
-						"click": LinkOperation{
-							Reload: false,
-							Key:    "openWorkloadDetail",
-						},
-					},
-				},
-				Namespace:    namespace,
-				Kind:         obj.String("kind"),
-				Age:          fields[5],
-				Schedule:     fields[1],
-				LastSchedule: fields[4],
-			})
+			items = append(items, item)
 		}
 	}
 
 	w.State.CountValues = CountValues{
 		DeploymentsCount: Count{
-			Active: activeDeploy,
-			Error:  errorDeploy,
+			Active: activeCount[apistructs.K8SDeployment],
+			Error:  errorCount[apistructs.K8SDeployment],
 		},
 		DaemonSetCount: Count{
-			Active: activeDs,
-			Error:  errorDs,
+			Active: activeCount[apistructs.K8SDaemonSet],
+			Error:  errorCount[apistructs.K8SDaemonSet],
 		},
 		StatefulSetCount: Count{
-			Active: activeSs,
-			Error:  errorSs,
+			Active: activeCount[apistructs.K8SStatefulSet],
+			Error:  errorCount[apistructs.K8SStatefulSet],
 		},
 		JobCount: Count{
-			Active:    activeJob,
-			Succeeded: succeededJob,
-			Failed:    failedJob,
+			Active:    activeCount[apistructs.K8SJob],
+			Succeeded: succeededCount[apistructs.K8SJob],
+			Failed:    failedCount[apistructs.K8SJob],
 		},
 		CronJobCount: Count{
-			Active: activeCronJob,
+			Active: activeCount[apistructs.K8SCronJob],
 		},
 	}
 
@@ -831,7 +617,20 @@ func (w *ComponentWorkloadTable) Transfer(c *cptype.Component) {
 func getWorkloadKindMap(kinds []string) map[string]struct{} {
 	res := make(map[string]struct{})
 	for _, kind := range kinds {
-		res[kind] = struct{}{}
+		switch kind {
+		case filter.DeploymentType:
+			res[string(apistructs.K8SDeployment)] = struct{}{}
+		case filter.StatefulSetType:
+			res[string(apistructs.K8SStatefulSet)] = struct{}{}
+		case filter.DaemonSetType:
+			res[string(apistructs.K8SDaemonSet)] = struct{}{}
+		case filter.JobType:
+			res[string(apistructs.K8SJob)] = struct{}{}
+		case filter.CronJobType:
+			res[string(apistructs.K8SCronJob)] = struct{}{}
+		default:
+			res[kind] = struct{}{}
+		}
 	}
 	return res
 }

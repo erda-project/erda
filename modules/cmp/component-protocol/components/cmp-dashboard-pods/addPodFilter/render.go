@@ -23,13 +23,14 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -101,14 +102,11 @@ func (f *ComponentAddPodFilter) SetComponentValue(ctx context.Context) error {
 	userID := f.sdk.Identity.UserID
 	orgID := f.sdk.Identity.OrgID
 
-	req := apistructs.SteveRequest{
-		UserID:      userID,
-		OrgID:       orgID,
-		Type:        apistructs.K8SNamespace,
-		ClusterName: f.State.ClusterName,
+	namespaces, err := cputil2.GetAllNamespacesFromCache(ctx, f.server, userID, orgID, f.State.ClusterName)
+	if err != nil {
+		return err
 	}
-
-	list, err := f.server.ListSteveResource(f.ctx, &req)
+	projectID2displayName, err := cputil2.GetAllProjectsDisplayNameFromCache(f.bdl, orgID)
 	if err != nil {
 		return err
 	}
@@ -150,16 +148,25 @@ func (f *ComponentAddPodFilter) SetComponentValue(ctx context.Context) error {
 		Value: "others",
 	}
 
-	for _, item := range list {
-		obj := item.Data()
-		name := obj.String("metadata", "name")
+	for _, name := range namespaces {
 		option := Option{
 			Label: name,
 			Value: name,
 		}
 		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
-			displayName, err := f.getDisplayName(name)
-			if err == nil {
+			splits := strings.Split(name, "-")
+			if len(splits) != 3 {
+				continue
+			}
+			id := splits[1]
+			num, err := strconv.ParseInt(id, 10, 64)
+			if err != nil {
+				logrus.Errorf("failed to parse project id %s from namespace %s, %v", id, name, err)
+				continue
+			}
+
+			displayName, ok := projectID2displayName[uint64(num)]
+			if ok {
 				option.Label = fmt.Sprintf("%s (%s: %s)", name, cputil.I18n(ctx, "project"), displayName)
 				switch suf {
 				case "-dev":
@@ -232,23 +239,6 @@ func (f *ComponentAddPodFilter) Transfer(component *cptype.Component) {
 		"values":      f.State.Values,
 	}
 	component.Operations = f.Operations
-}
-
-func (f *ComponentAddPodFilter) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := f.bdl.GetProject(uint64(num))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
 }
 
 func hasSuffix(name string) (string, bool) {

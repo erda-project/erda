@@ -384,20 +384,3 @@ func hasSuffix(name string) (string, bool) {
 	}
 	return "", false
 }
-
-func (f *ComponentFilter) getDisplayName(name string) (string, error) {
-	splits := strings.Split(name, "-")
-	if len(splits) != 3 {
-		return "", errors.New("invalid name")
-	}
-	id := splits[1]
-	num, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	project, err := f.bdl.GetProject(uint64(num))
-	if err != nil {
-		return "", err
-	}
-	return project.DisplayName, nil
-}

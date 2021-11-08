@@ -28,9 +28,9 @@ type ComponentOperationButton struct {
 	ctx    context.Context
 	sdk    *cptype.SDK
 	server cmp.SteveServer
-	Type   string `json:"type"`
-	State  State  `json:"state"`
+	Type   string `json:"type,omitempty"`
 	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type State struct {

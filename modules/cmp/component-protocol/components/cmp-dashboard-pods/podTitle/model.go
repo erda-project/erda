@@ -22,7 +22,7 @@ type PodTitle struct {
 	base.DefaultProvider
 
 	Props Props  `json:"props"`
-	Type  string `json:"type"`
+	Type  string `json:"type,omitempty"`
 }
 
 type Props struct {

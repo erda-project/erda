@@ -28,7 +28,7 @@ type ComponentAddPodFileEditor struct {
 	sdk        *cptype.SDK
 	ctx        context.Context
 	server     cmp.SteveServer
-	Type       string                 `json:"type"`
+	Type       string                 `json:"type,omitempty"`
 	Props      Props                  `json:"props"`
 	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
@@ -42,8 +42,8 @@ type Props struct {
 
 type State struct {
 	ClusterName string `json:"clusterName,omitempty"`
-	Values      Values `json:"values,omitempty"`
 	Value       string `json:"value,omitempty"`
+	Values      Values `json:"values,omitempty"`
 }
 
 type Operation struct {

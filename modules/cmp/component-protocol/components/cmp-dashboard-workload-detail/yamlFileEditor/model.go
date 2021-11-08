@@ -46,8 +46,8 @@ type Actions struct {
 
 type State struct {
 	ClusterName string `json:"clusterName,omitempty"`
-	WorkloadID  string `json:"workloadId,omitempty"`
 	Value       string `json:"value,omitempty"`
+	WorkloadID  string `json:"workloadId,omitempty"`
 }
 
 type Operation struct {

@@ -15,10 +15,13 @@
 package ContainerTable
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 func TestComponentContainerTable_Transfer(t *testing.T) {
@@ -93,4 +96,42 @@ func TestComponentContainerTable_Transfer(t *testing.T) {
 	if string(expectedData) != string(resultData) {
 		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
 	}
+}
+
+func TestContainerTable_GenComponentState(t *testing.T) {
+	c := &cptype.Component{State: map[string]interface{}{
+		"clusterName": "testClusterName",
+		"podId":       "testPodId",
+	}}
+	ct := &ContainerTable{}
+	if err := ct.GenComponentState(c); err != nil {
+		t.Fatal(err)
+	}
+	ok, err := cputil.IsJsonEqual(ct.State, c.State)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Error("test failed, json is not equal")
+	}
+}
+
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
+func TestParseContainerStatus(t *testing.T) {
+	sdk := cptype.SDK{Tran: &MockTran{}}
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &sdk)
+	parseContainerStatus(ctx, "running")
+	parseContainerStatus(ctx, "waiting")
+	parseContainerStatus(ctx, "terminated")
 }
