@@ -308,7 +308,33 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	for _, item := range list {
 		var config map[string]*structpb.Value
 		if item.Config != "" {
-			json.Unmarshal([]byte(item.Config), &config)
+			err := json.Unmarshal([]byte(item.Config), &config)
+			if err != nil {
+				return nil, err
+			}
+			if v, ok := config["body"]; ok {
+				bodyBytes, err := json.Marshal(v.GetStructValue())
+				if err != nil {
+					return nil, err
+				}
+				bodyStr := string(bodyBytes)
+				if !strings.Contains(bodyStr, "content") {
+					// history
+					fields := v.GetStructValue().GetFields()
+					fields["content"] = structpb.NewStringValue(bodyStr)
+					fields["type"] = structpb.NewStringValue("none")
+					headers := config["headers"].GetStructValue().GetFields()
+					if v, ok := headers["Content-Type"]; ok {
+						fields["type"] = structpb.NewStringValue(v.GetStringValue())
+					}
+
+					for k, _ := range fields {
+						if k != "content" && k != "type" {
+							delete(fields, k)
+						}
+					}
+				}
+			}
 		}
 
 		result := &pb.DescribeItemV1{
