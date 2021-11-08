@@ -328,7 +328,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 						fields["type"] = structpb.NewStringValue(v.GetStringValue())
 					}
 
-					for k, _ := range fields {
+					for k := range fields {
 						if k != "content" && k != "type" {
 							delete(fields, k)
 						}
