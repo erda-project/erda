@@ -285,10 +285,12 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 			}
 			allNsValues, expired, err := cache.GetFreeCache().Get(key.GetKey())
 			if allNsValues != nil && err == nil && !expired {
+				logrus.Infof("get %s from all namespace cache", req.Type)
 				return getByNamespace(allNsValues[0].Value().([]types.APIObject), apiOp.Namespace), nil
 			}
 		}
 
+		logrus.Infof("can not get cache for %s, list from steve server", req.Type)
 		queryQueue.Acquire(req.ClusterName, 1)
 		list, err := p.list(apiOp, resp, req.ClusterName)
 		queryQueue.Release(req.ClusterName, 1)
@@ -340,6 +342,7 @@ func (p *provider) ListSteveResource(ctx context.Context, req *apistructs.SteveR
 		}
 	}
 
+	logrus.Infof("get %s from cache", req.Type)
 	list := values[0].Value().([]types.APIObject)
 	return list, nil
 }
