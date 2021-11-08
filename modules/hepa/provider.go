@@ -56,7 +56,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		path := strings.Replace(req.URL.Path, "/api/gateway/openapi/metrics/charts", "/api/metrics", 1)
 		path += "?" + req.URL.RawQuery
 		logrus.Infof("monitor proxy url:%s", path)
-		code, body, err := util.CommonRequest("GET", discover.Monitor()+path, nil)
+		headers := make(map[string]string)
+		for key, values := range req.Header {
+			headers[key] = values[0]
+		}
+		code, body, err := util.CommonRequest("GET", discover.Monitor()+path, nil, headers)
 		if err != nil {
 			logrus.Error(err)
 			code = http.StatusInternalServerError
