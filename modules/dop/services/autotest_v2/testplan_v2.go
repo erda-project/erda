@@ -876,8 +876,8 @@ func (svc *Service) ListTestPlanV2ByID(planIDs ...uint64) (steps []apistructs.Te
 }
 
 // ListAutoTestExecHistory .
-func (svc *Service) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs ...uint64) (history []apistructs.AutoTestExecHistoryDto, err error) {
-	list, err := svc.db.ListAutoTestExecHistory(timeStart, timeEnd, planIDs...)
+func (svc *Service) ListAutoTestExecHistory(timeStart, timeEnd string, itrIDs []uint64, planIDs ...uint64) (history []apistructs.AutoTestExecHistoryDto, err error) {
+	list, err := svc.db.ListAutoTestExecHistory(timeStart, timeEnd, itrIDs, planIDs...)
 	if err != nil {
 		return nil, err
 	}

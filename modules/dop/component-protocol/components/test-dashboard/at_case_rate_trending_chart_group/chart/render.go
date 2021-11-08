@@ -129,6 +129,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		historyList, err := atSvc.ListAutoTestExecHistory(
 			timeFilter.TimeStart,
 			timeFilter.TimeEnd,
+			h.GetGlobalSelectedIterationIDs(),
 			func() []uint64 {
 				planIDs := make([]uint64, 0, len(atPlans))
 				for _, v := range atPlans {

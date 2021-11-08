@@ -83,9 +83,10 @@ func (AutoTestExecHistory) TableName() string {
 }
 
 // ListAutoTestExecHistory .
-func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs ...uint64) ([]AutoTestExecHistory, error) {
+func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, itrIDs []uint64, planIDs ...uint64) ([]AutoTestExecHistory, error) {
 	var list []AutoTestExecHistory
 	db := client.Model(&AutoTestExecHistory{}).
+		Where("iteration_id IN (?)", itrIDs).
 		Where("plan_id IN (?)", planIDs)
 	if timeStart != "" {
 		db = db.Where("execute_time >= ?", timeStart)
