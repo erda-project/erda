@@ -31,7 +31,6 @@ import (
 
 	"github.com/bugaolengdeyuxiaoer/go-ansiterm"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -63,7 +62,7 @@ const (
 	AuditTargetLabel  = "targetLabel"
 	AuditCommands     = "commands"
 
-	maxAuditLength = 40000
+	maxAuditLength = 1 << 16
 )
 
 type Auditor struct {
@@ -263,46 +262,40 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		ctx:        w.ctx,
 	}
 	go func(w *wrapWriter) {
-		limiter := rate.NewLimiter(1, 1)
 		for {
-			select {
-			case <-w.ctx.Done():
-				return
-			case <-closeChan:
-				return
-			default:
-				err = limiter.Wait(w.ctx)
-				if err != nil {
-					logrus.Errorf("audit with websocket limiter error, %v", err)
+			auditStr := ""
+		LOOP:
+			for {
+				select {
+				case cmd := <-d.auditReqChan:
+					auditStr += fmt.Sprintf("%s: %s\n", cmd.start.Format(time.RFC3339), cmd.cmd)
+					if len(auditStr) > maxAuditLength {
+						break LOOP
+					}
+				case <-w.ctx.Done():
+					w.sendWebsocketAudit(auditStr)
+					return
+				case <-closeChan:
+					w.sendWebsocketAudit(auditStr)
 					return
 				}
-				auditStr := ""
-				ticker := time.NewTicker(1 * time.Second)
-			LOOP:
-				for {
-					select {
-					case <-ticker.C:
-						break LOOP
-					case cmd := <-d.auditReqChan:
-						auditStr += fmt.Sprintf("%s: %s\n", cmd.start.Format(time.RFC3339), cmd.cmd)
-						if len(auditStr) > 1024 {
-							break LOOP
-						}
-					default:
-					}
-				}
-				if len(auditStr) > 0 {
-					w.auditReq.Context[AuditCommands] = auditStr
-					if err := w.bdl.CreateAuditEvent(&w.auditReq); err != nil {
-						logrus.Errorf("faild to audit in steve audit, %v", err)
-					} else {
-						logrus.Infof("send audit message with websocket : %s", auditStr)
-					}
-				}
+				w.sendWebsocketAudit(auditStr)
 			}
+
 		}
 	}(w)
 	return wc, rw, nil
+}
+
+func (w *wrapWriter) sendWebsocketAudit(auditStr string) {
+	if len(auditStr) > 0 {
+		w.auditReq.Context[AuditCommands] = auditStr
+		if err := w.bdl.CreateAuditEvent(&w.auditReq); err != nil {
+			logrus.Errorf("faild to audit in steve audit, %v", err)
+		} else {
+			logrus.Infof("send audit message with websocket ,length : %d,", len(auditStr))
+		}
+	}
 }
 
 type wrapConn struct {
