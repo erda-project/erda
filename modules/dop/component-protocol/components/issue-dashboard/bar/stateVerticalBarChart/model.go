@@ -25,5 +25,6 @@ type ComponentAction struct {
 }
 
 type State struct {
-	Values common.FilterConditions `json:"values,omitempty"`
+	Values       common.FilterConditions   `json:"values,omitempty"`
+	FilterValues common.FrontendConditions `json:"filterValues,omitempty"`
 }
