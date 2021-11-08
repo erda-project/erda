@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cassandra_v1
+package storage
 
 import (
 	"fmt"
