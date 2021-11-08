@@ -42,10 +42,11 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Bdl = bundle.New(bundle.WithKMS())
+	p.Bdl = bundle.New(bundle.WithKMS(), bundle.WithCoreServices())
 	p.addonMySQLService = &mysqlService{
 		logger: p.Logger,
 		kms:    NewKMSWrapper(p.Bdl),
+		perm:   p.Bdl,
 		db: &dbclient.DBClient{
 			DBEngine: &dbengine.DBEngine{
 				DB: p.DB,

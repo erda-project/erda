@@ -433,6 +433,10 @@
   scope: project
   resource: addon
   action: GET
+- role: Owner,Lead
+  scope: project
+  resource: addon
+  action: UPDATE
 - role: Owner,Lead,Dev,QA
   scope: project
   resource: addon
