@@ -70,8 +70,13 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 }
 
 func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
-	var data []*apistructs.CodeCoverageNode
-	var root *apistructs.CodeCoverageNode
+	var (
+		data      []*apistructs.CodeCoverageNode
+		root      *apistructs.CodeCoverageNode
+		path      string
+		rootValue []float64
+		toolTip   apistructs.ToolTip
+	)
 	title := cputil.I18n(ctx, "report-details")
 	var maxDepth int
 	projectName := ""
@@ -85,6 +90,9 @@ func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 			maxDepth = reportContent[0].MaxDepth()
 			data = reportContent[0].Nodes
 			root = reportContent[0]
+			path = root.Path
+			rootValue = root.Value
+			toolTip = root.ToolTip
 		}
 		// mysql default time 1000-01-01
 		if record.ReportTime.Year() != 1000 {
@@ -141,9 +149,9 @@ func (c *ComponentAction) setProps(ctx context.Context, recordID uint64) error {
 					"type":            "treemap",
 					"roam":            false,
 					"leafDepth":       maxDepth,
-					"tooltip":         root.ToolTip,
-					"value":           root.Value,
-					"path":            root.Path,
+					"tooltip":         toolTip,
+					"value":           rootValue,
+					"path":            path,
 					"bottom":          30,
 					"width":           "100%",
 					"height":          "90%",
