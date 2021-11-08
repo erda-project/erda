@@ -202,7 +202,7 @@ func (d *dispatcher) RemoveBackwardAll() error {
 
 // removeAndStore remove buf [start,end] and store it
 func (d *dispatcher) removeAndStore(start, end int) {
-	if end < start {
+	if end < start || start <= 0 || end <= 0 {
 		return
 	}
 	newLen := end - start + 1
@@ -214,20 +214,30 @@ func (d *dispatcher) removeAndStore(start, end int) {
 }
 
 func (d *dispatcher) findForwardWord() (int, int) {
-	start := d.cursorIdx + 1
+	if d.cursorIdx == d.length+startIdx {
+		return d.cursorIdx, 0
+	}
+	end := d.cursorIdx + 1
 	// skip any space
-	for ; start <= d.length && d.buf[start] == ' '; start++ {
+	for ; end <= d.length && d.buf[end] == ' '; end++ {
 	}
 	// find space to the end
-	for ; start <= d.length; start++ {
-		if d.buf[start] == ' ' {
+	for ; end < d.length+startIdx; end++ {
+		if d.buf[end] == ' ' {
+			end--
 			break
 		}
 	}
-	return d.cursorIdx + 1, start - 1
+	if end >= d.length+startIdx {
+		end = d.length
+	}
+	return d.cursorIdx, end
 }
 
 func (d *dispatcher) findBackwardWord() (int, int) {
+	if d.cursorIdx == startIdx {
+		return startIdx, 0
+	}
 	start := d.cursorIdx - 1
 	// skip any space
 	for ; start >= startIdx && d.buf[start] == ' '; start-- {
@@ -296,10 +306,10 @@ func (d *dispatcher) DoubleX() error {
 }
 
 func (d *dispatcher) SwapLastTwoCharacter() error {
-	if d.cursorIdx == startIdx {
+	if d.length == startIdx || d.cursorIdx == startIdx {
 		return nil
 	}
-	if d.length > 1 && d.cursorIdx != d.length+1 {
+	if d.cursorIdx != d.length+startIdx {
 		d.buf[d.cursorIdx-1], d.buf[d.cursorIdx] = d.buf[d.cursorIdx], d.buf[d.cursorIdx-1]
 	} else {
 		d.buf[d.cursorIdx-2], d.buf[d.cursorIdx-1] = d.buf[d.cursorIdx-1], d.buf[d.cursorIdx-2]
