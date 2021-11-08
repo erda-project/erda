@@ -104,3 +104,100 @@ func (client *DBClient) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (A
 	err := client.Model(&AutoTestExecHistory{}).Where("pipeline_id = ?", pipelineID).First(&execHistory).Error
 	return execHistory, err
 }
+
+// ExecHistorySceneAvgCostTime .
+func (client *DBClient) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneAvgCostTime, err error) {
+	db := client.Debug().Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
+		Where("project_id = ?", req.ProjectID).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeScene)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("scene_id").Find(&list).Error
+	return
+}
+
+// ExecHistorySceneStatusCount .
+func (client *DBClient) ExecHistorySceneStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneStatusCount, err error) {
+	db := client.Debug().Table("dice_autotest_exec_history").
+		Select("scene_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
+			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
+		Where("project_id = ?", req.ProjectID).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeScene)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("scene_id").Find(&list).Error
+	return
+}
+
+// ExecHistorySceneApiStatusCount .
+func (client *DBClient) ExecHistorySceneApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneApiStatusCount, err error) {
+	db := client.Debug().Table("dice_autotest_exec_history").
+		Select("scene_id,SUM(`success_api_num`) AS 'success_count',"+
+			"SUM(`total_api_num`) AS 'total_count'").
+		Where("project_id = ?", req.ProjectID).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type = ?", apistructs.StepTypeScene)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("scene_id").Find(&list).Error
+	return
+}
+
+// ExecHistoryApiAvgCostTime .
+func (client *DBClient) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiAvgCostTime, err error) {
+	db := client.Debug().Table("dice_autotest_exec_history").
+		Select("step_id,AVG(cost_time_sec) AS avg").
+		Where("project_id = ?", req.ProjectID).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type IN (?)", apistructs.EffectiveStepType)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("step_id").Find(&list).Error
+	return
+}
+
+// ExecHistoryApiStatusCount .
+func (client *DBClient) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiStatusCount, err error) {
+	db := client.Debug().Table("dice_autotest_exec_history").
+		Select("step_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
+			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
+		Where("project_id = ?", req.ProjectID).
+		Where("plan_id IN (?)", req.PlanIDs).
+		Where("type IN (?)", apistructs.EffectiveStepType)
+	if req.TimeStart != "" {
+		db = db.Where("execute_time >= ?", req.TimeStart)
+	}
+	if req.TimeEnd != "" {
+		db = db.Where("execute_time <= ?", req.TimeEnd)
+	}
+	err = db.Group("step_id").Find(&list).Error
+	return
+}
+
+// ListExecHistorySceneSetByParentPID .
+func (client *DBClient) ListExecHistorySceneSetByParentPID(parentPID uint64) (list []AutoTestExecHistory, err error) {
+	err = client.Model(AutoTestExecHistory{}).
+		Where("parent_p_id = ?", parentPID).
+		Where("type = ?", apistructs.AutotestSceneSet).
+		Order("execute_time ASC").
+		Find(&list).Error
+	return
+}
