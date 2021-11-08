@@ -23,6 +23,7 @@ import (
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -54,7 +55,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	pg := common.LoadPageDataAccount(ctx)
 	switch event.Operation {
 	case "addAccount":
-		_, err := addonMySQLSvc.GenerateMySQLAccount(ctx, &addonmysqlpb.GenerateMySQLAccountRequest{
+		_, err := addonMySQLSvc.GenerateMySQLAccount(utils.NewContextWithHeader(ctx), &addonmysqlpb.GenerateMySQLAccountRequest{
 			InstanceId: pg.InstanceID,
 			UserID:     userID,
 		})

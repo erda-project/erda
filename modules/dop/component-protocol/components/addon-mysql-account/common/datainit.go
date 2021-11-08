@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,7 +41,7 @@ type AccountData struct {
 func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (*AccountData, error) {
 	identity := cputil.GetIdentity(ctx)
 	addonMySQLSvc := ctx.Value(types.AddonMySQLService).(addonmysqlpb.AddonMySQLServiceServer)
-	r, err := addonMySQLSvc.ListAttachment(ctx, &addonmysqlpb.ListAttachmentRequest{
+	r, err := addonMySQLSvc.ListAttachment(utils.NewContextWithHeader(ctx), &addonmysqlpb.ListAttachmentRequest{
 		InstanceId: instanceID,
 	})
 	if err != nil {
@@ -51,7 +52,7 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 		attachmentMap[attachment.Id] = attachment
 	}
 
-	ra, err := addonMySQLSvc.ListMySQLAccount(ctx, &addonmysqlpb.ListMySQLAccountRequest{
+	ra, err := addonMySQLSvc.ListMySQLAccount(utils.NewContextWithHeader(ctx), &addonmysqlpb.ListMySQLAccountRequest{
 		InstanceId: instanceID,
 	})
 	if err != nil {

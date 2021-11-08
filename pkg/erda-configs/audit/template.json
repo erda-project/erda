@@ -904,6 +904,17 @@
   "updateOrg": {
     "desc": "更新企业",
     "success": {
+      "zh": "更新了企业[@orgName]",
+      "en": "Company updated [@orgName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "updateOrgV2": {
+    "desc": "更新企业",
+    "success": {
       "zh": "更新了企业[@orgName], [@contentZH]",
       "en": "Company updated [@orgName], [@contentEN]"
     },
@@ -1669,17 +1680,6 @@
       "en": ""
     }
   },
-  "scaleRuntime": {
-    "desc": "服务扩缩容",
-    "success": {
-      "zh": "应用 [@appName](app) 中, 对 [@serviceName] 进行了扩缩容, [@scaleMessageZH]",
-      "en": "in app [@appName](app), Changed the scale of service [@serviceName], [@scaleMessageEN]"
-    },
-    "fail": {
-      "zh": "",
-      "en": ""
-    }
-  },
   "labelNode": {
     "desc": "添加节点标签",
     "success": {
@@ -1718,6 +1718,39 @@
     "success": {
       "zh": "在集群 [@clusterName] 中，解冻节点 [@name]",
       "en": "Uncordon the node [@name] in cluster [@clusterName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "drainNode": {
+    "desc": "驱散节点",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，驱散节点 [@name]",
+      "en": "Drain the node [@name] in cluster [@clusterName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "offlineNode": {
+    "desc": "下线节点",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，下线节点 [@name]",
+      "en": "Offline the node [@name] in cluster [@clusterName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "onlineNode": {
+    "desc": "上线节点",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，上线节点 [@name]",
+      "en": "Online the node [@name] in cluster [@clusterName]"
     },
     "fail": {
       "zh": "",
@@ -1768,6 +1801,17 @@
       "en": ""
     }
   },
+  "restartWorkload": {
+    "desc": "重新调度工作负载",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，重新调度 [@resourceType] : [@name]（命名空间：[@namespace]）",
+      "en": "Restart [@resourceType] : [@name] in cluster [@clusterName] (namespace: [@namespace])"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
   "redeployRuntime": {
     "desc": "服务重启",
     "success": {
@@ -1801,6 +1845,17 @@
       "en": ""
     }
   },
+  "scaleRuntime": {
+    "desc": "服务扩缩容",
+    "success": {
+      "zh": "应用 [@appName](app) 中, 对 [@serviceName] 进行了扩缩容, [@scaleMessageZH]",
+      "en": "in app [@appName](app), changed the scale of service [@serviceName], [@scaleMessageEN]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
   "archiveTestPlan": {
     "desc": "测试计划归档",
     "success": {
@@ -1812,7 +1867,7 @@
       "en": ""
     }
   },
-  "cancelArchiveTestPlan": {
+  "unarchiveTestPlan": {
     "desc": "测试计划取消归档",
     "success": {
       "zh": "在 [@projectName](project) 项目中，对测试计划 [@testPlanName] 取消了归档",
@@ -1821,6 +1876,67 @@
     "fail": {
       "zh": "",
       "en": ""
+    }
+  },
+  "createIssueState": {
+    "desc": "创建自定义状态",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对<<issueType>>事项追加了状态 [@stateName]",
+      "en": "Add issue state [@stateName] for <<issueType>> in project [@projectName](project)"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "updateIssueState": {
+    "desc": "更新自定义状态",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对<<issueType>>事项更新了状态 [@stateName]",
+      "en": "Update issue state [@stateName] for <<issueType>> in project [@projectName](project)"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "deleteIssueState": {
+    "desc": "删除自定义状态",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对<<issueType>>事项删除了状态 [@stateName]",
+      "en": "Delete issue state [@stateName] for <<issueType>> in project [@projectName](project)"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "updateProjectResourceConfig": {
+    "desc": "修改项目环境资源配置",
+    "success": {
+      "zh": "在组织 [@orgName] 中，修改了项目 [@projectName](project) 的资源配置。\n开发环境 修改前：集群：[@oldDevCluster]，CPU：[@oldDevCPU] 核，内存：[@oldDevMem]；修改后：集群：[@newDevCluster]，CPU：[@newDevCPU] 核，内存：[@newDevMem]\n测试环境 修改前：集群：[@oldTestCluster]，CPU：[@oldTestCPU] 核，内存：[@oldTestMem]；修改后：集群：[@newTestCluster]，CPU：[@newTestCPU] 核，内存：[@newTestMem]\n预发环境 修改前：集群：[@oldStagingCluster]，CPU：[@oldStagingCPU] 核，内存：[@oldStagingMem]；修改后：集群：[@newStagingCluster]，CPU：[@newStagingCPU] 核，内存：[@newStagingMem]\n生产环境 修改前：集群：[@oldProdCluster]，CPU：[@oldProdCPU] 核，内存：[@oldProdMem]；修改后：集群：[@newProdCluster]，CPU：[@newProdCPU] 核，内存：[@newProdMem]",
+      "en": "Update resource config for project [@projectName](project) in organization [@orgName].\nWorkspace dev Before: Cluster: [@oldDevCluster], CPU: [@oldDevCPU] core(s), memory: [@oldDevMem]; Now: Cluster: [@newDevCluster], CPU: [@newDevCPU] core(s), memory: [@newDevMem]\nWorkspace test Before: Cluster: [@oldTestCluster], CPU: [@oldTestCPU] core(s), memory: [@oldTestMem]; Now: Cluster: [@newTestCluster], CPU: [@newTestCPU] core(s), memory: [@newTestMem]\nWorkspace staging Before: Cluster: [@oldStagingCluster], CPU: [@oldStagingCPU] core(s), memory: [@oldStagingMem]; Now: Cluster: [@newStagingCluster], CPU: [@newStagingCPU] core(s), memory: [@newStagingMem]\nWorkspace production Before: Cluster: [@oldProdCluster], CPU: [@oldProdCPU], memory: [@oldProdMem]; Now: Cluster: [@newProdCluster], CPU: [@newProdCPU], memory: [@newProdMem]"
+    }
+  },
+  "createMySQLAddonAccount": {
+    "desc": "创建 MySQL Addon 账号",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对 [@workspace] 环境的 [MySQL](addonPlatformMysqlAccount) 创建了账号 [@mysqlUsername]",
+      "en": "Create account [@mysqlUsername] for [MySQL](addonPlatformMysqlAccount) at [@workspace] in project [@projectName](project)"
+    }
+  },
+  "deleteMySQLAddonAccount": {
+    "desc": "删除 MySQL Addon 账号",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对 [@workspace] 环境的 [MySQL](addonPlatformMysqlAccount) 创建了账号 [@mysqlUsername]",
+      "en": "Delete account [@mysqUsername] for [MySQL](addonPlatformMysqlAccount) at [@workspace] in project [@projectName](project)"
+    }
+  },
+  "resetAttachmentMySQLAddonAccount": {
+    "desc": "修改 MySQL Addon 账号引用",
+    "success": {
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 runtime [@runtimeName](runtimeDetailRoot) 修改了 MySQL 账号 [@preMysqlUsername] -> [@mysqlUsername]",
+      "en": "Change MySQL account [@preMysqlUsername] -> [@mysqlUsername] for runtime [@runtimeName](runtimeDetailRoot) in [@projectName](project) / [@appName](app)"
     }
   }
 }

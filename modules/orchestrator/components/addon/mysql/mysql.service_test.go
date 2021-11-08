@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
@@ -130,12 +131,12 @@ func Test_mysqlService_getConnConfig(t *testing.T) {
 			fields: fields{
 				kms: &MockKMS{},
 			},
-			args:    args{
+			args: args{
 				ins: &dbclient.AddonInstance{
 					Config: `{"MYSQL_HOST":"hhh","MYSQL_PORT":"ppp","MYSQL_USERNAME":"uuu","MYSQL_PASSWORD":"MjIy"}`,
 				},
 			},
-			want:    &connConfig{
+			want: &connConfig{
 				Host: "hhh",
 				Port: "ppp",
 				User: "uuu",
@@ -158,6 +159,195 @@ func Test_mysqlService_getConnConfig(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getConnConfig() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type MockPerm struct {
+}
+
+func (m *MockPerm) CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+	if req.ScopeID == 24 {
+		return &apistructs.PermissionCheckResponseData{Access: true}, nil
+	}
+	return &apistructs.PermissionCheckResponseData{Access: false}, nil
+}
+
+func (m *MockPerm) CreateAuditEvent(audits *apistructs.AuditCreateRequest) error {
+	return nil
+}
+
+func (m *MockPerm) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
+	return &apistructs.ProjectDTO{
+		ID:   id,
+		Name: "test-project",
+	}, nil
+}
+
+func Test_mysqlService_checkPerm(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+		kms    KMSWrapper
+		perm   PermissionWrapper
+		db     *dbclient.DBClient
+	}
+	type args struct {
+		userID   string
+		routing  *dbclient.AddonInstanceRouting
+		resource string
+		action   string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "t1",
+			fields: fields{
+				perm: &MockPerm{},
+			},
+			args: args{
+				userID: "111",
+				routing: &dbclient.AddonInstanceRouting{
+					ID:        "222",
+					ProjectID: "24",
+				},
+				resource: "addon",
+				action:   "UPDATE",
+			},
+			wantErr: false,
+		},
+		{
+			name: "t2",
+			fields: fields{
+				perm: &MockPerm{},
+			},
+			args: args{
+				userID: "111",
+				routing: &dbclient.AddonInstanceRouting{
+					ID:        "222",
+					ProjectID: "42",
+				},
+				resource: "addon",
+				action:   "UPDATE",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &mysqlService{
+				logger: tt.fields.logger,
+				kms:    tt.fields.kms,
+				perm:   tt.fields.perm,
+				db:     tt.fields.db,
+			}
+			if err := s.checkPerm(tt.args.userID, tt.args.routing, tt.args.resource, tt.args.action); (err != nil) != tt.wantErr {
+				t.Errorf("checkPerm() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_mysqlService_audit(t *testing.T) {
+	type fields struct {
+		logger logs.Logger
+		kms    KMSWrapper
+		perm   PermissionWrapper
+		db     *dbclient.DBClient
+	}
+	type args struct {
+		userID   string
+		orgID    string
+		routing  *dbclient.AddonInstanceRouting
+		att      *dbclient.AddonAttachment
+		tmplName apistructs.TemplateName
+		tmplCtx  map[string]interface{}
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "create",
+			fields: fields{
+				perm: &MockPerm{},
+			},
+			args: args{
+				userID: "111",
+				orgID:  "333",
+				routing: &dbclient.AddonInstanceRouting{
+					ID:        "222",
+					ProjectID: "24",
+				},
+				att:      nil,
+				tmplName: "create",
+				tmplCtx: map[string]interface{}{
+					"mysqlUsername": "mysql",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "update",
+			fields: fields{
+				perm: &MockPerm{},
+			},
+			args: args{
+				userID: "111",
+				orgID:  "333",
+				routing: &dbclient.AddonInstanceRouting{
+					ID:        "222",
+					ProjectID: "24",
+				},
+				att:      nil,
+				tmplName: "update",
+				tmplCtx: map[string]interface{}{
+					"mysqlUsername": "mysql",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "change attachment",
+			fields: fields{
+				perm: &MockPerm{},
+			},
+			args: args{
+				userID: "111",
+				orgID:  "333",
+				routing: &dbclient.AddonInstanceRouting{
+					ID:        "222",
+					ProjectID: "24",
+				},
+				att: &dbclient.AddonAttachment{
+					RuntimeID:     "123",
+					RuntimeName:   "321",
+					ApplicationID: "444",
+				},
+				tmplName: "update",
+				tmplCtx: map[string]interface{}{
+					"mysqlUsername": "mysql",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &mysqlService{
+				logger: tt.fields.logger,
+				kms:    tt.fields.kms,
+				perm:   tt.fields.perm,
+				db:     tt.fields.db,
+			}
+			if err := s.audit(tt.args.userID, tt.args.orgID, tt.args.routing, tt.args.att, tt.args.tmplName, tt.args.tmplCtx); (err != nil) != tt.wantErr {
+				t.Errorf("audit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
