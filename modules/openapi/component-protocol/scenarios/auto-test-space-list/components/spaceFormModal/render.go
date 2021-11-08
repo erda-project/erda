@@ -93,7 +93,7 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 						Value: apistructs.TestSpaceInit,
 					},
 					{
-						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInprogress),
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInProgress),
 						Value: apistructs.TestSpaceInProgress,
 					},
 					{

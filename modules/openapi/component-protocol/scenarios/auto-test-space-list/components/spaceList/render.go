@@ -251,7 +251,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			ArchiveStatus: ArchiveStatus{
 				Color:  "red",
 				Status: each.ArchiveStatus,
-				Text:   i18nLocale.Get(string(each.ArchiveStatus)),
+				Text:   i18nLocale.Get(fmt.Sprintf("autoTestSpace%s", each.ArchiveStatus)),
 			},
 			Operations: map[string]interface{}{},
 			ExtraInfos: []ExtraInfos{

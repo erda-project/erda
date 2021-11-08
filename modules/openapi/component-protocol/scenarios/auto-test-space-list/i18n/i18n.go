@@ -44,6 +44,6 @@ const (
 	I18nKeyTableStatus             = "wb.content.autotest.space.table.title.status"
 	I18nKeyTableResult             = "wb.content.autotest.space.table.title.result"
 	I18nKeyAutoTestSpaceInit       = "autoTestSpaceInit"
-	I18nKeyAutoTestSpaceInprogress = "autoTestSpaceInprogress"
+	I18nKeyAutoTestSpaceInProgress = "autoTestSpaceInProgress"
 	I18nKeyAutoTestSpaceCompleted  = "autoTestSpaceCompleted"
 )

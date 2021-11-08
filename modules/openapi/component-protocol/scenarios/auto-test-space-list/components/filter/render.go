@@ -96,7 +96,7 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 					Value: apistructs.TestSpaceInit,
 				},
 				{
-					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInprogress),
+					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInProgress),
 					Value: apistructs.TestSpaceInProgress,
 				},
 				{
