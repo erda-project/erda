@@ -516,6 +516,11 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		if rule.Metric == StatusPage {
 			continue
 		}
+		scopeApplicationFilter := monitor.CustomizeAlertRuleFilter{}
+		scopeApplicationFilter.Tag = "application_id"
+		scopeApplicationFilter.Operator = OperateIn
+		scopeApplicationFilter.Value = structpb.NewStringValue("$" + "application_id")
+		rule.Filters = append(rule.Filters, &scopeApplicationFilter)
 	}
 	requestData, err := json.Marshal(alertDetail)
 	if err != nil {
