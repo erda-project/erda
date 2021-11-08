@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -493,6 +494,39 @@ func (imh *IssueManHour) Convert2String() string {
 	mh, _ := json.Marshal(*imh)
 
 	return string(mh)
+}
+
+var estimateRegexp, _ = regexp.Compile("^[0-9]+[wdhm]+$")
+
+func NewManhour(manhour string) (IssueManHour, error) {
+	if manhour == "" {
+		return IssueManHour{}, nil
+	}
+	if !estimateRegexp.MatchString(manhour) {
+		return IssueManHour{}, fmt.Errorf("invalid estimate time: %s", manhour)
+	}
+	timeType := manhour[len(manhour)-1]
+	timeSet := manhour[:len(manhour)-1]
+	timeVal, err := strconv.ParseUint(timeSet, 10, 64)
+	if err != nil {
+		return IssueManHour{}, fmt.Errorf("invalid man hour: %s, err: %v", manhour, err)
+	}
+	switch timeType {
+	case 'm':
+		val := int64(timeVal)
+		return IssueManHour{EstimateTime: val, RemainingTime: val}, nil
+	case 'h':
+		val := int64(timeVal) * 60
+		return IssueManHour{EstimateTime: val, RemainingTime: val}, nil
+	case 'd':
+		val := int64(timeVal) * 60 * 8
+		return IssueManHour{EstimateTime: val, RemainingTime: val}, nil
+	case 'w':
+		val := int64(timeVal) * 60 * 8 * 5
+		return IssueManHour{EstimateTime: val, RemainingTime: val}, nil
+	default:
+		return IssueManHour{}, fmt.Errorf("invalid man hour: %s", manhour)
+	}
 }
 
 // Clean get,list事件返回时 开始时间，工作内容都需要为空
