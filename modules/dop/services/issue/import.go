@@ -15,6 +15,7 @@
 package issue
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -80,6 +81,16 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 			issue.Source = req.Source
 			issue.Stage = req.GetStage()
 			issue.Owner = memberMap[req.Owner]
+			if req.ManHour.EstimateTime > 0 {
+				var oldManHour apistructs.IssueManHour
+				json.Unmarshal([]byte(issue.ManHour), &oldManHour)
+				oldManHour.EstimateTime = req.ManHour.EstimateTime
+				if oldManHour.RemainingTime == 0 {
+					oldManHour.RemainingTime = oldManHour.EstimateTime
+				}
+				newManHour, _ := json.Marshal(oldManHour)
+				issue.ManHour = string(newManHour)
+			}
 			if err := svc.db.UpdateIssueType(&issue); err != nil {
 				falseIssue = append(falseIssue, excelIndex[index])
 				falseReason = append(falseReason, fmt.Sprintf("failed to update issue: %s, err: %v", issue.Title, err))
@@ -161,6 +172,10 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 				Stage:          req.GetStage(),
 				Owner:          memberMap[req.Owner],
 				//ManHour:      req.GetDBManHour(),
+			}
+			if req.ManHour.EstimateTime > 0 {
+				newManHour, _ := json.Marshal(req.ManHour)
+				create.ManHour = string(newManHour)
 			}
 			if string(create.Type) != string(request.Type) {
 				falseIssue = append(falseIssue, excelIndex[index])
