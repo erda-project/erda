@@ -25,35 +25,39 @@ const (
 	maskBit = 1 << 7
 )
 
-func DecodeFrame(data []byte) []byte {
+func DecodeFrames(data []byte) [][]byte {
 	buf := bytes.NewBuffer(data)
-	first2Bytes := make([]byte, 2)
-	buf.Read(first2Bytes)
+	frames := make([][]byte, 0)
+	for buf.Len() > 0 {
+		first2Bytes := make([]byte, 2)
+		buf.Read(first2Bytes)
 
-	mask := first2Bytes[1]&maskBit != 0
-	length := uint64(first2Bytes[1] & 0x7f)
-	switch length {
-	case 126:
-		lenBytes := make([]byte, 2)
-		buf.Read(lenBytes)
-		length = binary.BigEndian.Uint64(lenBytes)
-	case 127:
-		lenBytes := make([]byte, 8)
-		buf.Read(lenBytes)
-		length = binary.BigEndian.Uint64(lenBytes)
-	}
+		mask := first2Bytes[1]&maskBit != 0
+		length := uint64(first2Bytes[1] & 0x7f)
+		switch length {
+		case 126:
+			lenBytes := make([]byte, 2)
+			buf.Read(lenBytes)
+			length = binary.BigEndian.Uint64(lenBytes)
+		case 127:
+			lenBytes := make([]byte, 8)
+			buf.Read(lenBytes)
+			length = binary.BigEndian.Uint64(lenBytes)
+		}
 
-	maskKeyBytes := make([]byte, 4)
-	if mask {
-		buf.Read(maskKeyBytes)
-	}
+		maskKeyBytes := make([]byte, 4)
+		if mask {
+			buf.Read(maskKeyBytes)
+		}
 
-	payloadBytes := make([]byte, length)
-	buf.Read(payloadBytes)
-	if mask {
-		maskBytes(maskKeyBytes, 0, payloadBytes)
+		payloadBytes := make([]byte, length)
+		buf.Read(payloadBytes)
+		if mask {
+			maskBytes(maskKeyBytes, 0, payloadBytes)
+		}
+		frames = append(frames, payloadBytes)
 	}
-	return payloadBytes
+	return frames
 }
 
 const wordSize = int(unsafe.Sizeof(uintptr(0)))

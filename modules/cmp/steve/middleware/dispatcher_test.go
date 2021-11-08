@@ -18,9 +18,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/go-ansiterm"
+	"github.com/bugaolengdeyuxiaoer/go-ansiterm"
 )
 
+var testDispatcher *dispatcher
+
+func init() {
+	auditReqChan := make(chan *cmdWithTimestamp, 10)
+	closeChan := make(chan struct{}, 10)
+	testDispatcher = NewDispatcher(auditReqChan, closeChan)
+}
 func TestNewDispatcher(t *testing.T) {
 	closeChan := make(chan struct{}, 10)
 	auditReqChan := make(chan *cmdWithTimestamp, 10)
@@ -362,6 +369,50 @@ func Test_dispatcher_CUF(t *testing.T) {
 			}
 			parser.Parse([]byte{98})
 			parser.Parse([]byte{13})
+		})
+	}
+}
+
+func Test_dispatcher_RemoveBackwardCharacter(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := testDispatcher.RemoveBackwardCharacter(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardCharacter() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_dispatcher_ReverseSearch(t *testing.T) {
+	type args struct {
+		b byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{'a'},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			if err := d.ReverseSearch(tt.args.b); (err != nil) != tt.wantErr {
+				t.Errorf("search() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
