@@ -249,6 +249,8 @@ github.com/bshuster-repo/logrus-logstash-hook v0.4.1 h1:pgAtgj+A31JBVtEHu2uHuEx0
 github.com/bshuster-repo/logrus-logstash-hook v0.4.1/go.mod h1:zsTqEiSzDgAa/8GZR7E1qaXrhYNDKBYy5/dWPTIflbk=
 github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211105082458-a2d01f0f130b h1:9cMzzuEqaP6RhGdV3DvIh6rm/fHUdez8uMIwMZJblyQ=
 github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211105082458-a2d01f0f130b/go.mod h1:zoCZuwF7bNiQYEVqIzNMPsWunfW6fAYiD606Td3x88Y=
+github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211108054157-9835e04f3693 h1:bxbrP2gHOdx2T8cNFFcgpfbqcj8BLjs9mGOgsig+SjE=
+github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211108054157-9835e04f3693/go.mod h1:zoCZuwF7bNiQYEVqIzNMPsWunfW6fAYiD606Td3x88Y=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/bugsnag/bugsnag-go v0.0.0-20141110184014-b1d153021fcd h1:rFt+Y/IK1aEZkEHchZRSq9OQbsSzIT/OrI8YFFmRIng=
