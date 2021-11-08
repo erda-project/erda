@@ -31,6 +31,7 @@ type ResourceOverviewReportDataItem struct {
 	ProjectName        string  `json:"projectName,omitempty"`
 	ProjectDisplayName string  `json:"projectDisplayName,omitempty"`
 	ProjectDesc        string  `json:"projectDesc,omitempty"`
+	ProjectTotal       uint64  `json:"projectTotal"`
 	OwnerUserID        int64   `json:"ownerUserID"`
 	OwnerUserName      string  `json:"ownerUserName"`
 	OwnerUserNickName  string  `json:"ownerUserNickname"`
@@ -54,11 +55,13 @@ func (data *ResourceOverviewReportData) GroupByOwner() {
 		owner, ok := m[item.OwnerUserName]
 		if !ok {
 			owner = &ResourceOverviewReportDataItem{
+				ProjectTotal:      0,
 				OwnerUserID:       item.OwnerUserID,
 				OwnerUserName:     item.OwnerUserName,
 				OwnerUserNickName: item.OwnerUserNickName,
 			}
 		}
+		owner.ProjectTotal += 1
 		owner.CPUQuota += item.CPUQuota
 		owner.CPURequest += item.CPURequest
 		owner.MemQuota += item.MemQuota
