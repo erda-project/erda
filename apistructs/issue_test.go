@@ -27,3 +27,16 @@ func TestSetRelatedIssueIDs(t *testing.T) {
 	assert.Equal(t, uint64(1001), relatedIDs[0])
 	assert.Equal(t, uint64(1002), relatedIDs[1])
 }
+
+func TestNewManhour(t *testing.T) {
+	_, err := NewManhour("2w3d")
+	assert.Equal(t, true, err != nil)
+	est1, _ := NewManhour("3h")
+	assert.Equal(t, int64(180), est1.EstimateTime)
+	est2, _ := NewManhour("9m")
+	assert.Equal(t, int64(9), est2.EstimateTime)
+	est3, _ := NewManhour("5d")
+	assert.Equal(t, int64(2400), est3.EstimateTime)
+	est4, _ := NewManhour("1w")
+	assert.Equal(t, int64(2400), est4.EstimateTime)
+}
