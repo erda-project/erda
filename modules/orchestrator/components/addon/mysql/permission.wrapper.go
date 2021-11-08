@@ -20,4 +20,5 @@ type PermissionWrapper interface {
 	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
 	CreateAuditEvent(audits *apistructs.AuditCreateRequest) error
 	GetProject(id uint64) (*apistructs.ProjectDTO, error)
+	GetApp(id uint64) (*apistructs.ApplicationDTO, error)
 }

@@ -185,6 +185,13 @@ func (m *MockPerm) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
 	}, nil
 }
 
+func (m *MockPerm) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
+	return &apistructs.ApplicationDTO{
+		ID:   id,
+		Name: "test-app",
+	}, nil
+}
+
 func Test_mysqlService_checkPerm(t *testing.T) {
 	type fields struct {
 		logger logs.Logger

@@ -187,7 +187,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 	dto := s.ToDTO(account, false)
 	dto.Password = pass
 
-	s.auditNoError(userID, apis.GetOrgID(ctx), routing, nil, apistructs.CreateMysqlAccountTemplate,
+	s.auditNoError(userID, apis.GetOrgID(ctx), routing, nil, apistructs.CreateMySQLAddonAccountTemplate,
 		map[string]interface{}{
 			"mysqlUsername": dto.Username,
 		},
@@ -328,7 +328,7 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 		return nil, err
 	}
 
-	s.auditNoError(userID, apis.GetOrgID(ctx), routing, att, apistructs.DeleteMySQLAddonAccountTemplate,
+	s.auditNoError(userID, apis.GetOrgID(ctx), routing, att, apistructs.ResetAttachmentMySQLAddonAccountTemplate,
 		map[string]interface{}{
 			"mysqlUsername":    preAcc.Username,
 			"preMysqlUsername": nextAcc.Username,
@@ -433,7 +433,12 @@ func (s *mysqlService) audit(userID string, orgID string, routing *dbclient.Addo
 			return err
 		}
 		appID = uint64(aid)
+		app, err := s.perm.GetApp(appID)
+		if err != nil {
+			return err
+		}
 		tmplCtx["appId"] = att.ApplicationID
+		tmplCtx["appName"] = app.Name
 		tmplCtx["runtimeId"] = att.RuntimeID
 		tmplCtx["runtimeName"] = att.RuntimeName
 	}
