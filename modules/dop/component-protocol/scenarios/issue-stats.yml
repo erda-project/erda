@@ -270,6 +270,8 @@ rendering:
           value: "{{ chartFilter@ownerHorizontalBar.values }}"
     - name: stateVerticalBarChart@iteration
       state:
+        - name: "filterValues"
+          value: "{{ filter.values }}"
         - name: "values"
           value: "{{ chartFilter@iterationVerticalBar.values }}"
     - name: memberHorizontalBarChart@reopenByOwner
@@ -328,6 +330,8 @@ rendering:
     - name: chartFilter@iterationVerticalBar
     - name: stateVerticalBarChart@iteration
       state:
+        - name: "filterValues"
+          value: "{{ filter.values }}"
         - name: "values"
           value: "{{ chartFilter@iterationVerticalBar.values }}"
     - name: reset
@@ -395,6 +399,8 @@ rendering:
     - name: chartFilter@iterationVerticalBar
     - name: stateVerticalBarChart@iteration
       state:
+        - name: "filterValues"
+          value: "{{ filter.values }}"
         - name: "values"
           value: "{{ chartFilter@iterationVerticalBar.values }}"
 
