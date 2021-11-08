@@ -373,7 +373,7 @@ func (this *CodeCoverageNode) ResetCounter() []ReportCounter {
 			}
 		}
 		setNodeValue(node, node.counters)
-		node.ToolTip.Formatter = fmt.Sprintf(PackageFormatter, node.Name, node.Value[LineIdx], node.Value[LineCoveredIdx], node.Value[LinePercentIdx], node.Value[ClassCoveredPercentIdx])
+		node.ToolTip.Formatter = fmt.Sprintf(PackageFormatter, node.Path, node.Value[LineIdx], node.Value[LineCoveredIdx], node.Value[LinePercentIdx], node.Value[ClassCoveredPercentIdx])
 	}
 	return this.counters
 }
