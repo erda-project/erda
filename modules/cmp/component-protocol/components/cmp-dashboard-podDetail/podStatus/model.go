@@ -21,9 +21,9 @@ import (
 type PodStatus struct {
 	base.DefaultProvider
 
-	Type  string `json:"type"`
-	Data  Data   `json:"data,omitempty"`
+	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
+	Data  Data   `json:"data,omitempty"`
 	State State  `json:"state,omitempty"`
 }
 

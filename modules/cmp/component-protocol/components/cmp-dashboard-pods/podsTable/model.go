@@ -31,22 +31,22 @@ type ComponentPodsTable struct {
 	server cmp_interface.SteveServer
 
 	Type       string                 `json:"type,omitempty"`
-	State      State                  `json:"state,omitempty"`
-	Data       Data                   `json:"data,omitempty"`
 	Props      Props                  `json:"props,omitempty"`
+	Data       Data                   `json:"data,omitempty"`
+	State      State                  `json:"state,omitempty"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
 type State struct {
+	ActiveKey         string         `json:"activeKey,omitempty"`
 	ClusterName       string         `json:"clusterName,omitempty"`
 	CountValues       map[string]int `json:"countValues"`
 	PageNo            int            `json:"pageNo"`
 	PageSize          int            `json:"pageSize"`
+	PodsTableURLQuery string         `json:"podsTable__urlQuery,omitempty"`
 	Sorter            Sorter         `json:"sorterData,omitempty"`
 	Total             int            `json:"total"`
 	Values            Values         `json:"values,omitempty"`
-	PodsTableURLQuery string         `json:"podsTable__urlQuery,omitempty"`
-	ActiveKey         string         `json:"activeKey,omitempty"`
 }
 
 type Values struct {

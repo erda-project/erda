@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 type MockSteveServer struct {
@@ -116,5 +117,54 @@ func TestComponentWorkloadInfo_GenComponentState(t *testing.T) {
 	fmt.Println(string(dst))
 	if string(src) != string(dst) {
 		t.Error("test failed, generate result is unexpected")
+	}
+}
+
+func TestComponentWorkloadInfo_Transfer(t *testing.T) {
+	component := ComponentWorkloadInfo{
+		Data: Data{
+			Data: DataInData{
+				Namespace: "testNs",
+				Age:       "1d",
+				Images:    "testImage",
+				Labels: []Tag{
+					{
+						Label: "testLabel",
+						Group: "testGroup",
+					},
+				},
+				Annotations: []Tag{
+					{
+						Label: "testLabel",
+						Group: "testGroup",
+					},
+				},
+			},
+		},
+		State: State{
+			ClusterName: "testClusterName",
+			WorkloadID:  "testWorkloadID",
+		},
+		Props: Props{
+			RequestIgnore: []string{"test"},
+			ColumnNum:     20,
+			Fields: []Field{
+				{
+					Label:      "testLabel",
+					ValueKey:   "testValueKey",
+					RenderType: "testType",
+					SpaceNum:   10,
+				},
+			},
+		},
+	}
+	c := &cptype.Component{}
+	component.Transfer(c)
+	ok, err := cputil.IsJsonEqual(c, component)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
 	}
 }

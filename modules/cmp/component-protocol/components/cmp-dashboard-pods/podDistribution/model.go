@@ -23,7 +23,7 @@ type PodDistribution struct {
 
 	Props Props  `json:"props"`
 	Data  Data   `json:"data"`
-	Type  string `json:"type"`
+	Type  string `json:"type,omitempty"`
 }
 
 type Props struct {
@@ -31,8 +31,8 @@ type Props struct {
 }
 
 type Data struct {
-	Total int    `json:"total"`
 	Lists []List `json:"list"`
+	Total int    `json:"total"`
 }
 
 type List struct {

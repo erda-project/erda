@@ -39,6 +39,6 @@ type Props struct {
 
 type State struct {
 	ClusterName string `json:"clusterName,omitempty"`
-	WorkloadID  string `json:"workloadId,omitempty"`
 	PodID       string `json:"podId,omitempty"`
+	WorkloadID  string `json:"workloadId,omitempty"`
 }

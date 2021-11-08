@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 func getTestURLQuery() (Values, string) {
@@ -123,6 +124,53 @@ func TestComponentFilter_EncodeURLQuery(t *testing.T) {
 	}
 	if f.State.FilterURLQuery != data {
 		t.Error("test failed, encode url query result is unexpected")
+	}
+}
+
+func TestComponentFilter_Transfer(t *testing.T) {
+	component := &ComponentFilter{
+		State: State{
+			ClusterName: "testClusterName",
+			Conditions: []Condition{
+				{
+					HaveFilter:  true,
+					Key:         "testKey",
+					Label:       "testLabel",
+					Placeholder: "testPlaceHolder",
+					Type:        "testType",
+					Fixed:       true,
+					Options: []Option{
+						{
+							Label: "testLabel",
+							Value: "testValue",
+						},
+					},
+				},
+			},
+			Values: Values{
+				Kind:      []string{"test"},
+				Namespace: []string{"test"},
+				Status:    []string{"test"},
+				Node:      []string{"node"},
+				Search:    "test",
+			},
+			FilterURLQuery: "testURLQuery",
+		},
+		Operations: map[string]interface{}{
+			"testOp": Operation{
+				Key:    "testKey",
+				Reload: true,
+			},
+		},
+	}
+	c := &cptype.Component{}
+	component.Transfer(c)
+	ok, err := cputil.IsJsonEqual(c, component)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
 	}
 }
 

@@ -31,7 +31,7 @@ type ComponentAddPodFilter struct {
 	bdl    *bundle.Bundle
 	server cmp.SteveServer
 
-	Type       string                 `json:"type"`
+	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }

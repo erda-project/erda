@@ -12,27 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package addPodDrawer
+package PodTitle
 
 import (
+	"testing"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
-type ComponentAddPodDrawer struct {
-	base.DefaultProvider
-
-	sdk   *cptype.SDK
-	Type  string `json:"type,omitempty"`
-	Props Props  `json:"props"`
-	State State  `json:"state"`
-}
-
-type Props struct {
-	Title string `json:"title,omitempty"`
-	Size  string `json:"size"`
-}
-
-type State struct {
-	Visible bool `json:"visible"`
+func TestPodTitle_Transfer(t *testing.T) {
+	component := &PodTitle{
+		Props: Props{
+			Size:  "small",
+			Title: "testTitle",
+		},
+	}
+	c := &cptype.Component{}
+	component.Transfer(c)
+	ok, err := cputil.IsJsonEqual(c, component)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
+	}
 }
