@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 func TestPodInfo_Transfer(t *testing.T) {
@@ -92,5 +93,24 @@ func TestPodInfo_Transfer(t *testing.T) {
 
 	if string(expectedData) != string(resultData) {
 		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	}
+}
+
+func TestPodInfo_GenComponentState(t *testing.T) {
+	c := &cptype.Component{State: map[string]interface{}{
+		"clusterName": "testClusterName",
+		"podId":       "testPodID",
+	}}
+	podInfo := &PodInfo{}
+	if err := podInfo.GenComponentState(c); err != nil {
+		t.Fatal(err)
+	}
+
+	ok, err := cputil.IsJsonEqual(c.State, podInfo.State)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
 	}
 }

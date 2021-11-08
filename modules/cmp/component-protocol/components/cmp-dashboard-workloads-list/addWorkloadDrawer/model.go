@@ -23,7 +23,7 @@ type ComponentAddWorkloadDrawer struct {
 	base.DefaultProvider
 
 	sdk   *cptype.SDK
-	Type  string `json:"type"`
+	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
 	State State  `json:"state"`
 }

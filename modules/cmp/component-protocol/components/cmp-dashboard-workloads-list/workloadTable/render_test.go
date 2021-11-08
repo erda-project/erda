@@ -16,6 +16,7 @@ package workloadTable
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -28,7 +29,56 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
+
+func getTestURLQuery() (State, string) {
+	v := State{
+		PageNo:   2,
+		PageSize: 10,
+		Sorter: Sorter{
+			Field: "test1",
+			Order: "descend",
+		},
+	}
+	m := map[string]interface{}{
+		"pageNo":     v.PageNo,
+		"pageSize":   v.PageSize,
+		"sorterData": v.Sorter,
+	}
+	data, _ := json.Marshal(m)
+	encode := base64.StdEncoding.EncodeToString(data)
+	return v, encode
+}
+
+func TestComponentWorkloadTable_DecodeURLQuery(t *testing.T) {
+	state, res := getTestURLQuery()
+	table := &ComponentWorkloadTable{
+		sdk: &cptype.SDK{
+			InParams: map[string]interface{}{
+				"workloadTable__urlQuery": res,
+			},
+		},
+	}
+	if err := table.DecodeURLQuery(); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+	if state.PageNo != table.State.PageNo || state.PageSize != table.State.PageSize ||
+		state.Sorter.Field != table.State.Sorter.Field || state.Sorter.Order != table.State.Sorter.Order {
+		t.Errorf("test failed, decode result is not expected")
+	}
+}
+
+func TestComponentWorkloadTable_EncodeURLQuery(t *testing.T) {
+	state, res := getTestURLQuery()
+	table := ComponentWorkloadTable{State: state}
+	if err := table.EncodeURLQuery(); err != nil {
+		t.Error(err)
+	}
+	if table.State.WorkloadTableURLQuery != res {
+		t.Errorf("test failed, unexpected url query encode result")
+	}
+}
 
 func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 	component := &cptype.Component{
@@ -277,6 +327,125 @@ func TestComponentWorkloadTable_SetComponentValue(t *testing.T) {
 	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 7 {
 		t.Errorf("test failed, expected length of columns in props is 7, actual %d", len(w.Props.Columns))
+	}
+}
+
+func TestComponentWorkloadTable_Transfer(t *testing.T) {
+	component := &ComponentWorkloadTable{
+		State: State{
+			ClusterName: "testClusterName",
+			CountValues: CountValues{
+				DeploymentsCount: Count{
+					Active:    1,
+					Error:     1,
+					Succeeded: 1,
+					Failed:    1,
+				},
+				DaemonSetCount: Count{
+					Active:    2,
+					Error:     2,
+					Succeeded: 2,
+					Failed:    2,
+				},
+				StatefulSetCount: Count{
+					Active:    3,
+					Error:     3,
+					Succeeded: 3,
+					Failed:    3,
+				},
+				JobCount: Count{
+					Active:    4,
+					Error:     4,
+					Succeeded: 4,
+					Failed:    4,
+				},
+				CronJobCount: Count{
+					Active:    5,
+					Error:     5,
+					Succeeded: 5,
+					Failed:    5,
+				},
+			},
+			PageNo:   1,
+			PageSize: 20,
+			Sorter: Sorter{
+				Field: "testField",
+				Order: "ascend",
+			},
+			Total: 100,
+			Values: Values{
+				Namespace: []string{"test"},
+				Kind:      []string{"test"},
+				Status:    []string{"test"},
+				Search:    "test",
+			},
+			WorkloadTableURLQuery: "testURLQuery",
+		},
+		Data: Data{
+			List: []Item{
+				{
+					ID: "testID",
+					Status: Status{
+						RenderType: "testType",
+						Value:      "testValue",
+						StyleConfig: StyleConfig{
+							Color: "testColor",
+						},
+					},
+					Name: Link{
+						RenderType: "testType",
+						Value:      "test",
+						Operations: map[string]interface{}{
+							"testOp": Operation{
+								Key:    "testKey",
+								Reload: true,
+							},
+						},
+					},
+					Namespace:    "testNs",
+					Kind:         "testKind",
+					Age:          "1d",
+					Ready:        "testReady",
+					UpToDate:     "testUpToDate",
+					Available:    "testAvailable",
+					Desired:      "testDesired",
+					Current:      "testCurrent",
+					Completions:  "testCompletions",
+					Duration:     "testDuration",
+					Schedule:     "testSchedule",
+					LastSchedule: "testLastSchedule",
+				},
+			},
+		},
+		Props: Props{
+			RequestIgnore:   []string{"test"},
+			PageSizeOptions: []string{"test"},
+			Columns: []Column{
+				{
+					DataIndex: "test",
+					Title:     "testTitle",
+					Width:     120,
+					Sorter:    true,
+				},
+			},
+			RowKey:         "testKey",
+			SortDirections: []string{"ascend"},
+		},
+		Operations: map[string]interface{}{
+			"testOp": Operation{
+				Key:    "testKey",
+				Reload: true,
+			},
+		},
+	}
+	c := &cptype.Component{}
+	component.Transfer(c)
+	ok, err := cputil.IsJsonEqual(c.State, component.State)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
 	}
 }
 
