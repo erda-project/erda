@@ -55,7 +55,7 @@ func (data *ResourceOverviewReportData) GroupByOwner() {
 		owner, ok := m[item.OwnerUserName]
 		if !ok {
 			owner = &ResourceOverviewReportDataItem{
-				ProjectTotal: 0,
+				ProjectTotal:      0,
 				OwnerUserID:       item.OwnerUserID,
 				OwnerUserName:     item.OwnerUserName,
 				OwnerUserNickName: item.OwnerUserNickName,
