@@ -87,7 +87,7 @@ func (infoMapTable *InfoMapTable) Render(ctx context.Context, c *cptype.Componen
 }
 
 func (infoMapTable *InfoMapTable) reScale(v float64) string {
-	strs := []string{"", "KB", "MB", "GB", "TB"}
+	strs := []string{"B", "KB", "MB", "GB", "TB"}
 	i := 0
 	for ; v >= 1024; i++ {
 		v /= 1024

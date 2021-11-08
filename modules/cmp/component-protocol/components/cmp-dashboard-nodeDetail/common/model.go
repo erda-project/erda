@@ -22,12 +22,10 @@ import (
 )
 
 var (
-	CMPDashboardAddLabel    cptype.OperationKey = "addLabel"
 	CMPDashboardRemoveLabel cptype.OperationKey = "deleteLabel"
 
 	NothingToBeDoneErr = errors.New("nothing to be done")
 
-	TypeNotAvailableErr = errors.New("type not available")
 	ResourceNotFoundErr = errors.New("resource type not available")
 
 	//util error

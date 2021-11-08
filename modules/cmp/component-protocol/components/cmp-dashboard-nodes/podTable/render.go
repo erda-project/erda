@@ -55,7 +55,6 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	pt.Operations = pt.GetTableOperation()
 	pt.Ctx = ctx
 	pt.Table.TableComponent = pt
-	pt.Ctx = ctx
 	pt.Server = steveServer
 	pt.getProps()
 	activeKey := (*gs)["activeKey"].(string)
@@ -130,7 +129,6 @@ func (pt *PodInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		//"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
 		"batchOperations": []string{"cordon", "uncordon", "drain"},
 		"scroll":          table.Scroll{X: 1200},
 	}

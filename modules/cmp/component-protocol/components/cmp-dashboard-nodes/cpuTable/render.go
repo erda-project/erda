@@ -70,7 +70,6 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	ct.Table.Metrics = mServer
 	ct.getProps()
 	ct.TableComponent = ct
-	ct.Ctx = ctx
 	activeKey := (*gs)["activeKey"].(string)
 	// Tab name not equal this component name
 	if activeKey != tableTabs.CPU_TAB {
@@ -143,7 +142,6 @@ func (ct *CpuInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		//"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
 		"batchOperations": []string{"cordon", "uncordon", "drain"},
 		"scroll":          table.Scroll{X: 1200},
 	}

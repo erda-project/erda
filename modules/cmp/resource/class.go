@@ -41,9 +41,7 @@ const (
 )
 
 var (
-	errResourceTypeNotFound = errors.New("resource type not support")
-	errIntervalTypeNotFound = errors.New("date type not support")
-	errNoClusterFound       = errors.New("no cluster legal found")
+	errNoClusterFound = errors.New("no cluster legal found")
 )
 
 type PieData struct {
@@ -181,6 +179,7 @@ func (r *Resource) GetProjectPie(ctx context.Context, resType string, resp *apis
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.memQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
+		// not used
 		//if resource != nil {
 		//	ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantMemRequest/G), 64)
 		//	serie.Data = append(serie.Data, SerieData{ir, r.I18n(langCodes, "shared resource")})
@@ -196,6 +195,8 @@ func (r *Resource) GetProjectPie(ctx context.Context, resType string, resp *apis
 			f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", v.cpuQuota), 64)
 			serie.Data = append(serie.Data, SerieData{f, v.nickName})
 		}
+
+		// not used
 		//if resource != nil {
 		//	ir, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", resource.IrrelevantCpuRequest/MilliCore), 64)
 		//	serie.Data = append(serie.Data, SerieData{ir, r.I18n(langCodes, "shared resource")})

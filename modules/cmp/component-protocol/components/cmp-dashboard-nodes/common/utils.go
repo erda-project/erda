@@ -18,9 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-
-	"github.com/rancher/apiserver/pkg/types"
-	"github.com/rancher/wrangler/pkg/data"
 )
 
 // Transfer transfer a to b with json, kind of b must be pointer
@@ -79,38 +76,4 @@ func GetPercent(a, b float64) string {
 		return "0"
 	}
 	return fmt.Sprintf("%.1f", a*100/b)
-}
-func GetInt64Len(a int64) int {
-	length := 0
-	for a > 0 {
-		length++
-		a /= 10
-	}
-	return length
-}
-
-/* ResetNumberBase
-* e.g. : 20 100 to 2 10 , 0.1 1000 to 1 10000
- */
-func ResetNumberBase(a, b float64) (float64, float64) {
-	if a <= 0 || b <= 0 {
-		return a, b
-	}
-	for a < 1 || b < 1 {
-		a *= 10
-		b *= 10
-	}
-	for a >= 10 || b >= 10 {
-		a /= 10
-		b /= 10
-	}
-	return a, b
-}
-
-func ToDataList(object []types.APIObject) []data.Object {
-	objs := make([]data.Object, 0)
-	for _, obj := range object {
-		objs = append(objs, obj.Data())
-	}
-	return objs
 }
