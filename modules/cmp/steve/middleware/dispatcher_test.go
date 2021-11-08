@@ -18,9 +18,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/go-ansiterm"
+	"github.com/bugaolengdeyuxiaoer/go-ansiterm"
 )
 
+var testDispatcher *dispatcher
+
+func init() {
+	auditReqChan := make(chan *cmdWithTimestamp, 10)
+	closeChan := make(chan struct{}, 10)
+	testDispatcher = NewDispatcher(auditReqChan, closeChan)
+}
 func TestNewDispatcher(t *testing.T) {
 	closeChan := make(chan struct{}, 10)
 	auditReqChan := make(chan *cmdWithTimestamp, 10)
@@ -362,6 +369,232 @@ func Test_dispatcher_CUF(t *testing.T) {
 			}
 			parser.Parse([]byte{98})
 			parser.Parse([]byte{13})
+		})
+	}
+}
+
+func Test_dispatcher_RemoveBackwardCharacter(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := testDispatcher.RemoveBackwardCharacter(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardCharacter() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_dispatcher_ReverseSearch(t *testing.T) {
+	type args struct {
+		b byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{'a'},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			if err := d.ReverseSearch(tt.args.b); (err != nil) != tt.wantErr {
+				t.Errorf("search() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_dispatcher_RemoveBackwardWord(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			d.buf = []byte(" ads sda edg ")
+			d.cursorIdx = 5
+			d.length = len(d.buf) - 1
+			if err := d.RemoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if string(d.buf[startIdx:startIdx+d.length]) != "sda edg " {
+				t.Errorf("RemoveBackwardWord() :%s required ,%s got", "sda edg ", string(d.buf[startIdx:startIdx+d.length]))
+			}
+			d.cursorIdx = 1
+			if err := d.RemoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if string(d.buf[startIdx:startIdx+d.length]) != "sda edg " {
+				t.Errorf("RemoveBackwardWord() :%s required ,%s got", "sda edg ", string(d.buf[startIdx:startIdx+d.length]))
+			}
+			d.cursorIdx = 4
+			if err := d.RemoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if string(d.buf[startIdx:startIdx+d.length]) != " edg " {
+				t.Errorf("RemoveBackwardWord() :%s required ,%s got", " edg ", string(d.buf[startIdx:startIdx+d.length]))
+			}
+			d.cursorIdx = 5
+			if err := d.RemoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if string(d.buf[startIdx:startIdx+d.length]) != "  " {
+				t.Errorf("RemoveBackwardWord() :%s required ,%s got", "  ", string(d.buf[startIdx:startIdx+d.length]))
+			}
+			d.cursorIdx = 3
+			if err := d.RemoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if string(d.buf[startIdx:startIdx+d.length]) != "" {
+				t.Errorf("RemoveBackwardWord() :%s required ,%s got", "", string(d.buf[startIdx:startIdx+d.length]))
+			}
+
+		})
+	}
+}
+
+func Test_dispatcher_MoveForwardWord(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			d.buf = []byte(" who is your daddy?")
+			d.cursorIdx = startIdx
+			d.length = len(d.buf) - 1
+			if err := d.MoveForwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("MoveForwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if d.cursorIdx != 4 {
+				t.Errorf("MoveForwardWord() get cursor :%d ,required idx :%d", d.cursorIdx, 4)
+			}
+			d.buf = []byte("         who is your daddy?")
+			d.cursorIdx = startIdx
+			d.length = len(d.buf) - 1
+			if err := d.MoveForwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("MoveForwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if d.cursorIdx != 12 {
+				t.Errorf("MoveForwardWord() get cursor :%d ,required idx :%d", d.cursorIdx, 12)
+			}
+			d.buf = []byte("        ")
+			d.cursorIdx = startIdx
+			d.length = len(d.buf) - 1
+			if err := d.MoveForwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("MoveForwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if d.cursorIdx != 8 {
+				t.Errorf("MoveForwardWord() get cursor :%d ,required idx :%d", d.cursorIdx, 8)
+			}
+		})
+	}
+}
+
+func Test_dispatcher_MoveBackwardWord(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			d.buf = []byte(" who is your   daddy?")
+			d.length = len(d.buf) - 1
+			d.cursorIdx = len(d.buf)
+			if err := d.MoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("MoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if d.cursorIdx != 15 {
+				t.Errorf("MoveForwardWord() get cursor :%d ,required idx :%d", d.cursorIdx, 15)
+			}
+			if err := d.MoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("MoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if d.cursorIdx != 8 {
+				t.Errorf("MoveForwardWord() get cursor :%d ,required idx :%d", d.cursorIdx, 8)
+			}
+			d.cursorIdx = 3
+			if err := d.MoveBackwardWord(); (err != nil) != tt.wantErr {
+				t.Errorf("MoveBackwardWord() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if d.cursorIdx != startIdx {
+				t.Errorf("MoveForwardWord() get cursor :%d ,required idx :%d", d.cursorIdx, startIdx)
+			}
+		})
+	}
+}
+
+func Test_dispatcher_SwapLastTwoCharacter(t *testing.T) {
+
+	tests := []struct {
+		name string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			d.buf = []byte(" 321 ")
+			d.cursorIdx = len(d.buf)
+			d.length = len(d.buf) - 1
+			d.SwapLastTwoCharacter()
+			if string(d.buf[startIdx:]) != "32 1" {
+				t.Errorf("SwapLastTwoCharacte() get %s ,required :%s", string(d.buf[startIdx:]), "32 1")
+			}
+			d.buf = []byte(" 3")
+			d.cursorIdx = len(d.buf)
+			d.length = len(d.buf) - 1
+			d.SwapLastTwoCharacter()
+			if string(d.buf[startIdx:]) != "3" {
+				t.Errorf("SwapLastTwoCharacte() get %s ,required :%s", string(d.buf[startIdx:]), "3")
+			}
+			d.cursorIdx = startIdx
+			d.SwapLastTwoCharacter()
+			if string(d.buf[startIdx:]) != "3" {
+				t.Errorf("SwapLastTwoCharacte() get %s ,required :%s", string(d.buf[startIdx:]), "3")
+			}
+			d.buf = []byte(" 321")
+			d.cursorIdx = 2
+			d.length = len(d.buf) - 1
+			d.SwapLastTwoCharacter()
+			if string(d.buf[startIdx:]) != "231" {
+				t.Errorf("SwapLastTwoCharacte() get %s ,required :%s", string(d.buf[startIdx:]), "231")
+			}
 		})
 	}
 }

@@ -17,8 +17,6 @@ package chart
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
@@ -49,37 +47,6 @@ type Chart struct {
 }
 type ChartInterface interface {
 	ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error
-}
-
-func GetScaleValue(quantity1 *resource.Quantity, quantity2 *resource.Quantity, quantity3 *resource.Quantity) (string, string, string) {
-	factor := 10
-	for ; (quantity1.Value() != 0 && quantity1.Value() > int64(1<<factor)) && ((quantity1.Value() != 0) && quantity2.Value() > int64(1<<factor)) && (quantity3.Value() != 0 && quantity3.Value() > int64(1<<factor)); factor += 10 {
-	}
-	factor -= 10
-	quantity1.Set(quantity1.Value() / (1 << factor))
-	quantity2.Set(quantity2.Value() / (1 << factor))
-	quantity3.Set(quantity3.Value() / (1 << factor))
-	switch factor {
-	case 0:
-		return quantity1.String(), quantity2.String(), quantity3.String()
-	case 10:
-		return quantity1.String() + "K", quantity2.String() + "K", quantity3.String() + "K"
-	case 20:
-		return quantity1.String() + "M", quantity2.String() + "M", quantity3.String() + "M"
-	case 30:
-		return quantity1.String() + "G", quantity2.String() + "G", quantity3.String() + "G"
-	case 40:
-		return quantity1.String() + "T", quantity2.String() + "T", quantity3.String() + "T"
-	}
-	return "", "", ""
-}
-
-func parseResource(str string, format resource.Format) *resource.Quantity {
-	if str == "" {
-		return resource.NewQuantity(0, format)
-	}
-	res, _ := resource.ParseQuantity(str)
-	return &res
 }
 
 func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData, ResourceType string) error {

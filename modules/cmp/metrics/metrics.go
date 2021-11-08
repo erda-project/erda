@@ -138,8 +138,6 @@ func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan map[stri
 		c <- res
 		return
 	}
-	//syncReqs := make(*MetricsReq, 0)
-	//asyncReqs := make(*MetricsReq, 0)
 	if !req.sync {
 		logrus.Infof("cache expired, try fetch metrics asynchronized")
 		//asyncReqs = append(asyncReqs, metricsReq)
@@ -348,7 +346,6 @@ func (m *Metric) toInfluxReq(keys []MetricsReqInterface, clusterName, resType, r
 			queryReq.End = "now"
 			queryReq.Statement = sql
 			queryReq.Params = map[string]*structpb.Value{
-				//"pod_name":      structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{structpb.NewStringValue(preq.PodName())}}),
 				"cluster_name": structpb.NewStringValue(clusterName),
 			}
 			sync := false
