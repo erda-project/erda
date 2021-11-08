@@ -519,7 +519,8 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		alertDetail.AlertType = "micro_service_customize"
 	}
 	alertDetail.AlertScope = MicroServiceScope
-	alertDetail.AlertScopeId = request.TenantGroup
+	//alertDetail.AlertScopeId = request.TenantGroup
+	alertDetail.AlertScopeId = tk
 	alertDetail.Attributes = nil
 
 	for _, rule := range alertDetail.Rules {
