@@ -128,6 +128,11 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 	task.ExecutorKind = spec.PipelineTaskExecutorKindScheduler
 	task.Status = apistructs.PipelineStatusAnalyzed
 
+	// if snippet action is disabled, set task status disabled directly
+	if action.Disable {
+		task.Status = apistructs.PipelineStatusDisabled
+	}
+
 	// extra
 	task.Extra = s.genSnippetTaskExtra(p, action)
 
