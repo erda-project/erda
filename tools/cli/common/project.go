@@ -93,7 +93,7 @@ func GetProjectList(ctx *command.Context) ([]apistructs.ProjectDTO, error) {
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/projects").Param("joined", "true").
-		Param("orgId", strconv.FormatUint(ctx.Sessions[ctx.CurrentOpenApiHost].OrgID, 10)).Do().Body(&b)
+		Param("orgId", strconv.FormatUint(ctx.CurrentOrg.ID, 10)).Do().Body(&b)
 	if err != nil {
 		return nil, fmt.Errorf(
 			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))

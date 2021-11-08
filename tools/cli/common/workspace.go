@@ -15,7 +15,6 @@
 package common
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -55,7 +54,6 @@ func GetWorkspacePipelines(dir string) ([]string, error) {
 	}
 
 	for _, path := range fs {
-		fmt.Println(path)
 		if !path.IsDir() && (strings.HasSuffix(path.Name(), ".yml") ||
 			strings.HasSuffix(path.Name(), ".yaml")) {
 			ymls = append(ymls, path.Name())
@@ -73,8 +71,8 @@ func IsDir(path string) bool {
 	return s.IsDir()
 }
 
-func GetWorkspaceInfo() (org string, project string, app string, err error) {
-	remoteCmd := exec.Command("git", "remote", "get-url", "origin")
+func GetWorkspaceInfo(remoteName string) (org string, project string, app string, err error) {
+	remoteCmd := exec.Command("git", "remote", "get-url", remoteName)
 	out, err := remoteCmd.CombinedOutput()
 	if err != nil {
 		return "", "", "", err

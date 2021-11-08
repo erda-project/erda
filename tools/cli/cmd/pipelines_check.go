@@ -30,12 +30,12 @@ var PIPELINECHECK = command.Command{
 	ParentName: "PIPELINE",
 	ShortHelp: "check pipeline",
 	Example: `
-  $ erda-cli pipeline check -f .erda/pipelines/pipeline.yml
+  $ erda-cli pipeline check -f .dice/pipelines/pipeline.yml
 `,
 	Flags: []command.Flag{
 		command.StringFlag{"f", "file",
-			"Specify the path of pipeline.yml file, default: .erda/pipelines/pipeline.yml",
-			".erda/pipelines/pipeline.yml"},
+			"Specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
+			".dice/pipelines/pipeline.yml"},
 	},
 	Run: PipelineCheck,
 }

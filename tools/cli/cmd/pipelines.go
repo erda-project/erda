@@ -15,9 +15,8 @@
 package cmd
 
 import (
-	"fmt"
+	"path"
 
-	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
@@ -26,7 +25,7 @@ import (
 
 var PIPELINE = command.Command{
 	Name: "pipeline",
-	ShortHelp: "List pipelines in .erda/pipelines directory (current repo)",
+	ShortHelp: "List pipelines in .dice/pipelines directory (current repo)",
 	Example: "erda-cli pipeline",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers",
@@ -44,18 +43,19 @@ func GetPipelines(ctx *command.Context, noHeaders bool) error {
 
 	var pipelineymls []string
 
-	erdaDir, err := dicedir.FindProjectErdaDir()
-	if err != nil && err != dicedir.NotExist {
-		return err
-	} else if err == nil {
-		ymls, err := common.GetWorkspacePipelines(erdaDir)
-		if err != nil {
-			return err
-		}
-		for _, y := range ymls {
-			pipelineymls = append(pipelineymls, ".erda/pipelines/" + y)
-		}
-	}
+	// TODO default dir as ".erda" ?
+	//erdaDir, err := dicedir.FindProjectErdaDir()
+	//if err != nil && err != dicedir.NotExist {
+	//	return err
+	//} else if err == nil {
+	//	ymls, err := common.GetWorkspacePipelines(erdaDir)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	for _, y := range ymls {
+	//		pipelineymls = append(pipelineymls, path.Join(dicedir.ProjectErdaDir, y))
+	//	}
+	//}
 
 	// compatible to dice
 	diceDir, err := dicedir.FindProjectDiceDir()
@@ -67,10 +67,11 @@ func GetPipelines(ctx *command.Context, noHeaders bool) error {
 			return err
 		}
 		if len(ymls) > 0 {
-			fmt.Println(color_str.Yellow("Warning! Should rename .dice to .erda"))
+			// TODO
+			// fmt.Println(color_str.Yellow("Warning! Should rename .dice to .erda"))
 		}
 		for _, y := range ymls {
-			pipelineymls = append(pipelineymls, ".dice/pipelines/" + y)
+			pipelineymls = append(pipelineymls, path.Join(dicedir.ProjectDiceDir, y))
 		}
 	}
 

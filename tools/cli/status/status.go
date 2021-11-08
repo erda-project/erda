@@ -30,13 +30,11 @@ const (
 // {
 // 	"terminus-org.app.terminus.io": {
 // 		"sessionid": "",
-// 		"orgID": 1,
 // 		"id": "0001",
 // 		"nickName": "username",
 // 	},
 // 	"terminus-org.test.terminus.io": {
 // 		"sessionid": "",
-// 		"orgID": 2,
 // 		"id": "0002",
 // 		"nickName": "username",
 // 	}
@@ -46,7 +44,6 @@ var SessionInfos = map[string]StatusInfo{}
 type StatusInfo struct {
 	SessionID string     `json:"sessionid"`
 	ExpiredAt *time.Time `json:"expiredAt"`
-	OrgID     uint64     `json:"orgID"`
 	UserInfo
 }
 

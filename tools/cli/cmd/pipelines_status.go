@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -25,23 +26,29 @@ import (
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
-var STATUS = command.Command{
+var PIPELINESTATUS = command.Command{
 	Name:      "status",
-	ShortHelp: "Show build status",
+	ParentName: "PIPELINE",
+	ShortHelp: "Show pipeline running status",
 	Example: `
-  $ erda-cli status -b develop
+  $ erda-cli pipeline status -b develop
 `,
 	Flags: []command.Flag{
-		command.StringFlag{Short: "b", Name: "branch", Doc: "specify branch to show pipeline status, default is current branch", DefaultValue: ""},
-		command.IntFlag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},
+		command.StringFlag{Short: "b", Name: "branch",
+			Doc: "specify branch to show pipeline status, default is current branch",
+			DefaultValue: ""},
+		command.IntFlag{Short: "i", Name: "pipelineID",
+			Doc: "specify pipeline id to show pipeline status",
+			DefaultValue: 0},
 	},
-	Run: RunPipelineStatus,
+	Run: PipelineStatus,
 }
 
 // RunBuildsInspect displays detailed information on the build record
-func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
+func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
 	if _, err := os.Stat(".git"); err != nil {
 		return err
 	}
@@ -56,7 +63,7 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 
 	// TODO gittar-adaptor 提供 API 根据 branch & git remote url 查询 pipelineID
 	// fetch appID
-	orgName, projectName, appName, err := common.GetWorkspaceInfo("origin")
+	orgName, projectName, appName, err := common.GetWorkspaceInfo(command.Remote)
 	if err != nil {
 		return err
 	}
@@ -89,7 +96,8 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 	for _, v := range pipelineCombResp.Data {
 		if v.Branch == branch {
 			for _, item := range v.PagingYmlNames {
-				if item != apistructs.DefaultPipelineYmlName {
+				if item != apistructs.DefaultPipelineYmlName &&
+					!strings.HasPrefix(item, dicedir.ProjectPipelineDir) {
 					ymlName = item
 				}
 			}

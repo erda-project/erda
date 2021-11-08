@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"os"
+	"path"
 	"strings"
 	"text/template"
 
@@ -30,7 +32,7 @@ var PIPELINEINIT = command.Command{
 	ShortHelp: "Init pipelines in .dice/pipelines directory (current repo)",
 	Example: "erda-cli pipeline init -f .dice/pipelines/pipeline.yml",
 	Flags: []command.Flag{
-		command.StringFlag{"f", "file",
+		command.StringFlag{"f", "filename",
 			"Specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
 			""},
 	},
@@ -40,7 +42,7 @@ var PIPELINEINIT = command.Command{
 func PipelineInit(ctx *command.Context, ymlfile string) error {
 	var filepath string
 	if ymlfile == "" {
-		filepath = ".dice/pipelines/pipeline.yml"
+		filepath = path.Join(dicedir.ProjectPipelineDir, "pipeline.yml")
 	} else {
 		filepath = ymlfile
 	}
@@ -58,7 +60,7 @@ func PipelineInit(ctx *command.Context, ymlfile string) error {
 		return err
 	}
 
-	err = os.MkdirAll(".dice/pipelines", 0755)
+	err = os.MkdirAll(dicedir.ProjectPipelineDir, 0755)
 	if err != nil {
 		return err
 	}

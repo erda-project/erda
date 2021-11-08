@@ -33,7 +33,7 @@ var ERDAINIT = command.Command{
 	Name:      	"init",
 	ParentName: "ERDA",
 	ShortHelp: 	"Init a erda.yml template",
-	LongHelp:  	"Make a .erda dir in current directory, then create a erda.yml template",
+	LongHelp:  	"Make a .dice dir in current directory, then create a erda.yml template",
 	Example: `
   $ erda init
 `,
@@ -57,7 +57,7 @@ func ErdaInit(ctx *command.Context, cpuQuota float64, memQuota int) error {
 	}
 
 	pdir, err := dicedir.CreateProjectDiceDir()
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return fmt.Errorf(
 			format.FormatErrMsg("init", "failed to create project dice directory: "+err.Error(), false))
 	}

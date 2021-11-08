@@ -43,6 +43,7 @@ import (
 
 var (
 	host      string // erda host, format: http[s]://<domain> eg: https://erda.cloud
+	Remote    string // git remote name for erda repo
 	username  string
 	password  string
 	debugMode bool
@@ -51,20 +52,23 @@ var (
 // Cmds which not require login
 var (
 	loginWhiteList = []string{
-		"init",
-		"parse",
-		"version",
-		"retag",
+		"config <ops>",
+		"config-set <write-ops> <name>",
+		"erda init",
+		"ext retag",
 		"migrate",
-		"lint",
-		"mkpy",
-		"mkpypkg",
-		"record",
+		"migrate lint",
+		"migrate mkpy",
+		"migrate mkpypkg",
+		"migrate record",
 		"pipeline",
+		"pipeline init",
+		"pipeline check",
+		"parse",
 		"check",
+		"version",
 		"help",
 	}
-	loginWhiteListCmds = strings.Join(loginWhiteList, ",")
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -80,12 +84,12 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 `,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		ctx.Debug = debugMode
 		logrus.SetOutput(os.Stdout)
 		defer func() {
 			cmd.SilenceErrors = true
 		}()
 
+		ctx.Debug = debugMode
 		httpOption := []httpclient.OpOption{httpclient.WithCompleteRedirect()}
 		if debugMode {
 			logrus.SetLevel(logrus.DebugLevel)
@@ -98,8 +102,25 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 		}
 		ctx.HttpClient = httpclient.New(httpOption...)
 
-		if strings.Contains(loginWhiteListCmds, strings.Split(cmd.Use, " ")[0]) {
-			return nil
+		// TODO handle error
+		u, err := getFullUse(cmd)
+		if err != nil {
+			err = fmt.Errorf(color_str.Red("✗ ") + err.Error())
+			fmt.Println(err)
+			return err
+		}
+
+		for _, w := range loginWhiteList {
+			if w == u {
+				return nil
+			}
+		}
+
+		// parse and use context according to host param or config file
+		if err := parseCtx(); err != nil {
+			err = fmt.Errorf(color_str.Red("✗ ") + err.Error())
+			fmt.Println(err)
+			return err
 		}
 
 		sessionInfos, err := ensureSessionInfos()
@@ -114,58 +135,22 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 	},
 }
 
-func setHost() error {
-	if host == "" {
-		if _, err := os.Stat(".git"); err != nil {
-			// fetch host from stdin
-			if os.IsNotExist(err) {
-				fmt.Print("Enter your dice host: ")
-				fmt.Scanln(&host)
-			} else if err != nil {
-				return err
-			}
-		} else {
-			// fetch host from git remote url
-			cmd := exec.Command("git", "remote", "get-url", "origin")
-			out, err := cmd.CombinedOutput()
-			if err != nil {
-				return err
-			}
-			// remove crlf, otherwise parse error
-			re := regexp.MustCompile(`\r?\n`)
-			newStr := re.ReplaceAllString(string(out), "")
-			u, err := url.Parse(newStr)
-			if err != nil {
-				return err
-			}
-			host = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
-		}
-	}
-	slashIndex := strings.Index(host, "://")
-	if slashIndex < 0 {
-		return errors.Errorf("invalid host format, it should be http[s]://<domain>")
-	}
-	hostHasOpenApi := strings.Index(host, "openapi.") != -1
-	openAPIAddr := host
-	if strings.HasPrefix(host, "https") {
-		if !hostHasOpenApi {
-			openAPIAddr = "https://openapi." + host[slashIndex+3:]
-		}
-	} else {
-		if !hostHasOpenApi {
-			openAPIAddr = "http://openapi." + host[slashIndex+3:]
-		}
-	}
-	logrus.Debugf("openapi addr: %s", openAPIAddr)
-	ctx.CurrentOpenApiHost = openAPIAddr
+func getFullUse(cmd *cobra.Command) (string, error) {
+	if cmd.HasParent() {
+		 pUse, err := getFullUse(cmd.Parent())
+		 if err != nil {
+		 	return "", err
+		 }
 
-	return nil
+		 return strings.TrimSpace(strings.Join([]string{
+		 	strings.TrimSpace(pUse), strings.TrimSpace(cmd.Use),
+		 }, " ")), nil
+	}
+
+	return "", nil
 }
 
 func ensureSessionInfos() (map[string]status.StatusInfo, error) {
-	if err := setHost(); err != nil {
-		return nil, err
-	}
 	sessionInfos, err := status.GetSessionInfos()
 	if err != nil && err != dicedir.NotExist {
 		return nil, err
@@ -178,14 +163,15 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 		}
 	}
 
-	if username == "" || password == "" {
-		gitCredentialStorage := fetchGitCredentialStorage()
-		switch gitCredentialStorage {
-		case "osxkeychain", "store":
-			// fetch username & password from osxkeychain
-			username, password = fetchGitUserInfo(gitCredentialStorage)
-		}
-	}
+	// TODO need git info ?
+	//if username == "" || password == "" {
+	//	gitCredentialStorage := fetchGitCredentialStorage()
+	//	switch gitCredentialStorage {
+	//	case "osxkeychain", "store":
+	//		// fetch username & password from osxkeychain
+	//		username, password = fetchGitUserInfo(gitCredentialStorage)
+	//	}
+	//}
 
 	if username == "" {
 		username = inputNormal("Enter your dice username: ")
@@ -206,6 +192,69 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 	}
 
 	return sessionInfos, nil
+}
+
+func parseCtx() error {
+	if host == "" {
+		c, err := GetCurContext()
+		if err != nil && err != dicedir.NotExist && !os.IsNotExist(err){
+			return err
+		}
+
+		host = c.Platform.Server
+		ctx.CurrentOrg = *c.Platform.OrgInfo
+
+		if _, err := os.Stat(".git"); err == nil {
+			// fetch host from git remote url
+			cmd := exec.Command("git", "remote", "get-url", Remote)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				return err
+			}
+			// remove crlf, otherwise parse error
+			re := regexp.MustCompile(`\r?\n`)
+			newStr := re.ReplaceAllString(string(out), "")
+			u, err := url.Parse(newStr)
+			if err != nil {
+				return err
+			}
+
+			if host == "" {
+				host = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+			} else {
+				if !strings.Contains(host, u.Host) {
+					fmt.Println(color_str.Yellow(
+						fmt.Sprintf("current git repo remote %s: %s, different from config: %s", Remote, newStr, host)))
+				}
+			}
+		}
+
+		if host == "" {
+			// fetch host from stdin
+			fmt.Print("Enter your dice host: ")
+			fmt.Scanln(&host)
+		}
+	}
+	slashIndex := strings.Index(host, "://")
+	if slashIndex < 0 {
+		return errors.Errorf("invalid host format, it should be http[s]://<domain>")
+	}
+	hostHasOpenApi := strings.Index(host, "openapi.") != -1
+	openAPIAddr := host
+	if strings.HasPrefix(host, "https") {
+		if !hostHasOpenApi {
+			openAPIAddr = "https://openapi." + host[slashIndex+3:]
+		}
+	} else {
+		if !hostHasOpenApi {
+			openAPIAddr = "http://openapi." + host[slashIndex+3:]
+		}
+	}
+
+	logrus.Debugf("openapi addr: %s", openAPIAddr)
+	ctx.CurrentOpenApiHost = openAPIAddr
+
+	return nil
 }
 
 func fetchGitCredentialStorage() string {
@@ -309,7 +358,8 @@ func Execute() {
 		}
 	}()
 
-	RootCmd.PersistentFlags().StringVar(&host, "host", "", "dice host to visit, format: <org>.<wildcard domain>, eg: https://terminus-org.app.terminus.io")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "", "erda host to visit, eg: https://erda.cloud")
+	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "r", "origin", "the remote for erda git repo")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "dice username to authenticate")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "dice password to authenticate")
 	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "enable verbose mode")

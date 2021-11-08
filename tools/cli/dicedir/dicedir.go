@@ -18,6 +18,7 @@ import (
 	"errors"
 	"os"
 	"os/user"
+	"path"
 	"path/filepath"
 )
 
@@ -25,10 +26,29 @@ var (
 	NotExist = errors.New("not exist")
 
 	GlobalDiceDir  = ".dice.d"
+	GlobalConfig = path.Join(GlobalDiceDir, "config")
+
 	ProjectDiceDir = ".dice"
+	ProjectPipelineDir = ".dice/pipelines"
 
 	ProjectErdaDir = ".erda"
 )
+
+func FindGlobalConfig() (string, error) {
+	u, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	file := filepath.Join(u.HomeDir, GlobalConfig)
+	f, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		return file, NotExist
+	}
+	if f.IsDir() {
+		return file, errors.New(file + " is a dirctory")
+	}
+	return file, nil
+}
 
 func FindGlobalDiceDir() (string, error) {
 	u, err := user.Current()
@@ -44,7 +64,6 @@ func FindGlobalDiceDir() (string, error) {
 		return "", NotExist
 	}
 	return dir, nil
-
 }
 
 func CreateGlobalDiceDir() (string, error) {
