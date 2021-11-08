@@ -48,7 +48,11 @@ func (s *mysqlService) ListMySQLAccount(ctx context.Context, req *pb.ListMySQLAc
 	if userID == "" {
 		return nil, fmt.Errorf("user not login")
 	}
-	if err := s.checkPerm(userID, req.InstanceId, "addon", "GET"); err != nil {
+	routing, err := s.db.GetInstanceRouting(req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkPerm(userID, routing, "addon", "GET"); err != nil {
 		return nil, err
 	}
 	accounts, err := s.db.GetMySQLAccountListByRoutingInstanceID(req.InstanceId)
@@ -134,15 +138,15 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 	if userID == "" {
 		return nil, errors.Errorf("user not login")
 	}
-	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
-		return nil, err
-	}
-
-	routingInstance, err := s.db.GetInstanceRouting(req.InstanceId)
+	routing, err := s.db.GetInstanceRouting(req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	ins, err := s.db.GetAddonInstance(routingInstance.RealInstance)
+	if err := s.checkPerm(userID, routing, "addon", "UPDATE"); err != nil {
+		return nil, err
+	}
+
+	ins, err := s.db.GetAddonInstance(routing.RealInstance)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +177,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 		Username:          user,
 		Password:          encryptData.CiphertextBase64,
 		KMSKey:            kr.KeyMetadata.KeyID,
-		InstanceID:        routingInstance.RealInstance,
+		InstanceID:        routing.RealInstance,
 		RoutingInstanceID: req.InstanceId,
 		Creator:           userID,
 	}
@@ -183,7 +187,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 	dto := s.ToDTO(account, false)
 	dto.Password = pass
 
-	s.auditNoError(userID, apis.GetOrgID(ctx), routingInstance, nil, apistructs.CreateMysqlAccountTemplate,
+	s.auditNoError(userID, apis.GetOrgID(ctx), routing, nil, apistructs.CreateMysqlAccountTemplate,
 		map[string]interface{}{
 			"mysqlUsername": dto.Username,
 		},
@@ -199,12 +203,11 @@ func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMyS
 	if userID == "" {
 		return nil, fmt.Errorf("user not login")
 	}
-	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
-		return nil, err
-	}
-	// TODO: optimize
 	routing, err := s.db.GetInstanceRouting(req.InstanceId)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.checkPerm(userID, routing, "addon", "UPDATE"); err != nil {
 		return nil, err
 	}
 	ins, err := s.db.GetAddonInstance(routing.RealInstance)
@@ -244,7 +247,11 @@ func (s *mysqlService) ListAttachment(ctx context.Context, req *pb.ListAttachmen
 	if userID == "" {
 		return nil, fmt.Errorf("user not login")
 	}
-	if err := s.checkPerm(userID, req.InstanceId, "addon", "GET"); err != nil {
+	routing, err := s.db.GetInstanceRouting(req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkPerm(userID, routing, "addon", "GET"); err != nil {
 		return nil, err
 	}
 	attachments, err := s.db.GetAttachmentsByRoutingInstanceID(req.InstanceId)
@@ -277,12 +284,11 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	if userID == "" {
 		return nil, fmt.Errorf("user not login")
 	}
-	if err := s.checkPerm(userID, req.InstanceId, "addon", "UPDATE"); err != nil {
-		return nil, err
-	}
-	// TODO: optimize
 	routing, err := s.db.GetInstanceRouting(req.InstanceId)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.checkPerm(userID, routing, "addon", "UPDATE"); err != nil {
 		return nil, err
 	}
 	att, err := s.db.GetAttachmentByID(req.Id)
@@ -370,14 +376,7 @@ func (s *mysqlService) getConfig(att *dbclient.AddonAttachment) (map[string]stri
 	return configMap, nil
 }
 
-func (s *mysqlService) checkPerm(userID string, instanceID string, resource string, action string) error {
-	routing, err := s.db.GetInstanceRouting(instanceID)
-	if err != nil {
-		return err
-	}
-	if routing == nil {
-		return fmt.Errorf("instance %s not found", instanceID)
-	}
+func (s *mysqlService) checkPerm(userID string, routing *dbclient.AddonInstanceRouting, resource string, action string) error {
 	projectID, err := strutil.Atoi64(routing.ProjectID)
 	if err != nil {
 		return err
