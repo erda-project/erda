@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -426,20 +427,27 @@ func (s *mysqlService) audit(userID string, orgID string, routing *dbclient.Addo
 	tmplCtx["instanceId"] = routing.ID
 	tmplCtx["workspace"] = routing.Workspace
 
+	var appID uint64
 	if att != nil {
+		aid, err := strutil.Atoi64(att.ApplicationID)
+		if err != nil {
+			return err
+		}
+		appID = uint64(aid)
 		tmplCtx["appId"] = att.ApplicationID
 		tmplCtx["runtimeId"] = att.RuntimeID
 		tmplCtx["runtimeName"] = att.RuntimeName
 	}
 
 	// TODO: direct use time.Time
-	now := time.Now().Format("2006-01-02 15:04:05")
+	now := strconv.FormatInt(time.Now().Unix(), 10)
 	audit := apistructs.Audit{
 		UserID:       userID,
 		ScopeType:    apistructs.ProjectScope,
 		ScopeID:      uint64(pid),
 		OrgID:        uint64(oid),
 		ProjectID:    uint64(pid),
+		AppID:        appID,
 		Result:       "success",
 		StartTime:    now,
 		EndTime:      now,
