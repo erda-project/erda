@@ -72,6 +72,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		iterationMap[s.ID] = &s
 	}
 
+	selectedMap := make(map[int64]bool)
+	for _, i := range f.State.FilterValues.IterationIDs {
+		selectedMap[i] = true
+	}
+
 	handler := stackhandlers.NewStackRetriever(
 		stackhandlers.WithIssueStageList(helper.GetIssueStageList()),
 		stackhandlers.WithIssueStateList(helper.GetIssueStateList()),
@@ -86,6 +91,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 				switch c.Name {
 				case "iteration":
 					for _, i := range iterationList {
+						if len(selectedMap) > 0 {
+							if _, ok := selectedMap[i.ID]; !ok {
+								continue
+							}
+						}
 						xAxis = append(xAxis, i.Title)
 					}
 				default:
@@ -145,6 +155,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
+	if c.Name == "iteration" && len(selectedMap) == 1 {
+		props["visible"] = false
+	}
 
 	c.Props = props
 	c.State = nil
