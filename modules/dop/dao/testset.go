@@ -24,6 +24,14 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	MaxTestSetDirectoryLength = 8192
+)
+
+func ValidateTestSetDirectoryLength(dir string) error {
+	return strutil.Validate(dir, strutil.MaxRuneCountValidator(MaxTestSetDirectoryLength))
+}
+
 // TestSet 测试集
 type TestSet struct {
 	dbengine.BaseModel
