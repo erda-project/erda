@@ -1,0 +1,45 @@
+syntax = "proto3";
+package erda.msp.apm.log_service;
+option go_package = "github.com/erda-project/erda-proto-go/msp/amp/log-service/pb";
+import "google/api/annotations.proto";
+
+service LogService {
+  rpc HistogramAggregation(HistogramAggregationRequest) returns(HistogramAggregationReponse) {
+    option (google.api.http) = {
+      get: "/api/log-service/statistics/histogram",
+    };
+  }
+
+  rpc BucketAggregation(BucketAggregationRequest) returns(BucketAggregationResponse) {
+    option (google.api.http) = {
+      get: "/api/log-service/statistics/bucket",
+    };
+  }
+
+  rpc PagedSearch(PagedSearchRequest) returns(PagedSearchResponse) {
+    option (google.api.http) = {
+      get: "/api/log-service/search/paged",
+    };
+  }
+
+  rpc SequentialSearch(SequentialSearchRequest) returns(SequentialSearchResponse) {
+    option (google.api.http) = {
+      get: "/api/log-service/search/sequential",
+    };
+  }
+
+  rpc GetFieldSettings(GetFieldSettingsRequest) returns(GetFieldSettingsResponse) {
+    option (google.api.http) = {
+      get: "/api/log-service/settings/fields",
+    };
+  }
+
+  // download api cannot exposed by grpc
+}
+
+
+message HistogramAggregationRequest {
+  int64 start = 1;
+  int64 end  = 2;
+
+}
