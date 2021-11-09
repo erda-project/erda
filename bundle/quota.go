@@ -63,7 +63,7 @@ func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*api
 // FetchNamespacesBelongsTo finds the project to which a given namespaces belongs to.
 // if orgID == 0, query from all scope.
 // namespaces: the key is cluster name, the value is the namespaces list in the cluster.
-func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context, orgID uint64, clusters []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -75,6 +75,11 @@ func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context) (*apistructs.GetP
 		lang = langCodes[0].String()
 	}
 
+	var params = make(url.Values)
+	for _, cluster := range clusters {
+		params.Add("clusterName", cluster)
+	}
+
 	type response struct {
 		apistructs.Header
 		Data *apistructs.GetProjectsNamesapcesResponseData
@@ -82,6 +87,8 @@ func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context) (*apistructs.GetP
 	var resp response
 	httpResp, err := hc.Get(host).
 		Header("lang", lang).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Params(params).
 		Path("/api/projects-namespaces").
 		Do().JSON(&resp)
 	if err != nil {

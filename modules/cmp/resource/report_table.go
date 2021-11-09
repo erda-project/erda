@@ -57,7 +57,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 	rt.fetchAllNamespaces(ctx, namespacesM, orgIDStr, clusterNames)
 
 	// 2) 调用 core-services bundle，根据 namespaces 查找各 namespaces 的归属
-	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(ctx)
+	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(ctx, uint64(orgID), clusterNames)
 	if err != nil {
 		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
 		logrus.WithError(err).Errorln()

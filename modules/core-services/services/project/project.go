@@ -1531,7 +1531,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	return response, nil
 }
 
-func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clusterNames []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	l := logrus.WithField("func", "GetNamespacesBelongsTo")
 
 	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
@@ -1540,7 +1540,9 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 	// 1）查找 s_pod_info
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
-	if err := p.db.Debug().Where("project_id != '' and project_id is not null").
+	if err := p.db.Debug().Where("project_id != '' and project_id IS NOT NULL").
+		Where(map[string]interface{}{"org_id": orgID}).
+		Where("cluster IN (?)", clusterNames).
 		Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")

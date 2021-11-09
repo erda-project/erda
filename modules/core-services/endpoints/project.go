@@ -793,7 +793,21 @@ func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars m
 func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	langCodes := i18n.Language(r)
 	ctx = context.WithValue(ctx, "lang_codes", langCodes)
-	data, err := e.project.GetNamespacesBelongsTo(ctx)
+
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	// parse usl values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+	values := r.URL.Query()
+	clusterNames := values["clusterName"]
+
+	data, err := e.project.GetNamespacesBelongsTo(ctx, orgID, clusterNames)
 	if err != nil {
 		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
 	}
