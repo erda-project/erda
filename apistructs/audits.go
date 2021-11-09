@@ -244,10 +244,10 @@ type AuditTemplateDetail struct {
 
 var (
 	regS = []*regexp.Regexp{
-		regexp.MustCompile(`(.*)\[@([a-zA-Z]*)\]\([a-zA-Z]*\)(.*)`),
-		regexp.MustCompile(`(.*)<<(.*)>>(.*)`),
-		regexp.MustCompile(`(.*)\[@([a-zA-Z]*)\](.*)`),
-		regexp.MustCompile(`(.*)\[(.*)\]\(.*\)(.*)`),
+		regexp.MustCompile(`(?s)(.*)\[@([a-zA-Z]*)\]\([a-zA-Z]*\)(.*)`),
+		regexp.MustCompile(`(?s)(.*)<<(.*)>>(.*)`),
+		regexp.MustCompile(`(?s)(.*)\[@([a-zA-Z]*)\](.*)`),
+		regexp.MustCompile(`(?s)(.*)\[(.*)\]\(.*\)(.*)`),
 	}
 )
 
