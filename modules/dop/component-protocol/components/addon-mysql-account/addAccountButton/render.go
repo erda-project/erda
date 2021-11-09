@@ -46,6 +46,9 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		"text":          "一键创建账号",
 		"type":          "primary",
 		"requestIgnore": []string{"props", "data", "operations"},
+		"tipProps": map[string]interface{}{
+			"placement": "left",
+		},
 	}
 	if !ac.EditPerm {
 		props["disabled"] = true
