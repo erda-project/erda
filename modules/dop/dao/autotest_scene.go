@@ -35,6 +35,7 @@ type AutoTestScene struct {
 	UpdaterID   string                 `gorm:"updater_id"`
 	Status      apistructs.SceneStatus `gorm:"status"`
 	RefSetID    uint64                 `gorm:"ref_set_id"` // 引用场景集ID
+	GroupID     uint64                 `gorm:"group_id"`   // scene group, in the same group run with parallel
 }
 
 func (AutoTestScene) TableName() string {
@@ -57,11 +58,56 @@ func (s *AutoTestScene) Convert() apistructs.AutoTestScene {
 		UpdateAt:    &s.UpdatedAt,
 		Status:      s.Status,
 		RefSetID:    s.RefSetID,
+		GroupID:     s.GroupID,
 	}
 }
 
-func (db *DBClient) CreateAutotestScene(node *AutoTestScene) error {
-	return db.Create(node).Error
+func (db *DBClient) CreateAutotestScene(scene *AutoTestScene) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var preScene, nextScene AutoTestScene
+		// Insert the first node
+		if scene.PreID == 0 {
+			return tx.Create(scene).Error
+		}
+		// Find the pre scene
+		if err := tx.Where("id = ?", scene.PreID).First(&preScene).Error; err != nil {
+			return err
+		}
+		// If groupID of the pre scene is 0, set its id as groupID
+		if preScene.GroupID == 0 && scene.GroupID != 0 {
+			preScene.GroupID = preScene.ID
+			if err := tx.Save(&preScene).Error; err != nil {
+				return err
+			}
+		}
+		// Find the next scene
+		hasNextStep := true
+		if err := tx.Where("pre_id = ?", scene.PreID).First(&nextScene).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				hasNextStep = false
+			} else {
+				return err
+			}
+		}
+		// Insert the new scene
+		if err := tx.Create(&scene).Error; err != nil {
+			return err
+		}
+		// If groupID of the new scene is 0, set its id as groupID
+		if scene.GroupID == 0 {
+			scene.GroupID = scene.ID
+			if err := tx.Save(&scene).Error; err != nil {
+				return err
+			}
+		}
+		// Update the order of next scene
+		if hasNextStep {
+			nextScene.PreID = scene.ID
+			return tx.Save(&nextScene).Error
+		}
+		return nil
+	})
+	return err
 }
 
 func (db *DBClient) UpdateAutotestScene(node *AutoTestScene) error {
@@ -177,44 +223,71 @@ func (db *DBClient) UpdateAutotestSceneUpdateAt(sceneID uint64, time time.Time) 
 func (db *DBClient) DeleteAutoTestScene(id uint64) (err error) {
 	return db.Transaction(func(tx *gorm.DB) error {
 		var scene, next AutoTestScene
-		// 获取scene
-		if err := tx.Where("id = ?", id).Find(&scene).Error; err != nil {
+		// Update the groupID
+		defer func() {
+			if err == nil {
+				err = updateSceneGroup(tx, scene.GroupID)
+			}
+		}()
+		// Get the scene
+		if err = tx.Where("id = ?", id).Find(&scene).Error; err != nil {
 			return err
 		}
-		// 获取next并更新
-		if err := tx.Where("pre_id = ?", id).Find(&next).Error; err != nil {
+		// Get the next scene
+		if err = tx.Where("pre_id = ?", id).Find(&next).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				goto LABEL1
 			}
 			return err
 		}
 		next.PreID = scene.PreID
-		if err := tx.Save(&next).Error; err != nil {
+		if err = tx.Save(&next).Error; err != nil {
 			return err
 		}
 
 		defer func() {
-			err = checkSamePreID(tx, next.SetID, next.PreID)
-			if err != nil {
-				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
+			if err == nil {
+				if err = checkSamePreID(tx, next.SetID, next.PreID); err != nil {
+					err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
+				}
 			}
 		}()
 	LABEL1:
 		// 删除该场景的全部关联
-		if err := tx.Delete(&scene, "pre_id = ? and id = ?", scene.PreID, scene.ID).Error; err != nil {
+		if err = tx.Delete(&scene, "pre_id = ? and id = ?", scene.PreID, scene.ID).Error; err != nil {
 			return err
 		}
-		if err := tx.Where(AutoTestSceneInput{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneInput{}).Error; err != nil {
+		if err = tx.Where(AutoTestSceneInput{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneInput{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where(AutoTestSceneOutput{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneOutput{}).Error; err != nil {
+		if err = tx.Where(AutoTestSceneOutput{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneOutput{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where(AutoTestSceneStep{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneStep{}).Error; err != nil {
+		if err = tx.Where(AutoTestSceneStep{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneStep{}).Error; err != nil {
 			return err
 		}
 		return nil
 	})
+}
+
+// updateSceneGroup update scene group, set min setID in the group as groupID
+func updateSceneGroup(tx *gorm.DB, groupIDs ...uint64) error {
+	for _, v := range groupIDs {
+		if v == 0 {
+			continue
+		}
+
+		var scenes []AutoTestScene
+		if err := tx.Where("group_id = ?", v).Order("id").Find(&scenes).Error; err != nil {
+			return err
+		}
+		if len(scenes) > 0 {
+			if err := tx.Model(&AutoTestScene{}).Where("group_id = ?", v).Update("group_id", scenes[0].ID).Error; err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // like linklist change to node index
@@ -432,21 +505,36 @@ func (db *DBClient) CountSceneBySpaceID(spaceID uint64) (uint64, error) {
 	return res, nil
 }
 
-func (db *DBClient) Insert(scene *AutoTestScene, id uint64) error {
+func (db *DBClient) Insert(scene *AutoTestScene) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		if id == 0 {
+		if scene.PreID == 0 {
 			return db.Create(&scene).Error
 		}
-		var next AutoTestScene
-		if err := db.Where("pre_id = ?", id).Find(&next).Error; err != nil {
+		var pre, next AutoTestScene
+		// Find the pre scene
+		if err := db.Where("id = ?", scene.PreID).First(&pre).Error; err != nil {
+			return err
+		}
+		// If groupID of the pre scene, set its id as groupID
+		if pre.GroupID == 0 {
+			pre.GroupID = pre.ID
+			if err := db.Save(&pre).Error; err != nil {
+				return err
+			}
+			scene.GroupID = pre.GroupID
+		}
+		// Find the next scene
+		if err := db.Where("pre_id = ?", scene.PreID).Find(&next).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				return db.Create(&scene).Error
 			}
 			return err
 		}
+		// Insert new scene
 		if err := db.Create(&scene).Error; err != nil {
 			return err
 		}
+		// Update preID of next scene
 		next.PreID = scene.ID
 		return db.Save(&next).Error
 	})

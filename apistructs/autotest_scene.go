@@ -68,6 +68,7 @@ type AutoTestScene struct {
 	Output              []AutoTestSceneOutput `json:"output"`    // 输出参数
 	Steps               []AutoTestSceneStep   `json:"steps"`     // 步骤
 	RefSetID            uint64                `json:"refSetID"`  // 引用场景集ID
+	GroupID             uint64                `json:"groupID"`   // scene group
 }
 
 type AutoTestSceneInput struct {
@@ -136,6 +137,9 @@ type AutotestSceneRequest struct {
 
 	PageNo   uint64 `json:"pageNo"`
 	PageSize uint64 `json:"pageSize"`
+
+	PreSetID     uint64 `json:"preSetID"`               // pre setID
+	SceneGroupID uint64 `json:"sceneGroupID,omitempty"` // scene group, set the min sceneID as groupID
 
 	IdentityInfo
 }

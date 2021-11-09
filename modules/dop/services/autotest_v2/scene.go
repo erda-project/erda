@@ -26,10 +26,11 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/publicsuffix"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/publicsuffix"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -111,6 +112,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		CreatorID:   req.UserID,
 		Status:      apistructs.DefaultSceneStatus,
 		RefSetID:    req.RefSetID,
+		GroupID:     req.SceneGroupID,
 	}
 	if err := svc.db.CreateAutotestScene(scene); err != nil {
 		return 0, err
@@ -341,7 +343,7 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	if err != nil {
 		return nil, err
 	}
-	sceneIDs := []uint64{}
+	var sceneIDs []uint64
 	for _, each := range scene {
 		sceneIDs = append(sceneIDs, each.ID)
 	}
@@ -357,14 +359,14 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	lists := map[uint64][]apistructs.AutoTestScene{}
 	for _, each := range scene {
 
-		inputsList := []apistructs.AutoTestSceneInput{}
+		var inputsList []apistructs.AutoTestSceneInput
 		for inputsNo := 0; inputsNo < len(inputs); inputsNo++ {
 			if each.ID == inputs[inputsNo].SceneID {
 				inputsList = append(inputsList, inputs[inputsNo])
 			}
 		}
 
-		outputList := []apistructs.AutoTestSceneOutput{}
+		var outputList []apistructs.AutoTestSceneOutput
 		for outputNo := 0; outputNo < len(outputs); outputNo++ {
 			if each.ID == outputs[outputNo].SceneID {
 				outputList = append(outputList, outputs[outputNo])
@@ -388,6 +390,7 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 			Inputs:      inputsList,
 			Output:      outputList,
 			RefSetID:    each.RefSetID,
+			GroupID:     each.GroupID,
 		})
 	}
 	return lists, nil
@@ -983,7 +986,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 		RefSetID:    oldScene.RefSetID,
 	}
 
-	if err = svc.db.Insert(newScene, req.PreID); err != nil {
+	if err = svc.db.Insert(newScene); err != nil {
 		return 0, err
 	}
 
