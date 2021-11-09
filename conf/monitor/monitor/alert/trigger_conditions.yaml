@@ -8,7 +8,7 @@
       index: host_summary
       filters:
         - org_name
-    - key: pod_name
+    - key: component_name
       index: docker_container_summary
       filters:
         - org_name
