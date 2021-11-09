@@ -2,13 +2,16 @@
 
 <table>
 <tr>
-  
-  <th title="Current">1.3<sup>Current</sup></th>
+  <th title="Current">1.4<sup>Current</sup></th>
+  <th title="Current">1.3</th>
   <th title="Current">1.2</th>
   <th title="Current">1.1</th>
   <th title="Current">1.0</th>
 </tr>
 <tr>
+  <td valign="top">
+    <a href="#v140">1.4.0</a><br/>
+  </td>
   <td valign="top">
     <a href="#v131">1.3.1</a><br/>
     <a href="#v130">1.3.0</a><br/>
@@ -27,6 +30,41 @@
   </td>
 </tr>
 </table>
+
+# v1.4.0
+
+`2021-11-09`
+
+### New Features
+
+* Support setting resource quotas according to the project's workspace granularity in the management center. [#2283](https://github.com/erda-project/erda/pull/2283)
+* Support the resource usage ranking of projects in the cloud management platform. [#2525](https://github.com/erda-project/erda/pull/2525)
+* Support sending SMS alerts through custom notification channels in microservice and cloud management platforms.[#2460](https://github.com/erda-project/erda/pull/2460)
+* Support elasticsearch as a backend storage in the microservice platform.[#2861](https://github.com/erda-project/erda/pull/2861) 
+* Support automatically adding the .yml suffix to the file name when the user creates a pipeline in the DevOps platform. [#2685](https://github.com/erda-project/erda/pull/2685) 
+* Support k8s versions below 1.16 in the kubernetes dashboard of cloud management platform.[#2852](https://github.com/erda-project/erda/pull/2852)
+* Support the dynamic configuration search depth of git search interface in the DevOps platform.[#2872](https://github.com/erda-project/erda/pull/2872) 
+* Optimize the alarm trigger conditions and alarm expressions in the microservice platform. [#2739](https://github.com/erda-project/erda/pull/2739)
+* Support the service analysis of microservice & DevOps type projects in the microservice platform.[#2782](https://github.com/erda-project/erda/pull/2782) [#2833](https://github.com/erda-project/erda/pull/2833)
+
+
+
+### Bug Fixes
+
+* Fix the bug that returns an error when the namespace hasn't aliyun secret in scheduler.[#2456](https://github.com/erda-project/erda/pull/2456)
+* Fix the bug that the custom alarm filtering rules created by msp and cmp are incorrect.[#2860](https://github.com/erda-project/erda/pull/2860) 
+* Fix the bug that span of tracing is missing in the microservice platform.[2849](https://github.com/erda-project/erda/pull/2849), [2820](https://github.com/erda-project/erda/pull/2820)
+* Fix the bug that log index cache got overwritten when multi esurls exists in erda cluster.[#2887](https://github.com/erda-project/erda/pull/2887) 
+* Fix the git-push address of mobile template in the DevOps platform.[#2808](https://github.com/erda-project/erda/pull/2808) 
+* Fix the bug that pipeline does not reset the start execution time of the cyclic task in the DevOps platform.[#2816](https://github.com/erda-project/erda/pull/2816)
+* Fix the bug that writes the data to etcd after handleServiceGroup function in scheduler.[#2604](https://github.com/erda-project/erda/pull/2604)
+* Fix the bug that automated test plan execution action to filter out archived plans in the DevOps platform.[#2663](https://github.com/erda-project/erda/pull/2663) 
+* Fix the bug that one of the tasks in the automated test pipeline may be in execution after canceling in the DevOps platform.[#2684](https://github.com/erda-project/erda/pull/2684) 
+* Fix the bug that will not update the resource environment variables of the container when scaling the service group in the DevOps platform.[#2672](https://github.com/erda-project/erda/pull/2672)
+* Fix the bug that admin account queries all organizations in the DevOps platform.[#2692](https://github.com/erda-project/erda/pull/2692)
+
+
+
 
 # v1.3.1
 
