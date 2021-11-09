@@ -144,19 +144,11 @@ func (e *Endpoints) DeleteAutoTestSpace(ctx context.Context, r *http.Request, va
 
 // GetAutoTestSpaceList 获取测试空间列表
 func (e *Endpoints) GetAutoTestSpaceList(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	projectID, err := strconv.ParseInt(r.URL.Query().Get("projectId"), 10, 64)
-	if err != nil {
+	var req apistructs.AutoTestSpaceListRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrListAutoTestSpace.InvalidParameter(err).ToResp(), nil
 	}
-	pageNo, err := strconv.Atoi(r.URL.Query().Get("pageNo"))
-	if err != nil {
-		return apierrors.ErrListAutoTestSpace.InvalidParameter(err).ToResp(), nil
-	}
-	pageSize, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
-	if err != nil {
-		return apierrors.ErrListAutoTestSpace.InvalidParameter(err).ToResp(), nil
-	}
-	space, err := e.autotestV2.GetSpaceList(projectID, pageNo, pageSize)
+	space, err := e.autotestV2.GetSpaceList(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -325,4 +317,16 @@ func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, va
 		Status:  http.StatusAccepted,
 		Content: recordID,
 	}, nil
+}
+
+func (e *Endpoints) AutotestSpaceStats(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var req apistructs.AutoTestSpaceStatsRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
+	}
+	res, err := e.autotestV2.SpaceStatRetriever(req.SpaceIDs)
+	if err != nil {
+		errorresp.ErrResp(err)
+	}
+	return httpserver.OkResp(res)
 }

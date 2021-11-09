@@ -23,7 +23,7 @@ type Props struct {
 	Style      map[string]interface{} `json:"style"`
 	SuffixIcon string                 `json:"suffixIcon"`
 	Tooltip    string                 `json:"tooltip"`
-	Visible    bool                   `json:"visible"`
+	Visible    bool                   `json:"visible,omitempty"`
 }
 
 type MenuItem struct {

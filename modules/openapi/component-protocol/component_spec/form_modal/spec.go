@@ -40,5 +40,11 @@ type FieldRule struct {
 }
 
 type ComponentProps struct {
-	MaxLength int `json:"maxLength"`
+	Options   []Option ` json:"options,omitempty"`
+	MaxLength int      `json:"maxLength"`
+}
+
+type Option struct {
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"`
 }

@@ -23,7 +23,7 @@ import (
 )
 
 // ListTestSpace 获取测试空间列表
-func (b *Bundle) ListTestSpace(projectID int64, pageSize int64, pageNo int64) (*apistructs.AutoTestSpaceList, error) {
+func (b *Bundle) ListTestSpace(req apistructs.AutoTestSpaceListRequest) (*apistructs.AutoTestSpaceList, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
@@ -32,10 +32,7 @@ func (b *Bundle) ListTestSpace(projectID int64, pageSize int64, pageNo int64) (*
 
 	var listResp apistructs.AutoTestSpaceListResponse
 	resp, err := hc.Get(host).Path("/api/autotests/spaces").
-		// Header(httputil.InternalHeader, "bundle").
-		Param("projectId", strconv.FormatInt(projectID, 10)).
-		Param("pageNo", strconv.FormatInt(pageNo, 10)).
-		Param("pageSize", strconv.FormatInt(pageSize, 10)).
+		Params(req.URLQueryString()).
 		Do().JSON(&listResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -99,7 +96,7 @@ func (b *Bundle) CreateTestSpace(name string, projectID int64, description strin
 }
 
 // UpdateTestSpace 更新测试空间
-func (b *Bundle) UpdateTestSpace(name string, id uint64, description string, userID string) error {
+func (b *Bundle) UpdateTestSpace(space *apistructs.AutoTestSpace, userID string) error {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return err
@@ -110,11 +107,7 @@ func (b *Bundle) UpdateTestSpace(name string, id uint64, description string, use
 	resp, err := hc.Put(host).Path("/api/autotests/spaces").
 		// Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
-		JSONBody(apistructs.AutoTestSpace{
-			Name:        name,
-			ID:          id,
-			Description: description,
-		}).
+		JSONBody(&space).
 		Do().JSON(&listResp)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
@@ -190,4 +183,27 @@ func (b *Bundle) ExportTestSpace(userID string, req apistructs.AutoTestSpaceExpo
 	}
 
 	return nil
+}
+
+func (b *Bundle) GetAutoTestSpaceStats(spaceIDs []string) (map[uint64]*apistructs.AutoTestSpaceStats, error) {
+	host, err := b.urls.DOP()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var listResp apistructs.AutoTestSpaceStatsResponse
+	resp, err := hc.Get(host).Path("/api/autotests/spaces/actions/stats").
+		Params(map[string][]string{
+			"spaceIDs": spaceIDs,
+		}).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+
+	return listResp.Data, nil
 }

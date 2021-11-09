@@ -22,7 +22,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/components/list"
 )
 
 type ComponentSpaceList struct {
@@ -33,9 +35,10 @@ type ComponentSpaceList struct {
 }
 
 type state struct {
-	Total    int64 `json:"total"`
-	PageSize int64 `json:"pageSize"`
-	PageNo   int64 `json:"pageNo"`
+	Total    int64                   `json:"total"`
+	PageSize int64                   `json:"pageSize"`
+	PageNo   int64                   `json:"pageNo"`
+	Values   common.FilterConditions `json:"values,omitempty"`
 }
 
 type props struct {
@@ -49,6 +52,29 @@ type spaceList struct {
 	Desc    string                 `json:"desc"`
 	Operate dataTask               `json:"operate"`
 	Status  map[string]interface{} `json:"status"`
+}
+
+type spaceItem struct {
+	ID            uint64                 `json:"id"`
+	Title         string                 `json:"title"`
+	Description   string                 `json:"description"`
+	PrefixImg     string                 `json:"prefixImg"`
+	ArchiveStatus ArchiveStatus          `json:"status"`
+	ExtraInfos    []ExtraInfos           `json:"extraInfos"`
+	Operations    map[string]interface{} `json:"operations"`
+}
+
+type ArchiveStatus struct {
+	Color  string                                `json:"color"`
+	Status apistructs.AutoTestSpaceArchiveStatus `json:"status"`
+	Text   string                                `json:"text"`
+}
+
+type ExtraInfos struct {
+	Icon    string `json:"icon,omitempty"`
+	Text    string `json:"text,omitempty"`
+	Tooltip string `json:"tooltip,omitempty"`
+	Type    string `json:"type,omitempty"`
 }
 
 // apistructs.AutoTestSpaceStatus
@@ -143,7 +169,7 @@ func getStatus(req apistructs.AutoTestSpaceStatus) map[string]interface{} {
 	return res
 }
 
-func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTestSpaceList) error {
+func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTestSpaceList, statsMap map[uint64]*apistructs.AutoTestSpaceStats) error {
 	access, err := a.CtxBdl.Bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   a.CtxBdl.Identity.UserID,
 		Scope:    apistructs.ProjectScope,
@@ -155,7 +181,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 		return err
 	}
 	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
-	lists := []spaceList{}
+	lists := []spaceItem{}
 	for _, each := range spaces.List {
 		var (
 			edit = dataOperation{
@@ -206,34 +232,60 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 				Disabled:  false,
 				ShowIndex: 5,
 			}
+			click = dataOperation{
+				Key:    "click",
+				Reload: false,
+				Command: map[string]interface{}{
+					"key":    "goto",
+					"target": "project_test_spaceDetail_scenes",
+				},
+			}
 		)
-		list := spaceList{
-			ID:   each.ID,
-			Name: each.Name,
-			Desc: each.Description,
-			Operate: dataTask{
-				RenderType: RenderTable,
-				Value:      "",
-				Operations: map[string]interface{}{},
+		updatedAt := each.UpdatedAt.Format("2006-01-02 15:04:05")
+		text, _ := list.CountActiveTime(updatedAt)
+		item := spaceItem{
+			ID:          each.ID,
+			Title:       each.Name,
+			Description: each.Description,
+			PrefixImg:   "default_test_case",
+			ArchiveStatus: ArchiveStatus{
+				Color:  "red",
+				Status: each.ArchiveStatus,
+				Text:   i18nLocale.Get(fmt.Sprintf("autoTestSpace%s", each.ArchiveStatus)),
 			},
-			Status: getStatus(each.Status),
+			Operations: map[string]interface{}{},
+			ExtraInfos: []ExtraInfos{
+				{
+					Text: fmt.Sprintf("场景集： %v", statsMap[each.ID].SetNum),
+				},
+				{
+					Text: fmt.Sprintf("场景数： %v", statsMap[each.ID].SceneNum),
+				},
+				{
+					Text: fmt.Sprintf("接口数： %v", statsMap[each.ID].StepNum),
+				},
+				{
+					Text:    "更新于 " + text,
+					Tooltip: updatedAt,
+				},
+			},
 		}
 		if each.Status == apistructs.TestSpaceFailed {
-			edit.Command = setCommand(list)
+			edit.Command = setCommand(item)
 			edit.Disabled = true
-			list.Operate.Operations["a-edit"] = edit
-			deleteOp.Meta = setMeta(list)
+			item.Operations["a-edit"] = edit
+			deleteOp.Meta = setMeta(item)
 			deleteOp.Disabled = false
-			list.Operate.Operations["delete"] = deleteOp
-			retry.Meta = setMeta(list)
-			export.Meta = setMeta(list)
+			item.Operations["delete"] = deleteOp
+			retry.Meta = setMeta(item)
+			export.Meta = setMeta(item)
 			export.Disabled = true
-			list.Operate.Operations["export"] = export
-			list.Operate.Operations["retry"] = retry
+			item.Operations["export"] = export
+			item.Operations["retry"] = retry
 		} else {
-			edit.Command = setCommand(list)
-			copyOp.Meta = setMeta(list)
-			deleteOp.Meta = setMeta(list)
+			edit.Command = setCommand(item)
+			copyOp.Meta = setMeta(item)
+			deleteOp.Meta = setMeta(item)
 			deleteOp.Disabled = true
 			copyOp.Disabled = true
 			edit.Disabled = true
@@ -243,13 +295,21 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 				copyOp.Disabled = false
 				export.Disabled = false
 			}
-			list.Operate.Operations["a-edit"] = edit
-			list.Operate.Operations["copy"] = copyOp
-			export.Meta = setMeta(list)
-			list.Operate.Operations["export"] = export
-			list.Operate.Operations["delete"] = deleteOp
+			item.Operations["a-edit"] = edit
+			item.Operations["copy"] = copyOp
+			export.Meta = setMeta(item)
+			item.Operations["export"] = export
+			item.Operations["delete"] = deleteOp
 		}
-		lists = append(lists, list)
+
+		status := getStatus(each.Status)
+		if v, ok := status["value"]; ok {
+			item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
+				Text: v.(string),
+			})
+		}
+		item.Operations["click"] = click
+		lists = append(lists, item)
 	}
 	a.Data["list"] = lists
 
@@ -282,27 +342,7 @@ func getOperations() map[string]interface{} {
 func getProps() spec.Props {
 	return spec.Props{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
-		RowKey:          "id",
-		Columns: []spec.Column{
-			{
-				Title:     "空间名",
-				DataIndex: "name",
-			},
-			{
-				Title:     "描述",
-				DataIndex: "desc",
-			},
-			{
-				Title:     "状态",
-				DataIndex: "status",
-			},
-			{
-				Title:     "操作",
-				DataIndex: "operate",
-				Width:     180,
-			},
-		},
-		Visible: true,
+		Visible:         true,
 	}
 }
 

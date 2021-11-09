@@ -55,7 +55,12 @@ func testSceneRun(ctx context.Context, c *apistructs.Component, scenario apistru
 		}
 	}
 
-	spaces, err := bdl.Bdl.ListTestSpace(projectId, 500, 1)
+	// spaces, err := bdl.Bdl.ListTestSpace(projectId, 500, 1, "")
+	spaces, err := bdl.Bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
+		ProjectID: projectId,
+		PageNo:    1,
+		PageSize:  500,
+	})
 	if err != nil {
 		return err
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/form_modal"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -50,10 +51,11 @@ type inParams struct {
 }
 
 type AutoTestSpace struct {
-	ID        uint64 `json:"id"`
-	ProjectID int64  `json:"projectId"`
-	Name      string `json:"name"`
-	Desc      string `json:"desc"`
+	ID            uint64                                `json:"id"`
+	ProjectID     int64                                 `json:"projectId"`
+	Name          string                                `json:"name"`
+	Desc          string                                `json:"desc"`
+	ArchiveStatus apistructs.AutoTestSpaceArchiveStatus `json:"archiveStatus"`
 }
 
 const (
@@ -62,6 +64,7 @@ const (
 
 func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	a.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	a.Props.Fields = []spec.Field{
 		{
 			Key:       "name",
@@ -75,6 +78,28 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 				{
 					Pattern: `/^[.a-z\u4e00-\u9fa5A-Z0-9_-\s]*$/`,
 					Msg:     "可输入中文、英文、数字、中划线或下划线",
+				},
+			},
+		},
+		{
+			Key:       "archiveStatus",
+			Label:     "状态",
+			Component: "select",
+			Required:  true,
+			ComponentProps: spec.ComponentProps{
+				Options: []spec.Option{
+					{
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
+						Value: apistructs.TestSpaceInit,
+					},
+					{
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInProgress),
+						Value: apistructs.TestSpaceInProgress,
+					},
+					{
+						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceCompleted),
+						Value: apistructs.TestSpaceCompleted,
+					},
 				},
 			},
 		},
@@ -190,11 +215,12 @@ func (a *SpaceFormModal) handlerUpdateOperation(bdl protocol.ContextBundle, c *a
 	if res.Status != apistructs.TestSpaceOpen {
 		return fmt.Errorf("当前状态不允许编辑")
 	}
-	err = bdl.Bdl.UpdateTestSpace(cond.Name, cond.ID, cond.Desc, bdl.Identity.UserID)
-	if err != nil {
-		return err
-	}
-	return nil
+	return bdl.Bdl.UpdateTestSpace(&apistructs.AutoTestSpace{
+		ID:            cond.ID,
+		Name:          cond.Name,
+		Description:   cond.Desc,
+		ArchiveStatus: cond.ArchiveStatus,
+	}, bdl.Identity.UserID)
 }
 
 func RenderCreator() protocol.CompRender {
