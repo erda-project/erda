@@ -68,8 +68,12 @@ func (data *ResourceOverviewReportData) GroupByOwner() {
 		owner.MemRequest += item.MemRequest
 		m[owner.OwnerUserName] = owner
 	}
-	for _, item := range m {
-		list = append(list, item)
+	for _, owner := range m {
+		owner.CPUQuota = calcu.Accuracy(owner.CPUQuota, 3)
+		owner.CPURequest = calcu.Accuracy(owner.CPURequest, 3)
+		owner.MemQuota = calcu.Accuracy(owner.MemQuota, 3)
+		owner.MemRequest = calcu.Accuracy(owner.MemRequest, 3)
+		list = append(list, owner)
 	}
 	data.List = list
 }
