@@ -730,7 +730,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID, "phase": "running"}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to Find the namespaces info in the project")
 		return
@@ -1534,7 +1534,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
 	if err := p.db.Debug().Where("project_id != '' and project_id IS NOT NULL").
-		Where(map[string]interface{}{"org_id": orgID}).
+		Where(map[string]interface{}{"org_id": orgID, "phase": "running"}).
 		Where("cluster IN (?)", clusterNames).
 		Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
