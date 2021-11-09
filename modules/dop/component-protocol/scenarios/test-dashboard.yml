@@ -4,6 +4,7 @@ hierarchy:
   structure:
     page:
       - filter
+      - tip
       - overview_group
       - mt_plan_chart_group
       - at_case_rate_trending_chart_group
@@ -66,6 +67,9 @@ hierarchy:
         - at_plan_latest_waterfall_chart
 
 components:
+  tip:
+    type: Alert
+    props:
   filter:
     name: filter
     operations:
