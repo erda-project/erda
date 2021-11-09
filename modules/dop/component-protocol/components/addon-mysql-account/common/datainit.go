@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	cppb "github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -29,6 +30,9 @@ import (
 )
 
 type AccountData struct {
+	ShowPerm bool
+	EditPerm bool
+
 	Attachments     []*addonmysqlpb.Attachment
 	AttachmentMap   map[uint64]*addonmysqlpb.Attachment
 	Accounts        []*addonmysqlpb.MySQLAccount
@@ -38,8 +42,38 @@ type AccountData struct {
 	AppMap          map[string]*apistructs.ApplicationDTO
 }
 
+func getPerm(ctx context.Context, identity *cppb.IdentityInfo, projectID uint64, action string) (bool, error) {
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	pr, err := bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   identity.UserID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  projectID,
+		Resource: "addon",
+		Action:   action,
+	})
+	if err != nil {
+		return false, err
+	}
+	return pr.Access, nil
+}
+
 func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (*AccountData, error) {
 	identity := cputil.GetIdentity(ctx)
+
+	showPerm, err := getPerm(ctx, identity, projectID, "GET")
+	if err != nil {
+		return nil, err
+	}
+	editPerm, err := getPerm(ctx, identity, projectID, "UPDATE")
+	if err != nil {
+		return nil, err
+	}
+	if !showPerm {
+		d := &AccountData{ShowPerm: false}
+		ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["accountData"] = d
+		return d, nil
+	}
+
 	addonMySQLSvc := ctx.Value(types.AddonMySQLService).(addonmysqlpb.AddonMySQLServiceServer)
 	r, err := addonMySQLSvc.ListAttachment(utils.NewContextWithHeader(ctx), &addonmysqlpb.ListAttachmentRequest{
 		InstanceId: instanceID,
@@ -89,6 +123,8 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 	}
 
 	data := &AccountData{
+		ShowPerm:        showPerm,
+		EditPerm:        editPerm,
 		Attachments:     r.Attachments,
 		AttachmentMap:   attachmentMap,
 		Accounts:        ra.Accounts,
