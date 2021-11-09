@@ -111,6 +111,7 @@ func (rt *ReportTable) fetchRequestOnNamespaces(ctx context.Context, namespaces 
 
 func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNamespacesResourcesResponse, namespaces *apistructs.GetProjectsNamesapcesResponseData,
 	cpuPerNode, memPerNode uint64, groupBy string) *apistructs.ResourceOverviewReportData {
+	l := logrus.WithField("func", "*ReportTable.groupResponse")
 	var (
 		langCodes, _   = ctx.Value("lang_codes").(i18n.LanguageCodes)
 		sharedResource [2]uint64
@@ -120,6 +121,9 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 			var belongsToProject = false
 			for _, projectItem := range namespaces.List {
 				if projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()) {
+					l.Infof("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
+						projectItem.ProjectID, projectItem.Clusters, clusterItem.GetClusterName(), namespaceItem.GetNamespace(),
+						namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
 					belongsToProject = true
 					projectItem.AddResource(namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
 					break
