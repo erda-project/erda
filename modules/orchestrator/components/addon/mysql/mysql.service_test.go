@@ -15,6 +15,7 @@
 package mysql
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -252,7 +253,7 @@ func Test_mysqlService_checkPerm(t *testing.T) {
 				perm:   tt.fields.perm,
 				db:     tt.fields.db,
 			}
-			if err := s.checkPerm(tt.args.userID, tt.args.routing, tt.args.resource, tt.args.action); (err != nil) != tt.wantErr {
+			if err := s.mustHavePerm(tt.args.userID, tt.args.routing, tt.args.resource, tt.args.action); (err != nil) != tt.wantErr {
 				t.Errorf("checkPerm() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -267,6 +268,7 @@ func Test_mysqlService_audit(t *testing.T) {
 		db     *dbclient.DBClient
 	}
 	type args struct {
+		ctx      context.Context
 		userID   string
 		orgID    string
 		routing  *dbclient.AddonInstanceRouting
@@ -286,6 +288,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm: &MockPerm{},
 			},
 			args: args{
+				ctx: context.Background(),
 				userID: "111",
 				orgID:  "333",
 				routing: &dbclient.AddonInstanceRouting{
@@ -306,6 +309,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm: &MockPerm{},
 			},
 			args: args{
+				ctx: context.Background(),
 				userID: "111",
 				orgID:  "333",
 				routing: &dbclient.AddonInstanceRouting{
@@ -326,6 +330,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm: &MockPerm{},
 			},
 			args: args{
+				ctx: context.Background(),
 				userID: "111",
 				orgID:  "333",
 				routing: &dbclient.AddonInstanceRouting{
@@ -353,7 +358,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm:   tt.fields.perm,
 				db:     tt.fields.db,
 			}
-			if err := s.audit(tt.args.userID, tt.args.orgID, tt.args.routing, tt.args.att, tt.args.tmplName, tt.args.tmplCtx); (err != nil) != tt.wantErr {
+			if err := s.audit(tt.args.ctx, tt.args.userID, tt.args.orgID, tt.args.routing, tt.args.att, tt.args.tmplName, tt.args.tmplCtx); (err != nil) != tt.wantErr {
 				t.Errorf("audit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -213,6 +213,13 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 			Meta: map[string]string{
 				"id": fmt.Sprintf("%d", item.Id),
 			},
+			Disabled: !f.ac.EditPerm,
+			DisabledTip: func() string {
+				if !f.ac.EditPerm {
+					return "您没有权限编辑账号使用，请联系项目管理员"
+				}
+				return ""
+			}(),
 			ShowIndex: 3,
 		},
 	}}
