@@ -308,32 +308,9 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	for _, item := range list {
 		var config map[string]*structpb.Value
 		if item.Config != "" {
-			err := json.Unmarshal([]byte(item.Config), &config)
+			err := handleBody(item, config)
 			if err != nil {
 				return nil, err
-			}
-			if v, ok := config["body"]; ok {
-				bodyBytes, err := json.Marshal(v.GetStructValue())
-				if err != nil {
-					return nil, err
-				}
-				bodyStr := string(bodyBytes)
-				if !strings.Contains(bodyStr, "content") {
-					// history
-					fields := v.GetStructValue().GetFields()
-					fields["content"] = structpb.NewStringValue(bodyStr)
-					fields["type"] = structpb.NewStringValue("none")
-					headers := config["headers"].GetStructValue().GetFields()
-					if v, ok := headers["Content-Type"]; ok {
-						fields["type"] = structpb.NewStringValue(v.GetStringValue())
-					}
-
-					for k := range fields {
-						if k != "content" && k != "type" {
-							delete(fields, k)
-						}
-					}
-				}
 			}
 		}
 
@@ -374,7 +351,10 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	if metric != nil {
 		var config map[string]*structpb.Value
 		if metric.Config != "" {
-			json.Unmarshal([]byte(metric.Config), &config)
+			err := handleBody(metric, config)
+			if err != nil {
+				return nil, err
+			}
 		}
 		results[req.Id] = &pb.DescribeItemV1{
 			Name:   metric.Name,
@@ -399,6 +379,40 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			Metrics:   results,
 		},
 	}, nil
+}
+
+func handleBody(metric *db.Metric, config map[string]*structpb.Value) error {
+	if metric.Config == "" {
+		return errors.NewNotFoundError("config")
+	}
+	err := json.Unmarshal([]byte(metric.Config), &config)
+	if err != nil {
+		return err
+	}
+	if v, ok := config["body"]; ok {
+		bodyBytes, err := json.Marshal(v.GetStructValue())
+		if err != nil {
+			return err
+		}
+		bodyStr := string(bodyBytes)
+		if !strings.Contains(bodyStr, "content") {
+			// history
+			fields := v.GetStructValue().GetFields()
+			fields["content"] = structpb.NewStringValue(bodyStr)
+			fields["type"] = structpb.NewStringValue("none")
+			headers := config["headers"].GetStructValue().GetFields()
+			if v, ok := headers["Content-Type"]; ok {
+				fields["type"] = structpb.NewStringValue(v.GetStringValue())
+			}
+
+			for k := range fields {
+				if k != "content" && k != "type" {
+					delete(fields, k)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func getTimeRange(unit string, num int, align bool) (start int64, end int64, interval string) {
