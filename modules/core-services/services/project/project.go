@@ -1463,7 +1463,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
-			PageSize:  1,
+			PageSize:  1000,
 		}
 		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
 		case err != nil:
@@ -1471,14 +1471,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			mb, ok := getMemberFromMembers(members, "Owner")
-			if ok {
-				member = mb
-				break
-			}
-			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
-				member = mb
-			}
+			getFirstValidOwnerOrLead(&member, members)
 		}
 
 		owner, ok := ownerM[member.UserID]
@@ -1607,7 +1600,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
-			PageSize:  1,
+			PageSize:  1000,
 		}
 		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
 		case err != nil:
@@ -1615,14 +1608,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			mb, ok := getMemberFromMembers(members, "Owner")
-			if ok {
-				member = mb
-				break
-			}
-			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
-				member = mb
-			}
+			getFirstValidOwnerOrLead(&member, members)
 		}
 		userID, err := strconv.ParseUint(member.UserID, 10, 64)
 		if err != nil {
@@ -1678,6 +1664,22 @@ func getMemberFromMembers(members []model.Member, role string) (model.Member, bo
 		}
 	}
 	return model.Member{}, false
+}
+
+func getFirstValidOwnerOrLead(member *model.Member, members []model.Member) {
+	if member == nil {
+		return
+	}
+	for _, role_ := range []string{"Owner", "Lead"} {
+		for _, memb := range members {
+			for _, role := range memb.Roles {
+				if strings.EqualFold(role, role_) {
+					*member = memb
+					return
+				}
+			}
+		}
+	}
 }
 
 func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO, changeRecord map[string]bool) (string, bool) {
