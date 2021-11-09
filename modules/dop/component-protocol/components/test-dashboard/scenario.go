@@ -53,4 +53,5 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/scene_chart_group/scene_avg_cost_chart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/scene_chart_group/scene_rate_failed_chart"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/scene_chart_group/scene_rate_passed_chart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/tip"
 )
