@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -36,10 +36,10 @@ func init() {
 	})
 }
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func (i *ComponentWorkloadInfo) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -161,12 +161,12 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (i *ComponentWorkloadInfo) Transfer(component *cptype.Component) {
-	component.Props = i.Props
-	component.Data = map[string]interface{}{
+func (i *ComponentWorkloadInfo) Transfer(c *cptype.Component) {
+	c.Props = i.Props
+	c.Data = map[string]interface{}{
 		"data": i.Data.Data,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": i.State.ClusterName,
 		"workloadId":  i.State.WorkloadID,
 	}

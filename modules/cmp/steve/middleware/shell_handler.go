@@ -27,7 +27,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/steve"
+	"github.com/erda-project/erda/modules/cmp/steve/predefined"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
@@ -65,7 +65,7 @@ func (s *ShellHandler) HandleShell(next http.Handler) http.Handler {
 		}
 
 		group := user.GetGroups()[0]
-		userGroup, ok := steve.UserGroups[group]
+		userGroup, ok := predefined.UserGroups[group]
 		if !ok {
 			resp.WriteHeader(http.StatusForbidden)
 			resp.Write(apistructs.NewSteveError(apistructs.PermissionDenied, "access denied").JSON())

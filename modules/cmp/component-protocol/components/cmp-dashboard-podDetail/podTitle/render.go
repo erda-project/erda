@@ -42,18 +42,18 @@ func (podTitle *PodTitle) Render(ctx context.Context, c *cptype.Component, s cpt
 	return nil
 }
 
-func (podTitle *PodTitle) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (podTitle *PodTitle) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	err = json.Unmarshal(jsonData, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -62,9 +62,9 @@ func (podTitle *PodTitle) GenComponentState(component *cptype.Component) error {
 	return nil
 }
 
-func (podTitle *PodTitle) Transfer(component *cptype.Component) {
-	component.Props = podTitle.Props
-	component.State = map[string]interface{}{
+func (podTitle *PodTitle) Transfer(c *cptype.Component) {
+	c.Props = podTitle.Props
+	c.State = map[string]interface{}{
 		"podId": podTitle.State.PodID,
 	}
 }

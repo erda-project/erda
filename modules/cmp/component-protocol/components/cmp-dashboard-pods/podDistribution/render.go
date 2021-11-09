@@ -69,12 +69,12 @@ func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt
 	return status
 }
 
-func (pd *PodDistribution) Transfer(component *cptype.Component) {
-	component.Data = map[string]interface{}{
+func (pd *PodDistribution) Transfer(c *cptype.Component) {
+	c.Data = map[string]interface{}{
 		"total": pd.Data.Total,
 		"list":  pd.Data.Lists,
 	}
-	component.Props = pd.Props
+	c.Props = pd.Props
 }
 
 func init() {

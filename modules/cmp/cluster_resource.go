@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
-	_interface "github.com/erda-project/erda/modules/cmp/cmp_interface"
 )
 
 func (p *provider) GetClustersResources(ctx context.Context, cReq *pb.GetClustersResourcesRequest) (*pb.GetClusterResourcesResponse, error) {
@@ -139,7 +138,7 @@ const (
 )
 
 // GetNamespaceAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
-func GetNamespaceAllocatedRes(ctx context.Context, server _interface.SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
+func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, namespaces []string) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nsAllocatedRes := make(map[string]AllocatedRes)
@@ -276,7 +275,7 @@ func IsVirtualNode(node data.Object) bool {
 }
 
 // GetNodesAllocatedRes get nodes allocated resource from cache, and update cache in goroutine
-func GetNodesAllocatedRes(ctx context.Context, server _interface.SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
+func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthentication bool, clusterName, userID, orgID string, nodes []data.Object) (map[string]AllocatedRes, error) {
 	var pods []types2.APIObject
 	hasExpired := false
 	nodesAllocatedRes := make(map[string]AllocatedRes)

@@ -68,12 +68,12 @@ func (tableTabs *TableTabs) GenComponentState(component *cptype.Component) error
 	return nil
 }
 
-func (tableTabs *TableTabs) Transfer(component *cptype.Component) {
-	component.Props = tableTabs.Props
-	component.State = map[string]interface{}{
+func (tableTabs *TableTabs) Transfer(c *cptype.Component) {
+	c.Props = tableTabs.Props
+	c.State = map[string]interface{}{
 		"activeKey": tableTabs.State.ActiveKey,
 	}
-	component.Operations = map[string]interface{}{
+	c.Operations = map[string]interface{}{
 		"onChange": tableTabs.Operations.OnChange,
 	}
 }

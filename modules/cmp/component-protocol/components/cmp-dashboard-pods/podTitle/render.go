@@ -49,8 +49,8 @@ func (podTitle *PodTitle) Render(ctx context.Context, c *cptype.Component, s cpt
 	return nil
 }
 
-func (podTitle *PodTitle) Transfer(component *cptype.Component) {
-	component.Props = podTitle.Props
+func (podTitle *PodTitle) Transfer(c *cptype.Component) {
+	c.Props = podTitle.Props
 }
 
 func init() {

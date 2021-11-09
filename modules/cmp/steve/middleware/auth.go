@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/steve"
+	"github.com/erda-project/erda/modules/cmp/steve/predefined"
 )
 
 const varsKey = "stevePathVars"
@@ -110,7 +110,7 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 			UID:  name,
 		}
 		for _, role := range rsp.Roles {
-			group, ok := steve.RoleToGroup[role]
+			group, ok := predefined.RoleToGroup[role]
 			if !ok {
 				continue
 			}
