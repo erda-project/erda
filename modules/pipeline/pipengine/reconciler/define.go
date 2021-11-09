@@ -59,6 +59,8 @@ type Reconciler struct {
 	processingTasks sync.Map
 	// teardownPipelines store pipeline id which is in the process of tear down
 	teardownPipelines sync.Map
+	// processPipelines store reconciler pipeline id
+	processingPipelines sync.Map
 
 	// svc
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
@@ -88,8 +90,9 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		bdl:      bdl,
 		dbClient: dbClient,
 
-		processingTasks:   sync.Map{},
-		teardownPipelines: sync.Map{},
+		processingTasks:     sync.Map{},
+		teardownPipelines:   sync.Map{},
+		processingPipelines: sync.Map{},
 
 		actionAgentSvc:  actionAgentSvc,
 		extMarketSvc:    extMarketSvc,
