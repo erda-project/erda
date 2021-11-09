@@ -26,11 +26,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 type MockSteveServer struct {
-	cmp_interface.SteveServer
+	cmp.SteveServer
 }
 
 func (m *MockSteveServer) GetSteveResource(context.Context, *apistructs.SteveRequest) (types.APIObject, error) {

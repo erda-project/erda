@@ -36,8 +36,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -51,12 +51,12 @@ func init() {
 }
 
 var (
-	steveServer cmp_interface.SteveServer
+	steveServer cmp.SteveServer
 	mServer     metrics.Interface
 )
 
 func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -130,37 +130,37 @@ func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) erro
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	queryData, ok := p.sdk.InParams["podsTable__urlQuery"].(string)
+	urlQuery, ok := p.sdk.InParams["podsTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
-	p.State.PageNo = int(query["pageNo"].(float64))
-	p.State.PageSize = int(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field, _ = sorter["field"].(string)
-	p.State.Sorter.Order, _ = sorter["order"].(string)
+	p.State.PageNo = int(queryData["pageNo"].(float64))
+	p.State.PageSize = int(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field, _ = sorterData["field"].(string)
+	p.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = p.State.PageNo
-	query["pageSize"] = p.State.PageSize
-	query["sorterData"] = p.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = p.State.PageNo
+	urlQuery["pageSize"] = p.State.PageSize
+	urlQuery["sorterData"] = p.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
+	encode := base64.StdEncoding.EncodeToString(jsonData)
 	p.State.PodsTableURLQuery = encode
 	return nil
 }
@@ -638,10 +638,10 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
-	component.Props = p.Props
-	component.Data = map[string]interface{}{"list": p.Data.List}
-	component.State = map[string]interface{}{
+func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
+	c.Props = p.Props
+	c.Data = map[string]interface{}{"list": p.Data.List}
+	c.State = map[string]interface{}{
 		"clusterName":         p.State.ClusterName,
 		"countValues":         p.State.CountValues,
 		"pageNo":              p.State.PageNo,
@@ -652,7 +652,7 @@ func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
 		"podsTable__urlQuery": p.State.PodsTableURLQuery,
 		"activeKey":           p.State.ActiveKey,
 	}
-	component.Operations = p.Operations
+	c.Operations = p.Operations
 }
 
 var PodStatusToColor = map[string]string{
