@@ -140,6 +140,7 @@ zh:
   scene-passed-rate: 场景 - 按执行通过率分布 Top500
   api-avg-cost: 接口 - 按执行平均耗时分布 Top500
   api-failed-rate: 接口 - 按执行失败率分布 Top500
+  test-dashboard-tip: 选择迭代下如无数据，请确认该迭代下是否有相关测试计划，以及存在的测试计划是否正确配置迭代
   week: 近一周
   month: 近一月
   quality_score_tip--title: 质量分的计算公式（分值 0-100）
@@ -343,6 +344,7 @@ en:
   scene-passed-rate: Scene - Execute Pass Rate Top500
   api-avg-cost: Api - Execute Avg Cost Top500
   api-failed-rate: Api - Execute Failed Rate Top500
+  test-dashboard-tip: If there is no data under the selected iteration, please confirm whether there is a related test plan under the iteration, and whether the existing test plan is configured correctly for the iteration
   week: Nearly a week
   month: Nearly a month
   quality_score_tip--title: Quqality Score Formula (Score 0-100)
