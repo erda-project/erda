@@ -118,10 +118,13 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 	)
 	for _, clusterItem := range resources.List {
 		for _, namespaceItem := range clusterItem.List {
+			if namespaceItem.GetNamespace() == "default" {
+				continue
+			}
 			var belongsToProject = false
 			for _, projectItem := range namespaces.List {
 				if projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()) {
-					l.Infof("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
+					l.Debugf("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
 						projectItem.ProjectID, projectItem.Clusters, clusterItem.GetClusterName(), namespaceItem.GetNamespace(),
 						namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
 					belongsToProject = true
