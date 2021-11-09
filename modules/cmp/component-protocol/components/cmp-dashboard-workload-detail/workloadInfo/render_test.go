@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 type MockSteveServer struct {
