@@ -306,7 +306,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
-		var config map[string]*structpb.Value
+		config := make(map[string]*structpb.Value)
 		if item.Config != "" {
 			err := handleBody(item, config)
 			if err != nil {
@@ -349,7 +349,7 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	results := make(map[int64]*pb.DescribeItemV1)
 	var downCount int64
 	if metric != nil {
-		var config map[string]*structpb.Value
+		config := make(map[string]*structpb.Value)
 		if metric.Config != "" {
 			err := handleBody(metric, config)
 			if err != nil {
