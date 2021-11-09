@@ -788,14 +788,14 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 			continue
 		}
 		if rc.CPUQuota != 0 {
-			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota, 4)
-			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota, 4)
-			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota, 4)
+			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota*100, 2)
+			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota*100, 2)
+			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota*100, 2)
 		}
 		if rc.MemQuota != 0 {
-			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota, 4)
-			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota, 4)
-			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota, 4)
+			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota*100, 2)
+			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota*100, 2)
+			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota*100, 2)
 		}
 	}
 }
