@@ -662,7 +662,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 }
 
 // Get 获取项目
-func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
+func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -677,12 +677,14 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	// 查询项目 quota
-	p.fetchQuota(&projectDTO)
-	// 查询项目下的 pod 的 request 数据
-	p.fetchPodInfo(&projectDTO)
-	// 根据已有统计值计算比率
-	p.calcuRequestRate(&projectDTO)
+	if withQuota {
+		// 查询项目 quota
+		p.fetchQuota(&projectDTO)
+		// 查询项目下的 pod 的 request 数据
+		p.fetchPodInfo(&projectDTO)
+		// 根据已有统计值计算比率
+		p.calcuRequestRate(&projectDTO)
+	}
 
 	return &projectDTO, nil
 }
@@ -730,7 +732,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID, "phase": "running"}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to Find the namespaces info in the project")
 		return
@@ -788,14 +790,14 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 			continue
 		}
 		if rc.CPUQuota != 0 {
-			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota, 4)
-			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota, 4)
-			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota, 4)
+			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota*100, 2)
+			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota*100, 2)
+			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota*100, 2)
 		}
 		if rc.MemQuota != 0 {
-			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota, 4)
-			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota, 4)
-			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota, 4)
+			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota*100, 2)
+			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota*100, 2)
+			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota*100, 2)
 		}
 	}
 }
@@ -1289,9 +1291,15 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 }
 
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
+	l := logrus.WithField("func", "convertToProjectDTO")
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
 		rollbackConfig = make(map[string]int)
+	}
+
+	var clusterConfig = make(map[string]string)
+	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
+		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
 	}
 
 	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
@@ -1309,7 +1317,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Stats: apistructs.ProjectStats{
 			CountApplications: int(total),
 		},
-		ClusterConfig:  nil,
+		ClusterConfig:  clusterConfig,
 		RollbackConfig: rollbackConfig,
 		CpuQuota:       project.CpuQuota,
 		MemQuota:       project.MemQuota,
@@ -1451,7 +1459,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
 	for _, project := range projects {
 		// query project owner
-		var member = &model.Member{
+		var member = model.Member{
 			UserID: "0",
 			Name:   "unknown",
 			Nick:   "unknown",
@@ -1463,7 +1471,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
-			PageSize:  1,
+			PageSize:  1000,
 		}
 		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
 		case err != nil:
@@ -1471,14 +1479,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			mb, ok := getMemberFromMembers(members, "Owner")
-			if ok {
-				member = mb
-				break
-			}
-			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
-				member = mb
-			}
+			hitFirstValidOwnerOrLead(&member, members)
 		}
 
 		owner, ok := ownerM[member.UserID]
@@ -1531,7 +1532,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	return response, nil
 }
 
-func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clusterNames []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	l := logrus.WithField("func", "GetNamespacesBelongsTo")
 
 	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
@@ -1540,7 +1541,9 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 	// 1）查找 s_pod_info
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
-	if err := p.db.Debug().Where("project_id != '' and project_id is not null").
+	if err := p.db.Debug().Where("project_id != '' and project_id IS NOT NULL").
+		Where(map[string]interface{}{"org_id": orgID, "phase": "running"}).
+		Where("cluster IN (?)", clusterNames).
 		Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")
@@ -1593,7 +1596,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 		}
 
 		// query project owner
-		var member = &model.Member{
+		var member = model.Member{
 			UserID: "0",
 			Name:   unknownName,
 			Nick:   unknownName,
@@ -1605,7 +1608,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
-			PageSize:  1,
+			PageSize:  1000,
 		}
 		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
 		case err != nil:
@@ -1613,14 +1616,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			mb, ok := getMemberFromMembers(members, "Owner")
-			if ok {
-				member = mb
-				break
-			}
-			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
-				member = mb
-			}
+			hitFirstValidOwnerOrLead(&member, members)
 		}
 		userID, err := strconv.ParseUint(member.UserID, 10, 64)
 		if err != nil {
@@ -1667,15 +1663,20 @@ func (p *Project) ListQuotaRecords(ctx context.Context) ([]*apistructs.ProjectQu
 	return records, nil
 }
 
-func getMemberFromMembers(members []model.Member, role string) (*model.Member, bool) {
-	for _, member := range members {
-		for _, role_ := range member.Roles {
-			if strings.EqualFold(role, role_) {
-				return &member, true
+func hitFirstValidOwnerOrLead(defaultOne *model.Member, members []model.Member) {
+	if defaultOne == nil {
+		return
+	}
+	for _, role_ := range []string{"Owner", "Lead"} {
+		for _, member := range members {
+			for _, role := range member.Roles {
+				if strings.EqualFold(role, role_) {
+					*defaultOne = member
+					return
+				}
 			}
 		}
 	}
-	return nil, false
 }
 
 func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO, changeRecord map[string]bool) (string, bool) {
