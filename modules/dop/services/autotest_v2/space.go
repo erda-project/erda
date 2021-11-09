@@ -16,6 +16,8 @@ package autotestv2
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -137,13 +139,7 @@ func (svc *Service) UpdateAutoTestSpace(req apistructs.AutoTestSpace, UserID str
 	if len(req.Status) > 0 {
 		autoTestSpace.Status = req.Status
 	}
-	if len(req.Name) > 0 {
-		autoTestSpace.Name = req.Name
-	}
-	if len(req.ArchiveStatus) > 0 {
-		autoTestSpace.ArchiveStatus = req.ArchiveStatus
-	}
-	autoTestSpace.Description = req.Description
+	changedField := getChangedFields(autoTestSpace, req)
 	if err := svc.validateSpace(*autoTestSpace); err != nil {
 		return nil, apierrors.ErrUpdateAutoTestSpace.InternalError(err)
 	}
@@ -151,8 +147,67 @@ func (svc *Service) UpdateAutoTestSpace(req apistructs.AutoTestSpace, UserID str
 	if err != nil {
 		return nil, apierrors.ErrUpdateAutoTestSpace.InternalError(err)
 	}
-	// 转换
+	if len(changedField) > 0 {
+		go svc.createAudits(autoTestSpace, changedField)
+	}
 	return convertToUnifiedFileSpace(res), nil
+}
+
+func getChangedFields(autoTestSpace *dao.AutoTestSpace, req apistructs.AutoTestSpace) map[string][]string {
+	changedField := make(map[string][]string)
+	if len(req.Name) > 0 {
+		if req.Name != autoTestSpace.Name {
+			changedField["name"] = []string{autoTestSpace.Name, req.Name}
+		}
+		autoTestSpace.Name = req.Name
+	}
+	if len(req.ArchiveStatus) > 0 {
+		if req.ArchiveStatus != autoTestSpace.ArchiveStatus {
+			changedField["archiveStatus"] = []string{string(autoTestSpace.ArchiveStatus), string(req.ArchiveStatus)}
+		}
+		autoTestSpace.ArchiveStatus = req.ArchiveStatus
+	}
+	if len(req.Description) > 0 {
+		if req.Description != autoTestSpace.Description {
+			changedField["description"] = []string{autoTestSpace.Description, req.Description}
+		}
+		autoTestSpace.Description = req.Description
+	}
+	return changedField
+}
+
+func (svc *Service) createAudits(space *dao.AutoTestSpace, changedField map[string][]string) {
+	now := strconv.FormatInt(time.Now().Unix(), 10)
+	projectID := uint64(space.ProjectID)
+	project, err := svc.bdl.GetProject(projectID)
+	if err != nil {
+		logrus.Error(apierrors.ErrUpdateAutoTestSpace.InternalError(err))
+		return
+	}
+	audits := make([]apistructs.Audit, 0)
+	for i, v := range changedField {
+		audits = append(audits, apistructs.Audit{
+			UserID:       space.UpdaterID,
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      projectID,
+			OrgID:        project.OrgID,
+			ProjectID:    projectID,
+			Result:       "success",
+			StartTime:    now,
+			EndTime:      now,
+			TemplateName: apistructs.UpdateAutoTestSpaceTemplate,
+			Context: map[string]interface{}{
+				"projectName": project.Name,
+				"spaceName":   space.Name,
+				"field":       i,
+				"from":        v[0],
+				"to":          v[1],
+			},
+		})
+	}
+	if err := svc.bdl.BatchCreateAuditEvent(&apistructs.AuditBatchCreateRequest{Audits: audits}); err != nil {
+		logrus.Error(apierrors.ErrUpdateAutoTestSpace.InternalError(err))
+	}
 }
 
 // DeleteAutoTestSpace 删除测试空间

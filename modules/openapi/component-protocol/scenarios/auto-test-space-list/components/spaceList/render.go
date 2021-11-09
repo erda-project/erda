@@ -301,6 +301,13 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			item.Operations["export"] = export
 			item.Operations["delete"] = deleteOp
 		}
+
+		status := getStatus(each.Status)
+		if v, ok := status["value"]; ok {
+			item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
+				Text: v.(string),
+			})
+		}
 		item.Operations["click"] = click
 		lists = append(lists, item)
 	}
