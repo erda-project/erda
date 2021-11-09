@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	cputil2 "github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -36,10 +36,10 @@ func init() {
 	})
 }
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func (s *ComponentWorkloadStatus) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -67,16 +67,16 @@ func (s *ComponentWorkloadStatus) InitComponent(ctx context.Context) {
 	s.server = steveServer
 }
 
-func (s *ComponentWorkloadStatus) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (s *ComponentWorkloadStatus) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	s.State = state
@@ -117,12 +117,12 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	return nil
 }
 
-func (s *ComponentWorkloadStatus) Transfer(component *cptype.Component) {
-	component.Props = s.Props
-	component.Data = map[string]interface{}{
+func (s *ComponentWorkloadStatus) Transfer(c *cptype.Component) {
+	c.Props = s.Props
+	c.Data = map[string]interface{}{
 		"labels": s.Data.Labels,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": s.State.ClusterName,
 		"workloadId":  s.State.WorkloadID,
 	}

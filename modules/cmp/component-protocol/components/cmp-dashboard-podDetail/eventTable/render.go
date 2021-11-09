@@ -30,14 +30,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func (t *ComponentEventTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -68,18 +68,18 @@ func (t *ComponentEventTable) InitComponent(ctx context.Context) error {
 	return nil
 }
 
-func (t *ComponentEventTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (t *ComponentEventTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	err = json.Unmarshal(jsonData, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -194,16 +194,16 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(c *cptype.Component) {
-	c.Props = t.Props
-	c.Data = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(component *cptype.Component) {
+	component.Props = t.Props
+	component.Data = map[string]interface{}{
 		"list": t.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"clusterName": t.State.ClusterName,
 		"podId":       t.State.PodID,
 	}
-	c.Operations = t.Operations
+	component.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

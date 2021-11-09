@@ -29,14 +29,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func (containerTable *ContainerTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -206,12 +206,12 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	return nil
 }
 
-func (containerTable *ContainerTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (containerTable *ContainerTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 
-	data, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
@@ -226,13 +226,13 @@ func (containerTable *ContainerTable) GenComponentState(component *cptype.Compon
 	return nil
 }
 
-func (containerTable *ContainerTable) Transfer(c *cptype.Component) {
-	c.Props = containerTable.Props
-	c.Data = map[string]interface{}{}
+func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
+	component.Props = containerTable.Props
+	component.Data = map[string]interface{}{}
 	for k, v := range containerTable.Data {
-		c.Data[k] = v
+		component.Data[k] = v
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"clusterName": containerTable.State.ClusterName,
 		"podId":       containerTable.State.PodID,
 	}

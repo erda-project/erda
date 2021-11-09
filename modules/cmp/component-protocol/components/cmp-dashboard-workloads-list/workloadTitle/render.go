@@ -46,25 +46,25 @@ func (w *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.C
 	return nil
 }
 
-func (w *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTitle) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	w.State = state
 	return nil
 }
 
-func (w *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
-	component.Props = w.Props
-	component.State = map[string]interface{}{
+func (w *ComponentWorkloadTitle) Transfer(c *cptype.Component) {
+	c.Props = w.Props
+	c.State = map[string]interface{}{
 		"values": w.State.Values,
 	}
 }
