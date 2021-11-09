@@ -27,15 +27,15 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func (podStatus *PodStatus) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -91,18 +91,18 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 	return nil
 }
 
-func (podStatus *PodStatus) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (podStatus *PodStatus) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	err = json.Unmarshal(jsonData, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -111,12 +111,12 @@ func (podStatus *PodStatus) GenComponentState(component *cptype.Component) error
 	return nil
 }
 
-func (podStatus *PodStatus) Transfer(component *cptype.Component) {
-	component.Props = podStatus.Props
-	component.Data = map[string]interface{}{
+func (podStatus *PodStatus) Transfer(c *cptype.Component) {
+	c.Props = podStatus.Props
+	c.Data = map[string]interface{}{
 		"labels": podStatus.Data.Labels,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": podStatus.State.ClusterName,
 		"podId":       podStatus.State.PodID,
 	}

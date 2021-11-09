@@ -16,11 +16,8 @@ package steve
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"net/http"
-	"reflect"
 	"sync"
 	"time"
 
@@ -32,17 +29,15 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	apierrors2 "github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/steve/predefined"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type group struct {
@@ -233,7 +228,7 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 		return err
 	}
 
-	for _, sa := range predefinedServiceAccount {
+	for _, sa := range predefined.PredefinedServiceAccount {
 		saClient := client.ClientSet.CoreV1().ServiceAccounts(sa.Namespace)
 		if err = saClient.Delete(a.Ctx, sa.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 			return err
@@ -244,7 +239,7 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 	}
 
 	crClient := client.ClientSet.RbacV1().ClusterRoles()
-	for _, cr := range predefinedClusterRole {
+	for _, cr := range predefined.PredefinedClusterRole {
 		if err = crClient.Delete(a.Ctx, cr.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -254,7 +249,7 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 	}
 
 	crbClient := client.ClientSet.RbacV1().ClusterRoleBindings()
-	for _, crb := range predefinedClusterRoleBinding {
+	for _, crb := range predefined.PredefinedClusterRoleBinding {
 		if err = crbClient.Delete(a.Ctx, crb.Name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -420,15 +415,15 @@ func (a *Aggregator) createSteve(clusterInfo apistructs.ClusterInfo) (*Server, c
 		cancel()
 		return nil, nil, err
 	}
-	go a.preloadCache(server, string(apistructs.K8SNode))
-	go a.preloadCache(server, string(apistructs.K8SPod))
+	go a.preloadCache(ctx, server, string(apistructs.K8SNode))
+	go a.preloadCache(ctx, server, string(apistructs.K8SPod))
 	return server, cancel, nil
 }
 
-func (a *Aggregator) preloadCache(server *Server, resType string) {
+func (a *Aggregator) preloadCache(ctx context.Context, server *Server, resType string) {
 	for i := 0; i < 10; i++ {
 		logrus.Infof("preload cache for %s in cluster %s", resType, server.ClusterName)
-		err := a.list(server, resType)
+		err := a.listAndSetCache(ctx, server, resType)
 		if err == nil {
 			logrus.Infof("preload cache for %s in cluster %s succeeded", resType, server.ClusterName)
 			return
@@ -438,78 +433,31 @@ func (a *Aggregator) preloadCache(server *Server, resType string) {
 	}
 }
 
-type cacheKey struct {
-	kind        string
-	namespace   string
-	clusterName string
-}
-
-func (k *cacheKey) getKey() string {
-	d := sha256.New()
-	d.Write([]byte(k.kind))
-	d.Write([]byte(k.namespace))
-	d.Write([]byte(k.clusterName))
-	return hex.EncodeToString(d.Sum(nil))
-}
-
-func (a *Aggregator) list(server *Server, resType string) error {
-	user := &apiuser.DefaultInfo{
-		Name: "admin",
-		UID:  "admin",
-		Groups: []string{
-			"system:masters",
-			"system:authenticated",
-		},
-	}
-	withUser := request.WithUser(a.Ctx, user)
-	path := strutil.JoinPath("/api/k8s/clusters", server.ClusterName, "v1", resType)
-	req, err := http.NewRequestWithContext(withUser, http.MethodGet, path, nil)
+func (a *Aggregator) listAndSetCache(ctx context.Context, server *Server, resType string) error {
+	apiOp, resp, err := a.getApiRequest(ctx, &apistructs.SteveRequest{
+		NoAuthentication: true,
+		Type:             apistructs.K8SResType(resType),
+		ClusterName:      server.ClusterName,
+	})
 	if err != nil {
-		return errors.Errorf("failed to new http request when preload cache for %s, %v", resType, err)
+		return errors.Errorf("failed to get api request, %v", err)
 	}
 
-	resp := &Response{}
-	apiOp := &types.APIRequest{
-		Type:           resType,
-		Method:         http.MethodGet,
-		ResponseWriter: resp,
-		Request:        req,
-		Response:       &StatusCodeGetter{Response: resp},
-	}
-
-	apiOp.Request = req
 	if err = server.SetSchemas(apiOp); err != nil {
 		logrus.Errorf("failed to preload cache for %s, %v", resType, err)
 	}
 	server.Handle(apiOp)
-	collection, ok := resp.ResponseData.(*types.GenericCollection)
-	if !ok {
-		if resp.ResponseData == nil {
-			return errors.New("null response data")
-		}
-		rawResource, ok := resp.ResponseData.(*types.RawResource)
-		if !ok {
-			return errors.Errorf("unknown response data type: %s", reflect.TypeOf(resp.ResponseData).String())
-		}
-		obj := rawResource.APIObject.Data()
-		return errors.New(obj.String("message"))
-	}
-
-	var objects []types.APIObject
-	for _, obj := range collection.Data {
-		objects = append(objects, obj.APIObject)
-	}
-
-	key := cacheKey{
-		kind:        resType,
-		clusterName: server.ClusterName,
-	}
-	vals, err := cache.GetInterfaceValue(objects)
+	list, err := convertResp(resp)
 	if err != nil {
-		return errors.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
+		return err
 	}
-	if err = cache.GetFreeCache().Set(key.getKey(), vals, time.Second.Nanoseconds()*30); err != nil {
-		return errors.Errorf("failed to set cache for %s", apiOp.Type)
+
+	key := CacheKey{
+		Kind:        resType,
+		ClusterName: server.ClusterName,
+	}
+	if err = setCacheForList(key.GetKey(), list); err != nil {
+		return errors.Errorf("failed to set cache for %s", resType)
 	}
 	return nil
 }
