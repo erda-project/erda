@@ -46,7 +46,7 @@ type provider struct {
 	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	DB               *gorm.DB                     `autowired:"mysql-client"`
 	Cassandra        cassandra.Interface          `autowired:"cassandra"`
-	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader"`
+	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
 	cassandraSession *cassandra.Session
 }
 
