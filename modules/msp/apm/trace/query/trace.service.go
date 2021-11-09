@@ -363,7 +363,7 @@ func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64,
 		s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch")  && s.StorageReader != nil  {
+	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") && s.StorageReader != nil {
 		// do cassandra query
 		elasticsearchCount = s.StorageReader.Count(ctx, traceID)
 	}
