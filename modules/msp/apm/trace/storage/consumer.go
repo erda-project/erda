@@ -18,10 +18,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"strconv"
 	"time"
 
 	"github.com/gocql/gocql"
+	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	oap "github.com/erda-project/erda-proto-go/oap/trace/pb"
@@ -81,17 +83,39 @@ func (p *provider) getStatement(data interface{}) (string, []interface{}, error)
 	if !ok {
 		return "", nil, fmt.Errorf("value %#v must be Span", data)
 	}
+
+	// PRIMARY KEY is (trace_id, start_time), avoid the same start_time in the same trace_id
+	startTime, endTime := getTimeRange(span)
 	const cql = `INSERT INTO spans (trace_id, start_time, end_time, operation_name, parent_span_id, span_id, tags) VALUES (?, ?, ?, ?, ?, ?, ?) USING TTL ?;`
 	return cql, []interface{}{
 		span.TraceID,
-		span.StartTime,
-		span.EndTime,
+		startTime,
+		endTime,
 		span.OperationName,
 		span.ParentSpanID,
 		span.SpanID,
 		span.Tags,
 		p.ttlSec,
 	}, nil
+}
+
+const millisecond = int64(time.Millisecond)
+const timeTailMask = millisecond / 10
+
+func getTimeRange(span *monitor.Span) (int64, int64) {
+	startTime, endTime := span.StartTime, span.EndTime
+	if startTime%millisecond == 0 {
+		tail := int64(convertToIntID(span.SpanID)) % timeTailMask
+		startTime = startTime + tail
+		endTime = endTime + tail
+	}
+	return startTime, endTime
+}
+
+func convertToIntID(id string) uint32 {
+	hash := fnv.New32()
+	hash.Write(reflectx.StringToBytes(id))
+	return hash.Sum32()
 }
 
 func (p *provider) spotSpanConsumer(key []byte, value []byte, topic *string, timestamp time.Time) error {
