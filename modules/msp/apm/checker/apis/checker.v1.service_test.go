@@ -451,7 +451,7 @@ func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
 					return &db.Metric{ID: id, ProjectID: 1, Mode: "http", Name: "test", URL: "http://xxx.com"}, nil
 				}
 				return &db.Metric{ID: id, ProjectID: 1, Mode: "http", Name: "test", URL: "http://xxx.com",
-					Config: "{\"body\":\"{'test': 'test'}\",\"frequency\":15,\"headers\":\"\",\"method\":\"GET\",\"retry\":3,\"triggering\":[{\"key\":\"http_code\",\"operate\":\"eq\",\"value\":200},{\"key\":\"body\",\"operate\":\"eq\",\"value\":\"xxx\"}],\"url\":\"http://xxx.com\"}",
+					Config: "{\"body\":{\"test\": \"test\"},\"frequency\":15,\"headers\":\"\",\"method\":\"GET\",\"retry\":3,\"triggering\":[{\"key\":\"http_code\",\"operate\":\"eq\",\"value\":200},{\"key\":\"body\",\"operate\":\"eq\",\"value\":\"xxx\"}],\"url\":\"http://xxx.com\"}",
 				}, nil
 			})
 
