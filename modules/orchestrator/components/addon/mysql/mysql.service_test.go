@@ -252,7 +252,7 @@ func Test_mysqlService_checkPerm(t *testing.T) {
 				perm:   tt.fields.perm,
 				db:     tt.fields.db,
 			}
-			if err := s.checkPerm(tt.args.userID, tt.args.routing, tt.args.resource, tt.args.action); (err != nil) != tt.wantErr {
+			if err := s.mustHavePerm(tt.args.userID, tt.args.routing, tt.args.resource, tt.args.action); (err != nil) != tt.wantErr {
 				t.Errorf("checkPerm() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

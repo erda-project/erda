@@ -55,9 +55,15 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 
 	switch event.Operation {
 	case "viewPassword":
+		if !f.ac.EditPerm {
+			return fmt.Errorf("no permission to view password")
+		}
 		f.pg.ShowViewPasswordModal = true
 		f.pg.AccountID = event.OperationData["meta"].(map[string]interface{})["id"].(string)
 	case "delete":
+		if !f.ac.EditPerm {
+			return fmt.Errorf("you don't have permission to edit this account")
+		}
 		//f.pg.ShowDeleteModal = true
 		accountID := event.OperationData["meta"].(map[string]interface{})["id"].(string)
 		addonMySQLSvc := ctx.Value(types.AddonMySQLService).(addonmysqlpb.AddonMySQLServiceServer)
@@ -209,6 +215,13 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 			Meta: map[string]string{
 				"id": item.Id,
 			},
+			Disabled: !f.ac.EditPerm,
+			DisabledTip: func() string {
+				if !f.ac.EditPerm {
+					return "您没有权限查看密码，请联系项目管理员"
+				}
+				return ""
+			}(),
 			ShowIndex: 1,
 		},
 		"delete": {
@@ -218,11 +231,19 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 			Meta: map[string]string{
 				"id": item.Id,
 			},
-			Disabled:    cnt > 0,
-			DisabledTip: "无法删除",
-			ShowIndex:   2,
-			Confirm:     "是否确认删除",
-			SuccessMsg:  "删除成功",
+			Disabled: !f.ac.EditPerm || cnt > 0,
+			DisabledTip: func() string {
+				if !f.ac.EditPerm {
+					return "您没有权限删除账号，请联系项目管理员"
+				}
+				if cnt > 0 {
+					return "账号正在被引用，无法删除"
+				}
+				return ""
+			}(),
+			ShowIndex:  2,
+			Confirm:    "是否确认删除",
+			SuccessMsg: "删除成功",
 		},
 	}}
 	return datum

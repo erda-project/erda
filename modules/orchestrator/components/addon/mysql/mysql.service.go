@@ -52,7 +52,7 @@ func (s *mysqlService) ListMySQLAccount(ctx context.Context, req *pb.ListMySQLAc
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkPerm(userID, routing, "addon", "GET"); err != nil {
+	if err := s.mustHavePerm(userID, routing, "addon", "GET"); err != nil {
 		return nil, err
 	}
 	accounts, err := s.db.GetMySQLAccountListByRoutingInstanceID(req.InstanceId)
@@ -142,7 +142,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkPerm(userID, routing, "addon", "UPDATE"); err != nil {
+	if err := s.mustHavePerm(userID, routing, "addon", "UPDATE"); err != nil {
 		return nil, err
 	}
 
@@ -207,7 +207,7 @@ func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMyS
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkPerm(userID, routing, "addon", "UPDATE"); err != nil {
+	if err := s.mustHavePerm(userID, routing, "addon", "UPDATE"); err != nil {
 		return nil, err
 	}
 	ins, err := s.db.GetAddonInstance(routing.RealInstance)
@@ -251,7 +251,11 @@ func (s *mysqlService) ListAttachment(ctx context.Context, req *pb.ListAttachmen
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkPerm(userID, routing, "addon", "GET"); err != nil {
+	if err := s.mustHavePerm(userID, routing, "addon", "GET"); err != nil {
+		return nil, err
+	}
+	editPerm, err := s.checkPerm(userID, routing, "addon", "UPDATE")
+	if err != nil {
 		return nil, err
 	}
 	attachments, err := s.db.GetAttachmentsByRoutingInstanceID(req.InstanceId)
@@ -260,7 +264,7 @@ func (s *mysqlService) ListAttachment(ctx context.Context, req *pb.ListAttachmen
 	}
 	res := make([]*pb.Attachment, len(*attachments))
 	for i, att := range *attachments {
-		cf, err := s.getConfig(&att)
+		cf, err := s.getConfig(&att, editPerm)
 		if err != nil {
 			s.logger.Errorf("get config of instance %s failed, err: %+v", att.InstanceID, err)
 		}
@@ -288,7 +292,7 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkPerm(userID, routing, "addon", "UPDATE"); err != nil {
+	if err := s.mustHavePerm(userID, routing, "addon", "UPDATE"); err != nil {
 		return nil, err
 	}
 	att, err := s.db.GetAttachmentByID(req.Id)
@@ -299,11 +303,11 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 		// no need to update
 		return &pb.UpdateAttachmentAccountResponse{}, nil
 	}
-	preAcc, err := s.db.GetMySQLAccountByID(att.PreviousMySQLAccountID)
+	preAcc, err := s.db.GetMySQLAccountByID(att.MySQLAccountID)
 	if err != nil {
 		return nil, err
 	}
-	nextAcc, err := s.db.GetMySQLAccountByID(att.MySQLAccountID)
+	nextAcc, err := s.db.GetMySQLAccountByID(req.AccountId)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +357,7 @@ func (s *mysqlService) decrypt(acc *dbclient.MySQLAccount) (string, error) {
 	return pass, nil
 }
 
-func (s *mysqlService) getConfig(att *dbclient.AddonAttachment) (map[string]string, error) {
+func (s *mysqlService) getConfig(att *dbclient.AddonAttachment, decrypt bool) (map[string]string, error) {
 	ins, err := s.db.GetAddonInstance(att.InstanceID)
 	if err != nil {
 		return nil, err
@@ -367,8 +371,14 @@ func (s *mysqlService) getConfig(att *dbclient.AddonAttachment) (map[string]stri
 		if err != nil {
 			return nil, err
 		}
-		pass, err := s.decrypt(acc)
 		configMap["MYSQL_USERNAME"] = acc.Username
+		pass := "******"
+		if decrypt {
+			pass, err = s.decrypt(acc)
+			if err != nil {
+				return nil, err
+			}
+		}
 		configMap["MYSQL_PASSWORD"] = pass
 	} else {
 		configMap["MYSQL_PASSWORD"] = "******"
@@ -376,10 +386,21 @@ func (s *mysqlService) getConfig(att *dbclient.AddonAttachment) (map[string]stri
 	return configMap, nil
 }
 
-func (s *mysqlService) checkPerm(userID string, routing *dbclient.AddonInstanceRouting, resource string, action string) error {
-	projectID, err := strutil.Atoi64(routing.ProjectID)
+func (s *mysqlService) mustHavePerm(userID string, routing *dbclient.AddonInstanceRouting, resource string, action string) error {
+	r, err := s.checkPerm(userID, routing, resource, action)
 	if err != nil {
 		return err
+	}
+	if !r {
+		return fmt.Errorf("user %s has no %s permission on %s", userID, action, resource)
+	}
+	return nil
+}
+
+func (s *mysqlService) checkPerm(userID string, routing *dbclient.AddonInstanceRouting, resource string, action string) (bool, error) {
+	projectID, err := strutil.Atoi64(routing.ProjectID)
+	if err != nil {
+		return false, err
 	}
 	pr, err := s.perm.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID,
@@ -389,12 +410,9 @@ func (s *mysqlService) checkPerm(userID string, routing *dbclient.AddonInstanceR
 		Action:   action,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
-	if !pr.Access {
-		return fmt.Errorf("user %s does not have permission", userID)
-	}
-	return nil
+	return pr.Access, nil
 }
 
 func (s *mysqlService) auditNoError(userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,

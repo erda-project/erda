@@ -16,7 +16,6 @@ package addAccountButton
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -39,12 +38,20 @@ func init() {
 
 func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	userID := apis.GetUserID(ctx)
-	fmt.Println("userID:", userID)
-	c.Props = map[string]interface{}{
+	ac, err := common.LoadAccountData(ctx)
+	if err != nil {
+		return err
+	}
+	props := map[string]interface{}{
 		"text":          "一键创建账号",
 		"type":          "primary",
 		"requestIgnore": []string{"props", "data", "operations"},
 	}
+	if !ac.EditPerm {
+		props["disabled"] = true
+		props["disabledTip"] = "您没有权限创建账号，请联系项目管理员"
+	}
+	c.Props = props
 	c.Operations = map[string]interface{}{
 		"click": cptype.Operation{
 			Key:    "addAccount",
