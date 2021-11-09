@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package query
+package trace
 
 import (
 	"context"
@@ -30,15 +30,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
-	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 )
 
-//go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage
 func Test_traceService_GetSpans(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -94,50 +91,6 @@ func Test_traceService_GetSpans(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_traceService_fetchSpanFromES(t *testing.T) {
-	s1 := &trace.Span{
-		TraceId:       "s1TraceId",
-		SpanId:        "s1SpanId",
-		ParentSpanId:  "s1ParentSpanId",
-		OperationName: "s1OperationName",
-		StartTime:     1,
-		EndTime:       1,
-		Tags:          map[string]string{"tagk.s1a": "tagv.s1a", "tagk.s1b": "tagv.s1b"},
-	}
-	ss := &listStorage{
-		span: s1,
-	}
-
-	tests := []struct {
-		name    string
-		ctx     context.Context
-		storage storage.Storage
-		sel     storage.Selector
-		forward bool
-		limit   int
-		want    []*trace.Span
-	}{{
-		"case 1",
-		context.TODO(),
-		ss,
-		storage.Selector{TraceId: "s1TraceId"},
-		true,
-		1,
-		[]*trace.Span{s1},
-	},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			if got, err := fetchSpanFromES(tt.ctx, ss, tt.sel, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
-				t.Errorf("fetchSpanFromES() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-
 }
 
 func Test_traceService_GetTraces(t *testing.T) {
