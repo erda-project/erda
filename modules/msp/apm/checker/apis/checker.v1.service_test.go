@@ -328,6 +328,8 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 		{"case3", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 1, Env: "TEST"}}, false},
 		{"case4", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: -2, Env: "TEST"}}, true},
 		{"case5", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 2, Env: "TEST"}}, true},
+		{"case6", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 3, Env: "TEST"}}, true},
+		{"case7", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 4, Env: "TEST"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -363,7 +365,39 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 						Mode:       "HTTP",
 						Status:     0,
 						Env:        "TEST",
-						Config:     "",
+						Config:     "{\"body\":{\"content\":\"{}\",\"type\":\"application/json\"}}",
+						CreateTime: time.Now(),
+						UpdateTime: time.Now(),
+						IsDeleted:  "N",
+					})
+				}
+				if projectID == 3 {
+					ms = append(ms, &db.Metric{
+						ID:         0,
+						ProjectID:  0,
+						ServiceID:  0,
+						Name:       "",
+						URL:        "",
+						Mode:       "HTTP",
+						Status:     0,
+						Env:        "TEST",
+						Config:     "{xxx}",
+						CreateTime: time.Now(),
+						UpdateTime: time.Now(),
+						IsDeleted:  "N",
+					})
+				}
+				if projectID == 4 {
+					ms = append(ms, &db.Metric{
+						ID:         0,
+						ProjectID:  0,
+						ServiceID:  0,
+						Name:       "",
+						URL:        "",
+						Mode:       "HTTP",
+						Status:     0,
+						Env:        "TEST",
+						Config:     "{\"body\":{\"type\":\"application/json\"}}",
 						CreateTime: time.Now(),
 						UpdateTime: time.Now(),
 						IsDeleted:  "N",
