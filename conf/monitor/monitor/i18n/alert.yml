@@ -129,6 +129,7 @@ zh:
     cluster_name: 集群名
     host: 主机
     host_ip: 主机ip
+    component_name: 平台组件
     interface: 网卡名
     org_name: 企业名
     kernel_version: 内核版本

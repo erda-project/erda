@@ -8,6 +8,10 @@
       index: host_summary
       filters:
         - org_name
+    - key: component_name
+      index: docker_container_summary
+      filters:
+        - org_name
 - scope: msp
   conditions:
     - key: application_name

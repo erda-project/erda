@@ -104,6 +104,7 @@ var (
 		"eq":       OperatorTypeOne,
 		"false":    OperatorTypeNone,
 		"in":       OperatorTypeMore,
+		"notIn":    OperatorTypeMore,
 		"like":     OperatorTypeOne,
 		"neq":      OperatorTypeOne,
 		"null":     OperatorTypeNone,
