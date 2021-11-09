@@ -560,10 +560,10 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (aler
 	index := a.generateCustomizeAlertIndex()
 
 	// related to the dashboard
-	dashboardID, err := NewDashboard(a).CreateChartDashboard(alertDetail)
-	if err != nil {
-		return 0, err
-	}
+	//dashboardID, err := NewDashboard(a).CreateChartDashboard(alertDetail)
+	//if err != nil {
+	//	return 0, err
+	//}
 
 	alertDetail.Id = 0
 	alertDetail.Enable = true
@@ -571,9 +571,9 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (aler
 		alertDetail.Attributes = make(map[string]*structpb.Value)
 	}
 	alertIndex := structpb.NewStringValue(index)
-	alertDashboardID := structpb.NewStringValue(dashboardID)
+	//alertDashboardID := structpb.NewStringValue(dashboardID)
 	alertDetail.Attributes["alert_index"] = alertIndex
-	alertDetail.Attributes["alert_dashboard_id"] = alertDashboardID
+	//alertDetail.Attributes["alert_dashboard_id"] = alertDashboardID
 	alert := a.CustomizeAlertToModel(alertDetail)
 	if err := tx.CustomizeAlert.Insert(alert); err != nil {
 		return 0, err
