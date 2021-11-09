@@ -155,7 +155,7 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 	sharedText := rt.trans.Text(langCodes, "SharedResources")
 	ownerUnknown := rt.trans.Text(langCodes, "OwnerUnknown")
 	sharedItem := newSharedItem(sharedResource, sharedText, ownerUnknown)
-	data.List = append(data.List, sharedItem)
+	_ = sharedItem
 
 	if groupBy == "owner" {
 		data.GroupByOwner()
