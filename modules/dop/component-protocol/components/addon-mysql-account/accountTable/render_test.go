@@ -105,6 +105,8 @@ func Test_comp_getDatum(t *testing.T) {
 							Meta: map[string]string{
 								"id": "111",
 							},
+							Disabled:    true,
+							DisabledTip: "您没有权限查看密码，请联系项目管理员",
 							ShowIndex: 1,
 						},
 						"delete": {
@@ -114,8 +116,8 @@ func Test_comp_getDatum(t *testing.T) {
 							Meta: map[string]string{
 								"id": "111",
 							},
-							Disabled:    false,
-							DisabledTip: "无法删除",
+							Disabled:    true,
+							DisabledTip: "您没有权限删除账号，请联系项目管理员",
 							ShowIndex:   2,
 							Confirm:     "是否确认删除",
 							SuccessMsg:  "删除成功",
@@ -134,7 +136,7 @@ func Test_comp_getDatum(t *testing.T) {
 				userIDs:         tt.fields.userIDs,
 			}
 			if got := f.getDatum(tt.args.item); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getDatum() = %v, want %v", got, tt.want)
+				t.Errorf("getDatum() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

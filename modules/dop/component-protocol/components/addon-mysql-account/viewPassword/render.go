@@ -16,6 +16,7 @@ package viewPassword
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -52,6 +53,10 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		return err
 	}
 	f.ac = ac
+
+	if !ac.EditPerm {
+		return fmt.Errorf("no permission to view account password")
+	}
 
 	var props table.Props
 	props.RequestIgnore = []string{"props", "data", "operations"}
