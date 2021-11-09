@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package label
+package mysql
 
-type Label struct {
-	RenderType string `json:"renderType"`
-	Name       string `json:"name"`
-	Value      string `json:"value"`
-	Group      string `json:"group"`
+import "github.com/erda-project/erda/apistructs"
+
+type PermissionWrapper interface {
+	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
+	CreateAuditEvent(audits *apistructs.AuditCreateRequest) error
+	GetProject(id uint64) (*apistructs.ProjectDTO, error)
+	GetApp(id uint64) (*apistructs.ApplicationDTO, error)
 }

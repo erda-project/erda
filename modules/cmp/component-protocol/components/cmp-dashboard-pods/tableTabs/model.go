@@ -16,23 +16,12 @@ package tableTabs
 
 import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-const (
-	CPU_TAB    = "cpu"
-	CPU_TAB_ZH = "cpu分析"
-
-	MEM_TAB    = "mem"
-	MEM_TAB_ZH = "mem分析"
-
-	POD_TAB    = "pod"
-	POD_TAB_ZH = "pod分析"
-)
-
 type TableTabs struct {
 	base.DefaultProvider
-	Type       string     `json:"type"`
+	Type       string     `json:"type,omitempty"`
 	Props      Props      `json:"props"`
-	Operations Operations `json:"operations"`
 	State      State      `json:"state"`
+	Operations Operations `json:"operations"`
 }
 
 type Props struct {

@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 type MockSteveServer struct {
@@ -196,5 +197,70 @@ func TestComponentOperationButton_SetComponentValue(t *testing.T) {
 	}
 	if !operation.Disabled {
 		t.Errorf("expected value of operation.Disabled is true, got false")
+	}
+}
+
+func TestComponentOperationButton_GenComponentState(t *testing.T) {
+	c := &cptype.Component{State: map[string]interface{}{
+		"clusterName": "testCluster",
+		"workloadId":  "testID",
+	}}
+	component := &ComponentOperationButton{}
+	if err := component.GenComponentState(c); err != nil {
+		t.Fatal(err)
+	}
+	ok, err := cputil.IsJsonEqual(c.State, component.State)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
+	}
+}
+
+func TestComponentOperationButton_Transfer(t *testing.T) {
+	component := &ComponentOperationButton{
+		State: State{
+			ClusterName: "testClusterName",
+			WorkloadID:  "testWorkloadId",
+		},
+		Props: Props{
+			Type: "testType",
+			Text: "testTex",
+			Menu: []Menu{
+				{
+					Key:  "testKey",
+					Text: "testText",
+					Operations: map[string]interface{}{
+						"testOp": Operation{
+							Key:        "testKey",
+							Reload:     true,
+							SuccessMsg: "testMsg",
+							Confirm:    "testConfirm",
+							Command: Command{
+								Key:    "testKey",
+								Target: "testTarget",
+								State: CommandState{
+									Params: map[string]string{
+										"test": "test",
+									},
+								},
+							},
+							Disabled:    true,
+							DisabledTip: "testTip",
+						},
+					},
+				},
+			},
+		},
+	}
+	c := &cptype.Component{}
+	component.Transfer(c)
+	ok, err := cputil.IsJsonEqual(c, component)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
 	}
 }

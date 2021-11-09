@@ -65,7 +65,6 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	mt.Operations = mt.GetTableOperation()
 	mt.Ctx = ctx
 	mt.Table.TableComponent = mt
-	mt.Ctx = ctx
 	mt.Server = steveServer
 	mt.Metrics = mServer
 	mt.getProps()
@@ -235,7 +234,6 @@ func (mt *MemInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-		//"batchOperations": []string{"cordon", "uncordon", "drain", "offline", "online"},
 		"batchOperations": []string{"cordon", "uncordon", "drain"},
 		"scroll":          table.Scroll{X: 1200},
 	}

@@ -18,7 +18,11 @@ import (
 	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 func TestGetStepMapByGroupID(t *testing.T) {
@@ -78,5 +82,41 @@ func TestGetStepMapByGroupID(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestListExecHistorySceneSetByParentPID(t *testing.T) {
+	var DB *dao.DBClient
+	monkey.PatchInstanceMethod(reflect.TypeOf(DB), "ListExecHistorySceneSetByParentPID", func(*dao.DBClient, uint64) (history []dao.AutoTestExecHistory, err error) {
+		return []dao.AutoTestExecHistory{
+			{
+				BaseModel: dbengine.BaseModel{
+					ID: 1,
+				},
+			},
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+
+	svc := Service{db: DB}
+	list, err := svc.ListExecHistorySceneSetByParentPID(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 {
+		t.Fatal("fail")
+	}
+}
+
+func TestExecHistoryApiStatusCount(t *testing.T) {
+	var DB *dao.DBClient
+	monkey.PatchInstanceMethod(reflect.TypeOf(DB), "ExecHistoryApiStatusCount", func(*dao.DBClient, apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiStatusCount, err error) {
+		return nil, err
+	})
+	defer monkey.UnpatchAll()
+	svc := Service{db: DB}
+	_, err := svc.ExecHistoryApiStatusCount(apistructs.StatisticsExecHistoryRequest{})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

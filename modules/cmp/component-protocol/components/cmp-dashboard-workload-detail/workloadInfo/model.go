@@ -29,9 +29,9 @@ type ComponentWorkloadInfo struct {
 	server cmp_interface.SteveServer
 
 	Type  string `json:"type,omitempty"`
+	Props Props  `json:"props,omitempty"`
 	Data  Data   `json:"data,omitempty"`
 	State State  `json:"state,omitempty"`
-	Props Props  `json:"props,omitempty"`
 }
 
 type Data struct {

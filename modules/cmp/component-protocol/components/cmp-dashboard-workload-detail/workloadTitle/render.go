@@ -59,6 +59,9 @@ func (t *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.C
 		if err != nil {
 			return err
 		}
+		if t.State.WorkloadID == "" {
+			return errors.Errorf("The pod is not created by a workload")
+		}
 	}
 	splits := strings.Split(t.State.WorkloadID, "_")
 	if len(splits) != 3 {
@@ -112,7 +115,9 @@ func (t *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
 func (t *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
 	component.Props = t.Props
 	component.State = map[string]interface{}{
-		"workloadId": t.State.WorkloadID,
+		"workloadId":  t.State.WorkloadID,
+		"podId":       t.State.PodID,
+		"clusterName": t.State.ClusterName,
 	}
 }
 

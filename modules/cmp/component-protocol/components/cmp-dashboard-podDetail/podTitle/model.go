@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/component-protocol/componen
 
 type PodTitle struct {
 	base.DefaultProvider
-	Type  string `json:"type"`
+	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
 	State State  `json:"state,omitempty"`
 }
@@ -28,5 +28,5 @@ type Props struct {
 }
 
 type State struct {
-	PodID string `json:"podID,omitempty"`
+	PodID string `json:"podId,omitempty"`
 }

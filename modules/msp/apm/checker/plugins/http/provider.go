@@ -92,17 +92,6 @@ func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
 	for k := range hs {
 		headers.Add(k, hs[k])
 	}
-	for k, vals := range p.Cfg.Headers {
-		for _, v := range vals {
-			headers.Add(k, v)
-		}
-	}
-	for k, v := range c.Config {
-		if strings.HasPrefix(k, "header_") {
-			k = k[len("header_"):]
-			headers.Add(k, v.GetStringValue())
-		}
-	}
 
 	// timeout
 	var timeout time.Duration
@@ -222,11 +211,6 @@ func (h httpHandler) Do(ctx plugins.Context) error {
 			fields["latency"] = 0
 			checkerStatusMetric("2", apis.StatusRED, 601, tags, fields)
 			continue
-		}
-
-		// setup trace if sample is true
-		if h.trace || h.p.shouldSample() {
-			h.p.setupTrace(req, tags, fields)
 		}
 
 		// create client with timeout

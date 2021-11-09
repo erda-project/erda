@@ -169,8 +169,11 @@ const (
 	DeleteInitiativeMonitor       TemplateName = "deleteInitiativeMonitor"
 	UpdateInitiativeMonitor       TemplateName = "updateInitiativeMonitor"
 	// ========================Addon================================
-	CreateCustomAddonTemplate TemplateName = "createCustomAddon"
-	DeleteAddonTemplate       TemplateName = "deleteAddon"
+	CreateCustomAddonTemplate                TemplateName = "createCustomAddon"
+	DeleteAddonTemplate                      TemplateName = "deleteAddon"
+	CreateMySQLAddonAccountTemplate          TemplateName = "createMySQLAddonAccount"
+	DeleteMySQLAddonAccountTemplate          TemplateName = "deleteMySQLAddonAccount"
+	ResetAttachmentMySQLAddonAccountTemplate TemplateName = "resetAttachmentMySQLAddonAccount"
 	// ========================Runtime================================
 	DeleteRuntimeTemplate   TemplateName = "deleteRuntime"
 	ScaleRuntimeTemplate    TemplateName = "scaleRuntime"

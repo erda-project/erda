@@ -28,9 +28,9 @@ type ComponentAddWorkloadFileEditor struct {
 	sdk        *cptype.SDK
 	ctx        context.Context
 	server     cmp.SteveServer
-	Type       string                 `json:"type"`
-	Props      Props                  `json:"props"`
+	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state"`
+	Props      Props                  `json:"props"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
@@ -42,9 +42,9 @@ type Props struct {
 
 type State struct {
 	ClusterName  string `json:"clusterName,omitempty"`
-	WorkloadKind string `json:"workloadKind,omitempty"`
-	Values       Values `json:"values,omitempty"`
 	Value        string `json:"value,omitempty"`
+	Values       Values `json:"values,omitempty"`
+	WorkloadKind string `json:"workloadKind,omitempty"`
 }
 
 type Operation struct {
