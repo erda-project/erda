@@ -32,12 +32,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/label"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
 	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -47,7 +47,7 @@ type Table struct {
 	SDK        *cptype.SDK
 	Ctx        context.Context
 	Metrics    metrics.Interface
-	Server     cmp_interface.SteveServer
+	Server     cmp.SteveServer
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
@@ -218,7 +218,7 @@ func GetDistributionStatus(str string) string {
 
 func IsNodeOffline(node data.Object) bool {
 	labels := node.Map("metadata", "labels")
-	offlineLabel := labels.String(cmp.OfflineLabel)
+	offlineLabel := labels.String(steve.OfflineLabel)
 	return offlineLabel == "true"
 }
 

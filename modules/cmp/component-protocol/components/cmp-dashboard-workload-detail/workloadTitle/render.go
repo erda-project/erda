@@ -26,11 +26,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-workload-detail", "workloadTitle", func() servicehub.Provider {
@@ -39,7 +39,7 @@ func init() {
 }
 
 func (t *ComponentWorkloadTitle) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -93,26 +93,28 @@ func (t *ComponentWorkloadTitle) InitComponent(ctx context.Context) {
 	t.server = steveServer
 }
 
-func (t *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (t *ComponentWorkloadTitle) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	t.State = state
 	return nil
 }
 
-func (t *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
-	component.Props = t.Props
-	component.State = map[string]interface{}{
-		"workloadId": t.State.WorkloadID,
+func (t *ComponentWorkloadTitle) Transfer(c *cptype.Component) {
+	c.Props = t.Props
+	c.State = map[string]interface{}{
+		"workloadId":  t.State.WorkloadID,
+		"podId":       t.State.PodID,
+		"clusterName": t.State.ClusterName,
 	}
 }
 

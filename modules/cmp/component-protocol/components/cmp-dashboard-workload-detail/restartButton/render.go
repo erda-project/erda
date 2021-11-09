@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp"
 	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -208,8 +209,8 @@ func (b *ComponentRestartButton) restartWorkload(userID, orgID, clusterName, kin
 		return err
 	}
 
-	cmp.RemoveCache(b.State.ClusterName, "", kind)
-	cmp.RemoveCache(b.State.ClusterName, namespace, kind)
+	steve.RemoveCache(b.State.ClusterName, "", kind)
+	steve.RemoveCache(b.State.ClusterName, namespace, kind)
 	return nil
 }
 
