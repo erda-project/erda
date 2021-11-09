@@ -93,7 +93,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		}
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") && s.StorageReader != nil {
+	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
 		// do es query
 		elasticsearchSpans, _ := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
 			TraceId: req.TraceID,
@@ -363,7 +363,7 @@ func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64,
 		s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") && s.StorageReader != nil {
+	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
 		// do cassandra query
 		elasticsearchCount = s.StorageReader.Count(ctx, traceID)
 	}
