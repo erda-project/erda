@@ -27,12 +27,13 @@ import (
 // AutoTestSpace 测试空间
 type AutoTestSpace struct {
 	dbengine.BaseModel
-	Name        string
-	ProjectID   int64
-	Description string
-	CreatorID   string
-	UpdaterID   string
-	Status      apistructs.AutoTestSpaceStatus
+	Name          string
+	ProjectID     int64
+	Description   string
+	CreatorID     string
+	UpdaterID     string
+	Status        apistructs.AutoTestSpaceStatus
+	ArchiveStatus apistructs.AutoTestSpaceArchiveStatus
 	// 被复制的源测试空间
 	SourceSpaceID *uint64
 	// DeletedAt 删除时间
@@ -50,14 +51,24 @@ func (db *DBClient) CreateAutoTestSpace(space *AutoTestSpace) (*AutoTestSpace, e
 }
 
 // ListAutoTestSpaceByProject 项目下获取测试空间列表
-func (db *DBClient) ListAutoTestSpaceByProject(projectID int64, pageNo, pageSize int) ([]AutoTestSpace, int, error) {
+func (db *DBClient) ListAutoTestSpaceByProject(req apistructs.AutoTestSpaceListRequest) ([]AutoTestSpace, int, error) {
 	var (
 		space []AutoTestSpace
 		total int
 	)
-	offset := (pageNo - 1) * pageSize
-	if err := db.Where("project_id = ?", projectID).Order("updated_at desc").
-		Offset(offset).Limit(pageSize).Find(&space).
+	offset := (req.PageNo - 1) * req.PageSize
+	sql := db.Where("project_id = ?", req.ProjectID)
+	if req.Order == "" {
+		req.Order = "updated_at desc"
+	}
+	if len(req.ArchiveStatus) > 0 {
+		sql = sql.Where("archive_status IN (?)", req.ArchiveStatus)
+	}
+	if req.Name != "" {
+		sql = sql.Where("name LIKE ?", "%"+req.Name+"%")
+	}
+	if err := sql.Order(req.Order).
+		Offset(offset).Limit(req.PageSize).Find(&space).
 		// reset offset & limit before count
 		Offset(0).Limit(-1).Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -141,4 +152,36 @@ func (db *DBClient) DeleteAutoTestSpaceRelation(spaceID uint64) error {
 		fmt.Println("delete sceneStep success")
 		return nil
 	})
+}
+
+type AutoTestSpaceSceneSetStats struct {
+	SpaceID uint64
+	SetNum  int
+}
+
+type AutoTestSpaceSceneStats struct {
+	SpaceID  uint64
+	SceneNum int
+}
+
+type AutoTestSpaceSceneStepStats struct {
+	SpaceID uint64
+	StepNum int
+}
+
+func (db *DBClient) GetAutoTestSpaceStats(spaceIDs []uint64) ([]AutoTestSpaceSceneSetStats, []AutoTestSpaceSceneStats, []AutoTestSpaceSceneStepStats, error) {
+	sql := db.Where("space_id IN (?)", spaceIDs).Group("space_id")
+	var set []AutoTestSpaceSceneSetStats
+	if err := sql.Table("dice_autotest_scene_set").Select("space_id, count(id) as set_num").Find(&set).Error; err != nil {
+		return nil, nil, nil, err
+	}
+	var scene []AutoTestSpaceSceneStats
+	if err := sql.Table("dice_autotest_scene").Select("space_id, count(id) as scene_num").Find(&scene).Error; err != nil {
+		return nil, nil, nil, err
+	}
+	var step []AutoTestSpaceSceneStepStats
+	if err := sql.Table("dice_autotest_scene_step").Select("space_id, count(id) as step_num").Find(&step).Error; err != nil {
+		return nil, nil, nil, err
+	}
+	return set, scene, step, nil
 }

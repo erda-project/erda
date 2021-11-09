@@ -1938,5 +1938,12 @@
       "zh": "在 [@projectName](project) / [@appName](app) 中, 对 runtime [@runtimeName](runtimeDetailRoot) 修改了 MySQL 账号 [@preMysqlUsername] -> [@mysqlUsername]",
       "en": "Change MySQL account [@preMysqlUsername] -> [@mysqlUsername] for runtime [@runtimeName](runtimeDetailRoot) in [@projectName](project) / [@appName](app)"
     }
+  },
+  "updateAutoTestSpace": {
+    "desc": "更新自动化测试空间",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中， 更新了测试空间 [@spaceName] 的[@field], 由 [@from] 变成 [@to] ",
+      "en": ""
+    }
   }
 }
