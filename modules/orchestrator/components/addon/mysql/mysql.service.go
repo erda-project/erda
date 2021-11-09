@@ -187,7 +187,7 @@ func (s *mysqlService) GenerateMySQLAccount(ctx context.Context, req *pb.Generat
 	dto := s.ToDTO(account, false)
 	dto.Password = pass
 
-	s.auditNoError(userID, apis.GetOrgID(ctx), routing, nil, apistructs.CreateMySQLAddonAccountTemplate,
+	s.auditNoError(ctx, userID, apis.GetOrgID(ctx), routing, nil, apistructs.CreateMySQLAddonAccountTemplate,
 		map[string]interface{}{
 			"mysqlUsername": dto.Username,
 		},
@@ -233,7 +233,7 @@ func (s *mysqlService) DeleteMySQLAccount(ctx context.Context, req *pb.DeleteMyS
 		return nil, err
 	}
 
-	s.auditNoError(userID, apis.GetOrgID(ctx), routing, nil, apistructs.DeleteMySQLAddonAccountTemplate,
+	s.auditNoError(ctx, userID, apis.GetOrgID(ctx), routing, nil, apistructs.DeleteMySQLAddonAccountTemplate,
 		map[string]interface{}{
 			"mysqlUsername": account.Username,
 		},
@@ -332,10 +332,10 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 		return nil, err
 	}
 
-	s.auditNoError(userID, apis.GetOrgID(ctx), routing, att, apistructs.ResetAttachmentMySQLAddonAccountTemplate,
+	s.auditNoError(ctx, userID, apis.GetOrgID(ctx), routing, att, apistructs.ResetAttachmentMySQLAddonAccountTemplate,
 		map[string]interface{}{
-			"mysqlUsername":    preAcc.Username,
-			"preMysqlUsername": nextAcc.Username,
+			"mysqlUsername":    nextAcc.Username,
+			"preMysqlUsername": preAcc.Username,
 		},
 	)
 
@@ -415,15 +415,15 @@ func (s *mysqlService) checkPerm(userID string, routing *dbclient.AddonInstanceR
 	return pr.Access, nil
 }
 
-func (s *mysqlService) auditNoError(userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
+func (s *mysqlService) auditNoError(ctx context.Context, userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
 	tmplName apistructs.TemplateName, tmplCtx map[string]interface{}) {
-	err := s.audit(userID, orgID, routing, att, tmplName, tmplCtx)
+	err := s.audit(ctx, userID, orgID, routing, att, tmplName, tmplCtx)
 	if err != nil {
 		s.logger.Errorf("audit %s failed, err: %+v", tmplName, err)
 	}
 }
 
-func (s *mysqlService) audit(userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
+func (s *mysqlService) audit(ctx context.Context, userID string, orgID string, routing *dbclient.AddonInstanceRouting, att *dbclient.AddonAttachment,
 	tmplName apistructs.TemplateName, tmplCtx map[string]interface{}) error {
 	oid, err := strutil.Atoi64(orgID)
 	if err != nil {
@@ -475,6 +475,7 @@ func (s *mysqlService) audit(userID string, orgID string, routing *dbclient.Addo
 		EndTime:      now,
 		TemplateName: tmplName,
 		Context:      tmplCtx,
+		ClientIP:     apis.GetClientIP(ctx),
 	}
 	return s.perm.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit})
 }
