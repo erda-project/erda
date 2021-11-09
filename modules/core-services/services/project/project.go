@@ -1540,7 +1540,8 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetPr
 	// 1）查找 s_pod_info
 	var projectsM = make(map[uint64]map[string][]string)
 	var podInfos []*apistructs.PodInfo
-	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
+	if err := p.db.Debug().Where("project_id != '' and project_id is not null").
+		Find(&podInfos).Error; err != nil {
 		if !gorm.IsRecordNotFoundError(err) {
 			err = errors.Wrap(err, "failed to Find podInfos")
 			l.WithError(err).Errorln()
