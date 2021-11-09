@@ -1451,7 +1451,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
 	for _, project := range projects {
 		// query project owner
-		var member = &model.Member{
+		var member = model.Member{
 			UserID: "0",
 			Name:   "unknown",
 			Nick:   "unknown",
@@ -1595,7 +1595,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		}
 
 		// query project owner
-		var member = &model.Member{
+		var member = model.Member{
 			UserID: "0",
 			Name:   unknownName,
 			Nick:   unknownName,
@@ -1669,15 +1669,15 @@ func (p *Project) ListQuotaRecords(ctx context.Context) ([]*apistructs.ProjectQu
 	return records, nil
 }
 
-func getMemberFromMembers(members []model.Member, role string) (*model.Member, bool) {
+func getMemberFromMembers(members []model.Member, role string) (model.Member, bool) {
 	for _, member := range members {
 		for _, role_ := range member.Roles {
 			if strings.EqualFold(role, role_) {
-				return &member, true
+				return member, true
 			}
 		}
 	}
-	return nil, false
+	return model.Member{}, false
 }
 
 func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO, changeRecord map[string]bool) (string, bool) {
