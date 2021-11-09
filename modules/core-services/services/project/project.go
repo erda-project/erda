@@ -371,7 +371,12 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	dto.ID = uint64(project.ID)
 	setProjectDtoQuotaFromModel(dto, project.Quota)
 	p.fetchPodInfo(dto)
-	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto); !ok {
+	changedRecord := make(map[string]bool)
+	if oldQuota == nil {
+		oldQuota = new(apistructs.ProjectQuota)
+	}
+	isQuotaChangedOnTheWorkspace(changedRecord, *oldQuota, *project.Quota)
+	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto, changedRecord); !ok {
 		logrus.Errorf("checkNewQuotaIsLessThanRequest is not ok: %s", msg)
 		return nil, errors.New(msg)
 	}
@@ -395,9 +400,6 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	go func() {
 		if project.Quota == nil {
 			return
-		}
-		if oldQuota == nil {
-			oldQuota = new(apistructs.ProjectQuota)
 		}
 		if !isQuotaChanged(*oldQuota, *project.Quota) {
 			return
@@ -488,15 +490,27 @@ func setQuotaFromResourceConfig(quota *apistructs.ProjectQuota, resource *apistr
 }
 
 func isQuotaChanged(oldQuota, newQuota apistructs.ProjectQuota) bool {
-	if oldQuota.DevCPUQuota != newQuota.DevCPUQuota || oldQuota.DevMemQuota != newQuota.DevMemQuota ||
-		oldQuota.TestCPUQuota != newQuota.TestCPUQuota || oldQuota.TestMemQuota != newQuota.TestMemQuota ||
-		oldQuota.StagingCPUQuota != newQuota.StagingCPUQuota || oldQuota.StagingMemQuota != newQuota.StagingMemQuota ||
-		oldQuota.ProdCPUQuota != newQuota.ProdCPUQuota || oldQuota.ProdMemQuota != newQuota.ProdMemQuota ||
-		oldQuota.DevClusterName != newQuota.DevClusterName || oldQuota.TestClusterName != newQuota.TestClusterName ||
-		oldQuota.StagingClusterName != newQuota.StagingClusterName || oldQuota.ProdClusterName != newQuota.ProdClusterName {
-		return true
+	var changedRecord = make(map[string]bool)
+	isQuotaChangedOnTheWorkspace(changedRecord, oldQuota, newQuota)
+	return changedRecord["PROD"] || changedRecord["STAGING"] || changedRecord["TEST"] || changedRecord["DEV"]
+}
+
+func isQuotaChangedOnTheWorkspace(workspaces map[string]bool, oldQuota, newQuota apistructs.ProjectQuota) {
+	if workspaces == nil {
+		return
 	}
-	return false
+	workspaces["PROD"] = oldQuota.ProdCPUQuota != newQuota.ProdCPUQuota ||
+		oldQuota.ProdMemQuota != newQuota.ProdMemQuota ||
+		oldQuota.ProdClusterName != newQuota.ProdClusterName
+	workspaces["STAGING"] = oldQuota.StagingCPUQuota != newQuota.StagingCPUQuota ||
+		oldQuota.StagingMemQuota != newQuota.StagingMemQuota ||
+		oldQuota.StagingClusterName != newQuota.StagingClusterName
+	workspaces["TEST"] = oldQuota.TestCPUQuota != newQuota.TestCPUQuota ||
+		oldQuota.TestMemQuota != newQuota.TestMemQuota ||
+		oldQuota.TestClusterName != newQuota.TestClusterName
+	workspaces["DEV"] = oldQuota.DevCPUQuota != newQuota.DevCPUQuota ||
+		oldQuota.DevMemQuota != newQuota.DevMemQuota ||
+		oldQuota.DevClusterName != newQuota.DevClusterName
 }
 
 func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody, userID uint64) error {
@@ -710,6 +724,7 @@ func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *apistructs.P
 	dto.MemQuota = calcu.ByteToGibibyte(quota.ProdMemQuota+quota.StagingMemQuota+quota.TestMemQuota+quota.DevMemQuota, 3)
 }
 
+// 从 s_pod_info 中读取 cpu/mem_request 数据记录到 dto
 func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 	if dto == nil || dto.ResourceConfig == nil {
 		return
@@ -1662,7 +1677,7 @@ func getMemberFromMembers(members []model.Member, role string) (*model.Member, b
 	return nil, false
 }
 
-func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO) (string, bool) {
+func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO, changeRecord map[string]bool) (string, bool) {
 	if dto == nil || dto.ResourceConfig == nil {
 		return "", true
 	}
@@ -1675,6 +1690,9 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 		"DEV":     dto.ResourceConfig.DEV,
 	} {
 		if resource == nil {
+			continue
+		}
+		if changeRecord != nil && !changeRecord[workspace] {
 			continue
 		}
 		if resource.CPUQuota < resource.CPURequest {

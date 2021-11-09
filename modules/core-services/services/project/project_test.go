@@ -310,6 +310,68 @@ func Test_setProjectDtoQuotaFromModel(t *testing.T) {
 
 }
 
+func initOldNewQutoa() (old, new_ apistructs.ProjectQuota) {
+	return apistructs.ProjectQuota{
+			ProdClusterName:    "prod",
+			StagingClusterName: "staging",
+			TestClusterName:    "test",
+			DevClusterName:     "dev",
+			ProdCPUQuota:       10,
+			ProdMemQuota:       20,
+			StagingCPUQuota:    30,
+			StagingMemQuota:    40,
+			TestCPUQuota:       50,
+			TestMemQuota:       60,
+			DevCPUQuota:        70,
+			DevMemQuota:        80,
+		}, apistructs.ProjectQuota{
+			ProdClusterName:    "prod",
+			StagingClusterName: "staging",
+			TestClusterName:    "test",
+			DevClusterName:     "dev",
+			ProdCPUQuota:       10,
+			ProdMemQuota:       20,
+			StagingCPUQuota:    30,
+			StagingMemQuota:    40,
+			TestCPUQuota:       50,
+			TestMemQuota:       60,
+			DevCPUQuota:        70,
+			DevMemQuota:        80,
+		}
+}
+
+func Test_isQuotaChanged(t *testing.T) {
+	if isChanged := isQuotaChanged(initOldNewQutoa()); isChanged {
+		t.Fatal("error")
+	}
+}
+
+func Test_isQuotaChangedOnTheWorkspace(t *testing.T) {
+	var changedRecord map[string]bool
+	old, new_ := initOldNewQutoa()
+	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
+	if len(changedRecord) > 0 {
+		t.Fatal("error")
+	}
+
+	changedRecord = make(map[string]bool)
+	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
+	if len(changedRecord) != 4 {
+		t.Fatal("error")
+	}
+	for _, w := range []string{"PROD", "STAGING", "TEST", "DEV"} {
+		if changedRecord[w] {
+			t.Fatal("error")
+		}
+	}
+
+	new_.ProdCPUQuota += 10
+	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
+	if !changedRecord["PROD"] {
+		t.Fatal("error")
+	}
+}
+
 // TODO We need to turn this ut on after adding the delete portal to the UI
 // func TestDeleteProjectWhenAddonExists(t *testing.T) {
 // 	db := &dao.DBClient{}
