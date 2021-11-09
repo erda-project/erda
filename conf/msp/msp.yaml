@@ -58,7 +58,7 @@ elasticsearch@span:
   password: "${SPAN_ES_SECURITY_PASSWORD}"
 
 elasticsearch.index.loader@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -69,16 +69,16 @@ elasticsearch.index.loader@span:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   default_ttl: "${SPAN_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   key_patterns:
     - "erda-spans-<org>.<key>-{number}"
 elasticsearch.index.cleaner@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   check_interval: "30m"
   print_onluy: true
   disk_clean:
@@ -95,7 +95,7 @@ elasticsearch.index.cleaner@span:
       - index: "erda-spans-<org>.<key>-{number}"
         alias: "erda-spans-<org>.<key>-rollover"
 span-storage-elasticsearch:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   query_timeout: "1m"
   read_page_size: 200
 
@@ -186,14 +186,14 @@ erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
 erda.msp.apm.trace.query:
-  query_source: "${TRACE_QUERY_SOURCE:cassandra,elasticsearch}"
+  query_source: "${TRACE_QUERY_SOURCE:cassandra}"
   cassandra:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
 
 erda.msp.apm.exception.query:
-  query_source: "${EXCEPTION_QUERY_SOURCE:cassandra,elasticsearch}"
+  query_source: "${EXCEPTION_QUERY_SOURCE:cassandra}"
   cassandra:
     keyspace:
       name: "spot_prod"
