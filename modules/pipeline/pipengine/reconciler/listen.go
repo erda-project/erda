@@ -65,6 +65,18 @@ func (r *Reconciler) doWatch(ctx context.Context, key string, t storetypes.Chang
 		return
 	}
 
+	// there may be multiple reconciles here, and subsequent reconciles will cause the pipeline to succeed directly
+	_, ok := r.processingPipelines.Load(pipelineID)
+	if ok {
+		rlog.PErrorf(pipelineID, "pipeline duplication reconcile")
+		return
+	} else {
+		r.processingPipelines.Store(pipelineID, pipelineID)
+		defer func() {
+			r.processingPipelines.Delete(pipelineID)
+		}()
+	}
+
 	// add into queue
 	popCh, needRetryIfErr, err := r.QueueManager.PutPipelineIntoQueue(pipelineID)
 	if err != nil {
@@ -140,6 +152,8 @@ func (r *Reconciler) doWatch(ctx context.Context, key string, t storetypes.Chang
 // reconcileAgain add to reconciler again, wait next reconcile
 func (r *Reconciler) reconcileAgain(pipelineID uint64) {
 	time.Sleep(time.Second * 5)
+	// delete the recorded pipeline that is being executed to prevent failure to reconcile
+	r.processingPipelines.Delete(pipelineID)
 	r.Add(pipelineID)
 }
 
