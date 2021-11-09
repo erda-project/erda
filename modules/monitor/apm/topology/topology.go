@@ -1931,10 +1931,13 @@ func handlerTranslationConditions(params translation, param map[string]interface
 	}
 
 	if params.Sort == 0 {
-		orderBy = " ORDER BY count(error::tag) DESC"
+		orderBy = " ORDER BY avg(elapsed_mean::field) DESC"
 	}
 	if params.Sort == 1 {
 		orderBy = " ORDER BY sum(elapsed_count::field) DESC"
+	}
+	if params.Sort == 2 {
+		orderBy = " ORDER BY count(error::tag) DESC"
 	}
 	return field, orderBy, nil
 }
