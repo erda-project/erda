@@ -30,6 +30,7 @@ type Queue interface {
 	pushBack(cmd string) error
 	Size() int
 	Get(i int) (string, error)
+	Set(i int, str string) error
 	Begin() int
 }
 
@@ -90,6 +91,11 @@ func (c *commandQueue) Get(i int) (string, error) {
 		return c.cmds[i], nil
 	}
 	return "", errors.Errorf("queue index out of range")
+}
+
+func (c *commandQueue) Set(i int, str string) error {
+	c.cmds[i] = str
+	return nil
 }
 
 type dispatcher struct {
@@ -172,7 +178,7 @@ func (d *dispatcher) ShowBuffer() error {
 }
 
 func (d *dispatcher) Clean() error {
-	d.reset()
+	d.resetWithCmdline()
 	return nil
 }
 
@@ -365,6 +371,9 @@ func (d *dispatcher) sendAuditReq() error {
 }
 
 func (d *dispatcher) resetWithCmdline() {
+	if d.cursorLine != 0 {
+		d.queue.Set(d.cursorLine, d.executeCommand)
+	}
 	d.cursorLine = 0
 	d.reset()
 }
@@ -385,14 +394,15 @@ func (d *dispatcher) reverseSearch(b byte) error {
 		d.reset()
 		return OutOfLengthSize
 	}
-	allStr := string(d.searchBuf[startIdx : d.searchIdx+startIdx])
+	allStr := string(d.searchBuf[startIdx:d.searchIdx])
 	for j := len(allStr); j >= 1; j-- {
 		searchStr := allStr[:j]
 		for i := d.queue.Begin(); i <= d.queue.Size(); i++ {
 			str, _ := d.queue.Get(i)
-			if strings.Contains(str, searchStr) {
+			contains, idx := d.reverseContains(str, searchStr)
+			if contains {
 				copy(d.buf[startIdx:], str)
-				d.cursorIdx = len(str) + 1
+				d.cursorIdx = idx
 				d.length = len(str)
 				d.cursorLine = i
 				return nil
@@ -400,6 +410,28 @@ func (d *dispatcher) reverseSearch(b byte) error {
 		}
 	}
 	return nil
+}
+
+func (d *dispatcher) reverseContains(str, substr string) (bool, int) {
+	if len(str) < len(substr) {
+		return false, -1
+	}
+	start := len(str) - len(substr)
+	idx := -1
+	for i := start; i >= 0; i-- {
+		j := 0
+		for ; j < len(substr); j++ {
+			if substr[j] == str[i+j] {
+				idx = i
+			} else {
+				break
+			}
+		}
+		if j == len(substr) {
+			return true, idx
+		}
+	}
+	return false, idx
 }
 
 func (d *dispatcher) search(b byte) error {
