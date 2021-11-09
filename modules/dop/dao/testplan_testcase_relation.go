@@ -367,7 +367,7 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 			if req.OrderByIDDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`id` DESC")
 			}
-		case tcFieldTestSetID:
+		case tcFieldTestSetID, tcFieldTestSetIDV2:
 			if req.OrderByTestSetIDAsc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`test_set_id` ASC")
 			}
@@ -381,18 +381,18 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 			if req.OrderByPriorityDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`priority` DESC")
 			}
-		case tcFieldUpdaterID:
+		case tcFieldUpdaterID, tcFieldUpdaterIDV2:
 			if req.OrderByUpdaterIDAsc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updater_id` ASC")
 			}
 			if req.OrderByUpdaterIDDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updater_id` DESC")
 			}
-		case tcFieldUpdatedAt:
-			if req.OrderByUpdaterIDAsc != nil {
+		case tcFieldUpdatedAt, tcFieldUpdatedAtV2:
+			if req.OrderByUpdatedAtAsc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updated_at` ASC")
 			}
-			if req.OrderByUpdaterIDDesc != nil {
+			if req.OrderByUpdatedAtDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updated_at` DESC")
 			}
 		}

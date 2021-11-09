@@ -195,11 +195,14 @@ func (client *DBClient) BatchDeleteTestCases(ids []uint64) error {
 
 // order
 const (
-	tcFieldPriority  = "priority"
-	tcFieldID        = "id"
-	tcFieldTestSetID = "test_set_id"
-	tcFieldUpdaterID = "updater_id"
-	tcFieldUpdatedAt = "updated_at"
+	tcFieldPriority    = "priority"
+	tcFieldID          = "id"
+	tcFieldTestSetID   = "test_set_id"
+	tcFieldTestSetIDV2 = "testSetID"
+	tcFieldUpdaterID   = "updater_id"
+	tcFieldUpdaterIDV2 = "updaterID"
+	tcFieldUpdatedAt   = "updated_at"
+	tcFieldUpdatedAtV2 = "updatedAt"
 )
 
 func (client *DBClient) PagingTestCases(req apistructs.TestCasePagingRequest) ([]TestCase, uint64, error) {
@@ -294,7 +297,7 @@ func (client *DBClient) PagingTestCases(req apistructs.TestCasePagingRequest) ([
 			if req.OrderByIDDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`id` DESC")
 			}
-		case tcFieldTestSetID:
+		case tcFieldTestSetID, tcFieldTestSetIDV2:
 			if req.OrderByTestSetIDAsc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`test_set_id` ASC")
 			}
@@ -308,18 +311,18 @@ func (client *DBClient) PagingTestCases(req apistructs.TestCasePagingRequest) ([
 			if req.OrderByPriorityDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`priority` DESC")
 			}
-		case tcFieldUpdaterID:
+		case tcFieldUpdaterID, tcFieldUpdaterIDV2:
 			if req.OrderByUpdaterIDAsc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updater_id` ASC")
 			}
 			if req.OrderByUpdaterIDDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updater_id` DESC")
 			}
-		case tcFieldUpdatedAt:
-			if req.OrderByUpdaterIDAsc != nil {
+		case tcFieldUpdatedAt, tcFieldUpdatedAtV2:
+			if req.OrderByUpdatedAtAsc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updated_at` ASC")
 			}
-			if req.OrderByUpdaterIDDesc != nil {
+			if req.OrderByUpdatedAtDesc != nil {
 				pagingSQL = pagingSQL.Order("`tc`.`updated_at` DESC")
 			}
 		}
