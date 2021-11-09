@@ -279,9 +279,8 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 					w.sendWebsocketAudit(auditStr)
 					return
 				}
-				w.sendWebsocketAudit(auditStr)
 			}
-
+			w.sendWebsocketAudit(auditStr)
 		}
 	}(w)
 	return wc, rw, nil
