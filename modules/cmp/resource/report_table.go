@@ -153,11 +153,11 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 		data.List = append(data.List, &item)
 	}
 	sharedText := rt.trans.Text(langCodes, "SharedResources")
-	sharedItem := newSharedItem(sharedResource, sharedText)
+	ownerUnknown := rt.trans.Text(langCodes, "OwnerUnknown")
+	sharedItem := newSharedItem(sharedResource, sharedText, ownerUnknown)
 	data.List = append(data.List, sharedItem)
 
 	if groupBy == "owner" {
-		sharedItem.OwnerUserNickName = sharedText
 		data.GroupByOwner()
 	}
 	data.Calculates(cpuPerNode, memPerNode)
@@ -188,17 +188,17 @@ func ReportTableWithTrans(trans i18n.Translator) ReportTableOption {
 	}
 }
 
-func newSharedItem(shared [2]uint64, sharedText string) *apistructs.ResourceOverviewReportDataItem {
+func newSharedItem(shared [2]uint64, sharedText, ownerUnknown string) *apistructs.ResourceOverviewReportDataItem {
 	cpu := calcu.MillcoreToCore(shared[0], 3)
 	mem := calcu.ByteToGibibyte(shared[1], 3)
 	return &apistructs.ResourceOverviewReportDataItem{
 		ProjectID:          0,
 		ProjectName:        "-",
-		ProjectDisplayName: "-",
-		ProjectDesc:        sharedText,
+		ProjectDisplayName: sharedText,
+		ProjectDesc:        "",
 		OwnerUserID:        0,
-		OwnerUserName:      "-",
-		OwnerUserNickName:  "-",
+		OwnerUserName:      ownerUnknown,
+		OwnerUserNickName:  ownerUnknown,
 		CPUQuota:           cpu,
 		CPURequest:         cpu,
 		CPUWaterLevel:      100,
