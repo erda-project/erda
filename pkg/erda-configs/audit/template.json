@@ -1928,7 +1928,7 @@
   "deleteMySQLAddonAccount": {
     "desc": "删除 MySQL Addon 账号",
     "success": {
-      "zh": "在 [@projectName](project) 项目中，对 [@workspace] 环境的 [MySQL](addonPlatformMysqlAccount) 创建了账号 [@mysqlUsername]",
+      "zh": "在 [@projectName](project) 项目中，对 [@workspace] 环境的 [MySQL](addonPlatformMysqlAccount) 删除了账号 [@mysqlUsername]",
       "en": "Delete account [@mysqUsername] for [MySQL](addonPlatformMysqlAccount) at [@workspace] in project [@projectName](project)"
     }
   },
