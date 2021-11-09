@@ -460,7 +460,7 @@ func (t *TestPlan) Paging(req apistructs.TestPlanPagingRequest) (*apistructs.Tes
 
 // PagingTestPlanCaseRels 分页查询测试计划内测试用例
 func (t *TestPlan) PagingTestPlanCaseRels(req apistructs.TestPlanCaseRelPagingRequest) (*apistructs.TestPlanCasePagingResponseData, error) {
-	// queryy testplan if not queried yet
+	// query testplan if not queried yet
 	if req.TestPlan == nil {
 		_tp, err := t.Get(req.TestPlanID)
 		if err != nil {
@@ -495,7 +495,7 @@ func (t *TestPlan) PagingTestPlanCaseRels(req apistructs.TestPlanCaseRelPagingRe
 		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
 	}
 
-	// 将 测试用例列表 转换为 测试集(包含测试用例)列表
+	// list(testCase) -> list(testSet with testCases)
 	mapOfTestSetIDAndDir := make(map[uint64]string)
 	for _, ts := range testSets {
 		mapOfTestSetIDAndDir[ts.ID] = ts.Directory
@@ -505,11 +505,11 @@ func (t *TestPlan) PagingTestPlanCaseRels(req apistructs.TestPlanCaseRelPagingRe
 
 	// map: ts.ID -> TestSetWithCases ([]tc)
 	for _, rel := range rels {
-		// testSetID 排序
+		// order by testSetID
 		if _, ok := resultTestSetMap[rel.TestSetID]; !ok {
 			testSetIDOrdered = append(testSetIDOrdered, rel.TestSetID)
 		}
-		// testSetWithCase 内容填充
+		// fulfill testSetWithCase
 		tmp := resultTestSetMap[rel.TestSetID]
 		tmp.Directory = mapOfTestSetIDAndDir[rel.TestSetID]
 		tmp.TestSetID = rel.TestSetID
@@ -523,7 +523,7 @@ func (t *TestPlan) PagingTestPlanCaseRels(req apistructs.TestPlanCaseRelPagingRe
 		}
 	}
 
-	// 获取所有用户 ID
+	// get all user ids
 	var allUserIDs []string
 	for _, ts := range resultTestSets {
 		for _, rel := range ts.TestCases {
@@ -532,7 +532,7 @@ func (t *TestPlan) PagingTestPlanCaseRels(req apistructs.TestPlanCaseRelPagingRe
 	}
 	allUserIDs = strutil.DedupSlice(allUserIDs, true)
 
-	// 返回结果
+	// result
 	result := apistructs.TestPlanCasePagingResponseData{
 		Total:    total,
 		TestSets: resultTestSets,

@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	MaxTestSetDirectoryLength = 8192
+	// related to: 20211109-manual-test-fix-slow-sql.sql #9
+	maxTestSetDirectoryLength = 5000
 )
 
 func ValidateTestSetDirectoryLength(dir string) error {
-	return strutil.Validate(dir, strutil.MaxRuneCountValidator(MaxTestSetDirectoryLength))
+	return strutil.Validate(dir, strutil.MaxRuneCountValidator(maxTestSetDirectoryLength))
 }
 
 // TestSet 测试集

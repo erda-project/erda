@@ -203,34 +203,3 @@ func getAlphabetSortedTestSetIDs(testSets []dao.TestSet, order string) []uint64 
 	}
 	return result
 }
-
-func (svc *Service) getSubTestSetIDsInMemory(projectID, baseTestSetID uint64, recycled bool) ([]uint64, error) {
-	testSets, err := svc.db.ListTestSets(apistructs.TestSetListRequest{
-		Recycled:      recycled,
-		ProjectID:     &projectID,
-		NoSubTestSets: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	// slice => map
-	testSetByParentID := make(map[uint64][]uint64)
-	for _, ts := range testSets {
-		testSetByParentID[ts.ParentID] = append(testSetByParentID[ts.ParentID], ts.ID)
-	}
-	// iterate from base
-	allTestSetIDsFromBase := findSub(testSetByParentID, baseTestSetID)
-	return allTestSetIDsFromBase, nil
-}
-
-func findSub(all map[uint64][]uint64, currentTestSetID uint64) []uint64 {
-	subIDs, ok := all[currentTestSetID]
-	if !ok {
-		return nil
-	}
-	var result []uint64
-	for _, subID := range subIDs {
-		result = append(result, findSub(all, subID)...)
-	}
-	return result
-}
