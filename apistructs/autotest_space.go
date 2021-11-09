@@ -14,7 +14,10 @@
 
 package apistructs
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // AutoTestSpaceStatus 测试空间状态
 type AutoTestSpaceStatus string
@@ -34,15 +37,24 @@ var (
 	TestSpaceFailed AutoTestSpaceStatus = "failed"
 )
 
+type AutoTestSpaceArchiveStatus string
+
+const (
+	TestSpaceInit       AutoTestSpaceArchiveStatus = "Init"
+	TestSpaceInProgress AutoTestSpaceArchiveStatus = "InProgress"
+	TestSpaceCompleted  AutoTestSpaceArchiveStatus = "Completed"
+)
+
 // AutoTestSpace 测试空间
 type AutoTestSpace struct {
-	ID          uint64              `json:"id"`
-	Name        string              `json:"name"`
-	ProjectID   int64               `json:"projectId"`
-	Description string              `json:"description"`
-	CreatorID   string              `json:"creatorId"`
-	UpdaterID   string              `json:"updaterId"`
-	Status      AutoTestSpaceStatus `json:"status"`
+	ID            uint64                     `json:"id"`
+	Name          string                     `json:"name"`
+	ProjectID     int64                      `json:"projectId"`
+	Description   string                     `json:"description"`
+	CreatorID     string                     `json:"creatorId"`
+	UpdaterID     string                     `json:"updaterId"`
+	Status        AutoTestSpaceStatus        `json:"status"`
+	ArchiveStatus AutoTestSpaceArchiveStatus `json:"archiveStatus"`
 	// 被复制的源测试空间
 	SourceSpaceID *uint64 `json:"sourceSpaceId,omitempty"`
 	// CreatedAt 创建时间
@@ -83,6 +95,38 @@ type AutoTestSpaceCreateRequest struct {
 type AutoTestSpaceResponse struct {
 	Header
 	Data *AutoTestSpace `json:"data"`
+}
+
+type AutoTestSpaceListRequest struct {
+	Name          string
+	ProjectID     int64
+	PageNo        int64
+	PageSize      int64
+	Order         string
+	ArchiveStatus []string
+}
+
+func (ats *AutoTestSpaceListRequest) URLQueryString() map[string][]string {
+	query := make(map[string][]string)
+	if ats.Name != "" {
+		query["name"] = append(query["name"], ats.Name)
+	}
+	if ats.Order != "" {
+		query["order"] = append(query["order"], ats.Order)
+	}
+	if len(ats.ArchiveStatus) > 0 {
+		query["archiveStatus"] = append(query["archiveStatus"], ats.ArchiveStatus...)
+	}
+	if ats.ProjectID != 0 {
+		query["projectID"] = []string{strconv.FormatInt(ats.ProjectID, 10)}
+	}
+	if ats.PageNo != 0 {
+		query["pageNo"] = []string{strconv.FormatInt(ats.PageNo, 10)}
+	}
+	if ats.PageSize != 0 {
+		query["pageSize"] = []string{strconv.FormatInt(ats.PageSize, 10)}
+	}
+	return query
 }
 
 // AutoTestSpaceListResponse 获取测试空间列表响应
@@ -139,4 +183,19 @@ type AutoTestSpaceImportRequest struct {
 type AutoTestSpaceImportResponse struct {
 	Header
 	Data uint64 `json:"data"`
+}
+
+type AutoTestSpaceStatsRequest struct {
+	SpaceIDs []uint64 `json:"spaceIDs"`
+}
+
+type AutoTestSpaceStatsResponse struct {
+	Header
+	Data map[uint64]*AutoTestSpaceStats `json:"data"`
+}
+
+type AutoTestSpaceStats struct {
+	SetNum   int
+	SceneNum int
+	StepNum  int
 }
