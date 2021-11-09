@@ -194,8 +194,8 @@ func newSharedItem(shared [2]uint64, sharedText string) *apistructs.ResourceOver
 	return &apistructs.ResourceOverviewReportDataItem{
 		ProjectID:          0,
 		ProjectName:        "-",
-		ProjectDisplayName: "-",
-		ProjectDesc:        sharedText,
+		ProjectDisplayName: sharedText,
+		ProjectDesc:        "",
 		OwnerUserID:        0,
 		OwnerUserName:      "-",
 		OwnerUserNickName:  "-",
