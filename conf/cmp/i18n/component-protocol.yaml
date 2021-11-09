@@ -240,6 +240,7 @@ zh:
  week: 周
  shared resource: 共享资源
  unused resource: 未使用资源
+ OwnerUnknown: '无'
 
 en:
  # general
@@ -408,3 +409,4 @@ en:
 
  # cmp-dashboard-resource
  resourceNodeCount: nodes
+ OwnerUnknown: 'Unknown'
