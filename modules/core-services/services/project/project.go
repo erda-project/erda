@@ -57,12 +57,12 @@ type Project struct {
 type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
-func New(options ...Option) *Project {
+func New(opts ...Option) *Project {
 	project := &Project{
 		memberCache: NewCache(time.Minute),
 		quotaCache:  NewCache(time.Minute),
 	}
-	for _, f := range options {
+	for _, f := range opts {
 		f(project)
 	}
 	go project.updateCache()
@@ -70,30 +70,30 @@ func New(options ...Option) *Project {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao.DBClient) Option {
-	return func(project *Project) {
-		project.db = db
+func WithDBClient(dbClient *dao.DBClient) Option {
+	return func(p *Project) {
+		p.db = dbClient
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(project *Project) {
-		project.uc = uc
+func WithUCClient(ucClient *ucauth.UCClient) Option {
+	return func(p *Project) {
+		p.uc = ucClient
 	}
 }
 
 // WithBundle 配置 bundle
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(project *Project) {
-		project.bdl = bdl
+func WithBundle(b *bundle.Bundle) Option {
+	return func(p *Project) {
+		p.bdl = b
 	}
 }
 
 // WithI18n set the translator
-func WithI18n(translator i18n.Translator) Option {
-	return func(project *Project) {
-		project.trans = translator
+func WithI18n(trans i18n.Translator) Option {
+	return func(p *Project) {
+		p.trans = trans
 	}
 }
 
@@ -470,29 +470,29 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	return &project, nil
 }
 
-func setQuotaFromResourceConfig(quota *apistructs.ProjectQuota, resource *apistructs.ResourceConfigs) {
-	if quota == nil || resource == nil {
+func setQuotaFromResourceConfig(quota *apistructs.ProjectQuota, resourceConfigs *apistructs.ResourceConfigs) {
+	if quota == nil || resourceConfigs == nil {
 		return
 	}
-	if resource.PROD != nil {
-		quota.ProdClusterName = resource.PROD.ClusterName
-		quota.ProdCPUQuota = calcu.CoreToMillcore(resource.PROD.CPUQuota)
-		quota.ProdMemQuota = calcu.GibibyteToByte(resource.PROD.MemQuota)
+	if resourceConfigs.PROD != nil {
+		quota.ProdClusterName = resourceConfigs.PROD.ClusterName
+		quota.ProdCPUQuota = calcu.CoreToMillcore(resourceConfigs.PROD.CPUQuota)
+		quota.ProdMemQuota = calcu.GibibyteToByte(resourceConfigs.PROD.MemQuota)
 	}
-	if resource.STAGING != nil {
-		quota.StagingClusterName = resource.STAGING.ClusterName
-		quota.StagingCPUQuota = calcu.CoreToMillcore(resource.STAGING.CPUQuota)
-		quota.StagingMemQuota = calcu.GibibyteToByte(resource.STAGING.MemQuota)
+	if resourceConfigs.STAGING != nil {
+		quota.StagingClusterName = resourceConfigs.STAGING.ClusterName
+		quota.StagingCPUQuota = calcu.CoreToMillcore(resourceConfigs.STAGING.CPUQuota)
+		quota.StagingMemQuota = calcu.GibibyteToByte(resourceConfigs.STAGING.MemQuota)
 	}
-	if resource.TEST != nil {
-		quota.TestClusterName = resource.TEST.ClusterName
-		quota.TestCPUQuota = calcu.CoreToMillcore(resource.TEST.CPUQuota)
-		quota.TestMemQuota = calcu.GibibyteToByte(resource.TEST.MemQuota)
+	if resourceConfigs.TEST != nil {
+		quota.TestClusterName = resourceConfigs.TEST.ClusterName
+		quota.TestCPUQuota = calcu.CoreToMillcore(resourceConfigs.TEST.CPUQuota)
+		quota.TestMemQuota = calcu.GibibyteToByte(resourceConfigs.TEST.MemQuota)
 	}
-	if resource.DEV != nil {
-		quota.DevClusterName = resource.DEV.ClusterName
-		quota.DevCPUQuota = calcu.CoreToMillcore(resource.DEV.CPUQuota)
-		quota.DevMemQuota = calcu.GibibyteToByte(resource.DEV.MemQuota)
+	if resourceConfigs.DEV != nil {
+		quota.DevClusterName = resourceConfigs.DEV.ClusterName
+		quota.DevCPUQuota = calcu.CoreToMillcore(resourceConfigs.DEV.CPUQuota)
+		quota.DevMemQuota = calcu.GibibyteToByte(resourceConfigs.DEV.MemQuota)
 	}
 }
 
@@ -1788,7 +1788,7 @@ func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, erro
 			logrus.Warnln("channel is blocked, update quota cache is skipped")
 		}
 	}
-	return cacheItem.(*memberCache), true, nil
+	return cacheItem.Object.(*memberCache), true, nil
 }
 
 func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error) {
