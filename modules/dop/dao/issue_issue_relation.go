@@ -39,6 +39,14 @@ func (client *DBClient) CreateIssueRelations(issueRelation *IssueRelation) error
 	return client.Create(issueRelation).Error
 }
 
+func (client *DBClient) IssueRelationExist(issueRelation *IssueRelation) (bool, error) {
+	var count int64
+	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue = ?", issueRelation.IssueID, issueRelation.RelatedIssue).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // GetRelatingIssues 获取该事件关联了哪些事件
 func (client *DBClient) GetRelatingIssues(issueID uint64) ([]uint64, error) {
 	var (
