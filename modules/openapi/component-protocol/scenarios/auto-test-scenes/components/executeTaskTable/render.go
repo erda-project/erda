@@ -217,6 +217,12 @@ func getProps() map[string]interface{} {
 				Ellipsis:  true,
 			},
 			{
+				Title:     "步骤",
+				DataIndex: "step",
+				Width:     85,
+				Ellipsis:  true,
+			},
+			{
 				Title:     "子任务数",
 				DataIndex: "tasksNum",
 				Width:     85,
@@ -282,7 +288,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 	num := (a.State.PageNo - 1) * (a.State.PageSize)
 	ret := a.State.PageSize
 	a.State.Total = 0
-
+	stepIdx := 1
 	for _, each := range pipeline.PipelineStages {
 
 		a.State.Total += int64(len(each.PipelineTasks))
@@ -352,6 +358,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(apistructs.StepAPIType(task.Type)),
 					"path":     "",
+					"step":     stepIdx,
 				}
 			} else {
 				// autotest task
@@ -429,6 +436,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(res.Type),
 					"path":     path,
+					"step":     stepIdx,
 				}
 
 				// scene or configSheet add other info
@@ -448,6 +456,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				break
 			}
 		}
+		stepIdx++
 	}
 
 	if a.State.Total <= (a.State.PageNo-1)*(a.State.PageSize) && a.State.Total > 0 {
