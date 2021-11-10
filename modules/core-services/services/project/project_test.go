@@ -163,33 +163,6 @@ func Test_convertAuditCreateReq2Model(t *testing.T) {
 	}
 }
 
-func Test_getMemberFromMembers(t *testing.T) {
-	var members = []model.Member{
-		{
-			UserID: "1",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "2",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "3",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "4",
-			Roles:  []string{"Owner"},
-		},
-	}
-
-	_, ok := getMemberFromMembers(members, "Owner")
-	if !ok {
-		t.Fatal("getMemberFromMembers error: not found an Owner")
-	}
-	_, ok = getMemberFromMembers(members, "Lead")
-	if ok {
-		t.Fatal("getMemberFromMembers error: found a Lead")
-	}
-}
-
 func Test_calcuRequestRate(t *testing.T) {
 	var (
 		prod = apistructs.ResourceConfigInfo{
@@ -369,6 +342,32 @@ func Test_isQuotaChangedOnTheWorkspace(t *testing.T) {
 	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
 	if !changedRecord["PROD"] {
 		t.Fatal("error")
+	}
+}
+
+func Test_getFirstValidOwnerOrLead(t *testing.T) {
+	var members = []model.Member{
+		{
+			UserID: "1",
+			Roles:  []string{"Developer"},
+		}, {
+			UserID: "2",
+			Roles:  []string{"Lead"},
+		}, {
+			UserID: "3",
+			Roles:  []string{"Lead", "Owner"},
+		}, {
+			UserID: "4",
+			Roles:  []string{"Owner"},
+		},
+	}
+	var member *model.Member
+	hitFirstValidOwnerOrLead(member, members)
+
+	member = new(model.Member)
+	hitFirstValidOwnerOrLead(member, members)
+	if member.UserID != "3" {
+		t.Fatal("hit error")
 	}
 }
 

@@ -233,14 +233,14 @@ func TestExceptionService_fetchErdaErrorFromES(t *testing.T) {
 		Name:         "exception",
 		Kind:         0,
 		TimeUnixNano: 1635845334935610000,
-		Relations:    &commonPb.Relation{
+		Relations: &commonPb.Relation{
 			TraceID:      "",
 			ResID:        "0f82da3be2e1c7070c269471fa7aa4a5",
 			ResType:      "exception",
 			ResourceKeys: nil,
 		},
-		Attributes:   att,
-		Message:      "",
+		Attributes: att,
+		Message:    "",
 	}
 	eventsResult := eventpb.GetEventsResult{
 		Items: []*oapPb.Event{&spanEvent},
@@ -267,5 +267,5 @@ func TestExceptionService_fetchErdaErrorFromES(t *testing.T) {
 	if items == nil || len(items) != 1 {
 		t.Errorf("assert result failed")
 	}
-		
+
 }

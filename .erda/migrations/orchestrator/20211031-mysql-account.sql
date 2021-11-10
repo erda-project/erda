@@ -1,3 +1,7 @@
+UPDATE tb_addon_instance SET kms_key = '' WHERE kms_key IS NULL;
+
+ALTER TABLE tb_addon_instance MODIFY COLUMN `kms_key` VARCHAR(64) NOT NULL DEFAULT '' COMMENT 'kms key id';
+
 ALTER TABLE tb_addon_attachment
     add column mysql_account_id varchar(36) NOT NULL DEFAULT '' COMMENT 'mysql account in use';
 ALTER TABLE tb_addon_attachment
