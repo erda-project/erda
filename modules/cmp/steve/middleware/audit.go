@@ -268,7 +268,7 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 			for {
 				select {
 				case cmd := <-d.auditReqChan:
-					auditStr += fmt.Sprintf("%s: %s\n", cmd.start.Format(time.RFC3339), cmd.cmd)
+					auditStr += fmt.Sprintf("\n%s: %s", cmd.start.Format(time.RFC3339), cmd.cmd)
 					if len(auditStr) > maxAuditLength {
 						break LOOP
 					}

@@ -15,7 +15,6 @@
 package middleware
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -599,71 +598,7 @@ func Test_dispatcher_SwapLastTwoCharacter(t *testing.T) {
 		})
 	}
 }
-
 func Test_dispatcher_reverseContains(t *testing.T) {
-	type fields struct {
-		ctx            context.Context
-		closeChan      chan struct{}
-		queue          Queue
-		cursorLine     int
-		cursorIdx      int
-		cursorBufIdx   int
-		length         int
-		buf            []byte
-		searchBuf      []byte
-		inputBuf       []byte
-		inputBufLength int
-		searchIdx      int
-		BufferMaxSize  int
-		executeCommand string
-		auditReqChan   chan *cmdWithTimestamp
-		state          int
-	}
-	type args struct {
-		str    string
-		substr string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
-		want1  int
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &dispatcher{
-				ctx:            tt.fields.ctx,
-				closeChan:      tt.fields.closeChan,
-				queue:          tt.fields.queue,
-				cursorLine:     tt.fields.cursorLine,
-				cursorIdx:      tt.fields.cursorIdx,
-				cursorBufIdx:   tt.fields.cursorBufIdx,
-				length:         tt.fields.length,
-				buf:            tt.fields.buf,
-				searchBuf:      tt.fields.searchBuf,
-				inputBuf:       tt.fields.inputBuf,
-				inputBufLength: tt.fields.inputBufLength,
-				searchIdx:      tt.fields.searchIdx,
-				BufferMaxSize:  tt.fields.BufferMaxSize,
-				executeCommand: tt.fields.executeCommand,
-				auditReqChan:   tt.fields.auditReqChan,
-				state:          tt.fields.state,
-			}
-			got, got1 := d.reverseContains(tt.args.str, tt.args.substr)
-			if got != tt.want {
-				t.Errorf("reverseContains() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("reverseContains() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func Test_dispatcher_reverseContains1(t *testing.T) {
 	type args struct {
 		str    string
 		substr string
@@ -694,6 +629,78 @@ func Test_dispatcher_reverseContains1(t *testing.T) {
 			}
 			if got1 != tt.want1 {
 				t.Errorf("reverseContains() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_commandQueue_Set(t *testing.T) {
+	type fields struct {
+		cmds    []string
+		length  int
+		maxSize int
+	}
+	type args struct {
+		i   int
+		str string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name:   "1",
+			fields: fields{cmds: []string{"12", "23"}},
+			args: args{
+				i:   0,
+				str: "34",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &commandQueue{
+				cmds:    tt.fields.cmds,
+				length:  tt.fields.length,
+				maxSize: tt.fields.maxSize,
+			}
+			if err := c.Set(tt.args.i, tt.args.str); (err != nil) != tt.wantErr {
+				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_dispatcher_removeAndStore(t *testing.T) {
+	type args struct {
+		start int
+		end   int
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				start: 1,
+				end:   3,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := testDispatcher
+			d.buf = []byte(" 123 321")
+			d.length = 7
+			d.removeAndStore(tt.args.start, tt.args.end)
+			if string(d.buf[startIdx:startIdx+d.length]) != " 321" {
+				t.Errorf("remove error")
 			}
 		})
 	}
