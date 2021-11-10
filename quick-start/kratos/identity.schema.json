@@ -26,16 +26,24 @@
             }
           }
         },
-        "name": {
-          "type": "object",
-          "properties": {
-            "first": {
-              "type": "string"
-            },
-            "last": {
-              "type": "string"
+        "username": {
+          "type": "string",
+          "ory.sh/kratos": {
+            "credentials": {
+              "password": {
+                "identifier": true
+              }
             }
           }
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
         }
       },
       "required": [
