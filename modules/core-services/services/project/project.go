@@ -59,8 +59,8 @@ type Option func(*Project)
 // New 新建 Project 实例，通过 Project 实例操作企业资源
 func New(options ...Option) *Project {
 	project := &Project{
-		memberCache: NewCache(time.Minute * 15),
-		quotaCache:  NewCache(time.Minute * 15),
+		memberCache: NewCache(time.Minute),
+		quotaCache:  NewCache(time.Minute),
 	}
 	for _, f := range options {
 		f(project)
