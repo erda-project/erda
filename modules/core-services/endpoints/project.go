@@ -182,6 +182,11 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
 	}
 
+	if err = r.ParseForm(); err != nil {
+		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
+	}
+	withQuota := r.URL.Query().Get("withQuota")
+
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	internalClient := r.Header.Get(httputil.InternalHeader)
 	if internalClient == "" {
@@ -216,7 +221,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	project, err := e.project.Get(ctx, projectID, vars["withQuota"] == "true")
+	project, err := e.project.Get(ctx, projectID, withQuota == "true")
 	if err != nil {
 		if err == dao.ErrNotFoundProject {
 			return apierrors.ErrGetProject.NotFound().ToResp(), nil

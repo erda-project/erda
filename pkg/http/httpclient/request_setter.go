@@ -27,7 +27,7 @@ func SetParams(params url.Values) RequestSetter {
 			r.params = make(url.Values)
 		}
 		for k, v := range params {
-			r.params[k] = append(r.params[k], v...)
+			r.params[k] = v
 		}
 	}
 }
