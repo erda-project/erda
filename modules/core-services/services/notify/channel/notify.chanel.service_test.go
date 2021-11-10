@@ -528,3 +528,67 @@ type MockTran struct {
 func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 	return ""
 }
+
+func Test_notifyChannelService_GetNotifyChannelEnabledStatus(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		req *pb.GetNotifyChannelEnabledStatusRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.GetNotifyChannelEnabledStatusRequest{}}, true},
+		{"case2", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "error"}}, true},
+		{"case3", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "nil"}}, true},
+		{"case4", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "hasEnabled"}}, true},
+		{"case5", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "scopeError"}}, true},
+		{"case5", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "enableNil"}}, false},
+		{"case6", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "test"}}, false},
+		{"case7", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "testNotSame"}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ncdb *db.NotifyChannelDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+				if id == "error" {
+					return nil, errors.New("error")
+				}
+				if id == "nil" {
+					return nil, nil
+				}
+				if id == "hasEnabled" {
+					return &model.NotifyChannel{Id: id, IsEnabled: true}, nil
+				}
+				if id == "scopeError" {
+					return &model.NotifyChannel{Id: id, ScopeId: "error"}, nil
+				}
+				if id == "enableNil" {
+					return &model.NotifyChannel{Id: id, ScopeId: "enableNil"}, nil
+				}
+				if id == "testNotSame" {
+					return &model.NotifyChannel{Id: "testNotSame"}, nil
+				}
+				return &model.NotifyChannel{Id: id}, nil
+			})
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
+				if scopeId == "error" {
+					return nil, errors.New("error")
+				}
+				if scopeId == "enableNil" {
+					return nil, nil
+				}
+				return &model.NotifyChannel{Id: "test", Config: "{\"xx\": \"xx\"}"}, nil
+			})
+
+			s := &notifyChannelService{}
+			_, err := s.GetNotifyChannelEnabledStatus(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNotifyChannelEnabledStatus() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}

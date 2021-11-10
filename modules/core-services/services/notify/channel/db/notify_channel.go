@@ -15,8 +15,9 @@
 package db
 
 import (
-	"github.com/jinzhu/gorm"
 	"time"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/common/errors"
