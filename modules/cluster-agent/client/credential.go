@@ -17,10 +17,13 @@ package client
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -37,46 +40,38 @@ var (
 	lock      sync.Mutex
 )
 
-func setAccessKey(ak string) {
+func SetAccessKey(ak string) {
 	lock.Lock()
 	defer lock.Unlock()
 	accessKey = ak
 }
 
-func getAccessKey() string {
+func GetAccessKey() string {
 	return accessKey
 }
 
 func WatchClusterCredential(ctx context.Context, cfg *config.Config) error {
-	rc, err := rest.InClusterConfig()
-	if err != nil {
-		logrus.Errorf("get incluster config error: %v", err)
-		return err
-	}
 
-	cs, err := kubernetes.NewForConfig(rc)
-	if err != nil {
-		logrus.Errorf("create clientset error: %v", err)
-		return err
-	}
+	var (
+		retryWatcher *watchtools.RetryWatcher
+		err          error
+	)
 
-	secInit, err := cs.CoreV1().Secrets(cfg.ErdaNamespace).Get(context.Background(), apistructs.ErdaClusterCredential, v1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("get configmap error: %v", err)
-	}
+	// Wait cluster credential secret ready.
+	for {
+		retryWatcher, err = getInClusterRetryWatcher(cfg.ErdaNamespace)
+		if err != nil {
+			logrus.Errorf("get retry warcher, %v", err)
+		} else if retryWatcher != nil {
+			break
+		}
 
-	// create retry watcher
-	retryWatcher, err := watchtools.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
-		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-			return cs.CoreV1().Secrets(cfg.ErdaNamespace).Watch(context.Background(), v1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential),
-			})
-		},
-	})
-
-	if err != nil {
-		logrus.Errorf("create retry watcher error: %v", err)
-		return err
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Duration(rand.Int()%10) * time.Second):
+			logrus.Warnf("failed to get retry watcher, try agin")
+		}
 	}
 
 	defer retryWatcher.Stop()
@@ -107,15 +102,19 @@ func WatchClusterCredential(ctx context.Context, cfg *config.Config) error {
 				}
 
 				// Access key values doesn't change, skip reconnect
-				if string(ak) == getAccessKey() {
+				if string(ak) == GetAccessKey() {
 					logrus.Info("cluster access key doesn't change, skip")
 					continue
 				}
 
-				logrus.Infof("cluster accesskey change from %s to %s", getAccessKey(), string(ak))
+				if GetAccessKey() == "" {
+					logrus.Infof("get cluster accesskey %s", string(ak))
+				} else {
+					logrus.Infof("cluster accesskey change from %s to %s", GetAccessKey(), string(ak))
+				}
 
 				// change value
-				setAccessKey(string(ak))
+				SetAccessKey(string(ak))
 
 				select {
 				case <-Connected():
@@ -127,4 +126,48 @@ func WatchClusterCredential(ctx context.Context, cfg *config.Config) error {
 			return nil
 		}
 	}
+}
+
+func getInClusterRetryWatcher(ns string) (*watchtools.RetryWatcher, error) {
+	rc, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("get incluster config error: %v", err)
+	}
+
+	cs, err := kubernetes.NewForConfig(rc)
+	if err != nil {
+		return nil, fmt.Errorf("create clientset error: %v", err)
+	}
+
+	// Get or create secret
+	secInit, err := cs.CoreV1().Secrets(ns).Get(context.Background(), apistructs.ErdaClusterCredential, v1.GetOptions{})
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return nil, fmt.Errorf("get secret error: %v", err)
+		}
+		// try to create init cluster credential secret
+		secInit, err = cs.CoreV1().Secrets(ns).Create(context.Background(), &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{Name: apistructs.ErdaClusterCredential},
+			Data:       map[string][]byte{apistructs.ClusterAccessKey: []byte("init")},
+		}, v1.CreateOptions{})
+
+		if err != nil {
+			return nil, fmt.Errorf("create init cluster credential secret error: %v", err)
+		}
+	}
+
+	// create retry watcher
+	retryWatcher, err := watchtools.NewRetryWatcher(secInit.ResourceVersion, &cache.ListWatch{
+		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+			return cs.CoreV1().Secrets(ns).Watch(context.Background(), v1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", apistructs.ErdaClusterCredential),
+			})
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("create retry watcher error: %v", err)
+	}
+
+	return retryWatcher, nil
 }
