@@ -27,11 +27,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tableTabs"
@@ -39,11 +37,11 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var steveServer cmp_interface.SteveServer
+var steveServer cmp.SteveServer
 var mServer metrics.Interface
 
 func (mt *MemInfoTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}

@@ -141,7 +141,11 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		// 创建动作呼出的表单页面
 		c.State["visible"] = true
 		c.State["formData"] = nil
-		result, err := bdl.Bdl.ListTestSpace(int64(projectID), 500, 1)
+		result, err := bdl.Bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
+			ProjectID: int64(projectID),
+			PageNo:    1,
+			PageSize:  500,
+		})
 		if err != nil {
 			return err
 		}

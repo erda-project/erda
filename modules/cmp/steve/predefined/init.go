@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package steve
+package predefined
 
 import (
 	"bytes"
@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	predefinedServiceAccount     = getPredefinedServiceAccount()
-	predefinedClusterRole        = getPredefinedClusterRole()
-	predefinedClusterRoleBinding = getPredefinedClusterRoleBinding()
+	PredefinedServiceAccount     = getPredefinedServiceAccount()
+	PredefinedClusterRole        = getPredefinedClusterRole()
+	PredefinedClusterRoleBinding = getPredefinedClusterRoleBinding()
 
 	erdaSystemEnv   = "ERDA_NAMESPACE"
 	diceSystemEnv   = "DICE_NAMESPACE"
@@ -172,106 +172,3 @@ type UserGroupInfo struct {
 	ServiceAccountName      string
 	ServiceAccountNamespace string
 }
-
-var (
-	ServiceAccountExpression = `
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: erda-org-manager
-  namespace: {{.}}
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: erda-org-ops
-  namespace: {{.}}
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: erda-org-support
-  namespace: {{.}}
-`
-	ClusterRoleExpression = `
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: erda-pod-exec
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - 'pods/exec'
-  verbs:
-  - '*'
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: erda-readonly
-rules:
-- apiGroups:
-  - "*"
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-  - watch
-`
-	ClusterRoleBindingExpression = `
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: erda-readonly
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: erda-readonly
-subjects:
-- kind: Group
-  name: erda-org-support
-- kind: ServiceAccount
-  name: erda-org-support
-  namespace: {{.}}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: erda-pod-exec
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: erda-pod-exec
-subjects:
-- kind: Group
-  name: erda-org-support
-- kind: ServiceAccount
-  name: erda-org-support
-  namespace: {{.}}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: erda-admin
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: Group
-  name: erda-org-manager
-- kind: ServiceAccount
-  name: erda-org-manager
-  namespace: {{.}}
-- kind: Group
-  name: erda-org-ops
-- kind: ServiceAccount
-  name: erda-org-ops
-  namespace: {{.}}
-`
-)

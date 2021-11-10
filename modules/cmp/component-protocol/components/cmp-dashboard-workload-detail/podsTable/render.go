@@ -36,8 +36,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/cmp_interface"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
@@ -52,12 +52,12 @@ func init() {
 }
 
 var (
-	steveServer cmp_interface.SteveServer
+	steveServer cmp.SteveServer
 	mServer     metrics.Interface
 )
 
 func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
-	server, ok := ctx.Service("cmp").(cmp_interface.SteveServer)
+	server, ok := ctx.Service("cmp").(cmp.SteveServer)
 	if !ok {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
@@ -109,16 +109,16 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.server = steveServer
 }
 
-func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var tableState State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &tableState); err != nil {
+	if err = json.Unmarshal(data, &tableState); err != nil {
 		return err
 	}
 	p.State = tableState
@@ -126,37 +126,37 @@ func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) erro
 }
 
 func (p *ComponentPodsTable) DecodeURLQuery() error {
-	urlQuery, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := p.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
 		return err
 	}
-	p.State.PageNo = int(query["pageNo"].(float64))
-	p.State.PageSize = int(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field = sorter["field"].(string)
-	p.State.Sorter.Order = sorter["order"].(string)
+	p.State.PageNo = int(urlQuery["pageNo"].(float64))
+	p.State.PageSize = int(urlQuery["pageSize"].(float64))
+	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field = sorterData["field"].(string)
+	p.State.Sorter.Order = sorterData["order"].(string)
 	return nil
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = p.State.PageNo
-	query["pageSize"] = p.State.PageSize
-	query["sorterData"] = p.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = p.State.PageNo
+	urlQuery["pageSize"] = p.State.PageSize
+	urlQuery["sorterData"] = p.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
-	encoded := base64.StdEncoding.EncodeToString(data)
-	p.State.PodsTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(jsonData)
+	p.State.PodsTableURLQuery = encode
 	return nil
 }
 
@@ -668,9 +668,9 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
-	component.Props = p.Props
-	component.State = map[string]interface{}{
+func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
+	c.Props = p.Props
+	c.State = map[string]interface{}{
 		"clusterName":       p.State.ClusterName,
 		"workloadId":        p.State.WorkloadID,
 		"pageNo":            p.State.PageNo,
@@ -679,10 +679,10 @@ func (p *ComponentPodsTable) Transfer(component *cptype.Component) {
 		"total":             p.State.Total,
 		"podsTableURLQuery": p.State.PodsTableURLQuery,
 	}
-	component.Data = map[string]interface{}{
+	c.Data = map[string]interface{}{
 		"list": p.Data.List,
 	}
-	component.Operations = p.Operations
+	c.Operations = p.Operations
 }
 
 func matchSelector(selector, labels map[string]interface{}) bool {
