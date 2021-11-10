@@ -58,6 +58,8 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateProject.InvalidParameter(errors.Errorf("project name is invalid %s",
 			projectCreateReq.Name)).ToResp(), nil
 	}
+	projectCreateReq.CpuQuota = 0
+	projectCreateReq.MemQuota = 0
 	logrus.Infof("request body: %+v", projectCreateReq)
 	logrus.Infof("request body data: %s", string(bodyData))
 
