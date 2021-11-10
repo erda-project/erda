@@ -345,6 +345,32 @@ func Test_isQuotaChangedOnTheWorkspace(t *testing.T) {
 	}
 }
 
+func Test_getFirstValidOwnerOrLead(t *testing.T) {
+	var members = []model.Member{
+		{
+			UserID: "1",
+			Roles:  []string{"Developer"},
+		}, {
+			UserID: "2",
+			Roles:  []string{"Lead"},
+		}, {
+			UserID: "3",
+			Roles:  []string{"Lead", "Owner"},
+		}, {
+			UserID: "4",
+			Roles:  []string{"Owner"},
+		},
+	}
+	var member *model.Member
+	hitFirstValidOwnerOrLead(member, members)
+
+	member = new(model.Member)
+	hitFirstValidOwnerOrLead(member, members)
+	if member.UserID != "3" {
+		t.Fatal("hit error")
+	}
+}
+
 // TODO We need to turn this ut on after adding the delete portal to the UI
 // func TestDeleteProjectWhenAddonExists(t *testing.T) {
 // 	db := &dao.DBClient{}

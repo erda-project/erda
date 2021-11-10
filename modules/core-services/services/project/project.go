@@ -1474,7 +1474,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			getFirstValidOwnerOrLead(&member, members)
+			hitFirstValidOwnerOrLead(&member, members)
 		}
 
 		owner, ok := ownerM[member.UserID]
@@ -1611,7 +1611,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			getFirstValidOwnerOrLead(&member, members)
+			hitFirstValidOwnerOrLead(&member, members)
 		}
 		userID, err := strconv.ParseUint(member.UserID, 10, 64)
 		if err != nil {
@@ -1658,15 +1658,15 @@ func (p *Project) ListQuotaRecords(ctx context.Context) ([]*apistructs.ProjectQu
 	return records, nil
 }
 
-func getFirstValidOwnerOrLead(member *model.Member, members []model.Member) {
-	if member == nil {
+func hitFirstValidOwnerOrLead(defaultOne *model.Member, members []model.Member) {
+	if defaultOne == nil {
 		return
 	}
 	for _, role_ := range []string{"Owner", "Lead"} {
-		for _, memb := range members {
-			for _, role := range memb.Roles {
+		for _, member := range members {
+			for _, role := range member.Roles {
 				if strings.EqualFold(role, role_) {
-					*member = memb
+					*defaultOne = member
 					return
 				}
 			}
