@@ -460,129 +460,86 @@ func (t *TestPlan) Paging(req apistructs.TestPlanPagingRequest) (*apistructs.Tes
 
 // PagingTestPlanCaseRels 分页查询测试计划内测试用例
 func (t *TestPlan) PagingTestPlanCaseRels(req apistructs.TestPlanCaseRelPagingRequest) (*apistructs.TestPlanCasePagingResponseData, error) {
-	if req.TestPlanID == 0 {
-		return nil, apierrors.ErrPagingTestPlanCaseRels.MissingParameter("testPlanID")
-	}
-	if req.PageNo == 0 {
-		req.PageNo = 1
-	}
-	if req.PageSize == 0 {
-		req.PageSize = 20
+	// query testplan if not queried yet
+	if req.TestPlan == nil {
+		_tp, err := t.Get(req.TestPlanID)
+		if err != nil {
+			return nil, err
+		}
+		req.TestPlan = _tp
 	}
 
-	// 查询测试计划
-	tp, err := t.Get(req.TestPlanID)
+	// get paged planCaseRels
+	rels, total, err := t.db.PagingTestPlanCaseRelations(req)
 	if err != nil {
 		return nil, err
 	}
 
-	// 从关系表根据过滤条件先过滤一次，用 relIDs 作为 测试用例分页查询全量列表
-	// 更新时间起始时间 左闭区间过滤
-	if req.TimestampSecUpdatedAtBegin != nil {
-		t := time.Unix(int64(*req.TimestampSecUpdatedAtBegin), 0)
-		req.UpdatedAtBeginInclude = &t
-	}
-	// 更新时间结束时间 右闭区间过滤
-	if req.TimestampSecUpdatedAtEnd != nil {
-		t := time.Unix(int64(*req.TimestampSecUpdatedAtEnd), 0)
-		req.UpdatedAtEndInclude = &t
-	}
-	// 查询测试集包含子测试集
-	allTestSetIDs, _, err := t.db.ListTestSetsRecursive(apistructs.TestSetListRequest{
-		Recycled:      false,
-		ParentID:      &req.TestSetID,
-		ProjectID:     &tp.ProjectID,
-		NoSubTestSets: false,
-	})
-	rels, err := t.db.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{
-		IDs:                   req.RelIDs,
-		TestPlanIDs:           []uint64{req.TestPlanID},
-		TestSetIDs:            allTestSetIDs,
-		UpdaterIDs:            req.UpdaterIDs,
-		ExecutorIDs:           req.ExecutorIDs,
-		ExecStatuses:          req.ExecStatuses,
-		UpdatedAtBeginInclude: req.UpdatedAtBeginInclude,
-		UpdatedAtEndInclude:   req.UpdatedAtEndInclude,
-		IdentityInfo:          req.IdentityInfo,
-	})
-	if err != nil {
-		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
-	}
-	if len(rels) == 0 {
-		return &apistructs.TestPlanCasePagingResponseData{
-			Total:    0,
-			TestSets: nil,
-		}, nil
-	}
-	var relTcIDs []uint64
-	testSetCaseMap := map[uint64][]uint64{}        // key: setID，value: [caseID]
-	relMap := make(map[uint64]dao.TestPlanCaseRel) // key: tcID, value: rel
-	for _, rel := range rels {
-		relTcIDs = append(relTcIDs, rel.TestCaseID)
-		relMap[rel.TestCaseID] = rel
-		testSetCaseMap[rel.TestSetID] = append(testSetCaseMap[rel.TestSetID], rel.TestCaseID)
-	}
-	// 从测试用例获取用例相关数据
-	pagingResult, err := t.testCaseSvc.PagingTestCases(apistructs.TestCasePagingRequest{
-		ProjectID:      tp.ProjectID,
-		TestSetID:      req.TestSetID,
-		TestCaseIDs:    relTcIDs,
-		TestSetCaseMap: testSetCaseMap,
-		Query:          req.Query,
-		Priorities:     req.Priorities,
-		UpdaterIDs:     req.UpdaterIDs,
-		//UpdatedAtBeginInclude: req.UpdatedAtBeginInclude,
-		//UpdatedAtEndInclude:   req.UpdatedAtEndInclude,
-		OrderByPriorityAsc:   req.OrderByPriorityAsc,
-		OrderByPriorityDesc:  req.OrderByPriorityDesc,
-		OrderByUpdaterIDAsc:  req.OrderByUpdaterIDAsc,
-		OrderByUpdaterIDDesc: req.OrderByUpdaterIDDesc,
-		OrderByUpdatedAtAsc:  req.OrderByUpdatedAtAsc,
-		OrderByUpdatedAtDesc: req.OrderByUpdatedAtDesc,
-		OrderByIDAsc:         req.OrderByIDAsc,
-		OrderByIDDesc:        req.OrderByIDDesc,
-		PageNo:               req.PageNo,
-		PageSize:             req.PageSize,
-	})
-	if err != nil {
-		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
+	if total == 0 {
+		return &apistructs.TestPlanCasePagingResponseData{}, nil
 	}
 
-	// 组装新的数据结构，TestCase -> TestPlanCaseRel
-	var newTestSets []apistructs.TestSetWithPlanCaseRels
-	for _, ts := range pagingResult.TestSets {
-		newTestSet := apistructs.TestSetWithPlanCaseRels{
-			TestSetID: ts.TestSetID,
-			Directory: ts.Directory,
-			TestCases: nil,
-		}
-		for _, tc := range ts.TestCases {
-			rel, ok := relMap[tc.ID]
-			if !ok {
-				return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(fmt.Errorf("not found testcase in testPlanCaseRelation, testCaseID: %d", tc.ID))
+	// get testsets from paged testcases
+	testSets, err := t.db.ListTestSets(apistructs.TestSetListRequest{
+		Recycled:  false,
+		ProjectID: &req.TestPlan.ProjectID,
+		TestSetIDs: func() (tsIDs []uint64) {
+			for _, rel := range rels {
+				tsIDs = append(tsIDs, rel.TestSetID)
 			}
-			newRel := t.ConvertRel(&rel, &tc)
-			newTestSet.TestCases = append(newTestSet.TestCases, *newRel)
-			pagingResult.UserIDs = append(pagingResult.UserIDs, rel.CreatorID, rel.UpdaterID, rel.ExecutorID)
-		}
-		// inject total test case count without filter
-		allRelsWithoutFilter, err := t.db.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{
-			TestPlanIDs: []uint64{tp.ID},
-			TestSetIDs:  []uint64{ts.TestSetID},
-			IDOnly:      true,
-		})
-		if err != nil {
-			return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(fmt.Errorf("failed to get all rels count under testSet, testSetID: %d, err: %v", ts.TestSetID, err))
-		}
-		newTestSet.TestCaseCountWithoutFilter = uint64(len(allRelsWithoutFilter))
-		newTestSets = append(newTestSets, newTestSet)
+			return
+		}(),
+		NoSubTestSets: true,
+	})
+	if err != nil {
+		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
 	}
 
-	return &apistructs.TestPlanCasePagingResponseData{
-		Total:    pagingResult.Total,
-		TestSets: newTestSets,
-		UserIDs:  strutil.DedupSlice(pagingResult.UserIDs),
-	}, nil
+	// list(testCase) -> list(testSet with testCases)
+	mapOfTestSetIDAndDir := make(map[uint64]string)
+	for _, ts := range testSets {
+		mapOfTestSetIDAndDir[ts.ID] = ts.Directory
+	}
+	resultTestSetMap := make(map[uint64]apistructs.TestSetWithPlanCaseRels)
+	var testSetIDOrdered []uint64
+
+	// map: ts.ID -> TestSetWithCases ([]tc)
+	for _, rel := range rels {
+		// order by testSetID
+		if _, ok := resultTestSetMap[rel.TestSetID]; !ok {
+			testSetIDOrdered = append(testSetIDOrdered, rel.TestSetID)
+		}
+		// fulfill testSetWithCase
+		tmp := resultTestSetMap[rel.TestSetID]
+		tmp.Directory = mapOfTestSetIDAndDir[rel.TestSetID]
+		tmp.TestSetID = rel.TestSetID
+		tmp.TestCases = append(tmp.TestCases, rel.ConvertForPaging())
+		resultTestSetMap[rel.TestSetID] = tmp
+	}
+	resultTestSets := make([]apistructs.TestSetWithPlanCaseRels, 0)
+	for _, tsID := range testSetIDOrdered {
+		if ts, ok := resultTestSetMap[tsID]; ok {
+			resultTestSets = append(resultTestSets, ts)
+		}
+	}
+
+	// get all user ids
+	var allUserIDs []string
+	for _, ts := range resultTestSets {
+		for _, rel := range ts.TestCases {
+			allUserIDs = append(allUserIDs, rel.CreatorID, rel.UpdaterID, rel.ExecutorID)
+		}
+	}
+	allUserIDs = strutil.DedupSlice(allUserIDs, true)
+
+	// result
+	result := apistructs.TestPlanCasePagingResponseData{
+		Total:    total,
+		TestSets: resultTestSets,
+		UserIDs:  allUserIDs,
+	}
+
+	return &result, nil
 }
 
 func (t *TestPlan) ListTestPlanCaseRels(req apistructs.TestPlanCaseRelListRequest) (rels []apistructs.TestPlanCaseRel, err error) {
