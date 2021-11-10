@@ -159,13 +159,6 @@ EOABORT
 )"
 fi
 
-if ! command -v nc >/dev/null; then
-    abort "$(cat <<EOABORT
-You must install netcat before installing Erda.
-EOABORT
-)"
-fi
-
 INSTALL_LOCATION="/opt/erda-quickstart"
 ERDA_VERSION="1.2.1"
 ERDA_RELEASE="https://static.erda.cloud/quick-start/$ERDA_VERSION/release.tar.gz"
