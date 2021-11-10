@@ -68,3 +68,7 @@ func (s *notifyChannelServiceWrapper) GetNotifyChannelEnabled(ctx context.Contex
 func (s *notifyChannelServiceWrapper) UpdateNotifyChannelEnabled(ctx context.Context, req *pb.UpdateNotifyChannelEnabledRequest) (*pb.UpdateNotifyChannelEnabledResponse, error) {
 	return s.client.UpdateNotifyChannelEnabled(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *notifyChannelServiceWrapper) GetNotifyChannelEnabledStatus(ctx context.Context, req *pb.GetNotifyChannelEnabledStatusRequest) (*pb.GetNotifyChannelEnabledStatusResponse, error) {
+	return s.client.GetNotifyChannelEnabledStatus(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

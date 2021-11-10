@@ -13,6 +13,10 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*GetNotifyChannelEnabledStatusRequest)(nil)
+var _ json.Unmarshaler = (*GetNotifyChannelEnabledStatusRequest)(nil)
+var _ json.Marshaler = (*GetNotifyChannelEnabledStatusResponse)(nil)
+var _ json.Unmarshaler = (*GetNotifyChannelEnabledStatusResponse)(nil)
 var _ json.Marshaler = (*UpdateNotifyChannelEnabledRequest)(nil)
 var _ json.Unmarshaler = (*UpdateNotifyChannelEnabledRequest)(nil)
 var _ json.Marshaler = (*UpdateNotifyChannelEnabledResponse)(nil)
@@ -53,6 +57,42 @@ var _ json.Marshaler = (*NotifyChannelProviderType)(nil)
 var _ json.Unmarshaler = (*NotifyChannelProviderType)(nil)
 var _ json.Marshaler = (*NotifyChannel)(nil)
 var _ json.Unmarshaler = (*NotifyChannel)(nil)
+
+// GetNotifyChannelEnabledStatusRequest implement json.Marshaler.
+func (m *GetNotifyChannelEnabledStatusRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyChannelEnabledStatusRequest implement json.Marshaler.
+func (m *GetNotifyChannelEnabledStatusRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetNotifyChannelEnabledStatusResponse implement json.Marshaler.
+func (m *GetNotifyChannelEnabledStatusResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyChannelEnabledStatusResponse implement json.Marshaler.
+func (m *GetNotifyChannelEnabledStatusResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // UpdateNotifyChannelEnabledRequest implement json.Marshaler.
 func (m *UpdateNotifyChannelEnabledRequest) MarshalJSON() ([]byte, error) {

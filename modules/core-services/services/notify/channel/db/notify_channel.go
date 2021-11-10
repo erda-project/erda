@@ -16,6 +16,7 @@ package db
 
 import (
 	"github.com/jinzhu/gorm"
+	"time"
 
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -136,6 +137,25 @@ func (db *NotifyChannelDB) UpdateById(notifyChannel *model.NotifyChannel) (*mode
 	return notifyChannel, nil
 }
 
+func (db *NotifyChannelDB) SwitchEnable(currentNotifyChannel, switchNotifyChannel *model.NotifyChannel) error {
+	tx := db.Begin()
+	currentNotifyChannel.IsEnabled = true
+	currentNotifyChannel.UpdatedAt = time.Now()
+	switchNotifyChannel.IsEnabled = false
+	switchNotifyChannel.UpdatedAt = time.Now()
+	err := db.db().Model(currentNotifyChannel).Save(currentNotifyChannel).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.NewDatabaseError(err)
+	}
+	err = db.db().Model(switchNotifyChannel).Save(switchNotifyChannel).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.NewDatabaseError(err)
+	}
+	return tx.Commit().Error
+}
+
 func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, scopeId, scopeType string) (int64, []model.NotifyChannel, error) {
 	var channels []model.NotifyChannel
 	whereDB := db.db().
@@ -144,7 +164,7 @@ func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, scopeId, scopeType
 		Where("`scope_type` = ?", scopeType)
 
 	err := whereDB.
-		Order("`updated_at` DESC", true).
+		Order("`created_at` DESC", true).
 		Offset(offset).
 		Limit(pageSize).
 		Find(&channels).

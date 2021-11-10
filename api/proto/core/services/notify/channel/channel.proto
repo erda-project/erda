@@ -88,6 +88,24 @@ service NotifyChannelService {
       path: "/api/notify-channel/enabled"
     };
   }
+
+  rpc GetNotifyChannelEnabledStatus (GetNotifyChannelEnabledStatusRequest) returns (GetNotifyChannelEnabledStatusResponse)  {
+    option (google.api.http)     = {
+      get: "/api/notify-channel/enabled/status",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/notify-channel/enabled/status"
+    };
+  }
+}
+
+message GetNotifyChannelEnabledStatusRequest {
+  string id   = 1;
+  string type = 2;
+}
+
+message GetNotifyChannelEnabledStatusResponse {
+  bool hasEnable = 1;
 }
 
 message UpdateNotifyChannelEnabledRequest {

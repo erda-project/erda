@@ -121,7 +121,7 @@ func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, err
 	}
-	return &pb.CreateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel)}, nil
+	return &pb.CreateNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel, false)}, nil
 }
 
 func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.GetNotifyChannelsRequest) (*pb.GetNotifyChannelsResponse, error) {
@@ -142,23 +142,7 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	total, channels, err := s.NotifyChannelDB.ListByPage((req.PageNo-1)*req.PageSize, req.PageSize, orgId, scopeType)
 	var pbChannels []*pb.NotifyChannel
 	for _, channel := range channels {
-		notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), &channel)
-		c, err := s.ConfigValidate(notifyChannel.ChannelProviderType.Name, notifyChannel.Config)
-		if err != nil {
-			return nil, err
-		}
-		decrypt, err := s.p.bdl.KMSDecrypt(apistructs.KMSDecryptRequest{
-			DecryptRequest: kmstypes.DecryptRequest{
-				KeyID:            channel.KmsKey,
-				CiphertextBase64: c["need_kms_data"].GetStringValue(),
-			}})
-		decodeString, err := base64.StdEncoding.DecodeString(decrypt.PlaintextBase64)
-		if err != nil {
-			return nil, err
-		}
-		notifyChannel.Config[c["need_kms_key"].GetStringValue()] = structpb.NewStringValue(string(decodeString))
-		delete(notifyChannel.Config, "need_kms_key")
-		delete(notifyChannel.Config, "need_kms_data")
+		notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), &channel, false)
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +226,7 @@ func (s *notifyChannelService) UpdateNotifyChannel(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, pkgerrors.NewDatabaseError(err)
 	}
-	notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), update)
+	notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), update, true)
 	if needKmsData != "" && needKmsKey != "" {
 		notifyChannel.Config[needKmsKey] = structpb.NewStringValue(needKmsData)
 	}
@@ -286,7 +270,7 @@ func (s *notifyChannelService) GetNotifyChannel(ctx context.Context, req *pb.Get
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
 
-	return &pb.GetNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel)}, nil
+	return &pb.GetNotifyChannelResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), channel, true)}, nil
 }
 
 func (s *notifyChannelService) DeleteNotifyChannel(ctx context.Context, req *pb.DeleteNotifyChannelRequest) (*pb.DeleteNotifyChannelResponse, error) {
@@ -367,7 +351,7 @@ func (s *notifyChannelService) GetNotifyChannelEnabled(ctx context.Context, req 
 	if err != nil {
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
-	return &pb.GetNotifyChannelEnabledResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), data)}, nil
+	return &pb.GetNotifyChannelEnabledResponse{Data: s.CovertToPbNotifyChannel(apis.Language(ctx), data, true)}, nil
 }
 
 func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, req *pb.UpdateNotifyChannelEnabledRequest) (*pb.UpdateNotifyChannelEnabledResponse, error) {
@@ -384,12 +368,18 @@ func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, r
 	}
 
 	if channel.IsEnabled == false && req.Enable == true {
-		enabledCount, err := s.NotifyChannelDB.GetCountByScopeAndType(channel.ScopeId, channel.ScopeType, channel.Type)
+		// open action
+		enableChannel, err := s.NotifyChannelDB.GetByScopeAndType(channel.ScopeId, channel.ScopeType, channel.Type)
 		if err != nil {
 			return nil, pkgerrors.NewInternalServerError(err)
 		}
-		if enabledCount >= 1 {
-			return &pb.UpdateNotifyChannelEnabledResponse{}, pkgerrors.NewWarnError(fmt.Sprintf(s.p.I18n.Text(apis.Language(ctx), "enabled_exception"), s.p.I18n.Text(apis.Language(ctx), channel.Type)))
+		if enableChannel != nil && enableChannel.Id != channel.Id {
+			// switch channel
+			err := s.NotifyChannelDB.SwitchEnable(channel, enableChannel)
+			if err != nil {
+				return nil, pkgerrors.NewInternalServerError(err)
+			}
+			return &pb.UpdateNotifyChannelEnabledResponse{Id: channel.Id, Enable: req.Enable}, nil
 		}
 	}
 	channel.IsEnabled = req.Enable
@@ -399,6 +389,35 @@ func (s *notifyChannelService) UpdateNotifyChannelEnabled(ctx context.Context, r
 		return nil, pkgerrors.NewInternalServerError(err)
 	}
 	return &pb.UpdateNotifyChannelEnabledResponse{Id: updated.Id, Enable: updated.IsEnabled}, nil
+}
+
+func (s *notifyChannelService) GetNotifyChannelEnabledStatus(ctx context.Context, req *pb.GetNotifyChannelEnabledStatusRequest) (*pb.GetNotifyChannelEnabledStatusResponse, error) {
+	if req.Id == "" {
+		return nil, pkgerrors.NewMissingParameterError("id")
+	}
+	channel, err := s.NotifyChannelDB.GetById(req.Id)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+	if channel == nil {
+		return nil, errors.New(fmt.Sprintf("not found channel by id (%s)", req.Id))
+	}
+	if channel.IsEnabled {
+		return nil, pkgerrors.NewWarnError("this channel is enabled.")
+	}
+
+	enableChannel, err := s.NotifyChannelDB.GetByScopeAndType(channel.ScopeId, channel.ScopeType, channel.Type)
+	if err != nil {
+		return nil, pkgerrors.NewInternalServerError(err)
+	}
+	if enableChannel == nil {
+		return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: false}, nil
+	}
+	if enableChannel.Id != channel.Id {
+		// has enabled
+		return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: true}, nil
+	}
+	return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: false}, nil
 }
 
 func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
@@ -425,7 +444,7 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 	}
 }
 
-func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 	if channel == nil {
 		return nil
 	}
@@ -434,12 +453,14 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 	if err != nil {
 		return nil
 	}
-	var config map[string]*structpb.Value
-	err = json.Unmarshal([]byte(channel.Config), &config)
-	if err != nil {
-		return nil
+	if needConfig {
+		var config map[string]*structpb.Value
+		err = json.Unmarshal([]byte(channel.Config), &config)
+		if err != nil {
+			return nil
+		}
+		ncpb.Config = config
 	}
-	ncpb.Config = config
 	ncpb.Type = &pb.NotifyChannelType{
 		Name:        channel.Type,
 		DisplayName: s.p.I18n.Text(lang, channel.Type),

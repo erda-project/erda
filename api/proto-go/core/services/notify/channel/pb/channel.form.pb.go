@@ -12,6 +12,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelEnabledStatusRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelEnabledStatusResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateNotifyChannelEnabledRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateNotifyChannelEnabledResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelEnabledRequest)(nil)
@@ -32,6 +34,38 @@ var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelTypeResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelProviderType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannel)(nil)
+
+// GetNotifyChannelEnabledStatusRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyChannelEnabledStatusRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				m.Id = vals[0]
+			case "type":
+				m.Type = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetNotifyChannelEnabledStatusResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyChannelEnabledStatusResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "hasEnable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.HasEnable = val
+			}
+		}
+	}
+	return nil
+}
 
 // UpdateNotifyChannelEnabledRequest implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateNotifyChannelEnabledRequest) UnmarshalURLValues(prefix string, values url.Values) error {
