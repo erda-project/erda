@@ -65,6 +65,7 @@ func New(options ...Option) *Project {
 	for _, f := range options {
 		f(project)
 	}
+	go project.updateCache()
 	return project
 }
 
@@ -1695,6 +1696,17 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 	return strings.Join(messages, "; "), false
 }
 
+func (p *Project) updateCache() {
+	for {
+		select {
+		case projectID := <-p.quotaCache.C:
+			_, _, _ = p.updateQuotaItemCache(projectID)
+		case projectID := <-p.memberCache.C:
+			_, _, _ = p.updateMemberCache(projectID)
+		}
+	}
+}
+
 func (p *Project) retrieveQuotaItem(projectID uint64) (*quotaCache, bool, error) {
 	value, ok := p.quotaCache.Load(projectID)
 	// if not found in cache, retrieve from db and update cache
@@ -1702,22 +1714,24 @@ func (p *Project) retrieveQuotaItem(projectID uint64) (*quotaCache, bool, error)
 		return p.updateQuotaItemCache(projectID)
 	}
 
-	v, ok := value.(*quotaCache)
+	cacheItem, ok := value.(*CacheItme)
 	if !ok {
-		panic(fmt.Sprintf("quota cache item type is error: %T", value))
+		panic(fmt.Sprintf("cache item type is error: %T", cacheItem))
 	}
+
 	// if cache is expired, update it and return current value
-	if v.IsExpired() {
+	if cacheItem.IsExpired() {
 		p.quotaCache.Delete(projectID)
-		go p.updateQuotaItemCache(projectID)
+		select {
+		case p.quotaCache.C <- projectID:
+		default:
+			logrus.Warnln("channel is blocked, update quota cache is skipped")
+		}
 	}
-	return v, true, nil
+	return cacheItem.Object.(*quotaCache), true, nil
 }
 
 func (p *Project) updateQuotaItemCache(projectID uint64) (*quotaCache, bool, error) {
-	p.quotaCache.Lock()
-	defer p.quotaCache.Release()
-
 	var (
 		project model.Project
 		quota   apistructs.ProjectQuota
@@ -1741,14 +1755,17 @@ func (p *Project) updateQuotaItemCache(projectID uint64) (*quotaCache, bool, err
 		return nil, false, nil
 	}
 
-	return &quotaCache{
+	item := &quotaCache{
 		ProjectID:          projectID,
 		ProjectName:        project.Name,
 		ProjectDisplayName: project.DisplayName,
 		ProjectDesc:        project.Desc,
 		CPUQuota:           quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota,
 		MemQuota:           quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota,
-	}, true, nil
+	}
+
+	p.quotaCache.Store(projectID, &CacheItme{Object: item})
+	return item, true, nil
 }
 
 func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, error) {
@@ -1758,22 +1775,23 @@ func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, erro
 		return p.updateMemberCache(projectID)
 	}
 
-	v, ok := value.(*memberCache)
+	cacheItem, ok := value.(*CacheItme)
 	if !ok {
 		panic(fmt.Sprintf("member cache item type is error: %T", value))
 	}
 	// if cache is expired, update it and return current value
-	if v.IsExpired() {
+	if cacheItem.IsExpired() {
 		p.memberCache.Delete(projectID)
-		go p.updateMemberCache(projectID)
+		select {
+		case p.memberCache.C <- projectID:
+		default:
+			logrus.Warnln("channel is blocked, update quota cache is skipped")
+		}
 	}
-	return v, true, nil
+	return cacheItem.(*memberCache), true, nil
 }
 
 func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error) {
-	p.memberCache.Lock()
-	defer p.memberCache.Release()
-
 	var (
 		l             = logrus.WithField("func", "*Project.updateMemberCache")
 		memberListReq = apistructs.MemberListRequest{
@@ -1801,11 +1819,13 @@ func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error
 		if err != nil {
 			return nil, false, nil
 		}
-		return &memberCache{
+		member := &memberCache{
 			ProjectID: projectID,
 			UserID:    uint(userID),
 			Name:      member.Name,
 			Nick:      member.Nick,
-		}, true, nil
+		}
+		p.memberCache.Store(projectID, &CacheItme{Object: member})
+		return member, true, nil
 	}
 }

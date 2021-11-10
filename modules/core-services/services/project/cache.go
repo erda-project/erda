@@ -22,31 +22,32 @@ import (
 type Cache struct {
 	sync.Map
 	expiredDuration time.Duration
-	c               chan struct{}
+	C               chan uint64
 }
 
 func NewCache(expiredDuration time.Duration) *Cache {
-	return &Cache{expiredDuration: expiredDuration, c: make(chan struct{}, 10)}
+	return &Cache{expiredDuration: expiredDuration, C: make(chan uint64, 10)}
 }
 
 func (c *Cache) Store(key interface{}, value interface{}) {
 	c.Map.Store(key, value)
-	if v, ok := value.(CacheItme); ok {
+	if v, ok := value.(*CacheItme); ok {
 		v.UpdateExpiredTime(c.expiredDuration)
 	}
 }
 
-func (c *Cache) Lock() {
-	c.c <- struct{}{}
+type CacheItme struct {
+	expiredTime time.Time
+
+	Object interface{}
 }
 
-func (c *Cache) Release() {
-	<-c.c
+func (i *CacheItme) IsExpired() bool {
+	return i.expiredTime.Before(time.Now())
 }
 
-type CacheItme interface {
-	IsExpired() bool
-	UpdateExpiredTime(duration time.Duration)
+func (i *CacheItme) UpdateExpiredTime(duration time.Duration) {
+	i.expiredTime = time.Now().Add(duration)
 }
 
 type quotaCache struct {
@@ -56,16 +57,6 @@ type quotaCache struct {
 	ProjectDesc        string
 	CPUQuota           uint64
 	MemQuota           uint64
-
-	expiredTime time.Time
-}
-
-func (i *quotaCache) IsExpired() bool {
-	return i.expiredTime.Before(time.Now())
-}
-
-func (i *quotaCache) UpdateExpiredTime(duration time.Duration) {
-	i.expiredTime = time.Now().Add(duration)
 }
 
 type memberCache struct {
@@ -73,14 +64,4 @@ type memberCache struct {
 	UserID    uint
 	Name      string
 	Nick      string
-
-	expiredTime time.Time
-}
-
-func (i *memberCache) IsExpired() bool {
-	return i.expiredTime.Before(time.Now())
-}
-
-func (i *memberCache) UpdateExpiredTime(duration time.Duration) {
-	i.expiredTime = time.Now().Add(duration)
 }

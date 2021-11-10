@@ -24,15 +24,11 @@ func TestNewCache(t *testing.T) {
 	quotaC := NewCache(time.Millisecond * 200)
 	for i := 0; i < 50; i++ {
 		member := new(memberCache)
-		memberC.Lock()
 		memberC.Store(i, member)
-		memberC.Release()
 	}
 	for i := 0; i < 20; i++ {
 		quota := new(quotaCache)
-		quotaC.Lock()
 		quotaC.Store(i, quota)
-		quotaC.Release()
 	}
 	time.Sleep(time.Second)
 	for i := 0; i < 20; i++ {
