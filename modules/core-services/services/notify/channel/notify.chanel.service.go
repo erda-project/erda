@@ -415,7 +415,7 @@ func (s *notifyChannelService) GetNotifyChannelEnabledStatus(ctx context.Context
 	}
 	if enableChannel.Id != channel.Id {
 		// has enabled
-		return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: true}, nil
+		return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: true, EnableChannelName: enableChannel.Name}, nil
 	}
 	return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: false}, nil
 }

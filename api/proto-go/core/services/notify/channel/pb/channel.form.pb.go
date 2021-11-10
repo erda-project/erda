@@ -61,6 +61,8 @@ func (m *GetNotifyChannelEnabledStatusResponse) UnmarshalURLValues(prefix string
 					return err
 				}
 				m.HasEnable = val
+			case "enableChannelName":
+				m.EnableChannelName = vals[0]
 			}
 		}
 	}

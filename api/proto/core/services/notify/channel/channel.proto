@@ -105,7 +105,8 @@ message GetNotifyChannelEnabledStatusRequest {
 }
 
 message GetNotifyChannelEnabledStatusResponse {
-  bool hasEnable = 1;
+  bool   hasEnable         = 1;
+  string enableChannelName = 2;
 }
 
 message UpdateNotifyChannelEnabledRequest {
