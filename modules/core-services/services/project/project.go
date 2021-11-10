@@ -662,7 +662,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 }
 
 // Get 获取项目
-func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
+func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -677,12 +677,14 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	// 查询项目 quota
-	p.fetchQuota(&projectDTO)
-	// 查询项目下的 pod 的 request 数据
-	p.fetchPodInfo(&projectDTO)
-	// 根据已有统计值计算比率
-	p.calcuRequestRate(&projectDTO)
+	if withQuota {
+		// 查询项目 quota
+		p.fetchQuota(&projectDTO)
+		// 查询项目下的 pod 的 request 数据
+		p.fetchPodInfo(&projectDTO)
+		// 根据已有统计值计算比率
+		p.calcuRequestRate(&projectDTO)
+	}
 
 	return &projectDTO, nil
 }
