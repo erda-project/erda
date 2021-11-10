@@ -1297,7 +1297,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 	}
 
 	var clusterConfig = make(map[string]string)
-	_ = json.Unmarshal([]byte(project.RollbackConfig), &clusterConfig)
+	_ = json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig)
 
 	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
 

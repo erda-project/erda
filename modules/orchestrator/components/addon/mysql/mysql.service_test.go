@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )
 
@@ -179,7 +180,7 @@ func (m *MockPerm) CreateAuditEvent(audits *apistructs.AuditCreateRequest) error
 	return nil
 }
 
-func (m *MockPerm) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
+func (m *MockPerm) GetProject(id uint64, setter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
 	return &apistructs.ProjectDTO{
 		ID:   id,
 		Name: "test-project",
