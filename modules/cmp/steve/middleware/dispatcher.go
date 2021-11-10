@@ -42,12 +42,6 @@ const (
 	startIdx   = 1
 	maxBufSize = 2048
 )
-const (
-// state
-//normal = iota
-//reverseSearch
-//reverseSearched
-)
 
 // start with index 1
 type commandQueue struct {
@@ -207,14 +201,14 @@ func (d *dispatcher) RemoveBackwardAll() error {
 }
 
 // removeAndStore remove buf [start,end] and store it
-func (d *dispatcher) removeAndStore(start, end int) {
-	if end < start || start <= 0 || end <= 0 {
+func (d *dispatcher) removeAndStore(startIdx, endIdx int) {
+	if endIdx < startIdx || startIdx <= 0 || endIdx <= 0 {
 		return
 	}
-	newLen := end - start + 1
+	newLen := endIdx - startIdx + 1
 	copy(d.inputBuf[startIdx+newLen:], d.inputBuf[startIdx:])
-	copy(d.inputBuf[startIdx:], d.buf[start:end+1])
-	copy(d.buf[start:], d.buf[end+1:])
+	copy(d.inputBuf[startIdx:], d.buf[startIdx:endIdx+1])
+	copy(d.buf[startIdx:], d.buf[endIdx+1:])
 	d.length -= newLen
 	d.inputBufLength += newLen
 }
