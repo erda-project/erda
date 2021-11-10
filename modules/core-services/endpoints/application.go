@@ -797,7 +797,7 @@ func (e *Endpoints) convertToApplicationDTO(ctx context.Context, application mod
 	}
 
 	// TODO ApplicationDTO 去除clusterName, 暂时兼容添加
-	project, err := e.project.Get(ctx, application.ProjectID)
+	project, err := e.project.Get(ctx, application.ProjectID, false)
 	if err != nil {
 		logrus.Error(err)
 	}

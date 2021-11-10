@@ -270,7 +270,7 @@ func (e *Endpoints) getPermissionList(userID string, scopeType apistructs.ScopeT
 func (e *Endpoints) scopeIsDeleted(ctx context.Context, scopeType apistructs.ScopeType, scopeID int64) (bool, error) {
 	switch scopeType {
 	case apistructs.ProjectScope:
-		_, err := e.project.Get(ctx, scopeID)
+		_, err := e.project.Get(ctx, scopeID, false)
 		if err != nil && err.Error() == "failed to get project: "+dao.ErrNotFoundProject.Error() {
 			return true, nil
 		}

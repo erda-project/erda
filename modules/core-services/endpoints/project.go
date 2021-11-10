@@ -58,6 +58,8 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateProject.InvalidParameter(errors.Errorf("project name is invalid %s",
 			projectCreateReq.Name)).ToResp(), nil
 	}
+	projectCreateReq.CpuQuota = 0
+	projectCreateReq.MemQuota = 0
 	logrus.Infof("request body: %+v", projectCreateReq)
 	logrus.Infof("request body data: %s", string(bodyData))
 
@@ -118,7 +120,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 	}
 	logrus.Infof("request body: %+v", projectUpdateReq)
 
-	oldProject, err := e.project.Get(ctx, projectID)
+	oldProject, err := e.project.Get(ctx, projectID, false)
 	if err != nil {
 		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
 	}
@@ -182,6 +184,11 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
 	}
 
+	if err = r.ParseForm(); err != nil {
+		return apierrors.ErrGetProject.InvalidParameter(err).ToResp(), nil
+	}
+	withQuota := r.URL.Query().Get("withQuota")
+
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	internalClient := r.Header.Get(httputil.InternalHeader)
 	if internalClient == "" {
@@ -216,7 +223,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	project, err := e.project.Get(ctx, projectID)
+	project, err := e.project.Get(ctx, projectID, withQuota == "true")
 	if err != nil {
 		if err == dao.ErrNotFoundProject {
 			return apierrors.ErrGetProject.NotFound().ToResp(), nil
@@ -254,7 +261,7 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// 审计事件需要项目详情，发生错误不应中断业务流程
-	project, err := e.project.Get(ctx, projectID)
+	project, err := e.project.Get(ctx, projectID, false)
 	if err != nil {
 		logrus.Errorf("when get project for audit faild %v", err)
 	}
@@ -793,7 +800,21 @@ func (e *Endpoints) GetProjectQuota(ctx context.Context, r *http.Request, vars m
 func (e *Endpoints) GetNamespacesBelongsTo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	langCodes := i18n.Language(r)
 	ctx = context.WithValue(ctx, "lang_codes", langCodes)
-	data, err := e.project.GetNamespacesBelongsTo(ctx)
+
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
+	}
+
+	// parse usl values from request
+	if err := r.ParseForm(); err != nil {
+		return apierrors.ErrGetProjectQuota.InvalidParameter(err).ToResp(), nil
+	}
+	values := r.URL.Query()
+	clusterNames := values["clusterName"]
+
+	data, err := e.project.GetNamespacesBelongsTo(ctx, orgID, clusterNames)
 	if err != nil {
 		return apierrors.ErrGetProjectQuota.InternalError(err).ToResp(), nil
 	}

@@ -14,7 +14,9 @@
 
 package mysql
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"github.com/erda-project/erda/apistructs"
+)
 
 type PermissionWrapper interface {
 	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)

@@ -15,7 +15,7 @@ components:
                     x-dice-raw: created_at
                     x-dice-source: base_model
                 id:
-                    type: number
+                    type: integer
                     example: 0
                     description: ""
                     x-dice-raw: id
@@ -30,7 +30,7 @@ components:
             type: object
             properties:
                 appID:
-                    type: number
+                    type: integer
                     example: 0
                     description: ""
                     x-dice-raw: app_id
@@ -54,7 +54,7 @@ components:
                     x-dice-raw: asset_name_2
                     x-dice-source: dice_api_assets
                 creatorID:
-                    type: number
+                    type: integer
                     example: 0
                     description: ""
                     x-dice-raw: creator_id
@@ -66,13 +66,13 @@ components:
                     x-dice-raw: logo
                     x-dice-source: dice_api_assets
                 orgID:
-                    type: number
+                    type: integer
                     example: 0
                     description: ""
                     x-dice-raw: org_id
                     x-dice-source: dice_api_assets
                 projectID:
-                    type: number
+                    type: integer
                     example: 0
                     description: ""
                     x-dice-raw: project_id
