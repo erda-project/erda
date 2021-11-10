@@ -1606,6 +1606,9 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		if err != nil {
 			return nil, err
 		}
+		if !ok {
+			continue
+		}
 		if ok {
 			item.ProjectName = quotaItem.ProjectName
 			item.ProjectDisplayName = quotaItem.ProjectDisplayName
