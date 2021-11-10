@@ -649,6 +649,11 @@ func contextVolumes(context spec.PipelineTaskContext) []apistructs.MetadataField
 }
 
 func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.PipelineTask) error {
+
+	if task.Type == apistructs.ActionTypeWait || task.Type == apistructs.ActionTypeAPITest || task.Type == apistructs.ActionTypeSnippet {
+		return nil
+	}
+
 	// 申请到的 token 只能请求 get-bootstrap-info api，并且保证 pipelineID 和 taskID 必须匹配
 	tokenInfo, err := pre.Bdl.GetOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenGetRequest{
 		ClientID:     "pipeline",
