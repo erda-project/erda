@@ -74,6 +74,10 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 	if req.State != "" {
 		r.State = req.State
 	}
+	if req.ErrorInfo != nil {
+		r.ErrorInfo = fmt.Sprint(req.ErrorInfo)
+	}
+
 	return svc.db.UpdateRecord(r)
 }
 
@@ -152,6 +156,10 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 
 	if record.Type == apistructs.FileActionTypeImport || record.Type == apistructs.FileActionTypeExport {
 		record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	}
+
+	if record.State == apistructs.FileRecordStateFail {
+		record.Description = s.ErrorInfo
 	}
 	return record
 }

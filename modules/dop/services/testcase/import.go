@@ -103,7 +103,7 @@ func (svc *Service) ImportFile(record *dao.TestFileRecord) {
 	}
 	if err := svc.ImportTestCases(req, record.ApiFileUUID); err != nil {
 		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: err}); err != nil {
 			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
 		}
 		return

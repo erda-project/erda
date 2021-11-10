@@ -45,6 +45,7 @@ type TestFileRecordRequest struct {
 	Type        FileActionType  `json:"type"`
 	State       FileRecordState `json:"state"`
 	Extra       TestFileExtra   `json:"extra"`
+	ErrorInfo   error           `json:"errorInfo"`
 	IdentityInfo
 }
 
