@@ -1291,13 +1291,17 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 }
 
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
+	l := logrus.WithField("func", "convertToProjectDTO")
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
 		rollbackConfig = make(map[string]int)
 	}
 
 	var clusterConfig = make(map[string]string)
-	_ = json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig)
+	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
+		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
+	}
+	l.Infof("project.ClusterConfig: %s, clusterConfig: %+v", project.ClusterConfig, clusterConfig)
 
 	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
 
