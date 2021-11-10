@@ -163,33 +163,6 @@ func Test_convertAuditCreateReq2Model(t *testing.T) {
 	}
 }
 
-func Test_getMemberFromMembers(t *testing.T) {
-	var members = []model.Member{
-		{
-			UserID: "1",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "2",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "3",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "4",
-			Roles:  []string{"Owner"},
-		},
-	}
-
-	_, ok := getMemberFromMembers(members, "Owner")
-	if !ok {
-		t.Fatal("getMemberFromMembers error: not found an Owner")
-	}
-	_, ok = getMemberFromMembers(members, "Lead")
-	if ok {
-		t.Fatal("getMemberFromMembers error: found a Lead")
-	}
-}
-
 func Test_calcuRequestRate(t *testing.T) {
 	var (
 		prod = apistructs.ResourceConfigInfo{

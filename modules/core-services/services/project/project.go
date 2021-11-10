@@ -1294,6 +1294,9 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		rollbackConfig = make(map[string]int)
 	}
 
+	var clusterConfig = make(map[string]string)
+	_ = json.Unmarshal([]byte(project.RollbackConfig), &clusterConfig)
+
 	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
 
 	projectDto := apistructs.ProjectDTO{
@@ -1309,7 +1312,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Stats: apistructs.ProjectStats{
 			CountApplications: int(total),
 		},
-		ClusterConfig:  nil,
+		ClusterConfig:  clusterConfig,
 		RollbackConfig: rollbackConfig,
 		CpuQuota:       project.CpuQuota,
 		MemQuota:       project.MemQuota,
@@ -1653,17 +1656,6 @@ func (p *Project) ListQuotaRecords(ctx context.Context) ([]*apistructs.ProjectQu
 		return nil, err
 	}
 	return records, nil
-}
-
-func getMemberFromMembers(members []model.Member, role string) (model.Member, bool) {
-	for _, member := range members {
-		for _, role_ := range member.Roles {
-			if strings.EqualFold(role, role_) {
-				return member, true
-			}
-		}
-	}
-	return model.Member{}, false
 }
 
 func getFirstValidOwnerOrLead(member *model.Member, members []model.Member) {
