@@ -135,6 +135,7 @@ func (db *CheckerDB) queryScopeInfo(projectID int64, env string) (*scopeInfo, er
 	if err := db.DB.Table("sp_monitor").
 		Select("`terminus_key` AS `scope_id`, `project_name`").
 		Where("`project_id`=? AND `workspace`=?", strconv.FormatInt(projectID, 10), env).
+		Where("`is_delete`=?", "N").
 		Last(&info).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
@@ -182,6 +183,7 @@ func (db *MetricDB) QueryScopeInfo(projectID int64, env string) (*scopeInfo, err
 	if err := db.DB.Table("sp_monitor").
 		Select("`terminus_key` AS `scope_id`, `project_name`").
 		Where("`project_id`=? AND `workspace`=?", strconv.FormatInt(projectID, 10), env).
+		Where("`is_delete`=?", "N").
 		Last(&info).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil

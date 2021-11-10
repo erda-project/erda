@@ -282,7 +282,13 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 		}
 		for _, m := range oldMetrics {
 			if m.Extra == "" {
-				list = append(list, m)
+				// data fix for history record
+				m.ProjectID = proj.ProjectID
+				m.Extra = strconv.FormatInt(proj.ProjectID, 10)
+				err := s.metricDB.Update(m)
+				if err != nil {
+					return nil, errors.NewDatabaseError(err)
+				}
 			}
 		}
 		newMetrics, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
