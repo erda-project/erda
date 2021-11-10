@@ -1459,7 +1459,7 @@ func (e *EDAS) getDeploymentInfo(group string, srv *apistructs.Service) (*k8sapi
 
 	for _, dep := range deps.Items {
 		i := dep
-		if strings.HasPrefix(dep.Metadata.Name, prefix) &&
+		if strings.Contains(dep.Metadata.Name, prefix) &&
 			strings.Compare(dep.Metadata.Labels["edas-domain"], "edas-admin") == 0 {
 			iDep = &i
 			// return &dep, nil
