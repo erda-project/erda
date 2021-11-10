@@ -220,6 +220,7 @@ func (e *Endpoints) PagingTestPlanCaseRelations(ctx context.Context, r *http.Req
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	req.TestPlan = tp
 
 	if !req.IsInternalClient() {
 		// Authorize

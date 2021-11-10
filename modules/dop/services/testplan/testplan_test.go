@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -195,4 +196,53 @@ func TestUpdate(t *testing.T) {
 	if err := tp.Update(apistructs.TestPlanUpdateRequest{}); err != nil {
 		t.Error(err)
 	}
+}
+
+func TestTestPlan_PagingTestPlanCaseRels(t *testing.T) {
+	tp := &TestPlan{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(tp), "Get", func(_ *TestPlan, _ uint64) (*apistructs.TestPlan, error) {
+		return &apistructs.TestPlan{Name: "tp"}, nil
+	})
+
+	// req without testPlan
+	req1 := apistructs.TestPlanCaseRelPagingRequest{TestPlan: nil}
+	_, err := tp.PagingTestPlanCaseRels(req1)
+	assert.Error(t, err)
+
+	// req with testPlan, but rels is empty
+	req2 := apistructs.TestPlanCaseRelPagingRequest{TestPlan: &apistructs.TestPlan{ID: 2, ProjectID: 2, Name: "tp2"}}
+	dbWithPagingZero := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbWithPagingZero), "PagingTestPlanCaseRelations", func(*dao.DBClient, apistructs.TestPlanCaseRelPagingRequest) ([]dao.TestPlanCaseRelDetail, uint64, error) {
+		data := []dao.TestPlanCaseRelDetail{}
+		return data, uint64(len(data)), nil
+	})
+	tp.db = dbWithPagingZero
+	result, err := tp.PagingTestPlanCaseRels(req2)
+	assert.NoError(t, err)
+	assert.True(t, 0 == result.Total)
+	monkey.UnpatchInstanceMethod(reflect.TypeOf(dbWithPagingZero), "PagingTestPlanCaseRelations")
+
+	// req with testPlan, and return some rels
+	req3 := apistructs.TestPlanCaseRelPagingRequest{TestPlan: &apistructs.TestPlan{ID: 3, ProjectID: 3, Name: "tp3"}}
+	dbWithPaging3 := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbWithPaging3), "PagingTestPlanCaseRelations", func(*dao.DBClient, apistructs.TestPlanCaseRelPagingRequest) ([]dao.TestPlanCaseRelDetail, uint64, error) {
+		data := []dao.TestPlanCaseRelDetail{
+			{Name: "rel1", TestPlanCaseRel: dao.TestPlanCaseRel{TestPlanID: 3, TestSetID: 1, TestCaseID: 1}},
+			{Name: "rel2", TestPlanCaseRel: dao.TestPlanCaseRel{TestPlanID: 3, TestSetID: 2, TestCaseID: 2}},
+			{Name: "rel3", TestPlanCaseRel: dao.TestPlanCaseRel{TestPlanID: 3, TestSetID: 2, TestCaseID: 3}},
+		}
+		return data, uint64(len(data)), nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(dbWithPaging3), "ListTestSets", func(*dao.DBClient, apistructs.TestSetListRequest) ([]dao.TestSet, error) {
+		data := []dao.TestSet{
+			{BaseModel: dbengine.BaseModel{ID: 1}, Name: "ts1"},
+			{BaseModel: dbengine.BaseModel{ID: 2}, Name: "ts2"},
+		}
+		return data, nil
+	})
+	tp.db = dbWithPaging3
+	result, err = tp.PagingTestPlanCaseRels(req3)
+	assert.NoError(t, err)
+	assert.True(t, 3 == result.Total)
+	monkey.UnpatchInstanceMethod(reflect.TypeOf(dbWithPaging3), "PagingTestPlanCaseRelations")
 }

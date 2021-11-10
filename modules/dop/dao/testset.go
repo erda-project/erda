@@ -21,7 +21,17 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/strutil"
 )
+
+const (
+	// related to: 20211109-manual-test-fix-slow-sql.sql #9
+	maxTestSetDirectoryLength = 5000
+)
+
+func ValidateTestSetDirectoryLength(dir string) error {
+	return strutil.Validate(dir, strutil.MaxRuneCountValidator(maxTestSetDirectoryLength))
+}
 
 // TestSet 测试集
 type TestSet struct {
@@ -160,7 +170,7 @@ func (db *DBClient) ListTestSets(req apistructs.TestSetListRequest) ([]TestSet, 
 		sql = sql.Where("`parent_id` = ?", *req.ParentID)
 	}
 	if len(req.TestSetIDs) > 0 {
-		sql = sql.Where("`id` IN (?)", req.TestSetIDs)
+		sql = sql.Where("`id` IN (?)", strutil.DedupUint64Slice(req.TestSetIDs, true))
 	}
 
 	sql = sql.Order("`order_num` DESC")

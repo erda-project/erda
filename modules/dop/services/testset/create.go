@@ -87,6 +87,9 @@ func (svc *Service) makeTestSetForCreate(projectID, parentTsID uint64, name stri
 	}
 	// directory
 	directory := generateTestSetDirectory(parentTs, polishedName)
+	if err := dao.ValidateTestSetDirectoryLength(directory); err != nil {
+		return nil, fmt.Errorf("directory too long, err: %v", err)
+	}
 
 	newTs := dao.TestSet{
 		Name:      polishedName,
