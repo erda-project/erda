@@ -216,7 +216,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		}
 	}
 
-	project, err := e.project.Get(ctx, projectID, true)
+	project, err := e.project.Get(ctx, projectID, vars["withQuota"] == "true")
 	if err != nil {
 		if err == dao.ErrNotFoundProject {
 			return apierrors.ErrGetProject.NotFound().ToResp(), nil

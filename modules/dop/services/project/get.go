@@ -16,6 +16,7 @@ package project
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -34,7 +36,9 @@ import (
 // id is the project id.
 func (p *Project) Get(ctx context.Context, id uint64) (*apistructs.ProjectDTO, *errorresp.APIError) {
 	l := logrus.WithField("func", "*Project.Get")
-	dto, err := p.bdl.GetProject(id)
+	params := make(url.Values)
+	params.Add("withQuota", "true")
+	dto, err := p.bdl.GetProject(id, httpclient.SetParams(params))
 	if err != nil {
 		l.Errorf("failed to GetProject by bdl: %v", err)
 		return nil, apierrors.ErrGetProject.InternalError(err)

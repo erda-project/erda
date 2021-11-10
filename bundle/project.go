@@ -31,7 +31,7 @@ import (
 )
 
 // GetProject get project by id from core-services.
-func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
+func (b *Bundle) GetProject(id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -39,7 +39,12 @@ func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
 	hc := b.hc
 
 	var fetchResp apistructs.ProjectDetailResponse
-	resp, err := hc.Get(host, httpclient.RetryOption{}).Path(fmt.Sprintf("/api/projects/%d", id)).Header(httputil.InternalHeader, "bundle").Do().JSON(&fetchResp)
+	r := hc.Get(host, httpclient.RetryOption{}).Path(fmt.Sprintf("/api/projects/%d", id)).
+		Header(httputil.InternalHeader, "bundle")
+	for _, setter := range requestSetter {
+		setter(r)
+	}
+	resp, err := r.Do().JSON(&fetchResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
