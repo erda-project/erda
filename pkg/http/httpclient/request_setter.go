@@ -15,6 +15,7 @@
 package httpclient
 
 import (
+	"net/http"
 	"net/url"
 )
 
@@ -28,5 +29,24 @@ func SetParams(params url.Values) RequestSetter {
 		for k, v := range params {
 			r.params[k] = append(r.params[k], v...)
 		}
+	}
+}
+
+func SetHeaders(headers http.Header) RequestSetter {
+	return func(r *Request) {
+		if r.header == nil {
+			r.header = make(map[string]string)
+		}
+		for k, v := range headers {
+			if len(v) > 0 {
+				r.header[k] = v[0]
+			}
+		}
+	}
+}
+
+func SetCookie(cookie *http.Cookie) RequestSetter {
+	return func(r *Request) {
+		r.cookie = append(r.cookie, cookie)
 	}
 }

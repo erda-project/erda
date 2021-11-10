@@ -15,6 +15,7 @@
 package httpclient
 
 import (
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -27,6 +28,29 @@ func TestSetParams(t *testing.T) {
 	p.Add("withQuota", "true")
 	SetParams(p)(&r)
 	if v := r.params.Get("withQuota"); v != "true" {
+		t.Fatal("error")
+	}
+}
+
+func TestSetHeaders(t *testing.T) {
+	var (
+		r Request
+		h = make(http.Header)
+	)
+	h.Add("withQuota", "true")
+	SetHeaders(h)(&r)
+	if v := r.header["Withquota"]; v != "true" {
+		t.Fatal("error", v, r.header)
+	}
+}
+
+func TestSetCookie(t *testing.T) {
+	var (
+		r Request
+		c = &http.Cookie{Name: "withQuota", Value: "true"}
+	)
+	SetCookie(c)(&r)
+	if r.cookie[0].Value != "true" {
 		t.Fatal("error")
 	}
 }

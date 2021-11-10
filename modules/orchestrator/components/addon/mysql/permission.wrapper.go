@@ -14,11 +14,14 @@
 
 package mysql
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+)
 
 type PermissionWrapper interface {
 	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
 	CreateAuditEvent(audits *apistructs.AuditCreateRequest) error
-	GetProject(id uint64) (*apistructs.ProjectDTO, error)
+	GetProject(id uint64, setter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error)
 	GetApp(id uint64) (*apistructs.ApplicationDTO, error)
 }

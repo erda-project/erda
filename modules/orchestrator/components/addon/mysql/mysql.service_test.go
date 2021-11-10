@@ -288,7 +288,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm: &MockPerm{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx:    context.Background(),
 				userID: "111",
 				orgID:  "333",
 				routing: &dbclient.AddonInstanceRouting{
@@ -309,7 +309,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm: &MockPerm{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx:    context.Background(),
 				userID: "111",
 				orgID:  "333",
 				routing: &dbclient.AddonInstanceRouting{
@@ -330,7 +330,7 @@ func Test_mysqlService_audit(t *testing.T) {
 				perm: &MockPerm{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx:    context.Background(),
 				userID: "111",
 				orgID:  "333",
 				routing: &dbclient.AddonInstanceRouting{
