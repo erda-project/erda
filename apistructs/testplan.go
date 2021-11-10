@@ -205,14 +205,22 @@ type TestPlanCaseRelPagingRequest struct {
 	UpdatedAtEndInclude   *time.Time `schema:"-"`
 
 	// order by field
-	OrderByPriorityAsc   *bool `schema:"orderByPriorityAsc"`
-	OrderByPriorityDesc  *bool `schema:"orderByPriorityDesc"`
-	OrderByUpdaterIDAsc  *bool `schema:"orderByUpdaterIDAsc"`
-	OrderByUpdaterIDDesc *bool `schema:"orderByUpdaterIDDesc"`
-	OrderByUpdatedAtAsc  *bool `schema:"orderByUpdatedAtAsc"`
-	OrderByUpdatedAtDesc *bool `schema:"orderByUpdatedAtDesc"`
-	OrderByIDAsc         *bool `schema:"orderByIDAsc"`
-	OrderByIDDesc        *bool `schema:"orderByIDDesc"`
+	OrderFields            []string `schema:"orderField"`
+	OrderByPriorityAsc     *bool    `schema:"orderByPriorityAsc"`
+	OrderByPriorityDesc    *bool    `schema:"orderByPriorityDesc"`
+	OrderByUpdaterIDAsc    *bool    `schema:"orderByUpdaterIDAsc"`
+	OrderByUpdaterIDDesc   *bool    `schema:"orderByUpdaterIDDesc"`
+	OrderByUpdatedAtAsc    *bool    `schema:"orderByUpdatedAtAsc"`
+	OrderByUpdatedAtDesc   *bool    `schema:"orderByUpdatedAtDesc"`
+	OrderByIDAsc           *bool    `schema:"orderByIDAsc"`
+	OrderByIDDesc          *bool    `schema:"orderByIDDesc"`
+	OrderByTestSetIDAsc    *bool    `schema:"orderByTestSetIDAsc"`
+	OrderByTestSetIDDesc   *bool    `schema:"orderByTestSetIDDesc"`
+	OrderByTestSetNameAsc  *bool    `schema:"orderByTestSetNameAsc"`
+	OrderByTestSetNameDesc *bool    `schema:"orderByTestSetNameDesc"`
+
+	// tp
+	TestPlan *TestPlan `schema:"-"` // internal use
 
 	IdentityInfo
 }

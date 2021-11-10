@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp"
 	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -85,16 +87,16 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	query, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
 	var values Values
-	if err := json.Unmarshal(decoded, &values); err != nil {
+	if err := json.Unmarshal(decode, &values); err != nil {
 		return err
 	}
 	f.State.Values = values
@@ -102,13 +104,13 @@ func (f *ComponentFilter) DecodeURLQuery() error {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
+	jsonData, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	f.State.FilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	f.State.FilterURLQuery = encoded
 	return nil
 }
 
@@ -284,14 +286,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(component *cptype.Component) {
-	component.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(c *cptype.Component) {
+	c.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	component.Operations = f.Operations
+	c.Operations = f.Operations
 }
 
 func (f *ComponentFilter) getDisplayName(name string) (string, error) {
@@ -304,7 +306,9 @@ func (f *ComponentFilter) getDisplayName(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	project, err := f.bdl.GetProject(uint64(num))
+	var params = make(url.Values)
+	params.Add("withQuota", "true")
+	project, err := f.bdl.GetProjectWithSetter(uint64(num), httpclient.SetParams(params))
 	if err != nil {
 		return "", err
 	}

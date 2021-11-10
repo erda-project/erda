@@ -75,16 +75,16 @@ func (b *ComponentOperationButton) InitComponent(ctx context.Context) {
 	b.server = steveServer
 }
 
-func (b *ComponentOperationButton) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (b *ComponentOperationButton) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	b.State = state
@@ -148,9 +148,9 @@ func (b *ComponentOperationButton) DeletePod() error {
 	return b.server.DeleteSteveResource(b.ctx, req)
 }
 
-func (b *ComponentOperationButton) Transfer(c *cptype.Component) {
-	c.Props = b.Props
-	c.State = map[string]interface{}{
+func (b *ComponentOperationButton) Transfer(component *cptype.Component) {
+	component.Props = b.Props
+	component.State = map[string]interface{}{
 		"clusterName": b.State.ClusterName,
 		"podId":       b.State.PodID,
 	}

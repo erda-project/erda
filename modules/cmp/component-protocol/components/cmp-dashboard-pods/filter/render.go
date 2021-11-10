@@ -88,33 +88,33 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	query, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
 
 	var values Values
-	if err := json.Unmarshal(decode, &values); err != nil {
+	if err := json.Unmarshal(decoded, &values); err != nil {
 		return err
 	}
 	f.State.Values = values
 	return nil
 }
 
-func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var filterState State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &filterState); err != nil {
+	if err = json.Unmarshal(data, &filterState); err != nil {
 		return err
 	}
 	f.State = filterState
@@ -355,24 +355,24 @@ func (f *ComponentFilter) getNodes() ([]string, error) {
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
+	jsonData, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	f.State.FilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	f.State.FilterURLQuery = encoded
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(component *cptype.Component) {
-	component.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(c *cptype.Component) {
+	c.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	component.Operations = f.Operations
+	c.Operations = f.Operations
 }
 
 func hasSuffix(name string) (string, bool) {

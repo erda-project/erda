@@ -163,33 +163,6 @@ func Test_convertAuditCreateReq2Model(t *testing.T) {
 	}
 }
 
-func Test_getMemberFromMembers(t *testing.T) {
-	var members = []model.Member{
-		{
-			UserID: "1",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "2",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "3",
-			Roles:  []string{"Owner"},
-		}, {
-			UserID: "4",
-			Roles:  []string{"Owner"},
-		},
-	}
-
-	_, ok := getMemberFromMembers(members, "Owner")
-	if !ok {
-		t.Fatal("getMemberFromMembers error: not found an Owner")
-	}
-	_, ok = getMemberFromMembers(members, "Lead")
-	if ok {
-		t.Fatal("getMemberFromMembers error: found a Lead")
-	}
-}
-
 func Test_calcuRequestRate(t *testing.T) {
 	var (
 		prod = apistructs.ResourceConfigInfo{
@@ -308,6 +281,94 @@ func Test_setProjectDtoQuotaFromModel(t *testing.T) {
 		t.Fatal("setProjectDtoQuotaFromModel error")
 	}
 
+}
+
+func initOldNewQutoa() (old, new_ apistructs.ProjectQuota) {
+	return apistructs.ProjectQuota{
+			ProdClusterName:    "prod",
+			StagingClusterName: "staging",
+			TestClusterName:    "test",
+			DevClusterName:     "dev",
+			ProdCPUQuota:       10,
+			ProdMemQuota:       20,
+			StagingCPUQuota:    30,
+			StagingMemQuota:    40,
+			TestCPUQuota:       50,
+			TestMemQuota:       60,
+			DevCPUQuota:        70,
+			DevMemQuota:        80,
+		}, apistructs.ProjectQuota{
+			ProdClusterName:    "prod",
+			StagingClusterName: "staging",
+			TestClusterName:    "test",
+			DevClusterName:     "dev",
+			ProdCPUQuota:       10,
+			ProdMemQuota:       20,
+			StagingCPUQuota:    30,
+			StagingMemQuota:    40,
+			TestCPUQuota:       50,
+			TestMemQuota:       60,
+			DevCPUQuota:        70,
+			DevMemQuota:        80,
+		}
+}
+
+func Test_isQuotaChanged(t *testing.T) {
+	if isChanged := isQuotaChanged(initOldNewQutoa()); isChanged {
+		t.Fatal("error")
+	}
+}
+
+func Test_isQuotaChangedOnTheWorkspace(t *testing.T) {
+	var changedRecord map[string]bool
+	old, new_ := initOldNewQutoa()
+	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
+	if len(changedRecord) > 0 {
+		t.Fatal("error")
+	}
+
+	changedRecord = make(map[string]bool)
+	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
+	if len(changedRecord) != 4 {
+		t.Fatal("error")
+	}
+	for _, w := range []string{"PROD", "STAGING", "TEST", "DEV"} {
+		if changedRecord[w] {
+			t.Fatal("error")
+		}
+	}
+
+	new_.ProdCPUQuota += 10
+	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
+	if !changedRecord["PROD"] {
+		t.Fatal("error")
+	}
+}
+
+func Test_getFirstValidOwnerOrLead(t *testing.T) {
+	var members = []model.Member{
+		{
+			UserID: "1",
+			Roles:  []string{"Developer"},
+		}, {
+			UserID: "2",
+			Roles:  []string{"Lead"},
+		}, {
+			UserID: "3",
+			Roles:  []string{"Lead", "Owner"},
+		}, {
+			UserID: "4",
+			Roles:  []string{"Owner"},
+		},
+	}
+	var member *model.Member
+	hitFirstValidOwnerOrLead(member, members)
+
+	member = new(model.Member)
+	hitFirstValidOwnerOrLead(member, members)
+	if member.UserID != "3" {
+		t.Fatal("hit error")
+	}
 }
 
 // TODO We need to turn this ut on after adding the delete portal to the UI
