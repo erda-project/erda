@@ -41,5 +41,11 @@ service LogService {
 message HistogramAggregationRequest {
   int64 start = 1;
   int64 end  = 2;
+  string clusterName = 3;
+  string query = 4;
+  bool debug = 5;
+}
+
+message HistogramAggregationResponse {
 
 }
