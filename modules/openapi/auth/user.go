@@ -74,13 +74,15 @@ type User struct {
 	bundle *bundle.Bundle
 }
 
+var client = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
+
 func NewUser(redisCli *redis.Client) *User {
 	ucUserAuth := ucauth.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: bundle.New(bundle.WithCoreServices(), bundle.WithDOP())}
+	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: client}
 }
 
 func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
