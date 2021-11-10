@@ -197,7 +197,6 @@ func (e *Endpoints) MoveAutoTestScene(ctx context.Context, r *http.Request, vars
 
 	req.IdentityInfo = identityInfo
 
-	//TODO 鉴权
 	sc, err := e.autotestV2.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: req.ID})
 	if err != nil {
 		return errorresp.ErrResp(err)
@@ -234,6 +233,57 @@ func (e *Endpoints) MoveAutoTestScene(ctx context.Context, r *http.Request, vars
 	}
 
 	return httpserver.OkResp(sceneID)
+}
+
+// MoveAutoTestSceneV2  Move scene between scene set, include the group drag
+func (e *Endpoints) MoveAutoTestSceneV2(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var req apistructs.AutotestSceneMoveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrMoveAutoTestScene.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrMoveAutoTestScene.NotLogin().ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	sc, err := e.autotestV2.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: req.FirstID})
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	sp, err := e.autotestV2.GetSpace(sc.SpaceID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if !sp.IsOpen() {
+		return apierrors.ErrUpdateAutoTestScene.InvalidState("the space is locked").ToResp(), nil
+	}
+
+	// check the permission
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(sp.ProjectID),
+			Resource: apistructs.AutotestSceneResource,
+			Action:   apistructs.UpdateAction,
+		})
+		if err != nil {
+			return apierrors.ErrMoveAutoTestScene.InternalError(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrMoveAutoTestScene.AccessDenied().ToResp(), nil
+		}
+	}
+
+	err = e.autotestV2.MoveAutotestSceneV2(req)
+	if err != nil {
+		return apierrors.ErrMoveAutoTestScene.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp("success")
 }
 
 // ListAutoTestScene 获取场景列表

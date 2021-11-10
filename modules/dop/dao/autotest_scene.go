@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
@@ -81,10 +82,10 @@ func (db *DBClient) CreateAutotestScene(scene *AutoTestScene) error {
 			}
 		}
 		// Find the next scene
-		hasNextStep := true
+		hasNextScene := true
 		if err := tx.Where("pre_id = ?", scene.PreID).First(&nextScene).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
-				hasNextStep = false
+				hasNextScene = false
 			} else {
 				return err
 			}
@@ -101,7 +102,7 @@ func (db *DBClient) CreateAutotestScene(scene *AutoTestScene) error {
 			}
 		}
 		// Update the order of next scene
-		if hasNextStep {
+		if hasNextScene {
 			nextScene.PreID = scene.ID
 			return tx.Save(&nextScene).Error
 		}
@@ -396,6 +397,84 @@ func (db *DBClient) MoveAutoTestScene(id, newPreID, newSetID uint64, tx *gorm.DB
 	return nil
 }
 
+// MoveAutoTestSceneV2 Move scene between scene set, include the group drag
+func (db *DBClient) MoveAutoTestSceneV2(req apistructs.AutotestSceneMoveRequest) error {
+	return db.Transaction(func(tx *gorm.DB) (err error) {
+		var oldGroupID, newGroupID uint64
+		// Update step groupID in the group if isGroup is false
+		defer func() {
+			if err == nil && !req.IsGroup {
+				groupIDs := strutil.DedupUint64Slice([]uint64{oldGroupID, newGroupID}, true)
+				err = updateStepGroup(tx, groupIDs...)
+			}
+		}()
+		var scene, oldNextScene, newNextScene AutoTestScene
+		// Get the first scene in the group
+		if err = tx.Where("id = ?", req.FirstID).First(&scene).Error; err != nil {
+			return err
+		}
+		oldGroupID = scene.GroupID
+		// The order of the linked list has not changed
+		if req.PreID == scene.PreID || req.PreID == req.LastID {
+			if req.IsGroup {
+				return nil
+			}
+			goto label2
+		}
+
+		// Get the old next scene, and update its preID if exists
+		if err = tx.Where("id = ?", req.LastID).First(&oldNextScene).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				// The scene was the last
+				goto label1
+			}
+			return err
+		}
+		oldNextScene.PreID = scene.PreID
+		if err = tx.Save(&oldNextScene).Error; err != nil {
+			return err
+		}
+
+	label1:
+		scene.PreID = req.PreID
+		// Get the new next scene and update its preID if exists
+		if err = tx.Where("pre_id = ?", req.PreID).First(&newNextScene).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				// The target scene was the last
+				goto label2
+			}
+			return err
+		}
+		newNextScene.PreID = req.LastID
+		if err = tx.Save(&newNextScene).Error; err != nil {
+			return err
+		}
+
+	label2:
+		// Update the preID of the scene, and update the groupID of the scene if needed
+		if !req.IsGroup {
+			if req.TargetID == 0 {
+				newGroupID = 0
+			} else {
+				var targetScene AutoTestScene
+				if err = tx.Where("id = ?", req.TargetID).First(&targetScene).Error; err != nil {
+					return err
+				}
+				// If the groupID of targetScene is 0, set its id as groupID
+				if newGroupID == 0 {
+					targetScene.GroupID = targetScene.ID
+					if err = tx.Save(&targetScene).Error; err != nil {
+						return err
+					}
+				}
+				newGroupID = targetScene.GroupID
+			}
+			scene.GroupID = newGroupID
+		}
+		return tx.Save(scene).Error
+	})
+}
+
 func getScene(tx *gorm.DB, id uint64) (AutoTestScene, error) {
 	var scene AutoTestScene
 	if err := tx.Where("id = ?", id).Find(&scene).Error; err != nil {
@@ -469,7 +548,6 @@ func (db *DBClient) GetAutoTestScenePreByPosition(req apistructs.AutotestSceneRe
 		}
 		// 目标的前一个位置是要移动的场景本身,不需要移动
 		if next.PreID == req.ID {
-			fmt.Println("ahsdiuhasdiouhas")
 			return 0, 0, true, nil
 		}
 		return next.SetID, next.PreID, false, nil
@@ -520,6 +598,9 @@ func (db *DBClient) Insert(scene *AutoTestScene) error {
 			pre.GroupID = pre.ID
 			if err := db.Save(&pre).Error; err != nil {
 				return err
+			}
+			if pre.SetID == scene.SetID {
+
 			}
 			scene.GroupID = pre.GroupID
 		}

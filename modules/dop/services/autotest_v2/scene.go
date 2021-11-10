@@ -271,6 +271,11 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	return req.ID, nil
 }
 
+// MoveAutotestSceneV2  Move scene between scene set, include the group drag
+func (svc *Service) MoveAutotestSceneV2(req apistructs.AutotestSceneMoveRequest) error {
+	return svc.db.MoveAutoTestSceneV2(req)
+}
+
 func (svc *Service) checkSceneSetSameNameScene(sceneSetID uint64, sceneName string, sceneID uint64) bool {
 	dbScenes, err := svc.db.FindSceneBySetAndName(sceneSetID, sceneName)
 	if err != nil {

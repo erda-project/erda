@@ -138,10 +138,18 @@ type AutotestSceneRequest struct {
 	PageNo   uint64 `json:"pageNo"`
 	PageSize uint64 `json:"pageSize"`
 
-	PreSetID     uint64 `json:"preSetID"`               // pre setID
 	SceneGroupID uint64 `json:"sceneGroupID,omitempty"` // scene group, set the min sceneID as groupID
 
 	IdentityInfo
+}
+
+type AutotestSceneMoveRequest struct {
+	IdentityInfo
+	FirstID  uint64 `json:"firstID"`  // first sceneID in the group
+	LastID   uint64 `json:"lastID"`   // last sceneID in the group
+	PreID    uint64 `json:"preID"`    // preID
+	TargetID uint64 `json:"targetID"` // target sceneID
+	IsGroup  bool   `json:"isGroup"`  // true: means move with group
 }
 
 type AutotestScenesRequest struct {
