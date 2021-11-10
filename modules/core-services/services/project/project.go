@@ -1301,7 +1301,6 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
 		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
 	}
-	l.Infof("project.ClusterConfig: %s, clusterConfig: %+v", project.ClusterConfig, clusterConfig)
 
 	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
 

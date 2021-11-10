@@ -352,7 +352,7 @@ func (f *ComponentFilter) getDisplayName(name string) (string, error) {
 	}
 	var params = make(url.Values)
 	params.Add("withQuota", "true")
-	project, err := f.bdl.GetProject(uint64(num), httpclient.SetParams(params))
+	project, err := f.bdl.GetProjectWithSetter(uint64(num), httpclient.SetParams(params))
 	if err != nil {
 		return "", err
 	}

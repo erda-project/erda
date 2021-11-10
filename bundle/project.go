@@ -31,7 +31,12 @@ import (
 )
 
 // GetProject get project by id from core-services.
-func (b *Bundle) GetProject(id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
+	return b.GetProjectWithSetter(id)
+}
+
+// GetProjectWithSetter get project by id from core-services.
+func (b *Bundle) GetProjectWithSetter(id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err

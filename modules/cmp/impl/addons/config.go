@@ -133,7 +133,7 @@ func (a *Addons) ProjectQuotaCheck(identity apistructs.Identity, req apistructs.
 	}
 	var params = make(url.Values)
 	params.Add("withQuota", "true")
-	p, err := a.bdl.GetProject(uint64(pid), httpclient.SetParams(params))
+	p, err := a.bdl.GetProjectWithSetter(uint64(pid), httpclient.SetParams(params))
 	if err != nil {
 		logrus.Errorf("get project failed, pid:%d, error:%v", pid, err)
 		return nil, err
