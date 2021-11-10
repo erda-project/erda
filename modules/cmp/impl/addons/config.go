@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type Addons struct {
@@ -129,7 +131,9 @@ func (a *Addons) ProjectQuotaCheck(identity apistructs.Identity, req apistructs.
 	if err != nil {
 		return nil, err
 	}
-	p, err := a.bdl.GetProject(uint64(pid))
+	var params = make(url.Values)
+	params.Add("withQuota", "true")
+	p, err := a.bdl.GetProject(uint64(pid), httpclient.SetParams(params))
 	if err != nil {
 		logrus.Errorf("get project failed, pid:%d, error:%v", pid, err)
 		return nil, err

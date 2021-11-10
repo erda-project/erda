@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp"
 	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -304,7 +306,9 @@ func (f *ComponentFilter) getDisplayName(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	project, err := f.bdl.GetProject(uint64(num))
+	var params = make(url.Values)
+	params.Add("withQuota", "true")
+	project, err := f.bdl.GetProject(uint64(num), httpclient.SetParams(params))
 	if err != nil {
 		return "", err
 	}

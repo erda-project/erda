@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -30,6 +31,7 @@ import (
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	_ "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/cloudapi"
 	resource_factory "github.com/erda-project/erda/modules/cmp/impl/resource-factory"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -139,7 +141,9 @@ func (e *Endpoints) ListGatewayAndVpc(ctx context.Context, r *http.Request, vars
 		err = errors.WithStack(err)
 		return
 	}
-	projectInfo, err := e.bdl.GetProject(pId)
+	var params = make(url.Values)
+	params.Add("withQuota", "true")
+	projectInfo, err := e.bdl.GetProject(pId, httpclient.SetParams(params))
 	if err != nil {
 		err = errors.WithStack(err)
 		return
