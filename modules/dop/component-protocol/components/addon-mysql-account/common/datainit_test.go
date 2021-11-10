@@ -15,8 +15,13 @@
 package common
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/apistructs"
 )
@@ -163,4 +168,83 @@ func TestAccountData_GetAppName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_countAccountUsage(t *testing.T) {
+	type args struct {
+		attachments []*addonmysqlpb.Attachment
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]int
+	}{
+		{
+			name: "t1",
+			args: args{
+				attachments: []*addonmysqlpb.Attachment{
+					{
+						AccountId:    "123",
+						PreAccountId: "321",
+						AccountState: "PRE",
+					},
+				},
+			},
+			want: map[string]int{
+				"123": 1,
+				"321": 1,
+			},
+		},
+		{
+			name: "t2",
+			args: args{
+				attachments: []*addonmysqlpb.Attachment{
+					{
+						AccountId:    "123",
+						PreAccountId: "321",
+						AccountState: "CUR",
+					},
+				},
+			},
+			want: map[string]int{
+				"123": 1,
+			},
+		},
+		{
+			name: "t3",
+			args: args{
+				attachments: []*addonmysqlpb.Attachment{
+					{
+						AccountId:    "123",
+						PreAccountId: "321",
+						AccountState: "PRE",
+					},
+					{
+						AccountId:    "123",
+						PreAccountId: "321",
+						AccountState: "CUR",
+					},
+				},
+			},
+			want: map[string]int{
+				"123": 2,
+				"321": 1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := countAccountUsage(tt.args.attachments); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("countAccountUsage() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSetAccountData(t *testing.T) {
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyStateTemp, map[string]interface{}{})
+	SetAccountData(ctx, &AccountData{ShowPerm: true})
+	loaded, err := LoadAccountData(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, &AccountData{ShowPerm: true}, loaded)
 }

@@ -70,7 +70,7 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 	}
 	if !showPerm {
 		d := &AccountData{ShowPerm: false}
-		ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["accountData"] = d
+		SetAccountData(ctx, d)
 		return d, nil
 	}
 
@@ -112,15 +112,7 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 		appMap[strutil.String(a.ID)] = &a
 	}
 
-	counter := map[string]int{}
-	for _, att := range r.Attachments {
-		if att.AccountId != "" {
-			counter[att.AccountId]++
-		}
-		if att.AccountState == "PRE" && att.PreAccountId != "" {
-			counter[att.PreAccountId]++
-		}
-	}
+	counter := countAccountUsage(r.Attachments)
 
 	data := &AccountData{
 		ShowPerm:        showPerm,
@@ -134,22 +126,43 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 		AppMap:          appMap,
 	}
 
-	ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["accountData"] = data
+	SetAccountData(ctx, data)
 
 	return data, nil
 }
 
+func countAccountUsage(attachments []*addonmysqlpb.Attachment) map[string]int {
+	counter := map[string]int{}
+	for _, att := range attachments {
+		if att.AccountId != "" {
+			counter[att.AccountId]++
+		}
+		if att.AccountState == "PRE" && att.PreAccountId != "" {
+			counter[att.PreAccountId]++
+		}
+	}
+	return counter
+}
+
+func SetAccountData(ctx context.Context, ac *AccountData) {
+	state, ok := ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})
+	if !ok || state == nil {
+		return
+	}
+	state["accountData"] = ac
+}
+
 func LoadAccountData(ctx context.Context) (*AccountData, error) {
-	data, ok := ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})["accountData"].(*AccountData)
+	state, ok := ctx.Value(cptype.GlobalInnerKeyStateTemp).(map[string]interface{})
+	if !ok || state == nil {
+		return nil, nil
+	}
+	data, ok := state["accountData"].(*AccountData)
 	if !ok {
 		return nil, fmt.Errorf("account data not found")
 	}
 	return data, nil
 }
-
-//func ClearAccountData(ctx context.Context, gs *cptype.GlobalStateData) {
-//	delete(*gs, "accountData")
-//}
 
 func (d *AccountData) GetAccountName(accountID string) string {
 	a, ok := d.AccountMap[accountID]
