@@ -102,7 +102,7 @@ func InitAccountData(ctx context.Context, instanceID string, projectID uint64) (
 	if err != nil {
 		return nil, err
 	}
-	rap, err := bdl.GetAppsByProject(projectID, uint64(orgID), identity.UserID)
+	rap, err := bdl.GetAppsByProjectSimple(projectID, uint64(orgID), identity.UserID)
 	if err != nil {
 		return nil, err
 	}
