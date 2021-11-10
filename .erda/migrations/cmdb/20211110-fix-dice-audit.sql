@@ -1,0 +1,1 @@
+ALTER TABLE `dice_audit` ADD INDEX `idx_org_start_scopetype` (`org_id`, `start_time`, `scope_type`);
