@@ -95,6 +95,10 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 				return
 			}
 
+			if task.Status.IsEndStatus() {
+				return
+			}
+
 			if task.IsSnippet {
 				task, err = r.reconcileSnippetTask(task, &p)
 				return
