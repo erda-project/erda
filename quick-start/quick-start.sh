@@ -193,24 +193,16 @@ ohai "Start setup Erda using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
 
 cd "${INSTALL_LOCATION}/quick-start" || exit 1
 execute "docker-compose" "up" "-d" "mysql"
-
-echo "waiting for mysql ready"
 sleep 10
-i=1
-until nc -z localhost 3306
-do
-  sleep 10
-  if ((i++ >= 100)); then
-    echo "timeout waiting for mysql ready"
-    exit 1
-  fi
-done
+execute "docker-compose" "up" "--abort-on-container-exit" "--exit-code-from" "mysql-healthcheck" "mysql-healthcheck"
+execute "docker-compose" "up" "--abort-on-container-exit" "--exit-code-from" "erda-migration" "erda-migration"
 
-execute "docker-compose" "up" "erda-migration"
 execute "docker-compose" "up" "sysctl-init"
 execute "docker-compose" "up" "-d" "elasticsearch"
+
 execute "docker-compose" "up" "-d" "cassandra"
 execute "docker-compose" "up" "-d" "kafka"
+
 execute "docker-compose" "up" "-d"
 
 ohai "Setup local hosts"
