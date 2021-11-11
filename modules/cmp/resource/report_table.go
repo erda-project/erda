@@ -119,6 +119,8 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 	for _, clusterItem := range resources.List {
 		for _, namespaceItem := range clusterItem.List {
 			if namespaceItem.GetNamespace() == "default" {
+				sharedResource[0] += namespaceItem.GetCpuRequest()
+				sharedResource[1] += namespaceItem.GetMemRequest()
 				continue
 			}
 			var belongsToProject = false
