@@ -454,11 +454,11 @@ func getTimeRange(unit string, num int, align bool) (start int64, end int64, int
 		now = alignTime(interval)
 		now = now.AddDate(0, 0, 1)
 	case "month":
-		interval = "24h"
+		interval = "1h"
 		now = alignTime(interval)
 		start = now.AddDate(0, -1*num, 0).UnixNano() / int64(time.Millisecond)
 	case "week":
-		interval = "24h"
+		interval = "1h"
 		now = alignTime(interval)
 		start = now.AddDate(0, 0, -7*num).UnixNano() / int64(time.Millisecond)
 	case "day":
@@ -626,12 +626,15 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 						upCount += item.count[i]
 					}
 				}
-				// TODO optimize
+				interval := int64(m.Config["interval"].GetNumberValue())
 				if stat == StatusRED {
+					duration := int64(0)
 					for i := len(item.time) - 1; i >= 0; i-- {
 						if item.count[i] > 0 {
 							j := i - 1
+							jcounts := int64(0)
 							for ; j >= 0; j-- {
+								jcounts += item.count[j]
 								if item.count[j] <= 0 {
 									break
 								}
@@ -639,15 +642,16 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 							if j < 0 {
 								j = 0
 							}
-							duration := (item.time[i]-item.time[j])/1000 + item.count[i]*30
-							if duration < 60 {
-								m.DownDuration = fmt.Sprintf("%d秒", duration)
-							} else if duration < 60*60 {
-								m.DownDuration = fmt.Sprintf("%d分钟", (duration+60-1)/60)
-							} else {
-								m.DownDuration = fmt.Sprintf("%d小时", (duration+60*60-1)/60*60)
-							}
+							duration = jcounts*interval + item.count[i]*interval
+							i = j
 						}
+					}
+					if duration < 60 {
+						m.DownDuration = fmt.Sprintf("%d秒", duration)
+					} else if duration < 60*60 {
+						m.DownDuration = fmt.Sprintf("%d分钟", (duration+60-1)/60)
+					} else {
+						m.DownDuration = fmt.Sprintf("%d小时", (duration+60*60-1)/(60*60))
 					}
 				}
 			}
