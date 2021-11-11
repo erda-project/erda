@@ -147,6 +147,58 @@ type ProjectNamespaces struct {
 	memRequest uint64
 }
 
+func (p *ProjectNamespaces) PatchClusters(clusters []string, namespaces map[string][]string) {
+	if len(clusters) == 0 || len(namespaces) == 0 {
+		return
+	}
+	if p.Clusters == nil {
+		p.Clusters = make(map[string][]string)
+	}
+	for _, cluster := range clusters {
+		if list, ok := namespaces[cluster]; ok {
+			p.Clusters[cluster] = append(p.Clusters[cluster], list...)
+		}
+	}
+}
+
+func (p *ProjectNamespaces) PatchQuota(quota *ProjectQuota) {
+	if quota == nil {
+		return
+	}
+
+	p.CPUQuota = 0
+	p.MemQuota = 0
+
+	for _, q := range []struct {
+		ClusterName string
+		CPUQuota    uint64
+		MemQuota    uint64
+	}{
+		{
+			ClusterName: quota.ProdClusterName,
+			CPUQuota:    quota.ProdCPUQuota,
+			MemQuota:    quota.ProdMemQuota,
+		}, {
+			ClusterName: quota.StagingClusterName,
+			CPUQuota:    quota.StagingCPUQuota,
+			MemQuota:    quota.StagingMemQuota,
+		}, {
+			ClusterName: quota.TestClusterName,
+			CPUQuota:    quota.TestCPUQuota,
+			MemQuota:    quota.TestMemQuota,
+		}, {
+			ClusterName: quota.DevClusterName,
+			CPUQuota:    quota.DevCPUQuota,
+			MemQuota:    quota.DevMemQuota,
+		},
+	} {
+		if _, ok := p.Clusters[q.ClusterName]; ok {
+			p.CPUQuota += q.CPUQuota
+			p.MemQuota += q.MemQuota
+		}
+	}
+}
+
 func (p *ProjectNamespaces) AddResource(cpu, mem uint64) {
 	p.cpuRequest += cpu
 	p.memRequest += mem

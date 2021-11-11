@@ -50,22 +50,24 @@ func (i *CacheItme) UpdateExpiredTime(duration time.Duration) {
 	i.expiredTime = time.Now().Add(duration)
 }
 
-type quotaCache struct {
-	ProjectID          uint64
-	ProjectName        string
-	ProjectDisplayName string
-	ProjectDesc        string
-	ProdQuota          *quotaItem
-	StagingQuota       *quotaItem
-	TestQuota          *quotaItem
-	DevQuota           *quotaItem
-}
-
 type memberCache struct {
 	ProjectID uint64
 	UserID    uint
 	Name      string
 	Nick      string
+}
+
+// projectClusterNamespaceCache caches the relationship for project:cluster:namespace
+type projectClusterNamespaceCache struct {
+	ProjectID  uint64
+	Namespaces map[string][]string
+}
+
+func newProjectClusterNamespaceCache(projectID uint64) *projectClusterNamespaceCache {
+	return &projectClusterNamespaceCache{
+		ProjectID:  projectID,
+		Namespaces: make(map[string][]string),
+	}
 }
 
 type quotaItem struct {
