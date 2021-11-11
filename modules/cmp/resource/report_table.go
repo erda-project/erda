@@ -119,6 +119,8 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 	for _, clusterItem := range resources.List {
 		for _, namespaceItem := range clusterItem.List {
 			if namespaceItem.GetNamespace() == "default" {
+				sharedResource[0] += namespaceItem.GetCpuRequest()
+				sharedResource[1] += namespaceItem.GetMemRequest()
 				continue
 			}
 			var belongsToProject = false
@@ -141,6 +143,9 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 
 	var data apistructs.ResourceOverviewReportData
 	for _, projectItem := range namespaces.List {
+		if projectItem.CPUQuota == 0 && projectItem.MemQuota == 0 {
+			continue
+		}
 		item := apistructs.ResourceOverviewReportDataItem{
 			ProjectID:          int64(projectItem.ProjectID),
 			ProjectName:        projectItem.ProjectName,

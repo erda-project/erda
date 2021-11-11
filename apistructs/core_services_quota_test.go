@@ -52,3 +52,38 @@ func TestGetQuotaOnClustersResponse_ReCalcu(t *testing.T) {
 		t.Fatal("mem quota error")
 	}
 }
+
+func TestProjectNamespaces_PatchClusters(t *testing.T) {
+	var (
+		p          apistructs.ProjectNamespaces
+		clusters   []string
+		namespaces = make(map[string][]string)
+	)
+	p.PatchClusters(clusters, namespaces)
+
+	clusters = []string{"erda-hongkong", "terminus-dev"}
+	namespaces = map[string][]string{
+		"erda-hongkong": {"default", "project-387-test"},
+		"terminus-dev":  {"default", "project-387-dev"},
+	}
+	p.PatchClusters(clusters, namespaces)
+
+	var quota = &apistructs.ProjectQuota{
+		ProdClusterName:    "erda-hongkong",
+		StagingClusterName: "staging",
+		TestClusterName:    "test",
+		DevClusterName:     "terminus-dev",
+		ProdCPUQuota:       0,
+		ProdMemQuota:       1,
+		StagingCPUQuota:    2,
+		StagingMemQuota:    3,
+		TestCPUQuota:       4,
+		TestMemQuota:       5,
+		DevCPUQuota:        6,
+		DevMemQuota:        7,
+	}
+	p.PatchQuota(quota)
+	if p.CPUQuota != 0+6 || p.MemQuota != 1+7 {
+		t.Fatal("patch quota error")
+	}
+}
