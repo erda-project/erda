@@ -29,6 +29,7 @@ type NotifyChannelServiceClient interface {
 	GetNotifyChannelTypes(ctx context.Context, in *GetNotifyChannelTypesRequest, opts ...grpc.CallOption) (*GetNotifyChannelTypesResponse, error)
 	GetNotifyChannelEnabled(ctx context.Context, in *GetNotifyChannelEnabledRequest, opts ...grpc.CallOption) (*GetNotifyChannelEnabledResponse, error)
 	UpdateNotifyChannelEnabled(ctx context.Context, in *UpdateNotifyChannelEnabledRequest, opts ...grpc.CallOption) (*UpdateNotifyChannelEnabledResponse, error)
+	GetNotifyChannelEnabledStatus(ctx context.Context, in *GetNotifyChannelEnabledStatusRequest, opts ...grpc.CallOption) (*GetNotifyChannelEnabledStatusResponse, error)
 }
 
 type notifyChannelServiceClient struct {
@@ -111,6 +112,15 @@ func (c *notifyChannelServiceClient) UpdateNotifyChannelEnabled(ctx context.Cont
 	return out, nil
 }
 
+func (c *notifyChannelServiceClient) GetNotifyChannelEnabledStatus(ctx context.Context, in *GetNotifyChannelEnabledStatusRequest, opts ...grpc.CallOption) (*GetNotifyChannelEnabledStatusResponse, error) {
+	out := new(GetNotifyChannelEnabledStatusResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.services.notify.channel.NotifyChannelService/GetNotifyChannelEnabledStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NotifyChannelServiceServer is the server API for NotifyChannelService service.
 // All implementations should embed UnimplementedNotifyChannelServiceServer
 // for forward compatibility
@@ -123,6 +133,7 @@ type NotifyChannelServiceServer interface {
 	GetNotifyChannelTypes(context.Context, *GetNotifyChannelTypesRequest) (*GetNotifyChannelTypesResponse, error)
 	GetNotifyChannelEnabled(context.Context, *GetNotifyChannelEnabledRequest) (*GetNotifyChannelEnabledResponse, error)
 	UpdateNotifyChannelEnabled(context.Context, *UpdateNotifyChannelEnabledRequest) (*UpdateNotifyChannelEnabledResponse, error)
+	GetNotifyChannelEnabledStatus(context.Context, *GetNotifyChannelEnabledStatusRequest) (*GetNotifyChannelEnabledStatusResponse, error)
 }
 
 // UnimplementedNotifyChannelServiceServer should be embedded to have forward compatible implementations.
@@ -152,6 +163,9 @@ func (*UnimplementedNotifyChannelServiceServer) GetNotifyChannelEnabled(context.
 }
 func (*UnimplementedNotifyChannelServiceServer) UpdateNotifyChannelEnabled(context.Context, *UpdateNotifyChannelEnabledRequest) (*UpdateNotifyChannelEnabledResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateNotifyChannelEnabled not implemented")
+}
+func (*UnimplementedNotifyChannelServiceServer) GetNotifyChannelEnabledStatus(context.Context, *GetNotifyChannelEnabledStatusRequest) (*GetNotifyChannelEnabledStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNotifyChannelEnabledStatus not implemented")
 }
 
 func RegisterNotifyChannelServiceServer(s grpc1.ServiceRegistrar, srv NotifyChannelServiceServer, opts ...grpc1.HandleOption) {
@@ -242,6 +256,15 @@ func _get_NotifyChannelService_serviceDesc(srv NotifyChannelServiceServer, opts 
 	if h.Interceptor != nil {
 		_NotifyChannelService_UpdateNotifyChannelEnabled_info = transport.NewServiceInfo("erda.core.services.notify.channel.NotifyChannelService", "UpdateNotifyChannelEnabled", srv)
 		_NotifyChannelService_UpdateNotifyChannelEnabled_Handler = h.Interceptor(_NotifyChannelService_UpdateNotifyChannelEnabled_Handler)
+	}
+
+	_NotifyChannelService_GetNotifyChannelEnabledStatus_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetNotifyChannelEnabledStatus(ctx, req.(*GetNotifyChannelEnabledStatusRequest))
+	}
+	var _NotifyChannelService_GetNotifyChannelEnabledStatus_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_NotifyChannelService_GetNotifyChannelEnabledStatus_info = transport.NewServiceInfo("erda.core.services.notify.channel.NotifyChannelService", "GetNotifyChannelEnabledStatus", srv)
+		_NotifyChannelService_GetNotifyChannelEnabledStatus_Handler = h.Interceptor(_NotifyChannelService_GetNotifyChannelEnabledStatus_Handler)
 	}
 
 	var serviceDesc = _NotifyChannelService_serviceDesc
@@ -428,6 +451,29 @@ func _get_NotifyChannelService_serviceDesc(srv NotifyChannelServiceServer, opts 
 					FullMethod: "/erda.core.services.notify.channel.NotifyChannelService/UpdateNotifyChannelEnabled",
 				}
 				return interceptor(ctx, in, info, _NotifyChannelService_UpdateNotifyChannelEnabled_Handler)
+			},
+		},
+		{
+			MethodName: "GetNotifyChannelEnabledStatus",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetNotifyChannelEnabledStatusRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(NotifyChannelServiceServer).GetNotifyChannelEnabledStatus(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _NotifyChannelService_GetNotifyChannelEnabledStatus_info)
+				}
+				if interceptor == nil {
+					return _NotifyChannelService_GetNotifyChannelEnabledStatus_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.services.notify.channel.NotifyChannelService/GetNotifyChannelEnabledStatus",
+				}
+				return interceptor(ctx, in, info, _NotifyChannelService_GetNotifyChannelEnabledStatus_Handler)
 			},
 		},
 	}

@@ -21,6 +21,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *GetNotifyChannelEnabledStatusRequest) Validate() error {
+	return nil
+}
+func (this *GetNotifyChannelEnabledStatusResponse) Validate() error {
+	return nil
+}
 func (this *UpdateNotifyChannelEnabledRequest) Validate() error {
 	return nil
 }
