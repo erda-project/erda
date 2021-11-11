@@ -102,7 +102,7 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 	}
 
 	monitor, err := p.monitorDB.GetByFields(map[string]interface{}{
-		"monitor_id": monitorId,
+		"MonitorId": monitorId,
 	})
 	if monitor != nil {
 		return monitor.ProjectId, nil
