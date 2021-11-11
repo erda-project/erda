@@ -201,6 +201,7 @@ func (r AfterDo) JSON(o interface{}) (*Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	// check content-type before decode body
 	contentType := resp.Header.Get("Content-Type")
 	body, err := ioutil.ReadAll(resp.Body)
