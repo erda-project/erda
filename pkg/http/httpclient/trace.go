@@ -47,6 +47,7 @@ func (t *DefaultTracer) TraceResponse(r *http.Response) {
 		io.WriteString(t.w, fmt.Sprintf("TraceResponse: read response body fail: %v", err))
 		return
 	}
+	r.Body.Close()
 	io.WriteString(t.w, fmt.Sprintf("ResponseBody: %s\n", string(body)))
 	r.Body = ioutil.NopCloser(bytes.NewReader(body))
 }
