@@ -57,43 +57,43 @@ type Project struct {
 type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
-func New(opts ...Option) *Project {
-	project := &Project{
+func New(options ...Option) *Project {
+	p := &Project{
 		memberCache: NewCache(time.Minute),
 		quotaCache:  NewCache(time.Minute),
 	}
-	for _, f := range opts {
-		f(project)
+	for _, f := range options {
+		f(p)
 	}
-	go project.updateCache()
-	return project
+	go p.updateCache()
+	return p
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(dbClient *dao.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(p *Project) {
-		p.db = dbClient
+		p.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(ucClient *ucauth.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(p *Project) {
-		p.uc = ucClient
+		p.uc = uc
 	}
 }
 
 // WithBundle 配置 bundle
-func WithBundle(b *bundle.Bundle) Option {
+func WithBundle(bdl *bundle.Bundle) Option {
 	return func(p *Project) {
-		p.bdl = b
+		p.bdl = bdl
 	}
 }
 
 // WithI18n set the translator
-func WithI18n(trans i18n.Translator) Option {
+func WithI18n(translator i18n.Translator) Option {
 	return func(p *Project) {
-		p.trans = trans
+		p.trans = translator
 	}
 }
 
@@ -1603,19 +1603,28 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			OwnerUserNickname: unknownName,
 		}
 
-		quotaItem, ok, err := p.retrieveQuotaItem(projectID)
+		quota, ok, err := p.retrieveQuotaItem(projectID)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
 			continue
 		}
-		if ok {
-			item.ProjectName = quotaItem.ProjectName
-			item.ProjectDisplayName = quotaItem.ProjectDisplayName
-			item.ProjectDesc = quotaItem.ProjectDesc
-			item.CPUQuota = quotaItem.CPUQuota
-			item.MemQuota = quotaItem.MemQuota
+		item.ProjectName = quota.ProjectName
+		item.ProjectDisplayName = quota.ProjectDisplayName
+		item.ProjectDesc = quota.ProjectDesc
+		for _, workspaceItem := range []*quotaItem{quota.ProdQuota, quota.StagingQuota, quota.TestQuota, quota.DevQuota} {
+			if workspaceItem == nil {
+				continue
+			}
+			if _, ok := clusterNamespaces[workspaceItem.ClusterName]; !ok {
+				continue
+			}
+			item.CPUQuota += workspaceItem.CPUQuota
+			item.MemQuota += workspaceItem.MemQuota
+		}
+		if item.CPUQuota == 0 && item.MemQuota == 0 {
+			continue
 		}
 
 		memberItem, ok, err := p.retrieveMemberItem(projectID)
@@ -1760,8 +1769,26 @@ func (p *Project) updateQuotaItemCache(projectID uint64) (*quotaCache, bool, err
 		ProjectName:        project.Name,
 		ProjectDisplayName: project.DisplayName,
 		ProjectDesc:        project.Desc,
-		CPUQuota:           quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota,
-		MemQuota:           quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota,
+		ProdQuota: &quotaItem{
+			ClusterName: quota.ProdClusterName,
+			CPUQuota:    quota.ProdCPUQuota,
+			MemQuota:    quota.ProdMemQuota,
+		},
+		StagingQuota: &quotaItem{
+			ClusterName: quota.StagingClusterName,
+			CPUQuota:    quota.StagingCPUQuota,
+			MemQuota:    quota.StagingMemQuota,
+		},
+		TestQuota: &quotaItem{
+			ClusterName: quota.TestClusterName,
+			CPUQuota:    quota.TestCPUQuota,
+			MemQuota:    quota.TestMemQuota,
+		},
+		DevQuota: &quotaItem{
+			ClusterName: quota.DevClusterName,
+			CPUQuota:    quota.DevCPUQuota,
+			MemQuota:    quota.DevMemQuota,
+		},
 	}
 
 	p.quotaCache.Store(projectID, &CacheItme{Object: item})

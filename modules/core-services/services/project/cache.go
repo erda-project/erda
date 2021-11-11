@@ -55,8 +55,10 @@ type quotaCache struct {
 	ProjectName        string
 	ProjectDisplayName string
 	ProjectDesc        string
-	CPUQuota           uint64
-	MemQuota           uint64
+	ProdQuota          *quotaItem
+	StagingQuota       *quotaItem
+	TestQuota          *quotaItem
+	DevQuota           *quotaItem
 }
 
 type memberCache struct {
@@ -64,4 +66,10 @@ type memberCache struct {
 	UserID    uint
 	Name      string
 	Nick      string
+}
+
+type quotaItem struct {
+	ClusterName string
+	CPUQuota    uint64
+	MemQuota    uint64
 }
