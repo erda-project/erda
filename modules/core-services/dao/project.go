@@ -16,8 +16,10 @@ package dao
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -215,4 +217,55 @@ func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingReque
 		return total, res, err
 	}
 	return total, res, nil
+}
+
+func (client *DBClient) GetProjectClustersNamespaces(result map[uint64]map[string][]string,
+	projectIDs []uint64, clusters []string) error {
+	var (
+		podInfos          []*apistructs.PodInfo
+		projectNamespaces []*apistructs.ProjectNamespaceModel
+	)
+
+	// 1) query from s_pod_info
+	if err := client.Where("project_id IN (?)", projectIDs).
+		Where(map[string]interface{}{"phase": "running"}).
+		Where("cluster IN (?)", clusters).
+		Find(&podInfos).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find podInfos")
+			return err
+		}
+	}
+
+	// 2) query from project_namespaces
+	if err := client.Find(&projectNamespaces).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find projectNamespace")
+			return err
+		}
+	}
+
+	// 3) patch to result
+	for _, podInfo := range podInfos {
+		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
+		if err != nil {
+			continue
+		}
+		clusters, ok := result[projectID]
+		if !ok {
+			clusters = make(map[string][]string)
+		}
+		clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
+		result[projectID] = clusters
+	}
+	for _, projectNamespace := range projectNamespaces {
+		clusters, ok := result[projectNamespace.ProjectID]
+		if !ok {
+			clusters = make(map[string][]string)
+		}
+		clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
+		result[projectNamespace.ProjectID] = clusters
+	}
+
+	return nil
 }

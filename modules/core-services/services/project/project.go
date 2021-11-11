@@ -1540,94 +1540,66 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 }
 
 func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clusterNames []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
-	l := logrus.WithField("func", "GetNamespacesBelongsTo")
+	var (
+		l            = logrus.WithField("func", "GetNamespacesBelongsTo")
+		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
+		unknownName  = p.trans.Text(langCodes, "OwnerUnknown")
 
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
-	unknownName := p.trans.Text(langCodes, "OwnerUnknown")
+		projects   []*model.Project
+		projectIDs []uint64
 
-	// 1）查找 s_pod_info
+		quotas  []*apistructs.ProjectQuota
+		quotasM = make(map[uint64]*apistructs.ProjectQuota)
+
+		data apistructs.GetProjectsNamesapcesResponseData
+	)
+
+	// 1) 查找项目列表
+	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
+		l.WithError(err).Errorln("failed to Find projects")
+		if gorm.IsRecordNotFoundError(err) {
+			return &apistructs.GetProjectsNamesapcesResponseData{
+				Total: 0,
+				List:  nil,
+			}, nil
+		}
+		return nil, err
+	}
+	for _, item := range projects {
+		projectIDs = append(projectIDs, uint64(item.ID))
+	}
+
+	// 2) 查询 quota 表
+	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&quotas).Error; err != nil {
+		l.WithError(err).Error("failed to Find quotas")
+		if !gorm.IsRecordNotFoundError(err) {
+			return nil, err
+		}
+	}
+	for _, item := range quotas {
+		quotasM[item.ProjectID] = item
+	}
+
+	// 3) 查找 project:cluster:namespace 三级对应关系
 	var projectsM = make(map[uint64]map[string][]string)
-	var podInfos []*apistructs.PodInfo
-	if err := p.db.Debug().Where("project_id != '' and project_id IS NOT NULL").
-		Where(map[string]interface{}{"org_id": orgID, "phase": "running"}).
-		Where("cluster IN (?)", clusterNames).
-		Find(&podInfos).Error; err != nil {
-		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to Find podInfos")
-			l.WithError(err).Errorln()
-			return nil, err
-		}
+	if err := p.db.GetProjectClustersNamespaces(projectsM, projectIDs, clusterNames); err != nil {
+		l.WithError(err).Errorln("failed to GetProjectClustersNamespaces")
+		return nil, err
 	}
-
-	for _, podInfo := range podInfos {
-		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
-		if err != nil {
-			continue
-		}
-		clusters, ok := projectsM[projectID]
-		if !ok {
-			clusters = make(map[string][]string)
-		}
-		clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
-		projectsM[projectID] = clusters
-	}
-
-	// 2) 查找 project_namespace
-	var projectNamespaces []*apistructs.ProjectNamespaceModel
-	if err := p.db.Find(&projectNamespaces).Error; err != nil {
-		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to Find projectNamespace")
-			l.WithError(err).Errorln()
-			return nil, err
-		}
-	}
-	for _, projectNamespace := range projectNamespaces {
-		clusters, ok := projectsM[projectNamespace.ProjectID]
-		if !ok {
-			clusters = make(map[string][]string)
-		}
-		clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
-		projectsM[projectNamespace.ProjectID] = clusters
-	}
-
-	var data apistructs.GetProjectsNamesapcesResponseData
 
 	// 3) 查询 quota and owner
-	for projectID, clusterNamespaces := range projectsM {
+	for _, proj := range projects {
 		var item = apistructs.ProjectNamespaces{
-			ProjectID: uint(projectID),
-			Clusters:  clusterNamespaces,
+			ProjectID: uint(proj.ID),
+			Clusters:  projectsM[uint64(proj.ID)],
 			// let owner default unknown
 			OwnerUserID:       0,
 			OwnerUserName:     unknownName,
 			OwnerUserNickname: unknownName,
 		}
+		patchProjectNamespaces(&item, quotas[proj.ID], clusterNames)
 
-		quota, ok, err := p.retrieveQuotaItem(projectID)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			continue
-		}
-		item.ProjectName = quota.ProjectName
-		item.ProjectDisplayName = quota.ProjectDisplayName
-		item.ProjectDesc = quota.ProjectDesc
-		for _, workspaceItem := range []*quotaItem{quota.ProdQuota, quota.StagingQuota, quota.TestQuota, quota.DevQuota} {
-			if workspaceItem == nil {
-				continue
-			}
-			if _, ok := clusterNamespaces[workspaceItem.ClusterName]; !ok {
-				continue
-			}
-			item.CPUQuota += workspaceItem.CPUQuota
-			item.MemQuota += workspaceItem.MemQuota
-		}
-		if item.CPUQuota == 0 && item.MemQuota == 0 {
-			continue
-		}
-
-		memberItem, ok, err := p.retrieveMemberItem(projectID)
+		memberItem, ok, err := p.retrieveMemberItem(uint64(proj.ID))
 		if err != nil {
 			return nil, err
 		}
@@ -1708,91 +1680,10 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 func (p *Project) updateCache() {
 	for {
 		select {
-		case projectID := <-p.quotaCache.C:
-			_, _, _ = p.updateQuotaItemCache(projectID)
 		case projectID := <-p.memberCache.C:
 			_, _, _ = p.updateMemberCache(projectID)
 		}
 	}
-}
-
-func (p *Project) retrieveQuotaItem(projectID uint64) (*quotaCache, bool, error) {
-	value, ok := p.quotaCache.Load(projectID)
-	// if not found in cache, retrieve from db and update cache
-	if !ok {
-		return p.updateQuotaItemCache(projectID)
-	}
-
-	cacheItem, ok := value.(*CacheItme)
-	if !ok {
-		panic(fmt.Sprintf("cache item type is error: %T", cacheItem))
-	}
-
-	// if cache is expired, update it and return current value
-	if cacheItem.IsExpired() {
-		p.quotaCache.Delete(projectID)
-		select {
-		case p.quotaCache.C <- projectID:
-		default:
-			logrus.Warnln("channel is blocked, update quota cache is skipped")
-		}
-	}
-	return cacheItem.Object.(*quotaCache), true, nil
-}
-
-func (p *Project) updateQuotaItemCache(projectID uint64) (*quotaCache, bool, error) {
-	var (
-		project model.Project
-		quota   apistructs.ProjectQuota
-		l       = logrus.WithField("func", "*Project.updateQuotaItemCache")
-	)
-	// query project record from db
-	if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			l.WithError(err).WithField("id", projectID).Warnln("failed to First project")
-			return nil, false, nil
-		}
-		return nil, false, err
-	}
-	// query quota record from db
-	if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
-		// allows if quota is not found
-		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to First project quota")
-			l.WithError(err).WithField("project_id", projectID).Errorln()
-		}
-		return nil, false, nil
-	}
-
-	item := &quotaCache{
-		ProjectID:          projectID,
-		ProjectName:        project.Name,
-		ProjectDisplayName: project.DisplayName,
-		ProjectDesc:        project.Desc,
-		ProdQuota: &quotaItem{
-			ClusterName: quota.ProdClusterName,
-			CPUQuota:    quota.ProdCPUQuota,
-			MemQuota:    quota.ProdMemQuota,
-		},
-		StagingQuota: &quotaItem{
-			ClusterName: quota.StagingClusterName,
-			CPUQuota:    quota.StagingCPUQuota,
-			MemQuota:    quota.StagingMemQuota,
-		},
-		TestQuota: &quotaItem{
-			ClusterName: quota.TestClusterName,
-			CPUQuota:    quota.TestCPUQuota,
-			MemQuota:    quota.TestMemQuota,
-		},
-		DevQuota: &quotaItem{
-			ClusterName: quota.DevClusterName,
-			CPUQuota:    quota.DevCPUQuota,
-			MemQuota:    quota.DevMemQuota,
-		},
-	}
-
-	p.quotaCache.Store(projectID, &CacheItme{Object: item})
-	return item, true, nil
 }
 
 func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, error) {
@@ -1854,5 +1745,39 @@ func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error
 		}
 		p.memberCache.Store(projectID, &CacheItme{Object: member})
 		return member, true, nil
+	}
+}
+
+func patchProjectNamespaces(item *apistructs.ProjectNamespaces, quota *apistructs.ProjectQuota, clusters []string) {
+	if item == nil || quota == nil {
+		return
+	}
+	var clusterM = make(map[string]struct{})
+	for _, cluster := range clusters {
+		clusterM[cluster] = struct{}{}
+	}
+	for _, q := range []quotaItem{
+		{
+			ClusterName: quota.ProdClusterName,
+			CPUQuota:    quota.ProdCPUQuota,
+			MemQuota:    quota.ProdMemQuota,
+		}, {
+			ClusterName: quota.StagingClusterName,
+			CPUQuota:    quota.StagingCPUQuota,
+			MemQuota:    quota.StagingMemQuota,
+		}, {
+			ClusterName: quota.TestClusterName,
+			CPUQuota:    quota.TestCPUQuota,
+			MemQuota:    quota.TestMemQuota,
+		}, {
+			ClusterName: quota.DevClusterName,
+			CPUQuota:    quota.DevCPUQuota,
+			MemQuota:    quota.DevMemQuota,
+		},
+	} {
+		if _, ok := clusterM[q.ClusterName]; ok {
+			item.CPUQuota += q.CPUQuota
+			item.MemQuota += q.MemQuota
+		}
 	}
 }
