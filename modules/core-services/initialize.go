@@ -188,6 +188,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithBundle(bdl),
 		project.WithI18n(p.Tran),
 	)
+	go proj.UpdateCache()
 
 	// init app service
 	app := application.New(

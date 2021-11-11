@@ -49,8 +49,8 @@ type Project struct {
 	bdl   *bundle.Bundle
 	trans i18n.Translator
 
-	memberCache *Cache
-	quotaCache  *Cache
+	memberCache  *Cache
+	clusterCahce *Cache
 }
 
 // Option 定义 Project 对象的配置选项
@@ -59,13 +59,12 @@ type Option func(*Project)
 // New 新建 Project 实例，通过 Project 实例操作企业资源
 func New(options ...Option) *Project {
 	p := &Project{
-		memberCache: NewCache(time.Minute),
-		quotaCache:  NewCache(time.Minute),
+		memberCache:  NewCache(time.Minute),
+		clusterCahce: NewCache(time.Minute),
 	}
 	for _, f := range options {
 		f(p)
 	}
-	go p.updateCache()
 	return p
 }
 
@@ -1540,94 +1539,64 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 }
 
 func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clusterNames []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
-	l := logrus.WithField("func", "GetNamespacesBelongsTo")
+	var (
+		l            = logrus.WithField("func", "GetNamespacesBelongsTo")
+		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
+		unknownName  = p.trans.Text(langCodes, "OwnerUnknown")
+		projects     []*model.Project
+		projectIDs   []uint64
+		quotas       []*apistructs.ProjectQuota
+		quotasM      = make(map[uint64]*apistructs.ProjectQuota)
+		data         apistructs.GetProjectsNamesapcesResponseData
+	)
 
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
-	unknownName := p.trans.Text(langCodes, "OwnerUnknown")
+	// 1) 查找项目列表
+	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
+		l.WithError(err).Errorln("failed to Find projects")
+		if gorm.IsRecordNotFoundError(err) {
+			return new(apistructs.GetProjectsNamesapcesResponseData), nil
+		}
+		return nil, err
+	}
+	for _, item := range projects {
+		projectIDs = append(projectIDs, uint64(item.ID))
+	}
 
-	// 1）查找 s_pod_info
-	var projectsM = make(map[uint64]map[string][]string)
-	var podInfos []*apistructs.PodInfo
-	if err := p.db.Debug().Where("project_id != '' and project_id IS NOT NULL").
-		Where(map[string]interface{}{"org_id": orgID, "phase": "running"}).
-		Where("cluster IN (?)", clusterNames).
-		Find(&podInfos).Error; err != nil {
+	// 2) 查询 quota 表
+	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&quotas).Error; err != nil {
+		l.WithError(err).Error("failed to Find quotas")
 		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to Find podInfos")
-			l.WithError(err).Errorln()
 			return nil, err
 		}
 	}
-
-	for _, podInfo := range podInfos {
-		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
-		if err != nil {
-			continue
-		}
-		clusters, ok := projectsM[projectID]
-		if !ok {
-			clusters = make(map[string][]string)
-		}
-		clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
-		projectsM[projectID] = clusters
+	for _, item := range quotas {
+		quotasM[item.ProjectID] = item
 	}
-
-	// 2) 查找 project_namespace
-	var projectNamespaces []*apistructs.ProjectNamespaceModel
-	if err := p.db.Find(&projectNamespaces).Error; err != nil {
-		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to Find projectNamespace")
-			l.WithError(err).Errorln()
-			return nil, err
-		}
-	}
-	for _, projectNamespace := range projectNamespaces {
-		clusters, ok := projectsM[projectNamespace.ProjectID]
-		if !ok {
-			clusters = make(map[string][]string)
-		}
-		clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
-		projectsM[projectNamespace.ProjectID] = clusters
-	}
-
-	var data apistructs.GetProjectsNamesapcesResponseData
 
 	// 3) 查询 quota and owner
-	for projectID, clusterNamespaces := range projectsM {
-		var item = apistructs.ProjectNamespaces{
-			ProjectID: uint(projectID),
-			Clusters:  clusterNamespaces,
+	for _, proj := range projects {
+		var item = &apistructs.ProjectNamespaces{
+			ProjectID:          uint(proj.ID),
+			ProjectName:        proj.Name,
+			ProjectDisplayName: proj.DisplayName,
+			ProjectDesc:        proj.Desc,
 			// let owner default unknown
 			OwnerUserID:       0,
 			OwnerUserName:     unknownName,
 			OwnerUserNickname: unknownName,
 		}
 
-		quota, ok, err := p.retrieveQuotaItem(projectID)
+		clustersCache, ok, err := p.retrieveClustersNamespaces(uint64(proj.ID))
 		if err != nil {
+			l.WithError(err).Errorln("failed to retrieveClustersNamespaces")
 			return nil, err
 		}
-		if !ok {
-			continue
+		if ok {
+			item.PatchClusters(clusterNames, clustersCache.Namespaces)
 		}
-		item.ProjectName = quota.ProjectName
-		item.ProjectDisplayName = quota.ProjectDisplayName
-		item.ProjectDesc = quota.ProjectDesc
-		for _, workspaceItem := range []*quotaItem{quota.ProdQuota, quota.StagingQuota, quota.TestQuota, quota.DevQuota} {
-			if workspaceItem == nil {
-				continue
-			}
-			if _, ok := clusterNamespaces[workspaceItem.ClusterName]; !ok {
-				continue
-			}
-			item.CPUQuota += workspaceItem.CPUQuota
-			item.MemQuota += workspaceItem.MemQuota
-		}
-		if item.CPUQuota == 0 && item.MemQuota == 0 {
-			continue
-		}
+		item.PatchQuota(quotasM[uint64(item.ProjectID)])
 
-		memberItem, ok, err := p.retrieveMemberItem(projectID)
+		memberItem, ok, err := p.retrieveMemberItem(uint64(proj.ID))
 		if err != nil {
 			return nil, err
 		}
@@ -1637,11 +1606,10 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			item.OwnerUserNickname = memberItem.Nick
 		}
 
-		data.List = append(data.List, &item)
+		data.List = append(data.List, item)
 	}
 
 	data.Total = uint32(len(data.List))
-
 	return &data, nil
 }
 
@@ -1705,94 +1673,59 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 	return strings.Join(messages, "; "), false
 }
 
-func (p *Project) updateCache() {
+func (p *Project) UpdateCache() {
+	var projects []*model.Project
+	p.db.Find(&projects)
+	go func() {
+		for _, proj := range projects {
+			p.memberCache.C <- uint64(proj.ID)
+			p.clusterCahce.C <- uint64(proj.ID)
+		}
+	}()
 	for {
 		select {
-		case projectID := <-p.quotaCache.C:
-			_, _, _ = p.updateQuotaItemCache(projectID)
 		case projectID := <-p.memberCache.C:
 			_, _, _ = p.updateMemberCache(projectID)
+		case projectID := <-p.clusterCahce.C:
+			_, _, _ = p.updateClustersNamespacesCache(projectID)
 		}
 	}
 }
 
-func (p *Project) retrieveQuotaItem(projectID uint64) (*quotaCache, bool, error) {
-	value, ok := p.quotaCache.Load(projectID)
+func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
+	value, ok := p.clusterCahce.Load(projectID)
 	// if not found in cache, retrieve from db and update cache
 	if !ok {
-		return p.updateQuotaItemCache(projectID)
+		return p.updateClustersNamespacesCache(projectID)
 	}
 
 	cacheItem, ok := value.(*CacheItme)
 	if !ok {
-		panic(fmt.Sprintf("cache item type is error: %T", cacheItem))
+		panic(fmt.Sprintf("clustersNamespaces cache item type is error: %T", value))
 	}
-
 	// if cache is expired, update it and return current value
 	if cacheItem.IsExpired() {
-		p.quotaCache.Delete(projectID)
+		p.clusterCahce.Delete(projectID)
 		select {
-		case p.quotaCache.C <- projectID:
+		case p.clusterCahce.C <- projectID:
 		default:
-			logrus.Warnln("channel is blocked, update quota cache is skipped")
+			logrus.Warnln("channel is blocked, to update project clusters namespaces relation ik skipped")
 		}
 	}
-	return cacheItem.Object.(*quotaCache), true, nil
+	return cacheItem.Object.(*projectClusterNamespaceCache), true, nil
 }
 
-func (p *Project) updateQuotaItemCache(projectID uint64) (*quotaCache, bool, error) {
+func (p *Project) updateClustersNamespacesCache(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
 	var (
-		project model.Project
-		quota   apistructs.ProjectQuota
-		l       = logrus.WithField("func", "*Project.updateQuotaItemCache")
+		l   = logrus.WithField("func", "*Project.updateClustersNamespacesCache")
+		obj = newProjectClusterNamespaceCache(projectID)
 	)
-	// query project record from db
-	if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			l.WithError(err).WithField("id", projectID).Warnln("failed to First project")
-			return nil, false, nil
-		}
+	if err := p.db.GetProjectClustersNamespacesByProjectID(obj.Namespaces, projectID); err != nil {
+		l.WithError(err).Warnln("failed to GetProjectClustersNamespacesByProjectID")
 		return nil, false, err
 	}
-	// query quota record from db
-	if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
-		// allows if quota is not found
-		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to First project quota")
-			l.WithError(err).WithField("project_id", projectID).Errorln()
-		}
-		return nil, false, nil
-	}
-
-	item := &quotaCache{
-		ProjectID:          projectID,
-		ProjectName:        project.Name,
-		ProjectDisplayName: project.DisplayName,
-		ProjectDesc:        project.Desc,
-		ProdQuota: &quotaItem{
-			ClusterName: quota.ProdClusterName,
-			CPUQuota:    quota.ProdCPUQuota,
-			MemQuota:    quota.ProdMemQuota,
-		},
-		StagingQuota: &quotaItem{
-			ClusterName: quota.StagingClusterName,
-			CPUQuota:    quota.StagingCPUQuota,
-			MemQuota:    quota.StagingMemQuota,
-		},
-		TestQuota: &quotaItem{
-			ClusterName: quota.TestClusterName,
-			CPUQuota:    quota.TestCPUQuota,
-			MemQuota:    quota.TestMemQuota,
-		},
-		DevQuota: &quotaItem{
-			ClusterName: quota.DevClusterName,
-			CPUQuota:    quota.DevCPUQuota,
-			MemQuota:    quota.DevMemQuota,
-		},
-	}
-
-	p.quotaCache.Store(projectID, &CacheItme{Object: item})
-	return item, true, nil
+	p.clusterCahce.Store(projectID, &CacheItme{Object: obj})
+	return obj, true, nil
 }
 
 func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, error) {
