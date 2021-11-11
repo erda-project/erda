@@ -1603,19 +1603,28 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			OwnerUserNickname: unknownName,
 		}
 
-		quotaItem, ok, err := p.retrieveQuotaItem(projectID)
+		quota, ok, err := p.retrieveQuotaItem(projectID)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
 			continue
 		}
-		if ok {
-			item.ProjectName = quotaItem.ProjectName
-			item.ProjectDisplayName = quotaItem.ProjectDisplayName
-			item.ProjectDesc = quotaItem.ProjectDesc
-			item.CPUQuota = quotaItem.CPUQuota
-			item.MemQuota = quotaItem.MemQuota
+		item.ProjectName = quota.ProjectName
+		item.ProjectDisplayName = quota.ProjectDisplayName
+		item.ProjectDesc = quota.ProjectDesc
+		for _, workspaceItem := range []*quotaItem{quota.ProdQuota, quota.StagingQuota, quota.TestQuota, quota.DevQuota} {
+			if workspaceItem == nil {
+				continue
+			}
+			if _, ok := clusterNamespaces[workspaceItem.ClusterName]; !ok {
+				continue
+			}
+			item.CPUQuota += workspaceItem.CPUQuota
+			item.MemQuota += workspaceItem.MemQuota
+		}
+		if item.CPUQuota == 0 && item.MemQuota == 0 {
+			continue
 		}
 
 		memberItem, ok, err := p.retrieveMemberItem(projectID)
@@ -1760,8 +1769,26 @@ func (p *Project) updateQuotaItemCache(projectID uint64) (*quotaCache, bool, err
 		ProjectName:        project.Name,
 		ProjectDisplayName: project.DisplayName,
 		ProjectDesc:        project.Desc,
-		CPUQuota:           quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota,
-		MemQuota:           quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota,
+		ProdQuota: &quotaItem{
+			ClusterName: quota.ProdClusterName,
+			CPUQuota:    quota.ProdCPUQuota,
+			MemQuota:    quota.ProdMemQuota,
+		},
+		StagingQuota: &quotaItem{
+			ClusterName: quota.StagingClusterName,
+			CPUQuota:    quota.StagingCPUQuota,
+			MemQuota:    quota.StagingMemQuota,
+		},
+		TestQuota: &quotaItem{
+			ClusterName: quota.TestClusterName,
+			CPUQuota:    quota.TestCPUQuota,
+			MemQuota:    quota.TestMemQuota,
+		},
+		DevQuota: &quotaItem{
+			ClusterName: quota.DevClusterName,
+			CPUQuota:    quota.DevCPUQuota,
+			MemQuota:    quota.DevMemQuota,
+		},
 	}
 
 	p.quotaCache.Store(projectID, &CacheItme{Object: item})
