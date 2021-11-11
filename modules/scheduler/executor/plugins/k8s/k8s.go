@@ -18,6 +18,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -782,6 +783,16 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 		return fmt.Errorf(errMsg)
 	}
 
+	registryInfos := k.composeRegistryInfos(sg)
+	if len(registryInfos) > 0 {
+		err = k.UpdateImageSecret(ns, registryInfos)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to update secret %s on namespace %s, err: %v", AliyunRegistry, ns, err)
+			logrus.Errorf(errMsg)
+			return fmt.Errorf(errMsg)
+		}
+	}
+
 	for _, svc := range sg.Services {
 		svc.Namespace = ns
 		runtimeServiceName := getDeployName(&svc)
@@ -1202,4 +1213,42 @@ func (k *Kubernetes) composeStatefulSetNodeAntiAffinityPreferred(workspace strin
 			},
 		},
 	})
+}
+
+func (k *Kubernetes) composeRegistryInfos(sg *apistructs.ServiceGroup) []apistructs.RegistryInfo {
+	registryInfos := []apistructs.RegistryInfo{}
+
+	for _, service := range sg.Services {
+		if service.ImageUsername != "" {
+			registryInfo := apistructs.RegistryInfo{}
+			registryInfo.Host = strings.Split(service.Image, "/")[0]
+			registryInfo.UserName = service.ImageUsername
+			registryInfo.Password = service.ImagePassword
+			registryInfos = append(registryInfos, registryInfo)
+		}
+	}
+	return registryInfos
+}
+
+func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectReference, error) {
+	secrets := []apiv1.LocalObjectReference{}
+
+	// need to set the secret in default namespace which named with REGISTRY_SECRET_NAME env
+	registryName := os.Getenv(RegistrySecretName)
+	if registryName == "" {
+		registryName = AliyunRegistry
+	}
+
+	_, err := k.secret.Get(namespace, registryName)
+	if err == nil {
+		secrets = append(secrets,
+			apiv1.LocalObjectReference{
+				Name: registryName,
+			})
+	} else {
+		if !k8serror.NotFound(err) {
+			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", registryName, namespace, err)
+		}
+	}
+	return secrets, nil
 }

@@ -159,6 +159,12 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		{PodLabels: map[string]string{"app": deployName}}}, k).Affinity
 	daemonset.Spec.Template.Spec.Affinity = &affinity
 
+	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	daemonset.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
+
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
 
