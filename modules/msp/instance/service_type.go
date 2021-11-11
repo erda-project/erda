@@ -20,4 +20,6 @@ const (
 	ServiceTypeMicroService   ServiceType = "MICRO_SERVICE"
 	ServiceTypeGeneralAbility ServiceType = "GENERAL_ABILITY"
 	ServiceTypeAddon          ServiceType = "ADDON"
+
+	Monitor = "monitor"
 )
