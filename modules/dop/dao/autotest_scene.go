@@ -175,6 +175,9 @@ func (db *DBClient) ListAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	//err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&scenes).
 	//	Offset(0).Limit(-1).Count(&total).Error
 	sql := db.Table("dice_autotest_scene").Where("set_id = ?", req.SetID)
+	if req.SceneGroupID != 0 {
+		sql = sql.Where("group_id = ?", req.SceneGroupID)
+	}
 	err := sql.Find(&scenes).Offset(0).Limit(-1).Count(&total).Error
 	if err != nil {
 		return 0, nil, err

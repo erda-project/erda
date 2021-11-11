@@ -1,0 +1,212 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package wxj
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
+
+type SceneStage struct {
+	base.DefaultProvider
+	CommonStageForm
+
+	sdk        *cptype.SDK
+	atTestPlan *autotestv2.Service
+	event      cptype.ComponentEvent
+}
+
+type CommonStageForm struct {
+	Version    string                 `json:"version,omitempty"`
+	Name       string                 `json:"name,omitempty"`
+	Type       string                 `json:"type,omitempty"`
+	State      State                  `json:"state,omitempty"`
+	Operations map[string]interface{} `json:"operations,omitempty"`
+	Data       Data                   `json:"data,omitempty"`
+	InParams   InParams               `json:"inParams,omitempty"`
+	Props      map[string]interface{} `json:"props,omitempty"`
+}
+
+type Data struct {
+	List []StageData `json:"value"`
+	Type string      `json:"type"`
+}
+
+type StageData struct {
+	Title      string                 `json:"title"`
+	ID         uint64                 `json:"id"`
+	GroupID    int                    `json:"groupId"`
+	Operations map[string]interface{} `json:"operations"`
+}
+
+type InParams struct {
+	SceneID    string `json:"sceneId__urlQuery"`
+	SceneSetID uint64 `json:"sceneSetId__urlQuery"`
+}
+
+type DragParams struct {
+	DragGroupKey int64 `json:"dragGroupKey"`
+	DropGroupKey int64 `json:"dropGroupKey"`
+	DragKey      int64 `json:"dragKey"`
+	DropKey      int64 `json:"dropKey"`
+	Position     int64 `json:"position"`
+}
+
+type State struct {
+	Visible             bool       `json:"visible"`
+	DragParams          DragParams `json:"dragParams"`
+	SetID               uint64     `json:"setID"`
+	StepId              uint64     `json:"stepId"`
+	ShowScenesSetDrawer bool       `json:"showScenesSetDrawer"`
+}
+
+type OperationBaseInfo struct {
+	FillMeta    string `json:"fillMeta"`
+	Key         string `json:"key"`
+	Icon        string `json:"icon"`
+	HoverTip    string `json:"hoverTip"`
+	HoverShow   bool   `json:"hoverShow"`
+	Text        string `json:"text"`
+	Confirm     string `json:"confirm,omitempty"`
+	Reload      bool   `json:"reload"`
+	Disabled    bool   `json:"disabled"`
+	DisabledTip string `json:"disabledTip"`
+}
+
+type OpMetaData struct {
+	Type   apistructs.StepAPIType   `json:"type"`   // 类型
+	Method apistructs.StepAPIMethod `json:"method"` // method
+	Value  string                   `json:"value"`  // 值
+	Name   string                   `json:"name"`   // 名称
+	ID     uint64                   `json:"id"`
+}
+
+type OpMetaInfo struct {
+	ID   uint64                 `json:"id"`
+	Data map[string]interface{} `json:"data"`
+}
+
+type OperationInfo struct {
+	OperationBaseInfo
+	Meta OpMetaInfo `json:"meta"`
+}
+
+func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, event cptype.ComponentEvent) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, s); err != nil {
+		return err
+	}
+
+	// sdk
+	s.sdk = cputil.SDK(ctx)
+	s.event = event
+	s.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	return nil
+}
+
+func (s *SceneStage) setToComponent(c *cptype.Component) error {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewStageData(scene apistructs.AutoTestScene) (s StageData) {
+	s.Title = fmt.Sprintf("#%d 场景: %s", scene.ID, scene.Name)
+	s.ID = scene.ID
+	s.GroupID = func() int {
+		if scene.GroupID == 0 {
+			return int(scene.ID)
+		}
+		return int(scene.GroupID)
+	}()
+	s.Operations = make(map[string]interface{})
+	s.Operations["add"] = OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:       AddParallelOperationKey.String(),
+			Icon:      "add",
+			HoverTip:  "添加并行场景",
+			HoverShow: true,
+			Reload:    true,
+			Disabled:  false,
+		},
+		Meta: OpMetaInfo{
+			ID: scene.ID,
+		},
+	}
+	s.Operations["delete"] = OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:      DeleteOperationKey.String(),
+			Icon:     "delete",
+			Reload:   true,
+			Disabled: false,
+		},
+		Meta: OpMetaInfo{
+			ID: scene.ID,
+		},
+	}
+	s.Operations["split"] = OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:       SplitOperationKey.String(),
+			Icon:      "split",
+			HoverTip:  "改为串行",
+			HoverShow: true,
+			Reload:    true,
+			Disabled: func() bool {
+				return scene.StepCount < 1
+			}(),
+		},
+		Meta: OpMetaInfo{
+			ID: scene.ID,
+			Data: map[string]interface{}{
+				"groupID": s.GroupID,
+			},
+		},
+	}
+	return
+}
+
+func GetOpsInfo(opsData interface{}) (*OpMetaInfo, error) {
+	if opsData == nil {
+		err := fmt.Errorf("empty operation data")
+		return nil, err
+	}
+	var op OperationInfo
+	cont, err := json.Marshal(opsData)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(cont, &op)
+	if err != nil {
+		return nil, err
+	}
+	meta := op.Meta
+	return &meta, nil
+}
