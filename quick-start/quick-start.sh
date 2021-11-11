@@ -210,6 +210,6 @@ ohai "Erda has been started successfully using ${INSTALL_LOCATION}/quick-start/d
 
 ohai "Next steps:"
 echo "visit ${tty_underline}http://erda.local${tty_reset} to start your journey on Erda"
-echo "visit ${tty_underline}https://docs.erda.cloud/1.2/manual/install/docker-install.html${tty_reset} for FAQs if you encounter problems installing Erda"
+echo "visit ${tty_underline}https://docs.erda.cloud/1.3/manual/install/docker-install.html${tty_reset} for FAQs if you encounter problems installing Erda"
 echo "visit ${tty_underline}https://docs.erda.cloud${tty_reset} for full introduction of Erda"
 echo "goto ${INSTALL_LOCATION}/quick-start/ dir to check and manage the docker-compose resources"
