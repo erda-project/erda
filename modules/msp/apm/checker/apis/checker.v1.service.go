@@ -48,6 +48,9 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data.ProjectID <= 0 {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
+	if req.Data.TenantId == "" {
+		return nil, errors.NewMissingParameterError("tenantId")
+	}
 
 	args, argsStr, err := s.ConvertArgsByMode(req.Data.Mode, req.Data.Config)
 
@@ -58,6 +61,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	now := time.Now()
 	m := &db.Metric{
 		ProjectID:  req.Data.ProjectID,
+		TenantId:   req.Data.TenantId,
 		Env:        req.Data.Env,
 		Name:       req.Data.Name,
 		Mode:       req.Data.Mode,
@@ -70,7 +74,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if err := s.metricDB.Create(m); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	checker := s.ConvertToChecker(ctx, m, req.Data.ProjectID)
+	checker := s.ConvertToChecker(ctx, m)
 	if checker != nil {
 		err := s.cache.Put(checker)
 		if err != nil {
@@ -111,7 +115,7 @@ func (s *checkerV1Service) ConvertArgsByMode(mode string, args map[string]*struc
 	}
 }
 
-func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, projectID int64) *pb.Checker {
+func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric) *pb.Checker {
 	config := make(map[string]*structpb.Value)
 	err := json.Unmarshal([]byte(m.Config), &config)
 	if err != nil {
@@ -125,46 +129,27 @@ func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, p
 		Config: config,
 		Tags: map[string]string{
 			"_metric_scope": "micro_service",
-			"project_id":    strconv.FormatInt(projectID, 10),
+			"project_id":    strconv.FormatInt(m.ProjectID, 10),
 			"env":           m.Env,
 			"metric":        strconv.FormatInt(m.ID, 10),
 			"metric_name":   m.Name,
 		},
 	}
-	response, err := s.projectServer.GetProject(ctx, &projectpb.GetProjectRequest{ProjectID: strconv.FormatInt(projectID, 10)})
-	if err == nil && response != nil {
-		project := response.Data
-		if project != nil && len(project.Relationship) > 0 {
-			var relationship *projectpb.TenantRelationship
-			for _, r := range project.Relationship {
-				if r.Workspace == m.Env {
-					relationship = r
-				}
-			}
-			if relationship != nil {
-				s.addTenantTags(ck, relationship.TenantID, project.Name)
-				return ck
-			}
-		}
-		return nil
-	}
-
-	scopeInfo, err := s.metricDB.QueryScopeInfo(projectID, m.Env)
-	if err == nil && scopeInfo != nil {
-		s.addTenantTags(ck, scopeInfo.ScopeID, scopeInfo.ProjectName)
-	}
+	s.addTenantTags(ck, m.TenantId)
 	return ck
 }
 
-func (s *checkerV1Service) addTenantTags(ck *pb.Checker, tenantId, projectName string) {
+func (s *checkerV1Service) addTenantTags(ck *pb.Checker, tenantId string) {
 	ck.Tags["_metric_scope_id"] = tenantId
 	ck.Tags["terminus_key"] = tenantId
-	ck.Tags["project_name"] = projectName
 }
 
 func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCheckerV1Request) (*pb.UpdateCheckerV1Response, error) {
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
+	}
+	if req.Data.TenantId == "" {
+		return nil, errors.NewMissingParameterError("tenantId")
 	}
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
@@ -177,6 +162,9 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	metric.Name = req.Data.Name
 	metric.URL = args.(*pb.HttpModeConfig).Url
 	metric.Config = argsStr
+	if metric.TenantId == "" {
+		metric.TenantId = req.Data.TenantId
+	}
 
 	if err := s.metricDB.Update(metric); err != nil {
 		return nil, errors.NewDatabaseError(err)
@@ -186,7 +174,7 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 		return nil, errors.NewDatabaseError(err)
 	}
 	req.Data.ProjectID = projectID
-	checker := s.ConvertToChecker(ctx, metric, projectID)
+	checker := s.ConvertToChecker(ctx, metric)
 	if checker != nil {
 		err := s.cache.Put(checker)
 		if err != nil {
@@ -285,6 +273,9 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 				// data fix for history record
 				m.ProjectID = proj.ProjectID
 				m.Extra = strconv.FormatInt(proj.ProjectID, 10)
+				if m.TenantId == "" {
+					m.TenantId = req.TenantId
+				}
 				err := s.metricDB.Update(m)
 				if err != nil {
 					return nil, errors.NewDatabaseError(err)
@@ -312,6 +303,14 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
+		if item.TenantId == "" {
+			item.TenantId = req.TenantId
+			err := s.metricDB.Update(item)
+			if err != nil {
+				return nil, errors.NewDatabaseError(err)
+			}
+		}
+
 		config := make(map[string]*structpb.Value)
 		if item.Config != "" {
 			err := handleBody(item, config)

@@ -72,6 +72,11 @@ func (m *CreateCheckerV1Request) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Env = vals[0]
+			case "data.tenantId":
+				if m.Data == nil {
+					m.Data = &CheckerV1{}
+				}
+				m.Data.TenantId = vals[0]
 			}
 		}
 	}
@@ -134,6 +139,11 @@ func (m *UpdateCheckerV1Request) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Env = vals[0]
+			case "data.tenantId":
+				if m.Data == nil {
+					m.Data = &CheckerV1{}
+				}
+				m.Data.TenantId = vals[0]
 			}
 		}
 	}
@@ -207,6 +217,11 @@ func (m *DeleteCheckerV1Response) UnmarshalURLValues(prefix string, values url.V
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Env = vals[0]
+			case "data.tenantId":
+				if m.Data == nil {
+					m.Data = &CheckerV1{}
+				}
+				m.Data.TenantId = vals[0]
 			}
 		}
 	}
@@ -263,6 +278,11 @@ func (m *GetCheckerV1Response) UnmarshalURLValues(prefix string, values url.Valu
 					m.Data = &CheckerV1{}
 				}
 				m.Data.Env = vals[0]
+			case "data.tenantId":
+				if m.Data == nil {
+					m.Data = &CheckerV1{}
+				}
+				m.Data.TenantId = vals[0]
 			}
 		}
 	}
@@ -282,6 +302,8 @@ func (m *DescribeCheckersV1Request) UnmarshalURLValues(prefix string, values url
 				m.ProjectID = val
 			case "env":
 				m.Env = vals[0]
+			case "tenantId":
+				m.TenantId = vals[0]
 			}
 		}
 	}
@@ -467,6 +489,8 @@ func (m *CheckerV1) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.ProjectID = val
 			case "env":
 				m.Env = vals[0]
+			case "tenantId":
+				m.TenantId = vals[0]
 			}
 		}
 	}

@@ -55,6 +55,7 @@ type JoinFields struct {
 	Mode        string `gorm:"column:mode"`
 	URL         string `gorm:"column:url"`
 	ProjectID   int64  `gorm:"column:project_id"`
+	TenantId    string `gorm:"column:tenant_id"`
 	ProjectName string `gorm:"column:project_name"`
 	Env         string `gorm:"column:env"`
 	Config      string `gorm:"column:config"`
@@ -108,7 +109,7 @@ func (db *CheckerDB) updateCacheIfNeed(list []*JoinFields) error {
 			if item.Deleted() {
 				continue
 			}
-			info, err := db.queryScopeInfo(item.ProjectID, item.Env)
+			info, err := db.queryScopeInfo(item.TenantId)
 			if err != nil {
 				return err
 			}
@@ -119,7 +120,7 @@ func (db *CheckerDB) updateCacheIfNeed(list []*JoinFields) error {
 		for _, item := range list {
 			key := scopeCacheKey{ProjectID: item.ProjectID, Env: item.Env}
 			if _, ok := db.cache[key]; !ok && !item.Deleted() {
-				info, err := db.queryScopeInfo(item.ProjectID, item.Env)
+				info, err := db.queryScopeInfo(item.TenantId)
 				if err != nil {
 					return err
 				}
@@ -130,11 +131,11 @@ func (db *CheckerDB) updateCacheIfNeed(list []*JoinFields) error {
 	return nil
 }
 
-func (db *CheckerDB) queryScopeInfo(projectID int64, env string) (*scopeInfo, error) {
+func (db *CheckerDB) queryScopeInfo(terminusKey string) (*scopeInfo, error) {
 	var info scopeInfo
 	if err := db.DB.Table("sp_monitor").
 		Select("`terminus_key` AS `scope_id`, `project_name`").
-		Where("`project_id`=? AND `workspace`=?", strconv.FormatInt(projectID, 10), env).
+		Where("`terminus_key`=?", terminusKey).
 		Where("`is_delete`=?", "N").
 		Last(&info).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
@@ -176,19 +177,4 @@ func convertToChecker(fields *JoinFields) *pb.Checker {
 			"metric_name":      fields.Name,
 		},
 	}
-}
-
-func (db *MetricDB) QueryScopeInfo(projectID int64, env string) (*scopeInfo, error) {
-	var info scopeInfo
-	if err := db.DB.Table("sp_monitor").
-		Select("`terminus_key` AS `scope_id`, `project_name`").
-		Where("`project_id`=? AND `workspace`=?", strconv.FormatInt(projectID, 10), env).
-		Where("`is_delete`=?", "N").
-		Last(&info).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &info, nil
 }
