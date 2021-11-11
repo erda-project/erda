@@ -260,3 +260,7 @@ func (client *DBClient) GetProjectClustersNamespacesByProjectID(result map[strin
 
 	return nil
 }
+
+func (client *DBClient) ProjectIsExists(projectID uint64) bool {
+	return client.First(new(model.Project), map[string]interface{}{"id": projectID}).Error == nil
+}
