@@ -1597,7 +1597,10 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			OwnerUserName:     unknownName,
 			OwnerUserNickname: unknownName,
 		}
-		patchProjectNamespaces(&item, quotas[proj.ID], clusterNames)
+		patchProjectNamespaces(&item, quotasM[uint64(item.ProjectID)], clusterNames)
+		if item.CPUQuota == 0 && item.MemQuota == 0 {
+			continue
+		}
 
 		memberItem, ok, err := p.retrieveMemberItem(uint64(proj.ID))
 		if err != nil {
