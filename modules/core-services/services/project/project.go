@@ -49,8 +49,8 @@ type Project struct {
 	bdl   *bundle.Bundle
 	trans i18n.Translator
 
-	memberCache *Cache
-	quotaCache  *Cache
+	memberCache  *Cache
+	clusterCahce *Cache
 }
 
 // Option 定义 Project 对象的配置选项
@@ -59,8 +59,8 @@ type Option func(*Project)
 // New 新建 Project 实例，通过 Project 实例操作企业资源
 func New(options ...Option) *Project {
 	p := &Project{
-		memberCache: NewCache(time.Minute),
-		quotaCache:  NewCache(time.Minute),
+		memberCache:  NewCache(time.Minute),
+		clusterCahce: NewCache(time.Minute),
 	}
 	for _, f := range options {
 		f(p)
@@ -1580,30 +1580,33 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		quotasM[item.ProjectID] = item
 	}
 
-	// 3) 查找 project:cluster:namespace 三级对应关系
-	var projectsM = make(map[uint64]map[string][]string)
-	if err := p.db.GetProjectClustersNamespaces(projectsM, projectIDs, clusterNames); err != nil {
-		l.WithError(err).Errorln("failed to GetProjectClustersNamespaces")
-		return nil, err
-	}
-
 	// 3) 查询 quota and owner
 	for _, proj := range projects {
-		var item = apistructs.ProjectNamespaces{
+		var item = &apistructs.ProjectNamespaces{
 			ProjectID:          uint(proj.ID),
 			ProjectName:        proj.Name,
 			ProjectDisplayName: proj.DisplayName,
 			ProjectDesc:        proj.Desc,
-			Clusters:           projectsM[uint64(proj.ID)],
+			Clusters: make(map[string][]string),
 			// let owner default unknown
 			OwnerUserID:       0,
 			OwnerUserName:     unknownName,
 			OwnerUserNickname: unknownName,
 		}
-		patchProjectNamespaces(&item, quotasM[uint64(item.ProjectID)], clusterNames)
-		if item.CPUQuota == 0 && item.MemQuota == 0 {
-			continue
+
+		clustersCache, ok, err := p.retrieveClustersNamespaces(uint64(proj.ID))
+		if err != nil {
+			l.WithError(err).Errorln("failed to retrieveClustersNamespaces")
+			return nil, err
 		}
+		if ok {
+			item.PatchClusters(clusterNames, clustersCache.Clusters)
+		}
+
+		item.PatchQuota(quotasM[uint64(item.ProjectID)])
+		//if item.CPUQuota == 0 && item.MemQuota == 0 {
+		//	continue
+		//}
 
 		memberItem, ok, err := p.retrieveMemberItem(uint64(proj.ID))
 		if err != nil {
@@ -1615,7 +1618,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			item.OwnerUserNickname = memberItem.Nick
 		}
 
-		data.List = append(data.List, &item)
+		data.List = append(data.List, item)
 	}
 
 	data.Total = uint32(len(data.List))
@@ -1688,8 +1691,46 @@ func (p *Project) updateCache() {
 		select {
 		case projectID := <-p.memberCache.C:
 			_, _, _ = p.updateMemberCache(projectID)
+		case projectID := <-p.clusterCahce.C:
+			_, _, _ = p.updateClustersNamespacesCache(projectID)
 		}
 	}
+}
+
+func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
+	value, ok := p.clusterCahce.Load(projectID)
+	// if not found in cache, retrieve from db and update cache
+	if !ok {
+		return p.updateClustersNamespacesCache(projectID)
+	}
+
+	cacheItme, ok := value.(*CacheItme)
+	if !ok {
+		panic(fmt.Sprintf("clustersNamespaces cache item type is error: %T", value))
+	}
+	// if cache is expired, update it and return current value
+	if cacheItme.IsExpired() {
+		p.clusterCahce.Delete(projectID)
+		select {
+		case p.clusterCahce.C <- projectID:
+		default:
+			logrus.Warnln("channel is blocked, to update project clusters namespaces relation ik skipped")
+		}
+	}
+	return cacheItme.Object.(*projectClusterNamespaceCache), true, nil
+}
+
+func (p *Project) updateClustersNamespacesCache(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
+	var (
+		l   = logrus.WithField("func", "*Project.updateClustersNamespacesCache")
+		obj = newProjectClusterNamespaceCache(projectID)
+	)
+	if err := p.db.GetProjectClustersNamespacesByProjectID(obj.Clusters, projectID); err != nil {
+		l.WithError(err).Warnln("failed to GetProjectClustersNamespacesByProjectID")
+		return nil, false, err
+	}
+	p.clusterCahce.Store(projectID, &CacheItme{Object: obj})
+	return obj, true, nil
 }
 
 func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, error) {
@@ -1751,39 +1792,5 @@ func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error
 		}
 		p.memberCache.Store(projectID, &CacheItme{Object: member})
 		return member, true, nil
-	}
-}
-
-func patchProjectNamespaces(item *apistructs.ProjectNamespaces, quota *apistructs.ProjectQuota, clusters []string) {
-	if item == nil || quota == nil {
-		return
-	}
-	var clusterM = make(map[string]struct{})
-	for _, cluster := range clusters {
-		clusterM[cluster] = struct{}{}
-	}
-	for _, q := range []quotaItem{
-		{
-			ClusterName: quota.ProdClusterName,
-			CPUQuota:    quota.ProdCPUQuota,
-			MemQuota:    quota.ProdMemQuota,
-		}, {
-			ClusterName: quota.StagingClusterName,
-			CPUQuota:    quota.StagingCPUQuota,
-			MemQuota:    quota.StagingMemQuota,
-		}, {
-			ClusterName: quota.TestClusterName,
-			CPUQuota:    quota.TestCPUQuota,
-			MemQuota:    quota.TestMemQuota,
-		}, {
-			ClusterName: quota.DevClusterName,
-			CPUQuota:    quota.DevCPUQuota,
-			MemQuota:    quota.DevMemQuota,
-		},
-	} {
-		if _, ok := clusterM[q.ClusterName]; ok {
-			item.CPUQuota += q.CPUQuota
-			item.MemQuota += q.MemQuota
-		}
 	}
 }

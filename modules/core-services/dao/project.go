@@ -272,3 +272,46 @@ func (client *DBClient) GetProjectClustersNamespaces(result map[uint64]map[strin
 
 	return nil
 }
+
+func (client *DBClient) GetProjectClustersNamespacesByProjectID(result map[string][]string, projectID uint64) error {
+	if result == nil {
+		return errors.New("the result map can not be nil")
+	}
+
+	var (
+		podInfos          []*apistructs.PodInfo
+		projectNamespaces []*apistructs.ProjectNamespaceModel
+	)
+
+	// 1) query from s_pod_info
+	if err := client.Where(map[string]interface{}{"project_id": projectID, "phase": "running"}).
+		Find(&podInfos).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find podInfos")
+			return err
+		}
+	}
+
+	// 2) query from project_namespaces
+	if err := client.Where(map[string]interface{}{"project_id": projectID}).
+		Find(&projectNamespaces).Error; err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			err = errors.Wrap(err, "failed to Find projectNamespace")
+			return err
+		}
+	}
+
+	// 3) patch to result
+	for _, podInfo := range podInfos {
+		clusters := result[podInfo.Cluster]
+		clusters = append(clusters, podInfo.K8sNamespace)
+		result[podInfo.Cluster] = clusters
+	}
+	for _, projectNamespace := range projectNamespaces {
+		clusters := result[projectNamespace.ClusterName]
+		clusters = append(clusters, projectNamespace.K8sNamespace)
+		result[projectNamespace.ClusterName] = clusters
+	}
+
+	return nil
+}

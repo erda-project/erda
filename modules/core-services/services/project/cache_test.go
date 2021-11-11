@@ -26,10 +26,7 @@ func TestNewCache(t *testing.T) {
 		member := new(memberCache)
 		memberC.Store(i, &CacheItme{Object: member})
 	}
-	for i := 0; i < 20; i++ {
-		quota := new(quotaCache)
-		quotaC.Store(i, &CacheItme{Object: quota})
-	}
+
 	time.Sleep(time.Second)
 	for i := 0; i < 20; i++ {
 		value, ok := quotaC.Load(i)
@@ -48,7 +45,7 @@ func TestNewCache(t *testing.T) {
 			t.Fatal("it should be expired")
 		}
 	}
-	quotaC.Store(1, &CacheItme{Object: new(quotaCache)})
+
 	value, _ := quotaC.Load(1)
 	if isExpired := value.(*CacheItme).IsExpired(); isExpired {
 		t.Fatal("it should not be expired")
