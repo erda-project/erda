@@ -627,6 +627,10 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 					}
 				}
 				interval := int64(m.Config["interval"].GetNumberValue())
+				if interval == 0 {
+					// old record
+					interval = int64(30)
+				}
 				if stat == StatusRED {
 					duration := int64(0)
 					for i := len(item.time) - 1; i >= 0; i-- {
