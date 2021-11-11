@@ -1675,6 +1675,14 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 }
 
 func (p *Project) updateCache() {
+	var projects []*model.Project
+	p.db.Find(&projects)
+	go func() {
+		for _, proj := range projects {
+			p.memberCache.C <- uint64(proj.ID)
+			p.clusterCahce.C <- uint64(proj.ID)
+		}
+	}()
 	for {
 		select {
 		case projectID := <-p.memberCache.C:
