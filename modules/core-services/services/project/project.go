@@ -1590,8 +1590,11 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 	// 3) 查询 quota and owner
 	for _, proj := range projects {
 		var item = apistructs.ProjectNamespaces{
-			ProjectID: uint(proj.ID),
-			Clusters:  projectsM[uint64(proj.ID)],
+			ProjectID:          uint(proj.ID),
+			ProjectName:        proj.Name,
+			ProjectDisplayName: proj.DisplayName,
+			ProjectDesc:        proj.Desc,
+			Clusters:           projectsM[uint64(proj.ID)],
 			// let owner default unknown
 			OwnerUserID:       0,
 			OwnerUserName:     unknownName,
