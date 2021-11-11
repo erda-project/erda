@@ -81,7 +81,11 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 	if len(tenants) <= 0 {
 		return "", errors.NewNotFoundError(group)
 	}
+	var monitorId = ""
 	for _, tenant := range tenants {
+		if tenant.Engine == instance.Monitor {
+			monitorId = tenant.ID
+		}
 		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
 		if err != nil {
 			return "", errors.NewDatabaseError(err)
@@ -96,6 +100,17 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 			}
 		}
 	}
+
+	monitor, err := p.monitorDB.GetByFields(map[string]interface{}{
+		"monitor_id": monitorId,
+	})
+	if monitor != nil {
+		return monitor.ProjectId, nil
+	}
+	if err != nil {
+		return "", errors.NewDatabaseError(err)
+	}
+
 	return "", errors.NewNotFoundError(group)
 }
 
