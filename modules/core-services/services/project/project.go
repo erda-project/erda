@@ -65,7 +65,6 @@ func New(options ...Option) *Project {
 	for _, f := range options {
 		f(p)
 	}
-	go p.updateCache()
 	return p
 }
 
@@ -1674,7 +1673,7 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 	return strings.Join(messages, "; "), false
 }
 
-func (p *Project) updateCache() {
+func (p *Project) UpdateCache() {
 	var projects []*model.Project
 	p.db.Find(&projects)
 	go func() {
