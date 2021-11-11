@@ -221,6 +221,9 @@ func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingReque
 
 func (client *DBClient) GetProjectClustersNamespaces(result map[uint64]map[string][]string,
 	projectIDs []uint64, clusters []string) error {
+	if result == nil {
+		return errors.New("the result can not be nil")
+	}
 	var (
 		podInfos          []*apistructs.PodInfo
 		projectNamespaces []*apistructs.ProjectNamespaceModel
