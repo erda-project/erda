@@ -26,14 +26,12 @@ type Cache struct {
 }
 
 func NewCache(expiredDuration time.Duration) *Cache {
-	return &Cache{expiredDuration: expiredDuration, C: make(chan uint64, 10)}
+	return &Cache{expiredDuration: expiredDuration, C: make(chan uint64, 1000)}
 }
 
-func (c *Cache) Store(key interface{}, value interface{}) {
+func (c *Cache) Store(key interface{}, value *CacheItme) {
 	c.Map.Store(key, value)
-	if v, ok := value.(*CacheItme); ok {
-		v.UpdateExpiredTime(c.expiredDuration)
-	}
+	value.UpdateExpiredTime(c.expiredDuration)
 }
 
 type CacheItme struct {

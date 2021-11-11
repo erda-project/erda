@@ -50,49 +50,49 @@ type Project struct {
 	trans i18n.Translator
 
 	memberCache  *Cache
-	clusterCahce *Cache
+	clusterCache *Cache
 }
 
 // Option 定义 Project 对象的配置选项
 type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
-func New(options ...Option) *Project {
+func New(opts ...Option) *Project {
 	p := &Project{
 		memberCache:  NewCache(time.Minute),
-		clusterCahce: NewCache(time.Minute),
+		clusterCache: NewCache(time.Minute),
 	}
-	for _, f := range options {
+	for _, f := range opts {
 		f(p)
 	}
 	return p
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao.DBClient) Option {
-	return func(p *Project) {
-		p.db = db
+func WithDBClient(dbClient *dao.DBClient) Option {
+	return func(project *Project) {
+		project.db = dbClient
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
-	return func(p *Project) {
-		p.uc = uc
+func WithUCClient(ucClient *ucauth.UCClient) Option {
+	return func(project *Project) {
+		project.uc = ucClient
 	}
 }
 
 // WithBundle 配置 bundle
 func WithBundle(bdl *bundle.Bundle) Option {
-	return func(p *Project) {
-		p.bdl = bdl
+	return func(project *Project) {
+		project.bdl = bdl
 	}
 }
 
 // WithI18n set the translator
-func WithI18n(translator i18n.Translator) Option {
-	return func(p *Project) {
-		p.trans = translator
+func WithI18n(trans i18n.Translator) Option {
+	return func(project *Project) {
+		project.trans = trans
 	}
 }
 
@@ -1600,7 +1600,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		if err != nil {
 			return nil, err
 		}
-		if ok {
+		if ok && memberItem.UserID != 0 {
 			item.OwnerUserID = memberItem.UserID
 			item.OwnerUserName = memberItem.Name
 			item.OwnerUserNickname = memberItem.Nick
@@ -1676,24 +1676,30 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 func (p *Project) UpdateCache() {
 	var projects []*model.Project
 	p.db.Find(&projects)
-	go func() {
-		for _, proj := range projects {
-			p.memberCache.C <- uint64(proj.ID)
-			p.clusterCahce.C <- uint64(proj.ID)
-		}
-	}()
+	for _, proj := range projects {
+		_, _, _ = p.updateMemberCache(uint64(proj.ID))
+		_, _, _ = p.updateClustersNamespacesCache(uint64(proj.ID))
+	}
 	for {
 		select {
 		case projectID := <-p.memberCache.C:
+			if !p.db.ProjectIsExists(projectID) {
+				p.memberCache.Delete(projectID)
+				continue
+			}
 			_, _, _ = p.updateMemberCache(projectID)
-		case projectID := <-p.clusterCahce.C:
+		case projectID := <-p.clusterCache.C:
+			if !p.db.ProjectIsExists(projectID) {
+				p.clusterCache.Delete(projectID)
+				continue
+			}
 			_, _, _ = p.updateClustersNamespacesCache(projectID)
 		}
 	}
 }
 
 func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
-	value, ok := p.clusterCahce.Load(projectID)
+	value, ok := p.clusterCache.Load(projectID)
 	// if not found in cache, retrieve from db and update cache
 	if !ok {
 		return p.updateClustersNamespacesCache(projectID)
@@ -1705,9 +1711,8 @@ func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterN
 	}
 	// if cache is expired, update it and return current value
 	if cacheItem.IsExpired() {
-		p.clusterCahce.Delete(projectID)
 		select {
-		case p.clusterCahce.C <- projectID:
+		case p.clusterCache.C <- projectID:
 		default:
 			logrus.Warnln("channel is blocked, to update project clusters namespaces relation ik skipped")
 		}
@@ -1724,7 +1729,7 @@ func (p *Project) updateClustersNamespacesCache(projectID uint64) (*projectClust
 		l.WithError(err).Warnln("failed to GetProjectClustersNamespacesByProjectID")
 		return nil, false, err
 	}
-	p.clusterCahce.Store(projectID, &CacheItme{Object: obj})
+	p.clusterCache.Store(projectID, &CacheItme{Object: obj})
 	return obj, true, nil
 }
 
@@ -1741,7 +1746,6 @@ func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, erro
 	}
 	// if cache is expired, update it and return current value
 	if cacheItem.IsExpired() {
-		p.memberCache.Delete(projectID)
 		select {
 		case p.memberCache.C <- projectID:
 		default:
@@ -1772,7 +1776,9 @@ func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error
 		return nil, false, err
 	case len(members) == 0:
 		l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
-		return nil, false, nil
+		member := &memberCache{ProjectID: projectID}
+		p.memberCache.Store(projectID, &CacheItme{Object: member})
+		return member, false, nil
 	default:
 		hitFirstValidOwnerOrLead(&member, members)
 		userID, err := strconv.ParseUint(member.UserID, 10, 64)
