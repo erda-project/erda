@@ -59,3 +59,75 @@ func TestConvertErrors(t *testing.T) {
 	task.Result.ConvertErrors()
 	assert.Equal(t, fmt.Sprintf("err\nstartTime: %s\nendTime: %s\ncount: %d", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"), 2), task.Result.Errors[0].Msg)
 }
+
+func TestPipelineTaskLoop_IsEmpty(t *testing.T) {
+	type fields struct {
+		Break    string
+		Strategy *LoopStrategy
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   bool
+	}{
+		{
+			name: "test_break",
+			fields: fields{
+				Break: "test",
+			},
+			want: false,
+		},
+		{
+			name: "test_DeclineLimitSec",
+			fields: fields{
+				Strategy: &LoopStrategy{
+					DeclineLimitSec: 1,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test_DeclineRatio",
+			fields: fields{
+				Strategy: &LoopStrategy{
+					DeclineLimitSec: 1,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test_IntervalSec",
+			fields: fields{
+				Strategy: &LoopStrategy{
+					DeclineLimitSec: 1,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test_MaxTimes",
+			fields: fields{
+				Strategy: &LoopStrategy{
+					DeclineLimitSec: 1,
+				},
+			},
+			want: false,
+		},
+		{
+			name:   "test_MaxTimes",
+			fields: fields{},
+			want:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &PipelineTaskLoop{
+				Break:    tt.fields.Break,
+				Strategy: tt.fields.Strategy,
+			}
+			if got := l.IsEmpty(); got != tt.want {
+				t.Errorf("IsEmpty() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
