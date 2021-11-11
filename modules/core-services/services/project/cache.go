@@ -59,14 +59,14 @@ type memberCache struct {
 
 // projectClusterNamespaceCache caches the relationship for project:cluster:namespace
 type projectClusterNamespaceCache struct {
-	ProjectID uint64
-	Clusters  map[string][]string
+	ProjectID  uint64
+	Namespaces map[string][]string
 }
 
 func newProjectClusterNamespaceCache(projectID uint64) *projectClusterNamespaceCache {
 	return &projectClusterNamespaceCache{
-		ProjectID: projectID,
-		Clusters:  make(map[string][]string),
+		ProjectID:  projectID,
+		Namespaces: make(map[string][]string),
 	}
 }
 

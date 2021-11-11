@@ -1544,24 +1544,18 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		l            = logrus.WithField("func", "GetNamespacesBelongsTo")
 		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
 		unknownName  = p.trans.Text(langCodes, "OwnerUnknown")
-
-		projects   []*model.Project
-		projectIDs []uint64
-
-		quotas  []*apistructs.ProjectQuota
-		quotasM = make(map[uint64]*apistructs.ProjectQuota)
-
-		data apistructs.GetProjectsNamesapcesResponseData
+		projects     []*model.Project
+		projectIDs   []uint64
+		quotas       []*apistructs.ProjectQuota
+		quotasM      = make(map[uint64]*apistructs.ProjectQuota)
+		data         apistructs.GetProjectsNamesapcesResponseData
 	)
 
 	// 1) 查找项目列表
 	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
 		l.WithError(err).Errorln("failed to Find projects")
 		if gorm.IsRecordNotFoundError(err) {
-			return &apistructs.GetProjectsNamesapcesResponseData{
-				Total: 0,
-				List:  nil,
-			}, nil
+			return new(apistructs.GetProjectsNamesapcesResponseData), nil
 		}
 		return nil, err
 	}
@@ -1587,7 +1581,6 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			ProjectName:        proj.Name,
 			ProjectDisplayName: proj.DisplayName,
 			ProjectDesc:        proj.Desc,
-			Clusters: make(map[string][]string),
 			// let owner default unknown
 			OwnerUserID:       0,
 			OwnerUserName:     unknownName,
@@ -1600,13 +1593,9 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			return nil, err
 		}
 		if ok {
-			item.PatchClusters(clusterNames, clustersCache.Clusters)
+			item.PatchClusters(clusterNames, clustersCache.Namespaces)
 		}
-
 		item.PatchQuota(quotasM[uint64(item.ProjectID)])
-		//if item.CPUQuota == 0 && item.MemQuota == 0 {
-		//	continue
-		//}
 
 		memberItem, ok, err := p.retrieveMemberItem(uint64(proj.ID))
 		if err != nil {
@@ -1622,7 +1611,6 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 	}
 
 	data.Total = uint32(len(data.List))
-
 	return &data, nil
 }
 
@@ -1704,12 +1692,12 @@ func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterN
 		return p.updateClustersNamespacesCache(projectID)
 	}
 
-	cacheItme, ok := value.(*CacheItme)
+	cacheItem, ok := value.(*CacheItme)
 	if !ok {
 		panic(fmt.Sprintf("clustersNamespaces cache item type is error: %T", value))
 	}
 	// if cache is expired, update it and return current value
-	if cacheItme.IsExpired() {
+	if cacheItem.IsExpired() {
 		p.clusterCahce.Delete(projectID)
 		select {
 		case p.clusterCahce.C <- projectID:
@@ -1717,7 +1705,7 @@ func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterN
 			logrus.Warnln("channel is blocked, to update project clusters namespaces relation ik skipped")
 		}
 	}
-	return cacheItme.Object.(*projectClusterNamespaceCache), true, nil
+	return cacheItem.Object.(*projectClusterNamespaceCache), true, nil
 }
 
 func (p *Project) updateClustersNamespacesCache(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
@@ -1725,7 +1713,7 @@ func (p *Project) updateClustersNamespacesCache(projectID uint64) (*projectClust
 		l   = logrus.WithField("func", "*Project.updateClustersNamespacesCache")
 		obj = newProjectClusterNamespaceCache(projectID)
 	)
-	if err := p.db.GetProjectClustersNamespacesByProjectID(obj.Clusters, projectID); err != nil {
+	if err := p.db.GetProjectClustersNamespacesByProjectID(obj.Namespaces, projectID); err != nil {
 		l.WithError(err).Warnln("failed to GetProjectClustersNamespacesByProjectID")
 		return nil, false, err
 	}

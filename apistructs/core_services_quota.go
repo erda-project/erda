@@ -151,6 +151,9 @@ func (p *ProjectNamespaces) PatchClusters(clusters []string, namespaces map[stri
 	if len(clusters) == 0 || len(namespaces) == 0 {
 		return
 	}
+	if p.Clusters == nil {
+		p.Clusters = make(map[string][]string)
+	}
 	for _, cluster := range clusters {
 		if list, ok := namespaces[cluster]; ok {
 			p.Clusters[cluster] = append(p.Clusters[cluster], list...)
