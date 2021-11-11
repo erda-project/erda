@@ -123,9 +123,6 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 			}
 			var belongsToProject = false
 			for _, projectItem := range namespaces.List {
-				if projectItem.CPUQuota == 0 && projectItem.MemQuota == 0 {
-					continue
-				}
 				if projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()) {
 					l.Debugf("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
 						projectItem.ProjectID, projectItem.Clusters, clusterItem.GetClusterName(), namespaceItem.GetNamespace(),
@@ -144,6 +141,9 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 
 	var data apistructs.ResourceOverviewReportData
 	for _, projectItem := range namespaces.List {
+		if projectItem.CPUQuota == 0 && projectItem.MemQuota == 0 {
+			continue
+		}
 		item := apistructs.ResourceOverviewReportDataItem{
 			ProjectID:          int64(projectItem.ProjectID),
 			ProjectName:        projectItem.ProjectName,
