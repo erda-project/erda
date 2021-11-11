@@ -213,6 +213,12 @@ func getProps() map[string]interface{} {
 				Ellipsis:  true,
 			},
 			{
+				Title:     "步骤",
+				DataIndex: "step",
+				Width:     85,
+				Ellipsis:  true,
+			},
+			{
 				Title:     "子任务数",
 				DataIndex: "tasksNum",
 				Width:     85,
@@ -291,6 +297,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 	num := (a.State.PageNo - 1) * (a.State.PageSize)
 	ret := a.State.PageSize
 	a.State.Total = 0
+	stepIdx := 1
 	for _, each := range pipeline.PipelineStages {
 		a.State.Total += int64(len(each.PipelineTasks))
 		if ret == 0 {
@@ -425,6 +432,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"type":     transformStepType(res.Type),
 					"path":     path,
 					"time":     a.getCostTime(task),
+					"step":     stepIdx,
 				}
 
 				if task.SnippetPipelineID != nil && (res.Type == apistructs.StepTypeScene ||
@@ -460,6 +468,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"type":     transformStepType(apistructs.AutotestSceneSet),
 					"path":     "",
 					"time":     a.getCostTime(task),
+					"step":     stepIdx,
 				}
 				if task.SnippetPipelineDetail != nil {
 					list["tasksNum"] = task.SnippetPipelineDetail.DirectSnippetTasksNum
@@ -493,6 +502,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"type":     transformStepType(apistructs.AutotestScene),
 					"path":     "",
 					"time":     a.getCostTime(task),
+					"step":     stepIdx,
 				}
 				if task.SnippetPipelineDetail != nil {
 					list["tasksNum"] = task.SnippetPipelineDetail.DirectSnippetTasksNum
@@ -507,6 +517,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				break
 			}
 		}
+		stepIdx++
 	}
 	if a.State.Total <= (a.State.PageNo-1)*(a.State.PageSize) && a.State.Total > 0 {
 		a.State.PageNo = DefaultPageNo

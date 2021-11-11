@@ -85,6 +85,9 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 				}
 				r.processingTasks.Delete(buildTaskDagName(p.ID, schedulableTasks[i].Name))
 				err = r.reconcile(ctx, pipelineID)
+				if err != nil {
+					logrus.Errorf("defer reconcile error %v", err)
+				}
 				wg.Done()
 			}()
 
