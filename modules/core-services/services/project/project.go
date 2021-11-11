@@ -57,43 +57,43 @@ type Project struct {
 type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
-func New(opts ...Option) *Project {
-	project := &Project{
+func New(options ...Option) *Project {
+	p := &Project{
 		memberCache: NewCache(time.Minute),
 		quotaCache:  NewCache(time.Minute),
 	}
-	for _, f := range opts {
-		f(project)
+	for _, f := range options {
+		f(p)
 	}
-	go project.updateCache()
-	return project
+	go p.updateCache()
+	return p
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(dbClient *dao.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(p *Project) {
-		p.db = dbClient
+		p.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(ucClient *ucauth.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(p *Project) {
-		p.uc = ucClient
+		p.uc = uc
 	}
 }
 
 // WithBundle 配置 bundle
-func WithBundle(b *bundle.Bundle) Option {
+func WithBundle(bdl *bundle.Bundle) Option {
 	return func(p *Project) {
-		p.bdl = b
+		p.bdl = bdl
 	}
 }
 
 // WithI18n set the translator
-func WithI18n(trans i18n.Translator) Option {
+func WithI18n(translator i18n.Translator) Option {
 	return func(p *Project) {
-		p.trans = trans
+		p.trans = translator
 	}
 }
 
