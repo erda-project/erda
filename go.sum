@@ -246,8 +246,6 @@ github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx2
 github.com/brancz/gojsontoyaml v0.0.0-20190425155809-e8bd32d46b3d/go.mod h1:IyUJYN1gvWjtLF5ZuygmxbnsAyP3aJS6cHzIuZY50B0=
 github.com/bshuster-repo/logrus-logstash-hook v0.4.1 h1:pgAtgj+A31JBVtEHu2uHuEx0n+2ukqUJnS2vVe5pQNA=
 github.com/bshuster-repo/logrus-logstash-hook v0.4.1/go.mod h1:zsTqEiSzDgAa/8GZR7E1qaXrhYNDKBYy5/dWPTIflbk=
-github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211108234456-bd9699bbc19b h1:k7jSmQqpCj6AhygFeyGZYWrmjMX2zmA2QM6Ysi9vW+k=
-github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211108234456-bd9699bbc19b/go.mod h1:zoCZuwF7bNiQYEVqIzNMPsWunfW6fAYiD606Td3x88Y=
 github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211110022506-7e621b9b6908 h1:sHzGoVoBvr4lkQzrmInUPimwEqcn8G7eaZvBcdaZeZE=
 github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211110022506-7e621b9b6908/go.mod h1:zoCZuwF7bNiQYEVqIzNMPsWunfW6fAYiD606Td3x88Y=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
@@ -448,12 +446,9 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
-github.com/erda-project/erda-infra v0.0.0-20211103123843-dd949cf5688a h1:NdAhlhv5Lq12rBAp8YJQp+A7vXo4ybJyesOJYlSGwc0=
 github.com/erda-project/erda-infra v0.0.0-20211103123843-dd949cf5688a/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
-github.com/erda-project/erda-infra v0.0.0-20211105091917-e0f611a1311f h1:VCyqn5HYc+F90b4mh3oTn4tmDrpS+xrzCNAKmqAEAZs=
-github.com/erda-project/erda-infra v0.0.0-20211105091917-e0f611a1311f/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
-github.com/erda-project/erda-infra v0.0.0-20211108014909-ee0141361213 h1:v8Xf/qKCDDEQ2VJtsybTufa/xJ1pNwZDx7ToPDciNFQ=
-github.com/erda-project/erda-infra v0.0.0-20211108014909-ee0141361213/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
+github.com/erda-project/erda-infra v0.0.0-20211111114940-a5b6f55013ce h1:AAGxM0sJ3PITJwj85uq3A1UhmQdIX85l5pFhalmoH8M=
+github.com/erda-project/erda-infra v0.0.0-20211111114940-a5b6f55013ce/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-sourcecov v0.1.0 h1:iLvoMsQ1xX81KNOW98BKr85Vs7sSazrIDEphLYdmgP4=

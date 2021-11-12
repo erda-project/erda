@@ -54,7 +54,8 @@ type provider struct {
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 	Protocol        componentprotocol.Interface
 	Resource        *resource.Resource
-	Tran            i18n.Translator `translator:"component-protocol"`
+	CPTran          i18n.I18n       `autowired:"i18n@cp"`
+	Tran            i18n.Translator `translator:"common"`
 	SteveAggregator *steve.Aggregator
 }
 
@@ -70,7 +71,7 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Protocol.SetI18nTran(p.Tran)
+	p.Protocol.SetI18nTran(p.CPTran)
 	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bundle.New(
 		bundle.WithAllAvailableClients(),
 		bundle.WithHTTPClient(

@@ -97,9 +97,14 @@ component-protocol.components.cmp-dashboard-podDetail.yamlDrawer:
 component-protocol.components.cmp-dashboard-podDetail.yamlFileEditor:
 
 
-i18n:
+i18n@cp:
+  common:
+    - conf/cmp/i18n/cp/common.yaml
   files:
-    - conf/cmp/i18n/component-protocol.yaml
+    - conf/cmp/i18n/cp/scenarios/
+i18n:
+  common:
+    - conf/cmp/i18n/cp/common.yaml # TODO : distinguish between cmp global common.yaml and cp/common.yaml
 
 service-register:
 

@@ -58,7 +58,7 @@ type provider struct {
 	AddonMySQLSvc addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 
 	Protocol      componentprotocol.Interface
-	Tran          i18n.Translator  `translator:"component-protocol"`
+	CPTran        i18n.I18n        `autowired:"i18n@cp"`
 	IssueTan      i18n.Translator  `translator:"issue-manage"`
 	ResourceTrans i18n.Translator  `translator:"resource-trans"`
 	DB            *gorm.DB         `autowired:"mysql-client"`
@@ -71,7 +71,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	// component-protocol
 	p.Log.Info("init component-protocol")
-	p.Protocol.SetI18nTran(p.Tran) // use custom i18n translator
+	p.Protocol.SetI18nTran(p.CPTran) // use custom i18n translator
 	// compatible for legacy protocol context bundle
 	bdl.Init(
 		// bundle.WithDOP(), // TODO change to internal method invoke in component-protocol

@@ -7,10 +7,15 @@ http-server:
 
 grpc-server:
   addr: ":9529"
+i18n@cp:
+  common:
+    - conf/dop/i18n/cp/common.yaml
+  files:
+    - conf/dop/i18n/cp/scenarios/
 i18n:
   files:
-    - conf/dop/i18n/component-protocol.yaml
     - conf/dop/i18n/resource-trans.yaml
+    - conf/dop/i18n/issue-manage.yaml
 mysql:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"
