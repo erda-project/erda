@@ -15,17 +15,23 @@
 package clusters
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 var (
@@ -105,4 +111,29 @@ func Test_DeleteAccessKey(t *testing.T) {
 	c := New(db, bdl, akService)
 	err := c.DeleteAccessKey(fakeCluster)
 	assert.NoError(t, err)
+}
+
+func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
+	var (
+		csErr            = errors.New("unit test, skip")
+		emptyClusterName = ""
+	)
+
+	defer monkey.UnpatchAll()
+
+	monkey.Patch(rest.InClusterConfig, func() (*rest.Config, error) {
+		return nil, nil
+	})
+
+	monkey.Patch(kubernetes.NewForConfig, func(c *rest.Config) (*kubernetes.Clientset, error) {
+		return nil, csErr
+	})
+
+	monkey.Patch(k8sclient.NewWithTimeOut, func(clusterName string, timeout time.Duration) (*k8sclient.K8sClient, error) {
+		return nil, csErr
+	})
+
+	c := New(db, bdl, nil)
+	_, err := c.ResetAccessKey(emptyClusterName)
+	assert.Equal(t, err, fmt.Errorf("connect to cluster: %s error: %s", emptyClusterName, csErr.Error()))
 }

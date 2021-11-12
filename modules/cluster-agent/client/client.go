@@ -106,9 +106,6 @@ func Start(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	// Set access key values default
-	setAccessKey(cfg.ClusterAccessKey)
-
 	// If specified cluster access key, preferred to use it.
 	if cfg.ClusterAccessKey == "" {
 		go func() {
@@ -118,22 +115,26 @@ func Start(ctx context.Context, cfg *config.Config) error {
 			}
 		}()
 	} else {
+		// Set access key values default
+		SetAccessKey(cfg.ClusterAccessKey)
 		logrus.Infof("use specified cluster access key: %v", cfg.ClusterAccessKey)
 	}
 
 	for {
-		headers.Set("Authorization", getAccessKey())
-		remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
-			switch proto {
-			case "tcp":
-				return true
-			case "unix":
-				return address == "/var/run/docker.sock"
-			case "npipe":
-				return address == "//./pipe/docker_engine"
-			}
-			return false
-		}, onConnect)
+		if GetAccessKey() != "" {
+			headers.Set("Authorization", GetAccessKey())
+			remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
+				switch proto {
+				case "tcp":
+					return true
+				case "unix":
+					return address == "/var/run/docker.sock"
+				case "npipe":
+					return address == "//./pipe/docker_engine"
+				}
+				return false
+			}, onConnect)
+		}
 		select {
 		case <-ctx.Done():
 			return nil
@@ -156,7 +157,7 @@ func onConnect(ctx context.Context, _ *remotedialer.Session) error {
 	// Or passThrough cancel() function
 	select {
 	case <-disConnected:
-		return fmt.Errorf("config reload")
+		return fmt.Errorf("cluster credential reload")
 	case <-ctx.Done():
 		return nil
 	}

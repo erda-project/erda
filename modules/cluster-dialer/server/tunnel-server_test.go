@@ -45,6 +45,12 @@ func Test_netportal(t *testing.T) {
 		return fakeClusterKey, true, nil
 	})
 
+	monkey.Patch(client.WatchClusterCredential, func(ctx context.Context, cfg *clientconfig.Config) error {
+		return nil
+	})
+
+	client.SetAccessKey("init")
+
 	go Start(context.Background(), nil, &serverconfig.Config{
 		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
