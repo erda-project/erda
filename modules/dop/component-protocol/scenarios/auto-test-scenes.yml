@@ -20,17 +20,9 @@ hierarchy:
     moreOperation:
       children: moreIcon
     rightPage:
-      - folderDetail
       - fileDetail
-    folderDetail:
-      # - folderDetailTitle
-      # - folderDetailTable
-      children:
-        - folderDetailTitle
-        - folderDetailTable
-      tabBarExtraContent:
-        tabSceneSetExecuteButton
-      
+    tabBarExtraContent:
+      tabSceneSetExecuteButton
     fileDetail:
       children:
         - fileConfig
@@ -38,6 +30,9 @@ hierarchy:
       tabBarExtraContent:
         - tabExecuteButton
     fileConfig:
+      - scenesConfig
+      - scenesSetConfig
+    scenesConfig:
       - fileInfoHead
       - fileInfo
       - inParamsTitle
@@ -47,6 +42,13 @@ hierarchy:
       - stagesOperations
       - outPutTitle
       - outPutForm
+    scenesSetConfig:
+      - scenesSetTitle
+      - scenesSetInfo
+      - scenesStagesTitle
+      - scenesStages
+      - scenesStagesOperations
+    scenesStagesOperations:
     fileInfoHead:
       left: fileInfoTitle
     #      right: fileHistory
@@ -97,9 +99,9 @@ hierarchy:
     executeHead:
       left: executeInfoTitle
       right:
-        - refreshButton
-        - cancelExecuteButton
-        - executeHistory
+#        - refreshButton
+#        - cancelExecuteButton
+#        - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryPop
@@ -174,12 +176,6 @@ components:
     type: FileTree
   fileFormModal:
     type: FormModal
-  folderDetail:
-    type: Container
-  folderDetailTitle:
-    type: Title
-  folderDetailTable:
-    type: Table
   fileDetail:
     type: Tabs
   stages:
@@ -231,6 +227,10 @@ components:
   fileInfo:
     type: Panel
   fileConfig:
+    type: Container
+  scenesConfig:
+    type: Container
+  scenesSetConfig:
     type: Container
   fileInfoTitle:
     type: Title
@@ -319,7 +319,16 @@ components:
     type: APIPreview
   tabSceneSetExecuteButton:
     type: Button
-
+  scenesSetTitle:
+    type: Title
+  scenesSetInfo:
+    type: Panel
+  scenesStagesTitle:
+    type: Title
+  scenesStages:
+    type: SortGroup
+  scenesStagesOperations:
+    type: RowContainer
 
 rendering:
   # 前端触发组件
@@ -333,119 +342,10 @@ rendering:
       state:
         - name: "sceneSetKey"
           value: "{{ fileFormModal.sceneSetKey }}"
-    - name: folderDetailTable
     - name: fileInfo
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
-  folderDetailTable:
-    - name: fileFormModal
-      state:
-        - name: "visible"
-          value: "{{ folderDetailTable.visible }}"
-        - name: "sceneId"
-          value: "{{ folderDetailTable.sceneId }}"
-        - name: "actionType"
-          value: "{{ folderDetailTable.actionType }}"
-    - name: fileTree
-      state:
-        - name: "clickFolderTableSceneID"
-          value: "{{ folderDetailTable.clickFolderTableRowID }}"
-        - name: "isClickFolderTable"
-          value: "{{ folderDetailTable.isClickFolderTableRow }}"
-    - name: tabExecuteButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: fileDetail
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "isChangeScene"
-          value: "{{ fileTree.isClickScene }}"
-    - name: fileConfig
-      state:
-        - name: activeKey
-          value: "{{ fileDetail.activeKey }}"
-    - name: fileInfo
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: inParamsForm
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "setId"
-          value: "{{ fileTree.sceneSetKey }}"
-    - name: stages
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: outPutForm
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: addApiButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: addCopyApiFormModal
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: addConfigSheetButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: addWaitButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: addCustomScriptButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: folderDetail
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "setId"
-          value: "{{ fileTree.sceneSetKey }}"
-    - name: executeHead
-    - name: executeHistoryTable
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-    - name: refreshButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: cancelExecuteButton
-      state:
-        - name: "chooseScenesID"
-          value: "{{ fileTree.sceneId }}"
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: executeInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: executeTaskTitle
-    - name: executeTaskBreadcrumb
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: executeHistoryButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
-    - name: executeTaskTable
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: resultDrawer
   fileTree:
     - name: tabExecuteButton
       state:
@@ -467,7 +367,7 @@ rendering:
           value: "{{ fileTree.sceneId }}"
         - name: "isChangeScene"
           value: "{{ fileTree.isClickScene }}"
-    - name: fileConfig
+    - name: scenesConfig
       state:
         - name: activeKey
           value: "{{ fileDetail.activeKey }}"
@@ -509,20 +409,6 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
-    - name: folderDetail
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "setId"
-          value: "{{ fileTree.sceneSetKey }}"
-    - name: folderDetailTable
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "setId"
-          value: "{{ fileTree.sceneSetKey }}"
-        - name: "pageNo"
-          value: "{{ fileTree.pageNo }}"
     - name: executeHead
     - name: executeHistoryTable
       state:
@@ -562,6 +448,8 @@ rendering:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: resultDrawer
+    - name: scenesSetTitle
+    - name: scenesSetInfo
   leftHeadAddSceneSet:
     - name: "fileFormModal"
       state:
@@ -570,7 +458,7 @@ rendering:
         - name: "actionType"
           value: "{{ leftHeadAddSceneSet.actionType }}"
   fileDetail:
-    - name: fileConfig
+    - name: scenesConfig
       state:
         - name: activeKey
           value: "{{ fileDetail.activeKey }}"
@@ -938,7 +826,7 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
-    - name: fileConfig
+    - name: scenesConfig
       state:
         - name: activeKey
           value: "{{ fileDetail.activeKey }}"
@@ -990,20 +878,6 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
-
-    - name: folderDetail
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "setId"
-          value: "{{ fileTree.sceneSetKey }}"
-    - name: folderDetailTitle
-    - name: folderDetailTable
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "setId"
-          value: "{{ fileTree.sceneSetKey }}"
     - name: tabSceneSetExecuteButton
 
 
@@ -1058,3 +932,10 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: fileConfig
+    - name: scenesSetConfig
+    - name: scenesSetTitle
+    - name: scenesSetInfo
+    - name: scenesStagesTitle
+    - name: scenesStages
+    - name: scenesStagesOperations

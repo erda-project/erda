@@ -1,7 +1,6 @@
 http-server:
   addr: ":9529"
   reloadable: ${OPENAPI_DEV_MODE:false}
-  allow_cors: true
 health:
 
 redis:

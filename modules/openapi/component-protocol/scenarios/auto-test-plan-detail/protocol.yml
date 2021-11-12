@@ -6,7 +6,7 @@ hierarchy:
   structure:
     fileDetail:
       children:
-        - fileConfig
+        - scenesConfig
         - fileExecute
       tabBarExtraContent:
         - tabExecuteButton
@@ -485,7 +485,7 @@ rendering:
     - name: envHeaderText
   __DefaultRendering__:
     - name: fileDetail
-    - name: fileConfig
+    - name: scenesConfig
       state:
         - name: activeKey
           value: "{{ fileDetail.activeKey }}"
@@ -496,14 +496,14 @@ rendering:
         - name: "testPlanId"
           value: "{{ fileDetail.testPlanId }}"
         - name: "visible"
-          value: "{{ fileConfig.visible }}"
+          value: "{{ scenesConfig.visible }}"
     - name: stagesTitle
     - name: stages
       state:
         - name: "testPlanId"
           value: "{{ fileDetail.testPlanId }}"
         - name: "visible"
-          value: "{{ fileConfig.visible }}"
+          value: "{{ scenesConfig.visible }}"
     - name: stagesOperations
     - name: tabExecuteButton
       state:

@@ -67,11 +67,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	props := make(map[string]interface{})
 
 	if ca.State.IsChangeScene {
-		ca.State.ActiveKey = "fileConfig"
+		ca.State.ActiveKey = "scenesConfig"
 		ca.State.IsChangeScene = false
 	}
 	if event.Operation == cptype.InitializeOperation {
-		ca.State.ActiveKey = "fileConfig"
+		ca.State.ActiveKey = "scenesConfig"
 		//props["visible"] = false
 	}
 	if event.Operation == "changeActiveKey" {
@@ -85,6 +85,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		props["visible"] = false
 	}
 
+	// TODO wxj
+	props["visible"] = true
 	props["tabMenu"] = []map[string]string{
 		{"key": "fileConfig", "name": "配置信息"},
 		{"key": "fileExecute", "name": "执行明细"},

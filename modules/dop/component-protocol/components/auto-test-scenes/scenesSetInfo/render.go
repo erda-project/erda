@@ -12,29 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileInfo
+package scenesSetInfo
 
 import (
 	"context"
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProviderWithCreator("auto-test-scenes", "fileInfo",
+	base.InitProviderWithCreator("auto-test-scenes", "scenesSetInfo",
 		func() servicehub.Provider { return &ComponentFileInfo{} })
 }
 
 // GenComponentState 获取state
 func (i *ComponentFileInfo) GenComponentState(ctx context.Context, c *cptype.Component) error {
+	i.sdk = cputil.SDK(ctx)
+	i.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -50,7 +54,6 @@ func (i *ComponentFileInfo) GenComponentState(ctx context.Context, c *cptype.Com
 		return err
 	}
 	i.State = state
-	i.sdk = cputil.SDK(ctx)
 	return nil
 }
 
@@ -64,33 +67,30 @@ func (i *ComponentFileInfo) RenderProtocol(c *cptype.Component, g *cptype.Global
 }
 
 func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
-	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	if err = i.GenComponentState(ctx, c); err != nil {
 		return
 	}
-	// TODO debug
 
-	i.State.AutotestSceneRequest.UserID = i.sdk.Identity.UserID
-	i.State.AutotestSceneRequest.SceneID = i.State.SceneId
-	i.State.AutotestSceneRequest.SetID = i.InParams.SceneSetID
-
-	visible := make(map[string]interface{})
-	visible["visible"] = true
-	if i.State.AutotestSceneRequest.SceneID == 0 {
-		visible["visible"] = false
-		c.Props = visible
+	i.Props = map[string]interface{}{
+		"visible": func() bool {
+			//if i.State.SetID == 0 {
+			//	return false
+			//}
+			return true
+		}(),
+	}
+	i.State.SetID = 504
+	if i.State.SetID == 0 {
 		return
 	}
-	i.Props = visible
-	rsp, err := i.bdl.GetAutoTestScene(i.State.AutotestSceneRequest)
+	rsp, err := i.atTestPlan.GetSceneSet(i.State.SetID)
 	if err != nil {
 		return err
 	}
 
-	// TODO 由于这里涉及旧数据迁移，用户信息可能有问题，所以err不返回
-	createrName, err := i.bdl.GetCurrentUser(rsp.CreatorID)
+	creator, err := i.bdl.GetCurrentUser(rsp.CreatorID)
 	if err == nil {
-		rsp.CreatorID = createrName.Nick
+		rsp.CreatorID = creator.Nick
 	}
 
 	if rsp.UpdaterID != "" {
@@ -100,9 +100,9 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 		}
 	}
 
-	i.Data.AutoTestScene = *rsp
-	i.Data.CreateATString = rsp.CreateAt.Format("2006-01-02 15:04:05")
-	i.Data.UpdateATString = rsp.UpdateAt.Format("2006-01-02 15:04:05")
+	i.Data.SceneSet = *rsp
+	i.Data.CreateATString = rsp.CreatedAt.Format("2006-01-02 15:04:05")
+	i.Data.UpdateATString = rsp.UpdatedAt.Format("2006-01-02 15:04:05")
 
 	i.Props["fields"] = []PropColumn{
 		{

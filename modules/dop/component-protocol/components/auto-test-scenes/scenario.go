@@ -46,8 +46,6 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/executeAlertInfo"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/fileFormModal"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/fileTree"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/folderDetail"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/folderDetailTable"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/leftHeadAddSceneSet"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/leftHeadTitle"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/marketProto"
@@ -68,6 +66,14 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/executeHistoryButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/executeInfoTitle"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/fileConfig"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesConfig"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesSetConfig"
+
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesSetInfo"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesSetTitle"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesStages"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesStagesOperations"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/scenesStagesTitle"
 
 	// _ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/fileHistory"
 	// _ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/fileHistoryButton"

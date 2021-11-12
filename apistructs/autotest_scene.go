@@ -303,7 +303,7 @@ const (
 type ActiveKey string
 
 const (
-	ActiveKeyfileConfig  ActiveKey = "fileConfig"
+	ActiveKeyfileConfig  ActiveKey = "scenesConfig"
 	ActiveKeyFileExecute ActiveKey = "fileExecute"
 )
 

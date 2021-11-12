@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileExecute
+package scenesSetConfig
 
 import (
 	"context"
@@ -33,11 +33,6 @@ type ComponentAction struct {
 
 type State struct {
 	ActiveKey apistructs.ActiveKey `json:"activeKey"`
-}
-
-func init() {
-	base.InitProviderWithCreator("auto-test-scenes", "fileExecute",
-		func() servicehub.Provider { return &ComponentAction{} })
 }
 
 func (ca *ComponentAction) GenComponentState(c *cptype.Component) error {
@@ -63,7 +58,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if err := ca.GenComponentState(c); err != nil {
 		return err
 	}
-	//props := make(map[string]interface{})
-	//props["visible"] = ca.State.ActiveKey == apistructs.ActiveKeyFileExecute
+	c.Props = map[string]interface{}{
+		"visible": true,
+	}
 	return nil
+}
+
+func init() {
+	base.InitProviderWithCreator("auto-test-scenes", "scenesSetConfig",
+		func() servicehub.Provider { return &ComponentAction{} })
 }

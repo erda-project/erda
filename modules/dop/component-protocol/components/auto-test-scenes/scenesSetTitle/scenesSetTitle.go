@@ -12,12 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileConfig
+package scenesSetTitle
 
 import (
+	"context"
+	"encoding/json"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+type ComponentAction struct {
+	base.DefaultProvider
+}
+
+func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	return json.Unmarshal([]byte(`{"title": "详情", "level": 2}`), &c.Props)
+}
+
 func init() {
-	base.InitProvider("auto-test-scenes", "fileConfig")
+	base.InitProviderWithCreator("auto-test-scenes", "scenesSetTitle",
+		func() servicehub.Provider { return &ComponentAction{} })
 }

@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileConfig
+package scenesStagesOperations
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
 func init() {
-	base.InitProvider("auto-test-scenes", "fileConfig")
+	base.InitProvider("auto-test-scenes", "scenesStagesOperations")
 }

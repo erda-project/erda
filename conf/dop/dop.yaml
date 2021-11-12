@@ -228,8 +228,6 @@ component-protocol.components.auto-test-scenes.apiEditor:
 component-protocol.components.auto-test-scenes.executeAlertInfo:
 component-protocol.components.auto-test-scenes.fileFormModal:
 component-protocol.components.auto-test-scenes.fileTree:
-component-protocol.components.auto-test-scenes.folderDetail:
-component-protocol.components.auto-test-scenes.folderDetailTable:
 component-protocol.components.auto-test-scenes.leftHeadAddSceneSet:
 component-protocol.components.auto-test-scenes.leftHeadTitle:
 component-protocol.components.auto-test-scenes.marketProto:
@@ -250,6 +248,8 @@ component-protocol.components.auto-test-scenes.customScriptDrawer:
 component-protocol.components.auto-test-scenes.executeHistoryButton:
 component-protocol.components.auto-test-scenes.executeInfoTitle:
 component-protocol.components.auto-test-scenes.fileConfig:
+component-protocol.components.auto-test-scenes.scenesConfig:
+component-protocol.components.auto-test-scenes.scenesSetConfig:
 
 component-protocol.components.auto-test-scenes.fileInfo:
 component-protocol.components.auto-test-scenes.fileDetail:
@@ -271,3 +271,10 @@ component-protocol.components.auto-test-scenes.outPutForm:
 component-protocol.components.auto-test-scenes.resultPreview:
 component-protocol.components.auto-test-scenes.tabExecuteButton:
 component-protocol.components.auto-test-scenes.tabSceneSetExecuteButton:
+
+component-protocol.components.auto-test-scenes.scenesSetTitle:
+component-protocol.components.auto-test-scenes.scenesSetInfo:
+component-protocol.components.auto-test-scenes.scenesStagesTitle:
+component-protocol.components.auto-test-scenes.scenesStages:
+component-protocol.components.auto-test-scenes.scenesStagesOperations:
+
