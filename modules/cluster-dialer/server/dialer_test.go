@@ -57,6 +57,12 @@ func Test_DialerContext(t *testing.T) {
 		return fakeClusterKey, true, nil
 	})
 
+	monkey.Patch(client.WatchClusterCredential, func(ctx context.Context, cfg *clientconfig.Config) error {
+		return nil
+	})
+
+	client.SetAccessKey("init")
+
 	ctx, cancel := startServer()
 	go client.Start(context.Background(), &clientconfig.Config{
 		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
