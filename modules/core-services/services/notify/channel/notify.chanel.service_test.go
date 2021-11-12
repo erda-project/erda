@@ -64,7 +64,7 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 				}
 				return c, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Name: "test", Type: &pb.NotifyChannelType{Name: "test", DisplayName: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test", DisplayName: "test"}}
 			})
 
@@ -146,7 +146,7 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 			})
 
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Type: &pb.NotifyChannelType{Name: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test"}, Config: map[string]*structpb.Value{}}
 			})
 			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
@@ -241,7 +241,7 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 				return &model.NotifyChannel{Id: "test", Name: name}, nil
 			})
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Type: &pb.NotifyChannelType{Name: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test"}, Config: map[string]*structpb.Value{}}
 			})
 			var b *bundle.Bundle
@@ -296,7 +296,7 @@ func Test_notifyChannelService_GetNotifyChannel(t *testing.T) {
 			})
 
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Type: &pb.NotifyChannelType{Name: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test"}, Config: map[string]*structpb.Value{}}
 			})
 			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
@@ -409,7 +409,7 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 				return &model.NotifyChannel{Id: "test", Config: "{\"xx\": \"xx\"}"}, nil
 			})
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel) *pb.NotifyChannel {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				nc := pb.NotifyChannel{}
 				err := copier.CopyWithOption(&nc, channel, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 				if err != nil {
@@ -457,8 +457,8 @@ func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
 		{"case2", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "error", Enable: true}}, true},
 		{"case3", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "nil", Enable: false}}, true},
 		{"case4", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "type_error", Enable: true}}, true},
-		{"case5", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "type_exist", Enable: true}}, true},
-		{"case6", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "update_error", Enable: true}}, true},
+		{"case5", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "type_exist", Enable: true}}, false},
+		{"case6", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "update_error", Enable: true}}, false},
 		{"case7", args{req: &pb.UpdateNotifyChannelEnabledRequest{Id: "test", Enable: false}}, false},
 	}
 	for _, tt := range tests {
@@ -478,7 +478,7 @@ func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
 					return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "type_error", IsEnabled: false}, nil
 				}
 				if id == "type_exist" {
-					return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "type_exist", IsEnabled: false}, nil
+					return &model.NotifyChannel{Id: "type_exist", ScopeId: "test", ScopeType: "test", Type: "type_exist", IsEnabled: false}, nil
 				}
 
 				if id == "update_error" {
@@ -487,14 +487,20 @@ func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
 				return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "test", IsEnabled: false}, nil
 			})
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetCountByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (int64, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
 				if channelType == "type_error" {
-					return 0, errors.New("error")
+					return nil, errors.New("error")
 				}
 				if channelType == "type_exist" {
-					return 1, nil
+					return &model.NotifyChannel{Id: "type_exist"}, nil
 				}
-				return 0, nil
+				return &model.NotifyChannel{Id: channelType}, nil
+			})
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "SwitchEnable", func(ncdb *db.NotifyChannelDB, currentNotifyChannel, switchNotifyChannel *model.NotifyChannel) error {
+				if currentNotifyChannel.Type == "type_error" {
+					return errors.New("error")
+				}
+				return nil
 			})
 
 			mt := &MockTran{}
@@ -527,4 +533,68 @@ type MockTran struct {
 
 func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 	return ""
+}
+
+func Test_notifyChannelService_GetNotifyChannelEnabledStatus(t *testing.T) {
+
+	type args struct {
+		ctx context.Context
+		req *pb.GetNotifyChannelEnabledStatusRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.GetNotifyChannelEnabledStatusRequest{}}, true},
+		{"case2", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "error"}}, true},
+		{"case3", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "nil"}}, true},
+		{"case4", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "hasEnabled"}}, true},
+		{"case5", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "scopeError"}}, true},
+		{"case5", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "enableNil"}}, false},
+		{"case6", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "test"}}, false},
+		{"case7", args{req: &pb.GetNotifyChannelEnabledStatusRequest{Id: "testNotSame"}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ncdb *db.NotifyChannelDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+				if id == "error" {
+					return nil, errors.New("error")
+				}
+				if id == "nil" {
+					return nil, nil
+				}
+				if id == "hasEnabled" {
+					return &model.NotifyChannel{Id: id, IsEnabled: true}, nil
+				}
+				if id == "scopeError" {
+					return &model.NotifyChannel{Id: id, ScopeId: "error"}, nil
+				}
+				if id == "enableNil" {
+					return &model.NotifyChannel{Id: id, ScopeId: "enableNil"}, nil
+				}
+				if id == "testNotSame" {
+					return &model.NotifyChannel{Id: "testNotSame"}, nil
+				}
+				return &model.NotifyChannel{Id: id}, nil
+			})
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
+				if scopeId == "error" {
+					return nil, errors.New("error")
+				}
+				if scopeId == "enableNil" {
+					return nil, nil
+				}
+				return &model.NotifyChannel{Id: "test", Config: "{\"xx\": \"xx\"}"}, nil
+			})
+
+			s := &notifyChannelService{}
+			_, err := s.GetNotifyChannelEnabledStatus(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNotifyChannelEnabledStatus() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
 }

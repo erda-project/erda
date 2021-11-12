@@ -48,31 +48,37 @@ type Project struct {
 	uc    *ucauth.UCClient
 	bdl   *bundle.Bundle
 	trans i18n.Translator
+
+	memberCache  *Cache
+	clusterCache *Cache
 }
 
 // Option 定义 Project 对象的配置选项
 type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
-func New(options ...Option) *Project {
-	project := &Project{}
-	for _, f := range options {
-		f(project)
+func New(opts ...Option) *Project {
+	p := &Project{
+		memberCache:  NewCache(time.Minute),
+		clusterCache: NewCache(time.Minute),
 	}
-	return project
+	for _, f := range opts {
+		f(p)
+	}
+	return p
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao.DBClient) Option {
+func WithDBClient(dbClient *dao.DBClient) Option {
 	return func(project *Project) {
-		project.db = db
+		project.db = dbClient
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(ucClient *ucauth.UCClient) Option {
 	return func(project *Project) {
-		project.uc = uc
+		project.uc = ucClient
 	}
 }
 
@@ -84,9 +90,9 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // WithI18n set the translator
-func WithI18n(translator i18n.Translator) Option {
+func WithI18n(trans i18n.Translator) Option {
 	return func(project *Project) {
-		project.trans = translator
+		project.trans = trans
 	}
 }
 
@@ -463,29 +469,29 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	return &project, nil
 }
 
-func setQuotaFromResourceConfig(quota *apistructs.ProjectQuota, resource *apistructs.ResourceConfigs) {
-	if quota == nil || resource == nil {
+func setQuotaFromResourceConfig(quota *apistructs.ProjectQuota, resourceConfigs *apistructs.ResourceConfigs) {
+	if quota == nil || resourceConfigs == nil {
 		return
 	}
-	if resource.PROD != nil {
-		quota.ProdClusterName = resource.PROD.ClusterName
-		quota.ProdCPUQuota = calcu.CoreToMillcore(resource.PROD.CPUQuota)
-		quota.ProdMemQuota = calcu.GibibyteToByte(resource.PROD.MemQuota)
+	if resourceConfigs.PROD != nil {
+		quota.ProdClusterName = resourceConfigs.PROD.ClusterName
+		quota.ProdCPUQuota = calcu.CoreToMillcore(resourceConfigs.PROD.CPUQuota)
+		quota.ProdMemQuota = calcu.GibibyteToByte(resourceConfigs.PROD.MemQuota)
 	}
-	if resource.STAGING != nil {
-		quota.StagingClusterName = resource.STAGING.ClusterName
-		quota.StagingCPUQuota = calcu.CoreToMillcore(resource.STAGING.CPUQuota)
-		quota.StagingMemQuota = calcu.GibibyteToByte(resource.STAGING.MemQuota)
+	if resourceConfigs.STAGING != nil {
+		quota.StagingClusterName = resourceConfigs.STAGING.ClusterName
+		quota.StagingCPUQuota = calcu.CoreToMillcore(resourceConfigs.STAGING.CPUQuota)
+		quota.StagingMemQuota = calcu.GibibyteToByte(resourceConfigs.STAGING.MemQuota)
 	}
-	if resource.TEST != nil {
-		quota.TestClusterName = resource.TEST.ClusterName
-		quota.TestCPUQuota = calcu.CoreToMillcore(resource.TEST.CPUQuota)
-		quota.TestMemQuota = calcu.GibibyteToByte(resource.TEST.MemQuota)
+	if resourceConfigs.TEST != nil {
+		quota.TestClusterName = resourceConfigs.TEST.ClusterName
+		quota.TestCPUQuota = calcu.CoreToMillcore(resourceConfigs.TEST.CPUQuota)
+		quota.TestMemQuota = calcu.GibibyteToByte(resourceConfigs.TEST.MemQuota)
 	}
-	if resource.DEV != nil {
-		quota.DevClusterName = resource.DEV.ClusterName
-		quota.DevCPUQuota = calcu.CoreToMillcore(resource.DEV.CPUQuota)
-		quota.DevMemQuota = calcu.GibibyteToByte(resource.DEV.MemQuota)
+	if resourceConfigs.DEV != nil {
+		quota.DevClusterName = resourceConfigs.DEV.ClusterName
+		quota.DevCPUQuota = calcu.CoreToMillcore(resourceConfigs.DEV.CPUQuota)
+		quota.DevMemQuota = calcu.GibibyteToByte(resourceConfigs.DEV.MemQuota)
 	}
 }
 
@@ -662,7 +668,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 }
 
 // Get 获取项目
-func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.ProjectDTO, error) {
+func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
@@ -677,12 +683,14 @@ func (p *Project) Get(ctx context.Context, projectID int64) (*apistructs.Project
 		projectDTO.Owners = append(projectDTO.Owners, v.UserID)
 	}
 
-	// 查询项目 quota
-	p.fetchQuota(&projectDTO)
-	// 查询项目下的 pod 的 request 数据
-	p.fetchPodInfo(&projectDTO)
-	// 根据已有统计值计算比率
-	p.calcuRequestRate(&projectDTO)
+	if withQuota {
+		// 查询项目 quota
+		p.fetchQuota(&projectDTO)
+		// 查询项目下的 pod 的 request 数据
+		p.fetchPodInfo(&projectDTO)
+		// 根据已有统计值计算比率
+		p.calcuRequestRate(&projectDTO)
+	}
 
 	return &projectDTO, nil
 }
@@ -730,7 +738,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 		return
 	}
 	var podInfos []apistructs.PodInfo
-	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
+	if err := p.db.Find(&podInfos, map[string]interface{}{"project_id": dto.ID, "phase": "running"}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
 			Warnln("failed to Find the namespaces info in the project")
 		return
@@ -788,14 +796,14 @@ func (p *Project) calcuRequestRate(dto *apistructs.ProjectDTO) {
 			continue
 		}
 		if rc.CPUQuota != 0 {
-			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota, 4)
-			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota, 4)
-			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota, 4)
+			rc.CPURequestRate = calcu.Accuracy(rc.CPURequest/rc.CPUQuota*100, 2)
+			rc.CPURequestByAddonRate = calcu.Accuracy(rc.CPURequestByAddon/rc.CPUQuota*100, 2)
+			rc.CPURequestByServiceRate = calcu.Accuracy(rc.CPURequestByService/rc.CPUQuota*100, 2)
 		}
 		if rc.MemQuota != 0 {
-			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota, 4)
-			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota, 4)
-			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota, 4)
+			rc.MemRequestRate = calcu.Accuracy(rc.MemRequest/rc.MemQuota*100, 2)
+			rc.MemRequestByAddonRate = calcu.Accuracy(rc.MemRequestByAddon/rc.MemQuota*100, 2)
+			rc.MemRequestByServiceRate = calcu.Accuracy(rc.MemRequestByService/rc.MemQuota*100, 2)
 		}
 	}
 }
@@ -1289,9 +1297,15 @@ func initRollbackConfig(rollbackConfig *map[string]int) error {
 }
 
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
+	l := logrus.WithField("func", "convertToProjectDTO")
 	var rollbackConfig map[string]int
 	if err := json.Unmarshal([]byte(project.RollbackConfig), &rollbackConfig); err != nil {
 		rollbackConfig = make(map[string]int)
+	}
+
+	var clusterConfig = make(map[string]string)
+	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
+		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
 	}
 
 	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
@@ -1309,7 +1323,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Stats: apistructs.ProjectStats{
 			CountApplications: int(total),
 		},
-		ClusterConfig:  nil,
+		ClusterConfig:  clusterConfig,
 		RollbackConfig: rollbackConfig,
 		CpuQuota:       project.CpuQuota,
 		MemQuota:       project.MemQuota,
@@ -1451,7 +1465,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	var ownerM = make(map[string]*apistructs.OwnerQuotaOnClusters)
 	for _, project := range projects {
 		// query project owner
-		var member = &model.Member{
+		var member = model.Member{
 			UserID: "0",
 			Name:   "unknown",
 			Nick:   "unknown",
@@ -1463,7 +1477,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 			Labels:    nil,
 			Q:         "",
 			PageNo:    1,
-			PageSize:  1,
+			PageSize:  1000,
 		}
 		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
 		case err != nil:
@@ -1471,14 +1485,7 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 		case len(members) == 0:
 			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
 		default:
-			mb, ok := getMemberFromMembers(members, "Owner")
-			if ok {
-				member = mb
-				break
-			}
-			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
-				member = mb
-			}
+			hitFirstValidOwnerOrLead(&member, members)
 		}
 
 		owner, ok := ownerM[member.UserID]
@@ -1531,127 +1538,78 @@ func (p *Project) GetQuotaOnClusters(orgID int64, clusterNames []string) (*apist
 	return response, nil
 }
 
-func (p *Project) GetNamespacesBelongsTo(ctx context.Context) (*apistructs.GetProjectsNamesapcesResponseData, error) {
-	l := logrus.WithField("func", "GetNamespacesBelongsTo")
+func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clusterNames []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
+	var (
+		l            = logrus.WithField("func", "GetNamespacesBelongsTo")
+		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
+		unknownName  = p.trans.Text(langCodes, "OwnerUnknown")
+		projects     []*model.Project
+		projectIDs   []uint64
+		quotas       []*apistructs.ProjectQuota
+		quotasM      = make(map[uint64]*apistructs.ProjectQuota)
+		data         apistructs.GetProjectsNamesapcesResponseData
+	)
 
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
-	unknownName := p.trans.Text(langCodes, "OwnerUnknown")
+	// 1) 查找项目列表
+	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
+		l.WithError(err).Errorln("failed to Find projects")
+		if gorm.IsRecordNotFoundError(err) {
+			return new(apistructs.GetProjectsNamesapcesResponseData), nil
+		}
+		return nil, err
+	}
+	for _, item := range projects {
+		projectIDs = append(projectIDs, uint64(item.ID))
+	}
 
-	// 1）查找 s_pod_info
-	var projectsM = make(map[uint64]map[string][]string)
-	var podInfos []*apistructs.PodInfo
-	if err := p.db.Debug().Find(&podInfos).Error; err != nil {
+	// 2) 查询 quota 表
+	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&quotas).Error; err != nil {
+		l.WithError(err).Error("failed to Find quotas")
 		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to Find podInfos")
-			l.WithError(err).Errorln()
 			return nil, err
 		}
 	}
-
-	for _, podInfo := range podInfos {
-		projectID, err := strconv.ParseUint(podInfo.ProjectID, 10, 64)
-		if err != nil {
-			continue
-		}
-		clusters, ok := projectsM[projectID]
-		if !ok {
-			clusters = make(map[string][]string)
-		}
-		clusters[podInfo.Cluster] = append(clusters[podInfo.Cluster], podInfo.K8sNamespace)
-		projectsM[projectID] = clusters
+	for _, item := range quotas {
+		quotasM[item.ProjectID] = item
 	}
 
-	// 2) 查找 project_namespace
-	var projectNamespaces []*apistructs.ProjectNamespaceModel
-	if err := p.db.Find(&projectNamespaces).Error; err != nil {
-		if !gorm.IsRecordNotFoundError(err) {
-			err = errors.Wrap(err, "failed to Find projectNamespace")
-			l.WithError(err).Errorln()
+	// 3) 查询 quota and owner
+	for _, proj := range projects {
+		var item = &apistructs.ProjectNamespaces{
+			ProjectID:          uint(proj.ID),
+			ProjectName:        proj.Name,
+			ProjectDisplayName: proj.DisplayName,
+			ProjectDesc:        proj.Desc,
+			// let owner default unknown
+			OwnerUserID:       0,
+			OwnerUserName:     unknownName,
+			OwnerUserNickname: unknownName,
+		}
+
+		clustersCache, ok, err := p.retrieveClustersNamespaces(uint64(proj.ID))
+		if err != nil {
+			l.WithError(err).Errorln("failed to retrieveClustersNamespaces")
 			return nil, err
 		}
-	}
-	for _, projectNamespace := range projectNamespaces {
-		clusters, ok := projectsM[projectNamespace.ProjectID]
-		if !ok {
-			clusters = make(map[string][]string)
+		if ok {
+			item.PatchClusters(clusterNames, clustersCache.Namespaces)
 		}
-		clusters[projectNamespace.ClusterName] = append(clusters[projectNamespace.ClusterName], projectNamespace.K8sNamespace)
-		projectsM[projectNamespace.ProjectID] = clusters
-	}
+		item.PatchQuota(quotasM[uint64(item.ProjectID)])
 
-	var data apistructs.GetProjectsNamesapcesResponseData
-
-	// 3) 查询 quota
-	for projectID, clusterNamespaces := range projectsM {
-		var project model.Project
-		if err := p.db.First(&project, map[string]interface{}{"id": projectID}).Error; err != nil {
-			if gorm.IsRecordNotFoundError(err) {
-				l.WithError(err).WithField("id", projectID).Warnln("failed to First project")
-				continue
-			}
-		}
-
-		// query project owner
-		var member = &model.Member{
-			UserID: "0",
-			Name:   unknownName,
-			Nick:   unknownName,
-		}
-		memberListReq := apistructs.MemberListRequest{
-			ScopeType: "project",
-			ScopeID:   project.ID,
-			Roles:     []string{"Owner", "Lead"},
-			Labels:    nil,
-			Q:         "",
-			PageNo:    1,
-			PageSize:  1,
-		}
-		switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
-		case err != nil:
-			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("failed to GetMembersByParam")
-		case len(members) == 0:
-			l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
-		default:
-			mb, ok := getMemberFromMembers(members, "Owner")
-			if ok {
-				member = mb
-				break
-			}
-			if mb, ok = getMemberFromMembers(members, "Lead"); ok {
-				member = mb
-			}
-		}
-		userID, err := strconv.ParseUint(member.UserID, 10, 64)
+		memberItem, ok, err := p.retrieveMemberItem(uint64(proj.ID))
 		if err != nil {
-			l.Warnln("failed to parse member.UserID")
-			continue
+			return nil, err
+		}
+		if ok && memberItem.UserID != 0 {
+			item.OwnerUserID = memberItem.UserID
+			item.OwnerUserName = memberItem.Name
+			item.OwnerUserNickname = memberItem.Nick
 		}
 
-		// query quota
-		var quota apistructs.ProjectQuota
-		if err := p.db.First(&quota, map[string]interface{}{"project_id": projectID}).Error; err != nil {
-			if !gorm.IsRecordNotFoundError(err) {
-				err = errors.Wrap(err, "failed to First project quota")
-				l.WithError(err).WithField("project_id", projectID).Errorln()
-				return nil, err
-			}
-		}
-		var item = apistructs.ProjectNamespaces{
-			ProjectID:          uint(project.ID),
-			ProjectName:        project.Name,
-			ProjectDisplayName: project.DisplayName,
-			ProjectDesc:        project.Desc,
-			OwnerUserID:        uint(userID),
-			OwnerUserName:      member.Name,
-			OwnerUserNickname:  member.Nick,
-			CPUQuota:           uint64(quota.ProdCPUQuota + quota.StagingCPUQuota + quota.TestCPUQuota + quota.DevCPUQuota),
-			MemQuota:           uint64(quota.ProdMemQuota + quota.StagingMemQuota + quota.TestMemQuota + quota.DevMemQuota),
-			Clusters:           clusterNamespaces,
-		}
-		data.List = append(data.List, &item)
+		data.List = append(data.List, item)
 	}
+
 	data.Total = uint32(len(data.List))
-
 	return &data, nil
 }
 
@@ -1666,15 +1624,20 @@ func (p *Project) ListQuotaRecords(ctx context.Context) ([]*apistructs.ProjectQu
 	return records, nil
 }
 
-func getMemberFromMembers(members []model.Member, role string) (*model.Member, bool) {
-	for _, member := range members {
-		for _, role_ := range member.Roles {
-			if strings.EqualFold(role, role_) {
-				return &member, true
+func hitFirstValidOwnerOrLead(defaultOne *model.Member, members []model.Member) {
+	if defaultOne == nil {
+		return
+	}
+	for _, role_ := range []string{"Owner", "Lead"} {
+		for _, member := range members {
+			for _, role := range member.Roles {
+				if strings.EqualFold(role, role_) {
+					*defaultOne = member
+					return
+				}
 			}
 		}
 	}
-	return nil, false
 }
 
 func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apistructs.ProjectDTO, changeRecord map[string]bool) (string, bool) {
@@ -1708,4 +1671,127 @@ func (p *Project) checkNewQuotaIsLessThanRequest(ctx context.Context, dto *apist
 		return "", true
 	}
 	return strings.Join(messages, "; "), false
+}
+
+func (p *Project) UpdateCache() {
+	var projects []*model.Project
+	p.db.Find(&projects)
+	for _, proj := range projects {
+		_, _, _ = p.updateMemberCache(uint64(proj.ID))
+		_, _, _ = p.updateClustersNamespacesCache(uint64(proj.ID))
+	}
+	for {
+		select {
+		case projectID := <-p.memberCache.C:
+			if !p.db.ProjectIsExists(projectID) {
+				p.memberCache.Delete(projectID)
+				continue
+			}
+			_, _, _ = p.updateMemberCache(projectID)
+		case projectID := <-p.clusterCache.C:
+			if !p.db.ProjectIsExists(projectID) {
+				p.clusterCache.Delete(projectID)
+				continue
+			}
+			_, _, _ = p.updateClustersNamespacesCache(projectID)
+		}
+	}
+}
+
+func (p *Project) retrieveClustersNamespaces(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
+	value, ok := p.clusterCache.Load(projectID)
+	// if not found in cache, retrieve from db and update cache
+	if !ok {
+		return p.updateClustersNamespacesCache(projectID)
+	}
+
+	cacheItem, ok := value.(*CacheItme)
+	if !ok {
+		panic(fmt.Sprintf("clustersNamespaces cache item type is error: %T", value))
+	}
+	// if cache is expired, update it and return current value
+	if cacheItem.IsExpired() {
+		select {
+		case p.clusterCache.C <- projectID:
+		default:
+			logrus.Warnln("channel is blocked, to update project clusters namespaces relation ik skipped")
+		}
+	}
+	return cacheItem.Object.(*projectClusterNamespaceCache), true, nil
+}
+
+func (p *Project) updateClustersNamespacesCache(projectID uint64) (*projectClusterNamespaceCache, bool, error) {
+	var (
+		l   = logrus.WithField("func", "*Project.updateClustersNamespacesCache")
+		obj = newProjectClusterNamespaceCache(projectID)
+	)
+	if err := p.db.GetProjectClustersNamespacesByProjectID(obj.Namespaces, projectID); err != nil {
+		l.WithError(err).Warnln("failed to GetProjectClustersNamespacesByProjectID")
+		return nil, false, err
+	}
+	p.clusterCache.Store(projectID, &CacheItme{Object: obj})
+	return obj, true, nil
+}
+
+func (p *Project) retrieveMemberItem(projectID uint64) (*memberCache, bool, error) {
+	value, ok := p.memberCache.Load(projectID)
+	// if not found in cache, retrieve from db and update cache
+	if !ok {
+		return p.updateMemberCache(projectID)
+	}
+
+	cacheItem, ok := value.(*CacheItme)
+	if !ok {
+		panic(fmt.Sprintf("member cache item type is error: %T", value))
+	}
+	// if cache is expired, update it and return current value
+	if cacheItem.IsExpired() {
+		select {
+		case p.memberCache.C <- projectID:
+		default:
+			logrus.Warnln("channel is blocked, update quota cache is skipped")
+		}
+	}
+	return cacheItem.Object.(*memberCache), true, nil
+}
+
+func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error) {
+	var (
+		l             = logrus.WithField("func", "*Project.updateMemberCache")
+		memberListReq = apistructs.MemberListRequest{
+			ScopeType: "project",
+			ScopeID:   int64(projectID),
+			Roles:     []string{"Owner", "Lead"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1000,
+		}
+	)
+
+	var member model.Member
+	switch _, members, err := p.db.GetMembersByParam(&memberListReq); {
+	case err != nil:
+		l.WithError(err).WithField("memberListReq", memberListReq).Warnln("failed to GetMembersByParam")
+		return nil, false, err
+	case len(members) == 0:
+		l.WithError(err).WithField("memberListReq", memberListReq).Warnln("not found owner for the project")
+		member := &memberCache{ProjectID: projectID}
+		p.memberCache.Store(projectID, &CacheItme{Object: member})
+		return member, false, nil
+	default:
+		hitFirstValidOwnerOrLead(&member, members)
+		userID, err := strconv.ParseUint(member.UserID, 10, 64)
+		if err != nil {
+			return nil, false, nil
+		}
+		member := &memberCache{
+			ProjectID: projectID,
+			UserID:    uint(userID),
+			Name:      member.Name,
+			Nick:      member.Nick,
+		}
+		p.memberCache.Store(projectID, &CacheItme{Object: member})
+		return member, true, nil
+	}
 }

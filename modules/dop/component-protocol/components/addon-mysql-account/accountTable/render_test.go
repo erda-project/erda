@@ -107,7 +107,7 @@ func Test_comp_getDatum(t *testing.T) {
 							},
 							Disabled:    true,
 							DisabledTip: "您没有权限查看密码，请联系项目管理员",
-							ShowIndex: 1,
+							ShowIndex:   1,
 						},
 						"delete": {
 							Key:    "delete",

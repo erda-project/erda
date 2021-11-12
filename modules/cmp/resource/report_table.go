@@ -57,7 +57,7 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 	rt.fetchAllNamespaces(ctx, namespacesM, orgIDStr, clusterNames)
 
 	// 2) 调用 core-services bundle，根据 namespaces 查找各 namespaces 的归属
-	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(ctx)
+	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(ctx, uint64(orgID), clusterNames)
 	if err != nil {
 		err = errors.Wrap(err, "failed to FetchNamespacesBelongsTo")
 		logrus.WithError(err).Errorln()
@@ -111,15 +111,24 @@ func (rt *ReportTable) fetchRequestOnNamespaces(ctx context.Context, namespaces 
 
 func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNamespacesResourcesResponse, namespaces *apistructs.GetProjectsNamesapcesResponseData,
 	cpuPerNode, memPerNode uint64, groupBy string) *apistructs.ResourceOverviewReportData {
+	l := logrus.WithField("func", "*ReportTable.groupResponse")
 	var (
 		langCodes, _   = ctx.Value("lang_codes").(i18n.LanguageCodes)
 		sharedResource [2]uint64
 	)
 	for _, clusterItem := range resources.List {
 		for _, namespaceItem := range clusterItem.List {
+			if namespaceItem.GetNamespace() == "default" {
+				sharedResource[0] += namespaceItem.GetCpuRequest()
+				sharedResource[1] += namespaceItem.GetMemRequest()
+				continue
+			}
 			var belongsToProject = false
 			for _, projectItem := range namespaces.List {
 				if projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()) {
+					l.Debugf("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
+						projectItem.ProjectID, projectItem.Clusters, clusterItem.GetClusterName(), namespaceItem.GetNamespace(),
+						namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
 					belongsToProject = true
 					projectItem.AddResource(namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
 					break
@@ -134,6 +143,9 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 
 	var data apistructs.ResourceOverviewReportData
 	for _, projectItem := range namespaces.List {
+		if projectItem.CPUQuota == 0 && projectItem.MemQuota == 0 {
+			continue
+		}
 		item := apistructs.ResourceOverviewReportDataItem{
 			ProjectID:          int64(projectItem.ProjectID),
 			ProjectName:        projectItem.ProjectName,
@@ -155,7 +167,7 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 	sharedText := rt.trans.Text(langCodes, "SharedResources")
 	ownerUnknown := rt.trans.Text(langCodes, "OwnerUnknown")
 	sharedItem := newSharedItem(sharedResource, sharedText, ownerUnknown)
-	data.List = append(data.List, sharedItem)
+	_ = sharedItem
 
 	if groupBy == "owner" {
 		data.GroupByOwner()

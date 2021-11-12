@@ -16,9 +16,12 @@ package aliyun_resources
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func GetProjectClusterName(ctx Context, projid string, workspace string) (clusterName, projectName string, err error) {
@@ -30,7 +33,9 @@ func GetProjectClusterName(ctx Context, projid string, workspace string) (cluste
 	}
 
 	// get project info
-	proj, err := ctx.Bdl.GetProject(projID)
+	var params = make(url.Values)
+	params.Add("withQuota", "true")
+	proj, err := ctx.Bdl.GetProjectWithSetter(projID, httpclient.SetParams(params))
 	if err != nil {
 		logrus.Errorf("get project info failed, project id: %s, error:%v", projid, err)
 		return

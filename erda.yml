@@ -142,10 +142,10 @@ services:
       UC_CLIENT_SECRET: "secret"
       CREATE_ORG_ENABLED: "false"
     resources:
-      cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
-      mem: ${request_mem:512}
-      max_mem: 512
+      cpu: ${request_cpu:1}
+      max_cpu: 1
+      mem: ${request_mem:2048}
+      max_mem: 2048
       network:
         mode: "container"
     binds:

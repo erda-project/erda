@@ -159,13 +159,6 @@ EOABORT
 )"
 fi
 
-if ! command -v nc >/dev/null; then
-    abort "$(cat <<EOABORT
-You must install netcat before installing Erda.
-EOABORT
-)"
-fi
-
 INSTALL_LOCATION="/opt/erda-quickstart"
 ERDA_VERSION="1.2.1"
 ERDA_RELEASE="https://static.erda.cloud/quick-start/$ERDA_VERSION/release.tar.gz"
@@ -193,24 +186,16 @@ ohai "Start setup Erda using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
 
 cd "${INSTALL_LOCATION}/quick-start" || exit 1
 execute "docker-compose" "up" "-d" "mysql"
-
-echo "waiting for mysql ready"
 sleep 10
-i=1
-until nc -z localhost 3306
-do
-  sleep 10
-  if ((i++ >= 100)); then
-    echo "timeout waiting for mysql ready"
-    exit 1
-  fi
-done
+execute "docker-compose" "up" "--abort-on-container-exit" "--exit-code-from" "mysql-healthcheck" "mysql-healthcheck"
+execute "docker-compose" "up" "--abort-on-container-exit" "--exit-code-from" "erda-migration" "erda-migration"
 
-execute "docker-compose" "up" "erda-migration"
 execute "docker-compose" "up" "sysctl-init"
 execute "docker-compose" "up" "-d" "elasticsearch"
+
 execute "docker-compose" "up" "-d" "cassandra"
 execute "docker-compose" "up" "-d" "kafka"
+
 execute "docker-compose" "up" "-d"
 
 ohai "Setup local hosts"
@@ -225,6 +210,6 @@ ohai "Erda has been started successfully using ${INSTALL_LOCATION}/quick-start/d
 
 ohai "Next steps:"
 echo "visit ${tty_underline}http://erda.local${tty_reset} to start your journey on Erda"
-echo "visit ${tty_underline}https://docs.erda.cloud/1.2/manual/install/docker-install.html${tty_reset} for FAQs if you encounter problems installing Erda"
+echo "visit ${tty_underline}https://docs.erda.cloud/1.3/manual/install/docker-install.html${tty_reset} for FAQs if you encounter problems installing Erda"
 echo "visit ${tty_underline}https://docs.erda.cloud${tty_reset} for full introduction of Erda"
 echo "goto ${INSTALL_LOCATION}/quick-start/ dir to check and manage the docker-compose resources"
