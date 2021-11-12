@@ -15,12 +15,13 @@
 package manager
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -140,4 +141,20 @@ func TestOrgPermissionCheckFailed(t *testing.T) {
 
 	err := OrgPermCheck(bdl, "1", "2", "GET")
 	assert.Error(t, err)
+}
+
+func TestListCluster(t *testing.T) {
+	bdl := &bundle.Bundle{}
+	m := &AdminManager{bundle: bdl}
+
+	req, _ := http.NewRequest("GET", "https://example.com", nil)
+	req.Header.Add("USER-ID", "1")
+
+	// monkey record delete func
+	monkey.Patch(PermissionCheck, func(bdl *bundle.Bundle, userID, orgID, projectID, action string) error {
+		return fmt.Errorf("access denied")
+	})
+
+	_, err := m.ListCluster(context.TODO(), req, map[string]string{})
+	assert.NoError(t, err)
 }

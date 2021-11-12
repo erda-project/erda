@@ -48,10 +48,8 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 	if id.Invalid() {
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
 	}
-	orgIDStr, err := GetOrgIDStr(req)
-	if err != nil {
-		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
-	}
+	orgIDStr, _ := GetOrgIDStr(req)
+
 	// check permission
 	err = PermissionCheck(am.bundle, userID, orgIDStr, "", apistructs.GetAction)
 	if err != nil {
