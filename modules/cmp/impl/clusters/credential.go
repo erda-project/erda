@@ -23,9 +23,11 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -141,6 +143,19 @@ func (c *Clusters) DeleteAccessKey(clusterName string) error {
 
 // ResetAccessKey reset access key
 func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysItem, error) {
+	// In cluster use Inner clientSet priority.
+	if clusterName == conf.ErdaClusterName() {
+		if ic, err := rest.InClusterConfig(); err == nil {
+			inClusterCs, err := kubernetes.NewForConfig(ic)
+			if err != nil {
+				logrus.Errorf("get kubernetes client error when reset accesskey, err: %v", err)
+				tipErr := fmt.Errorf("connect to cluster: %s error: %v", clusterName, err)
+				return nil, tipErr
+			}
+			return c.ResetAccessKeyWithClientSet(clusterName, inClusterCs)
+		}
+	}
+
 	// Get configmap and PreCheck cluster connection
 	kc, err := k8sclient.NewWithTimeOut(clusterName, getClusterTimeout)
 	if err != nil {
