@@ -92,6 +92,8 @@ components:
         reload: true
     props:
       rowKey: "id"
+      scroll:
+        x: 1200
       columns:
         - title: "计划id"
           dataIndex: "id"
@@ -100,10 +102,10 @@ components:
           dataIndex: "name"
         - title: "测试空间"
           dataIndex: "testSpace"
-          width: 150
+          width: 100
         - title: "迭代"
           dataIndex: "iteration"
-          width: 150
+          width: 80
         - title: "负责人"
           dataIndex: "owners"
           width: 80
