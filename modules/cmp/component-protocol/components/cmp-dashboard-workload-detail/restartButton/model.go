@@ -56,5 +56,6 @@ type Operation struct {
 	Reload      bool   `json:"reload"`
 	Confirm     string `json:"confirm,omitempty"`
 	Disabled    bool   `json:"disabled"`
+	SuccessMsg  string `json:"successMsg,omitempty"`
 	DisabledTip string `json:"disabledTip,omitempty"`
 }

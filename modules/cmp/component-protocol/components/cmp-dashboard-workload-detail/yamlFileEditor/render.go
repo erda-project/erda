@@ -256,8 +256,9 @@ func (f *ComponentYamlFileEditor) SetComponentValue() {
 	f.Props.MinLines = 22
 	f.Operations = map[string]interface{}{
 		"submit": Operation{
-			Key:    "submit",
-			Reload: true,
+			Key:        "submit",
+			Reload:     true,
+			SuccessMsg: f.sdk.I18n("updateWorkloadSuccessfully"),
 		},
 	}
 }
