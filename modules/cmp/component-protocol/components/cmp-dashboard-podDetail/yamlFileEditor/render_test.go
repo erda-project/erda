@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
@@ -41,8 +42,24 @@ func TestComponentYamlFileEditor_GenComponentState(t *testing.T) {
 	}
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestComponentYamlFileEditor_SetComponentValue(t *testing.T) {
-	component := &ComponentYamlFileEditor{}
+	component := &ComponentYamlFileEditor{
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+		},
+	}
 	component.SetComponentValue()
 	if _, ok := component.Operations["submit"]; !ok || !component.Props.Bordered ||
 		len(component.Props.FileValidate) != 2 {

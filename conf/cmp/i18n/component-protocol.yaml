@@ -45,6 +45,7 @@ zh:
 
  # cmp-dashboard-pod-detail
  deletedPodSuccessfully: Pod 删除成功
+ updatePodSuccessfully: Pod 更新成功
 
  # cmp-dashboard-workload-detail
  cpuRequests: CPU 请求值
@@ -59,9 +60,11 @@ zh:
  totalWorkload: 工作负载总数
  restart: 重新调度
  confirmRestart: 确认重新调度？
- cannotRestart: 只有 Deployment、StatefulSet 和 Daemonset 可以被重新调度
- deletedWorkloadSuccessfully: Workload 删除成功
+ cannotRestart: 只有 Deployment、StatefulSet 和 DaemonSet 可以被重新调度
+ deletedWorkloadSuccessfully: 工作负载删除成功
  canNotDeleteSystemWorkload: 平台组件不可删除
+ restartWorkloadSuccessfully: 工作负载重新调度成功
+ updateWorkloadSuccessfully: 工作负载更新成功
 
  # cmp-dashboard-workloads-list
  createWorkloadSuccessfully: 创建工作负载成功
@@ -220,6 +223,7 @@ zh:
  no select: 未选择
  select labels: 筛选节点标签
  OutOfDisk: 磁盘资源不足
+ updateNodeSuccessfully: 节点更新成功
 
  # cmp-dashboard-resource
  distribution by project: 按项目统计
@@ -289,6 +293,7 @@ en:
 
  # cmp-dashboard-pod-detail
  deletedPodSuccessfully: Deleted Pod successfully
+ updatePodSuccessfully: Updated Pod successfully
 
  # cmp-dashboard-workload-detail
  cpuRequests: CPU Requests
@@ -301,16 +306,16 @@ en:
  workloadPods: Pods
  restart: Restart
  confirmRestart: Sure to restart ?
- cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
- canNotDeleteSystemWorkload: Platform components can not be deleted
-
- # cmp-dashboard-workload-detail
  workloadDetail: Workload Detail
  totalWorkload: Total Workloads
- deletedWorkloadSuccessfully: Deleted Workload successfully
+ cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
+ canNotDeleteSystemWorkload: Platform components can not be deleted
+ deletedWorkloadSuccessfully: Deleted workload successfully
+ restartWorkloadSuccessfully: Restarted workload successfully
+ updateWorkloadSuccessfully: Updated workload successfully
 
  # cmp-dashboard-workloads-list
- createWorkloadSuccessfully: Created Workload successfully
+ createWorkloadSuccessfully: Created workload successfully
  search: Search
  workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
@@ -406,6 +411,7 @@ en:
  memory-size: Memory Size
  undrained: There are still unevicted Pods in this node!
  SharedResources: Shared Resources on the Platform
+ updateNodeSuccessfully: Updated Node successfully
 
  # cmp-dashboard-resource
  resourceNodeCount: nodes
