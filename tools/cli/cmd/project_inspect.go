@@ -16,36 +16,39 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/format"
 	"github.com/erda-project/erda/tools/cli/prettyjson"
-	"strconv"
+	"github.com/pkg/errors"
 )
 
-var ORGINSPECT = command.Command{
-	Name:       "inspect",
-	ParentName: "ORG",
-	ShortHelp:  "Display detailed information of one organization",
-	Example: `
-  $ erda-cli org inspect
-`,
+var PROJECTINSPECT = command.Command{
+	Name: "inspect",
+	ParentName: "PROJECT",
+	ShortHelp: "Inspect project",
+	Example: "erda-cli project inspect",
 	Flags: []command.Flag{
 		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
 	},
-	Run: OrgInspect,
+	Run: InspectProject,
 }
 
-func OrgInspect(ctx *command.Context, orgId int) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return fmt.Errorf(format.FormatErrMsg("orgs inspect", "invalid OrgID", true))
+func InspectProject(ctx *command.Context, orgId, projectId int) error {
+	if projectId <= 0 {
+		return errors.New("invalid project id")
 	}
 
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
+	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
+		return errors.New("invalid org id")
+	}
+	if orgId == 0 && ctx.CurrentOrg.ID > 0{
 		orgId = int(ctx.CurrentOrg.ID)
 	}
 
-	resp, err := common.GetOrgDetail(ctx, strconv.Itoa(orgId))
+	resp, err := common.GetProjectDetail(ctx, projectId, orgId)
 	if err != nil {
 		return err
 	}

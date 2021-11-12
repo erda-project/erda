@@ -25,44 +25,14 @@ import (
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
-func GetProjectDetail(ctx *command.Context, project string, orgID string) (apistructs.ProjectDetailResponse, error) {
+func GetProjectDetail(ctx *command.Context, orgID, projectID int) (apistructs.ProjectDetailResponse, error) {
 	var resp apistructs.ProjectDetailResponse
 	var b bytes.Buffer
-	var projectID string
 
-	if project == "" {
-		return apistructs.ProjectDetailResponse{}, fmt.Errorf(
-			format.FormatErrMsg("get project detail", "missing required arg project", false))
-	}
-
-	projectID = project
-
-	if orgID != "" {
-		projectFlag := false
-		projects, err := GetProjectList(ctx)
-		if err != nil {
-			return apistructs.ProjectDetailResponse{}, err
-		}
-		for i := range projects {
-			porgID, err := strconv.ParseUint(orgID, 10, 64)
-			if err != nil {
-				return apistructs.ProjectDetailResponse{}, fmt.Errorf(
-					format.FormatErrMsg("get project detail", err.Error(), false))
-			}
-			if projects[i].Name == project && projects[i].OrgID == porgID {
-				projectID = strconv.FormatUint(projects[i].ID, 10)
-				projectFlag = true
-				break
-			}
-		}
-
-		if !projectFlag {
-			return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg("get project detail",
-				"failed to get project from projects list", false))
-		}
-	}
-
-	response, err := ctx.Get().Path(fmt.Sprintf("/api/projects/%s", projectID)).Do().Body(&b)
+	response, err := ctx.Get().
+		Header("Org-ID", strconv.Itoa(orgID)).
+		Path(fmt.Sprintf("/api/projects/%d", projectID)).
+		Do().Body(&b)
 	if err != nil {
 		return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg(
 			"get project detail", "failed to request ("+err.Error()+")", false))
@@ -88,12 +58,14 @@ func GetProjectDetail(ctx *command.Context, project string, orgID string) (apist
 	return resp, nil
 }
 
-func GetProjectList(ctx *command.Context) ([]apistructs.ProjectDTO, error) {
+// TODO paging
+func GetProjectList(ctx *command.Context, orgId int) ([]apistructs.ProjectDTO, error) {
 	var resp apistructs.ProjectListResponse
 	var b bytes.Buffer
 
-	response, err := ctx.Get().Path("/api/projects").Param("joined", "true").
-		Param("orgId", strconv.FormatUint(ctx.CurrentOrg.ID, 10)).Do().Body(&b)
+	response, err := ctx.Get().Path("/api/projects").
+		Param("joined", "true").
+		Param("orgId", strconv.Itoa(orgId)).Do().Body(&b)
 	if err != nil {
 		return nil, fmt.Errorf(
 			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
@@ -121,10 +93,10 @@ func GetProjectList(ctx *command.Context) ([]apistructs.ProjectDTO, error) {
 			format.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
 	}
 
-	if resp.Data.Total == 0 {
-		fmt.Printf(format.FormatErrMsg("list", "no projects created\n", false))
-		return nil, nil
-	}
+	//if resp.Data.Total == 0 {
+	//	fmt.Printf(format.FormatErrMsg("list", "no projects created\n", false))
+	//	return nil, nil
+	//}
 
 	return resp.Data.List, nil
 }

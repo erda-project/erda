@@ -12,49 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package cmd
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/pkg/errors"
 )
 
-func GetOrgDetail(ctx *command.Context, orgIdorName string) (apistructs.OrgFetchResponse, error) {
-	var resp apistructs.OrgFetchResponse
-	var b bytes.Buffer
+var APPLICATIONDELETE = command.Command{
+	Name: "delete",
+	ParentName: "APPLICATION",
+	ShortHelp: "Delete application",
+	Example: "erda-cli application delete",
+	Flags: []command.Flag{
+		command.IntFlag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
+	},
+	Run: ApplicationDelete,
+}
 
-	if orgIdorName == "" {
-		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get organization detail",
-			"invalid required parameter organization", false))
+func ApplicationDelete(ctx *command.Context, appID int) error {
+	if appID <= 0 {
+		return errors.New("invalid application id")
 	}
 
-	response, err := ctx.Get().Path(fmt.Sprintf("/api/orgs/%s", orgIdorName)).Do().Body(&b)
+	var resp apistructs.ApplicationDeleteResponse
+	var b bytes.Buffer
+
+	response, err := ctx.Delete().
+		Path(fmt.Sprintf("/api/applications/%d", appID)).Do().Body(&b)
 	if err != nil {
-		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg(
-			"get organization detail", "failed to request ("+err.Error()+")", false))
+		return fmt.Errorf(
+			format.FormatErrMsg("delete", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get organization detail",
+		return fmt.Errorf(format.FormatErrMsg("delete",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get organization detail",
-			fmt.Sprintf("failed to unmarshal organization detail response ("+err.Error()+")"), false))
+		return fmt.Errorf(format.FormatErrMsg("delete",
+			fmt.Sprintf("failed to unmarshal releases remove application response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get organization detail",
+		return fmt.Errorf(format.FormatErrMsg("delete",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	return resp, nil
+	ctx.Succ("Application deleted.")
+	return nil
 }

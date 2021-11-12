@@ -18,50 +18,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
+	"strconv"
 )
 
-func GetApplicationDetail(ctx *command.Context, application string, project string) (
+func GetApplicationDetail(ctx *command.Context, orgId, projectId, applicationId int) (
 	apistructs.ApplicationFetchResponse, error) {
 	var (
 		resp  apistructs.ApplicationFetchResponse
 		b     bytes.Buffer
-		appID string
 	)
 
-	if application == "" {
-		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
-			"missing required parameter application", false))
-	}
-
-	appID = application
-
-	if project != "" {
-		appFlag := false
-		appList, err := GetApplicationList(ctx, project)
-		if err != nil {
-			return apistructs.ApplicationFetchResponse{}, err
-		}
-
-		for i := range appList {
-			if appList[i].Name == application {
-				appID = strconv.FormatUint(appList[i].ID, 10)
-				appFlag = true
-			}
-		}
-
-		if !appFlag {
-			return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
-				"failed to get app from apps list", false))
-		}
-	}
-
-	response, err := ctx.Get().Path(strutil.Concat("/api/applications/", appID)).Do().Body(&b)
+	response, err := ctx.Get().Header("Org-ID", strconv.Itoa(orgId)).
+		Path(fmt.Sprintf("/api/applications/%d?projectId=%d", applicationId, projectId)).
+		Do().Body(&b)
 	if err != nil {
 		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg(
 			"get application detail", "failed to request ("+err.Error()+")", false))
@@ -87,11 +59,14 @@ func GetApplicationDetail(ctx *command.Context, application string, project stri
 	return resp, nil
 }
 
-func GetApplicationList(ctx *command.Context, project string) ([]apistructs.ApplicationDTO, error) {
+// TODO paging
+func GetApplicationList(ctx *command.Context, orgId, projectId int) ([]apistructs.ApplicationDTO, error) {
 	var resp apistructs.ApplicationListResponse
 	var b bytes.Buffer
 
-	response, err := ctx.Get().Path("/api/applications").Param("projectId", project).
+	response, err := ctx.Get().Path("/api/applications").
+		Header("Org-ID", strconv.Itoa(orgId)).
+		Param("projectId", strconv.Itoa(projectId)).
 		Param("pageSize", "200").Do().Body(&b)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -116,10 +91,10 @@ func GetApplicationList(ctx *command.Context, project string) ([]apistructs.Appl
 					resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	if resp.Data.Total == 0 {
-		fmt.Printf(format.FormatErrMsg("list", "no applications created\n", false))
-		return nil, nil
-	}
+	//if resp.Data.Total == 0 {
+	//	fmt.Printf(format.FormatErrMsg("list", "no applications created\n", false))
+	//	return nil, nil
+	//}
 
 	return resp.Data.List, nil
 }
