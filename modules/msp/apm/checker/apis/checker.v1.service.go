@@ -466,11 +466,11 @@ func getTimeRange(unit string, num int, align bool) (start int64, end int64, int
 		now = alignTime(interval)
 		now = now.AddDate(0, 0, 1)
 	case "month":
-		interval = "1h"
+		interval = "24h"
 		now = alignTime(interval)
 		start = now.AddDate(0, -1*num, 0).UnixNano() / int64(time.Millisecond)
 	case "week":
-		interval = "1h"
+		interval = "24h"
 		now = alignTime(interval)
 		start = now.AddDate(0, 0, -7*num).UnixNano() / int64(time.Millisecond)
 	case "day":
