@@ -108,9 +108,11 @@ func (b *ComponentRestartButton) SetComponentValue() {
 	b.Props.TipProps.Placement = "bottom"
 
 	operation := Operation{
-		Key:     "restart",
-		Reload:  true,
-		Confirm: b.sdk.I18n("confirmRestart"),
+		Key:        "restart",
+		Reload:     true,
+		Confirm:    b.sdk.I18n("confirmRestart"),
+		Disabled:   false,
+		SuccessMsg: b.sdk.I18n("restartWorkloadSuccessfully"),
 	}
 	if kind == string(apistructs.K8SJob) || kind == string(apistructs.K8SCronJob) {
 		operation.Disabled = true
