@@ -65,6 +65,9 @@ func (svc *Service) CreateSpace(req apistructs.AutoTestSpaceCreateRequest) (*api
 		ArchiveStatus: apistructs.TestSpaceInit,
 		SourceSpaceID: req.SourceSpaceID,
 	}
+	if req.ArchiveStatus.Valid() {
+		autoTestSpace.ArchiveStatus = req.ArchiveStatus
+	}
 	res, err := svc.db.CreateAutoTestSpace(&autoTestSpace)
 	// 创建
 	if err != nil {

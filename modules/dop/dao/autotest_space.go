@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -91,6 +92,12 @@ func (db *DBClient) GetAutoTestSpace(id uint64) (*AutoTestSpace, error) {
 func (db *DBClient) UpdateAutoTestSpace(space *AutoTestSpace) (*AutoTestSpace, error) {
 	err := db.Where("id = ?", space.ID).Save(space).Error
 	return space, err
+}
+
+func (db *DBClient) AfterUpdateAutoTestSpaceElements(spaceID uint64) {
+	if err := db.Table("dice_autotest_space").Where("id = ?", spaceID).Update("updated_at", time.Now()).Error; err != nil {
+		logrus.Errorf("after update auto test space elements err: %v, spaceID: %v", err, spaceID)
+	}
 }
 
 // DeleteAutoTestSpace 删除测试空间
