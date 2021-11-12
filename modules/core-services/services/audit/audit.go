@@ -248,8 +248,11 @@ func (a *Audit) cronCleanAudit() {
 	// 软删除企业审计事件
 	for interval, orgs := range intervalOrgsMap {
 		startAt := time.Now().AddDate(0, 0, interval)
-		if err := a.db.DeleteAuditsByTimeAndOrg(startAt, orgs); err != nil {
-			logrus.Errorf(err.Error())
+		// delete org audit one by one to avoid very long IN clause
+		for _, org := range orgs {
+			if err := a.db.DeleteAuditsByTimeAndOrg(startAt, []uint64{org}); err != nil {
+				logrus.Errorf(err.Error())
+			}
 		}
 	}
 	// 软删除系统审计事件
