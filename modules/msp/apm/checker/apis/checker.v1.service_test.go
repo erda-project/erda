@@ -215,7 +215,7 @@ func Test_oldConfig(t *testing.T) {
 			oldConfig(tt.args.item, tt.args.config)
 			if !reflect.DeepEqual(tt.args.config, tt.args.wantConfig) {
 				if !tt.args.wantErr {
-					t.Errorf("metricService.QueryWithInfluxFormat() = %v, want %v", tt.args.config, tt.args.wantConfig)
+					t.Errorf("Test_oldConfig = %v, want %v", tt.args.config, tt.args.wantConfig)
 				}
 			}
 		})
