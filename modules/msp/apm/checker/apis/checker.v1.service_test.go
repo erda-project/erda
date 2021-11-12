@@ -16,6 +16,7 @@ package apis
 
 import (
 	"context"
+	"google.golang.org/protobuf/types/known/structpb"
 	"reflect"
 	"testing"
 	"time"
@@ -190,6 +191,32 @@ func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DescribeCheckerV1() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func Test_oldConfig(t *testing.T) {
+	type args struct {
+		item       *db.Metric
+		config     map[string]*structpb.Value
+		wantConfig map[string]*structpb.Value
+		wantErr    bool
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{"case1", args{item: &db.Metric{Name: "test", URL: "http://127.0.0.1:8080", Mode: "http"}, config: make(map[string]*structpb.Value), wantConfig: map[string]*structpb.Value{"url": structpb.NewStringValue("http://127.0.0.1:8080"), "method": structpb.NewStringValue("GET")}, wantErr: false}},
+		{"case2", args{item: &db.Metric{Name: "test", URL: "http://127.0.0.1:8080", Mode: "http"}, config: make(map[string]*structpb.Value), wantConfig: make(map[string]*structpb.Value), wantErr: true}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldConfig(tt.args.item, tt.args.config)
+			if !reflect.DeepEqual(tt.args.config, tt.args.wantConfig) {
+				if !tt.args.wantErr {
+					t.Errorf("metricService.QueryWithInfluxFormat() = %v, want %v", tt.args.config, tt.args.wantConfig)
+				}
 			}
 		})
 	}

@@ -317,6 +317,8 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			oldConfig(item, config)
 		}
 
 		result := &pb.DescribeItemV1{
@@ -346,6 +348,14 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	}, nil
 }
 
+func oldConfig(item *db.Metric, config map[string]*structpb.Value) {
+	switch item.Mode {
+	case "http":
+		config["url"] = structpb.NewStringValue(item.URL)
+		config["method"] = structpb.NewStringValue("GET")
+	}
+}
+
 func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.DescribeCheckerV1Request) (*pb.DescribeCheckerV1Response, error) {
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
@@ -360,6 +370,8 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			oldConfig(metric, config)
 		}
 		results[req.Id] = &pb.DescribeItemV1{
 			Name:   metric.Name,
