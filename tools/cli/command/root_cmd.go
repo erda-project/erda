@@ -137,14 +137,14 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 
 func getFullUse(cmd *cobra.Command) (string, error) {
 	if cmd.HasParent() {
-		 pUse, err := getFullUse(cmd.Parent())
-		 if err != nil {
-		 	return "", err
-		 }
+		pUse, err := getFullUse(cmd.Parent())
+		if err != nil {
+			return "", err
+		}
 
-		 return strings.TrimSpace(strings.Join([]string{
-		 	strings.TrimSpace(pUse), strings.TrimSpace(cmd.Use),
-		 }, " ")), nil
+		return strings.TrimSpace(strings.Join([]string{
+			strings.TrimSpace(pUse), strings.TrimSpace(cmd.Use),
+		}, " ")), nil
 	}
 
 	return "", nil
@@ -197,7 +197,7 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 func parseCtx() error {
 	if host == "" {
 		c, err := GetCurContext()
-		if err != nil && err != dicedir.NotExist && !os.IsNotExist(err){
+		if err != nil && err != dicedir.NotExist && !os.IsNotExist(err) {
 			return err
 		}
 

@@ -18,17 +18,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
-	"github.com/pkg/errors"
 )
 
 var APPLICATIONDELETE = command.Command{
-	Name: "delete",
+	Name:       "delete",
 	ParentName: "APPLICATION",
-	ShortHelp: "Delete application",
-	Example: "erda-cli application delete",
+	ShortHelp:  "Delete application",
+	Example:    "erda-cli application delete",
 	Flags: []command.Flag{
 		command.IntFlag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
 	},

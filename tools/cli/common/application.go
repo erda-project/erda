@@ -18,17 +18,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
-	"strconv"
 )
 
 func GetApplicationDetail(ctx *command.Context, orgId, projectId, applicationId int) (
 	apistructs.ApplicationFetchResponse, error) {
 	var (
-		resp  apistructs.ApplicationFetchResponse
-		b     bytes.Buffer
+		resp apistructs.ApplicationFetchResponse
+		b    bytes.Buffer
 	)
 
 	response, err := ctx.Get().Header("Org-ID", strconv.Itoa(orgId)).

@@ -15,29 +15,30 @@
 package cmd
 
 import (
-	"github.com/erda-project/erda/tools/cli/dicedir"
 	"os"
 	"path"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
-	"github.com/pkg/errors"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 // BUILD command
 var PIPELINERUN = command.Command{
-	Name:      "run",
+	Name:       "run",
 	ParentName: "PIPELINE",
-	ShortHelp: "Create an pipeline and run it",
-	Example:   `$ erda-cli pipeline run`,
+	ShortHelp:  "Create an pipeline and run it",
+	Example:    `$ erda-cli pipeline run`,
 	Flags: []command.Flag{
 		command.StringFlag{Short: "b", Name: "branch",
-			Doc: "branch to create pipeline, default is current branch",
+			Doc:          "branch to create pipeline, default is current branch",
 			DefaultValue: ""},
 		command.StringFlag{Short: "f", Name: "filename",
-			Doc: "filename for 'pipeline.yml'",
+			Doc:          "filename for 'pipeline.yml'",
 			DefaultValue: path.Join(dicedir.ProjectPipelineDir, "pipeline.yml")},
 	},
 	Run: PipelineRun,

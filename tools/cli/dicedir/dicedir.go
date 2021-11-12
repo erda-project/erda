@@ -25,10 +25,10 @@ import (
 var (
 	NotExist = errors.New("not exist")
 
-	GlobalDiceDir  = ".dice.d"
-	GlobalConfig = path.Join(GlobalDiceDir, "config")
+	GlobalDiceDir = ".dice.d"
+	GlobalConfig  = path.Join(GlobalDiceDir, "config")
 
-	ProjectDiceDir = ".dice"
+	ProjectDiceDir     = ".dice"
 	ProjectPipelineDir = ".dice/pipelines"
 
 	ProjectErdaDir = ".erda"

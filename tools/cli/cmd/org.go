@@ -27,9 +27,9 @@ import (
 )
 
 var ORG = command.Command{
-	Name: "org",
+	Name:      "org",
 	ShortHelp: "List organizations",
-	Example: "erda-cli org",
+	Example:   "erda-cli org",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 	},

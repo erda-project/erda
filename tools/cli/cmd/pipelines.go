@@ -24,12 +24,12 @@ import (
 )
 
 var PIPELINE = command.Command{
-	Name: "pipeline",
+	Name:      "pipeline",
 	ShortHelp: "List pipelines in .dice/pipelines directory (current repo)",
-	Example: "erda-cli pipeline",
+	Example:   "erda-cli pipeline",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers",
-			Doc: "When using the default or custom-column output format, don't print headers (default print headers)",
+			Doc:          "When using the default or custom-column output format, don't print headers (default print headers)",
 			DefaultValue: false},
 	},
 	Run: GetPipelines,

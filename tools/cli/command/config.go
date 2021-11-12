@@ -15,9 +15,10 @@
 package command
 
 import (
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/tools/cli/dicedir"
 	"gopkg.in/yaml.v3"
@@ -28,29 +29,29 @@ var (
 )
 
 type Config struct {
-	Version string `yaml:"version"`
-	Platforms []*Platform `yaml:"platforms"`
-	Contexts	[]*Ctx `yaml:"contexts"`
-	CurrentContext string `yaml:"current_context"`
+	Version        string      `yaml:"version"`
+	Platforms      []*Platform `yaml:"platforms"`
+	Contexts       []*Ctx      `yaml:"contexts"`
+	CurrentContext string      `yaml:"current_context"`
 }
 
 type Platform struct {
-	Name string `yaml:"name"`
-	Server string `yaml:"server"`
+	Name    string   `yaml:"name"`
+	Server  string   `yaml:"server"`
 	OrgInfo *OrgInfo `yaml:"org_info"`
 }
 
 type Ctx struct {
-	Name string `yaml:"name"`
+	Name         string `yaml:"name"`
 	PlatformName string `yaml:"platform_name"`
 }
 
 type CurCtx struct {
 	Platform Platform
-	Name string
+	Name     string
 }
 
-func GetCurContext() (CurCtx, error){
+func GetCurContext() (CurCtx, error) {
 	var cur CurCtx
 	_, conf, err := GetConfig()
 	if err != nil {
@@ -80,7 +81,7 @@ func GetCurContext() (CurCtx, error){
 	return cur, errors.New("current context not found")
 }
 
-func GetConfig()(string, *Config, error) {
+func GetConfig() (string, *Config, error) {
 	config, err := dicedir.FindGlobalConfig()
 	if err != nil {
 		return config, nil, err

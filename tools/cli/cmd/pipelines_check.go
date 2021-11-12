@@ -26,9 +26,9 @@ import (
 )
 
 var PIPELINECHECK = command.Command{
-	Name: "check",
+	Name:       "check",
 	ParentName: "PIPELINE",
-	ShortHelp: "check pipeline",
+	ShortHelp:  "check pipeline",
 	Example: `
   $ erda-cli pipeline check -f .dice/pipelines/pipeline.yml
 `,
@@ -49,7 +49,7 @@ func PipelineCheck(ctx *command.Context, ymlfile string) error {
 		}
 		b = bytes
 	} else {
-		wd, err :=os.Getwd()
+		wd, err := os.Getwd()
 		if err != nil {
 			return err
 		}

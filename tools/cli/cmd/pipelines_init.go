@@ -16,21 +16,22 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/tools/cli/dicedir"
 	"os"
 	"path"
 	"strings"
 	"text/template"
+
+	"github.com/erda-project/erda/tools/cli/dicedir"
 
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 )
 
 var PIPELINEINIT = command.Command{
-	Name: "init",
+	Name:       "init",
 	ParentName: "PIPELINE",
-	ShortHelp: "Init pipelines in .dice/pipelines directory (current repo)",
-	Example: "erda-cli pipeline init -f .dice/pipelines/pipeline.yml",
+	ShortHelp:  "Init pipelines in .dice/pipelines directory (current repo)",
+	Example:    "erda-cli pipeline init -f .dice/pipelines/pipeline.yml",
 	Flags: []command.Flag{
 		command.StringFlag{"f", "filename",
 			"Specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",

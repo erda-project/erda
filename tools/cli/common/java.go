@@ -27,7 +27,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func ParseSpringBoot() (map[string]string, error){
+func ParseSpringBoot() (map[string]string, error) {
 	p, err := parsePom()
 	if err != nil {
 		return nil, err
@@ -56,9 +56,9 @@ func ParseSpringBoot() (map[string]string, error){
 	}
 
 	return map[string]string{
-		"ServiceName": p.Name,
+		"ServiceName":       p.Name,
 		"ServiceTargetName": serviceTargetName,
-		"ServicePort": strconv.Itoa(port),
+		"ServicePort":       strconv.Itoa(port),
 	}, nil
 }
 
@@ -162,20 +162,20 @@ func parsePom() (*Project, error) {
 }
 
 type Project struct {
-	XMLName	xml.Name	`xml:"project"`
-	Version string		`xml:"version"`
-	Name	string		`xml:"name"`
-	Build	Build		`xml:"build"`
+	XMLName xml.Name `xml:"project"`
+	Version string   `xml:"version"`
+	Name    string   `xml:"name"`
+	Build   Build    `xml:"build"`
 }
 
 type Build struct {
-	FinalName string `xml:"finalName"`
-	Plugins []Plugin `xml:"plugins>plugin"`
+	FinalName string   `xml:"finalName"`
+	Plugins   []Plugin `xml:"plugins>plugin"`
 }
 
 type Plugin struct {
-	GroupID		string	`xml:"groupId"`
-	ArtifactID	string	`xml:"artifactId"`
+	GroupID    string `xml:"groupId"`
+	ArtifactID string `xml:"artifactId"`
 }
 
 type Application struct {

@@ -16,18 +16,20 @@ package cmd
 
 import (
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/format"
 	"github.com/erda-project/erda/tools/cli/prettyjson"
-	"github.com/pkg/errors"
 )
 
 var APPLICATIONINSPECT = command.Command{
-	Name: "inspect",
+	Name:       "inspect",
 	ParentName: "APPLICATION",
-	ShortHelp: "Inspect application",
-	Example: "erda-cli application inspect",
+	ShortHelp:  "Inspect application",
+	Example:    "erda-cli application inspect",
 	Flags: []command.Flag{
 		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
 		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},

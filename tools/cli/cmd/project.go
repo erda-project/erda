@@ -15,22 +15,22 @@
 package cmd
 
 import (
-	"github.com/erda-project/erda/tools/cli/common"
-	"github.com/pkg/errors"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
 )
 
 var PROJECT = command.Command{
-	Name: "project",
+	Name:      "project",
 	ShortHelp: "List projects",
-	Example: "erda-cli project",
+	Example:   "erda-cli project",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
-
 	},
 	Run: GetProjects,
 }

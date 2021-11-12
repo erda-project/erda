@@ -30,19 +30,19 @@ import (
 )
 
 var ERDAINIT = command.Command{
-	Name:      	"init",
+	Name:       "init",
 	ParentName: "ERDA",
-	ShortHelp: 	"Init a erda.yml template",
-	LongHelp:  	"Make a .dice dir in current directory, then create a erda.yml template",
+	ShortHelp:  "Init a erda.yml template",
+	LongHelp:   "Make a .dice dir in current directory, then create a erda.yml template",
 	Example: `
   $ erda init
 `,
 	Flags: []command.Flag{
 		command.FloatFlag{Short: "c", Name: "cpu",
-			Doc: "the quota of CPU for service",
+			Doc:          "the quota of CPU for service",
 			DefaultValue: 0.5},
 		command.IntFlag{Short: "m", Name: "memory",
-			Doc: "the quota of Memory for service",
+			Doc:          "the quota of Memory for service",
 			DefaultValue: 1024},
 	},
 	Run:    ErdaInit,

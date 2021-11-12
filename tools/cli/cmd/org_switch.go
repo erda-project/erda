@@ -68,7 +68,6 @@ func RunOrganizationsSwitch(ctx *command.Context, org string) error {
 				"orgs switch", "failed to switch ("+err.Error()+")", false))
 	}
 
-
 	fmt.Printf("  Before: %-15s(%d)\n", preOrg.Name, preOrg.ID)
 	ctx.Succ(color_str.Green(fmt.Sprintf("Current: %-15s(%d)", ctx.CurrentOrg.Name, ctx.CurrentOrg.ID)))
 

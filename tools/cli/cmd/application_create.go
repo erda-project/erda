@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -27,15 +28,15 @@ import (
 )
 
 var APPLICATIONCREATE = command.Command{
-	Name: "create",
+	Name:       "create",
 	ParentName: "APPLICATION",
-	ShortHelp: "Create application",
-	Example: "erda-cli application create",
+	ShortHelp:  "Create application",
+	Example:    "erda-cli application create",
 	Flags: []command.Flag{
 		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
 		command.StringFlag{Short: "n", Name: "application-name", Doc: "the name of an application ", DefaultValue: ""},
 		command.StringFlag{Short: "m", Name: "mode",
-			Doc: "the id of an application, application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
+			Doc:          "the id of an application, application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
 			DefaultValue: "SERVICE"},
 		command.StringFlag{"d", "description", "description", ""},
 	},

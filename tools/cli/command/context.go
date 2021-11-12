@@ -43,7 +43,7 @@ func GetContext() *Context {
 type Context struct {
 	Sessions           map[string]status.StatusInfo
 	CurrentOpenApiHost string
-	CurrentOrg	       OrgInfo
+	CurrentOrg         OrgInfo
 	Debug              bool
 	Token              string // uc token
 	HttpClient         *httpclient.HTTPClient

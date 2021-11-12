@@ -17,18 +17,19 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/format"
 	"github.com/erda-project/erda/tools/cli/prettyjson"
-	"github.com/pkg/errors"
 )
 
 var PROJECTINSPECT = command.Command{
-	Name: "inspect",
+	Name:       "inspect",
 	ParentName: "PROJECT",
-	ShortHelp: "Inspect project",
-	Example: "erda-cli project inspect",
+	ShortHelp:  "Inspect project",
+	Example:    "erda-cli project inspect",
 	Flags: []command.Flag{
 		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
@@ -44,7 +45,7 @@ func InspectProject(ctx *command.Context, orgId, projectId int) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
-	if orgId == 0 && ctx.CurrentOrg.ID > 0{
+	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
 		orgId = int(ctx.CurrentOrg.ID)
 	}
 

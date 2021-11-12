@@ -17,10 +17,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/pkg/terminal/table"
-	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+
+	"github.com/erda-project/erda/pkg/terminal/table"
+	"github.com/erda-project/erda/tools/cli/command"
 )
 
 var CONFIG = command.Command{
@@ -32,7 +33,7 @@ var CONFIG = command.Command{
 	},
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers",
-			Doc: "When using the default or custom-column output format, don't print headers (default print headers)",
+			Doc:          "When using the default or custom-column output format, don't print headers (default print headers)",
 			DefaultValue: false},
 	},
 	Run: ConfigOps,
@@ -139,4 +140,3 @@ func configInspect(ctx *command.Context) error {
 
 	return nil
 }
-

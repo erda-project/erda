@@ -16,8 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/tools/cli/command"
+
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/tools/cli/command"
 )
 
 var CONFIGW = command.Command{
@@ -32,7 +34,6 @@ var CONFIGW = command.Command{
 		command.StringFlag{Short: "s", Name: "server", Doc: "the http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
 		command.StringFlag{Short: "o", Name: "org", Doc: "a org under the platform", DefaultValue: ""},
 		command.StringFlag{Short: "e", Name: "platform", Doc: "the name of platform", DefaultValue: ""},
-
 	},
 	Run: ConfigOpsW,
 }
@@ -105,7 +106,7 @@ func setContext(conf *command.Config, name, platform string) {
 	}
 
 	if notExist {
-		conf.Contexts = append(conf.Contexts, &command.Ctx {name, platform })
+		conf.Contexts = append(conf.Contexts, &command.Ctx{name, platform})
 	}
 }
 
