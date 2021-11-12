@@ -105,7 +105,9 @@ func (e *PipelineTaskEvent) HandleWebSocket() error {
 	payload.ProjectID = e.Pipeline.Labels[apistructs.LabelProjectID]
 	payload.OrgID = e.Pipeline.Labels[apistructs.LabelOrgID]
 	payload.Status = state
-	payload.Result = e.Task.Result
+	if e.Task.Result != nil {
+		payload.Result = *e.Task.Result
+	}
 	payload.CostTimeSec = e.Content().(apistructs.PipelineTaskEventData).CostTimeSec
 
 	wsEvent := websocket.Event{

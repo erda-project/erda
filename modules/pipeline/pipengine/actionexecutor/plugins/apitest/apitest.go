@@ -96,7 +96,7 @@ func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{
 			return
 		}
 
-		meta := latestTask.Result.Metadata
+		meta := latestTask.GetMetadata()
 		for _, metaField := range meta {
 			if metaField.Name == logic.MetaKeyResult {
 				if metaField.Value == logic.ResultSuccess {
@@ -132,12 +132,12 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 		return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusAnalyzed}, nil
 	}
 
-	if !started && len(latestTask.Result.Metadata) == 0 {
+	meta := latestTask.GetMetadata()
+	if !started && len(meta) == 0 {
 		return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusBorn}, nil
 	}
 
 	// status according to api success or not
-	meta := latestTask.Result.Metadata
 	var status = apistructs.PipelineStatusFailed
 	for _, metaField := range meta {
 		if metaField.Name == logic.MetaKeyResult {
