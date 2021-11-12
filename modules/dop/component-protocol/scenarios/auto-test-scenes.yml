@@ -22,7 +22,7 @@ hierarchy:
     rightPage:
       - fileDetail
     tabBarExtraContent:
-      tabSceneSetExecuteButton
+      - tabSceneSetExecuteButton
     fileDetail:
       children:
         - fileConfig
