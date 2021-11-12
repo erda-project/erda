@@ -41,12 +41,18 @@ type Data struct {
 	Type string      `json:"type"`
 }
 
+type Tag struct {
+	Label string `json:"label"`
+	Color string `json:"color"`
+}
+
 type StageData struct {
 	Title      string                 `json:"title"`
 	ID         uint64                 `json:"id"`
 	GroupID    int64                  `json:"groupId"`
 	Disabled   bool                   `json:"disabled"`
 	Operations map[string]interface{} `json:"operations"`
+	Tags       []Tag                  `json:"tags"`
 }
 
 type InParams struct {

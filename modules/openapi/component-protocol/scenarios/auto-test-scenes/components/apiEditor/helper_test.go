@@ -15,6 +15,7 @@
 package apiEditor
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,4 +26,39 @@ func TestGenEmptyAPISpecStr(t *testing.T) {
 	assert.Equal(t, "GET", testEmptyAPISpec.APIInfo.Method)
 	assert.Equal(t, `{"apiSpec":{"id":"","name":"","url":"","method":"GET","headers":null,"params":null,"body":{"type":"","content":null},"out_params":null,"asserts":null},"loop":null}`,
 		testEmptyAPISpecStr)
+}
+
+func Test_genProps(t *testing.T) {
+	type args struct {
+		input       string
+		execute     string
+		replaceOpts []replaceOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want interface{}
+	}{
+		{
+			name: "test_replace_loop_options",
+			args: args{
+				input:   "",
+				execute: "",
+				replaceOpts: []replaceOption{
+					{
+						key:   LoopFormFieldDefaultExpand,
+						value: "test",
+					},
+				},
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := genProps(tt.args.input, tt.args.execute, tt.args.replaceOpts...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("genProps() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

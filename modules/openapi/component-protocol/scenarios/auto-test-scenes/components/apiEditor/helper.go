@@ -16,6 +16,7 @@ package apiEditor
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -24,13 +25,13 @@ import (
 	"github.com/erda-project/erda/pkg/expression"
 )
 
-const props1 string = `{
+var props1 = `{
 	 "loopFormField":[
 		{
 			"component":"formGroup",
 			"key":"loop",
 			"componentProps":{
-				"defaultExpand":false,
+				"defaultExpand": ` + LoopFormFieldDefaultExpand.string() + `,
 				"expandable":true,
 				"title":"循环策略"
 			},
@@ -335,9 +336,42 @@ const props3 string = `}
 //}
 const props4 string = `}`
 
-func genProps(input, execute string) interface{} {
+type optionKey string
+
+// placeholder for whether the loop strategy is expanded by default
+const LoopFormFieldDefaultExpand = optionKey("defaultExpand")
+
+func (opt optionKey) string() string {
+	return "{{_" + string(opt) + "_}}"
+}
+
+type replaceOption struct {
+	key   optionKey
+	value string
+}
+
+var defaultReplaceOptions = []replaceOption{
+	{
+		key:   LoopFormFieldDefaultExpand,
+		value: "false",
+	},
+}
+
+func genProps(input, execute string, replaceOpts ...replaceOption) interface{} {
+	// because props are assembled by splicing json strings,
+	// dynamic setting values can only be replaced by placeholders.
+	var propsJson = props1 + input + props2 + input + props3 + execute + props4
+
+	for _, opt := range replaceOpts {
+		propsJson = strings.ReplaceAll(propsJson, opt.key.string(), opt.value)
+	}
+
+	for _, opt := range defaultReplaceOptions {
+		propsJson = strings.ReplaceAll(propsJson, opt.key.string(), opt.value)
+	}
+
 	var propsI interface{}
-	if err := json.Unmarshal([]byte(props1+input+props2+input+props3+execute+props4), &propsI); err != nil {
+	if err := json.Unmarshal([]byte(propsJson), &propsI); err != nil {
 		logrus.Errorf("init props name=testplan component=formModal propsType=CreateTestPlan err: errMsg: %v", err)
 	}
 

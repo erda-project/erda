@@ -365,6 +365,17 @@ LABEL:
 	if err := json.Unmarshal([]byte(sceneStep.Value), &apiInfo); err != nil {
 		return err
 	}
+
+	// replace placeholders in props
+	var opts []replaceOption
+	if !apiInfo.Loop.IsEmpty() {
+		opts = append(opts, replaceOption{
+			key:   LoopFormFieldDefaultExpand,
+			value: "true",
+		})
+	}
+	c.Props = genProps(string(inputBytes), executeString, opts...)
+
 	apiInfo.APIInfo.Name = sceneStep.Name
 	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": sceneStep.APISpecID, "loop": apiInfo.Loop}
 	return nil

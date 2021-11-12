@@ -19,6 +19,7 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
+	st "github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 )
 
 type MU struct {
@@ -116,6 +117,16 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o3.Meta.ID = step.ID
 		o3.CopyText = step.ToJsonCopyText()
 		pd.Operations["copyAsJson"] = o3
+
+		var apiInfo st.APISpec
+		if err := json.Unmarshal([]byte(step.Value), &apiInfo); err == nil {
+			if !apiInfo.Loop.IsEmpty() {
+				pd.Tags = append(pd.Tags, Tag{
+					Label: "循环步骤",
+					Color: "blue",
+				})
+			}
+		}
 	}
 
 	os := OperationInfo{

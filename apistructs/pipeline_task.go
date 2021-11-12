@@ -151,6 +151,32 @@ type PipelineTaskLoop struct {
 	Strategy *LoopStrategy `json:"strategy,omitempty" yaml:"strategy,omitempty"`
 }
 
+func (l *PipelineTaskLoop) IsEmpty() bool {
+	if l == nil {
+		return true
+	}
+	if l.Break != "" {
+		return false
+	}
+
+	if l.Strategy != nil {
+		if l.Strategy.DeclineLimitSec > 0 {
+			return false
+		}
+		if l.Strategy.DeclineRatio > 0 {
+			return false
+		}
+		if l.Strategy.IntervalSec > 0 {
+			return false
+		}
+		if l.Strategy.MaxTimes > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
 type PipelineTaskErrResponse struct {
 	Code string             `json:"code"`
 	Msg  string             `json:"msg"`
