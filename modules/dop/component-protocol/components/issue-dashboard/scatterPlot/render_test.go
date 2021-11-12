@@ -60,6 +60,28 @@ func TestScatterData(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "illegal data",
+			args: args{
+				issues: []dao.IssueItem{
+					{
+						BaseModel: dbengine.BaseModel{
+							CreatedAt: t1,
+						},
+						StartTime:  &t3,
+						FinishTime: &t2,
+					},
+					{
+						BaseModel: dbengine.BaseModel{
+							CreatedAt: t3,
+						},
+						StartTime:  &t2,
+						FinishTime: &t1,
+					},
+				},
+			},
+			want: [][]float32{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

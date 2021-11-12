@@ -80,6 +80,9 @@ func ScatterData(issues []dao.IssueItem) Props {
 		items := make([]float32, 0)
 		solveTime := (issue.FinishTime.UnixNano() - issue.StartTime.UnixNano()) / int64(time.Millisecond)
 		responseTime := (issue.StartTime.UnixNano() - issue.CreatedAt.UnixNano()) / int64(time.Millisecond)
+		if solveTime < 0 || responseTime < 0 {
+			continue
+		}
 		items = append(items, milliToHour(solveTime), milliToHour(responseTime))
 		data = append(data, items)
 	}
