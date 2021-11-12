@@ -145,6 +145,10 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 	}
 
 	if mc.Type == apistructs.ManageProxy {
+		if _, err = c.GetOrCreateAccessKey(req.ClusterName); err != nil {
+			err = fmt.Errorf("create cluster accessKey error, err: %v", err)
+			return err
+		}
 		return nil
 	}
 
@@ -630,7 +634,7 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 
 	ak, err := c.GetOrCreateAccessKey(clusterName)
 	if err != nil {
-		logrus.Errorf("render cluster acccessKey error: %v", err)
+		logrus.Errorf("render cluster accessKey error: %v", err)
 		return nil, err
 	}
 
