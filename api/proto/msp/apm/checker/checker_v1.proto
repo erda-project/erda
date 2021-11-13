@@ -128,6 +128,7 @@ message GetCheckerV1Response {
 message DescribeCheckersV1Request {
   int64  projectID = 1 [(validator.field) = {int_gt: 0}, json_name = "projectId"];
   string env       = 2 [(validator.field) = {string_not_empty : true}];
+  string tenantId  = 3;
 }
 
 message DescribeCheckersV1Response {
@@ -173,7 +174,8 @@ message CheckerV1 {
   string                             mode      = 2 [(validator.field) = {string_not_empty : true}];
   int64                              projectID = 3 [json_name = "projectId"];
   string                             env       = 4;
-  map<string, google.protobuf.Value> config    = 5;
+  string                             tenantId  = 5;
+  map<string, google.protobuf.Value> config    = 6;
 }
 
 message HttpModeConfig {

@@ -48,6 +48,9 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data.ProjectID <= 0 {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
+	if req.Data.TenantId == "" {
+		return nil, errors.NewMissingParameterError("tenantId")
+	}
 
 	args, argsStr, err := s.ConvertArgsByMode(req.Data.Mode, req.Data.Config)
 
@@ -58,6 +61,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	now := time.Now()
 	m := &db.Metric{
 		ProjectID:  req.Data.ProjectID,
+		TenantId:   req.Data.TenantId,
 		Env:        req.Data.Env,
 		Name:       req.Data.Name,
 		Mode:       req.Data.Mode,
@@ -70,7 +74,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if err := s.metricDB.Create(m); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	checker := s.ConvertToChecker(ctx, m, req.Data.ProjectID)
+	checker := s.ConvertToChecker(ctx, m)
 	if checker != nil {
 		err := s.cache.Put(checker)
 		if err != nil {
@@ -111,7 +115,7 @@ func (s *checkerV1Service) ConvertArgsByMode(mode string, args map[string]*struc
 	}
 }
 
-func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, projectID int64) *pb.Checker {
+func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric) *pb.Checker {
 	config := make(map[string]*structpb.Value)
 	err := json.Unmarshal([]byte(m.Config), &config)
 	if err != nil {
@@ -125,46 +129,27 @@ func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, p
 		Config: config,
 		Tags: map[string]string{
 			"_metric_scope": "micro_service",
-			"project_id":    strconv.FormatInt(projectID, 10),
+			"project_id":    strconv.FormatInt(m.ProjectID, 10),
 			"env":           m.Env,
 			"metric":        strconv.FormatInt(m.ID, 10),
 			"metric_name":   m.Name,
 		},
 	}
-	response, err := s.projectServer.GetProject(ctx, &projectpb.GetProjectRequest{ProjectID: strconv.FormatInt(projectID, 10)})
-	if err == nil && response != nil {
-		project := response.Data
-		if project != nil && len(project.Relationship) > 0 {
-			var relationship *projectpb.TenantRelationship
-			for _, r := range project.Relationship {
-				if r.Workspace == m.Env {
-					relationship = r
-				}
-			}
-			if relationship != nil {
-				s.addTenantTags(ck, relationship.TenantID, project.Name)
-				return ck
-			}
-		}
-		return nil
-	}
-
-	scopeInfo, err := s.metricDB.QueryScopeInfo(projectID, m.Env)
-	if err == nil && scopeInfo != nil {
-		s.addTenantTags(ck, scopeInfo.ScopeID, scopeInfo.ProjectName)
-	}
+	s.addTenantTags(ck, m.TenantId)
 	return ck
 }
 
-func (s *checkerV1Service) addTenantTags(ck *pb.Checker, tenantId, projectName string) {
+func (s *checkerV1Service) addTenantTags(ck *pb.Checker, tenantId string) {
 	ck.Tags["_metric_scope_id"] = tenantId
 	ck.Tags["terminus_key"] = tenantId
-	ck.Tags["project_name"] = projectName
 }
 
 func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCheckerV1Request) (*pb.UpdateCheckerV1Response, error) {
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
+	}
+	if req.Data.TenantId == "" {
+		return nil, errors.NewMissingParameterError("tenantId")
 	}
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
@@ -177,6 +162,9 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	metric.Name = req.Data.Name
 	metric.URL = args.(*pb.HttpModeConfig).Url
 	metric.Config = argsStr
+	if metric.TenantId == "" {
+		metric.TenantId = req.Data.TenantId
+	}
 
 	if err := s.metricDB.Update(metric); err != nil {
 		return nil, errors.NewDatabaseError(err)
@@ -186,7 +174,7 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 		return nil, errors.NewDatabaseError(err)
 	}
 	req.Data.ProjectID = projectID
-	checker := s.ConvertToChecker(ctx, metric, projectID)
+	checker := s.ConvertToChecker(ctx, metric)
 	if checker != nil {
 		err := s.cache.Put(checker)
 		if err != nil {
@@ -282,7 +270,16 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 		}
 		for _, m := range oldMetrics {
 			if m.Extra == "" {
-				list = append(list, m)
+				// data fix for history record
+				m.ProjectID = proj.ProjectID
+				m.Extra = strconv.FormatInt(proj.ProjectID, 10)
+				if m.TenantId == "" {
+					m.TenantId = req.TenantId
+				}
+				err := s.metricDB.Update(m)
+				if err != nil {
+					return nil, errors.NewDatabaseError(err)
+				}
 			}
 		}
 		newMetrics, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
@@ -306,12 +303,22 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
+		if item.TenantId == "" {
+			item.TenantId = req.TenantId
+			err := s.metricDB.Update(item)
+			if err != nil {
+				return nil, errors.NewDatabaseError(err)
+			}
+		}
+
 		config := make(map[string]*structpb.Value)
 		if item.Config != "" {
 			err := handleBody(item, config)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			oldConfig(item, config)
 		}
 
 		result := &pb.DescribeItemV1{
@@ -341,6 +348,14 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	}, nil
 }
 
+func oldConfig(item *db.Metric, config map[string]*structpb.Value) {
+	switch item.Mode {
+	case "http":
+		config["url"] = structpb.NewStringValue(item.URL)
+		config["method"] = structpb.NewStringValue("GET")
+	}
+}
+
 func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.DescribeCheckerV1Request) (*pb.DescribeCheckerV1Response, error) {
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
@@ -355,6 +370,8 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			oldConfig(metric, config)
 		}
 		results[req.Id] = &pb.DescribeItemV1{
 			Name:   metric.Name,
@@ -621,12 +638,19 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 						upCount += item.count[i]
 					}
 				}
-				// TODO optimize
+				interval := int64(m.Config["interval"].GetNumberValue())
+				if interval == 0 {
+					// old record
+					interval = int64(30)
+				}
 				if stat == StatusRED {
+					duration := int64(0)
 					for i := len(item.time) - 1; i >= 0; i-- {
 						if item.count[i] > 0 {
 							j := i - 1
+							jcounts := int64(0)
 							for ; j >= 0; j-- {
+								jcounts += item.count[j]
 								if item.count[j] <= 0 {
 									break
 								}
@@ -634,15 +658,16 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 							if j < 0 {
 								j = 0
 							}
-							duration := (item.time[i]-item.time[j])/1000 + item.count[i]*30
-							if duration < 60 {
-								m.DownDuration = fmt.Sprintf("%d秒", duration)
-							} else if duration < 60*60 {
-								m.DownDuration = fmt.Sprintf("%d分钟", (duration+60-1)/60)
-							} else {
-								m.DownDuration = fmt.Sprintf("%d小时", (duration+60*60-1)/60*60)
-							}
+							duration = jcounts*interval + item.count[i]*interval
+							i = j
 						}
+					}
+					if duration < 60 {
+						m.DownDuration = fmt.Sprintf("%d秒", duration)
+					} else if duration < 60*60 {
+						m.DownDuration = fmt.Sprintf("%d分钟", (duration+60-1)/60)
+					} else {
+						m.DownDuration = fmt.Sprintf("%d小时", (duration+60*60-1)/(60*60))
 					}
 				}
 			}

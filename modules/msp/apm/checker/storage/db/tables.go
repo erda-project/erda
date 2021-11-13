@@ -49,6 +49,7 @@ var projectFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Project{})
 // Metric .
 type Metric struct {
 	ID         int64     `gorm:"column:id;primary_key"`
+	TenantId   string    `gorm:"column:tenant_id"`
 	ProjectID  int64     `gorm:"column:project_id"`
 	ServiceID  int64     `gorm:"column:service_id"`
 	Name       string    `gorm:"column:name"`
