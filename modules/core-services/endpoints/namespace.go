@@ -33,9 +33,17 @@ func (e *Endpoints) GetAllNamespaces(ctx context.Context, r *http.Request, vars 
 	}
 
 	existed := make(map[string]struct{})
+	platformNamespace := map[string]struct{}{
+		"default":     {},
+		"erda-system": {},
+		"kube-system": {},
+	}
 	var namespaces []string
 	for _, pod := range podsInfo {
 		if _, ok := existed[pod.K8sNamespace]; ok {
+			continue
+		}
+		if _, ok := platformNamespace[pod.K8sNamespace]; ok {
 			continue
 		}
 		namespaces = append(namespaces, pod.K8sNamespace)
