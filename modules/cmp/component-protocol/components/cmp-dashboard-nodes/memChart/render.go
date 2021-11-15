@@ -35,7 +35,7 @@ func (cht *MemChart) Render(ctx context.Context, c *cptype.Component, s cptype.S
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "memChart", func() servicehub.Provider {
 		cc := &MemChart{}
-		cc.Type = "Chart"
+		cc.Type = "PieChart"
 		cc.Chart = chart.Chart{}
 		return cc
 	})

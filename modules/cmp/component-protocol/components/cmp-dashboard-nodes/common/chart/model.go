@@ -34,7 +34,7 @@ var (
 	CPU    = "cpu"
 	Pods   = "pods"
 
-	DefaultFormat = "{d}%\n"
+	//DefaultFormat = "{d}%\n"
 )
 
 type Chart struct {
@@ -42,8 +42,9 @@ type Chart struct {
 	SDK    *cptype.SDK
 	Ctx    context.Context
 	CtxBdl *bundle.Bundle
-	Type   string `json:"type"`
-	Props  Props  `json:"props"`
+	Data   ChartData `json:"data"`
+	Type   string    `json:"type"`
+	Props  Props     `json:"props"`
 }
 type ChartInterface interface {
 	ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error
@@ -52,11 +53,16 @@ type ChartInterface interface {
 func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData, ResourceType string) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	cht.SDK = cputil.SDK(ctx)
-	cht.Props.Option.Series[0].Data = (*gs)[ResourceType+"Chart"].([]DataItem)
+	cht.Data = ChartData{Data: (*gs)[ResourceType+"Chart"].([]DataItem)}
 	return common.Transfer(cht.Props, &c.Props)
 }
 
+type ChartData struct {
+	Data []DataItem `json:"data"`
+}
+
 type Props struct {
+	Name   string `json:"name"`
 	Option Option `json:"option"`
 	Title  string `json:"title"`
 	Style  Style  `json:"style"`
@@ -79,9 +85,8 @@ type TextStyle struct {
 }
 
 type Serie struct {
-	Type   string     `json:"type"`
-	Radius string     `json:"radius"`
-	Data   []DataItem `json:"data"`
+	Type   string `json:"type"`
+	Radius string `json:"radius"`
 }
 
 type Legend struct {
@@ -100,9 +105,10 @@ type Style struct {
 }
 
 type DataItem struct {
-	Value float64 `json:"value"`
-	Name  string  `json:"name"`
-	Label Label   `json:"label"`
+	Value     float64 `json:"value"`
+	Name      string  `json:"name"`
+	Formatter string  `json:"formatter"`
+	Color     string  `json:"color"`
 }
 
 type Label struct {
@@ -111,21 +117,6 @@ type Label struct {
 
 func (cht *Chart) GetProps(name string) Props {
 	return Props{
-		Title: name,
-		Option: Option{
-			Color:  []string{"orange", "green", "red"},
-			Legend: Legend{Data: []string{cht.SDK.I18n(Allocated), cht.SDK.I18n(Free_Allocate), cht.SDK.I18n(Cannot_Allocate)}, Bottom: "0"},
-			Grid: Grid{
-				Bottom:       0,
-				Top:          0,
-				ContainLabel: true,
-			},
-			Series: []Serie{{
-				Type:   "pie",
-				Radius: "60%",
-				Data:   nil,
-			}},
-		},
-		Style: Style{Flex: 1},
+		Name: name,
 	}
 }

@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package charts
+package chartsContainer
 
-import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-type Charts struct {
-	Type  string `json:"type"`
-	Props Props  `json:"props"`
-	*cptype.SDK
+type ChartsContainer struct {
 	base.DefaultProvider
+	Type  string
+	Name  string
+	Props Props `json:"props"`
 }
 
 type Props struct {
-	Gutter int `json:"gutter"`
+	WhiteBg bool `json:"whiteBg"`
 }

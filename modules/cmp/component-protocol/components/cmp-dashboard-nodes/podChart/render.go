@@ -26,6 +26,10 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+func (cht *PodChart) Init(ctx servicehub.Context) error {
+	return cht.DefaultProvider.Init(ctx)
+}
+
 func (cht *PodChart) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	cht.SDK = cputil.SDK(ctx)
@@ -36,7 +40,7 @@ func (cht *PodChart) Render(ctx context.Context, c *cptype.Component, s cptype.S
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "podChart", func() servicehub.Provider {
 		cc := &PodChart{}
-		cc.Type = "Chart"
+		cc.Type = "PieChart"
 		return cc
 	})
 }

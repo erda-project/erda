@@ -12,31 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cpuChart
+package chartsContainer
 
 import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (cht *CpuChart) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	cht.SDK = cputil.SDK(ctx)
-	cht.Props = cht.GetProps(cht.SDK.I18n("Cpu Chart"))
-	return cht.ChartRender(ctx, c, s, event, gs, chart.CPU)
+func (cc *ChartsContainer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	cc.getProps()
+	err := common.Transfer(cc.Props, &c.Props)
+	if err != nil {
+		return err
+	}
+	return nil
 }
+
+func (cc *ChartsContainer) getProps() {
+	cc.Props = Props{
+		WhiteBg: true,
+	}
+}
+
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-nodes", "cpuChart", func() servicehub.Provider {
-		cc := &CpuChart{}
-		cc.Type = "PieChart"
-		cc.Chart = chart.Chart{}
-		return cc
+	base.InitProviderWithCreator("cmp-dashboard-nodes", "chartsContainer", func() servicehub.Provider {
+		return &ChartsContainer{Type: "Container", Props: Props{WhiteBg: true}}
 	})
 }

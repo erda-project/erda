@@ -201,11 +201,11 @@ func TestSortByString(t *testing.T) {
 			name: "testRole",
 			args: args{
 				data: []RowItem{{
-					Role: "worker",
+					Role: Role{Value: RoleValue{Label: "worker"}},
 				}, {
-					Role: "lb",
+					Role: Role{Value: RoleValue{Label: "lb"}},
 				}, {
-					Role: "master",
+					Role: Role{Value: RoleValue{Label: "master"}},
 				}},
 				sortColumn: "Role",
 				asc:        false,

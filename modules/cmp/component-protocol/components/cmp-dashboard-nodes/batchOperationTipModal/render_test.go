@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memTable
+package batchOperationTipModal
 
 import (
 	"fmt"
@@ -20,7 +20,6 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
 type NopTranslator struct{}
@@ -33,30 +32,51 @@ func (t NopTranslator) Sprintf(lang i18n.LanguageCodes, key string, args ...inte
 	return fmt.Sprintf(key, args...)
 }
 
-func TestMemInfoTable_getProps(t *testing.T) {
-	type fields struct {
-		Table table.Table
-		Data  []table.RowItem
-	}
+func TestBatchOperationTipModal_getOperations(t *testing.T) {
 	tests := []struct {
-		name   string
-		fields fields
+		name string
 	}{
+		// TODO: Add test cases.
 		{
-			"case1",
-			fields{},
+			name: "1",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ct := &MemInfoTable{
-				Table: tt.fields.Table,
-				Data:  tt.fields.Data,
+			bot := &BatchOperationTipModal{}
+			bot.SDK = &cptype.SDK{}
+			bot.SDK.Tran = &NopTranslator{}
+			bot.getOperations()
+		})
+	}
+}
+
+func TestBatchOperationTipModal_getContent(t *testing.T) {
+	type args struct {
+		tip     string
+		nodeIDs []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				tip:     "1",
+				nodeIDs: []string{"1"},
+			},
+			want: "1\n1\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bot := &BatchOperationTipModal{}
+			if got := bot.getContent(tt.args.tip, tt.args.nodeIDs); got != tt.want {
+				t.Errorf("getContent() = %v, want %v", got, tt.want)
 			}
-			ct.SDK = &cptype.SDK{
-				Tran: NopTranslator{},
-			}
-			ct.GetProps()
 		})
 	}
 }
