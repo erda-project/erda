@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -106,6 +107,35 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 	}
 
 	return k.updateDefaultServiceAccountForImageSecret(namespace, s.Name)
+}
+
+func (k *Kubernetes) UpdateImageSecret(namespace string, infos []apistructs.RegistryInfo) error {
+	logrus.Infof("start to update secret %s on namespace %s", AliyunRegistry, namespace)
+	aliYunSecret, err := k.secret.Get(namespace, AliyunRegistry)
+	if err != nil {
+		return err
+	}
+	var dockerConfigJson apistructs.RegistryAuthJson
+	if err := json.Unmarshal(aliYunSecret.Data[".dockerconfigjson"], &dockerConfigJson); err != nil {
+		return err
+	}
+	for _, info := range infos {
+		authString := base64.StdEncoding.EncodeToString([]byte(info.UserName + ":" + info.Password))
+		dockerConfigJson.Auths[info.Host] = apistructs.RegistryUserInfo{Auth: authString}
+		logrus.Infof("docker config json is %v", dockerConfigJson)
+	}
+
+	var sData []byte
+	if sData, err = json.Marshal(dockerConfigJson); err != nil {
+		logrus.Infof("marshal docker config json err: %v", dockerConfigJson)
+		return err
+	}
+	aliYunSecret.Data[".dockerconfigjson"] = sData
+	if err := k.secret.Update(aliYunSecret); err != nil {
+		logrus.Errorf("update secrets is err: %v", err)
+		return err
+	}
+	return nil
 }
 
 // CopyErdaSecrets Copy the secret under orignns namespace to dstns
