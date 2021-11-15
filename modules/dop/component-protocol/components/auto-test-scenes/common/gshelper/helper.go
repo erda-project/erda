@@ -20,6 +20,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
+const (
+	SceneConfigKey    string = "SceneConfigKey"
+	SceneSetConfigKey string = "SceneSetConfigKey"
+)
+
 type GSHelper struct {
 	gs *cptype.GlobalStateData
 }
@@ -36,18 +41,18 @@ func assign(src, dst interface{}) error {
 	return mapstructure.Decode(src, dst)
 }
 
-func (h *GSHelper) SetGlobalSetID(id uint64) {
+func (h *GSHelper) SetGlobalSelectedSetID(id uint64) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)["GlobalSetID"] = id
+	(*h.gs)["GlobalSelectedSetID"] = id
 }
 
-func (h *GSHelper) GetGlobalSetID() uint64 {
+func (h *GSHelper) GetGlobalSelectedSetID() uint64 {
 	if h.gs == nil {
 		return 0
 	}
-	v, ok := (*h.gs)["GlobalSetID"]
+	v, ok := (*h.gs)["GlobalSelectedSetID"]
 	if !ok {
 		return 0
 	}
@@ -55,4 +60,21 @@ func (h *GSHelper) GetGlobalSetID() uint64 {
 		return v.(uint64)
 	}
 	return uint64(v.(float64))
+}
+
+func (h *GSHelper) SetGlobalActiveConfig(key string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalActiveConfig"] = key
+}
+
+func (h *GSHelper) GetGlobalActiveConfig() string {
+	if h.gs == nil {
+		return ""
+	}
+	if v, ok := (*h.gs)["GlobalActiveConfig"].(string); ok {
+		return v
+	}
+	return SceneSetConfigKey
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 )
 
 func (i *ComponentFileTree) RenderFileTree(inParams InParams) error {
@@ -69,6 +70,9 @@ func (i *ComponentFileTree) RenderFileTree(inParams InParams) error {
 
 	i.Data = res
 	i.State.FormVisible = false
+	if len(rsp) > 0 {
+		i.gsHelper.SetGlobalSelectedSetID(rsp[0].ID)
+	}
 	return nil
 }
 
@@ -144,6 +148,7 @@ func (i *ComponentFileTree) RenderSceneSets(inParams InParams) error {
 	// 	}
 	// }
 	i.State.FormVisible = false
+	i.gsHelper.SetGlobalSelectedSetID(rsp[0].ID)
 	return nil
 }
 
@@ -461,6 +466,7 @@ func (i *ComponentFileTree) RenderClickScene(event cptype.ComponentEvent) error 
 		i.State.SceneSetKey = operationData.Meta.ParentKey
 		i.State.SceneId = uint64(id)
 	}
+	i.gsHelper.SetGlobalActiveConfig(gshelper.SceneConfigKey)
 	return nil
 }
 
@@ -476,7 +482,8 @@ func (i *ComponentFileTree) RenderClickSceneSet(event cptype.ComponentEvent) err
 	i.State.SceneId = 0
 	i.State.SetId__urlQuery = strconv.Itoa(id)
 	i.State.SceneId__urlQuery = ""
-	i.gsHelper.SetGlobalSetID(uint64(id))
+	i.gsHelper.SetGlobalSelectedSetID(uint64(id))
+	i.gsHelper.SetGlobalActiveConfig(gshelper.SceneSetConfigKey)
 	return nil
 }
 

@@ -247,6 +247,7 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 		lists = append(lists, list)
 		num--
 	}
+	e.Data = make(map[string]interface{})
 	e.Data["list"] = lists
 	return nil
 }

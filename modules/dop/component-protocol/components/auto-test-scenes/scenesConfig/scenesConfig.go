@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -28,14 +29,16 @@ import (
 
 type ComponentAction struct {
 	base.DefaultProvider
-	State State `json:"state"`
+	State    State `json:"state"`
+	gsHelper *gshelper.GSHelper
 }
 
 type State struct {
 	ActiveKey apistructs.ActiveKey `json:"activeKey"`
 }
 
-func (ca *ComponentAction) GenComponentState(c *cptype.Component) error {
+func (ca *ComponentAction) GenComponentState(c *cptype.Component, gs *cptype.GlobalStateData) error {
+	ca.gsHelper = gshelper.NewGSHelper(gs)
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -55,17 +58,14 @@ func (ca *ComponentAction) GenComponentState(c *cptype.Component) error {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	if err := ca.GenComponentState(c); err != nil {
+	if err := ca.GenComponentState(c, gs); err != nil {
 		return err
 	}
-	props := make(map[string]interface{})
-	if ca.State.ActiveKey == apistructs.ActiveKeyfileConfig {
-		props["visible"] = true
-	} else {
-		props["visible"] = false
+	c.Props = map[string]interface{}{
+		"visible": func() bool {
+			return ca.gsHelper.GetGlobalActiveConfig() == gshelper.SceneConfigKey
+		}(),
 	}
-	props["visible"] = false
-	c.Props = props
 	return nil
 }
 

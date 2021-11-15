@@ -32,7 +32,7 @@ func (s *ScenesSetInfo) Render(ctx context.Context, c *cptype.Component, scenari
 		return
 	}
 
-	setID := s.gsHelper.GetGlobalSetID()
+	setID := s.gsHelper.GetGlobalSelectedSetID()
 	s.Props = map[string]interface{}{
 		"visible": func() bool {
 			return setID != 0

@@ -448,6 +448,7 @@ rendering:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: resultDrawer
+    - name: scenesSetConfig
     - name: scenesSetTitle
     - name: scenesSetInfo
     - name: scenesStages

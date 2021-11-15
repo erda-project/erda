@@ -54,7 +54,7 @@ var OperationRender = map[cptype.OperationKey]OperationFunc{
 
 func RenderList(s *SceneStage) error {
 	_, scenes, err := s.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{
-		SetID: s.gsHelper.GetGlobalSetID(),
+		SetID: s.gsHelper.GetGlobalSelectedSetID(),
 	})
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func RenderCopyParallel(s *SceneStage) error {
 	_, err = s.atTestPlan.CopyAutotestScene(apistructs.AutotestSceneCopyRequest{
 		PreID:        meta.ID,
 		SceneID:      meta.ID,
-		SetID:        s.gsHelper.GetGlobalSetID(),
+		SetID:        s.gsHelper.GetGlobalSelectedSetID(),
 		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
 	}, false, nil)
 	return err
@@ -128,7 +128,7 @@ func RenderCopyTo(s *SceneStage) error {
 func RenderItemMove(s *SceneStage) error {
 	dragGroupKey := uint64(s.State.DragParams.DragGroupKey)
 	dropGroupKey := uint64(s.State.DragParams.DropGroupKey)
-	setID := s.gsHelper.GetGlobalSetID()
+	setID := s.gsHelper.GetGlobalSelectedSetID()
 
 	req := apistructs.AutotestSceneMoveRequest{
 		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
@@ -186,7 +186,7 @@ func RenderItemMove(s *SceneStage) error {
 func RenderGroupMove(s *SceneStage) error {
 	dragGroupKey := uint64(s.State.DragParams.DragGroupKey)
 	dropGroupKey := uint64(s.State.DragParams.DropGroupKey)
-	setID := s.gsHelper.GetGlobalSetID()
+	setID := s.gsHelper.GetGlobalSelectedSetID()
 
 	req := apistructs.AutotestSceneMoveRequest{
 		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
@@ -266,7 +266,7 @@ func RenderDelete(s *SceneStage) error {
 }
 
 func RenderSplit(s *SceneStage) error {
-	setID := s.gsHelper.GetGlobalSetID()
+	setID := s.gsHelper.GetGlobalSelectedSetID()
 	meta, err := GetOpsInfo(s.event.OperationData)
 	if err != nil {
 		return err
