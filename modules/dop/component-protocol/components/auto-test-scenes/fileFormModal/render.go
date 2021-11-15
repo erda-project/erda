@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/fileTree"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -38,7 +39,7 @@ func init() {
 func (a *ComponentFileFormModal) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	a.sdk = cputil.SDK(ctx)
-
+	a.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 	err = a.unmarshal(c)
 	if err != nil {
 		return err
@@ -304,17 +305,32 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 
 func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
 	formData := a.State.FormData
-	setId := a.State.SceneSetKey
-	req := apistructs.AutotestSceneRequest{
-		AutoTestSceneParams: apistructs.AutoTestSceneParams{
-			SpaceID: inParams.SpaceId,
-		},
+	var (
+		preScene *apistructs.AutoTestScene
+		err      error
+	)
+	if a.State.SceneId != 0 {
+		preScene, err = a.atTestPlan.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: a.State.SceneId})
+		if err != nil {
+			return err
+		}
+	}
+	_, err = a.atTestPlan.CreateAutotestScene(apistructs.AutotestSceneRequest{
 		Name:        formData.Name,
 		Description: formData.Description,
-		SetID:       uint64(setId), //formData.SetID,
-	}
-	req.UserID = a.sdk.Identity.UserID
-	_, err := a.bdl.CreateAutoTestScene(req)
+		SetID:       uint64(a.State.SceneSetKey),
+		SceneGroupID: func() uint64 {
+			if preScene == nil {
+				return 0
+			}
+			if preScene.GroupID == 0 {
+				return preScene.ID
+			}
+			return preScene.GroupID
+		}(),
+		PreID:        a.State.SceneId,
+		IdentityInfo: apistructs.IdentityInfo{UserID: a.sdk.Identity.UserID},
+	})
 	if err != nil {
 		return err
 	}

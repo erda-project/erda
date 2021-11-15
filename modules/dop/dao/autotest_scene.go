@@ -83,7 +83,7 @@ func (db *DBClient) CreateAutotestScene(scene *AutoTestScene) error {
 		}
 		// Find the next scene
 		hasNextScene := true
-		if err := tx.Where("pre_id = ?", scene.PreID).First(&nextScene).Error; err != nil {
+		if err := tx.Where("pre_id = ?", scene.PreID).Where("set_id = ?", scene.SetID).First(&nextScene).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				hasNextScene = false
 			} else {

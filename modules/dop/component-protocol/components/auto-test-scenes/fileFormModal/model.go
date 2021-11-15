@@ -17,6 +17,7 @@ package fileFormModal
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -24,6 +25,7 @@ type ComponentFileFormModal struct {
 	base.DefaultProvider
 	bdl        *bundle.Bundle
 	sdk        *cptype.SDK
+	atTestPlan *autotestv2.Service
 	Props      Props                  `json:"props"`
 	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations"`
@@ -43,6 +45,7 @@ type FormData struct {
 	Description string `json:"desc"`
 	// SetID       uint64 `json:"setId"`
 	ScenesSet *uint64 `json:"scenesSet"`
+	SceneID   uint64  `json:"sceneID"`
 }
 
 type Props struct {

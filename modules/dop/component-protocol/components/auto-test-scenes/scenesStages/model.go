@@ -80,6 +80,9 @@ type State struct {
 	SetID               uint64     `json:"setID"`
 	StepId              uint64     `json:"stepId"`
 	ShowScenesSetDrawer bool       `json:"showScenesSetDrawer"`
+	ActionType          string     `json:"actionType"`
+	SceneID             uint64     `json:"sceneId"`
+	SceneSetKey         uint64     `json:"sceneSetKey"`
 }
 
 type OperationBaseInfo struct {
@@ -93,6 +96,7 @@ type OperationBaseInfo struct {
 	Reload      bool   `json:"reload"`
 	Disabled    bool   `json:"disabled"`
 	DisabledTip string `json:"disabledTip"`
+	Group       string `json:"group"`
 }
 
 type OpMetaData struct {
@@ -127,6 +131,7 @@ func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, 
 	s.event = event
 	s.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 	s.gsHelper = gshelper.NewGSHelper(gs)
+	s.State.Visible = false
 	return nil
 }
 
@@ -192,6 +197,47 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 			Data: map[string]interface{}{
 				"groupID": s.GroupID,
 			},
+		},
+	}
+	s.Operations["copy"] = OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:       CopyParallelOperationKey.String(),
+			Icon:      "fz1",
+			HoverShow: true,
+			Text:      "复制场景",
+			Reload:    true,
+			Disabled:  false,
+			Group:     "copy",
+		},
+		Meta: OpMetaInfo{
+			ID: scene.ID,
+		},
+	}
+	s.Operations["copyTo"] = OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:       CopyToOperationKey.String(),
+			Icon:      "fz1",
+			HoverShow: true,
+			Text:      "复制到其他场景集",
+			Reload:    true,
+			Disabled:  false,
+			Group:     "copy",
+		},
+		Meta: OpMetaInfo{
+			ID: scene.ID,
+		},
+	}
+	s.Operations["edit"] = OperationInfo{
+		OperationBaseInfo: OperationBaseInfo{
+			Key:       EditOperationKey.String(),
+			Icon:      "edit",
+			HoverShow: true,
+			Text:      "编辑场景",
+			Reload:    true,
+			Disabled:  false,
+		},
+		Meta: OpMetaInfo{
+			ID: scene.ID,
 		},
 	}
 	return

@@ -346,6 +346,7 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
+    - name: scenesStages
   fileTree:
     - name: tabExecuteButton
       state:
@@ -810,7 +811,16 @@ rendering:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
   scenesStages:
-    - name: scenesStages
+    - name: fileFormModal
+      state:
+        - name: "actionType"
+          value: "{{ scenesStages.actionType }}"
+        - name: "visible"
+          value: "{{ scenesStages.visible }}"
+        - name: "sceneSetKey"
+          value: "{{ scenesStages.sceneSetKey }}"
+        - name: "sceneId"
+          value: "{{ scenesStages.sceneId }}"
   __DefaultRendering__:
     - name: moreOperation
     - name: autoTestScenes

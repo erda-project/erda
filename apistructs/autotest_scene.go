@@ -139,6 +139,7 @@ type AutotestSceneRequest struct {
 	PageSize uint64 `json:"pageSize"`
 
 	SceneGroupID uint64 `json:"sceneGroupID,omitempty"` // scene group, set the min sceneID as groupID
+	PreID        uint64 `json:"preID,omitempty"`
 
 	IdentityInfo
 }

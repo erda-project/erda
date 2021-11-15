@@ -15,6 +15,8 @@
 package scenesStages
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -41,7 +43,7 @@ type OperationFunc []func(s *SceneStage) error
 var OperationRender = map[cptype.OperationKey]OperationFunc{
 	InitializeOperation:      []func(s *SceneStage) error{RenderList},
 	RenderingOperation:       []func(s *SceneStage) error{RenderList},
-	AddParallelOperationKey:  []func(s *SceneStage) error{RenderAddParallel, RenderList},
+	AddParallelOperationKey:  []func(s *SceneStage) error{RenderAddParallel},
 	CopyParallelOperationKey: []func(s *SceneStage) error{RenderCopyParallel, RenderList},
 	CopyToOperationKey:       []func(s *SceneStage) error{RenderCopyTo, RenderList},
 	MoveItemOperationKey:     []func(s *SceneStage) error{RenderItemMove, RenderList},
@@ -87,23 +89,12 @@ func RenderAddParallel(s *SceneStage) error {
 	if err != nil {
 		return err
 	}
-	preScene, err := s.atTestPlan.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: meta.ID})
-	if err != nil {
-		return err
-	}
-	_, err = s.atTestPlan.CreateAutotestScene(apistructs.AutotestSceneRequest{
-		Name:        "wxj",
-		Description: "xi",
-		SetID:       504,
-		SceneGroupID: func() uint64 {
-			if preScene.GroupID == 0 {
-				return preScene.ID
-			}
-			return preScene.GroupID
-		}(),
-		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
-	})
-	return err
+
+	s.State.ActionType = "AddScene"
+	s.State.Visible = true
+	s.State.SceneID = meta.ID
+	s.State.SceneSetKey = s.gsHelper.GetGlobalSelectedSetID()
+	return nil
 }
 
 func RenderCopyParallel(s *SceneStage) error {
@@ -258,11 +249,16 @@ func RenderEdit(s *SceneStage) error {
 }
 
 func RenderDelete(s *SceneStage) error {
+	fmt.Println("wxj delete")
 	meta, err := GetOpsInfo(s.event.OperationData)
 	if err != nil {
 		return err
 	}
-	return s.atTestPlan.DeleteAutotestScene(meta.ID, apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID})
+	err = s.atTestPlan.DeleteAutotestScene(meta.ID, apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID})
+	if err != nil {
+		fmt.Println("wxj: ", err.Error())
+	}
+	return err
 }
 
 func RenderSplit(s *SceneStage) error {
