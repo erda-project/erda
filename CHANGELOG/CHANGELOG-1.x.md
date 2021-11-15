@@ -37,6 +37,12 @@
 
 ### New Features
 
+* The scenario set supports parallelism In the automated test plan. [#2173](https://github.com/erda-project/erda/pull/2173)
+* Automatic test scenario set supports export and import. [#2470](https://github.com/erda-project/erda/pull/2470)
+* Automated test step supports copy paste. [#2481](https://github.com/erda-project/erda/pull/2481)
+* Automated test step support disable. [#2453](https://github.com/erda-project/erda/pull/2453)
+* Accelerate the speed of viewing Manual-Test related pages. [#2910](https://github.com/erda-project/erda/pull/2910)
+* Add Issue dashboard, history data displayed in bar chart, pie chart, etc. [#2294](https://github.com/erda-project/erda/pull/2294) [#2462](https://github.com/erda-project/erda/pull/2462)
 * Support setting resource quotas according to the project's workspace granularity in the management center. [#2283](https://github.com/erda-project/erda/pull/2283)
 * Support the resource usage ranking of projects in the cloud management platform. [#2525](https://github.com/erda-project/erda/pull/2525)
 * Support sending SMS alerts through custom notification channels in microservice and cloud management platforms.[#2460](https://github.com/erda-project/erda/pull/2460)
@@ -51,6 +57,27 @@
 
 ### Bug Fixes
 
+* Fix the bug that action will not automatically synchronize the latest version of github. [#2507](https://github.com/erda-project/erda/pull/2507)
+* Fix the bug that automated test scenario set movement does not verify whether there is a cycle in the reference scenario set. [#2309](https://github.com/erda-project/erda/pull/2309)
+* Fix the bug that automated test plan execution action cannot monitor whether the plan is executed. [#2407](https://github.com/erda-project/erda/pull/2407)
+* Fix the bug that the application new pipeline needs to fill in the .yml suffix. [#2685](https://github.com/erda-project/erda/pull/2685)
+* Fix the bug that incorrect calculation of execution time of pipeline loop task. [#2816](https://github.com/erda-project/erda/pull/2816)
+* Fix the bug that the same id pipeline is scheduled repeatedly. [#2921](https://github.com/erda-project/erda/pull/2921)
+* Fix the bug that automated test tasks apply for a large range of tokens, resulting in slower requests. [#2991](https://github.com/erda-project/erda/pull/2991)
+* Fix the bug that Failed to delete the application without returning an error message. [#2613](https://github.com/erda-project/erda/pull/2613)
+* Fix the bug that add a unique index to the application table to prevent applications with the same name. [#2611](https://github.com/erda-project/erda/pull/2611)
+* Optimization the audit message for org update. [#2706](https://github.com/erda-project/erda/pull/2706)
+* Fix the bug that the parent context is recycled, and the child context gets data from it, causing the gittar component to panic. [#2348](https://github.com/erda-project/erda/pull/2348)
+* Optimization the api statistics of auto test. [#2806](https://github.com/erda-project/erda/pull/2806)
+* Fix the bug that the execution details of the scene set in the automated test cannot show the execution environment at the time. [#2529](https://github.com/erda-project/erda/pull/2529)
+* Fix the bug that pipeline timing tasks click to retry, the trigger time will not change. [#2560](https://github.com/erda-project/erda/pull/2560)
+* Fix the bug that after the configuration sheet does not support exporting and importing the plan, the scene clicks to report an error. [#2609](https://github.com/erda-project/erda/pull/2609)
+* Fix the bug that automated test The newly imported test space status is inconsistent with the status recorded in the import and export. [#2624](https://github.com/erda-project/erda/pull/2624)
+* Fix the bug that automated test interface steps are time-consuming 00:00. [#2650](https://github.com/erda-project/erda/pull/2650)
+* Fix the bug that in the case of multiple instances of the pipeline, the queue manager query quantity is inconsistent. [#2742](https://github.com/erda-project/erda/pull/2742)
+* Fix the bug that App CI/CD Pipeline variable not inject in some cases. [#2797](https://github.com/erda-project/erda/pull/2797)
+* Fix default issue state coming from home page. [#2268](https://github.com/erda-project/erda/pull/2268)
+* Fix issue gantt component filtered data default value reset. [#2504](https://github.com/erda-project/erda/pull/2504)
 * Fix the bug that returns an error when the namespace hasn't aliyun secret in scheduler.[#2456](https://github.com/erda-project/erda/pull/2456)
 * Fix the bug that the custom alarm filtering rules created by msp and cmp are incorrect.[#2860](https://github.com/erda-project/erda/pull/2860) 
 * Fix the bug that span of tracing is missing in the microservice platform.[2849](https://github.com/erda-project/erda/pull/2849), [2820](https://github.com/erda-project/erda/pull/2820)
