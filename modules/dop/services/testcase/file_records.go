@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint64, error) {
@@ -75,7 +76,11 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 		r.State = req.State
 	}
 	if req.ErrorInfo != nil {
-		r.ErrorInfo = fmt.Sprint(req.ErrorInfo)
+		errorInfo := fmt.Sprint(req.ErrorInfo)
+		if err := strutil.Validate(errorInfo, strutil.MaxRuneCountValidator(apistructs.TestFileRecordErrorMaxLength)); err != nil {
+			errorInfo = strutil.Truncate(errorInfo, apistructs.TestFileRecordErrorMaxLength)
+		}
+		r.ErrorInfo = errorInfo
 	}
 
 	return svc.db.UpdateRecord(r)

@@ -55,6 +55,8 @@ type TestFileExtra struct {
 	AutotestSceneSetFileExtraInfo *AutoTestSceneSetFileExtraInfo `json:"autotestSceneSetFileExtraInfo,omitempty"`
 }
 
+const TestFileRecordErrorMaxLength = 2048
+
 type ManualTestFileExtraInfo struct {
 	TestSetID     uint64                   `json:"testSetID,omitempty"`
 	ImportRequest *TestCaseImportRequest   `json:"importRequest,omitempty"`
