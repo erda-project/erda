@@ -175,9 +175,6 @@ func (db *DBClient) ListAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	//err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&scenes).
 	//	Offset(0).Limit(-1).Count(&total).Error
 	sql := db.Table("dice_autotest_scene").Where("set_id = ?", req.SetID)
-	if req.SceneGroupID != 0 {
-		sql = sql.Where("group_id = ?", req.SceneGroupID)
-	}
 	err := sql.Find(&scenes).Offset(0).Limit(-1).Count(&total).Error
 	if err != nil {
 		return 0, nil, err
@@ -408,7 +405,7 @@ func (db *DBClient) MoveAutoTestSceneV2(req apistructs.AutotestSceneMoveRequest)
 		defer func() {
 			if err == nil && !req.IsGroup {
 				groupIDs := strutil.DedupUint64Slice([]uint64{oldGroupID, newGroupID}, true)
-				err = updateStepGroup(tx, groupIDs...)
+				err = updateSceneGroup(tx, groupIDs...)
 			}
 		}()
 		var scene, oldNextScene, newNextScene AutoTestScene
@@ -426,7 +423,7 @@ func (db *DBClient) MoveAutoTestSceneV2(req apistructs.AutotestSceneMoveRequest)
 		}
 
 		// Get the old next scene, and update its preID if exists
-		if err = tx.Where("id = ?", req.LastID).First(&oldNextScene).Error; err != nil {
+		if err = tx.Where("pre_id = ?", req.LastID).Where("set_id = ?", req.SetID).First(&oldNextScene).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				// The scene was the last
 				goto label1
@@ -441,7 +438,7 @@ func (db *DBClient) MoveAutoTestSceneV2(req apistructs.AutotestSceneMoveRequest)
 	label1:
 		scene.PreID = req.PreID
 		// Get the new next scene and update its preID if exists
-		if err = tx.Where("pre_id = ?", req.PreID).First(&newNextScene).Error; err != nil {
+		if err = tx.Where("pre_id = ?", req.PreID).Where("set_id = ?", req.SetID).First(&newNextScene).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				// The target scene was the last
 				goto label2
@@ -464,7 +461,7 @@ func (db *DBClient) MoveAutoTestSceneV2(req apistructs.AutotestSceneMoveRequest)
 					return err
 				}
 				// If the groupID of targetScene is 0, set its id as groupID
-				if newGroupID == 0 {
+				if targetScene.GroupID == 0 {
 					targetScene.GroupID = targetScene.ID
 					if err = tx.Save(&targetScene).Error; err != nil {
 						return err
@@ -636,4 +633,12 @@ func (db *DBClient) ListSceneBySceneSetID(setIDs ...uint64) ([]AutoTestScene, er
 	var scenes []AutoTestScene
 	err := db.Model(&AutoTestScene{}).Where("set_id IN (?)", setIDs).Find(&scenes).Error
 	return scenes, err
+}
+
+// ListAutotestSceneByGroupID .
+func (db *DBClient) ListAutotestSceneByGroupID(setID, groupID uint64) (scenes []AutoTestScene, err error) {
+	err = db.Model(&AutoTestScene{}).
+		Where("set_id = ?", setID).
+		Where("group_id = ? OR id = ?", groupID, groupID).Find(&scenes).Error
+	return
 }

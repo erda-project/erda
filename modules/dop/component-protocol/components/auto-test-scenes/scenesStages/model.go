@@ -138,7 +138,7 @@ func (s *SceneStage) setToComponent(c *cptype.Component) error {
 	return nil
 }
 
-func NewStageData(scene apistructs.AutoTestScene) (s StageData) {
+func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s StageData) {
 	s.Title = fmt.Sprintf("#%d 场景: %s", scene.ID, scene.Name)
 	s.ID = scene.ID
 	s.GroupID = func() int {
@@ -180,7 +180,8 @@ func NewStageData(scene apistructs.AutoTestScene) (s StageData) {
 			HoverShow: true,
 			Reload:    true,
 			Disabled: func() bool {
-				return scene.StepCount < 1
+				scenes, _ := svc.ListAutotestSceneByGroupID(scene.SetID, uint64(s.GroupID))
+				return len(scenes) <= 1
 			}(),
 		},
 		Meta: OpMetaInfo{

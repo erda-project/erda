@@ -150,6 +150,7 @@ type AutotestSceneMoveRequest struct {
 	PreID    uint64 `json:"preID"`    // preID
 	TargetID uint64 `json:"targetID"` // target sceneID
 	IsGroup  bool   `json:"isGroup"`  // true: means move with group
+	SetID    uint64 `json:"setID"`
 }
 
 type AutotestScenesRequest struct {

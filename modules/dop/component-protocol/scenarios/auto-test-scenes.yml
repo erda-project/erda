@@ -807,7 +807,8 @@ rendering:
       state:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
-
+  scenesStages:
+    - name: scenesStages
   __DefaultRendering__:
     - name: moreOperation
     - name: autoTestScenes

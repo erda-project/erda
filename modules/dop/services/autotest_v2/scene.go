@@ -1489,3 +1489,15 @@ func (svc *Service) ListAutoTestSceneSteps(sceneIDs []uint64) (sceneSteps []apis
 	}
 	return
 }
+
+// ListAutotestSceneByGroupID .
+func (svc *Service) ListAutotestSceneByGroupID(setID, groupID uint64) (scenes []apistructs.AutoTestScene, err error) {
+	list, err := svc.db.ListAutotestSceneByGroupID(setID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		scenes = append(scenes, v.Convert())
+	}
+	return
+}
