@@ -696,6 +696,22 @@ func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*ap
 }
 
 func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
+	if dto.ClusterConfig != nil {
+		var (
+			prodCluster, hasProdCluster       = dto.ClusterConfig["PROD"]
+			stagingCluster, hasStagingCluster = dto.ClusterConfig["STAGING"]
+			testCluster, hasTestCluster       = dto.ClusterConfig["TEST"]
+			devCluster, hasDevCluster         = dto.ClusterConfig["DEV"]
+		)
+		if hasProdCluster && hasStagingCluster && hasTestCluster && hasDevCluster {
+			dto.ResourceConfig = apistructs.NewResourceConfig()
+			dto.ResourceConfig.PROD.ClusterName = prodCluster
+			dto.ResourceConfig.STAGING.ClusterName = stagingCluster
+			dto.ResourceConfig.TEST.ClusterName = testCluster
+			dto.ResourceConfig.DEV.ClusterName = devCluster
+		}
+	}
+
 	var projectQuota apistructs.ProjectQuota
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
