@@ -69,3 +69,29 @@ func TestAutoTestSpaceListRequest_URLQueryString(t *testing.T) {
 		})
 	}
 }
+
+func TestAutoTestSpaceArchiveStatus_Valid(t *testing.T) {
+	tests := []struct {
+		name string
+		s    AutoTestSpaceArchiveStatus
+		want bool
+	}{
+		{
+			name: "valid",
+			s:    TestSpaceInit,
+			want: true,
+		},
+		{
+			name: "invalid",
+			s:    AutoTestSpaceArchiveStatus("start"),
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.s.Valid(); got != tt.want {
+				t.Errorf("AutoTestSpaceArchiveStatus.Valid() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

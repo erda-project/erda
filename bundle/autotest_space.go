@@ -68,7 +68,7 @@ func (b *Bundle) DeleteTestSpace(id uint64, userID string) error {
 }
 
 // CreateTestSpace 创建测试空间
-func (b *Bundle) CreateTestSpace(name string, projectID int64, description string, userID string) error {
+func (b *Bundle) CreateTestSpace(req *apistructs.AutoTestSpaceCreateRequest, userID string) error {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return err
@@ -79,11 +79,7 @@ func (b *Bundle) CreateTestSpace(name string, projectID int64, description strin
 	resp, err := hc.Post(host).Path("/api/autotests/spaces").
 		// Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
-		JSONBody(apistructs.AutoTestSpaceCreateRequest{
-			Name:        name,
-			ProjectID:   projectID,
-			Description: description,
-		}).
+		JSONBody(req).
 		Do().JSON(&listResp)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)

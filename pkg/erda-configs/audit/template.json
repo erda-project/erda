@@ -1942,8 +1942,8 @@
   "updateAutoTestSpace": {
     "desc": "更新自动化测试空间",
     "success": {
-      "zh": "在 [@projectName](project) 项目中， 更新了测试空间 [@spaceName] 的[@field], 由 [@from] 变成 [@to] ",
-      "en": ""
+      "zh": "在 [@projectName](project) 项目中, 更新了测试空间 [@spaceName] 的[@field], 由 [@from] 变成 [@to] ",
+      "en": "Update auto test space [@spaceName] [@field] from [@from] to [@to] in project [@projectName](project)"
     }
   }
 }

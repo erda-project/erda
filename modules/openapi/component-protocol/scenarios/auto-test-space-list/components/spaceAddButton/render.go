@@ -28,6 +28,11 @@ type props struct {
 	Text       string      `json:"text"`
 	Type       string      `json:"type"`
 	Operations interface{} `json:"operations"`
+	TipProps   TipProps    `json:"tipProps"`
+}
+
+type TipProps struct {
+	Placement string `json:"placement,omitempty"`
 }
 
 type AddButtonCandidateOp struct {
@@ -104,6 +109,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	prop := props{
 		Text: i18nLocale.Get(i18n.I18nKeyAdd),
 		Type: "primary",
+		TipProps: TipProps{
+			Placement: "left",
+		},
 	}
 	c.Props = prop
 	c.Operations = map[string]interface{}{
@@ -122,8 +130,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				"key":    "set",
 				"target": "spaceFormModal",
 				"state": map[string]interface{}{
-					"visible":  true,
-					"formData": nil,
+					"visible": true,
+					"formData": map[string]interface{}{
+						"archiveStatus": apistructs.TestSpaceInit,
+					},
 				},
 			},
 		},

@@ -175,7 +175,13 @@ func (a *SpaceFormModal) handlerCreateOperation(bdl protocol.ContextBundle, c *a
 	if !reg.MatchString(cond.Name) {
 		return fmt.Errorf("请输入中文、英文、数字、中划线或下划线")
 	}
-	err := bdl.Bdl.CreateTestSpace(cond.Name, inParams.ProjectID, cond.Desc, bdl.Identity.UserID)
+	err := bdl.Bdl.CreateTestSpace(
+		&apistructs.AutoTestSpaceCreateRequest{
+			Name:          cond.Name,
+			ProjectID:     inParams.ProjectID,
+			Description:   cond.Desc,
+			ArchiveStatus: cond.ArchiveStatus,
+		}, bdl.Identity.UserID)
 	if err != nil {
 		return err
 	}

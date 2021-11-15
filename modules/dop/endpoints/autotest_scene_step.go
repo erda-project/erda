@@ -87,6 +87,7 @@ func (e *Endpoints) CreateAutoTestSceneStep(ctx context.Context, r *http.Request
 		return errorresp.ErrResp(err)
 	}
 
+	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp(sceneID)
 }
 
@@ -148,6 +149,7 @@ func (e *Endpoints) UpdateAutoTestSceneStep(ctx context.Context, r *http.Request
 		return apierrors.ErrUpdateAutoTestSceneStep.InternalError(err).ToResp(), nil
 	}
 
+	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp(sceneID)
 }
 
@@ -199,7 +201,7 @@ func (e *Endpoints) MoveAutoTestSceneStep(ctx context.Context, r *http.Request, 
 	if err := e.autotestV2.MoveAutoTestSceneStep(req); err != nil {
 		return apierrors.ErrUpdateAutoTestSceneStep.InternalError(err).ToResp(), nil
 	}
-
+	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp(req.ID)
 }
 
@@ -312,6 +314,7 @@ func (e *Endpoints) DeleteAutoTestSceneStep(ctx context.Context, r *http.Request
 		return errorresp.ErrResp(err)
 	}
 
+	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp("delete success")
 }
 
