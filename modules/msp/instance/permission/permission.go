@@ -74,11 +74,11 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 		return id, nil
 	}
 
-	tenants, err := p.instanceTenantDB.GetInstanceByTenantGroup(group)
+	tenant, err := p.instanceTenantDB.GetInstanceByTenantGroup(group)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)
 	}
-	tmc, err := p.tmcDB.GetByEngine(tenants.Engine)
+	tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)
 	}
@@ -86,14 +86,14 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 		return "", errors.NewDatabaseError(err)
 	}
 	if strings.EqualFold(tmc.ServiceType, string(instance.ServiceTypeMicroService)) {
-		id := p.getProjectIDByTenant(tenants)
+		id := p.getProjectIDByTenant(tenant)
 		if len(id) > 0 {
 			return id, nil
 		}
 	}
 
 	monitor, err := p.monitorDB.GetByFields(map[string]interface{}{
-		"MonitorId": tenants.ID,
+		"MonitorId": tenant.ID,
 	})
 	if monitor != nil {
 		return monitor.ProjectId, nil
