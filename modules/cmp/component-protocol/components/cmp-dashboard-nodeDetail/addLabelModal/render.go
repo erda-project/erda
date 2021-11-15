@@ -151,7 +151,7 @@ func (alm *AddLabelModal) getProps() {
 		},
 		{
 			Key:            "job",
-			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
+			ComponentProps: ComponentProps{Options: []Option{{Name: alm.SDK.I18n("cicd-job"), Value: "dice/job=true"}, {Name: alm.SDK.I18n("bigdata-job"), Value: "dice/bigdata-job=true"}}},
 			Label:          alm.SDK.I18n("label"),
 			Component:      "select",
 			Required:       true,

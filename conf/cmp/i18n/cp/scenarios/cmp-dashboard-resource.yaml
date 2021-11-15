@@ -1,0 +1,75 @@
+
+zh:
+  # general
+  name: 名称
+  namespace: 命名空间
+  status: 状态
+  ip: IP 地址
+  age: 存活时间
+  images: 镜像
+  labels: 标签
+  annotations: 注释
+  project: 项目名称
+  core: 核
+  viewOrEditYaml: 查看/编辑YAML
+  delete: 删除
+  confirmDelete: 确定删除？
+  times: 次
+  moreOperations: 更多操作
+  # cmp-dashboard-resource
+  distribution by project: 按项目统计
+  distribution by clutser: 按集群统计
+  distribution by owner: 按负责人统计
+  quota: 配额
+  total: 总量
+  request: 占用量
+  node pressure: 节点压力图
+  cpu pressure: CPU 压力图
+  memory pressure: 内存压力图
+  quota in use: 已分配
+  request in use: 已占用
+  cluster trend: 集群资源变化趋势图
+  project trend: 项目资源变化趋势图
+  SharedResources: 平台共享资源
+  resourceNodeCount: 个
+  week: 周
+  shared resource: 共享资源
+  unused resource: 未使用资源
+  OwnerUnknown: '无'
+en:
+  # general
+  name: Name
+  namespace: Namespace
+  status: Status
+  ip: IP
+  age: Age
+  images: Images
+  labels: Labels
+  annotations: Annotations
+  project: Project Name
+  core: cores
+  viewOrEditYaml: View/Edit YAML
+  delete: Delete
+  confirmDelete: Sure to delete?
+  times: time(s)
+  moreOperations: More Operations
+  # cmp-dashboard-resource
+  distribution by project: Distribution By Project
+  distribution by clutser: Distribution By Clutser
+  distribution by owner: Distribution By Owner
+  quota: Quota
+  total: Total
+  request: Request
+  node pressure: Node Pressure
+  cpu pressure: CPU Pressure
+  memory pressure: Memory Pressure
+  quota in use: Quota In Use
+  request in use: Request In Use
+  cluster trend: Cluster Trend
+  project trend: Project Trend
+  SharedResources: Shared Resources
+  week: Week
+  shared resource: Shared Resources
+  unused resource: Unused Resources
+  resourceNodeCount: nodes
+  OwnerUnknown: 'Unknown'

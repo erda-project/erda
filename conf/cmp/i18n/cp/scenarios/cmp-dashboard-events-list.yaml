@@ -1,0 +1,78 @@
+
+zh:
+  # general
+  name: 名称
+  namespace: 命名空间
+  status: 状态
+  ip: IP 地址
+  age: 存活时间
+  images: 镜像
+  labels: 标签
+  annotations: 注释
+  project: 项目名称
+  core: 核
+  viewOrEditYaml: 查看/编辑YAML
+  delete: 删除
+  confirmDelete: 确定删除？
+  times: 次
+  moreOperations: 更多操作
+  # cmp-dashboard-events-list
+  lastSeen: 上次触发时间
+  eventType: 事件级别
+  reason: 原因
+  object: 对象
+  source: 事件源
+  message: 事件信息
+  count: 累计次数
+  ago: 前
+  workspace-dev: 开发环境
+  workspace-test: 测试环境
+  workspace-staging: 预发环境
+  workspace-prod: 生产环境
+  addons: 扩展组件
+  pipelines: 流水线
+  default: 默认
+  system: 系统
+  others: 其他
+  Normal: 普通
+  Warning: 警告
+  eventSearchPlaceHolder: 搜索事件内容
+
+en:
+  # general
+  name: Name
+  namespace: Namespace
+  status: Status
+  ip: IP
+  age: Age
+  images: Images
+  labels: Labels
+  annotations: Annotations
+  project: Project Name
+  core: cores
+  viewOrEditYaml: View/Edit YAML
+  delete: Delete
+  confirmDelete: Sure to delete?
+  times: time(s)
+  moreOperations: More Operations
+  # cmp-dashboard-events-list
+  lastSeen: Last Seen
+  eventType: Event Type
+  reason: Reason
+  object: Object
+  source: Source
+  message: Message
+  count: Count
+  ago: ago
+  workspace-dev: Workspace-Dev
+  workspace-test: Workspace-Test
+  workspace-staging: Workspace-Staging
+  workspace-prod: Workspace-Production
+  addons: Addons
+  pipelines: Pipelines
+  default: Default
+  system: System
+  others: Others
+  Normal: Normal
+  Warning: Warning
+  eventSearchPlaceHolder: Search Events
