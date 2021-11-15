@@ -11,7 +11,7 @@ service DomainService {
   // +publish path:"/api/gateway/domains"
   rpc GetOrgDomains(GetOrgDomainsRequest) returns (GetOrgDomainsResponse) {
     option (google.api.http) = {
-      get: "/api/gateway/domains?orgId={orgId}&projectId={projectId}&env={env}&pageNo={pageNo}&pageSize={pageSize}&domain={domain}&clusterName={clusterName}&type={type}",
+      get: "/api/gateway/domains?projectID={projectId}&workspace={env}&pageNo={pageNo}&pageSize={pageSize}&domain={domain}&clusterName={clusterName}&type={type}",
     };
   }
 
@@ -102,7 +102,6 @@ message IngressRoute {
 }
 
 message GetOrgDomainsRequest {
-  string orgId = 1;
   string projectId = 2;
   string env = 3;
   int64 pageNo = 4;

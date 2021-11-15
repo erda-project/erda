@@ -5,13 +5,12 @@ package pb
 
 import (
 	json "encoding/json"
-	url "net/url"
-	strconv "strconv"
-	strings "strings"
-
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	pb "github.com/erda-project/erda-proto-go/core/hepa/pb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	url "net/url"
+	strconv "strconv"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -437,8 +436,6 @@ func (m *GetOrgDomainsRequest) UnmarshalURLValues(prefix string, values url.Valu
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "orgId":
-				m.OrgId = vals[0]
 			case "projectId":
 				m.ProjectId = vals[0]
 			case "env":
