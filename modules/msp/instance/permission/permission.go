@@ -74,35 +74,26 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 		return id, nil
 	}
 
-	tenants, err := p.instanceTenantDB.GetByTenantGroup(group)
+	tenants, err := p.instanceTenantDB.GetInstanceByTenantGroup(group)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)
 	}
-	if len(tenants) <= 0 {
-		return "", errors.NewNotFoundError(group)
+	tmc, err := p.tmcDB.GetByEngine(tenants.Engine)
+	if err != nil {
+		return "", errors.NewDatabaseError(err)
 	}
-	var monitorId = ""
-	for _, tenant := range tenants {
-		if tenant.Engine == instance.Monitor {
-			monitorId = tenant.ID
-		}
-		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
-		if err != nil {
-			return "", errors.NewDatabaseError(err)
-		}
-		if tmc == nil {
-			continue
-		}
-		if strings.EqualFold(tmc.ServiceType, string(instance.ServiceTypeMicroService)) {
-			id := p.getProjectIDByTenant(tenant)
-			if len(id) > 0 {
-				return id, nil
-			}
+	if tmc == nil {
+		return "", errors.NewDatabaseError(err)
+	}
+	if strings.EqualFold(tmc.ServiceType, string(instance.ServiceTypeMicroService)) {
+		id := p.getProjectIDByTenant(tenants)
+		if len(id) > 0 {
+			return id, nil
 		}
 	}
 
 	monitor, err := p.monitorDB.GetByFields(map[string]interface{}{
-		"MonitorId": monitorId,
+		"MonitorId": tenants.ID,
 	})
 	if monitor != nil {
 		return monitor.ProjectId, nil
