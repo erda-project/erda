@@ -374,9 +374,14 @@ func Test_getFirstValidOwnerOrLead(t *testing.T) {
 func Test_defaultResourceConfig(t *testing.T) {
 	var dto = new(apistructs.ProjectDTO)
 	defaultResourceConfig(dto)
+
 	dto.ClusterConfig = make(map[string]string)
+	defaultResourceConfig(dto)
+
 	dto.ClusterConfig["PROD"] = "prod-cluster"
 	dto.ClusterConfig["STAGING"] = "staging-cluster"
+	defaultResourceConfig(dto)
+
 	dto.ClusterConfig["TEST"] = "test-cluster"
 	dto.ClusterConfig["DEV"] = "dev-cluster"
 	defaultResourceConfig(dto)
