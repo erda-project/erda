@@ -371,6 +371,26 @@ func Test_getFirstValidOwnerOrLead(t *testing.T) {
 	}
 }
 
+func Test_defaultResourceConfig(t *testing.T) {
+	var dto = new(apistructs.ProjectDTO)
+	defaultResourceConfig(dto)
+	dto.ClusterConfig = make(map[string]string)
+	dto.ClusterConfig["PROD"] = "prod-cluster"
+	dto.ClusterConfig["STAGING"] = "staging-cluster"
+	dto.ClusterConfig["TEST"] = "test-cluster"
+	dto.ClusterConfig["DEV"] = "dev-cluster"
+	defaultResourceConfig(dto)
+	if dto.ResourceConfig == nil {
+		t.Fatal("dto.ResourceConfig should not be nil")
+	}
+	if dto.ResourceConfig.PROD.ClusterName != "prod-cluster" ||
+		dto.ResourceConfig.STAGING.ClusterName != "staging-cluster" ||
+		dto.ResourceConfig.TEST.ClusterName != "test-cluster" ||
+		dto.ResourceConfig.DEV.ClusterName != "dev-cluster" {
+		t.Fatal("clusters names error in ResourceConfig")
+	}
+}
+
 // TODO We need to turn this ut on after adding the delete portal to the UI
 // func TestDeleteProjectWhenAddonExists(t *testing.T) {
 // 	db := &dao.DBClient{}
