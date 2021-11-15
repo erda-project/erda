@@ -12,39 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package folderDetail
+package scenesSetConfig
 
 import (
 	"context"
 	"encoding/json"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	base.DefaultProvider
-	State State `json:"state"`
+	State    State `json:"state"`
+	gsHelper *gshelper.GSHelper
 }
 
 type State struct {
-	SetId   uint64 `json:"setId"`
-	SceneId uint64 `json:"sceneId"`
+	ActiveKey apistructs.ActiveKey `json:"activeKey"`
 }
 
-func init() {
-	base.InitProviderWithCreator("auto-test-scenes", "folderDetail",
-		func() servicehub.Provider { return &ComponentAction{} })
-}
-
-func (ca *ComponentAction) RenderState(c *cptype.Component) error {
+func (ca *ComponentAction) GenComponentState(c *cptype.Component, gs *cptype.GlobalStateData) error {
+	ca.gsHelper = gshelper.NewGSHelper(gs)
+	if c == nil || c.State == nil {
+		return nil
+	}
 	var state State
-	b, err := json.Marshal(c.State)
+	cont, err := json.Marshal(c.State)
 	if err != nil {
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
 		return err
 	}
-	if err := json.Unmarshal(b, &state); err != nil {
+	err = json.Unmarshal(cont, &state)
+	if err != nil {
+		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
 		return err
 	}
 	ca.State = state
@@ -52,28 +59,18 @@ func (ca *ComponentAction) RenderState(c *cptype.Component) error {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	if c.State == nil {
-		c.State = map[string]interface{}{}
-	}
-
-	if err := ca.RenderState(c); err != nil {
+	if err := ca.GenComponentState(c, gs); err != nil {
 		return err
 	}
-
-	props := make(map[string]interface{})
-	if ca.State.SceneId == 0 && ca.State.SetId != 0 {
-		props["visible"] = true
-	} else {
-		props["visible"] = false
+	c.Props = map[string]interface{}{
+		"visible": func() bool {
+			return ca.gsHelper.GetGlobalActiveConfig() == gshelper.SceneSetConfigKey
+		}(),
 	}
-	c.Props = props
-	// set state
-	setState(c, ca.State)
-
 	return nil
 }
 
-func setState(c *cptype.Component, state State) {
-	c.State["setId"] = state.SetId
-	c.State["sceneId"] = state.SceneId
+func init() {
+	base.InitProviderWithCreator("auto-test-scenes", "scenesSetConfig",
+		func() servicehub.Provider { return &ComponentAction{} })
 }

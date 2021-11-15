@@ -18,8 +18,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
