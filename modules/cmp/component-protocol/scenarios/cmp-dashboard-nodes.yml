@@ -4,19 +4,19 @@ hierarchy:
   root: page
   structure:
     page:
-      - filter
-      - charts
-      - tableTabsContainer
+      - filterContainer
+      - chartsContainer
+      - tabsTable
       - addLabelModal
       - cleanData
       - batchOperationTipModal
-    tableTabsContainer:
-      - tableTabs
-    tableTabs:
-      children:
-        - cpuTable
-        - memTable
-        - podTable
+    filterContainer:
+      - filter
+    tabsTable:
+      slot: tabs
+      table: table
+    chartsContainer:
+      - charts
     charts:
       - cpuChart
       - memChart
@@ -25,44 +25,49 @@ hierarchy:
 components:
   page:
     type: Container
+  filterContainer:
+    type: Container
   filter:
     type: ContractiveFilter
   charts:
-    type: RowContainer
+    type: Grid
   batchOperationTipModal:
     type: Modal
-  tableTabsContainer:
-    type: Container
   addLabelModal:
     type: FormModal
-  tableTabs:
-    type: Tabs
-  cpuTable:
-    type: Table
-  memTable:
-    type: Table
-  podTable:
+  tabsTable:
+    type: ComposeTable
+  tabs:
+    type: RadioTabs
+  table:
     type: Table
   cpuChart:
-    type: Chart
+    type: PieChart
   memChart:
-    type: Chart
+    type: PieChart
   podChart:
-    type: Chart
+    type: PieChart
   cleanData:
+    type: Container
+  chartsContainer:
     type: Container
 
 
 rendering:
   __DefaultRendering__:
     - name: page
-    - name: tableTabs
+    - name: tabsTable
+    - name: filterContainer
     - name: filter
-    - name: tableTabsContainer
+    - name: tabs
     - name: batchOperationTipModal
-    - name: cpuTable
-    - name: podTable
-    - name: memTable
+    - name: table
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: chartsContainer
     - name: charts
     - name: cpuChart
     - name: memChart
@@ -70,21 +75,10 @@ rendering:
     - name: addLabelModal
     - name: cleanData
 
-  tableTabs:
+  tabsTable:
     - name: filter
-    - name: cpuTable
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: podTable
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: memTable
+    - name: tabs
+    - name: table
       state:
         - name: "values"
           value: "{{ filter.values }}"
@@ -94,38 +88,24 @@ rendering:
     - name: batchOperationTipModal
     - name: cleanData
 
-  cpuTable:
-    - name: batchOperationTipModal
-    - name: cleanData
-
-  memTable:
-    - name: batchOperationTipModal
-    - name: cleanData
-
-  podTable:
+  table:
     - name: batchOperationTipModal
     - name: cleanData
 
   batchOperationTipModal:
-    - name: cpuTable
-    - name: memTable
-    - name: podTable
+    - name: tabsTable
+    - name: tabs
+    - name: table
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
     - name: cleanData
 
   filter:
-    - name: cpuTable
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: podTable
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: memTable
+    - name: tabs
+    - name: table
       state:
         - name: "values"
           value: "{{ filter.values }}"
@@ -141,19 +121,9 @@ rendering:
 
   addLabelModal:
     - name: filter
-    - name: cpuTable
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: podTable
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: memTable
+    - name: tabsTable
+    - name: tabs
+    - name: table
       state:
         - name: "values"
           value: "{{ filter.values }}"

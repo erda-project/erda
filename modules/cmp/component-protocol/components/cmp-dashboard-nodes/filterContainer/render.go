@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabsContainer
+package page
 
 import (
 	"context"
@@ -23,24 +23,27 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (t *TableTabsContainer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	t.getProps()
-	err := common.Transfer(t.Props, &c.Props)
+func (p *FilterContainer) Init(ctx servicehub.Context) error {
+	return p.DefaultProvider.Init(ctx)
+}
+
+func (p *FilterContainer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	p.getProps()
+	err := common.Transfer(p.Props, &c.Props)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (t *TableTabsContainer) getProps() {
-	t.Props = Props{
+func (p *FilterContainer) getProps() {
+	p.Props = Props{
 		WhiteBg: true,
 	}
 }
+
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-nodes", "tableTabsContainer", func() servicehub.Provider {
-		return &TableTabsContainer{
-			Type: "Container",
-		}
+	base.InitProviderWithCreator("cmp-dashboard-nodes", "filterContainer", func() servicehub.Provider {
+		return &FilterContainer{Type: "Container", Props: Props{WhiteBg: true}}
 	})
 }

@@ -12,22 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package tabs
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	table2 "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-const (
-	CPU_TAB = "cpu-analysis"
-
-	MEM_TAB = "mem-analysis"
-
-	POD_TAB = "pod-analysis"
-)
-
-type TableTabs struct {
+type Tabs struct {
 	base.DefaultProvider
 	SDK        *cptype.SDK
 	Type       string                 `json:"type"`
@@ -37,17 +30,20 @@ type TableTabs struct {
 }
 
 type Props struct {
-	TabMenu []MenuPair `json:"tabMenu"`
+	Size        string     `json:"size"`
+	RadioType   string     `json:"radioType"`
+	Options     []MenuPair `json:"options"`
+	ButtonStyle string     `json:"buttonStyle"`
 }
 
 type MenuPair struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
+	Key  table2.TableType `json:"key"`
+	Text string           `json:"text"`
 }
 
 type State struct {
-	ActiveKey         string `json:"activeKey"`
-	TableTabsURLQuery string `json:"tableTabs__urlQuery,omitempty"`
+	Value             table2.TableType `json:"value"`
+	TableTabsURLQuery string           `json:"tableTabs__urlQuery,omitempty"`
 }
 
 type Meta struct {

@@ -12,31 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package page
+package tabsTable
 
 import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (p *Page) Init(ctx servicehub.Context) error {
-	return p.DefaultProvider.Init(ctx)
-}
-
-func (p Page) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	err := common.Transfer(p.Props, &c.Props)
-	if err != nil {
-		return err
-	}
+func (p TabsTable) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	return nil
 }
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-nodes", "page", func() servicehub.Provider {
-		return &Page{Type: "Container", Props: Props{SpaceSize: "middle"}}
+	base.InitProviderWithCreator("cmp-dashboard-nodes", "tabsTable", func() servicehub.Provider {
+		return &TabsTable{Type: "ComposeTable"}
 	})
 }

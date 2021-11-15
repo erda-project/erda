@@ -35,16 +35,16 @@ component-protocol.components.cmp-dashboard-workload-detail.yamlFileEditor:
 # component-protocol framework
 # components
 component-protocol.components.cmp-dashboard-nodes.filter:
+component-protocol.components.cmp-dashboard-nodes.filterContainer:
 component-protocol.components.cmp-dashboard-nodes.page:
 component-protocol.components.cmp-dashboard-nodes.charts:
 component-protocol.components.cmp-dashboard-nodes.cleanData:
-component-protocol.components.cmp-dashboard-nodes.tableTabsContainer:
 component-protocol.components.cmp-dashboard-nodes.addLabelModal:
 component-protocol.components.cmp-dashboard-nodes.batchOperationTipModal:
-component-protocol.components.cmp-dashboard-nodes.tableTabs:
-component-protocol.components.cmp-dashboard-nodes.cpuTable:
-component-protocol.components.cmp-dashboard-nodes.memTable:
-component-protocol.components.cmp-dashboard-nodes.podTable:
+component-protocol.components.cmp-dashboard-nodes.tabsTable:
+component-protocol.components.cmp-dashboard-nodes.table:
+component-protocol.components.cmp-dashboard-nodes.chartsContainer:
+component-protocol.components.cmp-dashboard-nodes.tabs:
 component-protocol.components.cmp-dashboard-nodes.cpuChart:
 component-protocol.components.cmp-dashboard-nodes.memChart:
 component-protocol.components.cmp-dashboard-nodes.podChart:
