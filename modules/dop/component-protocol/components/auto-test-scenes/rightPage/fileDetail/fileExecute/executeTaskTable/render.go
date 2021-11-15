@@ -460,6 +460,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 		a.State.PageNo = DefaultPageNo
 		return a.setData(pipeline)
 	}
+	a.Data = make(map[string]interface{})
 	a.Data["list"] = lists
 	a.Operations = getOperations(clickableKeys)
 	return nil
