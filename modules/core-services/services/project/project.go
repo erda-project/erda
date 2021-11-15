@@ -696,6 +696,8 @@ func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*ap
 }
 
 func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
+	defaultResourceConfig(dto)
+
 	var projectQuota apistructs.ProjectQuota
 	if err := p.db.First(&projectQuota, map[string]interface{}{"project_id": dto.ID}).Error; err != nil {
 		logrus.WithError(err).WithField("project_id", dto.ID).
@@ -703,6 +705,32 @@ func (p *Project) fetchQuota(dto *apistructs.ProjectDTO) {
 		return
 	}
 	setProjectDtoQuotaFromModel(dto, &projectQuota)
+}
+
+func defaultResourceConfig(dto *apistructs.ProjectDTO) {
+	if dto == nil || dto.ClusterConfig == nil {
+		return
+	}
+	var (
+		prodCluster, hasProdCluster       = dto.ClusterConfig["PROD"]
+		stagingCluster, hasStagingCluster = dto.ClusterConfig["STAGING"]
+		testCluster, hasTestCluster       = dto.ClusterConfig["TEST"]
+		devCluster, hasDevCluster         = dto.ClusterConfig["DEV"]
+	)
+
+	if hasProdCluster && hasStagingCluster && hasTestCluster && hasDevCluster {
+		dto.ResourceConfig = apistructs.NewResourceConfig()
+		dto.ResourceConfig.PROD.ClusterName = prodCluster
+		dto.ResourceConfig.STAGING.ClusterName = stagingCluster
+		dto.ResourceConfig.TEST.ClusterName = testCluster
+		dto.ResourceConfig.DEV.ClusterName = devCluster
+		return
+	}
+	if !hasProdCluster && !hasStagingCluster && !hasTestCluster && !hasDevCluster {
+		return
+	}
+	logrus.Warnf("the config of cluster must be all empty or all not empty: prod: %s, staging: %s, test: %s, dev: %s",
+		prodCluster, stagingCluster, testCluster, devCluster)
 }
 
 func setProjectDtoQuotaFromModel(dto *apistructs.ProjectDTO, quota *apistructs.ProjectQuota) {
