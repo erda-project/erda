@@ -51,6 +51,7 @@ const (
 	ISTIO_ALIYUN            ClusterInfoMapKey = "ISTIO_ALIYUN"            // 是否用aliyn asm，true or false
 	ISTIO_INSTALLED         ClusterInfoMapKey = "ISTIO_INSTALLED"         // 是否启用了 istio
 	ISTIO_VERSION           ClusterInfoMapKey = "ISTIO_VERSION"           // istio 的版本
+	JOB_CLUSTER             ClusterInfoMapKey = "JOB_CLUSTER"             // specify the job execute cluster
 )
 
 type ClusterInfoResponse struct {
