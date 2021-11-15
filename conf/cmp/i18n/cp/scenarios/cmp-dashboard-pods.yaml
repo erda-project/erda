@@ -1,0 +1,43 @@
+
+zh:
+  # general
+  name: 名称
+  namespace: 命名空间
+  status: 状态
+  ip: IP 地址
+  age: 存活时间
+  images: 镜像
+  labels: 标签
+  annotations: 注释
+  project: 项目名称
+  core: 核
+  viewOrEditYaml: 查看/编辑YAML
+  delete: 删除
+  confirmDelete: 确定删除？
+  times: 次
+  moreOperations: 更多操作
+  # cmp-dashboard-pods-list
+  gotoWorkload: 查看工作负载
+  createPod: 创建 Pod
+  createdPodSuccessfully: Pod 创建成功
+en:
+  # general
+  name: Name
+  namespace: Namespace
+  status: Status
+  ip: IP
+  age: Age
+  images: Images
+  labels: Labels
+  annotations: Annotations
+  project: Project Name
+  core: cores
+  viewOrEditYaml: View/Edit YAML
+  delete: Delete
+  confirmDelete: Sure to delete?
+  times: time(s)
+  moreOperations: More Operations
+  # cmp-dashboard-pods-list
+  gotoWorkload: Goto Workload
+  createPod: Create Pod
+  createdPodSuccessfully: Created Pod successfully
