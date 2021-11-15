@@ -45,6 +45,15 @@ const (
 	TestSpaceCompleted  AutoTestSpaceArchiveStatus = "Completed"
 )
 
+func (s AutoTestSpaceArchiveStatus) Valid() bool {
+	switch s {
+	case TestSpaceInit, TestSpaceInProgress, TestSpaceCompleted:
+		return true
+	default:
+		return false
+	}
+}
+
 // AutoTestSpace 测试空间
 type AutoTestSpace struct {
 	ID            uint64                     `json:"id"`
@@ -83,11 +92,11 @@ type AutoTestSpaceCopy struct {
 
 // AutoTestSpaceCreateRequest 测试空间创建请求
 type AutoTestSpaceCreateRequest struct {
-	Name          string  `json:"name"`
-	ProjectID     int64   `json:"projectId"`
-	Description   string  `json:"description"`
-	SourceSpaceID *uint64 `json:"sourceSpaceId"`
-
+	Name          string                     `json:"name"`
+	ProjectID     int64                      `json:"projectId"`
+	Description   string                     `json:"description"`
+	SourceSpaceID *uint64                    `json:"sourceSpaceId"`
+	ArchiveStatus AutoTestSpaceArchiveStatus `json:"archiveStatus"`
 	IdentityInfo
 }
 

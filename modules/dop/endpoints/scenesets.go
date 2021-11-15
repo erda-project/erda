@@ -103,6 +103,8 @@ func (e *Endpoints) CreateSceneSet(ctx context.Context, r *http.Request, vars ma
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+
+	go e.db.AfterUpdateAutoTestSpaceElements(req.SpaceID)
 	return httpserver.OkResp(res)
 }
 
@@ -139,6 +141,8 @@ func (e *Endpoints) UpdateSceneSet(ctx context.Context, r *http.Request, vars ma
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+
+	go e.db.AfterUpdateAutoTestSpaceElements(res.SpaceID)
 	return httpserver.OkResp(res)
 }
 
