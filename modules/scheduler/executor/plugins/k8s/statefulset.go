@@ -104,6 +104,12 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		},
 	}
 	set.Spec.Template.Spec.Affinity = &affinity
+
+	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
+	if err != nil {
+		return err
+	}
+	set.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 	// Currently only one business container is set in our Pod
 	container := &apiv1.Container{
 		Name:  statefulName,

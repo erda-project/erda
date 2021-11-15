@@ -124,6 +124,27 @@ func (p *Secret) Create(secret *apiv1.Secret) error {
 	return nil
 }
 
+// Update creates a k8s ingress object
+func (p *Secret) Update(secret *apiv1.Secret) error {
+	var b bytes.Buffer
+	path := strutil.Concat("/api/v1/namespaces/", secret.Namespace, "/secrets/", secret.Name)
+
+	resp, err := p.client.Put(p.addr).
+		Path(path).
+		JSONBody(secret).
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return errors.Errorf("failed to update secret, name: %s, (%v)", secret.Name, err)
+	}
+
+	if !resp.IsOK() {
+		return errors.Errorf("failed to update secret, statuscode: %v, body: %v", resp.StatusCode(), b.String())
+	}
+	return nil
+}
+
 func (p *Secret) CreateIfNotExist(secret *apiv1.Secret) error {
 	_, err := p.Get(secret.Namespace, secret.Name)
 	if err == nil {

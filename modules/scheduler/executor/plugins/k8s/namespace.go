@@ -44,6 +44,12 @@ func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) err
 	}
 
 	if !notfound {
+		registryInfos := k.composeRegistryInfos(sg)
+		err := k.UpdateImageSecret(ns, registryInfos)
+		if err != nil {
+			logrus.Errorf("failed to update secret %s on namespace %s, err: %v", AliyunRegistry, ns, err)
+			return err
+		}
 		if sg.ProjectNamespace != "" {
 			return nil
 		}

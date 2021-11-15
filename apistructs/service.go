@@ -768,3 +768,9 @@ type ComponentInfoData struct {
 	StartedAt  time.Time  `json:"startedAt"`
 	FinishedAt *time.Time `json:"finishedAt"`
 }
+
+type RegistryInfo struct {
+	Host     string `json:"host"`
+	UserName string `json:"userName"`
+	Password string `json:"password"`
+}

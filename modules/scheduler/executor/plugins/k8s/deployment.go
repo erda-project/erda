@@ -17,7 +17,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -30,7 +29,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -487,25 +485,11 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 			},
 		},
 	}
-
-	// need to set the secret in default namespace which named with REGISTRY_SECRET_NAME env
-	registryName := os.Getenv(RegistrySecretName)
-	if registryName == "" {
-		registryName = AliyunRegistry
+	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
+	if err != nil {
+		return nil, err
 	}
-
-	_, err := k.secret.Get(service.Namespace, registryName)
-	if err == nil {
-		deployment.Spec.Template.Spec.ImagePullSecrets = []apiv1.LocalObjectReference{
-			{
-				Name: registryName,
-			},
-		}
-	} else {
-		if !k8serror.NotFound(err) {
-			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", registryName, service.Namespace, err)
-		}
-	}
+	deployment.Spec.Template.Spec.ImagePullSecrets = imagePullSecrets
 
 	if v := k.options["FORCE_BLUE_GREEN_DEPLOY"]; v != "true" &&
 		(strutil.ToUpper(service.Env[DiceWorkSpace]) == apistructs.DevWorkspace.String() ||
