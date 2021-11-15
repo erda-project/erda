@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -34,6 +35,7 @@ type SceneStage struct {
 	sdk        *cptype.SDK
 	atTestPlan *autotestv2.Service
 	event      cptype.ComponentEvent
+	gsHelper   *gshelper.GSHelper
 }
 
 type CommonStageForm struct {
@@ -111,7 +113,7 @@ type OperationInfo struct {
 	Meta OpMetaInfo `json:"meta"`
 }
 
-func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, event cptype.ComponentEvent) error {
+func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	b, err := json.Marshal(c)
 	if err != nil {
 		return err
@@ -124,6 +126,7 @@ func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, 
 	s.sdk = cputil.SDK(ctx)
 	s.event = event
 	s.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	s.gsHelper = gshelper.NewGSHelper(gs)
 	return nil
 }
 

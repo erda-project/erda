@@ -53,9 +53,8 @@ var OperationRender = map[cptype.OperationKey]OperationFunc{
 }
 
 func RenderList(s *SceneStage) error {
-	s.State.SetID = 504
 	_, scenes, err := s.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{
-		SetID: s.State.SetID,
+		SetID: s.gsHelper.GetGlobalSetID(),
 	})
 	if err != nil {
 		return err
@@ -115,7 +114,7 @@ func RenderCopyParallel(s *SceneStage) error {
 	_, err = s.atTestPlan.CopyAutotestScene(apistructs.AutotestSceneCopyRequest{
 		PreID:        meta.ID,
 		SceneID:      meta.ID,
-		SetID:        s.State.SetID,
+		SetID:        s.gsHelper.GetGlobalSetID(),
 		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
 	}, false, nil)
 	return err
@@ -129,6 +128,7 @@ func RenderCopyTo(s *SceneStage) error {
 func RenderItemMove(s *SceneStage) error {
 	dragGroupKey := uint64(s.State.DragParams.DragGroupKey)
 	dropGroupKey := uint64(s.State.DragParams.DropGroupKey)
+	setID := s.gsHelper.GetGlobalSetID()
 
 	req := apistructs.AutotestSceneMoveRequest{
 		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
@@ -141,12 +141,12 @@ func RenderItemMove(s *SceneStage) error {
 			return uint64(s.State.DragParams.DropKey)
 		}(),
 		IsGroup: false,
-		SetID:   s.State.SetID,
+		SetID:   setID,
 	}
 
 	// Find preID
 	if s.State.DragParams.DropKey == -1 { // Move to the end and be independent group
-		_, scenes, err := s.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: s.State.SetID})
+		_, scenes, err := s.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: setID})
 		if err != nil {
 			return err
 		}
@@ -186,14 +186,15 @@ func RenderItemMove(s *SceneStage) error {
 func RenderGroupMove(s *SceneStage) error {
 	dragGroupKey := uint64(s.State.DragParams.DragGroupKey)
 	dropGroupKey := uint64(s.State.DragParams.DropGroupKey)
+	setID := s.gsHelper.GetGlobalSetID()
 
 	req := apistructs.AutotestSceneMoveRequest{
 		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
 		IsGroup:      true,
-		SetID:        s.State.SetID,
+		SetID:        setID,
 	}
 
-	sceneDragGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(s.State.SetID, dragGroupKey)
+	sceneDragGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(setID, dragGroupKey)
 	if err != nil {
 		return err
 	}
@@ -208,7 +209,7 @@ func RenderGroupMove(s *SceneStage) error {
 	case 0: // Inside target
 		return nil
 	case -1: // In front of the target
-		sceneDropGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(s.State.SetID, dropGroupKey)
+		sceneDropGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(setID, dropGroupKey)
 		if err != nil {
 			return err
 		}
@@ -223,7 +224,7 @@ func RenderGroupMove(s *SceneStage) error {
 			return nil
 		}
 	case 1: // Behind the target
-		sceneDropGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(s.State.SetID, dropGroupKey)
+		sceneDropGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(setID, dropGroupKey)
 		if err != nil {
 			return err
 		}
@@ -265,6 +266,7 @@ func RenderDelete(s *SceneStage) error {
 }
 
 func RenderSplit(s *SceneStage) error {
+	setID := s.gsHelper.GetGlobalSetID()
 	meta, err := GetOpsInfo(s.event.OperationData)
 	if err != nil {
 		return err
@@ -276,9 +278,9 @@ func RenderSplit(s *SceneStage) error {
 		LastID:       meta.ID,
 		TargetID:     0,
 		IsGroup:      false,
-		SetID:        s.State.SetID,
+		SetID:        setID,
 	}
-	sceneGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(s.State.SetID, uint64(meta.Data["groupID"].(float64)))
+	sceneGroup, err := s.atTestPlan.ListAutotestSceneByGroupID(setID, uint64(meta.Data["groupID"].(float64)))
 	if err != nil {
 		return err
 	}

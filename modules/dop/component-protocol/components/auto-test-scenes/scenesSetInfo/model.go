@@ -15,20 +15,27 @@
 package scenesSetInfo
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type ComponentFileInfo struct {
+type ScenesSetInfo struct {
 	base.DefaultProvider
 	CommonFileInfo
 
 	sdk        *cptype.SDK
 	atTestPlan *autotestv2.Service
 	bdl        *bundle.Bundle
+	gsHelper   *gshelper.GSHelper
 }
 
 type CommonFileInfo struct {
@@ -62,4 +69,20 @@ type PropColumn struct {
 type State struct {
 	//AutotestSceneSetRequest apistructs.SceneSetRequest `json:"autotestSceneSetRequest"`
 	SetID uint64 `json:"setID"`
+}
+
+func (s *ScenesSetInfo) initFromProtocol(ctx context.Context, c *cptype.Component, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	if err = json.Unmarshal(b, s); err != nil {
+		return err
+	}
+
+	s.sdk = cputil.SDK(ctx)
+	s.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	s.gsHelper = gshelper.NewGSHelper(gs)
+	s.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	return nil
 }

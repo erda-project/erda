@@ -16,13 +16,6 @@ package scenesSetInfo
 
 import (
 	"context"
-	"encoding/json"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -31,80 +24,45 @@ import (
 
 func init() {
 	base.InitProviderWithCreator("auto-test-scenes", "scenesSetInfo",
-		func() servicehub.Provider { return &ComponentFileInfo{} })
+		func() servicehub.Provider { return &ScenesSetInfo{} })
 }
 
-// GenComponentState 获取state
-func (i *ComponentFileInfo) GenComponentState(ctx context.Context, c *cptype.Component) error {
-	i.sdk = cputil.SDK(ctx)
-	i.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
-	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	i.State = state
-	return nil
-}
-
-func (i *ComponentFileInfo) RenderProtocol(c *cptype.Component, g *cptype.GlobalStateData) {
-	if c.Data == nil {
-		d := make(cptype.ComponentData)
-		c.Data = d
-	}
-	(*c).Data["data"] = i.Data
-	c.Props = i.Props
-}
-
-func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
-	if err = i.GenComponentState(ctx, c); err != nil {
+func (s *ScenesSetInfo) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
+	if err = s.initFromProtocol(ctx, c, event, gs); err != nil {
 		return
 	}
 
-	i.Props = map[string]interface{}{
+	setID := s.gsHelper.GetGlobalSetID()
+	s.Props = map[string]interface{}{
 		"visible": func() bool {
-			//if i.State.SetID == 0 {
-			//	return false
-			//}
-			return true
+			return setID != 0
 		}(),
 	}
-	i.State.SetID = 504
-	if i.State.SetID == 0 {
+	if setID == 0 {
 		return
 	}
-	rsp, err := i.atTestPlan.GetSceneSet(i.State.SetID)
+	rsp, err := s.atTestPlan.GetSceneSet(setID)
 	if err != nil {
 		return err
 	}
 
-	creator, err := i.bdl.GetCurrentUser(rsp.CreatorID)
+	creator, err := s.bdl.GetCurrentUser(rsp.CreatorID)
 	if err == nil {
 		rsp.CreatorID = creator.Nick
 	}
 
 	if rsp.UpdaterID != "" {
-		updaterName, err := i.bdl.GetCurrentUser(rsp.UpdaterID)
+		updaterName, err := s.bdl.GetCurrentUser(rsp.UpdaterID)
 		if err == nil {
 			rsp.UpdaterID = updaterName.Nick
 		}
 	}
 
-	i.Data.SceneSet = *rsp
-	i.Data.CreateATString = rsp.CreatedAt.Format("2006-01-02 15:04:05")
-	i.Data.UpdateATString = rsp.UpdatedAt.Format("2006-01-02 15:04:05")
+	s.Data.SceneSet = *rsp
+	s.Data.CreateATString = rsp.CreatedAt.Format("2006-01-02 15:04:05")
+	s.Data.UpdateATString = rsp.UpdatedAt.Format("2006-01-02 15:04:05")
 
-	i.Props["fields"] = []PropColumn{
+	s.Props["fields"] = []PropColumn{
 		{
 			Label:      "名称",
 			ValueKey:   "name",
@@ -133,6 +91,15 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 		},
 	}
 
-	i.RenderProtocol(c, gs)
+	s.RenderProtocol(c, gs)
 	return nil
+}
+
+func (s *ScenesSetInfo) RenderProtocol(c *cptype.Component, g *cptype.GlobalStateData) {
+	if c.Data == nil {
+		d := make(cptype.ComponentData)
+		c.Data = d
+	}
+	(*c).Data["data"] = s.Data
+	c.Props = s.Props
 }

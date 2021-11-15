@@ -29,7 +29,7 @@ func init() {
 }
 
 func (s *SceneStage) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	if err := s.initFromProtocol(ctx, c, event); err != nil {
+	if err := s.initFromProtocol(ctx, c, event, gs); err != nil {
 		return err
 	}
 	if operationFunc, ok := OperationRender[event.Operation]; ok {

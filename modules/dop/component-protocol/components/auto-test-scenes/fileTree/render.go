@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -138,6 +139,7 @@ func (i *ComponentFileTree) onClickFolderTable() error {
 }
 
 func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
+	i.gsHelper = gshelper.NewGSHelper(gs)
 	if event.Operation != cptype.InitializeOperation && event.Operation != cptype.RenderingOperation {
 		err = i.unmarshal(c)
 		if err != nil {

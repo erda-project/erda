@@ -476,6 +476,7 @@ func (i *ComponentFileTree) RenderClickSceneSet(event cptype.ComponentEvent) err
 	i.State.SceneId = 0
 	i.State.SetId__urlQuery = strconv.Itoa(id)
 	i.State.SceneId__urlQuery = ""
+	i.gsHelper.SetGlobalSetID(uint64(id))
 	return nil
 }
 

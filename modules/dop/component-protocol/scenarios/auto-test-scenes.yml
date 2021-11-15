@@ -99,9 +99,9 @@ hierarchy:
     executeHead:
       left: executeInfoTitle
       right:
-#        - refreshButton
-#        - cancelExecuteButton
-#        - executeHistory
+    #        - refreshButton
+    #        - cancelExecuteButton
+    #        - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryPop
@@ -450,6 +450,7 @@ rendering:
     - name: resultDrawer
     - name: scenesSetTitle
     - name: scenesSetInfo
+    - name: scenesStages
   leftHeadAddSceneSet:
     - name: "fileFormModal"
       state:
