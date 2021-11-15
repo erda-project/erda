@@ -68,6 +68,9 @@ func (e *Endpoints) UpdateAutoTestSpace(ctx context.Context, r *http.Request, va
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter(err).ToResp(), nil
 	}
+	if !req.ArchiveStatus.Valid() {
+		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter("archive status").ToResp(), nil
+	}
 
 	res, err := e.autotestV2.GetSpace(req.ID)
 	if err != nil {

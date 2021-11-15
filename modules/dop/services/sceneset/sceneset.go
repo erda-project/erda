@@ -153,7 +153,11 @@ func (svc *Service) DeleteSceneSet(req apistructs.SceneSetRequest) error {
 	for i, s := range scenes {
 		ids[i] = s.ID
 	}
-	return svc.db.DeleteSceneSet(s, ids)
+	if err := svc.db.DeleteSceneSet(s, ids); err != nil {
+		return err
+	}
+	go svc.db.AfterUpdateAutoTestSpaceElements(s.SpaceID)
+	return nil
 }
 
 func (svc *Service) DragSceneSet(req apistructs.SceneSetRequest) error {

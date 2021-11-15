@@ -1,0 +1,74 @@
+
+
+zh:
+  # general
+  name: 名称
+  namespace: 命名空间
+  status: 状态
+  ip: IP 地址
+  age: 存活时间
+  images: 镜像
+  labels: 标签
+  annotations: 注释
+  project: 项目名称
+  core: 核
+  viewOrEditYaml: 查看/编辑YAML
+  delete: 删除
+  confirmDelete: 确定删除？
+  times: 次
+  moreOperations: 更多操作
+  # cmp-dashboard-workload-detail
+  cpuRequests: CPU 请求值
+  cpuLimits: CPU 限制值
+  cpuPercent: CPU 水位
+  memoryRequests: 内存请求值
+  memoryLimits: 内存限制值
+  memoryPercent: 内存水位
+  ready: 就绪
+  workloadPods: 关联的Pods
+  workloadDetail: 工作负载详情
+  totalWorkload: 工作负载总数
+  restart: 重新调度
+  confirmRestart: 确认重新调度？
+  cannotRestart: 只有 Deployment、StatefulSet 和 DaemonSet 可以被重新调度
+  deletedWorkloadSuccessfully: 工作负载删除成功
+  canNotDeleteSystemWorkload: 平台组件不可删除
+  restartWorkloadSuccessfully: 工作负载重新调度成功
+  updateWorkloadSuccessfully: 工作负载更新成功
+
+en:
+  # general
+  name: Name
+  namespace: Namespace
+  status: Status
+  ip: IP
+  age: Age
+  images: Images
+  labels: Labels
+  annotations: Annotations
+  project: Project Name
+  core: cores
+  viewOrEditYaml: View/Edit YAML
+  delete: Delete
+  confirmDelete: Sure to delete?
+  times: time(s)
+  moreOperations: More Operations
+
+  # cmp-dashboard-workload-detail
+  cpuRequests: CPU Requests
+  cpuLimits: CPU Limits
+  cpuPercent: CPU Percent
+  memoryRequests: Mem Requests
+  memoryLimits: Mem Limits
+  memoryPercent: Mem Percent
+  ready: Ready
+  workloadPods: Pods
+  restart: Restart
+  confirmRestart: Sure to restart ?
+  workloadDetail: Workload Detail
+  totalWorkload: Total Workloads
+  cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
+  canNotDeleteSystemWorkload: Platform components can not be deleted
+  deletedWorkloadSuccessfully: Deleted workload successfully
+  restartWorkloadSuccessfully: Restarted workload successfully
+  updateWorkloadSuccessfully: Updated workload successfully

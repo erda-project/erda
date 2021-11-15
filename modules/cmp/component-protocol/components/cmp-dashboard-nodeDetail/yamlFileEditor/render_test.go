@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protobuf/proto-go/cp/pb"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
@@ -77,8 +78,24 @@ func TestComponentYamlFileEditor_UpdateNode(t *testing.T) {
 	}
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestComponentYamlFileEditor_SetComponentValue(t *testing.T) {
-	f := &ComponentYamlFileEditor{}
+	f := &ComponentYamlFileEditor{
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+		},
+	}
 	f.SetComponentValue()
 	if !f.Props.Bordered {
 		t.Errorf("test failed, .Props.Bordered is unexpected, expected true, got false")

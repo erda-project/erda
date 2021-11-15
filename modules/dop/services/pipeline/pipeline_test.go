@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition_client/deftype"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
@@ -358,4 +359,21 @@ func Test_makeAppWorkspaceLevelCmsNs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_setClusterName(t *testing.T) {
+	var bdl *bundle.Bundle
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, clusterName string) (apistructs.ClusterInfoData, error) {
+		if clusterName == "erda-edge" {
+			return apistructs.ClusterInfoData{apistructs.JOB_CLUSTER: "erda-center", apistructs.DICE_IS_EDGE: "true"}, nil
+		}
+		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "false"}, nil
+	})
+	defer m1.Unpatch()
+	pipelineSvc := New(WithBundle(bdl))
+	pv := &apistructs.PipelineCreateRequestV2{}
+	pipelineSvc.setClusterName("erda-edge", pv)
+	assert.Equal(t, "erda-center", pv.ClusterName)
+	pipelineSvc.setClusterName("erda-center", pv)
+	assert.Equal(t, "erda-center", pv.ClusterName)
 }
