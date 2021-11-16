@@ -203,9 +203,49 @@ func (e *Endpoints) ScopeRoleAccess(ctx context.Context, r *http.Request, vars m
 		for _, mem := range members {
 			permission.ContactsWhenNoPermission = append(permission.ContactsWhenNoPermission, mem.UserID)
 		}
+
+		permission, err = e.buildScopeInfo(accessReq, permission)
+		if err != nil {
+			return apierrors.ErrAccessPermission.InternalError(err).ToResp(), nil
+		}
 	}
 
 	return httpserver.OkResp(permission, permission.ContactsWhenNoPermission)
+}
+
+func (e *Endpoints) buildScopeInfo(accessReq apistructs.ScopeRoleAccessRequest, permission apistructs.PermissionList) (apistructs.PermissionList, error) {
+	queryScopeType := accessReq.Scope.Type
+	queryScopeID, err := strconv.ParseInt(accessReq.Scope.ID, 10, 64)
+	if err != nil {
+		return permission, err
+	}
+
+	// point appName
+	if queryScopeType == "app" {
+		app, err := e.app.Get(queryScopeID)
+		if err != nil {
+			return permission, err
+		}
+		if permission.ScopeInfo == nil {
+			permission.ScopeInfo = &apistructs.ScopeInfo{}
+		}
+		permission.ScopeInfo.AppName = app.Name
+		queryScopeType = "project"
+		queryScopeID = app.ProjectID
+	}
+
+	// point projectName
+	if queryScopeType == "project" {
+		project, err := e.project.GetModelProject(queryScopeID)
+		if err != nil {
+			return permission, err
+		}
+		if permission.ScopeInfo == nil {
+			permission.ScopeInfo = &apistructs.ScopeInfo{}
+		}
+		permission.ScopeInfo.ProjectName = project.DisplayName
+	}
+	return permission, nil
 }
 
 // 获取权限
