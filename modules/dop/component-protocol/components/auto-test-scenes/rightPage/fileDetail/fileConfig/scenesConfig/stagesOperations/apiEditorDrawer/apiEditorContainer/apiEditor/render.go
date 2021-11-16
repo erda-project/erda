@@ -70,7 +70,8 @@ func GetOpsInfo(opsData interface{}) (*Meta, error) {
 func (ae *ApiEditor) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	tmpStepID, ok := c.State["stepId"]
 	if !ok {
-		return errors.New("stepId is empty")
+		// not exhibition if no stepId
+		return nil
 	}
 	stepID, err := strconv.ParseUint(fmt.Sprintf("%v", tmpStepID), 10, 64)
 	if err != nil {

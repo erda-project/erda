@@ -54,7 +54,8 @@ func (mp *MarketProto) Render(ctx context.Context, c *cptype.Component, scenario
 	// 塞市场接口的数据
 	tmpStepID, ok := c.State["stepId"]
 	if !ok {
-		return errors.New("stepId is empty")
+		// not exhibition if no stepId
+		return nil
 	}
 	// TODO: 类型要改
 	stepID, err := strconv.ParseUint(fmt.Sprintf("%v", tmpStepID), 10, 64)

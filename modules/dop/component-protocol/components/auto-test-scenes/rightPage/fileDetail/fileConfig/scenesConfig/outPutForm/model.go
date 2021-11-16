@@ -101,7 +101,6 @@ const (
 type State struct {
 	AutotestSceneRequest apistructs.AutotestSceneRequest  `json:"autotestSceneRequest"`
 	List                 []apistructs.AutoTestSceneOutput `json:"list"`
-	SceneId              uint64                           `json:"sceneId"`
 }
 
 type OperationBaseInfo struct {

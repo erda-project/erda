@@ -16,9 +16,6 @@ package scenesConfig
 
 import (
 	"context"
-	"encoding/json"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -29,12 +26,9 @@ import (
 
 type ComponentAction struct {
 	base.DefaultProvider
-	State    State `json:"state"`
 	gsHelper *gshelper.GSHelper
-}
 
-type State struct {
-	ActiveKey apistructs.ActiveKey `json:"activeKey"`
+	activeKey apistructs.ActiveKey
 }
 
 func (ca *ComponentAction) GenComponentState(c *cptype.Component, gs *cptype.GlobalStateData) error {
@@ -42,18 +36,7 @@ func (ca *ComponentAction) GenComponentState(c *cptype.Component, gs *cptype.Glo
 	if c == nil || c.State == nil {
 		return nil
 	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	ca.State = state
+	ca.activeKey = ca.gsHelper.GetFileDetailActiveKey()
 	return nil
 }
 

@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -101,10 +102,8 @@ func (a *ComponentAction) unmarshal(c *cptype.Component) error {
 }
 
 type State struct {
-	Env       string               `json:"env"`
-	ScenesID  uint64               `json:"scenesID"`
-	SceneId   uint64               `json:"sceneId"`
-	ActiveKey apistructs.ActiveKey `json:"activeKey"`
+	Env      string `json:"env"`
+	ScenesID uint64 `json:"scenesID"`
 }
 
 type ClientMetaData struct {
@@ -132,6 +131,8 @@ type ClickOperation struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
+
 	ca.sdk = cputil.SDK(ctx)
 	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
@@ -149,10 +150,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	//if scenesIdInt == 0 {
 	//	return nil
 	//}
-	if ca.State.SceneId == 0 {
+	sceneID := gh.GetFileTreeSceneID()
+	if sceneID == 0 {
 		return nil
 	}
-	ca.State.ScenesID = ca.State.SceneId
+	ca.State.ScenesID = sceneID
 
 	defer func() {
 		fail := ca.marshal(c)
@@ -251,6 +253,7 @@ func (a *ComponentAction) handleDefault() error {
 }
 
 func (a *ComponentAction) handleClick(event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
 	metaJson, err := json.Marshal(event.OperationData["meta"])
 	if err != nil {
 		return err
@@ -265,7 +268,7 @@ func (a *ComponentAction) handleClick(event cptype.ComponentEvent, gs *cptype.Gl
 	req.ClusterName = metaData.Env
 	req.ConfigManageNamespaces = metaData.ConfigEnv
 	req.UserID = a.sdk.Identity.UserID
-	a.State.ActiveKey = "fileExecute"
+	gh.SetExecuteButtonActiveKey("fileExecute")
 	pipeline, err := a.bdl.ExecuteDiceAutotestScene(req)
 	if err != nil {
 		(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()

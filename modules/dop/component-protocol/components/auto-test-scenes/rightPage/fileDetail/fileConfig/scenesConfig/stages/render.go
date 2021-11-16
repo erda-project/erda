@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -119,6 +120,7 @@ func (i *ComponentStageForm) GetInParams(ctx context.Context) error {
 }
 
 func (i *ComponentStageForm) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
+	gh := gshelper.NewGSHelper(gs)
 	i.sdk = cputil.SDK(ctx)
 	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
@@ -134,7 +136,7 @@ func (i *ComponentStageForm) Render(ctx context.Context, c *cptype.Component, sc
 	i.Props = make(map[string]interface{})
 
 	i.State.AutotestSceneRequest.UserID = i.sdk.Identity.UserID
-	i.State.AutotestSceneRequest.SceneID = i.State.SceneId
+	i.State.AutotestSceneRequest.SceneID = gh.GetFileTreeSceneID()
 	i.State.AutotestSceneRequest.SetID = i.InParams.SceneSetID
 
 	// init

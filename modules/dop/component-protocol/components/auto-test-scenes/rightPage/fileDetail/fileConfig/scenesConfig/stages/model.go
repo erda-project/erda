@@ -80,8 +80,7 @@ type State struct {
 	ShowNestedSceneDrawer  bool   `json:"showNestedSceneDrawer"`
 	ShowCustomEditorDrawer bool   `json:"showCustomEditorDrawer"`
 
-	SceneId     uint64 `json:"sceneId"`
-	IsClickItem bool   `json:"isClickItem"`
+	IsClickItem bool `json:"isClickItem"`
 }
 
 type OperationBaseInfo struct {

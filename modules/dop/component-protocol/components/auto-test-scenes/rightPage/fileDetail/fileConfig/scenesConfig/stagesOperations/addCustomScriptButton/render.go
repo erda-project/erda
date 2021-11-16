@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -38,6 +39,7 @@ func init() {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
 	ca.sdk = cputil.SDK(ctx)
 	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
@@ -50,8 +52,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		var autotestSceneRequest apistructs.AutotestSceneRequest
 		autotestSceneRequest.UserID = ca.sdk.Identity.UserID
-		autotestSceneRequest.ID = uint64(c.State["sceneId"].(float64))
-		autotestSceneRequest.SceneID = uint64(c.State["sceneId"].(float64))
+		autotestSceneRequest.ID = gh.GetFileTreeSceneID()
+		autotestSceneRequest.SceneID = gh.GetFileTreeSceneID()
 		result, err := ca.bdl.GetAutoTestScene(autotestSceneRequest)
 		if err != nil {
 			return err

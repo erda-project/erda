@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -29,6 +30,9 @@ type ComponentAction struct {
 	base.DefaultProvider
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
+
+	visible    bool
+	pipelineId uint64
 }
 
 func init() {
@@ -37,14 +41,17 @@ func init() {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
 
 	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	ca.visible = gh.GetExecuteTaskBreadcrumbVisible()
+	ca.pipelineId = gh.GetExecuteHistoryTablePipelineID()
 
 	switch event.Operation {
 	case "cancelExecute":
 
 		var req apistructs.PipelineCancelRequest
-		req.PipelineID = uint64(c.State["pipelineId"].(float64))
+		req.PipelineID = gh.GetExecuteHistoryTablePipelineID()
 		req.UserID = ca.sdk.Identity.UserID
 		err := ca.bdl.CancelPipeline(req)
 		if err != nil {
@@ -58,14 +65,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Type = "Button"
-		visible := true
-		if _, ok := c.State["visible"]; ok {
-			visible = c.State["visible"].(bool)
-		}
-		if _, ok := c.State["pipelineId"]; ok && visible {
-			pipelineId := uint64(c.State["pipelineId"].(float64))
-			if pipelineId > 0 {
-				rsp, err := ca.bdl.GetPipeline(pipelineId)
+		visible := gh.GetExecuteTaskBreadcrumbVisible()
+		if ca.pipelineId > 0 && visible {
+			if ca.pipelineId > 0 {
+				rsp, err := ca.bdl.GetPipeline(ca.pipelineId)
 				if err != nil {
 					return err
 				}

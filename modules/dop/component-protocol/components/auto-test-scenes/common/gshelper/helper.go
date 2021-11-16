@@ -18,6 +18,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 )
 
 const (
@@ -77,4 +78,162 @@ func (h *GSHelper) GetGlobalActiveConfig() string {
 		return v
 	}
 	return SceneSetConfigKey
+}
+
+func (h *GSHelper) SetFileTreeSceneID(id uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["FileTreeSceneID"] = id
+}
+
+func (h *GSHelper) GetFileTreeSceneID() uint64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["FileTreeSceneID"]
+	if !ok {
+		return 0
+	}
+	if _, ok = v.(uint64); ok {
+		return v.(uint64)
+	}
+	return uint64(v.(float64))
+}
+
+func (h *GSHelper) SetFileDetailActiveKey(key apistructs.ActiveKey) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["FileDetailActiveKey"] = key
+}
+
+func (h *GSHelper) GetFileDetailActiveKey() apistructs.ActiveKey {
+	if h.gs == nil {
+		return ""
+	}
+	if v, ok := (*h.gs)["FileDetailActiveKey"].(string); ok {
+		return apistructs.ActiveKey(v)
+	}
+	if v, ok := (*h.gs)["FileDetailActiveKey"].(apistructs.ActiveKey); ok {
+		return v
+	}
+	return ""
+}
+
+func (h *GSHelper) SetFileDetailIsChangeScene(isChangeScene bool) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["FileDetailIsChangeScene"] = isChangeScene
+}
+
+func (h *GSHelper) GetFileDetailIsChangeScene() bool {
+	if h.gs == nil {
+		return false
+	}
+	if v, ok := (*h.gs)["FileDetailIsChangeScene"].(bool); ok {
+		return v
+	}
+	return false
+}
+
+func (h *GSHelper) SetFileTreeSceneSetKey(id uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["FileTreeSceneSetKey"] = id
+}
+
+func (h *GSHelper) GetFileTreeSceneSetKey() uint64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["FileTreeSceneSetKey"]
+	if !ok {
+		return 0
+	}
+	if _, ok = v.(uint64); ok {
+		return v.(uint64)
+	}
+	return uint64(v.(float64))
+}
+
+func (h *GSHelper) SetExecuteHistoryTablePipelineID(id uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["ExecuteHistoryTablePipelineID"] = id
+}
+
+func (h *GSHelper) GetExecuteHistoryTablePipelineID() uint64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["ExecuteHistoryTablePipelineID"]
+	if !ok {
+		return 0
+	}
+	if _, ok = v.(uint64); ok {
+		return v.(uint64)
+	}
+	return uint64(v.(float64))
+}
+
+func (h *GSHelper) SetExecuteTaskBreadcrumbPipelineID(id uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["ExecuteTaskBreadcrumbPipelineID"] = id
+}
+
+func (h *GSHelper) GetExecuteTaskBreadcrumbPipelineID() uint64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["ExecuteTaskBreadcrumbPipelineID"]
+	if !ok {
+		return 0
+	}
+	if _, ok = v.(uint64); ok {
+		return v.(uint64)
+	}
+	return uint64(v.(float64))
+}
+
+func (h *GSHelper) SetExecuteTaskBreadcrumbVisible(visible bool) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["ExecuteTaskBreadcrumbVisible"] = visible
+}
+
+func (h *GSHelper) GetExecuteTaskBreadcrumbVisible() bool {
+	if h.gs == nil {
+		return false
+	}
+	if v, ok := (*h.gs)["ExecuteTaskBreadcrumbVisible"].(bool); ok {
+		return v
+	}
+	return false
+}
+
+func (h *GSHelper) SetExecuteButtonActiveKey(key apistructs.ActiveKey) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["ExecuteButtonActiveKey"] = key
+}
+
+func (h *GSHelper) GetExecuteButtonActiveKey() apistructs.ActiveKey {
+	if h.gs == nil {
+		return ""
+	}
+	if v, ok := (*h.gs)["ExecuteButtonActiveKey"].(string); ok {
+		return apistructs.ActiveKey(v)
+	}
+	if v, ok := (*h.gs)["ExecuteButtonActiveKey"].(apistructs.ActiveKey); ok {
+		return v
+	}
+	return ""
 }

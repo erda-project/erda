@@ -168,7 +168,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 
-	if !c.State["visible"].(bool) {
+	cv, ok := c.State["visible"]
+	if !ok {
+		return nil
+	}
+	if !cv.(bool) {
 		return nil
 	}
 

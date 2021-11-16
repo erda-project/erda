@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -274,5 +275,10 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 		}
 	}
 	i.RenderProtocol(c, gs)
+
+	// set global state
+	i.gsHelper.SetFileTreeSceneID(i.State.SceneId)
+	i.gsHelper.SetFileTreeSceneSetKey(uint64(i.State.SceneSetKey))
+
 	return
 }

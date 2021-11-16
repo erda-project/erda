@@ -16,11 +16,9 @@ package fileInfo
 
 import (
 	"context"
-	"encoding/json"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -34,27 +32,6 @@ func init() {
 		func() servicehub.Provider { return &ComponentFileInfo{} })
 }
 
-// GenComponentState 获取state
-func (i *ComponentFileInfo) GenComponentState(ctx context.Context, c *cptype.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	i.State = state
-	i.sdk = cputil.SDK(ctx)
-	return nil
-}
-
 func (i *ComponentFileInfo) RenderProtocol(c *cptype.Component, g *cptype.GlobalStateData) {
 	if c.Data == nil {
 		d := make(cptype.ComponentData)
@@ -66,24 +43,23 @@ func (i *ComponentFileInfo) RenderProtocol(c *cptype.Component, g *cptype.Global
 
 func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
 	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	if err = i.GenComponentState(ctx, c); err != nil {
-		return
-	}
-	// TODO debug
+	i.sdk = cputil.SDK(ctx)
 
-	i.State.AutotestSceneRequest.UserID = i.sdk.Identity.UserID
-	i.State.AutotestSceneRequest.SceneID = i.State.SceneId
-	i.State.AutotestSceneRequest.SetID = i.InParams.SceneSetID
+	gh := gshelper.NewGSHelper(gs)
+
+	i.AutotestSceneRequest.UserID = i.sdk.Identity.UserID
+	i.AutotestSceneRequest.SceneID = gh.GetFileTreeSceneID()
+	i.AutotestSceneRequest.SetID = i.InParams.SceneSetID
 
 	visible := make(map[string]interface{})
 	visible["visible"] = true
-	if i.State.AutotestSceneRequest.SceneID == 0 {
+	if i.AutotestSceneRequest.SceneID == 0 {
 		visible["visible"] = false
 		c.Props = visible
 		return
 	}
 	i.Props = visible
-	rsp, err := i.bdl.GetAutoTestScene(i.State.AutotestSceneRequest)
+	rsp, err := i.bdl.GetAutoTestScene(i.AutotestSceneRequest)
 	if err != nil {
 		return err
 	}
