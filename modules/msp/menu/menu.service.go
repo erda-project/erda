@@ -48,6 +48,12 @@ var NotExist = map[string]bool{
 	"ServiceManage": true,
 }
 
+var DopMenu = map[string]bool{
+	"MonitorCenter":  true,
+	"ServiceManage":  true,
+	"EnvironmentSet": true,
+}
+
 type componentInfo struct {
 	cnName string
 	enName string
@@ -120,7 +126,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
 			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-			if NotExist[item.Key] {
+			if DopMenu[item.Key] {
 				for _, child := range item.Children {
 					child.Params = item.Params
 					// 反转exists字段，隐藏引导页，显示功能子菜单
@@ -339,6 +345,7 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 	}
 	if monitor != nil {
 		for _, item := range setParams {
+			item.Params = monitor.Params
 			for _, child := range item.Children {
 				child.Params = monitor.Params
 			}
