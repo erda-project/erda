@@ -71,6 +71,8 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesSetConfig/scenesSetTitle"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesSetConfig/scenesStages"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesSetConfig/scenesStagesOperations"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesSetConfig/scenesStagesOperations/addScenesButton"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesSetConfig/scenesStagesOperations/exportScenesButton"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesSetConfig/scenesStagesTitle"
 
 	// fileExecute
