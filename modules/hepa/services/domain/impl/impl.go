@@ -104,14 +104,14 @@ func (impl GatewayDomainServiceImpl) Clone(ctx context.Context) domain.GatewayDo
 	return &newService
 }
 
-func diffDomains(reqDomains []gw.EndpointDomainDto, existDomains []orm.GatewayDomain) (adds []gw.EndpointDomainDto, dels []orm.GatewayDomain, updates []orm.GatewayDomain) {
-	for _, domain := range reqDomains {
-		exist := false
-		for i := len(existDomains) - 1; i >= 0; i-- {
-			domainObj := existDomains[i]
+func diffDomains(req []gw.EndpointDomainDto, exist []orm.GatewayDomain) (adds []gw.EndpointDomainDto, dels []orm.GatewayDomain, updates []orm.GatewayDomain) {
+	for _, domain := range req {
+		existed := false
+		for i := len(exist) - 1; i >= 0; i-- {
+			domainObj := exist[i]
 			if domain.Domain == domainObj.Domain {
-				exist = true
-				existDomains = append(existDomains[:i], existDomains[i+1:]...)
+				existed = true
+				exist = append(exist[:i], exist[i+1:]...)
 				if domain.Type != domainObj.Type {
 					domainObj.Type = domain.Type
 					updates = append(updates, domainObj)
@@ -119,11 +119,11 @@ func diffDomains(reqDomains []gw.EndpointDomainDto, existDomains []orm.GatewayDo
 				break
 			}
 		}
-		if !exist {
+		if !existed {
 			adds = append(adds, domain)
 		}
 	}
-	dels = existDomains
+	dels = exist
 	return
 }
 
