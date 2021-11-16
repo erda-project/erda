@@ -156,6 +156,7 @@ func parseVars(req *http.Request) map[string]string {
 	var match mux.RouteMatch
 	m := mux.NewRouter().PathPrefix("/api/k8s/clusters/{clusterName}")
 	s := m.Subrouter()
+	s.Path("/")
 	s.Path("/v1")
 	s.Path("/v1/")
 	s.Path("/v1/{type}")
@@ -165,6 +166,7 @@ func parseVars(req *http.Request) map[string]string {
 	s.Path("/api/{version}/namespaces/{namespace}/{type}")
 	s.Path("/api/{version}/namespaces/{namespace}/{type}/{name}")
 	s.Path("/api/{version}/namespaces/{namespace}/{type}/{name}/{link}")
+	s.PathPrefix("/api")
 
 	vars := make(map[string]string)
 	if s.Match(req, &match) {
