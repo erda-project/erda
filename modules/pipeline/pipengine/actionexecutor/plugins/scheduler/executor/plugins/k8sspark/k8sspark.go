@@ -388,6 +388,11 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 		},
 	}
 
+	// add deps pyFiles
+	if len(conf.Spec.SparkConf.Deps.PyFiles) > 0 {
+		sparkApp.Spec.Deps.PyFiles = conf.Spec.SparkConf.Deps.PyFiles
+	}
+
 	if sparkApp.Spec.Type == sparkv1beta2.PythonApplicationType {
 		sparkApp.Spec.PythonVersion = stringptr("3")
 		if conf.Spec.SparkConf.PythonVersion != nil {
