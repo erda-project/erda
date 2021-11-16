@@ -64,4 +64,9 @@ type SparkConf struct {
 	PythonVersion    *string         `json:"pythonVersion,omitempty"`
 	DriverResource   BigdataResource `json:"driverResource"`
 	ExecutorResource BigdataResource `json:"executorResource"`
+	Deps             Dependencies    `json:"deps"`
+}
+
+type Dependencies struct {
+	PyFiles []string `json:"pyFiles"`
 }
