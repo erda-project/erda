@@ -52,9 +52,9 @@ func Test_getChangedFields(t *testing.T) {
 				},
 			},
 			want: map[string][]string{
-				"name":          {"space", "space1"},
-				"description":   {"not a space", "a space"},
-				"archiveStatus": {"Init", "InProgress"},
+				"Name":          {"space", "space1"},
+				"Description":   {"not a space", "a space"},
+				"ArchiveStatus": {"未开始", "进行中"},
 			},
 		},
 	}

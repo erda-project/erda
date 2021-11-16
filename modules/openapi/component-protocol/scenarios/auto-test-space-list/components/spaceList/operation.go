@@ -109,6 +109,10 @@ func (a *ComponentSpaceList) handlerListOperation(bdl protocol.ContextBundle, c 
 	} else if a.State.PageSize != 10 && a.State.PageSize != 20 && a.State.PageSize != 50 && a.State.PageSize != 100 {
 		return fmt.Errorf("无效的pageSize")
 	}
+
+	if event.Operation == apistructs.InitializeOperation || event.Operation == apistructs.RenderingOperation {
+		a.State.PageNo = 1
+	}
 	// spaceList, err := bdl.Bdl.ListTestSpace(inParams.ProjectID, a.State.PageSize, a.State.PageNo, a.State.Values.Order)
 	spaceList, err := bdl.Bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
 		ProjectID:     inParams.ProjectID,

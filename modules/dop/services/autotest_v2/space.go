@@ -160,19 +160,19 @@ func getChangedFields(autoTestSpace *dao.AutoTestSpace, req apistructs.AutoTestS
 	changedField := make(map[string][]string)
 	if len(req.Name) > 0 {
 		if req.Name != autoTestSpace.Name {
-			changedField["name"] = []string{autoTestSpace.Name, req.Name}
+			changedField["Name"] = []string{autoTestSpace.Name, req.Name}
 		}
 		autoTestSpace.Name = req.Name
 	}
 	if len(req.ArchiveStatus) > 0 {
 		if req.ArchiveStatus != autoTestSpace.ArchiveStatus {
-			changedField["archiveStatus"] = []string{string(autoTestSpace.ArchiveStatus), string(req.ArchiveStatus)}
+			changedField["ArchiveStatus"] = []string{autoTestSpace.ArchiveStatus.GetZhName(), req.ArchiveStatus.GetZhName()}
 		}
 		autoTestSpace.ArchiveStatus = req.ArchiveStatus
 	}
 	if len(req.Description) > 0 {
 		if req.Description != autoTestSpace.Description {
-			changedField["description"] = []string{autoTestSpace.Description, req.Description}
+			changedField["Description"] = []string{autoTestSpace.Description, req.Description}
 		}
 		autoTestSpace.Description = req.Description
 	}
@@ -198,11 +198,10 @@ func (svc *Service) createAudits(space *dao.AutoTestSpace, changedField map[stri
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
-			TemplateName: apistructs.UpdateAutoTestSpaceTemplate,
+			TemplateName: apistructs.TemplateName(apistructs.UpdateAutoTestSpaceTemplatePrefix + i),
 			Context: map[string]interface{}{
 				"projectName": project.Name,
 				"spaceName":   space.Name,
-				"field":       i,
 				"from":        v[0],
 				"to":          v[1],
 			},
