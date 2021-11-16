@@ -1939,11 +1939,25 @@
       "en": "Change MySQL account [@preMysqlUsername] -> [@mysqlUsername] for runtime [@runtimeName](runtimeDetailRoot) in [@projectName](project) / [@appName](app)"
     }
   },
-  "updateAutoTestSpace": {
-    "desc": "更新自动化测试空间",
+  "updateAutoTestSpaceName": {
+    "desc": "更新自动化测试空间名称",
     "success": {
-      "zh": "在 [@projectName](project) 项目中, 更新了测试空间 [@spaceName] 的[@field], 由 [@from] 变成 [@to] ",
-      "en": "Update auto test space [@spaceName] [@field] from [@from] to [@to] in project [@projectName](project)"
+      "zh": "在 [@projectName](project) 项目中, 更新了测试空间 [@spaceName] 的名称, 由 [@from] 变成 [@to] ",
+      "en": "Update auto test space [@spaceName] name from [@from] to [@to] in project [@projectName](project)"
+    }
+  },
+  "updateAutoTestSpaceDescription": {
+    "desc": "更新自动化测试空间描述",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中, 更新了测试空间 [@spaceName] 的描述, 由 [@from] 变成 [@to] ",
+      "en": "Update auto test space [@spaceName] description from [@from] to [@to] in project [@projectName](project)"
+    }
+  },
+  "updateAutoTestSpaceArchiveStatus": {
+    "desc": "更新自动化测试空间状态",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中, 更新了测试空间 [@spaceName] 的状态, 由 [@from] 变成 [@to] ",
+      "en": "Update auto test space [@spaceName] archiveStatus from [@from] to [@to] in project [@projectName](project)"
     }
   }
 }
