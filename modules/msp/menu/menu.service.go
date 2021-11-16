@@ -335,7 +335,7 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 	setParams := make([]*pb.MenuItem, 0)
 	for _, item := range items {
 		switch item.Key {
-		case "MonitorCenter", "ServiceManage", "EnvironmentSet", "MicroServiceOverview":
+		case "MonitorCenter", "ServiceManage", "EnvironmentSet", "Overview":
 			setParams = append(setParams, item)
 		case "AlertCenter":
 			monitor = item
