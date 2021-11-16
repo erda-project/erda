@@ -1,25 +1,5 @@
-
 zh:
-  # general
-  name: 名称
-  namespace: 命名空间
-  status: 状态
-  ip: IP 地址
-  age: 存活时间
-  images: 镜像
-  labels: 标签
-  label: 标签
-  annotations: 注释
-  project: 项目名称
-  core: 核
-  viewOrEditYaml: 查看/编辑YAML
-  delete: 删除
-  confirmDelete: 确定删除？
-  times: 次
-  moreOperations: 更多操作
-  # nodeDetail
   nodeStatus: 节点状态
-  node: 节点
   cpu-size: CPU 核数
   memory-size: 内存大小
   architecture: 架构
@@ -49,7 +29,6 @@ zh:
   nodeIP: IP
   version: 版本
   os: 系统
-  podNum: Pod 数量
   tag: 标签
   annotation: 注释
   taint: 污点
@@ -68,24 +47,7 @@ zh:
   lb: 负载均衡
   label-value: 标签值
   addLabel: 添加标签
-
-
+  podNum: Pod 数量
 
 en:
-  # general
-  name: Name
-  namespace: Namespace
-  status: Status
-  ip: IP
-  age: Age
-  images: Images
-  labels: Labels
-  label: Label
-  annotations: Annotations
-  project: Project Name
-  core: cores
-  viewOrEditYaml: View/Edit YAML
-  delete: Delete
-  confirmDelete: Sure to delete?
-  times: time(s)
-  moreOperations: More Operations
+  podNum: Number of Pods

@@ -182,7 +182,7 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 					},
 				}},
 			{
-				Label:      podInfo.SDK.I18n("label"),
+				Label:      podInfo.SDK.I18n("labels"),
 				ValueKey:   "labels",
 				RenderType: "tagsRow",
 				SpaceNum:   2,
