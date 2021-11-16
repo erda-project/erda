@@ -337,7 +337,7 @@ func (impl GatewayOpenapiServiceImpl) CreatePackage(args *gw.DiceArgsDto, dto *g
 	if err != nil {
 		return
 	}
-	domains, err = (*impl.domainBiz).TouchPackageDomain(pack.Id, az, dto.BindDomain, helper)
+	domains, err = (*impl.domainBiz).TouchPackageDomain(args.OrgId, pack.Id, az, dto.BindDomain, helper)
 	if err != nil {
 		return
 	}
@@ -567,7 +567,7 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 	return nil
 }
 
-func (impl GatewayOpenapiServiceImpl) UpdatePackage(id string, dto *gw.PackageDto) (result *gw.PackageInfoDto, err error) {
+func (impl GatewayOpenapiServiceImpl) UpdatePackage(orgId, id string, dto *gw.PackageDto) (result *gw.PackageInfoDto, err error) {
 	var diceInfo gw.DiceInfo
 	var dao *orm.GatewayPackage
 	var z *orm.GatewayZone
@@ -632,7 +632,7 @@ func (impl GatewayOpenapiServiceImpl) UpdatePackage(id string, dto *gw.PackageDt
 	}
 	if domainHasDiff {
 		needUpdate = true
-		domains, err = (*impl.domainBiz).TouchPackageDomain(id, dao.DiceClusterName, dto.BindDomain, session)
+		domains, err = (*impl.domainBiz).TouchPackageDomain(orgId, id, dao.DiceClusterName, dto.BindDomain, session)
 		if err != nil {
 			return
 		}
@@ -879,7 +879,7 @@ func (impl *GatewayOpenapiServiceImpl) deletePackage(id string, session *db.Sess
 	if err != nil {
 		return err
 	}
-	_, err = (*impl.domainBiz).TouchPackageDomain(id, dao.DiceClusterName, nil, session)
+	_, err = (*impl.domainBiz).TouchPackageDomain("", id, dao.DiceClusterName, nil, session)
 	if err != nil {
 		return err
 	}
@@ -2262,6 +2262,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 	if err != nil {
 		return err
 	}
+	var orgId string
 	var pack *orm.GatewayPackage
 	packageSession, err := impl.packageDb.NewSession(session)
 	if err != nil {
@@ -2279,7 +2280,11 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 	if err != nil {
 		goto clear_route
 	}
-	_, err = (*impl.domainBiz).TouchPackageDomain(pack.Id, kongInfo.Az, []string{outerHost}, session)
+	orgId, err = (*impl.globalBiz).GetOrgId(pack.DiceProjectId)
+	if err != nil {
+		goto clear_route
+	}
+	_, err = (*impl.domainBiz).TouchPackageDomain(orgId, pack.Id, kongInfo.Az, []string{outerHost}, session)
 	if err != nil {
 		goto clear_route
 	}

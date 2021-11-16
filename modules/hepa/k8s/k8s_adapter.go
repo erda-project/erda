@@ -271,20 +271,20 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 }
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
-	name = strings.ToLower(name)
-	exist, err := impl.CheckIngressExist(namespace, name)
+	ingressName := strings.ToLower(name)
+	exist, err := impl.CheckIngressExist(namespace, ingressName)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, name)
+		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, ingressName)
 		return nil
 	}
-	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), ingressName, metav1.DeleteOptions{})
 	if err != nil {
-		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", name, namespace, err)
+		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	logrus.Infof("ingress deleted, namespace:%s, name:%s", namespace, name)
+	logrus.Infof("ingress deleted, namespace:%s, name:%s", namespace, ingressName)
 	return nil
 }
 
@@ -360,20 +360,20 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
-	var ingress interface{}
+	var ing interface{}
 	routeOptions := RouteOptions{}
 	if len(options) > 0 {
 		routeOptions = options[0]
 	}
-	ingress = impl.newIngress(namespace, ingressName, routes, backend, routeOptions.EnableTLS)
+	ing = impl.newIngress(namespace, ingressName, routes, backend, routeOptions.EnableTLS)
 	if k8serrors.IsNotFound(err) {
-		err := impl.setOptionAnnotations(ingress, routeOptions)
+		err := impl.setOptionAnnotations(ing, routeOptions)
 		if err != nil {
 			return false, err
 		}
 		log.Debugf("begin create ingress, name:%s, ns:%s", ingressName, namespace)
 
-		_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
+		_, err = ns.Create(context.Background(), ing, metav1.CreateOptions{})
 		if err != nil {
 			return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
 				ingressName, namespace, err)
@@ -385,16 +385,16 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	if err != nil {
 		return true, err
 	}
-	err = impl.ingressesHelper.IngressAnnotationBatchSet(ingress, oldAnnotations)
+	err = impl.ingressesHelper.IngressAnnotationBatchSet(ing, oldAnnotations)
 	if err != nil {
 		return true, err
 	}
-	err = impl.setOptionAnnotations(ingress, routeOptions)
+	err = impl.setOptionAnnotations(ing, routeOptions)
 	if err != nil {
 		return true, err
 	}
 	log.Debugf("begin update ingress, name:%s, ns:%s", ingressName, namespace)
-	_, err = ns.Update(context.Background(), ingress, metav1.UpdateOptions{})
+	_, err = ns.Update(context.Background(), ing, metav1.UpdateOptions{})
 	if err != nil {
 		return true, errors.Errorf("update ingress %s failed, ns:%s, err:%s",
 			ingressName, namespace, err)
