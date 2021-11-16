@@ -20,9 +20,10 @@ hierarchy:
     moreOperation:
       children: moreIcon
     rightPage:
+      children:
       - fileDetail
-    tabBarExtraContent:
-      - tabSceneSetExecuteButton
+      tabBarExtraContent:
+        - tabSceneSetExecuteButton
     fileDetail:
       children:
         - fileConfig
