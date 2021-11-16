@@ -1132,7 +1132,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 		RefSetID:    oldScene.RefSetID,
 	}
 
-	if err = svc.db.Insert(newScene); err != nil {
+	if err = svc.db.Copy(newScene, newScene.SetID != oldScene.SetID); err != nil {
 		return 0, err
 	}
 

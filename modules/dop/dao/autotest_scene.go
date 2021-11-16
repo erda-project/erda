@@ -583,7 +583,7 @@ func (db *DBClient) CountSceneBySpaceID(spaceID uint64) (uint64, error) {
 	return res, nil
 }
 
-func (db *DBClient) Insert(scene *AutoTestScene) error {
+func (db *DBClient) Copy(scene *AutoTestScene, isCopyTo bool) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		if scene.PreID == 0 {
 			return db.Create(&scene).Error
@@ -593,15 +593,14 @@ func (db *DBClient) Insert(scene *AutoTestScene) error {
 		if err := db.Where("id = ?", scene.PreID).First(&pre).Error; err != nil {
 			return err
 		}
-		// If groupID of the pre scene, set its id as groupID
+		// If groupID of the pre scene is 0, set its id as groupID
 		if pre.GroupID == 0 {
 			pre.GroupID = pre.ID
 			if err := db.Save(&pre).Error; err != nil {
 				return err
 			}
-			if pre.SetID == scene.SetID {
-
-			}
+		}
+		if !isCopyTo {
 			scene.GroupID = pre.GroupID
 		}
 		// Find the next scene
@@ -616,6 +615,26 @@ func (db *DBClient) Insert(scene *AutoTestScene) error {
 			return err
 		}
 		// Update preID of next scene
+		next.PreID = scene.ID
+		return db.Save(&next).Error
+	})
+}
+
+func (db *DBClient) Insert(scene *AutoTestScene, id uint64) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if id == 0 {
+			return db.Create(&scene).Error
+		}
+		var next AutoTestScene
+		if err := db.Where("pre_id = ?", id).Find(&next).Error; err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return db.Create(&scene).Error
+			}
+			return err
+		}
+		if err := db.Create(&scene).Error; err != nil {
+			return err
+		}
 		next.PreID = scene.ID
 		return db.Save(&next).Error
 	})

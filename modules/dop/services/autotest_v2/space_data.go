@@ -624,7 +624,7 @@ func (a *AutoTestSpaceData) CopyScenes() error {
 				RefSetID:    a.sceneSetIDAssociationMap[each.RefSetID],
 			}
 			// TODO wxj 改成create 需要设置groupID
-			if err = a.svc.db.Insert(newScene); err != nil {
+			if err = a.svc.db.Insert(newScene, preID); err != nil {
 				return err
 			}
 

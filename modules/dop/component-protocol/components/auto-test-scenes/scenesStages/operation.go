@@ -103,6 +103,7 @@ func RenderCopyParallel(s *SceneStage) error {
 		return err
 	}
 	_, err = s.atTestPlan.CopyAutotestScene(apistructs.AutotestSceneCopyRequest{
+		SpaceID:      uint64(s.sdk.InParams["spaceId"].(float64)),
 		PreID:        meta.ID,
 		SceneID:      meta.ID,
 		SetID:        s.gsHelper.GetGlobalSelectedSetID(),
