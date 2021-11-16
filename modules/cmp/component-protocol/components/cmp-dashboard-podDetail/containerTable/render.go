@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	data2 "github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -74,7 +74,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	}
 	obj := resp.Data()
 
-	var data []Data
+	var datas []Data
 	containerStatuses := obj.Slice("status", "containerStatuses")
 	for _, containerStatus := range containerStatuses {
 		states := containerStatus.Map("state")
@@ -83,16 +83,16 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			status = parseContainerStatus(ctx, k)
 		}
 
-		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
+		containerId := getContainerID(containerStatus.String("containerID"))
 		restartCountStr := containerStatus.String("restartCount") + " " + cputil.I18n(ctx, "times")
 		var restartCount interface{}
 		lastContainerState := containerStatus.Map("lastState")
 		for _, v := range lastContainerState {
-			lastState, err := data2.Convert(v)
+			lastState, err := data.Convert(v)
 			if err != nil {
 				continue
 			}
-			lastContainerID := strings.TrimPrefix(lastState.String("containerID"), "docker://")
+			lastContainerID := getContainerID(lastState.String("containerID"))
 			if lastContainerID != "" {
 				restartCount = Operate{
 					Operations: map[string]Operation{
@@ -118,7 +118,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			restartCount = restartCountStr
 		}
 
-		data = append(data, Data{
+		datas = append(datas, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
 			Name:   containerStatus.String("name"),
@@ -157,11 +157,11 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			},
 		})
 	}
-	sort.Slice(data, func(i, j int) bool {
-		return data[i].Name < data[j].Name
+	sort.Slice(datas, func(i, j int) bool {
+		return datas[i].Name < datas[j].Name
 	})
 	containerTable.Data = map[string][]Data{
-		"list": data,
+		"list": datas,
 	}
 
 	containerTable.Props.SortDirections = []string{"descend", "ascend"}
@@ -256,6 +256,14 @@ func parseContainerStatus(ctx context.Context, state string) Status {
 			Color: color,
 		},
 	}
+}
+
+func getContainerID(id string) string {
+	splits := strings.Split(id, "://")
+	if len(splits) != 2 {
+		return id
+	}
+	return splits[1]
 }
 
 func init() {

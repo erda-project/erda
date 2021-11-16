@@ -75,6 +75,7 @@ type Item struct {
 	MemoryLimitsNum   int64   `json:"MemoryLimitsNum,omitempty"`
 	Ready             string  `json:"ready,omitempty"`
 	NodeName          string  `json:"nodeName,omitempty"`
+	Operate           Operate `json:"operate"`
 }
 
 type Status struct {
@@ -122,6 +123,11 @@ type Percent struct {
 	Status     string `json:"status,omitempty"`
 }
 
+type Operate struct {
+	Operations map[string]Operation `json:"operations"`
+	RenderType string               `json:"renderType"`
+}
+
 type Props struct {
 	RequestIgnore   []string               `json:"requestIgnore,omitempty"`
 	PageSizeOptions []string               `json:"pageSizeOptions,omitempty"`
@@ -136,9 +142,12 @@ type Column struct {
 	Title     string `json:"title,omitempty"`
 	Width     int    `json:"width"`
 	Sorter    bool   `json:"sorter"`
+	Fixed     string `json:"fixed,omitempty"`
 }
 
 type Operation struct {
-	Key    string `json:"key,omitempty"`
-	Reload bool   `json:"reload"`
+	Key    string                 `json:"key,omitempty"`
+	Text   string                 `json:"text,omitempty"`
+	Reload bool                   `json:"reload"`
+	Meta   map[string]interface{} `json:"meta,omitempty"`
 }

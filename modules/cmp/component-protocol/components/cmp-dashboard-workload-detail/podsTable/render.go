@@ -313,6 +313,16 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memStatus, memValue, memTip = p.parseResPercent(usedMemPercent, memLimits, resource.BinarySI)
 		}
 
+		var containerNames, containerIDs []string
+		containerStatuses := obj.Slice("status", "containerStatuses")
+		for _, containerStatus := range containerStatuses {
+			containerNames = append(containerNames, containerStatus.String("name"))
+			containerIDs = append(containerIDs, getContainerID(containerStatus.String("containerID")))
+		}
+		if len(containerNames) == 0 || len(containerIDs) == 0 {
+			continue
+		}
+
 		id := fmt.Sprintf("%s_%s", podNamespace, podName)
 		items = append(items, Item{
 			ID:     id,
@@ -365,6 +375,32 @@ func (p *ComponentPodsTable) RenderTable() error {
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
 			NodeName:        fields[6],
+			Operate: Operate{
+				Operations: map[string]Operation{
+					"log": {
+						Key:    "checkLog",
+						Text:   p.sdk.I18n("log"),
+						Reload: false,
+						Meta: map[string]interface{}{
+							"containerName": containerNames[0],
+							"podName":       name,
+							"namespace":     namespace,
+							"containerId":   containerIDs[0],
+						},
+					},
+					"console": {
+						Key:    "checkConsole",
+						Text:   p.sdk.I18n("console"),
+						Reload: false,
+						Meta: map[string]interface{}{
+							"containerName": containerNames[0],
+							"podName":       name,
+							"namespace":     namespace,
+						},
+					},
+				},
+				RenderType: "tableOperation",
+			},
 		})
 	}
 
@@ -657,6 +693,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Width:     120,
 			Sorter:    true,
 		},
+		{
+			DataIndex: "operate",
+			Title:     cputil.I18n(ctx, "operate"),
+			Width:     130,
+			Sorter:    false,
+			Fixed:     "right",
+		},
 	}
 
 	p.Operations = map[string]interface{}{
@@ -735,4 +778,12 @@ func getRange(length, pageNo, pageSize int) (int, int) {
 		r = length
 	}
 	return l, r
+}
+
+func getContainerID(id string) string {
+	splits := strings.Split(id, "://")
+	if len(splits) != 2 {
+		return id
+	}
+	return splits[1]
 }
