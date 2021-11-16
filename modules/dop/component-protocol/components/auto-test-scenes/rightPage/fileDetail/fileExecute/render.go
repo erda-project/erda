@@ -15,55 +15,13 @@
 package fileExecute
 
 import (
-	"context"
-	"encoding/json"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	base.DefaultProvider
-	State State `json:"state"`
-}
-
-type State struct {
-	ActiveKey apistructs.ActiveKey `json:"activeKey"`
 }
 
 func init() {
-	base.InitProviderWithCreator("auto-test-scenes", "fileExecute",
-		func() servicehub.Provider { return &ComponentAction{} })
-}
-
-func (ca *ComponentAction) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	ca.State = state
-	return nil
-}
-
-func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	if err := ca.GenComponentState(c); err != nil {
-		return err
-	}
-	//props := make(map[string]interface{})
-	//props["visible"] = ca.State.ActiveKey == apistructs.ActiveKeyFileExecute
-	return nil
+	base.InitProvider("auto-test-scenes", "fileExecute")
 }

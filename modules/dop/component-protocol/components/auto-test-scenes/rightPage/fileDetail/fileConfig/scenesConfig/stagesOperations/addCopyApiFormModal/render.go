@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -34,8 +35,7 @@ type ComponentAction struct {
 }
 
 type State struct {
-	SceneID  uint64 `json:"sceneId"`
-	Visible  bool   `json:"visible"`
+	Visible  bool `json:"visible"`
 	FormData struct {
 		ApiText string `json:"apiText"`
 	}
@@ -48,6 +48,7 @@ func init() {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
 	ca.sdk = cputil.SDK(ctx)
 	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	v, err := json.Marshal(c.State)
@@ -66,12 +67,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 				UserID: ca.sdk.Identity.UserID,
 			},
 			AutoTestSceneParams: apistructs.AutoTestSceneParams{
-				ID: state.SceneID,
+				ID: gh.GetFileTreeSceneID(),
 			},
 			Target:  -1,
 			GroupID: -1,
 			Type:    apistructs.StepTypeAPI,
-			SceneID: state.SceneID,
+			SceneID: gh.GetFileTreeSceneID(),
 		})
 		if err != nil {
 			return err

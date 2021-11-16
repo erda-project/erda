@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -34,6 +35,8 @@ type ComponentAlertInfo struct {
 	base.DefaultProvider
 
 	CommonAlertInfo
+
+	pipelineID uint64
 }
 
 type CommonAlertInfo struct {
@@ -41,13 +44,8 @@ type CommonAlertInfo struct {
 	Name       string                                           `json:"name,omitempty"`
 	Type       string                                           `json:"type,omitempty"`
 	Props      map[string]interface{}                           `json:"props,omitempty"`
-	State      State                                            `json:"state,omitempty"`
 	Operations map[apistructs.OperationKey]apistructs.Operation `json:"operations,omitempty"`
 	Data       map[string]interface{}                           `json:"data,omitempty"`
-}
-
-type State struct {
-	PipelineID uint64 `json:"pipelineId"`
 }
 
 func (a *ComponentAlertInfo) Import(c *cptype.Component) error {
@@ -66,27 +64,6 @@ func init() {
 		func() servicehub.Provider { return &ComponentAlertInfo{} })
 }
 
-// GenComponentState 获取state
-func (i *ComponentAlertInfo) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	fmt.Println(state)
-	i.State = state
-	return nil
-}
-
 func (i *ComponentAlertInfo) RenderProtocol(c *cptype.Component, g *cptype.GlobalStateData) {
 	if c.Data == nil {
 		d := make(cptype.ComponentData)
@@ -98,10 +75,12 @@ func (i *ComponentAlertInfo) RenderProtocol(c *cptype.Component, g *cptype.Globa
 }
 
 func (i *ComponentAlertInfo) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
+	gh := gshelper.NewGSHelper(gs)
 	if err := i.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
 		return err
 	}
+	i.pipelineID = gh.GetExecuteHistoryTablePipelineID()
 
 	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	defer func() {
@@ -111,11 +90,11 @@ func (i *ComponentAlertInfo) Render(ctx context.Context, c *cptype.Component, sc
 		}
 	}()
 	fmt.Printf("state: %+v\n", c.State)
-	fmt.Println(i.State.PipelineID)
+	fmt.Println(i.pipelineID)
 	visible := false
 	var message []string
-	if i.State.PipelineID > 0 {
-		rsp, err := i.bdl.GetPipeline(i.State.PipelineID)
+	if i.pipelineID > 0 {
+		rsp, err := i.bdl.GetPipeline(i.pipelineID)
 		if err != nil {
 			return err
 		}
@@ -136,16 +115,6 @@ func (i *ComponentAlertInfo) Render(ctx context.Context, c *cptype.Component, sc
 }
 
 func (a *ComponentAlertInfo) marshal(c *cptype.Component) error {
-	stateValue, err := json.Marshal(a.State)
-	if err != nil {
-		return err
-	}
-	var state map[string]interface{}
-	err = json.Unmarshal(stateValue, &state)
-	if err != nil {
-		return err
-	}
-
 	propValue, err := json.Marshal(a.Props)
 	if err != nil {
 		return err
@@ -157,7 +126,6 @@ func (a *ComponentAlertInfo) marshal(c *cptype.Component) error {
 	}
 
 	c.Props = props
-	c.State = state
 	c.Type = a.Type
 	return nil
 }

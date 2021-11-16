@@ -26,6 +26,7 @@ type ComponentFileInfo struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
 
+	AutotestSceneRequest apistructs.AutotestSceneRequest
 	CommonFileInfo
 }
 
@@ -34,7 +35,6 @@ type CommonFileInfo struct {
 	Name       string                                           `json:"name,omitempty"`
 	Type       string                                           `json:"type,omitempty"`
 	Props      map[string]interface{}                           `json:"props,omitempty"`
-	State      State                                            `json:"state,omitempty"`
 	Operations map[apistructs.OperationKey]apistructs.Operation `json:"operations,omitempty"`
 	Data       Data                                             `json:"data,omitempty"`
 	InParams   InParams                                         `json:"inParams,omitempty"`
@@ -55,9 +55,4 @@ type PropColumn struct {
 	Label      string `json:"label"`
 	ValueKey   string `json:"valueKey"`
 	RenderType string `json:"renderType,omitempty"`
-}
-
-type State struct {
-	AutotestSceneRequest apistructs.AutotestSceneRequest `json:"autotestSceneRequest"`
-	SceneId              uint64                          `json:"sceneId"`
 }

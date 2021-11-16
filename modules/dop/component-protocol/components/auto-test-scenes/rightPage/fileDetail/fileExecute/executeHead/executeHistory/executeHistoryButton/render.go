@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -34,12 +35,8 @@ func getProps(visible bool) map[string]interface{} {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	//return json.Unmarshal([]byte(`{"text":"执行历史"}`), &c.Props)
-	visible := true
-	if _, ok := c.State["visible"]; ok {
-		visible = c.State["visible"].(bool)
-	}
-	c.Props = getProps(visible)
+	gh := gshelper.NewGSHelper(gs)
+	c.Props = getProps(gh.GetExecuteTaskBreadcrumbVisible())
 	return nil
 }
 

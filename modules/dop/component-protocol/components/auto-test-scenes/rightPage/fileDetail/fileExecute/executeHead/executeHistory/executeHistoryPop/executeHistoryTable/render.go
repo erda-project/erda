@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -37,14 +38,14 @@ type ExecuteHistoryTable struct {
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
 	Data       map[string]interface{} `json:"data"`
+
+	pipelineID uint64
 }
 
 type State struct {
-	Total      int64  `json:"total"`
-	PageSize   int64  `json:"pageSize"`
-	PageNo     int64  `json:"pageNo"`
-	SceneID    int64  `json:"sceneId"`
-	PipelineID uint64 `json:"pipelineId"`
+	Total    int64 `json:"total"`
+	PageSize int64 `json:"pageSize"`
+	PageNo   int64 `json:"pageNo"`
 }
 
 const (
@@ -107,6 +108,7 @@ func (a *ExecuteHistoryTable) Import(c *cptype.Component) error {
 }
 
 func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
+	gh := gshelper.NewGSHelper(gs)
 	// import component data
 	if err := a.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
@@ -127,7 +129,7 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, s
 	// listen on operation
 	switch event.Operation {
 	case cptype.OperationKey(apistructs.ExecuteChangePageNoOperationKey), cptype.RenderingOperation, cptype.InitializeOperation:
-		if err := a.handlerListOperation(c, event); err != nil {
+		if err := a.handlerListOperation(c, event, gs); err != nil {
 			return err
 		}
 	case cptype.OperationKey(apistructs.ExecuteClickRowNoOperationKey):
@@ -135,6 +137,9 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, s
 			return err
 		}
 	}
+
+	// set global state
+	gh.SetExecuteHistoryTablePipelineID(a.pipelineID)
 
 	return nil
 }
@@ -226,9 +231,9 @@ func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
 func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData, num int64, event cptype.OperationKey) error {
 	lists := []map[string]interface{}{}
 	if len(pipeline.Pipelines) > 0 && event != cptype.OperationKey(apistructs.ExecuteChangePageNoOperationKey) {
-		e.State.PipelineID = pipeline.Pipelines[0].ID
+		e.pipelineID = pipeline.Pipelines[0].ID
 	} else if len(pipeline.Pipelines) == 0 {
-		e.State.PipelineID = 0
+		e.pipelineID = 0
 	}
 	for _, each := range pipeline.Pipelines {
 		var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
@@ -252,17 +257,16 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 	return nil
 }
 
-func (e *ExecuteHistoryTable) handlerListOperation(c *cptype.Component, event cptype.ComponentEvent) error {
-	if e.State.SceneID == 0 {
+func (e *ExecuteHistoryTable) handlerListOperation(c *cptype.Component, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
+	sceneID := gh.GetFileTreeSceneID()
+	if sceneID == 0 {
 		c.Data = map[string]interface{}{}
-		e.State = State{
-			SceneID:    0,
-			PipelineID: 0,
-		}
+		e.State = State{}
 		return nil
 	}
 	req := apistructs.PipelinePageListRequest{
-		YmlNames: []string{strconv.FormatInt(e.State.SceneID, 10)},
+		YmlNames: []string{strconv.FormatUint(sceneID, 10)},
 		Sources:  []apistructs.PipelineSource{apistructs.PipelineSourceAutoTest},
 	}
 	if e.State.PageNo == 0 {
@@ -293,6 +297,6 @@ func (e *ExecuteHistoryTable) handlerClickRowOperation(c *cptype.Component, even
 	if err := json.Unmarshal(b, &res); err != nil {
 		return err
 	}
-	e.State.PipelineID = res.Meta.RowData.PipelineID
+	e.pipelineID = res.Meta.RowData.PipelineID
 	return nil
 }

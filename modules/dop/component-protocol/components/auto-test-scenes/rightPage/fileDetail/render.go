@@ -21,19 +21,21 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	base.DefaultProvider
 	State State `json:"state"`
+
+	sceneID uint64
 }
 
 type State struct {
 	ClickType            string                          `json:"clickType"`
 	ActiveKey            apistructs.ActiveKey            `json:"activeKey"`
 	AutotestSceneRequest apistructs.AutotestSceneRequest `json:"autotestSceneRequest"`
-	SceneId              uint64                          `json:"sceneId"`
 	IsChangeScene        bool                            `json:"isChangeScene"`
 }
 
@@ -56,6 +58,8 @@ func (ca *ComponentAction) RenderState(c *cptype.Component) error {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
+
 	if c.State == nil {
 		c.State = map[string]interface{}{}
 	}
@@ -63,6 +67,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if err := ca.RenderState(c); err != nil {
 		return err
 	}
+
+	ca.sceneID = gh.GetFileTreeSceneID()
 
 	props := make(map[string]interface{})
 
@@ -79,7 +85,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	// props
 
-	if ca.State.SceneId != 0 {
+	if gh.GetFileTreeSceneID() != 0 {
 		props["visible"] = true
 	} else {
 		props["visible"] = false
@@ -100,14 +106,18 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		Reload: true,
 	}
 	// set state
-	setState(c, ca.State)
+	setState(c, ca.State, gs)
 
 	return json.Unmarshal([]byte(`{"onChange":{"key":"changeViewType","reload":true}}`), &c.Operations)
 }
 
-func setState(c *cptype.Component, state State) {
+func setState(c *cptype.Component, state State, gs *cptype.GlobalStateData) {
 	c.State["activeKey"] = state.ActiveKey
 	c.State["autotestSceneRequest"] = state.AutotestSceneRequest
 	c.State["isChangeScene"] = state.IsChangeScene
 	//c.State["activeKey"] = "fileExecute"
+
+	gh := gshelper.NewGSHelper(gs)
+	gh.SetFileDetailActiveKey(state.ActiveKey)
+	gh.SetFileDetailIsChangeScene(state.IsChangeScene)
 }

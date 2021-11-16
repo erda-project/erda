@@ -349,15 +349,9 @@ rendering:
         - name: "sceneSetKey"
           value: "{{ fileFormModal.sceneSetKey }}"
     - name: fileInfo
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: scenesStages
   fileTree:
     - name: tabExecuteButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: fileFormModal
       state:
         - name: "visible"
@@ -366,94 +360,33 @@ rendering:
           value: "{{ fileTree.sceneSetKey }}"
         - name: "actionType"
           value: "{{ fileTree.actionType }}"
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: fileDetail
       state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
         - name: "isChangeScene"
           value: "{{ fileTree.isClickScene }}"
     - name: scenesConfig
-      state:
-        - name: activeKey
-          value: "{{ fileDetail.activeKey }}"
     - name: fileInfo
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: inParamsForm
       state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
         - name: "setId"
           value: "{{ fileTree.sceneSetKey }}"
     - name: stages
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: outPutForm
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: addApiButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: addCopyApiFormModal
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: addConfigSheetButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: addWaitButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: addCustomScriptButton
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: executeHead
     - name: executeHistoryTable
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: executeAlertInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: refreshButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
-      state:
-        - name: "chooseScenesID"
-          value: "{{ fileTree.sceneId }}"
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeTaskTitle
     - name: executeTaskBreadcrumb
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeHistoryButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
     - name: executeTaskTable
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: resultDrawer
     - name: scenesSetConfig
     - name: scenesSetTitle
@@ -468,13 +401,7 @@ rendering:
           value: "{{ leftHeadAddSceneSet.actionType }}"
   fileDetail:
     - name: scenesConfig
-      state:
-        - name: activeKey
-          value: "{{ fileDetail.activeKey }}"
     - name: fileExecute
-      state:
-        - name: activeKey
-          value: "{{ fileDetail.activeKey }}"
   addApiButton:
     - name: fileInfo
     - name: stages
@@ -666,75 +593,28 @@ rendering:
 
   executeHistoryTable:
     - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: refreshButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeAlertInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeTaskBreadcrumb
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
   executeTaskTable:
     - name: executeTaskBreadcrumb
       state:
         - name: "name"
           value: "{{ executeTaskTable.name }}"
-        - name: "pipelineId"
-          value: "{{ executeTaskTable.pipelineId }}"
         - name: "unfold"
           value: "{{ executeTaskTable.unfold }}"
     - name: executeHistoryButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
     - name: refreshButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
     - name: cancelExecuteButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
     - name: executeInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeTaskTable.pipelineId }}"
   executeTaskBreadcrumb:
     - name: executeTaskTable
-      state:
-        - name: "pipelineId"
-          value: "{{ executeTaskBreadcrumb.pipelineId }}"
     - name: executeInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeTaskBreadcrumb.pipelineId }}"
     - name: executeHistoryButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
     - name: refreshButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
     - name: cancelExecuteButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
   refreshButton:
     - name: executeHistoryTable
     - name: executeTaskTable
@@ -747,75 +627,25 @@ rendering:
         - name: pageNo
           value: "{{ executeHistoryRefresh.pageNo }}"
     - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeAlertInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
   cancelExecuteButton:
     - name: executeHistoryTable
     - name: refreshButton
     - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeAlertInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
   tabExecuteButton:
     - name: executeHistoryTable
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
     - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: refreshButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeTaskBreadcrumb
-      state:
-        - name: "sceneId"
-          value: "{{ fileTree.sceneId }}"
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: fileDetail
-      state:
-        - name: activeKey
-          value: "{{ tabExecuteButton.activeKey }}"
     - name: executeAlertInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeHistoryButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
   scenesStages:
     - name: fileFormModal
       state:

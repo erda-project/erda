@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -40,14 +41,16 @@ type ComponentAction struct {
 	State      state                  `json:"state"`
 	Operations map[string]interface{} `json:"operations"`
 	Data       map[string]interface{} `json:"data"`
+
+	pipelineIDFromExecuteHistoryTable   uint64
+	pipelineIDFromExecuteTaskBreadcrumb uint64
+	visible                             bool
+	sceneID                             uint64
 }
 
 type state struct {
-	PipelineID uint64 `json:"pipelineId"`
-	SceneID    uint64 `json:"sceneId"`
-	Name       string `json:"name"`
-	Visible    bool   `json:"visible"`
-	Unfold     bool   `json:"unfold"`
+	Name   string `json:"name"`
+	Unfold bool   `json:"unfold"`
 }
 
 type Breadcrumb struct {
@@ -72,16 +75,19 @@ func init() {
 }
 
 func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	gh := gshelper.NewGSHelper(gs)
 	a.Type = "Breadcrumb"
 	if err := a.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
 		return err
 	}
+	a.pipelineIDFromExecuteHistoryTable = gh.GetExecuteHistoryTablePipelineID()
+	a.sceneID = gh.GetFileTreeSceneID()
 
 	a.sdk = cputil.SDK(ctx)
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
-	if a.State.PipelineID == 0 {
+	if a.pipelineIDFromExecuteHistoryTable == 0 {
 		c.Data = map[string]interface{}{}
 		c.State = map[string]interface{}{"visible": true}
 		return nil
@@ -89,12 +95,12 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	// listen on operation
 	switch event.Operation {
 	case cptype.RenderingOperation, cptype.InitializeOperation:
-		if a.State.SceneID == 0 {
+		if a.sceneID == 0 {
 			return nil
 		}
 		res := []Breadcrumb{}
 		if !a.State.Unfold {
-			req := apistructs.AutotestSceneRequest{SceneID: a.State.SceneID}
+			req := apistructs.AutotestSceneRequest{SceneID: a.sceneID}
 			req.UserID = a.sdk.Identity.UserID
 			scene, err := a.bdl.GetAutoTestScene(req)
 			if err != nil {
@@ -112,12 +118,12 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			}
 		}
 		a.State.Unfold = false
-		fmt.Println("name:  ", a.State.Name, "  pipelineID:  ", a.State.PipelineID)
+		fmt.Println("name:  ", a.State.Name, "  pipelineID:  ", a.pipelineIDFromExecuteHistoryTable)
 		res = append(res, Breadcrumb{
-			Key:  strconv.FormatUint(a.State.PipelineID, 10),
+			Key:  strconv.FormatUint(a.pipelineIDFromExecuteHistoryTable, 10),
 			Item: a.State.Name,
 		})
-		a.State.Visible = len(res) < 2
+		a.visible = len(res) < 2
 		a.Data = map[string]interface{}{"list": res}
 	case cptype.OperationKey(apistructs.ExecuteTaskBreadcrumbSelectItem):
 		res := []Breadcrumb{}
@@ -146,9 +152,9 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 				break
 			}
 		}
-		a.State.Visible = len(lists) < 2
+		a.visible = len(lists) < 2
 		a.Data = map[string]interface{}{"list": lists}
-		a.State.PipelineID, err = strconv.ParseUint(ret.Meta.Key, 10, 64)
+		a.pipelineIDFromExecuteTaskBreadcrumb, err = strconv.ParseUint(ret.Meta.Key, 10, 64)
 		if err != nil {
 			logrus.Errorf("pipelineId ParseUint failed, err: %v", err)
 			return err
@@ -163,6 +169,11 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			err = fail
 		}
 	}()
+
+	// set global state
+	gh.SetExecuteTaskBreadcrumbPipelineID(a.pipelineIDFromExecuteTaskBreadcrumb)
+	gh.SetExecuteTaskBreadcrumbVisible(a.visible)
+
 	return nil
 }
 
@@ -205,7 +216,7 @@ func getOperations() map[string]interface{} {
 }
 
 func (ca *ComponentAction) setData() error {
-	rsp, err := ca.bdl.GetPipeline(ca.State.PipelineID)
+	rsp, err := ca.bdl.GetPipeline(ca.pipelineIDFromExecuteTaskBreadcrumb)
 	if err != nil {
 		return err
 	}

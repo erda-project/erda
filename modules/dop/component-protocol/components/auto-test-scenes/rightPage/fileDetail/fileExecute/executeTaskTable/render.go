@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
@@ -39,16 +40,17 @@ type ExecuteTaskTable struct {
 	Operations map[string]interface{} `json:"operations"`
 	State      State                  `json:"state"`
 	Data       map[string]interface{} `json:"data"`
+
+	pipelineID uint64
 }
 
 type State struct {
-	Total      int64  `json:"total"`
-	PageSize   int64  `json:"pageSize"`
-	PageNo     int64  `json:"pageNo"`
-	PipelineID uint64 `json:"pipelineId"`
-	StepID     uint64 `json:"stepId"`
-	Name       string `json:"name"`
-	Unfold     bool   `json:"unfold"`
+	Total    int64  `json:"total"`
+	PageSize int64  `json:"pageSize"`
+	PageNo   int64  `json:"pageNo"`
+	StepID   uint64 `json:"stepId"`
+	Name     string `json:"name"`
+	Unfold   bool   `json:"unfold"`
 }
 
 type operationData struct {
@@ -146,11 +148,13 @@ func (a *ExecuteTaskTable) Export(c *cptype.Component, gs *cptype.GlobalStateDat
 }
 
 func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
+	gh := gshelper.NewGSHelper(gs)
 	// import component data
 	if err := a.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
 		return err
 	}
+	a.pipelineID = gh.GetExecuteHistoryTablePipelineID()
 
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
@@ -328,7 +332,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							Text:   "日志",
 							Meta: map[string]interface{}{
 								"logId":      task.Extra.UUID,
-								"pipelineId": a.State.PipelineID,
+								"pipelineId": a.pipelineID,
 								"nodeId":     task.ID,
 							},
 							DisabledTip: "禁用接口无法查看日志",
@@ -407,7 +411,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							Text:   "日志",
 							Meta: map[string]interface{}{
 								"logId":      task.Extra.UUID,
-								"pipelineId": a.State.PipelineID,
+								"pipelineId": a.pipelineID,
 								"nodeId":     task.ID,
 							},
 							DisabledTip: "禁用接口无法查看日志",
@@ -498,11 +502,11 @@ func (e *ExecuteTaskTable) handlerListOperation(c *cptype.Component, event cptyp
 	e.State.PageNo = DefaultPageNo
 	e.State.PageSize = DefaultPageSize
 
-	if e.State.PipelineID == 0 {
+	if e.pipelineID == 0 {
 		c.Data = map[string]interface{}{}
 		return nil
 	}
-	list, err := e.bdl.GetPipeline(e.State.PipelineID)
+	list, err := e.bdl.GetPipeline(e.pipelineID)
 	if err != nil {
 		return err
 	}
@@ -525,7 +529,7 @@ func (e *ExecuteTaskTable) handlerClickRowOperation(c *cptype.Component, event c
 		return err
 	}
 	e.State.Name = res.Meta.Target.Name
-	e.State.PipelineID = res.Meta.Target.SnippetPipelineID
+	e.pipelineID = res.Meta.Target.SnippetPipelineID
 	e.State.Unfold = true
 	if res.Meta.Target.SnippetPipelineID == 0 {
 		return nil

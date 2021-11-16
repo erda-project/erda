@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -53,31 +52,4 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	}
 	return nil
-}
-
-func pipelineShowRefresh(pipelineIDObject interface{}, bdl *bundle.Bundle) bool {
-
-	if pipelineIDObject == nil {
-		return false
-	}
-
-	pipelineID, ok := pipelineIDObject.(float64)
-	if !ok {
-		return false
-	}
-
-	var req apistructs.PipelineDetailRequest
-	req.PipelineID = uint64(pipelineID)
-	req.SimplePipelineBaseResult = true
-
-	dto, err := bdl.GetPipelineV2(req)
-	if err != nil {
-		return false
-	}
-
-	if dto == nil || dto.Status.IsEndStatus() {
-		return false
-	}
-	return true
-
 }
