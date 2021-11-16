@@ -15,8 +15,6 @@
 package scenesStages
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -258,16 +256,11 @@ func RenderEdit(s *SceneStage) error {
 }
 
 func RenderDelete(s *SceneStage) error {
-	fmt.Println("wxj delete")
 	meta, err := GetOpsInfo(s.event.OperationData)
 	if err != nil {
 		return err
 	}
-	err = s.atTestPlan.DeleteAutotestScene(meta.ID, apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID})
-	if err != nil {
-		fmt.Println("wxj: ", err.Error())
-	}
-	return err
+	return s.atTestPlan.DeleteAutotestScene(meta.ID, apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID})
 }
 
 func RenderSplit(s *SceneStage) error {
