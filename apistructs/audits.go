@@ -204,12 +204,12 @@ const (
 	UpdateAppNotifyGroupTemplate     TemplateName = "updateAppNotifyGroup"
 
 	// ========================Test Platform================================
-	QaTestEnvCreateTemplate     TemplateName = "qaTestEnvCreate"
-	QaTestEnvUpdateTemplate     TemplateName = "qaTestEnvUpdate"
-	QaTestEnvDeleteTemplate     TemplateName = "qaTestEnvDelete"
-	ArchiveTestplanTemplate     TemplateName = "archiveTestPlan"
-	UnarchiveTestPlanTemplate   TemplateName = "unarchiveTestPlan"
-	UpdateAutoTestSpaceTemplate TemplateName = "updateAutoTestSpace"
+	QaTestEnvCreateTemplate           TemplateName = "qaTestEnvCreate"
+	QaTestEnvUpdateTemplate           TemplateName = "qaTestEnvUpdate"
+	QaTestEnvDeleteTemplate           TemplateName = "qaTestEnvDelete"
+	ArchiveTestplanTemplate           TemplateName = "archiveTestPlan"
+	UnarchiveTestPlanTemplate         TemplateName = "unarchiveTestPlan"
+	UpdateAutoTestSpaceTemplatePrefix string       = "updateAutoTestSpace"
 	// ========================cmdb==========================================
 	CreateCertificatesTemplate TemplateName = "createCertificates"
 	DeleteCertificatesTemplate TemplateName = "deleteCertificates"
