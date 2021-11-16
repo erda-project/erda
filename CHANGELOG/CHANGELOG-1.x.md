@@ -2,13 +2,16 @@
 
 <table>
 <tr>
-  
-  <th title="Current">1.3<sup>Current</sup></th>
+  <th title="Current">1.4<sup>Current</sup></th>
+  <th title="Current">1.3</th>
   <th title="Current">1.2</th>
   <th title="Current">1.1</th>
   <th title="Current">1.0</th>
 </tr>
 <tr>
+  <td valign="top">
+    <a href="#v140">1.4.0</a><br/>
+  </td>
   <td valign="top">
     <a href="#v131">1.3.1</a><br/>
     <a href="#v130">1.3.0</a><br/>
@@ -27,6 +30,68 @@
   </td>
 </tr>
 </table>
+
+# v1.4.0
+
+`2021-11-16`
+
+### New Features
+
+* Support parallel scene sets in automated testing. [#2173](https://github.com/erda-project/erda/pull/2173)
+* Support scene set importing and exporting in automated testing. [#2470](https://github.com/erda-project/erda/pull/2470)
+* Support step copying and pasting in automated testing. [#2481](https://github.com/erda-project/erda/pull/2481)
+* Support step enabling and disabling in automated testing. [#2453](https://github.com/erda-project/erda/pull/2453)
+* Accelerate the loading of manual test related pages. [#2910](https://github.com/erda-project/erda/pull/2910)
+* Support issue dashboard with history data displayed in bar chart, pie chart, etc. [#2294](https://github.com/erda-project/erda/pull/2294) [#2462](https://github.com/erda-project/erda/pull/2462)
+* Support setting resource quotas according to the project's workspace granularity in the management center. [#2283](https://github.com/erda-project/erda/pull/2283)
+* Support resource usage ranking of projects in the cloud management platform. [#2525](https://github.com/erda-project/erda/pull/2525)
+* Support sending SMS alerts through custom notification channels in microservice and cloud management platforms. [#2460](https://github.com/erda-project/erda/pull/2460)
+* Support Elasticsearch as a backend storage in the microservice platform. [#2861](https://github.com/erda-project/erda/pull/2861)
+* Support automatically adding the .yml suffix to the file name when user creates a pipeline in the DevOps platform. [#2685](https://github.com/erda-project/erda/pull/2685)
+* Support K8s versions below 1.16 in the Kubernetes dashboard of cloud management platform.[#2852](https://github.com/erda-project/erda/pull/2852)
+* Support dynamic configuration search depth of git search interface in the DevOps platform.[#2872](https://github.com/erda-project/erda/pull/2872)
+* Optimize the alarm trigger conditions and alarm expressions in the microservice platform. [#2739](https://github.com/erda-project/erda/pull/2739)
+* Support service analysis of microservice&DevOps projects in the microservice platform.[#2782](https://github.com/erda-project/erda/pull/2782) [#2833](https://github.com/erda-project/erda/pull/2833)
+
+
+
+### Bug Fixes
+
+* Fix the bug that action will not automatically synchronize the latest version of GitHub. [#2507](https://github.com/erda-project/erda/pull/2507)
+* Fix the bug that it is not checked whether there is a cycle in the scene set when it is moved. [#2309](https://github.com/erda-project/erda/pull/2309)
+* Fix the bug that the execution action of automated test plan cannot monitor whether the plan is executed. [#2407](https://github.com/erda-project/erda/pull/2407)
+* Fix the bug that the .yml suffix is not added when creating a pipeline. [#2685](https://github.com/erda-project/erda/pull/2685)
+* Fix the bug of incorrect calculation of execution time of pipeline loop task. [#2816](https://github.com/erda-project/erda/pull/2816)
+* Fix the bug that the pipeline with the same ID is scheduled repeatedly. [#2921](https://github.com/erda-project/erda/pull/2921)
+* Fix the bug of slower requests as automated testing tasks apply for a large number of tokens. [#2991](https://github.com/erda-project/erda/pull/2991)
+* Fix the bug that application deletion failed without returning an error message. [#2613](https://github.com/erda-project/erda/pull/2613)
+* Fix the bug that add a unique index to the application table to avoid applications with the same name. [#2611](https://github.com/erda-project/erda/pull/2611)
+* Optimize the audit message for org update. [#2706](https://github.com/erda-project/erda/pull/2706)
+* Fix the bug that the parent context is recycled from which the child context gets data, causing the gittar component to panic. [#2348](https://github.com/erda-project/erda/pull/2348)
+* Optimize the API statistics of automated testing. [#2806](https://github.com/erda-project/erda/pull/2806)
+* Fix the bug that the execution details of the scene set in the automated testing cannot show the execution environment at the time. [#2529](https://github.com/erda-project/erda/pull/2529)
+* Fix the bug that when click to retry pipeline timing tasks, the trigger time will not change. [#2560](https://github.com/erda-project/erda/pull/2560)
+* Fix the bug that the imported scene set contains configuration sheet and an eoor occurs when click to view details. [#2609](https://github.com/erda-project/erda/pull/2609)
+* Fix the bug that the status in the test space records of importing and exporting is inconsistent with that in the test space list. [#2624](https://github.com/erda-project/erda/pull/2624)
+* Fix the bug that the execution time of steps in automated testing is 00:00. [#2650](https://github.com/erda-project/erda/pull/2650)
+* Fix the bug that in case of multiple instances in the pipeline, the number quried by queue manager is inconsistent. [#2742](https://github.com/erda-project/erda/pull/2742)
+* Fix the bug that branch variables are not injected in the pipeline. [#2797](https://github.com/erda-project/erda/pull/2797)
+* Fix the bug of incorrect issue status. [#2268](https://github.com/erda-project/erda/pull/2268)
+* Fix the bug of incorrect filtering result. [#2504](https://github.com/erda-project/erda/pull/2504)
+* Fix the bug that an error occurs when the namespace does not have aliyun secret in scheduler. [#2456](https://github.com/erda-project/erda/pull/2456)
+* Fix the bug that the filtering rules of custom alarm created in msp and cmp are incorrect. [#2860](https://github.com/erda-project/erda/pull/2860)
+* Fix the bug that span of tracing is missing in the microservice platform. [2849](https://github.com/erda-project/erda/pull/2849), [2820](https://github.com/erda-project/erda/pull/2820)
+* Fix the bug that log index cache gets overwritten when multi esurls exist in Erda cluster. [#2887](https://github.com/erda-project/erda/pull/2887)
+* Modify the git-push address of mobile template in the DevOps platform. [#2808](https://github.com/erda-project/erda/pull/2808)
+* Fix the bug that pipeline does not reset the execution start time of the cyclic task in the DevOps platform. [#2816](https://github.com/erda-project/erda/pull/2816)
+* Fix the bug that write data to etcd after handleServiceGroup function in scheduler. [#2604](https://github.com/erda-project/erda/pull/2604)
+* Fix the bug that the execution of test plan leaves out archived plans in the DevOps platform. [#2663](https://github.com/erda-project/erda/pull/2663)
+* Fix the bug that one of the tasks in the pipeline of automated testing may be in execution after canceling in the DevOps platform. [#2684](https://github.com/erda-project/erda/pull/2684)
+* Fix the bug that the environment variables of container resource are not updated when scaling the service group in the DevOps platform. [#2672](https://github.com/erda-project/erda/pull/2672)
+* Fix the bug that admin account queries all organizations in the DevOps platform. [#2692](https://github.com/erda-project/erda/pull/2692)
+
+
+
 
 # v1.3.1
 
