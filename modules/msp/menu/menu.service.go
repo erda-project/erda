@@ -39,11 +39,13 @@ type menuService struct {
 }
 
 var NotExist = map[string]bool{
-	"LogAnalyze":      true,
-	"APIGateway":      true,
-	"RegisterCenter":  true,
-	"ConfigCenter":    true,
-	"AlarmManagement": true,
+	//"LogAnalyze":      true,
+	//"APIGateway":      true,
+	//"RegisterCenter":  true,
+	//"ConfigCenter":    true,
+	//"AlarmManagement": true,
+	"AlertCenter":   true,
+	"ServiceManage": true,
 }
 
 type componentInfo struct {
@@ -78,6 +80,7 @@ var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
 //GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
+	//监控中心保留服务监控，诊断分析保留链路追踪、错误分析
 	// get menu items
 	items, err := s.getMenuItems()
 	if err != nil {
@@ -117,7 +120,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
 			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-			if item.EnName == "EnvironmentSet" {
+			if NotExist[item.Key] {
 				for _, child := range item.Children {
 					child.Params = item.Params
 					// 反转exists字段，隐藏引导页，显示功能子菜单
@@ -326,11 +329,11 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 	setParams := make([]*pb.MenuItem, 0)
 	for _, item := range items {
 		switch item.Key {
-		case "EnvironmentalOverview", "AlarmManagement", "QueryAnalysis":
+		case "MonitorCenter", "ServiceManage", "EnvironmentSet":
 			setParams = append(setParams, item)
-		case "AppMonitor":
+		case "AlertCenter":
 			monitor = item
-		case "LogAnalyze":
+		case "DiagnoseAnalyzer":
 			loghub = item
 		}
 	}
