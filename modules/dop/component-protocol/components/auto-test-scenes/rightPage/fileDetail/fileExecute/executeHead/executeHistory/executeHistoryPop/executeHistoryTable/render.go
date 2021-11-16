@@ -17,6 +17,7 @@ package executeHistoryTable
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -32,7 +33,9 @@ import (
 
 type ExecuteHistoryTable struct {
 	base.DefaultProvider
-	bdl        *bundle.Bundle
+	bdl      *bundle.Bundle
+	gsHelper *gshelper.GSHelper
+
 	Type       string                 `json:"type"`
 	State      State                  `json:"state"`
 	Props      map[string]interface{} `json:"props"`
@@ -115,6 +118,7 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, s
 		return err
 	}
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	a.gsHelper = gshelper.NewGSHelper(gs)
 
 	defer func() {
 		fail := a.marshal(c)
@@ -259,15 +263,27 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 
 func (e *ExecuteHistoryTable) handlerListOperation(c *cptype.Component, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	gh := gshelper.NewGSHelper(gs)
+	setID := e.gsHelper.GetGlobalSelectedSetID()
+	configKey := e.gsHelper.GetGlobalActiveConfig()
 	sceneID := gh.GetFileTreeSceneID()
-	if sceneID == 0 {
+	if configKey == "" {
+		c.Data = map[string]interface{}{}
+		e.State = State{}
+		return nil
+	}
+	if sceneID == 0 && setID == 0 {
 		c.Data = map[string]interface{}{}
 		e.State = State{}
 		return nil
 	}
 	req := apistructs.PipelinePageListRequest{
-		YmlNames: []string{strconv.FormatUint(sceneID, 10)},
-		Sources:  []apistructs.PipelineSource{apistructs.PipelineSourceAutoTest},
+		Sources: []apistructs.PipelineSource{apistructs.PipelineSourceAutoTest},
+	}
+	if sceneID != 0 && configKey == gshelper.SceneConfigKey {
+		req.YmlNames = []string{strconv.FormatUint(sceneID, 10)}
+	}
+	if setID != 0 && configKey == gshelper.SceneSetConfigKey {
+		req.YmlNames = []string{fmt.Sprintf("autotest-scene-set-%s", strconv.FormatUint(setID, 10))}
 	}
 	if e.State.PageNo == 0 {
 		e.State.PageNo = DefaultPageNo
