@@ -74,6 +74,20 @@ func (a *Aggregator) GetAllClusters() []string {
 	return clustersNames
 }
 
+// ListClusters list ready and unready clusters in steveAggregator
+func (a *Aggregator) ListClusters() (ready, unready []string) {
+	a.servers.Range(func(key, value interface{}) bool {
+		g := value.(*group)
+		if g.ready {
+			ready = append(ready, key.(string))
+		} else {
+			unready = append(unready, key.(string))
+		}
+		return true
+	})
+	return
+}
+
 func (a *Aggregator) IsServerReady(clusterName string) bool {
 	s, ok := a.servers.Load(clusterName)
 	if !ok {
