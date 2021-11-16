@@ -45,7 +45,7 @@ var OperationRender = map[cptype.OperationKey]OperationFunc{
 	RenderingOperation:       []func(s *SceneStage) error{RenderList},
 	AddParallelOperationKey:  []func(s *SceneStage) error{RenderAddParallel},
 	CopyParallelOperationKey: []func(s *SceneStage) error{RenderCopyParallel, RenderList},
-	CopyToOperationKey:       []func(s *SceneStage) error{RenderCopyTo, RenderList},
+	CopyToOperationKey:       []func(s *SceneStage) error{RenderCopyTo},
 	MoveItemOperationKey:     []func(s *SceneStage) error{RenderItemMove, RenderList},
 	MoveGroupOperationKey:    []func(s *SceneStage) error{RenderGroupMove, RenderList},
 	EditOperationKey:         []func(s *SceneStage) error{RenderEdit, RenderList},
@@ -113,7 +113,15 @@ func RenderCopyParallel(s *SceneStage) error {
 }
 
 func RenderCopyTo(s *SceneStage) error {
+	meta, err := GetOpsInfo(s.event.OperationData)
+	if err != nil {
+		return err
+	}
 
+	s.State.ActionType = "CopyTo"
+	s.State.Visible = true
+	s.State.SceneID = meta.ID
+	s.State.SceneSetKey = s.gsHelper.GetGlobalSelectedSetID()
 	return nil
 }
 

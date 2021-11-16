@@ -181,6 +181,45 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 	return nil
 }
 
+func (a *ComponentFileFormModal) initSceneCopyToFields(inParams fileTree.InParams) error {
+	a.Props = Props{
+		Title: "添加",
+		Fields: []Entry{
+			{
+				Key:       "scenesSet",
+				Label:     "选择场景集",
+				Component: "select",
+				Required:  true,
+				ComponentProps: ComponentProps{
+					Placeholder: "请选择场景集",
+				},
+			},
+		},
+	}
+
+	req := apistructs.SceneSetRequest{
+		SpaceID: inParams.SpaceId,
+	}
+	req.UserID = a.sdk.Identity.UserID
+	rsp, err := a.bdl.GetSceneSets(req)
+	if err != nil {
+		return err
+	}
+	for _, v := range rsp {
+		if strconv.Itoa(int(v.ID)) == inParams.SetID {
+			continue
+		}
+		a.Props.Fields[0].ComponentProps.Options = append(a.Props.Fields[0].ComponentProps.Options, struct {
+			Name  string `json:"name"`
+			Value uint64 `json:"value"`
+		}{
+			v.Name,
+			v.ID,
+		})
+	}
+	return nil
+}
+
 func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event cptype.ComponentEvent) error {
 	switch a.State.ActionType {
 	case "AddScene":
@@ -222,6 +261,13 @@ func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event 
 			Name:        "",
 			Description: "",
 		}
+	case "CopyTo":
+		a.initSceneCopyToFields(inParams)
+		a.Props.Title = "复制到其他场景集"
+		a.Props.Fields = []Entry{a.Props.Fields[0]}
+		a.State.FormData = FormData{
+			ScenesSet: nil,
+		}
 	}
 	return nil
 }
@@ -246,6 +292,10 @@ func (a *ComponentFileFormModal) renderSubmitHelper(inParams fileTree.InParams, 
 		}
 	case "ClickAddSceneSetButton":
 		if err := a.AddSceneSet(inParams); err != nil {
+			return err
+		}
+	case "CopyTo":
+		if err := a.CopyTo(inParams); err != nil {
 			return err
 		}
 	}
@@ -448,4 +498,25 @@ func (a *ComponentFileFormModal) unmarshal(c *cptype.Component) error {
 	// a.Type = c.Type
 	a.Props = prop
 	return nil
+}
+
+func (a *ComponentFileFormModal) CopyTo(inParams fileTree.InParams) error {
+	formData := a.State.FormData
+
+	if formData.ScenesSet == nil || *formData.ScenesSet <= 0 {
+		return fmt.Errorf("failed to copy scene to other set, scene set id is empty")
+	}
+	_, scenes, err := a.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: *formData.ScenesSet})
+	if err != nil {
+		return err
+	}
+
+	_, err = a.atTestPlan.CopyAutotestScene(apistructs.AutotestSceneCopyRequest{
+		SpaceID:      inParams.SpaceId,
+		PreID:        scenes[len(scenes)-1].ID,
+		SceneID:      a.State.SceneId,
+		SetID:        *formData.ScenesSet,
+		IdentityInfo: apistructs.IdentityInfo{UserID: a.sdk.Identity.UserID},
+	}, false, nil)
+	return err
 }
