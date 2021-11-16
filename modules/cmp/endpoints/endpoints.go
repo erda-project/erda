@@ -246,5 +246,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/resource-overview/cluster-trend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClusterTrend)},
 		{Path: "/api/resource-overview/project-trend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceProjectTrend)},
 		{Path: "/api/resource-overview/report-table", Method: http.MethodGet, Handler: i18nPrinter(e.ResourceOverviewReport)},
+
+		// k8s clusters
+		{Path: "/api/k8s/clusters", Method: http.MethodGet, Handler: e.ListK8SClusters},
 	}
 }
