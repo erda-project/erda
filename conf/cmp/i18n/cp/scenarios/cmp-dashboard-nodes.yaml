@@ -1,22 +1,4 @@
-
 zh:
-  # general
-  name: 名称
-  namespace: 命名空间
-  status: 状态
-  ip: IP 地址
-  age: 存活时间
-  images: 镜像
-  labels: 标签
-  annotations: 注释
-  project: 项目名称
-  core: 核
-  viewOrEditYaml: 查看/编辑YAML
-  delete: 删除
-  confirmDelete: 确定删除？
-  times: 次
-  moreOperations: 更多操作
-  # cmp-dashboard-nodes
   node-list: 节点列表
   organization-label: 组织标签
   service-label: 服务标签
@@ -39,17 +21,14 @@ zh:
   nodeInfo: 节点信息
   nodeStatus: 节点状态
   survive: 创建时长
-  node: 节点
   version: 版本
   label: 标签
   arch: 架构
-  podNum: Pod 数量
   containerVersion: 容器版本
   image: 镜像
   requests: 分配量
   limits: 限制量
   usage: 使用率
-  restartCount: 重启次数
   category: 分类
   tag: 标签
   success: 安全
@@ -58,18 +37,8 @@ zh:
   custom: 自定义
   podInfo: Pod 信息
   podsList: Pods 列表
-  Completed: 完成
-  ContainerCreating: 容器创建中
-  CrashLoopBackOff: 崩溃重启中
-  Evicted: 驱逐
-  ImagePullBackOff: 镜像拉取失败重试中
-  ErrImagePull: 镜像拉取失败
-  Pending: 挂起
-  Running: 运行中
   memUsed: Mem 使用率
   use: mem 使用率
-  Terminating: 终止
-  OOMKilled: 内存溢出被杀
   addLabel: 添加标签
   nodeDetail: 节点详情
   distribution: 分配率
@@ -89,18 +58,10 @@ zh:
   online: 上线
   cluster-service: 集群服务
   rebootTimes: 重启次数
-  operate: 操作
-  console: 控制台
   podInspect: 查看容器
-  events: 相关事件
   desc: 注释
-  workload: 工作负载
   Memory Chart: 内存
   Pod Chart: Pods
-  podSearchPlaceHolder: 搜索 Pod 名称或 IP
-  podInfoTitle: Pod 详情
-  podIP: Pod IP
-  log: 查看日志
   enterprise: 企业
   location-cluster-service: 集群级服务
   stateless-service: 无状态服务
@@ -113,7 +74,6 @@ zh:
   placeholderFilterByNodeName: 按节点名称过滤
   cpuUsage: CPU 使用率
   SchedulingDisabled: 冻结
-  container: 容器
   running: 运行中
   waiting: 等待
   terminated: 终止
@@ -145,21 +105,7 @@ zh:
   select labels: 筛选节点标签
   OutOfDisk: 磁盘资源不足
   updateNodeSuccessfully: 节点更新成功
+  role: 角色
 
 en:
-  # general
-  name: Name
-  namespace: Namespace
-  status: Status
-  ip: IP
-  age: Age
-  images: Images
-  labels: Labels
-  annotations: Annotations
-  project: Project Name
-  core: cores
-  viewOrEditYaml: View/Edit YAML
-  delete: Delete
-  confirmDelete: Sure to delete?
-  times: time(s)
-  moreOperations: More Operations
+  role: Role
