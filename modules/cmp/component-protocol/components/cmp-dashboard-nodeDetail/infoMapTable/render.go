@@ -104,10 +104,11 @@ func (infoMapTable *InfoMapTable) getProps() Props {
 		Columns: []Column{{
 			DataIndex: "label",
 			Title:     "",
-			Width:     200,
+			Width:     100,
 		}, {
 			DataIndex: "value",
 			Title:     "",
+			Width:     100,
 		}},
 	}
 }

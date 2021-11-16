@@ -1,22 +1,4 @@
-
 zh:
-  # general
-  name: 名称
-  namespace: 命名空间
-  status: 状态
-  ip: IP 地址
-  age: 存活时间
-  images: 镜像
-  labels: 标签
-  annotations: 注释
-  project: 项目名称
-  core: 核
-  viewOrEditYaml: 查看/编辑YAML
-  delete: 删除
-  confirmDelete: 确定删除？
-  times: 次
-  moreOperations: 更多操作
-  # cmp-dashboard-resource
   distribution by project: 按项目统计
   distribution by clutser: 按集群统计
   distribution by owner: 按负责人统计
@@ -36,24 +18,8 @@ zh:
   shared resource: 共享资源
   unused resource: 未使用资源
   OwnerUnknown: '无'
+
 en:
-  # general
-  name: Name
-  namespace: Namespace
-  status: Status
-  ip: IP
-  age: Age
-  images: Images
-  labels: Labels
-  annotations: Annotations
-  project: Project Name
-  core: cores
-  viewOrEditYaml: View/Edit YAML
-  delete: Delete
-  confirmDelete: Sure to delete?
-  times: time(s)
-  moreOperations: More Operations
-  # cmp-dashboard-resource
   distribution by project: Distribution By Project
   distribution by clutser: Distribution By Clutser
   distribution by owner: Distribution By Owner
