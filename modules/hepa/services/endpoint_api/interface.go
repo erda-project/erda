@@ -49,7 +49,7 @@ type GatewayOpenapiService interface {
 	GetPackages(*dto.GetPackagesDto) (common.NewPageQuery, error)
 	GetPackage(string) (*dto.PackageInfoDto, error)
 	GetPackagesName(*dto.GetPackagesDto) ([]dto.PackageInfoDto, error)
-	UpdatePackage(string, *dto.PackageDto) (*dto.PackageInfoDto, error)
+	UpdatePackage(string, string, *dto.PackageDto) (*dto.PackageInfoDto, error)
 	DeletePackage(string) (bool, error)
 	CreatePackageApi(string, *dto.OpenapiDto) (string, bool, error)
 	GetPackageApis(string, *dto.GetOpenapiDto) (common.NewPageQuery, error)

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/services/endpoint_api"
+	"github.com/erda-project/erda/pkg/common/apis"
 	erdaErr "github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -107,6 +108,7 @@ func (s *endpointApiService) CreateEndpoint(ctx context.Context, req *pb.CreateE
 		return
 	}
 	ep, existName, err := service.CreatePackage(&dto.DiceArgsDto{
+		OrgId:     apis.GetOrgID(ctx),
 		ProjectId: req.ProjectId,
 		Env:       req.Env,
 	}, dto.FromEndpoint(req.Endpoint))
@@ -129,7 +131,7 @@ func (s *endpointApiService) UpdateEndpoint(ctx context.Context, req *pb.UpdateE
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, "endpoint is empty")
 		return
 	}
-	ep, err := service.UpdatePackage(req.PackageId, dto.FromEndpoint(req.Endpoint))
+	ep, err := service.UpdatePackage(apis.GetOrgID(ctx), req.PackageId, dto.FromEndpoint(req.Endpoint))
 	if err != nil {
 		err = erdaErr.NewInvalidParameterError(vars.TODO_PARAM, errors.Cause(err).Error())
 		return
