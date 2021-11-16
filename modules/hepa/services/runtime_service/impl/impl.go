@@ -436,7 +436,7 @@ func (impl GatewayRuntimeServiceServiceImpl) clearDomain(dao *orm.GatewayRuntime
 		log.Errorf("invalid material:%+v maybe old, ignored", material)
 		return nil
 	}
-	_, err = (*impl.domainBiz).TouchRuntimeDomain(dao, material, nil, nil, session)
+	_, err = (*impl.domainBiz).TouchRuntimeDomain("", dao, material, nil, nil, session)
 	if err != nil {
 		return err
 	}

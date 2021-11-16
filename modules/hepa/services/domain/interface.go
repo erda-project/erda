@@ -39,8 +39,8 @@ type GatewayDomainService interface {
 	UpdateRuntimeServicePort(runtimeService *orm.GatewayRuntimeService, releaseInfo *diceyml.Object) error
 	RefreshRuntimeDomain(runtimeService *orm.GatewayRuntimeService, session *service.SessionHelper) error
 	GiveRuntimeDomainToPackage(runtimeService *orm.GatewayRuntimeService, session *service.SessionHelper) (bool, error)
-	TouchRuntimeDomain(runtimeService *orm.GatewayRuntimeService, material endpoint.EndpointMaterial, domains []dto.EndpointDomainDto, audits *[]apistructs.Audit, session *service.SessionHelper) (string, error)
-	TouchPackageDomain(packageId, clusterName string, domains []string, session *service.SessionHelper) ([]string, error)
+	TouchRuntimeDomain(orgId string, runtimeService *orm.GatewayRuntimeService, material endpoint.EndpointMaterial, domains []dto.EndpointDomainDto, audits *[]apistructs.Audit, session *service.SessionHelper) (string, error)
+	TouchPackageDomain(orgId, packageId, clusterName string, domains []string, session *service.SessionHelper) ([]string, error)
 	GetPackageDomains(packageId string, session ...*service.SessionHelper) ([]string, error)
 	IsPackageDomainsDiff(packageId, clusterName string, domains []string, session *service.SessionHelper) (bool, error)
 }

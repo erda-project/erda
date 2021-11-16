@@ -85,6 +85,13 @@ func (req ManageDomainReq) GenSelectOptions() []orm.SelectOption {
 			Value:  orm.DT_COMPONENT,
 		})
 	}
+	if req.OrgId != "" {
+		result = append(result, orm.SelectOption{
+			Type:   orm.ExactMatch,
+			Column: "org_id",
+			Value:  req.OrgId,
+		})
+	}
 	if req.ProjectID != "" {
 		result = append(result, orm.SelectOption{
 			Type:   orm.ExactMatch,
@@ -99,5 +106,13 @@ func (req ManageDomainReq) GenSelectOptions() []orm.SelectOption {
 			Value:  req.Workspace,
 		})
 	}
+	if req.ClusterName != "" {
+		result = append(result, orm.SelectOption{
+			Type:   orm.ExactMatch,
+			Column: "cluster_name",
+			Value:  req.ClusterName,
+		})
+	}
+
 	return result
 }

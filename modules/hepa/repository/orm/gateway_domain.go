@@ -29,6 +29,7 @@ type GatewayDomain struct {
 	PackageId        string `json:"package_id" xorm:"comment('所属流量入口id') index(idx_package) VARCHAR(32)"`
 	ComponentName    string `json:"component_name" xorm:"comment('所属平台组件的名称') VARCHAR(32)"`
 	IngressName      string `json:"ingress_name" xorm:"comment('所属平台组件的ingress的名称') VARCHAR(32)"`
+	OrgId            string `json:"org_id" xorm:"not null comment('组织标识id') VARCHAR(32)"`
 	ProjectId        string `json:"project_id" xorm:"not null comment('项目标识id') VARCHAR(32)"`
 	ProjectName      string `json:"project_name" xorm:"not null comment('项目名称') VARCHAR(50)"`
 	Workspace        string `json:"workspace" xorm:"not null comment('所属环境') VARCHAR(32)"`
