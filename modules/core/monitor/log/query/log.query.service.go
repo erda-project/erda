@@ -154,7 +154,7 @@ func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selec
 			continue
 		}
 		it, _err := stor.Iterator(ctx, sel)
-		if err != nil {
+		if _err != nil {
 			s.p.Log.Errorf("failed to create %T.Iterator: %s", stor, _err)
 			err = _err
 			continue
