@@ -116,6 +116,18 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
 	query := elastic.NewBoolQuery().Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lt(end))
+
+	// compatiblity for source=deploy
+	isContainer := true
+	for _, filter := range sel.Filters {
+		if filter.Key != "source" {
+			continue
+		}
+		if val, ok := filter.Value.(string); ok && val != "container" {
+			isContainer = false
+		}
+	}
+
 	for _, filter := range sel.Filters {
 		val, ok := filter.Value.(string)
 		if !ok {
@@ -125,6 +137,10 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 			if filter.Key == "content" {
 				continue
 			}
+		}
+		// compatiblity for source=deploy, ignore tags filters
+		if !isContainer && strings.HasPrefix(filter.Key, "tags.") {
+			continue
 		}
 		switch filter.Op {
 		case storage.EQ:
