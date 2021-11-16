@@ -45,6 +45,19 @@ const (
 	TestSpaceCompleted  AutoTestSpaceArchiveStatus = "Completed"
 )
 
+func (s AutoTestSpaceArchiveStatus) GetZhName() string {
+	switch s {
+	case TestSpaceInit:
+		return "未开始"
+	case TestSpaceInProgress:
+		return "进行中"
+	case TestSpaceCompleted:
+		return "已完成"
+	default:
+		return ""
+	}
+}
+
 func (s AutoTestSpaceArchiveStatus) Valid() bool {
 	switch s {
 	case TestSpaceInit, TestSpaceInProgress, TestSpaceCompleted:
