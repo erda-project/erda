@@ -46,7 +46,7 @@ var OperationRender = map[cptype.OperationKey]OperationFunc{
 	CopyToOperationKey:       []func(s *SceneStage) error{RenderCopyTo},
 	MoveItemOperationKey:     []func(s *SceneStage) error{RenderItemMove, RenderList},
 	MoveGroupOperationKey:    []func(s *SceneStage) error{RenderGroupMove, RenderList},
-	EditOperationKey:         []func(s *SceneStage) error{RenderEdit, RenderList},
+	EditOperationKey:         []func(s *SceneStage) error{RenderEdit},
 	DeleteOperationKey:       []func(s *SceneStage) error{RenderDelete, RenderList},
 	SplitOperationKey:        []func(s *SceneStage) error{RenderSplit, RenderList},
 	SwitchOperationKey:       []func(s *SceneStage) error{RenderSwitch, RenderList},
@@ -247,12 +247,11 @@ func RenderEdit(s *SceneStage) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.atTestPlan.UpdateAutotestScene(apistructs.AutotestSceneSceneUpdateRequest{
-		SceneID:     meta.ID,
-		Name:        "",
-		Description: "",
-	})
-	return err
+	s.State.ActionType = "UpdateScene"
+	s.State.Visible = true
+	s.State.SceneID = meta.ID
+	s.State.SceneSetKey = s.gsHelper.GetGlobalSelectedSetID()
+	return nil
 }
 
 func RenderDelete(s *SceneStage) error {
