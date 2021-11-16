@@ -116,6 +116,30 @@ logs-metrics-analysis@org:
             username: "${COLLECTOR_AUTH_USERNAME}"
             password: "${COLLECTOR_AUTH_PASSWORD}"
 
+logs-metrics-analysis@cluster:
+    _enable: ${LOG_METRICS_ENABLE:true}
+    processors:
+        scope: "cluster"
+        scope_id: "${METRIC_CLUSTER_SCOPE_ID}"
+        scope_id_key: "${METRIC_CLUSTER_SCOPE_ID_KEY:dice_cluster_name}"
+        reload_interval: "3m"
+    input:
+        topics: "${LOG_TOPICS:spot-container-log}"
+        group: "${LOG_METRICS_CLUSTER_SCOPE_GROUP_ID:spot-log-metrics-cluster-scope}"
+        parallelism: ${LOG_METRICS_CONSUMERS:3}
+    output:
+        type: "${METRIC_OUTPUT_TYPE:kafka}"
+        kafka:
+            topic: "${METRIC_TOPICS:spot-metrics}"
+            parallelism: ${KAFKA_PARALLELISM:3}
+            batch:
+                size:  ${KAFKA_BATCH_SIZE:50}
+                timeout: "10s"
+        collector:
+            url: "${COLLECTOR_PUBLIC_URL:http://collector.default.svc.cluster.local:7076}"
+            username: "${COLLECTOR_AUTH_USERNAME}"
+            password: "${COLLECTOR_AUTH_PASSWORD}"
+
 http-server@admin:
     addr: ":7098"
 pprof:
