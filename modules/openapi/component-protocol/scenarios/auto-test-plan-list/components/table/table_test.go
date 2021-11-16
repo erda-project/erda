@@ -133,7 +133,7 @@ func Test_Render(t *testing.T) {
 		}, gs)
 	assert.NoError(t, err)
 	list := c.Data["list"].([]TableItem)
-	want := []string{"10", "0"}
+	want := []string{"10.00", "0.00"}
 	wantExecuteApiNum := []string{"1", "2"}
 	for i := range list {
 		assert.Equal(t, list[i].PassRate.Value, want[i])
