@@ -21,7 +21,7 @@ hierarchy:
       children: moreIcon
     rightPage:
       children:
-      - fileDetail
+        - fileDetail
       tabBarExtraContent:
         - tabSceneSetExecuteButton
     fileDetail:
@@ -50,6 +50,8 @@ hierarchy:
       - scenesStages
       - scenesStagesOperations
     scenesStagesOperations:
+      - addScenesButton
+      - exportScenesButton
     fileInfoHead:
       left: fileInfoTitle
     #      right: fileHistory
@@ -330,7 +332,10 @@ components:
     type: SortGroup
   scenesStagesOperations:
     type: RowContainer
-
+  addScenesButton:
+    type: Button
+  exportScenesButton:
+    type: Button
 rendering:
   # 前端触发组件
   # 先渲染前端触发组件，再渲染关联组件
@@ -822,6 +827,15 @@ rendering:
           value: "{{ scenesStages.sceneSetKey }}"
         - name: "sceneId"
           value: "{{ scenesStages.sceneId }}"
+  addScenesButton:
+    - name: fileFormModal
+      state:
+        - name: "actionType"
+          value: "{{ addScenesButton.actionType }}"
+        - name: "visible"
+          value: "{{ addScenesButton.visible }}"
+        - name: "sceneSetKey"
+          value: "{{ addScenesButton.sceneSetKey }}"
   __DefaultRendering__:
     - name: moreOperation
     - name: autoTestScenes
@@ -953,3 +967,5 @@ rendering:
     - name: scenesStagesTitle
     - name: scenesStages
     - name: scenesStagesOperations
+    - name: exportScenesButton
+    - name: addScenesButton
