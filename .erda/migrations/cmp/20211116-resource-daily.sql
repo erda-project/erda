@@ -38,4 +38,4 @@ create table `cmp_application_resource_daily`
     INDEX idx_project_id (project_id),
     INDEX idx_application_id (application_id)
 ) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8 COMMENT = '应用资源变化日表';
+  DEFAULT CHARSET = utf8mb4 COMMENT = '应用资源变化日表';

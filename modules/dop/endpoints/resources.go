@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -92,7 +93,7 @@ func ParseApplicationsResourceQuery(query *apistructs.ApplicationsResourceQuery,
 	query.PageSize, _ = strconv.ParseUint(pageSizeStr, 10, 64)
 	pageNoStr := values.Get("pageNo")
 	query.PageSize, _ = strconv.ParseUint(pageNoStr, 10, 64)
-	query.OrderBy = values["orderBy"]
+	query.OrderBy = strings.Split(values.Get("orderBy"), ",")
 	if query.PageSize == 0 {
 		query.PageSize = 20
 	}
