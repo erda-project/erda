@@ -284,6 +284,9 @@ const (
 	applicationIdValue             = "$application_id"
 	clusterNameTag                 = "cluster_name"
 	clusterNameValue               = "$cluster_name"
+
+	any = "any"
+	all = "all"
 )
 
 // CustomizeAlerts .
