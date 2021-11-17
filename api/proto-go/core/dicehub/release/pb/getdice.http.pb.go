@@ -35,7 +35,7 @@ func RegisterReleaseGetDiceServiceHandler(r http.Router, srv ReleaseGetDiceServi
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		handler := func(w http1.ResponseWriter, r *http1.Request) {
+		return func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -45,10 +45,6 @@ func RegisterReleaseGetDiceServiceHandler(r http.Router, srv ReleaseGetDiceServi
 				h.Error(w, r, err)
 			}
 		}
-		if h.HTTPInterceptor != nil {
-			handler = h.HTTPInterceptor(handler)
-		}
-		return handler
 	}
 
 	add_PullDiceYAML := func(method, path string, fn func(context.Context, *ReleaseGetDiceYmlRequest) (*ReleaseGetDiceYmlResponse, error)) {

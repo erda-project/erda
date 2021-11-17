@@ -38,7 +38,7 @@ func RegisterResourceServiceHandler(r http.Router, srv ResourceServiceHandler, o
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		handler := func(w http1.ResponseWriter, r *http1.Request) {
+		return func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -48,10 +48,6 @@ func RegisterResourceServiceHandler(r http.Router, srv ResourceServiceHandler, o
 				h.Error(w, r, err)
 			}
 		}
-		if h.HTTPInterceptor != nil {
-			handler = h.HTTPInterceptor(handler)
-		}
-		return handler
 	}
 
 	add_CreateResource := func(method, path string, fn func(context.Context, *CreateResourceRequest) (*CreateResourceResponse, error)) {
