@@ -76,6 +76,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		ca.State.ActiveKey = "fileConfig"
 		ca.State.IsChangeScene = false
 	}
+	if event.Operation == cptype.RenderingOperation {
+		executeActiveKey := gh.GetExecuteButtonActiveKey()
+		if executeActiveKey != "" {
+			ca.State.ActiveKey = executeActiveKey
+		}
+	}
 	if event.Operation == cptype.InitializeOperation {
 		ca.State.ActiveKey = "fileConfig"
 		//props["visible"] = false

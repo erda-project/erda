@@ -180,6 +180,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 	}
+	gh.SetExecuteHistoryTablePipelineID(a.pipelineID)
 	return nil
 }
 

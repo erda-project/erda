@@ -616,7 +616,6 @@ rendering:
     - name: refreshButton
     - name: cancelExecuteButton
   refreshButton:
-    - name: executeHistoryTable
     - name: executeTaskTable
     - name: executeInfo
     - name: cancelExecuteButton
