@@ -236,25 +236,12 @@ func (a *Aggregator) ListSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	key := CacheKey{
-		Kind:        apiOp.Type,
-		Namespace:   apiOp.Namespace,
+		Kind:        string(req.Type),
+		Namespace:   req.Namespace,
 		ClusterName: req.ClusterName,
 	}
 	values, lexpired, err := cache.GetFreeCache().Get(key.GetKey())
 	if values == nil || err != nil {
-		if apiOp.Namespace != "" {
-			key := CacheKey{
-				Kind:        apiOp.Type,
-				Namespace:   "",
-				ClusterName: req.ClusterName,
-			}
-			allNsValues, expired, err := cache.GetFreeCache().Get(key.GetKey())
-			if allNsValues != nil && err == nil && !expired {
-				logrus.Infof("get %s from all namespace cache", req.Type)
-				return getByNamespace(allNsValues[0].Value().([]types.APIObject), apiOp.Namespace), nil
-			}
-		}
-
 		logrus.Infof("can not get cache for %s, list from steve server", req.Type)
 		queryQueue.Acquire(req.ClusterName, 1)
 		list, err := a.list(apiOp, resp, req.ClusterName)
@@ -342,16 +329,6 @@ func setCacheForList(key string, list []types.APIObject) error {
 		return err
 	}
 	return nil
-}
-
-func getByNamespace(list []types.APIObject, namespace string) []types.APIObject {
-	var res []types.APIObject
-	for _, apiObj := range list {
-		if apiObj.Namespace() == namespace {
-			res = append(res, apiObj)
-		}
-	}
-	return res
 }
 
 func newReadCloser(obj interface{}) (io.ReadCloser, error) {

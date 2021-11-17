@@ -16,10 +16,8 @@ package queue
 
 import (
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/smallnest/queue"
 )
 
 type Task struct {
@@ -28,7 +26,7 @@ type Task struct {
 }
 
 type TaskQueue struct {
-	tasks   *queue.LKQueue
+	tasks   chan *Task
 	keys    map[string]struct{}
 	maxSize int
 	mtx     sync.Mutex
@@ -36,7 +34,7 @@ type TaskQueue struct {
 
 func NewTaskQueue(maxSize int) *TaskQueue {
 	return &TaskQueue{
-		tasks:   queue.NewLKQueue(),
+		tasks:   make(chan *Task, maxSize),
 		keys:    make(map[string]struct{}, maxSize),
 		maxSize: maxSize,
 	}
@@ -61,28 +59,17 @@ func (q *TaskQueue) Enqueue(task *Task) {
 	}
 	q.keys[task.Key] = struct{}{}
 	q.mtx.Unlock()
-	q.tasks.Enqueue(task)
+	q.tasks <- task
 }
 
-func (q *TaskQueue) Dequeue() *Task {
-	ele := q.tasks.Dequeue()
-	if ele == nil {
-		return nil
-	}
-	task := ele.(*Task)
-	q.mtx.Lock()
-	delete(q.keys, task.Key)
-	q.mtx.Unlock()
-	return task
-}
-
-func (q *TaskQueue) ExecuteLoop(interval time.Duration) {
+func (q *TaskQueue) ExecuteLoop() {
 	for {
+		task := <-q.tasks
 		logrus.Infof("start execute loop")
-		for task := q.Dequeue(); task != nil; task = q.Dequeue() {
-			task.Do()
-		}
+		q.mtx.Lock()
+		delete(q.keys, task.Key)
+		q.mtx.Unlock()
+		task.Do()
 		logrus.Infof("end execute loop")
-		time.Sleep(interval)
 	}
 }

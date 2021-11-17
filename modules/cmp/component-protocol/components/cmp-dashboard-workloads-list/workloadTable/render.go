@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -166,7 +167,11 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			continue
 		}
 		steveRequest.Type = kind
-		list, err := w.server.ListSteveResource(w.ctx, &steveRequest)
+		var (
+			list []types.APIObject
+			err  error
+		)
+		list, err = cmpcputil.ListSteveResourceByNamespaces(w.ctx, w.server, &steveRequest, w.State.Values.Namespace)
 		if err != nil {
 			return err
 		}
