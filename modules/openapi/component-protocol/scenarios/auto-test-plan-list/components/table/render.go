@@ -198,7 +198,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			ExecuteApiNum: strconv.FormatInt(data.ExecuteApiNum, 10),
 			PassRate: PassRate{
 				RenderType: "progress",
-				Value:      fmt.Sprintf("%.f", data.PassRate),
+				Value:      fmt.Sprintf("%.2f", data.PassRate),
 			},
 			ExecuteTime: convertExecuteTime(data),
 		}
