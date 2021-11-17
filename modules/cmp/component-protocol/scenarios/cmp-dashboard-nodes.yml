@@ -4,7 +4,7 @@ hierarchy:
   root: page
   structure:
     page:
-      - nodeFilter
+      - filter
       - charts
       - tableTabsContainer
       - addLabelModal
@@ -25,7 +25,7 @@ hierarchy:
 components:
   page:
     type: Container
-  nodeFilter:
+  filter:
     type: ContractiveFilter
   charts:
     type: RowContainer
@@ -57,7 +57,7 @@ rendering:
   __DefaultRendering__:
     - name: page
     - name: tableTabs
-    - name: nodeFilter
+    - name: filter
     - name: tableTabsContainer
     - name: batchOperationTipModal
     - name: cpuTable
@@ -71,23 +71,23 @@ rendering:
     - name: cleanData
 
   tableTabs:
-    - name: nodeFilter
+    - name: filter
     - name: cpuTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: podTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: memTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: addLabelModal
@@ -112,23 +112,23 @@ rendering:
     - name: podTable
     - name: cleanData
 
-  nodeFilter:
+  filter:
     - name: cpuTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: podTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: memTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: charts
@@ -140,23 +140,23 @@ rendering:
     - name: cleanData
 
   addLabelModal:
-    - name: nodeFilter
+    - name: filter
     - name: cpuTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: podTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: memTable
       state:
         - name: "values"
-          value: "{{ nodeFilter.values }}"
+          value: "{{ filter.values }}"
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
     - name: batchOperationTipModal
