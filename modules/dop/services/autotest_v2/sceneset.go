@@ -130,7 +130,7 @@ func mapping(s *dao.SceneSet) *apistructs.SceneSet {
 	}
 }
 
-func (svc *Service) ExecuteDiceAutotestSceneSet(req apistructs.AutotestExecuteSceneSetRequest) (*apistructs.PipelineDTO, error) {
+func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneSetRequest) (*apistructs.PipelineDTO, error) {
 	var spec pipelineyml.Spec
 	spec.Version = "1.1"
 	var stagesValue []*pipelineyml.Stage

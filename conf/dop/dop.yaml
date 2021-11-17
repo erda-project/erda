@@ -278,4 +278,4 @@ component-protocol.components.auto-test-scenes.scenesStages:
 component-protocol.components.auto-test-scenes.scenesStagesOperations:
 component-protocol.components.auto-test-scenes.addScenesButton:
 component-protocol.components.auto-test-scenes.exportScenesButton:
-
+component-protocol.components.auto-test-scenes.referSceneSetButton:
