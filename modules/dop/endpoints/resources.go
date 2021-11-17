@@ -63,7 +63,7 @@ func (e *Endpoints) ApplicationsResources(ctx context.Context, r *http.Request, 
 	req.OrgID = orgID
 	req.UserID = string(userID)
 	req.Query = new(apistructs.ApplicationsResourceQuery)
-	parseApplicationsResourceQuery(req.Query, r.URL.Query())
+	ParseApplicationsResourceQuery(req.Query, r.URL.Query())
 
 	data, apiError := e.project.ApplicationsResources(ctx, &req)
 	if apiError != nil {
@@ -72,7 +72,7 @@ func (e *Endpoints) ApplicationsResources(ctx context.Context, r *http.Request, 
 	return httpserver.OkResp(data)
 }
 
-func parseApplicationsResourceQuery(query *apistructs.ApplicationsResourceQuery, values url.Values) {
+func ParseApplicationsResourceQuery(query *apistructs.ApplicationsResourceQuery, values url.Values) {
 	if query == nil || len(values) == 0 {
 		return
 	}

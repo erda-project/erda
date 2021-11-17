@@ -1,8 +1,8 @@
 ALTER TABLE `cmp_project_resource_daily`
     ADD COLUMN `project_display_name` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '项目显示名称',
     ADD COLUMN `owner_user_id`        BIGINT(20)   NOT NULL DEFAULT 0 COMMENT '项目所有者 ID',
-    ADD COLUMN 'owner_user_name'      VARCHAR(255) NOT NULL DEFAULT '' COMMENT '项目所有者用户名',
-    ADD COLUMN 'owner_user_nickname'  VARCHAR(255) NOT NULL DEFAULT '' COMMENT '项目所有者用户昵称'
+    ADD COLUMN `owner_user_name`      VARCHAR(255) NOT NULL DEFAULT '' COMMENT '项目所有者用户名',
+    ADD COLUMN `owner_user_nickname`  VARCHAR(255) NOT NULL DEFAULT '' COMMENT '项目所有者用户昵称'
 ;
 
 CREATE INDEX `idx_owner_user_id`
