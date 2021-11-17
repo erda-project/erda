@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -52,6 +53,17 @@ func (e *Endpoints) AddIssueRelation(ctx context.Context, r *http.Request, vars 
 	}
 	if !identityInfo.IsInternalClient() {
 		// TODO 鉴权
+	}
+
+	exist, err := e.db.IssueRelationExist(&dao.IssueRelation{
+		IssueID:      createReq.IssueID,
+		RelatedIssue: createReq.RelatedIssue,
+	})
+	if err != nil {
+		return apierrors.ErrCreateIssueRelation.InternalError(err).ToResp(), nil
+	}
+	if exist {
+		return apierrors.ErrCreateIssueRelation.AlreadyExists().ToResp(), nil
 	}
 
 	issueRel, err := e.issueRelated.AddRelatedIssue(&createReq)
