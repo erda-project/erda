@@ -383,7 +383,9 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 
 	for ws, clusterName := range pj.ClusterConfig {
 		if strutil.Equal(ws, workspace, true) {
-			pv2.ClusterName = clusterName
+			if err := p.setClusterName(clusterName, pv2); err != nil {
+				return nil, err
+			}
 			break
 		}
 	}
@@ -393,6 +395,19 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		strconv.FormatUint(app.ID, 10), pv1.Branch, workspace)
 
 	return pv2, nil
+}
+
+func (p *Pipeline) setClusterName(clusterName string, pv *apistructs.PipelineCreateRequestV2) error {
+	pv.ClusterName = clusterName
+	clusterInfo, err := p.bdl.QueryClusterInfo(clusterName)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster info by cluster name: %s, err: %v", clusterName, err)
+	}
+	jobCluster := clusterInfo.Get(apistructs.JOB_CLUSTER)
+	if jobCluster != "" {
+		return p.setClusterName(jobCluster, pv)
+	}
+	return nil
 }
 
 func (p *Pipeline) makeNamespace(appID uint64, branch string, workspace string) ([]string, error) {
