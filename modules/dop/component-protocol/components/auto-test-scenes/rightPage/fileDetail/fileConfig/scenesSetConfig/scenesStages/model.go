@@ -230,7 +230,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 	s.Operations["edit"] = OperationInfo{
 		OperationBaseInfo: OperationBaseInfo{
 			Key:       EditOperationKey.String(),
-			Icon:      "edit",
+			Icon:      "bianji",
 			HoverShow: true,
 			Text:      "编辑场景",
 			Reload:    true,
