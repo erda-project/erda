@@ -1318,7 +1318,7 @@ func getTitleName(requestName string) (string, error) {
 }
 
 // getList 获取分页后的list
-func sortAutoTestSceneList(list []apistructs.AutoTestScene, pageNo, pageSize uint64) []apistructs.AutoTestScene {
+func (svc *Service) sortAutoTestSceneList(list []apistructs.AutoTestScene, pageNo, pageSize uint64) []apistructs.AutoTestScene {
 	mp := make(map[uint64]apistructs.AutoTestScene)
 	var rsp []apistructs.AutoTestScene
 	for _, v := range list {

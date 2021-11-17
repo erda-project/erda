@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
@@ -40,6 +41,7 @@ func init() {
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	gh := gshelper.NewGSHelper(gs)
 	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	ca.sdk = cputil.SDK(ctx)
 
 	switch event.Operation {
 	case cptype.OperationKey(apistructs.ExecuteAddApiOperationKey):

@@ -29,17 +29,21 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	base.DefaultProvider
-	sdk   *cptype.SDK
-	bdl   *bundle.Bundle
-	Type  string `json:"type"`
-	Props Props  `json:"props"`
-	State State  `json:"state"`
+	sdk          *cptype.SDK
+	bdl          *bundle.Bundle
+	Type         string `json:"type"`
+	Props        Props  `json:"props"`
+	State        State  `json:"state"`
+	gsHelper     *gshelper.GSHelper
+	AutoTestSvc  *autotestv2.Service
+	ActiveConfig string
 }
 
 func init() {
@@ -135,23 +139,16 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	ca.sdk = cputil.SDK(ctx)
 	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	ca.gsHelper = gshelper.NewGSHelper(gs)
 
 	err := ca.unmarshal(c)
 	if err != nil {
 		return err
 	}
 
-	//_, ok := bdl.InParams["sceneId__urlQuery"]
-	//if !ok {
-	//	return nil
-	//}
-
-	//scenesIdInt := uint64(bdl.InParams["sceneId__urlQuery"].(float64))
-	//if scenesIdInt == 0 {
-	//	return nil
-	//}
 	sceneID := gh.GetFileTreeSceneID()
-	if sceneID == 0 {
+	ca.ActiveConfig = ca.gsHelper.GetGlobalActiveConfig()
+	if ca.ActiveConfig == gshelper.SceneConfigKey && sceneID == 0 {
 		return nil
 	}
 	ca.State.ScenesID = sceneID
@@ -163,11 +160,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 	}()
 
+	ca.AutoTestSvc = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
-		err := ca.handleDefault()
-		if err != nil {
-			return err
+		if ca.ActiveConfig == gshelper.SceneConfigKey {
+			if err := ca.handleSceneDefault(); err != nil {
+				return err
+			}
+		} else {
+			if err := ca.handleSceneSetDefault(); err != nil {
+				return err
+			}
 		}
 	case "execute":
 		err := ca.handleClick(event, gs)
@@ -179,7 +182,76 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	return nil
 }
 
-func (a *ComponentAction) handleDefault() error {
+func (a *ComponentAction) handleSceneSetDefault() error {
+	setID := a.gsHelper.GetGlobalSelectedSetID()
+	sceneSet, err := a.AutoTestSvc.GetSceneSet(setID)
+	if err != nil {
+		return err
+	}
+	spaces, err := a.AutoTestSvc.GetSpace(sceneSet.SpaceID)
+	if err != nil {
+		return err
+	}
+
+	project, err := a.bdl.GetProject(uint64(spaces.ProjectID))
+	if err != nil {
+		return err
+	}
+	testClusterName, ok := project.ClusterConfig[string(apistructs.TestWorkspace)]
+	if !ok {
+		return fmt.Errorf("not found cluster")
+	}
+	var autoTestGlobalConfigListRequest apistructs.AutoTestGlobalConfigListRequest
+	autoTestGlobalConfigListRequest.ScopeID = strconv.Itoa(int(project.ID))
+	autoTestGlobalConfigListRequest.Scope = "project-autotest-testcase"
+	autoTestGlobalConfigListRequest.UserID = a.sdk.Identity.UserID
+	configs, err := a.bdl.ListAutoTestGlobalConfig(autoTestGlobalConfigListRequest)
+	if err != nil {
+		return err
+	}
+
+	a.Props.Menus = []Menu{
+		{
+			Text: "无",
+			Key:  "无",
+			Operations: map[string]interface{}{
+				apistructs.ClickOperation.String(): ClickOperation{
+					Key:    "execute",
+					Reload: true,
+					Meta: ClientMetaData{
+						Env:       testClusterName,
+						ScenesID:  setID,
+						ConfigEnv: "",
+					},
+				},
+			},
+		},
+	}
+
+	for _, v := range configs {
+		a.Props.Menus = append(a.Props.Menus, Menu{
+			Text: v.DisplayName,
+			Key:  v.Ns,
+			Operations: map[string]interface{}{
+				apistructs.ClickOperation.String(): ClickOperation{
+					Key:    "execute",
+					Reload: true,
+					Meta: ClientMetaData{
+						Env:       testClusterName,
+						ScenesID:  setID,
+						ConfigEnv: v.Ns,
+					},
+				},
+			},
+		})
+	}
+
+	a.Props.Type = "primary"
+	a.Props.Test = "执行"
+	return nil
+}
+
+func (a *ComponentAction) handleSceneDefault() error {
 	scenesID := a.State.ScenesID
 	var req apistructs.AutotestSceneRequest
 	req.SceneID = scenesID
@@ -263,17 +335,31 @@ func (a *ComponentAction) handleClick(event cptype.ComponentEvent, gs *cptype.Gl
 	if err != nil {
 		return err
 	}
-	var req apistructs.AutotestExecuteSceneRequest
-	req.AutoTestScene.ID = metaData.ScenesID
-	req.ClusterName = metaData.Env
-	req.ConfigManageNamespaces = metaData.ConfigEnv
-	req.UserID = a.sdk.Identity.UserID
 	gh.SetExecuteButtonActiveKey("fileExecute")
-	pipeline, err := a.bdl.ExecuteDiceAutotestScene(req)
-	if err != nil {
-		(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()
+	if a.ActiveConfig == gshelper.SceneConfigKey {
+		var req apistructs.AutotestExecuteSceneRequest
+		req.AutoTestScene.ID = metaData.ScenesID
+		req.ClusterName = metaData.Env
+		req.ConfigManageNamespaces = metaData.ConfigEnv
+		req.UserID = a.sdk.Identity.UserID
+		pipeline, err := a.bdl.ExecuteDiceAutotestScene(req)
+		if err != nil {
+			(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()
+		} else {
+			logrus.Infof("run scene pipeline success scene id: %v, pipelineID %v", req.AutoTestScene.ID, pipeline.Data.ID)
+		}
 	} else {
-		logrus.Infof("run scene pipeline success scene id: %v, pipelineID %v", req.AutoTestScene.ID, pipeline.Data.ID)
+		var req apistructs.AutotestExecuteSceneSetRequest
+		req.AutoTestSceneSet.ID = metaData.ScenesID
+		req.ClusterName = metaData.Env
+		req.ConfigManageNamespaces = metaData.ConfigEnv
+		req.UserID = a.sdk.Identity.UserID
+		pipeline, err := a.AutoTestSvc.ExecuteDiceAutotestSceneSet(req)
+		if err != nil {
+			(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()
+		} else {
+			logrus.Infof("run scene set pipeline success scene set id: %v, pipelineID %v", req.AutoTestSceneSet.ID, pipeline.ID)
+		}
 	}
 	return nil
 }
