@@ -475,6 +475,9 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
+		if (tag == applicationIdTag && value == applicationIdValue) || (tag == clusterNameTag && value == clusterNameValue) {
+			continue
+		}
 		if attr, ok := attributes[tag]; ok {
 			val, err := formatOperatorValue(opType, utils.StringType, attr)
 			if err != nil {
