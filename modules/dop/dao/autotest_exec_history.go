@@ -86,7 +86,9 @@ func (AutoTestExecHistory) TableName() string {
 func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs ...uint64) ([]AutoTestExecHistory, error) {
 	var list []AutoTestExecHistory
 	db := client.Model(&AutoTestExecHistory{}).
-		Where("plan_id IN (?)", planIDs)
+		Select("type,success_api_num,execute_api_num,total_api_num,plan_id,pipeline_id,execute_time").
+		Where("plan_id IN (?)", planIDs).
+		Where("type = ?", apistructs.AutoTestPlan)
 	if timeStart != "" {
 		db = db.Where("execute_time >= ?", timeStart)
 	}
@@ -94,7 +96,7 @@ func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, planI
 	if timeEnd != "" {
 		db = db.Where("execute_time <= ?", timeEnd)
 	}
-	err := db.Find(&list).Order("execute_time ASC").Error
+	err := db.Order("execute_time ASC").Find(&list).Error
 	return list, err
 }
 
@@ -107,7 +109,7 @@ func (client *DBClient) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (A
 
 // ExecHistorySceneAvgCostTime .
 func (client *DBClient) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneAvgCostTime, err error) {
-	db := client.Debug().Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
+	db := client.Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
 		Where("project_id = ?", req.ProjectID).
 		Where("plan_id IN (?)", req.PlanIDs).
 		Where("type = ?", apistructs.StepTypeScene)
@@ -123,7 +125,7 @@ func (client *DBClient) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExe
 
 // ExecHistorySceneStatusCount .
 func (client *DBClient) ExecHistorySceneStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneStatusCount, err error) {
-	db := client.Debug().Table("dice_autotest_exec_history").
+	db := client.Table("dice_autotest_exec_history").
 		Select("scene_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
 			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
 		Where("project_id = ?", req.ProjectID).
@@ -141,7 +143,7 @@ func (client *DBClient) ExecHistorySceneStatusCount(req apistructs.StatisticsExe
 
 // ExecHistorySceneApiStatusCount .
 func (client *DBClient) ExecHistorySceneApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneApiStatusCount, err error) {
-	db := client.Debug().Table("dice_autotest_exec_history").
+	db := client.Table("dice_autotest_exec_history").
 		Select("scene_id,SUM(`success_api_num`) AS 'success_count',"+
 			"SUM(`total_api_num`) AS 'total_count'").
 		Where("project_id = ?", req.ProjectID).
@@ -159,7 +161,7 @@ func (client *DBClient) ExecHistorySceneApiStatusCount(req apistructs.Statistics
 
 // ExecHistoryApiAvgCostTime .
 func (client *DBClient) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiAvgCostTime, err error) {
-	db := client.Debug().Table("dice_autotest_exec_history").
+	db := client.Table("dice_autotest_exec_history").
 		Select("step_id,AVG(cost_time_sec) AS avg").
 		Where("project_id = ?", req.ProjectID).
 		Where("plan_id IN (?)", req.PlanIDs).
@@ -176,7 +178,7 @@ func (client *DBClient) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecH
 
 // ExecHistoryApiStatusCount .
 func (client *DBClient) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiStatusCount, err error) {
-	db := client.Debug().Table("dice_autotest_exec_history").
+	db := client.Table("dice_autotest_exec_history").
 		Select("step_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
 			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
 		Where("project_id = ?", req.ProjectID).
