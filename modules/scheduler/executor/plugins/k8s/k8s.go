@@ -253,7 +253,7 @@ func getWorkspaceRatio(options map[string]string, workspace string, t string, va
 	}
 }
 
-func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
+func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
 	istioInfo := info.GetIstioInfo()
 	if !istioInfo.Installed {
 		return istioctl.EmptyEngine, nil
@@ -262,14 +262,10 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	if istioInfo.IsAliyunASM {
 		return istioctl.EmptyEngine, nil
 	}
-	apiServerUrl := info.GetApiServerUrl()
-	if apiServerUrl == "" {
-		return istioctl.EmptyEngine, errors.Errorf("empty api server url, cluster:%s", info.Get(apistructs.DICE_CLUSTER_NAME))
-	}
 	// TODO: Combine version to choose
-	localEngine, err := engines.NewLocalEngine(apiServerUrl)
+	localEngine, err := engines.NewLocalEngine(clusterName)
 	if err != nil {
-		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", info.Get(apistructs.DICE_CLUSTER_NAME), err)
+		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", clusterName, err)
 	}
 	return localEngine, nil
 }
@@ -355,7 +351,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		for key, value := range rawData {
 			clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
 		}
-		istioEngine, err = getIstioEngine(clusterInfoData)
+		istioEngine, err = getIstioEngine(clusterName, clusterInfoData)
 		if err != nil {
 			return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
 				name, clusterName, err)
