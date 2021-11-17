@@ -470,6 +470,10 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
+		if operator == any || operator == all {
+			delete(filterMap, "value")
+			continue
+		}
 		opType := filterOperatorRel[operator]
 		value, ok := filterMap["value"]
 		if !ok {
