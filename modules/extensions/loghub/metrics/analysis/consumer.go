@@ -60,7 +60,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		}
 	}
 
-	if len(tagVal) == 0 && p.C.Processors.Scope == "micro_service" {
+	if len(tagVal) == 0 {
 		return nil
 	}
 
