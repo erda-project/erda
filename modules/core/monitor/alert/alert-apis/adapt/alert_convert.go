@@ -492,6 +492,9 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		filterMap := make(map[string]interface{})
 		tag := v.Condition
 		operator := v.Operator
+		if operator == all {
+			operator = any
+		}
 		value := v.Values
 		opType := filterOperatorRel[operator]
 		val, err := formatOperatorValue(opType, utils.StringType, value)
@@ -500,9 +503,6 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		}
 		filterMap["tag"] = tag
 		filterMap["operator"] = operator
-		if operator == all {
-			operator = any
-		}
 		if operator != any {
 			filterMap["value"] = val
 		}
