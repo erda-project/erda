@@ -134,6 +134,8 @@ type Action struct {
 
 	Caches []ActionCache `yaml:"caches,omitempty"` // action 构建缓存
 
+	Policy *Policy `yaml:"policy,omitempty"` // action execution strategy
+
 	SnippetConfig *SnippetConfig `yaml:"snippet_config,omitempty"` // snippet 类型的 action 的配置
 
 	If string `yaml:"if,omitempty"` // 条件执行
@@ -161,6 +163,10 @@ type Action struct {
 	// 隐式命名空间为一个 alias，对应流水线上下文目录下的一个目录。
 	// Namespaces 即使声明，同时会注入默认值 alias，也就是说每个 action 至少会有一个 namespace。
 	Namespaces []string `yaml:"namespaces,omitempty"`
+}
+
+type Policy struct {
+	Type apistructs.PolicyType `yaml:"type,omitempty"`
 }
 
 type SnippetConfig struct {

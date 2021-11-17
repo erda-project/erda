@@ -106,6 +106,28 @@ type PipelineYmlAction struct {
 	Disable       bool                   `json:"disable,omitempty"`                                        // task is disable or enable
 	Loop          *PipelineTaskLoop      `json:"loop,omitempty"`                                           // 循环执行
 	SnippetStages *SnippetStages         `json:"snippetStages,omitempty"`                                  // snippetStages snippet 展开
+	Policy        *Policy                `json:"policy,omitempty"`                                         // action execution strategy
+}
+
+type PolicyType string
+
+// todo add other types of implementation
+// try-latest-result (if not exist -> new-run)
+// force-latest-result (throw error or wait?)
+//
+// try-latest-success-result
+// force-latest-success-result
+//
+// new-run (default, can omit)
+//
+// run-once-from-root-pipeline
+const (
+	NewRunPolicyType                 PolicyType = "new-run"
+	TryLatestSuccessResultPolicyType PolicyType = "try-latest-success-result"
+)
+
+type Policy struct {
+	Type PolicyType `json:"type,omitempty"`
 }
 
 type SnippetStages struct {

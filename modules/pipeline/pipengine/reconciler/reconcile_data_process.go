@@ -95,6 +95,10 @@ func (r *Reconciler) saveTask(task *spec.PipelineTask, pipeline *spec.Pipeline) 
 		pt = task
 	}
 
+	pt, err = r.adaptPolicy(pt)
+	if err != nil {
+		return nil, err
+	}
 	// save action
 	if err := r.dbClient.CreatePipelineTask(pt); err != nil {
 		logrus.Errorf("[alert] failed to create pipeline task when create pipeline graph: %v", err)
