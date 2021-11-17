@@ -77,6 +77,12 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 				})
 			}
 
+			if frontendAction.Policy != nil {
+				maps[ActionType(frontendAction.Type)].Policy = &Policy{
+					Type: frontendAction.Policy.Type,
+				}
+			}
+
 			actions = append(actions, maps)
 		}
 		s.Stages = append(s.Stages, &Stage{Actions: actions})
@@ -238,6 +244,12 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 
 				if action.SnippetConfig != nil {
 					resultAction.SnippetConfig = action.SnippetConfig.toApiSnippetConfig()
+				}
+
+				if action.Policy != nil {
+					resultAction.Policy = &apistructs.Policy{
+						Type: action.Policy.Type,
+					}
 				}
 
 				stageActions = append(stageActions, resultAction)

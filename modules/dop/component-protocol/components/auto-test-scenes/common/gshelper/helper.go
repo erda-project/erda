@@ -166,6 +166,27 @@ func (h *GSHelper) SetExecuteHistoryTablePipelineID(id uint64) {
 	(*h.gs)["ExecuteHistoryTablePipelineID"] = id
 }
 
+func (h *GSHelper) GetExecuteTaskTablePipelineID() uint64 {
+	if h.gs == nil {
+		return 0
+	}
+	v, ok := (*h.gs)["ExecuteTaskTablePipelineID"]
+	if !ok {
+		return 0
+	}
+	if _, ok = v.(uint64); ok {
+		return v.(uint64)
+	}
+	return uint64(v.(float64))
+}
+
+func (h *GSHelper) SetExecuteTaskTablePipelineID(id uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["ExecuteTaskTablePipelineID"] = id
+}
+
 func (h *GSHelper) GetExecuteHistoryTablePipelineID() uint64 {
 	if h.gs == nil {
 		return 0

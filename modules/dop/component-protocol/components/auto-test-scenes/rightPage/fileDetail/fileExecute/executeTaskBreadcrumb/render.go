@@ -175,6 +175,7 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 			logrus.Errorf("pipelineId ParseUint failed, err: %v", err)
 			return err
 		}
+		gh.SetExecuteHistoryTablePipelineID(a.pipelineIDFromExecuteTaskBreadcrumb)
 	}
 	c.Operations = getOperations()
 	c.Data = a.Data

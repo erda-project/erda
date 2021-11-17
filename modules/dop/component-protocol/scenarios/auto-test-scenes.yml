@@ -22,8 +22,6 @@ hierarchy:
     rightPage:
       children:
         - fileDetail
-      tabBarExtraContent:
-        - tabSceneSetExecuteButton
     fileDetail:
       children:
         - fileConfig
@@ -52,6 +50,7 @@ hierarchy:
     scenesStagesOperations:
       - addScenesButton
       - exportScenesButton
+      - referSceneSetButton
     fileInfoHead:
       left: fileInfoTitle
     #      right: fileHistory
@@ -320,8 +319,6 @@ components:
     type: Button
   resultPreview:
     type: APIPreview
-  tabSceneSetExecuteButton:
-    type: Button
   scenesSetTitle:
     type: Title
   scenesSetInfo:
@@ -336,6 +333,9 @@ components:
     type: Button
   exportScenesButton:
     type: Button
+  referSceneSetButton:
+    type: Button
+    
 rendering:
   # 前端触发组件
   # 先渲染前端触发组件，再渲染关联组件
@@ -616,7 +616,6 @@ rendering:
     - name: refreshButton
     - name: cancelExecuteButton
   refreshButton:
-    - name: executeHistoryTable
     - name: executeTaskTable
     - name: executeInfo
     - name: cancelExecuteButton
@@ -681,3 +680,12 @@ rendering:
           value: "{{ addScenesButton.visible }}"
         - name: "sceneSetKey"
           value: "{{ addScenesButton.sceneSetKey }}"
+  referSceneSetButton:
+    - name: fileFormModal
+      state:
+        - name: "actionType"
+          value: "{{ referSceneSetButton.actionType }}"
+        - name: "visible"
+          value: "{{ referSceneSetButton.visible }}"
+        - name: "sceneSetKey"
+          value: "{{ referSceneSetButton.sceneSetKey }}"

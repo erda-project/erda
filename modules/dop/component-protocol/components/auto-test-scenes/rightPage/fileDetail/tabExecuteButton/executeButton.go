@@ -357,7 +357,7 @@ func (a *ComponentAction) handleClick(event cptype.ComponentEvent, gs *cptype.Gl
 		req.ClusterName = metaData.Env
 		req.ConfigManageNamespaces = metaData.ConfigEnv
 		req.UserID = a.sdk.Identity.UserID
-		pipeline, err := a.AutoTestSvc.ExecuteDiceAutotestSceneSet(req)
+		pipeline, err := a.AutoTestSvc.ExecuteAutotestSceneSet(req)
 		if err != nil {
 			(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()
 		} else {
