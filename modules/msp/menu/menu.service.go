@@ -39,11 +39,19 @@ type menuService struct {
 }
 
 var NotExist = map[string]bool{
-	"LogAnalyze":      true,
-	"APIGateway":      true,
-	"RegisterCenter":  true,
-	"ConfigCenter":    true,
-	"AlarmManagement": true,
+	//"LogAnalyze":      true,
+	//"APIGateway":      true,
+	//"RegisterCenter":  true,
+	//"ConfigCenter":    true,
+	//"AlarmManagement": true,
+	"AlertCenter":   true,
+	"ServiceManage": true,
+}
+
+var DopMenu = map[string]bool{
+	"MonitorCenter":  true,
+	"ServiceManage":  true,
+	"EnvironmentSet": true,
 }
 
 type componentInfo struct {
@@ -52,8 +60,8 @@ type componentInfo struct {
 }
 
 var ComponentInfo = map[string]*componentInfo{
-	"AppMonitor": {
-		enName: "AppMonitor",
+	"MonitorCenter": {
+		enName: "MonitorCenter",
 		cnName: "应用监控",
 	},
 	"LogAnalyze": {
@@ -78,6 +86,7 @@ var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
 //GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
+	//监控中心保留服务监控，诊断分析保留链路追踪、错误分析
 	// get menu items
 	items, err := s.getMenuItems()
 	if err != nil {
@@ -117,7 +126,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
 			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-			if item.EnName == "EnvironmentSet" {
+			if DopMenu[item.Key] {
 				for _, child := range item.Children {
 					child.Params = item.Params
 					// 反转exists字段，隐藏引导页，显示功能子菜单
@@ -139,6 +148,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				if len(child.Href) > 0 {
 					child.Href = s.version + child.Href
 				}
+				menuMap[child.Key] = child
 			}
 			menuMap[item.Key] = item
 		}
@@ -172,6 +182,9 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				for k, v := range params {
 					item.Params[k] = fmt.Sprint(v)
 				}
+			}
+			if engine != "monitor" {
+				item.Params["_enabled"] = "true"
 			}
 
 			// setup exists
@@ -325,18 +338,23 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 	var monitor, loghub *pb.MenuItem
 	setParams := make([]*pb.MenuItem, 0)
 	for _, item := range items {
-		switch item.Key {
-		case "EnvironmentalOverview", "AlarmManagement", "QueryAnalysis":
+		if item.Params == nil {
 			setParams = append(setParams, item)
-		case "AppMonitor":
+		}
+		switch item.Key {
+		case "MonitorCenter":
 			monitor = item
-		case "LogAnalyze":
+		case "DiagnoseAnalyzer":
 			loghub = item
 		}
 	}
 	if monitor != nil {
 		for _, item := range setParams {
+			item.Params = monitor.Params
 			for _, child := range item.Children {
+				if child.Params != nil {
+					continue
+				}
 				child.Params = monitor.Params
 			}
 		}
