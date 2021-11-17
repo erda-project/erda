@@ -98,3 +98,59 @@ func TestNodeFilter_getState(t *testing.T) {
 		})
 	}
 }
+
+func TestNodeFilter_EncodeURLQuery(t *testing.T) {
+	type fields struct {
+		Filter      filter.Filter
+		clusterName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nf := &NodeFilter{
+				Filter:      tt.fields.Filter,
+				clusterName: tt.fields.clusterName,
+			}
+			if err := nf.EncodeURLQuery(); (err != nil) != tt.wantErr {
+				t.Errorf("EncodeURLQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestNodeFilter_DecodeURLQuery(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nf := &NodeFilter{
+				Filter: filter.Filter{
+					SDK: &cptype.SDK{
+						InParams: map[string]interface{}{
+							"filter__urlQuery": "eyJzdGF0ZSI6WyJrdWJlcm5ldGVzLmlvL2hvc3RuYW1lPW5vZGUtMDEwMDAwMDA2MjIwIl19",
+						},
+					},
+				},
+			}
+			if err := nf.DecodeURLQuery(); (err != nil) != tt.wantErr {
+				t.Errorf("DecodeURLQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

@@ -46,7 +46,8 @@ type MenuPair struct {
 }
 
 type State struct {
-	ActiveKey string `json:"activeKey"`
+	ActiveKey         string `json:"activeKey"`
+	TableTabsURLQuery string `json:"tableTabs__urlQuery,omitempty"`
 }
 
 type Meta struct {

@@ -65,6 +65,17 @@ const (
 	Cpu    TableType = "cpu"
 )
 
+var nodeLabelBlacklist = map[string]string{
+	"dice/platform":         "true",
+	"dice/lb":               "true",
+	"dice/cassandra":        "true",
+	"dice/es":               "true",
+	"dice/kafka":            "true",
+	"dice/nexus":            "true",
+	"dice/gittar":           "true",
+	"dice/stateful-service": "true",
+}
+
 type Columns struct {
 	Title     string `json:"title,omitempty"`
 	DataIndex string `json:"dataIndex,omitempty"`
@@ -670,12 +681,41 @@ func (t *Table) GetOperate(id string) Operate {
 	}
 }
 
+func (t *Table) DecodeURLQuery() error {
+	query, ok := t.SDK.InParams["table__urlQuery"].(string)
+	if !ok {
+		return nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(query)
+	if err != nil {
+		return err
+	}
+
+	var values State
+	if err := json.Unmarshal(decoded, &values); err != nil {
+		return err
+	}
+	t.State.SelectedRowKeys = values.SelectedRowKeys
+	t.State.Sorter = values.Sorter
+	return nil
+}
+
+func (t *Table) EncodeURLQuery() error {
+	jsonData, err := json.Marshal(t.State)
+	if err != nil {
+		return err
+	}
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	t.State.FilterUrlQuery = encoded
+	return nil
+}
+
 // SortByString sort by string value
-func SortByString(data []RowItem, sortColumn string, ascend bool) {
+func SortByString(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
-		if ascend {
+		if asc {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
@@ -683,9 +723,9 @@ func SortByString(data []RowItem, sortColumn string, ascend bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, ascend bool) {
+func SortByNode(data []RowItem, _ string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if ascend {
+		if asc {
 			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
 		}
 		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
@@ -693,13 +733,13 @@ func SortByNode(data []RowItem, _ string, ascend bool) {
 }
 
 // SortByDistribution sort by percent
-func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
+func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
-		if ascend {
+		if asc {
 			return aValue < bValue
 		}
 		return aValue > bValue
@@ -714,17 +754,6 @@ func SortByStatus(data []RowItem, _ string, asc bool) {
 		}
 		return data[i].Status.Value > data[j].Status.Value
 	})
-}
-
-var nodeLabelBlacklist = map[string]string{
-	"dice/platform":         "true",
-	"dice/lb":               "true",
-	"dice/cassandra":        "true",
-	"dice/es":               "true",
-	"dice/kafka":            "true",
-	"dice/nexus":            "true",
-	"dice/gittar":           "true",
-	"dice/stateful-service": "true",
 }
 
 func IsNodeLabelInBlacklist(node data.Object) bool {
@@ -747,7 +776,8 @@ type State struct {
 	//Left           int           `json:"total,omitempty"`
 	SelectedRowKeys []string      `json:"selectedRowKeys,omitempty"`
 	Sorter          Sorter        `json:"sorterData,omitempty"`
-	Values          filter.Values `json:"values"`
+	Values          filter.Values `json:"values,omitempty"`
+	FilterUrlQuery  string        `json:"table__urlQuery,omitempty"`
 }
 
 type SteveStatus struct {
