@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -35,11 +36,11 @@ func (s *ScenesSetInfo) Render(ctx context.Context, c *cptype.Component, scenari
 	setID := s.gsHelper.GetGlobalSelectedSetID()
 	s.Props = map[string]interface{}{
 		"visible": func() bool {
-			return setID != 0
+			return setID != 0 && s.gsHelper.GetGlobalActiveConfig() == gshelper.SceneSetConfigKey
 		}(),
 	}
 	if setID == 0 {
-		return
+		return nil
 	}
 	rsp, err := s.atTestPlan.GetSceneSet(setID)
 	if err != nil {

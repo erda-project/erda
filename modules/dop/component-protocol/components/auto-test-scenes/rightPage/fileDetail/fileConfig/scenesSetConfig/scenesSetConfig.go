@@ -64,7 +64,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	c.Props = map[string]interface{}{
 		"visible": func() bool {
-			return ca.gsHelper.GetGlobalActiveConfig() == gshelper.SceneSetConfigKey
+			return ca.gsHelper.GetGlobalActiveConfig() == gshelper.SceneSetConfigKey && ca.gsHelper.GetGlobalSelectedSetID() != 0
 		}(),
 	}
 	return nil

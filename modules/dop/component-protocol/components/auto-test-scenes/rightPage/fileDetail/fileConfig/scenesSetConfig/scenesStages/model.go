@@ -75,14 +75,21 @@ type DragParams struct {
 }
 
 type State struct {
-	Visible             bool       `json:"visible"`
-	DragParams          DragParams `json:"dragParams"`
-	SetID               uint64     `json:"setID"`
-	StepId              uint64     `json:"stepId"`
-	ShowScenesSetDrawer bool       `json:"showScenesSetDrawer"`
-	ActionType          string     `json:"actionType"`
-	SceneID             uint64     `json:"sceneId"`
-	SceneSetKey         uint64     `json:"sceneSetKey"`
+	Visible               bool       `json:"visible"`
+	DragParams            DragParams `json:"dragParams"`
+	SetID                 uint64     `json:"setID"`
+	StepId                uint64     `json:"stepId"`
+	ShowScenesSetDrawer   bool       `json:"showScenesSetDrawer"`
+	ActionType            string     `json:"actionType"`
+	SceneID               uint64     `json:"sceneId"`
+	SceneSetKey           uint64     `json:"sceneSetKey"`
+	PageNo                int        `json:"pageNo"`
+	SetId__urlQuery       string     `json:"setId__urlQuery"`
+	SceneId__urlQuery     string     `json:"sceneId__urlQuery"`
+	SelectedKeys          []string   `json:"selectedKeys"`
+	IsClickScene          bool       `json:"isClickScene"`
+	IsClickFolderTableRow bool       `json:"isClickFolderTableRow"`
+	ClickFolderTableRowID uint64     `json:"clickFolderTableRowID"`
 }
 
 type OperationBaseInfo struct {

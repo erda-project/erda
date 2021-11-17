@@ -102,9 +102,9 @@ hierarchy:
     executeHead:
       left: executeInfoTitle
       right:
-            - refreshButton
-            - cancelExecuteButton
-            - executeHistory
+        - refreshButton
+        - cancelExecuteButton
+        - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryPop
@@ -657,6 +657,21 @@ rendering:
           value: "{{ scenesStages.sceneSetKey }}"
         - name: "sceneId"
           value: "{{ scenesStages.sceneId }}"
+    - name: fileTree
+      state:
+        - name: "clickFolderTableSceneID"
+          value: "{{ scenesStages.clickFolderTableRowID }}"
+        - name: "isClickFolderTable"
+          value: "{{ scenesStages.isClickFolderTableRow }}"
+        - name: "sceneId"
+          value: "{{ scenesStages.sceneId }}"
+    - name: scenesConfig
+    - name: scenesSetConfig
+    - name: fileInfo
+    - name: scenesSetInfo
+    - name: fileInfo
+    - name: inParamsForm
+    - name: outPutForm
   addScenesButton:
     - name: fileFormModal
       state:

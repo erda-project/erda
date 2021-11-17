@@ -184,6 +184,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 func (a *ComponentAction) handleSceneSetDefault() error {
 	setID := a.gsHelper.GetGlobalSelectedSetID()
+	if setID == 0 {
+		return nil
+	}
 	sceneSet, err := a.AutoTestSvc.GetSceneSet(setID)
 	if err != nil {
 		return err

@@ -70,9 +70,6 @@ func (i *ComponentFileTree) RenderFileTree(inParams InParams) error {
 
 	i.Data = res
 	i.State.FormVisible = false
-	if len(rsp) > 0 {
-		i.gsHelper.SetGlobalSelectedSetID(rsp[0].ID)
-	}
 	return nil
 }
 
@@ -148,7 +145,6 @@ func (i *ComponentFileTree) RenderSceneSets(inParams InParams) error {
 	// 	}
 	// }
 	i.State.FormVisible = false
-	i.gsHelper.SetGlobalSelectedSetID(rsp[0].ID)
 	return nil
 }
 
