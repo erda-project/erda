@@ -470,10 +470,6 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
-		if operator == any || operator == all {
-			delete(filterMap, "value")
-			continue
-		}
 		opType := filterOperatorRel[operator]
 		value, ok := filterMap["value"]
 		if !ok {
@@ -504,7 +500,12 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		}
 		filterMap["tag"] = tag
 		filterMap["operator"] = operator
-		filterMap["value"] = val
+		if operator == all {
+			operator = any
+		}
+		if operator != any {
+			filterMap["value"] = val
+		}
 		filters = append(filters, filterMap)
 	}
 	filtersValue, err := structpb.NewList(filters)
