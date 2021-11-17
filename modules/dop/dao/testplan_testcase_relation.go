@@ -311,7 +311,7 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 	baseSQL = baseSQL.Where("`rel`.`test_plan_id` = ?", req.TestPlanID)
 	// testset
 	if req.TestSetID > 0 {
-		baseSQL = baseSQL.Where("`ts`.`directory` LIKE '" + baseTestSet.Directory + "%'")
+		baseSQL = baseSQL.Where("`ts`.`directory` LIKE ? OR `ts`.`directory` = ?", baseTestSet.Directory+"/%", baseTestSet.Directory)
 	}
 	// name
 	if req.Query != "" {
