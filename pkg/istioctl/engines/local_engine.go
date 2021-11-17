@@ -15,22 +15,28 @@
 package engines
 
 import (
-	"github.com/erda-project/erda/pkg/clientgo"
+	"istio.io/client-go/pkg/clientset/versioned"
+
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/executors"
+	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 type LocalEngine struct {
 	istioctl.DefaultEngine
 }
 
-func NewLocalEngine(addr string) (*LocalEngine, error) {
-	client, err := clientgo.New(addr)
+func NewLocalEngine(clusterName string) (*LocalEngine, error) {
+	rc, err := k8sclient.GetRestConfig(clusterName)
+	if err != nil {
+		return nil, err
+	}
+	client, err := versioned.NewForConfig(rc)
 	if err != nil {
 		return nil, err
 	}
 	authN := &executors.AuthNExecutor{}
-	authN.SetIstioClient(client.CustomClient)
+	authN.SetIstioClient(client)
 	return &LocalEngine{
 		DefaultEngine: istioctl.NewDefaultEngine(authN),
 	}, nil

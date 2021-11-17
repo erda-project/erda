@@ -15,10 +15,18 @@
 package k8s
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/pkg/errors"
 	"gotest.tools/assert"
 	apiv1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/istioctl"
+	"github.com/erda-project/erda/pkg/istioctl/engines"
+	"github.com/erda-project/erda/pkg/istioctl/executors"
 )
 
 func TestComposeDeploymentNodeAffinityPreferredWithServiceWorkspace(t *testing.T) {
@@ -136,5 +144,63 @@ func TestComposeStatefulSetNodeAffinityPreferredWithServiceWorkspace(t *testing.
 		assert.DeepEqual(t, preferred.Preference.MatchExpressions[0].Key, resPreferred[index].Preference.MatchExpressions[0].Key)
 		assert.DeepEqual(t, preferred.Preference.MatchExpressions[0].Operator, resPreferred[index].Preference.MatchExpressions[0].Operator)
 		assert.DeepEqual(t, preferred.Weight, resPreferred[index].Weight)
+	}
+}
+
+func Test_getIstioEngine(t *testing.T) {
+	mockEngine := &engines.LocalEngine{
+		DefaultEngine: istioctl.NewDefaultEngine(&executors.AuthNExecutor{}),
+	}
+	type args struct {
+		clusterName string
+		info        apistructs.ClusterInfoData
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    istioctl.IstioEngine
+		wantErr bool
+	}{
+		{
+			"case1",
+			args{
+				clusterName: "exist",
+				info: apistructs.ClusterInfoData{
+					apistructs.ISTIO_INSTALLED: "true",
+				},
+			},
+			mockEngine,
+			false,
+		},
+		{
+			"case2",
+			args{
+				clusterName: "notExist",
+				info: apistructs.ClusterInfoData{
+					apistructs.ISTIO_INSTALLED: "true",
+				},
+			},
+			istioctl.EmptyEngine,
+			true,
+		},
+	}
+	patch := monkey.Patch(engines.NewLocalEngine, func(clusterName string) (*engines.LocalEngine, error) {
+		if clusterName == "exist" {
+			return mockEngine, nil
+		}
+		return nil, errors.New("")
+	})
+	defer patch.Unpatch()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getIstioEngine(tt.args.clusterName, tt.args.info)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getIstioEngine() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getIstioEngine() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
