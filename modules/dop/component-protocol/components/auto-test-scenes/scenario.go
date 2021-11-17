@@ -96,5 +96,4 @@ import (
 
 	// button
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/tabExecuteButton"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/tabSceneSetExecuteButton"
 )

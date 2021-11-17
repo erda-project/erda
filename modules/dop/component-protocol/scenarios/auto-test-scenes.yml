@@ -22,8 +22,6 @@ hierarchy:
     rightPage:
       children:
         - fileDetail
-      tabBarExtraContent:
-        - tabSceneSetExecuteButton
     fileDetail:
       children:
         - fileConfig
@@ -320,8 +318,6 @@ components:
     type: Button
   resultPreview:
     type: APIPreview
-  tabSceneSetExecuteButton:
-    type: Button
   scenesSetTitle:
     type: Title
   scenesSetInfo:
