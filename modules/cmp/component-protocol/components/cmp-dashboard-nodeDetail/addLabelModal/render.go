@@ -16,6 +16,7 @@ package AddLabelModal
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -47,7 +48,7 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 	if err != nil {
 		return err
 	}
-	alm.getProps()
+	alm.GetProps()
 	alm.GetOperations()
 	clusterNameIter := alm.SDK.InParams["clusterName"]
 	if clusterNameIter == nil {
@@ -63,8 +64,21 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 			Name:        alm.State.FormData["recordId"],
 			ClusterName: clusterNameIter.(string),
 		}
-		labelKey := alm.State.FormData["label_custom_key"]
-		labelValue := alm.State.FormData["label_custom_value"]
+		labelValue := ""
+		labelKey := alm.State.FormData["labelGroup"]
+		if labelKey == "custom" {
+			labelKey = alm.State.FormData["label_custom_key"]
+			labelValue = alm.State.FormData["label_custom_value"]
+		} else {
+			labelValue = alm.State.FormData[labelKey]
+			splits := strings.Split(labelValue, "=")
+			labelKey = splits[0]
+			if len(splits) == 1 {
+				labelValue = ""
+			} else {
+				labelValue = splits[1]
+			}
+		}
 		err := steveServer.LabelNode(alm.Ctx, req, map[string]string{labelKey: labelValue})
 		if err != nil {
 			return err
@@ -89,7 +103,8 @@ func (alm *AddLabelModal) SetComponentValue(c *cptype.Component) error {
 	return nil
 }
 
-func (alm *AddLabelModal) getProps() {
+func (alm *AddLabelModal) GetProps() {
+
 	fields := []Fields{
 		{
 			Label:     alm.SDK.I18n("category"),
