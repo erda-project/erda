@@ -14,11 +14,15 @@
 
 package apistructs
 
+import (
+	"strings"
+)
+
 type ApplicationsResourcesRequest struct {
-	UserID string
-	OrgID uint64
+	UserID    string
+	OrgID     uint64
 	ProjectID uint64
-	Query *ApplicationsResourceQuery
+	Query     *ApplicationsResourceQuery
 }
 
 type ApplicationsResourceQuery struct {
@@ -30,30 +34,54 @@ type ApplicationsResourceQuery struct {
 }
 
 type ApplicationsResourcesResponse struct {
-	Total uint64 `json:"total"`
-	List  []ApplicationsResourcesItem
+	Total int                          `json:"total"`
+	List  []*ApplicationsResourcesItem `json:"list"`
 }
 
 type ApplicationsResourcesItem struct {
-	Id                int    `json:"id"` // the application primary
+	ID                uint64 `json:"id"` // the application primary
 	Name              string `json:"name"`
 	DisplayName       string `json:"displayName"`
-	OwnerUserID       int    `json:"ownerUserID"`
+	OwnerUserID       uint64 `json:"ownerUserID"`
 	OwnerUserName     string `json:"ownerUserName"`
 	OwnerUserNickname string `json:"ownerUserNickname"`
-	PodsCount         int    `json:"runtimesCount"`
-	CPURequest        int    `json:"cpuRequest"`
-	MemRequest        int    `json:"memRequest"`
-	ProdCPURequest    int    `json:"prodCPURequest"`
-	ProdMemRequest    int    `json:"prodMemRequest"`
-	ProdPodsCount     int    `json:"prodRuntimesCount"`
-	StagingCPURequest int    `json:"stagingCPURequest"`
-	StagingMemRequest int    `json:"stagingMemRequest"`
-	StagingPodsCount  int    `json:"stagingRuntimesCount"`
-	TestCPURequest    int    `json:"testCPURequest"`
-	TestMemRequest    int    `json:"testMemRequest"`
-	TestPodsCount     int    `json:"testRuntimesCount"`
-	DevCPURequest     int    `json:"devCPURequest"`
-	DevMemRequest     int    `json:"devMemRequest"`
-	DevPodsCount      int    `json:"devRuntimesCount"`
+	PodsCount         uint64 `json:"runtimesCount"`
+	CPURequest        uint64 `json:"cpuRequest"`
+	MemRequest        uint64 `json:"memRequest"`
+	ProdCPURequest    uint64 `json:"prodCPURequest"`
+	ProdMemRequest    uint64 `json:"prodMemRequest"`
+	ProdPodsCount     uint64 `json:"prodRuntimesCount"`
+	StagingCPURequest uint64 `json:"stagingCPURequest"`
+	StagingMemRequest uint64 `json:"stagingMemRequest"`
+	StagingPodsCount  uint64 `json:"stagingRuntimesCount"`
+	TestCPURequest    uint64 `json:"testCPURequest"`
+	TestMemRequest    uint64 `json:"testMemRequest"`
+	TestPodsCount     uint64 `json:"testRuntimesCount"`
+	DevCPURequest     uint64 `json:"devCPURequest"`
+	DevMemRequest     uint64 `json:"devMemRequest"`
+	DevPodsCount      uint64 `json:"devRuntimesCount"`
+}
+
+func (i *ApplicationsResourcesItem) AddResource(workspace string, pods, cpu, mem uint64) {
+	switch strings.ToUpper(workspace) {
+	case "PROD":
+		i.ProdPodsCount += pods
+		i.ProdCPURequest += cpu
+		i.ProdMemRequest += mem
+	case "STAGING":
+		i.StagingPodsCount += pods
+		i.StagingCPURequest += cpu
+		i.StagingMemRequest += mem
+	case "TEST":
+		i.TestPodsCount += pods
+		i.TestCPURequest += cpu
+		i.TestMemRequest += mem
+	case "DEV":
+		i.DevPodsCount += pods
+		i.DevCPURequest += cpu
+		i.DevMemRequest += mem
+	}
+	i.PodsCount = i.ProdPodsCount + i.StagingPodsCount + i.TestPodsCount + i.DevPodsCount
+	i.CPURequest = i.ProdCPURequest + i.StagingCPURequest + i.TestCPURequest + i.DevCPURequest
+	i.MemRequest = i.ProdMemRequest + i.StagingMemRequest + i.TestMemRequest + i.DevMemRequest
 }

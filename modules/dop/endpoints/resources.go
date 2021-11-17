@@ -17,15 +17,86 @@ package endpoints
 import (
 	"context"
 	"net/http"
+	"net/url"
+	"strconv"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // ApplicationsResources responses the resources list for every applications in the project
 func (e *Endpoints) ApplicationsResources(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	l := logrus.WithField("func", "*Endpoints.ApplicationsResources")
 	var (
-		total int
-		application []apistructs.application
+		req apistructs.ApplicationsResourcesRequest
 	)
-	e.project.b
+	projectID, err := strconv.ParseUint(vars["projectID"], 10, 64)
+	if err != nil {
+		l.WithError(err).Errorln("failed to ParseUint projectID")
+		return apierrors.ErrApplicationsResources.InvalidParameter(err).ToResp(), nil
+	}
+
+	orgIDStr := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	if err != nil {
+		l.WithError(err).Errorln("failed to ParseUint orgID")
+		return apierrors.ErrApplicationsResources.InvalidParameter(err).ToResp(), nil
+	}
+
+	userID, err := user.GetUserID(r)
+	if err != nil {
+		l.WithError(err).Errorln("failed to GetUserID")
+		return apierrors.ErrApplicationsResources.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err = r.ParseForm(); err != nil {
+		l.WithError(err).Errorln("failed to ParseForm")
+		return apierrors.ErrApplicationsResources.InvalidParameter(err).ToResp(), nil
+	}
+
+	req.ProjectID = projectID
+	req.OrgID = orgID
+	req.UserID = string(userID)
+	req.Query = new(apistructs.ApplicationsResourceQuery)
+	parseApplicationsResourceQuery(req.Query, r.URL.Query())
+
+	data, apiError := e.project.ApplicationsResources(ctx, &req)
+	if apiError != nil {
+		return apiError.ToResp(), nil
+	}
+	return httpserver.OkResp(data)
+}
+
+func parseApplicationsResourceQuery(query *apistructs.ApplicationsResourceQuery, values url.Values) {
+	if query == nil || len(values) == 0 {
+		return
+	}
+	applicationIDs := values["applicationID"]
+	for _, idStr := range applicationIDs {
+		if id, err := strconv.ParseUint(idStr, 10, 64); err == nil {
+			query.ApplicationsIDs = append(query.ApplicationsIDs, id)
+		}
+	}
+	ownerIDs := values["ownerID"]
+	for _, idStr := range ownerIDs {
+		if id, err := strconv.ParseUint(idStr, 10, 64); err == nil {
+			query.OwnerIDs = append(query.OwnerIDs, id)
+		}
+	}
+	pageSizeStr := values.Get("pageSize")
+	query.PageSize, _ = strconv.ParseUint(pageSizeStr, 10, 64)
+	pageNoStr := values.Get("pageNo")
+	query.PageSize, _ = strconv.ParseUint(pageNoStr, 10, 64)
+	query.OrderBy = values["orderBy"]
+	if query.PageSize == 0 {
+		query.PageSize = 20
+	}
+	if query.PageNo == 0 {
+		query.PageNo = 1
+	}
 }
