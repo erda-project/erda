@@ -16,6 +16,7 @@ package memTable
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 
@@ -107,6 +108,15 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			(*gs)["OperationKey"] = common.CMPDashboardOnlineNode
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
+		}
+		if err = mt.EncodeURLQuery(); err != nil {
+			return err
+		}
+	} else {
+		if _, ok := mt.SDK.InParams["table__urlQuery"]; ok {
+			if err = mt.DecodeURLQuery(); err != nil {
+				return fmt.Errorf("failed to decode url query for filter component, %v", err)
+			}
 		}
 	}
 	if err = mt.RenderList(c, table.Memory, gs); err != nil {

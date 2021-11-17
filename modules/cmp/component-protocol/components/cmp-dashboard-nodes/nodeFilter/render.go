@@ -16,11 +16,14 @@ package nodeFilter
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/wrangler/pkg/data"
+	"gopkg.in/square/go-jose.v2/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -81,11 +84,25 @@ func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	nf.Props = nf.GetFilterProps(labels)
 	nf.getState(labels)
 	switch event.Operation {
+	case cptype.InitializeOperation:
+		if _, ok := nf.SDK.InParams["filter__urlQuery"]; ok {
+			if err = nf.DecodeURLQuery(); err != nil {
+				return fmt.Errorf("failed to decode url query for filter component, %v", err)
+			}
+		} else {
+			if err := common.Transfer(c.State, &nf.State); err != nil {
+				return err
+			}
+		}
+		nodes = DoFilter(nodeList, nf.State.Values)
 	case common.CMPDashboardFilterOperationKey, common.CMPDashboardTableTabs, cptype.RenderingOperation:
 		if err := common.Transfer(c.State, &nf.State); err != nil {
 			return err
 		}
 		nodes = DoFilter(nodeList, nf.State.Values)
+		if err = nf.EncodeURLQuery(); err != nil {
+			return err
+		}
 	default:
 		nodes = nodeList
 	}
@@ -280,6 +297,35 @@ func getFilterOperation() map[string]interface{} {
 	return map[string]interface{}{"filter": ops}
 }
 
+func (nf *NodeFilter) DecodeURLQuery() error {
+	query, ok := nf.SDK.InParams["filter__urlQuery"].(string)
+	if !ok {
+		return nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(query)
+	if err != nil {
+		return err
+	}
+
+	var values filter.Values
+	if err := json.Unmarshal(decoded, &values); err != nil {
+		return err
+	}
+	nf.State.Values = values
+	return nil
+}
+
+func (nf *NodeFilter) EncodeURLQuery() error {
+	jsonData, err := json.Marshal(nf.State.Values)
+	if err != nil {
+		return err
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	nf.State.FilterUrlQuery = encoded
+	return nil
+}
+
 // SetComponentValue mapping properties to Component
 func (nf *NodeFilter) SetComponentValue(c *cptype.Component) error {
 	var (
@@ -298,7 +344,7 @@ func (nf *NodeFilter) SetComponentValue(c *cptype.Component) error {
 }
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-nodes", "nodeFilter", func() servicehub.Provider {
+	base.InitProviderWithCreator("cmp-dashboard-nodes", "filter", func() servicehub.Provider {
 		return &NodeFilter{}
 	})
 }

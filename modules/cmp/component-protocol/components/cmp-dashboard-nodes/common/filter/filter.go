@@ -44,9 +44,10 @@ func (f *Filter) GetFilterProps(labels map[string]struct{}) Props {
 type Values map[string]interface{}
 
 type State struct {
-	Conditions  []Condition `json:"conditions"`
-	Values      Values      `json:"values"`
-	ClusterName string      `json:"clusterName"`
+	Conditions     []Condition `json:"conditions"`
+	Values         Values      `json:"values"`
+	ClusterName    string      `json:"clusterName"`
+	FilterUrlQuery string      `json:"filter__urlQuery,omitempty"`
 }
 type Condition struct {
 	EmptyText   string   `json:"emptyText"`

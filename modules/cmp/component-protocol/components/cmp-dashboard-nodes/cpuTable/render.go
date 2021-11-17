@@ -16,6 +16,7 @@ package cpuTable
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 
@@ -77,6 +78,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	} else {
 		ct.Props["visible"] = true
 	}
+
 	if event.Operation != cptype.InitializeOperation {
 		switch event.Operation {
 		//case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
@@ -110,6 +112,15 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			(*gs)["OperationKey"] = common.CMPDashboardOnlineNode
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
+		}
+		if err = ct.EncodeURLQuery(); err != nil {
+			return err
+		}
+	} else {
+		if _, ok := ct.SDK.InParams["table__urlQuery"]; ok {
+			if err = ct.DecodeURLQuery(); err != nil {
+				return fmt.Errorf("failed to decode url query for filter component, %v", err)
+			}
 		}
 	}
 

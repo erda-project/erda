@@ -16,8 +16,11 @@ package tableTabs
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/square/go-jose.v2/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -44,9 +47,16 @@ func (t *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Sc
 		},
 	},
 	}
+
 	switch event.Operation {
 	case cptype.InitializeOperation:
-		t.State.ActiveKey = CPU_TAB
+		if _, ok := t.SDK.InParams["tableTabs__urlQuery"]; ok {
+			if err := t.DecodeURLQuery(); err != nil {
+				return fmt.Errorf("failed to decode url query for filter component, %v", err)
+			}
+		} else {
+			t.State.ActiveKey = CPU_TAB
+		}
 	case common.CMPDashboardTableTabs:
 		m1 := event.OperationData["meta"].(map[string]interface{})
 		m2 := m1["activeKey"].(map[string]interface{})
@@ -56,8 +66,40 @@ func (t *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Sc
 	}
 	(*gs)["activeKey"] = t.State.ActiveKey
 	t.getOperations()
-
+	err := t.EncodeURLQuery()
+	if err != nil {
+		return err
+	}
 	return t.RenderProtocol(c)
+}
+
+func (t *TableTabs) DecodeURLQuery() error {
+	query, ok := t.SDK.InParams["tableTabs__urlQuery"].(string)
+	if !ok {
+		return nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(query)
+	if err != nil {
+		return err
+	}
+
+	var values string
+	if err := json.Unmarshal(decoded, &values); err != nil {
+		return err
+	}
+	t.State.ActiveKey = values
+	return nil
+}
+
+func (t *TableTabs) EncodeURLQuery() error {
+	jsonData, err := json.Marshal(t.State.ActiveKey)
+	if err != nil {
+		return err
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	t.State.TableTabsURLQuery = encoded
+	return nil
 }
 
 func (t *TableTabs) getOperations() {

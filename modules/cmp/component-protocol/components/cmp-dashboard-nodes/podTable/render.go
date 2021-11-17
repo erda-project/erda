@@ -16,6 +16,7 @@ package podTable
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -100,6 +101,15 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 			(*gs)["OperationKey"] = common.CMPDashboardOnlineNode
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
+		}
+		if err = pt.EncodeURLQuery(); err != nil {
+			return err
+		}
+	} else {
+		if _, ok := pt.SDK.InParams["table__urlQuery"]; ok {
+			if err = pt.DecodeURLQuery(); err != nil {
+				return fmt.Errorf("failed to decode url query for filter component, %v", err)
+			}
 		}
 	}
 	if err = pt.RenderList(c, table.Pod, gs); err != nil {
