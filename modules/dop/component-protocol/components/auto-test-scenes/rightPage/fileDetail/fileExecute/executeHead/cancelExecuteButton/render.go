@@ -81,6 +81,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 				visible = false
 			}
 		}
+		if ca.pipelineId == 0 {
+			visible = false
+		}
 		c.Props = map[string]interface{}{
 			"text":    "取消执行",
 			"visible": visible,

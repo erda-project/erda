@@ -388,6 +388,7 @@ rendering:
     - name: executeHistoryButton
     - name: executeTaskTable
     - name: resultDrawer
+    - name: cancelExecuteButton
     - name: scenesSetConfig
     - name: scenesSetTitle
     - name: scenesSetInfo
