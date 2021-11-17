@@ -60,8 +60,8 @@ type componentInfo struct {
 }
 
 var ComponentInfo = map[string]*componentInfo{
-	"AppMonitor": {
-		enName: "AppMonitor",
+	"MonitorCenter": {
+		enName: "MonitorCenter",
 		cnName: "应用监控",
 	},
 	"LogAnalyze": {
@@ -148,6 +148,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				if len(child.Href) > 0 {
 					child.Href = s.version + child.Href
 				}
+				menuMap[child.Key] = child
 			}
 			menuMap[item.Key] = item
 		}
@@ -181,6 +182,9 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				for k, v := range params {
 					item.Params[k] = fmt.Sprint(v)
 				}
+			}
+			if engine != "monitor" {
+				item.Params["_enabled"] = "true"
 			}
 
 			// setup exists
@@ -350,6 +354,9 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 		for _, item := range setParams {
 			item.Params = monitor.Params
 			for _, child := range item.Children {
+				if child.Params != nil {
+					continue
+				}
 				child.Params = monitor.Params
 			}
 		}
