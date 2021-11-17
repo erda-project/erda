@@ -244,7 +244,7 @@ func (client *DBClient) PagingTestCases(req apistructs.TestCasePagingRequest) ([
 	baseSQL = baseSQL.Where("`tc`.`project_id` = ?", req.ProjectID)
 	// test set id
 	if req.TestSetID > 0 {
-		baseSQL = baseSQL.Where("`ts`.`directory` LIKE '" + baseTestSet.Directory + "%'")
+		baseSQL = baseSQL.Where("`ts`.`directory` LIKE ? OR `ts`.`directory` = ?", baseTestSet.Directory+"/%", baseTestSet.Directory)
 	}
 	// recycled
 	baseSQL = baseSQL.Where("`tc`.`recycled` = ?", req.Recycled)
