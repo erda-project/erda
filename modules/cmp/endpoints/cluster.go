@@ -196,6 +196,9 @@ func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, var
 		err = fmt.Errorf("failed to offline cluster: %v", err)
 		return
 	}
+
+	e.SteveAggregator.Delete(req.ClusterName)
+
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
 		Data:   apistructs.OfflineEdgeClusterData{RecordID: recordID},
