@@ -62,6 +62,15 @@ type SceneSetRequest struct {
 	IdentityInfo
 }
 
+type AutotestExecuteSceneSetRequest struct {
+	AutoTestSceneSet       SceneSet          `json:"sceneSet"`
+	ClusterName            string            `json:"clusterName"`
+	Labels                 map[string]string `json:"labels"`
+	UserID                 string            `json:"userId"`
+	ConfigManageNamespaces string            `json:"configManageNamespaces"`
+	IdentityInfo           IdentityInfo      `json:"identityInfo"`
+}
+
 func (req *SceneSetRequest) Validate() error {
 	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(SceneSetNameMaxLength)); err != nil {
 		return err

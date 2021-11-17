@@ -102,9 +102,9 @@ hierarchy:
     executeHead:
       left: executeInfoTitle
       right:
-    #        - refreshButton
-    #        - cancelExecuteButton
-    #        - executeHistory
+            - refreshButton
+            - cancelExecuteButton
+            - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryPop

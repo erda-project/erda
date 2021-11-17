@@ -34,8 +34,10 @@ import (
 
 type ComponentAction struct {
 	base.DefaultProvider
-	sdk        *cptype.SDK
-	bdl        *bundle.Bundle
+	sdk      *cptype.SDK
+	bdl      *bundle.Bundle
+	gsHelper *gshelper.GSHelper
+
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	State      state                  `json:"state"`
@@ -86,6 +88,7 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	a.sdk = cputil.SDK(ctx)
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	a.gsHelper = gshelper.NewGSHelper(gs)
 
 	if a.pipelineIDFromExecuteHistoryTable == 0 {
 		c.Data = map[string]interface{}{}
@@ -95,19 +98,32 @@ func (a *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	// listen on operation
 	switch event.Operation {
 	case cptype.RenderingOperation, cptype.InitializeOperation:
-		if a.sceneID == 0 {
+		setID := a.gsHelper.GetGlobalSelectedSetID()
+		if a.sceneID == 0 && setID == 0 {
 			return nil
 		}
 		res := []Breadcrumb{}
 		if !a.State.Unfold {
-			req := apistructs.AutotestSceneRequest{SceneID: a.sceneID}
-			req.UserID = a.sdk.Identity.UserID
-			scene, err := a.bdl.GetAutoTestScene(req)
-			if err != nil {
-				logrus.Errorf("get autoTestScene failed, err: %v", err)
-				return err
+			if a.sceneID != 0 {
+				req := apistructs.AutotestSceneRequest{SceneID: a.sceneID}
+				req.UserID = a.sdk.Identity.UserID
+				scene, err := a.bdl.GetAutoTestScene(req)
+				if err != nil {
+					logrus.Errorf("get autoTestScene failed, err: %v", err)
+					return err
+				}
+				a.State.Name = scene.Name
 			}
-			a.State.Name = scene.Name
+			if setID != 0 {
+				req := apistructs.SceneSetRequest{SetID: setID}
+				req.UserID = a.sdk.Identity.UserID
+				sceneSet, err := a.bdl.GetSceneSet(req)
+				if err != nil {
+					logrus.Errorf("get autoTestSceneSet failed, err: %v", err)
+					return err
+				}
+				a.State.Name = sceneSet.Name
+			}
 		} else {
 			b, err := json.Marshal(a.Data["list"])
 			if err != nil {

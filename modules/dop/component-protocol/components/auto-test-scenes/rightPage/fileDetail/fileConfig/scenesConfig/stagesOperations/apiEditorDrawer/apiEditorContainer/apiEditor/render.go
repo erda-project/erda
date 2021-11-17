@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
@@ -98,11 +99,13 @@ func (ae *ApiEditor) Render(ctx context.Context, c *cptype.Component, scenario c
 		return err
 	}
 	// var orgID uint64 = 1
-	sceneIDStr := fmt.Sprintf("%v", cputil.GetInParamByKey(ctx, "sceneId__urlQuery"))
-	sceneID, err := strconv.ParseUint(sceneIDStr, 10, 64)
-	if err != nil {
-		return err
-	}
+	// sceneIDStr := fmt.Sprintf("%v", cputil.GetInParamByKey(ctx, "sceneId__urlQuery"))
+	// sceneID, err := strconv.ParseUint(sceneIDStr, 10, 64)
+	gh := gshelper.NewGSHelper(gs)
+	sceneID := gh.GetFileTreeSceneID()
+	// if err != nil {
+	// 	return err
+	// }
 	ae.State.SceneId = sceneID
 
 	projectID, err := type_conversion.InterfaceToUint64(cputil.GetInParamByKey(ctx, "projectId"))
