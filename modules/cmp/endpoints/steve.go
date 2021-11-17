@@ -54,11 +54,7 @@ func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars 
 	}
 
 	if strutil.Equal(req.Action, bundle.DeleteAction, true) {
-		err := e.SteveAggregator.Delete(req.Content.Name)
-		if err != nil {
-			logrus.Errorf("failed to stop steve server for cluster %s, %v", req.Content.Name, err)
-			return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, nil
-		}
+		e.SteveAggregator.Delete(req.Content.Name)
 	}
 
 	return httpserver.HTTPResponse{Status: http.StatusOK}, nil
