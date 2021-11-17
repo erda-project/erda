@@ -16,6 +16,10 @@ package apistructs
 
 type K8SClusters struct {
 	Header
+	Data ClustersData `json:"data"`
+}
+
+type ClustersData struct {
 	Ready   []string `json:"ready"`
 	UnReady []string `json:"unReady"`
 }

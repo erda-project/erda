@@ -73,7 +73,9 @@ func (e *Endpoints) ListK8SClusters(ctx context.Context, r *http.Request, vars m
 		Header: apistructs.Header{
 			Success: true,
 		},
-		Ready:   readyInOrg,
-		UnReady: unreadyInOrg,
+		Data: apistructs.ClustersData{
+			Ready:   readyInOrg,
+			UnReady: unreadyInOrg,
+		},
 	})
 }
