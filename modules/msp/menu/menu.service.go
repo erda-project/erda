@@ -340,12 +340,10 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 	for _, item := range items {
 		if item.Params == nil {
 			setParams = append(setParams, item)
-		} else {
-			if monitor == nil {
-				monitor = item
-			}
 		}
 		switch item.Key {
+		case "MonitorCenter":
+			monitor = item
 		case "DiagnoseAnalyzer":
 			loghub = item
 		}
