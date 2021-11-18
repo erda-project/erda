@@ -109,11 +109,29 @@ func (rt *ReportTable) fetchRequestOnNamespaces(ctx context.Context, namespaces 
 	return rt.cmp.GetNamespacesResources(ctx, &getNamespacesResourcesReq)
 }
 
-func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNamespacesResourcesResponse, namespaces *apistructs.GetProjectsNamesapcesResponseData,
+func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNamespacesResourcesResponse,
+	namespaces *apistructs.GetProjectsNamesapcesResponseData,
 	cpuPerNode, memPerNode uint64, groupBy string) *apistructs.ResourceOverviewReportData {
-	l := logrus.WithField("func", "*ReportTable.groupResponse")
 	var (
-		langCodes, _   = ctx.Value("lang_codes").(i18n.LanguageCodes)
+		langCodes, _ = ctx.Value("lang_codes").(i18n.LanguageCodes)
+	)
+	data, sharedResource := AddResourceForEveryProject(namespaces, resources)
+	sharedText := rt.trans.Text(langCodes, "SharedResources")
+	ownerUnknown := rt.trans.Text(langCodes, "OwnerUnknown")
+	sharedItem := newSharedItem(sharedResource, sharedText, ownerUnknown)
+	_ = sharedItem // shared resource is not used for now
+
+	if groupBy == "owner" {
+		data.GroupByOwner()
+	}
+	data.Calculates(cpuPerNode, memPerNode)
+
+	return data
+}
+
+func AddResourceForEveryProject(namespaces *apistructs.GetProjectsNamesapcesResponseData,
+	resources *pb.GetNamespacesResourcesResponse) (*apistructs.ResourceOverviewReportData, [2]uint64) {
+	var (
 		sharedResource [2]uint64
 		data           apistructs.ResourceOverviewReportData
 	)
@@ -125,17 +143,9 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 					sharedResource[1] += namespaceItem.GetMemRequest()
 					continue
 				}
-
-				var belongsToProject = false
-				if projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()) {
-					l.Debugf("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
-						projectItem.ProjectID, projectItem.Clusters, clusterItem.GetClusterName(), namespaceItem.GetNamespace(),
-						namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
-					belongsToProject = true
+				if belongsToProject := projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()); belongsToProject {
 					projectItem.AddResource(namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
-					break
-				}
-				if !belongsToProject {
+				} else {
 					sharedResource[0] += namespaceItem.GetCpuRequest()
 					sharedResource[1] += namespaceItem.GetMemRequest()
 				}
@@ -160,17 +170,7 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 		}
 		data.List = append(data.List, &item)
 	}
-	sharedText := rt.trans.Text(langCodes, "SharedResources")
-	ownerUnknown := rt.trans.Text(langCodes, "OwnerUnknown")
-	sharedItem := newSharedItem(sharedResource, sharedText, ownerUnknown)
-	_ = sharedItem
-
-	if groupBy == "owner" {
-		data.GroupByOwner()
-	}
-	data.Calculates(cpuPerNode, memPerNode)
-
-	return &data
+	return &data, sharedResource
 }
 
 type ReportTableOption func(table *ReportTable)

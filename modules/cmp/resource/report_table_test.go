@@ -48,3 +48,46 @@ func TestNewReportTable(t *testing.T) {
 		resource.ReportTableWithTrans(trans),
 	)
 }
+
+func TestAddResourceForEveryProject(t *testing.T) {
+	var (
+		namespaces = &apistructs.GetProjectsNamesapcesResponseData{
+			Total: 0,
+			List: []*apistructs.ProjectNamespaces{
+				{
+					ProjectID:          1,
+					ProjectName:        "project-1",
+					ProjectDisplayName: "project-1",
+					ProjectDesc:        "",
+					OwnerUserID:        1,
+					OwnerUserName:      "user-1",
+					OwnerUserNickname:  "user-",
+					CPUQuota:           10,
+					MemQuota:           10,
+					Clusters: map[string][]string{
+						"cluster-1": {"namespace-1", "namespace-2"},
+					},
+				},
+			},
+		}
+		resources = &pb.GetNamespacesResourcesResponse{
+			Total: 0,
+			List: []*pb.ClusterResourceItem{
+				{
+					Success:     true,
+					Err:         "",
+					ClusterName: "cluster-1",
+					List: []*pb.NamespaceResourceDetail{
+						{
+							Namespace:  "namespace-1",
+							CpuRequest: 5,
+							MemRequest: 5,
+						},
+					},
+				},
+			},
+		}
+	)
+	data, _ := resource.AddResourceForEveryProject(namespaces, resources)
+	t.Logf("data: %+v", data)
+}
