@@ -1612,15 +1612,16 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			OwnerUserID:       0,
 			OwnerUserName:     unknownName,
 			OwnerUserNickname: unknownName,
+			Clusters:          make(map[string][]string),
 		}
-
+		item.PatchClusters(quotasM[uint64(item.ProjectID)], clusterNames)
 		clustersCache, ok, err := p.retrieveClustersNamespaces(uint64(proj.ID))
 		if err != nil {
 			l.WithError(err).Errorln("failed to retrieveClustersNamespaces")
 			return nil, err
 		}
 		if ok {
-			item.PatchClusters(clusterNames, clustersCache.Namespaces)
+			item.PatchClustersNamespaces(clustersCache.Namespaces)
 		}
 		item.PatchQuota(quotasM[uint64(item.ProjectID)])
 

@@ -55,18 +55,44 @@ func TestGetQuotaOnClustersResponse_ReCalcu(t *testing.T) {
 
 func TestProjectNamespaces_PatchClusters(t *testing.T) {
 	var (
+		p apistructs.ProjectNamespaces
+		q = apistructs.ProjectQuota{
+			ProdClusterName:    "prod",
+			StagingClusterName: "staging",
+			TestClusterName:    "test",
+			DevClusterName:     "dev",
+		}
+		filter = []string{"prod", "staging"}
+	)
+	p.PatchClusters(&q, filter)
+	t.Logf("%+v", p.Clusters)
+	if _, ok := p.Clusters["prod"]; !ok {
+		t.Fatal("error")
+	}
+	if _, ok := p.Clusters["staging"]; !ok {
+		t.Fatal("error")
+	}
+	if _, ok := p.Clusters["test"]; ok {
+		t.Fatal("error")
+	}
+	if _, ok := p.Clusters["dev"]; ok {
+		t.Fatal("error")
+	}
+}
+
+func TestProjectNamespaces_PatchClustersNamespaces(t *testing.T) {
+	var (
 		p          apistructs.ProjectNamespaces
-		clusters   []string
 		namespaces = make(map[string][]string)
 	)
-	p.PatchClusters(clusters, namespaces)
+	p.PatchClustersNamespaces(namespaces)
 
-	clusters = []string{"erda-hongkong", "terminus-dev"}
+	p.Clusters = map[string][]string{"erda-hongkong": nil, "terminus-dev": nil}
 	namespaces = map[string][]string{
 		"erda-hongkong": {"default", "project-387-test"},
 		"terminus-dev":  {"default", "project-387-dev"},
 	}
-	p.PatchClusters(clusters, namespaces)
+	p.PatchClustersNamespaces(namespaces)
 
 	var quota = &apistructs.ProjectQuota{
 		ProdClusterName:    "erda-hongkong",

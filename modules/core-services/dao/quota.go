@@ -15,6 +15,7 @@
 package dao
 
 import (
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -27,6 +28,9 @@ func (client *DBClient) GetWorkspaceQuota(projectID, workspace string) (uint64, 
 	if err := client.Find(&projectQuota, map[string]interface{}{
 		"project_id": projectID,
 	}).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return 0, 0, nil
+		}
 		return 0, 0, err
 	}
 
