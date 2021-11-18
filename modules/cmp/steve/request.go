@@ -260,38 +260,34 @@ func (a *Aggregator) ListSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	if lexpired {
-		if !cache.ExpireFreshQueue.IsFull() {
-			tmp := *req
-			task := &queue.Task{
-				Key: key.GetKey(),
-				Do: func() {
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-					defer cancel()
-					apiOp, resp, err := a.getApiRequest(ctx, &tmp)
-					if err != nil {
-						logrus.Errorf("failed to get api request in task, %v", err)
-						return
-					}
+		tmp := *req
+		task := &queue.Task{
+			Key: key.GetKey(),
+			Do: func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				defer cancel()
+				apiOp, resp, err := a.getApiRequest(ctx, &tmp)
+				if err != nil {
+					logrus.Errorf("failed to get api request in task, %v", err)
+					return
+				}
 
-					list, err := a.list(apiOp, resp, tmp.ClusterName)
-					if err != nil {
-						logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
-						return
-					}
-					value, err := cache.GetInterfaceValue(list)
-					if err != nil {
-						logrus.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
-						return
-					}
-					if err = cache.GetFreeCache().Set(key.GetKey(), value, time.Second.Nanoseconds()*30); err != nil {
-						logrus.Errorf("failed to set cache for %s, %v", apiOp.Type, err)
-					}
-				},
-			}
-			cache.ExpireFreshQueue.Enqueue(task)
-		} else {
-			logrus.Warnf("queue size is full, task is ignored, key:%s", key.GetKey())
+				list, err := a.list(apiOp, resp, tmp.ClusterName)
+				if err != nil {
+					logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
+					return
+				}
+				value, err := cache.GetInterfaceValue(list)
+				if err != nil {
+					logrus.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
+					return
+				}
+				if err = cache.GetFreeCache().Set(key.GetKey(), value, time.Second.Nanoseconds()*30); err != nil {
+					logrus.Errorf("failed to set cache for %s, %v", apiOp.Type, err)
+				}
+			},
 		}
+		cache.ExpireFreshQueue.Enqueue(task)
 	}
 
 	logrus.Infof("get %s from cache", req.Type)

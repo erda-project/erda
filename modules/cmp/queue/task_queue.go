@@ -15,8 +15,6 @@
 package queue
 
 import (
-	"sync"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,49 +24,27 @@ type Task struct {
 }
 
 type TaskQueue struct {
-	tasks   chan *Task
-	keys    map[string]struct{}
-	maxSize int
-	mtx     sync.Mutex
+	tasks chan *Task
 }
 
 func NewTaskQueue(maxSize int) *TaskQueue {
 	return &TaskQueue{
-		tasks:   make(chan *Task, maxSize),
-		keys:    make(map[string]struct{}, maxSize),
-		maxSize: maxSize,
+		tasks: make(chan *Task, maxSize),
 	}
-}
-
-func (q *TaskQueue) IsFull() bool {
-	q.mtx.Lock()
-	defer q.mtx.Unlock()
-	return len(q.keys) >= q.maxSize
 }
 
 func (q *TaskQueue) Enqueue(task *Task) {
-	q.mtx.Lock()
-	if len(q.keys) >= q.maxSize {
+	select {
+	case q.tasks <- task:
+	default:
 		logrus.Warnf("queue size is full, task is ignored, key:%s", task.Key)
-		q.mtx.Unlock()
-		return
 	}
-	if _, ok := q.keys[task.Key]; ok {
-		q.mtx.Unlock()
-		return
-	}
-	q.keys[task.Key] = struct{}{}
-	q.mtx.Unlock()
-	q.tasks <- task
 }
 
 func (q *TaskQueue) ExecuteLoop() {
 	for {
 		task := <-q.tasks
 		logrus.Infof("start execute loop")
-		q.mtx.Lock()
-		delete(q.keys, task.Key)
-		q.mtx.Unlock()
 		task.Do()
 		logrus.Infof("end execute loop")
 	}
