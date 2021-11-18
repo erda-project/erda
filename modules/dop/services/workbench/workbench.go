@@ -159,6 +159,9 @@ func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, i
 }
 
 func (w *Workbench) GetUndoneProjectItems(req apistructs.WorkbenchRequest, userID string) (*apistructs.WorkbenchResponse, error) {
+	if len(req.ProjectIDs) == 0 {
+		return &apistructs.WorkbenchResponse{}, nil
+	}
 	req.IssuePagingRequest = apistructs.IssuePagingRequest{
 		OrgID:    int64(req.OrgID),
 		PageNo:   1,
