@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -368,4 +369,34 @@ func GetAllNamespacesFromCache(ctx context.Context, steveServer cmp.SteveServer,
 	comb := values[0].String()
 	namespaces := strings.Split(comb, ",")
 	return namespaces, nil
+}
+
+// ListSteveResourceByNamespaces list steve resource in target namespaces
+func ListSteveResourceByNamespaces(ctx context.Context, steveServer cmp.SteveServer, req *apistructs.SteveRequest, namespaces []string) ([]types.APIObject, error) {
+	newReq := &apistructs.SteveRequest{
+		NoAuthentication: req.NoAuthentication,
+		UserID:           req.UserID,
+		OrgID:            req.OrgID,
+		Type:             req.Type,
+		ClusterName:      req.ClusterName,
+		LabelSelector:    req.LabelSelector,
+		FieldSelector:    req.FieldSelector,
+	}
+	if len(namespaces) == 0 {
+		return steveServer.ListSteveResource(ctx, newReq)
+	}
+
+	var (
+		list, nsList []types.APIObject
+		err          error
+	)
+	for _, namespace := range namespaces {
+		newReq.Namespace = namespace
+		nsList, err = steveServer.ListSteveResource(ctx, newReq)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, nsList...)
+	}
+	return list, nil
 }

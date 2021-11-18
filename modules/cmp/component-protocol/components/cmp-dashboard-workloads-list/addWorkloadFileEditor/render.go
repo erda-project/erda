@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -166,6 +167,8 @@ func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 	if _, err := e.server.CreateSteveResource(e.ctx, req); err != nil {
 		return err
 	}
+
+	steve.RemoveCache(e.State.ClusterName, e.State.Values.Namespace, string(apistructs.K8SPod))
 	return nil
 }
 

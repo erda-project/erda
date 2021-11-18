@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -203,7 +204,11 @@ func (b *ComponentOperationButton) DeleteWorkload() error {
 		Namespace:   namespace,
 	}
 
-	return b.server.DeleteSteveResource(b.ctx, req)
+	if err := b.server.DeleteSteveResource(b.ctx, req); err != nil {
+		return err
+	}
+	steve.RemoveCache(b.State.ClusterName, namespace, string(apistructs.K8SPod))
+	return nil
 }
 
 func (b *ComponentOperationButton) Transfer(c *cptype.Component) {

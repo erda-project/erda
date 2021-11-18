@@ -148,6 +148,8 @@ func (b *ComponentRestartButton) RestartWorkload() error {
 		return err
 	}
 
+	steve.RemoveCache(clusterName, namespace, string(apistructs.K8SPod))
+
 	auditCtx := map[string]interface{}{
 		middleware.AuditClusterName:  clusterName,
 		middleware.AuditResourceName: name,

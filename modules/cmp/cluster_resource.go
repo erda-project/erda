@@ -179,7 +179,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 			logrus.Errorf("failed to marshal value for namespace %s in GetNamespaceAllocatedRes, %v", namespace, err)
 			continue
 		}
-		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, namespace, nsCacheType), value, time.Second.Nanoseconds()*30); err != nil {
+		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, namespace, nsCacheType), value, time.Minute.Nanoseconds()*5); err != nil {
 			logrus.Errorf("failed to set cache for namespace %s in GetNamespaceAllocatedRes, %v", namespace, err)
 			continue
 		}
@@ -219,7 +219,7 @@ func GetNamespaceAllocatedRes(ctx context.Context, server SteveServer, noAuthent
 					logrus.Errorf("failed to marshal value for namespace %s in GetNamespaceAllocatedRes goroutine, %v", namespace, err)
 					continue
 				}
-				if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, namespace, nsCacheType), value, time.Second.Nanoseconds()*30); err != nil {
+				if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, namespace, nsCacheType), value, time.Minute.Nanoseconds()*5); err != nil {
 					logrus.Errorf("failed to set cache for namespace %s in GetNamespaceAllocatedRes goroutine, %v", namespace, err)
 					continue
 				}
@@ -320,7 +320,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 			logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes, %v", nodeName, err)
 			continue
 		}
-		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, nodeCacheType), value, time.Second.Nanoseconds()*30); err != nil {
+		if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, nodeCacheType), value, time.Minute.Nanoseconds()*5); err != nil {
 			logrus.Errorf("failed to set cache for node %s in GetNodeAllocatedRes, %v", nodeName, err)
 			continue
 		}
@@ -364,7 +364,7 @@ func GetNodesAllocatedRes(ctx context.Context, server SteveServer, noAuthenticat
 					logrus.Errorf("failed to marshal value for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
 					continue
 				}
-				if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, nodeCacheType), value, time.Second.Nanoseconds()*30); err != nil {
+				if err = cache.GetFreeCache().Set(cache.GenerateKey(clusterName, nodeName, nodeCacheType), value, time.Minute.Nanoseconds()*5); err != nil {
 					logrus.Errorf("failed to set cache for node %s in GetNodeAllocatedRes goroutine, %v", nodeName, err)
 					continue
 				}
