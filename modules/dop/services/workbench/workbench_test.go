@@ -94,7 +94,9 @@ func TestWorkbench_GetUndoneProjectItems(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				req: apistructs.WorkbenchRequest{},
+				req: apistructs.WorkbenchRequest{
+					ProjectIDs: []uint64{1},
+				},
 			},
 			want: &apistructs.WorkbenchResponse{
 				Data: apistructs.WorkbenchResponseData{
@@ -104,6 +106,14 @@ func TestWorkbench_GetUndoneProjectItems(t *testing.T) {
 					},
 				},
 			},
+			wantErr: false,
+		},
+		{
+			name: "empty",
+			args: args{
+				req: apistructs.WorkbenchRequest{},
+			},
+			want:    &apistructs.WorkbenchResponse{},
 			wantErr: false,
 		},
 	}
