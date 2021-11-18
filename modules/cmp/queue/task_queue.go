@@ -16,10 +16,8 @@ package queue
 
 import (
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/smallnest/queue"
 )
 
 type Task struct {
@@ -28,61 +26,38 @@ type Task struct {
 }
 
 type TaskQueue struct {
-	tasks   *queue.LKQueue
-	keys    map[string]struct{}
-	maxSize int
-	mtx     sync.Mutex
+	tasks chan *Task
+	keys  map[string]struct{}
+	mtx   sync.Mutex
 }
 
 func NewTaskQueue(maxSize int) *TaskQueue {
 	return &TaskQueue{
-		tasks:   queue.NewLKQueue(),
-		keys:    make(map[string]struct{}, maxSize),
-		maxSize: maxSize,
+		tasks: make(chan *Task, maxSize),
+		keys:  make(map[string]struct{}, maxSize),
 	}
-}
-
-func (q *TaskQueue) IsFull() bool {
-	q.mtx.Lock()
-	defer q.mtx.Unlock()
-	return len(q.keys) >= q.maxSize
 }
 
 func (q *TaskQueue) Enqueue(task *Task) {
 	q.mtx.Lock()
-	if len(q.keys) >= q.maxSize {
-		logrus.Warnf("queue size is full, task is ignored, key:%s", task.Key)
-		q.mtx.Unlock()
-		return
-	}
+	defer q.mtx.Unlock()
 	if _, ok := q.keys[task.Key]; ok {
-		q.mtx.Unlock()
 		return
 	}
-	q.keys[task.Key] = struct{}{}
-	q.mtx.Unlock()
-	q.tasks.Enqueue(task)
-}
-
-func (q *TaskQueue) Dequeue() *Task {
-	ele := q.tasks.Dequeue()
-	if ele == nil {
-		return nil
+	select {
+	case q.tasks <- task:
+		q.keys[task.Key] = struct{}{}
+	default:
+		logrus.Warnf("queue size is full, task is ignored, key:%s", task.Key)
 	}
-	task := ele.(*Task)
-	q.mtx.Lock()
-	delete(q.keys, task.Key)
-	q.mtx.Unlock()
-	return task
 }
 
-func (q *TaskQueue) ExecuteLoop(interval time.Duration) {
+func (q *TaskQueue) ExecuteLoop() {
 	for {
-		logrus.Infof("start execute loop")
-		for task := q.Dequeue(); task != nil; task = q.Dequeue() {
-			task.Do()
-		}
-		logrus.Infof("end execute loop")
-		time.Sleep(interval)
+		task := <-q.tasks
+		task.Do()
+		q.mtx.Lock()
+		delete(q.keys, task.Key)
+		q.mtx.Unlock()
 	}
 }

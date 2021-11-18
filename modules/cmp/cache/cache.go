@@ -78,7 +78,7 @@ func init() {
 		queueSize = size
 	}
 	ExpireFreshQueue = queue.NewTaskQueue(queueSize)
-	go ExpireFreshQueue.ExecuteLoop(5 * time.Second)
+	go ExpireFreshQueue.ExecuteLoop()
 }
 
 var freeCache *Cache

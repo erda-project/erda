@@ -25,6 +25,7 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -161,7 +163,11 @@ func (t *ComponentEventTable) RenderList() error {
 		ClusterName: t.State.ClusterName,
 	}
 
-	list, err := t.server.ListSteveResource(t.ctx, &req)
+	var (
+		list []types.APIObject
+		err  error
+	)
+	list, err = cputil2.ListSteveResourceByNamespaces(t.ctx, t.server, &req, t.State.FilterValues.Namespace)
 	if err != nil {
 		return err
 	}

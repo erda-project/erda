@@ -236,25 +236,12 @@ func (a *Aggregator) ListSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	key := CacheKey{
-		Kind:        apiOp.Type,
-		Namespace:   apiOp.Namespace,
+		Kind:        string(req.Type),
+		Namespace:   req.Namespace,
 		ClusterName: req.ClusterName,
 	}
 	values, lexpired, err := cache.GetFreeCache().Get(key.GetKey())
 	if values == nil || err != nil {
-		if apiOp.Namespace != "" {
-			key := CacheKey{
-				Kind:        apiOp.Type,
-				Namespace:   "",
-				ClusterName: req.ClusterName,
-			}
-			allNsValues, expired, err := cache.GetFreeCache().Get(key.GetKey())
-			if allNsValues != nil && err == nil && !expired {
-				logrus.Infof("get %s from all namespace cache", req.Type)
-				return getByNamespace(allNsValues[0].Value().([]types.APIObject), apiOp.Namespace), nil
-			}
-		}
-
 		logrus.Infof("can not get cache for %s, list from steve server", req.Type)
 		queryQueue.Acquire(req.ClusterName, 1)
 		list, err := a.list(apiOp, resp, req.ClusterName)
@@ -273,38 +260,34 @@ func (a *Aggregator) ListSteveResource(ctx context.Context, req *apistructs.Stev
 	}
 
 	if lexpired {
-		if !cache.ExpireFreshQueue.IsFull() {
-			tmp := *req
-			task := &queue.Task{
-				Key: key.GetKey(),
-				Do: func() {
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-					defer cancel()
-					apiOp, resp, err := a.getApiRequest(ctx, &tmp)
-					if err != nil {
-						logrus.Errorf("failed to get api request in task, %v", err)
-						return
-					}
+		tmp := *req
+		task := &queue.Task{
+			Key: key.GetKey(),
+			Do: func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				defer cancel()
+				apiOp, resp, err := a.getApiRequest(ctx, &tmp)
+				if err != nil {
+					logrus.Errorf("failed to get api request in task, %v", err)
+					return
+				}
 
-					list, err := a.list(apiOp, resp, tmp.ClusterName)
-					if err != nil {
-						logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
-						return
-					}
-					value, err := cache.GetInterfaceValue(list)
-					if err != nil {
-						logrus.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
-						return
-					}
-					if err = cache.GetFreeCache().Set(key.GetKey(), value, time.Second.Nanoseconds()*30); err != nil {
-						logrus.Errorf("failed to set cache for %s, %v", apiOp.Type, err)
-					}
-				},
-			}
-			cache.ExpireFreshQueue.Enqueue(task)
-		} else {
-			logrus.Warnf("queue size is full, task is ignored, key:%s", key.GetKey())
+				list, err := a.list(apiOp, resp, tmp.ClusterName)
+				if err != nil {
+					logrus.Errorf("failed to list %s in task, %v", apiOp.Type, err)
+					return
+				}
+				value, err := cache.GetInterfaceValue(list)
+				if err != nil {
+					logrus.Errorf("failed to marshal cache data for %s, %v", apiOp.Type, err)
+					return
+				}
+				if err = cache.GetFreeCache().Set(key.GetKey(), value, time.Second.Nanoseconds()*30); err != nil {
+					logrus.Errorf("failed to set cache for %s, %v", apiOp.Type, err)
+				}
+			},
 		}
+		cache.ExpireFreshQueue.Enqueue(task)
 	}
 
 	logrus.Infof("get %s from cache", req.Type)
@@ -342,16 +325,6 @@ func setCacheForList(key string, list []types.APIObject) error {
 		return err
 	}
 	return nil
-}
-
-func getByNamespace(list []types.APIObject, namespace string) []types.APIObject {
-	var res []types.APIObject
-	for _, apiObj := range list {
-		if apiObj.Namespace() == namespace {
-			res = append(res, apiObj)
-		}
-	}
-	return res
 }
 
 func newReadCloser(obj interface{}) (io.ReadCloser, error) {
