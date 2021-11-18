@@ -144,6 +144,7 @@ func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, 
 	// clear
 	s.State.Visible = false
 	s.State.ActionType = ""
+	s.State.IsAddParallel = false
 	return nil
 }
 

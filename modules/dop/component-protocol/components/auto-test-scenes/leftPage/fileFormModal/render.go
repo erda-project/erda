@@ -82,7 +82,6 @@ func (a *ComponentFileFormModal) Render(ctx context.Context, c *cptype.Component
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -422,6 +421,10 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 }
 
 func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
+	defer func() {
+		// clear
+		a.State.IsAddParallel = false
+	}()
 	formData := a.State.FormData
 	var (
 		preScene *apistructs.AutoTestScene
@@ -431,6 +434,18 @@ func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
 		preScene, err = a.atTestPlan.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: a.State.SceneId})
 		if err != nil {
 			return err
+		}
+	}
+	preID := a.State.SceneId
+	if !a.State.IsAddParallel {
+		_, scenes, err := a.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: uint64(a.State.SceneSetKey)})
+		if err != nil {
+			return err
+		}
+		if len(scenes) > 0 {
+			preID = scenes[len(scenes)-1].ID
+		} else {
+			preID = 0
 		}
 	}
 	_, err = a.atTestPlan.CreateAutotestScene(apistructs.AutotestSceneRequest{
@@ -446,7 +461,7 @@ func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
 			}
 			return preScene.GroupID
 		}(),
-		PreID:        a.State.SceneId,
+		PreID:        preID,
 		IdentityInfo: apistructs.IdentityInfo{UserID: a.sdk.Identity.UserID},
 	})
 	if err != nil {

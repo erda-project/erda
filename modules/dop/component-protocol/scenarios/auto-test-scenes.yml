@@ -699,6 +699,8 @@ rendering:
           value: "{{ addScenesButton.visible }}"
         - name: "sceneSetKey"
           value: "{{ addScenesButton.sceneSetKey }}"
+        - name: "isAddParallel"
+          value: "{{ scenesStages.isAddParallel }}"
   referSceneSetButton:
     - name: fileFormModal
       state:

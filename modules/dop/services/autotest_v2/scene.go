@@ -110,7 +110,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 	}
 
 	// 一个场景集下500个场景
-	total, scs, err := svc.ListAutotestScene(req)
+	total, _, err := svc.ListAutotestScene(req)
 	if err != nil {
 		return 0, err
 	}
@@ -132,19 +132,11 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		Description: req.Description,
 		SpaceID:     req.SpaceID,
 		SetID:       req.SetID,
-		PreID: func() uint64 {
-			if req.PreID != 0 {
-				return req.PreID
-			}
-			if len(scs) == 0 {
-				return 0
-			}
-			return scs[len(scs)-1].ID
-		}(),
-		CreatorID: req.UserID,
-		Status:    apistructs.DefaultSceneStatus,
-		RefSetID:  req.RefSetID,
-		GroupID:   req.SceneGroupID,
+		PreID:       req.PreID,
+		CreatorID:   req.UserID,
+		Status:      apistructs.DefaultSceneStatus,
+		RefSetID:    req.RefSetID,
+		GroupID:     req.SceneGroupID,
 	}
 	if scene.RefSetID > 0 && req.Policy != "" {
 		scene.Policy = req.Policy
