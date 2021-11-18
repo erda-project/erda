@@ -105,7 +105,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	ps := (pv.(*processors.Processors)).Find("", scopeID, log.Tags)
 	var errs errorx.Errors
 	for _, processor := range ps {
-		name, fields, err := processor.Process(log.Content)
+		name, fields, appendTags, err := processor.Process(log.Content)
 		if err != nil {
 			// invalid processor or not match content
 			continue
@@ -117,6 +117,11 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 					// 后面大盘支持 field 过滤了，再调整
 					log.Tags[k] = s
 				}
+			}
+		}
+		if len(appendTags) > 0 {
+			for k, v := range appendTags {
+				log.Tags[k] = v
 			}
 		}
 		metric := &metrics.Metric{

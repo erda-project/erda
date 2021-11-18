@@ -27,15 +27,17 @@ import (
 )
 
 type config struct {
-	Pattern string            `json:"pattern"`
-	Keys    []*pb.FieldDefine `json:"keys"`
+	Pattern    string            `json:"pattern"`
+	Keys       []*pb.FieldDefine `json:"keys"`
+	AppendTags map[string]string `json:"appendTags"`
 }
 
 type processor struct {
-	metric   string
-	reg      *regexp.Regexp
-	keys     []*pb.FieldDefine
-	converts []func(text string) (interface{}, error)
+	metric     string
+	reg        *regexp.Regexp
+	keys       []*pb.FieldDefine
+	appendTags map[string]string
+	converts   []func(text string) (interface{}, error)
 }
 
 // New .
@@ -61,10 +63,11 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 		converts[i] = conv
 	}
 	return &processor{
-		metric:   metric,
-		reg:      reg,
-		keys:     c.Keys,
-		converts: converts,
+		metric:     metric,
+		reg:        reg,
+		keys:       c.Keys,
+		appendTags: c.AppendTags,
+		converts:   converts,
 	}, nil
 }
 
@@ -72,15 +75,15 @@ func New(metric string, cfg []byte) (processors.Processor, error) {
 var ErrNotMatch = fmt.Errorf("not match regexp")
 
 // Process .
-func (p *processor) Process(content string) (string, map[string]interface{}, error) {
+func (p *processor) Process(content string) (string, map[string]interface{}, map[string]string, error) {
 	match := p.reg.FindAllSubmatch(reflectx.StringToBytes(content), 1)
 	if len(match) <= 0 {
-		return "", nil, ErrNotMatch
+		return "", nil, nil, ErrNotMatch
 	}
 	fields := make(map[string]interface{})
 	for _, parts := range match {
 		if len(parts) != len(p.keys)+1 {
-			return "", nil, ErrNotMatch
+			return "", nil, nil, ErrNotMatch
 		}
 		for i, byts := range parts[1:] {
 			if i < len(p.keys) {
@@ -88,14 +91,15 @@ func (p *processor) Process(content string) (string, map[string]interface{}, err
 				convert := p.converts[i]
 				val, err := convert(reflectx.BytesToString(byts))
 				if err != nil {
-					return "", nil, ErrNotMatch
+					return "", nil, nil, ErrNotMatch
 				}
 				fields[key.Key] = val
 			}
 		}
 		break // 只处理第一次匹配
 	}
-	return p.metric, fields, nil
+
+	return p.metric, fields, p.appendTags, nil
 }
 
 func (p *processor) Keys() []*pb.FieldDefine {
