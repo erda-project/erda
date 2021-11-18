@@ -17,13 +17,14 @@ package processors_test
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
 )
 
-func ExampleProcessors() {
+func TestExampleProcessors(t *testing.T) {
 	var (
 		scopeID string = "terminus"
 		tags           = map[string]string{
@@ -34,18 +35,21 @@ func ExampleProcessors() {
 		metricName = "test_metric"
 	)
 	cfg, _ := json.Marshal(map[string]interface{}{
-		"pattern": "(d+)",
+		"pattern": "(\\d+)",
 		"keys": []*pb.FieldDefine{
 			{
 				Key:  "ip",
 				Type: "string",
 			},
 		},
+		"appendTags": map[string]string{
+			"append_tag_1": "value_1",
+		},
 	})
 	ps := processors.New()
 	err := ps.Add(scopeID, tags, metricName, "regexp", cfg)
 	if err != nil {
-		fmt.Println(err)
+		t.Errorf("Add error: %s", err)
 		return
 	}
 	list := ps.Find("", scopeID, map[string]string{
@@ -53,7 +57,7 @@ func ExampleProcessors() {
 		"dice_application_id": "2",
 	})
 	if len(list) != 0 {
-		fmt.Println("Find error")
+		t.Errorf("Find error")
 		return
 	}
 	list = ps.Find("", scopeID, map[string]string{
@@ -62,7 +66,7 @@ func ExampleProcessors() {
 		"dice_service_name":   "abc",
 	})
 	if len(list) != 0 {
-		fmt.Println("Find error")
+		t.Errorf("Find error")
 		return
 	}
 	list = ps.Find("", scopeID, map[string]string{
@@ -71,7 +75,7 @@ func ExampleProcessors() {
 		"dice_service_name":   "abc",
 	})
 	if len(list) <= 0 {
-		fmt.Println("Find error")
+		t.Errorf("Find error")
 		return
 	}
 	fmt.Printf("Find %d\n", len(list))

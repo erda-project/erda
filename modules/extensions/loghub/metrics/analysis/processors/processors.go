@@ -22,7 +22,7 @@ import (
 
 // Processor .
 type Processor interface {
-	Process(content string) (string, map[string]interface{}, error)
+	Process(content string) (string, map[string]interface{}, map[string]string, error)
 	Keys() []*pb.FieldDefine
 }
 

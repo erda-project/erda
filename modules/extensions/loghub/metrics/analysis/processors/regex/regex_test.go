@@ -14,6 +14,102 @@
 
 package regex
 
+import (
+	"encoding/json"
+	"testing"
+
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
+)
+
+func Test_Process_With_ValidParams_Should_Success(t *testing.T) {
+	var (
+		metricName = "test_metric"
+	)
+	cfg, _ := json.Marshal(map[string]interface{}{
+		"pattern": "(\\d+)",
+		"keys": []*pb.FieldDefine{
+			{
+				Key:  "ip",
+				Type: "string",
+			},
+		},
+		"appendTags": map[string]string{
+			"append_tag_1": "value_1",
+		},
+	})
+	p, _ := New(metricName, cfg)
+
+	metric, fields, appendTags, err := p.(processors.Processor).Process("123")
+	if metric != metricName {
+		t.Errorf("Process error, expect metricName: %s, but got %s", metricName, metric)
+	}
+	if len(fields) == 0 {
+		t.Errorf("fields should not empty")
+	}
+	if len(appendTags) == 0 {
+		t.Errorf("appendTags should not empty")
+	}
+
+	metric, fields, appendTags, err = p.Process("abc")
+	if err != ErrNotMatch {
+		t.Errorf("should miss match")
+	}
+
+}
+
+func Test_Process_With_InvalidLenOfKeys_Should_Fail(t *testing.T) {
+	var (
+		metricName = "test_metric"
+	)
+	cfg, _ := json.Marshal(map[string]interface{}{
+		"pattern": "(\\d+)",
+		"keys": []*pb.FieldDefine{
+			{
+				Key:  "ip",
+				Type: "string",
+			},
+			{
+				Key:  "extra",
+				Type: "string",
+			},
+		},
+		"appendTags": map[string]string{
+			"append_tag_1": "value_1",
+		},
+	})
+	p, _ := New(metricName, cfg)
+
+	_, _, _, err := p.(processors.Processor).Process("abc")
+	if err != ErrNotMatch {
+		t.Errorf("should miss match")
+	}
+}
+
+func Test_Process_With_InvalidTypeOfKeys_Should_Fail(t *testing.T) {
+	var (
+		metricName = "test_metric"
+	)
+	cfg, _ := json.Marshal(map[string]interface{}{
+		"pattern": "(\\S+)",
+		"keys": []*pb.FieldDefine{
+			{
+				Key:  "ip",
+				Type: "int",
+			},
+		},
+		"appendTags": map[string]string{
+			"append_tag_1": "value_1",
+		},
+	})
+	p, _ := New(metricName, cfg)
+
+	_, _, _, err := p.(processors.Processor).Process("abc")
+	if err != ErrNotMatch {
+		t.Errorf("should miss match")
+	}
+}
+
 //
 // import (
 // 	"encoding/json"

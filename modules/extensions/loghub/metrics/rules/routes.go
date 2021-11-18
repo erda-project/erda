@@ -276,7 +276,7 @@ func (p *provider) testRule(params struct {
 		if err != nil {
 			return api.Errors.InvalidParameter("fail to create processor", err.Error())
 		}
-		name, fields, err := proc.Process(params.Content)
+		name, fields, _, err := proc.Process(params.Content)
 		if err != nil {
 			return api.Success(nil)
 		}
