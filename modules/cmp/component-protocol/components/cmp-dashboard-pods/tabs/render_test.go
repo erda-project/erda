@@ -12,54 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package PodDistribution
+package tabs
 
 import (
-	"context"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
-type MockTran struct {
-	i18n.Translator
-}
-
-func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
-	return ""
-}
-
-func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
-	return ""
-}
-
-func TestPodDistribution_ParsePodStatus(t *testing.T) {
-	sdk := cptype.SDK{Tran: &MockTran{}}
-	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &sdk)
-	pd := &PodDistribution{Data: Data{Total: 1}}
-	status := pd.ParsePodStatus(ctx, "Running", 1)
-	if status.Color != "green" {
-		t.Errorf("test failed, value of status is unexpected")
+func TestTableTabs_GenComponentState(t *testing.T) {
+	c := &cptype.Component{State: map[string]interface{}{
+		"value": "test",
+	}}
+	component := &Tabs{}
+	if err := component.GenComponentState(c); err != nil {
+		t.Fatal(err)
+	}
+	ok, err := cputil.IsJsonEqual(c.State, component.State)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Errorf("test failed, json is not equal")
 	}
 }
 
-func TestPodDistribution_Transfer(t *testing.T) {
-	component := &PodDistribution{
+func TestTableTabs_Transfer(t *testing.T) {
+	component := &Tabs{
 		Props: Props{
-			RequestIgnore: []string{"test"},
-		},
-		Data: Data{
-			Total: 1,
-			Lists: []List{
+			ButtonStyle: "testStyle",
+			Options: []Option{
 				{
-					Color: "green",
-					Tip:   "1/1",
-					Value: 1,
-					Label: "1",
+					Key:  "testKey",
+					Text: "testText",
 				},
 			},
+			RadioType: "testType",
+			Size:      "small",
+		},
+		Operations: map[string]interface{}{
+			"testOp": Operation{
+				Key:    "testKey",
+				Reload: true,
+			},
+		},
+		State: State{
+			Value: "testValue",
 		},
 	}
 	c := &cptype.Component{}

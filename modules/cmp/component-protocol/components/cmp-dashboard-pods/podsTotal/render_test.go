@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package PodTitle
 
 import (
 	"testing"
@@ -21,41 +21,13 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
-func TestTableTabs_GenComponentState(t *testing.T) {
-	c := &cptype.Component{State: map[string]interface{}{
-		"activeKey": "test",
-	}}
-	component := &TableTabs{}
-	if err := component.GenComponentState(c); err != nil {
-		t.Fatal(err)
-	}
-	ok, err := cputil.IsJsonEqual(c.State, component.State)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
-		t.Errorf("test failed, json is not equal")
-	}
-}
-
-func TestTableTabs_Transfer(t *testing.T) {
-	component := &TableTabs{
-		Props: Props{
-			TabMenu: []TabMenu{
-				{
-					Key:  "testKey",
-					Name: "testName",
-				},
+func TestPodTitle_Transfer(t *testing.T) {
+	component := &PodsTotal{
+		Data: Data{
+			Data: DataInData{
+				Main: 100,
+				Desc: "test",
 			},
-		},
-		Operations: Operations{
-			OnChange: OnChange{
-				Key:    "testKey",
-				Reload: true,
-			},
-		},
-		State: State{
-			ActiveKey: "test",
 		},
 	}
 	c := &cptype.Component{}

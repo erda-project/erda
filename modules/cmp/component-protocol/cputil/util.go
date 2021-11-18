@@ -151,7 +151,7 @@ func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) stri
 	case resource.DecimalSI:
 		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64), sdk.I18n("core"))
 	case resource.BinarySI:
-		units := []string{"B", "K", "M", "G", "T"}
+		units := []string{"B", "KB", "MB", "GB", "TB"}
 		i := 0
 		for res >= 1<<10 && i < len(units)-1 {
 			res /= 1 << 10
