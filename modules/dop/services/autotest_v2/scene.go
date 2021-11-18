@@ -146,6 +146,9 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		RefSetID:  req.RefSetID,
 		GroupID:   req.SceneGroupID,
 	}
+	if scene.RefSetID > 0 && req.Policy != "" {
+		scene.Policy = req.Policy
+	}
 	if err := svc.db.CreateAutotestScene(scene); err != nil {
 		return 0, err
 	}
@@ -256,6 +259,9 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 	scene.Description = req.Description
 	if !req.IsStatus {
 		scene.UpdaterID = req.IdentityInfo.UserID
+	}
+	if scene.RefSetID > 0 && req.Policy != "" {
+		scene.Policy = req.Policy
 	}
 	if err = svc.db.UpdateAutotestScene(scene); err != nil {
 		return 0, err

@@ -69,6 +69,7 @@ type AutoTestScene struct {
 	Steps               []AutoTestSceneStep   `json:"steps"`     // 步骤
 	RefSetID            uint64                `json:"refSetID"`  // 引用场景集ID
 	GroupID             uint64                `json:"groupID"`   // scene group
+	Policy              PolicyType            `json:"policy"`
 }
 
 type AutoTestSceneInput struct {
@@ -141,6 +142,7 @@ type AutotestSceneRequest struct {
 	SceneGroupID uint64 `json:"sceneGroupID,omitempty"` // scene group, set the min sceneID as groupID
 	PreID        uint64 `json:"preID,omitempty"`
 
+	Policy PolicyType `json:"policy,omitempty"`
 	IdentityInfo
 }
 
@@ -168,6 +170,7 @@ type AutotestSceneSceneUpdateRequest struct {
 	Status      SceneStatus `json:"status"`
 	SetID       uint64      `json:"setID"`
 	IsStatus    bool        `json:"isStatus"` // 为true的情况下不会改变更新人
+	Policy      PolicyType  `json:"policy"`
 	IdentityInfo
 }
 

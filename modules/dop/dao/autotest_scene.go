@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type AutoTestScene struct {
@@ -37,6 +37,7 @@ type AutoTestScene struct {
 	Status      apistructs.SceneStatus `gorm:"status"`
 	RefSetID    uint64                 `gorm:"ref_set_id"` // 引用场景集ID
 	GroupID     uint64                 `gorm:"group_id"`   // scene group, in the same group run with parallel
+	Policy      apistructs.PolicyType  `gorm:"policy"`
 }
 
 func (AutoTestScene) TableName() string {
@@ -60,6 +61,7 @@ func (s *AutoTestScene) Convert() apistructs.AutoTestScene {
 		Status:      s.Status,
 		RefSetID:    s.RefSetID,
 		GroupID:     s.GroupID,
+		Policy:      s.Policy,
 	}
 }
 

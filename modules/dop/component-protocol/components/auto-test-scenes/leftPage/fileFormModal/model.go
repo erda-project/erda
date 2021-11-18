@@ -16,6 +16,7 @@ package fileFormModal
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -44,8 +45,9 @@ type FormData struct {
 	Name        string `json:"name"`
 	Description string `json:"desc"`
 	// SetID       uint64 `json:"setId"`
-	ScenesSet *uint64 `json:"scenesSet"`
-	SceneID   uint64  `json:"sceneID"`
+	ScenesSet *uint64               `json:"scenesSet"`
+	Policy    apistructs.PolicyType `json:"policy"`
+	SceneID   uint64                `json:"sceneID"`
 }
 
 type Props struct {
@@ -75,4 +77,9 @@ type ComponentProps struct {
 type Operation struct {
 	Key    string `json:"key"`
 	Reload bool   `json:"reload"`
+}
+
+type PolicyOption struct {
+	Name  string                `json:"name"`
+	Value apistructs.PolicyType `json:"value"`
 }
