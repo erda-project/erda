@@ -91,12 +91,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	// props
 
-	if gh.GetFileTreeSceneID() != 0 {
+	if gh.GetGlobalSelectedSetID() != 0 {
 		props["visible"] = true
 	} else {
 		props["visible"] = false
 	}
-	props["visible"] = true
+	// props["visible"] = true
 	props["tabMenu"] = []map[string]string{
 		{"key": "fileConfig", "name": "配置信息"},
 		{"key": "fileExecute", "name": "执行明细"},
@@ -126,4 +126,5 @@ func setState(c *cptype.Component, state State, gs *cptype.GlobalStateData) {
 	gh := gshelper.NewGSHelper(gs)
 	gh.SetFileDetailActiveKey(state.ActiveKey)
 	gh.SetFileDetailIsChangeScene(state.IsChangeScene)
+	gh.SetExecuteButtonActiveKey(apistructs.ActiveKeyfileConfig)
 }

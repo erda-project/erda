@@ -182,6 +182,7 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 								//apistructs.LabelIsRefSet:         "true",
 							},
 						},
+						Policy: &pipelineyml.Policy{Type: v.Policy},
 					},
 				})
 			} else {

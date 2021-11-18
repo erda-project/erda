@@ -483,6 +483,7 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 			Output:      outputList,
 			RefSetID:    each.RefSetID,
 			GroupID:     each.GroupID,
+			Policy:      each.Policy,
 		})
 	}
 	return lists, nil

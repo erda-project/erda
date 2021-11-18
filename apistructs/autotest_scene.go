@@ -308,7 +308,7 @@ const (
 type ActiveKey string
 
 const (
-	ActiveKeyfileConfig  ActiveKey = "scenesConfig"
+	ActiveKeyfileConfig  ActiveKey = "fileConfig"
 	ActiveKeyFileExecute ActiveKey = "fileExecute"
 )
 

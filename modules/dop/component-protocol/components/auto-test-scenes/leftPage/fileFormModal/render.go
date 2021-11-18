@@ -517,6 +517,7 @@ func (a *ComponentFileFormModal) UpdateScene(inParams fileTree.InParams) error {
 		Name:        formData.Name,
 		Description: formData.Description,
 		SceneID:     id,
+		Policy:      formData.Policy,
 	}
 	req.UserID = a.sdk.Identity.UserID
 	_, err := a.bdl.UpdateAutoTestScene(req)

@@ -191,7 +191,8 @@ func getOperations() map[string]interface{} {
 
 func getProps() map[string]interface{} {
 	return map[string]interface{}{
-		"rowKey": "id",
+		"rowKey":     "id",
+		"hideHeader": true,
 		"columns": []columns{
 			{
 				Title:     "版本",

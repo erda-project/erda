@@ -637,10 +637,10 @@ rendering:
     - name: executeAlertInfo
   tabExecuteButton:
     - name: executeHistoryTable
+    - name: cancelExecuteButton
     - name: executeTaskTable
     - name: executeInfo
     - name: refreshButton
-    - name: cancelExecuteButton
     - name: executeTaskBreadcrumb
     - name: fileDetail
     - name: executeAlertInfo
