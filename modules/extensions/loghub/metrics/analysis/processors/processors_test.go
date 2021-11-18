@@ -84,7 +84,9 @@ func TestExampleProcessors(t *testing.T) {
 	// Output:
 	// Find 1
 
-	metric, fields, appendTags, err := list[0].Process("123")
+	p, _ := regex.New(metricName, cfg)
+
+	metric, fields, appendTags, err := p.(processors.Processor).Process("123")
 	if metric != metricName {
 		t.Errorf("Process error, expect metricName: %s, but got %s", metricName, metric)
 	}
@@ -104,12 +106,6 @@ func TestExampleProcessors(t *testing.T) {
 
 func Test_ExampleProcessors_With_InvalidLenOfKeys_Should_Fail(t *testing.T) {
 	var (
-		scopeID string = "terminus"
-		tags           = map[string]string{
-			"dice_org_id":         "1",
-			"dice_application_id": "2",
-			"dice_service_name":   "abc",
-		}
 		metricName = "test_metric"
 	)
 	cfg, _ := json.Marshal(map[string]interface{}{
@@ -128,24 +124,9 @@ func Test_ExampleProcessors_With_InvalidLenOfKeys_Should_Fail(t *testing.T) {
 			"append_tag_1": "value_1",
 		},
 	})
-	ps := processors.New()
-	err := ps.Add(scopeID, tags, metricName, "regexp", cfg)
+	p, _ := regex.New(metricName, cfg)
 
-	list := ps.Find("", scopeID, map[string]string{
-		"dice_org_id":         "1",
-		"dice_application_id": "2",
-		"dice_service_name":   "abc",
-	})
-	if len(list) <= 0 {
-		t.Errorf("Find error")
-		return
-	}
-	fmt.Printf("Find %d\n", len(list))
-
-	// Output:
-	// Find 1
-
-	_, _, _, err = list[0].Process("abc")
+	_, _, _, err := p.(processors.Processor).Process("abc")
 	if err != regex.ErrNotMatch {
 		t.Errorf("should miss match")
 	}
@@ -153,12 +134,6 @@ func Test_ExampleProcessors_With_InvalidLenOfKeys_Should_Fail(t *testing.T) {
 
 func Test_ExampleProcessors_With_InvalidTypeOfKeys_Should_Fail(t *testing.T) {
 	var (
-		scopeID string = "terminus"
-		tags           = map[string]string{
-			"dice_org_id":         "1",
-			"dice_application_id": "2",
-			"dice_service_name":   "abc",
-		}
 		metricName = "test_metric"
 	)
 	cfg, _ := json.Marshal(map[string]interface{}{
@@ -173,24 +148,9 @@ func Test_ExampleProcessors_With_InvalidTypeOfKeys_Should_Fail(t *testing.T) {
 			"append_tag_1": "value_1",
 		},
 	})
-	ps := processors.New()
-	err := ps.Add(scopeID, tags, metricName, "regexp", cfg)
+	p, _ := regex.New(metricName, cfg)
 
-	list := ps.Find("", scopeID, map[string]string{
-		"dice_org_id":         "1",
-		"dice_application_id": "2",
-		"dice_service_name":   "abc",
-	})
-	if len(list) <= 0 {
-		t.Errorf("Find error")
-		return
-	}
-	fmt.Printf("Find %d\n", len(list))
-
-	// Output:
-	// Find 1
-
-	_, _, _, err = list[0].Process("abc")
+	_, _, _, err := p.(processors.Processor).Process("abc")
 	if err != regex.ErrNotMatch {
 		t.Errorf("should miss match")
 	}
