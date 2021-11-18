@@ -626,10 +626,6 @@ rendering:
       state:
         - name: pageNo
           value: "{{ executeHistoryRefresh.pageNo }}"
-    - name: executeTaskTable
-    - name: executeInfo
-    - name: cancelExecuteButton
-    - name: executeAlertInfo
   cancelExecuteButton:
     - name: executeHistoryTable
     - name: refreshButton

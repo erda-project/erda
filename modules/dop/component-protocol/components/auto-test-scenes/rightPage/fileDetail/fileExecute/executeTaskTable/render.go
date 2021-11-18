@@ -202,8 +202,9 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 
 func getProps() map[string]interface{} {
 	return map[string]interface{}{
-		"rowKey": "key",
-		"scroll": map[string]interface{}{"x": 1200},
+		"rowKey":     "key",
+		"scroll":     map[string]interface{}{"x": 1200},
+		"hideHeader": true,
 		"columns": []columns{
 			{
 				Title:     "步骤名称",
