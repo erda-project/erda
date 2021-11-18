@@ -115,16 +115,18 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 	var (
 		langCodes, _   = ctx.Value("lang_codes").(i18n.LanguageCodes)
 		sharedResource [2]uint64
+		data           apistructs.ResourceOverviewReportData
 	)
-	for _, clusterItem := range resources.List {
-		for _, namespaceItem := range clusterItem.List {
-			if namespaceItem.GetNamespace() == "default" {
-				sharedResource[0] += namespaceItem.GetCpuRequest()
-				sharedResource[1] += namespaceItem.GetMemRequest()
-				continue
-			}
-			var belongsToProject = false
-			for _, projectItem := range namespaces.List {
+	for _, projectItem := range namespaces.List {
+		for _, clusterItem := range resources.List {
+			for _, namespaceItem := range clusterItem.List {
+				if namespaceItem.GetNamespace() == "default" {
+					sharedResource[0] += namespaceItem.GetCpuRequest()
+					sharedResource[1] += namespaceItem.GetMemRequest()
+					continue
+				}
+
+				var belongsToProject = false
 				if projectItem.Has(clusterItem.GetClusterName(), namespaceItem.GetNamespace()) {
 					l.Debugf("projectID: %v, project namespaces: %+v, goal cluster: %s, goal namespace: %s, cpuRequest: %v, memRequest: %v",
 						projectItem.ProjectID, projectItem.Clusters, clusterItem.GetClusterName(), namespaceItem.GetNamespace(),
@@ -133,16 +135,13 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 					projectItem.AddResource(namespaceItem.GetCpuRequest(), namespaceItem.GetMemRequest())
 					break
 				}
-			}
-			if !belongsToProject {
-				sharedResource[0] += namespaceItem.GetCpuRequest()
-				sharedResource[1] += namespaceItem.GetMemRequest()
+				if !belongsToProject {
+					sharedResource[0] += namespaceItem.GetCpuRequest()
+					sharedResource[1] += namespaceItem.GetMemRequest()
+				}
 			}
 		}
-	}
 
-	var data apistructs.ResourceOverviewReportData
-	for _, projectItem := range namespaces.List {
 		if projectItem.CPUQuota == 0 && projectItem.MemQuota == 0 {
 			continue
 		}
@@ -156,11 +155,8 @@ func (rt *ReportTable) groupResponse(ctx context.Context, resources *pb.GetNames
 			OwnerUserNickName:  projectItem.OwnerUserNickname,
 			CPUQuota:           calcu.MillcoreToCore(projectItem.CPUQuota, 3),
 			CPURequest:         calcu.MillcoreToCore(projectItem.GetCPUReqeust(), 3),
-			CPUWaterLevel:      0,
 			MemQuota:           calcu.ByteToGibibyte(projectItem.MemQuota, 3),
 			MemRequest:         calcu.ByteToGibibyte(projectItem.GetMemRequest(), 3),
-			MemWaterLevel:      0,
-			Nodes:              0,
 		}
 		data.List = append(data.List, &item)
 	}

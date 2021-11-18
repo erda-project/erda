@@ -60,9 +60,7 @@ func (b *Bundle) FetchQuotaOnClusters(orgID uint64, clusterNames []string) (*api
 	return resp.Data, nil
 }
 
-// FetchNamespacesBelongsTo finds the project to which a given namespaces belongs to.
-// if orgID == 0, query from all scope.
-// namespaces: the key is cluster name, the value is the namespaces list in the cluster.
+// FetchNamespacesBelongsTo queries the relationship between projects and namespaces
 func (b *Bundle) FetchNamespacesBelongsTo(ctx context.Context, orgID uint64, clusters []string) (*apistructs.GetProjectsNamesapcesResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
