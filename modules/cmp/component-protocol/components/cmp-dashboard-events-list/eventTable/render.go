@@ -25,6 +25,7 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
+	"github.com/rancher/apiserver/pkg/types"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -114,21 +116,21 @@ func (t *ComponentEventTable) GenComponentState(component *cptype.Component) err
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	urlQuery, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	queryData := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &queryData); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(queryData["pageNo"].(float64))
-	t.State.PageSize = uint64(queryData["pageSize"].(float64))
-	sorter := queryData["sorterData"].(map[string]interface{})
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
 	t.State.Sorter.Field = sorter["field"].(string)
 	t.State.Sorter.Order = sorter["order"].(string)
 	return nil
@@ -140,12 +142,12 @@ func (t *ComponentEventTable) EncodeURLQuery() error {
 	urlQuery["pageSize"] = int(t.State.PageSize)
 	urlQuery["sorterData"] = t.State.Sorter
 
-	jsonData, err := json.Marshal(urlQuery)
+	data, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	decode := base64.StdEncoding.EncodeToString(jsonData)
+	decode := base64.StdEncoding.EncodeToString(data)
 	t.State.EventTableUQLQuery = decode
 	return nil
 }
@@ -161,7 +163,11 @@ func (t *ComponentEventTable) RenderList() error {
 		ClusterName: t.State.ClusterName,
 	}
 
-	list, err := t.server.ListSteveResource(t.ctx, &req)
+	var (
+		list []types.APIObject
+		err  error
+	)
+	list, err = cputil2.ListSteveResourceByNamespaces(t.ctx, t.server, &req, t.State.FilterValues.Namespace)
 	if err != nil {
 		return err
 	}
@@ -374,10 +380,10 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(c *cptype.Component) {
-	c.Props = t.Props
-	c.Data = map[string]interface{}{"list": t.Data.List}
-	c.State = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(component *cptype.Component) {
+	component.Props = t.Props
+	component.Data = map[string]interface{}{"list": t.Data.List}
+	component.State = map[string]interface{}{
 		"clusterName":          t.State.ClusterName,
 		"filterValues":         t.State.FilterValues,
 		"pageNo":               t.State.PageNo,
@@ -386,7 +392,7 @@ func (t *ComponentEventTable) Transfer(c *cptype.Component) {
 		"total":                t.State.Total,
 		"eventTable__urlQuery": t.State.EventTableUQLQuery,
 	}
-	c.Operations = t.Operations
+	component.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

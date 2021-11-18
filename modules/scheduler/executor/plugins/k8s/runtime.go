@@ -171,7 +171,7 @@ func (k *Kubernetes) createStatelessGroup(ctx context.Context, sg *apistructs.Se
 			errOccurred = err
 			logrus.Errorf("failed to create serivce and going to destroy servicegroup, name: %s, ns: %s, (%v)",
 				service.Name, service.Namespace, err)
-			if IsQuotaError(err) {
+			if IsQuotaError(err) && sg.ProjectNamespace != "" {
 				continue
 			}
 			defer func() {

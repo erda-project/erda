@@ -104,14 +104,14 @@ func (impl GatewayDomainServiceImpl) Clone(ctx context.Context) domain.GatewayDo
 	return &newService
 }
 
-func diffDomains(reqDomains []gw.EndpointDomainDto, existDomains []orm.GatewayDomain) (adds []gw.EndpointDomainDto, dels []orm.GatewayDomain, updates []orm.GatewayDomain) {
-	for _, domain := range reqDomains {
-		exist := false
-		for i := len(existDomains) - 1; i >= 0; i-- {
-			domainObj := existDomains[i]
+func diffDomains(req []gw.EndpointDomainDto, exist []orm.GatewayDomain) (adds []gw.EndpointDomainDto, dels []orm.GatewayDomain, updates []orm.GatewayDomain) {
+	for _, domain := range req {
+		existed := false
+		for i := len(exist) - 1; i >= 0; i-- {
+			domainObj := exist[i]
 			if domain.Domain == domainObj.Domain {
-				exist = true
-				existDomains = append(existDomains[:i], existDomains[i+1:]...)
+				existed = true
+				exist = append(exist[:i], exist[i+1:]...)
 				if domain.Type != domainObj.Type {
 					domainObj.Type = domain.Type
 					updates = append(updates, domainObj)
@@ -119,11 +119,11 @@ func diffDomains(reqDomains []gw.EndpointDomainDto, existDomains []orm.GatewayDo
 				break
 			}
 		}
-		if !exist {
+		if !existed {
 			adds = append(adds, domain)
 		}
 	}
-	dels = existDomains
+	dels = exist
 	return
 }
 
@@ -327,6 +327,10 @@ func (impl GatewayDomainServiceImpl) GiveRuntimeDomainToPackage(runtimeService *
 	if err != nil {
 		return false, err
 	}
+	if len(serviceDomains) == 0 {
+		return true, nil
+	}
+	orgId := serviceDomains[0].OrgId
 	var domains []gw.EndpointDomainDto
 	for _, domain := range serviceDomains {
 		domains = append(domains, gw.EndpointDomainDto{
@@ -365,6 +369,7 @@ func (impl GatewayDomainServiceImpl) GiveRuntimeDomainToPackage(runtimeService *
 				ClusterName: runtimeService.ClusterName,
 				Type:        orm.DT_PACKAGE,
 				PackageId:   relationPackage.Id,
+				OrgId:       orgId,
 				ProjectId:   runtimeService.ProjectId,
 				ProjectName: projectName,
 				Workspace:   runtimeService.Workspace,
@@ -381,7 +386,7 @@ func (impl GatewayDomainServiceImpl) GiveRuntimeDomainToPackage(runtimeService *
 	return changed, nil
 }
 
-func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(runtimeService *orm.GatewayRuntimeService, material endpoint.EndpointMaterial, domains []gw.EndpointDomainDto, audits *[]apistructs.Audit, session *db.SessionHelper) (string, error) {
+func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(orgId string, runtimeService *orm.GatewayRuntimeService, material endpoint.EndpointMaterial, domains []gw.EndpointDomainDto, audits *[]apistructs.Audit, session *db.SessionHelper) (string, error) {
 	// unique domain
 	domains = uniqDomains(domains)
 
@@ -496,6 +501,7 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(runtimeService *orm.Gate
 			ClusterName:      runtimeService.ClusterName,
 			Type:             domainDto.Type,
 			RuntimeServiceId: runtimeService.Id,
+			OrgId:            orgId,
 			ProjectId:        runtimeService.ProjectId,
 			ProjectName:      projectName,
 			Workspace:        runtimeService.Workspace,
@@ -528,6 +534,7 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(runtimeService *orm.Gate
 				ClusterName: runtimeService.ClusterName,
 				Type:        orm.DT_PACKAGE,
 				PackageId:   relationPackage.Id,
+				OrgId:       orgId,
 				ProjectId:   runtimeService.ProjectId,
 				ProjectName: projectName,
 				Workspace:   runtimeService.Workspace,
@@ -695,7 +702,7 @@ func (impl GatewayDomainServiceImpl) checkDomainsValid(clusterName string, domai
 	return nil
 }
 
-func (impl GatewayDomainServiceImpl) TouchPackageDomain(packageId, clusterName string, domains []string,
+func (impl GatewayDomainServiceImpl) TouchPackageDomain(orgId, packageId, clusterName string, domains []string,
 	session *db.SessionHelper) ([]string, error) {
 	// unique domain
 	domains = util.UniqStringSlice(domains)
@@ -770,6 +777,7 @@ func (impl GatewayDomainServiceImpl) TouchPackageDomain(packageId, clusterName s
 			ClusterName: clusterName,
 			Type:        orm.DT_PACKAGE,
 			PackageId:   packageId,
+			OrgId:       orgId,
 			ProjectId:   pack.DiceProjectId,
 			Workspace:   pack.DiceEnv,
 			ProjectName: projectName,
@@ -1096,7 +1104,7 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	if err != nil {
 		return
 	}
-	existDomain, err = impl.TouchRuntimeDomain(runtimeService, material, domains, &audits, session)
+	existDomain, err = impl.TouchRuntimeDomain(orgId, runtimeService, material, domains, &audits, session)
 	if err != nil {
 		return
 	}
@@ -1247,40 +1255,8 @@ func (impl GatewayDomainServiceImpl) GetOrgDomainInfo(reqDto *gw.ManageDomainReq
 		err = errors.Errorf("invalid request, req:%+v", reqDto)
 		return
 	}
-	clusters, err := (*impl.globalBiz).GetClustersByOrg(reqDto.OrgId)
-	if err != nil {
-		return
-	}
-	if len(clusters) == 0 {
-		res = common.NewPages(nil, 0)
-		return
-	}
 	pageInfo := common.NewPage2(reqDto.PageSize, reqDto.PageNo)
 	selectOptions := reqDto.GenSelectOptions()
-	if reqDto.ClusterName == "" {
-		selectOptions = append(selectOptions, orm.SelectOption{
-			Type:   orm.Contains,
-			Column: "cluster_name",
-			Value:  clusters,
-		})
-	} else {
-		clusterAllow := false
-		for _, cluster := range clusters {
-			if strings.EqualFold(cluster, reqDto.ClusterName) {
-				clusterAllow = true
-				break
-			}
-		}
-		if !clusterAllow {
-			err = errors.New("invalid cluster name")
-			return
-		}
-		selectOptions = append(selectOptions, orm.SelectOption{
-			Type:   orm.ExactMatch,
-			Column: "cluster_name",
-			Value:  reqDto.ClusterName,
-		})
-	}
 	page, err := impl.domainDb.GetPage(selectOptions, (*common.Page)(pageInfo))
 	if err != nil {
 		return

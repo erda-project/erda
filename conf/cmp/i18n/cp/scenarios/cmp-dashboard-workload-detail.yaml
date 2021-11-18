@@ -1,0 +1,37 @@
+zh:
+  workloadPods: 关联的Pods
+  workloadDetail: 工作负载详情
+  restart: 重新调度
+  confirmRestart: 确认重新调度？
+  cannotRestart: 只有 Deployment、StatefulSet 和 DaemonSet 可以被重新调度
+  deletedWorkloadSuccessfully: 工作负载删除成功
+  canNotDeleteSystemWorkload: 平台组件不可删除
+  restartWorkloadSuccessfully: 工作负载重新调度成功
+  updateWorkloadSuccessfully: 工作负载更新成功
+  Active: 活跃
+  Error: 错误
+  Succeeded: 成功
+  Failed: 失败
+
+  Completed: 完成
+  ContainerCreating: 容器创建中
+  CrashLoopBackOff: 崩溃重启中
+  Evicted: 驱逐
+  ImagePullBackOff: 镜像拉取失败重试中
+  ErrImagePull: 镜像拉取失败
+  Pending: 挂起
+  Running: 运行中
+  Terminating: 终止
+  OOMKilled: 内存溢出被杀
+#  Error: 错误
+
+en:
+  workloadPods: Pods
+  restart: Restart
+  confirmRestart: Sure to restart ?
+  workloadDetail: Workload Detail
+  cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
+  canNotDeleteSystemWorkload: Platform components can not be deleted
+  deletedWorkloadSuccessfully: Deleted workload successfully
+  restartWorkloadSuccessfully: Restarted workload successfully
+  updateWorkloadSuccessfully: Updated workload successfully

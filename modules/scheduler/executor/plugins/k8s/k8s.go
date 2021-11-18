@@ -18,6 +18,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -252,7 +253,7 @@ func getWorkspaceRatio(options map[string]string, workspace string, t string, va
 	}
 }
 
-func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
+func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioctl.IstioEngine, error) {
 	istioInfo := info.GetIstioInfo()
 	if !istioInfo.Installed {
 		return istioctl.EmptyEngine, nil
@@ -261,14 +262,10 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	if istioInfo.IsAliyunASM {
 		return istioctl.EmptyEngine, nil
 	}
-	apiServerUrl := info.GetApiServerUrl()
-	if apiServerUrl == "" {
-		return istioctl.EmptyEngine, errors.Errorf("empty api server url, cluster:%s", info.Get(apistructs.DICE_CLUSTER_NAME))
-	}
 	// TODO: Combine version to choose
-	localEngine, err := engines.NewLocalEngine(apiServerUrl)
+	localEngine, err := engines.NewLocalEngine(clusterName)
 	if err != nil {
-		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", info.Get(apistructs.DICE_CLUSTER_NAME), err)
+		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", clusterName, err)
 	}
 	return localEngine, nil
 }
@@ -354,7 +351,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		for key, value := range rawData {
 			clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
 		}
-		istioEngine, err = getIstioEngine(clusterInfoData)
+		istioEngine, err = getIstioEngine(clusterName, clusterInfoData)
 		if err != nil {
 			return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
 				name, clusterName, err)
@@ -782,6 +779,16 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 		return fmt.Errorf(errMsg)
 	}
 
+	registryInfos := k.composeRegistryInfos(sg)
+	if len(registryInfos) > 0 {
+		err = k.UpdateImageSecret(ns, registryInfos)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to update secret %s on namespace %s, err: %v", AliyunRegistry, ns, err)
+			logrus.Errorf(errMsg)
+			return fmt.Errorf(errMsg)
+		}
+	}
+
 	for _, svc := range sg.Services {
 		svc.Namespace = ns
 		runtimeServiceName := getDeployName(&svc)
@@ -1202,4 +1209,42 @@ func (k *Kubernetes) composeStatefulSetNodeAntiAffinityPreferred(workspace strin
 			},
 		},
 	})
+}
+
+func (k *Kubernetes) composeRegistryInfos(sg *apistructs.ServiceGroup) []apistructs.RegistryInfo {
+	registryInfos := []apistructs.RegistryInfo{}
+
+	for _, service := range sg.Services {
+		if service.ImageUsername != "" {
+			registryInfo := apistructs.RegistryInfo{}
+			registryInfo.Host = strings.Split(service.Image, "/")[0]
+			registryInfo.UserName = service.ImageUsername
+			registryInfo.Password = service.ImagePassword
+			registryInfos = append(registryInfos, registryInfo)
+		}
+	}
+	return registryInfos
+}
+
+func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectReference, error) {
+	secrets := []apiv1.LocalObjectReference{}
+
+	// need to set the secret in default namespace which named with REGISTRY_SECRET_NAME env
+	registryName := os.Getenv(RegistrySecretName)
+	if registryName == "" {
+		registryName = AliyunRegistry
+	}
+
+	_, err := k.secret.Get(namespace, registryName)
+	if err == nil {
+		secrets = append(secrets,
+			apiv1.LocalObjectReference{
+				Name: registryName,
+			})
+	} else {
+		if !k8serror.NotFound(err) {
+			return nil, fmt.Errorf("get secret %s in namespace %s err: %v", registryName, namespace, err)
+		}
+	}
+	return secrets, nil
 }

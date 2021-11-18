@@ -148,6 +148,7 @@ require (
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/igm/sockjs-go.v2 v2.0.0
 	gopkg.in/oauth2.v3 v3.12.0
+	gopkg.in/square/go-jose.v2 v2.3.1
 	gopkg.in/stretchr/testify.v1 v1.2.2
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

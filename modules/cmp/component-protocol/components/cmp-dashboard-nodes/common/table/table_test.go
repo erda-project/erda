@@ -448,3 +448,49 @@ func TestTable_GetUsageValue(t1 *testing.T) {
 		})
 	}
 }
+
+func TestTable_DecodeURLQuery(t1 *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "2",
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{
+				SDK: &cptype.SDK{
+					InParams: map[string]interface{}{
+						"table__urlQuery": "eyJzb3J0ZXJEYXRhIjp7ImZpZWxkIjoiRGlzdHJpYnV0aW9uIiwib3JkZXIiOiJhc2NlbmQifX0=",
+					},
+				},
+			}
+			if err := t.DecodeURLQuery(); (err != nil) != tt.wantErr {
+				t1.Errorf("DecodeURLQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestTable_EncodeURLQuery(t1 *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &Table{}
+			if err := t.EncodeURLQuery(); (err != nil) != tt.wantErr {
+				t1.Errorf("EncodeURLQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

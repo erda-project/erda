@@ -74,6 +74,20 @@ func (a *Aggregator) GetAllClusters() []string {
 	return clustersNames
 }
 
+// ListClusters list ready and unready clusters in steveAggregator
+func (a *Aggregator) ListClusters() (ready, unready []string) {
+	a.servers.Range(func(key, value interface{}) bool {
+		g := value.(*group)
+		if g.ready {
+			ready = append(ready, key.(string))
+		} else {
+			unready = append(unready, key.(string))
+		}
+		return true
+	})
+	return
+}
+
 func (a *Aggregator) IsServerReady(clusterName string) bool {
 	s, ok := a.servers.Load(clusterName)
 	if !ok {
@@ -143,10 +157,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 				if _, ok := exists[key.(string)]; ok {
 					return
 				}
-				if err = a.Delete(key.(string)); err != nil {
-					logrus.Errorf("failed to stop steve server for cluster %s when watch, %v", key.(string), err)
-					return
-				}
+				a.Delete(key.(string))
 				return
 			}
 			a.servers.Range(checkDeleted)
@@ -288,10 +299,10 @@ func (a *Aggregator) insureSystemNamespace(client *k8sclient.K8sClient) error {
 }
 
 // Delete closes a steve server for k8s cluster with clusterName and delete it from aggregator
-func (a *Aggregator) Delete(clusterName string) error {
+func (a *Aggregator) Delete(clusterName string) {
 	g, ok := a.servers.Load(clusterName)
 	if !ok {
-		return nil
+		return
 	}
 
 	group, _ := g.(*group)
@@ -299,7 +310,6 @@ func (a *Aggregator) Delete(clusterName string) error {
 		group.cancel()
 	}
 	a.servers.Delete(clusterName)
-	return nil
 }
 
 // ServeHTTP forwards API request to corresponding steve server

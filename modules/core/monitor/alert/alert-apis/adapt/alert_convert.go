@@ -457,7 +457,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 	// fill expression filters
 	expressionMap := (&Adapt{}).ValueMapToInterfaceMap(expression)
 	filters, _ := utils.GetMapValueArr(expressionMap, "filters")
-	for _, filterValue := range filters {
+	for index, filterValue := range filters {
 		filterMap, ok := filterValue.(map[string]interface{})
 		if !ok {
 			continue
@@ -475,6 +475,10 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
+		if (tag == applicationIdTag && value == applicationIdValue) || (tag == clusterNameTag && value == clusterNameValue) {
+			filters = append(filters[0:index], filters[index+1:]...)
+			continue
+		}
 		if attr, ok := attributes[tag]; ok {
 			val, err := formatOperatorValue(opType, utils.StringType, attr)
 			if err != nil {
@@ -488,6 +492,9 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		filterMap := make(map[string]interface{})
 		tag := v.Condition
 		operator := v.Operator
+		if operator == all {
+			operator = any
+		}
 		value := v.Values
 		opType := filterOperatorRel[operator]
 		val, err := formatOperatorValue(opType, utils.StringType, value)
@@ -496,7 +503,9 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		}
 		filterMap["tag"] = tag
 		filterMap["operator"] = operator
-		filterMap["value"] = val
+		if operator != any {
+			filterMap["value"] = val
+		}
 		filters = append(filters, filterMap)
 	}
 	filtersValue, err := structpb.NewList(filters)

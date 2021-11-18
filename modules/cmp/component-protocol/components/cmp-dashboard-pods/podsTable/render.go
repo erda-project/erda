@@ -184,9 +184,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(2)
 	go func() {
-		logrus.Infof("[XDEBUG] start list pods at %s", time.Now().Format(time.StampNano))
-		list, err = p.server.ListSteveResource(p.ctx, &podReq)
-		logrus.Infof("[XDEBUG] end list pods at %s", time.Now().Format(time.StampNano))
+		list, err = cmpcputil.ListSteveResourceByNamespaces(p.ctx, p.server, &podReq, p.State.Values.Namespace)
 		waitGroup.Done()
 	}()
 
