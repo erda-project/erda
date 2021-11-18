@@ -17,7 +17,6 @@ package executeAlertInfo
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 
@@ -89,8 +88,6 @@ func (i *ComponentAlertInfo) Render(ctx context.Context, c *cptype.Component, sc
 			err = fail
 		}
 	}()
-	fmt.Printf("state: %+v\n", c.State)
-	fmt.Println(i.pipelineID)
 	visible := false
 	var message []string
 	if i.pipelineID > 0 {
