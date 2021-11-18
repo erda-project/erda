@@ -620,6 +620,7 @@ func (i *ComponentFileTree) RenderAddScene(event cptype.ComponentEvent) error {
 	i.State.ActionType = "AddScene"
 	i.State.SceneSetKey = operationData.Meta.ParentKey
 	i.State.SceneId = 0
+	i.State.IsAddParallel = false
 	setId := "sceneset-" + strconv.Itoa(operationData.Meta.ParentKey)
 	i.State.ExpandedKeys = append(i.State.ExpandedKeys, setId)
 	i.State.SelectedKeys = []string{setId}

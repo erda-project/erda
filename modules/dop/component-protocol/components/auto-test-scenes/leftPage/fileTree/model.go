@@ -95,6 +95,7 @@ type State struct {
 	IsClickScene            bool       `json:"isClickScene"`
 	IsClickFolderTable      bool       `json:"isClickFolderTable"`
 	ClickFolderTableSceneID uint64     `json:"clickFolderTableSceneID"`
+	IsAddParallel           bool       `json:"isAddParallel"`
 }
 
 type Operation struct {

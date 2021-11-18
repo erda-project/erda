@@ -360,6 +360,8 @@ rendering:
           value: "{{ fileTree.sceneSetKey }}"
         - name: "actionType"
           value: "{{ fileTree.actionType }}"
+        - name: "isAddParallel"
+          value: "{{ scenesStages.isAddParallel }}"
     - name: fileDetail
       state:
         - name: "isChangeScene"

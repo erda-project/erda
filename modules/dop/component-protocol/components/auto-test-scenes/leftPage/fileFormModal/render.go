@@ -421,10 +421,6 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 }
 
 func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
-	defer func() {
-		// clear
-		a.State.IsAddParallel = false
-	}()
 	formData := a.State.FormData
 	var (
 		preScene *apistructs.AutoTestScene
