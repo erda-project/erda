@@ -16,9 +16,7 @@ package dop
 
 import (
 	"net/http"
-	"net/url"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -30,29 +28,6 @@ var APPLICATIONS_RESOURCES_LIST = apis.ApiSpec{
 	Scheme:      "http",
 	CheckLogin:  true,
 	CheckToken:  true,
-	ChunkAPI:    false,
 	Doc:         "the list of applications resources in the project",
 	IsOpenAPI:   true,
-	Parameters: &apis.Parameters{
-		Tag:    "资源相关",
-		Header: make(http.Header),
-		QueryValues: url.Values{
-			"applicationID": nil,
-			"ownerID":       nil,
-			"orderBy":       []string{"-podsCount,-cpuRequest,-memRequest"},
-			"pageNo":        nil,
-			"pageSize":      nil,
-		},
-		Body: nil,
-		Response: struct {
-			apistructs.Header
-			Data interface{} `json:"data"`
-		}{
-			Header: apistructs.Header{
-				Success: true,
-				Error:   apistructs.ErrorResponse{},
-			},
-			Data: apistructs.ApplicationsResourcesResponse{},
-		},
-	},
 }

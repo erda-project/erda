@@ -65,6 +65,7 @@ func New(opts ...Option) *Project {
 	for _, f := range opts {
 		f(p)
 	}
+	go p.UpdateCache()
 	return p
 }
 

@@ -14,29 +14,8 @@
 
 package project
 
-import (
-	"time"
-
-	"github.com/erda-project/erda-infra/providers/i18n"
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/cache"
-)
-
-type Project struct {
-	bdl   *bundle.Bundle
-	trans i18n.Translator
-	cmp   dashboardPb.ClusterResourceServer
-
-	appOwnerCache *cache.Cache
-}
-
-func New(options ...Option) *Project {
-	p := new(Project)
-	for _, f := range options {
-		f(p)
-	}
-	p.appOwnerCache = cache.New(time.Minute, p.updateMemberCache)
-	cache.RunCache(p.appOwnerCache)
-	return p
+type memberCacheObject struct {
+	ID   uint64
+	Name string
+	Nick string
 }

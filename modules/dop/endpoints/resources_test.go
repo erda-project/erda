@@ -29,6 +29,7 @@ func TestParseApplicationsResourceQuery(t *testing.T) {
 	)
 	endpoints.ParseApplicationsResourceQuery(query, values)
 
+	values = make(url.Values)
 	values.Add("applicationID", "1")
 	values.Add("applicationID", "2")
 	values.Add("ownerID", "1")

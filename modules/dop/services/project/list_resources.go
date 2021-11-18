@@ -17,6 +17,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -25,6 +26,7 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
@@ -37,6 +39,16 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		err := errors.New("request can not be nil")
 		l.WithError(err).Errorln("the req is nil")
 		return nil, apierrors.ErrApplicationsResources.InvalidParameter(err)
+	}
+	var (
+		applicationFilter = make(map[uint64]struct{})
+		ownerFilter       = make(map[uint64]struct{})
+	)
+	for _, applicationID := range req.Query.ApplicationsIDs {
+		applicationFilter[applicationID] = struct{}{}
+	}
+	for _, ownerID := range req.Query.OwnerIDs {
+		ownerFilter[ownerID] = struct{}{}
 	}
 
 	var data apistructs.ApplicationsResourcesResponse
@@ -67,6 +79,9 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		items           = make(map[uint64]*apistructs.ApplicationsResourcesItem)
 	)
 	for _, application := range apps.List {
+		if _, ok := applicationFilter[application.ID]; !ok {
+			continue
+		}
 		applicationsIDs = append(applicationsIDs, application.ID)
 		var item = new(apistructs.ApplicationsResourcesItem)
 		items[application.ID] = item
@@ -74,9 +89,14 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		item.ID = application.ID
 		item.Name = application.Name
 		item.DisplayName = application.DisplayName
-	}
 
-	// todo: query for owner info [cache]
+		if cacheItem, _ := p.appOwnerCache.LoadWithUpdate(application.ID); cacheItem != nil {
+			owner := cacheItem.Object.(*memberCacheObject)
+			item.OwnerUserID = owner.ID
+			item.OwnerUserName = owner.Name
+			item.OwnerUserNickname = owner.Nick
+		}
+	}
 
 	// query runtimes list from orchestrator
 	runtimesM, err := p.bdl.GetApplicationsRuntimes(req.OrgID, req.UserID, applicationsIDs)
@@ -125,4 +145,45 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 
 	data.Total = len(data.List)
 	return &data, nil
+}
+
+func (p *Project) updateMemberCache(key interface{}) (*cache.CacheItem, bool) {
+	l := logrus.WithField("func", "*Project.updateMemberCache")
+
+	member := &memberCacheObject{
+		ID:   0,
+		Name: "OwnerUnknown",
+		Nick: "OwnerUnknown",
+	}
+	cacheItem := &cache.CacheItem{Object: member}
+
+	applicationID := key.(uint64)
+	members, err := p.bdl.GetMembers(apistructs.MemberListRequest{
+		ScopeType: "app",
+		ScopeID:   int64(applicationID),
+		Roles:     []string{"Owner"},
+		Labels:    nil,
+		Q:         "",
+		PageNo:    1,
+		PageSize:  999,
+	})
+	if err != nil {
+		l.WithError(err).Errorln("failed to GetMembers")
+		return cacheItem, true
+	}
+	if len(members.List) == 0 {
+		l.WithError(err).Errorln("found no member by GetMembers")
+		return cacheItem, true
+	}
+
+	userID, err := strconv.ParseUint(members.List[0].UserID, 10, 64)
+	if err != nil {
+		l.WithError(err).Errorf("failed to ParseUint, member userID: %s", members.List[0].UserID)
+		return cacheItem, true
+	}
+	member.ID = userID
+	member.Name = members.List[0].Name
+	member.Nick = members.List[0].Nick
+
+	return cacheItem, true
 }
