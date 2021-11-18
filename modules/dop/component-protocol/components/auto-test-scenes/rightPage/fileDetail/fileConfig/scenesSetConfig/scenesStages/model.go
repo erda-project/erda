@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesConfig/stages"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -59,6 +60,7 @@ type StageData struct {
 	ID         uint64                 `json:"id"`
 	GroupID    int                    `json:"groupId"`
 	Operations map[string]interface{} `json:"operations"`
+	Tags       []stages.Tag           `json:"tags"`
 }
 
 type InParams struct {
@@ -158,6 +160,18 @@ func (s *SceneStage) setToComponent(c *cptype.Component) error {
 
 func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s StageData) {
 	s.Title = fmt.Sprintf("#%d 场景: %s", scene.ID, scene.Name)
+	if scene.RefSetID > 0 {
+		s.Tags = []stages.Tag{
+			{
+				Label: "场景集引用",
+				Color: "red",
+			},
+			{
+				Label: scene.Policy.GetZhName(),
+				Color: "blue",
+			},
+		}
+	}
 	s.ID = scene.ID
 	s.GroupID = func() int {
 		if scene.GroupID == 0 {

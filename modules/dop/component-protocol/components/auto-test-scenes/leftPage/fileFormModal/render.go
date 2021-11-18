@@ -147,6 +147,25 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 				},
 			},
 			{
+				Key:       "policy",
+				Label:     "引用策略",
+				Component: "select",
+				Required:  true,
+				ComponentProps: ComponentProps{
+					Placeholder: "请选择引用策略",
+					Options: []interface{}{
+						PolicyOption{
+							apistructs.NewRunPolicyType.GetZhName(),
+							apistructs.NewRunPolicyType,
+						},
+						PolicyOption{
+							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
+							apistructs.TryLatestSuccessResultPolicyType,
+						},
+					},
+				},
+			},
+			{
 				Key:       "desc",
 				Label:     "描述",
 				Component: "textarea",
@@ -239,6 +258,7 @@ func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event 
 			Name:        "",
 			Description: "",
 			ScenesSet:   nil,
+			Policy:      apistructs.NewRunPolicyType,
 		}
 	case "UpdateSceneSet":
 		a.initFields()
@@ -350,6 +370,54 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 		Name:        s.Name,
 		Description: s.Description,
 	}
+	if s.RefSetID > 0 {
+		a.Props.Fields = []Entry{
+			{
+				Key:       "name",
+				Label:     "名称",
+				Required:  true,
+				Component: "input",
+				Rules: []Rule{
+					{
+						Pattern: `/^[a-z\u4e00-\u9fa5A-Z0-9_-]*$/`,
+						Msg:     "可输入中文、英文、数字、中划线或下划线",
+					},
+				},
+				ComponentProps: ComponentProps{
+					MaxLength: 50,
+				},
+			},
+			{
+				Key:       "policy",
+				Label:     "引用策略",
+				Component: "select",
+				Required:  true,
+				ComponentProps: ComponentProps{
+					Placeholder: "请选择引用策略",
+					Options: []interface{}{
+						PolicyOption{
+							apistructs.NewRunPolicyType.GetZhName(),
+							apistructs.NewRunPolicyType,
+						},
+						PolicyOption{
+							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
+							apistructs.TryLatestSuccessResultPolicyType,
+						},
+					},
+				},
+			},
+			{
+				Key:       "desc",
+				Label:     "描述",
+				Component: "textarea",
+				Required:  false,
+				ComponentProps: ComponentProps{
+					MaxLength: 1000,
+				},
+			},
+		}
+		a.State.FormData.Policy = s.Policy
+	}
 	return nil
 }
 
@@ -403,6 +471,7 @@ func (a *ComponentFileFormModal) AddRefSceneSet(inParams fileTree.InParams) erro
 		Description: formData.Description,
 		SetID:       uint64(setId), //formData.SetID,
 		RefSetID:    *formData.ScenesSet,
+		Policy:      formData.Policy,
 	}
 	req.UserID = a.sdk.Identity.UserID
 	_, err := a.bdl.CreateAutoTestScene(req)
