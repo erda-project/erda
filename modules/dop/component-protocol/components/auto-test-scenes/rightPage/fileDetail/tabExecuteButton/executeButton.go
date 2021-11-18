@@ -184,6 +184,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 func (a *ComponentAction) handleSceneSetDefault() error {
 	setID := a.gsHelper.GetGlobalSelectedSetID()
+	if setID == 0 {
+		return nil
+	}
 	sceneSet, err := a.AutoTestSvc.GetSceneSet(setID)
 	if err != nil {
 		return err
@@ -354,7 +357,7 @@ func (a *ComponentAction) handleClick(event cptype.ComponentEvent, gs *cptype.Gl
 		req.ClusterName = metaData.Env
 		req.ConfigManageNamespaces = metaData.ConfigEnv
 		req.UserID = a.sdk.Identity.UserID
-		pipeline, err := a.AutoTestSvc.ExecuteDiceAutotestSceneSet(req)
+		pipeline, err := a.AutoTestSvc.ExecuteAutotestSceneSet(req)
 		if err != nil {
 			(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()
 		} else {

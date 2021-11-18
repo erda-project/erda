@@ -270,7 +270,6 @@ component-protocol.components.auto-test-scenes.inParamsForm:
 component-protocol.components.auto-test-scenes.outPutForm:
 component-protocol.components.auto-test-scenes.resultPreview:
 component-protocol.components.auto-test-scenes.tabExecuteButton:
-component-protocol.components.auto-test-scenes.tabSceneSetExecuteButton:
 
 component-protocol.components.auto-test-scenes.scenesSetTitle:
 component-protocol.components.auto-test-scenes.scenesSetInfo:
@@ -279,4 +278,4 @@ component-protocol.components.auto-test-scenes.scenesStages:
 component-protocol.components.auto-test-scenes.scenesStagesOperations:
 component-protocol.components.auto-test-scenes.addScenesButton:
 component-protocol.components.auto-test-scenes.exportScenesButton:
-
+component-protocol.components.auto-test-scenes.referSceneSetButton:

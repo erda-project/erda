@@ -15,6 +15,7 @@
 package scenesStages
 
 import (
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -49,6 +50,7 @@ var OperationRender = map[cptype.OperationKey]OperationFunc{
 	EditOperationKey:         []func(s *SceneStage) error{RenderEdit},
 	DeleteOperationKey:       []func(s *SceneStage) error{RenderDelete, RenderList},
 	SplitOperationKey:        []func(s *SceneStage) error{RenderSplit, RenderList},
+	ClickOperationKey:        []func(s *SceneStage) error{RenderClick},
 	SwitchOperationKey:       []func(s *SceneStage) error{RenderSwitch, RenderList},
 }
 
@@ -77,7 +79,7 @@ func RenderList(s *SceneStage) error {
 		OperationBaseInfo: OperationBaseInfo{Key: MoveGroupOperationKey.String(), Reload: true},
 	}
 	s.Operations[ClickOperationKey.String()] = OperationInfo{
-		OperationBaseInfo: OperationBaseInfo{Key: ClickOperationKey.String(), Reload: true},
+		OperationBaseInfo: OperationBaseInfo{Key: ClickOperationKey.String(), Reload: true, FillMeta: "data"},
 	}
 	return nil
 }
@@ -317,4 +319,30 @@ func findFirstLastSceneInGroup(scenes []apistructs.AutoTestScene) (firstScene, l
 		}
 	}
 	return
+}
+
+func RenderClick(s *SceneStage) error {
+	meta, err := GetOpsInfo(s.event.OperationData)
+	if err != nil {
+		return err
+	}
+
+	scene, err := s.atTestPlan.GetAutotestScene(apistructs.AutotestSceneRequest{
+		SceneID:      uint64(meta.Data["id"].(float64)),
+		IdentityInfo: apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID},
+	})
+	if err != nil {
+		return err
+	}
+	if scene.RefSetID != 0 {
+		s.gsHelper.SetGlobalSelectedSetID(scene.RefSetID)
+		s.gsHelper.SetFileTreeSceneSetKey(scene.RefSetID)
+		return RenderList(s)
+	} else {
+		s.gsHelper.SetGlobalActiveConfig(gshelper.SceneConfigKey)
+		s.gsHelper.SetFileTreeSceneID(scene.ID)
+		s.State.SceneID = scene.ID
+	}
+
+	return nil
 }

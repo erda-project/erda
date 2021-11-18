@@ -22,8 +22,6 @@ hierarchy:
     rightPage:
       children:
         - fileDetail
-      tabBarExtraContent:
-        - tabSceneSetExecuteButton
     fileDetail:
       children:
         - fileConfig
@@ -52,6 +50,7 @@ hierarchy:
     scenesStagesOperations:
       - addScenesButton
       - exportScenesButton
+      - referSceneSetButton
     fileInfoHead:
       left: fileInfoTitle
     #      right: fileHistory
@@ -102,9 +101,9 @@ hierarchy:
     executeHead:
       left: executeInfoTitle
       right:
-            - refreshButton
-            - cancelExecuteButton
-            - executeHistory
+        - refreshButton
+        - cancelExecuteButton
+        - executeHistory
     executeHistory:
       children: executeHistoryButton
       content: executeHistoryPop
@@ -320,8 +319,6 @@ components:
     type: Button
   resultPreview:
     type: APIPreview
-  tabSceneSetExecuteButton:
-    type: Button
   scenesSetTitle:
     type: Title
   scenesSetInfo:
@@ -336,6 +333,9 @@ components:
     type: Button
   exportScenesButton:
     type: Button
+  referSceneSetButton:
+    type: Button
+    
 rendering:
   # 前端触发组件
   # 先渲染前端触发组件，再渲染关联组件
@@ -657,6 +657,21 @@ rendering:
           value: "{{ scenesStages.sceneSetKey }}"
         - name: "sceneId"
           value: "{{ scenesStages.sceneId }}"
+    - name: fileTree
+      state:
+        - name: "clickFolderTableSceneID"
+          value: "{{ scenesStages.clickFolderTableRowID }}"
+        - name: "isClickFolderTable"
+          value: "{{ scenesStages.isClickFolderTableRow }}"
+        - name: "sceneId"
+          value: "{{ scenesStages.sceneId }}"
+    - name: scenesConfig
+    - name: scenesSetConfig
+    - name: fileInfo
+    - name: scenesSetInfo
+    - name: fileInfo
+    - name: inParamsForm
+    - name: outPutForm
   addScenesButton:
     - name: fileFormModal
       state:
@@ -666,3 +681,12 @@ rendering:
           value: "{{ addScenesButton.visible }}"
         - name: "sceneSetKey"
           value: "{{ addScenesButton.sceneSetKey }}"
+  referSceneSetButton:
+    - name: fileFormModal
+      state:
+        - name: "actionType"
+          value: "{{ referSceneSetButton.actionType }}"
+        - name: "visible"
+          value: "{{ referSceneSetButton.visible }}"
+        - name: "sceneSetKey"
+          value: "{{ referSceneSetButton.sceneSetKey }}"
