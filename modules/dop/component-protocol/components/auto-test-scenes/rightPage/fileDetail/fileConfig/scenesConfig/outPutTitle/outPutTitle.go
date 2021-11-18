@@ -23,7 +23,9 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type ComponentAction struct{}
+type ComponentAction struct {
+	base.DefaultProvider
+}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	return json.Unmarshal([]byte(`{ "title": "场景出参", "level": 2 }`), &c.Props)

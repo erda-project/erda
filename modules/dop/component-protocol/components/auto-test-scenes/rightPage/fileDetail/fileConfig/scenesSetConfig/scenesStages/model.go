@@ -90,6 +90,7 @@ type State struct {
 	IsClickScene          bool       `json:"isClickScene"`
 	IsClickFolderTableRow bool       `json:"isClickFolderTableRow"`
 	ClickFolderTableRowID uint64     `json:"clickFolderTableRowID"`
+	IsAddParallel         bool       `json:"isAddParallel"`
 }
 
 type OperationBaseInfo struct {
@@ -138,7 +139,9 @@ func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, 
 	s.event = event
 	s.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 	s.gsHelper = gshelper.NewGSHelper(gs)
+	// clear
 	s.State.Visible = false
+	s.State.ActionType = ""
 	return nil
 }
 

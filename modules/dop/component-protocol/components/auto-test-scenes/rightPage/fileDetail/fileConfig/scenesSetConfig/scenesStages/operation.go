@@ -94,6 +94,7 @@ func RenderAddParallel(s *SceneStage) error {
 	s.State.Visible = true
 	s.State.SceneID = meta.ID
 	s.State.SceneSetKey = s.gsHelper.GetGlobalSelectedSetID()
+	s.State.IsAddParallel = true
 	return nil
 }
 
@@ -261,7 +262,17 @@ func RenderDelete(s *SceneStage) error {
 	if err != nil {
 		return err
 	}
-	return s.atTestPlan.DeleteAutotestScene(meta.ID, apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID})
+	if meta.ID == 0 {
+		return nil
+	}
+	err = s.atTestPlan.DeleteAutotestScene(meta.ID, apistructs.IdentityInfo{UserID: s.sdk.Identity.UserID})
+	if err != nil {
+		return nil
+	}
+	// clear
+	s.gsHelper.SetFileTreeSceneID(0)
+	s.State.SceneID = 0
+	return nil
 }
 
 func RenderSplit(s *SceneStage) error {

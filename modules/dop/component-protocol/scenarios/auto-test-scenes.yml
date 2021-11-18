@@ -371,6 +371,7 @@ rendering:
         - name: "setId"
           value: "{{ fileTree.sceneSetKey }}"
     - name: stages
+    - name: outPutTitle
     - name: outPutForm
     - name: addApiButton
     - name: addCopyApiFormModal
@@ -653,6 +654,8 @@ rendering:
           value: "{{ scenesStages.sceneSetKey }}"
         - name: "sceneId"
           value: "{{ scenesStages.sceneId }}"
+        - name: "isAddParallel"
+          value: "{{ scenesStages.isAddParallel }}"
     - name: fileTree
       state:
         - name: "clickFolderTableSceneID"
@@ -661,13 +664,32 @@ rendering:
           value: "{{ scenesStages.isClickFolderTableRow }}"
         - name: "sceneId"
           value: "{{ scenesStages.sceneId }}"
-    - name: scenesConfig
+    - name: fileConfig
     - name: scenesSetConfig
-    - name: fileInfo
     - name: scenesSetInfo
+    - name: scenesConfig
     - name: fileInfo
     - name: inParamsForm
+    - name: outPutTitle
     - name: outPutForm
+    - name: stages
+    - name: stagesOperations
+    - name: executeHead
+    - name: executeHistoryTable
+    - name: executeAlertInfo
+    - name: refreshButton
+    - name: cancelExecuteButton
+    - name: executeInfo
+    - name: executeTaskTitle
+    - name: executeTaskBreadcrumb
+    - name: executeHistoryButton
+    - name: executeTaskTable
+    - name: resultDrawer
+    - name: cancelExecuteButton
+    - name: tabExecuteButton
+    - name: addWaitButton
+    - name: addConfigSheetButton
+    - name: addApiButton
   addScenesButton:
     - name: fileFormModal
       state:

@@ -359,7 +359,7 @@ func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
 		preScene *apistructs.AutoTestScene
 		err      error
 	)
-	if a.State.SceneId != 0 {
+	if a.State.IsAddParallel && a.State.SceneId != 0 {
 		preScene, err = a.atTestPlan.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: a.State.SceneId})
 		if err != nil {
 			return err

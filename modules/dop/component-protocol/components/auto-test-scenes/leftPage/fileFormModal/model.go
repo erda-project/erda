@@ -32,12 +32,13 @@ type ComponentFileFormModal struct {
 }
 
 type State struct {
-	FormVisible bool     `json:"formVisible"`
-	SceneSetKey int      `json:"sceneSetKey"`
-	Visible     bool     `json:"visible"`
-	FormData    FormData `json:"formData"`
-	ActionType  string   `json:"actionType"`
-	SceneId     uint64   `json:"sceneId"`
+	FormVisible   bool     `json:"formVisible"`
+	SceneSetKey   int      `json:"sceneSetKey"`
+	Visible       bool     `json:"visible"`
+	FormData      FormData `json:"formData"`
+	ActionType    string   `json:"actionType"`
+	SceneId       uint64   `json:"sceneId"`
+	IsAddParallel bool     `json:"isAddParallel"`
 }
 
 type FormData struct {

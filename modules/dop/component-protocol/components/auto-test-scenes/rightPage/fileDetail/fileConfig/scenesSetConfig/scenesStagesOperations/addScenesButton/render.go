@@ -40,9 +40,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	switch event.Operation {
 	case AddSceneOperationKey:
 		c.State = map[string]interface{}{
-			"actionType":  AddSceneOperationKey.String(),
-			"visible":     true,
-			"sceneSetKey": h.GetGlobalSelectedSetID(),
+			"actionType":    AddSceneOperationKey.String(),
+			"visible":       true,
+			"sceneSetKey":   h.GetGlobalSelectedSetID(),
+			"isAddParallel": false,
 		}
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Type = "Button"
