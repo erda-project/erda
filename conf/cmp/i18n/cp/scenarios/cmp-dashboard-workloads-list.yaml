@@ -7,6 +7,8 @@ zh:
   Error: 错误
   Succeeded: 成功
   Failed: 失败
+  Updating: 更新中
+  Abnormal: 异常
   createWorkload: 创建工作负载
   upToDate: 已更新
   available: 可用

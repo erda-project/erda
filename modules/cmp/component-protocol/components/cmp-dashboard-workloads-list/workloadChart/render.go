@@ -71,7 +71,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		"green", "red", "steelblue", "maroon",
 	}
 	w.Props.Option.Legend.Data = []string{
-		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Error"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),
+		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Abnormal"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"), cputil.I18n(ctx, "Updating"),
 	}
 	w.Props.Option.XAxis.Type = "value"
 	w.Props.Option.YAxis.Type = "category"
@@ -81,15 +81,16 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 
 	// deployment
 	activeDeploy := w.State.Values.DeploymentsCount.Active
-	errorDeploy := w.State.Values.DeploymentsCount.Error
+	abnormalDeploy := w.State.Values.DeploymentsCount.Abnormal
+	updatingDeploy := w.State.Values.DeploymentsCount.Updating
 
 	// daemonSet
 	activeDs := w.State.Values.DaemonSetCount.Active
-	errorDs := w.State.Values.DaemonSetCount.Error
+	abnormalDs := w.State.Values.DaemonSetCount.Abnormal
 
 	// statefulSet
 	activeSs := w.State.Values.StatefulSetCount.Active
-	errorSs := w.State.Values.StatefulSetCount.Error
+	abnormalSs := w.State.Values.StatefulSetCount.Abnormal
 
 	// job
 	activeJob := w.State.Values.JobCount.Active
@@ -110,12 +111,12 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	}
 
 	errorSeries := Series{
-		Name:     cputil.I18n(ctx, "Error"),
+		Name:     cputil.I18n(ctx, "Abnormal"),
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
 		Data: []*int{
-			nil, nil, &errorDs, &errorSs, &errorDeploy,
+			nil, nil, &abnormalDs, &abnormalSs, &abnormalDeploy,
 		},
 	}
 
@@ -139,8 +140,17 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		},
 	}
 
+	updatingSeries := Series{
+		Name:     cputil.I18n(ctx, "Updating"),
+		Type:     "bar",
+		Stack:    "count",
+		BarWidth: "50%",
+		Data: []*int{
+			nil, nil, nil, nil, &updatingDeploy,
+		},
+	}
 	w.Props.Option.Series = []Series{
-		activeSeries, errorSeries, succeededSeries, failedSeries,
+		activeSeries, errorSeries, succeededSeries, failedSeries, updatingSeries,
 	}
 	return nil
 }

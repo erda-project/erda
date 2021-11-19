@@ -27,6 +27,7 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -47,15 +48,29 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 
 	switch kind {
 	case "Deployment":
-		if len(fields) != 8 {
-			return "", "", fmt.Errorf("deployment %s has invalid fields length", obj.String("metadata", "name"))
+		conditions := obj.Slice("status", "conditions")
+		available, progressing, failure := false, false, false
+		for _, cond := range conditions {
+			statusTrue := cond.String("status") == string(v1.ConditionTrue)
+			switch cond.String("type") {
+			case string(appsv1.DeploymentAvailable):
+				available = statusTrue
+			case string(appsv1.DeploymentProgressing):
+				progressing = statusTrue
+			case string(appsv1.DeploymentReplicaFailure):
+				failure = statusTrue
+			}
 		}
-		// up-to-date and available
-		if fields[2] == fields[3] {
+		if failure {
+			return "Abnormal", "red", nil
+		}
+		if available && progressing {
 			return "Active", "green", nil
-		} else {
-			return "Error", "red", nil
 		}
+		if available || progressing {
+			return "Updating", "darkcyan", nil
+		}
+		return "Abnormal", "red", nil
 	case "DaemonSet":
 		if len(fields) != 11 {
 			return "", "", fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
@@ -64,7 +79,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 		if fields[1] == fields[3] {
 			return "Active", "green", nil
 		} else {
-			return "Error", "red", nil
+			return "Abnormal", "red", nil
 		}
 	case "StatefulSet":
 		if len(fields) != 5 {
@@ -75,7 +90,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 		if readyPods[0] == readyPods[1] {
 			return "Active", "green", nil
 		} else {
-			return "Error", "red", nil
+			return "Abnormal", "red", nil
 		}
 	case "Job":
 		if len(fields) != 7 {
