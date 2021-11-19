@@ -224,33 +224,35 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 			},
 		},
 	}
-	s.Operations["copy"] = OperationInfo{
-		OperationBaseInfo: OperationBaseInfo{
-			Key:       CopyParallelOperationKey.String(),
-			Icon:      "fz1",
-			HoverShow: true,
-			Text:      "复制场景",
-			Reload:    true,
-			Disabled:  false,
-			Group:     "copy",
-		},
-		Meta: OpMetaInfo{
-			ID: scene.ID,
-		},
-	}
-	s.Operations["copyTo"] = OperationInfo{
-		OperationBaseInfo: OperationBaseInfo{
-			Key:       CopyToOperationKey.String(),
-			Icon:      "fz1",
-			HoverShow: true,
-			Text:      "复制到其他场景集",
-			Reload:    true,
-			Disabled:  false,
-			Group:     "copy",
-		},
-		Meta: OpMetaInfo{
-			ID: scene.ID,
-		},
+	if scene.RefSetID == 0 {
+		s.Operations["copy"] = OperationInfo{
+			OperationBaseInfo: OperationBaseInfo{
+				Key:       CopyParallelOperationKey.String(),
+				Icon:      "fz1",
+				HoverShow: true,
+				Text:      "复制场景",
+				Reload:    true,
+				Disabled:  false,
+				Group:     "copy",
+			},
+			Meta: OpMetaInfo{
+				ID: scene.ID,
+			},
+		}
+		s.Operations["copyTo"] = OperationInfo{
+			OperationBaseInfo: OperationBaseInfo{
+				Key:       CopyToOperationKey.String(),
+				Icon:      "fz1",
+				HoverShow: true,
+				Text:      "复制到其他场景集",
+				Reload:    true,
+				Disabled:  false,
+				Group:     "copy",
+			},
+			Meta: OpMetaInfo{
+				ID: scene.ID,
+			},
+		}
 	}
 	s.Operations["edit"] = OperationInfo{
 		OperationBaseInfo: OperationBaseInfo{
