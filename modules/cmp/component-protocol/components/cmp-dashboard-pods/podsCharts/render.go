@@ -30,8 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-var PrimaryColor = []string{"1E2059", "2D3280", "424CA6", "5C6BCC", "798CF1", "ABBAFF", "D1DCFF", "FDF4FF"}
-
 func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if gs == nil {
 		return nil
@@ -53,13 +51,6 @@ func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.S
 	sort.Slice(p.Data.Group, func(i, j int) bool {
 		return p.Data.Group[i][0].Value > p.Data.Group[j][0].Value
 	})
-	for i := range p.Data.Group {
-		color := PrimaryColor[len(PrimaryColor)-1]
-		if i < len(PrimaryColor) {
-			color = PrimaryColor[i]
-		}
-		p.Data.Group[i][0].Color = color
-	}
 	delete(*gs, "countValues")
 	p.Transfer(c)
 	return nil
@@ -73,7 +64,8 @@ func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, cnt, tot 
 	percent := float64(cnt) / float64(tot) * 100
 	status := Pie{
 		Name:  cputil.I18n(ctx, state),
-		Value: percent,
+		Value: cnt,
+		Color: color,
 		Total: tot,
 		Infos: []Info{
 			{
