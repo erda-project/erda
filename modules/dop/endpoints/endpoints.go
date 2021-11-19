@@ -616,6 +616,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodGet, Handler: e.GetProject},
 		{Path: "/api/projects", Method: http.MethodGet, Handler: e.ListProject},
+
+		// resources
+		{Path: "/api/projects/{projectID}/applications-resources", Method: http.MethodGet, Handler: e.ApplicationsResources},
+
 		// core-services application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},

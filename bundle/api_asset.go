@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -126,6 +127,12 @@ func (b *Bundle) GetApplicationRuntimes(applicationID uint64, orgID uint64, user
 	}
 
 	return fetchResp.Data, nil
+}
+
+// GetApplicationsRuntimes queries the runtimes for the given applications ids
+func (b *Bundle) GetApplicationsRuntimes(orgID uint64, userID string, applicationsIDs []uint64) (map[uint64][]*GetApplicationRuntimesDataEle, error) {
+	// todo:
+	return nil, errors.New("not implement")
 }
 
 type GetRuntimeServicesResponse struct {

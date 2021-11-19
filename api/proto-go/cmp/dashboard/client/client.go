@@ -44,3 +44,7 @@ func (s *clusterResourceWrapper) GetClustersResources(ctx context.Context, req *
 func (s *clusterResourceWrapper) GetNamespacesResources(ctx context.Context, req *pb.GetNamespacesResourcesRequest) (*pb.GetNamespacesResourcesResponse, error) {
 	return s.client.GetNamespacesResources(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *clusterResourceWrapper) GetPodsByLabels(ctx context.Context, req *pb.GetPodsByLabelsRequest) (*pb.GetPodsByLabelsResponse, error) {
+	return s.client.GetPodsByLabels(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
