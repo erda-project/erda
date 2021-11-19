@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package charts
+package table
 
 import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	table2 "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
-type Charts struct {
-	Type  string `json:"type"`
-	Props Props  `json:"props"`
-	*cptype.SDK
-	base.DefaultProvider
-}
-
-type Props struct {
-	Gutter int `json:"gutter"`
+type Table struct {
+	table2.Table
+	cpuTable table2.GetTable
+	memTable table2.GetTable
+	podTable table2.GetTable
 }

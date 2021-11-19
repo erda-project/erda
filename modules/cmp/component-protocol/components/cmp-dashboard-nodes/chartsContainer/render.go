@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package page
+package chartsContainer
 
 import (
 	"context"
@@ -23,20 +23,23 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (p *Page) Init(ctx servicehub.Context) error {
-	return p.DefaultProvider.Init(ctx)
-}
-
-func (p Page) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	err := common.Transfer(p.Props, &c.Props)
+func (cc *ChartsContainer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	cc.getProps()
+	err := common.Transfer(cc.Props, &c.Props)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+func (cc *ChartsContainer) getProps() {
+	cc.Props = Props{
+		WhiteBg: true,
+	}
+}
+
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-nodes", "page", func() servicehub.Provider {
-		return &Page{Type: "Container", Props: Props{SpaceSize: "middle"}}
+	base.InitProviderWithCreator("cmp-dashboard-nodes", "chartsContainer", func() servicehub.Provider {
+		return &ChartsContainer{Type: "Container", Props: Props{WhiteBg: true}}
 	})
 }
