@@ -62,7 +62,7 @@ func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Componen
 
 	if event.Operation == cptype.InitializeOperation {
 		if _, ok := f.sdk.InParams["filter__urlQuery"]; !ok {
-			f.State.Values.Namespace = []string{"default"}
+			f.State.Values.Namespace = "default"
 		} else if err := f.DecodeURLQuery(); err != nil {
 			return fmt.Errorf("failed to decode url query for filter component, %v", err)
 		}
@@ -229,6 +229,9 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Label:      cputil.I18n(ctx, "namespace"),
 		Type:       "select",
 		Fixed:      true,
+		CustomProps: CustomProps{
+			Mode: "single",
+		},
 	}
 	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, otherNs} {
 		if option.Children != nil {

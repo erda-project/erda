@@ -38,7 +38,7 @@ func TestComponentPodsTable_GenComponentState(t *testing.T) {
 		"total": 20,
 		"values": Values{
 			Kind:      []string{"test"},
-			Namespace: []string{"test"},
+			Namespace: "test",
 			Status:    []string{"test"},
 			Node:      []string{"test"},
 			Search:    "test",
@@ -144,7 +144,7 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 			Total: 20,
 			Values: Values{
 				Kind:      []string{"test"},
-				Namespace: []string{"test"},
+				Namespace: "test",
 				Status:    []string{"test"},
 				Node:      []string{"test"},
 				Search:    "test",
@@ -157,25 +157,19 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 					Status: Status{
 						RenderType: "testType",
 						Value:      "testValue",
-						StyleConfig: StyleConfig{
-							Color: "testColor",
-						},
+						Color:      "testColor",
 					},
-					Name: Link{
+					Name: Multiple{
 						RenderType: "testType",
-						Value:      "testValues",
-						Operations: map[string]interface{}{
-							"testOp": Operation{
-								Key:    "testKey",
-								Reload: true,
-							},
-						},
+						Direction:  "testDirection",
 					},
-					PodName:        "testName",
-					Namespace:      "default",
-					IP:             "testIP",
-					Age:            "1d",
-					CPURequests:    "1",
+					PodName: "testName",
+					IP:      "testIP",
+					Age:     "1d",
+					CPURequests: Multiple{
+						RenderType: "testType",
+						Direction:  "testDirection",
+					},
 					CPURequestsNum: 1000,
 					CPUPercent: Percent{
 						RenderType: "testType",
@@ -183,9 +177,15 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 						Tip:        "testTip",
 						Status:     "testStatus",
 					},
-					CPULimits:         "1",
-					CPULimitsNum:      1000,
-					MemoryRequests:    "1Gi",
+					CPULimits: Multiple{
+						RenderType: "testType",
+						Direction:  "testDirection",
+					},
+					CPULimitsNum: 1000,
+					MemoryRequests: Multiple{
+						RenderType: "testType",
+						Direction:  "testDirection",
+					},
 					MemoryRequestsNum: 1 << 30,
 					MemoryPercent: Percent{
 						RenderType: "testType",
@@ -193,7 +193,10 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 						Tip:        "testTip",
 						Status:     "testStatus",
 					},
-					MemoryLimits:    "1",
+					MemoryLimits: Multiple{
+						RenderType: "testType",
+						Direction:  "testDirection",
+					},
 					MemoryLimitsNum: 1 << 30,
 					Ready:           "1",
 					Node:            "testNode",
@@ -218,7 +221,6 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 				{
 					DataIndex: "test",
 					Title:     "testTitle",
-					Width:     120,
 					Sorter:    true,
 					Fixed:     "test",
 				},

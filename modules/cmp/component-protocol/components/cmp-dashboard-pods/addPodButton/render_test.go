@@ -24,8 +24,9 @@ import (
 func TestComponentAddPodButton_Transfer(t *testing.T) {
 	component := &ComponentAddPodButton{
 		Props: Props{
-			Text: "testText",
-			Type: "testType",
+			Text:       "testText",
+			Type:       "testType",
+			PrefixIcon: "testIcon",
 		},
 		Operations: map[string]interface{}{
 			"testOp": Operation{

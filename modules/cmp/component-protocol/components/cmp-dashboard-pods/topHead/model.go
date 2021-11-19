@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package topHead
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-func init() {
-	base.InitProvider("cmp-dashboard-pods", "chartContainer")
+type ComponentTopHead struct {
+	base.DefaultProvider
+
+	Type  string `json:"type,omitempty"`
+	Props Props  `json:"props"`
+}
+
+type Props struct {
+	IsTopHead bool `json:"isTopHead"`
 }

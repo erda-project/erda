@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package charts
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-func init() {
-	base.InitProvider("cmp-dashboard-pods", "chartContainer")
+type ComponentCharts struct {
+	base.DefaultProvider
+	Type  string `json:"type,omitempty"`
+	Props Props  `json:"props"`
+}
+
+type Props struct {
+	WhiteBg bool `json:"whiteBg,omitempty"`
 }

@@ -43,13 +43,18 @@ type State struct {
 }
 
 type Condition struct {
-	HaveFilter  bool     `json:"haveFilter,omitempty"`
-	Key         string   `json:"key,omitempty"`
-	Label       string   `json:"label,omitempty"`
-	Placeholder string   `json:"placeholder,omitempty"`
-	Type        string   `json:"type,omitempty"`
-	Fixed       bool     `json:"fixed,omitempty"`
-	Options     []Option `json:"options,omitempty"`
+	HaveFilter  bool        `json:"haveFilter,omitempty"`
+	Key         string      `json:"key,omitempty"`
+	Label       string      `json:"label,omitempty"`
+	Placeholder string      `json:"placeholder,omitempty"`
+	Type        string      `json:"type,omitempty"`
+	Fixed       bool        `json:"fixed,omitempty"`
+	Options     []Option    `json:"options,omitempty"`
+	CustomProps CustomProps `json:"customProps,omitempty"`
+}
+
+type CustomProps struct {
+	Mode string `json:"mode,omitempty"`
 }
 
 type Option struct {
@@ -60,7 +65,7 @@ type Option struct {
 
 type Values struct {
 	Kind      []string `json:"kind,omitempty"`
-	Namespace []string `json:"namespace,omitempty"`
+	Namespace string   `json:"namespace,omitempty"`
 	Status    []string `json:"status,omitempty"`
 	Node      []string `json:"node,omitempty"`
 	Search    string   `json:"search,omitempty"`

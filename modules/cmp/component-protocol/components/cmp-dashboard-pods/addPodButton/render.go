@@ -34,6 +34,7 @@ func (b *ComponentAddPodButton) Render(ctx context.Context, component *cptype.Co
 	b.InitComponent(ctx)
 	b.Props.Text = b.sdk.I18n("createPod")
 	b.Props.Type = "primary"
+	b.Props.PrefixIcon = "add"
 	b.Operations = map[string]interface{}{
 		"click": Operation{
 			Key:    "addPod",

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package tabs
 
 import (
 	"context"
@@ -25,34 +25,38 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (tableTabs *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	if err := tableTabs.GenComponentState(c); err != nil {
-		return fmt.Errorf("failed to gen tableTabs component state, %v", err)
+func (t *Tabs) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := t.GenComponentState(c); err != nil {
+		return fmt.Errorf("failed to gen tabs component state, %v", err)
 	}
 	if event.Operation == cptype.InitializeOperation {
-		tableTabs.State.ActiveKey = "cpu"
+		t.State.Value = "cpu"
 	}
-	tableTabs.Props.TabMenu = []TabMenu{
+
+	t.Props.ButtonStyle = "solid"
+	t.Props.Options = []Option{
 		{
 			Key:  "cpu",
-			Name: cputil.I18n(ctx, "cpu-analysis"),
+			Text: cputil.I18n(ctx, "cpu-analysis"),
 		},
 		{
 			Key:  "mem",
-			Name: cputil.I18n(ctx, "mem-analysis"),
+			Text: cputil.I18n(ctx, "mem-analysis"),
 		},
 	}
-	tableTabs.Operations = Operations{
-		OnChange: OnChange{
+	t.Props.RadioType = "button"
+	t.Props.Size = "small"
+	t.Operations = map[string]interface{}{
+		"onChange": Operation{
 			Key:    "changeTab",
 			Reload: true,
 		},
 	}
-	tableTabs.Transfer(c)
+	t.Transfer(c)
 	return nil
 }
 
-func (tableTabs *TableTabs) GenComponentState(component *cptype.Component) error {
+func (t *Tabs) GenComponentState(component *cptype.Component) error {
 	if component == nil || component.State == nil {
 		return nil
 	}
@@ -64,22 +68,20 @@ func (tableTabs *TableTabs) GenComponentState(component *cptype.Component) error
 	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
-	tableTabs.State = state
+	t.State = state
 	return nil
 }
 
-func (tableTabs *TableTabs) Transfer(c *cptype.Component) {
-	c.Props = tableTabs.Props
+func (t *Tabs) Transfer(c *cptype.Component) {
+	c.Props = t.Props
 	c.State = map[string]interface{}{
-		"activeKey": tableTabs.State.ActiveKey,
+		"value": t.State.Value,
 	}
-	c.Operations = map[string]interface{}{
-		"onChange": tableTabs.Operations.OnChange,
-	}
+	c.Operations = t.Operations
 }
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-pods", "tableTabs", func() servicehub.Provider {
-		return &TableTabs{}
+	base.InitProviderWithCreator("cmp-dashboard-pods", "tabs", func() servicehub.Provider {
+		return &Tabs{}
 	})
 }

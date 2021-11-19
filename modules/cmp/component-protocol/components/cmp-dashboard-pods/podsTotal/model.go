@@ -12,29 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package addPodButton
+package PodTitle
 
 import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type ComponentAddPodButton struct {
+type PodsTotal struct {
 	base.DefaultProvider
 
-	sdk        *cptype.SDK
-	Type       string                 `json:"type,omitempty"`
-	Props      Props                  `json:"props"`
-	Operations map[string]interface{} `json:"operations,omitempty"`
+	Type string `json:"type,omitempty"`
+	Data Data   `json:"data"`
 }
 
-type Props struct {
-	Text       string `json:"text,omitempty"`
-	Type       string `json:"type,omitempty"`
-	PrefixIcon string `json:"prefixIcon,omitempty"`
+type Data struct {
+	Data DataInData `json:"data"`
 }
 
-type Operation struct {
-	Key    string `json:"key,omitempty"`
-	Reload bool   `json:"reload"`
+type DataInData struct {
+	Main int    `json:"main"`
+	Desc string `json:"desc,omitempty"`
 }
