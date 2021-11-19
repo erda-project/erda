@@ -30,11 +30,11 @@ type Data struct {
 }
 
 type Pie struct {
-	Name  string  `json:"name,omitempty"`
-	Value float64 `json:"value"`
-	Color string  `json:"color,omitempty"`
-	Total int     `json:"total"`
-	Infos []Info  `json:"info,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Value int    `json:"value"`
+	Color string `json:"color,omitempty"`
+	Total int    `json:"total"`
+	Infos []Info `json:"info,omitempty"`
 }
 
 type Info struct {

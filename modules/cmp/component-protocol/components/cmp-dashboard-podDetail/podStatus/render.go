@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
+	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -78,9 +78,9 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 		return fmt.Errorf("pod %s/%s has invalid fields length", namespace, name)
 	}
 	status := fields[2]
-	color := podsTable.PodStatusToColor[status]
+	color := cmpcputil.PodStatus[status]
 	if color == "" {
-		color = "darkslategray"
+		color = "Default"
 	}
 
 	podStatus.Data.Labels.Color = color

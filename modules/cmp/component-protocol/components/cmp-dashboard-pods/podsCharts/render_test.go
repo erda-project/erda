@@ -41,7 +41,7 @@ func TestPodsCharts_ParsePodStatus(t *testing.T) {
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &sdk)
 	pd := &PodsCharts{}
 	status := pd.ParsePodStatus(ctx, "Running", 1, 1)
-	if status[0].Color != "green" {
+	if status[0].Color != "success" {
 		t.Errorf("test failed, value of status is unexpected")
 	}
 }

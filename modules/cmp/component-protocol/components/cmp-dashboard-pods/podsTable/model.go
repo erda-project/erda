@@ -91,7 +91,7 @@ type Item struct {
 type Status struct {
 	RenderType string `json:"renderType,omitempty"`
 	Value      string `json:"value,omitempty"`
-	Color      string `json:"color,omitempty"`
+	Status     string `json:"status,omitempty"`
 }
 
 type Multiple struct {

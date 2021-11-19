@@ -400,3 +400,18 @@ func ListSteveResourceByNamespaces(ctx context.Context, steveServer cmp.SteveSer
 	}
 	return list, nil
 }
+
+// PodStatus is a map of pod status to normal status
+var PodStatus = map[string]string{
+	"Completed":         "success",
+	"ContainerCreating": "processing",
+	"CrashLoopBackOff":  "error",
+	"Error":             "error",
+	"Evicted":           "default",
+	"ImagePullBackOff":  "error",
+	"ErrImagePull":      "error",
+	"Pending":           "processing",
+	"Running":           "success",
+	"Terminating":       "processing",
+	"OOMKilled":         "error",
+}

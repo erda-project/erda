@@ -26,9 +26,11 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
+	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+var PrimaryColor = []string{"primary8", "primary7", "primary6", "primary5", "primary4", "primary3", "primary2", "primary1"}
 
 func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if gs == nil {
@@ -51,20 +53,27 @@ func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.S
 	sort.Slice(p.Data.Group, func(i, j int) bool {
 		return p.Data.Group[i][0].Value > p.Data.Group[j][0].Value
 	})
+	for i := range p.Data.Group {
+		color := PrimaryColor[len(PrimaryColor)-1]
+		if i < len(PrimaryColor) {
+			color = PrimaryColor[i]
+		}
+		p.Data.Group[i][0].Color = color
+	}
 	delete(*gs, "countValues")
 	p.Transfer(c)
 	return nil
 }
 
 func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, cnt, tot int) []Pie {
-	color := podsTable.PodStatusToColor[state]
+	color := cmpcputil.PodStatus[state]
 	if color == "" {
-		color = "darkslategray"
+		color = "Default"
 	}
 	percent := float64(cnt) / float64(tot) * 100
 	status := Pie{
 		Name:  cputil.I18n(ctx, state),
-		Value: percent,
+		Value: cnt,
 		Color: color,
 		Total: tot,
 		Infos: []Info{

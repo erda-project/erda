@@ -157,7 +157,7 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 					Status: Status{
 						RenderType: "testType",
 						Value:      "testValue",
-						Color:      "testColor",
+						Status:     "testStatus",
 					},
 					Name: Multiple{
 						RenderType: "testType",
