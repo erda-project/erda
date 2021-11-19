@@ -29,16 +29,17 @@ func TestComponentWorkloadChart_GenComponentState(t *testing.T) {
 		State: map[string]interface{}{
 			"values": Values{
 				DeploymentsCount: Count{
-					Active: 1,
-					Error:  1,
+					Active:   1,
+					Abnormal: 1,
+					Updating: 1,
 				},
 				DaemonSetCount: Count{
-					Active: 1,
-					Error:  1,
+					Active:   1,
+					Abnormal: 1,
 				},
 				StatefulSetCount: Count{
-					Active: 1,
-					Error:  1,
+					Active:   1,
+					Abnormal: 1,
 				},
 				JobCount: Count{
 					Active:    1,
@@ -99,31 +100,31 @@ func TestComponentWorkloadChart_Transfer(t *testing.T) {
 			Values: Values{
 				DeploymentsCount: Count{
 					Active:    1,
-					Error:     1,
+					Abnormal:  1,
 					Succeeded: 1,
 					Failed:    1,
 				},
 				DaemonSetCount: Count{
 					Active:    2,
-					Error:     2,
+					Abnormal:  2,
 					Succeeded: 2,
 					Failed:    2,
 				},
 				StatefulSetCount: Count{
 					Active:    3,
-					Error:     3,
+					Abnormal:  3,
 					Succeeded: 3,
 					Failed:    3,
 				},
 				JobCount: Count{
 					Active:    4,
-					Error:     4,
+					Abnormal:  4,
 					Succeeded: 4,
 					Failed:    4,
 				},
 				CronJobCount: Count{
 					Active:    5,
-					Error:     5,
+					Abnormal:  5,
 					Succeeded: 5,
 					Failed:    5,
 				},

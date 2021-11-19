@@ -12,6 +12,8 @@ zh:
   Error: 错误
   Succeeded: 成功
   Failed: 失败
+  Updating: 更新中
+  Abnormal: 异常
 
   Completed: 完成
   ContainerCreating: 容器创建中

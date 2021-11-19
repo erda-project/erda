@@ -258,8 +258,8 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 				Value: WorkloadActive,
 			},
 			{
-				Label: cputil.I18n(ctx, "Error"),
-				Value: WorkloadError,
+				Label: cputil.I18n(ctx, "Abnormal"),
+				Value: WorkloadAbnormal,
 			},
 			{
 				Label: cputil.I18n(ctx, "Succeeded"),
@@ -268,6 +268,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 			{
 				Label: cputil.I18n(ctx, "Failed"),
 				Value: WorkloadFailed,
+			},
+			{
+				Label: cputil.I18n(ctx, "Updating"),
+				Value: WorkloadUpdating,
 			},
 		},
 	})
