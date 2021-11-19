@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion5
 type ClusterResourceClient interface {
 	GetClustersResources(ctx context.Context, in *GetClustersResourcesRequest, opts ...grpc.CallOption) (*GetClusterResourcesResponse, error)
 	GetNamespacesResources(ctx context.Context, in *GetNamespacesResourcesRequest, opts ...grpc.CallOption) (*GetNamespacesResourcesResponse, error)
+	GetPodsByLabels(ctx context.Context, in *GetPodsByLabelsRequest, opts ...grpc.CallOption) (*GetPodsByLabelsResponse, error)
 }
 
 type clusterResourceClient struct {
@@ -51,12 +52,22 @@ func (c *clusterResourceClient) GetNamespacesResources(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *clusterResourceClient) GetPodsByLabels(ctx context.Context, in *GetPodsByLabelsRequest, opts ...grpc.CallOption) (*GetPodsByLabelsResponse, error) {
+	out := new(GetPodsByLabelsResponse)
+	err := c.cc.Invoke(ctx, "/erda.cmp.dashboard.resource.ClusterResource/GetPodsByLabels", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClusterResourceServer is the server API for ClusterResource service.
 // All implementations should embed UnimplementedClusterResourceServer
 // for forward compatibility
 type ClusterResourceServer interface {
 	GetClustersResources(context.Context, *GetClustersResourcesRequest) (*GetClusterResourcesResponse, error)
 	GetNamespacesResources(context.Context, *GetNamespacesResourcesRequest) (*GetNamespacesResourcesResponse, error)
+	GetPodsByLabels(context.Context, *GetPodsByLabelsRequest) (*GetPodsByLabelsResponse, error)
 }
 
 // UnimplementedClusterResourceServer should be embedded to have forward compatible implementations.
@@ -68,6 +79,9 @@ func (*UnimplementedClusterResourceServer) GetClustersResources(context.Context,
 }
 func (*UnimplementedClusterResourceServer) GetNamespacesResources(context.Context, *GetNamespacesResourcesRequest) (*GetNamespacesResourcesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNamespacesResources not implemented")
+}
+func (*UnimplementedClusterResourceServer) GetPodsByLabels(context.Context, *GetPodsByLabelsRequest) (*GetPodsByLabelsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPodsByLabels not implemented")
 }
 
 func RegisterClusterResourceServer(s grpc1.ServiceRegistrar, srv ClusterResourceServer, opts ...grpc1.HandleOption) {
@@ -104,6 +118,15 @@ func _get_ClusterResource_serviceDesc(srv ClusterResourceServer, opts ...grpc1.H
 	if h.Interceptor != nil {
 		_ClusterResource_GetNamespacesResources_info = transport.NewServiceInfo("erda.cmp.dashboard.resource.ClusterResource", "GetNamespacesResources", srv)
 		_ClusterResource_GetNamespacesResources_Handler = h.Interceptor(_ClusterResource_GetNamespacesResources_Handler)
+	}
+
+	_ClusterResource_GetPodsByLabels_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetPodsByLabels(ctx, req.(*GetPodsByLabelsRequest))
+	}
+	var _ClusterResource_GetPodsByLabels_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ClusterResource_GetPodsByLabels_info = transport.NewServiceInfo("erda.cmp.dashboard.resource.ClusterResource", "GetPodsByLabels", srv)
+		_ClusterResource_GetPodsByLabels_Handler = h.Interceptor(_ClusterResource_GetPodsByLabels_Handler)
 	}
 
 	var serviceDesc = _ClusterResource_serviceDesc
@@ -152,6 +175,29 @@ func _get_ClusterResource_serviceDesc(srv ClusterResourceServer, opts ...grpc1.H
 					FullMethod: "/erda.cmp.dashboard.resource.ClusterResource/GetNamespacesResources",
 				}
 				return interceptor(ctx, in, info, _ClusterResource_GetNamespacesResources_Handler)
+			},
+		},
+		{
+			MethodName: "GetPodsByLabels",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetPodsByLabelsRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ClusterResourceServer).GetPodsByLabels(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ClusterResource_GetPodsByLabels_info)
+				}
+				if interceptor == nil {
+					return _ClusterResource_GetPodsByLabels_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.cmp.dashboard.resource.ClusterResource/GetPodsByLabels",
+				}
+				return interceptor(ctx, in, info, _ClusterResource_GetPodsByLabels_Handler)
 			},
 		},
 	}

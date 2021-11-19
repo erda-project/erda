@@ -31,6 +31,12 @@ var _ json.Marshaler = (*ClusterResourceItem)(nil)
 var _ json.Unmarshaler = (*ClusterResourceItem)(nil)
 var _ json.Marshaler = (*NamespaceResourceDetail)(nil)
 var _ json.Unmarshaler = (*NamespaceResourceDetail)(nil)
+var _ json.Marshaler = (*GetPodsByLabelsRequest)(nil)
+var _ json.Unmarshaler = (*GetPodsByLabelsRequest)(nil)
+var _ json.Marshaler = (*GetPodsByLabelsResponse)(nil)
+var _ json.Unmarshaler = (*GetPodsByLabelsResponse)(nil)
+var _ json.Marshaler = (*GetPodsByLabelsItem)(nil)
+var _ json.Unmarshaler = (*GetPodsByLabelsItem)(nil)
 
 // GetClustersResourcesRequest implement json.Marshaler.
 func (m *GetClustersResourcesRequest) MarshalJSON() ([]byte, error) {
@@ -189,6 +195,60 @@ func (m *NamespaceResourceDetail) MarshalJSON() ([]byte, error) {
 
 // NamespaceResourceDetail implement json.Marshaler.
 func (m *NamespaceResourceDetail) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetPodsByLabelsRequest implement json.Marshaler.
+func (m *GetPodsByLabelsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetPodsByLabelsRequest implement json.Marshaler.
+func (m *GetPodsByLabelsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetPodsByLabelsResponse implement json.Marshaler.
+func (m *GetPodsByLabelsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetPodsByLabelsResponse implement json.Marshaler.
+func (m *GetPodsByLabelsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetPodsByLabelsItem implement json.Marshaler.
+func (m *GetPodsByLabelsItem) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetPodsByLabelsItem implement json.Marshaler.
+func (m *GetPodsByLabelsItem) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

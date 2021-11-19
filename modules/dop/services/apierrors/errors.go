@@ -498,6 +498,8 @@ var (
 	ErrCreateTestReportRecord = err("ErrCreateTestReportRecord", "创建测试报告记录失败")
 	ErrListTestReportRecord   = err("ErrListTestReportRecord", "查询测试报告记录失败")
 	ErrGetTestReportRecord    = err("ErrGetTestReportRecord", "获取测试报告记录失败")
+
+	ErrApplicationsResources = err("ErrApplicationsResources", "查询应用资源列表失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

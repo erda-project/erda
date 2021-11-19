@@ -6,6 +6,7 @@ option go_package = "github.com/erda-project/erda-proto-go/cmp/dashboard/pb";
 service ClusterResource {
   rpc GetClustersResources(GetClustersResourcesRequest)returns(GetClusterResourcesResponse) {}
   rpc GetNamespacesResources(GetNamespacesResourcesRequest)returns(GetNamespacesResourcesResponse){}
+  rpc GetPodsByLabels(GetPodsByLabelsRequest)returns(GetPodsByLabelsResponse){}
 }
 
 message GetClustersResourcesRequest {
@@ -60,4 +61,23 @@ message NamespaceResourceDetail {
   string namespace = 2;
   uint64 cpuRequest = 3;
   uint64 memRequest = 4;
+}
+
+message GetPodsByLabelsRequest {
+  string cluster = 1;
+  repeated string labels = 2;
+}
+
+message GetPodsByLabelsResponse {
+  uint64 total = 1;
+  repeated GetPodsByLabelsItem list = 2;
+}
+
+message GetPodsByLabelsItem {
+  string cluster = 1;
+  string status = 2;
+  string name = 3;
+  string namespace = 4;
+  uint64 cpuRequest = 5;
+  uint64 memRequest = 6;
 }

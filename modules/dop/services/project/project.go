@@ -15,15 +15,22 @@
 package project
 
 import (
+	"time"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/dbclient"
+	"github.com/erda-project/erda/pkg/cache"
 )
 
 type Project struct {
+	db    *dbclient.DBClient
 	bdl   *bundle.Bundle
 	trans i18n.Translator
 	cmp   dashboardPb.ClusterResourceServer
+
+	appOwnerCache *cache.Cache
 }
 
 func New(options ...Option) *Project {
@@ -31,5 +38,6 @@ func New(options ...Option) *Project {
 	for _, f := range options {
 		f(p)
 	}
+	p.appOwnerCache = cache.New("ApplicationOwnerCache", time.Minute, p.updateMemberCache)
 	return p
 }

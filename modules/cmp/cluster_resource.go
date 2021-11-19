@@ -405,3 +405,55 @@ func CalculateNodeAllocatedRes(nodeName string, pods []types2.APIObject) (cpu, m
 	}
 	return cpuQty.MilliValue(), memQty.Value(), podNum
 }
+
+func (p *provider) GetPodsByLabels(ctx context.Context, pReq *pb.GetPodsByLabelsRequest) (*pb.GetPodsByLabelsResponse, error) {
+	req := &apistructs.SteveRequest{
+		NoAuthentication: true,
+		Type:             apistructs.K8SPod,
+		ClusterName:      pReq.Cluster,
+		LabelSelector:    pReq.Labels,
+	}
+	pods, err := p.ListSteveResource(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var targetsPods []*pb.GetPodsByLabelsItem
+	for _, pod := range pods {
+		obj := pod.Data()
+		status := obj.String("status", "phase")
+		name := obj.String("metadata", "name")
+		namespace := obj.String("metadata", "namespace")
+
+		cpuQty := resource.NewQuantity(0, resource.DecimalSI)
+		memQty := resource.NewQuantity(0, resource.BinarySI)
+		containers := obj.Slice("spec", "containers")
+		for _, container := range containers {
+			cpuQty.Add(*parseResource(container.String("resources", "requests", "cpu"), resource.DecimalSI))
+			memQty.Add(*parseResource(container.String("resources", "requests", "memory"), resource.BinarySI))
+		}
+		cpu := uint64(cpuQty.MilliValue())
+		mem := uint64(memQty.Value())
+
+		targetsPods = append(targetsPods, &pb.GetPodsByLabelsItem{
+			Cluster:    pReq.Cluster,
+			Status:     status,
+			Name:       name,
+			Namespace:  namespace,
+			CpuRequest: cpu,
+			MemRequest: mem,
+		})
+	}
+	return &pb.GetPodsByLabelsResponse{
+		Total: uint64(len(targetsPods)),
+		List:  targetsPods,
+	}, nil
+}
+
+func parseResource(str string, format resource.Format) *resource.Quantity {
+	if str == "" {
+		return resource.NewQuantity(0, format)
+	}
+	res, _ := resource.ParseQuantity(str)
+	return &res
+}
