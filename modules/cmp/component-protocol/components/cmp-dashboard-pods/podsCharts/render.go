@@ -30,6 +30,8 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+var PrimaryColor = []string{"primary8", "primary7", "primary6", "primary5", "primary4", "primary3", "primary2", "primary1"}
+
 func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if gs == nil {
 		return nil
@@ -51,6 +53,13 @@ func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.S
 	sort.Slice(p.Data.Group, func(i, j int) bool {
 		return p.Data.Group[i][0].Value > p.Data.Group[j][0].Value
 	})
+	for i := range p.Data.Group {
+		color := PrimaryColor[len(PrimaryColor)-1]
+		if i < len(PrimaryColor) {
+			color = PrimaryColor[i]
+		}
+		p.Data.Group[i][0].Color = color
+	}
 	delete(*gs, "countValues")
 	p.Transfer(c)
 	return nil
