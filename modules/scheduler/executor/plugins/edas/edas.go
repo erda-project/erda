@@ -696,8 +696,6 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		// 1. The service whose name has been deleted or updated
 		// 2. The service whose port has been modified
 		svcs := checkoutServicesToDelete(newRuntime, oldRuntime)
-		isScale := e.isScaleServices(newRuntime, oldRuntime)
-		logrus.Errorf("[EDAS] group %s scale mode is: %+v", group, isScale)
 		for _, svc := range *svcs {
 			appName := group + "-" + svc.Name
 			logrus.Warningf("[EDAS] need to delete service(%s) because the user modified name or ports !!!", appName)
@@ -725,26 +723,13 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 					}
 					continue
 				}
-				if e.isServiceToScale(newSvc, oldRuntime) {
-					// scale services
-					logrus.Infof("[EDAS] Begin to scale service: %s", appName)
-					if err = e.scaleApp(appName, newSvc.Scale); err != nil {
-						logrus.Errorf("[EDAS] Failed to scale service: %s, error: %v", appName, err)
-						errChan <- err
-						return
-					}
-				} else {
-					// The update scenario does not affect other services that have not been updated
-					if isScale && e.isNotChangeService(newSvc, oldRuntime) {
-						continue
-					}
-					// update service
-					// Does not include domain name updates
-					if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
-						logrus.Errorf("[EDAS] Failed to update service: %s, error: %v", appName, err)
-						errChan <- err
-						return
-					}
+
+				// update service
+				// Does not include domain name updates
+				if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
+					logrus.Errorf("[EDAS] Failed to update service: %s, error: %v", appName, err)
+					errChan <- err
+					return
 				}
 			}
 		}
@@ -2031,100 +2016,6 @@ func checkoutServicesToDelete(newRuntime, oldRuntime *apistructs.ServiceGroup) *
 	return &svcs
 }
 
-func (e *EDAS) isScaleServices(newRuntime, oldRuntime *apistructs.ServiceGroup) bool {
-	if newRuntime == nil || oldRuntime == nil {
-		return false
-	}
-
-	var newSvcCpu float64
-	for _, oldSvc := range oldRuntime.Services {
-		oldResourceMem := oldSvc.Resources.Mem / 1024 / 1024
-		ok, newSvc := isServiceInRuntime(oldSvc.Name, newRuntime)
-
-		if !ok {
-			return false
-		}
-		if oldSvc.Scale != 0 {
-			if e.unlimitCPU == "true" {
-				if newSvc.Resources.Cpu < 1 {
-					newSvcCpu = 0
-				} else {
-					newSvcCpu = math.Floor(newSvc.Resources.Cpu+0.5) * 1000
-				}
-			} else {
-				newSvcCpu = newSvc.Resources.Cpu * 1000
-			}
-			if oldSvc.Scale != newSvc.Scale {
-				logrus.Infof("[edas] isScaleServices old scale is %+v, new scale is %+v", oldSvc.Scale, newSvc.Scale)
-				return true
-			}
-			if oldResourceMem != newSvc.Resources.Mem {
-				logrus.Infof("[edas] isScaleServices old mem is %+v, new mem is %+v", oldResourceMem, newSvc.Resources.Mem)
-				return true
-			}
-			if oldSvc.Resources.Cpu != newSvcCpu {
-				logrus.Infof("[edas] isScaleServices old cpu is %+v, new cou is %+v", oldSvc.Resources.Cpu, newSvcCpu)
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// Confirm that only the list of the number of instances is modified
-func (e *EDAS) isServiceToScale(newRuntime *apistructs.Service, oldRuntime *apistructs.ServiceGroup) bool {
-	if newRuntime == nil || oldRuntime == nil {
-		return false
-	}
-	var newSvcCpu float64
-	if e.unlimitCPU == "true" {
-		if newRuntime.Resources.Cpu < 1 {
-			newSvcCpu = 0
-		} else {
-			newSvcCpu = math.Floor(newRuntime.Resources.Cpu+0.5) * 1000
-		}
-	} else {
-		newSvcCpu = newRuntime.Resources.Cpu * 1000
-	}
-	logrus.Infof("[edas] new runtime cpu: %+v", newRuntime.Resources.Cpu)
-	for _, oldSvc := range oldRuntime.Services {
-		oldResourceMem := oldSvc.Resources.Mem / 1024 / 1024
-		logrus.Infof("[edas] old runtime cpu: %+v", oldSvc.Resources.Cpu)
-		if newRuntime.Name == oldSvc.Name && oldSvc.Resources.Cpu == newSvcCpu && oldResourceMem == newRuntime.Resources.Mem && oldSvc.Scale != newRuntime.Scale && oldSvc.Scale != 0 {
-			return true
-		}
-	}
-	return false
-}
-
-// Confirm that there is no change in the service
-func (e *EDAS) isNotChangeService(newRuntime *apistructs.Service, oldRuntime *apistructs.ServiceGroup) bool {
-	if newRuntime == nil || oldRuntime == nil {
-		return false
-	}
-	var newSvcCpu float64
-	logrus.Infof("[edas] isNotChangeService origin new cpu: %v", newRuntime.Resources.Cpu)
-	if e.unlimitCPU == "true" {
-		if newRuntime.Resources.Cpu < 1 {
-			newSvcCpu = 0
-		} else {
-			newSvcCpu = math.Floor(newRuntime.Resources.Cpu+0.5) * 1000
-		}
-	} else {
-		newSvcCpu = newRuntime.Resources.Cpu * 1000
-	}
-	logrus.Infof("[edas] isNotChangeService new cpu: %v, new mem: %v, new scale: %v", newSvcCpu, newRuntime.Resources.Mem, newRuntime.Scale)
-	for _, oldSvc := range oldRuntime.Services {
-		oldResourceMem := oldSvc.Resources.Mem / 1024 / 1024
-		logrus.Infof("[edas] isNotChangeService old cpu: %v, old mem: %v, old scale: %v", oldSvc.Resources.Cpu, oldResourceMem, oldSvc.Scale)
-		if newRuntime.Name == oldSvc.Name && oldSvc.Resources.Cpu == newSvcCpu && oldResourceMem == newRuntime.Resources.Mem && oldSvc.Scale == newRuntime.Scale && oldSvc.Image == newRuntime.Image {
-			return true
-		}
-	}
-	return false
-}
-
 func isServiceInRuntime(name string, run *apistructs.ServiceGroup) (bool, *apistructs.Service) {
 	if name == "" || run == nil {
 		logrus.Warningf("[EDAS] hasServiceInRuntime invalid params, name or runtime is null")
@@ -2225,7 +2116,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 		if destService.Resources.Cpu < 1 {
 			destService.Resources.Cpu = 0
 		} else {
-			destService.Resources.Cpu = math.Floor(destService.Resources.Cpu+0.5) * 1000
+			destService.Resources.Cpu = math.Floor(destService.Resources.Cpu + 0.5)
 		}
 	}
 
