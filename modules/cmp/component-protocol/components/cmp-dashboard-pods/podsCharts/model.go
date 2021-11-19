@@ -12,29 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package PodTitle
+package podsCharts
 
 import (
-	"testing"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func TestPodTitle_Transfer(t *testing.T) {
-	component := &PodTitle{
-		Props: Props{
-			Size:  "small",
-			Title: "testTitle",
-		},
-	}
-	c := &cptype.Component{}
-	component.Transfer(c)
-	ok, err := cputil.IsJsonEqual(c, component)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
-		t.Errorf("test failed, json is not equal")
-	}
+type PodsCharts struct {
+	base.DefaultProvider
+
+	Type string `json:"type,omitempty"`
+	Data Data   `json:"data"`
+}
+
+type Data struct {
+	Group [][]Pie `json:"group,omitempty"`
+}
+
+type Pie struct {
+	Name  string  `json:"name,omitempty"`
+	Value float64 `json:"value"`
+	Color string  `json:"color,omitempty"`
+	Total int     `json:"total"`
+	Infos []Info  `json:"info,omitempty"`
+}
+
+type Info struct {
+	Main string `json:"main,omitempty"`
+	Sub  string `json:"sub,omitempty"`
+	Desc string `json:"desc,omitempty"`
 }

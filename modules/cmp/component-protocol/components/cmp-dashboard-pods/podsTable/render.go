@@ -86,7 +86,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 			return fmt.Errorf("failed to decode url query for podsTable component, %v", err)
 		}
 	case cptype.RenderingOperation, "changePageSize", "changeSort":
-		if event.Component == "tableTabs" {
+		if event.Component == "tabs" {
 			return nil
 		} else {
 			p.State.PageNo = 1
@@ -174,6 +174,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 		UserID:      userID,
 		OrgID:       orgID,
 		Type:        apistructs.K8SPod,
+		Namespace:   p.State.Values.Namespace,
 		ClusterName: p.State.ClusterName,
 	}
 
@@ -184,7 +185,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(2)
 	go func() {
-		list, err = cmpcputil.ListSteveResourceByNamespaces(p.ctx, p.server, &podReq, p.State.Values.Namespace)
+		list, err = p.server.ListSteveResource(p.ctx, &podReq)
 		waitGroup.Done()
 	}()
 
@@ -232,9 +233,6 @@ func (p *ComponentPodsTable) RenderTable() error {
 		fields := obj.StringSlice("metadata", "fields")
 		if len(fields) != 9 {
 			logrus.Errorf("length of pod %s:%s fields is invalid", namespace, name)
-			continue
-		}
-		if len(p.State.Values.Namespace) != 0 && !contain(p.State.Values.Namespace, namespace) {
 			continue
 		}
 		if len(p.State.Values.Status) != 0 && !contain(p.State.Values.Status, convertPodStatus(fields[2])) {
@@ -297,21 +295,56 @@ func (p *ComponentPodsTable) RenderTable() error {
 		items = append(items, Item{
 			ID:     id,
 			Status: status,
-			Name: Link{
-				RenderType: "linkText",
-				Value:      name,
-				Operations: map[string]interface{}{
-					"click": LinkOperation{
-						Reload: false,
-						Key:    "openPodDetail",
+			Name: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "default_k8s_pod",
+						},
+					},
+					[]interface{}{
+						Link{
+							RenderType: "linkText",
+							Value:      name,
+							Operations: map[string]interface{}{
+								"click": LinkOperation{
+									Reload: false,
+									Key:    "openPodDetail",
+								},
+							},
+						},
+						TextWithIcon{
+							RenderType: "subText",
+							Value:      fmt.Sprintf("%s: %s", p.sdk.I18n("namespace"), namespace),
+						},
 					},
 				},
 			},
-			PodName:        name,
-			Namespace:      namespace,
-			IP:             fields[5],
-			Age:            fields[4],
-			CPURequests:    cpuRequestStr,
+			PodName: name,
+			IP:      fields[5],
+			Age:     fields[4],
+			CPURequests: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "CPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      cpuRequestStr,
+						},
+					},
+				},
+			},
 			CPURequestsNum: cpuRequests.MilliValue(),
 			CPUPercent: Percent{
 				RenderType: "progress",
@@ -319,9 +352,45 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Tip:        cpuTip,
 				Status:     cpuStatus,
 			},
-			CPULimits:         cpuLimitsStr,
-			CPULimitsNum:      cpuLimits.MilliValue(),
-			MemoryRequests:    memRequestsStr,
+			CPULimits: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "CPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      cpuLimitsStr,
+						},
+					},
+				},
+			},
+			CPULimitsNum: cpuLimits.MilliValue(),
+			MemoryRequests: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "GPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      memRequestsStr,
+						},
+					},
+				},
+			},
 			MemoryRequestsNum: memRequests.Value(),
 			MemoryPercent: Percent{
 				RenderType: "progress",
@@ -329,13 +398,30 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Tip:        memTip,
 				Status:     memStatus,
 			},
-			MemoryLimits:    memLimitsStr,
+			MemoryLimits: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "GPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      memLimitsStr,
+						},
+					},
+				},
+			},
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
 			Node:            fields[6],
 			GotoWorkload: Link{
-				RenderType: "linkText",
-				Value:      p.sdk.I18n("gotoWorkload"),
+				RenderType: "tableOperation",
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
 						Command: &Command{
@@ -353,6 +439,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 						},
 						Reload: false,
 						Key:    "gotoWorkload",
+						Text:   p.sdk.I18n("gotoWorkload"),
 					},
 				},
 			},
@@ -373,15 +460,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "name":
 				return func(i int, j int) bool {
-					less := items[i].Name.Value < items[j].Name.Value
-					if ascend {
-						return less
-					}
-					return !less
-				}
-			case "namespace":
-				return func(i int, j int) bool {
-					less := items[i].Namespace < items[j].Namespace
+					less := items[i].PodName < items[j].PodName
 					if ascend {
 						return less
 					}
@@ -535,45 +614,33 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	}
 	p.Props.Columns = []Column{
 		{
-			DataIndex: "status",
-			Title:     cputil.I18n(ctx, "status"),
-			Width:     120,
-			Sorter:    true,
-		},
-		{
 			DataIndex: "name",
 			Title:     cputil.I18n(ctx, "name"),
-			Width:     180,
 			Sorter:    true,
 		},
 		{
-			DataIndex: "namespace",
-			Title:     cputil.I18n(ctx, "namespace"),
-			Width:     180,
+			DataIndex: "status",
+			Title:     cputil.I18n(ctx, "status"),
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ip",
 			Title:     cputil.I18n(ctx, "ip"),
-			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
-			Width:     80,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "node",
 			Title:     cputil.I18n(ctx, "node"),
-			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "age",
 			Title:     cputil.I18n(ctx, "age"),
-			Width:     120,
 			Sorter:    true,
 		},
 	}
@@ -583,19 +650,16 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "cpuRequests",
 				Title:     cputil.I18n(ctx, "cpuRequests"),
-				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "cpuLimits",
 				Title:     cputil.I18n(ctx, "cpuLimits"),
-				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "cpuPercent",
 				Title:     cputil.I18n(ctx, "cpuPercent"),
-				Width:     120,
 				Sorter:    true,
 			},
 		}...)
@@ -604,19 +668,16 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "memoryRequests",
 				Title:     cputil.I18n(ctx, "memoryRequests"),
-				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "memoryLimits",
 				Title:     cputil.I18n(ctx, "memoryLimits"),
-				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "memoryPercent",
 				Title:     cputil.I18n(ctx, "memoryPercent"),
-				Width:     120,
 				Sorter:    true,
 			},
 		}...)
@@ -624,7 +685,6 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.Columns = append(p.Props.Columns, Column{
 		DataIndex: "gotoWorkload",
 		Title:     cputil.I18n(ctx, "operate"),
-		Width:     120,
 		Sorter:    false,
 		Fixed:     "right",
 	})
@@ -673,11 +733,9 @@ func (p *ComponentPodsTable) parsePodStatus(state string) Status {
 		color = "darkslategray"
 	}
 	return Status{
-		RenderType: "text",
+		RenderType: "textWithBadge",
 		Value:      p.sdk.I18n(state),
-		StyleConfig: StyleConfig{
-			Color: color,
-		},
+		Color:      color,
 	}
 }
 

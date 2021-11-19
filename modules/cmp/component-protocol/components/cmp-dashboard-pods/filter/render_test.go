@@ -26,7 +26,7 @@ import (
 func getTestURLQuery() (Values, string) {
 	v := Values{
 		Kind:      []string{"test"},
-		Namespace: []string{"test"},
+		Namespace: "test",
 		Status:    []string{"test"},
 		Search:    "test",
 	}
@@ -59,7 +59,7 @@ func TestComponentFilter_DecodeURLQuery(t *testing.T) {
 	if err := filter.DecodeURLQuery(); err != nil {
 		t.Errorf("test failed, %v", err)
 	}
-	if !isEqual(filter.State.Values.Namespace, values.Namespace) || !isEqual(filter.State.Values.Status, values.Status) ||
+	if filter.State.Values.Namespace != values.Namespace || !isEqual(filter.State.Values.Status, values.Status) ||
 		!isEqual(filter.State.Values.Kind, values.Kind) || filter.State.Values.Search != values.Search {
 		t.Errorf("test failed, edcode result is not expected")
 	}
@@ -86,7 +86,7 @@ func TestComponentFilter_GenComponentState(t *testing.T) {
 			},
 			"values": Values{
 				Kind:      []string{"test"},
-				Namespace: []string{"test"},
+				Namespace: "test",
 				Status:    []string{"test"},
 				Search:    "test",
 			},
@@ -149,7 +149,7 @@ func TestComponentFilter_Transfer(t *testing.T) {
 			},
 			Values: Values{
 				Kind:      []string{"test"},
-				Namespace: []string{"test"},
+				Namespace: "test",
 				Status:    []string{"test"},
 				Node:      []string{"node"},
 				Search:    "test",
