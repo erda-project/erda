@@ -56,7 +56,7 @@ func TestCpuInfoTable_getProps(t *testing.T) {
 			ct.SDK = &cptype.SDK{
 				Tran: NopTranslator{},
 			}
-			ct.getProps()
+			ct.GetProps()
 		})
 	}
 }

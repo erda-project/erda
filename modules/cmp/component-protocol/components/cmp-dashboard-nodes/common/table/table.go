@@ -42,7 +42,9 @@ import (
 )
 
 type Table struct {
-	TableComponent GetRowItem
+	CpuTable GetTable
+	MemTable GetTable
+	PodTable GetTable
 	base.DefaultProvider
 	SDK        *cptype.SDK
 	Ctx        context.Context
@@ -63,6 +65,14 @@ const (
 	Pod    TableType = "pod"
 	Memory TableType = "memory"
 	Cpu    TableType = "cpu"
+)
+
+const (
+	CPU_TAB TableType = "cpu-analysis"
+
+	MEM_TAB TableType = "mem-analysis"
+
+	POD_TAB TableType = "pod-analysis"
 )
 
 var nodeLabelBlacklist = map[string]string{
@@ -108,7 +118,7 @@ type RowItem struct {
 	Status  SteveStatus `json:"Status,omitempty"`
 	Node    Node        `json:"Node,omitempty"`
 	NodeID  string      `json:"nodeId,omitempty"`
-	Role    string      `json:"Role,omitempty"`
+	Role    Role        `json:"Role,omitempty"`
 	Version string      `json:"Version,omitempty"`
 	//
 	Distribution Distribution `json:"Distribution,omitempty"`
@@ -135,6 +145,17 @@ type Operation struct {
 	Text          string      `json:"text,omitempty"`
 	Command       *Command    `json:"command,omitempty"`
 }
+
+type Role struct {
+	RenderType string    `json:"renderType"`
+	Value      RoleValue `json:"value"`
+	Size       string    `json:"size"`
+}
+
+type RoleValue struct {
+	Label string `json:"label"`
+}
+
 type BatchOperation struct {
 	Key       string   `json:"key,omitempty"`
 	Text      string   `json:"text,omitempty"`
@@ -165,6 +186,7 @@ type FormData struct {
 
 type Node struct {
 	RenderType string        `json:"renderType,omitempty"`
+	Direction  string        `json:"direction"`
 	Renders    []interface{} `json:"renders,omitempty"`
 }
 
@@ -173,6 +195,11 @@ type NodeLink struct {
 	Value      string               `json:"value,omitempty"`
 	Operations map[string]Operation `json:"operations,omitempty"`
 	Reload     bool                 `json:"reload"`
+}
+
+type NodeIcon struct {
+	RenderType string `json:"renderType,omitempty"`
+	Icon       string `json:"icon,omitempty"`
 }
 
 type NodeTags struct {
@@ -206,7 +233,16 @@ type LabelsValue struct {
 }
 
 type GetRowItem interface {
-	GetRowItems(c []data.Object, resName TableType, requests map[string]cmp.AllocatedRes) ([]RowItem, error)
+	GetRowItems(c []data.Object, requests map[string]cmp.AllocatedRes) ([]RowItem, error)
+}
+
+type GetTableProps interface {
+	GetProps() map[string]interface{}
+}
+
+type GetTable interface {
+	GetRowItem
+	GetTableProps
 }
 
 func (t *Table) GetUsageValue(used, total float64, resourceType TableType) DistributionValue {
@@ -376,6 +412,8 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, gs 
 			SortByString(items, sortColumn, asc)
 		case reflect.TypeOf(Node{}):
 			SortByNode(items, sortColumn, asc)
+		case reflect.TypeOf(Role{}):
+			SortByRole(items, sortColumn, asc)
 		case reflect.TypeOf(Distribution{}):
 			SortByDistribution(items, sortColumn, asc)
 		case reflect.TypeOf(SteveStatus{}):
@@ -397,7 +435,18 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, gs 
 
 // SetData assemble rowItem of table
 func (t *Table) SetData(nodes []data.Object, tableType TableType, requests map[string]cmp.AllocatedRes) ([]RowItem, error) {
-	return t.TableComponent.GetRowItems(nodes, tableType, requests)
+	switch tableType {
+	case CPU_TAB:
+		t.Props = t.CpuTable.GetProps()
+		return t.CpuTable.GetRowItems(nodes, requests)
+	case MEM_TAB:
+		t.Props = t.MemTable.GetProps()
+		return t.MemTable.GetRowItems(nodes, requests)
+	case POD_TAB:
+		t.Props = t.PodTable.GetProps()
+		return t.PodTable.GetRowItems(nodes, requests)
+	}
+	return nil, nil
 }
 
 func (t *Table) GetNodes(ctx context.Context, gs *cptype.GlobalStateData) ([]data.Object, error) {
@@ -634,6 +683,10 @@ func (t *Table) GetIp(node data.Object) string {
 }
 
 func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
+	ni := NodeIcon{
+		Icon:       "default_k8s_node",
+		RenderType: "icon",
+	}
 	nl := NodeLink{
 		RenderType: "linkText",
 		Value:      id,
@@ -650,7 +703,7 @@ func (t *Table) GetRenders(id string, labelMap data.Object) []interface{} {
 		Value:      t.GetNodeLabels(labelMap),
 		Operations: t.GetLabelOperation(id),
 	}
-	return []interface{}{[]interface{}{nl}, []interface{}{nt}}
+	return []interface{}{[]interface{}{ni}, []interface{}{nl, nt}}
 }
 
 func (t *Table) GetOperate(id string) Operate {
@@ -711,11 +764,11 @@ func (t *Table) EncodeURLQuery() error {
 }
 
 // SortByString sort by string value
-func SortByString(data []RowItem, sortColumn string, asc bool) {
+func SortByString(data []RowItem, sortColumn string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
-		if asc {
+		if ascend {
 			return a.FieldByName(sortColumn).String() < b.FieldByName(sortColumn).String()
 		}
 		return a.FieldByName(sortColumn).String() > b.FieldByName(sortColumn).String()
@@ -723,23 +776,33 @@ func SortByString(data []RowItem, sortColumn string, asc bool) {
 }
 
 // SortByNode sort by node struct
-func SortByNode(data []RowItem, _ string, asc bool) {
+func SortByNode(data []RowItem, _ string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
-		if asc {
-			return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
+		if ascend {
+			return data[i].Node.Renders[1].([]interface{})[0].(NodeLink).Value < data[j].Node.Renders[1].([]interface{})[0].(NodeLink).Value
 		}
-		return data[i].Node.Renders[0].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[0].([]interface{})[0].(NodeLink).Value
+		return data[i].Node.Renders[1].([]interface{})[0].(NodeLink).Value > data[j].Node.Renders[1].([]interface{})[0].(NodeLink).Value
+	})
+}
+
+// SortByRole sort by node struct
+func SortByRole(data []RowItem, _ string, ascend bool) {
+	sort.Slice(data, func(i, j int) bool {
+		if ascend {
+			return data[i].Role.Value.Label < data[j].Role.Value.Label
+		}
+		return data[i].Role.Value.Label > data[j].Role.Value.Label
 	})
 }
 
 // SortByDistribution sort by percent
-func SortByDistribution(data []RowItem, sortColumn string, asc bool) {
+func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
-		if asc {
+		if ascend {
 			return aValue < bValue
 		}
 		return aValue > bValue

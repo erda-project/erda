@@ -29,13 +29,12 @@ import (
 func (cht *MemChart) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	cht.SDK = cputil.SDK(ctx)
-	cht.Props = cht.GetProps(cht.SDK.I18n("Memory Chart"))
 	return cht.ChartRender(ctx, c, s, event, gs, chart.Memory)
 }
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "memChart", func() servicehub.Provider {
 		cc := &MemChart{}
-		cc.Type = "Chart"
+		cc.Type = "PieChart"
 		cc.Chart = chart.Chart{}
 		return cc
 	})

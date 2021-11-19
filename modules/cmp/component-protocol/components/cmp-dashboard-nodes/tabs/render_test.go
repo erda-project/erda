@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package tabs
 
 import (
 	"testing"
@@ -32,7 +32,7 @@ func TestTableTabs_EncodeURLQuery(t1 *testing.T) {
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
-			t := &TableTabs{}
+			t := &Tabs{}
 			if err := t.EncodeURLQuery(); (err != nil) != tt.wantErr {
 				t1.Errorf("EncodeURLQuery() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -53,7 +53,7 @@ func TestTableTabs_DecodeURLQuery(t1 *testing.T) {
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
-			t := &TableTabs{
+			t := &Tabs{
 				SDK: &cptype.SDK{
 					InParams: map[string]interface{}{
 						"tableTabs__urlQuery": "Im1lbS1hbmFseXNpcyI=",

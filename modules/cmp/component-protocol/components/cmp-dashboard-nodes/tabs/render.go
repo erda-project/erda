@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package tabs
 
 import (
 	"context"
@@ -26,45 +26,46 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (t *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (t *Tabs) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	// import components data
 	t.SDK = cputil.SDK(ctx)
-	t.Props = Props{[]MenuPair{
-		{
-			Key:  CPU_TAB,
-			Name: t.SDK.I18n(CPU_TAB),
+	t.Props = Props{"small",
+		"button",
+		[]MenuPair{
+			{
+				Key:  table.CPU_TAB,
+				Text: t.SDK.I18n(string(table.CPU_TAB)),
+			},
+			{
+				Key:  table.MEM_TAB,
+				Text: t.SDK.I18n(string(table.MEM_TAB)),
+			},
+			{
+				Key:  table.POD_TAB,
+				Text: t.SDK.I18n(string(table.POD_TAB)),
+			},
 		},
-		{
-			Key:  MEM_TAB,
-			Name: t.SDK.I18n(MEM_TAB),
-		},
-		{
-			Key:  POD_TAB,
-			Name: t.SDK.I18n(POD_TAB),
-		},
-	},
+		"solid",
 	}
-
+	// Default is cpu, overwritten if event is changeTab.
+	t.State.Value = table.CPU_TAB
 	switch event.Operation {
 	case cptype.InitializeOperation:
 		if _, ok := t.SDK.InParams["tableTabs__urlQuery"]; ok {
 			if err := t.DecodeURLQuery(); err != nil {
 				return fmt.Errorf("failed to decode url query for filter component, %v", err)
 			}
-		} else {
-			t.State.ActiveKey = CPU_TAB
 		}
 	case common.CMPDashboardTableTabs:
-		m1 := event.OperationData["meta"].(map[string]interface{})
-		m2 := m1["activeKey"].(map[string]interface{})
-		t.State.ActiveKey = m2["activeKey"].(string)
+		t.State.Value = table.TableType(c.State["value"].(string))
 	default:
 		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 	}
-	(*gs)["activeKey"] = t.State.ActiveKey
+	(*gs)["activeKey"] = string(t.State.Value)
 	t.getOperations()
 	err := t.EncodeURLQuery()
 	if err != nil {
@@ -73,7 +74,7 @@ func (t *TableTabs) Render(ctx context.Context, c *cptype.Component, s cptype.Sc
 	return t.RenderProtocol(c)
 }
 
-func (t *TableTabs) DecodeURLQuery() error {
+func (t *Tabs) DecodeURLQuery() error {
 	query, ok := t.SDK.InParams["tableTabs__urlQuery"].(string)
 	if !ok {
 		return nil
@@ -87,12 +88,12 @@ func (t *TableTabs) DecodeURLQuery() error {
 	if err := json.Unmarshal(decoded, &values); err != nil {
 		return err
 	}
-	t.State.ActiveKey = values
+	t.State.Value = table.TableType(values)
 	return nil
 }
 
-func (t *TableTabs) EncodeURLQuery() error {
-	jsonData, err := json.Marshal(t.State.ActiveKey)
+func (t *Tabs) EncodeURLQuery() error {
+	jsonData, err := json.Marshal(t.State.Value)
 	if err != nil {
 		return err
 	}
@@ -102,22 +103,20 @@ func (t *TableTabs) EncodeURLQuery() error {
 	return nil
 }
 
-func (t *TableTabs) getOperations() {
+func (t *Tabs) getOperations() {
 	t.Operations = map[string]interface{}{"onChange": Operation{
-		Key:      "changeTab",
-		Reload:   true,
-		FillMeta: "activeKey",
-		Meta:     Meta{},
+		Key:    string(common.CMPDashboardTableTabs),
+		Reload: true,
 	},
 	}
 }
 
-func (t *TableTabs) RenderProtocol(c *cptype.Component) error {
+func (t *Tabs) RenderProtocol(c *cptype.Component) error {
 	return common.Transfer(*t, c)
 }
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-nodes", "tableTabs", func() servicehub.Provider {
-		return &TableTabs{Type: "Tabs"}
+	base.InitProviderWithCreator("cmp-dashboard-nodes", "tabs", func() servicehub.Provider {
+		return &Tabs{Type: "Radio"}
 	})
 }

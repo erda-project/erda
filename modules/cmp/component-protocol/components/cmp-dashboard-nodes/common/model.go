@@ -42,7 +42,7 @@ var (
 	CMPDashboardOnlineNode   cptype.OperationKey = "online"
 	CMPDashboardBatchSubmit  cptype.OperationKey = "batchSubmit"
 
-	CMPDashboardTableTabs cptype.OperationKey = "changeTab"
+	CMPDashboardTableTabs cptype.OperationKey = "changeViewType"
 
 	CMPDashboardSubmit cptype.OperationKey = "submit"
 

@@ -50,8 +50,7 @@ func (cht *Charts) Init(ctx servicehub.Context) error {
 }
 func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	cht.Props = Props{
-		ContentSetting: "between",
-		SpaceSize:      "big",
+		Gutter: 8,
 	}
 	c.Props = cht.Props
 	cht.SDK = cputil.SDK(ctx)
@@ -124,29 +123,28 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 		leftValue = float64(leftQuantity.MilliValue()) / 1000
 		unAllocatableValue = float64(unAllocatableQuantity.MilliValue()) / 1000
 		var di []chart.DataItem
-		var distributedDesc, freeDesc, lockedDesc string
 		if requestValue != 0 {
-			distributedDesc = chart.DefaultFormat + requestStr
 			di = append(di, chart.DataItem{
-				Value: requestValue,
-				Name:  cht.SDK.I18n(chart.Allocated),
-				Label: chart.Label{Formatter: distributedDesc},
+				Value:     requestValue,
+				Name:      cht.SDK.I18n(chart.Allocated),
+				Formatter: requestStr,
+				Color:     "orange",
 			})
 		}
 		if leftValue != 0 {
-			freeDesc = chart.DefaultFormat + leftStr
 			di = append(di, chart.DataItem{
-				Value: leftValue,
-				Name:  cht.SDK.I18n(chart.Free_Allocate),
-				Label: chart.Label{Formatter: freeDesc},
+				Value:     leftValue,
+				Name:      cht.SDK.I18n(chart.Free_Allocate),
+				Formatter: leftStr,
+				Color:     "green",
 			})
 		}
 		if unAllocatableValue != 0 {
-			lockedDesc = chart.DefaultFormat + unAllocatableStr
 			di = append(di, chart.DataItem{
-				Value: unAllocatableValue,
-				Name:  cht.SDK.I18n(chart.Cannot_Allocate),
-				Label: chart.Label{Formatter: lockedDesc},
+				Value:     unAllocatableValue,
+				Name:      cht.SDK.I18n(chart.Cannot_Allocate),
+				Formatter: unAllocatableStr,
+				Color:     "red",
 			})
 		}
 		(*gs)[resourceName+"Chart"] = di
@@ -156,7 +154,7 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "charts", func() servicehub.Provider {
 		return &Charts{
-			Type: "RowContainer",
+			Type: "Grid",
 		}
 	})
 }
