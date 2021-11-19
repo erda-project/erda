@@ -157,9 +157,10 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	kinds := getWorkloadKindMap(w.State.Values.Kind)
 
 	activeCount := map[apistructs.K8SResType]int{}
-	errorCount := map[apistructs.K8SResType]int{}
+	abnormalCount := map[apistructs.K8SResType]int{}
 	succeededCount := map[apistructs.K8SResType]int{}
 	failedCount := map[apistructs.K8SResType]int{}
+	updateCount := map[apistructs.K8SResType]int{}
 
 	for _, kind := range []apistructs.K8SResType{apistructs.K8SDeployment, apistructs.K8SStatefulSet,
 		apistructs.K8SDaemonSet, apistructs.K8SJob, apistructs.K8SCronJob} {
@@ -232,8 +233,10 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 				if statusValue == "Active" {
 					activeCount[kind]++
+				} else if statusValue == "Updating" {
+					updateCount[kind]++
 				} else {
-					errorCount[kind]++
+					abnormalCount[kind]++
 				}
 				item.Age = fields[4]
 				item.Ready = fields[1]
@@ -247,7 +250,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				if statusValue == "Active" {
 					activeCount[kind]++
 				} else {
-					errorCount[kind]++
+					abnormalCount[kind]++
 				}
 				item.Age = fields[7]
 				item.Ready = fields[3]
@@ -263,7 +266,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				if statusValue == "Active" {
 					activeCount[kind]++
 				} else {
-					errorCount[kind]++
+					abnormalCount[kind]++
 				}
 				item.Age = fields[2]
 				item.Ready = fields[1]
@@ -299,16 +302,17 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 
 	w.State.CountValues = CountValues{
 		DeploymentsCount: Count{
-			Active: activeCount[apistructs.K8SDeployment],
-			Error:  errorCount[apistructs.K8SDeployment],
+			Active:   activeCount[apistructs.K8SDeployment],
+			Abnormal: abnormalCount[apistructs.K8SDeployment],
+			Updating: updateCount[apistructs.K8SDeployment],
 		},
 		DaemonSetCount: Count{
-			Active: activeCount[apistructs.K8SDaemonSet],
-			Error:  errorCount[apistructs.K8SDaemonSet],
+			Active:   activeCount[apistructs.K8SDaemonSet],
+			Abnormal: abnormalCount[apistructs.K8SDaemonSet],
 		},
 		StatefulSetCount: Count{
-			Active: activeCount[apistructs.K8SStatefulSet],
-			Error:  errorCount[apistructs.K8SStatefulSet],
+			Active:   activeCount[apistructs.K8SStatefulSet],
+			Abnormal: abnormalCount[apistructs.K8SStatefulSet],
 		},
 		JobCount: Count{
 			Active:    activeCount[apistructs.K8SJob],
