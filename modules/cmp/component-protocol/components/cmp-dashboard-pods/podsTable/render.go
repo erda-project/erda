@@ -713,29 +713,15 @@ func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
 	c.Operations = p.Operations
 }
 
-var PodStatusToColor = map[string]string{
-	"Completed":         "steelblue",
-	"ContainerCreating": "orange",
-	"CrashLoopBackOff":  "red",
-	"Error":             "maroon",
-	"Evicted":           "darkgoldenrod",
-	"ImagePullBackOff":  "darksalmon",
-	"ErrImagePull":      "darksalmon",
-	"Pending":           "teal",
-	"Running":           "green",
-	"Terminating":       "brown",
-	"OOMKilled":         "purple",
-}
-
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	color := PodStatusToColor[state]
+	color := cmpcputil.PodStatus[state]
 	if color == "" {
-		color = "darkslategray"
+		color = "Default"
 	}
 	return Status{
 		RenderType: "textWithBadge",
 		Value:      p.sdk.I18n(state),
-		Color:      color,
+		Status:     color,
 	}
 }
 
@@ -749,7 +735,7 @@ func contain(arr []string, target string) bool {
 }
 
 func convertPodStatus(status string) string {
-	if _, ok := PodStatusToColor[status]; ok {
+	if _, ok := cmpcputil.PodStatus[status]; ok {
 		return status
 	}
 	return "others"

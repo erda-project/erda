@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -704,9 +703,9 @@ func matchSelector(selector, labels map[string]interface{}) bool {
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	color := podsTable.PodStatusToColor[state]
+	color := cmpcputil.PodStatus[state]
 	if color == "" {
-		color = "darkslategray"
+		color = "Default"
 	}
 	return Status{
 		RenderType: "tagsRow",
