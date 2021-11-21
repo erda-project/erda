@@ -51,6 +51,8 @@ const (
 
 // asyncPushCollectorLog async push log to collector
 func (agent *Agent) asyncPushCollectorLog() {
+	agent.FileWatcher.Wait.Add(1)
+
 	// pushLogic do push logic
 	pushLogic := func(logs *[]apistructs.LogPushLine, lock *sync.Mutex, _type string) {
 		lock.Lock()
@@ -77,6 +79,7 @@ func (agent *Agent) asyncPushCollectorLog() {
 	// rangePush range push log to collector
 	rangePush := func(logs *[]apistructs.LogPushLine, lock *sync.Mutex, _type string) {
 		ticker := time.NewTicker(asyncPushInterval)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
@@ -103,7 +106,7 @@ func (agent *Agent) asyncPushCollectorLog() {
 	for range gracefulDoneC {
 		receivedNum++
 		if receivedNum == 2 {
-			agent.FileWatcher.GracefulDoneC <- struct{}{}
+			agent.FileWatcher.Wait.Done()
 			break
 		}
 	}

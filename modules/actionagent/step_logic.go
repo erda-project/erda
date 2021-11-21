@@ -24,6 +24,15 @@ import (
 )
 
 func (agent *Agent) logic() {
+	// defer write flag end line for tail
+	defer func() {
+		if _, err := fmt.Fprintln(agent.EasyUse.RunMultiStdout, agent.EasyUse.FlagEndLineForTail); err != nil {
+			logrus.Println("stdout append flag err:", err)
+		}
+		if _, err := fmt.Fprintln(agent.EasyUse.RunMultiStderr, agent.EasyUse.FlagEndLineForTail); err != nil {
+			logrus.Println("stderr append flag err:", err)
+		}
+	}()
 
 	// go to ${WORKDIR}
 	if err := os.Chdir(agent.EasyUse.ContainerWd); err != nil {
