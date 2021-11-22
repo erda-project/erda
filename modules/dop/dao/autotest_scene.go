@@ -473,7 +473,11 @@ func (db *DBClient) MoveAutoTestSceneV2(req apistructs.AutotestSceneMoveRequest)
 			}
 			scene.GroupID = newGroupID
 		}
-		return tx.Save(scene).Error
+
+		if err = tx.Save(scene).Error; err != nil {
+			return err
+		}
+		return checkSceneSetNotHaveSamePreID(tx, scene.SetID)
 	})
 }
 
