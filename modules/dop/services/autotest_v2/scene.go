@@ -258,6 +258,7 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 	if err = svc.db.UpdateAutotestScene(scene); err != nil {
 		return 0, err
 	}
+	go svc.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return scene.ID, nil
 }
 
@@ -546,7 +547,11 @@ func (svc *Service) DeleteAutotestScene(id uint64, identityInfo apistructs.Ident
 			return apierrors.ErrDeleteAutoTestScene.AccessDenied()
 		}
 	}
-	return svc.db.DeleteAutoTestScene(id)
+	err = svc.db.DeleteAutoTestScene(id)
+	if err == nil {
+		go svc.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
+	}
+	return err
 }
 
 // UpdateAutotestSceneUpdater 更新场景更新人
@@ -1226,6 +1231,8 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			return newScene.ID, err
 		}
 	}
+
+	go svc.db.AfterUpdateAutoTestSpaceElements(sp.ID)
 	return newScene.ID, nil
 }
 
