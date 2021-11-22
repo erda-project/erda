@@ -46,10 +46,9 @@ import (
 var scenarioFS embed.FS
 
 type provider struct {
-	Server     pb.MetricServiceServer              `autowired:"erda.core.monitor.metric.MetricService"`
-	Credential credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
-
-	Register        transport.Register `autowired:"service-register" optional:"true"`
+	Server          pb.MetricServiceServer              `autowired:"erda.core.monitor.metric.MetricService"`
+	Credential      credentialpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService" optional:"true"`
+	Register        transport.Register                  `autowired:"service-register" optional:"true"`
 	Metrics         *metrics.Metric
 	Monitor         monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 	Protocol        componentprotocol.Interface

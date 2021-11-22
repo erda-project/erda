@@ -148,7 +148,7 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 				Status:     table.GetDistributionStatus(usage.Percent),
 				Tip:        usage.Text,
 			},
-			DistributionRate: ct.GetDistributionRate(used, float64(cpuRequest), table.Cpu),
+			DistributionRate: ct.GetDistributionRate(used*1000, float64(cpuRequest), table.Cpu),
 			Operate:          ct.GetOperate(c.String("metadata", "name")),
 			BatchOperations:  batchOperations,
 		},
