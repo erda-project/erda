@@ -288,12 +288,13 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 
 	language := apis.Language(ctx)
 
-	var providerTypes []*pb.NotifyChannelProviderType
-	providerTypes = append(providerTypes, &pb.NotifyChannelProviderType{
+	var shortMessageProviderTypes []*pb.NotifyChannelProviderType
+	shortMessageProviderTypes = append(shortMessageProviderTypes, &pb.NotifyChannelProviderType{
 		Name:        strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()),
 		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_SMS.String())),
 	})
-	providerTypes = append(providerTypes, &pb.NotifyChannelProviderType{
+	var dingWorkNoticeProviderTypes []*pb.NotifyChannelProviderType
+	dingWorkNoticeProviderTypes = append(dingWorkNoticeProviderTypes, &pb.NotifyChannelProviderType{
 		Name:        strings.ToLower(pb.ProviderType_DINGTALK.String()),
 		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_DINGTALK.String())),
 	})
@@ -302,9 +303,14 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 	types = append(types, &pb.NotifyChannelTypeResponse{
 		Name:        strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
 		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_SHORT_MESSAGE.String())),
-		Providers:   providerTypes,
+		Providers:   shortMessageProviderTypes,
 	})
 
+	types = append(types, &pb.NotifyChannelTypeResponse{
+		Name:        strings.ToLower(pb.Type_DINGTALK_WORK_NOTICE.String()),
+		DisplayName: s.p.I18n.Text(language, pb.Type_DINGTALK_WORK_NOTICE.String()),
+		Providers:   dingWorkNoticeProviderTypes,
+	})
 	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
 }
 
@@ -448,7 +454,7 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 		return nil, err
 	}
 	if msEnable {
-		result.Data[pb.Type_SHORT_MESSAGE.String()] = true
+		result.Data[strings.ToLower(pb.Type_SHORT_MESSAGE.String())] = true
 	}
 	return result, nil
 }
