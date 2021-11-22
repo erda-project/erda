@@ -386,8 +386,7 @@ type Input struct {
 	Children []Input `json:"children"`
 }
 
-func genMockInput() Input {
-	// i18nLocale := a.bdl.GetLocale(bdl.Locale)
+func (ae *ApiEditor) genMockInput() Input {
 	var mockInput Input
 	mockInput.Label = "mock"
 	mockInput.Value = "mock"
@@ -395,10 +394,10 @@ func genMockInput() Input {
 	var children []Input
 	for _, v := range expression.MockString {
 		o := Input{
-			Label:  v,
-			Value:  expression.GenRandomRef(v),
-			IsLeaf: true,
-			// ToolTip: i18nLocale.Get("wb.content.autotest.scene."+v, v),
+			Label:   v,
+			Value:   expression.GenRandomRef(v),
+			IsLeaf:  true,
+			ToolTip: ae.sdk.I18n("wb.content.autotest.scene." + v),
 		}
 		children = append(children, o)
 	}

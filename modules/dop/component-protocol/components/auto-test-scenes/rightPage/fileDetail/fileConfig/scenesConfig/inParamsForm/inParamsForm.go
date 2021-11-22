@@ -274,13 +274,12 @@ func (i *ComponentInParamsForm) RenderOnSelect(ctx context.Context, opsData inte
 					children = append(children, o)
 				}
 			} else if strings.HasPrefix(value.Value, MockOptionValue.String()) {
-				// i18nLocale := i.bdl.GetLocale(i.ctxBdl.Locale)
 				for _, v := range expression.MockString {
 					o := PropChangeOption{
-						Label:  v,
-						Value:  expression.GenRandomRef(v),
-						IsLeaf: true,
-						// ToolTip: i18nLocale.Get("wb.content.autotest.scene."+v, v),
+						Label:   v,
+						Value:   expression.GenRandomRef(v),
+						IsLeaf:  true,
+						ToolTip: i.sdk.I18n("wb.content.autotest.scene." + v),
 					}
 					children = append(children, o)
 				}
