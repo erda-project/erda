@@ -17,8 +17,6 @@ package actionagent
 func (agent *Agent) PreStop() {
 	// TODO invoke /opt/action/pre-stop
 
-	go agent.stopWatchFiles()
-
 	// 打包目录并上传
 	agent.uploadDir()
 

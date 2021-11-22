@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -25,11 +26,11 @@ import (
 	"github.com/erda-project/erda/modules/actionagent"
 )
 
-type PlatformLogFormmater struct {
+type PlatformLogFormatter struct {
 	logrus.TextFormatter
 }
 
-func (f *PlatformLogFormmater) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *PlatformLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	_bytes, err := f.TextFormatter.Format(entry)
 	if err != nil {
 		return nil, err
@@ -44,12 +45,14 @@ func main() {
 
 func realMain(args string) {
 	// set logrus
-	logrus.SetFormatter(&PlatformLogFormmater{
+	logrus.SetFormatter(&PlatformLogFormatter{
 		logrus.TextFormatter{
 			ForceColors:            true,
-			DisableTimestamp:       true,
-			DisableLevelTruncation: false,
-			PadLevelText:           false,
+			DisableTimestamp:       false,
+			FullTimestamp:          true,
+			TimestampFormat:        time.RFC3339Nano,
+			DisableLevelTruncation: true,
+			PadLevelText:           true,
 		},
 	})
 	logrus.SetOutput(os.Stderr)
@@ -60,7 +63,7 @@ func realMain(args string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	agent := &actionagent.Agent{
 		Errs:              make([]error, 0),
-		PushedMetaFileMap: make(map[string]string),
+		PushedMetaFileMap: make(map[string]map[string]struct{}),
 		// enciphered data will Replaced by '******' when log output
 		TextBlackList: make([]string, 0),
 		Ctx:           ctx,

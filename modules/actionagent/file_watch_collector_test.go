@@ -30,12 +30,11 @@ func TestAgent_asyncPushCollectorLog(t *testing.T) {
 	agent := Agent{
 		Ctx:         ctx,
 		Cancel:      cancel,
-		FileWatcher: &filewatch.Watcher{GracefulDoneC: make(chan struct{})},
+		FileWatcher: &filewatch.Watcher{},
 	}
 	go func() {
 		time.Sleep(time.Second)
 		cancel()
-		<-agent.FileWatcher.GracefulDoneC
 	}()
 	agent.asyncPushCollectorLog()
 }

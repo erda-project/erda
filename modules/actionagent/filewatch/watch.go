@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"time"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/hpcloud/tail"
@@ -47,7 +47,12 @@ type Watcher struct {
 	fullFileHandlerMap map[string]FullHandler
 	fullFsWatcher      *fsnotify.Watcher
 	errs               []error
-	GracefulDoneC      chan struct{} // send when graceful stop done
+
+	// tail
+	EndLineForTail string
+
+	// wait all fw things done
+	Wait sync.WaitGroup
 }
 
 const logPrefix = "[Platform Log] [file watcher]"
@@ -55,7 +60,7 @@ const logPrefix = "[Platform Log] [file watcher]"
 var logger = log.New(os.Stderr, logPrefix+" ", 0)
 
 func New(ctx context.Context) (*Watcher, error) {
-	w := Watcher{ctx: ctx, fullFileHandlerMap: make(map[string]FullHandler), GracefulDoneC: make(chan struct{})}
+	w := Watcher{ctx: ctx, fullFileHandlerMap: make(map[string]FullHandler)}
 
 	watcher, err := fsnotify.NewWatcher()
 	w.fullFsWatcher = watcher
@@ -108,18 +113,7 @@ func New(ctx context.Context) (*Watcher, error) {
 }
 
 func (w *Watcher) Close() {
-	// max wait 10 sec
-	maxWaitTime := time.Second * 10
-	timer := time.NewTimer(maxWaitTime)
-	select {
-	case <-timer.C:
-		logrus.Debugf("%s exceed max wait time (%v s) when close file watcher, force close", logPrefix, maxWaitTime.Seconds())
-	case <-w.GracefulDoneC:
-		logrus.Debugf("%s close file watcher success", logPrefix)
-		close(w.GracefulDoneC)
-	case <-w.ctx.Done():
-		logrus.Debugf("%s close file watcher success (action done)", logPrefix)
-	}
+	w.Wait.Wait()
 
 	if w.fullFsWatcher != nil {
 		_ = w.fullFsWatcher.Close()
@@ -144,6 +138,8 @@ func (w *Watcher) RegisterFullHandler(fullpath string, handler FullHandler) {
 }
 
 func (w *Watcher) RegisterTailHandler(fullpath string, handler TailHandler) {
+	w.Wait.Add(1)
+
 	tailIO, err := tail.TailFile(fullpath, tail.Config{ReOpen: true, MustExist: false, Follow: true, Poll: true})
 	if err != nil {
 		logger.Printf("ignore, failed to register tail handler, fullpath: %s, err: %v", fullpath, err)
@@ -151,12 +147,17 @@ func (w *Watcher) RegisterTailHandler(fullpath string, handler TailHandler) {
 	}
 
 	var allLines []string
-	go func() {
+	go func(fullpath string) {
 		for line := range tailIO.Lines {
+			if line.Text == w.EndLineForTail {
+				logrus.Debugln(fullpath + " tail done")
+				w.Wait.Done()
+				break
+			}
 			allLines = append(allLines, line.Text)
 			if err := handler(line.Text, allLines); err != nil {
 				logger.Printf("failed to handle a tailed line of %s, err: %v\n", fullpath, err)
 			}
 		}
-	}()
+	}(fullpath)
 }

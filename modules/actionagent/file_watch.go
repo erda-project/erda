@@ -43,6 +43,7 @@ func (agent *Agent) watchFiles() {
 		return
 	}
 	agent.FileWatcher = watcher
+	agent.FileWatcher.EndLineForTail = agent.EasyUse.FlagEndLineForTail
 
 	// ${METAFILE}
 	watcher.RegisterFullHandler(agent.EasyUse.ContainerMetaFile, metaFileFullHandler(agent))
@@ -64,8 +65,6 @@ func (agent *Agent) stopWatchFiles() {
 // metaFileFullHandler 全量处理 metafile
 func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 	return func(r io.ReadCloser) error {
-		agent.LockPushedMetaFileMap.Lock()
-		defer agent.LockPushedMetaFileMap.Unlock()
 		// 一次性读取
 		b, err := ioutil.ReadAll(r)
 		if err != nil {
@@ -81,7 +80,6 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 		if err != nil {
 			return err
 		}
-		updatePushedMetadata(cb, agent)
 		return nil
 	}
 }

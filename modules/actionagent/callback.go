@@ -38,8 +38,6 @@ func (agent *Agent) Callback() {
 	cb := &Callback{}
 	defer func() {
 		cb.Errors = append(cb.Errors, agent.MergeErrors()...)
-		agent.LockPushedMetaFileMap.Lock()
-		defer agent.LockPushedMetaFileMap.Unlock()
 		if err := agent.callbackToPipelinePlatform(cb); err != nil {
 			for _, err := range cb.Errors {
 				logrus.Println(err.Msg)
@@ -78,6 +76,8 @@ func (agent *Agent) Callback() {
 }
 
 func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
+	agent.LockPushedMetaFileMap.Lock()
+	defer agent.LockPushedMetaFileMap.Unlock()
 
 	filterMetadata(cb, agent)
 	defer func() {
@@ -239,17 +239,28 @@ func filterMetadata(cb *Callback, agent *Agent) {
 	// 不推送已经推送过的
 	var filteredMetadata apistructs.Metadata
 	for _, wait := range cb.Metadata {
-		pushedV, ok := agent.PushedMetaFileMap[wait.Name]
-		if ok && pushedV == wait.Value {
-			continue
+		wait := wait
+		mapOfKey, keyOK := agent.PushedMetaFileMap[wait.Name]
+		if keyOK && len(mapOfKey) > 0 {
+			if _, valueOK := mapOfKey[wait.Value]; valueOK {
+				logrus.Debugf("noneed push meta: key: %s, value: %s\n", wait.Name, wait.Value)
+				continue
+			}
 		}
 		filteredMetadata = append(filteredMetadata, wait)
+		logrus.Debugf("need push meta: key: %s, value: %s\n", wait.Name, wait.Value)
 	}
 	cb.Metadata = filteredMetadata
 }
 
+// updatePushedMetadata recognize situation that one key with multiple values.
 func updatePushedMetadata(cb *Callback, agent *Agent) {
 	for _, meta := range cb.Metadata {
-		agent.PushedMetaFileMap[meta.Name] = meta.Value
+		meta := meta
+		if mapOfValue := agent.PushedMetaFileMap[meta.Name]; mapOfValue == nil {
+			agent.PushedMetaFileMap[meta.Name] = make(map[string]struct{})
+		}
+		agent.PushedMetaFileMap[meta.Name][meta.Value] = struct{}{}
+		logrus.Debugf("pushed meta: key: %s, value: %s\n", meta.Name, meta.Value)
 	}
 }

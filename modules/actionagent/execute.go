@@ -69,9 +69,6 @@ func (agent *Agent) Execute(r io.Reader) {
 		agent.store()
 	}()
 
-	go agent.ListenSignal()
-	go agent.watchFiles()
-
 	// 4. logic
 	agent.logic()
 	if len(agent.Errs) > 0 {

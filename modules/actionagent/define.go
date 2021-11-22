@@ -41,9 +41,12 @@ type Agent struct {
 	Errs []error
 
 	FileWatcher *filewatch.Watcher
+	FWLock      sync.Mutex
 
 	// PushedMetaFileMap store key value already pushed
-	PushedMetaFileMap     map[string]string
+	// first-level key: meta name; second-level key: meta value
+	// for situation that one key has multiple values
+	PushedMetaFileMap     map[string]map[string]struct{}
 	LockPushedMetaFileMap sync.RWMutex
 
 	Ctx      context.Context
@@ -85,6 +88,7 @@ type EasyUse struct {
 	RunMultiStdout         *os.File // multiWriter(os.Stdout) 的文件
 	RunMultiStderrFilePath string   // multiWriter(os.Stderr) 的文件路径
 	RunMultiStderr         *os.File // multiWriter(os.Stderr) 的文件
+	FlagEndLineForTail     string   // flag end line for tail to stop
 
 	OpenAPIAddr       string
 	OpenAPIToken      string
