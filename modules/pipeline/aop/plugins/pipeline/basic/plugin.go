@@ -64,10 +64,10 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 			TimeEndQueue:     getTimeOrNil(task.Extra.TimeEndQueue),
 			QueueCostTimeSec: task.QueueTimeSec,
 			RunCostTimeSec:   task.CostTimeSec,
-			MachineStat:      task.Result.MachineStat,
+			MachineStat:      task.Inspect.MachineStat,
 			Meta: func() map[string]string {
 				result := make(map[string]string)
-				for _, meta := range task.Result.Metadata {
+				for _, meta := range task.GetMetadata() {
 					result[meta.Name] = meta.Value
 				}
 				return result

@@ -108,14 +108,15 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 				needApproval = true
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
-			if task.Result.Metadata == nil {
+			if task.Result == nil {
+				task.Result = &apistructs.PipelineTaskResult{}
 				task.Result.Metadata = make([]apistructs.MetadataField, 0)
 			}
 			// add task events to result metadata if task status isn`t success and events it`s failed
-			if !task.Status.IsSuccessStatus() && task.Result.Events != "" && !isEventsLatestNormal(task.Result.Events) {
+			if !task.Status.IsSuccessStatus() && task.Inspect.Events != "" && !isEventsLatestNormal(task.Inspect.Events) {
 				task.Result.Metadata = append(task.Result.Metadata, apistructs.MetadataField{
 					Name:  "task-events",
-					Value: task.Result.Events,
+					Value: task.Inspect.Events,
 				})
 			}
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
@@ -455,7 +456,7 @@ func polishTask(p *spec.Pipeline, task *spec.PipelineTask, runningStageID uint64
 				return
 			}
 			// 判断 task 状态
-			if len(task.Result.Errors) > 0 {
+			if len(task.Inspect.Errors) > 0 {
 				task.Status = apistructs.PipelineStatusFailed
 				changed = true
 				return
