@@ -14,16 +14,16 @@
 
 package eventbox
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var EVENTBOX_WEBSOCKET = apis.ApiSpec{
-	Path:        "/api/websocket/<a>/<b>/websocket",
-	BackendPath: "/api/dice/eventbox/ws/<a>/<b>/websocket",
+var EVENTBOX_SMTP_INFO = apis.ApiSpec{
+	Path:        "/api/dice/eventbox/actions/get-smtp-info",
+	BackendPath: "/api/dice/eventbox/actions/get-smtp-info",
 	Host:        "eventbox.marathon.l4lb.thisdcos.directory:9528",
-	Scheme:      "ws",
+	Scheme:      "http",
 	Method:      "GET",
-	CheckLogin:  true,
-	Doc: `
-summary: dice's websocket proxy
-`,
+	IsOpenAPI:   true,
+	CheckToken:  true,
 }

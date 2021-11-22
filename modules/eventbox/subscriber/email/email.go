@@ -45,6 +45,16 @@ type MailSubscriber struct {
 	bundle             *bundle.Bundle
 }
 
+type MailSubscriberInfo struct {
+	Host               string
+	Port               string
+	User               string
+	Password           string
+	DisplayUser        string
+	IsSSL              bool
+	InsecureSkipVerify bool
+}
+
 type MailData struct {
 	Template    string            `json:"template"`
 	Params      map[string]string `json:"params"`
@@ -54,6 +64,21 @@ type MailData struct {
 }
 
 type Option func(*MailSubscriber)
+
+func NewMailSubscriberInfo(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string) *MailSubscriberInfo {
+	subscriber := &MailSubscriberInfo{
+		Host:        host,
+		Port:        port,
+		User:        user,
+		Password:    password,
+		DisplayUser: displayUser,
+	}
+	isSSL, _ := strconv.ParseBool(isSSLStr)
+	subscriber.IsSSL = isSSL
+	isInsecureSkipVerify, _ := strconv.ParseBool(insecureSkipVerify)
+	subscriber.InsecureSkipVerify = isInsecureSkipVerify
+	return subscriber
+}
 
 func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle) subscriber.Subscriber {
 	subscriber := &MailSubscriber{
