@@ -12,32 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package PodDistribution
+package podsCharts
 
 import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type PodDistribution struct {
+type PodsCharts struct {
 	base.DefaultProvider
 
-	Props Props  `json:"props"`
-	Data  Data   `json:"data"`
-	Type  string `json:"type,omitempty"`
-}
-
-type Props struct {
-	RequestIgnore []string `json:"requestIgnore,omitempty"`
+	Type string `json:"type,omitempty"`
+	Data Data   `json:"data"`
 }
 
 type Data struct {
-	Lists []List `json:"list"`
-	Total int    `json:"total"`
+	Group [][]Pie `json:"group,omitempty"`
 }
 
-type List struct {
-	Color string `json:"color"`
-	Tip   string `json:"tip"`
+type Pie struct {
+	Name  string `json:"name,omitempty"`
 	Value int    `json:"value"`
-	Label string `json:"label"`
+	Color string `json:"color,omitempty"`
+	Total int    `json:"total"`
+	Infos []Info `json:"info,omitempty"`
+}
+
+type Info struct {
+	Main string `json:"main,omitempty"`
+	Sub  string `json:"sub,omitempty"`
+	Desc string `json:"desc,omitempty"`
 }

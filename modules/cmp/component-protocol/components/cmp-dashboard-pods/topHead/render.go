@@ -12,20 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package PodTitle
+package topHead
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type PodTitle struct {
-	base.DefaultProvider
-
-	Props Props  `json:"props"`
-	Type  string `json:"type,omitempty"`
+func init() {
+	base.InitProviderWithCreator("cmp-dashboard-pods", "topHead", func() servicehub.Provider {
+		return &ComponentTopHead{}
+	})
 }
 
-type Props struct {
-	Size  string `json:"size"`
-	Title string `json:"title"`
+func (t *ComponentTopHead) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	component.Props = Props{IsTopHead: true}
+	return nil
 }

@@ -29,8 +29,9 @@ type ComponentAddPodButton struct {
 }
 
 type Props struct {
-	Text string `json:"text,omitempty"`
-	Type string `json:"type,omitempty"`
+	Text       string `json:"text,omitempty"`
+	Type       string `json:"type,omitempty"`
+	PrefixIcon string `json:"prefixIcon,omitempty"`
 }
 
 type Operation struct {

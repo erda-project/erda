@@ -12,36 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package tabsTable
 
 import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-type TableTabs struct {
+type TabsTable struct {
 	base.DefaultProvider
-	Type       string     `json:"type,omitempty"`
-	Props      Props      `json:"props"`
-	State      State      `json:"state"`
-	Operations Operations `json:"operations"`
-}
-
-type Props struct {
-	TabMenu []TabMenu `json:"tabMenu"`
-}
-
-type Operations struct {
-	OnChange OnChange `json:"onChange"`
-}
-
-type State struct {
-	ActiveKey string `json:"activeKey"`
-}
-
-type TabMenu struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
-}
-
-type OnChange struct {
-	Key    string `json:"key"`
-	Reload bool   `json:"reload"`
+	Type string `json:"type"`
 }

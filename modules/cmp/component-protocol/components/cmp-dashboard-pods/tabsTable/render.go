@@ -12,16 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package tabsTable
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+import (
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
 
-type ChartContainer struct {
-	base.DefaultProvider
-	Type  string `json:"type"`
-	Props Props  `json:"props"`
-}
-
-type Props struct {
-	WhiteBg bool `json:"whiteBg"`
+func init() {
+	base.InitProvider("cmp-dashboard-pods", "tabsTable")
 }

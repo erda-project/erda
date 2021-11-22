@@ -27,6 +27,7 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -47,15 +48,29 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 
 	switch kind {
 	case "Deployment":
-		if len(fields) != 8 {
-			return "", "", fmt.Errorf("deployment %s has invalid fields length", obj.String("metadata", "name"))
+		conditions := obj.Slice("status", "conditions")
+		available, progressing, failure := false, false, false
+		for _, cond := range conditions {
+			statusTrue := cond.String("status") == string(v1.ConditionTrue)
+			switch cond.String("type") {
+			case string(appsv1.DeploymentAvailable):
+				available = statusTrue
+			case string(appsv1.DeploymentProgressing):
+				progressing = statusTrue
+			case string(appsv1.DeploymentReplicaFailure):
+				failure = statusTrue
+			}
 		}
-		// up-to-date and available
-		if fields[2] == fields[3] {
+		if failure {
+			return "Abnormal", "red", nil
+		}
+		if available && progressing {
 			return "Active", "green", nil
-		} else {
-			return "Error", "red", nil
 		}
+		if available || progressing {
+			return "Updating", "darkcyan", nil
+		}
+		return "Abnormal", "red", nil
 	case "DaemonSet":
 		if len(fields) != 11 {
 			return "", "", fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
@@ -64,7 +79,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 		if fields[1] == fields[3] {
 			return "Active", "green", nil
 		} else {
-			return "Error", "red", nil
+			return "Abnormal", "red", nil
 		}
 	case "StatefulSet":
 		if len(fields) != 5 {
@@ -75,7 +90,7 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 		if readyPods[0] == readyPods[1] {
 			return "Active", "green", nil
 		} else {
-			return "Error", "red", nil
+			return "Abnormal", "red", nil
 		}
 	case "Job":
 		if len(fields) != 7 {
@@ -151,7 +166,7 @@ func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) stri
 	case resource.DecimalSI:
 		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64), sdk.I18n("core"))
 	case resource.BinarySI:
-		units := []string{"B", "K", "M", "G", "T"}
+		units := []string{"B", "KB", "MB", "GB", "TB"}
 		i := 0
 		for res >= 1<<10 && i < len(units)-1 {
 			res /= 1 << 10
@@ -399,4 +414,19 @@ func ListSteveResourceByNamespaces(ctx context.Context, steveServer cmp.SteveSer
 		list = append(list, nsList...)
 	}
 	return list, nil
+}
+
+// PodStatus is a map of pod status to normal status
+var PodStatus = map[string]string{
+	"Completed":         "success",
+	"ContainerCreating": "processing",
+	"CrashLoopBackOff":  "error",
+	"Error":             "error",
+	"Evicted":           "default",
+	"ImagePullBackOff":  "error",
+	"ErrImagePull":      "error",
+	"Pending":           "processing",
+	"Running":           "success",
+	"Terminating":       "processing",
+	"OOMKilled":         "error",
 }

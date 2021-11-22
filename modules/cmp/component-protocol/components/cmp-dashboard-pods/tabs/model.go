@@ -12,51 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabs
+package tabs
 
-import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-const (
-	CPU_TAB = "cpu-analysis"
-
-	MEM_TAB = "mem-analysis"
-
-	POD_TAB = "pod-analysis"
-)
-
-type TableTabs struct {
+type Tabs struct {
 	base.DefaultProvider
-	SDK        *cptype.SDK
-	Type       string                 `json:"type"`
+	Type       string                 `json:"type,omitempty"`
 	Props      Props                  `json:"props"`
 	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
 type Props struct {
-	TabMenu []MenuPair `json:"tabMenu"`
+	ButtonStyle string   `json:"buttonStyle,omitempty"`
+	Options     []Option `json:"options,omitempty"`
+	RadioType   string   `json:"radioType,omitempty"`
+	Size        string   `json:"size,omitempty"`
 }
 
-type MenuPair struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
+type Option struct {
+	Key  string `json:"key,omitempty"`
+	Text string `json:"text,omitempty"`
 }
 
 type State struct {
-	ActiveKey         string `json:"activeKey"`
-	TableTabsURLQuery string `json:"tableTabs__urlQuery,omitempty"`
-}
-
-type Meta struct {
-	ActiveKey string `json:"activeKey"`
+	Value string `json:"value"`
 }
 
 type Operation struct {
-	Key      string `json:"key"`
-	Reload   bool   `json:"reload"`
-	FillMeta string `json:"fillMeta"`
-	Meta     Meta   `json:"meta"`
+	Key    string `json:"key"`
+	Reload bool   `json:"reload"`
 }

@@ -94,6 +94,7 @@ func (agent *Agent) prepare() {
 	} else {
 		agent.EasyUse.RunMultiStderr = f
 	}
+	agent.EasyUse.FlagEndLineForTail = "[Platform Log] [Action-Run End]"
 
 	// 5. set stderr regexp list
 	envStdErrRegexpStr := os.Getenv(EnvStdErrRegexpList)
@@ -110,6 +111,12 @@ func (agent *Agent) prepare() {
 			agent.StdErrRegexpList = append(agent.StdErrRegexpList, reg)
 		}
 	}
+
+	// 6. watch files
+	agent.watchFiles()
+
+	// 7. listen signal
+	go agent.ListenSignal()
 }
 
 func (agent *Agent) setupScript() error {

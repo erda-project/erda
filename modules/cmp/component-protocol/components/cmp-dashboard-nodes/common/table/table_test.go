@@ -40,6 +40,7 @@ func TestSortByNode(t *testing.T) {
 				data: []RowItem{{
 					Node: Node{
 						Renders: []interface{}{
+							[]interface{}{},
 							[]interface{}{NodeLink{
 								RenderType: "linkText",
 								Value:      "123",
@@ -49,24 +50,28 @@ func TestSortByNode(t *testing.T) {
 					},
 				}, {
 					Node: Node{
-						Renders: []interface{}{[]interface{}{
-							NodeLink{
-								RenderType: "linkText",
-								Value:      "321",
-							}, Labels{
-								RenderType: "tagsRow",
-							}},
+						Renders: []interface{}{
+							[]interface{}{},
+							[]interface{}{
+								NodeLink{
+									RenderType: "linkText",
+									Value:      "321",
+								}, Labels{
+									RenderType: "tagsRow",
+								}},
 						},
 					},
 				}, {
 					ID: "1",
 					Node: Node{
-						Renders: []interface{}{[]interface{}{
-							NodeLink{
-								RenderType: "linkText",
-								Value:      "123123",
+						Renders: []interface{}{
+							[]interface{}{},
+							[]interface{}{
+								NodeLink{
+									RenderType: "linkText",
+									Value:      "123123",
+								},
 							},
-						},
 						},
 					},
 				}},
@@ -201,11 +206,11 @@ func TestSortByString(t *testing.T) {
 			name: "testRole",
 			args: args{
 				data: []RowItem{{
-					Role: "worker",
+					Role: Role{Value: RoleValue{Label: "worker"}},
 				}, {
-					Role: "lb",
+					Role: Role{Value: RoleValue{Label: "lb"}},
 				}, {
-					Role: "master",
+					Role: Role{Value: RoleValue{Label: "master"}},
 				}},
 				sortColumn: "Role",
 				asc:        false,
@@ -491,6 +496,45 @@ func TestTable_EncodeURLQuery(t1 *testing.T) {
 			if err := t.EncodeURLQuery(); (err != nil) != tt.wantErr {
 				t1.Errorf("EncodeURLQuery() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestSortByRole(t *testing.T) {
+	type args struct {
+		data   []RowItem
+		in1    string
+		ascend bool
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				data: []RowItem{{
+					Role: Role{
+						Value: RoleValue{Label: "1"},
+					},
+				}, {
+					Role: Role{
+						Value: RoleValue{Label: "2"},
+					},
+				}, {
+					Role: Role{
+						Value: RoleValue{Label: "3"},
+					},
+				}},
+				in1:    "",
+				ascend: false,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SortByRole(tt.args.data, tt.args.in1, tt.args.ascend)
 		})
 	}
 }

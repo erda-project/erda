@@ -12,29 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package PodTitle
+package table
 
 import (
-	"testing"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
+	table2 "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
 )
 
-func TestPodTitle_Transfer(t *testing.T) {
-	component := &PodTitle{
-		Props: Props{
-			Size:  "small",
-			Title: "testTitle",
-		},
-	}
-	c := &cptype.Component{}
-	component.Transfer(c)
-	ok, err := cputil.IsJsonEqual(c, component)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
-		t.Errorf("test failed, json is not equal")
-	}
+type Table struct {
+	table2.Table
+	cpuTable table2.GetTable
+	memTable table2.GetTable
+	podTable table2.GetTable
 }

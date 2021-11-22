@@ -3,72 +3,83 @@ scenario: cmp-dashboard-pods
 hierarchy:
   root: page
   structure:
-    page:
-      - filterContainer
-      - chartContainer
-      - tableContainer
-      - addPodDrawer
-    filterContainer:
-      - filter
-    chartContainer:
-      - podTitle
-      - podDistribution
-    tableContainer:
-      - tableTabs
-    tableTabs:
-      tabBarExtraContent: addPodButton
-      children:
-        - podsTable
-        - podsTable
     addPodDrawer:
       content: addPodContainer
     addPodContainer:
       - addPodFilter
       - addPodFileEditor
+    filterContainer:
+      - filter
+    page:
+      - topHead
+      - filterContainer
+      - charts
+      - tabsTable
+      - addPodDrawer
+    charts:
+      - chartContainer
+    chartContainer:
+      - podsTotal
+      - podsCharts
+    topHead:
+      - addPodButton
+    tableContainer:
+      - tabsTable
+    tabsTable:
+      slot: tabs
+      table: podsTable
 
 components:
-  page:
-    type: Container
-  filterContainer:
-    type: Container
-  chartContainer:
-    type: Container
-  tableContainer:
-    type: Container
-  podTitle:
-    type: Title
-  podDistribution:
-    type: LinearDistribution
-  filter:
-    type: ContractiveFilter
-  tableTabs:
-    type: Tabs
-  podsTable:
-    type: Table
-  addPodFileEditor:
-    type: FileEditor
+  addPodDrawer:
+    type: Drawer
   addPodContainer:
     type: Container
   addPodFilter:
     type: ContractiveFilter
-  addPodDrawer:
-    type: Drawer
+  addPodFileEditor:
+    type: FileEditor
   addPodButton:
     type: Button
+  filterContainer:
+    type: Container
+  filter:
+    type: ContractiveFilter
+  page:
+    type: Container
+  topHead:
+    type: Container
+  charts:
+    type: Container
+  chartContainer:
+    type: Grid
+  podsTotal:
+    type: TextBlock
+  podsCharts:
+    type: PieChart
+  tableContainer:
+    type: Container
+  tabsTable:
+    type: ComposeTable
+  podsTable:
+    type: Table
+  tabs:
+    type: Radio
 
 
 rendering:
   __DefaultRendering__:
     - name: page
-    - name: filterContainer
-    - name: chartContainer
-    - name: tableContainer
+    - name: topHead
+    - name: addPodButton
     - name: addPodContainer
+    - name: filterContainer
     - name: filter
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
-    - name: tableTabs
+    - name: tableContainer
+    - name: tabsTable
+    - name: tabs
     - name: podsTable
       state:
         - name: "clusterName"
@@ -76,23 +87,24 @@ rendering:
         - name: "values"
           value: "{{ filter.values }}"
         - name: "activeKey"
-          value: "{{ tableTabs.activeKey }}"
-    - name: podTitle
-    - name: podDistribution
-    - name: addPodButton
+          value: "{{ tabs.value }}"
+    - name: charts
+    - name: chartContainer
+    - name: podsTotal
+    - name: podsCharts
   podsTable: []
-  tableTabs:
+  tabs:
     - name: podsTable
       state:
         - name: "activeKey"
-          value: "{{ tableTabs.activeKey }}"
+          value: "{{ tabs.value }}"
   filter:
     - name: podsTable
       state:
         - name: "values"
           value: "{{ filter.values }}"
-    - name: podTitle
-    - name: podDistribution
+    - name: podsTotal
+    - name: podsCharts
   addPodButton:
     - name: addPodDrawer
     - name: addPodFilter
@@ -123,6 +135,7 @@ rendering:
         - name: "values"
           value: "{{ filter.values }}"
         - name: "activeKey"
-          value: "{{ tableTabs.activeKey }}"
-    - name: podDistribution
+          value: "{{ tabs.value }}"
+    - name: podsTotal
+    - name: podsCharts
 

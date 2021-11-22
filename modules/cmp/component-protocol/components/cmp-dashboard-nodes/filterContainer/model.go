@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tableTabsContainer
+package page
 
 import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-type TableTabsContainer struct {
+type FilterContainer struct {
 	base.DefaultProvider
 	Type  string `json:"type"`
 	Props Props  `json:"props"`

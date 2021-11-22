@@ -147,16 +147,38 @@ type ProjectNamespaces struct {
 	memRequest uint64
 }
 
-func (p *ProjectNamespaces) PatchClusters(clusters []string, namespaces map[string][]string) {
-	if len(clusters) == 0 || len(namespaces) == 0 {
+func (p *ProjectNamespaces) PatchClusters(quota *ProjectQuota, filterClusters []string) {
+	if quota == nil || len(filterClusters) == 0 {
 		return
 	}
+
+	var filter = make(map[string]struct{})
+	for _, cluster := range filterClusters {
+		filter[cluster] = struct{}{}
+	}
+
 	if p.Clusters == nil {
 		p.Clusters = make(map[string][]string)
 	}
-	for _, cluster := range clusters {
+	for _, cluster := range []string{
+		quota.ProdClusterName,
+		quota.StagingClusterName,
+		quota.TestClusterName,
+		quota.DevClusterName,
+	} {
+		if _, ok := filter[cluster]; ok {
+			p.Clusters[cluster] = p.Clusters[cluster]
+		}
+	}
+}
+
+func (p *ProjectNamespaces) PatchClustersNamespaces(namespaces map[string][]string) {
+	if len(p.Clusters) == 0 || len(namespaces) == 0 {
+		return
+	}
+	for cluster := range p.Clusters {
 		if list, ok := namespaces[cluster]; ok {
-			p.Clusters[cluster] = append(p.Clusters[cluster], list...)
+			p.Clusters[cluster] = list
 		}
 	}
 }

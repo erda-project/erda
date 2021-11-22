@@ -12,24 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package PodDistribution
+package PodTitle
 
 import (
 	"context"
-	"fmt"
 	"reflect"
-	"sort"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+func (p *PodsTotal) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if gs == nil {
 		return nil
 	}
@@ -38,47 +35,25 @@ func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cp
 		logrus.Errorf("invalid count values type: %v", reflect.TypeOf((*gs)["countValues"]))
 		return nil
 	}
+
 	total := 0
 	for _, count := range countValues {
 		total += count
 	}
-	pd.Data.Total = total
-	pd.Data.Lists = nil
-	for state, count := range countValues {
-		total += count
-		pd.Data.Lists = append(pd.Data.Lists, pd.ParsePodStatus(ctx, state, count))
-	}
-	sort.Slice(pd.Data.Lists, func(i, j int) bool {
-		return pd.Data.Lists[i].Value > pd.Data.Lists[j].Value
-	})
-	pd.Transfer(c)
+	p.Data.Data.Main = total
+	p.Data.Data.Desc = cputil.I18n(ctx, "podNum")
+	p.Transfer(c)
 	return nil
 }
 
-func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt int) List {
-	color := podsTable.PodStatusToColor[state]
-	if color == "" {
-		color = "darkslategray"
-	}
-	status := List{
-		Color: color,
-		Tip:   fmt.Sprintf("%s %d/%d", cputil.I18n(ctx, state), cnt, pd.Data.Total),
-		Value: cnt,
-		Label: fmt.Sprintf("%s %d", cputil.I18n(ctx, state), cnt),
-	}
-	return status
-}
-
-func (pd *PodDistribution) Transfer(c *cptype.Component) {
+func (p *PodsTotal) Transfer(c *cptype.Component) {
 	c.Data = map[string]interface{}{
-		"total": pd.Data.Total,
-		"list":  pd.Data.Lists,
+		"data": p.Data.Data,
 	}
-	c.Props = pd.Props
 }
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-pods", "podDistribution", func() servicehub.Provider {
-		return &PodDistribution{Type: "LinearDistribution"}
+	base.InitProviderWithCreator("cmp-dashboard-pods", "podsTotal", func() servicehub.Provider {
+		return &PodsTotal{}
 	})
 }

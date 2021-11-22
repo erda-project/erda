@@ -27,6 +27,5 @@ type Charts struct {
 }
 
 type Props struct {
-	ContentSetting string `json:"contentSetting"`
-	SpaceSize      string `json:"spaceSize"`
+	Gutter int `json:"gutter"`
 }
