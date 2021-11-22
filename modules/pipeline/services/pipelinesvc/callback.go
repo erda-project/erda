@@ -56,8 +56,13 @@ func (s *PipelineSvc) DealPipelineCallbackOfAction(data []byte) (err error) {
 			fmt.Sprintf("task not belong to pipeline, taskID: %d, pipelineID: %d", task.ID, p.ID))
 	}
 
-	// 更新 task.result
-	if err = s.appendPipelineTaskResult(&p, &task, cb); err != nil {
+	// update task.metadata
+	if err = s.appendPipelineTaskMetadata(&p, &task, cb); err != nil {
+		return err
+	}
+
+	// update task.inspect
+	if err = s.appendPipelineTaskInspect(&p, &task, cb); err != nil {
 		return err
 	}
 
@@ -74,13 +79,10 @@ func (s *PipelineSvc) DealPipelineCallbackOfAction(data []byte) (err error) {
 	return nil
 }
 
-// appendPipelineTaskResult 追加 result
-func (s *PipelineSvc) appendPipelineTaskResult(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
-	if len(cb.Metadata) == 0 && len(cb.Errors) == 0 && cb.MachineStat == nil {
+func (s *PipelineSvc) appendPipelineTaskInspect(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
+	if len(cb.Errors) == 0 && cb.MachineStat == nil {
 		return nil
 	}
-	// metadata
-	task.Result.Metadata = append(task.Result.Metadata, cb.Metadata...)
 	// TODO action agent should add err start time and end time
 	newTaskErrors := make([]*apistructs.PipelineTaskErrResponse, 0)
 	for _, e := range cb.Errors {
@@ -88,13 +90,28 @@ func (s *PipelineSvc) appendPipelineTaskResult(p *spec.Pipeline, task *spec.Pipe
 			Msg: e.Msg,
 		})
 	}
-	task.Result.Errors = task.Result.AppendError(newTaskErrors...)
+	task.Inspect.Errors = task.Inspect.AppendError(newTaskErrors...)
 	// machine stat
 	if cb.MachineStat != nil {
-		task.Result.MachineStat = cb.MachineStat
+		task.Inspect.MachineStat = cb.MachineStat
 	}
 
-	if err := s.dbClient.UpdatePipelineTaskResult(task.ID, task.Result); err != nil {
+	if err := s.dbClient.UpdatePipelineTaskInspect(task.ID, task.Inspect); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *PipelineSvc) appendPipelineTaskMetadata(p *spec.Pipeline, task *spec.PipelineTask, cb apistructs.ActionCallback) error {
+	if len(cb.Metadata) == 0 {
+		return nil
+	}
+	if task.Result == nil {
+		task.Result = &apistructs.PipelineTaskResult{Metadata: apistructs.Metadata{}}
+	}
+
+	task.Result.Metadata = append(task.Result.Metadata, cb.Metadata...)
+	if err := s.dbClient.UpdatePipelineTaskMetadata(task.ID, task.Result); err != nil {
 		return err
 	}
 

@@ -88,12 +88,15 @@ func (r *Reconciler) handleParentSnippetTaskOutputs(snippetPipeline *spec.Pipeli
 
 	// update result.metadata for value-context reference
 	for _, outputValue := range snippetPipeline.Snapshot.OutputValues {
+		if parentTask.Result == nil {
+			parentTask.Result = &apistructs.PipelineTaskResult{Metadata: apistructs.Metadata{}}
+		}
 		parentTask.Result.Metadata = append(parentTask.Result.Metadata, apistructs.MetadataField{
 			Name:  outputValue.Name,
 			Value: strutil.String(outputValue.Value),
 		})
 	}
-	if err := r.dbClient.UpdatePipelineTaskResult(parentTaskID, parentTask.Result); err != nil {
+	if err := r.dbClient.UpdatePipelineTaskMetadata(parentTaskID, parentTask.Result); err != nil {
 		return err
 	}
 
@@ -105,7 +108,7 @@ func (r *Reconciler) calculateAndUpdatePipelineOutputValues(p *spec.Pipeline, ta
 	// 所有任务的输出
 	allTaskOutputs := make(map[string]map[string]interface{})
 	for _, task := range tasks {
-		for _, meta := range task.Result.Metadata {
+		for _, meta := range task.GetMetadata() {
 			if allTaskOutputs[task.Name] == nil {
 				allTaskOutputs[task.Name] = make(map[string]interface{})
 			}

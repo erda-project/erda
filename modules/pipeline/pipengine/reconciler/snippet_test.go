@@ -15,10 +15,16 @@
 package reconciler
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 func TestParsePipelineOutputRef(t *testing.T) {
@@ -35,4 +41,51 @@ func TestParsePipelineOutputRefV2(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "a", reffedTask)
 	assert.Equal(t, "b", reffedKey)
+}
+
+func Test_handleParentSnippetTaskOutputs(t *testing.T) {
+	db := &dbclient.Client{}
+
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
+		return spec.PipelineTask{Result: &apistructs.PipelineTaskResult{}}, nil
+	})
+	defer m1.Unpatch()
+
+	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskSnippetDetail", func(_ *dbclient.Client, id uint64, snippetDetail apistructs.PipelineTaskSnippetDetail, ops ...dbclient.SessionOption) error {
+		return nil
+	})
+	defer m2.Unpatch()
+
+	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *apistructs.PipelineTaskResult) error {
+		return nil
+	})
+	defer m3.Unpatch()
+
+	r := &Reconciler{dbClient: db}
+	parentTaskID := uint64(1)
+	snippetPipeline := &spec.Pipeline{PipelineBase: spec.PipelineBase{ParentTaskID: &parentTaskID}}
+	err := r.handleParentSnippetTaskOutputs(snippetPipeline, []apistructs.PipelineOutputWithValue{{
+		PipelineOutput: apistructs.PipelineOutput{Name: "pipelineID"},
+		Value:          "1",
+	}})
+	assert.NoError(t, err)
+}
+
+func Test_calculateAndUpdatePipelineOutputValues(t *testing.T) {
+	db := &dbclient.Client{}
+
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineExtraSnapshot", func(_ *dbclient.Client, pipelineID uint64, snapshot spec.Snapshot, ops ...dbclient.SessionOption) error {
+		return nil
+	})
+	defer m1.Unpatch()
+
+	tasks := []*spec.PipelineTask{&spec.PipelineTask{Name: "1", Result: &apistructs.PipelineTaskResult{
+		Metadata: apistructs.Metadata{{
+			Name:  "pipelineID",
+			Value: "1",
+		}},
+	}}}
+	r := &Reconciler{dbClient: db}
+	_, err := r.calculateAndUpdatePipelineOutputValues(&spec.Pipeline{PipelineBase: spec.PipelineBase{ID: 1}}, tasks)
+	assert.NoError(t, err)
 }

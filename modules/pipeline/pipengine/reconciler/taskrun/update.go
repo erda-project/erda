@@ -70,8 +70,8 @@ func (tr *TaskRun) AppendLastMsg(msg string) error {
 	if err := tr.fetchLatestTask(); err != nil {
 		return err
 	}
-	tr.Task.Result.Errors = tr.Task.Result.AppendError(&apistructs.PipelineTaskErrResponse{Msg: msg})
-	if err := tr.DBClient.UpdatePipelineTaskResult(tr.Task.ID, tr.Task.Result); err != nil {
+	tr.Task.Inspect.Errors = tr.Task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: msg})
+	if err := tr.DBClient.UpdatePipelineTaskInspect(tr.Task.ID, tr.Task.Inspect); err != nil {
 		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q append last message failed, err: %v",
 			tr.P.ID, tr.Task.Name, err)
 		return err
@@ -88,9 +88,9 @@ func (tr *TaskRun) UpdateTaskInspect(inspect string) error {
 		return err
 	}
 	events := getEventsFromInspect(inspect)
-	tr.Task.Result.Inspect = inspect
-	tr.Task.Result.Events = events
-	if err := tr.DBClient.UpdatePipelineTaskResult(tr.Task.ID, tr.Task.Result); err != nil {
+	tr.Task.Inspect.Inspect = inspect
+	tr.Task.Inspect.Events = events
+	if err := tr.DBClient.UpdatePipelineTaskInspect(tr.Task.ID, tr.Task.Inspect); err != nil {
 		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q update inspect failed, err: %v",
 			tr.P.ID, tr.Task.Name, err)
 		return err

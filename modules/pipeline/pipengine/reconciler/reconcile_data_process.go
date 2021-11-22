@@ -113,7 +113,7 @@ func (r *Reconciler) createSnippetPipeline(task *spec.PipelineTask, p *spec.Pipe
 	defer func() {
 		if failedError != nil {
 			err = failedError
-			task.Result.Errors = append(task.Result.Errors, &apistructs.PipelineTaskErrResponse{
+			task.Inspect.Errors = append(task.Inspect.Errors, &apistructs.PipelineTaskErrResponse{
 				Msg: err.Error(),
 			})
 			task.Status = apistructs.PipelineStatusFailed
@@ -180,7 +180,7 @@ func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipel
 
 	if snippetPipeline == nil {
 		task.Status = apistructs.PipelineStatusAnalyzeFailed
-		task.Result.Errors = append(task.Result.Errors, &apistructs.PipelineTaskErrResponse{
+		task.Inspect.Errors = append(task.Inspect.Errors, &apistructs.PipelineTaskErrResponse{
 			Msg: "not find task bind pipeline",
 		})
 		if updateErr := r.dbClient.UpdatePipelineTask(task.ID, task); updateErr != nil {

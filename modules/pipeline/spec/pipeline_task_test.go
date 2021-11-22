@@ -16,7 +16,9 @@ package spec
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/magiconair/properties/assert"
 	"github.com/sirupsen/logrus"
@@ -30,7 +32,7 @@ func TestRuntimeID(t *testing.T) {
 	if err := json.Unmarshal([]byte(s), &r); err != nil {
 		logrus.Fatal(err)
 	}
-	pt := PipelineTask{Result: r}
+	pt := PipelineTask{Result: &r}
 	assert.Equal(t, pt.RuntimeID(), "9")
 }
 
@@ -131,4 +133,38 @@ func TestMakeTaskExecutorCtxKey(t *testing.T) {
 	task := &PipelineTask{ID: 1}
 	ctxKey := MakeTaskExecutorCtxKey(task)
 	assert.Equal(t, ctxKey, "executor-done-chan-1")
+}
+
+func TestPipelineTaskAppendError(t *testing.T) {
+	task := PipelineTask{}
+	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a"})
+	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a"})
+	assert.Equal(t, 1, len(task.Inspect.Errors))
+	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "b"})
+	assert.Equal(t, 2, len(task.Inspect.Errors))
+	startA := time.Date(2021, 8, 19, 10, 10, 0, 0, time.Local)
+	endA := time.Date(2021, 8, 19, 10, 30, 0, 0, time.Local)
+	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a", Ctx: apistructs.PipelineTaskErrCtx{StartTime: startA, EndTime: endA}})
+	assert.Equal(t, 3, len(task.Inspect.Errors))
+	start := time.Date(2021, 8, 19, 10, 9, 0, 0, time.Local)
+	end := time.Date(2021, 8, 19, 10, 29, 0, 0, time.Local)
+	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "a", Ctx: apistructs.PipelineTaskErrCtx{StartTime: start, EndTime: end}})
+	taskDto := task.Convert2DTO()
+	assert.Equal(t, uint64(2), taskDto.Result.Errors[2].Ctx.Count)
+	assert.Equal(t, 3, len(taskDto.Result.Errors))
+	assert.Equal(t, start.Unix(), taskDto.Result.Errors[2].Ctx.StartTime.Unix())
+	assert.Equal(t, endA.Unix(), taskDto.Result.Errors[2].Ctx.EndTime.Unix())
+}
+
+func TestConvertErrors(t *testing.T) {
+	task := PipelineTask{}
+	start := time.Date(2021, 8, 24, 9, 45, 1, 1, time.Local)
+	end := time.Date(2021, 8, 24, 9, 46, 1, 1, time.Local)
+	task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: "err", Ctx: apistructs.PipelineTaskErrCtx{
+		StartTime: start,
+		EndTime:   end,
+		Count:     2,
+	}})
+	taskDto := task.Convert2DTO()
+	assert.Equal(t, fmt.Sprintf("err\nstartTime: %s\nendTime: %s\ncount: %d", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"), 2), taskDto.Result.Errors[0].Msg)
 }

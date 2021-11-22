@@ -62,8 +62,16 @@ type TaskContainer struct {
 	ContainerID string `json:"containerID"`
 }
 
+// PipelineTaskResult spec.pipeline task only use metadata, task dto has all fields
 type PipelineTaskResult struct {
 	Metadata    Metadata                   `json:"metadata,omitempty"`
+	Errors      []*PipelineTaskErrResponse `json:"errors,omitempty"`
+	MachineStat *PipelineTaskMachineStat   `json:"machineStat,omitempty"`
+	Inspect     string                     `json:"inspect,omitempty"`
+	Events      string                     `json:"events,omitempty"`
+}
+
+type PipelineTaskInspect struct {
 	Errors      []*PipelineTaskErrResponse `json:"errors,omitempty"`
 	MachineStat *PipelineTaskMachineStat   `json:"machineStat,omitempty"`
 	Inspect     string                     `json:"inspect,omitempty"`
@@ -195,7 +203,7 @@ func (o orderedResponses) Len() int           { return len(o) }
 func (o orderedResponses) Less(i, j int) bool { return o[i].Ctx.EndTime.Before(o[j].Ctx.EndTime) }
 func (o orderedResponses) Swap(i, j int)      { o[i], o[j] = o[j], o[i] }
 
-func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrResponse) []*PipelineTaskErrResponse {
+func (t *PipelineTaskInspect) AppendError(newResponses ...*PipelineTaskErrResponse) []*PipelineTaskErrResponse {
 	if len(newResponses) == 0 {
 		return t.Errors
 	}
@@ -249,7 +257,7 @@ func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrRespons
 	return orderd
 }
 
-func (t *PipelineTaskResult) ConvertErrors() {
+func (t *PipelineTaskInspect) ConvertErrors() {
 	for _, response := range t.Errors {
 		if response.Ctx.Count > 1 {
 			response.Msg = fmt.Sprintf("%s\nstartTime: %s\nendTime: %s\ncount: %d",
