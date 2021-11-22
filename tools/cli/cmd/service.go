@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -24,19 +25,21 @@ import (
 	"github.com/erda-project/erda/tools/cli/common"
 )
 
-var APPLICATION = command.Command{
-	Name:      "application",
-	ShortHelp: "List applications",
-	Example:   "erda-cli application",
+var SERVICE = command.Command{
+	Name:      "service",
+	ShortHelp: "List services",
+	Example:   "erda-cli service",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "workspace", Doc: "The workspace for runtime", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "runtime", Doc: "The id of an application", DefaultValue: ""},
 	},
-	Run: GetApplications,
+	Run: ServiceList,
 }
 
-func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
+func ServiceList(ctx *command.Context, noHeaders bool, orgId, projectId int, workspace, runtime string) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
@@ -49,25 +52,31 @@ func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int)
 		return errors.New("invalid project id")
 	}
 
-	list, err := common.GetApplicationList(ctx, orgId, projectId)
+	if workspace == "" || runtime == "" {
+		return errors.New("invalid workspace or runtime")
+	}
+
+	list, err := common.GetSerivceList(ctx, orgId, projectId, workspace, runtime)
 	if err != nil {
 		return err
 	}
 
 	data := [][]string{}
-	for i := range list {
+	for n, v := range list {
 		data = append(data, []string{
-			strconv.FormatUint(list[i].ID, 10),
-			list[i].Name,
-			list[i].DisplayName,
-			list[i].Desc,
+			n,
+			v.Status,
+			fmt.Sprintf("%.2f", v.Resources.CPU),
+			strconv.Itoa(v.Resources.Mem),
+			strconv.Itoa(v.Resources.Disk),
+			strconv.Itoa(v.Deployments.Replicas),
 		})
 	}
 
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"ApplicationID", "Name", "DisplayName", "Description",
+			"Name", "Status", "CPU", "Memory(MB)", "Disk(MB)", "Replicas",
 		})
 	}
 	return t.Data(data).Flush()

@@ -25,28 +25,21 @@ import (
 	"github.com/erda-project/erda/tools/cli/prettyjson"
 )
 
-var APPLICATIONINSPECT = command.Command{
+var RUNTIMEINSPECT = command.Command{
 	Name:       "inspect",
-	ParentName: "APPLICATION",
-	ShortHelp:  "Inspect application",
-	Example:    "erda-cli application inspect",
+	ParentName: "RUNTIME",
+	ShortHelp:  "Inspect runtime",
+	Example:    "erda-cli runtime inspect",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "workspace", Doc: "The workspace of a runtime", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "runtime", Doc: "The id/name of a runtime", DefaultValue: ""},
 	},
-	Run: ApplicationInspect,
+	Run: RuntimeInspect,
 }
 
-func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId int) error {
-	if applicationId <= 0 {
-		errors.New("invalid application id")
-	}
-
-	if projectId <= 0 {
-		errors.New("invalid project id")
-	}
-
+func RuntimeInspect(ctx *command.Context, orgId, applicationId int, workspace, runtime string) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
@@ -55,18 +48,21 @@ func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId in
 		orgId = int(ctx.CurrentOrg.ID)
 	}
 
-	resp, err := common.GetApplicationDetail(ctx, orgId, projectId, applicationId)
+	if runtime == "" {
+		return errors.New("invalid runtime")
+	}
+
+	resp, err := common.GetRuntimeDetail(ctx, orgId, applicationId, workspace, runtime)
 	if err != nil {
 		return err
 	}
 
 	s, err := prettyjson.Marshal(resp.Data)
 	if err != nil {
-		return fmt.Errorf(format.FormatErrMsg("application inspect",
-			"failed to prettyjson marshal application data ("+err.Error()+")", false))
+		return fmt.Errorf(format.FormatErrMsg("runtime inspect",
+			"failed to prettyjson marshal runtime data ("+err.Error()+")", false))
 	}
 
 	fmt.Println(string(s))
-
 	return nil
 }

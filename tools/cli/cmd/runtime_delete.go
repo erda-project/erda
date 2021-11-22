@@ -15,28 +15,26 @@
 package cmd
 
 import (
-	"strconv"
-
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 )
 
-var APPLICATION = command.Command{
-	Name:      "application",
-	ShortHelp: "List applications",
-	Example:   "erda-cli application",
+var RUNTIMEDELETE = command.Command{
+	Name:       "delete",
+	ParentName: "RUNTIME",
+	ShortHelp:  "Delete runtime",
+	Example:    "erda-cli runtime delete",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "runtime-id", Doc: "The id of a runtime", DefaultValue: 0},
 	},
-	Run: GetApplications,
+	Run: GetRuntimes,
 }
 
-func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
+func GetRuntimes(ctx *command.Context, noHeaders bool, orgId, runtimeId int) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
@@ -45,30 +43,15 @@ func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int)
 		orgId = int(ctx.CurrentOrg.ID)
 	}
 
-	if projectId <= 0 {
-		return errors.New("invalid project id")
+	if runtimeId <= 0 {
+		return errors.New("invalid runtime id")
 	}
 
-	list, err := common.GetApplicationList(ctx, orgId, projectId)
+	err := common.DeleteRuntime(ctx, orgId, runtimeId)
 	if err != nil {
 		return err
 	}
 
-	data := [][]string{}
-	for i := range list {
-		data = append(data, []string{
-			strconv.FormatUint(list[i].ID, 10),
-			list[i].Name,
-			list[i].DisplayName,
-			list[i].Desc,
-		})
-	}
-
-	t := table.NewTable()
-	if !noHeaders {
-		t.Header([]string{
-			"ApplicationID", "Name", "DisplayName", "Description",
-		})
-	}
-	return t.Data(data).Flush()
+	ctx.Succ("Runtime deleted.")
+	return nil
 }

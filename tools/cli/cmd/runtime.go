@@ -24,19 +24,19 @@ import (
 	"github.com/erda-project/erda/tools/cli/common"
 )
 
-var APPLICATION = command.Command{
-	Name:      "application",
-	ShortHelp: "List applications",
-	Example:   "erda-cli application",
+var RUNTIME = command.Command{
+	Name:      "runtime",
+	ShortHelp: "List runtimes",
+	Example:   "erda-cli runtime",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
 	},
-	Run: GetApplications,
+	Run: RuntimeList,
 }
 
-func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
+func RuntimeList(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
@@ -49,25 +49,24 @@ func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int)
 		return errors.New("invalid project id")
 	}
 
-	list, err := common.GetApplicationList(ctx, orgId, projectId)
+	list, err := common.GetRuntimeList(ctx, orgId, projectId, "", "")
 	if err != nil {
 		return err
 	}
 
 	data := [][]string{}
-	for i := range list {
+	for _, l := range list {
 		data = append(data, []string{
-			strconv.FormatUint(list[i].ID, 10),
-			list[i].Name,
-			list[i].DisplayName,
-			list[i].Desc,
+			strconv.FormatUint(l.ID, 10),
+			l.Name,
+			l.CreatedAt.String(),
 		})
 	}
 
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"ApplicationID", "Name", "DisplayName", "Description",
+			"RuntimeID", "Name", "CreateAt",
 		})
 	}
 	return t.Data(data).Flush()

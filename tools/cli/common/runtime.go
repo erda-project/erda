@@ -18,6 +18,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/erda-project/erda/tools/cli/httputils"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -25,7 +28,8 @@ import (
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
-func GetRuntimeDetail(ctx *command.Context, runtime string, app string) (apistructs.RuntimeInspectResponse, error) {
+func GetRuntimeDetail(ctx *command.Context, orgId, applicationId int, workspace, runtime string) (
+	apistructs.RuntimeInspectResponse, error) {
 	var resp apistructs.RuntimeInspectResponse
 	var b bytes.Buffer
 	var request *httpclient.Request
@@ -35,11 +39,10 @@ func GetRuntimeDetail(ctx *command.Context, runtime string, app string) (apistru
 			format.FormatErrMsg("releases inspect", "missing required parameter runtime", false))
 	}
 
-	if app == "" {
-		request = ctx.Get().Path(fmt.Sprintf("/api/runtimes/%s", runtime))
-	} else {
-		request = ctx.Get().Path(fmt.Sprintf("/api/runtimes/%s", runtime)).Param("applicationId", app)
-	}
+	request = ctx.Get().Path(fmt.Sprintf("/api/runtimes/%s", runtime)).
+		Header("Org-ID", strconv.Itoa(orgId)).
+		Param("applicationId", strconv.Itoa(applicationId)).
+		Param("workspace", workspace)
 
 	response, err := request.Do().Body(&b)
 	if err != nil {
@@ -65,4 +68,64 @@ func GetRuntimeDetail(ctx *command.Context, runtime string, app string) (apistru
 	}
 
 	return resp, nil
+}
+
+func GetRuntimeList(ctx *command.Context, orgId, applicationId int, workspace, name string) (
+	[]apistructs.RuntimeSummaryDTO, error) {
+	var resp apistructs.RuntimeListResponse
+	var b bytes.Buffer
+
+	req := ctx.Get().Path("/api/runtimes").
+		Header("Org-ID", strconv.Itoa(orgId)).
+		Param("applicationId", strconv.Itoa(applicationId)).
+		Param("workspace", workspace).
+		Param("name", name)
+
+	response, err := req.Do().Body(&b)
+	if err != nil {
+		return nil, fmt.Errorf(
+			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return nil, fmt.Errorf(format.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return nil, fmt.Errorf(format.FormatErrMsg("list",
+			fmt.Sprintf("failed to unmarshal runtimes list response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf(format.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	if len(resp.Data) == 0 {
+		fmt.Printf(format.FormatErrMsg("list", "no runtimes created\n", false))
+		return nil, nil
+	}
+
+	return resp.Data, nil
+}
+
+func DeleteRuntime(ctx *command.Context, orgID, runtimeID int) error {
+	r := ctx.Delete().
+		Header("Org-ID", strconv.Itoa(orgID)).
+		Path(fmt.Sprintf("/api/runtimes/%d", runtimeID))
+	resp, err := httputils.DoResp(r)
+	if err != nil {
+		return fmt.Errorf(
+			format.FormatErrMsg("remove", "failed to remove runtime, error: "+err.Error(), false))
+	}
+	if err := resp.ParseData(nil); err != nil {
+		return fmt.Errorf(
+			format.FormatErrMsg(
+				"remove", "failed to parse remove runtime response, error: "+err.Error(), false))
+	}
+
+	return nil
 }
