@@ -221,3 +221,14 @@ func TestGetTriggeredTime(t *testing.T) {
 	triggerTime := getTriggeredTime(p)
 	assert.Equal(t, now.Unix(), triggerTime.Unix())
 }
+
+func Test_isCronShouldBeIgnored(t *testing.T) {
+	emptyStartTimeCron := spec.PipelineCron{}
+	startTime := time.Date(2099, 1, 1, 1, 1, 1, 1, time.Local)
+	startTimeCron := spec.PipelineCron{Extra: spec.PipelineCronExtra{
+		CronStartFrom: &startTime,
+	}}
+	svc := PipelineSvc{}
+	assert.Equal(t, false, svc.isCronShouldBeIgnored(emptyStartTimeCron))
+	assert.Equal(t, true, svc.isCronShouldBeIgnored(startTimeCron))
+}

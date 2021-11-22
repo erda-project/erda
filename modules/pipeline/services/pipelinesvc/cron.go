@@ -56,8 +56,8 @@ func (s *PipelineSvc) RunCronPipelineFunc(id uint64) {
 		return
 	}
 
-	// 如果当前触发时间小于定时开始时间，return
-	if pc.Extra.CronStartFrom != nil && cronTriggerTime.Before(*pc.Extra.CronStartFrom) {
+	// if trigger time less than cronStartFrom, return directly
+	if s.isCronShouldBeIgnored(pc) {
 		logrus.Warnf("crond: pipelineCronID: %d, triggered but ignored, triggerTime: %s, cronStartFrom: %s",
 			pc.ID, cronTriggerTime, *pc.Extra.CronStartFrom)
 		return
