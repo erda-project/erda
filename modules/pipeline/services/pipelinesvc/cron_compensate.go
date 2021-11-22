@@ -154,15 +154,21 @@ func (s *PipelineSvc) traverseDoCompensate(doCompensate func(cron spec.PipelineC
 	}
 
 	group := limit_sync_group.NewSemaphore(int(conf.CronCompensateConcurrentNumber()))
-	for i := range enabledCrons {
+	for _, pc := range enabledCrons {
+		if s.isCronShouldBeIgnored(pc) {
+			triggerTime := time.Now()
+			logrus.Warnf("crond compensator: pipelineCronID: %d, triggered compensate but ignored, triggerTime: %s, cronStartFrom: %s",
+				pc.ID, triggerTime, *pc.Extra.CronStartFrom)
+			continue
+		}
 		if sync {
-			doCompensate(enabledCrons[i])
+			doCompensate(pc)
 		} else {
 			group.Add(1)
 			go func(pc spec.PipelineCron) {
 				defer group.Done()
 				doCompensate(pc)
-			}(enabledCrons[i])
+			}(pc)
 		}
 	}
 	group.Wait()
@@ -463,4 +469,13 @@ func (s *PipelineSvc) createCronCompensatePipeline(pc spec.PipelineCron, trigger
 			InternalClient: "system-cron-compensator",
 		},
 	})
+}
+
+// isCronShouldIgnore if trigger time before cron start from time, should ignore cron at this trigger time
+func (s *PipelineSvc) isCronShouldBeIgnored(pc spec.PipelineCron) bool {
+	if pc.Extra.CronStartFrom == nil {
+		return false
+	}
+	triggerTime := time.Now()
+	return triggerTime.Before(*pc.Extra.CronStartFrom)
 }
