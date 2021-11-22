@@ -34,6 +34,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/erda-project/erda-infra v0.0.0-20211111114940-a5b6f55013ce
+	github.com/erda-project/erda-infra/tools v0.0.0-20211117120837-51bbd5e21c3d // indirect
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0

@@ -23,6 +23,12 @@ type AliyunSMS struct {
 	TemplateCode    string
 }
 
+type DingDingWorkNotice struct {
+	AgentId   int64
+	AppKey    string
+	AppSecret string
+}
+
 func (asm *AliyunSMS) Validate() error {
 	if asm.SignName == "" {
 		return errors.NewMissingParameterError("signName")
@@ -35,6 +41,19 @@ func (asm *AliyunSMS) Validate() error {
 	}
 	if asm.AccessKeySecret == "" {
 		return errors.NewMissingParameterError("accessKeySecret")
+	}
+	return nil
+}
+
+func (ding *DingDingWorkNotice) Validate() error {
+	if ding.AgentId == 0 {
+		return errors.NewMissingParameterError("agentId")
+	}
+	if ding.AppSecret == "" {
+		return errors.NewMissingParameterError("appSecret")
+	}
+	if ding.AppKey == "" {
+		return errors.NewMissingParameterError("appKey")
 	}
 	return nil
 }

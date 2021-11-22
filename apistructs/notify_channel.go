@@ -43,6 +43,9 @@ type NotifyChannelConfig struct {
 	AccessKeySecret string `json:"accessKeySecret"`
 	SignName        string `json:"signName"`
 	TemplateCode    string `json:"templateCode"`
+	AgentId         int64  `json:"agentId"`
+	AppKey          string `json:"appKey"`
+	AppSecret       string `json:"appSecret"`
 }
 
 type NotifyChannelType string
@@ -50,3 +53,4 @@ type NotifyChannelProviderType string
 
 const NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE = NotifyChannelType("short_message")
 const NOTIFY_CHANNEL_PROVIDER_TYPE_ALIYUN = NotifyChannelProviderType("aliyun_sms")
+const NOTIFY_CHANNEL_TYPE_DINGTALK_WORK_NOTICE = NotifyChannelType("dingtalk_work_notice")

@@ -34,6 +34,8 @@ var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelTypeResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannelProviderType)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyChannel)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelsEnabledRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyChannelsEnabledResponse)(nil)
 
 // GetNotifyChannelEnabledStatusRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetNotifyChannelEnabledStatusRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -520,6 +522,8 @@ func (m *GetNotifyChannelsRequest) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.PageSize = val
+			case "type":
+				m.Type = vals[0]
 			}
 		}
 	}
@@ -788,5 +792,25 @@ func (m *NotifyChannel) UnmarshalURLValues(prefix string, values url.Values) err
 			}
 		}
 	}
+	return nil
+}
+
+// GetNotifyChannelsEnabledRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyChannelsEnabledRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "scopeType":
+				m.ScopeType = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetNotifyChannelsEnabledResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyChannelsEnabledResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

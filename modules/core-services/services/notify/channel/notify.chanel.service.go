@@ -139,7 +139,7 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 		return nil, pkgerrors.NewNotFoundError("Org")
 	}
 	scopeType := "org"
-	total, channels, err := s.NotifyChannelDB.ListByPage((req.PageNo-1)*req.PageSize, req.PageSize, orgId, scopeType)
+	total, channels, err := s.NotifyChannelDB.ListByPage((req.PageNo-1)*req.PageSize, req.PageSize, orgId, scopeType, req.Type)
 	var pbChannels []*pb.NotifyChannel
 	for _, channel := range channels {
 		notifyChannel := s.CovertToPbNotifyChannel(apis.Language(ctx), &channel, false)
@@ -288,17 +288,21 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 
 	language := apis.Language(ctx)
 
-	var shortMessageProviderTypes []*pb.NotifyChannelProviderType
-	shortMessageProviderTypes = append(shortMessageProviderTypes, &pb.NotifyChannelProviderType{
+	var providerTypes []*pb.NotifyChannelProviderType
+	providerTypes = append(providerTypes, &pb.NotifyChannelProviderType{
 		Name:        strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()),
 		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_SMS.String())),
+	})
+	providerTypes = append(providerTypes, &pb.NotifyChannelProviderType{
+		Name:        strings.ToLower(pb.ProviderType_DINGTALK.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_DINGTALK.String())),
 	})
 
 	var types []*pb.NotifyChannelTypeResponse
 	types = append(types, &pb.NotifyChannelTypeResponse{
 		Name:        strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
 		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_SHORT_MESSAGE.String())),
-		Providers:   shortMessageProviderTypes,
+		Providers:   providerTypes,
 	})
 
 	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
@@ -420,6 +424,35 @@ func (s *notifyChannelService) GetNotifyChannelEnabledStatus(ctx context.Context
 	return &pb.GetNotifyChannelEnabledStatusResponse{HasEnable: false}, nil
 }
 
+func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req *pb.GetNotifyChannelsEnabledRequest) (*pb.GetNotifyChannelsEnabledResponse, error) {
+	if req.ScopeType == "" {
+		return nil, pkgerrors.NewMissingParameterError("scopeId")
+	}
+	if req.ScopeType == "" {
+		req.ScopeType = "org"
+	}
+	list, err := s.NotifyChannelDB.EnabledChannelList(req.ScopeId, req.ScopeType)
+	if err != nil {
+		return nil, err
+	}
+	result := &pb.GetNotifyChannelsEnabledResponse{
+		Data: make(map[string]bool),
+	}
+	for _, v := range list {
+		result.Data[v.Type] = v.IsEnabled
+	}
+	userId := apis.GetUserID(ctx)
+	orgId := apis.GetOrgID(ctx)
+	msEnable, err := s.p.bdl.GetNotifyConfigMS(userId, orgId)
+	if err != nil {
+		return nil, err
+	}
+	if msEnable {
+		result.Data[pb.Type_SHORT_MESSAGE.String()] = true
+	}
+	return result, nil
+}
+
 func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
 	switch channelType {
 	case strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()):
@@ -438,6 +471,23 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		}
 		c["need_kms_key"] = structpb.NewStringValue("accessKeySecret")
 		c["need_kms_data"] = structpb.NewStringValue(asm.AccessKeySecret)
+		return c, nil
+	case strings.ToLower(pb.ProviderType_DINGTALK.String()):
+		bytes, err := json.Marshal(c)
+		if err != nil {
+			return nil, errors.New("Json parser failed.")
+		}
+		var dingNotice kind.DingDingWorkNotice
+		err = json.Unmarshal(bytes, &dingNotice)
+		if err != nil {
+			return nil, err
+		}
+		err = dingNotice.Validate()
+		if err != nil {
+			return nil, err
+		}
+		c["need_kms_key"] = structpb.NewStringValue("appSecret")
+		c["need_kms_data"] = structpb.NewStringValue(dingNotice.AppSecret)
 		return c, nil
 	default:
 		return nil, errors.New("Not support notify channel type")
