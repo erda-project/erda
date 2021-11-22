@@ -24,6 +24,7 @@ func (agent *Agent) Teardown(exitCode ...int) {
 		agent.ExitCode = exitCode[0]
 	}
 	agent.PreStop()
+	agent.stopWatchFiles()
 	agent.Callback()
 }
 
