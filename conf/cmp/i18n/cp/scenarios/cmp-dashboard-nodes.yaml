@@ -91,7 +91,7 @@ zh:
   DiskPressure: 磁盘压力状态
   PIDPressure: 进程压力状态
   input node Name or IP: 请输入节点名称或IP
-  The proportion of allocated resources that are not used, lower than 40% means Low, between 40% to 80% means Middle, higher than 80% means High: 已分配资源中未使用的比例，低于40%意味着闲置率低，40%至80%意味着闲置率中，大于80%意味着闲置率高
+  The proportion of allocated resources that are not used, lower than 40% means busy, between 40% to 80% means ordinary, higher than 80% means idle: 已分配资源中未使用的比例，低于40%意味着繁忙，40%至80%意味着一般，大于80%意味着空闲
   status update success: 状态修改成功
   Cordon following nodes: 冻结以下节点：
   Uncordon following nodes: 解冻以下节点：
@@ -106,9 +106,9 @@ zh:
   OutOfDisk: 磁盘资源不足
   updateNodeSuccessfully: 节点更新成功
   role: 角色
-  Low: 低
-  Middle: 中
-  High: 高
+  idle: 空闲
+  ordinary: 一般
+  busy: 繁忙
 
 en:
   role: Role

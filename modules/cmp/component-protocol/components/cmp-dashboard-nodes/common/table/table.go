@@ -313,11 +313,11 @@ func (t *Table) GetDistributionValue(req, total float64, resourceType TableType)
 func (t *Table) GetUnusedRate(unallocate, request float64, resourceType TableType) string {
 	rate := unallocate / request
 	if rate <= 0.4 {
-		return t.SDK.I18n("Low")
+		return t.SDK.I18n("busy")
 	} else if rate <= 0.8 {
-		return t.SDK.I18n("Middle")
+		return t.SDK.I18n("ordinary")
 	} else {
-		return t.SDK.I18n("High")
+		return t.SDK.I18n("idle")
 	}
 }
 
