@@ -448,14 +448,14 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 	}
 	userId := apis.GetUserID(ctx)
 	log.Infof("userid is %+v", userId)
-	msEnable, err := s.p.bdl.GetNotifyConfigMS(userId, orgId)
-	log.Info("ms enable", msEnable)
+	//msEnable, err := s.p.bdl.GetNotifyConfigMS(userId, orgId)
+	//log.Info("ms enable", msEnable)
 	if err != nil {
 		return nil, err
 	}
-	if msEnable {
-		result.Data[strings.ToLower(pb.Type_SHORT_MESSAGE.String())] = true
-	}
+	//if msEnable {
+	//	result.Data[strings.ToLower(pb.Type_SHORT_MESSAGE.String())] = true
+	//}
 	log.Infof("result is %+v", result)
 	return result, nil
 }
