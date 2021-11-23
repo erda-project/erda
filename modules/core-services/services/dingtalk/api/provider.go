@@ -15,11 +15,11 @@
 package api
 
 import (
-	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/caches"
 	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/caches"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/manager"
 )
 
