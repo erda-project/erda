@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/jinzhu/copier"
@@ -129,7 +130,7 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{req: &pb.GetNotifyChannelsRequest{PageNo: 1, PageSize: 10}}, false},
+		{"case1", args{req: &pb.GetNotifyChannelsRequest{PageNo: 1, PageSize: 10, Type: "short_message"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -157,7 +158,7 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 			})
 
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "ListByPage", func(ncdb *db.NotifyChannelDB, offset, pageSize int64, scopeId, scopeType string) (int64, []model.NotifyChannel, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "ListByPage", func(ncdb *db.NotifyChannelDB, offset, pageSize int64, scopeId, scopeType, channelType string) (int64, []model.NotifyChannel, error) {
 				var channels []model.NotifyChannel
 				for i := 0; i < 10; i++ {
 					channels = append(channels, model.NotifyChannel{Id: strconv.Itoa(i), Name: strconv.Itoa(i), Type: strconv.Itoa(i), ChannelProvider: strconv.Itoa(i)})
@@ -369,6 +370,7 @@ func Test_notifyChannelService_ConfigValidate(t *testing.T) {
 		wantErr bool
 	}{
 		{"case1", args{channelType: "aliyun_sms", c: map[string]*structpb.Value{"accessKeyId": structpb.NewStringValue("xx"), "accessKeySecret": structpb.NewStringValue("xx"), "signName": structpb.NewStringValue("xx"), "templateCode": structpb.NewStringValue("xx")}}, false},
+		{"case2", args{channelType: "dingtalk", c: map[string]*structpb.Value{"agentId": structpb.NewNumberValue(33), "appKey": structpb.NewStringValue("xx"), "appSecret": structpb.NewStringValue("xx")}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -593,6 +595,66 @@ func Test_notifyChannelService_GetNotifyChannelEnabledStatus(t *testing.T) {
 			_, err := s.GetNotifyChannelEnabledStatus(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetNotifyChannelEnabledStatus() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetNotifyChannelsEnabledRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case1",
+			args: args{
+				req: &pb.GetNotifyChannelsEnabledRequest{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+				return "1"
+			})
+			var ncdb *db.NotifyChannelDB
+			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "EnabledChannelList", func(ncdb *db.NotifyChannelDB, scopeId, scopeType string) ([]model.NotifyChannel, error) {
+				return []model.NotifyChannel{
+					{
+						Id:              "21",
+						Name:            "ss",
+						Type:            "short_message",
+						Config:          "ss",
+						ScopeType:       "ss",
+						ScopeId:         "2",
+						CreatorId:       "23",
+						ChannelProvider: "sdds",
+						IsEnabled:       false,
+						KmsKey:          "saa",
+						CreatedAt:       time.Time{},
+						UpdatedAt:       time.Time{},
+						IsDeleted:       false,
+					},
+				}, nil
+			})
+			monkey.Patch(apis.GetUserID, func(ctx context.Context) string {
+				return "1"
+			})
+			var bund *bundle.Bundle
+			monkey.PatchInstanceMethod(reflect.TypeOf(bund), "GetNotifyConfigMS", func(bdl *bundle.Bundle, userId, orgId string) (bool, error) {
+				return true, nil
+			})
+			s := &notifyChannelService{}
+			_, err := s.GetNotifyChannelsEnabled(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNotifyChannelsEnabled() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
