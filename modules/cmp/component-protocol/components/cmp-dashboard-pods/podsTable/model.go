@@ -92,6 +92,7 @@ type Status struct {
 	RenderType string `json:"renderType,omitempty"`
 	Value      string `json:"value,omitempty"`
 	Status     string `json:"status,omitempty"`
+	Breathing  bool   `json:"breathing"`
 }
 
 type Multiple struct {

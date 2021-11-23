@@ -42,14 +42,23 @@ func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.S
 		return nil
 	}
 	total := 0
-	for _, count := range countValues {
-		total += count
-	}
-	p.Data.Group = nil
+	otherStatusCount := 0
 	for state, count := range countValues {
 		total += count
+		_, ok := cmpcputil.PodStatus[state]
+		if !ok {
+			otherStatusCount += count
+			continue
+		}
+	}
+
+	p.Data.Group = nil
+	for state := range cmpcputil.PodStatus {
+		count := countValues[state]
 		p.Data.Group = append(p.Data.Group, p.ParsePodStatus(ctx, state, count, total))
 	}
+	p.Data.Group = append(p.Data.Group, p.ParsePodStatus(ctx, "others", otherStatusCount, total))
+
 	sort.Slice(p.Data.Group, func(i, j int) bool {
 		return p.Data.Group[i][0].Value > p.Data.Group[j][0].Value
 	})
@@ -66,15 +75,10 @@ func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.S
 }
 
 func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, cnt, tot int) []Pie {
-	color := cmpcputil.PodStatus[state]
-	if color == "" {
-		color = "Default"
-	}
 	percent := float64(cnt) / float64(tot) * 100
 	status := Pie{
 		Name:  cputil.I18n(ctx, state),
 		Value: cnt,
-		Color: color,
 		Total: tot,
 		Infos: []Info{
 			{

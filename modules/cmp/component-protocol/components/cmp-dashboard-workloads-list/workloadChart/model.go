@@ -22,8 +22,8 @@ type ComponentWorkloadChart struct {
 	base.DefaultProvider
 
 	Type  string `json:"type,omitempty"`
-	State State  `json:"state,omitempty"`
-	Props Props  `json:"props,omitempty"`
+	State State  `json:"state"`
+	Data  Data   `json:"data"`
 }
 
 type State struct {
@@ -46,8 +46,8 @@ type Count struct {
 	Updating  int `json:"updating"`
 }
 
-type Props struct {
-	Option Option `json:"option,omitempty"`
+type Data struct {
+	Option Option `json:"option"`
 }
 
 type Option struct {
@@ -60,8 +60,7 @@ type Option struct {
 }
 
 type Tooltip struct {
-	Trigger     string      `json:"trigger,omitempty"`
-	AxisPointer AxisPointer `json:"axisPointer,omitempty"`
+	Show bool `json:"show"`
 }
 
 type AxisPointer struct {
@@ -80,7 +79,7 @@ type Axis struct {
 type Series struct {
 	Name     string `json:"name,omitempty"`
 	Type     string `json:"type,omitempty"`
-	Stack    string `json:"stack,omitempty"`
-	BarWidth string `json:"barWidth,omitempty"`
+	BarGap   string `json:"barGap,omitempty"`
+	BarWidth int    `json:"barWidth,omitempty"`
 	Data     []*int `json:"data,omitempty"`
 }

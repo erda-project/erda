@@ -14,6 +14,8 @@ zh:
   Failed: 失败
   Updating: 更新中
   Abnormal: 异常
+  console: 控制台
+  log: 查看日志
 
   Completed: 完成
   ContainerCreating: 容器创建中
@@ -37,3 +39,5 @@ en:
   deletedWorkloadSuccessfully: Deleted workload successfully
   restartWorkloadSuccessfully: Restarted workload successfully
   updateWorkloadSuccessfully: Updated workload successfully
+  console: Console
+  log: Logs

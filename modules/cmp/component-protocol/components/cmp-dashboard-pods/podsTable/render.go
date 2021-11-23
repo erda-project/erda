@@ -714,14 +714,12 @@ func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	color := cmpcputil.PodStatus[state]
-	if color == "" {
-		color = "Default"
-	}
+	color, breathing := cmpcputil.ParsePodStatus(state)
 	return Status{
 		RenderType: "textWithBadge",
 		Value:      p.sdk.I18n(state),
 		Status:     color,
+		Breathing:  breathing,
 	}
 }
 

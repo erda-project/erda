@@ -43,19 +43,24 @@ type State struct {
 }
 
 type Values struct {
-	Namespace []string `json:"namespace,omitempty"`
+	Namespace string   `json:"namespace,omitempty"`
 	Search    string   `json:"search,omitempty"`
 	Type      []string `json:"type,omitempty"`
 }
 
 type Condition struct {
-	HaveFilter  bool     `json:"haveFilter,omitempty"`
-	Key         string   `json:"key,omitempty"`
-	Placeholder string   `json:"placeholder,omitempty"`
-	Label       string   `json:"label,omitempty"`
-	Type        string   `json:"type,omitempty"`
-	Fixed       bool     `json:"fixed"`
-	Options     []Option `json:"options,omitempty"`
+	HaveFilter  bool        `json:"haveFilter,omitempty"`
+	Key         string      `json:"key,omitempty"`
+	Placeholder string      `json:"placeholder,omitempty"`
+	Label       string      `json:"label,omitempty"`
+	Type        string      `json:"type,omitempty"`
+	Fixed       bool        `json:"fixed"`
+	Options     []Option    `json:"options,omitempty"`
+	CustomProps CustomProps `json:"customProps,omitempty"`
+}
+
+type CustomProps struct {
+	Mode string `json:"mode,omitempty"`
 }
 
 type Option struct {

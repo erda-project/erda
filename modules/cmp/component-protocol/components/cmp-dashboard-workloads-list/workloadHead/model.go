@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package workloadHead
 
 import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-type FilterContainer struct {
+type ComponentWorkloadHead struct {
 	base.DefaultProvider
-	Type  string `json:"type"`
-	Props Props  `json:"props"`
+	Props Props `json:"props"`
 }
 
 type Props struct {
-	WhiteBg bool `json:"whiteBg"`
+	IsTopHead bool `json:"isTopHead"`
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workloadTitle
+package workloadTotal
 
 import (
 	"encoding/json"
@@ -53,7 +53,7 @@ func TestComponentWorkloadTitle_GenComponentState(t *testing.T) {
 		t.Errorf("test failed, %v", err)
 	}
 
-	f := &ComponentWorkloadTitle{}
+	f := &ComponentWorkloadTotal{}
 	if err := f.GenComponentState(component); err != nil {
 		t.Errorf("test failed, %v", err)
 	}

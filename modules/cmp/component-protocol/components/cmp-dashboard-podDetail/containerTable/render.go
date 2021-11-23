@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	data2 "github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -74,7 +74,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	}
 	obj := resp.Data()
 
-	var data []Data
+	var datas []Data
 	containerStatuses := obj.Slice("status", "containerStatuses")
 	for _, containerStatus := range containerStatuses {
 		states := containerStatus.Map("state")
@@ -83,22 +83,21 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			status = parseContainerStatus(ctx, k)
 		}
 
-		containerId := strings.TrimPrefix(containerStatus.String("containerID"), "docker://")
+		containerId := getContainerID(containerStatus.String("containerID"))
 		restartCountStr := containerStatus.String("restartCount") + " " + cputil.I18n(ctx, "times")
 		var restartCount interface{}
 		lastContainerState := containerStatus.Map("lastState")
 		for _, v := range lastContainerState {
-			lastState, err := data2.Convert(v)
+			lastState, err := data.Convert(v)
 			if err != nil {
 				continue
 			}
-			lastContainerID := strings.TrimPrefix(lastState.String("containerID"), "docker://")
+			lastContainerID := getContainerID(lastState.String("containerID"))
 			if lastContainerID != "" {
 				restartCount = Operate{
 					Operations: map[string]Operation{
 						"log": {
 							Key:    "checkPrevLog",
-							Text:   restartCountStr,
 							Reload: false,
 							Meta: map[string]interface{}{
 								"hasRestarted":  true,
@@ -109,7 +108,8 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 							},
 						},
 					},
-					RenderType: "tableOperation",
+					RenderType: "linkText",
+					Value:      restartCountStr,
 				}
 				break
 			}
@@ -118,7 +118,7 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			restartCount = restartCountStr
 		}
 
-		data = append(data, Data{
+		datas = append(datas, Data{
 			Status: status,
 			Ready:  containerStatus.String("ready"),
 			Name:   containerStatus.String("name"),
@@ -157,11 +157,11 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 			},
 		})
 	}
-	sort.Slice(data, func(i, j int) bool {
-		return data[i].Name < data[j].Name
+	sort.Slice(datas, func(i, j int) bool {
+		return datas[i].Name < datas[j].Name
 	})
 	containerTable.Data = map[string][]Data{
-		"list": data,
+		"list": datas,
 	}
 
 	containerTable.Props.SortDirections = []string{"descend", "ascend"}
@@ -171,32 +171,27 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	containerTable.Props.Scroll.X = 1000
 	containerTable.Props.Columns = []Column{
 		{
-			Width:     80,
 			DataIndex: "status",
 			Title:     cputil.I18n(ctx, "status"),
 		},
 		{
-			Width:     80,
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
 		},
 		{
-			Width:     120,
 			DataIndex: "name",
 			Title:     cputil.I18n(ctx, "name"),
 		},
 		{
-			Width:     400,
 			DataIndex: "images",
 			Title:     cputil.I18n(ctx, "images"),
 		},
 		{
-			Width:     80,
 			DataIndex: "restartCount",
 			Title:     cputil.I18n(ctx, "restartCount"),
+			Align:     "right",
 		},
 		{
-			Width:     120,
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
 			Fixed:     "right",
@@ -240,22 +235,30 @@ func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
 
 func parseContainerStatus(ctx context.Context, state string) Status {
 	color := ""
+	breathing := false
 	switch state {
 	case "running":
-		color = "green"
+		color = "success"
+		breathing = true
 	case "waiting":
-		color = "steelblue"
+		color = "processing"
 	case "terminated":
-		color = "red"
+		color = "error"
 	}
 	return Status{
-		RenderType: "tagsRow",
-		Size:       "default",
-		Value: StatusValue{
-			Label: cputil.I18n(ctx, state),
-			Color: color,
-		},
+		RenderType: "textWithBadge",
+		Value:      cputil.I18n(ctx, state),
+		Status:     color,
+		Breathing:  breathing,
 	}
+}
+
+func getContainerID(id string) string {
+	splits := strings.Split(id, "://")
+	if len(splits) != 2 {
+		return id
+	}
+	return splits[1]
 }
 
 func init() {

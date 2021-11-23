@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
-	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -160,6 +159,7 @@ func (t *ComponentEventTable) RenderList() error {
 		UserID:      userID,
 		OrgID:       orgID,
 		Type:        apistructs.K8SEvent,
+		Namespace:   t.State.FilterValues.Namespace,
 		ClusterName: t.State.ClusterName,
 	}
 
@@ -167,7 +167,7 @@ func (t *ComponentEventTable) RenderList() error {
 		list []types.APIObject
 		err  error
 	)
-	list, err = cputil2.ListSteveResourceByNamespaces(t.ctx, t.server, &req, t.State.FilterValues.Namespace)
+	list, err = t.server.ListSteveResource(t.ctx, &req)
 	if err != nil {
 		return err
 	}
@@ -175,9 +175,6 @@ func (t *ComponentEventTable) RenderList() error {
 	var items []Item
 	for _, item := range list {
 		obj := item.Data()
-		if t.State.FilterValues.Namespace != nil && !contain(t.State.FilterValues.Namespace, obj.String("metadata", "namespace")) {
-			continue
-		}
 		if t.State.FilterValues.Type != nil && !contain(t.State.FilterValues.Type, obj.String("_type")) {
 			continue
 		}
@@ -319,55 +316,48 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 			{
 				DataIndex: "lastSeen",
 				Title:     cputil.I18n(ctx, "lastSeen"),
-				Width:     80,
 				Sorter:    true,
+				Align:     "right",
 			},
 			{
 				DataIndex: "type",
 				Title:     cputil.I18n(ctx, "eventType"),
-				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "reason",
 				Title:     cputil.I18n(ctx, "reason"),
-				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "object",
 				Title:     cputil.I18n(ctx, "object"),
-				Width:     150,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "source",
 				Title:     cputil.I18n(ctx, "source"),
-				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "message",
 				Title:     cputil.I18n(ctx, "message"),
-				Width:     200,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "count",
 				Title:     cputil.I18n(ctx, "count"),
-				Width:     60,
 				Sorter:    true,
+				Align:     "right",
 			},
 			{
 				DataIndex: "name",
 				Title:     cputil.I18n(ctx, "name"),
-				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "namespace",
 				Title:     cputil.I18n(ctx, "namespace"),
-				Width:     120,
 				Sorter:    true,
 			},
 		},

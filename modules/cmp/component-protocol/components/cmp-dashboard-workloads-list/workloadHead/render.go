@@ -15,9 +15,21 @@
 package workloadHead
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider("cmp-dashboard-workloads-list", "workloadHead")
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "workloadHead", func() servicehub.Provider {
+		return &ComponentWorkloadHead{}
+	})
+}
+
+func (w *ComponentWorkloadHead) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	component.Props = Props{IsTopHead: true}
+	return nil
 }

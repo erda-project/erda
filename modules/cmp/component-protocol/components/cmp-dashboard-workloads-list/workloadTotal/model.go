@@ -12,23 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workloadTitle
+package workloadTotal
 
 import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type ComponentWorkloadTitle struct {
+type ComponentWorkloadTotal struct {
 	base.DefaultProvider
 
 	Type  string `json:"type,omitempty"`
-	Props Props  `json:"props,omitempty"`
+	Data  Data   `json:"data"`
 	State State  `json:"state,omitempty"`
 }
 
-type Props struct {
-	Title string `json:"title,omitempty"`
-	Size  string `json:"size,omitempty"`
+type Data struct {
+	Data DataInData `json:"data"`
+}
+
+type DataInData struct {
+	Main string `json:"main,omitempty"`
+	Desc string `json:"desc,omitempty"`
 }
 
 type State struct {

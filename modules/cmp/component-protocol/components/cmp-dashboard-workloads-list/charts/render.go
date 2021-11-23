@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package charts
 
 import (
 	"context"
@@ -22,13 +22,14 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func (fc *FilterContainer) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	c.Props = Props{WhiteBg: true}
-	return nil
+func init() {
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "charts", func() servicehub.Provider {
+		return &ComponentCharts{}
+	})
 }
 
-func init() {
-	base.InitProviderWithCreator("cmp-dashboard-pods", "filterContainer", func() servicehub.Provider {
-		return &FilterContainer{}
-	})
+func (w *ComponentCharts) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	component.Props = Props{WhiteBg: true}
+	return nil
 }

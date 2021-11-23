@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workloadTitle
+package workloadTotal
 
 import (
 	"context"
@@ -26,32 +26,32 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "workloadTitle", func() servicehub.Provider {
-		return &ComponentWorkloadTitle{}
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "workloadTotal", func() servicehub.Provider {
+		return &ComponentWorkloadTotal{}
 	})
 }
 
-func (w *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+func (w *ComponentWorkloadTotal) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	if err := w.GenComponentState(component); err != nil {
-		return fmt.Errorf("failed to gen workloadTitle component state, %v", err)
+		return fmt.Errorf("failed to gen workloadTotal component state, %v", err)
 	}
 
 	count := addCount(w.State.Values.DeploymentsCount) + addCount(w.State.Values.DaemonSetCount) +
 		addCount(w.State.Values.StatefulSetCount) + addCount(w.State.Values.JobCount) + addCount(w.State.Values.CronJobCount)
 
-	w.Props.Title = fmt.Sprintf("%s: %d", cputil.I18n(ctx, "totalWorkload"), count)
-	w.Props.Size = "small"
+	w.Data.Data.Desc = cputil.I18n(ctx, "totalWorkload")
+	w.Data.Data.Main = fmt.Sprintf("%d", count)
 	w.Transfer(component)
 	return nil
 }
 
-func (w *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTotal) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -62,8 +62,10 @@ func (w *ComponentWorkloadTitle) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
-func (w *ComponentWorkloadTitle) Transfer(c *cptype.Component) {
-	c.Props = w.Props
+func (w *ComponentWorkloadTotal) Transfer(c *cptype.Component) {
+	c.Data = map[string]interface{}{
+		"data": w.Data.Data,
+	}
 	c.State = map[string]interface{}{
 		"values": w.State.Values,
 	}

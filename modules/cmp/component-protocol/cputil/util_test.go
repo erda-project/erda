@@ -31,12 +31,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err := ParseWorkloadStatus(deployment)
+	status, color, breathing, err := ParseWorkloadStatus(deployment)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Abnormal" || color != "red" {
+	if status != "Abnormal" || color != "error" {
 		t.Errorf("test failed, deployment status is unexpected")
+	}
+	if breathing {
+		t.Errorf("test failed, deployment breathing is unexpected")
 	}
 	fields[2], fields[3] = "0", "1"
 	deployment = data.Object{
@@ -45,12 +48,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(deployment)
+	status, color, breathing, err = ParseWorkloadStatus(deployment)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Abnormal" || color != "red" {
+	if status != "Abnormal" || color != "error" {
 		t.Errorf("test failed, deployment status is unexpected")
+	}
+	if breathing {
+		t.Errorf("test failed, deployment breathing is unexpected")
 	}
 
 	fields = make([]string, 11, 11)
@@ -61,12 +67,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(daemonset)
+	status, color, breathing, err = ParseWorkloadStatus(daemonset)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Active" || color != "green" {
+	if status != "Active" || color != "success" {
 		t.Errorf("test failed, daemonset status is unexpected")
+	}
+	if !breathing {
+		t.Errorf("test failed, daemonset breathing is unexpected")
 	}
 	fields[1], fields[3] = "0", "1"
 	daemonset = data.Object{
@@ -75,12 +84,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(daemonset)
+	status, color, breathing, err = ParseWorkloadStatus(daemonset)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Abnormal" || color != "red" {
+	if status != "Abnormal" || color != "error" {
 		t.Errorf("test failed, daemonset status is unexpected")
+	}
+	if breathing {
+		t.Errorf("test failed, daemonset breathing is unexpected")
 	}
 
 	fields = make([]string, 5, 5)
@@ -91,12 +103,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(statefulset)
+	status, color, breathing, err = ParseWorkloadStatus(statefulset)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Active" || color != "green" {
+	if status != "Active" || color != "success" {
 		t.Errorf("test failed, statefulset status is unexpected")
+	}
+	if !breathing {
+		t.Errorf("test failed, statefulset breathing is unexpected")
 	}
 	fields[1] = "0/1"
 	statefulset = data.Object{
@@ -105,12 +120,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(statefulset)
+	status, color, breathing, err = ParseWorkloadStatus(statefulset)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Abnormal" || color != "red" {
+	if status != "Abnormal" || color != "error" {
 		t.Errorf("test failed, statefulset status is unexpected")
+	}
+	if breathing {
+		t.Errorf("test failed, statefulset breathing is unexpected")
 	}
 
 	fields = make([]string, 7, 7)
@@ -124,12 +142,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"field":  0,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(job)
+	status, color, breathing, err = ParseWorkloadStatus(job)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Active" || color != "green" {
+	if status != "Active" || color != "success" {
 		t.Errorf("test failed, job status is unexpected")
+	}
+	if !breathing {
+		t.Errorf("test failed, job breathing is unexpected")
 	}
 	job = data.Object{
 		"kind": "Job",
@@ -141,12 +162,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"failed": 1,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(job)
+	status, color, breathing, err = ParseWorkloadStatus(job)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Failed" || color != "red" {
+	if status != "Failed" || color != "error" {
 		t.Errorf("test failed, job status is unexpected")
+	}
+	if breathing {
+		t.Errorf("test failed, job breathing is unexpected")
 	}
 	job = data.Object{
 		"kind": "Job",
@@ -157,12 +181,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"succeeded": 1,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(job)
+	status, color, breathing, err = ParseWorkloadStatus(job)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Succeeded" || color != "steelblue" {
+	if status != "Succeeded" || color != "success" {
 		t.Errorf("test failed, job status is unexpected")
+	}
+	if breathing {
+		t.Errorf("test failed, job breathing is unexpected")
 	}
 
 	fields = make([]string, 7, 7)
@@ -172,12 +199,15 @@ func TestParseWorkloadStatus(t *testing.T) {
 			"fields": fields,
 		},
 	}
-	status, color, err = ParseWorkloadStatus(cronjob)
+	status, color, breathing, err = ParseWorkloadStatus(cronjob)
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Active" || color != "green" {
+	if status != "Active" || color != "success" {
 		t.Errorf("test failed, cronjob status is unexpected")
+	}
+	if !breathing {
+		t.Errorf("test failed, cronjob breathing is unexpected")
 	}
 }
 

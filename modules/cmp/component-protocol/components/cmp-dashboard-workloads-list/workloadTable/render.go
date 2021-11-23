@@ -150,6 +150,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	steveRequest := apistructs.SteveRequest{
 		UserID:      userID,
 		OrgID:       orgID,
+		Namespace:   w.State.Values.Namespace,
 		ClusterName: w.State.ClusterName,
 	}
 
@@ -172,21 +173,18 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			list []types.APIObject
 			err  error
 		)
-		list, err = cmpcputil.ListSteveResourceByNamespaces(w.ctx, w.server, &steveRequest, w.State.Values.Namespace)
+		list, err = w.server.ListSteveResource(w.ctx, &steveRequest)
 		if err != nil {
 			return err
 		}
 
 		for _, obj := range list {
 			workload := obj.Data()
-			if w.State.Values.Namespace != nil && !contain(w.State.Values.Namespace, workload.String("metadata", "namespace")) {
-				continue
-			}
 			if w.State.Values.Search != "" && !strings.Contains(workload.String("metadata", "name"), w.State.Values.Search) {
 				continue
 			}
 
-			statusValue, statusColor, err := cmpcputil.ParseWorkloadStatus(workload)
+			statusValue, statusColor, breathing, err := cmpcputil.ParseWorkloadStatus(workload)
 			if err != nil {
 				logrus.Error(err)
 				continue
@@ -195,34 +193,57 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				continue
 			}
 			status := Status{
-				RenderType: "text",
+				RenderType: "textWithBadge",
 				Value:      w.sdk.I18n(statusValue),
-				StyleConfig: StyleConfig{
-					Color: statusColor,
-				},
+				Status:     statusColor,
+				Breathing:  breathing,
 			}
 
 			name := workload.String("metadata", "name")
 			namespace := workload.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", kind, namespace, name)
-			link := Link{
-				RenderType: "linkText",
-				Value:      name,
-				Operations: map[string]interface{}{
-					"click": LinkOperation{
-						Reload: false,
-						Key:    "openWorkloadDetail",
-					},
-				},
-			}
 
 			fields := workload.StringSlice("metadata", "fields")
 			item := Item{
-				ID:        id,
-				Status:    status,
-				Name:      link,
-				Namespace: namespace,
-				Kind:      workload.String("kind"),
+				ID:     id,
+				Status: status,
+				Name: Multiple{
+					RenderType: "multiple",
+					Direction:  "row",
+					Renders: []interface{}{
+						[]interface{}{
+							TextWithIcon{
+								RenderType: "icon",
+								Icon:       "default_k8s_workload",
+							},
+						},
+						[]interface{}{
+							Link{
+								RenderType: "linkText",
+								Value:      name,
+								Operations: map[string]interface{}{
+									"click": LinkOperation{
+										Reload: false,
+										Key:    "openWorkloadDetail",
+									},
+								},
+							},
+							TextWithIcon{
+								RenderType: "subText",
+								Value:      fmt.Sprintf("%s: %s", w.sdk.I18n("namespace"), namespace),
+							},
+						},
+					},
+				},
+				WorkloadName: name,
+				Namespace:    namespace,
+				Kind: Kind{
+					RenderType: "tagsRow",
+					Size:       "normal",
+					Value: KindValue{
+						Label: workload.String("kind"),
+					},
+				},
 			}
 
 			switch kind {
@@ -338,7 +359,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "name":
 				return func(i int, j int) bool {
-					less := items[i].Name.Value < items[j].Name.Value
+					less := items[i].WorkloadName < items[j].WorkloadName
 					if ascend {
 						return less
 					}
@@ -354,7 +375,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "kind":
 				return func(i int, j int) bool {
-					less := items[i].Kind < items[j].Kind
+					less := items[i].Kind.Value.Label < items[j].Kind.Value.Label
 					if ascend {
 						return less
 					}
@@ -488,111 +509,106 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	statusColumn := Column{
 		DataIndex: "status",
 		Title:     cputil.I18n(ctx, "status"),
-		Width:     120,
 		Sorter:    true,
 	}
 	kindColumn := Column{
 		DataIndex: "kind",
 		Title:     cputil.I18n(ctx, "workloadKind"),
-		Width:     120,
 		Sorter:    true,
 	}
 	nameColumn := Column{
 		DataIndex: "name",
 		Title:     cputil.I18n(ctx, "name"),
-		Width:     180,
 		Sorter:    true,
 	}
 	namespaceColumn := Column{
 		DataIndex: "namespace",
 		Title:     cputil.I18n(ctx, "namespace"),
-		Width:     180,
 		Sorter:    true,
 	}
 	ageColumn := Column{
 		DataIndex: "age",
 		Title:     cputil.I18n(ctx, "age"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	readyColumn := Column{
 		DataIndex: "ready",
 		Title:     cputil.I18n(ctx, "ready"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	upToDateColumn := Column{
 		DataIndex: "upToDate",
 		Title:     cputil.I18n(ctx, "upToDate"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	availableColumn := Column{
 		DataIndex: "available",
 		Title:     cputil.I18n(ctx, "available"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	desiredColumn := Column{
 		DataIndex: "desired",
 		Title:     cputil.I18n(ctx, "desired"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	currentColumn := Column{
 		DataIndex: "current",
 		Title:     cputil.I18n(ctx, "current"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	completionsColumn := Column{
 		DataIndex: "completions",
 		Title:     cputil.I18n(ctx, "completions"),
-		Width:     100,
 		Sorter:    true,
+		Align:     "right",
 	}
 	durationColumn := Column{
 		DataIndex: "duration",
 		Title:     cputil.I18n(ctx, "jobDuration"),
-		Width:     120,
 		Sorter:    true,
+		Align:     "right",
 	}
 	scheduleColumn := Column{
 		DataIndex: "schedule",
 		Title:     cputil.I18n(ctx, "schedule"),
-		Width:     100,
 		Sorter:    true,
 	}
 	lastScheduleColumn := Column{
 		DataIndex: "lastSchedule",
 		Title:     cputil.I18n(ctx, "lastSchedule"),
-		Width:     120,
 		Sorter:    true,
+		Align:     "right",
 	}
 
 	if len(w.State.Values.Kind) != 1 {
 		w.Props.Columns = []Column{
-			statusColumn, kindColumn, nameColumn, namespaceColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, namespaceColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.DeploymentType {
 		w.Props.Columns = []Column{
-			statusColumn, kindColumn, nameColumn, namespaceColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, namespaceColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.DaemonSetType {
 		w.Props.Columns = []Column{
-			statusColumn, kindColumn, nameColumn, namespaceColumn, desiredColumn, currentColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, namespaceColumn, desiredColumn, currentColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.StatefulSetType {
 		w.Props.Columns = []Column{
-			statusColumn, kindColumn, nameColumn, namespaceColumn, readyColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, namespaceColumn, readyColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.JobType {
 		w.Props.Columns = []Column{
-			statusColumn, kindColumn, nameColumn, namespaceColumn, completionsColumn, durationColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, namespaceColumn, completionsColumn, durationColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.CronJobType {
 		w.Props.Columns = []Column{
-			statusColumn, kindColumn, nameColumn, namespaceColumn, scheduleColumn, lastScheduleColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, namespaceColumn, scheduleColumn, lastScheduleColumn, ageColumn,
 		}
 	}
 

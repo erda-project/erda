@@ -90,7 +90,7 @@ func TestComponentEventTable_GenComponentState(t *testing.T) {
 			},
 			"total": 100,
 			"filterValues": FilterValues{
-				Namespace: []string{"test1"},
+				Namespace: "test1",
 				Type:      []string{"test1"},
 			},
 		},
@@ -251,7 +251,7 @@ func TestComponentEventTable_Transfer(t *testing.T) {
 		State: State{
 			ClusterName: "testCluster",
 			FilterValues: FilterValues{
-				Namespace: []string{"default"},
+				Namespace: "default",
 				Type:      []string{"Normal"},
 				Search:    "test",
 			},
@@ -271,7 +271,6 @@ func TestComponentEventTable_Transfer(t *testing.T) {
 				{
 					DataIndex: "test",
 					Title:     "test",
-					Width:     120,
 					Sorter:    true,
 				},
 			},

@@ -30,17 +30,13 @@ type ComponentWorkloadStatus struct {
 
 	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props,omitempty"`
-	Data  Data   `json:"data,omitempty"`
 	State State  `json:"state,omitempty"`
 }
 
 type Props struct {
-	RequestIgnore []string `json:"requestIgnore,omitempty"`
-	Size          string   `json:"size,omitempty"`
-}
-
-type Data struct {
-	Labels Labels `json:"labels,omitempty"`
+	Text      string `json:"text,omitempty"`
+	Status    string `json:"status,omitempty"`
+	Breathing bool   `json:"breathing"`
 }
 
 type Labels struct {

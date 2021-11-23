@@ -23,7 +23,6 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/chartContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/charts"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/filter"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/filterContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/page"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsCharts"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"

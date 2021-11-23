@@ -23,22 +23,13 @@ type PodStatus struct {
 
 	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
-	Data  Data   `json:"data,omitempty"`
 	State State  `json:"state,omitempty"`
 }
 
 type Props struct {
-	RequestIgnore []string `json:"requestIgnore,omitempty"`
-	Size          string   `json:"size,omitempty"`
-}
-
-type Data struct {
-	Labels Labels `json:"labels,omitempty"`
-}
-
-type Labels struct {
-	Label string `json:"label,omitempty"`
-	Color string `json:"color,omitempty"`
+	Text      string `json:"text,omitempty"`
+	Status    string `json:"status,omitempty"`
+	Breathing bool   `json:"breathing"`
 }
 
 type State struct {

@@ -31,11 +31,8 @@ func TestComponentContainerTable_Transfer(t *testing.T) {
 				{
 					Status: Status{
 						RenderType: "text",
-						Size:       "small",
-						Value: StatusValue{
-							Label: "test",
-							Color: "test",
-						},
+						Value:      "testValue",
+						Status:     "testStatus",
 					},
 					Ready: "true",
 					Name:  "test",
@@ -72,7 +69,6 @@ func TestComponentContainerTable_Transfer(t *testing.T) {
 			},
 			Columns: []Column{
 				{
-					Width:     120,
 					DataIndex: "test",
 					Title:     "test",
 					Fixed:     "test",

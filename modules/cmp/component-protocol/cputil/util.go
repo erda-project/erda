@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -42,7 +41,7 @@ import (
 )
 
 // ParseWorkloadStatus get status for workloads from .metadata.fields
-func ParseWorkloadStatus(obj data.Object) (string, string, error) {
+func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 	kind := obj.String("kind")
 	fields := obj.StringSlice("metadata", "fields")
 
@@ -62,53 +61,53 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 			}
 		}
 		if failure {
-			return "Abnormal", "red", nil
+			return "Abnormal", "error", false, nil
 		}
 		if available && progressing {
-			return "Active", "green", nil
+			return "Active", "success", true, nil
 		}
 		if available || progressing {
-			return "Updating", "darkcyan", nil
+			return "Updating", "processing", true, nil
 		}
-		return "Abnormal", "red", nil
+		return "Abnormal", "error", false, nil
 	case "DaemonSet":
 		if len(fields) != 11 {
-			return "", "", fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
+			return "", "", false, fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
 		}
 		// desired and ready
 		if fields[1] == fields[3] {
-			return "Active", "green", nil
+			return "Active", "success", true, nil
 		} else {
-			return "Abnormal", "red", nil
+			return "Abnormal", "error", false, nil
 		}
 	case "StatefulSet":
 		if len(fields) != 5 {
-			return "", "", fmt.Errorf("statefulSet %s has invalid fields length", obj.String("metadata", "name"))
+			return "", "", false, fmt.Errorf("statefulSet %s has invalid fields length", obj.String("metadata", "name"))
 		}
 		//
 		readyPods := strings.Split(fields[1], "/")
 		if readyPods[0] == readyPods[1] {
-			return "Active", "green", nil
+			return "Active", "success", true, nil
 		} else {
-			return "Abnormal", "red", nil
+			return "Abnormal", "error", false, nil
 		}
 	case "Job":
 		if len(fields) != 7 {
-			return "", "", fmt.Errorf("job %s has invalid fields length", obj.String("metadata", "name"))
+			return "", "", false, fmt.Errorf("job %s has invalid fields length", obj.String("metadata", "name"))
 		}
 		active := obj.String("status", "active")
 		failed := obj.String("status", "failed")
 		if failed != "" && failed != "0" {
-			return "Failed", "red", nil
+			return "Failed", "error", false, nil
 		} else if active != "" && active != "0" {
-			return "Active", "green", nil
+			return "Active", "success", true, nil
 		} else {
-			return "Succeeded", "steelblue", nil
+			return "Succeeded", "success", false, nil
 		}
 	case "CronJob":
-		return "Active", "green", nil
+		return "Active", "success", true, nil
 	default:
-		return "", "", fmt.Errorf("valid workload kind: %v", kind)
+		return "", "", false, fmt.Errorf("valid workload kind: %v", kind)
 	}
 }
 
@@ -386,36 +385,6 @@ func GetAllNamespacesFromCache(ctx context.Context, steveServer cmp.SteveServer,
 	return namespaces, nil
 }
 
-// ListSteveResourceByNamespaces list steve resource in target namespaces
-func ListSteveResourceByNamespaces(ctx context.Context, steveServer cmp.SteveServer, req *apistructs.SteveRequest, namespaces []string) ([]types.APIObject, error) {
-	newReq := &apistructs.SteveRequest{
-		NoAuthentication: req.NoAuthentication,
-		UserID:           req.UserID,
-		OrgID:            req.OrgID,
-		Type:             req.Type,
-		ClusterName:      req.ClusterName,
-		LabelSelector:    req.LabelSelector,
-		FieldSelector:    req.FieldSelector,
-	}
-	if len(namespaces) == 0 {
-		return steveServer.ListSteveResource(ctx, newReq)
-	}
-
-	var (
-		list, nsList []types.APIObject
-		err          error
-	)
-	for _, namespace := range namespaces {
-		newReq.Namespace = namespace
-		nsList, err = steveServer.ListSteveResource(ctx, newReq)
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, nsList...)
-	}
-	return list, nil
-}
-
 // PodStatus is a map of pod status to normal status
 var PodStatus = map[string]string{
 	"Completed":         "success",
@@ -429,4 +398,16 @@ var PodStatus = map[string]string{
 	"Running":           "success",
 	"Terminating":       "processing",
 	"OOMKilled":         "error",
+}
+
+func ParsePodStatus(state string) (string, bool) {
+	breathing := false
+	if state == "Running" || state == "ContainerCreating" {
+		breathing = true
+	}
+	status := PodStatus[state]
+	if status == "" {
+		status = "default"
+	}
+	return status, breathing
 }

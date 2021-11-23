@@ -8,12 +8,10 @@ hierarchy:
     addPodContainer:
       - addPodFilter
       - addPodFileEditor
-    filterContainer:
-      - filter
     page:
       - topHead
-      - filterContainer
       - charts
+      - tabs
       - tabsTable
       - addPodDrawer
     charts:
@@ -26,7 +24,7 @@ hierarchy:
     tableContainer:
       - tabsTable
     tabsTable:
-      slot: tabs
+      slot: filter
       table: podsTable
 
 components:
@@ -40,8 +38,6 @@ components:
     type: FileEditor
   addPodButton:
     type: Button
-  filterContainer:
-    type: Container
   filter:
     type: ContractiveFilter
   page:
@@ -72,7 +68,6 @@ rendering:
     - name: topHead
     - name: addPodButton
     - name: addPodContainer
-    - name: filterContainer
     - name: filter
       state:
         - name: "clusterName"
