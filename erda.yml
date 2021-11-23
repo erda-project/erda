@@ -677,6 +677,8 @@ services:
       TRACE_GROUP_ID: "spot-monitor-trace"
       TRACE_TTL: "168h"
       LOG_LEVEL: INFO
+      EVENT_GROUP_ID: "spot-monitor-event"
+      ENTITY_GROUP_ID: "spot-monitor-entity"
     resources:
       cpu: ${request_cpu:0.5}
       mem: ${request_mem:1024}
