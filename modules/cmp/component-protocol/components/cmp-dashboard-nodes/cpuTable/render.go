@@ -39,11 +39,11 @@ func (ct *CpuInfoTable) GetProps() map[string]interface{} {
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
-			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Fixed: "left"},
 			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true},
-			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true},
-			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true},
-			{DataIndex: "UnusedRate", Title: ct.SDK.I18n("unusedRate"), Sortable: true, TitleTip: ct.SDK.I18n("The proportion of allocated resources that are not used")},
+			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Fixed: "left"},
+			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Align: "right"},
+			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Align: "right"},
+			{DataIndex: "UnusedRate", Title: ct.SDK.I18n("unusedRate"), Sortable: true, TitleTip: ct.SDK.I18n("The proportion of allocated resources that are not used, lower than 40% means Low, between 40% to 80% means Middle, higher than 80% means High")},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true},
 			{DataIndex: "Role", Title: "Role", Sortable: true},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true},
@@ -58,12 +58,12 @@ func (ct *CpuInfoTable) GetProps() map[string]interface{} {
 
 func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp.AllocatedRes) ([]table.RowItem, error) {
 	var (
-		err                     error
-		status                  *table.SteveStatus
-		distribution, dr, usage table.DistributionValue
-		clusterName             string
-		nodeLabels              []string
-		items                   []table.RowItem
+		err                 error
+		status              *table.SteveStatus
+		distribution, usage table.DistributionValue
+		clusterName         string
+		nodeLabels          []string
+		items               []table.RowItem
 	)
 	if ct.SDK.InParams["clusterName"] != nil {
 		clusterName = ct.SDK.InParams["clusterName"].(string)
@@ -94,7 +94,6 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 		}
 		usage = ct.GetUsageValue(used*1000, float64(requestQty.Value())*1000, table.Cpu)
 		unused := math.Max(float64(cpuRequest)-used*1000, 0.0)
-		dr = ct.GetUnusedRate(unused, float64(cpuRequest), table.Cpu)
 		roleStr := c.StringSlice("metadata", "fields")[2]
 
 		ip := c.StringSlice("metadata", "fields")[5]
@@ -151,12 +150,7 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 				Status:     table.GetDistributionStatus(usage.Percent),
 				Tip:        usage.Text,
 			},
-			UnusedRate: table.Distribution{
-				RenderType: "progress",
-				Value:      dr.Percent,
-				Status:     table.GetDistributionStatus(dr.Percent),
-				Tip:        dr.Text,
-			},
+			UnusedRate:      ct.GetUnusedRate(unused, float64(cpuRequest), table.Cpu),
 			Operate:         ct.GetOperate(c.String("metadata", "name")),
 			BatchOperations: batchOperations,
 		},

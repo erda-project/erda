@@ -4,16 +4,14 @@ hierarchy:
   root: page
   structure:
     page:
-      - filterContainer
       - chartsContainer
+      - tabs
       - tabsTable
       - addLabelModal
       - cleanData
       - batchOperationTipModal
-    filterContainer:
-      - filter
     tabsTable:
-      slot: tabs
+      slot: filter
       table: table
     chartsContainer:
       - charts
@@ -24,8 +22,6 @@ hierarchy:
 
 components:
   page:
-    type: Container
-  filterContainer:
     type: Container
   filter:
     type: ContractiveFilter
@@ -57,7 +53,6 @@ rendering:
   __DefaultRendering__:
     - name: page
     - name: tabsTable
-    - name: filterContainer
     - name: filter
     - name: tabs
     - name: batchOperationTipModal

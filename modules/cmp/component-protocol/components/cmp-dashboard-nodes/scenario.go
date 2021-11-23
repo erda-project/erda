@@ -21,7 +21,6 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/chartsContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/cleanData"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/cpuChart"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/filterContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/memChart"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/page"

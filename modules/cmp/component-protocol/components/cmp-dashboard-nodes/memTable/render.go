@@ -35,11 +35,11 @@ func (mt *MemInfoTable) Init(sdk *cptype.SDK) {
 
 func (mt *MemInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp.AllocatedRes) ([]table.RowItem, error) {
 	var (
-		err                     error
-		status                  *table.SteveStatus
-		distribution, dr, usage table.DistributionValue
-		clusterName             string
-		items                   []table.RowItem
+		err                 error
+		status              *table.SteveStatus
+		distribution, usage table.DistributionValue
+		clusterName         string
+		items               []table.RowItem
 	)
 	if mt.SDK.InParams["clusterName"] != nil {
 		clusterName = mt.SDK.InParams["clusterName"].(string)
@@ -64,7 +64,6 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 		}
 		usage = mt.GetUsageValue(used, float64(requestQty.Value()), table.Memory)
 		unused := math.Max(float64(memRequest)-used, 0.0)
-		dr = mt.GetUnusedRate(unused, float64(memRequest), table.Memory)
 		roleStr := c.StringSlice("metadata", "fields")[2]
 		ip := c.StringSlice("metadata", "fields")[5]
 		if roleStr == "<none>" {
@@ -121,12 +120,7 @@ func (mt *MemInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 				Status:     table.GetDistributionStatus(usage.Percent),
 				Tip:        usage.Text,
 			},
-			UnusedRate: table.Distribution{
-				RenderType: "progress",
-				Value:      dr.Percent,
-				Status:     table.GetDistributionStatus(dr.Percent),
-				Tip:        dr.Text,
-			},
+			UnusedRate:      mt.GetUnusedRate(unused, float64(memRequest), table.Memory),
 			Operate:         mt.GetOperate(c.String("metadata", "name")),
 			BatchOperations: batchOperations,
 		},
@@ -141,10 +135,10 @@ func (mt *MemInfoTable) GetProps() map[string]interface{} {
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
-			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Fixed: "left"},
 			{DataIndex: "Node", Title: mt.SDK.I18n("node"), Sortable: true},
-			{DataIndex: "Distribution", Title: mt.SDK.I18n("distribution"), Sortable: true},
-			{DataIndex: "Usage", Title: mt.SDK.I18n("usedRate"), Sortable: true},
+			{DataIndex: "Status", Title: mt.SDK.I18n("status"), Sortable: true, Fixed: "left"},
+			{DataIndex: "Distribution", Title: mt.SDK.I18n("distribution"), Sortable: true, Align: "right"},
+			{DataIndex: "Usage", Title: mt.SDK.I18n("usedRate"), Sortable: true, Align: "right"},
 			{DataIndex: "UnusedRate", Title: mt.SDK.I18n("unusedRate"), Sortable: true, TitleTip: mt.SDK.I18n("The proportion of allocated resources that are not used")},
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true},
 			{DataIndex: "Role", Title: "Role", Sortable: true},
