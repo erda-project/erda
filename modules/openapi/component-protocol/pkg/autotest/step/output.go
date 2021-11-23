@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -31,7 +32,7 @@ type APISpec struct {
 	Loop    *apistructs.PipelineTaskLoop `json:"loop"`
 }
 
-func GetStepAllOutput(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *apistructs.GlobalStateData) (map[string]map[string]string, error) {
+func GetStepAllOutput(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *cptype.GlobalStateData) (map[string]map[string]string, error) {
 	var outputs = map[string]map[string]string{}
 	apiOutput, err := buildStepOutPut(steps)
 	if err != nil {
@@ -134,7 +135,7 @@ func MakeStepOutputSelectKey(stepID string, stepName string, key string) string 
 	return "#" + stepID + "-" + stepName + ":" + key
 }
 
-func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *apistructs.GlobalStateData) (map[string]map[string]string, error) {
+func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *cptype.GlobalStateData) (map[string]map[string]string, error) {
 
 	outputs := make(map[string]map[string]string, 0)
 
@@ -200,7 +201,7 @@ func buildConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundl
 	return outputs, nil
 }
 
-func GetConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *apistructs.GlobalStateData) (map[string]map[string]string, error) {
+func GetConfigSheetStepOutPut(steps []apistructs.AutoTestSceneStep, bdl *bundle.Bundle, gs *cptype.GlobalStateData) (map[string]map[string]string, error) {
 
 	outputs := make(map[string]map[string]string, 0)
 

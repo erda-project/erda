@@ -251,6 +251,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				map[string]interface{}{"title": "", "dataIndex": "planFinishedAt"},
 			},
 			"showHeader": false,
+			"hideHeader": true,
 			"pagination": false,
 			"styleNames": map[string]bool{
 				"no-border": true,

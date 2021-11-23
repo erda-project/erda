@@ -75,6 +75,7 @@ openapi-v1-routes:
           - test-report
           - addon-mysql-account
           - addon-mysql-consumer
+          - auto-test-scenes
       - addr: http://localhost:8080
         scenarios:
           - demo
