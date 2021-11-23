@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package manager
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+	"sync"
+	"testing"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+func Test_GetAccessTokenManager_WithMultipleTimes_Should_CreateOnlyOneRequestLock(t *testing.T) {
+	m := &Manager{}
+	wg := sync.WaitGroup{}
+	wg.Add(100)
+
+	for i := 0; i < 100; i++ {
+		go func() {
+			tm := m.GetAccessTokenManager("mock_appkey", "mock_appsecret")
+			if tm == nil {
+				t.Errorf("GetAccessTokenManager should not return nil")
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	if len(requestLocks) != 1 {
+		t.Errorf("concurrency get token manager for same key, should create only one lock")
+	}
 }

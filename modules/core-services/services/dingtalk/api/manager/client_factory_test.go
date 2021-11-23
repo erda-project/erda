@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package manager
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+	"sync"
+	"testing"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+func Test_GetClient_WithMultipleTimes_Should_Success(t *testing.T) {
+	m := &Manager{}
+	wg := sync.WaitGroup{}
+	wg.Add(100)
+
+	for i := 0; i < 100; i++ {
+		go func() {
+			client := m.GetClient("mock_appkey", "mock_appsecret", 123)
+			if client == nil {
+				t.Errorf("client factory should not return nil")
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	if len(requestLocks) != 1 {
+		t.Errorf("concurrency get same client, should create only one lock")
+	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 )
 
 type Manager struct {
@@ -27,3 +28,7 @@ type Manager struct {
 	Redis *redis.Client
 	lock  sync.Mutex
 }
+
+var _ interfaces.DingTalkApiClientFactory = (*Manager)(nil)
+var _ interfaces.DingtalkAccessTokenManager = (*Manager)(nil)
+var _ interfaces.DingtalkUserInfoManager = (*Manager)(nil)
