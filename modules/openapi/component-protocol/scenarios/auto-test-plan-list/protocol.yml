@@ -11,7 +11,9 @@ hierarchy:
 rendering:
   formModal:
     - name: table
-
+      state:
+        - name: "reloadTablePageNo"
+          value: "{{ formModal.reloadTablePageNo }}"
   table:
     - name: formModal
       state:
