@@ -24,14 +24,14 @@ import (
 type Manager struct {
 	Log   logs.Logger
 	Cache interfaces.KvCache
-	lock  sync.Mutex
+	lock  *sync.Mutex
 }
 
 func NewManager(logger logs.Logger, cache interfaces.KvCache) *Manager {
 	return &Manager{
 		Log:   logger,
 		Cache: cache,
-		lock:  sync.Mutex{},
+		lock:  &sync.Mutex{},
 	}
 }
 
