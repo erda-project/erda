@@ -323,7 +323,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "High",
+			want: "idle",
 		},
 		{
 			name:   "text",
@@ -333,7 +333,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "Middle",
+			want: "ordinary",
 		},
 		{
 			name:   "text",
@@ -343,7 +343,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "Low",
+			want: "busy",
 		},
 	}
 	for _, tt := range tests {
