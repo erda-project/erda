@@ -17,8 +17,11 @@ package taskop
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
@@ -69,4 +72,10 @@ func Test_prepare_generateOpenapiTokenForPullBootstrapInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_condition(t *testing.T) {
+	task := &spec.PipelineTask{Extra: spec.PipelineTaskExtra{Action: pipelineyml.Action{If: "${{   1 == 1   }}"}}}
+	b := condition(task)
+	assert.Equal(t, false, b)
 }

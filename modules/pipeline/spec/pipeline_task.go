@@ -32,14 +32,15 @@ type PipelineTask struct {
 	PipelineID uint64 `json:"pipelineID"`
 	StageID    uint64 `json:"stageID"`
 
-	Name         string                        `json:"name"`
-	OpType       PipelineTaskOpType            `json:"opType"`         // Deprecated: get, put, task
-	Type         string                        `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
-	ExecutorKind PipelineTaskExecutorKind      `json:"executorKind"`   // scheduler, memory
-	Status       apistructs.PipelineStatus     `json:"status"`
-	Extra        PipelineTaskExtra             `json:"extra" xorm:"json"`
-	Context      PipelineTaskContext           `json:"context" xorm:"json"`
-	Result       apistructs.PipelineTaskResult `json:"result" xorm:"json"`
+	Name         string                         `json:"name"`
+	OpType       PipelineTaskOpType             `json:"opType"`         // Deprecated: get, put, task
+	Type         string                         `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
+	ExecutorKind PipelineTaskExecutorKind       `json:"executorKind"`   // scheduler, memory
+	Status       apistructs.PipelineStatus      `json:"status"`
+	Extra        PipelineTaskExtra              `json:"extra" xorm:"json"`
+	Context      PipelineTaskContext            `json:"context" xorm:"json"`
+	Result       *apistructs.PipelineTaskResult `json:"result" xorm:"json"`
+	Inspect      apistructs.PipelineTaskInspect `json:"inspect" xorm:"json"`
 
 	IsSnippet             bool                                  `json:"isSnippet"`                         // 该节点是否是嵌套流水线节点
 	SnippetPipelineID     *uint64                               `json:"snippetPipelineID"`                 // 嵌套的流水线 id
@@ -201,7 +202,6 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	if pt == nil {
 		return nil
 	}
-	pt.Result.ConvertErrors()
 	task := apistructs.PipelineTaskDTO{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,
@@ -216,7 +216,6 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 			TaskContainers: pt.Extra.TaskContainers,
 		},
 		Labels:       pt.Extra.Action.Labels,
-		Result:       pt.Result,
 		CostTimeSec:  pt.CostTimeSec,
 		QueueTimeSec: pt.QueueTimeSec,
 		TimeBegin:    pt.TimeBegin,
@@ -228,6 +227,12 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		SnippetPipelineID:     pt.SnippetPipelineID,
 		SnippetPipelineDetail: pt.SnippetPipelineDetail,
 	}
+	task.Result.Metadata = pt.GetMetadata()
+	pt.Inspect.ConvertErrors()
+	task.Result.MachineStat = pt.Inspect.MachineStat
+	task.Result.Inspect = pt.Inspect.Inspect
+	task.Result.Events = pt.Inspect.Events
+	task.Result.Errors = pt.Inspect.Errors
 	// handle metadata
 	for _, field := range task.Result.Metadata {
 		field.Level = field.GetLevel()
@@ -247,7 +252,7 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 }
 
 func (pt *PipelineTask) RuntimeID() string {
-	for _, meta := range pt.Result.Metadata {
+	for _, meta := range pt.GetMetadata() {
 		if meta.Type == apistructs.ActionCallbackTypeLink &&
 			meta.Name == apistructs.ActionCallbackRuntimeID {
 			return meta.Value
@@ -257,13 +262,20 @@ func (pt *PipelineTask) RuntimeID() string {
 }
 
 func (pt *PipelineTask) ReleaseID() string {
-	for _, meta := range pt.Result.Metadata {
+	for _, meta := range pt.GetMetadata() {
 		if meta.Type == apistructs.ActionCallbackTypeLink &&
 			meta.Name == apistructs.ActionCallbackReleaseID {
 			return meta.Value
 		}
 	}
 	return ""
+}
+
+func (pt *PipelineTask) GetMetadata() apistructs.Metadata {
+	if pt.Result == nil {
+		return apistructs.Metadata{}
+	}
+	return pt.Result.Metadata
 }
 
 func GenDefaultTaskResource() RuntimeResource {

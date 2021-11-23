@@ -41,8 +41,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 
 	// task result metafile not have set_cookie return
-	metadata := ctx.SDK.Task.Result.Metadata
-	if metadata == nil {
+	metadata := ctx.SDK.Task.GetMetadata()
+	if len(metadata) == 0 {
 		return nil
 	}
 	var setCookieJSON string

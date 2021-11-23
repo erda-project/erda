@@ -59,7 +59,7 @@ func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (apistru
 		return statusDesc, err
 	}
 
-	logrus.Infof("get status from name %s in namespace %s", task.Extra.UUID, task.Extra.Namespace)
+	logrus.Debugf("get status from name %s in namespace %s", task.Extra.UUID, task.Extra.Namespace)
 	flinkCluster, err := k.GetFlinkClusterInfo(ctx, bigDataConf)
 	if err != nil {
 		logrus.Errorf("get status err %v", err)
@@ -102,7 +102,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 			}, fmt.Errorf("get namespace err: %v", err)
 		}
 
-		logrus.Infof("create namespace %s", job.Namespace)
+		logrus.Debugf("create namespace %s", job.Namespace)
 		ns.Name = job.Namespace
 
 		var nsErr error
@@ -139,7 +139,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		job.Volumes[i].ID = &(pvcs[i].Name)
 	}
 
-	logrus.Infof("create flink cluster cr name %s in namespace %s", job.Name, ns.Name)
+	logrus.Debugf("create flink cluster cr name %s in namespace %s", job.Name, ns.Name)
 
 	clusterInfo, err := k.GetClusterInfo(DiceClusterInfo)
 	if err != nil {
@@ -210,7 +210,7 @@ func (k *K8sFlink) Inspect(ctx context.Context, task *spec.PipelineTask) (apistr
 }
 
 func (k *K8sFlink) GetFlinkClusterInfo(ctx context.Context, data apistructs.BigdataConf) (*flinkoperatorv1beta1.FlinkCluster, error) {
-	logrus.Infof("get flinkCluster name %s in ns %s", data.Name, data.Namespace)
+	logrus.Debugf("get flinkCluster name %s in ns %s", data.Name, data.Namespace)
 
 	flinkCluster := flinkoperatorv1beta1.FlinkCluster{}
 

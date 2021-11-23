@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -105,6 +106,21 @@ func GenHeaderProps(actionExt *apistructs.ExtensionVersion, versions []VersionOp
 		},
 	}
 	props = append(props, aliasInput, verSelect, ifInput)
+	return
+}
+
+func GenTimeoutProps(local *i18n.LocaleResource) (props []apistructs.FormPropItem, err error) {
+	timeout := apistructs.FormPropItem{
+		Label:     local.Get("wb.content.action.input.label.timeout"),
+		Component: "inputNumber",
+		Key:       "timeout",
+		ComponentProps: map[string]interface{}{
+			"placeholder": local.Get("wb.content.action.input.label.timeoutPlaceholder"),
+		},
+		DefaultValue: "3600",
+	}
+
+	props = append(props, timeout)
 	return
 }
 
@@ -263,6 +279,7 @@ func GenActionProps(ctx context.Context, c *apistructs.Component, name, version 
 	}
 	// 默认请求时，version为空，需要以默认版本覆盖
 	c.State["version"] = actionExt.Version
+	local := bdl.Bdl.GetLocale(bdl.Locale)
 
 	header, err := GenHeaderProps(actionExt, versions)
 	if err != nil {
@@ -282,11 +299,18 @@ func GenActionProps(ctx context.Context, c *apistructs.Component, name, version 
 		return
 	}
 
+	timeouts, err := GenTimeoutProps(local)
+	if err != nil {
+		logrus.Errorf("generate action timeout props failed, name: %s, version: %s, err:%v", name, version, err)
+		return
+	}
+
 	var props []apistructs.FormPropItem
 	props = append(props, header...)
 	props = append(props, params...)
 	props = append(props, resource...)
 	props = append(props, loop...)
+	props = append(props, timeouts...)
 	c.Props = map[string]interface{}{
 		"fields": props,
 	}
