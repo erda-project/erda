@@ -12,20 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package caches
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"time"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+	"github.com/go-redis/redis"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+type redisCache struct {
+	client *redis.Client
+}
+
+func NewRedis(redis *redis.Client) *redisCache {
+	return &redisCache{
+		client: redis,
+	}
+}
+
+func (r *redisCache) Get(key string) (string, error) {
+	return r.client.Get(key).Result()
+}
+
+func (r *redisCache) Set(key string, value string, expire time.Duration) (string, error) {
+	return r.client.Set(key, value, expire).Result()
 }
