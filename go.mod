@@ -11,6 +11,9 @@ require (
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
+	github.com/alibabacloud-go/darabonba-openapi v0.1.9
+	github.com/alibabacloud-go/dingtalk v1.2.1
+	github.com/alibabacloud-go/tea v1.1.17
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/aliyun/aliyun-log-go-sdk v0.1.19
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
