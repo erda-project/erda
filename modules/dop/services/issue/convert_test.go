@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/i18n"
 )
@@ -51,11 +52,11 @@ func TestDecodeFromExcelFile(t *testing.T) {
 	tm := monkey.Patch(excel.Decode, func(r io.Reader) ([][][]string, error) {
 		return [][][]string{
 			[][]string{
-				[]string{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联", "预估时间", "关闭时间", ""},
-				[]string{"1", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "", "", ""},
-				[]string{"a", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "", "", ""},
-				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "a,b", "", "", "3h", "", ""},
-				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "3d", "", ""},
+				[]string{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间", "被以下事项关联", "预估时间", "关闭时间", "custom"},
+				[]string{"1", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "a"},
+				[]string{"a", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "", "", "b"},
+				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "3h", "", "c"},
+				[]string{"2", "erda", "erda", "待处理", "erda", "erda", "erda", "缺陷", "低", "1.1", "中", "一般", "", "缺陷", "", "2021-09-26 15:19:00", "", "3d", "", "d"},
 			},
 		}, nil
 	})
@@ -68,6 +69,7 @@ func TestDecodeFromExcelFile(t *testing.T) {
 				{
 					ProjectID: projectID,
 					Name:      "待处理",
+					BaseModel: dbengine.BaseModel{ID: 1},
 				},
 			}, nil
 		},
@@ -80,6 +82,7 @@ func TestDecodeFromExcelFile(t *testing.T) {
 				{
 					ProjectID: projectID,
 					Title:     "1.1",
+					BaseModel: dbengine.BaseModel{ID: 1},
 				},
 			}, nil
 		},
@@ -87,7 +90,7 @@ func TestDecodeFromExcelFile(t *testing.T) {
 	defer p2.Unpatch()
 
 	svc := &Issue{db: db}
-	_, _, _, _, _, _, err := svc.decodeFromExcelFile(apistructs.IssueImportExcelRequest{ProjectID: 1, OrgID: 1}, strings.NewReader(""), []apistructs.IssuePropertyIndex{})
+	_, _, _, _, _, _, err := svc.decodeFromExcelFile(apistructs.IssueImportExcelRequest{ProjectID: 1, OrgID: 1}, strings.NewReader(""), []apistructs.IssuePropertyIndex{{PropertyName: "custom", Index: 1}})
 	assert.Equal(t, nil, err)
 }
 
