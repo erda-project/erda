@@ -22,6 +22,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -187,7 +188,7 @@ func TestGetStepAllOutput(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var bdl = &bundle.Bundle{}
 			var patch *monkey.PatchGuard
-			var gs = &apistructs.GlobalStateData{}
+			var gs = &cptype.GlobalStateData{}
 			if tt.args.ConfigOutput != nil {
 				patch = monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineActionParamsAndOutputs", func(b *bundle.Bundle, req apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
 					return tt.args.ConfigOutput, nil
@@ -289,7 +290,7 @@ func TestGetConfigSheetStepOutPut(t *testing.T) {
 
 			var bdl = &bundle.Bundle{}
 			var patch *monkey.PatchGuard
-			var gs = &apistructs.GlobalStateData{}
+			var gs = &cptype.GlobalStateData{}
 			if tt.args.ConfigOutput != nil {
 				patch = monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipelineActionParamsAndOutputs", func(b *bundle.Bundle, req apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
 					return tt.args.ConfigOutput, nil

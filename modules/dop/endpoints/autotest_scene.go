@@ -39,36 +39,6 @@ func (e *Endpoints) CreateAutoTestScene(ctx context.Context, r *http.Request, va
 	}
 	req.IdentityInfo = identityInfo
 
-	set, err := e.autotestV2.GetSceneSet(req.SetID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	sp, err := e.autotestV2.GetSpace(set.SpaceID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	if !sp.IsOpen() {
-		return apierrors.ErrUpdateAutoTestScene.InvalidState("所属测试空间已锁定").ToResp(), nil
-	}
-	req.SpaceID = sp.ID
-
-	// 鉴权
-	if !identityInfo.IsInternalClient() {
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.ProjectScope,
-			ScopeID:  uint64(sp.ProjectID),
-			Resource: apistructs.AutotestSceneResource,
-			Action:   apistructs.CreateAction,
-		})
-		if err != nil {
-			return apierrors.ErrUpdateAutoTestScene.InternalError(err).ToResp(), nil
-		}
-		if !access.Access {
-			return apierrors.ErrUpdateAutoTestScene.AccessDenied().ToResp(), nil
-		}
-	}
-
 	sceneID, err := e.autotestV2.CreateAutotestScene(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
@@ -91,37 +61,10 @@ func (e *Endpoints) CopyAutoTestScene(ctx context.Context, r *http.Request, vars
 	}
 	req.IdentityInfo = identityInfo
 
-	set, err := e.autotestV2.GetSceneSet(req.SetID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	sp, err := e.autotestV2.GetSpace(set.SpaceID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	// 鉴权
-	if !identityInfo.IsInternalClient() {
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.ProjectScope,
-			ScopeID:  uint64(sp.ProjectID),
-			Resource: apistructs.AutotestSceneResource,
-			Action:   apistructs.CreateAction,
-		})
-		if err != nil {
-			return apierrors.ErrCreateAutoTestScene.InternalError(err).ToResp(), nil
-		}
-		if !access.Access {
-			return apierrors.ErrCreateAutoTestScene.AccessDenied().ToResp(), nil
-		}
-	}
-
 	sceneID, err := e.autotestV2.CopyAutotestScene(req, false, nil)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	go e.db.AfterUpdateAutoTestSpaceElements(sp.ID)
 	return httpserver.OkResp(sceneID)
 }
 
@@ -141,46 +84,12 @@ func (e *Endpoints) UpdateAutoTestScene(ctx context.Context, r *http.Request, va
 	if err != nil {
 		return apierrors.ErrUpdateAutoTestScene.NotLogin().ToResp(), nil
 	}
-
 	req.IdentityInfo = identityInfo
 	req.SceneID = id
-
-	//TODO 鉴权
-	sc, err := e.autotestV2.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: req.SceneID})
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	req.SetID = sc.SetID
-	sp, err := e.autotestV2.GetSpace(sc.SpaceID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	if !sp.IsOpen() {
-		return apierrors.ErrUpdateAutoTestScene.InvalidState("所属测试空间已锁定").ToResp(), nil
-	}
-
-	// 鉴权
-	if !identityInfo.IsInternalClient() {
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.ProjectScope,
-			ScopeID:  uint64(sp.ProjectID),
-			Resource: apistructs.AutotestSceneResource,
-			Action:   apistructs.UpdateAction,
-		})
-		if err != nil {
-			return apierrors.ErrUpdateAutoTestScene.InternalError(err).ToResp(), nil
-		}
-		if !access.Access {
-			return apierrors.ErrUpdateAutoTestScene.AccessDenied().ToResp(), nil
-		}
-	}
 	sceneID, err := e.autotestV2.UpdateAutotestScene(req)
 	if err != nil {
 		return apierrors.ErrUpdateAutoTestScene.InternalError(err).ToResp(), nil
 	}
-
-	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp(sceneID)
 }
 
@@ -199,7 +108,6 @@ func (e *Endpoints) MoveAutoTestScene(ctx context.Context, r *http.Request, vars
 
 	req.IdentityInfo = identityInfo
 
-	//TODO 鉴权
 	sc, err := e.autotestV2.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: req.ID})
 	if err != nil {
 		return errorresp.ErrResp(err)
@@ -236,6 +144,27 @@ func (e *Endpoints) MoveAutoTestScene(ctx context.Context, r *http.Request, vars
 	}
 	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp(sceneID)
+}
+
+// MoveAutoTestSceneV2  Move scene between scene set, include the group drag
+func (e *Endpoints) MoveAutoTestSceneV2(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var req apistructs.AutotestSceneMoveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrMoveAutoTestScene.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrMoveAutoTestScene.NotLogin().ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	err = e.autotestV2.MoveAutotestSceneV2(req)
+	if err != nil {
+		return apierrors.ErrMoveAutoTestScene.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp("success")
 }
 
 // ListAutoTestScene 获取场景列表
@@ -329,41 +258,10 @@ func (e *Endpoints) DeleteAutoTestScene(ctx context.Context, r *http.Request, va
 		return apierrors.ErrDeleteAutoTestScene.NotLogin().ToResp(), nil
 	}
 
-	sc, err := e.autotestV2.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: id})
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	sp, err := e.autotestV2.GetSpace(sc.SpaceID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	if !sp.IsOpen() {
-		return apierrors.ErrDeleteAutoTestScene.InvalidState("所属测试空间已锁定").ToResp(), nil
-	}
-
-	// 鉴权
-	if !identityInfo.IsInternalClient() {
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.ProjectScope,
-			ScopeID:  uint64(sp.ProjectID),
-			Resource: apistructs.AutotestSceneResource,
-			Action:   apistructs.UpdateAction,
-		})
-		if err != nil {
-			return apierrors.ErrDeleteAutoTestScene.InternalError(err).ToResp(), nil
-		}
-		if !access.Access {
-			return apierrors.ErrDeleteAutoTestScene.AccessDenied().ToResp(), nil
-		}
-	}
-
-	err = e.autotestV2.DeleteAutotestScene(id)
+	err = e.autotestV2.DeleteAutotestScene(id, identityInfo)
 	if err != nil {
 		return apierrors.ErrDeleteAutoTestScene.InternalError(err).ToResp(), nil
 	}
-
-	go e.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return httpserver.OkResp("delete success")
 }
 

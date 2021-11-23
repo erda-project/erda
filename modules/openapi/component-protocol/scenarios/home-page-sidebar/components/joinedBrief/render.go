@@ -62,6 +62,7 @@ type props struct {
 	RowKey     string     `json:"rowKey"`
 	Columns    []column   `json:"columns"`
 	ShowHeader bool       `json:"showHeader"`
+	HideHeader bool       `json:"hideHeader"`
 	Pagination bool       `json:"pagination"`
 	StyleNames StyleNames `json:"styleNames"`
 }
@@ -141,6 +142,7 @@ func (this *JoinedBrief) setProps() {
 	this.Props.Columns = make([]column, 0)
 	this.Props.RowKey = "key"
 	this.Props.ShowHeader = false
+	this.Props.HideHeader = true
 	this.Props.Pagination = false
 
 	this.Props.Columns = append(this.Props.Columns, column{Title: "", DataIndex: "category"})

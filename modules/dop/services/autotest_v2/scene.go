@@ -26,10 +26,11 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/publicsuffix"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/publicsuffix"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -53,10 +54,40 @@ const (
 
 // CreateAutotestScene 创建场景
 func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (uint64, error) {
-	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(nameMaxLength)); err != nil {
+	set, err := svc.GetSceneSet(req.SetID)
+	if err != nil {
 		return 0, err
 	}
-	if err := strutil.Validate(req.Description, strutil.MaxRuneCountValidator(descMaxLength)); err != nil {
+	sp, err := svc.GetSpace(set.SpaceID)
+	if err != nil {
+		return 0, err
+	}
+	if !sp.IsOpen() {
+		return 0, fmt.Errorf("the space is locked")
+	}
+	req.SpaceID = sp.ID
+
+	// 鉴权
+	if !req.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.IdentityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(sp.ProjectID),
+			Resource: apistructs.AutotestSceneResource,
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return 0, err
+		}
+		if !access.Access {
+			return 0, apierrors.ErrUpdateAutoTestScene.AccessDenied()
+		}
+	}
+
+	if err = strutil.Validate(req.Name, strutil.MaxRuneCountValidator(nameMaxLength)); err != nil {
+		return 0, err
+	}
+	if err = strutil.Validate(req.Description, strutil.MaxRuneCountValidator(descMaxLength)); err != nil {
 		return 0, err
 	}
 	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {
@@ -79,7 +110,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 	}
 
 	// 一个场景集下500个场景
-	total, scs, err := svc.ListAutotestScene(req)
+	total, _, err := svc.ListAutotestScene(req)
 	if err != nil {
 		return 0, err
 	}
@@ -96,21 +127,19 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		return 0, fmt.Errorf("一个空间下，限制五万个场景")
 	}
 
-	var preID uint64
-	if len(scs) == 0 {
-		preID = 0
-	} else {
-		preID = scs[len(scs)-1].ID
-	}
 	scene := &dao.AutoTestScene{
 		Name:        req.Name,
 		Description: req.Description,
 		SpaceID:     req.SpaceID,
 		SetID:       req.SetID,
-		PreID:       preID,
+		PreID:       req.PreID,
 		CreatorID:   req.UserID,
 		Status:      apistructs.DefaultSceneStatus,
 		RefSetID:    req.RefSetID,
+		GroupID:     req.SceneGroupID,
+	}
+	if scene.RefSetID > 0 && req.Policy != "" {
+		scene.Policy = req.Policy
 	}
 	if err := svc.db.CreateAutotestScene(scene); err != nil {
 		return 0, err
@@ -165,6 +194,35 @@ func (svc *Service) checkCycle(scene dao.AutoTestScene, allNodes []uint64, allNo
 
 // UpdateAutotestScene 更新场景
 func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateRequest) (uint64, error) {
+	sc, err := svc.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: req.SceneID})
+	if err != nil {
+		return 0, err
+	}
+	req.SetID = sc.SetID
+	sp, err := svc.GetSpace(sc.SpaceID)
+	if err != nil {
+		return 0, err
+	}
+	if !sp.IsOpen() {
+		return 0, fmt.Errorf("the space is locked")
+	}
+
+	// check permission
+	if !req.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.IdentityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(sp.ProjectID),
+			Resource: apistructs.AutotestSceneResource,
+			Action:   apistructs.UpdateAction,
+		})
+		if err != nil {
+			return 0, err
+		}
+		if !access.Access {
+			return 0, apierrors.ErrUpdateAutoTestScene.AccessDenied()
+		}
+	}
 	if err := strutil.Validate(req.Name, strutil.MaxRuneCountValidator(nameMaxLength)); err != nil {
 		return 0, err
 	}
@@ -194,9 +252,13 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 	if !req.IsStatus {
 		scene.UpdaterID = req.IdentityInfo.UserID
 	}
+	if scene.RefSetID > 0 && req.Policy != "" {
+		scene.Policy = req.Policy
+	}
 	if err = svc.db.UpdateAutotestScene(scene); err != nil {
 		return 0, err
 	}
+	go svc.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
 	return scene.ID, nil
 }
 
@@ -267,6 +329,39 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	}
 
 	return req.ID, nil
+}
+
+// MoveAutotestSceneV2  Move scene between scene set, include the group drag
+func (svc *Service) MoveAutotestSceneV2(req apistructs.AutotestSceneMoveRequest) error {
+	sc, err := svc.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: req.FirstID})
+	if err != nil {
+		return err
+	}
+
+	sp, err := svc.GetSpace(sc.SpaceID)
+	if err != nil {
+		return err
+	}
+	if !sp.IsOpen() {
+		return fmt.Errorf("the space is locked")
+	}
+	// check the permission
+	if !req.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.IdentityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(sp.ProjectID),
+			Resource: apistructs.AutotestSceneResource,
+			Action:   apistructs.UpdateAction,
+		})
+		if err != nil {
+			return err
+		}
+		if !access.Access {
+			return apierrors.ErrMoveAutoTestScene.AccessDenied()
+		}
+	}
+	return svc.db.MoveAutoTestSceneV2(req)
 }
 
 func (svc *Service) checkSceneSetSameNameScene(sceneSetID uint64, sceneName string, sceneID uint64) bool {
@@ -341,7 +436,7 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	if err != nil {
 		return nil, err
 	}
-	sceneIDs := []uint64{}
+	var sceneIDs []uint64
 	for _, each := range scene {
 		sceneIDs = append(sceneIDs, each.ID)
 	}
@@ -357,14 +452,14 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 	lists := map[uint64][]apistructs.AutoTestScene{}
 	for _, each := range scene {
 
-		inputsList := []apistructs.AutoTestSceneInput{}
+		var inputsList []apistructs.AutoTestSceneInput
 		for inputsNo := 0; inputsNo < len(inputs); inputsNo++ {
 			if each.ID == inputs[inputsNo].SceneID {
 				inputsList = append(inputsList, inputs[inputsNo])
 			}
 		}
 
-		outputList := []apistructs.AutoTestSceneOutput{}
+		var outputList []apistructs.AutoTestSceneOutput
 		for outputNo := 0; outputNo < len(outputs); outputNo++ {
 			if each.ID == outputs[outputNo].SceneID {
 				outputList = append(outputList, outputs[outputNo])
@@ -388,6 +483,8 @@ func (svc *Service) ListAutotestScenes(setIDs []uint64) (map[uint64][]apistructs
 			Inputs:      inputsList,
 			Output:      outputList,
 			RefSetID:    each.RefSetID,
+			GroupID:     each.GroupID,
+			Policy:      each.Policy,
 		})
 	}
 	return lists, nil
@@ -422,8 +519,39 @@ func (svc *Service) CutAutotestScene(sc *dao.AutoTestScene) error {
 }
 
 // DeleteAutotestScene 删除场景
-func (svc *Service) DeleteAutotestScene(id uint64) error {
-	return svc.db.DeleteAutoTestScene(id)
+func (svc *Service) DeleteAutotestScene(id uint64, identityInfo apistructs.IdentityInfo) error {
+	sc, err := svc.GetAutotestScene(apistructs.AutotestSceneRequest{SceneID: id})
+	if err != nil {
+		return err
+	}
+	sp, err := svc.GetSpace(sc.SpaceID)
+	if err != nil {
+		return err
+	}
+	if !sp.IsOpen() {
+		return fmt.Errorf("the space is locked")
+	}
+	// check permission
+	if !identityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(sp.ProjectID),
+			Resource: apistructs.AutotestSceneResource,
+			Action:   apistructs.UpdateAction,
+		})
+		if err != nil {
+			return err
+		}
+		if !access.Access {
+			return apierrors.ErrDeleteAutoTestScene.AccessDenied()
+		}
+	}
+	err = svc.db.DeleteAutoTestScene(id)
+	if err == nil {
+		go svc.db.AfterUpdateAutoTestSpaceElements(sc.SpaceID)
+	}
+	return err
 }
 
 // UpdateAutotestSceneUpdater 更新场景更新人
@@ -913,6 +1041,31 @@ func (svc *Service) CancelDiceAutotestScene(req apistructs.AutotestCancelSceneRe
 
 // CopyAutotestScene 复制场景
 func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, isSpaceCopy bool, preSceneIdMap map[uint64]uint64) (uint64, error) {
+	set, err := svc.GetSceneSet(req.SetID)
+	if err != nil {
+		return 0, err
+	}
+	sp, err := svc.GetSpace(set.SpaceID)
+	if err != nil {
+		return 0, err
+	}
+
+	// 鉴权
+	if !req.IdentityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   req.IdentityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(sp.ProjectID),
+			Resource: apistructs.AutotestSceneResource,
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return 0, err
+		}
+		if !access.Access {
+			return 0, apierrors.ErrCreateAutoTestScene.AccessDenied()
+		}
+	}
 	// 一个场景集下500个场景
 	total, err := svc.db.CountSceneBySetID(req.SetID)
 	if err != nil {
@@ -983,7 +1136,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 		RefSetID:    oldScene.RefSetID,
 	}
 
-	if err = svc.db.Insert(newScene, req.PreID); err != nil {
+	if err = svc.db.Copy(newScene, newScene.SetID != oldScene.SetID); err != nil {
 		return 0, err
 	}
 
@@ -1078,6 +1231,8 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			return newScene.ID, err
 		}
 	}
+
+	go svc.db.AfterUpdateAutoTestSpaceElements(sp.ID)
 	return newScene.ID, nil
 }
 
@@ -1169,7 +1324,7 @@ func getTitleName(requestName string) (string, error) {
 }
 
 // getList 获取分页后的list
-func sortAutoTestSceneList(list []apistructs.AutoTestScene, pageNo, pageSize uint64) []apistructs.AutoTestScene {
+func (svc *Service) sortAutoTestSceneList(list []apistructs.AutoTestScene, pageNo, pageSize uint64) []apistructs.AutoTestScene {
 	mp := make(map[uint64]apistructs.AutoTestScene)
 	var rsp []apistructs.AutoTestScene
 	for _, v := range list {
@@ -1339,6 +1494,18 @@ func (svc *Service) ListAutoTestSceneSteps(sceneIDs []uint64) (sceneSteps []apis
 	}
 	for _, v := range list {
 		sceneSteps = append(sceneSteps, *v.Convert())
+	}
+	return
+}
+
+// ListAutotestSceneByGroupID .
+func (svc *Service) ListAutotestSceneByGroupID(setID, groupID uint64) (scenes []apistructs.AutoTestScene, err error) {
+	list, err := svc.db.ListAutotestSceneByGroupID(setID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range list {
+		scenes = append(scenes, v.Convert())
 	}
 	return
 }

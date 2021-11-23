@@ -167,7 +167,7 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 		return fmt.Errorf("missing scene data")
 	}
 	for _, sceneRow := range sheet[1:] {
-		if len(sceneRow) != 7 {
+		if len(sceneRow) < 7 {
 			return fmt.Errorf("invalid scene data")
 		}
 		scene := apistructs.AutoTestScene{}
@@ -190,6 +190,13 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 			return err
 		}
 		scene.Description = sceneRow[6]
+		// group id
+		if len(sceneRow) >= 8 {
+			scene.GroupID, err = convertToUint64PermitZero(sceneRow[7])
+			if err != nil {
+				return err
+			}
+		}
 		for _, input := range inputList {
 			if input.SceneID == scene.ID {
 				scene.Inputs = append(scene.Inputs, input)

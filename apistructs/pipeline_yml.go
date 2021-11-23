@@ -126,6 +126,17 @@ const (
 	TryLatestSuccessResultPolicyType PolicyType = "try-latest-success-result"
 )
 
+func (p PolicyType) GetZhName() string {
+	switch p {
+	case NewRunPolicyType:
+		return "重新执行并引用执行结果"
+	case TryLatestSuccessResultPolicyType:
+		return "最近一次执行的结果"
+	default:
+		return ""
+	}
+}
+
 type Policy struct {
 	Type PolicyType `json:"type,omitempty"`
 }

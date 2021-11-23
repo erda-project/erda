@@ -26,17 +26,18 @@ func (s PipelineSource) String() string {
 }
 
 var (
-	PipelineSourceDefault      PipelineSource = "default"
-	PipelineSourceDice         PipelineSource = "dice"             // 普通 Dice CI/CD
-	PipelineSourceBigData      PipelineSource = "bigdata"          // 大数据任务
-	PipelineSourceOps          PipelineSource = "ops"              // ops 链路
-	PipelineSourceQA           PipelineSource = "qa"               // qa 链路
-	PipelineSourceConfigSheet  PipelineSource = "config-sheet"     // 配置单
-	PipelineSourceProject      PipelineSource = "project-pipeline" // 项目级流水线
-	PipelineSourceProjectLocal PipelineSource = "local"            // gittar 流水线
-	PipelineSourceAPITest      PipelineSource = "api-test"         // API Test
-	PipelineSourceAutoTest     PipelineSource = "autotest"
-	PipelineSourceAutoTestPlan PipelineSource = "autotest-plan"
+	PipelineSourceDefault          PipelineSource = "default"
+	PipelineSourceDice             PipelineSource = "dice"             // 普通 Dice CI/CD
+	PipelineSourceBigData          PipelineSource = "bigdata"          // 大数据任务
+	PipelineSourceOps              PipelineSource = "ops"              // ops 链路
+	PipelineSourceQA               PipelineSource = "qa"               // qa 链路
+	PipelineSourceConfigSheet      PipelineSource = "config-sheet"     // 配置单
+	PipelineSourceProject          PipelineSource = "project-pipeline" // 项目级流水线
+	PipelineSourceProjectLocal     PipelineSource = "local"            // gittar 流水线
+	PipelineSourceAPITest          PipelineSource = "api-test"         // API Test
+	PipelineSourceAutoTest         PipelineSource = "autotest"
+	PipelineSourceAutoTestPlan     PipelineSource = "autotest-plan"
+	PipelineSourceAutoTestSceneSet PipelineSource = "autotest-scene-set"
 
 	// cdp workflow
 	PipelineSourceCDPDev     PipelineSource = "cdp-dev"

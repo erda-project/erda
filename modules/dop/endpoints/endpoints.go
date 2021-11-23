@@ -374,6 +374,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/scenes", Method: http.MethodPost, Handler: e.CreateAutoTestScene},
 		{Path: "/api/autotests/scenes/{sceneID}", Method: http.MethodPut, Handler: e.UpdateAutoTestScene},
 		{Path: "/api/autotests/scenes/actions/move-scene", Method: http.MethodPut, Handler: e.MoveAutoTestScene},
+		{Path: "/api/autotests/scenes/actions/move-scene-v2", Method: http.MethodPut, Handler: e.MoveAutoTestSceneV2},
 		{Path: "/api/autotests/scenes", Method: http.MethodGet, Handler: e.ListAutoTestScene},
 		{Path: "/api/autotests/scenes/modal", Method: http.MethodGet, Handler: e.ListAutoTestScenes},
 		{Path: "/api/autotests/scenes/{sceneID}", Method: http.MethodGet, Handler: e.GetAutoTestScene},

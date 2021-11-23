@@ -461,7 +461,7 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 					},
 					If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
 					SnippetConfig: &pipelineyml.SnippetConfig{
-						Name:   strconv.Itoa(int(v.SceneSetID)),
+						Name:   apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(v.SceneSetID)),
 						Source: apistructs.PipelineSourceAutoTest.String(),
 						Labels: map[string]string{
 							apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
@@ -611,7 +611,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 		var spec pipelineyml.Spec
 		spec.Version = "1.1"
 
-		scenes := sortAutoTestSceneList(resultsScenes, 1, 10000)
+		scenes := svc.sortAutoTestSceneList(resultsScenes, 1, 10000)
 		spec.Stages = make([]*pipelineyml.Stage, len(scenes))
 		for index, v := range scenes {
 			var specStage pipelineyml.Stage
@@ -642,7 +642,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 						},
 						If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
 						SnippetConfig: &pipelineyml.SnippetConfig{
-							Name:   strconv.Itoa(int(v.ID)),
+							Name:   apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(v.ID)),
 							Source: apistructs.PipelineSourceAutoTest.String(),
 							Labels: map[string]string{
 								apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
