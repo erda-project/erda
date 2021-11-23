@@ -106,7 +106,7 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	}
 	obj := resp.Data()
 
-	status, color, err := cputil.ParseWorkloadStatus(obj)
+	status, color, _, err := cputil.ParseWorkloadStatus(obj)
 	if err != nil {
 		return err
 	}

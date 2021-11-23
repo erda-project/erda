@@ -41,7 +41,7 @@ func (w *ComponentWorkloadTotal) Render(ctx context.Context, component *cptype.C
 		addCount(w.State.Values.StatefulSetCount) + addCount(w.State.Values.JobCount) + addCount(w.State.Values.CronJobCount)
 
 	w.Data.Data.Desc = cputil.I18n(ctx, "totalWorkload")
-	w.Data.Data.Main = fmt.Sprintf("%s", count)
+	w.Data.Data.Main = fmt.Sprintf("%d", count)
 	w.Transfer(component)
 	return nil
 }

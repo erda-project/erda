@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
-	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -160,6 +159,7 @@ func (t *ComponentEventTable) RenderList() error {
 		UserID:      userID,
 		OrgID:       orgID,
 		Type:        apistructs.K8SEvent,
+		Namespace:   t.State.FilterValues.Namespace,
 		ClusterName: t.State.ClusterName,
 	}
 
@@ -167,7 +167,7 @@ func (t *ComponentEventTable) RenderList() error {
 		list []types.APIObject
 		err  error
 	)
-	list, err = cputil2.ListSteveResourceByNamespaces(t.ctx, t.server, &req, t.State.FilterValues.Namespace)
+	list, err = t.server.ListSteveResource(t.ctx, &req)
 	if err != nil {
 		return err
 	}
@@ -175,9 +175,6 @@ func (t *ComponentEventTable) RenderList() error {
 	var items []Item
 	for _, item := range list {
 		obj := item.Data()
-		if t.State.FilterValues.Namespace != nil && !contain(t.State.FilterValues.Namespace, obj.String("metadata", "namespace")) {
-			continue
-		}
 		if t.State.FilterValues.Type != nil && !contain(t.State.FilterValues.Type, obj.String("_type")) {
 			continue
 		}

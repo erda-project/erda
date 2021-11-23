@@ -65,20 +65,19 @@ func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
 }
 
 func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
-	w.Data.Option.Tooltip.Trigger = "axis"
-	w.Data.Option.Tooltip.AxisPointer.Type = "shadow"
+	w.Data.Option.Tooltip.Show = false
 	w.Data.Option.Color = []string{
-		"primary8", "primary7", "primary6", "warning8", "warning7",
+		"primary8", "warning8", "primary6", "primary4", "warning6",
 	}
 	w.Data.Option.Legend.Data = []string{
 		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Succeeded"),
 		cputil.I18n(ctx, "Updating"), cputil.I18n(ctx, "Abnormal"),
 		cputil.I18n(ctx, "Failed"),
 	}
-	w.Data.Option.XAxis.Type = "value"
-	w.Data.Option.YAxis.Type = "category"
-	w.Data.Option.YAxis.Data = []string{
-		"CronJobs", "Jobs", "DaemonSets", "StatefulSets", "Deployments",
+	w.Data.Option.YAxis.Type = "value"
+	w.Data.Option.XAxis.Type = "category"
+	w.Data.Option.XAxis.Data = []string{
+		"Deployments", "StatefulSets", "DaemonSets", "Jobs", "CronJobs",
 	}
 
 	// deployment
@@ -105,17 +104,17 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	activeSeries := Series{
 		Name:     cputil.I18n(ctx, "Active"),
 		Type:     "bar",
-		BarWidth: "50%",
+		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
 			&activeCronJob, &activeJob, &activeDs, &activeSs, &activeDeploy,
 		},
 	}
 
-	errorSeries := Series{
+	abnormalSeries := Series{
 		Name:     cputil.I18n(ctx, "Abnormal"),
 		Type:     "bar",
-		BarWidth: "50%",
+		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
 			nil, nil, &abnormalDs, &abnormalSs, &abnormalDeploy,
@@ -125,7 +124,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	succeededSeries := Series{
 		Name:     cputil.I18n(ctx, "Succeeded"),
 		Type:     "bar",
-		BarWidth: "50%",
+		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
 			nil, &succeededJob, nil, nil, nil,
@@ -135,7 +134,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	failedSeries := Series{
 		Name:     cputil.I18n(ctx, "Failed"),
 		Type:     "bar",
-		BarWidth: "50%",
+		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
 			nil, &failedJob, nil, nil, nil,
@@ -145,14 +144,14 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	updatingSeries := Series{
 		Name:     cputil.I18n(ctx, "Updating"),
 		Type:     "bar",
-		BarWidth: "50%",
+		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
 			nil, nil, nil, nil, &updatingDeploy,
 		},
 	}
 	w.Data.Option.Series = []Series{
-		activeSeries, succeededSeries, updatingSeries, errorSeries, failedSeries,
+		activeSeries, abnormalSeries, updatingSeries, succeededSeries, failedSeries,
 	}
 	return nil
 }

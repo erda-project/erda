@@ -60,8 +60,7 @@ type Option struct {
 }
 
 type Tooltip struct {
-	Trigger     string      `json:"trigger,omitempty"`
-	AxisPointer AxisPointer `json:"axisPointer,omitempty"`
+	Show bool `json:"show"`
 }
 
 type AxisPointer struct {
@@ -81,6 +80,6 @@ type Series struct {
 	Name     string `json:"name,omitempty"`
 	Type     string `json:"type,omitempty"`
 	BarGap   string `json:"barGap,omitempty"`
-	BarWidth string `json:"barWidth,omitempty"`
+	BarWidth int    `json:"barWidth,omitempty"`
 	Data     []*int `json:"data,omitempty"`
 }

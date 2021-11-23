@@ -68,7 +68,7 @@ type Sorter struct {
 }
 
 type Values struct {
-	Namespace []string `json:"namespace,omitempty"`
+	Namespace string   `json:"namespace,omitempty"`
 	Kind      []string `json:"kind,omitempty"`
 	Status    []string `json:"status,omitempty"`
 	Search    string   `json:"search,omitempty"`
@@ -98,13 +98,10 @@ type Item struct {
 }
 
 type Status struct {
-	RenderType  string      `json:"renderType,omitempty"`
-	Value       string      `json:"value,omitempty"`
-	StyleConfig StyleConfig `json:"styleConfig,omitempty"`
-}
-
-type StyleConfig struct {
-	Color string `json:"color,omitempty"`
+	RenderType string `json:"renderType,omitempty"`
+	Value      string `json:"value,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Breathing  bool   `json:"breathing,omitempty"`
 }
 
 type Multiple struct {
@@ -158,6 +155,7 @@ type Column struct {
 	Title     string `json:"title,omitempty"`
 	Width     int    `json:"width"`
 	Sorter    bool   `json:"sorter,omitempty"`
+	Align     string `json:"align,omitempty"`
 }
 
 type Operation struct {

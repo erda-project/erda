@@ -616,26 +616,38 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.RowKey = "id"
 	p.Props.Columns = []Column{
 		{
-			DataIndex: "status",
-			Title:     cputil.I18n(ctx, "status"),
-			Width:     80,
-			Sorter:    true,
-		},
-		{
 			DataIndex: "name",
 			Title:     cputil.I18n(ctx, "name"),
 			Width:     180,
 			Sorter:    true,
 		},
 		{
-			DataIndex: "namespace",
-			Title:     cputil.I18n(ctx, "namespace"),
-			Width:     180,
+			DataIndex: "status",
+			Title:     cputil.I18n(ctx, "status"),
+			Width:     80,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ip",
 			Title:     cputil.I18n(ctx, "ip"),
+			Width:     120,
+			Sorter:    true,
+		},
+		{
+			DataIndex: "ready",
+			Title:     cputil.I18n(ctx, "ready"),
+			Width:     80,
+			Sorter:    true,
+		},
+		{
+			DataIndex: "nodeName",
+			Title:     cputil.I18n(ctx, "node"),
+			Width:     120,
+			Sorter:    true,
+		},
+		{
+			DataIndex: "age",
+			Title:     cputil.I18n(ctx, "age"),
 			Width:     120,
 			Sorter:    true,
 		},
@@ -672,24 +684,6 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "memoryPercent",
 			Title:     cputil.I18n(ctx, "memoryPercent"),
-			Width:     120,
-			Sorter:    true,
-		},
-		{
-			DataIndex: "ready",
-			Title:     cputil.I18n(ctx, "ready"),
-			Width:     80,
-			Sorter:    true,
-		},
-		{
-			DataIndex: "nodeName",
-			Title:     cputil.I18n(ctx, "node"),
-			Width:     120,
-			Sorter:    true,
-		},
-		{
-			DataIndex: "age",
-			Title:     cputil.I18n(ctx, "age"),
 			Width:     120,
 			Sorter:    true,
 		},

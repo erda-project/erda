@@ -46,7 +46,7 @@ type State struct {
 }
 
 type FilterValues struct {
-	Namespace []string `json:"namespace,omitempty"`
+	Namespace string   `json:"namespace,omitempty"`
 	Type      []string `json:"type,omitempty"`
 	Search    string   `json:"search,omitempty"`
 }

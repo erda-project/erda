@@ -4,15 +4,12 @@ hierarchy:
   root: page
   structure:
     page:
-      - filterContainer
       - charts
       - workloadHead
-      - workloadTable
+      - table
       - addWorkloadDrawer
     workloadHead:
       - addWorkloadButton
-    filterContainer:
-      - filter
     charts:
       - chartContainer
     chartContainer:
@@ -23,13 +20,14 @@ hierarchy:
     addWorkloadContainer:
       - addWorkloadFilter
       - addWorkloadFileEditor
+    table:
+      slot: filter
+      table: workloadTable
 
 components:
   page:
     type: Container
   workloadHead:
-    type: Container
-  filterContainer:
     type: Container
   charts:
     type: Container
@@ -53,12 +51,13 @@ components:
     type: Drawer
   addWorkloadButton:
     type: Button
+  table:
+    type: ComposeTable
 
 rendering:
   __DefaultRendering__:
     - name: page
     - name: workloadHead
-    - name: filterContainer
     - name: charts
     - name: chartContainer
     - name: addWorkloadContainer
@@ -66,6 +65,7 @@ rendering:
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
+    - name: table
     - name: workloadTable
       state:
         - name: "clusterName"

@@ -92,7 +92,7 @@ func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 				Order: "test",
 			},
 			"values": Values{
-				Namespace: []string{"test"},
+				Namespace: "test",
 				Kind:      []string{"test"},
 				Status:    []string{"test"},
 				Search:    "test",
@@ -374,7 +374,7 @@ func TestComponentWorkloadTable_Transfer(t *testing.T) {
 			},
 			Total: 100,
 			Values: Values{
-				Namespace: []string{"test"},
+				Namespace: "test",
 				Kind:      []string{"test"},
 				Status:    []string{"test"},
 				Search:    "test",
@@ -392,18 +392,18 @@ func TestComponentWorkloadTable_Transfer(t *testing.T) {
 							Color: "testColor",
 						},
 					},
-					Name: Link{
+					Name: Multiple{
 						RenderType: "testType",
-						Value:      "test",
-						Operations: map[string]interface{}{
-							"testOp": Operation{
-								Key:    "testKey",
-								Reload: true,
-							},
+						Direction:  "testDirection",
+					},
+					Namespace: "testNs",
+					Kind: Kind{
+						RenderType: "testType",
+						Size:       "small",
+						Value: KindValue{
+							Label: "testLabel",
 						},
 					},
-					Namespace:    "testNs",
-					Kind:         "testKind",
 					Age:          "1d",
 					Ready:        "testReady",
 					UpToDate:     "testUpToDate",

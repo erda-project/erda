@@ -8,7 +8,6 @@ component-protocol.components.cmp-dashboard-events-list.filter:
 component-protocol.components.cmp-dashboard-workloads-list.filter:
 component-protocol.components.cmp-dashboard-workloads-list.workloadChart:
 component-protocol.components.cmp-dashboard-workloads-list.workloadTable:
-component-protocol.components.cmp-dashboard-workloads-list.filterContainer:
 component-protocol.components.cmp-dashboard-workloads-list.chartContainer:
 component-protocol.components.cmp-dashboard-workloads-list.workloadTotal:
 component-protocol.components.cmp-dashboard-workloads-list.addWorkloadButton:
@@ -18,6 +17,7 @@ component-protocol.components.cmp-dashboard-workloads-list.addWorkloadFileEditor
 component-protocol.components.cmp-dashboard-workloads-list.addWorkloadFilter:
 component-protocol.components.cmp-dashboard-workloads-list.workloadHead:
 component-protocol.components.cmp-dashboard-workloads-list.charts:
+component-protocol.components.cmp-dashboard-workloads-list.table:
 
 component-protocol.components.cmp-dashboard-workload-detail.podsTable:
 component-protocol.components.cmp-dashboard-workload-detail.podsTableTitle:
