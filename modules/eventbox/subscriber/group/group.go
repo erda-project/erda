@@ -239,6 +239,24 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 			if len(groupDetail.WebHookList) > 0 {
 				d.routeMessage(msg, &chr)
 			}
+		} else if channel.Name == "dingtalk_work_notice" {
+			mobiles := []string{}
+			for _, user := range groupDetail.Users {
+				mobile := strings.TrimSpace(user.Mobile)
+				if mobile != "" {
+					mobiles = append(mobiles, mobile)
+				}
+			}
+			msg := &types.Message{
+				Content: request,
+				Time:    time,
+				Labels: map[types.LabelKey]interface{}{
+					"DINGTALK_WORK_NOTICE": mobiles,
+				},
+			}
+			if len(mobiles) > 0 {
+				d.routeMessage(msg, &chr)
+			}
 		}
 	}
 	return errs
