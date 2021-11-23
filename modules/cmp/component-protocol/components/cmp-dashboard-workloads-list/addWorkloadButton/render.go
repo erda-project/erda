@@ -101,9 +101,9 @@ func (b *ComponentAddWorkloadButton) InitComponent(ctx context.Context) {
 	b.sdk = sdk
 }
 
-func (b *ComponentAddWorkloadButton) Transfer(c *cptype.Component) {
-	c.Props = b.Props
-	c.State = map[string]interface{}{
+func (b *ComponentAddWorkloadButton) Transfer(component *cptype.Component) {
+	component.Props = b.Props
+	component.State = map[string]interface{}{
 		"workloadKind": b.State.WorkloadKind,
 	}
 }

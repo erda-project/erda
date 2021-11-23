@@ -84,16 +84,16 @@ func (e *ComponentAddWorkloadFileEditor) InitComponent(ctx context.Context) {
 	e.server = steveServer
 }
 
-func (e *ComponentAddWorkloadFileEditor) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (e *ComponentAddWorkloadFileEditor) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	e.State = state
@@ -172,13 +172,13 @@ func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 	return nil
 }
 
-func (e *ComponentAddWorkloadFileEditor) Transfer(c *cptype.Component) {
-	c.Props = e.Props
-	c.State = map[string]interface{}{
+func (e *ComponentAddWorkloadFileEditor) Transfer(component *cptype.Component) {
+	component.Props = e.Props
+	component.State = map[string]interface{}{
 		"clusterName":  e.State.ClusterName,
 		"workloadKind": e.State.WorkloadKind,
 		"values":       e.State.Values,
 		"value":        e.State.Value,
 	}
-	c.Operations = e.Operations
+	component.Operations = e.Operations
 }
