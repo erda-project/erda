@@ -157,18 +157,27 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if policyDto.RefuseResponse == "" {
 		namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
+    log_by_lua_block {
+        plugins.run()
+    }
     return %d;
 }
 `, id, policyDto.RefuseCode)
 	} else if policyDto.RefuseCode >= 300 && policyDto.RefuseCode < 400 {
 		namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
+    log_by_lua_block {
+        plugins.run()
+    }
     return %d "%s";
 }
 `, id, policyDto.RefuseCode, policyDto.RefuseResponse)
 	} else {
 		namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
+    log_by_lua_block {
+        plugins.run()
+    }
     more_set_headers 'Content-Type: text/plain; charset=utf-8';
     return %d "%s";
 }

@@ -72,6 +72,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			}
 			c.State["visible"] = false
 			c.State["formData"] = nil
+			c.State["reloadTablePageNo"] = false
 		} else if _, ok := c.State["isCreate"]; ok && c.State["isCreate"].(bool) {
 			defer delete(c.State, "isCreate")
 			// 创建完需要把这个数据置为false
@@ -89,6 +90,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			}
 			c.State["visible"] = false
 			c.State["formData"] = nil
+			c.State["reloadTablePageNo"] = true
 		}
 	}
 
