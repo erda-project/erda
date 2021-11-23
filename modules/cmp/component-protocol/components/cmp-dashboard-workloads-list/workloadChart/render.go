@@ -45,14 +45,14 @@ func (w *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.C
 	return nil
 }
 
-func (w *ComponentWorkloadChart) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	cont, err := json.Marshal(component.State)
+	cont, err := json.Marshal(c.State)
 	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", component.State, err)
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
 		return err
 	}
 	err = json.Unmarshal(cont, &state)
@@ -155,9 +155,9 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (w *ComponentWorkloadChart) Transfer(c *cptype.Component) {
-	c.Props = w.Props
-	c.State = map[string]interface{}{
+func (w *ComponentWorkloadChart) Transfer(component *cptype.Component) {
+	component.Props = w.Props
+	component.State = map[string]interface{}{
 		"values": w.State.Values,
 	}
 }

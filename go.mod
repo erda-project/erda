@@ -169,6 +169,7 @@ require (
 	k8s.io/apiserver v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog/v2 v2.8.0
+	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
