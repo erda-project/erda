@@ -19,11 +19,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/eventbox/dispatcher"
 )
 
-func Initialize() error {
-	dp, err := dispatcher.New()
+func Initialize(dingtalk interfaces.DingTalkApiClientFactory) error {
+	dp, err := dispatcher.New(dingtalk)
 	if err != nil {
 		panic(err)
 	}

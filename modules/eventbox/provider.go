@@ -18,11 +18,14 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 )
 
-type provider struct{}
+type provider struct {
+	DingtalkApiClient interfaces.DingTalkApiClientFactory `autowired:"dingtalk.api"`
+}
 
-func (p *provider) Run(ctx context.Context) error { return Initialize() }
+func (p *provider) Run(ctx context.Context) error { return Initialize(p.DingtalkApiClient) }
 
 func init() {
 	servicehub.Register("eventbox", &servicehub.Spec{
