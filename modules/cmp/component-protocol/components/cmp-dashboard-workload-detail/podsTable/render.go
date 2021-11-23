@@ -327,33 +327,70 @@ func (p *ComponentPodsTable) RenderTable() error {
 		items = append(items, Item{
 			ID:     id,
 			Status: status,
-			Name: Link{
-				RenderType: "linkText",
-				Value:      podName,
-				Operations: map[string]interface{}{
-					"click": LinkOperation{
-						Command: Command{
-							Key:    "goto",
-							Target: "cmpClustersPodDetail",
-							State: CommandState{
-								Params: map[string]string{
-									"podId": id,
-								},
-								Query: map[string]string{
-									"namespace": podNamespace,
-									"podName":   podName,
+			Name: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "default_k8s_pod",
+						},
+					},
+					[]interface{}{
+						Link{
+							RenderType: "linkText",
+							Value:      "name",
+							Operations: map[string]interface{}{
+								"click": LinkOperation{
+									Command: Command{
+										Key:    "goto",
+										Target: "cmpClustersPodDetail",
+										State: CommandState{
+											Params: map[string]string{
+												"podId": id,
+											},
+											Query: map[string]string{
+												"namespace": podNamespace,
+												"podName":   podName,
+											},
+										},
+										JumpOut: true,
+									},
+									Reload: false,
 								},
 							},
-							JumpOut: true,
 						},
-						Reload: false,
+						TextWithIcon{
+							RenderType: "subText",
+							Value:      fmt.Sprintf("%s: %s", p.sdk.I18n("namespace"), namespace),
+						},
 					},
 				},
 			},
-			Namespace:      podNamespace,
-			IP:             fields[5],
-			Age:            fields[4],
-			CPURequests:    cpuRequestStr,
+			PodName:   name,
+			Namespace: podNamespace,
+			IP:        fields[5],
+			Age:       fields[4],
+			CPURequests: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "CPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      cpuRequestStr,
+						},
+					},
+				},
+			},
 			CPURequestsNum: cpuRequests.MilliValue(),
 			CPUPercent: Percent{
 				RenderType: "progress",
@@ -361,9 +398,45 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Tip:        cpuTip,
 				Status:     cpuStatus,
 			},
-			CPULimits:         cpuLimitsStr,
-			CPULimitsNum:      cpuLimits.MilliValue(),
-			MemoryRequests:    memRequestsStr,
+			CPULimits: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "CPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      cpuLimitsStr,
+						},
+					},
+				},
+			},
+			CPULimitsNum: cpuLimits.MilliValue(),
+			MemoryRequests: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "GPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      memRequestsStr,
+						},
+					},
+				},
+			},
 			MemoryRequestsNum: memRequests.Value(),
 			MemoryPercent: Percent{
 				RenderType: "progress",
@@ -371,7 +444,25 @@ func (p *ComponentPodsTable) RenderTable() error {
 				Tip:        memTip,
 				Status:     memStatus,
 			},
-			MemoryLimits:    memLimitsStr,
+			MemoryLimits: Multiple{
+				RenderType: "multiple",
+				Direction:  "row",
+				Renders: []interface{}{
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "icon",
+							Icon:       "GPU",
+							Size:       "small",
+						},
+					},
+					[]interface{}{
+						TextWithIcon{
+							RenderType: "text",
+							Value:      memLimitsStr,
+						},
+					},
+				},
+			},
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
 			NodeName:        fields[6],
@@ -410,7 +501,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			switch field {
 			case "status":
 				return func(i int, j int) bool {
-					less := items[i].Status.Value.Label < items[j].Status.Value.Label
+					less := items[i].Status.Value < items[j].Status.Value
 					if ascend {
 						return less
 					}
@@ -418,7 +509,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "name":
 				return func(i int, j int) bool {
-					less := items[i].Name.Value < items[j].Name.Value
+					less := items[i].PodName < items[j].PodName
 					if ascend {
 						return less
 					}
@@ -618,79 +709,74 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "name",
 			Title:     cputil.I18n(ctx, "name"),
-			Width:     180,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "status",
 			Title:     cputil.I18n(ctx, "status"),
-			Width:     80,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ip",
 			Title:     cputil.I18n(ctx, "ip"),
-			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
-			Width:     80,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "nodeName",
 			Title:     cputil.I18n(ctx, "node"),
-			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "age",
 			Title:     cputil.I18n(ctx, "age"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "cpuRequests",
 			Title:     cputil.I18n(ctx, "cpuRequests"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "cpuLimits",
 			Title:     cputil.I18n(ctx, "cpuLimits"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "cpuPercent",
 			Title:     cputil.I18n(ctx, "cpuPercent"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "memoryRequests",
 			Title:     cputil.I18n(ctx, "memoryRequests"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "memoryLimits",
 			Title:     cputil.I18n(ctx, "memoryLimits"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "memoryPercent",
 			Title:     cputil.I18n(ctx, "memoryPercent"),
-			Width:     120,
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
-			Width:     130,
 			Sorter:    false,
 			Fixed:     "right",
 		},
@@ -740,17 +826,12 @@ func matchSelector(selector, labels map[string]interface{}) bool {
 }
 
 func (p *ComponentPodsTable) parsePodStatus(state string) Status {
-	color := cmpcputil.PodStatus[state]
-	if color == "" {
-		color = "Default"
-	}
+	color, breathing := cmpcputil.ParsePodStatus(state)
 	return Status{
-		RenderType: "tagsRow",
-		Size:       "default",
-		Value: StatusValue{
-			Label: p.sdk.I18n(state),
-			Color: color,
-		},
+		RenderType: "textWithBadge",
+		Value:      p.sdk.I18n(state),
+		Status:     color,
+		Breathing:  breathing,
 	}
 }
 

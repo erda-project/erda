@@ -78,15 +78,10 @@ func (podStatus *PodStatus) Render(ctx context.Context, c *cptype.Component, s c
 		return fmt.Errorf("pod %s/%s has invalid fields length", namespace, name)
 	}
 	status := fields[2]
-	color := cmpcputil.PodStatus[status]
-	if color == "" {
-		color = "Default"
-	}
-
-	podStatus.Data.Labels.Color = color
-	podStatus.Data.Labels.Label = cputil.I18n(ctx, status)
-	podStatus.Props.Size = "default"
-	podStatus.Props.RequestIgnore = []string{"data"}
+	color, breathing := cmpcputil.ParsePodStatus(status)
+	podStatus.Props.Status = color
+	podStatus.Props.Text = cputil.I18n(ctx, status)
+	podStatus.Props.Breathing = breathing
 	podStatus.Transfer(c)
 	return nil
 }
@@ -113,9 +108,6 @@ func (podStatus *PodStatus) GenComponentState(c *cptype.Component) error {
 
 func (podStatus *PodStatus) Transfer(c *cptype.Component) {
 	c.Props = podStatus.Props
-	c.Data = map[string]interface{}{
-		"labels": podStatus.Data.Labels,
-	}
 	c.State = map[string]interface{}{
 		"clusterName": podStatus.State.ClusterName,
 		"podId":       podStatus.State.PodID,

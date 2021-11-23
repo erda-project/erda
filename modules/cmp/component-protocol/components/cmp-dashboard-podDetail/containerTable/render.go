@@ -98,7 +98,6 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 					Operations: map[string]Operation{
 						"log": {
 							Key:    "checkPrevLog",
-							Text:   restartCountStr,
 							Reload: false,
 							Meta: map[string]interface{}{
 								"hasRestarted":  true,
@@ -109,7 +108,8 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 							},
 						},
 					},
-					RenderType: "tableOperation",
+					RenderType: "linkText",
+					Value:      restartCountStr,
 				}
 				break
 			}
@@ -171,32 +171,27 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	containerTable.Props.Scroll.X = 1000
 	containerTable.Props.Columns = []Column{
 		{
-			Width:     80,
 			DataIndex: "status",
 			Title:     cputil.I18n(ctx, "status"),
 		},
 		{
-			Width:     80,
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
 		},
 		{
-			Width:     120,
 			DataIndex: "name",
 			Title:     cputil.I18n(ctx, "name"),
 		},
 		{
-			Width:     400,
 			DataIndex: "images",
 			Title:     cputil.I18n(ctx, "images"),
 		},
 		{
-			Width:     80,
 			DataIndex: "restartCount",
 			Title:     cputil.I18n(ctx, "restartCount"),
+			Align:     "right",
 		},
 		{
-			Width:     120,
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
 			Fixed:     "right",
@@ -240,21 +235,21 @@ func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
 
 func parseContainerStatus(ctx context.Context, state string) Status {
 	color := ""
+	breathing := false
 	switch state {
 	case "running":
-		color = "green"
+		color = "success"
+		breathing = true
 	case "waiting":
-		color = "steelblue"
+		color = "processing"
 	case "terminated":
-		color = "red"
+		color = "error"
 	}
 	return Status{
-		RenderType: "tagsRow",
-		Size:       "default",
-		Value: StatusValue{
-			Label: cputil.I18n(ctx, state),
-			Color: color,
-		},
+		RenderType: "textWithBadge",
+		Value:      cputil.I18n(ctx, state),
+		Status:     color,
+		Breathing:  breathing,
 	}
 }
 

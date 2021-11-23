@@ -80,8 +80,8 @@ type Props struct {
 type Column struct {
 	DataIndex string `json:"dataIndex,omitempty"`
 	Title     string `json:"title,omitempty"`
-	Width     int    `json:"width,omitempty"`
 	Sorter    bool   `json:"sorter,omitempty"`
+	Align     string `json:"align,omitempty"`
 }
 
 type Operation struct {

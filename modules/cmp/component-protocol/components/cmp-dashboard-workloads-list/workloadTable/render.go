@@ -509,93 +509,79 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	statusColumn := Column{
 		DataIndex: "status",
 		Title:     cputil.I18n(ctx, "status"),
-		Width:     120,
 		Sorter:    true,
 	}
 	kindColumn := Column{
 		DataIndex: "kind",
 		Title:     cputil.I18n(ctx, "workloadKind"),
-		Width:     120,
 		Sorter:    true,
 	}
 	nameColumn := Column{
 		DataIndex: "name",
 		Title:     cputil.I18n(ctx, "name"),
-		Width:     180,
 		Sorter:    true,
 	}
 	namespaceColumn := Column{
 		DataIndex: "namespace",
 		Title:     cputil.I18n(ctx, "namespace"),
-		Width:     180,
 		Sorter:    true,
 	}
 	ageColumn := Column{
 		DataIndex: "age",
 		Title:     cputil.I18n(ctx, "age"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	readyColumn := Column{
 		DataIndex: "ready",
 		Title:     cputil.I18n(ctx, "ready"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	upToDateColumn := Column{
 		DataIndex: "upToDate",
 		Title:     cputil.I18n(ctx, "upToDate"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	availableColumn := Column{
 		DataIndex: "available",
 		Title:     cputil.I18n(ctx, "available"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	desiredColumn := Column{
 		DataIndex: "desired",
 		Title:     cputil.I18n(ctx, "desired"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	currentColumn := Column{
 		DataIndex: "current",
 		Title:     cputil.I18n(ctx, "current"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	completionsColumn := Column{
 		DataIndex: "completions",
 		Title:     cputil.I18n(ctx, "completions"),
-		Width:     100,
 		Sorter:    true,
 		Align:     "right",
 	}
 	durationColumn := Column{
 		DataIndex: "duration",
 		Title:     cputil.I18n(ctx, "jobDuration"),
-		Width:     120,
 		Sorter:    true,
 		Align:     "right",
 	}
 	scheduleColumn := Column{
 		DataIndex: "schedule",
 		Title:     cputil.I18n(ctx, "schedule"),
-		Width:     100,
 		Sorter:    true,
 	}
 	lastScheduleColumn := Column{
 		DataIndex: "lastSchedule",
 		Title:     cputil.I18n(ctx, "lastSchedule"),
-		Width:     120,
 		Sorter:    true,
 		Align:     "right",
 	}

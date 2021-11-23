@@ -399,3 +399,15 @@ var PodStatus = map[string]string{
 	"Terminating":       "processing",
 	"OOMKilled":         "error",
 }
+
+func ParsePodStatus(state string) (string, bool) {
+	breathing := false
+	if state == "Running" || state == "ContainerCreating" {
+		breathing = true
+	}
+	status := PodStatus[state]
+	if status == "" {
+		status = "default"
+	}
+	return status, breathing
+}

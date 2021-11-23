@@ -107,7 +107,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			&activeCronJob, &activeJob, &activeDs, &activeSs, &activeDeploy,
+			&activeDeploy, &activeSs, &activeDs, &activeJob, &activeCronJob,
 		},
 	}
 
@@ -117,7 +117,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			nil, nil, &abnormalDs, &abnormalSs, &abnormalDeploy,
+			&abnormalDeploy, &abnormalSs, &abnormalDs, nil, nil,
 		},
 	}
 
@@ -127,7 +127,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			nil, &succeededJob, nil, nil, nil,
+			nil, nil, nil, &succeededJob, nil,
 		},
 	}
 
@@ -137,7 +137,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			nil, &failedJob, nil, nil, nil,
+			nil, nil, nil, &failedJob, nil,
 		},
 	}
 
@@ -147,7 +147,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			nil, nil, nil, nil, &updatingDeploy,
+			&updatingDeploy, nil, nil, nil, nil,
 		},
 	}
 	w.Data.Option.Series = []Series{

@@ -106,22 +106,18 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	}
 	obj := resp.Data()
 
-	status, color, _, err := cputil.ParseWorkloadStatus(obj)
+	status, color, breathing, err := cputil.ParseWorkloadStatus(obj)
 	if err != nil {
 		return err
 	}
-	s.Data.Labels.Label = s.sdk.I18n(status)
-	s.Data.Labels.Color = color
-	s.Props.Size = "default"
-	s.Props.RequestIgnore = []string{"data"}
+	s.Props.Text = s.sdk.I18n(status)
+	s.Props.Status = color
+	s.Props.Breathing = breathing
 	return nil
 }
 
 func (s *ComponentWorkloadStatus) Transfer(c *cptype.Component) {
 	c.Props = s.Props
-	c.Data = map[string]interface{}{
-		"labels": s.Data.Labels,
-	}
 	c.State = map[string]interface{}{
 		"clusterName": s.State.ClusterName,
 		"workloadId":  s.State.WorkloadID,

@@ -64,7 +64,6 @@ component-protocol.components.cmp-dashboard-nodeDetail.yamlDrawer:
 component-protocol.components.cmp-dashboard-nodeDetail.yamlFileEditor:
 
 component-protocol.components.cmp-dashboard-pods.page:
-component-protocol.components.cmp-dashboard-pods.filterContainer:
 component-protocol.components.cmp-dashboard-pods.chartContainer:
 component-protocol.components.cmp-dashboard-pods.tableContainer:
 component-protocol.components.cmp-dashboard-pods.filter:

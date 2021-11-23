@@ -388,9 +388,8 @@ func TestComponentWorkloadTable_Transfer(t *testing.T) {
 					Status: Status{
 						RenderType: "testType",
 						Value:      "testValue",
-						StyleConfig: StyleConfig{
-							Color: "testColor",
-						},
+						Status:     "testStatus",
+						Breathing:  true,
 					},
 					Name: Multiple{
 						RenderType: "testType",
@@ -424,8 +423,8 @@ func TestComponentWorkloadTable_Transfer(t *testing.T) {
 				{
 					DataIndex: "test",
 					Title:     "testTitle",
-					Width:     120,
 					Sorter:    true,
+					Align:     "right",
 				},
 			},
 			RowKey:         "testKey",

@@ -40,10 +40,7 @@ func TestPodsCharts_ParsePodStatus(t *testing.T) {
 	sdk := cptype.SDK{Tran: &MockTran{}}
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &sdk)
 	pd := &PodsCharts{}
-	status := pd.ParsePodStatus(ctx, "Running", 1, 1)
-	if status[0].Color != "success" {
-		t.Errorf("test failed, value of status is unexpected")
-	}
+	pd.ParsePodStatus(ctx, "Running", 1, 1)
 }
 
 func TestPodsCharts_Transfer(t *testing.T) {

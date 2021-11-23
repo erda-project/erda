@@ -122,15 +122,10 @@ func TestComponentWorkloadStatus_GenComponentState(t *testing.T) {
 
 func TestComponentWorkloadStatus_Transfer(t *testing.T) {
 	component := &ComponentWorkloadStatus{
-		Data: Data{
-			Labels: Labels{
-				Label: "testLabel",
-				Color: "testColor",
-			},
-		},
 		Props: Props{
-			RequestIgnore: []string{"test"},
-			Size:          "small",
+			Text:      "testText",
+			Status:    "testStatus",
+			Breathing: true,
 		},
 		State: State{
 			ClusterName: "testClusterName",

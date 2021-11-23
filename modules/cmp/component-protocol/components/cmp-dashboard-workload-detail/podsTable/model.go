@@ -57,36 +57,46 @@ type Data struct {
 }
 
 type Item struct {
-	ID                string  `json:"id,omitempty"`
-	Status            Status  `json:"status,omitempty"`
-	Name              Link    `json:"name,omitempty"`
-	Namespace         string  `json:"namespace,omitempty"`
-	IP                string  `json:"ip,omitempty"`
-	Age               string  `json:"age,omitempty"`
-	CPURequests       string  `json:"cpuRequests,omitempty"`
-	CPURequestsNum    int64   `json:"CPURequestsNum,omitempty"`
-	CPUPercent        Percent `json:"cpuPercent,omitempty"`
-	CPULimits         string  `json:"cpuLimits,omitempty"`
-	CPULimitsNum      int64   `json:"CPULimitsNum,omitempty"`
-	MemoryRequests    string  `json:"memoryRequests,omitempty"`
-	MemoryRequestsNum int64   `json:"MemoryRequestsNum,omitempty"`
-	MemoryPercent     Percent `json:"memoryPercent,omitempty"`
-	MemoryLimits      string  `json:"memoryLimits,omitempty"`
-	MemoryLimitsNum   int64   `json:"MemoryLimitsNum,omitempty"`
-	Ready             string  `json:"ready,omitempty"`
-	NodeName          string  `json:"nodeName,omitempty"`
-	Operate           Operate `json:"operate"`
+	ID                string   `json:"id,omitempty"`
+	Status            Status   `json:"status,omitempty"`
+	Name              Multiple `json:"name,omitempty"`
+	PodName           string   `json:"podName,omitempty"`
+	Namespace         string   `json:"namespace,omitempty"`
+	IP                string   `json:"ip,omitempty"`
+	Age               string   `json:"age,omitempty"`
+	CPURequests       Multiple `json:"cpuRequests,omitempty"`
+	CPURequestsNum    int64    `json:"CPURequestsNum,omitempty"`
+	CPUPercent        Percent  `json:"cpuPercent,omitempty"`
+	CPULimits         Multiple `json:"cpuLimits,omitempty"`
+	CPULimitsNum      int64    `json:"CPULimitsNum,omitempty"`
+	MemoryRequests    Multiple `json:"memoryRequests,omitempty"`
+	MemoryRequestsNum int64    `json:"MemoryRequestsNum,omitempty"`
+	MemoryPercent     Percent  `json:"memoryPercent,omitempty"`
+	MemoryLimits      Multiple `json:"memoryLimits,omitempty"`
+	MemoryLimitsNum   int64    `json:"MemoryLimitsNum,omitempty"`
+	Ready             string   `json:"ready,omitempty"`
+	NodeName          string   `json:"nodeName,omitempty"`
+	Operate           Operate  `json:"operate"`
 }
 
 type Status struct {
-	RenderType string      `json:"renderType,omitempty"`
-	Size       string      `json:"size,omitempty"`
-	Value      StatusValue `json:"value,omitempty"`
+	RenderType string `json:"renderType,omitempty"`
+	Value      string `json:"value,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Breathing  bool   `json:"breathing"`
 }
 
-type StatusValue struct {
-	Label string `json:"label,omitempty"`
-	Color string `json:"color,omitempty"`
+type Multiple struct {
+	RenderType string        `json:"renderType,omitempty"`
+	Direction  string        `json:"direction,omitempty"`
+	Renders    []interface{} `json:"renders,omitempty"`
+}
+
+type TextWithIcon struct {
+	RenderType string `json:"renderType,omitempty"`
+	Icon       string `json:"icon,omitempty"`
+	Value      string `json:"value,omitempty"`
+	Size       string `json:"size,omitempty"`
 }
 
 type StyleConfig struct {
@@ -140,9 +150,9 @@ type Props struct {
 type Column struct {
 	DataIndex string `json:"dataIndex,omitempty"`
 	Title     string `json:"title,omitempty"`
-	Width     int    `json:"width"`
 	Sorter    bool   `json:"sorter"`
 	Fixed     string `json:"fixed,omitempty"`
+	Align     string `json:"align"`
 }
 
 type Operation struct {
