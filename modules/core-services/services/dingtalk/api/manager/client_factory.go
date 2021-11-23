@@ -16,13 +16,10 @@ package manager
 
 import (
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/client"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 )
 
-type DingTalkApiClientFactory interface {
-	GetClient(appKey, appSecret string, agentId int64) *client.DingtalkApiClient
-}
-
-func (p *provider) GetClient(appKey, appSecret string, agentId int64) *client.DingtalkApiClient {
+func (p *Manager) GetClient(appKey, appSecret string, agentId int64) interfaces.DingtalkApiClient {
 	tokenManager := p.GetAccessTokenManager(appKey, appSecret)
 	return client.New(appKey, appSecret, agentId, tokenManager, p)
 }

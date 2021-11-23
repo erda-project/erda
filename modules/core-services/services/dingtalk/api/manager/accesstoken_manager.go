@@ -21,17 +21,14 @@ import (
 
 	"github.com/go-redis/redis"
 
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
-
-type DingtalkAccessTokenManager interface {
-	GetAccessToken(appKey string) (string, error)
-}
 
 var appKeySecrets = make(map[string]string)
 var requestLocks = make(map[string]*sync.Mutex)
 
-func (p *provider) GetAccessTokenManager(appKey, appSecret string) DingtalkAccessTokenManager {
+func (p *Manager) GetAccessTokenManager(appKey, appSecret string) interfaces.DingtalkAccessTokenManager {
 	if secret, ok := appKeySecrets[appKey]; ok && secret == appSecret {
 		return p
 	}
@@ -47,7 +44,7 @@ func (p *provider) GetAccessTokenManager(appKey, appSecret string) DingtalkAcces
 	return p
 }
 
-func (p *provider) GetAccessToken(appKey string) (string, error) {
+func (p *Manager) GetAccessToken(appKey string) (string, error) {
 	cacheKey := p.getAccessTokenCacheKey(appKey)
 	result, err := p.Redis.Get(cacheKey).Result()
 	if err != nil && err != redis.Nil {
@@ -78,6 +75,6 @@ func (p *provider) GetAccessToken(appKey string) (string, error) {
 	return accessToken, nil
 }
 
-func (p *provider) getAccessTokenCacheKey(appKey string) string {
+func (p *Manager) getAccessTokenCacheKey(appKey string) string {
 	return "erda_dingtalk_ak_" + appKey
 }

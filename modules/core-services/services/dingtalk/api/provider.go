@@ -12,40 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package manager
+package api
 
 import (
-	"sync"
-
 	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/manager"
 )
 
 type config struct {
 }
 
 type provider struct {
-	Cfg   *config
-	Log   logs.Logger
-	Redis *redis.Client `autowired:"redis-client" optional:"true"`
-	lock  sync.Mutex
+	Cfg     *config
+	Log     logs.Logger
+	Redis   *redis.Client `autowired:"redis-client" optional:"true"`
+	manager *manager.Manager
 }
 
-var _ DingTalkApiClientFactory = &provider{}
-
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.manager = &manager.Manager{
+		Log:   p.Log,
+		Redis: p.Redis,
+	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
+	return p.manager
 }
 
 func init() {
-	servicehub.Register("dingtalk.api.manager", &servicehub.Spec{
-		Services: []string{"dingtalk.api.manager"},
+	servicehub.Register("dingtalk.api", &servicehub.Spec{
+		Services: []string{"dingtalk.api"},
 		Creator:  func() servicehub.Provider { return &provider{} },
 	})
 }

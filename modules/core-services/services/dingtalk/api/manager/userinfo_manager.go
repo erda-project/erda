@@ -21,11 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
-type DingtalkUserInfoManager interface {
-	GetUserIdsByPhones(accessToken string, agentId int64, phones []string) (userIds []string, err error)
-}
-
-func (p *provider) GetUserIdsByPhones(accessToken string, agentId int64, phones []string) (userIds []string, err error) {
+func (p *Manager) GetUserIdsByPhones(accessToken string, agentId int64, phones []string) (userIds []string, err error) {
 	results := sync.Map{}
 	ctx := NewTaskContext(10, &results)
 
@@ -46,7 +42,7 @@ func (p *provider) GetUserIdsByPhones(accessToken string, agentId int64, phones 
 	return userIds, err
 }
 
-func (p *provider) getUserIdByPhone(ctx *TaskContext, accessToken string, agentId int64, phone string) {
+func (p *Manager) getUserIdByPhone(ctx *TaskContext, accessToken string, agentId int64, phone string) {
 	defer ctx.Done()
 
 	cacheKey := p.getUserIdCacheKey(agentId, phone)
@@ -69,6 +65,6 @@ func (p *provider) getUserIdByPhone(ctx *TaskContext, accessToken string, agentI
 	}
 }
 
-func (p *provider) getUserIdCacheKey(agentId int64, phone string) string {
+func (p *Manager) getUserIdCacheKey(agentId int64, phone string) string {
 	return fmt.Sprintf("erda_dingtalk_uid_%d_%s", agentId, phone)
 }

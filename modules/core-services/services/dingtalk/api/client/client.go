@@ -15,22 +15,22 @@
 package client
 
 import (
-	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/manager"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
-type DingtalkApiClient struct {
+type dingtalkApiClient struct {
 	appKey             string
 	appSecret          string
 	agentId            int64
-	accessTokenManager manager.DingtalkAccessTokenManager
-	userInfoManager    manager.DingtalkUserInfoManager
+	accessTokenManager interfaces.DingtalkAccessTokenManager
+	userInfoManager    interfaces.DingtalkUserInfoManager
 }
 
 func New(appKey, appSecret string, agentId int64,
-	accessTokenManager manager.DingtalkAccessTokenManager,
-	userInfoManager manager.DingtalkUserInfoManager) *DingtalkApiClient {
-	return &DingtalkApiClient{
+	accessTokenManager interfaces.DingtalkAccessTokenManager,
+	userInfoManager interfaces.DingtalkUserInfoManager) interfaces.DingtalkApiClient {
+	return &dingtalkApiClient{
 		appKey:             appKey,
 		appSecret:          appSecret,
 		agentId:            agentId,
@@ -39,7 +39,7 @@ func New(appKey, appSecret string, agentId int64,
 	}
 }
 
-func (dc *DingtalkApiClient) SendWorkNotice(phones []string, title, content string) error {
+func (dc *dingtalkApiClient) SendWorkNotice(phones []string, title, content string) error {
 	accessToken, err := dc.accessTokenManager.GetAccessToken(dc.appKey)
 	if err != nil {
 		return err

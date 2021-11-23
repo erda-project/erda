@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package interfaces
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+type DingtalkAccessTokenManager interface {
+	GetAccessToken(appKey string) (string, error)
+}
 
-	// providers and modules
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
-)
+type DingtalkUserInfoManager interface {
+	GetUserIdsByPhones(accessToken string, agentId int64, phones []string) (userIds []string, err error)
+}
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+type DingtalkApiClient interface {
+	SendWorkNotice(phones []string, title, content string) error
+}
+
+type DingTalkApiClientFactory interface {
+	GetClient(appKey, appSecret string, agentId int64) DingtalkApiClient
 }

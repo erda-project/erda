@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package manager
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"sync"
 
-	// providers and modules
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+	"github.com/go-redis/redis"
+
+	"github.com/erda-project/erda-infra/base/logs"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+type Manager struct {
+	Log   logs.Logger
+	Redis *redis.Client
+	lock  sync.Mutex
 }
