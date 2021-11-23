@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
-
 	"bou.ke/monkey"
+
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
 func Test_RegisterApp_WithMultipleTimes_Should_CreateOnlyOneRequestLock(t *testing.T) {
