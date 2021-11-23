@@ -438,14 +438,16 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	log.Info("get list", list)
+	log.Infof("get list %+v", list)
 	result := &pb.GetNotifyChannelsEnabledResponse{
 		Data: make(map[string]bool),
 	}
 	for _, v := range list {
+		log.Infof("list v %+v", v)
 		result.Data[v.Type] = v.IsEnabled
 	}
 	userId := apis.GetUserID(ctx)
+	log.Infof("userid is %+v", userId)
 	msEnable, err := s.p.bdl.GetNotifyConfigMS(userId, orgId)
 	log.Info("ms enable", msEnable)
 	if err != nil {
@@ -454,7 +456,7 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 	if msEnable {
 		result.Data[strings.ToLower(pb.Type_SHORT_MESSAGE.String())] = true
 	}
-	log.Info("rrrrrrrrtrtrrrrr", result)
+	log.Infof("result is %+v", result)
 	return result, nil
 }
 
