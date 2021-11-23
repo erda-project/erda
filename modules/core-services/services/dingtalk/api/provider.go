@@ -34,7 +34,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.manager = manager.New(p.Log, caches.NewRedis(p.Redis))
+	p.manager = manager.NewManager(p.Log, caches.NewRedis(p.Redis))
 	return nil
 }
 

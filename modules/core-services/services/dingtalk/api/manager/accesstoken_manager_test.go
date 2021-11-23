@@ -40,7 +40,13 @@ func Test_RegisterApp_WithMultipleTimes_Should_CreateOnlyOneRequestLock(t *testi
 	}
 	wg.Wait()
 
-	if len(requestLocks) != 1 {
+	count := 0
+	requestLocks.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+
+	if count != 1 {
 		t.Errorf("concurrency get token manager for same key, should create only one lock")
 	}
 }

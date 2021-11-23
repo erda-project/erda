@@ -15,33 +15,28 @@
 package manager
 
 import (
-	"sync"
+	"fmt"
 	"testing"
+
+	"bou.ke/monkey"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
-func Test_GetClient_WithMultipleTimes_Should_Success(t *testing.T) {
-	m := &Manager{}
-	wg := sync.WaitGroup{}
-	wg.Add(1000)
+func Test_GetUserIdsByPhones_Should_Success(t *testing.T) {
+	m := NewManager(nil, &MockCache{})
 
-	for i := 0; i < 1000; i++ {
-		go func() {
-			client := m.GetClient("mock_appkey", "mock_appsecret", 123)
-			if client == nil {
-				t.Errorf("client factory should not return nil")
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	count := 0
-	requestLocks.Range(func(key, value interface{}) bool {
-		count++
-		return true
+	monkey.Unpatch(native.GetUserIdByMobile)
+	monkey.Patch(native.GetUserIdByMobile, func(accessToken string, mobile string) (userId string, err error) {
+		return "userid_" + mobile, nil
 	})
 
-	if count != 1 {
-		t.Errorf("concurrency get same client, should create only one lock")
+	userIds, err := m.GetUserIdsByPhones("mock_accesstoken", 123, []string{"17139483930", "123232323"})
+	if err != nil {
+		t.Errorf("should not error")
 	}
+
+	if len(userIds) != 2 {
+		t.Errorf("userIds should not empty")
+	}
+	fmt.Println(userIds)
 }

@@ -25,22 +25,22 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
-var appKeySecrets = make(map[string]string)
-var requestLocks = make(map[string]*sync.Mutex)
+var appKeySecrets = &sync.Map{}
+var requestLocks = &sync.Map{}
 
 func (m *Manager) RegisterApp(appKey, appSecret string) interfaces.DingtalkAccessTokenManager {
-	if secret, ok := appKeySecrets[appKey]; ok && secret == appSecret {
+	if secret, ok := appKeySecrets.Load(appKey); ok && secret == appSecret {
 		return m
 	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if secret, ok := appKeySecrets[appKey]; ok && secret == appSecret {
+	if secret, ok := appKeySecrets.Load(appKey); ok && secret == appSecret {
 		return m
 	}
-	appKeySecrets[appKey] = appSecret
-	requestLocks[appKey] = &sync.Mutex{}
+	appKeySecrets.Store(appKey, appSecret)
+	requestLocks.Store(appKey, &sync.Mutex{})
 	return m
 }
 
@@ -54,20 +54,20 @@ func (m *Manager) GetAccessToken(appKey string) (string, error) {
 		return result, nil
 	}
 
-	secret, ok := appKeySecrets[appKey]
+	secret, ok := appKeySecrets.Load(appKey)
 	if !ok {
 		return "", fmt.Errorf("appSecret not registered")
 	}
-	requestLock, ok := requestLocks[appKey]
+	requestLock, ok := requestLocks.Load(appKey)
 	if !ok {
 		return "", fmt.Errorf("request lock is nil")
 	}
 
 	// todo: use chan to load accessToken async
-	requestLock.Lock()
-	defer requestLock.Unlock()
+	requestLock.(*sync.Mutex).Lock()
+	defer requestLock.(*sync.Mutex).Unlock()
 
-	accessToken, expireIn, err := native.GetAccessToken(appKey, secret)
+	accessToken, expireIn, err := native.GetAccessToken(appKey, secret.(string))
 	if err != nil {
 		return "", err
 	}

@@ -27,7 +27,7 @@ type Manager struct {
 	lock  sync.Mutex
 }
 
-func New(logger logs.Logger, cache interfaces.KvCache) *Manager {
+func NewManager(logger logs.Logger, cache interfaces.KvCache) *Manager {
 	return &Manager{
 		Log:   logger,
 		Cache: cache,
