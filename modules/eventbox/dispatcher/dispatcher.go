@@ -44,6 +44,7 @@ import (
 	vmssubscriber "github.com/erda-project/erda/modules/eventbox/subscriber/vms"
 	"github.com/erda-project/erda/modules/eventbox/webhook"
 	"github.com/erda-project/erda/modules/eventbox/websocket"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
@@ -155,6 +156,7 @@ func New() (Dispatcher, error) {
 	server.AddEndPoints(httpi.GetHTTPEndPoints())
 	server.AddEndPoints(regHTTP.GetHTTPEndPoints())
 	server.AddEndPoints([]stypes.Endpoint{{"/version", http.MethodGet, getVersion}})
+	server.AddEndPoints([]stypes.Endpoint{{"/actions/get-smtp-info", http.MethodGet, getSMTPInfo}})
 	server.AddEndPoints(wh.GetHTTPEndPoints())
 	server.AddEndPoints(mon.GetHTTPEndPoints())
 	// add router for Websocket
@@ -244,4 +246,20 @@ func (d *DispatcherImpl) Stop() {
 
 func getVersion(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
 	return stypes.HTTPResponse{Status: http.StatusOK, Content: version.String()}, nil
+}
+
+func getSMTPInfo(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(req)
+
+	if err != nil {
+		logrus.Errorf("getIdentityInfo error %v", err)
+		return stypes.HTTPResponse{Status: http.StatusUnauthorized, Content: "failed"}, nil
+	}
+
+	if !identityInfo.IsInternalClient() {
+		return stypes.HTTPResponse{Status: http.StatusUnauthorized, Content: "failed"}, nil
+	}
+
+	return stypes.HTTPResponse{Status: http.StatusOK, Content: emailsubscriber.NewMailSubscriberInfo(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
+		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify())}, nil
 }
