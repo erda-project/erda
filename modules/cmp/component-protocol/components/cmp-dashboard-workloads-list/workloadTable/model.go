@@ -68,7 +68,7 @@ type Sorter struct {
 }
 
 type Values struct {
-	Namespace []string `json:"namespace,omitempty"`
+	Namespace string   `json:"namespace,omitempty"`
 	Kind      []string `json:"kind,omitempty"`
 	Status    []string `json:"status,omitempty"`
 	Search    string   `json:"search,omitempty"`
@@ -79,31 +79,41 @@ type Data struct {
 }
 
 type Item struct {
-	ID           string `json:"id,omitempty"`
-	Status       Status `json:"status,omitempty"`
-	Name         Link   `json:"name,omitempty"`
-	Namespace    string `json:"namespace,omitempty"`
-	Kind         string `json:"kind,omitempty"`
-	Age          string `json:"age,omitempty"`
-	Ready        string `json:"ready,omitempty"`
-	UpToDate     string `json:"upToDate,omitempty"`
-	Available    string `json:"available,omitempty"`
-	Desired      string `json:"desired,omitempty"`
-	Current      string `json:"current,omitempty"`
-	Completions  string `json:"completions,omitempty"`
-	Duration     string `json:"duration,omitempty"`
-	Schedule     string `json:"schedule,omitempty"`
-	LastSchedule string `json:"lastSchedule,omitempty"`
+	ID           string   `json:"id,omitempty"`
+	Status       Status   `json:"status,omitempty"`
+	Name         Multiple `json:"name,omitempty"`
+	WorkloadName string   `json:"workloadName,omitempty"`
+	Namespace    string   `json:"namespace,omitempty"`
+	Kind         Kind     `json:"kind,omitempty"`
+	Age          string   `json:"age,omitempty"`
+	Ready        string   `json:"ready,omitempty"`
+	UpToDate     string   `json:"upToDate,omitempty"`
+	Available    string   `json:"available,omitempty"`
+	Desired      string   `json:"desired,omitempty"`
+	Current      string   `json:"current,omitempty"`
+	Completions  string   `json:"completions,omitempty"`
+	Duration     string   `json:"duration,omitempty"`
+	Schedule     string   `json:"schedule,omitempty"`
+	LastSchedule string   `json:"lastSchedule,omitempty"`
 }
 
 type Status struct {
-	RenderType  string      `json:"renderType,omitempty"`
-	Value       string      `json:"value,omitempty"`
-	StyleConfig StyleConfig `json:"styleConfig,omitempty"`
+	RenderType string `json:"renderType,omitempty"`
+	Value      string `json:"value,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Breathing  bool   `json:"breathing,omitempty"`
 }
 
-type StyleConfig struct {
-	Color string `json:"color,omitempty"`
+type Multiple struct {
+	RenderType string        `json:"renderType,omitempty"`
+	Direction  string        `json:"direction,omitempty"`
+	Renders    []interface{} `json:"renders,omitempty"`
+}
+
+type TextWithIcon struct {
+	RenderType string `json:"renderType,omitempty"`
+	Icon       string `json:"icon,omitempty"`
+	Value      string `json:"value,omitempty"`
 }
 
 type Link struct {
@@ -115,6 +125,16 @@ type Link struct {
 type LinkOperation struct {
 	Reload bool   `json:"reload"`
 	Key    string `json:"key,omitempty"`
+}
+
+type Kind struct {
+	RenderType string    `json:"renderType,omitempty"`
+	Size       string    `json:"size,omitempty"`
+	Value      KindValue `json:"value"`
+}
+
+type KindValue struct {
+	Label string `json:"label,omitempty"`
 }
 
 type CommandState struct {
@@ -133,8 +153,8 @@ type Props struct {
 type Column struct {
 	DataIndex string `json:"dataIndex,omitempty"`
 	Title     string `json:"title,omitempty"`
-	Width     int    `json:"width"`
 	Sorter    bool   `json:"sorter,omitempty"`
+	Align     string `json:"align,omitempty"`
 }
 
 type Operation struct {

@@ -65,18 +65,19 @@ func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
 }
 
 func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
-	w.Props.Option.Tooltip.Trigger = "axis"
-	w.Props.Option.Tooltip.AxisPointer.Type = "shadow"
-	w.Props.Option.Color = []string{
-		"green", "red", "steelblue", "maroon",
+	w.Data.Option.Tooltip.Show = false
+	w.Data.Option.Color = []string{
+		"primary8", "warning8", "primary6", "primary4", "warning6",
 	}
-	w.Props.Option.Legend.Data = []string{
-		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Abnormal"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"), cputil.I18n(ctx, "Updating"),
+	w.Data.Option.Legend.Data = []string{
+		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Succeeded"),
+		cputil.I18n(ctx, "Updating"), cputil.I18n(ctx, "Abnormal"),
+		cputil.I18n(ctx, "Failed"),
 	}
-	w.Props.Option.XAxis.Type = "value"
-	w.Props.Option.YAxis.Type = "category"
-	w.Props.Option.YAxis.Data = []string{
-		"CronJobs", "Jobs", "DaemonSets", "StatefulSets", "Deployments",
+	w.Data.Option.YAxis.Type = "value"
+	w.Data.Option.XAxis.Type = "category"
+	w.Data.Option.XAxis.Data = []string{
+		"Deployments", "StatefulSets", "DaemonSets", "Jobs", "CronJobs",
 	}
 
 	// deployment
@@ -103,61 +104,63 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	activeSeries := Series{
 		Name:     cputil.I18n(ctx, "Active"),
 		Type:     "bar",
-		Stack:    "count",
-		BarWidth: "50%",
+		BarWidth: 10,
+		BarGap:   "40%",
 		Data: []*int{
-			&activeCronJob, &activeJob, &activeDs, &activeSs, &activeDeploy,
+			&activeDeploy, &activeSs, &activeDs, &activeJob, &activeCronJob,
 		},
 	}
 
-	errorSeries := Series{
+	abnormalSeries := Series{
 		Name:     cputil.I18n(ctx, "Abnormal"),
 		Type:     "bar",
-		Stack:    "count",
-		BarWidth: "50%",
+		BarWidth: 10,
+		BarGap:   "40%",
 		Data: []*int{
-			nil, nil, &abnormalDs, &abnormalSs, &abnormalDeploy,
+			&abnormalDeploy, &abnormalSs, &abnormalDs, nil, nil,
 		},
 	}
 
 	succeededSeries := Series{
 		Name:     cputil.I18n(ctx, "Succeeded"),
 		Type:     "bar",
-		Stack:    "count",
-		BarWidth: "50%",
+		BarWidth: 10,
+		BarGap:   "40%",
 		Data: []*int{
-			nil, &succeededJob, nil, nil, nil,
+			nil, nil, nil, &succeededJob, nil,
 		},
 	}
 
 	failedSeries := Series{
 		Name:     cputil.I18n(ctx, "Failed"),
 		Type:     "bar",
-		Stack:    "count",
-		BarWidth: "50%",
+		BarWidth: 10,
+		BarGap:   "40%",
 		Data: []*int{
-			nil, &failedJob, nil, nil, nil,
+			nil, nil, nil, &failedJob, nil,
 		},
 	}
 
 	updatingSeries := Series{
 		Name:     cputil.I18n(ctx, "Updating"),
 		Type:     "bar",
-		Stack:    "count",
-		BarWidth: "50%",
+		BarWidth: 10,
+		BarGap:   "40%",
 		Data: []*int{
-			nil, nil, nil, nil, &updatingDeploy,
+			&updatingDeploy, nil, nil, nil, nil,
 		},
 	}
-	w.Props.Option.Series = []Series{
-		activeSeries, errorSeries, succeededSeries, failedSeries, updatingSeries,
+	w.Data.Option.Series = []Series{
+		activeSeries, abnormalSeries, updatingSeries, succeededSeries, failedSeries,
 	}
 	return nil
 }
 
-func (w *ComponentWorkloadChart) Transfer(component *cptype.Component) {
-	component.Props = w.Props
-	component.State = map[string]interface{}{
+func (w *ComponentWorkloadChart) Transfer(c *cptype.Component) {
+	c.State = map[string]interface{}{
 		"values": w.State.Values,
+	}
+	c.Data = map[string]interface{}{
+		"option": w.Data.Option,
 	}
 }

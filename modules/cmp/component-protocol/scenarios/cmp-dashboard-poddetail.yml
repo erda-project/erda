@@ -33,7 +33,7 @@ components:
   rightContent:
     type: RowContainer
   podStatus:
-    type: Tags
+    type: Badge
   podTitle:
     type: Title
   containerTitle:
