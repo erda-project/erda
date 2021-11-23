@@ -651,7 +651,19 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 			monkey.PatchInstanceMethod(reflect.TypeOf(bund), "GetNotifyConfigMS", func(bdl *bundle.Bundle, userId, orgId string) (bool, error) {
 				return true, nil
 			})
-			s := &notifyChannelService{}
+			pro := provider{
+				Cfg:                 nil,
+				Log:                 nil,
+				Register:            nil,
+				uc:                  nil,
+				notifyChanelService: nil,
+				bdl:                 &bundle.Bundle{},
+				DB:                  nil,
+				I18n:                nil,
+			}
+			s := &notifyChannelService{
+				p: &pro,
+			}
 			_, err := s.GetNotifyChannelsEnabled(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetNotifyChannelsEnabled() error = %v, wantErr %v", err, tt.wantErr)
