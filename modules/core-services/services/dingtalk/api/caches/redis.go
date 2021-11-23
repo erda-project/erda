@@ -12,29 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package manager
+package caches
 
 import (
-	"sync"
+	"time"
 
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
+	"github.com/go-redis/redis"
 )
 
-type Manager struct {
-	Log   logs.Logger
-	Cache interfaces.KvCache
-	lock  sync.Mutex
+type redisCache struct {
+	client *redis.Client
 }
 
-func New(logger logs.Logger, cache interfaces.KvCache) *Manager {
-	return &Manager{
-		Log:   logger,
-		Cache: cache,
-		lock:  sync.Mutex{},
+func NewRedis(redis *redis.Client) *redisCache {
+	return &redisCache{
+		client: redis,
 	}
 }
 
-var _ interfaces.DingTalkApiClientFactory = (*Manager)(nil)
-var _ interfaces.DingtalkAccessTokenManager = (*Manager)(nil)
-var _ interfaces.DingtalkUserInfoManager = (*Manager)(nil)
+func (r *redisCache) Get(key string) (string, error) {
+	return r.client.Get(key).Result()
+}
+
+func (r *redisCache) Set(key string, value string, expire time.Duration) (string, error) {
+	return r.client.Set(key, value, expire).Result()
+}

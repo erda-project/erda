@@ -15,6 +15,7 @@
 package api
 
 import (
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/caches"
 	"github.com/go-redis/redis"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -33,10 +34,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.manager = &manager.Manager{
-		Log:   p.Log,
-		Redis: p.Redis,
-	}
+	p.manager = manager.New(p.Log, caches.NewRedis(p.Redis))
 	return nil
 }
 

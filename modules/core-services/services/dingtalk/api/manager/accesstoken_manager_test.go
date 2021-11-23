@@ -17,16 +17,21 @@ package manager
 import (
 	"sync"
 	"testing"
+	"time"
+
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
+
+	"bou.ke/monkey"
 )
 
-func Test_GetAccessTokenManager_WithMultipleTimes_Should_CreateOnlyOneRequestLock(t *testing.T) {
+func Test_RegisterApp_WithMultipleTimes_Should_CreateOnlyOneRequestLock(t *testing.T) {
 	m := &Manager{}
 	wg := sync.WaitGroup{}
-	wg.Add(100)
+	wg.Add(1000)
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		go func() {
-			tm := m.GetAccessTokenManager("mock_appkey", "mock_appsecret")
+			tm := m.RegisterApp("mock_appkey", "mock_appsecret")
 			if tm == nil {
 				t.Errorf("GetAccessTokenManager should not return nil")
 			}
@@ -38,4 +43,39 @@ func Test_GetAccessTokenManager_WithMultipleTimes_Should_CreateOnlyOneRequestLoc
 	if len(requestLocks) != 1 {
 		t.Errorf("concurrency get token manager for same key, should create only one lock")
 	}
+}
+
+func Test_GetAccessToken_Should_Success(t *testing.T) {
+	tokenFromApi := "mock_api_accesstoken"
+	tokenFromCache := ""
+
+	defer monkey.Unpatch(native.GetAccessToken)
+	monkey.Patch(native.GetAccessToken, func(appKey, appSecret string) (accessToken string, expireIn int64, err error) {
+		return tokenFromApi, 7200, nil
+	})
+
+	m := &Manager{
+		Cache: &MockCache{GetResult: tokenFromCache},
+	}
+	m.RegisterApp("mock_appkey", "mock_secret")
+
+	token, err := m.GetAccessToken("mock_appkey")
+	if err != nil {
+		t.Errorf("should not error: %s", err)
+	}
+	if token != tokenFromApi {
+		t.Errorf("GetAccessToken expect: %s, but got: %s", tokenFromApi, token)
+	}
+}
+
+type MockCache struct {
+	GetResult string
+}
+
+func (r *MockCache) Get(key string) (string, error) {
+	return r.GetResult, nil
+}
+
+func (r *MockCache) Set(key string, value string, expire time.Duration) (string, error) {
+	return "", nil
 }

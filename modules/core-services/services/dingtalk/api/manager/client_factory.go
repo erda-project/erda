@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 )
 
-func (p *Manager) GetClient(appKey, appSecret string, agentId int64) interfaces.DingtalkApiClient {
-	tokenManager := p.GetAccessTokenManager(appKey, appSecret)
-	return client.New(appKey, appSecret, agentId, tokenManager, p)
+func (m *Manager) GetClient(appKey, appSecret string, agentId int64) interfaces.DingtalkApiClient {
+	tokenManager := m.RegisterApp(appKey, appSecret)
+	return client.New(appKey, appSecret, agentId, tokenManager, m)
 }

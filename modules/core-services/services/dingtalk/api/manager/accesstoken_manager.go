@@ -28,25 +28,25 @@ import (
 var appKeySecrets = make(map[string]string)
 var requestLocks = make(map[string]*sync.Mutex)
 
-func (p *Manager) GetAccessTokenManager(appKey, appSecret string) interfaces.DingtalkAccessTokenManager {
+func (m *Manager) RegisterApp(appKey, appSecret string) interfaces.DingtalkAccessTokenManager {
 	if secret, ok := appKeySecrets[appKey]; ok && secret == appSecret {
-		return p
+		return m
 	}
 
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 
 	if secret, ok := appKeySecrets[appKey]; ok && secret == appSecret {
-		return p
+		return m
 	}
 	appKeySecrets[appKey] = appSecret
 	requestLocks[appKey] = &sync.Mutex{}
-	return p
+	return m
 }
 
-func (p *Manager) GetAccessToken(appKey string) (string, error) {
-	cacheKey := p.getAccessTokenCacheKey(appKey)
-	result, err := p.Redis.Get(cacheKey).Result()
+func (m *Manager) GetAccessToken(appKey string) (string, error) {
+	cacheKey := m.getAccessTokenCacheKey(appKey)
+	result, err := m.Cache.Get(cacheKey)
 	if err != nil && err != redis.Nil {
 		return "", err
 	}
@@ -71,10 +71,10 @@ func (p *Manager) GetAccessToken(appKey string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, err = p.Redis.Set(cacheKey, accessToken, time.Duration(expireIn)*time.Second).Result()
+	_, err = m.Cache.Set(cacheKey, accessToken, time.Duration(expireIn)*time.Second)
 	return accessToken, nil
 }
 
-func (p *Manager) getAccessTokenCacheKey(appKey string) string {
+func (m *Manager) getAccessTokenCacheKey(appKey string) string {
 	return "erda_dingtalk_ak_" + appKey
 }

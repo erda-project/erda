@@ -14,6 +14,8 @@
 
 package interfaces
 
+import "time"
+
 type DingtalkAccessTokenManager interface {
 	GetAccessToken(appKey string) (string, error)
 }
@@ -28,4 +30,9 @@ type DingtalkApiClient interface {
 
 type DingTalkApiClientFactory interface {
 	GetClient(appKey, appSecret string, agentId int64) DingtalkApiClient
+}
+
+type KvCache interface {
+	Get(key string) (string, error)
+	Set(key string, value string, expire time.Duration) (string, error)
 }

@@ -17,17 +17,18 @@ package manager
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
-func (p *Manager) GetUserIdsByPhones(accessToken string, agentId int64, phones []string) (userIds []string, err error) {
+func (m *Manager) GetUserIdsByPhones(accessToken string, agentId int64, phones []string) (userIds []string, err error) {
 	results := sync.Map{}
 	ctx := NewTaskContext(10, &results)
 
 	for _, phone := range phones {
 		ctx.Add()
-		go p.getUserIdByPhone(ctx, accessToken, agentId, phone)
+		go m.getUserIdByPhone(ctx, accessToken, agentId, phone)
 	}
 	ctx.Wait()
 
@@ -42,13 +43,13 @@ func (p *Manager) GetUserIdsByPhones(accessToken string, agentId int64, phones [
 	return userIds, err
 }
 
-func (p *Manager) getUserIdByPhone(ctx *TaskContext, accessToken string, agentId int64, phone string) {
+func (m *Manager) getUserIdByPhone(ctx *TaskContext, accessToken string, agentId int64, phone string) {
 	defer ctx.Done()
 
-	cacheKey := p.getUserIdCacheKey(agentId, phone)
-	userId, err := p.Redis.Get(cacheKey).Result()
+	cacheKey := m.getUserIdCacheKey(agentId, phone)
+	userId, err := m.Cache.Get(cacheKey)
 	if err != nil {
-		p.Log.Errorf("redis get(%s) failed: %s", cacheKey, err)
+		m.Log.Errorf("redis get(%s) failed: %s", cacheKey, err)
 	}
 	if len(userId) > 0 {
 		results := ctx.result.(*sync.Map)
@@ -60,11 +61,12 @@ func (p *Manager) getUserIdByPhone(ctx *TaskContext, accessToken string, agentId
 	if err == nil && len(userId) > 0 {
 		results := ctx.result.(*sync.Map)
 		results.Store(phone, userId)
+		m.Cache.Set(cacheKey, userId, 30*24*time.Hour)
 	} else {
-		p.Log.Errorf("getUserIdByPhone failed: %s", err)
+		m.Log.Errorf("getUserIdByPhone failed: %s", err)
 	}
 }
 
-func (p *Manager) getUserIdCacheKey(agentId int64, phone string) string {
+func (m *Manager) getUserIdCacheKey(agentId int64, phone string) string {
 	return fmt.Sprintf("erda_dingtalk_uid_%d_%s", agentId, phone)
 }
