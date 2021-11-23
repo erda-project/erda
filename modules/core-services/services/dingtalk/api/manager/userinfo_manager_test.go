@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/native"
 )
 
