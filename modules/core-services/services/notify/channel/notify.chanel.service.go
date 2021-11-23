@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/gommon/log"
 	"strings"
 	"time"
 
@@ -432,31 +431,20 @@ func (s *notifyChannelService) GetNotifyChannelEnabledStatus(ctx context.Context
 }
 
 func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req *pb.GetNotifyChannelsEnabledRequest) (*pb.GetNotifyChannelsEnabledResponse, error) {
-	log.Info("in GetNotifyChannelsEnabled")
 	orgId := apis.GetOrgID(ctx)
 	list, err := s.NotifyChannelDB.EnabledChannelList(orgId, "org")
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("get list %+v", list)
 	result := &pb.GetNotifyChannelsEnabledResponse{
 		Data: make(map[string]bool),
 	}
 	for _, v := range list {
-		log.Infof("list v %+v", v)
 		result.Data[v.Type] = v.IsEnabled
 	}
-	userId := apis.GetUserID(ctx)
-	log.Infof("userid is %+v", userId)
-	//msEnable, err := s.p.bdl.GetNotifyConfigMS(userId, orgId)
-	//log.Info("ms enable", msEnable)
 	if err != nil {
 		return nil, err
 	}
-	//if msEnable {
-	//	result.Data[strings.ToLower(pb.Type_SHORT_MESSAGE.String())] = true
-	//}
-	log.Infof("result is %+v", result)
 	return result, nil
 }
 
