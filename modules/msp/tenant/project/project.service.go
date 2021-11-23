@@ -16,12 +16,14 @@ package project
 
 import (
 	context "context"
+	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -37,6 +39,7 @@ type projectService struct {
 	MSPProjectDB *db.MSPProjectDB
 	MSPTenantDB  *db.MSPTenantDB
 	MonitorDB    *monitor.MonitorDB
+	metricq      metricpb.MetricServiceServer
 }
 
 func (s *projectService) getDisplayWorkspace(lang i18n.LanguageCodes, workspace string) string {
@@ -82,7 +85,7 @@ func (p Projects) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p Projects) Less(i, j int) bool { return p[i].CreateTime > p[j].CreateTime }
 
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	projects, err := s.GetProjectList(ctx, req.ProjectId)
+	projects, err := s.GetProjectList(ctx, req.ProjectId, req.WithStats)
 	if err != nil {
 		return &pb.GetProjectsResponse{Data: nil}, err
 	}
@@ -98,7 +101,7 @@ var workspaces = []string{
 	tenantpb.Workspace_DEFAULT.String(),
 }
 
-func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string) (Projects, error) {
+func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string, withStats bool) (Projects, error) {
 	var projects Projects
 
 	// request orch for history project
@@ -134,7 +137,97 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 		}
 		projects = append(projects, project)
 	}
+
+	if !withStats {
+		return projects, nil
+	}
+
+	err = s.getProjectsStatistics(projects)
+	if err != nil {
+		s.p.Log.Warnf("failed to get projects statistics: %s", err)
+	}
 	return projects, nil
+}
+
+func (s *projectService) getProjectsStatistics(projects Projects) error {
+	endMillSeconds := time.Now().UnixNano() / int64(time.Millisecond)
+	startMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
+
+	servicesCountMap := map[string]int64{}
+	activeTimeMap := map[string]int64{}
+	alertCountMap := map[string]int64{}
+
+	req := &metricpb.QueryWithInfluxFormatRequest{
+		Start: strconv.FormatInt(startMillSeconds, 10),
+		End:   strconv.FormatInt(endMillSeconds, 10),
+		Statement: `
+			SELECT project_id::tag, distinct(service_id::tag), max(timestamp)
+			FROM application_service_node
+			WHERE _metric_scope::tag = 'micro_service' 
+			GROUP BY project_id::tag
+        `,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	resp, err := s.metricq.QueryWithInfluxFormat(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to do metrics: %s", err)
+	}
+	if len(resp.Results) > 0 &&
+		len(resp.Results[0].Series) > 0 &&
+		len(resp.Results[0].Series[0].Rows) > 0 {
+
+		for _, row := range resp.Results[0].Series[0].Rows {
+			projectId := row.Values[0].GetStringValue()
+			servicesCount := row.Values[1].GetNumberValue()
+			activeTime := row.Values[2].GetNumberValue()
+
+			servicesCountMap[projectId] = int64(servicesCount)
+			activeTimeMap[projectId] = int64(activeTime) / int64(time.Millisecond)
+		}
+	}
+
+	req = &metricpb.QueryWithInfluxFormatRequest{
+		Start: strconv.FormatInt(startMillSeconds, 10),
+		End:   strconv.FormatInt(endMillSeconds, 10),
+		Statement: `
+			SELECT project_id::tag, count(project_id::tag)
+			FROM analyzer_alert
+			WHERE alert_scope::tag = 'micro_service'
+			GROUP BY project_id::tag
+		`,
+	}
+	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	resp, err = s.metricq.QueryWithInfluxFormat(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to do metrics: %s", err)
+	}
+	if len(resp.Results) > 0 &&
+		len(resp.Results[0].Series) > 0 &&
+		len(resp.Results[0].Series[0].Rows) > 0 {
+
+		for _, row := range resp.Results[0].Series[0].Rows {
+			projectId := row.Values[0].GetStringValue()
+			alertCount := row.Values[1].GetNumberValue()
+
+			alertCountMap[projectId] = int64(alertCount)
+		}
+	}
+
+	for _, project := range projects {
+		if serviceCount, ok := servicesCountMap[project.Id]; ok {
+			project.ServiceCount = serviceCount
+		}
+		if activeTime, ok := activeTimeMap[project.Id]; ok {
+			project.LastActiveTime = activeTime
+		}
+		if alertCount, ok := alertCountMap[project.Id]; ok {
+			project.Last24HAlertCount = alertCount
+		}
+	}
+
+	return nil
 }
 
 func (s *projectService) GetHistoryProjects(ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
@@ -155,6 +248,8 @@ func (s *projectService) CovertHistoryProjectToMSPProject(ctx context.Context, p
 	pbProject := pb.Project{}
 	pbProject.Id = project.ProjectID
 	pbProject.Name = project.ProjectName
+	pbProject.Desc = project.ProjectDesc
+	pbProject.Logo = project.LogoURL
 	pbProject.DisplayName = project.ProjectName
 	pbProject.CreateTime = project.CreateTime.UnixNano()
 	pbProject.Type = tenantpb.Type_DOP.String()
@@ -328,7 +423,7 @@ func (s *projectService) DeleteProject(ctx context.Context, req *pb.DeleteProjec
 }
 
 func (s *projectService) GetProjectOverview(ctx context.Context, req *pb.GetProjectOverviewRequest) (*pb.GetProjectOverviewResponse, error) {
-	projects, err := s.GetProjectList(ctx, req.ProjectId)
+	projects, err := s.GetProjectList(ctx, req.ProjectId, false)
 	predata := pb.ProjectOverviewList{}
 	var data []*pb.ProjectOverview
 	pv := pb.ProjectOverview{}

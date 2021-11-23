@@ -710,6 +710,7 @@ type MicroServiceProjectResponse struct {
 type MicroServiceProjectResponseData struct {
 	ProjectID    string            `json:"projectId"`
 	ProjectName  string            `json:"projectName"`
+	ProjectDesc  string            `json:"projectDesc"`
 	LogoURL      string            `json:"logoUrl"`
 	Envs         []string          `json:"envs"`
 	TenantGroups []string          `json:"tenantGroups"`

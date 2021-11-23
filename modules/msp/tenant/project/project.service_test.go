@@ -508,7 +508,7 @@ func Test_projectService_GetProjectList(t *testing.T) {
 				return &pbProject
 			})
 
-			got, err := s.GetProjectList(tt.args.ctx, tt.args.projectIDs)
+			got, err := s.GetProjectList(tt.args.ctx, tt.args.projectIDs, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetProjectList() error = %v, wantErr %v", err, tt.wantErr)
 				return
