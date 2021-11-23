@@ -93,6 +93,7 @@ type Columns struct {
 	Sortable  bool   `json:"sorter,omitempty"`
 	Fixed     string `json:"fixed,omitempty"`
 	TitleTip  string `json:"titleTip"`
+	Align     string `json:"align"`
 }
 
 type Meta struct {
@@ -123,7 +124,7 @@ type RowItem struct {
 	//
 	Distribution Distribution `json:"Distribution,omitempty"`
 	Usage        Distribution `json:"Usage,omitempty"`
-	UnusedRate   Distribution `json:"UnusedRate,omitempty"`
+	UnusedRate   string       `json:"UnusedRate,omitempty"`
 	Operate      Operate      `json:"Operate,omitempty"`
 	// batchOperations for json
 	BatchOperations []string `json:"batchOperations,omitempty"`
@@ -309,10 +310,14 @@ func (t *Table) GetDistributionValue(req, total float64, resourceType TableType)
 	}
 }
 
-func (t *Table) GetUnusedRate(unallocate, request float64, resourceType TableType) DistributionValue {
-	return DistributionValue{
-		Text:    t.GetScaleValue(unallocate, request, resourceType),
-		Percent: common.GetPercent(unallocate, request),
+func (t *Table) GetUnusedRate(unallocate, request float64, resourceType TableType) string {
+	rate := unallocate / request
+	if rate <= 0.4 {
+		return t.SDK.I18n("Low")
+	} else if rate <= 0.8 {
+		return t.SDK.I18n("Middle")
+	} else {
+		return t.SDK.I18n("High")
 	}
 }
 

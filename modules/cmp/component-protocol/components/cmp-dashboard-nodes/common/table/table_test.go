@@ -16,14 +16,25 @@ package table
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+type NopTranslator struct{}
+
+func (t NopTranslator) Get(lang i18n.LanguageCodes, key, def string) string { return key }
+
+func (t NopTranslator) Text(lang i18n.LanguageCodes, key string) string { return key }
+
+func (t NopTranslator) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return fmt.Sprintf(key, args...)
+}
 func TestSortByNode(t *testing.T) {
 	type args struct {
 		data       []RowItem
@@ -152,35 +163,6 @@ func TestSortByDistribution(t *testing.T) {
 					},
 				}},
 				sortColumn: "Usage",
-				asc:        false,
-			},
-		},
-		{
-			name: "testUsageRate",
-			args: args{
-				data: []RowItem{{
-					UnusedRate: Distribution{
-						RenderType: "",
-						Value:      "30",
-						Status:     "",
-						Tip:        "",
-					},
-				}, {
-					UnusedRate: Distribution{
-						RenderType: "",
-						Value:      "10",
-						Status:     "",
-						Tip:        "",
-					},
-				}, {
-					UnusedRate: Distribution{
-						RenderType: "",
-						Value:      "20",
-						Status:     "",
-						Tip:        "",
-					},
-				}},
-				sortColumn: "UnusedRate",
 				asc:        false,
 			},
 		},
@@ -330,33 +312,46 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   DistributionValue
+		want   string
 	}{
 		// TODO: Add test cases.
 		{
 			name:   "text",
 			fields: fields{},
 			args: args{
-				a:            200,
-				b:            1200,
-				resourceType: Cpu,
+				a:            1.1,
+				b:            1.2,
+				resourceType: Memory,
 			},
-			want: DistributionValue{"0.200/1.200", "16.7"},
+			want: "High",
 		},
 		{
 			name:   "text",
 			fields: fields{},
 			args: args{
-				a:            0.2,
+				a:            0.8,
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: DistributionValue{"0.2/1.2", "16.7"},
+			want: "Middle",
+		},
+		{
+			name:   "text",
+			fields: fields{},
+			args: args{
+				a:            0.3,
+				b:            1.2,
+				resourceType: Memory,
+			},
+			want: "Low",
 		},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t := &Table{}
+			t.SDK = &cptype.SDK{
+				Tran: NopTranslator{},
+			}
 			if got := t.GetUnusedRate(tt.args.a, tt.args.b, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
 				t1.Errorf("GetUnusedRate() = %v, want %v", got, tt.want)
 			}
