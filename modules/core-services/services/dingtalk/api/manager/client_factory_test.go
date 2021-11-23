@@ -20,7 +20,7 @@ import (
 )
 
 func Test_GetClient_WithMultipleTimes_Should_Success(t *testing.T) {
-	m := &Manager{}
+	m := NewManager(nil, nil)
 	wg := sync.WaitGroup{}
 	wg.Add(1000)
 

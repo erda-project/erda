@@ -25,7 +25,7 @@ import (
 )
 
 func Test_RegisterApp_WithMultipleTimes_Should_CreateOnlyOneRequestLock(t *testing.T) {
-	m := &Manager{}
+	m := NewManager(nil, nil)
 	wg := sync.WaitGroup{}
 	wg.Add(1000)
 
@@ -60,9 +60,7 @@ func Test_GetAccessToken_Should_Success(t *testing.T) {
 		return tokenFromApi, 7200, nil
 	})
 
-	m := &Manager{
-		Cache: &MockCache{GetResult: tokenFromCache},
-	}
+	m := NewManager(nil, &MockCache{GetResult: tokenFromCache})
 	m.RegisterApp("mock_appkey", "mock_secret")
 
 	token, err := m.GetAccessToken("mock_appkey")
