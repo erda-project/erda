@@ -28,8 +28,6 @@ import (
 	"github.com/rancher/steve/pkg/aggregation"
 	"github.com/rancher/steve/pkg/auth"
 	"github.com/rancher/steve/pkg/clustercache"
-	schemacontroller "github.com/rancher/steve/pkg/controllers/schema"
-	"github.com/rancher/steve/pkg/resources/common"
 	"github.com/rancher/steve/pkg/resources/schemas"
 	"github.com/rancher/steve/pkg/schema"
 	"github.com/rancher/steve/pkg/server/router"
@@ -168,14 +166,14 @@ func setup(ctx context.Context, server *Server) error {
 		sf.AddTemplate(template)
 	}
 
-	cols, err := common.NewDynamicColumns(server.RESTConfig)
+	cols, err := NewDynamicColumns(server.RESTConfig)
 	if err != nil {
 		return err
 	}
 
 	schemas.SetupWatcher(ctx, server.BaseSchemas, asl, sf)
 
-	schemacontroller.Register(ctx,
+	Register(ctx,
 		cols,
 		server.controllers.K8s.Discovery(),
 		server.controllers.CRD.CustomResourceDefinition(),
