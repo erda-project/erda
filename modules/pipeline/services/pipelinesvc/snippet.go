@@ -283,8 +283,12 @@ func (s *PipelineSvc) MakeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *
 	for k, v := range snippetTask.Extra.Action.Params {
 		runParams = append(runParams, apistructs.PipelineRunParam{Name: k, Value: v})
 	}
+	// avoid concurrent problem
+	labels := make(map[string]string, len(p.Labels))
+	for k, v := range p.Labels {
+		labels[k] = v
+	}
 	// transfer snippetTask to pipeline create request
-	labels := p.Labels
 	for k, v := range snippetConfig.Labels {
 		labels[k] = v
 	}
