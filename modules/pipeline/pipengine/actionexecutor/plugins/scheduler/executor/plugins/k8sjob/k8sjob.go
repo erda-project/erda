@@ -212,7 +212,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 
 	// when the err is nil, the job and DeletionTimestamp is not nil. scheduler should delete the job.
 	if err == nil && jb.DeletionTimestamp == nil {
-		logrus.Infof("start to delete job %s", name)
+		logrus.Debugf("start to delete job %s", name)
 		err = k.client.ClientSet.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{
 			PropagationPolicy: &propagationPolicy,
 		})
@@ -222,11 +222,11 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 			}
 			logrus.Warningf("delete the job %s in namespace %s is not found", name, namespace)
 		}
-		logrus.Infof("finish to delete job %s", name)
+		logrus.Debugf("finish to delete job %s", name)
 
 		for index := range job.Volumes {
 			pvcName := fmt.Sprintf("%s-%d", name, index)
-			logrus.Infof("start to delete pvc %s", pvcName)
+			logrus.Debugf("start to delete pvc %s", pvcName)
 			err = k.client.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
@@ -234,7 +234,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 				}
 				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", name, pvcName, namespace)
 			}
-			logrus.Infof("finish to delete pvc %s", pvcName)
+			logrus.Debugf("finish to delete pvc %s", pvcName)
 		}
 	}
 
@@ -272,7 +272,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 			}
 
 			if ns.DeletionTimestamp == nil {
-				logrus.Infof("start to delete the job's namespace %s", namespace)
+				logrus.Debugf("start to delete the job's namespace %s", namespace)
 				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 				if err != nil {
 					if !k8serrors.IsNotFound(err) {
@@ -281,7 +281,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 					}
 					logrus.Warningf("not found the namespace %s", namespace)
 				}
-				logrus.Infof("clean namespace %s successfully", namespace)
+				logrus.Debugf("clean namespace %s successfully", namespace)
 			}
 		}
 	}

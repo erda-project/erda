@@ -57,7 +57,7 @@ func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 			return nil, fmt.Errorf("get namespace err: %v", err)
 		}
 
-		logrus.Infof("create namespace : %s", job.Namespace)
+		logrus.Debugf("create namespace : %s", job.Namespace)
 		ns.Name = job.Namespace
 		if ns, err = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 			return nil, fmt.Errorf("create namespace err: %v", err)
