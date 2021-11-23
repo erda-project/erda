@@ -205,24 +205,48 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			name := workload.String("metadata", "name")
 			namespace := workload.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", kind, namespace, name)
-			link := Link{
-				RenderType: "linkText",
-				Value:      name,
-				Operations: map[string]interface{}{
-					"click": LinkOperation{
-						Reload: false,
-						Key:    "openWorkloadDetail",
-					},
-				},
-			}
 
 			fields := workload.StringSlice("metadata", "fields")
 			item := Item{
-				ID:        id,
-				Status:    status,
-				Name:      link,
-				Namespace: namespace,
-				Kind:      workload.String("kind"),
+				ID:     id,
+				Status: status,
+				Name: Multiple{
+					RenderType: "multiple",
+					Direction:  "row",
+					Renders: []interface{}{
+						[]interface{}{
+							TextWithIcon{
+								RenderType: "icon",
+								Icon:       "default_k8s_workload",
+							},
+						},
+						[]interface{}{
+							Link{
+								RenderType: "linkText",
+								Value:      name,
+								Operations: map[string]interface{}{
+									"click": LinkOperation{
+										Reload: false,
+										Key:    "openWorkloadDetail",
+									},
+								},
+							},
+							TextWithIcon{
+								RenderType: "subText",
+								Value:      fmt.Sprintf("%s: %s", w.sdk.I18n("namespace"), namespace),
+							},
+						},
+					},
+				},
+				WorkloadName: name,
+				Namespace:    namespace,
+				Kind: Kind{
+					RenderType: "tagsRow",
+					Size:       "normal",
+					Value: KindValue{
+						Label: workload.String("kind"),
+					},
+				},
 			}
 
 			switch kind {
@@ -338,7 +362,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "name":
 				return func(i int, j int) bool {
-					less := items[i].Name.Value < items[j].Name.Value
+					less := items[i].WorkloadName < items[j].WorkloadName
 					if ascend {
 						return less
 					}
@@ -354,7 +378,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "kind":
 				return func(i int, j int) bool {
-					less := items[i].Kind < items[j].Kind
+					less := items[i].Kind.Value.Label < items[j].Kind.Value.Label
 					if ascend {
 						return less
 					}

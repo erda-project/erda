@@ -5,7 +5,7 @@ hierarchy:
   structure:
     page:
       - filterContainer
-      - chartContainer
+      - charts
       - workloadHead
       - workloadTable
       - addWorkloadDrawer
@@ -13,8 +13,10 @@ hierarchy:
       - addWorkloadButton
     filterContainer:
       - filter
+    charts:
+      - chartContainer
     chartContainer:
-      - workloadTitle
+      - workloadTotal
       - workloadChart
     addWorkloadDrawer:
       content: addWorkloadContainer
@@ -26,17 +28,19 @@ components:
   page:
     type: Container
   workloadHead:
-    type: RowContainer
+    type: Container
   filterContainer:
     type: Container
-  chartContainer:
+  charts:
     type: Container
-  workloadTitle:
-    type: Title
+  chartContainer:
+    type: Grid
+  workloadTotal:
+    type: TextBlock
   filter:
     type: ContractiveFilter
   workloadChart:
-    type: Chart
+    type: BarChart
   workloadTable:
     type: Table
   addWorkloadFileEditor:
@@ -55,6 +59,7 @@ rendering:
     - name: page
     - name: workloadHead
     - name: filterContainer
+    - name: charts
     - name: chartContainer
     - name: addWorkloadContainer
     - name: filter
@@ -67,7 +72,7 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "values"
           value: "{{ filter.values }}"
-    - name: workloadTitle
+    - name: workloadTotal
       state:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
@@ -82,7 +87,7 @@ rendering:
       state:
         - name: "values"
           value: "{{ filter.values }}"
-    - name: workloadTitle
+    - name: workloadTotal
       state:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
@@ -123,7 +128,7 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "values"
           value: "{{ filter.values }}"
-    - name: workloadTitle
+    - name: workloadTotal
       state:
         - name: "values"
           value: "{{ workloadTable.countValues }}"

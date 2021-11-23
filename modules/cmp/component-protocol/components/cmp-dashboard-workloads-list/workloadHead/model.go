@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package workloadHead
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-func init() {
-	base.InitProvider("cmp-dashboard-workloads-list", "chartContainer")
+type ComponentWorkloadHead struct {
+	base.DefaultProvider
+	Props Props `json:"props"`
+}
+
+type Props struct {
+	IsTopHead bool `json:"isTopHead"`
 }

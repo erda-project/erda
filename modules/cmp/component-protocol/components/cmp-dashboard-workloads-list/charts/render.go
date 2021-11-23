@@ -12,12 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Page
+package charts
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider("cmp-dashboard-workloads-list", "chartContainer")
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "charts", func() servicehub.Provider {
+		return &ComponentCharts{}
+	})
+}
+
+func (w *ComponentCharts) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	component.Props = Props{WhiteBg: true}
+	return nil
 }
