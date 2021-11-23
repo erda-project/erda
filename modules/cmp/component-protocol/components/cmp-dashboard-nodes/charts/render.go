@@ -128,7 +128,7 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 				Value:     requestValue,
 				Name:      cht.SDK.I18n(chart.Allocated),
 				Formatter: requestStr,
-				Color:     "orange",
+				Color:     "primary8",
 			})
 		}
 		if leftValue != 0 {
@@ -136,7 +136,7 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 				Value:     leftValue,
 				Name:      cht.SDK.I18n(chart.Free_Allocate),
 				Formatter: leftStr,
-				Color:     "green",
+				Color:     "primary5",
 			})
 		}
 		if unAllocatableValue != 0 {
@@ -144,7 +144,7 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 				Value:     unAllocatableValue,
 				Name:      cht.SDK.I18n(chart.Cannot_Allocate),
 				Formatter: unAllocatableStr,
-				Color:     "red",
+				Color:     "primary2",
 			})
 		}
 		(*gs)[resourceName+"Chart"] = di
