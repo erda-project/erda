@@ -797,16 +797,6 @@ func (m *NotifyChannel) UnmarshalURLValues(prefix string, values url.Values) err
 
 // GetNotifyChannelsEnabledRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetNotifyChannelsEnabledRequest) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "scopeId":
-				m.ScopeId = vals[0]
-			case "scopeType":
-				m.ScopeType = vals[0]
-			}
-		}
-	}
 	return nil
 }
 

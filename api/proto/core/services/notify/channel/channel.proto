@@ -230,8 +230,6 @@ message NotifyChannel {
 }
 
 message GetNotifyChannelsEnabledRequest {
-  string scopeId   = 1;
-  string scopeType = 2;
 }
 
 message GetNotifyChannelsEnabledResponse {

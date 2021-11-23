@@ -431,13 +431,8 @@ func (s *notifyChannelService) GetNotifyChannelEnabledStatus(ctx context.Context
 }
 
 func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req *pb.GetNotifyChannelsEnabledRequest) (*pb.GetNotifyChannelsEnabledResponse, error) {
-	if req.ScopeType == "" {
-		return nil, pkgerrors.NewMissingParameterError("scopeId")
-	}
-	if req.ScopeType == "" {
-		req.ScopeType = "org"
-	}
-	list, err := s.NotifyChannelDB.EnabledChannelList(req.ScopeId, req.ScopeType)
+	orgId := apis.GetOrgID(ctx)
+	list, err := s.NotifyChannelDB.EnabledChannelList(orgId, "org")
 	if err != nil {
 		return nil, err
 	}
@@ -448,7 +443,6 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 		result.Data[v.Type] = v.IsEnabled
 	}
 	userId := apis.GetUserID(ctx)
-	orgId := apis.GetOrgID(ctx)
 	msEnable, err := s.p.bdl.GetNotifyConfigMS(userId, orgId)
 	if err != nil {
 		return nil, err
