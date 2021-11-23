@@ -45,14 +45,14 @@ func (w *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.C
 	return nil
 }
 
-func (w *ComponentWorkloadChart) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	cont, err := json.Marshal(component.State)
+	cont, err := json.Marshal(c.State)
 	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", component.State, err)
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
 		return err
 	}
 	err = json.Unmarshal(cont, &state)
@@ -71,7 +71,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		"green", "red", "steelblue", "maroon",
 	}
 	w.Props.Option.Legend.Data = []string{
-		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Error"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),
+		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Abnormal"), cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"), cputil.I18n(ctx, "Updating"),
 	}
 	w.Props.Option.XAxis.Type = "value"
 	w.Props.Option.YAxis.Type = "category"
@@ -81,15 +81,16 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 
 	// deployment
 	activeDeploy := w.State.Values.DeploymentsCount.Active
-	errorDeploy := w.State.Values.DeploymentsCount.Error
+	abnormalDeploy := w.State.Values.DeploymentsCount.Abnormal
+	updatingDeploy := w.State.Values.DeploymentsCount.Updating
 
 	// daemonSet
 	activeDs := w.State.Values.DaemonSetCount.Active
-	errorDs := w.State.Values.DaemonSetCount.Error
+	abnormalDs := w.State.Values.DaemonSetCount.Abnormal
 
 	// statefulSet
 	activeSs := w.State.Values.StatefulSetCount.Active
-	errorSs := w.State.Values.StatefulSetCount.Error
+	abnormalSs := w.State.Values.StatefulSetCount.Abnormal
 
 	// job
 	activeJob := w.State.Values.JobCount.Active
@@ -110,12 +111,12 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	}
 
 	errorSeries := Series{
-		Name:     cputil.I18n(ctx, "Error"),
+		Name:     cputil.I18n(ctx, "Abnormal"),
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
 		Data: []*int{
-			nil, nil, &errorDs, &errorSs, &errorDeploy,
+			nil, nil, &abnormalDs, &abnormalSs, &abnormalDeploy,
 		},
 	}
 
@@ -139,15 +140,24 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		},
 	}
 
+	updatingSeries := Series{
+		Name:     cputil.I18n(ctx, "Updating"),
+		Type:     "bar",
+		Stack:    "count",
+		BarWidth: "50%",
+		Data: []*int{
+			nil, nil, nil, nil, &updatingDeploy,
+		},
+	}
 	w.Props.Option.Series = []Series{
-		activeSeries, errorSeries, succeededSeries, failedSeries,
+		activeSeries, errorSeries, succeededSeries, failedSeries, updatingSeries,
 	}
 	return nil
 }
 
-func (w *ComponentWorkloadChart) Transfer(c *cptype.Component) {
-	c.Props = w.Props
-	c.State = map[string]interface{}{
+func (w *ComponentWorkloadChart) Transfer(component *cptype.Component) {
+	component.Props = w.Props
+	component.State = map[string]interface{}{
 		"values": w.State.Values,
 	}
 }

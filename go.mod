@@ -11,6 +11,9 @@ require (
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
+	github.com/alibabacloud-go/darabonba-openapi v0.1.9
+	github.com/alibabacloud-go/dingtalk v1.2.1
+	github.com/alibabacloud-go/tea v1.1.17
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/aliyun/aliyun-log-go-sdk v0.1.19
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
@@ -165,6 +168,7 @@ require (
 	k8s.io/apiserver v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog/v2 v2.8.0
+	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f

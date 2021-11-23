@@ -90,7 +90,14 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 
 	switch event.Operation.String() {
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		cond.PageNo = 1
+		// the table needs to be refreshed when other components are rendered, but the paging still needs to be maintained
+		reloadTablePageNo, ok := c.State["reloadTablePageNo"].(bool)
+		if !ok {
+			reloadTablePageNo = true
+		}
+		if reloadTablePageNo {
+			cond.PageNo = 1
+		}
 	case "edit":
 		var operationData OperationData
 		odBytes, err := json.Marshal(event.OperationData)

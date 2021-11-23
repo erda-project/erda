@@ -21,6 +21,9 @@ var _ urlenc.URLValuesUnmarshaler = (*ClusterNamespacePair)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNamespacesResourcesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ClusterResourceItem)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NamespaceResourceDetail)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetPodsByLabelsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetPodsByLabelsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetPodsByLabelsItem)(nil)
 
 // GetClustersResourcesRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetClustersResourcesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -187,6 +190,69 @@ func (m *NamespaceResourceDetail) UnmarshalURLValues(prefix string, values url.V
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "namespace":
+				m.Namespace = vals[0]
+			case "cpuRequest":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CpuRequest = val
+			case "memRequest":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.MemRequest = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetPodsByLabelsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetPodsByLabelsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "cluster":
+				m.Cluster = vals[0]
+			case "labels":
+				m.Labels = vals
+			}
+		}
+	}
+	return nil
+}
+
+// GetPodsByLabelsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetPodsByLabelsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetPodsByLabelsItem implement urlenc.URLValuesUnmarshaler.
+func (m *GetPodsByLabelsItem) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "cluster":
+				m.Cluster = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "name":
+				m.Name = vals[0]
 			case "namespace":
 				m.Namespace = vals[0]
 			case "cpuRequest":

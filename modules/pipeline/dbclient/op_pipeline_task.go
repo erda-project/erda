@@ -146,11 +146,20 @@ func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...Se
 	return tasks, nil
 }
 
-func (client *Client) UpdatePipelineTaskResult(id uint64, result apistructs.PipelineTaskResult) error {
+func (client *Client) UpdatePipelineTaskMetadata(id uint64, result *apistructs.PipelineTaskResult) error {
 	_, err := client.ID(id).Cols("result").Update(&spec.PipelineTask{Result: result})
 	if err != nil {
 		b, _ := json.Marshal(&result)
 		return errors.Errorf("failed to update pipeline task result, taskID: %d, result: %s, err: %v", id, string(b), err)
+	}
+	return nil
+}
+
+func (client *Client) UpdatePipelineTaskInspect(id uint64, inspect apistructs.PipelineTaskInspect) error {
+	_, err := client.ID(id).Cols("inspect").Update(&spec.PipelineTask{Inspect: inspect})
+	if err != nil {
+		b, _ := json.Marshal(&inspect)
+		return errors.Errorf("failed to update pipeline task inspect, taskID: %d, inspect: %s, err: %v", id, string(b), err)
 	}
 	return nil
 }
@@ -163,7 +172,7 @@ func (client *Client) UpdatePipelineTask(id uint64, task *spec.PipelineTask, ops
 	retryNum := 0
 
 	for {
-		affectedRows, err := client.ID(id).AllCols().Update(task)
+		affectedRows, err := client.ID(id).Update(task)
 		if err != nil {
 			return err
 		}

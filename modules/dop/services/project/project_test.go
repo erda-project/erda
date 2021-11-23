@@ -40,6 +40,10 @@ func (fakeTrans) Sprintf(i18n.LanguageCodes, string, ...interface{}) string {
 
 type fakeCMP struct{}
 
+func (c fakeCMP) GetPodsByLabels(ctx context.Context, request *dashboardPb.GetPodsByLabelsRequest) (*dashboardPb.GetPodsByLabelsResponse, error) {
+	return nil, nil
+}
+
 func (fakeCMP) GetClustersResources(context.Context, *dashboardPb.GetClustersResourcesRequest) (*dashboardPb.GetClusterResourcesResponse, error) {
 	return nil, nil
 }

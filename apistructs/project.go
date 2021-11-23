@@ -243,8 +243,6 @@ type ProjectDTO struct {
 	ProjectResourceUsage
 
 	// 项目各环境集群配置
-	// Deprecated: to retrieve the relationship between clusters and workspaces,
-	// please use ResourceConfig .
 	ClusterConfig map[string]string `json:"clusterConfig"`
 	// ResourceConfig shows the relationship between clusters and workspaces,
 	// and contains the quota info for every workspace .

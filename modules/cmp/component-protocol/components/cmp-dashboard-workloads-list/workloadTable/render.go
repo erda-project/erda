@@ -85,32 +85,32 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	urlQuery, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
+	query, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	queryData := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &queryData); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
 		return err
 	}
-	w.State.PageNo = uint64(queryData["pageNo"].(float64))
-	w.State.PageSize = uint64(queryData["pageSize"].(float64))
-	sorterData := queryData["sorterData"].(map[string]interface{})
-	w.State.Sorter.Field, _ = sorterData["field"].(string)
-	w.State.Sorter.Order, _ = sorterData["order"].(string)
+	w.State.PageNo = uint64(urlQuery["pageNo"].(float64))
+	w.State.PageSize = uint64(urlQuery["pageSize"].(float64))
+	sorter := urlQuery["sorterData"].(map[string]interface{})
+	w.State.Sorter.Field, _ = sorter["field"].(string)
+	w.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
 func (w *ComponentWorkloadTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = w.State.PageNo
-	query["pageSize"] = w.State.PageSize
-	query["sorterData"] = w.State.Sorter
-	jsonData, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = w.State.PageNo
+	urlQuery["pageSize"] = w.State.PageSize
+	urlQuery["sorterData"] = w.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
@@ -127,16 +127,16 @@ func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
 	w.server = steveServer
 }
 
-func (w *ComponentWorkloadTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	w.State = state
@@ -157,9 +157,10 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	kinds := getWorkloadKindMap(w.State.Values.Kind)
 
 	activeCount := map[apistructs.K8SResType]int{}
-	errorCount := map[apistructs.K8SResType]int{}
+	abnormalCount := map[apistructs.K8SResType]int{}
 	succeededCount := map[apistructs.K8SResType]int{}
 	failedCount := map[apistructs.K8SResType]int{}
+	updateCount := map[apistructs.K8SResType]int{}
 
 	for _, kind := range []apistructs.K8SResType{apistructs.K8SDeployment, apistructs.K8SStatefulSet,
 		apistructs.K8SDaemonSet, apistructs.K8SJob, apistructs.K8SCronJob} {
@@ -232,8 +233,10 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 				if statusValue == "Active" {
 					activeCount[kind]++
+				} else if statusValue == "Updating" {
+					updateCount[kind]++
 				} else {
-					errorCount[kind]++
+					abnormalCount[kind]++
 				}
 				item.Age = fields[4]
 				item.Ready = fields[1]
@@ -247,7 +250,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				if statusValue == "Active" {
 					activeCount[kind]++
 				} else {
-					errorCount[kind]++
+					abnormalCount[kind]++
 				}
 				item.Age = fields[7]
 				item.Ready = fields[3]
@@ -263,7 +266,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				if statusValue == "Active" {
 					activeCount[kind]++
 				} else {
-					errorCount[kind]++
+					abnormalCount[kind]++
 				}
 				item.Age = fields[2]
 				item.Ready = fields[1]
@@ -299,16 +302,17 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 
 	w.State.CountValues = CountValues{
 		DeploymentsCount: Count{
-			Active: activeCount[apistructs.K8SDeployment],
-			Error:  errorCount[apistructs.K8SDeployment],
+			Active:   activeCount[apistructs.K8SDeployment],
+			Abnormal: abnormalCount[apistructs.K8SDeployment],
+			Updating: updateCount[apistructs.K8SDeployment],
 		},
 		DaemonSetCount: Count{
-			Active: activeCount[apistructs.K8SDaemonSet],
-			Error:  errorCount[apistructs.K8SDaemonSet],
+			Active:   activeCount[apistructs.K8SDaemonSet],
+			Abnormal: abnormalCount[apistructs.K8SDaemonSet],
 		},
 		StatefulSetCount: Count{
-			Active: activeCount[apistructs.K8SStatefulSet],
-			Error:  errorCount[apistructs.K8SStatefulSet],
+			Active:   activeCount[apistructs.K8SStatefulSet],
+			Abnormal: abnormalCount[apistructs.K8SStatefulSet],
 		},
 		JobCount: Count{
 			Active:    activeCount[apistructs.K8SJob],
@@ -601,12 +605,12 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
-	component.Props = w.Props
-	component.Data = map[string]interface{}{
+func (w *ComponentWorkloadTable) Transfer(c *cptype.Component) {
+	c.Props = w.Props
+	c.Data = map[string]interface{}{
 		"list": w.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName":             w.State.ClusterName,
 		"countValues":             w.State.CountValues,
 		"pageNo":                  w.State.PageNo,
@@ -616,7 +620,7 @@ func (w *ComponentWorkloadTable) Transfer(component *cptype.Component) {
 		"values":                  w.State.Values,
 		"workloadTable__urlQuery": w.State.WorkloadTableURLQuery,
 	}
-	component.Operations = w.Operations
+	c.Operations = w.Operations
 }
 
 func getWorkloadKindMap(kinds []string) map[string]struct{} {

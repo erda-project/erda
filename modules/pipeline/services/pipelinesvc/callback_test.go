@@ -15,9 +15,15 @@
 package pipelinesvc
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/pipeline/events"
+
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -34,7 +40,7 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 	}
 
 	task := &spec.PipelineTask{
-		Result: apistructs.PipelineTaskResult{
+		Inspect: apistructs.PipelineTaskInspect{
 			Errors: []*apistructs.PipelineTaskErrResponse{
 				&apistructs.PipelineTaskErrResponse{Msg: "a"},
 			},
@@ -47,7 +53,40 @@ func TestAppendPipelineTaskResult(t *testing.T) {
 			Msg: e.Msg,
 		})
 	}
-	task.Result.Errors = task.Result.AppendError(newTaskErrors...)
+	task.Inspect.Errors = task.Inspect.AppendError(newTaskErrors...)
 
-	assert.Equal(t, 3, len(task.Result.Errors))
+	assert.Equal(t, 3, len(task.Inspect.Errors))
+}
+
+func TestDealPipelineCallbackOfAction(t *testing.T) {
+	db := &dbclient.Client{}
+
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipelineTask", func(_ *dbclient.Client, id interface{}) (spec.PipelineTask, error) {
+		return spec.PipelineTask{PipelineID: 1}, nil
+	})
+	defer m1.Unpatch()
+
+	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetPipeline", func(_ *dbclient.Client, id interface{}, ops ...dbclient.SessionOption) (spec.Pipeline, error) {
+		return spec.Pipeline{PipelineBase: spec.PipelineBase{ID: 1}}, nil
+	})
+	defer m2.Unpatch()
+
+	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskMetadata", func(_ *dbclient.Client, id uint64, result *apistructs.PipelineTaskResult) error {
+		return nil
+	})
+	defer m3.Unpatch()
+
+	m4 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "UpdatePipelineTaskInspect", func(_ *dbclient.Client, id uint64, inspect apistructs.PipelineTaskInspect) error {
+		return nil
+	})
+	defer m4.Unpatch()
+
+	m5 := monkey.Patch(events.EmitTaskEvent, func(task *spec.PipelineTask, p *spec.Pipeline) {
+		return
+	})
+	defer m5.Unpatch()
+	data := []byte("{\"metadata\":[{\"name\":\"pipelineID\",\"value\":\"1\"}],\"errors\":[{\"code\":\"\",\"msg\":\"network error\",\"ctx\":null}],\"pipelineID\":1,\"pipelineTaskID\":1}")
+	pSvc := PipelineSvc{dbClient: db}
+	err := pSvc.DealPipelineCallbackOfAction(data)
+	assert.NoError(t, err)
 }

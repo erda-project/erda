@@ -40,9 +40,10 @@ type Values struct {
 
 type Count struct {
 	Active    int `json:"active"`
-	Error     int `json:"error"`
+	Abnormal  int `json:"abnormal"`
 	Succeeded int `json:"succeeded"`
 	Failed    int `json:"failed"`
+	Updating  int `json:"updating"`
 }
 
 type Props struct {

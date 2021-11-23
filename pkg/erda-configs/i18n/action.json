@@ -1,0 +1,11 @@
+{
+  "zh-CN": {
+    "wb.content.action.input.label.timeout": "超时时间",
+    "wb.content.action.input.label.timeoutPlaceholder": "请输入执行超时时间"
+  },
+  "en-US": {
+    "wb.content.action.input.label.timeout": "timeout",
+    "wb.content.action.input.label.timeoutPlaceholder": "please enter the execution timeout"
+  }
+}
+

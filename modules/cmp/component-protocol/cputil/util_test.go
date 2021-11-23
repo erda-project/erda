@@ -35,7 +35,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Active" || color != "green" {
+	if status != "Abnormal" || color != "red" {
 		t.Errorf("test failed, deployment status is unexpected")
 	}
 	fields[2], fields[3] = "0", "1"
@@ -49,7 +49,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Error" || color != "red" {
+	if status != "Abnormal" || color != "red" {
 		t.Errorf("test failed, deployment status is unexpected")
 	}
 
@@ -79,7 +79,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Error" || color != "red" {
+	if status != "Abnormal" || color != "red" {
 		t.Errorf("test failed, daemonset status is unexpected")
 	}
 
@@ -109,7 +109,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if status != "Error" || color != "red" {
+	if status != "Abnormal" || color != "red" {
 		t.Errorf("test failed, statefulset status is unexpected")
 	}
 

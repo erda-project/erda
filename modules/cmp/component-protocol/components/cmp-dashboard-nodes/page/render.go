@@ -23,6 +23,10 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
+func (p *Page) Init(ctx servicehub.Context) error {
+	return p.DefaultProvider.Init(ctx)
+}
+
 func (p Page) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	err := common.Transfer(p.Props, &c.Props)
 	if err != nil {

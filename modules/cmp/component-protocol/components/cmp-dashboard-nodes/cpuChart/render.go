@@ -29,13 +29,12 @@ import (
 func (cht *CpuChart) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	cht.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	cht.SDK = cputil.SDK(ctx)
-	cht.Props = cht.GetProps(cht.SDK.I18n("Cpu Chart"))
 	return cht.ChartRender(ctx, c, s, event, gs, chart.CPU)
 }
 func init() {
 	base.InitProviderWithCreator("cmp-dashboard-nodes", "cpuChart", func() servicehub.Provider {
 		cc := &CpuChart{}
-		cc.Type = "Chart"
+		cc.Type = "PieChart"
 		cc.Chart = chart.Chart{}
 		return cc
 	})
