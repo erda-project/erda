@@ -130,35 +130,30 @@ func TestComponentWorkloadChart_Transfer(t *testing.T) {
 				},
 			},
 		},
-		Props: Props{
+		Data: Data{
 			Option: Option{
 				Tooltip: Tooltip{
-					Trigger: "test",
-					AxisPointer: AxisPointer{
-						Type: "testType",
-					},
+					Show: true,
 				},
-				Color: []string{"test"},
+				Color: []string{"testColor"},
 				Legend: Legend{
-					Data: []string{"test"},
+					Data: []string{"testData"},
 				},
 				XAxis: Axis{
 					Type: "testType",
-					Data: []string{"test"},
+					Data: []string{"testData"},
 				},
 				YAxis: Axis{
 					Type: "testType",
-					Data: []string{"test"},
+					Data: []string{"testData"},
 				},
 				Series: []Series{
 					{
 						Name:     "testName",
 						Type:     "testType",
-						Stack:    "testStack",
-						BarWidth: "teatBarWidth",
-						Data: []*int{
-							&tmp,
-						},
+						BarGap:   "testGap",
+						BarWidth: 10,
+						Data:     []*int{&tmp},
 					},
 				},
 			},

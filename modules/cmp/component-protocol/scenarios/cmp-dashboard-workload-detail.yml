@@ -32,7 +32,7 @@ components:
   rightContent:
     type: RowContainer
   workloadStatus:
-    type: Tags
+    type: Badge
   workloadTitle:
     type: Title
   podsTableTitle:

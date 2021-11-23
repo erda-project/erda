@@ -31,10 +31,8 @@ func TestComponentFilter_GenComponentState(t *testing.T) {
 				Type: []string{
 					"Normal",
 				},
-				Namespace: []string{
-					"default",
-				},
-				Search: "test",
+				Namespace: "default",
+				Search:    "test",
 			},
 		},
 	}
@@ -63,7 +61,7 @@ func TestComponentFilter_GenComponentState(t *testing.T) {
 func getTestURLQuery() (Values, string) {
 	v := Values{
 		Type:      []string{"Normal"},
-		Namespace: []string{"default"},
+		Namespace: "default",
 		Search:    "test",
 	}
 	m := map[string]interface{}{
@@ -100,7 +98,7 @@ func TestComponentFilter_DecodeURLQuery(t *testing.T) {
 	if err := table.DecodeURLQuery(); err != nil {
 		t.Errorf("test failed, %v", err)
 	}
-	if !isEqual(values.Type, table.State.Values.Type) || !isEqual(values.Namespace, table.State.Values.Namespace) ||
+	if !isEqual(values.Type, table.State.Values.Type) || values.Namespace != table.State.Values.Namespace ||
 		values.Search != table.State.Values.Search {
 		t.Errorf("test failed, edcode result is not expected")
 	}
@@ -159,7 +157,7 @@ func TestComponentFilter_Transfer(t *testing.T) {
 				},
 			},
 			Values: Values{
-				Namespace: []string{"default"},
+				Namespace: "default",
 				Search:    "test",
 				Type:      []string{"Normal"},
 			},

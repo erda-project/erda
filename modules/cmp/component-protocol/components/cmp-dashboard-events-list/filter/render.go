@@ -242,6 +242,9 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		Label:      cputil.I18n(ctx, "namespace"),
 		Type:       "select",
 		Fixed:      true,
+		CustomProps: CustomProps{
+			Mode: "single",
+		},
 	}
 	for _, option := range []Option{defaultNs, systemNs, devNs, testNs, productionNs, stagingNs, addonNs, pipelineNs, otherNs} {
 		if option.Children != nil {

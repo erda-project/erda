@@ -55,26 +55,23 @@ type Props struct {
 }
 
 type Column struct {
-	Width     int    `json:"width"`
 	DataIndex string `json:"dataIndex"`
 	Title     string `json:"title"`
 	Fixed     string `json:"fixed,omitempty"`
+	Align     string `json:"align,omitempty"`
 }
 
 type Operate struct {
 	Operations map[string]Operation `json:"operations"`
 	RenderType string               `json:"renderType"`
+	Value      string               `json:"value,omitempty"`
 }
 
 type Status struct {
-	RenderType string      `json:"renderType"`
-	Size       string      `json:"size,omitempty"`
-	Value      StatusValue `json:"value,omitempty"`
-}
-
-type StatusValue struct {
-	Label string `json:"label,omitempty"`
-	Color string `json:"color,omitempty"`
+	RenderType string `json:"renderType"`
+	Value      string `json:"value,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Breathing  bool   `json:"breathing,omitempty"`
 }
 
 type Images struct {

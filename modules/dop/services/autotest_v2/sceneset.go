@@ -15,9 +15,16 @@
 package autotestv2
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 const MAX_SIZE int = 200
@@ -121,4 +128,149 @@ func mapping(s *dao.SceneSet) *apistructs.SceneSet {
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
 	}
+}
+
+func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneSetRequest) (*apistructs.PipelineDTO, error) {
+	var spec pipelineyml.Spec
+	spec.Version = "1.1"
+	var stagesValue []*pipelineyml.Stage
+
+	scenes, err := svc.ListAutotestScenes([]uint64{req.AutoTestSceneSet.ID})
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := scenes[req.AutoTestSceneSet.ID]; !ok {
+		return nil, fmt.Errorf("not find SceneSet ID: %v", req.AutoTestSceneSet.ID)
+	}
+	sceneList := svc.sortAutoTestSceneList(scenes[req.AutoTestSceneSet.ID], 1, 10000)
+	sceneGroupMap, groupIDs := getSceneMapByGroupID(sceneList)
+
+	for _, groupID := range groupIDs {
+		var specStage pipelineyml.Stage
+		for _, v := range sceneGroupMap[groupID] {
+			inputs := v.Inputs
+
+			var params = make(map[string]interface{})
+			for _, input := range inputs {
+				replacedValue := expression.ReplaceRandomParams(input.Value)
+				params[input.Name] = replacedValue
+			}
+			sceneJson, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+
+			if v.RefSetID > 0 {
+				// scene reference scene set
+				specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
+					pipelineyml.Snippet: {
+						Alias: pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
+						Type:  pipelineyml.Snippet,
+						Labels: map[string]string{
+							apistructs.AutotestScene: base64.StdEncoding.EncodeToString(sceneJson),
+							apistructs.AutotestType:  apistructs.AutotestScene,
+						},
+						If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
+						SnippetConfig: &pipelineyml.SnippetConfig{
+							Name:   apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(v.ID)),
+							Source: apistructs.PipelineSourceAutoTest.String(),
+							Labels: map[string]string{
+								apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
+								apistructs.LabelSceneSetID:       strconv.Itoa(int(v.RefSetID)),
+								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
+								//apistructs.LabelIsRefSet:         "true",
+							},
+						},
+						Policy: &pipelineyml.Policy{Type: v.Policy},
+					},
+				})
+			} else {
+				specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
+					pipelineyml.Snippet: {
+						Alias:  pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
+						Type:   pipelineyml.Snippet,
+						Params: params,
+						Labels: map[string]string{
+							apistructs.AutotestType:  apistructs.AutotestScene,
+							apistructs.AutotestScene: base64.StdEncoding.EncodeToString(sceneJson),
+						},
+						If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
+						SnippetConfig: &pipelineyml.SnippetConfig{
+							Name:   strconv.Itoa(int(v.ID)),
+							Source: apistructs.PipelineSourceAutoTest.String(),
+							Labels: map[string]string{
+								apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
+								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
+								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+								// apistructs.LabelIsRefSet:         isRefSetMap[key],
+							},
+						},
+					},
+				})
+			}
+		}
+		stagesValue = append(stagesValue, &specStage)
+
+		for _, v := range sceneGroupMap[groupID] {
+			for _, output := range v.Output {
+				spec.Outputs = append(spec.Outputs, &pipelineyml.PipelineOutput{
+					Name: fmt.Sprintf("%v_%v", v.ID, output.Name),
+					Ref:  fmt.Sprintf("%s %s.%d.%s %s", expression.LeftPlaceholder, expression.Outputs, v.ID, output.Name, expression.RightPlaceholder),
+				})
+			}
+		}
+	}
+
+	spec.Stages = stagesValue
+	yml, err := pipelineyml.GenerateYml(&spec)
+	if err != nil {
+		return nil, err
+	}
+
+	var reqPipeline = apistructs.PipelineCreateRequestV2{
+		PipelineYmlName: apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(req.AutoTestSceneSet.ID)),
+		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		AutoRun:         true,
+		ForceRun:        true,
+		ClusterName:     req.ClusterName,
+		PipelineYml:     string(yml),
+		Labels:          req.Labels,
+		IdentityInfo:    req.IdentityInfo,
+	}
+	if req.ConfigManageNamespaces != "" {
+		reqPipeline.ConfigManageNamespaces = append(reqPipeline.ConfigManageNamespaces, req.ConfigManageNamespaces)
+	}
+
+	if reqPipeline.ClusterName == "" {
+		testClusterName, err := svc.GetTestClusterNameBySpaceID(req.AutoTestSceneSet.SpaceID)
+		if err != nil {
+			return nil, err
+		}
+		reqPipeline.ClusterName = testClusterName
+	}
+
+	pipelineDTO, err := svc.bdl.CreatePipeline(&reqPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	return pipelineDTO, nil
+}
+
+func getSceneMapByGroupID(scenes []apistructs.AutoTestScene) (map[uint64][]*apistructs.AutoTestScene, []uint64) {
+	sceneGroupMap := make(map[uint64][]*apistructs.AutoTestScene, 0)
+	groupIDs := make([]uint64, 0)
+	for i, v := range scenes {
+		if v.GroupID == 0 {
+			v.GroupID = v.ID
+		}
+		if _, ok := sceneGroupMap[v.GroupID]; ok {
+			sceneGroupMap[v.GroupID] = append(sceneGroupMap[v.GroupID], &scenes[i])
+		} else {
+			sceneGroupMap[v.GroupID] = []*apistructs.AutoTestScene{&scenes[i]}
+			groupIDs = append(groupIDs, v.GroupID)
+		}
+	}
+	return sceneGroupMap, groupIDs
 }
