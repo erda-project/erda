@@ -47,8 +47,8 @@ func TestPodsCharts_Transfer(t *testing.T) {
 	component := &PodsCharts{
 		DefaultProvider: base.DefaultProvider{},
 		Data: Data{
-			Group: [][]Pie{
-				{{
+			Group: [][][]Pie{
+				{{{
 					Name:  "testName",
 					Value: 1,
 					Color: "testColor",
@@ -59,7 +59,7 @@ func TestPodsCharts_Transfer(t *testing.T) {
 							Desc: "testDesc",
 						},
 					},
-				}},
+				}}},
 			},
 		},
 	}
