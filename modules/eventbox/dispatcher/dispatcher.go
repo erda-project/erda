@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/eventbox/conf"
 	"github.com/erda-project/erda/modules/eventbox/input"
 	etcdinput "github.com/erda-project/erda/modules/eventbox/input/etcd"
@@ -35,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	dingdingsubscriber "github.com/erda-project/erda/modules/eventbox/subscriber/dingding"
 	dingdingworknoticesubscriber "github.com/erda-project/erda/modules/eventbox/subscriber/dingding_worknotice"
+	"github.com/erda-project/erda/modules/eventbox/subscriber/dingtalk_worknotice"
 	emailsubscriber "github.com/erda-project/erda/modules/eventbox/subscriber/email"
 	fakesubscriber "github.com/erda-project/erda/modules/eventbox/subscriber/fake"
 	groupsubscriber "github.com/erda-project/erda/modules/eventbox/subscriber/group"
@@ -68,7 +70,7 @@ type DispatcherImpl struct {
 	runningWg sync.WaitGroup
 }
 
-func New() (Dispatcher, error) {
+func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
 	js, err := jsonstore.New()
 	if err != nil {
 		return nil, err
@@ -109,6 +111,7 @@ func New() (Dispatcher, error) {
 		conf.AliyunSmsMonitorTemplateCode(), bundleS)
 	vmsS := vmssubscriber.New(conf.AliyunAccessKeyID(), conf.AliyunAccessKeySecret(), conf.AliyunVmsMonitorTtsCode(),
 		conf.AliyunVmsMonitorCalledShowNumber(), bundleS)
+	dingWorkNotice := dingtalk_worknotice.New(bundleS, dingtalk)
 	groupS := groupsubscriber.New(bundleS)
 	if err != nil {
 		return nil, err
@@ -136,6 +139,7 @@ func New() (Dispatcher, error) {
 	dispatcher.RegisterSubscriber(vmsS)
 	dispatcher.RegisterSubscriber(mboxS)
 	dispatcher.RegisterSubscriber(groupS)
+	dispatcher.RegisterSubscriber(dingWorkNotice)
 
 	for name := range dispatcher.subscribers {
 		dispatcher.subscriberspool[name] = goroutinepool.New(conf.PoolSize())

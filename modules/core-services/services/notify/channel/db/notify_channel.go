@@ -157,12 +157,13 @@ func (db *NotifyChannelDB) SwitchEnable(currentNotifyChannel, switchNotifyChanne
 	return tx.Commit().Error
 }
 
-func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, scopeId, scopeType string) (int64, []model.NotifyChannel, error) {
+func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, scopeId, scopeType, channelType string) (int64, []model.NotifyChannel, error) {
 	var channels []model.NotifyChannel
 	whereDB := db.db().
 		Where("`is_deleted` = ?", false).
 		Where("`scope_id` = ?", scopeId).
-		Where("`scope_type` = ?", scopeType)
+		Where("`scope_type` = ?", scopeType).
+		Where("`type` = ?", channelType)
 
 	err := whereDB.
 		Order("`created_at` DESC", true).
@@ -180,4 +181,18 @@ func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, scopeId, scopeType
 	}
 
 	return totalCount, channels, nil
+}
+
+func (db *NotifyChannelDB) EnabledChannelList(scopeId, scopeType string) ([]model.NotifyChannel, error) {
+	db.LogMode(true)
+	var channels []model.NotifyChannel
+	err := db.db().Where("`scope_id` = ?", scopeId).
+		Where("`scope_type` = ?", scopeType).
+		Where("`is_enabled` = ?", true).
+		Where("`is_deleted` = ?", false).
+		Find(&channels).Error
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return channels, nil
 }
