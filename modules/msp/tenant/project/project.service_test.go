@@ -19,6 +19,10 @@ import (
 	reflect "reflect"
 	testing "testing"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+
 	"bou.ke/monkey"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
@@ -446,7 +450,9 @@ func Test_projectService_GetProjectList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var s *projectService
+			var s = &projectService{
+				metricq: &mockInfluxQl{},
+			}
 			monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetHistoryProjects", func(s *projectService, ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
 				var data []apistructs.MicroServiceProjectResponseData
 				project := apistructs.MicroServiceProjectResponseData{
@@ -508,7 +514,7 @@ func Test_projectService_GetProjectList(t *testing.T) {
 				return &pbProject
 			})
 
-			got, err := s.GetProjectList(tt.args.ctx, tt.args.projectIDs, false)
+			got, err := s.GetProjectList(tt.args.ctx, tt.args.projectIDs, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetProjectList() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -518,4 +524,51 @@ func Test_projectService_GetProjectList(t *testing.T) {
 			}
 		})
 	}
+}
+
+type mockInfluxQl struct {
+}
+
+func (m *mockInfluxQl) QueryWithInfluxFormat(context.Context, *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	return &metricpb.QueryWithInfluxFormatResponse{
+		Results: []*metricpb.Result{
+			&metricpb.Result{
+				Series: []*metricpb.Serie{
+					&metricpb.Serie{
+						Rows: []*metricpb.Row{
+							&metricpb.Row{
+								Values: []*structpb.Value{
+									structpb.NewStringValue("1"),
+									structpb.NewNumberValue(10),
+									structpb.NewNumberValue(100),
+								},
+							},
+							&metricpb.Row{
+								Values: []*structpb.Value{
+									structpb.NewStringValue("2"),
+									structpb.NewNumberValue(101),
+									structpb.NewNumberValue(1001),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil
+}
+func (m *mockInfluxQl) SearchWithInfluxFormat(context.Context, *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	panic("not implement")
+}
+func (m *mockInfluxQl) QueryWithTableFormat(context.Context, *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	panic("not implement")
+}
+func (m *mockInfluxQl) SearchWithTableFormat(context.Context, *metricpb.QueryWithTableFormatRequest) (*metricpb.QueryWithTableFormatResponse, error) {
+	panic("not implement")
+}
+func (m *mockInfluxQl) GeneralQuery(context.Context, *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	panic("not implement")
+}
+func (m *mockInfluxQl) GeneralSearch(context.Context, *metricpb.GeneralQueryRequest) (*metricpb.GeneralQueryResponse, error) {
+	panic("not implement")
 }
