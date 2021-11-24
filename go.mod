@@ -38,7 +38,6 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/erda-project/erda-infra v0.0.0-20211123061255-960b922553f2
-	github.com/erda-project/erda-infra/tools v0.0.0-20211117120837-51bbd5e21c3d // indirect
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -67,6 +66,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
+	github.com/google/btree v1.0.1 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
@@ -81,6 +81,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.2
 	github.com/jmespath/go-jmespath v0.4.0
+	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.11
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0
@@ -124,7 +125,6 @@ require (
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/smallnest/queue v0.0.0-20201001101855-6d53a4f556a1
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.2.1
@@ -133,6 +133,7 @@ require (
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
 	github.com/tebeka/strftime v0.1.5 // indirect
+	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f

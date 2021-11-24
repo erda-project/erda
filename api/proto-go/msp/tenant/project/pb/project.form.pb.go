@@ -161,6 +161,43 @@ func (m *GetProjectResponse) UnmarshalURLValues(prefix string, values url.Values
 					m.Data = &Project{}
 				}
 				m.Data.DisplayType = vals[0]
+			case "data.desc":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				m.Data.Desc = vals[0]
+			case "data.logo":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				m.Data.Logo = vals[0]
+			case "data.serviceCount":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ServiceCount = val
+			case "data.last24hAlertCount":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Last24HAlertCount = val
+			case "data.lastActiveTime":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.LastActiveTime = val
 			}
 		}
 	}
@@ -174,6 +211,12 @@ func (m *GetProjectsRequest) UnmarshalURLValues(prefix string, values url.Values
 			switch prefix + key {
 			case "projectId":
 				m.ProjectId = vals
+			case "withStats":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.WithStats = val
 			}
 		}
 	}
@@ -309,6 +352,43 @@ func (m *CreateProjectResponse) UnmarshalURLValues(prefix string, values url.Val
 					m.Data = &Project{}
 				}
 				m.Data.DisplayType = vals[0]
+			case "data.desc":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				m.Data.Desc = vals[0]
+			case "data.logo":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				m.Data.Logo = vals[0]
+			case "data.serviceCount":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ServiceCount = val
+			case "data.last24hAlertCount":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Last24HAlertCount = val
+			case "data.lastActiveTime":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.LastActiveTime = val
 			}
 		}
 	}
@@ -395,6 +475,43 @@ func (m *UpdateProjectResponse) UnmarshalURLValues(prefix string, values url.Val
 					m.Data = &Project{}
 				}
 				m.Data.DisplayType = vals[0]
+			case "data.desc":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				m.Data.Desc = vals[0]
+			case "data.logo":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				m.Data.Logo = vals[0]
+			case "data.serviceCount":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ServiceCount = val
+			case "data.last24hAlertCount":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Last24HAlertCount = val
+			case "data.lastActiveTime":
+				if m.Data == nil {
+					m.Data = &Project{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.LastActiveTime = val
 			}
 		}
 	}
@@ -434,6 +551,28 @@ func (m *Project) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.DisplayName = vals[0]
 			case "displayType":
 				m.DisplayType = vals[0]
+			case "desc":
+				m.Desc = vals[0]
+			case "logo":
+				m.Logo = vals[0]
+			case "serviceCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ServiceCount = val
+			case "last24hAlertCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Last24HAlertCount = val
+			case "lastActiveTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.LastActiveTime = val
 			}
 		}
 	}

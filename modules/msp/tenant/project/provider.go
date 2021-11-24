@@ -21,6 +21,7 @@ import (
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/bundle"
@@ -42,6 +43,7 @@ type provider struct {
 	I18n           i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	DB             *gorm.DB                     `autowired:"mysql-client"`
 	TenantServer   tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
+	Metric         metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -51,6 +53,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		MSPProjectDB: &db.MSPProjectDB{DB: p.DB},
 		MSPTenantDB:  &db.MSPTenantDB{DB: p.DB},
 		MonitorDB:    &monitor.MonitorDB{DB: p.DB},
+		metricq:      p.Metric,
 	}
 	if p.Register != nil {
 		pb.RegisterProjectServiceImp(p.Register, p.projectService, apis.Options())

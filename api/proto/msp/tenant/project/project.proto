@@ -78,6 +78,7 @@ message GetProjectResponse {
 
 message GetProjectsRequest{
   repeated string projectId = 1;
+  bool            withStats = 2;
 }
 
 message GetProjectsResponse{
@@ -125,22 +126,27 @@ message UpdateProjectResponse{
 
 message Project{
   // Project id
-  string                      id           = 1;
+  string                      id                = 1;
   // Project name
-  string                      name         = 2;
+  string                      name              = 2;
   // Project type
-  string                      type         = 3;
+  string                      type              = 3;
   // Tenant relationship list, k is workspace, v is tenantId
-  repeated TenantRelationship relationship = 4;
+  repeated TenantRelationship relationship      = 4;
   // Create timestamp
-  int64                       createTime   = 5;
+  int64                       createTime        = 5;
   // Update timestamp
-  int64                       updateTime   = 6;
-  bool                        isDeleted    = 7;
+  int64                       updateTime        = 6;
+  bool                        isDeleted         = 7;
   // Project display name
-  string                      displayName  = 8;
+  string                      displayName       = 8;
   // Project type display name
-  string                      displayType  = 9;
+  string                      displayType       = 9;
+  string                      desc              = 10;
+  string                      logo              = 11;
+  int64                       serviceCount      = 12;
+  int64                       last24hAlertCount = 13;
+  int64                       lastActiveTime    = 14;
 }
 
 message TenantRelationship {
