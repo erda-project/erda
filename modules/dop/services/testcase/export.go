@@ -96,7 +96,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 	fileUUID, err := svc.ExportTestCases(req, record.FileName)
 	if err != nil {
 		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: err}); err != nil {
 			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
 		}
 		return

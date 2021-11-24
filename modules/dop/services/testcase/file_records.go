@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint64, error) {
@@ -74,6 +75,14 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 	if req.State != "" {
 		r.State = req.State
 	}
+	if req.ErrorInfo != nil {
+		errorInfo := fmt.Sprint(req.ErrorInfo)
+		if err := strutil.Validate(errorInfo, strutil.MaxRuneCountValidator(apistructs.TestFileRecordErrorMaxLength)); err != nil {
+			errorInfo = strutil.Truncate(errorInfo, apistructs.TestFileRecordErrorMaxLength)
+		}
+		r.ErrorInfo = errorInfo
+	}
+
 	return svc.db.UpdateRecord(r)
 }
 
@@ -152,6 +161,10 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 
 	if record.Type == apistructs.FileActionTypeImport || record.Type == apistructs.FileActionTypeExport {
 		record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	}
+
+	if record.State == apistructs.FileRecordStateFail {
+		record.Description = s.ErrorInfo
 	}
 	return record
 }
