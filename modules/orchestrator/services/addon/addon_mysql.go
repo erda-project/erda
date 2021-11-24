@@ -32,15 +32,26 @@ func (a *Addon) toOverrideConfigFromMySQLAccount(config map[string]interface{}, 
 }
 
 func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{}, account *dbclient.MySQLAccount) error {
-	dr, err := a.kms.Decrypt(account.Password, account.KMSKey)
-	if err != nil {
-		return err
+	password := account.Password
+	if account.KMSKey != "" {
+		dr, err := a.kms.Decrypt(account.Password, account.KMSKey)
+		if err != nil {
+			return err
+		}
+		rawSecret, err := base64.StdEncoding.DecodeString(dr.PlaintextBase64)
+		if err != nil {
+			return err
+		}
+		password = string(rawSecret)
+	} else {
+		// try to decrypt in old-style
+		_password, err := a.encrypt.DecryptPassword(password)
+		if err != nil {
+			logrus.Errorf("failed to decrypt password for mysql account %s: %s", account.ID, err)
+		} else {
+			password = _password
+		}
 	}
-	rawSecret, err := base64.StdEncoding.DecodeString(dr.PlaintextBase64)
-	if err != nil {
-		return err
-	}
-	password := string(rawSecret)
 	config["MYSQL_USERNAME"] = account.Username
 	config["MYSQL_PASSWORD"] = password
 	return nil
