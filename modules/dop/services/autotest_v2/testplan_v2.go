@@ -652,6 +652,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 								//apistructs.LabelIsRefSet:         "true",
 							},
 						},
+						Policy: &pipelineyml.Policy{Type: v.Policy},
 					},
 				})
 			} else {

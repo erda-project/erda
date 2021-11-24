@@ -110,7 +110,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 	}
 
 	// 一个场景集下500个场景
-	total, _, err := svc.ListAutotestScene(req)
+	total, scenes, err := svc.ListAutotestScene(req)
 	if err != nil {
 		return 0, err
 	}
@@ -127,12 +127,23 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		return 0, fmt.Errorf("一个空间下，限制五万个场景")
 	}
 
+	var preID uint64
+	if req.PreID > 0 {
+		preID = req.PreID
+	} else {
+		if len(scenes) > 0 {
+			preID = scenes[len(scenes)-1].ID
+		} else {
+			preID = 0
+		}
+	}
+
 	scene := &dao.AutoTestScene{
 		Name:        req.Name,
 		Description: req.Description,
 		SpaceID:     req.SpaceID,
 		SetID:       req.SetID,
-		PreID:       req.PreID,
+		PreID:       preID,
 		CreatorID:   req.UserID,
 		Status:      apistructs.DefaultSceneStatus,
 		RefSetID:    req.RefSetID,
