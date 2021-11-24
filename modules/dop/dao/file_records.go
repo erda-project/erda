@@ -38,6 +38,7 @@ type TestFileRecord struct {
 	State       apistructs.FileRecordState
 	OperatorID  string
 	Extra       TestFileExtra
+	ErrorInfo   string
 }
 
 type TestFileExtra apistructs.TestFileExtra

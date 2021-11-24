@@ -45,6 +45,7 @@ type TestFileRecordRequest struct {
 	Type        FileActionType  `json:"type"`
 	State       FileRecordState `json:"state"`
 	Extra       TestFileExtra   `json:"extra"`
+	ErrorInfo   error           `json:"errorInfo"`
 	IdentityInfo
 }
 
@@ -53,6 +54,8 @@ type TestFileExtra struct {
 	AutotestSpaceFileExtraInfo    *AutoTestSpaceFileExtraInfo    `json:"autotestSpaceFileExtraInfo,omitempty"`
 	AutotestSceneSetFileExtraInfo *AutoTestSceneSetFileExtraInfo `json:"autotestSceneSetFileExtraInfo,omitempty"`
 }
+
+const TestFileRecordErrorMaxLength = 2048
 
 type ManualTestFileExtraInfo struct {
 	TestSetID     uint64                   `json:"testSetID,omitempty"`
