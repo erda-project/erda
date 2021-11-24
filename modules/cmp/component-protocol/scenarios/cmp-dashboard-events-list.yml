@@ -4,12 +4,16 @@ hierarchy:
   root: page
   structure:
     page:
-      - filter
-      - eventTable
+      - tableContainer
+    tableContainer:
+      slot: filter
+      table: eventTable
 
 components:
   page:
     type: Container
+  tableContainer:
+    type: ComposeTable
   filter:
     type: ContractiveFilter
   eventTable:
@@ -18,6 +22,7 @@ components:
 rendering:
   __DefaultRendering__:
     - name: page
+    - name: tableContainer
     - name: filter
       state:
         - name: "clusterName"
