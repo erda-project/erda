@@ -461,8 +461,9 @@ func (i *ComponentFileTree) RenderClickScene(event cptype.ComponentEvent) error 
 		i.State.SetId__urlQuery = strconv.Itoa(operationData.Meta.ParentKey)
 		i.State.SceneSetKey = operationData.Meta.ParentKey
 		i.State.SceneId = uint64(id)
+		i.gsHelper.SetGlobalActiveConfig(gshelper.SceneConfigKey)
 	}
-	i.gsHelper.SetGlobalActiveConfig(gshelper.SceneConfigKey)
+
 	return nil
 }
 
@@ -478,6 +479,7 @@ func (i *ComponentFileTree) RenderClickSceneSet(event cptype.ComponentEvent) err
 	i.State.SceneId = 0
 	i.State.SetId__urlQuery = strconv.Itoa(id)
 	i.State.SceneId__urlQuery = ""
+	i.State.SelectedKeys = []string{"sceneset-" + strconv.Itoa(id)}
 	i.gsHelper.SetGlobalSelectedSetID(uint64(id))
 	i.gsHelper.SetGlobalActiveConfig(gshelper.SceneSetConfigKey)
 	return nil
@@ -713,4 +715,6 @@ func (i *ComponentFileTree) SetSceneSetClick(setID int) {
 	i.State.SetId__urlQuery = strconv.Itoa(setID)
 	i.State.SelectedKeys = []string{"sceneset-" + i.State.SetId__urlQuery}
 	i.State.SceneId__urlQuery = ""
+	i.gsHelper.SetGlobalActiveConfig(gshelper.SceneSetConfigKey)
+	i.gsHelper.SetGlobalSelectedSetID(uint64(setID))
 }
