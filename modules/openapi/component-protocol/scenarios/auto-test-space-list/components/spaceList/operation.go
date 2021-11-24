@@ -77,7 +77,7 @@ type operationData struct {
 	Meta meta `json:"meta"`
 }
 
-func setCommand(space spaceItem) map[string]interface{} {
+func setCommand(space spaceItem, status apistructs.AutoTestSpaceArchiveStatus) map[string]interface{} {
 	return map[string]interface{}{
 		"key": "set",
 		"state": spaceFormModal.State{
@@ -87,7 +87,7 @@ func setCommand(space spaceItem) map[string]interface{} {
 				"id":            space.ID,
 				"name":          space.Title,
 				"desc":          space.Description,
-				"archiveStatus": space.ArchiveStatus.Status,
+				"archiveStatus": status,
 			},
 		},
 		"target": "spaceFormModal",

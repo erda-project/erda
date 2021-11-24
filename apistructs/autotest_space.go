@@ -58,6 +58,19 @@ func (s AutoTestSpaceArchiveStatus) GetZhName() string {
 	}
 }
 
+func (s AutoTestSpaceArchiveStatus) GetFrontEndStatus() string {
+	switch s {
+	case TestSpaceInit:
+		return "default"
+	case TestSpaceInProgress:
+		return "processing"
+	case TestSpaceCompleted:
+		return "success"
+	default:
+		return ""
+	}
+}
+
 func (s AutoTestSpaceArchiveStatus) Valid() bool {
 	switch s {
 	case TestSpaceInit, TestSpaceInProgress, TestSpaceCompleted:
