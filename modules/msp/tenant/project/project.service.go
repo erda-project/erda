@@ -172,7 +172,8 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		return nil
 	}
 	endMillSeconds := time.Now().UnixNano() / int64(time.Millisecond)
-	startMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
+	oneDayAgoMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
+	sevenDayAgoMillSeconds := endMillSeconds - int64(7*24*time.Hour/time.Millisecond)
 	var projectIds []interface{}
 	for _, project := range projects {
 		projectIds = append(projectIds, project.Id)
@@ -186,8 +187,9 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	activeTimeMap := map[string]int64{}
 	alertCountMap := map[string]int64{}
 
+	// get services count
 	req := &metricpb.QueryWithInfluxFormatRequest{
-		Start: strconv.FormatInt(startMillSeconds, 10),
+		Start: strconv.FormatInt(oneDayAgoMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
 			{
@@ -197,7 +199,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 			},
 		},
 		Statement: `
-		SELECT project_id::tag, distinct(service_id::tag), max(timestamp)
+		SELECT project_id::tag, distinct(service_id::tag)
 		FROM application_service_node
 		WHERE _metric_scope::tag = 'micro_service'
 		GROUP BY project_id::tag
@@ -216,15 +218,50 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		for _, row := range resp.Results[0].Series[0].Rows {
 			projectId := row.Values[0].GetStringValue()
 			servicesCount := row.Values[1].GetNumberValue()
-			activeTime := row.Values[2].GetNumberValue()
 
 			servicesCountMap[projectId] = int64(servicesCount)
+		}
+	}
+
+	// get active time
+	req = &metricpb.QueryWithInfluxFormatRequest{
+		Start: strconv.FormatInt(sevenDayAgoMillSeconds, 10),
+		End:   strconv.FormatInt(endMillSeconds, 10),
+		Filters: []*metricpb.Filter{
+			{
+				Key:   "tags.project_id",
+				Op:    "in",
+				Value: structpb.NewListValue(pbIdList),
+			},
+		},
+		Statement: `
+		SELECT project_id::tag, max(timestamp)
+		FROM application_service_node
+		WHERE _metric_scope::tag = 'micro_service'
+		GROUP BY project_id::tag
+		`,
+	}
+	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	resp, err = s.metricq.QueryWithInfluxFormat(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to do metrics: %s", err)
+	}
+	if len(resp.Results) > 0 &&
+		len(resp.Results[0].Series) > 0 &&
+		len(resp.Results[0].Series[0].Rows) > 0 {
+
+		for _, row := range resp.Results[0].Series[0].Rows {
+			projectId := row.Values[0].GetStringValue()
+			activeTime := row.Values[1].GetNumberValue()
+
 			activeTimeMap[projectId] = int64(activeTime) / int64(time.Millisecond)
 		}
 	}
 
+	// get alert count
 	req = &metricpb.QueryWithInfluxFormatRequest{
-		Start: strconv.FormatInt(startMillSeconds, 10),
+		Start: strconv.FormatInt(oneDayAgoMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
 			{
