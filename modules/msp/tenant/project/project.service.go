@@ -83,7 +83,17 @@ func (p Projects) Len() int { return len(p) }
 
 func (p Projects) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-func (p Projects) Less(i, j int) bool { return p[i].CreateTime > p[j].CreateTime }
+func (p Projects) Less(i, j int) bool {
+
+	activeTime1 := p[i].LastActiveTime / int64(10*time.Minute/time.Millisecond)
+	activeTime2 := p[j].LastActiveTime / int64(10*time.Minute/time.Millisecond)
+
+	if activeTime1 == activeTime2 {
+		return p[i].CreateTime > p[j].CreateTime
+	}
+
+	return activeTime1 > activeTime2
+}
 
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
 	projects, err := s.GetProjectList(ctx, req.ProjectId, req.WithStats)
@@ -133,6 +143,12 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 		for i, p := range projects {
 			if p.Id == id {
 				projects = append(projects[:i], projects[i+1:]...)
+				if len(project.Desc) == 0 {
+					project.Desc = projects[i].Desc
+				}
+				if len(project.Logo) == 0 {
+					project.Logo = projects[i].Logo
+				}
 				break
 			}
 		}
