@@ -32,16 +32,26 @@ import (
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
-	query := elastic.NewBoolQuery().Filter(elastic.NewQueryStringQuery("trace_id.raw:" + sel.TraceId))
+	query := elastic.NewBoolQuery().Filter(elastic.NewTermQuery("trace_id", sel.TraceId))
 	return searchSource.Query(query)
 }
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
-	// TODO check org
-	indices := p.Loader.Indices(ctx, time.Now().Add(-time.Hour*24*7).UnixNano(), time.Now().UnixNano(), loader.KeyPath{
+	keyPath := loader.KeyPath{
 		Recursive: true,
-	})
-
+	}
+	if len(sel.Hint.Scope) > 0 {
+		keyPath.Keys = []string{sel.Hint.Scope}
+	}
+	now := time.Now()
+	end := now.UnixNano()
+	start := now.Add(-time.Hour * 24 * 7).UnixNano()
+	if sel.Hint.Timestamp > 0 {
+		t := time.Unix(sel.Hint.Timestamp/int64(time.Second), sel.Hint.Timestamp%int64(time.Second))
+		end = t.Add(15 * time.Minute).UnixNano()
+		start = t.Add(-15 * time.Minute).UnixNano()
+	}
+	indices := p.Loader.Indices(ctx, start, end, keyPath)
 	return &scrollIterator{
 		ctx:          ctx,
 		sel:          sel,
