@@ -16,11 +16,13 @@ package apitestsv2
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/encoding/jsonpath"
 )
 
@@ -30,4 +32,69 @@ func TestJsonPath(t *testing.T) {
 	data, err := jsonpath.Get(a, "success")
 	assert.NoError(t, err)
 	spew.Dump(data)
+}
+
+func TestAPITest_Invoke(t *testing.T) {
+	type fields struct {
+		API       *apistructs.APIInfo
+		APIResult *apistructs.ApiTestInfo
+		opt       option
+	}
+	type args struct {
+		testEnv    *apistructs.APITestEnvData
+		caseParams map[string]*apistructs.CaseParams
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *apistructs.APIRequestInfo
+		want1   *apistructs.APIResp
+		wantErr bool
+	}{
+		{
+			name: "test_normal",
+			fields: fields{
+				API: &apistructs.APIInfo{
+					URL:    "www.erda.cloud",
+					Name:   "TEST",
+					Method: "GET",
+				},
+				APIResult: &apistructs.ApiTestInfo{},
+				opt:       option{},
+			},
+			args: args{
+				testEnv:    &apistructs.APITestEnvData{},
+				caseParams: nil,
+			},
+			want: &apistructs.APIRequestInfo{
+				URL:     "http://www.erda.cloud",
+				Method:  "GET",
+				Headers: map[string][]string{"Accept-Encoding": {"identity"}},
+				Params:  map[string][]string{},
+				Body: apistructs.APIBody{
+					Content: "",
+				},
+			},
+			want1:   &apistructs.APIResp{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			at := &APITest{
+				API:       tt.fields.API,
+				APIResult: tt.fields.APIResult,
+				opt:       tt.fields.opt,
+			}
+			got, _, err := at.Invoke(nil, tt.args.testEnv, tt.args.caseParams)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Invoke() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
