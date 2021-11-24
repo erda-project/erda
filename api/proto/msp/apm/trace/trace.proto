@@ -188,6 +188,8 @@ message GetSpansRequest {
   // The scopeId is similar to the tenant id, which can quickly locate the cluster, project, and environment
   string scopeID = 2 [(validator.field) = {string_not_empty: true}];
   int64  limit   = 3;
+  string orgName = 4;
+  int64 startTime = 5;
 }
 
 message GetSpanDashboardsRequest {

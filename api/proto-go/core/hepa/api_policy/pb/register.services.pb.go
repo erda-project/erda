@@ -4,8 +4,9 @@
 package pb
 
 import (
-	transport "github.com/erda-project/erda-infra/pkg/transport"
 	reflect "reflect"
+
+	transport "github.com/erda-project/erda-infra/pkg/transport"
 )
 
 // RegisterApiPolicyServiceImp api_policy.proto
