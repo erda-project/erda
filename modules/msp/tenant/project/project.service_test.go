@@ -19,14 +19,12 @@ import (
 	reflect "reflect"
 	testing "testing"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
-	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-
 	"bou.ke/monkey"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
