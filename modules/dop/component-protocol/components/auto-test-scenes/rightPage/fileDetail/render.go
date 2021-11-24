@@ -91,7 +91,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	// props
 
-	if gh.GetGlobalSelectedSetID() != 0 {
+	if gh.GetGlobalSelectedSetID() != 0 || gh.GetFileTreeSceneID() != 0 {
 		props["visible"] = true
 	} else {
 		props["visible"] = false

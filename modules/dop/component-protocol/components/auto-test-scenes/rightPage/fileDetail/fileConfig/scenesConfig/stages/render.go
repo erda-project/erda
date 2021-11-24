@@ -71,6 +71,7 @@ func (i *ComponentStageForm) RenderProtocol(c *cptype.Component, g *cptype.Globa
 	}
 	(*c).Data["value"] = i.Data.List
 	c.Data["type"] = i.Data.Type
+	c.State = make(map[string]interface{})
 	c.State["showApiEditorDrawer"] = i.State.ShowApiEditorDrawer
 	c.State["showConfigSheetDrawer"] = i.State.ShowConfigSheetDrawer
 	c.State["showWaitEditorDrawer"] = i.State.ShowWaitEditorDrawer

@@ -319,6 +319,7 @@ func (a *ComponentFileFormModal) renderSubmitHelper(inParams fileTree.InParams, 
 		}
 	}
 	a.State.Visible = false
+	a.State.SceneId = 0
 	return nil
 }
 
@@ -433,17 +434,6 @@ func (a *ComponentFileFormModal) AddScene(inParams fileTree.InParams) error {
 		}
 	}
 	preID := a.State.SceneId
-	if !a.State.IsAddParallel {
-		_, scenes, err := a.atTestPlan.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: uint64(a.State.SceneSetKey)})
-		if err != nil {
-			return err
-		}
-		if len(scenes) > 0 {
-			preID = scenes[len(scenes)-1].ID
-		} else {
-			preID = 0
-		}
-	}
 	_, err = a.atTestPlan.CreateAutotestScene(apistructs.AutotestSceneRequest{
 		Name:        formData.Name,
 		Description: formData.Description,

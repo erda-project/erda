@@ -172,7 +172,7 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 	i.Operations["drag"] = drag
 
 	i.Props = map[string]interface{}{}
-	i.Props["draggable"] = true
+	i.Props["draggable"] = false
 
 	inParamsBytes, err := json.Marshal(cputil.SDK(ctx).InParams)
 	if err != nil {
@@ -279,6 +279,7 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 	// set global state
 	i.gsHelper.SetFileTreeSceneID(i.State.SceneId)
 	i.gsHelper.SetFileTreeSceneSetKey(uint64(i.State.SceneSetKey))
+	i.gsHelper.SetGlobalSelectedSetID(uint64(i.State.SceneSetKey))
 
 	return
 }
