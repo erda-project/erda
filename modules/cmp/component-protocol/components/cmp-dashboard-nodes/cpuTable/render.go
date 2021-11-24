@@ -15,7 +15,6 @@
 package cpuTable
 
 import (
-	"math"
 	"strings"
 
 	"github.com/rancher/wrangler/pkg/data"
@@ -39,11 +38,11 @@ func (ct *CpuInfoTable) GetProps() map[string]interface{} {
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
-			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true},
-			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Fixed: "left"},
+			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Fixed: "left"},
+			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true},
 			{DataIndex: "Distribution", Title: ct.SDK.I18n("distribution"), Sortable: true, Align: "right"},
 			{DataIndex: "Usage", Title: ct.SDK.I18n("usedRate"), Sortable: true, Align: "right"},
-			{DataIndex: "UnusedRate", Title: ct.SDK.I18n("unusedRate"), Sortable: true, TitleTip: ct.SDK.I18n("The proportion of allocated resources that are not used, lower than 40% means Low, between 40% to 80% means Middle, higher than 80% means High")},
+			{DataIndex: "DistributionRate", Title: ct.SDK.I18n("distributionRate"), Sortable: true, TitleTip: ct.SDK.I18n("The proportion of allocated resources that are used")},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true},
 			{DataIndex: "Role", Title: "Role", Sortable: true},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Sortable: true},
@@ -93,7 +92,6 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 			used = metricsData.Used
 		}
 		usage = ct.GetUsageValue(used*1000, float64(requestQty.Value())*1000, table.Cpu)
-		unused := math.Max(float64(cpuRequest)-used*1000, 0.0)
 		roleStr := c.StringSlice("metadata", "fields")[2]
 
 		ip := c.StringSlice("metadata", "fields")[5]
@@ -150,9 +148,9 @@ func (ct *CpuInfoTable) GetRowItems(nodes []data.Object, requests map[string]cmp
 				Status:     table.GetDistributionStatus(usage.Percent),
 				Tip:        usage.Text,
 			},
-			UnusedRate:      ct.GetUnusedRate(unused, float64(cpuRequest), table.Cpu),
-			Operate:         ct.GetOperate(c.String("metadata", "name")),
-			BatchOperations: batchOperations,
+			DistributionRate: ct.GetDistributionRate(used, float64(cpuRequest), table.Cpu),
+			Operate:          ct.GetOperate(c.String("metadata", "name")),
+			BatchOperations:  batchOperations,
 		},
 		)
 	}

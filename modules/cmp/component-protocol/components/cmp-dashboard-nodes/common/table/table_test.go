@@ -323,7 +323,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "idle",
+			want: "High",
 		},
 		{
 			name:   "text",
@@ -333,7 +333,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "ordinary",
+			want: "Middle",
 		},
 		{
 			name:   "text",
@@ -343,7 +343,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "busy",
+			want: "Low",
 		},
 	}
 	for _, tt := range tests {
@@ -352,8 +352,8 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			t.SDK = &cptype.SDK{
 				Tran: NopTranslator{},
 			}
-			if got := t.GetUnusedRate(tt.args.a, tt.args.b, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
-				t1.Errorf("GetUnusedRate() = %v, want %v", got, tt.want)
+			if got := t.GetDistributionRate(tt.args.a, tt.args.b, tt.args.resourceType); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("GetDistributionRate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
