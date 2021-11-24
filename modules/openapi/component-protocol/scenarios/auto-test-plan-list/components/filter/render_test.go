@@ -16,15 +16,25 @@ package filter
 
 import (
 	"context"
-	"fmt"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func TestAutoTestPlanFilter_Render(t *testing.T) {
+	bdl := bundle.New()
+	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), protocol.ContextBundle{
+		Bdl:      bdl,
+		InParams: map[string]interface{}{"projectId": 25},
+		Identity: apistructs.Identity{UserID: "2", OrgID: "1"},
+	})
+
 	type args struct {
 		ctx      context.Context
 		c        *apistructs.Component
@@ -52,6 +62,7 @@ func TestAutoTestPlanFilter_Render(t *testing.T) {
 						},
 					},
 				},
+				ctx: ctx,
 			},
 			wantErr: false,
 		},
@@ -65,6 +76,7 @@ func TestAutoTestPlanFilter_Render(t *testing.T) {
 				c: &apistructs.Component{
 					State: map[string]interface{}{},
 				},
+				ctx: ctx,
 			},
 			wantErr: false,
 		},
@@ -82,11 +94,16 @@ func TestAutoTestPlanFilter_Render(t *testing.T) {
 						},
 					},
 				},
+				ctx: ctx,
 			},
 			wantErr: false,
 		},
 	}
 	expects := []interface{}{true, false, nil}
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListProjectIterations", func(*bundle.Bundle, apistructs.IterationPagingRequest, string) ([]apistructs.Iteration, error) {
+		return nil, nil
+	})
+	defer monkey.UnpatchAll()
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tpm := &AutoTestPlanFilter{}
@@ -94,7 +111,6 @@ func TestAutoTestPlanFilter_Render(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AutoTestPlanFilter.Render() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			fmt.Println(tt.args.c.State["archive"])
 			assert.Equal(t, expects[i], tt.args.c.State["archive"])
 		})
 	}
