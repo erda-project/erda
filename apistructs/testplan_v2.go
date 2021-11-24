@@ -113,7 +113,7 @@ type TestPlanV2PagingRequest struct {
 	Updater      string   `schema:"updater"`
 	SpaceID      uint64   `schema:"spaceID"`
 	ProjectID    uint64   `schema:"projectID"`
-	IterationIDs []uint64 `json:"iterationIDs"`
+	IterationIDs []uint64 `schema:"iterationID"`
 	IsArchived   *bool    `schema:"isArchived"`
 
 	// +optional default 1
@@ -154,6 +154,17 @@ func (tpr *TestPlanV2PagingRequest) UrlQueryString() map[string][]string {
 	if tpr.IsArchived != nil {
 		query["isArchived"] = []string{strconv.FormatBool(*tpr.IsArchived)}
 	}
+
+	if len(tpr.IterationIDs) != 0 {
+		query["iterationID"] = func() []string {
+			iterations := make([]string, 0, len(tpr.IterationIDs))
+			for _, v := range tpr.IterationIDs {
+				iterations = append(iterations, strconv.FormatUint(v, 10))
+			}
+			return iterations
+		}()
+	}
+
 	if tpr.OrderBy != "" {
 		query["orderBy"] = []string{tpr.OrderBy}
 	}

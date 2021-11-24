@@ -167,7 +167,9 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	if _, ok := c.State["name"]; ok {
 		cond.Name = c.State["name"].(string)
 	}
-
+	if _, ok := c.State["iteration"]; ok {
+		cond.IterationIDs = c.State["iteration"].([]uint64)
+	}
 	if v, ok := c.State["archive"]; ok && v != nil {
 		var isArchive bool
 		if s := v.(bool); s == true {

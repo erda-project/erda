@@ -20,6 +20,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 )
 
 type AutoTestPlanFilter struct{}
@@ -29,11 +31,30 @@ func RenderCreator() protocol.CompRender {
 }
 
 type Value struct {
-	Archive []string `json:"archive"`
-	Name    string   `json:"name"`
+	Archive   []string `json:"archive"`
+	Name      string   `json:"name"`
+	Iteration []uint64 `json:"iteration"`
 }
 
 func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
+	if err != nil {
+		return err
+	}
+	iterations, err := bdl.Bdl.ListProjectIterations(apistructs.IterationPagingRequest{
+		PageNo:              1,
+		PageSize:            999,
+		ProjectID:           projectID,
+		WithoutIssueSummary: true,
+	}, "0")
+	if err != nil {
+		return err
+	}
+	if c.State == nil {
+		c.State = make(map[string]interface{})
+	}
+	c.State["conditions"] = tpm.setConditions(iterations)
 	if event.Operation.String() == "filter" {
 		if _, ok := c.State["values"]; ok {
 			fiterDataBytes, err := json.Marshal(c.State["values"])
@@ -52,6 +73,7 @@ func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Compone
 			if len(values.Archive) == 1 {
 				c.State["archive"] = values.Archive[0] == "archived"
 			}
+			c.State["iteration"] = values.Iteration
 		}
 	} else {
 		c.State["name"] = ""
@@ -59,7 +81,54 @@ func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Compone
 		c.State["values"] = Value{
 			Archive: []string{"inprogress"},
 		}
+		c.State["iteration"] = []uint64{}
 	}
 
 	return nil
+}
+
+func (tpm *AutoTestPlanFilter) setConditions(iterations []apistructs.Iteration) []filter.PropCondition {
+	return []filter.PropCondition{
+		{
+			Key:         "name",
+			Label:       "计划名",
+			Fixed:       true,
+			Placeholder: "输入计划名按回车键查询",
+			Type:        filter.PropConditionTypeInput,
+		},
+		{
+			Key:         "archive",
+			Label:       "归档",
+			EmptyText:   "全部",
+			Fixed:       true,
+			Placeholder: "输入计划名按回车键查询",
+			Type:        filter.PropConditionTypeSelect,
+			Options: []filter.PropConditionOption{
+				{
+					Label: "进行中",
+					Value: "inprogress",
+				},
+				{
+					Label: "已归档",
+					Value: "archived",
+				},
+			},
+		},
+		{
+			EmptyText: "全部",
+			Fixed:     true,
+			Key:       "iteration",
+			Label:     "迭代",
+			Options: func() (opts []filter.PropConditionOption) {
+				for _, itr := range iterations {
+					opts = append(opts, filter.PropConditionOption{
+						Label: itr.Title,
+						Value: itr.ID,
+					})
+				}
+				return
+			}(),
+			Type: filter.PropConditionTypeSelect,
+		},
+	}
 }
