@@ -122,10 +122,10 @@ type RowItem struct {
 	Role    Role        `json:"Role,omitempty"`
 	Version string      `json:"Version,omitempty"`
 	//
-	Distribution Distribution `json:"Distribution,omitempty"`
-	Usage        Distribution `json:"Usage,omitempty"`
-	UnusedRate   string       `json:"UnusedRate,omitempty"`
-	Operate      Operate      `json:"Operate,omitempty"`
+	Distribution     Distribution `json:"Distribution,omitempty"`
+	Usage            Distribution `json:"Usage,omitempty"`
+	DistributionRate string       `json:"DistributionRate,omitempty"`
+	Operate          Operate      `json:"Operate,omitempty"`
 	// batchOperations for json
 	BatchOperations []string `json:"batchOperations,omitempty"`
 }
@@ -310,14 +310,14 @@ func (t *Table) GetDistributionValue(req, total float64, resourceType TableType)
 	}
 }
 
-func (t *Table) GetUnusedRate(unallocate, request float64, resourceType TableType) string {
-	rate := unallocate / request
+func (t *Table) GetDistributionRate(allocate, request float64, resourceType TableType) string {
+	rate := allocate / request
 	if rate <= 0.4 {
-		return t.SDK.I18n("busy")
+		return t.SDK.I18n("Low")
 	} else if rate <= 0.8 {
-		return t.SDK.I18n("ordinary")
+		return t.SDK.I18n("Middle")
 	} else {
-		return t.SDK.I18n("idle")
+		return t.SDK.I18n("High")
 	}
 }
 

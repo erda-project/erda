@@ -38,8 +38,8 @@ func (pt *PodInfoTable) GetProps() map[string]interface{} {
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
-			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true},
-			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Fixed: "left"},
+			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Fixed: "left"},
+			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true},
 			{DataIndex: "Usage", Title: pt.SDK.I18n("usedRate"), Sortable: true, Align: "right"},
 			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true},
 			{DataIndex: "Role", Title: "Role", Sortable: true},
