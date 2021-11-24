@@ -26,7 +26,7 @@ type PodsCharts struct {
 }
 
 type Data struct {
-	Group [][]Pie `json:"group,omitempty"`
+	Group [][][]Pie `json:"group,omitempty"`
 }
 
 type Pie struct {
