@@ -192,8 +192,8 @@ func (p *provider) setupTimeRange(index *IndexEntry) {
 		ranges, ok := p.timeRanges[index.Index]
 		if !ok || (index.DocsCount != ranges.DocsCount || index.DocsDeleted != ranges.DocsDeleted) {
 			searchSource := elastic.NewSearchSource()
-			searchSource.Aggregation("min_time", elastic.NewMinAggregation().Field("timestamp"))
-			searchSource.Aggregation("max_time", elastic.NewMaxAggregation().Field("timestamp"))
+			searchSource.Aggregation("min_time", elastic.NewMinAggregation().Field(p.Cfg.TimestampKey))
+			searchSource.Aggregation("max_time", elastic.NewMaxAggregation().Field(p.Cfg.TimestampKey))
 			context, cancel := context.WithTimeout(context.Background(), p.Cfg.RequestTimeout)
 			defer cancel()
 			resp, err := p.es.Client().Search(index.Index).IgnoreUnavailable(true).AllowNoIndices(true).
@@ -208,12 +208,12 @@ func (p *provider) setupTimeRange(index *IndexEntry) {
 			min, ok := resp.Aggregations.Min("min_time")
 			if ok && min.Value != nil {
 				t := int64(*min.Value)
-				index.MinT = time.Unix(t/int64(time.Second), t%int64(time.Second))
+				index.MinT = p.parseUnixToTime(t)
 			}
 			max, ok := resp.Aggregations.Max("max_time")
 			if ok && max.Value != nil {
 				t := int64(*max.Value)
-				index.MaxT = time.Unix(t/int64(time.Second), t%int64(time.Second))
+				index.MaxT = p.parseUnixToTime(t)
 			}
 			p.Log.Debugf("query index %q , mint: %q, maxt: %q", index.Index, index.MinT.String(), index.MaxT.String())
 			if min != nil && min.Value != nil &&
@@ -229,6 +229,17 @@ func (p *provider) setupTimeRange(index *IndexEntry) {
 			index.MinT = ranges.MinT
 			index.MaxT = ranges.MaxT
 		}
+	}
+}
+
+func (p *provider) parseUnixToTime(t int64) time.Time {
+	switch p.Cfg.TimestampUnit {
+	case "s":
+		return time.Unix(t, 0)
+	case "ms":
+		return time.Unix(t/1000, (t%1000)*1000000)
+	default: // ns
+		return time.Unix(t/int64(time.Second), t%int64(time.Second))
 	}
 }
 

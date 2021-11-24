@@ -43,6 +43,8 @@ type (
 		LoadMode            string        `file:"load_mode" default:"LoadFromElasticSearchOnly"`
 		RequestTimeout      time.Duration `file:"request_timeout" default:"1m"`
 		QueryIndexTimeRange bool          `file:"query_index_time_range"`
+		TimestampKey        string        `file:"timestamp_key" default:"timestamp"`
+		TimestampUnit       string        `file:"timestamp_unit" default:"ns"` // ms、ns
 		IndexReloadInterval time.Duration `file:"index_reload_interval" default:"2m"`
 		CacheKeyPrefix      string        `file:"cache_key_prefix" default:"es-index"`
 		DefaultIndex        string        `file:"default_index" default:"index__for__not__exist"`

@@ -92,11 +92,18 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 			spans = append(spans, span)
 		}
 	}
-
 	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+		org := req.OrgName
+		if len(org) <= 0 {
+			org = apis.GetHeader(ctx, "org")
+		}
 		// do es query
 		elasticsearchSpans, _ := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
 			TraceId: req.TraceID,
+			Hint: storage.QueryHint{
+				Scope:     org,
+				Timestamp: req.StartTime * 1000000, // convert ms to ns
+			},
 		}, true, int(req.GetLimit()))
 		for _, value := range elasticsearchSpans {
 			var span pb.Span

@@ -5,14 +5,15 @@ package pb
 
 import (
 	context "context"
+	http1 "net/http"
+	strconv "strconv"
+	strings "strings"
+
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
 	httprule "github.com/erda-project/erda-infra/pkg/transport/http/httprule"
 	runtime "github.com/erda-project/erda-infra/pkg/transport/http/runtime"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
-	http1 "net/http"
-	strconv "strconv"
-	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -38,7 +39,7 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -48,6 +49,10 @@ func RegisterOpenapiRuleServiceHandler(r http.Router, srv OpenapiRuleServiceHand
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetLimits := func(method, path string, fn func(context.Context, *GetLimitsRequest) (*GetLimitsResponse, error)) {
