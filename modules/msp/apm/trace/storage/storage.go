@@ -24,6 +24,12 @@ type (
 	// Selector .
 	Selector struct {
 		TraceId string
+		Hint    QueryHint
+	}
+	// QueryHint .
+	QueryHint struct {
+		Scope     string
+		Timestamp int64
 	}
 
 	// Storage .

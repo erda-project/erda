@@ -5,10 +5,11 @@ package pb
 
 import (
 	context "context"
+	http1 "net/http"
+
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
-	http1 "net/http"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -29,7 +30,7 @@ func RegisterLegacyConsumerServiceHandler(r http.Router, srv LegacyConsumerServi
 		op(h)
 	}
 	encodeFunc := func(fn func(http1.ResponseWriter, *http1.Request) (interface{}, error)) http.HandlerFunc {
-		return func(w http1.ResponseWriter, r *http1.Request) {
+		handler := func(w http1.ResponseWriter, r *http1.Request) {
 			out, err := fn(w, r)
 			if err != nil {
 				h.Error(w, r, err)
@@ -39,6 +40,10 @@ func RegisterLegacyConsumerServiceHandler(r http.Router, srv LegacyConsumerServi
 				h.Error(w, r, err)
 			}
 		}
+		if h.HTTPInterceptor != nil {
+			handler = h.HTTPInterceptor(handler)
+		}
+		return handler
 	}
 
 	add_GetConsumer := func(method, path string, fn func(context.Context, *GetConsumerRequest) (*GetConsumerResponse, error)) {

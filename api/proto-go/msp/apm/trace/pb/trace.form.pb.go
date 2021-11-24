@@ -238,6 +238,14 @@ func (m *GetSpansRequest) UnmarshalURLValues(prefix string, values url.Values) e
 					return err
 				}
 				m.Limit = val
+			case "orgName":
+				m.OrgName = vals[0]
+			case "startTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.StartTime = val
 			}
 		}
 	}

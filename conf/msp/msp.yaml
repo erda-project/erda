@@ -62,6 +62,8 @@ elasticsearch.index.loader@span:
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
+  timestamp_key: "@timestamp"
+  timestamp_unit: "ms"
   cache_key_prefix: "es-index-span"
   match:
     - prefix: "erda-spans-"
