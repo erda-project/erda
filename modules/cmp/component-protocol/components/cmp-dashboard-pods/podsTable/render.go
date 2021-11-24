@@ -632,6 +632,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
 			Sorter:    true,
+			Align:     "right",
 		},
 		{
 			DataIndex: "node",
@@ -642,6 +643,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			DataIndex: "age",
 			Title:     cputil.I18n(ctx, "age"),
 			Sorter:    true,
+			Align:     "right",
 		},
 	}
 
@@ -651,16 +653,19 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "cpuRequests",
 				Title:     cputil.I18n(ctx, "cpuRequests"),
 				Sorter:    true,
+				Align:     "right",
 			},
 			{
 				DataIndex: "cpuLimits",
 				Title:     cputil.I18n(ctx, "cpuLimits"),
 				Sorter:    true,
+				Align:     "right",
 			},
 			{
 				DataIndex: "cpuPercent",
 				Title:     cputil.I18n(ctx, "cpuPercent"),
 				Sorter:    true,
+				Align:     "right",
 			},
 		}...)
 	} else {
@@ -669,16 +674,19 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "memoryRequests",
 				Title:     cputil.I18n(ctx, "memoryRequests"),
 				Sorter:    true,
+				Align:     "right",
 			},
 			{
 				DataIndex: "memoryLimits",
 				Title:     cputil.I18n(ctx, "memoryLimits"),
 				Sorter:    true,
+				Align:     "right",
 			},
 			{
 				DataIndex: "memoryPercent",
 				Title:     cputil.I18n(ctx, "memoryPercent"),
 				Sorter:    true,
+				Align:     "right",
 			},
 		}...)
 	}

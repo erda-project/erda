@@ -154,6 +154,7 @@ type Column struct {
 	Title     string `json:"title,omitempty"`
 	Sorter    bool   `json:"sorter"`
 	Fixed     string `json:"fixed,omitempty"`
+	Align     string `json:"align,omitempty"`
 }
 
 type Operation struct {

@@ -4,8 +4,8 @@ hierarchy:
   root: page
   structure:
     page:
-      - charts
       - workloadHead
+      - charts
       - table
       - addWorkloadDrawer
     workloadHead:

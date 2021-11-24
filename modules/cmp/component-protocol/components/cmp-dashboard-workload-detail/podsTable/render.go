@@ -340,7 +340,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 					[]interface{}{
 						Link{
 							RenderType: "linkText",
-							Value:      "name",
+							Value:      name,
 							Operations: map[string]interface{}{
 								"click": LinkOperation{
 									Command: Command{
@@ -774,12 +774,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Sorter:    true,
 			Align:     "right",
 		},
-		{
-			DataIndex: "operate",
-			Title:     cputil.I18n(ctx, "operate"),
-			Sorter:    false,
-			Fixed:     "right",
-		},
+		//{
+		//	DataIndex: "operate",
+		//	Title:     cputil.I18n(ctx, "operate"),
+		//	Sorter:    false,
+		//	Fixed:     "right",
+		//},
 	}
 
 	p.Operations = map[string]interface{}{
