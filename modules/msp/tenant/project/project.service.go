@@ -185,10 +185,10 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		Start: strconv.FormatInt(startMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Statement: `
-			SELECT project_id::tag, distinct(service_id::tag), max(timestamp)
-			FROM application_service_node
-			WHERE _metric_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
-			GROUP BY project_id::tag
+		SELECT project_id::tag, distinct(service_id::tag), max(timestamp)
+		FROM application_service_node
+		WHERE _metric_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
+		GROUP BY project_id::tag
         `,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -215,10 +215,10 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		Start: strconv.FormatInt(startMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Statement: `
-			SELECT project_id::tag, count(project_id::tag)
-			FROM analyzer_alert
-			WHERE alert_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
-			GROUP BY project_id::tag
+		SELECT project_id::tag, count(project_id::tag)
+		FROM analyzer_alert
+		WHERE alert_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
+		GROUP BY project_id::tag
 		`,
 	}
 	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
