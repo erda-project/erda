@@ -65,9 +65,8 @@ type spaceItem struct {
 }
 
 type ArchiveStatus struct {
-	Color  string                                `json:"color"`
-	Status apistructs.AutoTestSpaceArchiveStatus `json:"status"`
-	Text   string                                `json:"text"`
+	Status string `json:"status"`
+	Text   string `json:"text"`
 }
 
 type ExtraInfos struct {
@@ -249,8 +248,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			Description: each.Description,
 			PrefixImg:   "default_test_case",
 			ArchiveStatus: ArchiveStatus{
-				Color:  "red",
-				Status: each.ArchiveStatus,
+				Status: each.ArchiveStatus.GetFrontEndStatus(),
 				Text:   i18nLocale.Get(fmt.Sprintf("autoTestSpace%s", each.ArchiveStatus)),
 			},
 			Operations: map[string]interface{}{},
@@ -271,7 +269,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			},
 		}
 		if each.Status == apistructs.TestSpaceFailed {
-			edit.Command = setCommand(item)
+			edit.Command = setCommand(item, each.ArchiveStatus)
 			edit.Disabled = true
 			item.Operations["a-edit"] = edit
 			deleteOp.Meta = setMeta(item)
@@ -283,7 +281,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			item.Operations["export"] = export
 			item.Operations["retry"] = retry
 		} else {
-			edit.Command = setCommand(item)
+			edit.Command = setCommand(item, each.ArchiveStatus)
 			copyOp.Meta = setMeta(item)
 			deleteOp.Meta = setMeta(item)
 			deleteOp.Disabled = true
