@@ -51,6 +51,7 @@ func (m *Manager) GetAccessToken(appKey string) (string, error) {
 		return "", err
 	}
 	if len(result) > 0 {
+		// todo: sliding extend the expire time aysnc
 		return result, nil
 	}
 
@@ -63,15 +64,19 @@ func (m *Manager) GetAccessToken(appKey string) (string, error) {
 		return "", fmt.Errorf("request lock is nil")
 	}
 
-	// todo: use chan to load accessToken async
 	requestLock.(*sync.Mutex).Lock()
 	defer requestLock.(*sync.Mutex).Unlock()
+
+	result, err = m.Cache.Get(cacheKey)
+	if len(result) > 0 {
+		return result, nil
+	}
 
 	accessToken, expireIn, err := native.GetAccessToken(appKey, secret.(string))
 	if err != nil {
 		return "", err
 	}
-	_, err = m.Cache.Set(cacheKey, accessToken, time.Duration(expireIn)*time.Second)
+	_, err = m.Cache.Set(cacheKey, accessToken, time.Duration(expireIn)*time.Second-10*time.Minute)
 	return accessToken, nil
 }
 
