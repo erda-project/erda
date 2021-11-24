@@ -602,6 +602,8 @@ github.com/erda-project/erda-infra v0.0.0-20210412035315-b1699f584b1e/go.mod h1:
 github.com/erda-project/erda-infra v0.0.0-20211103123843-dd949cf5688a/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
 github.com/erda-project/erda-infra v0.0.0-20211111114940-a5b6f55013ce h1:AAGxM0sJ3PITJwj85uq3A1UhmQdIX85l5pFhalmoH8M=
 github.com/erda-project/erda-infra v0.0.0-20211111114940-a5b6f55013ce/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
+github.com/erda-project/erda-infra v0.0.0-20211123061255-960b922553f2 h1:1Q4OMNZnS6ocB9xUfogN2Fspi//A6G3AeE2Fr66u3RE=
+github.com/erda-project/erda-infra v0.0.0-20211123061255-960b922553f2/go.mod h1:YWl4gg86UMFLrr160Jba/4yhovqC/t7Vi6cpGqx1TrY=
 github.com/erda-project/erda-infra/tools v0.0.0-20211117120837-51bbd5e21c3d h1:lILLhBroMkigz7B+Ubvw0JVrxrfI+sCIiP/5UAbEadw=
 github.com/erda-project/erda-infra/tools v0.0.0-20211117120837-51bbd5e21c3d/go.mod h1:86dJE9WGtOFwa4lqUwMXLU1A7OGJJEVXGFLCqPFOOEA=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
@@ -1016,9 +1018,9 @@ github.com/gophercloud/gophercloud v0.1.0/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEo
 github.com/gopherjs/gopherjs v0.0.0-20180424202546-8dffc02ea1cb/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
-github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 h1:l5lAOZEym3oK3SQ2HBHWsJUfbNBiTXJDeW2QDxw9AQ0=
 github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
+github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/handlers v0.0.0-20150720190736-60c7bfde3e33/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
 github.com/gorilla/handlers v1.4.2 h1:0QniY0USkHQ1RGCLfKxeNHK9bkDHGRYGNDFBCS+YARg=
@@ -1918,9 +1920,9 @@ github.com/smallnest/queue v0.0.0-20201001101855-6d53a4f556a1/go.mod h1:hvV8lQMd
 github.com/smartystreets/assertions v0.0.0-20180301161246-7678a5452ebe/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
 github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
-github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 h1:hp2CYQUINdZMHdvTdXtPOY2ainKl4IoMcpAXEf2xj3Q=
 github.com/smartystreets/assertions v1.1.0 h1:MkTeG1DMwsrdH7QtLXy5W+fUxWq+vmb6cLmyJ7aRtF0=
 github.com/smartystreets/assertions v1.1.0/go.mod h1:tcbTF8ujkAEcZ8TElKY+i30BzYlVhC/LOxJk7iOWnoo=
+github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 h1:hp2CYQUINdZMHdvTdXtPOY2ainKl4IoMcpAXEf2xj3Q=
 github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9/go.mod h1:SnhjPscd9TpLiy1LpzGSKh3bXCfxxXuqd9xmQJy3slM=
 github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a/go.mod h1:XDJAKZRPZ1CvBcN2aX5YOUTYGHki24fSF0Iv48Ibg0s=
 github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c/go.mod h1:XDJAKZRPZ1CvBcN2aX5YOUTYGHki24fSF0Iv48Ibg0s=
