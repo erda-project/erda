@@ -20,8 +20,9 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -172,9 +173,13 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	}
 	endMillSeconds := time.Now().UnixNano() / int64(time.Millisecond)
 	startMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
-	var projectIds []string
+	var projectIds []interface{}
 	for _, project := range projects {
 		projectIds = append(projectIds, project.Id)
+	}
+	pbIdList, err := structpb.NewList(projectIds)
+	if err != nil {
+		return fmt.Errorf("failed to generate pb valuelist")
 	}
 
 	servicesCountMap := map[string]int64{}
@@ -184,10 +189,17 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	req := &metricpb.QueryWithInfluxFormatRequest{
 		Start: strconv.FormatInt(startMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
+		Filters: []*metricpb.Filter{
+			&metricpb.Filter{
+				Key:   "tags.project_id",
+				Op:    "in",
+				Value: structpb.NewListValue(pbIdList),
+			},
+		},
 		Statement: `
 		SELECT project_id::tag, distinct(service_id::tag), max(timestamp)
 		FROM application_service_node
-		WHERE _metric_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
+		WHERE _metric_scope::tag = 'micro_service'
 		GROUP BY project_id::tag
         `,
 	}
@@ -214,10 +226,17 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	req = &metricpb.QueryWithInfluxFormatRequest{
 		Start: strconv.FormatInt(startMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
+		Filters: []*metricpb.Filter{
+			&metricpb.Filter{
+				Key:   "tags.project_id",
+				Op:    "in",
+				Value: structpb.NewListValue(pbIdList),
+			},
+		},
 		Statement: `
 		SELECT project_id::tag, count(project_id::tag)
 		FROM analyzer_alert
-		WHERE alert_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
+		WHERE alert_scope::tag = 'micro_service'
 		GROUP BY project_id::tag
 		`,
 	}
