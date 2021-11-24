@@ -881,6 +881,9 @@ func (a *Aggregator) OnlineNode(ctx context.Context, req *apistructs.SteveReques
 
 // Auth authenticates by userID and orgID.
 func (a *Aggregator) Auth(userID, orgID, clusterName string) (apiuser.Info, error) {
+	if a == nil {
+		return nil, errors.New("steve server is not initialized yet")
+	}
 	scopeID, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InvalidParameter(fmt.Sprintf("invalid org id %s, %v", orgID, err))

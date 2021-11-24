@@ -52,37 +52,42 @@ func (p *PodsCharts) Render(ctx context.Context, c *cptype.Component, s cptype.S
 		}
 	}
 
-	p.Data.Group = nil
+	var pies [][]Pie
 	for state := range cmpcputil.PodStatus {
 		count := countValues[state]
-		p.Data.Group = append(p.Data.Group, p.ParsePodStatus(ctx, state, count, total))
+		pies = append(pies, p.ParsePodStatus(ctx, state, count, total))
 	}
-	p.Data.Group = append(p.Data.Group, p.ParsePodStatus(ctx, "others", otherStatusCount, total))
+	pies = append(pies, p.ParsePodStatus(ctx, "others", otherStatusCount, total))
 
-	sort.Slice(p.Data.Group, func(i, j int) bool {
-		return p.Data.Group[i][0].Value > p.Data.Group[j][0].Value
+	sort.Slice(pies, func(i, j int) bool {
+		return pies[i][0].Value > pies[j][0].Value
 	})
-	for i := range p.Data.Group {
+	for i := range pies {
 		color := PrimaryColor[len(PrimaryColor)-1]
 		if i < len(PrimaryColor) {
 			color = PrimaryColor[i]
 		}
-		p.Data.Group[i][0].Color = color
+		pies[i][0].Color = color
+	}
+	if len(pies) <= 1 {
+		p.Data.Group = [][][]Pie{pies}
+	} else {
+		p.Data.Group = [][][]Pie{pies[0 : len(pies)/2], pies[len(pies)/2:]}
 	}
 	delete(*gs, "countValues")
 	p.Transfer(c)
 	return nil
 }
 
-func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, cnt, tot int) []Pie {
-	percent := float64(cnt) / float64(tot) * 100
+func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, count, total int) []Pie {
+	percent := float64(count) / float64(total) * 100
 	status := Pie{
 		Name:  cputil.I18n(ctx, state),
-		Value: cnt,
-		Total: tot,
+		Value: count,
+		Total: total,
 		Infos: []Info{
 			{
-				Main: strconv.FormatInt(int64(cnt), 10),
+				Main: strconv.FormatInt(int64(count), 10),
 				Sub:  fmt.Sprintf("%.1f%%", percent),
 				Desc: cputil.I18n(ctx, state),
 			},
@@ -91,8 +96,8 @@ func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, cnt, tot 
 	return []Pie{status}
 }
 
-func (p *PodsCharts) Transfer(c *cptype.Component) {
-	c.Data = map[string]interface{}{
+func (p *PodsCharts) Transfer(component *cptype.Component) {
+	component.Data = map[string]interface{}{
 		"group": p.Data.Group,
 	}
 }

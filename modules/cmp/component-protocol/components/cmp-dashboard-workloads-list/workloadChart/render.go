@@ -67,11 +67,11 @@ func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
 func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	w.Data.Option.Tooltip.Show = false
 	w.Data.Option.Color = []string{
-		"primary8", "warning8", "primary6", "primary4", "warning6",
+		"primary7", "warning7", "primary6", "primary4", "warning6",
 	}
 	w.Data.Option.Legend.Data = []string{
-		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Succeeded"),
-		cputil.I18n(ctx, "Updating"), cputil.I18n(ctx, "Abnormal"),
+		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Abnormal"),
+		cputil.I18n(ctx, "Updating"), cputil.I18n(ctx, "Succeeded"),
 		cputil.I18n(ctx, "Failed"),
 	}
 	w.Data.Option.YAxis.Type = "value"
