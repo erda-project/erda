@@ -303,7 +303,9 @@ type Resources struct {
 	// cpu sharing
 	Cpu float64 `json:"cpu,omitempty"`
 	// memory usage
-	Mem float64 `json:"mem,omitempty"`
+	Mem    float64 `json:"mem,omitempty"`
+	MaxCPU float64 `json:"max_cpu,omitempty"`
+	MaxMem float64 `json:"max_mem,omitempty"`
 	// disk usage
 	Disk float64 `json:"disk,omitempty"`
 }

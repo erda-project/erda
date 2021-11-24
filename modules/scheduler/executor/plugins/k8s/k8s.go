@@ -83,6 +83,9 @@ const (
 	// MIN_CPU_SIZE Minimum application cpu value
 	MIN_CPU_SIZE = 0.1
 
+	// MIN_MEM_SIZE Minimum application mem value
+	MIN_MEM_SIZE = 10
+
 	// ProjectNamespace Env
 	LabelServiceGroupID = "servicegroup-id"
 )
@@ -1031,10 +1034,23 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 }
 
 func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
-	format := container.Resources.Requests.Memory().Format
-	origin := container.Resources.Requests.Memory().Value()
-	r := resource.NewQuantity(int64(float64(origin)/memSubscribeRatio), format)
-	container.Resources.Requests[apiv1.ResourceMemory] = *r
+	requestMem := float64(container.Resources.Requests.Memory().Value() / 1024 / 1024)
+	maxMem := float64(container.Resources.Limits.Memory().Value() / 1024 / 1024)
+
+	if requestMem < MIN_MEM_SIZE {
+		return errors.Errorf("invalid request mem, value: %v, (which is lower than min mem(%vMi))",
+			requestMem, MIN_MEM_SIZE)
+	}
+
+	// if max_mem not set, use [mem/ratio, mem]; else use [mem, max_mem]
+	if maxMem < MIN_MEM_SIZE {
+		maxMem = requestMem
+		requestMem = requestMem / memSubscribeRatio
+	}
+
+	container.Resources.Requests[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(requestMem)))
+	container.Resources.Limits[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(maxMem)))
+
 	return nil
 }
 
@@ -1042,6 +1058,8 @@ func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRa
 func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
 	// 1, Processing request cpu value
 	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
+	maxCPU := float64(container.Resources.Limits.Cpu().MilliValue()) / 1000
+	actualCPU := requestCPU
 
 	if requestCPU < MIN_CPU_SIZE {
 		return errors.Errorf("invalid request cpu, value: %v, (which is lower than min cpu(%v))",
@@ -1050,8 +1068,14 @@ func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[str
 
 	// 2, Dealing with cpu oversold
 	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
-	actualCPU := requestCPU / ratio
-	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%v", actualCPU))
+
+	// if max_cpu not set, use [cpu/ratio, cpu]; else use [cpu, max_cpu]
+	if maxCPU < MIN_CPU_SIZE {
+		maxCPU = requestCPU
+		actualCPU = requestCPU / ratio
+	}
+
+	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(actualCPU*1000)))
 
 	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
 	quota := k.cpuNumQuota
@@ -1062,14 +1086,11 @@ func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[str
 	}
 
 	if quota >= requestCPU {
-		container.Resources.Limits = apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(fmt.Sprintf("%v", requestCPU)),
-			apiv1.ResourceMemory: container.Resources.Requests[apiv1.ResourceMemory],
-		}
+		container.Resources.Limits[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(maxCPU*1000)))
 	}
 
-	logrus.Debugf("set container cpu: name: %s, request cpu: %v, actual cpu: %v, subscribe ratio: %v, cpu quota: %v",
-		container.Name, requestCPU, actualCPU, ratio, quota)
+	logrus.Infof("set container cpu: name: %s, request cpu: %v, actual cpu: %vm, max cpu: %vm, subscribe ratio: %v, cpu quota: %v",
+		container.Name, requestCPU, container.Resources.Requests.Cpu().MilliValue(), container.Resources.Limits.Cpu().MilliValue(), ratio, quota)
 	return nil
 }
 
