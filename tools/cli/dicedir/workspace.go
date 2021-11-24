@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package dicedir
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -29,7 +30,7 @@ func GetWorkspaceBranch() (string, error) {
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	out, err := branchCmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", errors.WithMessage(err, strings.TrimSpace(string(out)))
 	}
 	re := regexp.MustCompile(`\r?\n`)
 	branch := re.ReplaceAllString(string(out), "")
@@ -71,11 +72,19 @@ func IsDir(path string) bool {
 	return s.IsDir()
 }
 
-func GetWorkspaceInfo(remoteName string) (org string, project string, app string, err error) {
+type WorkspaceInfo struct {
+	Scheme      string
+	Host        string
+	Org         string
+	Project     string
+	Application string
+}
+
+func GetWorkspaceInfo(remoteName string) (WorkspaceInfo, error) {
 	remoteCmd := exec.Command("git", "remote", "get-url", remoteName)
 	out, err := remoteCmd.CombinedOutput()
 	if err != nil {
-		return "", "", "", err
+		return WorkspaceInfo{}, errors.WithMessage(err, strings.TrimSpace(string(out)))
 	}
 
 	re := regexp.MustCompile(`\r?\n`)
@@ -86,13 +95,16 @@ func GetWorkspaceInfo(remoteName string) (org string, project string, app string
 func GetWorkspaceInfoFromErdaRepo(erdaRepo string) (org, project, app string, err error) {
 	u, err := url.Parse(erdaRepo)
 	if err != nil {
-		return "", "", "", err
+		return WorkspaceInfo{}, err
 	}
 	// <org>/dop/<project>/<app>
 	paths := strings.Split(u.Path, "/")
 	if len(paths) != 5 {
-		return "", "", "", errors.New("Invalid Erda Repo Path: " + u.Path)
+		return WorkspaceInfo{}, errors.New(
+			fmt.Sprintf("Invalid Erda git repository: %s", newStr))
 	}
 
-	return paths[1], paths[3], paths[4], nil
+	return WorkspaceInfo{
+		u.Scheme, u.Host, paths[1], paths[3], paths[4],
+	}, nil
 }

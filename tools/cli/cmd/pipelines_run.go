@@ -54,7 +54,7 @@ func PipelineRun(ctx *command.Context, branch, filename string) error {
 	}
 
 	if branch == "" {
-		b, err := common.GetWorkspaceBranch()
+		b, err := dicedir.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
@@ -62,18 +62,18 @@ func PipelineRun(ctx *command.Context, branch, filename string) error {
 	}
 
 	// fetch appID
-	orgName, projectName, appName, err := common.GetWorkspaceInfo(command.Remote)
+	info, err := dicedir.GetWorkspaceInfo(command.Remote)
 	if err != nil {
 		return err
 	}
 
-	org, err := common.GetOrgDetail(ctx, orgName)
+	org, err := common.GetOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
 	orgID := strconv.FormatUint(org.Data.ID, 10)
-	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	repoStats, err := common.GetRepoStats(ctx, orgID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func PipelineRun(ctx *command.Context, branch, filename string) error {
 	if !pipelineResp.Success {
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
-	ctx.Succ("run pipeline: %s for branch: %s, pipelineID: %d, you can view building status via `erda-cli status -i %d`",
+	ctx.Succ("run pipeline: %s for branch: %s, pipelineID: %d, you can view building status via `erda-cli pipeline status -i %d`",
 		filename, branch, pipelineResp.Data.ID, pipelineResp.Data.ID)
 
 	return nil

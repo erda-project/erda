@@ -15,41 +15,59 @@
 package cmd
 
 import (
+	"strconv"
+
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
-	"github.com/erda-project/erda/tools/cli/dicedir"
+	"github.com/erda-project/erda/tools/cli/common"
 )
 
-var ERDA = command.Command{
-	Name:      "erda",
-	ShortHelp: "List erda.yaml in .dice/ directory (current repo)",
-	Example:   "erda-cli erda",
+var ADDON = command.Command{
+	Name:      "addon",
+	ShortHelp: "List addons",
+	Example:   "erda-cli addon",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
+		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
 	},
-	Run: GetErdas,
+	Run: GetAddons,
 }
 
-func GetErdas(ctx *command.Context, noHeaders bool) error {
-	branch, err := dicedir.GetWorkspaceBranch()
+func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
+	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
+		return errors.New("invalid org id")
+	}
+
+	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
+		orgId = int(ctx.CurrentOrg.ID)
+	}
+
+	if projectId <= 0 {
+		return errors.New("invalid project id")
+	}
+
+	list, err := common.GetAddonList(ctx, orgId, projectId)
 	if err != nil {
 		return err
 	}
 
-	var erdaymls []string
-
-	var data [][]string
-	for _, p := range erdaymls {
+	data := [][]string{}
+	for _, l := range list.Data {
 		data = append(data, []string{
-			branch,
-			p,
+			l.ID,
+			l.AddonName,
+			l.AddonDisplayName,
+			strconv.Itoa(l.Reference),
 		})
 	}
 
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"branch", "erda",
+			"AddonID", "Name", "DisplayName", "Reference",
 		})
 	}
 	return t.Data(data).Flush()

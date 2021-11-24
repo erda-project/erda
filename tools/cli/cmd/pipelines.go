@@ -19,7 +19,6 @@ import (
 
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
-	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
@@ -36,7 +35,7 @@ var PIPELINE = command.Command{
 }
 
 func GetPipelines(ctx *command.Context, noHeaders bool) error {
-	branch, err := common.GetWorkspaceBranch()
+	branch, err := dicedir.GetWorkspaceBranch()
 	if err != nil {
 		return err
 	}
@@ -62,7 +61,7 @@ func GetPipelines(ctx *command.Context, noHeaders bool) error {
 	if err != nil && err != dicedir.NotExist {
 		return err
 	} else if err == nil {
-		ymls, err := common.GetWorkspacePipelines(diceDir)
+		ymls, err := dicedir.GetWorkspacePipelines(diceDir)
 		if err != nil {
 			return err
 		}

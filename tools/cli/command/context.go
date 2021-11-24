@@ -86,36 +86,6 @@ func (c *Context) wrapRequest(m func(host string, retry ...httpclient.RetryOptio
 	return req
 }
 
-// 当前企业可能不存在，因为可能不在任何企业内，所以返回的OrgInfo可能为空
-//func (c *Context) CurrentOrg() (apistructs.OrgDTO, error) {
-//	var resp apistructs.OrgFetchResponse
-//	var b bytes.Buffer
-//
-//	v, ok := c.Sessions[c.CurrentOpenApiHost]
-//	if !ok {
-//		return apistructs.OrgDTO{}, errors.Errorf("failed to find session for %s", c.CurrentOpenApiHost)
-//	}
-//	response, err := ctx.Get().Path(fmt.Sprintf("/api/orgs/%d", v.OrgID)).Do().JSON(&resp)
-//	if err != nil {
-//		return apistructs.OrgDTO{}, fmt.Errorf(
-//			format.FormatErrMsg("orgs", "failed to request ("+err.Error()+")", false))
-//	}
-//
-//	// TODO: check 404 or any other known errors
-//	if !response.IsOK() {
-//		return apistructs.OrgDTO{}, fmt.Errorf(format.FormatErrMsg("orgs",
-//			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-//				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-//	}
-//
-//	if !resp.Success {
-//		return apistructs.OrgDTO{}, fmt.Errorf(format.FormatErrMsg("orgs",
-//			fmt.Sprintf("error code(%s), error message(%s)", resp.Error.Code, resp.Error.Msg), false))
-//	}
-//
-//	return resp.Data, nil
-//}
-
 func (c *Context) AvailableOrgs() ([]apistructs.OrgDTO, error) {
 	var resp apistructs.OrgSearchResponse
 	var b bytes.Buffer

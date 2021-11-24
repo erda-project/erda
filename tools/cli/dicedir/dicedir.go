@@ -25,8 +25,8 @@ import (
 var (
 	NotExist = errors.New("not exist")
 
-	GlobalDiceDir = ".dice.d"
-	GlobalConfig  = path.Join(GlobalDiceDir, "config")
+	GlobalErdaDir = ".erda.d"
+	GlobalConfig  = path.Join(GlobalErdaDir, "config")
 
 	ProjectDiceDir     = ".dice"
 	ProjectPipelineDir = ".dice/pipelines"
@@ -55,7 +55,7 @@ func FindGlobalDiceDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(u.HomeDir, GlobalDiceDir)
+	dir := filepath.Join(u.HomeDir, GlobalErdaDir)
 	f, err := os.Stat(dir)
 	if os.IsNotExist(err) {
 		return "", NotExist
@@ -71,7 +71,7 @@ func CreateGlobalDiceDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(u.HomeDir, GlobalDiceDir)
+	dir := filepath.Join(u.HomeDir, GlobalErdaDir)
 	if err := os.Mkdir(dir, 0755); err != nil {
 		return "", err
 	}

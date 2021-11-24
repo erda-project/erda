@@ -19,9 +19,9 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/tools/cli/dicedir"
-	"gopkg.in/yaml.v3"
 )
 
 var (

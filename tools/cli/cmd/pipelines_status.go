@@ -54,7 +54,7 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
 	}
 
 	if branch == "" {
-		b, err := common.GetWorkspaceBranch()
+		b, err := dicedir.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
@@ -63,18 +63,18 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
 
 	// TODO gittar-adaptor 提供 API 根据 branch & git remote url 查询 pipelineID
 	// fetch appID
-	orgName, projectName, appName, err := common.GetWorkspaceInfo(command.Remote)
+	info, err := dicedir.GetWorkspaceInfo(command.Remote)
 	if err != nil {
 		return err
 	}
 
-	org, err := common.GetOrgDetail(ctx, orgName)
+	org, err := common.GetOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
 	orgID := strconv.FormatUint(org.Data.ID, 10)
-	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	repoStats, err := common.GetRepoStats(ctx, orgID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}

@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -74,7 +76,7 @@ func RunBuild(ctx *command.Context, repo, branch, filename, alias string) (err e
 	}
 
 	if branch == "" {
-		b, err := common.GetWorkspaceBranch()
+		b, err := dicedir.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
@@ -94,13 +96,13 @@ func RunBuild(ctx *command.Context, repo, branch, filename, alias string) (err e
 		return err
 	}
 
-	org, err := common.GetOrgDetail(ctx, orgName)
+	org, err := common.GetOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
 	orgID := strconv.FormatUint(org.Data.ID, 10)
-	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	repoStats, err := common.GetRepoStats(ctx, orgID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}

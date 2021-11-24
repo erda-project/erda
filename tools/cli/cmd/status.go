@@ -19,6 +19,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -47,7 +49,7 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 	}
 
 	if branch == "" {
-		b, err := common.GetWorkspaceBranch()
+		b, err := dicedir.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
@@ -56,18 +58,18 @@ func RunPipelineStatus(ctx *command.Context, branch string, pipelineID int) erro
 
 	// TODO gittar-adaptor 提供 API 根据 branch & git remote url 查询 pipelineID
 	// fetch appID
-	orgName, projectName, appName, err := common.GetWorkspaceInfo("origin")
+	info, err := dicedir.GetWorkspaceInfo("origin")
 	if err != nil {
 		return err
 	}
 
-	org, err := common.GetOrgDetail(ctx, orgName)
+	org, err := common.GetOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
 	orgID := strconv.FormatUint(org.Data.ID, 10)
-	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	repoStats, err := common.GetRepoStats(ctx, orgID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}

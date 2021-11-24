@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -34,6 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/dicedir"
@@ -131,6 +131,16 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 		}
 		ctx.Sessions = sessionInfos
 
+		// Get OrgInfo after login with info in git repository
+		if ctx.CurrentOrg.Name != "" && ctx.CurrentOrg.ID == 0 {
+			resp, err := fetchOrgIdByName(ctx.CurrentOrg.Name)
+			if err != nil {
+				return err
+			}
+			ctx.CurrentOrg.ID = resp.Data.ID
+			ctx.CurrentOrg.Desc = resp.Data.Desc
+		}
+
 		return nil
 	},
 }
@@ -163,16 +173,6 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 		}
 	}
 
-	// TODO need git info ?
-	//if username == "" || password == "" {
-	//	gitCredentialStorage := fetchGitCredentialStorage()
-	//	switch gitCredentialStorage {
-	//	case "osxkeychain", "store":
-	//		// fetch username & password from osxkeychain
-	//		username, password = fetchGitUserInfo(gitCredentialStorage)
-	//	}
-	//}
-
 	if username == "" {
 		username = inputNormal("Enter your dice username: ")
 	}
@@ -202,29 +202,36 @@ func parseCtx() error {
 		}
 
 		host = c.Platform.Server
-		ctx.CurrentOrg = *c.Platform.OrgInfo
+		if c.Platform.OrgInfo != nil {
+			ctx.CurrentOrg = *c.Platform.OrgInfo
+		}
 
 		if _, err := os.Stat(".git"); err == nil {
 			// fetch host from git remote url
-			cmd := exec.Command("git", "remote", "get-url", Remote)
-			out, err := cmd.CombinedOutput()
-			if err != nil {
-				return err
-			}
-			// remove crlf, otherwise parse error
-			re := regexp.MustCompile(`\r?\n`)
-			newStr := re.ReplaceAllString(string(out), "")
-			u, err := url.Parse(newStr)
+			info, err := dicedir.GetWorkspaceInfo(Remote)
 			if err != nil {
 				return err
 			}
 
 			if host == "" {
-				host = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+				host = fmt.Sprintf("%s://%s", info.Scheme, info.Host)
+
+				if username == "" || password == "" {
+					gitCredentialStorage := fetchGitCredentialStorage()
+					switch gitCredentialStorage {
+					case "osxkeychain", "store":
+						// fetch username & password from osxkeychain
+						username, password = fetchGitUserInfo(info.Host, gitCredentialStorage)
+					}
+				}
+
+				// TODO parse org from git remote url
+				ctx.CurrentOrg = OrgInfo{0, info.Org, ""}
 			} else {
-				if !strings.Contains(host, u.Host) {
+				if !strings.Contains(host, info.Host) {
 					fmt.Println(color_str.Yellow(
-						fmt.Sprintf("current git repo remote %s: %s, different from config: %s", Remote, newStr, host)))
+						fmt.Sprintf("current git repo remote %s: %s, different from config: %s",
+							Remote, info.Scheme+"://"+info.Host, host)))
 				}
 			}
 		}
@@ -257,8 +264,36 @@ func parseCtx() error {
 	return nil
 }
 
+func fetchOrgIdByName(orgName string) (apistructs.OrgFetchResponse, error) {
+	var b bytes.Buffer
+	response, err := ctx.Get().Path(fmt.Sprintf("/api/orgs/%s", orgName)).Do().Body(&b)
+	if err != nil {
+		return apistructs.OrgFetchResponse{}, err
+	}
+
+	if !response.IsOK() {
+		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get organization detail",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	var resp apistructs.OrgFetchResponse
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return apistructs.OrgFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get organization detail",
+			fmt.Sprintf("failed to unmarshal organization detail response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return resp, fmt.Errorf(format.FormatErrMsg("get organization detail",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	return resp, nil
+}
+
 func fetchGitCredentialStorage() string {
-	c, err := exec.Command("git", "config", "--global", "credential.helper").Output()
+	c, err := exec.Command("git", "config", "credential.helper").Output()
 	if err != nil {
 		fmt.Printf("fetch git credential err: %v", err)
 		return ""
@@ -267,13 +302,8 @@ func fetchGitCredentialStorage() string {
 	return strings.TrimSuffix(string(c), "\n")
 }
 
-func fetchGitUserInfo(credentialStorage string) (string, string) {
-	u, err := url.Parse(host)
-	if err != nil {
-		fmt.Println(err)
-		return "", ""
-	}
-	c1 := exec.Command("echo", fmt.Sprintf("host=%s", u.Hostname()))
+func fetchGitUserInfo(host, credentialStorage string) (string, string) {
+	c1 := exec.Command("echo", fmt.Sprintf("host=%s", host))
 	c2 := exec.Command("git", fmt.Sprintf("credential-%s", credentialStorage), "get")
 
 	r, w := io.Pipe()
