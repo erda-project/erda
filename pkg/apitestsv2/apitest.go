@@ -218,19 +218,18 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	httpResp, err := req.Params(apiReq.Params).
 		RawBody(bytes.NewBufferString(apiReq.Body.Content.(string))).
 		Do().Body(&buffer)
-	if err != nil {
-		return nil, nil, err
-	}
 
 	// resp
 	apiResp := apistructs.APIResp{
-		Status:  httpResp.StatusCode(),
-		Headers: httpResp.Headers(),
 		Body:    buffer.Bytes(),
 		BodyStr: buffer.String(),
 	}
+	if httpResp != nil {
+		apiResp.Status = httpResp.StatusCode()
+		apiResp.Headers = httpResp.Headers()
+	}
 
-	return &apiReq, &apiResp, nil
+	return &apiReq, &apiResp, err
 }
 
 func (at *APITest) renderAtOnce(apiReq *apistructs.APIInfo, caseParams map[string]*apistructs.CaseParams) error {
