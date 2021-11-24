@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -150,8 +151,15 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 }
 
 func (s *projectService) getProjectsStatistics(projects Projects) error {
+	if len(projects) == 0 {
+		return nil
+	}
 	endMillSeconds := time.Now().UnixNano() / int64(time.Millisecond)
 	startMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
+	var projectIds []string
+	for _, project := range projects {
+		projectIds = append(projectIds, project.Id)
+	}
 
 	servicesCountMap := map[string]int64{}
 	activeTimeMap := map[string]int64{}
@@ -163,7 +171,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		Statement: `
 			SELECT project_id::tag, distinct(service_id::tag), max(timestamp)
 			FROM application_service_node
-			WHERE _metric_scope::tag = 'micro_service' 
+			WHERE _metric_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
 			GROUP BY project_id::tag
         `,
 	}
@@ -193,7 +201,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		Statement: `
 			SELECT project_id::tag, count(project_id::tag)
 			FROM analyzer_alert
-			WHERE alert_scope::tag = 'micro_service'
+			WHERE alert_scope::tag = 'micro_service' AND include(project_id, '` + strings.Join(projectIds, "','") + `')
 			GROUP BY project_id::tag
 		`,
 	}
