@@ -484,7 +484,7 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			continue
 		}
 		// row[17] EstimateTime
-		if row[17] != "" {
+		if len(row) >= 18 && row[17] != "" {
 			manHour, err := apistructs.NewManhour(row[17])
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
@@ -501,21 +501,23 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		for indexx, line := range row[19:] {
-			index := indexx + 19
-			// 获取字段名对应的字段
-			instance := apistructs.IssuePropertyInstance{
-				IssuePropertyIndex: propertyNameMap[rows[0][index]],
-			}
-			if !instance.PropertyType.IsOptions() {
-				instance.ArbitraryValue = line
-			} else {
-				values := strutil.Split(line, ",", true)
-				for _, val := range values {
-					instance.Values = append(instance.Values, propertyMap[propertyValue{instance.PropertyID, val}])
+		if len(row) >= 20 {
+			for indexx, line := range row[19:] {
+				index := indexx + 19
+				// 获取字段名对应的字段
+				instance := apistructs.IssuePropertyInstance{
+					IssuePropertyIndex: propertyNameMap[rows[0][index]],
 				}
+				if !instance.PropertyType.IsOptions() {
+					instance.ArbitraryValue = line
+				} else {
+					values := strutil.Split(line, ",", true)
+					for _, val := range values {
+						instance.Values = append(instance.Values, propertyMap[propertyValue{instance.PropertyID, val}])
+					}
+				}
+				relation.Property = append(relation.Property, instance)
 			}
-			relation.Property = append(relation.Property, instance)
 		}
 		allIssue = append(allIssue, issue)
 		allInstance = append(allInstance, relation)
