@@ -142,13 +142,13 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 
 		for i, p := range projects {
 			if p.Id == id {
-				projects = append(projects[:i], projects[i+1:]...)
 				if len(project.Desc) == 0 {
 					project.Desc = projects[i].Desc
 				}
 				if len(project.Logo) == 0 {
 					project.Logo = projects[i].Logo
 				}
+				projects = append(projects[:i], projects[i+1:]...)
 				break
 			}
 		}
