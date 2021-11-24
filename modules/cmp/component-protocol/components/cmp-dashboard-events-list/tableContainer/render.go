@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmp_dashboard_events_list
+package tableContainer
 
 import (
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list/eventTable"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list/filter"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list/tableContainer"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+func init() {
+	base.InitProvider("cmp-dashboard-events-list", "tableContainer")
+}

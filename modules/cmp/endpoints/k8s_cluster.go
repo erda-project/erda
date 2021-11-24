@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -39,7 +41,7 @@ func (e *Endpoints) ListK8SClusters(ctx context.Context, r *http.Request, vars m
 			},
 		})
 	}
-	clusters, err := e.bdl.ListClusters("k8s", scopeID)
+	clusters, err := e.listClusters(scopeID, "k8s", "edas")
 	if err != nil {
 		errstr := fmt.Sprintf("failed to list cluster, %v", err)
 		return mkResponse(apistructs.K8SClusters{
@@ -78,4 +80,16 @@ func (e *Endpoints) ListK8SClusters(ctx context.Context, r *http.Request, vars m
 			UnReady: unreadyInOrg,
 		},
 	})
+}
+
+func (e *Endpoints) listClusters(scopeID uint64, clusterTypes ...string) ([]apistructs.ClusterInfo, error) {
+	var clusters []apistructs.ClusterInfo
+	for _, typ := range clusterTypes {
+		c, err := e.bdl.ListClusters(typ, scopeID)
+		if err != nil {
+			return nil, errors.Errorf("failed to list %s clusters, %v", typ, err)
+		}
+		clusters = append(clusters, c...)
+	}
+	return clusters, nil
 }
