@@ -49,7 +49,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.bdl = bundle.New(bundle.WithKMS())
+	p.bdl = bundle.New(bundle.WithKMS(), bundle.WithCoreServices())
 	ucClientId := os.Getenv("UC_CLIENT_ID")
 	ucClientSecret := os.Getenv("UC_CLIENT_SECRET")
 	p.uc = ucauth.NewUCClient(discover.UC(), ucClientId, ucClientSecret)

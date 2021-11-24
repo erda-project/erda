@@ -36,6 +36,8 @@ type NotifyChannelServiceHandler interface {
 	UpdateNotifyChannelEnabled(context.Context, *UpdateNotifyChannelEnabledRequest) (*UpdateNotifyChannelEnabledResponse, error)
 	// GET /api/notify-channel/enabled/status
 	GetNotifyChannelEnabledStatus(context.Context, *GetNotifyChannelEnabledStatusRequest) (*GetNotifyChannelEnabledStatusResponse, error)
+	// GET /api/notify-channel/channels/enabled
+	GetNotifyChannelsEnabled(context.Context, *GetNotifyChannelsEnabledRequest) (*GetNotifyChannelsEnabledResponse, error)
 }
 
 // RegisterNotifyChannelServiceHandler register NotifyChannelServiceHandler to http.Router.
@@ -385,6 +387,42 @@ func RegisterNotifyChannelServiceHandler(r http.Router, srv NotifyChannelService
 		)
 	}
 
+	add_GetNotifyChannelsEnabled := func(method, path string, fn func(context.Context, *GetNotifyChannelsEnabledRequest) (*GetNotifyChannelsEnabledResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetNotifyChannelsEnabledRequest))
+		}
+		var GetNotifyChannelsEnabled_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetNotifyChannelsEnabled_info = transport.NewServiceInfo("erda.core.services.notify.channel.NotifyChannelService", "GetNotifyChannelsEnabled", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetNotifyChannelsEnabled_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetNotifyChannelsEnabledRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateNotifyChannel("POST", "/api/notify-channel", srv.CreateNotifyChannel)
 	add_GetNotifyChannels("GET", "/api/notify-channels", srv.GetNotifyChannels)
 	add_UpdateNotifyChannel("PUT", "/api/notify-channel", srv.UpdateNotifyChannel)
@@ -394,4 +432,5 @@ func RegisterNotifyChannelServiceHandler(r http.Router, srv NotifyChannelService
 	add_GetNotifyChannelEnabled("GET", "/api/notify-channel/enabled", srv.GetNotifyChannelEnabled)
 	add_UpdateNotifyChannelEnabled("PUT", "/api/notify-channel/enabled", srv.UpdateNotifyChannelEnabled)
 	add_GetNotifyChannelEnabledStatus("GET", "/api/notify-channel/enabled/status", srv.GetNotifyChannelEnabledStatus)
+	add_GetNotifyChannelsEnabled("GET", "/api/notify-channel/channels/enabled", srv.GetNotifyChannelsEnabled)
 }
