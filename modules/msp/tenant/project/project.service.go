@@ -190,7 +190,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		Start: strconv.FormatInt(startMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
-			&metricpb.Filter{
+			{
 				Key:   "tags.project_id",
 				Op:    "in",
 				Value: structpb.NewListValue(pbIdList),
@@ -227,7 +227,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		Start: strconv.FormatInt(startMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
-			&metricpb.Filter{
+			{
 				Key:   "tags.project_id",
 				Op:    "in",
 				Value: structpb.NewListValue(pbIdList),
