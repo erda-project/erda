@@ -433,6 +433,7 @@ func getOrgListParam(r *http.Request) (*apistructs.OrgSearchRequest, error) {
 		Q:        q,
 		PageNo:   num,
 		PageSize: size,
+		Org:      r.Header.Get("org"),
 		IdentityInfo: apistructs.IdentityInfo{
 			UserID: r.Header.Get(httputil.UserHeader),
 		},
