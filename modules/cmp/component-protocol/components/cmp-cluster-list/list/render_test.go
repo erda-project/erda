@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/apistructs"
 )
 
 type NopTranslator struct{}
@@ -59,7 +60,7 @@ func TestList_GetExtraContent(t *testing.T) {
 				ExtraData: []ExtraData{
 					{
 						Name:  "CPU Rate",
-						Value: 50,
+						Value: 50.000,
 						Total: 100,
 						Color: "green",
 						Info: []ExtraDataItem{
@@ -68,16 +69,16 @@ func TestList_GetExtraContent(t *testing.T) {
 								Sub:  "Rate",
 							}, {
 								Main: "1.000core",
-								Sub:  "Distribution",
+								Sub:  "Used",
 							}, {
 								Main: "2.000core",
-								Sub:  "CPU" + "Quota",
+								Sub:  "CPU" + "Limit",
 							},
 						},
 					},
 					{
 						Name:  "Memory Rate",
-						Value: 75,
+						Value: 75.000,
 						Total: 100,
 						Color: "green",
 						Info: []ExtraDataItem{
@@ -86,16 +87,16 @@ func TestList_GetExtraContent(t *testing.T) {
 								Sub:  "Rate",
 							}, {
 								Main: "3.000",
-								Sub:  "Distribution",
+								Sub:  "Used",
 							}, {
 								Main: "4.000",
-								Sub:  "Memory" + "Quota",
+								Sub:  "Memory" + "Limit",
 							},
 						},
 					},
 					{
 						Name:  "Disk Rate",
-						Value: 90,
+						Value: 90.000,
 						Total: 100,
 						Color: "green",
 						Info: []ExtraDataItem{
@@ -104,10 +105,10 @@ func TestList_GetExtraContent(t *testing.T) {
 								Sub:  "Rate",
 							}, {
 								Main: "9.000",
-								Sub:  "Distribution",
+								Sub:  "Used",
 							}, {
 								Main: "10.000",
-								Sub:  "Disk" + "Quota",
+								Sub:  "Disk" + "Limit",
 							},
 						},
 					},
@@ -202,6 +203,47 @@ func TestList_SetComponentValue(t *testing.T) {
 			l := &List{}
 			if err := l.SetComponentValue(tt.args.c); (err != nil) != tt.wantErr {
 				t.Errorf("SetComponentValue() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestList_GetBgImage(t *testing.T) {
+	type args struct {
+		c apistructs.ClusterInfo
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{c: apistructs.ClusterInfo{Type: "edas"}},
+			want: "edas_cluster_bg",
+		},
+		{
+			name: "2",
+			args: args{c: apistructs.ClusterInfo{Type: "k8s"}},
+			want: "k8s_cluster_bg",
+		},
+		{
+			name: "3",
+			args: args{c: apistructs.ClusterInfo{Type: "dcos"}},
+			want: "dcos_cluster_bg",
+		},
+		{
+			name: "4",
+			args: args{c: apistructs.ClusterInfo{Type: "ack"}},
+			want: "ali_cloud_cluster_bg",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &List{}
+			if got := l.GetBgImage(tt.args.c); got != tt.want {
+				t.Errorf("GetBgImage() = %v, want %v", got, tt.want)
 			}
 		})
 	}

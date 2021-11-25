@@ -285,17 +285,16 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 		logrus.Infof("get nodes start")
 		for i := 0; i < len(clusters); i++ {
 			nodes, err = l.GetNodes(clusters[i].Name)
-			usedData := res[clusters[i].Name]
 			if err != nil {
 				logrus.Error(err)
 			}
 			for _, m := range nodes {
-				cpuCapacity, _ := resource.ParseQuantity(m.String("status", "capacity", "cpu"))
-				memoryCapacity, _ := resource.ParseQuantity(m.String("status", "capacity", "memory"))
-				diskCapacity, _ := resource.ParseQuantity(m.String("status", "capacity", "ephemeral-storage"))
-				usedData.CpuTotal += float64(cpuCapacity.Value())
-				usedData.MemoryTotal += float64(memoryCapacity.Value())
-				usedData.DiskTotal += float64(diskCapacity.Value())
+				cpuCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "cpu"))
+				memoryCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "memory"))
+				diskCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "ephemeral-storage"))
+				res[clusters[i].Name].CpuTotal += float64(cpuCapacity.Value())
+				res[clusters[i].Name].MemoryTotal += float64(memoryCapacity.Value())
+				res[clusters[i].Name].DiskTotal += float64(diskCapacity.Value())
 			}
 			clusterInfos[clusters[i].Name].NodeCnt = len(nodes)
 		}
@@ -373,18 +372,13 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	di := make([]DataItem, 0)
 	logrus.Infof("start set data")
 	for _, c := range clusters {
-		var bgImg = ""
-		if c.Type == "k8s" {
-			bgImg = "k8s_cluster_bg"
-		}
-
 		status := ItemStatus{Text: l.SDK.I18n(clusterInfos[c.Name].RawStatus), Status: clusterInfos[c.Name].Status}
 		i := DataItem{
 			ID:            c.ID,
 			Title:         c.Name,
 			Description:   c.Description,
 			PrefixImg:     "cluster",
-			BackgroundImg: bgImg,
+			BackgroundImg: l.GetBgImage(c),
 			ExtraInfos:    l.GetExtraInfos(clusterInfos[c.Name]),
 			Status:        status,
 			ExtraContent:  l.GetExtraContent(res[c.Name]),
@@ -397,6 +391,21 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	d["list"] = di
 	logrus.Infof("cluster get data finished")
 	return d, nil
+}
+
+func (l *List) GetBgImage(c apistructs.ClusterInfo) string {
+	switch c.Type {
+	case "k8s":
+		return "k8s_cluster_bg"
+	case "dcos":
+		return "dcos_cluster_bg"
+	case "edas":
+		return "edas_cluster_bg"
+	case "ack":
+		return "ali_cloud_cluster_bg"
+	default:
+		return ""
+	}
 }
 
 func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
@@ -469,61 +478,68 @@ func (l *List) GetExtraContent(res *ResData) ExtraContent {
 		Type:   "PieChart",
 		RowNum: 3,
 	}
-	if res.CpuTotal == 0 || res.DiskTotal == 0 || res.MemoryTotal == 0 {
-		return ExtraContent{}
+	cpuRate, memRate, diskRate := 0.0, 0.0, 0.0
+	if res.CpuTotal != 0 {
+		cpuRate, _ = strconv.ParseFloat(fmt.Sprintf("%.3f", res.CpuUsed/res.CpuTotal*100), 64)
+	}
+	if res.MemoryTotal != 0 {
+		memRate, _ = strconv.ParseFloat(fmt.Sprintf("%.3f", res.MemoryUsed/res.MemoryTotal*100), 64)
+	}
+	if res.DiskTotal != 0 {
+		diskRate, _ = strconv.ParseFloat(fmt.Sprintf("%.3f", res.DiskUsed/res.DiskTotal*100), 64)
 	}
 	ec.ExtraData = []ExtraData{
 		{
 			Name:  l.SDK.I18n("CPU Rate"),
-			Value: res.CpuUsed / res.CpuTotal * 100,
+			Value: cpuRate,
 			Total: 100,
 			Color: "green",
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.3f%%", res.CpuUsed/res.CpuTotal*100),
+					Main: fmt.Sprintf("%.3f%%", cpuRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: fmt.Sprintf("%.3f", res.CpuUsed) + l.SDK.I18n("core"),
-					Sub:  l.SDK.I18n("Distribution"),
+					Sub:  l.SDK.I18n("Used"),
 				}, {
 					Main: fmt.Sprintf("%.3f", res.CpuTotal) + l.SDK.I18n("core"),
-					Sub:  "CPU" + l.SDK.I18n("Quota"),
+					Sub:  "CPU" + l.SDK.I18n("Limit"),
 				},
 			},
 		},
 		{
 			Name:  l.SDK.I18n("Memory Rate"),
-			Value: res.MemoryUsed / res.MemoryTotal * 100,
+			Value: memRate,
 			Total: 100,
 			Color: "green",
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.3f%%", res.MemoryUsed/res.MemoryTotal*100),
+					Main: fmt.Sprintf("%.3f%%", memRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: common.RescaleBinary(res.MemoryUsed),
-					Sub:  l.SDK.I18n("Distribution"),
+					Sub:  l.SDK.I18n("Used"),
 				}, {
 					Main: common.RescaleBinary(res.MemoryTotal),
-					Sub:  l.SDK.I18n("Memory") + l.SDK.I18n("Quota"),
+					Sub:  l.SDK.I18n("Memory") + l.SDK.I18n("Limit"),
 				},
 			},
 		},
 		{
 			Name:  l.SDK.I18n("Disk Rate"),
-			Value: res.DiskUsed / res.DiskTotal * 100,
+			Value: diskRate,
 			Total: 100,
 			Color: "green",
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.3f%%", res.DiskUsed/res.DiskTotal*100),
+					Main: fmt.Sprintf("%.3f%%", diskRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: common.RescaleBinary(res.DiskUsed),
-					Sub:  l.SDK.I18n("Distribution"),
+					Sub:  l.SDK.I18n("Used"),
 				}, {
 					Main: common.RescaleBinary(res.DiskTotal),
-					Sub:  l.SDK.I18n("Disk") + l.SDK.I18n("Quota"),
+					Sub:  l.SDK.I18n("Disk") + l.SDK.I18n("Limit"),
 				},
 			},
 		},
