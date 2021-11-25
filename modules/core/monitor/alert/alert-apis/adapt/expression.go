@@ -77,6 +77,12 @@ const (
 	HostIP        = "host_ip"
 )
 
+const (
+	SMS                = "sms"
+	shortMessage       = "short_message"
+	dingtalkWorkNotice = "dingtalk_work_notice"
+)
+
 type (
 	// DisplayKey .
 	DisplayKey struct {
@@ -199,12 +205,12 @@ func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, config map[string]boo
 	var keys []*pb.DisplayKey
 	for _, item := range notifyTargets {
 		switch item {
-		case "sms":
-			if ok := config["short_message"]; ok {
+		case SMS:
+			if ok := config[shortMessage]; ok {
 				keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 			}
-		case "dingtalk_work_notice":
-			if ok := config["dingtalk_work_notice"]; ok {
+		case dingtalkWorkNotice:
+			if ok := config[dingtalkWorkNotice]; ok {
 				keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 			}
 		default:
