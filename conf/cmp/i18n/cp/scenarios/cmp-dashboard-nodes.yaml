@@ -98,7 +98,7 @@ zh:
   Drain following nodes: 驱散以下节点：
   Offline following nodes: 下线以下节点：
   Online following nodes: 上线以下节点：
-  show: 查看
+  show: 查看pods
   undrained: 此节点中还存在未驱散的Pod！
   isOffline: 已下线
   no select: 未选择
