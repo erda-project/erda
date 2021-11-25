@@ -175,10 +175,15 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	oneDayAgoMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
 	sevenDayAgoMillSeconds := endMillSeconds - int64(7*24*time.Hour/time.Millisecond)
 	var projectIds []interface{}
+	var terminusKeys []interface{}
 	for _, project := range projects {
 		projectIds = append(projectIds, project.Id)
+		for _, workspace := range project.Relationship {
+			terminusKeys = append(terminusKeys, workspace.TenantID)
+		}
 	}
-	pbIdList, err := structpb.NewList(projectIds)
+	projectIdList, err := structpb.NewList(projectIds)
+	terminusKeyList, err := structpb.NewList(terminusKeys)
 	if err != nil {
 		return fmt.Errorf("failed to generate pb valuelist")
 	}
@@ -189,20 +194,20 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 
 	// get services count
 	req := &metricpb.QueryWithInfluxFormatRequest{
-		Start: strconv.FormatInt(oneDayAgoMillSeconds, 10),
+		Start: strconv.FormatInt(sevenDayAgoMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
 			{
-				Key:   "tags.project_id",
+				Key:   "tags.terminus_key",
 				Op:    "in",
-				Value: structpb.NewListValue(pbIdList),
+				Value: structpb.NewListValue(terminusKeyList),
 			},
 		},
 		Statement: `
-		SELECT project_id::tag, distinct(service_id::tag)
+		SELECT terminus_key::tag, distinct(service_id::tag), max(timestamp)
 		FROM application_service_node
 		WHERE _metric_scope::tag = 'micro_service'
-		GROUP BY project_id::tag
+		GROUP BY terminus_key::tag
         `,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -216,46 +221,12 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		len(resp.Results[0].Series[0].Rows) > 0 {
 
 		for _, row := range resp.Results[0].Series[0].Rows {
-			projectId := row.Values[0].GetStringValue()
+			terminusKey := row.Values[0].GetStringValue()
 			servicesCount := row.Values[1].GetNumberValue()
+			activeTime := row.Values[2].GetNumberValue()
 
-			servicesCountMap[projectId] = int64(servicesCount)
-		}
-	}
-
-	// get active time
-	req = &metricpb.QueryWithInfluxFormatRequest{
-		Start: strconv.FormatInt(sevenDayAgoMillSeconds, 10),
-		End:   strconv.FormatInt(endMillSeconds, 10),
-		Filters: []*metricpb.Filter{
-			{
-				Key:   "tags.project_id",
-				Op:    "in",
-				Value: structpb.NewListValue(pbIdList),
-			},
-		},
-		Statement: `
-		SELECT project_id::tag, max(timestamp)
-		FROM application_service_node
-		WHERE _metric_scope::tag = 'micro_service'
-		GROUP BY project_id::tag
-		`,
-	}
-	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	resp, err = s.metricq.QueryWithInfluxFormat(ctx, req)
-	if err != nil {
-		return fmt.Errorf("failed to do metrics: %s", err)
-	}
-	if len(resp.Results) > 0 &&
-		len(resp.Results[0].Series) > 0 &&
-		len(resp.Results[0].Series[0].Rows) > 0 {
-
-		for _, row := range resp.Results[0].Series[0].Rows {
-			projectId := row.Values[0].GetStringValue()
-			activeTime := row.Values[1].GetNumberValue()
-
-			activeTimeMap[projectId] = int64(activeTime) / int64(time.Millisecond)
+			servicesCountMap[terminusKey] = int64(servicesCount)
+			activeTimeMap[terminusKey] = int64(activeTime) / int64(time.Millisecond)
 		}
 	}
 
@@ -267,7 +238,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 			{
 				Key:   "tags.project_id",
 				Op:    "in",
-				Value: structpb.NewListValue(pbIdList),
+				Value: structpb.NewListValue(projectIdList),
 			},
 		},
 		Statement: `
@@ -296,11 +267,13 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	}
 
 	for _, project := range projects {
-		if serviceCount, ok := servicesCountMap[project.Id]; ok {
-			project.ServiceCount = serviceCount
-		}
-		if activeTime, ok := activeTimeMap[project.Id]; ok {
-			project.LastActiveTime = activeTime
+		for _, workspace := range project.Relationship {
+			if serviceCount, ok := servicesCountMap[workspace.TenantID]; ok {
+				project.ServiceCount += serviceCount
+			}
+			if activeTime, ok := activeTimeMap[workspace.TenantID]; ok && activeTime > project.LastActiveTime {
+				project.LastActiveTime = activeTime
+			}
 		}
 		if alertCount, ok := alertCountMap[project.Id]; ok {
 			project.Last24HAlertCount = alertCount
