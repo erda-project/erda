@@ -90,6 +90,7 @@ openapi-v1-routes:
           - cmp-dashboard-nodeDetail
           - cmp-dashboard-pods
           - cmp-dashboard-podDetail
+          - cmp-cluster-list
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}
