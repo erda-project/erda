@@ -583,8 +583,13 @@ func (a *ComponentFileFormModal) CopyTo(inParams fileTree.InParams) error {
 	}
 
 	_, err = a.atTestPlan.CopyAutotestScene(apistructs.AutotestSceneCopyRequest{
-		SpaceID:      inParams.SpaceId,
-		PreID:        scenes[len(scenes)-1].ID,
+		SpaceID: inParams.SpaceId,
+		PreID: func() uint64 {
+			if len(scenes) == 0 {
+				return 0
+			}
+			return scenes[len(scenes)-1].ID
+		}(),
 		SceneID:      a.State.SceneId,
 		SetID:        *formData.ScenesSet,
 		IdentityInfo: apistructs.IdentityInfo{UserID: a.sdk.Identity.UserID},
