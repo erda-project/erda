@@ -141,7 +141,7 @@ func (m *Metric) querySync(ctx context.Context, req *MetricsReq, c chan map[stri
 		c <- res
 		return
 	}
-	if !req.sync {
+	if !req.sync && req.resType != NodeAll {
 		logrus.Infof("cache expired, try fetch metrics asynchronized")
 		//asyncReqs = append(asyncReqs, metricsReq)
 		select {
@@ -328,18 +328,18 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[strin
 	return noNeed, nil
 }
 
-func (m *Metric) ToInfluxReq(request *MetricsRequest, kind string) (*MetricsReq, map[string]*MetricsData, error) {
+func (m *Metric) ToInfluxReq(request *MetricsRequest, reqKind string) (*MetricsReq, map[string]*MetricsData, error) {
 	cluster := request.ClusterName()
 	if request.Cluster == "" {
 		return nil, nil, errors.New(fmt.Sprintf("parameter %s not found", request.Cluster))
 	}
-	switch kind {
+	switch reqKind {
 	case Node:
 		return m.toInfluxReq(request.NodeRequests, cluster, request.ResourceType(), request.ResourceKind(), NodeResourceUsageSelectStatement)
 	case Pod:
 		return m.toInfluxReq(request.PodRequests, cluster, request.ResourceType(), request.ResourceKind(), PodResourceUsageSelectStatement)
 	default:
-		logrus.Errorf("query metrics kind %v, %v", kind, ResourceNotSupport)
+		logrus.Errorf("query metrics kind %v, %v", reqKind, ResourceNotSupport)
 		return nil, nil, ResourceNotSupport
 	}
 }
