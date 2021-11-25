@@ -289,14 +289,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }
 
 func (f *ComponentFilter) getDisplayName(name string) (string, error) {
