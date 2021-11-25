@@ -50,3 +50,7 @@ type SteveServer interface {
 	OfflineNode(context.Context, string, string, string, []string) error
 	OnlineNode(context.Context, *apistructs.SteveRequest) error
 }
+
+type ClusterManagerInterface interface {
+	ClusterInfo(ctx context.Context, orgID uint64, clusterNames []string) ([]map[string]map[string]apistructs.NameValue, error)
+}

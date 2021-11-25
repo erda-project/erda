@@ -36,13 +36,14 @@ const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
 	//NodeCpuUsageSelectStatement    = `SELECT last(cpu_cores_usage::field) FROM host_summary WHERE cluster_name::tag=$cluster_name AND host_ip::tag=$host_ip `
-	NodeResourceUsageSelectStatement = `SELECT last(mem_used::field) as memRate , last(cpu_cores_usage::field) as cpuRate , host_ip::tag FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag limit 100000`
+	NodeResourceUsageSelectStatement = `SELECT last(mem_used::field) as memRate , last(cpu_cores_usage::field) as cpuRate ,last(disk_used::field) as diskRate , host_ip::tag FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag limit 100000`
 	//NodeResourceUsageSelectStatement = `SELECT  mem_usage::field  ,cpu_cores_usage::field, host_ip FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`
 	//PodCpuUsageSelectStatement     = `SELECT SUM(cpu_allocation::field) * 100 / SUM(cpu_limit::field) as cpuRate, pod_name FROM docker_container_summary WHERE pod_namespace::tag=$pod_namespace and podsandbox != true GROUP BY pod_name::tag`
 	PodResourceUsageSelectStatement = `SELECT round_float(SUM(mem_usage::field) * 100 / SUM(mem_limit::field),2) as memoryRate,round_float(SUM(cpu_usage_percent::field) / SUM(cpu_limit::field) ,2) as cpuRate ,pod_name::tag ,pod_namespace::tag FROM docker_container_summary WHERE  cluster_name::tag=$cluster_name and podsandbox != true GROUP BY pod_name::tag, pod_namespace::tag limit 100000 `
 
 	Memory = "memory"
 	Cpu    = "cpu"
+	Disk   = "disk"
 
 	Pod  = "pod"
 	Node = "node"
@@ -192,18 +193,26 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 					res[k] = d
 				}
 			case Node:
-				if row.Values[1].GetKind() != nil {
-					k = cache.GenerateKey(Node, Cpu, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+				if row.Values[1].GetKind() != nil && row.Values[3].GetKind() != nil {
+					k = cache.GenerateKey(Node, Cpu, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[3].GetStringValue())
 					d = &MetricsData{
 						Used: row.Values[1].GetNumberValue(),
 					}
 					SetCache(k, d)
 					res[k] = d
 				}
-				if row.Values[0].GetKind() != nil {
-					k = cache.GenerateKey(Node, Memory, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[2].GetStringValue())
+				if row.Values[0].GetKind() != nil && row.Values[3].GetKind() != nil {
+					k = cache.GenerateKey(Node, Memory, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[3].GetStringValue())
 					d = &MetricsData{
 						Used: row.Values[0].GetNumberValue(),
+					}
+					SetCache(k, d)
+					res[k] = d
+				}
+				if row.Values[2].GetKind() != nil && row.Values[3].GetKind() != nil {
+					k = cache.GenerateKey(Node, Disk, metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), row.Values[3].GetStringValue())
+					d = &MetricsData{
+						Used: row.Values[2].GetNumberValue(),
 					}
 					SetCache(k, d)
 					res[k] = d

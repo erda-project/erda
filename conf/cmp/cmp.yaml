@@ -97,6 +97,8 @@ component-protocol.components.cmp-dashboard-podDetail.operationButton:
 component-protocol.components.cmp-dashboard-podDetail.yamlDrawer:
 component-protocol.components.cmp-dashboard-podDetail.yamlFileEditor:
 
+component-protocol.components.cmp-cluster-list.list:
+component-protocol.components.cmp-cluster-list.page:
 
 i18n@cp:
   common:

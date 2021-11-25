@@ -15,6 +15,7 @@
 package components
 
 import (
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-cluster-list"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodeDetail"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes"
