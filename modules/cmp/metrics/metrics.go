@@ -302,7 +302,6 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[stri
 	case resp := <-c:
 		for key, v := range resp {
 			noNeed[key] = v
-			logrus.Info(key, "===", v.Used)
 		}
 	}
 	return noNeed, nil
