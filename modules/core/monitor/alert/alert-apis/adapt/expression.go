@@ -198,23 +198,18 @@ func (a *Adapt) AggregatorKeysSet() map[string]bool {
 func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, config map[string]bool) []*pb.DisplayKey {
 	var keys []*pb.DisplayKey
 	for _, item := range notifyTargets {
-		if item == "sms" || item == "dingtalk_work_notice" {
-			if config == nil || len(config) == 0 {
-				continue
+		switch item {
+		case "sms":
+			if ok := config["short_message"]; ok {
+				keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 			}
-			if item == "sms" {
-				ok := config["short_message"]
-				if !ok {
-					continue
-				}
-			} else {
-				ok := config["dingtalk_work_notice"]
-				if !ok {
-					continue
-				}
+		case "dingtalk_work_notice":
+			if ok := config["dingtalk_work_notice"]; ok {
+				keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 			}
+		default:
+			keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 		}
-		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 	}
 	return keys
 }
