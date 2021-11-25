@@ -48,6 +48,8 @@ const (
 	Pod  = "pod"
 	Node = "node"
 
+	NodeAll = "nodeall"
+
 	syncKey = "metricsCacheSync"
 
 	queryTimeout = 30 * time.Second
@@ -219,6 +221,9 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 				}
 			}
 		}
+		if metricsRequest.resKind == Node {
+			SetCache(cache.GenerateKey(metricsRequest.rawReq.Params["cluster_name"].GetStringValue(), NodeAll), res)
+		}
 		return res
 	}
 	return nil
@@ -297,6 +302,7 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[stri
 	case resp := <-c:
 		for key, v := range resp {
 			noNeed[key] = v
+			logrus.Info(key, "===", v.Used)
 		}
 	}
 	return noNeed, nil

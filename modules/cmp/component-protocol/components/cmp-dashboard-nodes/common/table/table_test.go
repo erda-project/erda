@@ -173,6 +173,69 @@ func TestSortByDistribution(t *testing.T) {
 		})
 	}
 }
+func TestSortByDistributionRate(t *testing.T) {
+	type args struct {
+		data       []RowItem
+		sortColumn string
+		asc        bool
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "testDistribution",
+			args: args{
+				data: []RowItem{{
+					DistributionRate: DistributionRate{
+						RenderType:        "",
+						DistributionValue: 1,
+					},
+				}, {
+					DistributionRate: DistributionRate{
+						RenderType:        "",
+						DistributionValue: 2,
+					},
+				}, {
+					DistributionRate: DistributionRate{
+						RenderType:        "",
+						DistributionValue: 3,
+					},
+				}},
+				sortColumn: "DistributionRate",
+				asc:        true,
+			},
+		},
+		{
+			name: "testUsage",
+			args: args{
+				data: []RowItem{{
+					DistributionRate: DistributionRate{
+						RenderType:        "",
+						DistributionValue: 1,
+					},
+				}, {
+					DistributionRate: DistributionRate{
+						RenderType:        "",
+						DistributionValue: 2,
+					},
+				}, {
+					DistributionRate: DistributionRate{
+						RenderType:        "",
+						DistributionValue: 3,
+					},
+				}},
+				sortColumn: "DistributionRate",
+				asc:        false,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SortByDistributionRate(tt.args.data, tt.args.sortColumn, tt.args.asc)
+		})
+	}
+}
 
 func TestSortByString(t *testing.T) {
 	type args struct {
@@ -312,7 +375,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   string
+		want   DistributionRate
 	}{
 		// TODO: Add test cases.
 		{
@@ -323,7 +386,11 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "High",
+			want: DistributionRate{
+				RenderType:        "text",
+				Value:             "High",
+				DistributionValue: 0.92,
+			},
 		},
 		{
 			name:   "text",
@@ -333,7 +400,11 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "Middle",
+			want: DistributionRate{
+				RenderType:        "text",
+				Value:             "Middle",
+				DistributionValue: 0.67,
+			},
 		},
 		{
 			name:   "text",
@@ -343,7 +414,11 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 				b:            1.2,
 				resourceType: Memory,
 			},
-			want: "Low",
+			want: DistributionRate{
+				RenderType:        "text",
+				Value:             "Low",
+				DistributionValue: 0.25,
+			},
 		},
 	}
 	for _, tt := range tests {
