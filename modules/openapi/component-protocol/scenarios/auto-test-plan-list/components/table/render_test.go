@@ -71,3 +71,34 @@ func TestTestPlanManageTable_Render(t *testing.T) {
 		})
 	}
 }
+
+func TestGetIterations(t *testing.T) {
+	tt := []struct {
+		state map[string]interface{}
+		want  []uint64
+	}{
+		{
+			state: nil, want: nil,
+		},
+		{
+			state: map[string]interface{}{"foo": "bar"}, want: nil,
+		},
+		{
+			state: map[string]interface{}{"iteration": "bar"}, want: nil,
+		},
+		{
+			state: map[string]interface{}{"iteration": []string{"1", "2"}}, want: nil,
+		},
+		{
+			state: map[string]interface{}{"iteration": []uint64{1, 2}}, want: []uint64{1, 2},
+		},
+		{
+			state: map[string]interface{}{"iteration": []interface{}{float64(1), float64(2)}}, want: []uint64{1, 2},
+		},
+	}
+	for _, v := range tt {
+		if !reflect.DeepEqual(v.want, getIterations(v.state)) {
+			t.Error("fail")
+		}
+	}
+}

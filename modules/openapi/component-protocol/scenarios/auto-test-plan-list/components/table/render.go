@@ -167,9 +167,11 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	if _, ok := c.State["name"]; ok {
 		cond.Name = c.State["name"].(string)
 	}
-	if _, ok := c.State["iteration"]; ok {
-		cond.IterationIDs = c.State["iteration"].([]uint64)
+	iterationIDs := getIterations(c.State)
+	if iterationIDs != nil {
+		cond.IterationIDs = iterationIDs
 	}
+
 	if v, ok := c.State["archive"]; ok && v != nil {
 		var isArchive bool
 		if s := v.(bool); s == true {
@@ -290,6 +292,28 @@ func convertExecuteTime(data *apistructs.TestPlanV2) string {
 	var executeTime string
 	executeTime = data.ExecuteTime.Format("2006-01-02 15:04:05")
 	return executeTime
+}
+
+func getIterations(state map[string]interface{}) (ids []uint64) {
+	if state == nil {
+		return
+	}
+	if _, ok := state["iteration"]; !ok && state["iteration"] == nil {
+		return
+	}
+
+	if v, ok := state["iteration"].([]uint64); ok {
+		return v
+	}
+	if v, ok := state["iteration"].([]interface{}); ok {
+		for _, v2 := range v {
+			if id, ok := v2.(float64); ok {
+				ids = append(ids, uint64(id))
+			}
+		}
+		return
+	}
+	return
 }
 
 // TODO:
