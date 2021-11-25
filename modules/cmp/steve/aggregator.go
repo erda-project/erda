@@ -133,7 +133,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.Tick(time.Hour):
+		case <-time.Tick(time.Minute):
 			clusters, err := a.listClusterByType("k8s", "edas")
 			if err != nil {
 				logrus.Errorf("failed to list k8s clusters when watch: %v", err)

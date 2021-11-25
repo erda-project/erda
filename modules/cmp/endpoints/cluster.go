@@ -453,6 +453,10 @@ func (e *Endpoints) ImportCluster(ctx context.Context, r *http.Request, vars map
 		return
 	}
 
+	clusterInfo, err := e.bdl.GetCluster(req.ClusterName)
+	if err == nil {
+		e.SteveAggregator.Add(*clusterInfo)
+	}
 	return mkResponse(apistructs.ImportClusterResponse{
 		Header: apistructs.Header{Success: true},
 	})
