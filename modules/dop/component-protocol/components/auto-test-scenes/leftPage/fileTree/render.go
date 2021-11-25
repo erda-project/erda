@@ -120,7 +120,7 @@ func (i *ComponentFileTree) RenderProtocol(c *cptype.Component, g *cptype.Global
 func (i *ComponentFileTree) onClickFolderTable() error {
 	i.State.IsClickFolderTable = false
 	i.State.IsClickScene = true
-	id := i.State.ClickFolderTableSceneID
+	id := i.gsHelper.GetFileTreeSceneID()
 
 	var req apistructs.AutotestSceneRequest
 	req.SceneID = id

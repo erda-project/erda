@@ -345,13 +345,14 @@ func RenderClick(s *SceneStage) error {
 	if err != nil {
 		return err
 	}
+	s.State.IsClickFolderTableRow = true
+	s.gsHelper.SetFileTreeSceneID(scene.ID)
 	if scene.RefSetID != 0 {
 		s.gsHelper.SetGlobalSelectedSetID(scene.RefSetID)
 		s.gsHelper.SetFileTreeSceneSetKey(scene.RefSetID)
 		return RenderList(s)
 	} else {
 		s.gsHelper.SetGlobalActiveConfig(gshelper.SceneConfigKey)
-		s.gsHelper.SetFileTreeSceneID(scene.ID)
 		s.State.SceneID = scene.ID
 	}
 
