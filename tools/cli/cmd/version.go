@@ -18,17 +18,17 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/version"
-	. "github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/command"
 )
 
-var VERSION = Command{
+var VERSION = command.Command{
 	Name:      "version",
 	ShortHelp: "Show dice version info",
 	Example:   `$ dice version`,
 	Run:       RunVersion,
 }
 
-func RunVersion(ctx *Context) error {
+func RunVersion(ctx *command.Context) error {
 	fmt.Println(version.String())
 
 	return nil

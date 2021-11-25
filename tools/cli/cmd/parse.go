@@ -18,28 +18,28 @@ import (
 	"os"
 
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	. "github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
-var PARSE = Command{
+var PARSE = command.Command{
 	Name:      "parse",
 	ShortHelp: "Parse the dice.yml file",
-	Flags: []Flag{
-		StringFlag{"f", "file",
+	Flags: []command.Flag{
+		command.StringFlag{"f", "file",
 			"Specify the path of dice.yml file, default: .dice/dice.yml", ""},
-		StringFlag{"s", "str", "Provide the content of dice.yml file as a string", ""},
-		BoolFlag{"", "dev", "Parse the dice.yml file in development environment ", false},
-		BoolFlag{"", "test", "Parse the dice.yml file in test environment", false},
-		BoolFlag{"", "staging", "Parse the dice.yml file in staging environment", false},
-		BoolFlag{"", "prod", "Parse the dice.yml in production environment", false},
-		BoolFlag{"o", "output", "Output the content as yaml", false},
+		command.StringFlag{"s", "str", "Provide the content of dice.yml file as a string", ""},
+		command.BoolFlag{"", "dev", "Parse the dice.yml file in development environment ", false},
+		command.BoolFlag{"", "test", "Parse the dice.yml file in test environment", false},
+		command.BoolFlag{"", "staging", "Parse the dice.yml file in staging environment", false},
+		command.BoolFlag{"", "prod", "Parse the dice.yml in production environment", false},
+		command.BoolFlag{"o", "output", "Output the content as yaml", false},
 	},
 	Run:    RunParse,
 	Hidden: true,
 }
 
-func RunParse(ctx *Context, ymlPath string, ymlContent string, dev, test, staging, prod, outputYml bool) error {
+func RunParse(ctx *command.Context, ymlPath string, ymlContent string, dev, test, staging, prod, outputYml bool) error {
 	var yml []byte
 	var err error
 	if ymlPath != "" {

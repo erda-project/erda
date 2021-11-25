@@ -31,13 +31,13 @@ var PROJECTINSPECT = command.Command{
 	ShortHelp:  "Inspect project",
 	Example:    "erda-cli project inspect",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
 	},
 	Run: InspectProject,
 }
 
-func InspectProject(ctx *command.Context, orgId, projectId int) error {
+func InspectProject(ctx *command.Context, orgId, projectId uint64) error {
 	if projectId <= 0 {
 		return errors.New("invalid project id")
 	}
@@ -46,10 +46,10 @@ func InspectProject(ctx *command.Context, orgId, projectId int) error {
 		return errors.New("invalid org id")
 	}
 	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+		orgId = ctx.CurrentOrg.ID
 	}
 
-	resp, err := common.GetProjectDetail(ctx, projectId, orgId)
+	resp, err := common.GetProjectDetail(ctx, orgId, projectId)
 	if err != nil {
 		return err
 	}

@@ -27,33 +27,41 @@ import (
 var ORGINSPECT = command.Command{
 	Name:       "inspect",
 	ParentName: "ORG",
-	ShortHelp:  "Display detailed information of one organization",
+	ShortHelp:  "Display detail information of one organization",
 	Example: `
-  $ erda-cli org inspect
+  $ erda-cli org inspect --org-id=<id>
 `,
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
 	},
 	Run: OrgInspect,
 }
 
-func OrgInspect(ctx *command.Context, orgId int) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return fmt.Errorf(format.FormatErrMsg("orgs inspect", "invalid OrgID", true))
+func OrgInspect(ctx *command.Context, orgId uint64, org string) error {
+	if orgId > 0 && org != "" {
+		fmt.Println("Both --org-id and --org are set, we use --org only")
 	}
 
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+	orgIdorName := ""
+	if org != "" {
+		orgIdorName = org
+	} else if orgId > 0 {
+		orgIdorName = strconv.FormatUint(orgId, 10)
+	} else if orgId <= 0 && ctx.CurrentOrg.ID > 0 {
+		orgIdorName = strconv.FormatUint(ctx.CurrentOrg.ID, 10)
+	} else {
+		return fmt.Errorf(format.FormatErrMsg("org inspect", "invalid Org or OrgID", true))
 	}
 
-	resp, err := common.GetOrgDetail(ctx, strconv.Itoa(orgId))
+	resp, err := common.GetOrgDetail(ctx, orgIdorName)
 	if err != nil {
 		return err
 	}
 
 	s, err := prettyjson.Marshal(resp.Data)
 	if err != nil {
-		return fmt.Errorf(format.FormatErrMsg("orgs inspect",
+		return fmt.Errorf(format.FormatErrMsg("org inspect",
 			"failed to prettyjson marshal organization data ("+err.Error()+")", false))
 	}
 

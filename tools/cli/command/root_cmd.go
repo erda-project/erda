@@ -15,7 +15,6 @@
 package command
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -174,10 +173,10 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 	}
 
 	if username == "" {
-		username = inputNormal("Enter your dice username: ")
+		username = dicedir.InputNormal("Enter your dice username: ")
 	}
 	if password == "" {
-		password = inputPWD("Enter your dice password: ")
+		password = dicedir.InputPWD("Enter your dice password: ")
 	}
 
 	// fetch session & user info according to host, username & password
@@ -401,31 +400,4 @@ func tput(arg string) error {
 	cmd := exec.Command("tput", arg)
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
-}
-
-func inputPWD(prompt string) string {
-	cmd := exec.Command("stty", "-echo")
-	cmd.Stdin = os.Stdin
-	if err := cmd.Run(); err != nil {
-		panic(err)
-	}
-	defer func() {
-		cmd := exec.Command("stty", "echo")
-		cmd.Stdin = os.Stdin
-		if err := cmd.Run(); err != nil {
-			panic(err)
-		}
-		fmt.Println("")
-	}()
-	return inputNormal(prompt)
-}
-
-func inputNormal(prompt string) string {
-	fmt.Printf(prompt)
-	r := bufio.NewReader(os.Stdin)
-	input, err := r.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-	return input[:len(input)-1]
 }

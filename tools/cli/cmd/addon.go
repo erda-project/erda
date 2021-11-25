@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
+
+	"github.com/erda-project/erda/apistructs"
 
 	"github.com/pkg/errors"
 
@@ -32,11 +35,19 @@ var ADDON = command.Command{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "workspace", Doc: "The env workspace", DefaultValue: ""},
 	},
 	Run: GetAddons,
 }
 
-func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64) error {
+func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64, workspace string) error {
+	if workspace != "" {
+		if !apistructs.WorkSpace(workspace).Valide() {
+			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
+				workspace, apistructs.WorkSpace("").ValideList()))
+		}
+	}
+
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("Invalid organization id")
 	}
@@ -56,19 +67,22 @@ func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64) er
 
 	data := [][]string{}
 	for _, l := range list.Data {
+		if workspace != "" && l.Workspace != workspace {
+			continue
+		}
 		data = append(data, []string{
 			l.ID,
 			l.AddonName,
-			l.AddonDisplayName,
 			l.Workspace,
 			strconv.Itoa(l.Reference),
+			l.AddonDisplayName,
 		})
 	}
 
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"AddonID", "Name", "DisplayName", "ENV", "Reference",
+			"AddonID", "Name", "ENV", "Reference", "DisplayName",
 		})
 	}
 	return t.Data(data).Flush()

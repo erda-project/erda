@@ -17,6 +17,8 @@ package cmd
 import (
 	"strconv"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/terminal/table"
@@ -32,11 +34,12 @@ var APPLICATION = command.Command{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "page-size", Doc: "The number of page size", DefaultValue: 10},
 	},
 	Run: GetApplications,
 }
 
-func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint64) error {
+func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint64, pageSize int) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("Invalid organization id")
 	}
@@ -49,26 +52,41 @@ func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint
 		return errors.New("Invalid project id")
 	}
 
-	list, err := common.GetApplicationList(ctx, orgId, projectId)
+	num := 0
+	err := dicedir.PagingView(
+		func(pageNo, pageSize int) (bool, error) {
+			pagingApplication, err := common.GetPagingApplications(ctx, orgId, projectId, pageNo, pageSize)
+			if err != nil {
+				return false, err
+			}
+
+			data := [][]string{}
+			for _, p := range pagingApplication.List {
+				data = append(data, []string{
+					strconv.FormatUint(p.ID, 10),
+					p.Name,
+					p.DisplayName,
+					p.Desc,
+				})
+			}
+
+			t := table.NewTable()
+			if !noHeaders {
+				t.Header([]string{
+					"ApplicationID", "Name", "DisplayName", "Description",
+				})
+			}
+			err = t.Data(data).Flush()
+			if err != nil {
+				return false, err
+			}
+
+			num += len(pagingApplication.List)
+			return pagingApplication.Total > num, nil
+		}, "Continue to display applications?", pageSize)
 	if err != nil {
 		return err
 	}
 
-	data := [][]string{}
-	for i := range list {
-		data = append(data, []string{
-			strconv.FormatUint(list[i].ID, 10),
-			list[i].Name,
-			list[i].DisplayName,
-			list[i].Desc,
-		})
-	}
-
-	t := table.NewTable()
-	if !noHeaders {
-		t.Header([]string{
-			"ApplicationID", "Name", "DisplayName", "Description",
-		})
-	}
-	return t.Data(data).Flush()
+	return nil
 }

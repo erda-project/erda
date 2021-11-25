@@ -36,11 +36,13 @@ var PROJECTCLEAR = command.Command{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "the env workspace of a project, if set only clear runtimes and addons in the specific workspace", DefaultValue: ""},
+		command.IntFlag{Short: "", Name: "wait-runtime", Doc: "the minutes to wait runtimes deleted", DefaultValue: 3},
+		command.IntFlag{Short: "", Name: "wait-addon", Doc: "the minutes to wait addons deleted", DefaultValue: 3},
 	},
 	Run: ClearProject,
 }
 
-func ClearProject(ctx *command.Context, orgId, projectId uint64, workspace string) error {
+func ClearProject(ctx *command.Context, orgId, projectId uint64, workspace string, waitRuntime, waitAddon int) error {
 	if workspace != "" {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
@@ -59,7 +61,7 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		orgId = ctx.CurrentOrg.ID
 	}
 
-	apps, err := common.GetApplicationList(ctx, orgId, projectId)
+	apps, err := common.GetApplications(ctx, orgId, projectId)
 	if err != nil {
 		return err
 	}
@@ -95,7 +97,7 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		}
 
 		return checkApplication(ctx, orgId, aId, workspace)
-	}, 3*time.Minute)
+	}, time.Duration(waitRuntime)*time.Minute)
 
 	// Clear Addons
 	resp, err := common.GetAddonList(ctx, orgId, projectId)
@@ -141,7 +143,7 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 			return true
 		}
 		return false
-	}, 3*time.Minute)
+	}, time.Duration(waitAddon)*time.Minute)
 
 	ctx.Succ("Project clear success.")
 	return nil

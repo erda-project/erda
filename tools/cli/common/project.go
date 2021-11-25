@@ -25,12 +25,12 @@ import (
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
-func GetProjectDetail(ctx *command.Context, orgID, projectID int) (apistructs.ProjectDetailResponse, error) {
+func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs.ProjectDetailResponse, error) {
 	var resp apistructs.ProjectDetailResponse
 	var b bytes.Buffer
 
 	response, err := ctx.Get().
-		Header("Org-ID", strconv.Itoa(orgID)).
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
 		Path(fmt.Sprintf("/api/projects/%d", projectID)).
 		Do().Body(&b)
 	if err != nil {
@@ -58,45 +58,41 @@ func GetProjectDetail(ctx *command.Context, orgID, projectID int) (apistructs.Pr
 	return resp, nil
 }
 
-// TODO paging
-func GetProjectList(ctx *command.Context, orgId int) ([]apistructs.ProjectDTO, error) {
+func GetPagingProjectList(ctx *command.Context, orgId uint64, pageNo, pageSize int) (apistructs.PagingProjectDTO, error) {
 	var resp apistructs.ProjectListResponse
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/projects").
 		Param("joined", "true").
-		Param("orgId", strconv.Itoa(orgId)).Do().Body(&b)
+		Param("orgId", strconv.FormatUint(orgId, 10)).
+		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
+		Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(
 			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(format.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(format.FormatErrMsg("list",
 			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(format.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
 	}
 
 	if resp.Data.Total < 0 {
-		return nil, fmt.Errorf(
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(
 			format.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
 	}
 
-	//if resp.Data.Total == 0 {
-	//	fmt.Printf(format.FormatErrMsg("list", "no projects created\n", false))
-	//	return nil, nil
-	//}
-
-	return resp.Data.List, nil
+	return resp.Data, nil
 }

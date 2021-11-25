@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
@@ -60,42 +61,54 @@ func GetApplicationDetail(ctx *command.Context, orgId, projectId, applicationId 
 	return resp, nil
 }
 
-// TODO paging
-func GetApplicationList(ctx *command.Context, orgId, projectId uint64) ([]apistructs.ApplicationDTO, error) {
+func GetApplications(ctx *command.Context, orgId, projectId uint64) ([]apistructs.ApplicationDTO, error) {
+	var apps []apistructs.ApplicationDTO
+	err := dicedir.PagingAll(func(pageNo, pageSize int) (bool, error) {
+		page, err := GetPagingApplications(ctx, orgId, projectId, pageNo, pageSize)
+		if err != nil {
+			return false, err
+		}
+		apps = append(apps, page.List...)
+		return page.Total > len(apps), nil
+	}, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	return apps, nil
+}
+
+func GetPagingApplications(ctx *command.Context, orgId, projectId uint64, pageNo, pageSize int) (apistructs.ApplicationListResponseData, error) {
 	var resp apistructs.ApplicationListResponse
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/applications").
 		Header("Org-ID", strconv.FormatUint(orgId, 10)).
 		Param("projectId", strconv.FormatUint(projectId, 10)).
-		Param("pageSize", "200").Do().Body(&b)
+		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
+		Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf(
 			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf(format.FormatErrMsg("list",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf(format.FormatErrMsg("list",
 			fmt.Sprintf("failed to unmarshal application list response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf(
+		return apistructs.ApplicationListResponseData{}, fmt.Errorf(
 			format.FormatErrMsg("list",
 				fmt.Sprintf("failed to request, error code: %s, error message: %s",
 					resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	//if resp.Data.Total == 0 {
-	//	fmt.Printf(format.FormatErrMsg("list", "no applications created\n", false))
-	//	return nil, nil
-	//}
-
-	return resp.Data.List, nil
+	return resp.Data, nil
 }

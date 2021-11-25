@@ -15,6 +15,7 @@
 package dicedir
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -107,4 +108,84 @@ func GetWorkspaceInfoFromErdaRepo(erdaRepo string) (org, project, app string, er
 	return WorkspaceInfo{
 		u.Scheme, u.Host, paths[1], paths[3], paths[4],
 	}, nil
+}
+
+func InputPWD(prompt string) string {
+	cmd := exec.Command("stty", "-echo")
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+	defer func() {
+		cmd := exec.Command("stty", "echo")
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err != nil {
+			panic(err)
+		}
+		fmt.Println("")
+	}()
+	return InputNormal(prompt)
+}
+
+func InputNormal(prompt string) string {
+	fmt.Printf(prompt)
+	r := bufio.NewReader(os.Stdin)
+	input, err := r.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	return input[:len(input)-1]
+}
+
+func InputAndChoose(prompt, yes, no string) string {
+	var ans string
+	for {
+		ans = strings.ToUpper(InputNormal(fmt.Sprintf("%s[%s/%s]", prompt, yes, no)))
+		if ans == yes || ans == no {
+			break
+		}
+	}
+	return ans
+}
+
+type pagingList func(int, int) (bool, error)
+
+func PagingView(p pagingList, choose string, pageSize int) error {
+	pageNo := 1
+	num := 0
+	for {
+		more, err := p(pageNo, pageSize)
+		if err != nil {
+			return err
+		}
+		num += pageSize
+		if more {
+			ans := InputAndChoose(choose, "Y", "N")
+			if ans == "Y" {
+				pageNo += 1
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	return nil
+}
+
+func PagingAll(p pagingList, pageSize int) error {
+	pageNo := 1
+	for {
+		more, err := p(pageNo, pageSize)
+		if err != nil {
+			return err
+		}
+		if more {
+			pageNo += 1
+		} else {
+			break
+		}
+	}
+	return nil
 }

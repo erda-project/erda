@@ -17,6 +17,8 @@ package cmd
 import (
 	"strconv"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/terminal/table"
@@ -30,40 +32,55 @@ var PROJECT = command.Command{
 	Example:   "erda-cli project",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
+		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
 	},
 	Run: GetProjects,
 }
 
-func GetProjects(ctx *command.Context, noHeaders bool, orgId int) error {
+func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, pageSize int) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("Invalid organization id")
 	}
 
 	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+		orgId = ctx.CurrentOrg.ID
 	}
 
-	list, err := common.GetProjectList(ctx, orgId)
+	num := 0
+	err := dicedir.PagingView(func(pageNo, pageSize int) (bool, error) {
+		pagingProject, err := common.GetPagingProjectList(ctx, orgId, pageNo, pageSize)
+		if err != nil {
+			return false, err
+		}
+
+		data := [][]string{}
+		for _, p := range pagingProject.List {
+			data = append(data, []string{
+				strconv.FormatUint(p.ID, 10),
+				p.Name,
+				p.DisplayName,
+				p.Desc,
+			})
+		}
+
+		t := table.NewTable()
+		if !noHeaders {
+			t.Header([]string{
+				"ProjectID", "Name", "DisplayName", "Description",
+			})
+		}
+		err = t.Data(data).Flush()
+		if err != nil {
+			return false, err
+		}
+
+		num += len(pagingProject.List)
+		return pagingProject.Total > num, nil
+	}, "Continue to display project?", pageSize)
 	if err != nil {
 		return err
 	}
 
-	data := [][]string{}
-	for i := range list {
-		data = append(data, []string{
-			strconv.FormatUint(list[i].ID, 10),
-			list[i].Name,
-			list[i].DisplayName,
-			list[i].Desc,
-		})
-	}
-
-	t := table.NewTable()
-	if !noHeaders {
-		t.Header([]string{
-			"ProjectID", "Name", "DisplayName", "Description",
-		})
-	}
-	return t.Data(data).Flush()
+	return nil
 }
