@@ -3,7 +3,7 @@
     "${ERDA_SPAN_INDEX_PREFIX:erda-spans-}*"
   ],
   "settings": {
-    "number_of_shards": ${SPAN_INDEX_SHARDS:1},
+    "number_of_shards": ${SPAN_INDEX_SHARDS:2},
     "number_of_replicas": ${SPAN_INDEX_REPLICAS:1},
     "index": {
       "refresh_interval": "15s",

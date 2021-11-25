@@ -106,7 +106,7 @@ log-persist:
     group: "${LOG_GROUP_ID:erda-logs-dev}"
   id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
-  buffer_size: ${LOG_BATCH_SIZE:50}
+  buffer_size: ${LOG_BATCH_SIZE:200}
   parallelism: ${LOG_PERSIST_PARALLELISM:3}
   print_invalid_log: false
 
@@ -209,7 +209,7 @@ event-persist:
     topics: "${EVENT_TOPICS:spot-events}"
     group: "${EVENT_GROUP_ID:spot-monitor-event-dev}"
   read_timeout: "5s"
-  buffer_size: ${EVENT_BATCH_SIZE:50}
+  buffer_size: ${EVENT_BATCH_SIZE:200}
   parallelism: ${EVENT_PERSIST_PARALLELISM:3}
   print_invalid_event: false
 
@@ -276,7 +276,7 @@ metric-persist:
     topics: "${METRIC_TOPICS:spot-metrics,msp-tracing-metrics}"
     group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
   read_timeout: "5s"
-  buffer_size: ${METRIC_BATCH_SIZE:50}
+  buffer_size: ${METRIC_BATCH_SIZE:200}
   parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
   features:
     generate_meta: true
@@ -354,7 +354,7 @@ span-persist:
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   id_keys: "${SPAN_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
-  buffer_size: ${SPAN_BATCH_SIZE:50}
+  buffer_size: ${SPAN_BATCH_SIZE:200}
   parallelism: ${SPAN_PERSIST_PARALLELISM:3}
   print_invalid_span: false
 
@@ -437,8 +437,8 @@ entity-persist:
     topics: "${ENTITY_TOPICS:spot-entity}"
     group: "${ENTITY_GROUP_ID:spot-monitor-entity-dev}"
   read_timeout: "5s"
-  buffer_size: ${METRIC_BATCH_SIZE:10}
-  parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
+  buffer_size: ${ENTITY_BATCH_SIZE:200}
+  parallelism: ${ENTITY_PERSIST_PARALLELISM:3}
 
 alert-storage:
   input:
