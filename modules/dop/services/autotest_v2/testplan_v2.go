@@ -644,7 +644,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 							},
 							If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
 							SnippetConfig: &pipelineyml.SnippetConfig{
-								Name:   apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(v.ID)),
+								Name:   apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(v.RefSetID)),
 								Source: apistructs.PipelineSourceAutoTest.String(),
 								Labels: map[string]string{
 									apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
