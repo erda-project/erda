@@ -52,10 +52,10 @@ cassandra:
 # span
 elasticsearch@span:
   _enable: ${SPAN_ELASTICSEARCH_ENABLE:false}
-  urls: "${SPAN_ES_URL:http://localhost:9200}"
-  security: ${SPAN_ES_SECURITY_ENABLE:false}
-  username: "${SPAN_ES_SECURITY_USERNAME}"
-  password: "${SPAN_ES_SECURITY_PASSWORD}"
+  urls: "${SPAN_ELASTICSEARCH_URL:http://localhost:9200}"
+  security: ${SPAN_ELASTICSEARCH_SECURITY_ENABLE:false}
+  username: "${SPAN_ELASTICSEARCH_SECURITY_USERNAME}"
+  password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.loader@span:
   _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
