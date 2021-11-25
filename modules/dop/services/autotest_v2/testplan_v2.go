@@ -592,7 +592,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 			return nil, err
 		}
 		setIds = append(setIds, uint64(sceneSetIDInt))
-		isRefSetMap[uint64(sceneSetIDInt)] = isRefSet(conf)
+		isRefSetMap[uint64(sceneSetIDInt)] = conf.Labels[apistructs.LabelIsRefSet]
 	}
 	results, err := svc.ListAutotestScenes(setIds)
 	if err != nil {
@@ -651,7 +651,7 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 									apistructs.LabelSceneSetID:       strconv.Itoa(int(v.RefSetID)),
 									apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
 									apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
-									//apistructs.LabelIsRefSet:         "true",
+									apistructs.LabelIsRefSet:         "true",
 								},
 							},
 							Policy: &pipelineyml.Policy{Type: v.Policy},
