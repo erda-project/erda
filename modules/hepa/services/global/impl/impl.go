@@ -436,7 +436,7 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) (result
 			err = errors.Errorf("get az failed, tenant:%+v", tenant)
 			return
 		}
-		if az.Type == orm.AT_K8S || az.Type == orm.AT_EDAS {
+		if (az.Type == orm.AT_K8S || az.Type == orm.AT_EDAS) && !config.ServerConf.UseAdminEndpoint {
 			err = (*impl.packageBiz).CreateTenantPackage(tenant.Id, session)
 			if err != nil {
 				return

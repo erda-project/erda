@@ -272,11 +272,11 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
 	ingressName := strings.ToLower(name)
-	exist, err := impl.CheckIngressExist(namespace, ingressName)
+	existed, err := impl.CheckIngressExist(namespace, ingressName)
 	if err != nil {
 		return err
 	}
-	if !exist {
+	if !existed {
 		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, ingressName)
 		return nil
 	}
