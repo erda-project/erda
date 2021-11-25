@@ -651,7 +651,7 @@ services:
       http:
         port: 9091
         path: "/info"
-        duration: 120
+        duration: 600
       exec: { }
   streaming:
     labels:
