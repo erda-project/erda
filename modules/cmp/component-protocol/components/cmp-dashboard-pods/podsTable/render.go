@@ -151,11 +151,11 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = p.State.PageNo
-	urlQuery["pageSize"] = p.State.PageSize
-	urlQuery["sorterData"] = p.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = p.State.PageNo
+	query["pageSize"] = p.State.PageSize
+	query["sorterData"] = p.State.Sorter
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
@@ -323,9 +323,10 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			PodName: name,
-			IP:      fields[5],
-			Age:     fields[4],
+			Namespace: namespace,
+			PodName:   name,
+			IP:        fields[5],
+			Age:       fields[4],
 			CPURequests: Multiple{
 				RenderType: "multiple",
 				Direction:  "row",
