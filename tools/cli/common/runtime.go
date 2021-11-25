@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/tools/cli/httputils"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/httputils"
 )
 
 func GetRuntimeDetail(ctx *command.Context, orgId, applicationId int, workspace, runtime string) (
@@ -70,14 +69,14 @@ func GetRuntimeDetail(ctx *command.Context, orgId, applicationId int, workspace,
 	return resp, nil
 }
 
-func GetRuntimeList(ctx *command.Context, orgId, applicationId int, workspace, name string) (
+func GetRuntimeList(ctx *command.Context, orgId, applicationId uint64, workspace, name string) (
 	[]apistructs.RuntimeSummaryDTO, error) {
 	var resp apistructs.RuntimeListResponse
 	var b bytes.Buffer
 
 	req := ctx.Get().Path("/api/runtimes").
-		Header("Org-ID", strconv.Itoa(orgId)).
-		Param("applicationId", strconv.Itoa(applicationId)).
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		Param("applicationId", strconv.FormatUint(applicationId, 10)).
 		Param("workspace", workspace).
 		Param("name", name)
 
@@ -104,17 +103,12 @@ func GetRuntimeList(ctx *command.Context, orgId, applicationId int, workspace, n
 				resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	if len(resp.Data) == 0 {
-		fmt.Printf(format.FormatErrMsg("list", "no runtimes created\n", false))
-		return nil, nil
-	}
-
 	return resp.Data, nil
 }
 
-func DeleteRuntime(ctx *command.Context, orgID, runtimeID int) error {
+func DeleteRuntime(ctx *command.Context, orgID, runtimeID uint64) error {
 	r := ctx.Delete().
-		Header("Org-ID", strconv.Itoa(orgID)).
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
 		Path(fmt.Sprintf("/api/runtimes/%d", runtimeID))
 	resp, err := httputils.DoResp(r)
 	if err != nil {

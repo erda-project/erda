@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
+
+	"github.com/erda-project/erda/apistructs"
 
 	"github.com/pkg/errors"
 
@@ -30,26 +33,34 @@ var RUNTIME = command.Command{
 	Example:   "erda-cli runtime",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "workspace", Doc: "The env workspace of an application", DefaultValue: ""},
 	},
 	Run: RuntimeList,
 }
 
-func RuntimeList(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
+func RuntimeList(ctx *command.Context, noHeaders bool, orgId, applicationId uint64, workspace string) error {
+	if workspace != "" {
+		if !apistructs.WorkSpace(workspace).Valide() {
+			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
+				workspace, apistructs.WorkSpace("").ValideList()))
+		}
+	}
+
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
 
 	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+		orgId = ctx.CurrentOrg.ID
 	}
 
-	if projectId <= 0 {
-		return errors.New("invalid project id")
+	if applicationId <= 0 {
+		return errors.New("invalid application id")
 	}
 
-	list, err := common.GetRuntimeList(ctx, orgId, projectId, "", "")
+	list, err := common.GetRuntimeList(ctx, orgId, applicationId, workspace, "")
 	if err != nil {
 		return err
 	}

@@ -30,23 +30,23 @@ var APPLICATION = command.Command{
 	Example:   "erda-cli application",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
 	},
 	Run: GetApplications,
 }
 
-func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId int) error {
+func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint64) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
+		return errors.New("Invalid organization id")
 	}
 
 	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+		orgId = ctx.CurrentOrg.ID
 	}
 
 	if projectId <= 0 {
-		return errors.New("invalid project id")
+		return errors.New("Invalid project id")
 	}
 
 	list, err := common.GetApplicationList(ctx, orgId, projectId)

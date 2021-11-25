@@ -121,6 +121,8 @@ func flagType(flag command.Flag) string {
 	switch flag.(type) {
 	case command.IntFlag:
 		return "int"
+	case command.Uint64Flag:
+		return "uint64"
 	case command.StringFlag:
 		return "string"
 	case command.BoolFlag:
@@ -241,6 +243,8 @@ func init() {
 	{{$.Name}}Cmd.Flags().BoolVarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
 	{{- else if eq (call $.FlagType $v) "int"}}
 	{{$.Name}}Cmd.Flags().IntVarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
+    {{- else if eq (call $.FlagType $v) "uint64"}}
+	{{$.Name}}Cmd.Flags().Uint64VarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
 	{{- else if eq (call $.FlagType $v) "float64"}}
 	{{$.Name}}Cmd.Flags().Float64VarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
 	{{- else if eq (call $.FlagType $v) "net.IP"}}

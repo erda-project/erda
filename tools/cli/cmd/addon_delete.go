@@ -27,19 +27,19 @@ var ADDONDELETE = command.Command{
 	ShortHelp:  "Delete addon",
 	Example:    "erda-cli addon delete",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "addon-id", Doc: "The id of an addon", DefaultValue: ""},
 	},
 	Run: DeleteAddon,
 }
 
-func DeleteAddon(ctx *command.Context, orgId int, addonId string) error {
+func DeleteAddon(ctx *command.Context, orgId uint64, addonId string) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
 		return errors.New("invalid org id")
 	}
 
 	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+		orgId = ctx.CurrentOrg.ID
 	}
 
 	err := common.DeleteAddon(ctx, orgId, addonId)

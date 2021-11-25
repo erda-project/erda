@@ -63,14 +63,14 @@ import (
 //}
 
 // TODO paging
-func GetAddonList(ctx *command.Context, orgId, projectId int) (apistructs.AddonListResponse, error) {
+func GetAddonList(ctx *command.Context, orgId, projectId uint64) (apistructs.AddonListResponse, error) {
 	var resp apistructs.AddonListResponse
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/addons").
-		Header("Org-ID", strconv.Itoa(orgId)).
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
 		Param("type", "project").
-		Param("value", strconv.Itoa(projectId)).
+		Param("value", strconv.FormatUint(projectId, 10)).
 		Do().Body(&b)
 	if err != nil {
 		return apistructs.AddonListResponse{}, fmt.Errorf(
@@ -98,9 +98,9 @@ func GetAddonList(ctx *command.Context, orgId, projectId int) (apistructs.AddonL
 	return resp, nil
 }
 
-func DeleteAddon(ctx *command.Context, orgID int, addonID string) error {
+func DeleteAddon(ctx *command.Context, orgID uint64, addonID string) error {
 	r := ctx.Delete().
-		Header("Org-ID", strconv.Itoa(orgID)).
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
 		Path(fmt.Sprintf("/api/addons/%s", addonID))
 	resp, err := httputils.DoResp(r)
 	if err != nil {

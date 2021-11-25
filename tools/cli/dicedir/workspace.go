@@ -99,7 +99,7 @@ func GetWorkspaceInfoFromErdaRepo(erdaRepo string) (org, project, app string, er
 	}
 	// <org>/dop/<project>/<app>
 	paths := strings.Split(u.Path, "/")
-	if len(paths) != 5 {
+	if len(paths) != 5 || paths[2] != "dop" {
 		return WorkspaceInfo{}, errors.New(
 			fmt.Sprintf("Invalid Erda git repository: %s", newStr))
 	}

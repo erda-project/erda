@@ -61,13 +61,13 @@ func GetApplicationDetail(ctx *command.Context, orgId, projectId, applicationId 
 }
 
 // TODO paging
-func GetApplicationList(ctx *command.Context, orgId, projectId int) ([]apistructs.ApplicationDTO, error) {
+func GetApplicationList(ctx *command.Context, orgId, projectId uint64) ([]apistructs.ApplicationDTO, error) {
 	var resp apistructs.ApplicationListResponse
 	var b bytes.Buffer
 
 	response, err := ctx.Get().Path("/api/applications").
-		Header("Org-ID", strconv.Itoa(orgId)).
-		Param("projectId", strconv.Itoa(projectId)).
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		Param("projectId", strconv.FormatUint(projectId, 10)).
 		Param("pageSize", "200").Do().Body(&b)
 	if err != nil {
 		return nil, fmt.Errorf(

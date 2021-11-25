@@ -37,7 +37,7 @@ var PROJECT = command.Command{
 
 func GetProjects(ctx *command.Context, noHeaders bool, orgId int) error {
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
+		return errors.New("Invalid organization id")
 	}
 
 	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
