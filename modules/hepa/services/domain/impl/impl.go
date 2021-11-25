@@ -515,7 +515,8 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(orgId string, runtimeSer
 		return "", err
 	}
 	needRelatePackage := true
-	if az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS {
+
+	if config.ServerConf.UseAdminEndpoint || (az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS) {
 		needRelatePackage = false
 	}
 	// add relation package domain
