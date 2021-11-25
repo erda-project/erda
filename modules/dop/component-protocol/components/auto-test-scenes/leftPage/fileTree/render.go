@@ -121,6 +121,9 @@ func (i *ComponentFileTree) onClickFolderTable() error {
 	i.State.IsClickFolderTable = false
 	i.State.IsClickScene = true
 	id := i.gsHelper.GetFileTreeSceneID()
+	if id == 0 {
+		return nil
+	}
 
 	var req apistructs.AutotestSceneRequest
 	req.SceneID = id
