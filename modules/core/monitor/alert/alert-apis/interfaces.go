@@ -133,8 +133,8 @@ func (p *provider) CustomizeMetrics(lang i18n.LanguageCodes, scope, scopeID stri
 	return p.a.CustomizeMetrics(lang, scope, scopeID, names)
 }
 
-func (p *provider) NotifyTargetsKeys(lang i18n.LanguageCodes, orgId string) []*pb.DisplayKey {
-	return p.a.NotifyTargetsKeys(lang, orgId)
+func (p *provider) NotifyTargetsKeys(lang i18n.LanguageCodes, config map[string]bool) []*pb.DisplayKey {
+	return p.a.NotifyTargetsKeys(lang, config)
 }
 
 func (p *provider) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, int, error) {

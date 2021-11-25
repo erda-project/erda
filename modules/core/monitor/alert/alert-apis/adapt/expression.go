@@ -195,17 +195,23 @@ func (a *Adapt) AggregatorKeysSet() map[string]bool {
 }
 
 // NotifyTargetsKeys .
-func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, orgId string) []*pb.DisplayKey {
+func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, config map[string]bool) []*pb.DisplayKey {
 	var keys []*pb.DisplayKey
 	for _, item := range notifyTargets {
-
-		if item == "vms" || item == "sms" {
-			config, err := a.bdl.GetNotifyConfig(orgId, "")
-			if err != nil {
+		if item == "sms" || item == "dingtalk_work_notice" {
+			if config == nil || len(config) == 0 {
 				continue
 			}
-			if !config.Config.EnableMS {
-				continue
+			if item == "sms" {
+				ok := config["short_message"]
+				if !ok {
+					continue
+				}
+			} else {
+				ok := config["dingtalk_work_notice"]
+				if !ok {
+					continue
+				}
 			}
 		}
 		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
