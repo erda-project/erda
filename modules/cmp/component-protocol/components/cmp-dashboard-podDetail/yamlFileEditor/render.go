@@ -21,8 +21,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -114,11 +113,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 		return err
 	}
 
-	pod := &corev1.Pod{}
-	err = cli.CRClient.Get(f.ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      name,
-	}, pod)
+	pod, err := cli.ClientSet.CoreV1().Pods(namespace).Get(f.ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Errorf("failed to get pod %s:%s, %v", namespace, name, err)
 	}
