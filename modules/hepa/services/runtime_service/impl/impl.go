@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
+	"github.com/erda-project/erda/modules/hepa/config"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/k8s"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
@@ -235,7 +236,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 	if err != nil {
 		return
 	}
-	isK8S = azInfo.Type == orm.AT_K8S || azInfo.Type == orm.AT_EDAS
+	isK8S = (azInfo.Type == orm.AT_K8S || azInfo.Type == orm.AT_EDAS) && !config.ServerConf.UseAdminEndpoint
 	kongInfo, err = impl.kongDb.GetByAny(&orm.GatewayKongInfo{
 		Az: reqDto.ClusterName,
 	})
