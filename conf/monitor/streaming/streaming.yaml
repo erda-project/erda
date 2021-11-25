@@ -437,8 +437,8 @@ entity-persist:
     topics: "${ENTITY_TOPICS:spot-entity}"
     group: "${ENTITY_GROUP_ID:spot-monitor-entity-dev}"
   read_timeout: "5s"
-  buffer_size: ${METRIC_BATCH_SIZE:200}
-  parallelism: ${MERTIC_PERSIST_PARALLELISM:3}
+  buffer_size: ${ENTITY_BATCH_SIZE:200}
+  parallelism: ${ENTITY_PERSIST_PARALLELISM:3}
 
 alert-storage:
   input:
