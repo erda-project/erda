@@ -73,6 +73,7 @@ type Command struct {
 
 type CommandState struct {
 	Params map[string]string `json:"params"`
+	Query  map[string]string `json:"query,omitempty"`
 }
 
 type Tag struct {
