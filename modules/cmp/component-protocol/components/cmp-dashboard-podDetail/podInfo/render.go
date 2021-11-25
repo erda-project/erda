@@ -118,13 +118,13 @@ func (podInfo *PodInfo) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
-func (podInfo *PodInfo) Transfer(c *cptype.Component) {
-	c.Props = podInfo.Props
-	c.Data = map[string]interface{}{}
+func (podInfo *PodInfo) Transfer(component *cptype.Component) {
+	component.Props = podInfo.Props
+	component.Data = map[string]interface{}{}
 	for k, v := range podInfo.Data {
-		c.Data[k] = v
+		component.Data[k] = v
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"clusterName": podInfo.State.ClusterName,
 		"podId":       podInfo.State.PodID,
 	}
@@ -174,9 +174,14 @@ func (podInfo *PodInfo) getProps(pod data.Object, workloadId string) Props {
 						Command: Command{
 							Key:    "goto",
 							Target: "cmpClustersNodeDetail",
-							State: CommandState{Params: map[string]string{
-								"nodeId": pod.String("spec", "nodeName"),
-							}},
+							State: CommandState{
+								Params: map[string]string{
+									"nodeId": pod.String("spec", "nodeName"),
+								},
+								Query: map[string]string{
+									"nodeIP": pod.String("status", "hostIP"),
+								},
+							},
 							JumpOut: true,
 						},
 					},
