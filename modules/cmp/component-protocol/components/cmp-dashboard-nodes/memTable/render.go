@@ -141,7 +141,7 @@ func (mt *MemInfoTable) GetProps() map[string]interface{} {
 			{DataIndex: "IP", Title: mt.SDK.I18n("ip"), Sortable: true},
 			{DataIndex: "Role", Title: "Role", Sortable: true},
 			{DataIndex: "Version", Title: mt.SDK.I18n("version"), Sortable: true},
-			{DataIndex: "Operate", Title: mt.SDK.I18n("podsList"), Fixed: "right"},
+			{DataIndex: "Operate", Title: mt.SDK.I18n("operate"), Fixed: "right"},
 		},
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
