@@ -70,6 +70,7 @@ type Item struct {
 	ID                string   `json:"id,omitempty"`
 	Status            Status   `json:"status"`
 	Name              Multiple `json:"name"`
+	Namespace         string   `json:"namespace,omitempty"`
 	PodName           string   `json:"podName,omitempty"`
 	IP                string   `json:"ip,omitempty"`
 	Age               string   `json:"age,omitempty"`
