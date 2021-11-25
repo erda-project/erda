@@ -18,6 +18,7 @@ package cmp
 import (
 	"context"
 	"flag"
+	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
@@ -188,6 +189,11 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	}
 	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
+	server.Router().Path("/debug/pprof").HandlerFunc(pprof.Index)
+	server.Router().Path("/debug/pprof/cmdline").HandlerFunc(pprof.Cmdline)
+	server.Router().Path("/debug/pprof/profile").HandlerFunc(pprof.Profile)
+	server.Router().Path("/debug/pprof/symbol").HandlerFunc(pprof.Symbol)
+	server.Router().Path("/debug/pprof/trace").HandlerFunc(pprof.Trace)
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
