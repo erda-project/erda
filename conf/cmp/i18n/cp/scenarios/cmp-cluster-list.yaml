@@ -1,7 +1,7 @@
 zh:
-  Rate: 分配率
-  Distribution: 已分配
-  Quota: 配额
+  Rate: 使用率
+  Used: 已使用
+  Limit: 限额
   Disk: 磁盘
   Memory: 内存
   manage type: 管理方式
