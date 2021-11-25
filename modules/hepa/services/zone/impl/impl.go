@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/modules/hepa/common"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
+	gconfig "github.com/erda-project/erda/modules/hepa/config"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/k8s"
 	"github.com/erda-project/erda/modules/hepa/kong"
@@ -423,7 +424,7 @@ func (impl GatewayZoneServiceImpl) CreateZone(config zone.ZoneConfig, session ..
 	if az == nil {
 		return nil, errors.New("find cluster failed")
 	}
-	if az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS {
+	if (az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS) || gconfig.ServerConf.UseAdminEndpoint {
 		return zone, nil
 	}
 	if config.ZoneRoute == nil {
@@ -476,7 +477,7 @@ func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route zone.Zon
 	if err != nil {
 		return false, err
 	}
-	if az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS {
+	if (az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS) || gconfig.ServerConf.UseAdminEndpoint {
 		return false, errors.Errorf("clusterType:%s, not support api route config", az.Type)
 	}
 	adapter, err := k8s.NewAdapter(zone.DiceClusterName)
