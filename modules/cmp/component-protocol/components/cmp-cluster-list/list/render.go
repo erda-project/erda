@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-cluster-list/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -62,8 +64,8 @@ func (l *List) Init(ctx servicehub.Context) error {
 
 func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	var (
-		err  error
-		data map[string][]DataItem
+		err error
+		d   map[string][]DataItem
 	)
 
 	l.SDK = cputil.SDK(ctx)
@@ -79,11 +81,11 @@ func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		return nil
 	}
 
-	data, err = l.GetData(ctx)
+	d, err = l.GetData(ctx)
 	if err != nil {
 		return err
 	}
-	l.Data = data
+	l.Data = d
 	err = l.SetComponentValue(c)
 	if err != nil {
 		return err
@@ -98,12 +100,17 @@ func (l *List) GetMetrics(ctx context.Context, clusterName string) map[string]*m
 		OrgId:   l.SDK.Identity.OrgID,
 		Cluster: clusterName,
 		Kind:    metrics.Node,
-		Type:    metrics.Disk,
 	}
 	metricsData, err := metricsServer.NodeMetrics(ctx, req)
 	if err != nil {
 		logrus.Error(err)
 		return nil
+	}
+	if metricsData == nil || len(metricsData) == 0 {
+		obj, _, _ := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, metrics.NodeAll))
+		if obj != nil {
+			metricsData = obj[0].Value().(map[string]*metrics.MetricsData)
+		}
 	}
 	return metricsData
 }
@@ -254,11 +261,12 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 		clusters []apistructs.ClusterInfo
 		nodes    []data.Object
 	)
-	//orgId, err := strconv.ParseUint(, 10, 64)
-	//if err != nil {
-	//	logrus.Errorf("org id parse err :%v", err)
-	//}
-	clusters, err = l.Bdl.ListClusters("")
+	orgId, err := strconv.ParseUint(l.SDK.Identity.OrgID, 10, 64)
+	if err != nil {
+		logrus.Errorf("org id parse err :%v", err)
+	}
+	logrus.Infof("cluster start get data")
+	clusters, err = l.Bdl.ListClusters("", orgId)
 	if err != nil {
 		return nil, err
 	}
@@ -274,6 +282,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 		clusterInfos[clusters[i].Name] = &ClusterInfoDetail{}
 	}
 	go func() {
+		logrus.Infof("get nodes start")
 		for i := 0; i < len(clusters); i++ {
 			nodes, err = l.GetNodes(clusters[i].Name)
 			usedData := res[clusters[i].Name]
@@ -318,6 +327,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 		wg.Done()
 	}()
 	go func() {
+		logrus.Infof("start query cluster info")
 		for _, c := range clusters {
 			if ci, err := l.Bdl.QueryClusterInfo(c.Name); err != nil {
 				errStr := fmt.Sprintf("failed to queryclusterinfo: %v, cluster: %v", err, c.Name)
@@ -356,10 +366,12 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 				clusterInfos[c.Name].RawStatus = statusStr
 			}
 		}
+		logrus.Infof("query cluster info finished")
 		wg.Done()
 	}()
 	wg.Wait()
 	di := make([]DataItem, 0)
+	logrus.Infof("start set data")
 	for _, c := range clusters {
 		var bgImg = ""
 		if c.Type == "k8s" {
@@ -383,6 +395,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 
 	d := make(map[string][]DataItem)
 	d["list"] = di
+	logrus.Infof("cluster get data finished")
 	return d, nil
 }
 

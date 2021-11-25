@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -122,10 +123,10 @@ type RowItem struct {
 	Role    Role        `json:"Role,omitempty"`
 	Version string      `json:"Version,omitempty"`
 	//
-	Distribution     Distribution `json:"Distribution,omitempty"`
-	Usage            Distribution `json:"Usage,omitempty"`
-	DistributionRate string       `json:"DistributionRate,omitempty"`
-	Operate          Operate      `json:"Operate,omitempty"`
+	Distribution     Distribution     `json:"Distribution,omitempty"`
+	Usage            Distribution     `json:"Usage,omitempty"`
+	DistributionRate DistributionRate `json:"DistributionRate,omitempty"`
+	Operate          Operate          `json:"Operate,omitempty"`
 	// batchOperations for json
 	BatchOperations []string `json:"batchOperations,omitempty"`
 }
@@ -223,6 +224,12 @@ type Distribution struct {
 	Tip    string `json:"tip,omitempty"`
 }
 
+type DistributionRate struct {
+	RenderType        string  `json:"renderType,omitempty"`
+	Value             string  `json:"value"`
+	DistributionValue float64 `json:"distributionValue"`
+}
+
 type DistributionValue struct {
 	Text    string `json:"text"`
 	Percent string `json:"percent"`
@@ -310,14 +317,15 @@ func (t *Table) GetDistributionValue(req, total float64, resourceType TableType)
 	}
 }
 
-func (t *Table) GetDistributionRate(allocate, request float64, resourceType TableType) string {
+func (t *Table) GetDistributionRate(allocate, request float64, resourceType TableType) DistributionRate {
 	rate := allocate / request
+	rate, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", rate), 64)
 	if rate <= 0.4 {
-		return t.SDK.I18n("Low")
+		return DistributionRate{RenderType: "text", Value: t.SDK.I18n("Low"), DistributionValue: rate}
 	} else if rate <= 0.8 {
-		return t.SDK.I18n("Middle")
+		return DistributionRate{RenderType: "text", Value: t.SDK.I18n("Middle"), DistributionValue: rate}
 	} else {
-		return t.SDK.I18n("High")
+		return DistributionRate{RenderType: "text", Value: t.SDK.I18n("High"), DistributionValue: rate}
 	}
 }
 
@@ -421,6 +429,8 @@ func (t *Table) RenderList(component *cptype.Component, tableType TableType, gs 
 			SortByRole(items, sortColumn, asc)
 		case reflect.TypeOf(Distribution{}):
 			SortByDistribution(items, sortColumn, asc)
+		case reflect.TypeOf(DistributionRate{}):
+			SortByDistributionRate(items, sortColumn, asc)
 		case reflect.TypeOf(SteveStatus{}):
 			SortByStatus(items, sortColumn, asc)
 		default:
@@ -807,6 +817,20 @@ func SortByDistribution(data []RowItem, sortColumn string, ascend bool) {
 		b := reflect.ValueOf(data[j])
 		aValue := cast.ToFloat64(a.FieldByName(sortColumn).FieldByName("Value").String())
 		bValue := cast.ToFloat64(b.FieldByName(sortColumn).FieldByName("Value").String())
+		if ascend {
+			return aValue < bValue
+		}
+		return aValue > bValue
+	})
+}
+
+// SortByDistributionRate sort by percent
+func SortByDistributionRate(data []RowItem, sortColumn string, ascend bool) {
+	sort.Slice(data, func(i, j int) bool {
+		a := reflect.ValueOf(data[i])
+		b := reflect.ValueOf(data[j])
+		aValue := a.FieldByName(sortColumn).FieldByName("DistributionValue").Float()
+		bValue := b.FieldByName(sortColumn).FieldByName("DistributionValue").Float()
 		if ascend {
 			return aValue < bValue
 		}
