@@ -21,10 +21,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	apps "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	"k8s.io/api/batch/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -118,11 +115,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	var workload interface{}
 	switch kind {
 	case string(apistructs.K8SDeployment):
-		deploy := &apps.Deployment{}
-		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, deploy)
+		deploy, err := cli.ClientSet.AppsV1().Deployments(namespace).Get(f.ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return errors.Errorf("failed to get deployment %s:%s, %v", namespace, name, err)
 		}
@@ -135,11 +128,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 		}
 		workload = deploy
 	case string(apistructs.K8SStatefulSet):
-		sts := &apps.StatefulSet{}
-		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, sts)
+		sts, err := cli.ClientSet.AppsV1().StatefulSets(namespace).Get(f.ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return errors.Errorf("failed to get statefulSet %s:%s, %v", namespace, name, err)
 		}
@@ -152,11 +141,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 		}
 		workload = sts
 	case string(apistructs.K8SDaemonSet):
-		ds := &apps.DaemonSet{}
-		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, ds)
+		ds, err := cli.ClientSet.AppsV1().DaemonSets(namespace).Get(f.ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return errors.Errorf("failed to get daemonSet %s:%s, %v", namespace, name, err)
 		}
@@ -169,11 +154,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 		}
 		workload = ds
 	case string(apistructs.K8SJob):
-		job := &batchv1.Job{}
-		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, job)
+		job, err := cli.ClientSet.BatchV1().Jobs(namespace).Get(f.ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return errors.Errorf("failed to get job %s:%s, %v", namespace, name, err)
 		}
@@ -186,11 +167,7 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 		}
 		workload = job
 	case string(apistructs.K8SCronJob):
-		cj := &v1beta1.CronJob{}
-		err = cli.CRClient.Get(f.ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, cj)
+		cj, err := cli.ClientSet.BatchV1beta1().CronJobs(namespace).Get(f.ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return errors.Errorf("failed to get cronJob %s:%s, %v", namespace, name, err)
 		}
