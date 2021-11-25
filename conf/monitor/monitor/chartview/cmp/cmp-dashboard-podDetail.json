@@ -463,7 +463,7 @@
                     "en": "Pod Disk Read Rate"
                   }
                 },
-                "expr": "diff(blk_read_bytes)",
+                "expr": "diffps(blk_read_bytes)",
                 "key": "valueCq0Ce85A",
                 "type": "expr",
                 "unit": {
@@ -479,7 +479,7 @@
                     "en": "Pod Disk Write Rate"
                   }
                 },
-                "expr": "diff(blk_write_bytes)",
+                "expr": "diffps(blk_write_bytes)",
                 "key": "valuevOuu8blw",
                 "type": "expr",
                 "unit": {
@@ -526,11 +526,11 @@
               },
               {
                 "alias": "valueCq0Ce85A",
-                "expr": "diff(blk_read_bytes)"
+                "expr": "diffps(blk_read_bytes)"
               },
               {
                 "alias": "valuevOuu8blw",
-                "expr": "diff(blk_write_bytes)"
+                "expr": "diffps(blk_write_bytes)"
               }
             ],
             "where": [
@@ -663,7 +663,7 @@
                   "zh": "网络接收速率",
                   "en": "Network Receive Rate"
                 },
-                "expr": "diff(rx_bytes)",
+                "expr": "diffps(rx_bytes)",
                 "key": "valuebam6F5zp",
                 "type": "expr",
                 "unit": {
@@ -677,7 +677,7 @@
                   "zh": "网络发送速率",
                   "en": "Network Send Rate"
                 },
-                "expr": "diff(tx_bytes)",
+                "expr": "diffps(tx_bytes)",
                 "key": "valueHD4wKjny",
                 "type": "expr",
                 "unit": {
@@ -724,11 +724,11 @@
               },
               {
                 "alias": "valuebam6F5zp",
-                "expr": "diff(rx_bytes)"
+                "expr": "diffps(rx_bytes)"
               },
               {
                 "alias": "valueHD4wKjny",
-                "expr": "diff(tx_bytes)"
+                "expr": "diffps(tx_bytes)"
               }
             ],
             "where": [
