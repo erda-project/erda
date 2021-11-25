@@ -323,5 +323,5 @@ monitor-monitoring:
     log: ${MONITOR_MONITORING_LOG_SYNC_INTERVAL:30m}
 
 grpc-client@erda.core.services.notify.channel:
-  addr: "${CORE_SERVICES_GRPC_ADDR:core-service:9537}"
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.notify.channel-client:
