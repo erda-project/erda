@@ -303,8 +303,8 @@ func initScene(scene apistructs.AutoTestScene, setId int) Scene {
 	s.Operations["click"] = click
 	if scene.RefSetID <= 0 {
 		s.Operations["editScene"] = edit
+		s.Operations["copyScene"] = copy
 	}
-	s.Operations["copyScene"] = copy
 
 	var deleteOperation = DeleteOperation{
 		Key:     "DeleteScene",
