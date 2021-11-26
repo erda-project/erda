@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/leftPage/fileTree"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
@@ -40,6 +41,7 @@ func (a *ComponentFileFormModal) Render(ctx context.Context, c *cptype.Component
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	a.sdk = cputil.SDK(ctx)
 	a.atTestPlan = ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
+	a.gsHelper = gshelper.NewGSHelper(gs)
 	err = a.unmarshal(c)
 	if err != nil {
 		return err
@@ -357,7 +359,7 @@ func (a *ComponentFileFormModal) GetSceneSet() error {
 }
 
 func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
-	id := a.State.SceneId
+	id := a.gsHelper.GetFileTreeSceneID()
 	req := apistructs.AutotestSceneRequest{
 		SceneID: id,
 	}
@@ -502,7 +504,7 @@ func (a *ComponentFileFormModal) UpdateSceneSet(inParams fileTree.InParams) erro
 
 func (a *ComponentFileFormModal) UpdateScene(inParams fileTree.InParams) error {
 	formData := a.State.FormData
-	id := a.State.SceneId
+	id := a.gsHelper.GetFileTreeSceneID()
 	req := apistructs.AutotestSceneSceneUpdateRequest{
 		Name:        formData.Name,
 		Description: formData.Description,

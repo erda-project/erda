@@ -145,6 +145,7 @@ func (s *SceneStage) initFromProtocol(ctx context.Context, c *cptype.Component, 
 	s.State.Visible = false
 	s.State.ActionType = ""
 	s.State.IsAddParallel = false
+	s.State.IsClickFolderTableRow = false
 	return nil
 }
 
