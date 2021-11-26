@@ -216,6 +216,7 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 					d = &MetricsData{
 						Used: row.Values[2].GetNumberValue(),
 					}
+					logrus.Info(k, "=====", d.Used)
 					SetCache(k, d)
 					res[k] = d
 				}
