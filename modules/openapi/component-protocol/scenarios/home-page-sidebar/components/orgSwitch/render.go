@@ -176,13 +176,19 @@ func RenItem(org apistructs.OrgDTO) MenuItem {
 }
 
 func (this *OrgSwitch) RenderList() error {
+	org, err := this.ctxBdl.Bdl.GetDopOrg(this.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+
 	identity := apistructs.IdentityInfo{UserID: this.ctxBdl.Identity.UserID}
 	req := &apistructs.OrgSearchRequest{
 		IdentityInfo: identity,
 		PageSize:     DefaultPageSize,
-		OrgID:        this.ctxBdl.Identity.OrgID,
+		Org:          org.Name,
 	}
-	pagingOrgDTO, err := this.ctxBdl.Bdl.ListOrgs(req, req.OrgID)
+
+	pagingOrgDTO, err := this.ctxBdl.Bdl.ListOrgs(req, "")
 	if err != nil {
 		return err
 	}
