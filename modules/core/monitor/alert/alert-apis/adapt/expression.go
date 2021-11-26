@@ -206,6 +206,7 @@ func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, config map[string]boo
 	for item := range config {
 		if item == shortMessage {
 			keys = append(keys, &pb.DisplayKey{Key: SMS, Display: a.t.Text(code, SMS)})
+			continue
 		}
 		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 	}
