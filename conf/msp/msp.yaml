@@ -82,7 +82,6 @@ elasticsearch.index.retention-strategy@span:
 elasticsearch.index.cleaner@span:
   _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
   check_interval: "30m"
-  print_onluy: true
   disk_clean:
     enable: ${SPAN_DISK_CLEAN_ENABLE:true}
     check_interval: "1m"
