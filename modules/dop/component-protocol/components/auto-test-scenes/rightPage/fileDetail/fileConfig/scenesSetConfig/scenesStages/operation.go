@@ -254,6 +254,7 @@ func RenderEdit(s *SceneStage) error {
 	s.State.Visible = true
 	s.State.SceneID = meta.ID
 	s.State.SceneSetKey = s.gsHelper.GetGlobalSelectedSetID()
+	s.gsHelper.SetFileTreeSceneID(s.State.SceneID)
 	return nil
 }
 
