@@ -77,6 +77,12 @@ const (
 	HostIP        = "host_ip"
 )
 
+const (
+	SMS                = "sms"
+	shortMessage       = "short_message"
+	dingtalkWorkNotice = "dingtalk_work_notice"
+)
+
 type (
 	// DisplayKey .
 	DisplayKey struct {
@@ -195,18 +201,11 @@ func (a *Adapt) AggregatorKeysSet() map[string]bool {
 }
 
 // NotifyTargetsKeys .
-func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, orgId string) []*pb.DisplayKey {
+func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, config map[string]bool) []*pb.DisplayKey {
 	var keys []*pb.DisplayKey
-	for _, item := range notifyTargets {
-
-		if item == "vms" || item == "sms" {
-			config, err := a.bdl.GetNotifyConfig(orgId, "")
-			if err != nil {
-				continue
-			}
-			if !config.Config.EnableMS {
-				continue
-			}
+	for item := range config {
+		if item == shortMessage {
+			keys = append(keys, &pb.DisplayKey{Key: SMS, Display: a.t.Text(code, SMS)})
 		}
 		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 	}

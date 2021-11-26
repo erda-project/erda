@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	channelpb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/utils"
@@ -183,7 +184,12 @@ func (m *alertService) QueryCustomizeNotifyTarget(ctx context.Context, request *
 		Data: &pb.QueryCustomizeNotifyTargetData{},
 	}
 	lang := apis.Language(ctx)
-	data := m.p.a.NotifyTargetsKeys(lang, apis.GetOrgID(ctx))
+	context := utils.NewContextWithHeader(ctx)
+	config, err := m.p.NotifyChannel.GetNotifyChannelsEnabled(context, &channelpb.GetNotifyChannelsEnabledRequest{})
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	data := m.p.a.NotifyTargetsKeys(lang, config.Data)
 	result.Data.Targets = data
 	return result, nil
 }
@@ -193,8 +199,12 @@ func (m *alertService) QueryOrgCustomizeNotifyTarget(ctx context.Context, reques
 		Data: &pb.QueryCustomizeNotifyTargetData{},
 	}
 	lang := apis.Language(ctx)
-	orgID := apis.GetOrgID(ctx)
-	data := m.p.a.NotifyTargetsKeys(lang, orgID)
+	context := utils.NewContextWithHeader(ctx)
+	config, err := m.p.NotifyChannel.GetNotifyChannelsEnabled(context, &channelpb.GetNotifyChannelsEnabledRequest{})
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	data := m.p.a.NotifyTargetsKeys(lang, config.Data)
 	result.Data.Targets = data
 	return result, nil
 }
