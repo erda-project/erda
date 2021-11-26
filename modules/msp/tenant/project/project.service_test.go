@@ -660,12 +660,14 @@ func (m *mockInfluxQl) QueryWithInfluxFormat(context.Context, *metricpb.QueryWit
 							&metricpb.Row{
 								Values: []*structpb.Value{
 									structpb.NewStringValue("1"),
+									structpb.NewStringValue("1"),
 									structpb.NewNumberValue(10),
 									structpb.NewNumberValue(100),
 								},
 							},
 							&metricpb.Row{
 								Values: []*structpb.Value{
+									structpb.NewStringValue("2"),
 									structpb.NewStringValue("2"),
 									structpb.NewNumberValue(101),
 									structpb.NewNumberValue(1001),
