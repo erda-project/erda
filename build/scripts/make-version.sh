@@ -4,6 +4,9 @@
 # 1. the environment variable `VERSION`
 # 2. take tag name when the HEAD matches any tag
 # 3. take x.x when the HEAD matches branch named as release/x.x
+#    cases:
+#     a) release/1.0 -> 1.0-beta
+#     b) release/1.0-beta2 -> 1.0-beta2
 # 4. VERSION file content which indicates the next version
 
 set -o errexit
