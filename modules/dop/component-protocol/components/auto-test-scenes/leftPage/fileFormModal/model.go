@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -30,6 +31,7 @@ type ComponentFileFormModal struct {
 	Props      Props                  `json:"props"`
 	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations"`
+	gsHelper   *gshelper.GSHelper
 }
 
 type State struct {
