@@ -65,7 +65,7 @@
         },
         {
           "span_id": {
-            "match": "trace_id",
+            "match": "span_id",
             "match_mapping_type": "string",
             "mapping": {
               "type": "keyword",
@@ -75,7 +75,7 @@
         },
         {
           "parent_span_id": {
-            "match": "trace_id",
+            "match": "parent_span_id",
             "match_mapping_type": "string",
             "mapping": {
               "type": "keyword",
@@ -85,7 +85,7 @@
         },
         {
           "operation_name": {
-            "match": "trace_id",
+            "match": "operation_name",
             "match_mapping_type": "string",
             "mapping": {
               "type": "keyword",
