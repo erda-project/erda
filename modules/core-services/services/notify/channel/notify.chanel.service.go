@@ -445,6 +445,10 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
+	targetList := []string{"dingding", "webhook", "email", "mbox", "ticket"}
+	for _, v := range targetList {
+		result.Data[v] = true
+	}
 	return result, nil
 }
 
