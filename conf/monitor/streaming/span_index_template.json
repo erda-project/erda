@@ -13,51 +13,97 @@
     }
   },
   "mappings": {
-    "spans": {
-      "dynamic": "true",
-      "properties": {
-        "trace_id": {
-          "type": "text",
-          "fields": {
-            "raw": {
-              "type": "keyword"
+    "spot": {
+      "date_detection": false,
+      "dynamic_templates": [
+        {
+          "timestamp_nanosecond": {
+            "match": "timestamp",
+            "match_mapping_type": "long",
+            "mapping": {
+              "type": "long"
             }
           }
         },
-        "span_id": {
-          "type": "text",
-          "fields": {
-            "raw": {
-              "type": "keyword"
+        {
+          "timestamp_date_format": {
+            "match": "@timestamp",
+            "match_mapping_type": "long",
+            "mapping": {
+              "type": "date",
+              "format": "epoch_millis"
             }
           }
         },
-        "parent_span_id": {
-          "type": "text",
-          "fields": {
-            "raw": {
-              "type": "keyword"
+        {
+          "start_nanosecond": {
+            "match": "start_time",
+            "match_mapping_type": "long",
+            "mapping": {
+              "type": "long"
             }
           }
         },
-        "operation_name": {
-          "type": "text",
-          "fields": {
-            "raw": {
-              "type": "keyword"
+        {
+          "end_nanosecond": {
+            "match": "end_time",
+            "match_mapping_type": "long",
+            "mapping": {
+              "type": "long"
             }
           }
         },
-        "start_time": {
-          "type": "date"
+        {
+          "trace_id": {
+            "match": "trace_id",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 10240
+            }
+          }
         },
-        "end_time": {
-          "type": "date"
+        {
+          "span_id": {
+            "match": "span_id",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 10240
+            }
+          }
         },
-        "tags": {
-          "type": "object"
+        {
+          "parent_span_id": {
+            "match": "parent_span_id",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 10240
+            }
+          }
+        },
+        {
+          "operation_name": {
+            "match": "operation_name",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 10240
+            }
+          }
+        },
+        {
+          "tags": {
+            "match": "*",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 10240
+            }
+          }
         }
-      }
+      ]
     }
   }
 }
