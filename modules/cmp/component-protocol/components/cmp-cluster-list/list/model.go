@@ -59,11 +59,12 @@ type ExtraContent struct {
 }
 
 type ExtraData struct {
-	Name  string          `json:"name"`
-	Value float64         `json:"value"`
-	Total int             `json:"total"`
-	Color string          `json:"color"`
-	Info  []ExtraDataItem `json:"info"`
+	Name        string          `json:"name"`
+	Value       float64         `json:"value"`
+	CenterLabel string          `json:"centerLabel"`
+	Total       int             `json:"total"`
+	Color       string          `json:"color"`
+	Info        []ExtraDataItem `json:"info"`
 }
 
 type ExtraDataItem struct {
