@@ -93,16 +93,17 @@ type K8SAdapterImpl struct {
 }
 
 const (
-	HEPA_BEGIN          = "###HEPA-AUTO-BEGIN###\n"
-	HEPA_END            = "###HEPA-AUTO-END###\n"
-	SYSTEM_NS           = "kube-system"
-	GATEWAY_SVC_NAME    = "api-gateway"
-	INGRESS_APP_LABEL   = "app.kubernetes.io/name=ingress-nginx"
-	INGRESS_CONFIG_NAME = "nginx-configuration"
-	LOC_SNIPPET_KEY     = "nginx.ingress.kubernetes.io/configuration-snippet"
-	MAIN_SNIPPET_KEY    = "main-snippet"
-	HTTP_SNIPPET_KEY    = "http-snippet"
-	SERVER_SNIPPET_KEY  = "server-snippet"
+	HEPA_BEGIN            = "###HEPA-AUTO-BEGIN###\n"
+	HEPA_END              = "###HEPA-AUTO-END###\n"
+	SYSTEM_NS             = "kube-system"
+	GATEWAY_SVC_NAME      = "api-gateway"
+	INGRESS_APP_LABEL     = "app.kubernetes.io/name=ingress-nginx"
+	INGRESS_APP_LABEL_NEW = "app=ingress-nginx"
+	INGRESS_CONFIG_NAME   = "nginx-configuration"
+	LOC_SNIPPET_KEY       = "nginx.ingress.kubernetes.io/configuration-snippet"
+	MAIN_SNIPPET_KEY      = "main-snippet"
+	HTTP_SNIPPET_KEY      = "http-snippet"
+	SERVER_SNIPPET_KEY    = "server-snippet"
 )
 
 func (impl *K8SAdapterImpl) CountIngressController() (int, error) {
@@ -113,8 +114,17 @@ func (impl *K8SAdapterImpl) CountIngressController() (int, error) {
 		return 0, errors.WithStack(err)
 	}
 	if pods == nil || len(pods.Items) == 0 {
-		logrus.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL)
-		return 1, nil
+		logrus.Warnf("can't find any ingress controllers with label:%s", INGRESS_APP_LABEL)
+		pods, err = impl.client.CoreV1().Pods(SYSTEM_NS).List(context.Background(), metav1.ListOptions{
+			LabelSelector: INGRESS_APP_LABEL_NEW,
+		})
+		if err != nil {
+			return 0, errors.WithStack(err)
+		}
+		if pods == nil || len(pods.Items) == 0 {
+			logrus.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL_NEW)
+			return 1, nil
+		}
 	}
 	return len(pods.Items), nil
 }
@@ -272,11 +282,11 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
 	ingressName := strings.ToLower(name)
-	existed, err := impl.CheckIngressExist(namespace, ingressName)
+	exist, err := impl.CheckIngressExist(namespace, ingressName)
 	if err != nil {
 		return err
 	}
-	if !existed {
+	if !exist {
 		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, ingressName)
 		return nil
 	}
@@ -356,7 +366,7 @@ func (impl *K8SAdapterImpl) setOptionAnnotations(ingress interface{}, options Ro
 func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
 	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
-	exist, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	existIng, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
@@ -381,7 +391,7 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 		log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
 		return false, nil
 	}
-	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
+	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(existIng)
 	if err != nil {
 		return true, err
 	}
