@@ -318,8 +318,15 @@ func (t *Table) GetDistributionValue(req, total float64, resourceType TableType)
 }
 
 func (t *Table) GetDistributionRate(allocate, request float64, resourceType TableType) DistributionRate {
+	if request == 0 {
+		return DistributionRate{RenderType: "text", Value: t.SDK.I18n("None")}
+	}
 	rate := allocate / request
-	rate, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", rate), 64)
+	rate, err := strconv.ParseFloat(fmt.Sprintf("%.2f", rate), 64)
+	if err != nil {
+		logrus.Error(err)
+		return DistributionRate{RenderType: "text", Value: t.SDK.I18n("None")}
+	}
 	if rate <= 0.4 {
 		return DistributionRate{RenderType: "text", Value: t.SDK.I18n("Low"), DistributionValue: rate}
 	} else if rate <= 0.8 {
