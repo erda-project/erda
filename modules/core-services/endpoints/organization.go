@@ -592,14 +592,9 @@ func (e *Endpoints) getOrgPermissions(r *http.Request) (bool, []int64, error) {
 	if userID == "" && r.Header.Get(httputil.InternalHeader) != "" {
 		return true, nil, nil
 	}
-
-	orgIDStr := r.URL.Query().Get("orgId")
-	if orgIDStr == "" {
-		orgIDStr = r.Header.Get("Org-ID")
-	}
-
 	// 操作鉴权, 系统管理员可查询企业
-	if e.member.IsAdmin(userID.String()) && orgIDStr == "" { // 系统管理员可查看所有企业列表
+	// Found that org is passed in the request header, even admin does not query all organizations
+	if e.member.IsAdmin(userID.String()) && (r.URL.Query().Get("org") == "" || r.URL.Query().Get("org") == "-") { // 系统管理员可查看所有企业列表
 		return true, nil, nil
 	} else { // 非系统管理员只能查看有权限的企业列表
 		members, err := e.member.ListByScopeTypeAndUser(apistructs.OrgScope, userID.String())

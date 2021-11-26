@@ -75,7 +75,11 @@ type OrgSearchRequest struct {
 	PageNo   int `query:"pageNo"`
 	PageSize int `query:"pageSize"`
 
-	OrgID string
+	// The header passed by the org front end is used as the admin account to distinguish the management interface and the user interface
+	// In the case of the user interface, the front end will pass org
+	// The management interface admin needs all org so pass-
+	// The backend determines whether the admin account queries all orgs according to whether org has a value
+	Org string `query:"org"`
 	IdentityInfo
 }
 
