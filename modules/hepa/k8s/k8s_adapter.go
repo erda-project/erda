@@ -93,16 +93,17 @@ type K8SAdapterImpl struct {
 }
 
 const (
-	HEPA_BEGIN          = "###HEPA-AUTO-BEGIN###\n"
-	HEPA_END            = "###HEPA-AUTO-END###\n"
-	SYSTEM_NS           = "kube-system"
-	GATEWAY_SVC_NAME    = "api-gateway"
-	INGRESS_APP_LABEL   = "app.kubernetes.io/name=ingress-nginx"
-	INGRESS_CONFIG_NAME = "nginx-configuration"
-	LOC_SNIPPET_KEY     = "nginx.ingress.kubernetes.io/configuration-snippet"
-	MAIN_SNIPPET_KEY    = "main-snippet"
-	HTTP_SNIPPET_KEY    = "http-snippet"
-	SERVER_SNIPPET_KEY  = "server-snippet"
+	HEPA_BEGIN            = "###HEPA-AUTO-BEGIN###\n"
+	HEPA_END              = "###HEPA-AUTO-END###\n"
+	SYSTEM_NS             = "kube-system"
+	GATEWAY_SVC_NAME      = "api-gateway"
+	INGRESS_APP_LABEL     = "app.kubernetes.io/name=ingress-nginx"
+	INGRESS_APP_LABEL_NEW = "app=ingress-nginx"
+	INGRESS_CONFIG_NAME   = "nginx-configuration"
+	LOC_SNIPPET_KEY       = "nginx.ingress.kubernetes.io/configuration-snippet"
+	MAIN_SNIPPET_KEY      = "main-snippet"
+	HTTP_SNIPPET_KEY      = "http-snippet"
+	SERVER_SNIPPET_KEY    = "server-snippet"
 )
 
 func (impl *K8SAdapterImpl) CountIngressController() (int, error) {
@@ -113,8 +114,17 @@ func (impl *K8SAdapterImpl) CountIngressController() (int, error) {
 		return 0, errors.WithStack(err)
 	}
 	if pods == nil || len(pods.Items) == 0 {
-		logrus.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL)
-		return 1, nil
+		logrus.Warnf("can't find any ingress controllers with label:%s", INGRESS_APP_LABEL)
+		pods, err = impl.client.CoreV1().Pods(SYSTEM_NS).List(context.Background(), metav1.ListOptions{
+			LabelSelector: INGRESS_APP_LABEL_NEW,
+		})
+		if err != nil {
+			return 0, errors.WithStack(err)
+		}
+		if pods == nil || len(pods.Items) == 0 {
+			logrus.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL_NEW)
+			return 1, nil
+		}
 	}
 	return len(pods.Items), nil
 }
