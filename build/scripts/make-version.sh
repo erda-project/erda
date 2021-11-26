@@ -4,6 +4,9 @@
 # 1. the environment variable `VERSION`
 # 2. take tag name when the HEAD matches any tag
 # 3. take x.x when the HEAD matches branch named as release/x.x
+#    cases:
+#     a) release/1.0 -> 1.0-beta
+#     b) release/1.0-beta2 -> 1.0-beta2
 # 4. VERSION file content which indicates the next version
 
 set -o errexit
@@ -11,7 +14,7 @@ set -o errexit
 function get_version() {
   [[ -n "${VERSION}" ]] && echo "${VERSION/v/}" && return
   [[ -f VERSION ]] && ver=$(head -n 1 VERSION) || ver=0.0
-  ALPHA=${ver}.0-alpha
+  ALPHA=${ver}-alpha
   HEAD_TAG=$(git tag --points-at HEAD |head -n1)
   # remove prefix v when present
   [[ -n "${HEAD_TAG}" ]] && echo "${HEAD_TAG/v/}" && return
@@ -19,7 +22,11 @@ function get_version() {
   BRANCH_PREFIX=$(git rev-parse --abbrev-ref HEAD)
 
   if [[ "${BRANCH_PREFIX}" =~ release/[[:digit:]]+\.* ]]; then
-    VERSION="${BRANCH_PREFIX//release\//}.0-beta"
+    VERSION=${BRANCH_PREFIX//release\//}
+    # some case branch already have greek version, like: release/1.0-beta2
+    if ! [[ "${BRANCH_PREFIX}" =~ - ]]; then
+      VERSION="${VERSION}-beta"
+    fi
   fi
 
   echo ${VERSION:-${ALPHA}}
