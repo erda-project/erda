@@ -322,18 +322,18 @@ func TestTable_GetScaleValue(t1 *testing.T) {
 			args: args{
 				a:            1024,
 				b:            102400000,
-				resourceType: "text",
+				resourceType: Memory,
 			},
-			want: "1K/102400K",
+			want: "1.0 KiB/100000.0 KiB",
 		},
 		{
 			name: "test1",
 			args: args{
 				a:            1024,
 				b:            1024,
-				resourceType: "text",
+				resourceType: Memory,
 			},
-			want: "1K/1K",
+			want: "1.0 KiB/1.0 KiB",
 		},
 		{
 			name: "test2",
@@ -342,7 +342,7 @@ func TestTable_GetScaleValue(t1 *testing.T) {
 				b:            1024,
 				resourceType: Memory,
 			},
-			want: "2.0K/1.0K",
+			want: "2.0 KiB/1.0 KiB",
 		},
 		{
 			name: "test3",
@@ -389,7 +389,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			want: DistributionRate{
 				RenderType:        "text",
 				Value:             "High",
-				DistributionValue: 0.92,
+				DistributionValue: 0.917,
 			},
 		},
 		{
@@ -403,7 +403,7 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 			want: DistributionRate{
 				RenderType:        "text",
 				Value:             "Middle",
-				DistributionValue: 0.67,
+				DistributionValue: 0.667,
 			},
 		},
 		{

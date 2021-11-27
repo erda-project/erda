@@ -2,13 +2,13 @@ zh:
   name: 名称
   namespace: 命名空间
   status: 状态
-  ip: IP 地址
+  ip: IP
   age: 存活时间
   images: 镜像
   labels: 标签
   annotations: 注释
   project: 项目名称
-  core: 核
+#  core: 核
   viewOrEditYaml: 查看/编辑YAML
   delete: 删除
   confirmDelete: 确定删除？
@@ -33,7 +33,7 @@ zh:
   operate: 操作
   workload: 工作负载
   ready: 就绪
-
+  Role: 角色
 en:
   name: Name
   namespace: Namespace

@@ -41,8 +41,8 @@ zh:
   use: mem 使用率
   addLabel: 添加标签
   nodeDetail: 节点详情
-  distribution: 分配率
-  distributionRate: 分配额使用程度
+  distribution: 分配
+  distributionRate: 分配使用
   dev: 开发环境
   test: 测试环境
   prod: 生产环境
@@ -77,8 +77,7 @@ zh:
   running: 运行中
   waiting: 等待
   terminated: 终止
-  usedRate: 使用率
-  cores: 核
+  usedRate: 使用
   taint: 污点
   none: 无
   NotReady: 未就绪

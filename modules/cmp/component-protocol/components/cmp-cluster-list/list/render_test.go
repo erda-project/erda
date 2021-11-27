@@ -55,60 +55,62 @@ func TestList_GetExtraContent(t *testing.T) {
 				DiskTotal:   10,
 			}},
 			want: ExtraContent{
-				Type:   "PieChart",
-				RowNum: 3,
+				Type: "PieChart",
 				ExtraData: []ExtraData{
 					{
-						Name:  "CPU Rate",
-						Value: 50.000,
-						Total: 100,
-						Color: "green",
+						Name:        "CPU Rate",
+						Value:       50.0,
+						Total:       100,
+						Color:       "green",
+						CenterLabel: "CPU",
 						Info: []ExtraDataItem{
 							{
-								Main: "50.000%",
+								Main: "50.0%",
 								Sub:  "Rate",
 							}, {
-								Main: "1.000core",
+								Main: "1.0 Core",
 								Sub:  "Used",
 							}, {
-								Main: "2.000core",
-								Sub:  "CPU" + "Limit",
+								Main: "2.0 Core",
+								Sub:  "Limit",
 							},
 						},
 					},
 					{
-						Name:  "Memory Rate",
-						Value: 75.000,
-						Total: 100,
-						Color: "green",
+						Name:        "Memory Rate",
+						Value:       75.0,
+						Total:       100,
+						Color:       "green",
+						CenterLabel: "Memory",
 						Info: []ExtraDataItem{
 							{
-								Main: "75.000%",
+								Main: "75.0%",
 								Sub:  "Rate",
 							}, {
-								Main: "3.000",
+								Main: "3.0 B",
 								Sub:  "Used",
 							}, {
-								Main: "4.000",
-								Sub:  "Memory" + "Limit",
+								Main: "4.0 B",
+								Sub:  "Limit",
 							},
 						},
 					},
 					{
-						Name:  "Disk Rate",
-						Value: 90.000,
-						Total: 100,
-						Color: "green",
+						Name:        "Disk Rate",
+						Value:       90.0,
+						Total:       100,
+						Color:       "green",
+						CenterLabel: "Disk",
 						Info: []ExtraDataItem{
 							{
-								Main: "90.000%",
+								Main: "90.0%",
 								Sub:  "Rate",
 							}, {
-								Main: "9.000",
+								Main: "9.0 B",
 								Sub:  "Used",
 							}, {
-								Main: "10.000",
-								Sub:  "Disk" + "Limit",
+								Main: "10.0 B",
+								Sub:  "Limit",
 							},
 						},
 					},
