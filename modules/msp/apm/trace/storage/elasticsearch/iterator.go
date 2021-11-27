@@ -33,7 +33,7 @@ import (
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
 	searchSource := elastic.NewSearchSource()
 	// TODO: range query [start ... end]
-	query := elastic.NewBoolQuery().Must(elastic.NewBoolQuery().Should(elastic.NewTermQuery("trace_id", sel.TraceId)))
+	query := elastic.NewBoolQuery().Must(elastic.NewBoolQuery().Should(elastic.NewTermQuery("trace_id", sel.TraceId), elastic.NewTermQuery("trace_id.raw", sel.TraceId)))
 	return searchSource.Query(query)
 }
 
