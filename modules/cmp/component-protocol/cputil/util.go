@@ -159,19 +159,19 @@ func GetWorkloadAgeAndImage(obj data.Object) (string, string, error) {
 // ResourceToString return resource with unit
 // Only support resource.DecimalSI and resource.BinarySI format
 // Original unit is m (for DecimalSI) or B (for resource.BinarySI)
-// Accurate to 3 decimal places. Zero in suffix will be removed
+// Accurate to 1 decimal places. Zero in suffix will be removed
 func ResourceToString(sdk *cptype.SDK, res float64, format resource.Format) string {
 	switch format {
 	case resource.DecimalSI:
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res/1000, 3), 'f', -1, 64), sdk.I18n("core"))
+		return fmt.Sprintf("%s %s", strconv.FormatFloat(setPrec(res/1000, 1), 'f', -1, 64), sdk.I18n("Core"))
 	case resource.BinarySI:
-		units := []string{"B", "KB", "MB", "GB", "TB"}
+		units := []string{"B", "KiB", "MiB", "GiB", "TiB"}
 		i := 0
 		for res >= 1<<10 && i < len(units)-1 {
 			res /= 1 << 10
 			i++
 		}
-		return fmt.Sprintf("%s%s", strconv.FormatFloat(setPrec(res, 3), 'f', -1, 64), units[i])
+		return fmt.Sprintf("%s %s", strconv.FormatFloat(setPrec(res, 1), 'f', -1, 64), units[i])
 	default:
 		return fmt.Sprintf("%d", int64(res))
 	}

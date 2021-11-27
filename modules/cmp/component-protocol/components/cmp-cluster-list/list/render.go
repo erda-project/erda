@@ -373,10 +373,14 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	logrus.Infof("start set data")
 	for _, c := range clusters {
 		status := ItemStatus{Text: l.SDK.I18n(clusterInfos[c.Name].RawStatus), Status: clusterInfos[c.Name].Status}
+		description := "-"
+		if c.Description != "" {
+			description = c.Description
+		}
 		i := DataItem{
 			ID:            c.ID,
 			Title:         c.Name,
-			Description:   c.Description,
+			Description:   description,
 			PrefixImg:     "cluster",
 			BackgroundImg: l.GetBgImage(c),
 			ExtraInfos:    l.GetExtraInfos(clusterInfos[c.Name]),
@@ -475,71 +479,74 @@ func (l *List) WithMachine(clusterInfo *ClusterInfoDetail) string {
 
 func (l *List) GetExtraContent(res *ResData) ExtraContent {
 	ec := ExtraContent{
-		Type:   "PieChart",
-		RowNum: 3,
+		Type: "PieChart",
+		//RowNum: 3,
 	}
 	cpuRate, memRate, diskRate := 0.0, 0.0, 0.0
 	if res.CpuTotal != 0 {
-		cpuRate, _ = strconv.ParseFloat(fmt.Sprintf("%.3f", res.CpuUsed/res.CpuTotal*100), 64)
+		cpuRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.CpuUsed/res.CpuTotal*100), 64)
 	}
 	if res.MemoryTotal != 0 {
-		memRate, _ = strconv.ParseFloat(fmt.Sprintf("%.3f", res.MemoryUsed/res.MemoryTotal*100), 64)
+		memRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.MemoryUsed/res.MemoryTotal*100), 64)
 	}
 	if res.DiskTotal != 0 {
-		diskRate, _ = strconv.ParseFloat(fmt.Sprintf("%.3f", res.DiskUsed/res.DiskTotal*100), 64)
+		diskRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.DiskUsed/res.DiskTotal*100), 64)
 	}
 	ec.ExtraData = []ExtraData{
 		{
-			Name:  l.SDK.I18n("CPU Rate"),
-			Value: cpuRate,
-			Total: 100,
-			Color: "green",
+			Name:        l.SDK.I18n("CPU Rate"),
+			Value:       cpuRate,
+			Total:       100,
+			Color:       "green",
+			CenterLabel: "CPU",
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.3f%%", cpuRate),
+					Main: fmt.Sprintf("%.1f%%", cpuRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
-					Main: fmt.Sprintf("%.3f", res.CpuUsed) + l.SDK.I18n("core"),
+					Main: fmt.Sprintf("%.1f %s", res.CpuUsed, l.SDK.I18n("Core")),
 					Sub:  l.SDK.I18n("Used"),
 				}, {
-					Main: fmt.Sprintf("%.3f", res.CpuTotal) + l.SDK.I18n("core"),
-					Sub:  "CPU" + l.SDK.I18n("Limit"),
+					Main: fmt.Sprintf("%.1f %s", res.CpuTotal, l.SDK.I18n("Core")),
+					Sub:  l.SDK.I18n("Limit"),
 				},
 			},
 		},
 		{
-			Name:  l.SDK.I18n("Memory Rate"),
-			Value: memRate,
-			Total: 100,
-			Color: "green",
+			Name:        l.SDK.I18n("Memory Rate"),
+			Value:       memRate,
+			Total:       100,
+			Color:       "green",
+			CenterLabel: l.SDK.I18n("Memory"),
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.3f%%", memRate),
+					Main: fmt.Sprintf("%.1f%%", memRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: common.RescaleBinary(res.MemoryUsed),
 					Sub:  l.SDK.I18n("Used"),
 				}, {
 					Main: common.RescaleBinary(res.MemoryTotal),
-					Sub:  l.SDK.I18n("Memory") + l.SDK.I18n("Limit"),
+					Sub:  l.SDK.I18n("Limit"),
 				},
 			},
 		},
 		{
-			Name:  l.SDK.I18n("Disk Rate"),
-			Value: diskRate,
-			Total: 100,
-			Color: "green",
+			Name:        l.SDK.I18n("Disk Rate"),
+			Value:       diskRate,
+			Total:       100,
+			Color:       "green",
+			CenterLabel: l.SDK.I18n("Disk"),
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.3f%%", diskRate),
+					Main: fmt.Sprintf("%.1f%%", diskRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: common.RescaleBinary(res.DiskUsed),
 					Sub:  l.SDK.I18n("Used"),
 				}, {
 					Main: common.RescaleBinary(res.DiskTotal),
-					Sub:  l.SDK.I18n("Disk") + l.SDK.I18n("Limit"),
+					Sub:  l.SDK.I18n("Limit"),
 				},
 			},
 		},

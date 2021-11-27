@@ -156,11 +156,11 @@ func ParseManageType(mc *apistructs.ManageConfig) string {
 }
 
 func RescaleBinary(num float64) string {
-	metrics := []string{"", "K", "M", "G", "T"}
+	metrics := []string{"B", "KiB", "MiB", "GiB", "TiB"}
 	i := 0
 	for num > 1024 && i < len(metrics)-1 {
 		num /= 1024
 		i++
 	}
-	return fmt.Sprintf("%.3f", num) + metrics[i]
+	return fmt.Sprintf("%.1f %s", num, metrics[i])
 }
