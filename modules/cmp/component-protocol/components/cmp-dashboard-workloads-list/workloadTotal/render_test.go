@@ -26,16 +26,17 @@ func TestComponentWorkloadTitle_GenComponentState(t *testing.T) {
 		State: map[string]interface{}{
 			"values": Values{
 				DeploymentsCount: Count{
-					Active: 1,
-					Error:  1,
+					Active:   1,
+					Abnormal: 1,
+					Updating: 1,
 				},
 				DaemonSetCount: Count{
-					Active: 1,
-					Error:  1,
+					Active:   1,
+					Abnormal: 1,
 				},
 				StatefulSetCount: Count{
-					Active: 1,
-					Error:  1,
+					Active:   1,
+					Abnormal: 1,
 				},
 				JobCount: Count{
 					Active:    1,
