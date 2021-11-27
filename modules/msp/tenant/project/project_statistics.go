@@ -85,7 +85,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	}
 	endMillSeconds := time.Now().UnixNano() / int64(time.Millisecond)
 	oneDayAgoMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
-	sevenDayAgoMillSeconds := endMillSeconds - int64(7*24*time.Hour/time.Millisecond)
+	//sevenDayAgoMillSeconds := endMillSeconds - int64(7*24*time.Hour/time.Millisecond)
 
 	projectIdList, _ := structpb.NewList(projects.
 		Select(func(item *pb.Project) interface{} { return item.Id }))
@@ -101,7 +101,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 
 	// get services count and last active time
 	req := &metricpb.QueryWithInfluxFormatRequest{
-		Start: strconv.FormatInt(sevenDayAgoMillSeconds, 10),
+		Start: strconv.FormatInt(oneDayAgoMillSeconds, 10),
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
 			{
