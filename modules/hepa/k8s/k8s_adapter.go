@@ -375,8 +375,8 @@ func (impl *K8SAdapterImpl) setOptionAnnotations(ingress interface{}, options Ro
 
 func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
 	ns := impl.ingressesHelper.Ingresses(namespace)
-	ingressName := strings.ToLower(name)
-	exist, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	ingName := strings.ToLower(name)
+	exist, err := ns.Get(context.Background(), ingName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
@@ -385,20 +385,20 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	if len(options) > 0 {
 		routeOptions = options[0]
 	}
-	ing = impl.newIngress(namespace, ingressName, routes, backend, routeOptions.EnableTLS)
+	ing = impl.newIngress(namespace, ingName, routes, backend, routeOptions.EnableTLS)
 	if k8serrors.IsNotFound(err) {
 		err := impl.setOptionAnnotations(ing, routeOptions)
 		if err != nil {
 			return false, err
 		}
-		log.Debugf("begin create ingress, name:%s, ns:%s", ingressName, namespace)
+		log.Debugf("begin create ingress, name:%s, ns:%s", ingName, namespace)
 
 		_, err = ns.Create(context.Background(), ing, metav1.CreateOptions{})
 		if err != nil {
 			return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
-				ingressName, namespace, err)
+				ingName, namespace, err)
 		}
-		log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
+		log.Infof("new ingress created, name:%s, ns:%s", ingName, namespace)
 		return false, nil
 	}
 	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
@@ -413,13 +413,13 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	if err != nil {
 		return true, err
 	}
-	log.Debugf("begin update ingress, name:%s, ns:%s", ingressName, namespace)
+	log.Debugf("begin update ingress, name:%s, ns:%s", ingName, namespace)
 	_, err = ns.Update(context.Background(), ing, metav1.UpdateOptions{})
 	if err != nil {
 		return true, errors.Errorf("update ingress %s failed, ns:%s, err:%s",
-			ingressName, namespace, err)
+			ingName, namespace, err)
 	}
-	log.Infof("ingress updated, name:%s, ns:%s", ingressName, namespace)
+	log.Infof("ingress updated, name:%s, ns:%s", ingName, namespace)
 	return true, nil
 }
 
