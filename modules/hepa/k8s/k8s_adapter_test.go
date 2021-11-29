@@ -162,6 +162,13 @@ func TestK8SAdapterImpl_CreateOrUpdateIngress(t *testing.T) {
 			false,
 			false,
 		},
+		{
+			"case2",
+			fields{nil, ingressHelper{}, nil},
+			args{"test", "testExists", nil, IngressBackend{}, nil},
+			true,
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
