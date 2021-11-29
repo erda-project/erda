@@ -64,6 +64,15 @@ func genTemplateArg(cmd command.Command, cmdname string) templateArg {
 	if cmd.ParentName != "" {
 		parent = cmd.ParentName + "Cmd"
 	}
+	if cmd.Example != "" {
+		var newLines []string
+		lines := strings.Split(strings.TrimSpace(cmd.Example), "\n")
+		for _, l := range lines {
+			nl := fmt.Sprintf("  %s", strings.TrimSpace(l))
+			newLines = append(newLines, nl)
+		}
+		cmd.Example = strings.Join(newLines, " \n")
+	}
 	argmin, argmax := argNum(cmd.Args)
 	r := templateArg{
 		Imports:        imports(cmd),

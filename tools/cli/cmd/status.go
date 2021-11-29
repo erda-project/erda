@@ -32,9 +32,7 @@ import (
 var STATUS = command.Command{
 	Name:      "status",
 	ShortHelp: "Show build status",
-	Example: `
-  $ erda-cli status -b develop
-`,
+	Example:   "$ erda-cli status -b develop",
 	Flags: []command.Flag{
 		command.StringFlag{Short: "b", Name: "branch", Doc: "specify branch to show pipeline status, default is current branch", DefaultValue: ""},
 		command.IntFlag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},

@@ -17,6 +17,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/tools/cli/command"
@@ -24,29 +26,35 @@ import (
 
 var CONFIGW = command.Command{
 	Name:      "config-set",
-	ShortHelp: "operate config for Erda CLI",
-	Example:   `erda config`,
+	ShortHelp: "Write config file for Erda CLI",
+	Example:   `$ erda-cli config-set <set-platform|set-context|use-context|delete-platform|delete-context> <name> [flags]`,
 	Args: []command.Arg{
 		command.StringArg{}.Name("write-ops"),
 		command.StringArg{}.Name("name"),
 	},
 	Flags: []command.Flag{
-		command.StringFlag{Short: "s", Name: "server", Doc: "the http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
-		command.StringFlag{Short: "o", Name: "org", Doc: "a org under the platform", DefaultValue: ""},
-		command.StringFlag{Short: "e", Name: "platform", Doc: "the name of platform", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "server", Doc: "the http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
+		command.StringFlag{Short: "", Name: "org", Doc: "an org under the platform", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "platform", Doc: "the name of platform", DefaultValue: ""},
 	},
 	Run: ConfigOpsW,
 }
 
 func ConfigOpsW(ctx *command.Context, ops, name, server, org, platform string) error {
 	file, conf, err := command.GetConfig()
-	if err != nil {
+	if err != nil && err != dicedir.NotExist {
 		return err
 	}
 	switch ops {
 	case "set-platform":
+		if server == "" {
+			return errors.New("Must set server by --server")
+		}
 		setPlatform(conf, name, server, org)
 	case "set-context":
+		if platform == "" {
+			return errors.New("Must set platform by --platform")
+		}
 		setContext(conf, name, platform)
 	case "use-context":
 		err = useContext(conf, name)
@@ -71,6 +79,7 @@ func ConfigOpsW(ctx *command.Context, ops, name, server, org, platform string) e
 
 func setPlatform(conf *command.Config, name, server, org string) {
 	notExist := true
+
 	for _, p := range conf.Platforms {
 		if p.Name == name {
 			p.Server = server

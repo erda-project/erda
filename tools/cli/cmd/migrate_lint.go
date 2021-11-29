@@ -44,7 +44,7 @@ var MigrationLint = command.Command{
 	Name:           "lint",
 	ShortHelp:      "Erda MySQL Migration lint",
 	LongHelp:       "Erda MySQL Migration lint",
-	Example:        "erda-cli migrate lint --input=. --config=default.yaml --detail",
+	Example:        "$ erda-cli migrate lint --input=. --config=default.yaml --detail",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,

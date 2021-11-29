@@ -59,13 +59,13 @@ type UserInfo struct {
 
 // GetSessionInfos fetch sessions
 func GetSessionInfos() (map[string]StatusInfo, error) {
-	// check directory ~/.dice.d if exist
-	diceDir, err := dicedir.FindGlobalDiceDir()
+	// check directory ~/.erda.d if exist
+	diceDir, err := dicedir.FindGlobalErdaDir()
 	if err != nil {
 		return nil, err
 	}
 
-	// load file ~/.dice.d/sessions
+	// load file ~/.erda.d/sessions
 	if _, err := os.Stat(filepath.Join(diceDir, sessionFile)); err != nil {
 		if os.IsNotExist(err) {
 			return nil, dicedir.NotExist
@@ -85,21 +85,21 @@ func GetSessionInfos() (map[string]StatusInfo, error) {
 	return SessionInfos, nil
 }
 
-// StoreSessionInfo write session info to file ~/.dice.d/sessions
+// StoreSessionInfo write session info to file ~/.erda.d/sessions
 func StoreSessionInfo(host string, stat StatusInfo) error {
-	diceDir, err := dicedir.FindGlobalDiceDir()
+	erdaDir, err := dicedir.FindGlobalErdaDir()
 	if err != nil {
 		if err != dicedir.NotExist {
 			return err
 		}
-		diceDir, err = dicedir.CreateGlobalDiceDir()
+		erdaDir, err = dicedir.CreateGlobalErdaDir()
 		if err != nil {
 			return err
 		}
 	}
 
 	sessions := make(map[string]StatusInfo)
-	sessionPath := filepath.Join(diceDir, sessionFile)
+	sessionPath := filepath.Join(erdaDir, sessionFile)
 	if _, err := os.Stat(sessionPath); err == nil {
 		sessions, err = GetSessionInfos()
 		if err != nil {

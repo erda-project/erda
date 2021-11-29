@@ -33,10 +33,8 @@ var ERDAINIT = command.Command{
 	Name:       "init",
 	ParentName: "ERDA",
 	ShortHelp:  "Init a erda.yml template",
-	LongHelp:   "Make a .dice dir in current directory, then create a erda.yml template",
-	Example: `
-  $ erda init
-`,
+	LongHelp:   "Make a .erda dir in current directory, then create a erda.yml template",
+	Example:    "$ erda init",
 	Flags: []command.Flag{
 		command.FloatFlag{Short: "c", Name: "cpu",
 			Doc:          "the quota of CPU for service",
@@ -56,7 +54,7 @@ func ErdaInit(ctx *command.Context, cpuQuota float64, memQuota int) error {
 			format.FormatErrMsg("init", "failed to reinitialize existing erda project", false))
 	}
 
-	pdir, err := dicedir.CreateProjectDiceDir()
+	pdir, err := dicedir.CreateProjectErdaDir()
 	if err != nil && !os.IsExist(err) {
 		return fmt.Errorf(
 			format.FormatErrMsg("init", "failed to create project dice directory: "+err.Error(), false))
@@ -88,7 +86,7 @@ func ErdaInit(ctx *command.Context, cpuQuota float64, memQuota int) error {
 				format.FormatErrMsg("init", "failed to write to file "+erdaYml, false))
 		}
 	}
-	ctx.Succ("Init .dice/erda.yml success")
+	ctx.Succ("Init .erda/erda.yml success")
 	return nil
 }
 

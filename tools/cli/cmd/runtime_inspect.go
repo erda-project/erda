@@ -19,6 +19,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/format"
@@ -29,27 +30,30 @@ var RUNTIMEINSPECT = command.Command{
 	Name:       "inspect",
 	ParentName: "RUNTIME",
 	ShortHelp:  "Inspect runtime",
-	Example:    "erda-cli runtime inspect",
+	Example:    "$ erda-cli runtime inspect --runtime=<id>",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "The workspace of a runtime", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "runtime", Doc: "The id/name of a runtime", DefaultValue: ""},
 	},
 	Run: RuntimeInspect,
 }
 
-func RuntimeInspect(ctx *command.Context, orgId, applicationId int, workspace, runtime string) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
+func RuntimeInspect(ctx *command.Context, org string, orgId, applicationId uint64, workspace, runtime string) error {
+	checkOrgParam(org, orgId)
+
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
-	}
-
-	if runtime == "" {
-		return errors.New("invalid runtime")
+	if workspace != "" {
+		if !apistructs.WorkSpace(workspace).Valide() {
+			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
+				workspace, apistructs.WorkSpace("").ValideList()))
+		}
 	}
 
 	resp, err := common.GetRuntimeDetail(ctx, orgId, applicationId, workspace, runtime)

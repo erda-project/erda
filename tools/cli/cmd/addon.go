@@ -30,17 +30,19 @@ import (
 var ADDON = command.Command{
 	Name:      "addon",
 	ShortHelp: "List addons",
-	Example:   "erda-cli addon",
+	Example:   "$ erda-cli addon --project=<name>",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "The env workspace", DefaultValue: ""},
 	},
 	Run: GetAddons,
 }
 
-func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64, workspace string) error {
+func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64, org, project, workspace string) error {
 	if workspace != "" {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
@@ -48,16 +50,17 @@ func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64, wo
 		}
 	}
 
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("Invalid organization id")
+	checkOrgParam(org, orgId)
+	checkProjectParam(project, projectId)
+
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
-	}
-
-	if projectId <= 0 {
-		return errors.New("Invalid project id")
+	projectId, err = getProjectId(ctx, orgId, project, projectId)
+	if err != nil {
+		return err
 	}
 
 	list, err := common.GetAddonList(ctx, orgId, projectId)

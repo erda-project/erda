@@ -17,6 +17,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
@@ -26,8 +28,8 @@ import (
 
 var CONFIG = command.Command{
 	Name:      "config",
-	ShortHelp: "operate config for Erda CLI",
-	Example:   `erda config`,
+	ShortHelp: "Read config file for Erda CLI",
+	Example:   `$ erda-cli config <inspect|current-context|get-contexts|get-platforms> <name>`,
 	Args: []command.Arg{
 		command.StringArg{}.Name("ops"),
 	},
@@ -40,15 +42,23 @@ var CONFIG = command.Command{
 }
 
 func ConfigOps(ctx *command.Context, ops string, noHeaders bool) error {
+	_, conf, err := command.GetConfig()
+	if err == dicedir.NotExist {
+		return errors.New("Please use 'erda-cli config-set' command to set configurations first")
+	}
+	if err != nil {
+		return err
+	}
+
 	switch ops {
 	case "inspect":
-		return configInspect(ctx)
+		return configInspect(conf)
 	case "current-context":
-		return getCurrentContext(ctx)
+		return getCurrentContext(conf)
 	case "get-contexts":
-		return getContexts(ctx, noHeaders)
+		return getContexts(conf, noHeaders)
 	case "get-platforms":
-		return getPlatforms(ctx, noHeaders)
+		return getPlatforms(conf, noHeaders)
 	default:
 		return errors.New(ops + " ops not found")
 	}
@@ -56,34 +66,30 @@ func ConfigOps(ctx *command.Context, ops string, noHeaders bool) error {
 	return nil
 }
 
-func getPlatforms(ctx *command.Context, noHeaders bool) error {
-	_, conf, err := command.GetConfig()
-	if err != nil {
-		return err
-	}
-
+func getPlatforms(conf *command.Config, noHeaders bool) error {
 	var data [][]string
 	for _, p := range conf.Platforms {
+		orgInfo := ""
+		if p.OrgInfo != nil {
+			orgInfo = fmt.Sprintf("%d/%s/%s", p.OrgInfo.ID, p.OrgInfo.Name, p.OrgInfo.Desc)
+		}
 		data = append(data, []string{
 			p.Name,
+			p.Server,
+			orgInfo,
 		})
 	}
 
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"name",
+			"name", "server", "orginfo(id/name/desc)",
 		})
 	}
 	return t.Data(data).Flush()
 }
 
-func getContexts(ctx *command.Context, noHeaders bool) error {
-	_, conf, err := command.GetConfig()
-	if err != nil {
-		return err
-	}
-
+func getContexts(conf *command.Config, noHeaders bool) error {
 	var data [][]string
 	for _, c := range conf.Contexts {
 		var current string
@@ -107,12 +113,7 @@ func getContexts(ctx *command.Context, noHeaders bool) error {
 	return t.Data(data).Flush()
 }
 
-func getCurrentContext(ctx *command.Context) error {
-	_, conf, err := command.GetConfig()
-	if err != nil {
-		return err
-	}
-
+func getCurrentContext(conf *command.Config) error {
 	if conf.CurrentContext != "" {
 		fmt.Println(conf.CurrentContext)
 	} else {
@@ -122,12 +123,7 @@ func getCurrentContext(ctx *command.Context) error {
 	return nil
 }
 
-func configInspect(ctx *command.Context) error {
-	_, conf, err := command.GetConfig()
-	if err != nil {
-		return err
-	}
-
+func configInspect(conf *command.Config) error {
 	if conf.Version != command.Version {
 		return errors.New(" Version mismatch, should be " + command.Version)
 	}

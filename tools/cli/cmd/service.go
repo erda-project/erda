@@ -31,21 +31,20 @@ var SERVICE = command.Command{
 	Example:   "erda-cli service",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "The workspace for runtime", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "runtime", Doc: "The id of an application", DefaultValue: ""},
 	},
 	Run: ServiceList,
 }
 
-func ServiceList(ctx *command.Context, noHeaders bool, orgId, projectId int, workspace, runtime string) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
-	}
-
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+func ServiceList(ctx *command.Context, noHeaders bool, orgId, projectId uint64, org, workspace, runtime string) error {
+	checkOrgParam(org, orgId)
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
 	if projectId <= 0 {

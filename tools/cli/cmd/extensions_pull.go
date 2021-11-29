@@ -34,9 +34,7 @@ var EXTENSIONSPULL = command.Command{
 	Name:       "pull",
 	ParentName: "EXT",
 	ShortHelp:  "pull extension",
-	Example: `
-  $ dice ext pull git-checkout@1.0 -o git-checkout
-`,
+	Example:    "$ dice ext pull git-checkout@1.0 -o git-checkout",
 	Args: []command.Arg{
 		command.StringArg{}.Name("extension"),
 	},

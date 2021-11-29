@@ -31,7 +31,7 @@ var PIPELINEINIT = command.Command{
 	Name:       "init",
 	ParentName: "PIPELINE",
 	ShortHelp:  "Init pipelines in .dice/pipelines directory (current repo)",
-	Example:    "erda-cli pipeline init -f .dice/pipelines/pipeline.yml",
+	Example:    "$ erda-cli pipeline init -f .dice/pipelines/pipeline.yml",
 	Flags: []command.Flag{
 		command.StringFlag{"f", "filename",
 			"Specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
@@ -97,13 +97,13 @@ func PipelineInit(ctx *command.Context, ymlfile string) error {
 }
 
 func getErdaYamls() (string, error) {
-	if _, err := os.Stat(".dice/erda.yml"); err != nil {
+	if _, err := os.Stat(".erda/erda.yml"); err != nil {
 		return "", err
 	}
 
-	yamls := []string{"dice_yml: ${git-checkout}/.dice/erda.yml"}
+	yamls := []string{"dice_yml: ${git-checkout}/.erda/erda.yml"}
 	for _, env := range []string{"dev", "test", "staging", "prod"} {
-		if _, err := os.Stat(".dice/erda_" + env + ".yml"); err == nil {
+		if _, err := os.Stat(".erda/erda_" + env + ".yml"); err == nil {
 			// TODO format is Critical!!
 			s := fmt.Sprintf("        dice_%s_yml: ${git-checkout}/erda_%s.yml", env, env)
 			yamls = append(yamls, s)

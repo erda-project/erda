@@ -34,9 +34,7 @@ var EXTENSIONSPUSH = command.Command{
 	Name:       "push",
 	ParentName: "EXT",
 	ShortHelp:  "push extension",
-	Example: `
-  $ dice ext push -f --public
-`,
+	Example:    "$ dice ext push -f --public",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "f", Name: "force", Doc: "override exist version", DefaultValue: false},
 		command.BoolFlag{Short: "a", Name: "all", Doc: "override exist extension and version,must with -f", DefaultValue: false},

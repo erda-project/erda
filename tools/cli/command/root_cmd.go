@@ -41,11 +41,12 @@ import (
 )
 
 var (
-	host      string // erda host, format: http[s]://<domain> eg: https://erda.cloud
-	Remote    string // git remote name for erda repo
-	username  string
-	password  string
-	debugMode bool
+	host        string // erda host, format: http[s]://<domain> eg: https://erda.cloud
+	Remote      string // git remote name for erda repo
+	username    string
+	password    string
+	debugMode   bool
+	Interactive bool
 )
 
 // Cmds which not require login
@@ -93,7 +94,7 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 		if debugMode {
 			logrus.SetLevel(logrus.DebugLevel)
 			httpOption = append(httpOption, httpclient.WithDebug(os.Stdout))
-		} else {
+		} else if Interactive {
 			httpOption = append(httpOption, httpclient.WithLoadingPrint(""))
 		}
 		if strings.HasPrefix(host, "https") {
@@ -164,7 +165,7 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 	if err != nil && err != dicedir.NotExist {
 		return nil, err
 	}
-	// file ~/.dice.d/sessions exist & and session for host also exist; otherwise need login fisrt
+	// file ~/.erda.d/sessions exist & and session for host also exist; otherwise need login fisrt
 	if currentSession, ok := sessionInfos[ctx.CurrentOpenApiHost]; ok {
 		// check session if expired
 		if currentSession.ExpiredAt != nil && time.Now().Before(*currentSession.ExpiredAt) {
@@ -173,10 +174,10 @@ func ensureSessionInfos() (map[string]status.StatusInfo, error) {
 	}
 
 	if username == "" {
-		username = dicedir.InputNormal("Enter your dice username: ")
+		username = dicedir.InputNormal("Enter your erda username: ")
 	}
 	if password == "" {
-		password = dicedir.InputPWD("Enter your dice password: ")
+		password = dicedir.InputPWD("Enter your erda password: ")
 	}
 
 	// fetch session & user info according to host, username & password
@@ -237,7 +238,7 @@ func parseCtx() error {
 
 		if host == "" {
 			// fetch host from stdin
-			fmt.Print("Enter your dice host: ")
+			fmt.Print("Enter a erda host: ")
 			fmt.Scanln(&host)
 		}
 	}
@@ -373,25 +374,30 @@ func loginAndStoreSession(host, username, password string) error {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	// hind cursor
-	tput("civis")
-	// unhind cursor
-	defer tput("cnorm")
+	if Interactive {
+		// hind cursor
+		tput("civis")
+		// unhind cursor
+		defer tput("cnorm")
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
-	go func() {
-		for range c {
-			tput("cnorm")
-			os.Exit(1)
-		}
-	}()
+	if Interactive {
+		go func() {
+			for range c {
+				tput("cnorm")
+				os.Exit(1)
+			}
+		}()
+	}
 
 	RootCmd.PersistentFlags().StringVar(&host, "host", "", "erda host to visit, eg: https://erda.cloud")
 	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "r", "origin", "the remote for erda git repo")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "dice username to authenticate")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "dice password to authenticate")
 	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "enable verbose mode")
+	RootCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "", true, "If interactive with user, default True")
 
 	RootCmd.Execute()
 }

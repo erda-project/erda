@@ -27,26 +27,26 @@ var RUNTIMEDELETE = command.Command{
 	ShortHelp:  "Delete runtime",
 	Example:    "erda-cli runtime delete",
 	Flags: []command.Flag{
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "runtime-id", Doc: "The id of a runtime", DefaultValue: 0},
 	},
 	Run: DeleteRuntime,
 }
 
-func DeleteRuntime(ctx *command.Context, orgId, runtimeId uint64) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("Invalid organization id")
-	}
+func DeleteRuntime(ctx *command.Context, org string, orgId, runtimeId uint64) error {
+	checkOrgParam(org, orgId)
 
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
 	if runtimeId <= 0 {
 		return errors.New("Invalid runtime id")
 	}
 
-	err := common.DeleteRuntime(ctx, orgId, runtimeId)
+	err = common.DeleteRuntime(ctx, orgId, runtimeId)
 	if err != nil {
 		return err
 	}

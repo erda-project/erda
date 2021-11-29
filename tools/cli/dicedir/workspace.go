@@ -150,7 +150,7 @@ func InputAndChoose(prompt, yes, no string) string {
 
 type pagingList func(int, int) (bool, error)
 
-func PagingView(p pagingList, choose string, pageSize int) error {
+func PagingView(p pagingList, choose string, pageSize int, interactive bool) error {
 	pageNo := 1
 	num := 0
 	for {
@@ -160,11 +160,15 @@ func PagingView(p pagingList, choose string, pageSize int) error {
 		}
 		num += pageSize
 		if more {
-			ans := InputAndChoose(choose, "Y", "N")
-			if ans == "Y" {
-				pageNo += 1
+			if interactive {
+				ans := InputAndChoose(choose, "Y", "N")
+				if ans == "Y" {
+					pageNo += 1
+				} else {
+					break
+				}
 			} else {
-				break
+				pageNo += 1
 			}
 		} else {
 			break

@@ -30,23 +30,23 @@ var APPLICATIONDELETE = command.Command{
 	Name:       "delete",
 	ParentName: "APPLICATION",
 	ShortHelp:  "Delete application",
-	Example:    "erda-cli application delete",
+	Example:    "erda-cli application delete --application-id=<id>",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
 	},
 	Run: ApplicationDelete,
 }
 
-func ApplicationDelete(ctx *command.Context, appID int) error {
-	if appID <= 0 {
-		return errors.New("invalid application id")
+func ApplicationDelete(ctx *command.Context, applicationId uint64) error {
+	if applicationId <= 0 {
+		return errors.New("Invalid application id")
 	}
 
 	var resp apistructs.ApplicationDeleteResponse
 	var b bytes.Buffer
 
 	response, err := ctx.Delete().
-		Path(fmt.Sprintf("/api/applications/%d", appID)).Do().Body(&b)
+		Path(fmt.Sprintf("/api/applications/%d", applicationId)).Do().Body(&b)
 	if err != nil {
 		return fmt.Errorf(
 			format.FormatErrMsg("delete", "failed to request ("+err.Error()+")", false))

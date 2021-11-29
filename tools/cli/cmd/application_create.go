@@ -33,7 +33,7 @@ var APPLICATIONCREATE = command.Command{
 	ShortHelp:  "Create application",
 	Example:    "erda-cli application create",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
 		command.StringFlag{Short: "n", Name: "application-name", Doc: "the name of an application ", DefaultValue: ""},
 		command.StringFlag{Short: "m", Name: "mode",
 			Doc:          "the id of an application, application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
@@ -43,9 +43,9 @@ var APPLICATIONCREATE = command.Command{
 	Run: ApplicationCreate,
 }
 
-func ApplicationCreate(ctx *command.Context, projectId int, name, mode, desc string) error {
+func ApplicationCreate(ctx *command.Context, projectId uint64, name, mode, desc string) error {
 	if name == "" {
-		return errors.New("invalid project name")
+		return errors.New("Invalid project name")
 	}
 
 	if err := apistructs.ApplicationMode(mode).CheckAppMode(); err != nil {
@@ -59,7 +59,7 @@ func ApplicationCreate(ctx *command.Context, projectId int, name, mode, desc str
 	request.Name = name
 	request.Mode = apistructs.ApplicationMode(mode)
 	request.Desc = desc
-	request.ProjectID = uint64(projectId)
+	request.ProjectID = projectId
 
 	resp, err := ctx.Post().Path("/api/applications").JSONBody(request).Do().Body(&b)
 	if err != nil {

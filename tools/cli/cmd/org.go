@@ -15,20 +15,21 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
-	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var ORG = command.Command{
 	Name:      "org",
 	ShortHelp: "List organizations",
-	Example:   "erda-cli org",
+	Example:   "$ erda-cli org",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
@@ -69,10 +70,36 @@ func GetOrgs(ctx *command.Context, noHeaders bool, pageSize int) error {
 			num += len(pagingOrgs.List)
 
 			return pagingOrgs.Total > num, nil
-		}, "Continue to display organizations?", pageSize)
+		}, "Continue to display organizations?", pageSize, command.Interactive)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getOrgId(ctx *command.Context, org string, orgId uint64) (uint64, error) {
+	if org != "" {
+		o, err := common.GetOrgDetail(ctx, org)
+		if err != nil {
+			return orgId, err
+		}
+		orgId = o.Data.ID
+	}
+
+	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
+		return orgId, errors.New("Invalid organization id")
+	}
+
+	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
+		orgId = ctx.CurrentOrg.ID
+	}
+
+	return orgId, nil
+}
+
+func checkOrgParam(org string, orgId uint64) {
+	if org != "" && orgId != 0 {
+		fmt.Println("Both --org and --org-id are set, we will only use name set by --org")
+	}
 }

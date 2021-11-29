@@ -31,10 +31,12 @@ var PROJECTCLEAR = command.Command{
 	Name:       "clear",
 	ParentName: "PROJECT",
 	ShortHelp:  "Clear project by delete runtimes and addons",
-	Example:    "erda-cli project clear --project-id=<id>",
+	Example:    "$ erda-cli project clear --project-id=<id>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "the env workspace of a project, if set only clear runtimes and addons in the specific workspace", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "wait-runtime", Doc: "the minutes to wait runtimes deleted", DefaultValue: 3},
 		command.IntFlag{Short: "", Name: "wait-addon", Doc: "the minutes to wait addons deleted", DefaultValue: 3},
@@ -42,23 +44,24 @@ var PROJECTCLEAR = command.Command{
 	Run: ClearProject,
 }
 
-func ClearProject(ctx *command.Context, orgId, projectId uint64, workspace string, waitRuntime, waitAddon int) error {
+func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, workspace string, waitRuntime, waitAddon int) error {
 	if workspace != "" {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
 				workspace, apistructs.WorkSpace("").ValideList()))
 		}
 	}
+	checkOrgParam(org, orgId)
+	checkProjectParam(project, projectId)
 
-	if projectId <= 0 {
-		return errors.New("Invalid project id")
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("Invalid organization id")
-	}
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
+	projectId, err = getProjectId(ctx, orgId, project, projectId)
+	if err != nil {
+		return err
 	}
 
 	apps, err := common.GetApplications(ctx, orgId, projectId)

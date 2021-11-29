@@ -17,8 +17,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/format"
@@ -29,30 +27,35 @@ var APPLICATIONINSPECT = command.Command{
 	Name:       "inspect",
 	ParentName: "APPLICATION",
 	ShortHelp:  "Inspect application",
-	Example:    "erda-cli application inspect",
+	Example:    "$ erda-cli application inspect --project=<name>",
 	Flags: []command.Flag{
-		command.IntFlag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
-		command.IntFlag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project ", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "application", Doc: "the name of an application ", DefaultValue: ""},
 	},
 	Run: ApplicationInspect,
 }
 
-func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId int) error {
-	if applicationId <= 0 {
-		errors.New("invalid application id")
+func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId uint64, org, project, application string) error {
+	checkOrgParam(org, orgId)
+	checkApplicationParam(application, applicationId)
+
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
-	if projectId <= 0 {
-		errors.New("invalid project id")
+	projectId, err = getProjectId(ctx, orgId, project, projectId)
+	if err != nil {
+		return err
 	}
 
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
-	}
-
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = int(ctx.CurrentOrg.ID)
+	applicationId, err = getApplicationId(ctx, orgId, projectId, application, applicationId)
+	if err != nil {
+		return err
 	}
 
 	resp, err := common.GetApplicationDetail(ctx, orgId, projectId, applicationId)
@@ -60,7 +63,7 @@ func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId in
 		return err
 	}
 
-	s, err := prettyjson.Marshal(resp.Data)
+	s, err := prettyjson.Marshal(resp)
 	if err != nil {
 		return fmt.Errorf(format.FormatErrMsg("application inspect",
 			"failed to prettyjson marshal application data ("+err.Error()+")", false))

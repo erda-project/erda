@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/tools/cli/httputils"
 )
 
-func GetRuntimeDetail(ctx *command.Context, orgId, applicationId int, workspace, runtime string) (
+func GetRuntimeDetail(ctx *command.Context, orgId, applicationId uint64, workspace, runtime string) (
 	apistructs.RuntimeInspectResponse, error) {
 	var resp apistructs.RuntimeInspectResponse
 	var b bytes.Buffer
@@ -39,8 +39,8 @@ func GetRuntimeDetail(ctx *command.Context, orgId, applicationId int, workspace,
 	}
 
 	request = ctx.Get().Path(fmt.Sprintf("/api/runtimes/%s", runtime)).
-		Header("Org-ID", strconv.Itoa(orgId)).
-		Param("applicationId", strconv.Itoa(applicationId)).
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		Param("applicationId", strconv.FormatUint(applicationId, 10)).
 		Param("workspace", workspace)
 
 	response, err := request.Do().Body(&b)

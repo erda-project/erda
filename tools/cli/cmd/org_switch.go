@@ -17,6 +17,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/tools/cli/dicedir"
+
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
@@ -27,11 +31,9 @@ var ORGANIZATIONSSWITCH = command.Command{
 	Name:       "switch",
 	ParentName: "ORG",
 	ShortHelp:  "Switch organization",
-	Example: `
-  $ erda-cli orgs switch 2
-`,
+	Example:    "$ erda-cli org switch <orgID/orgName>",
 	Args: []command.Arg{
-		command.StringArg{}.Name("org"),
+		command.StringArg{}.Name("orgIdorName"),
 	},
 	Run: RunOrganizationsSwitch,
 }
@@ -51,7 +53,9 @@ func RunOrganizationsSwitch(ctx *command.Context, org string) error {
 	ctx.CurrentOrg.Desc = orgResp.Data.Desc
 
 	f, conf, err := command.GetConfig()
-	if err != nil {
+	if err == dicedir.NotExist {
+		return errors.New("Please use 'erda-cli config-set' command to set configurations first")
+	} else if err != nil {
 		return err
 	}
 

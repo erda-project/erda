@@ -18,15 +18,14 @@ import (
 	"errors"
 	"os"
 	"os/user"
-	"path"
 	"path/filepath"
 )
 
 var (
 	NotExist = errors.New("not exist")
 
-	GlobalErdaDir = ".erda.d"
-	GlobalConfig  = path.Join(GlobalErdaDir, "config")
+	GlobalErdaDir    = ".erda.d"
+	GlobalConfigFile = "config"
 
 	ProjectDiceDir     = ".dice"
 	ProjectPipelineDir = ".dice/pipelines"
@@ -35,11 +34,14 @@ var (
 )
 
 func FindGlobalConfig() (string, error) {
-	u, err := user.Current()
+	erdaDir, err := FindGlobalErdaDir()
+	if err == NotExist {
+		_, err = CreateGlobalErdaDir()
+	}
 	if err != nil {
 		return "", err
 	}
-	file := filepath.Join(u.HomeDir, GlobalConfig)
+	file := filepath.Join(erdaDir, GlobalConfigFile)
 	f, err := os.Stat(file)
 	if os.IsNotExist(err) {
 		return file, NotExist
@@ -50,7 +52,7 @@ func FindGlobalConfig() (string, error) {
 	return file, nil
 }
 
-func FindGlobalDiceDir() (string, error) {
+func FindGlobalErdaDir() (string, error) {
 	u, err := user.Current()
 	if err != nil {
 		return "", err
@@ -58,7 +60,7 @@ func FindGlobalDiceDir() (string, error) {
 	dir := filepath.Join(u.HomeDir, GlobalErdaDir)
 	f, err := os.Stat(dir)
 	if os.IsNotExist(err) {
-		return "", NotExist
+		return dir, NotExist
 	}
 	if !f.IsDir() {
 		return "", NotExist
@@ -66,7 +68,7 @@ func FindGlobalDiceDir() (string, error) {
 	return dir, nil
 }
 
-func CreateGlobalDiceDir() (string, error) {
+func CreateGlobalErdaDir() (string, error) {
 	u, err := user.Current()
 	if err != nil {
 		return "", err

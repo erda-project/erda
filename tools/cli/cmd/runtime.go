@@ -30,34 +30,33 @@ import (
 var RUNTIME = command.Command{
 	Name:      "runtime",
 	ShortHelp: "List runtimes",
-	Example:   "erda-cli runtime",
+	Example:   "$ erda-cli runtime",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "The env workspace of an application", DefaultValue: ""},
 	},
 	Run: RuntimeList,
 }
 
-func RuntimeList(ctx *command.Context, noHeaders bool, orgId, applicationId uint64, workspace string) error {
+func RuntimeList(ctx *command.Context, noHeaders bool, orgId, applicationId uint64, org, workspace string) error {
 	if workspace != "" {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
 				workspace, apistructs.WorkSpace("").ValideList()))
 		}
 	}
+	checkOrgParam(org, orgId)
 
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
-	}
-
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
 	if applicationId <= 0 {
-		return errors.New("invalid application id")
+		return errors.New("Invalid application id")
 	}
 
 	list, err := common.GetRuntimeList(ctx, orgId, applicationId, workspace, "")

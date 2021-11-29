@@ -17,8 +17,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/format"
@@ -28,25 +26,29 @@ import (
 var PROJECTINSPECT = command.Command{
 	Name:       "inspect",
 	ParentName: "PROJECT",
-	ShortHelp:  "Inspect project",
-	Example:    "erda-cli project inspect",
+	ShortHelp:  "Inspect project detail information",
+	Example:    "$ erda-cli project inspect --project-id=<id>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
 	},
 	Run: InspectProject,
 }
 
-func InspectProject(ctx *command.Context, orgId, projectId uint64) error {
-	if projectId <= 0 {
-		return errors.New("invalid project id")
+func InspectProject(ctx *command.Context, orgId, projectId uint64, org, project string) error {
+	checkOrgParam(org, orgId)
+	checkProjectParam(project, projectId)
+
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
-	}
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
+	projectId, err = getProjectId(ctx, orgId, project, projectId)
+	if err != nil {
+		return err
 	}
 
 	resp, err := common.GetProjectDetail(ctx, orgId, projectId)
@@ -56,8 +58,8 @@ func InspectProject(ctx *command.Context, orgId, projectId uint64) error {
 
 	s, err := prettyjson.Marshal(resp.Data)
 	if err != nil {
-		return fmt.Errorf(format.FormatErrMsg("orgs inspect",
-			"failed to prettyjson marshal organization data ("+err.Error()+")", false))
+		return fmt.Errorf(format.FormatErrMsg("project inspect",
+			"failed to prettyjson marshal project data ("+err.Error()+")", false))
 	}
 
 	fmt.Println(string(s))

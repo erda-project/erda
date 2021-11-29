@@ -31,7 +31,7 @@ import (
 var PIPELINERUN = command.Command{
 	Name:       "run",
 	ParentName: "PIPELINE",
-	ShortHelp:  "Create an pipeline and run it",
+	ShortHelp:  "Create a pipeline and run it",
 	Example:    `$ erda-cli pipeline run`,
 	Flags: []command.Flag{
 		command.StringFlag{Short: "b", Name: "branch",

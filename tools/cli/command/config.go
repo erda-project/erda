@@ -82,16 +82,16 @@ func GetCurContext() (CurCtx, error) {
 }
 
 func GetConfig() (string, *Config, error) {
+	conf := Config{Version: Version}
 	config, err := dicedir.FindGlobalConfig()
 	if err != nil {
-		return config, nil, err
+		return config, &conf, err
 	}
 
 	f, err := os.Open(config)
 	if err != nil {
 		return config, nil, err
 	}
-	var conf Config
 	if err := yaml.NewDecoder(f).Decode(&conf); err != nil {
 		os.Remove(config)
 		return config, nil, err
@@ -105,7 +105,7 @@ func SetConfig(file string, conf *Config) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(file, c, 655)
+	err = ioutil.WriteFile(file, c, 0655)
 	if err != nil {
 		return err
 	}

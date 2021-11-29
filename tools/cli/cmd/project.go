@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda/tools/cli/dicedir"
@@ -29,27 +30,26 @@ import (
 var PROJECT = command.Command{
 	Name:      "project",
 	ShortHelp: "List projects",
-	Example:   "erda-cli project",
+	Example:   "$ erda-cli project",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization ", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
 	},
 	Run: GetProjects,
 }
 
-func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, pageSize int) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("Invalid organization id")
-	}
-
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
+func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, org string, pageSize int) error {
+	checkOrgParam(org, orgId)
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
 	num := 0
-	err := dicedir.PagingView(func(pageNo, pageSize int) (bool, error) {
-		pagingProject, err := common.GetPagingProjectList(ctx, orgId, pageNo, pageSize)
+	err = dicedir.PagingView(func(pageNo, pageSize int) (bool, error) {
+		pagingProject, err := common.GetPagingProjects(ctx, orgId, pageNo, pageSize)
 		if err != nil {
 			return false, err
 		}
@@ -77,10 +77,36 @@ func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, pageSize in
 
 		num += len(pagingProject.List)
 		return pagingProject.Total > num, nil
-	}, "Continue to display project?", pageSize)
+	}, "Continue to display project?", pageSize, command.Interactive)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getProjectId(ctx *command.Context, orgId uint64, project string, projectId uint64) (uint64, error) {
+	if projectId == 0 && project == "" {
+		return projectId, errors.New("Must set one of --project or --project-id")
+	}
+
+	if project != "" {
+		pId, err := common.GetProjectIdByName(ctx, orgId, project)
+		if err != nil {
+			return projectId, err
+		}
+		projectId = pId
+	}
+
+	if projectId <= 0 {
+		return projectId, errors.New("Invalid project id")
+	}
+
+	return projectId, nil
+}
+
+func checkProjectParam(project string, projectId uint64) {
+	if project != "" && projectId != 0 {
+		fmt.Println("Both --project and --project-id are set, we will only use name set by --project")
+	}
 }

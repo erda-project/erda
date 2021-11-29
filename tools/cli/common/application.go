@@ -20,45 +20,61 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
-func GetApplicationDetail(ctx *command.Context, orgId, projectId, applicationId int) (
-	apistructs.ApplicationFetchResponse, error) {
+func GetApplicationDetail(ctx *command.Context, orgId, projectId, applicationId uint64) (
+	apistructs.ApplicationDTO, error) {
 	var (
 		resp apistructs.ApplicationFetchResponse
 		b    bytes.Buffer
 	)
 
-	response, err := ctx.Get().Header("Org-ID", strconv.Itoa(orgId)).
+	response, err := ctx.Get().Header("Org-ID", strconv.FormatUint(orgId, 10)).
 		Path(fmt.Sprintf("/api/applications/%d?projectId=%d", applicationId, projectId)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg(
+		return apistructs.ApplicationDTO{}, fmt.Errorf(format.FormatErrMsg(
 			"get application detail", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+		return apistructs.ApplicationDTO{}, fmt.Errorf(format.FormatErrMsg("get application detail",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+		return apistructs.ApplicationDTO{}, fmt.Errorf(format.FormatErrMsg("get application detail",
 			fmt.Sprintf("failed to unmarshal application detail response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+		return apistructs.ApplicationDTO{}, fmt.Errorf(format.FormatErrMsg("get application detail",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	return resp, nil
+	return resp.Data, nil
+}
+
+func GetApplicationIdByName(ctx *command.Context, orgId, projectId uint64, application string) (uint64, error) {
+	appList, err := GetApplications(ctx, orgId, projectId)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, app := range appList {
+		if app.Name == application {
+			return app.ID, nil
+		}
+	}
+	return 0, errors.New(fmt.Sprintf("Invalid application name %s, may not exist or has no permission", application))
 }
 
 func GetApplications(ctx *command.Context, orgId, projectId uint64) ([]apistructs.ApplicationDTO, error) {

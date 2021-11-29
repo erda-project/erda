@@ -28,9 +28,7 @@ var ORGINSPECT = command.Command{
 	Name:       "inspect",
 	ParentName: "ORG",
 	ShortHelp:  "Display detail information of one organization",
-	Example: `
-  $ erda-cli org inspect --org-id=<id>
-`,
+	Example:    "$ erda-cli org inspect --org=<name>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
@@ -39,9 +37,7 @@ var ORGINSPECT = command.Command{
 }
 
 func OrgInspect(ctx *command.Context, orgId uint64, org string) error {
-	if orgId > 0 && org != "" {
-		fmt.Println("Both --org-id and --org are set, we use --org only")
-	}
+	checkOrgParam(org, orgId)
 
 	orgIdorName := ""
 	if org != "" {

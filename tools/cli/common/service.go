@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
-func GetSerivceList(ctx *command.Context, orgId, applicationId int, workspace, runtime string) (
+func GetSerivceList(ctx *command.Context, orgId, applicationId uint64, workspace, runtime string) (
 	map[string]*apistructs.RuntimeInspectServiceDTO, error) {
 	r, err := GetRuntimeDetail(ctx, orgId, applicationId, workspace, runtime)
 	if err != nil {

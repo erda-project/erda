@@ -22,7 +22,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/pkg/errors"
 )
 
 func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs.ProjectDetailResponse, error) {
@@ -58,7 +60,38 @@ func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs
 	return resp, nil
 }
 
-func GetPagingProjectList(ctx *command.Context, orgId uint64, pageNo, pageSize int) (apistructs.PagingProjectDTO, error) {
+func GetProjectIdByName(ctx *command.Context, orgId uint64, project string) (uint64, error) {
+	pList, err := GetProjects(ctx, orgId)
+	if err != nil {
+		return 0, err
+	}
+	for _, p := range pList {
+		if p.Name == project {
+			return p.ID, nil
+		}
+	}
+	return 0, errors.New(fmt.Sprintf("Invalid project name %s, may not exist or has no permission", project))
+}
+
+func GetProjects(ctx *command.Context, orgId uint64) ([]apistructs.ProjectDTO, error) {
+	var projects []apistructs.ProjectDTO
+	err := dicedir.PagingAll(func(pageNo, pageSize int) (bool, error) {
+		paging, err := GetPagingProjects(ctx, orgId, pageNo, pageSize)
+		if err != nil {
+			return false, err
+		}
+		projects = append(projects, paging.List...)
+
+		return paging.Total > len(projects), nil
+	}, 20)
+	if err != nil {
+		return nil, err
+	}
+
+	return projects, nil
+}
+
+func GetPagingProjects(ctx *command.Context, orgId uint64, pageNo, pageSize int) (apistructs.PagingProjectDTO, error) {
 	var resp apistructs.ProjectListResponse
 	var b bytes.Buffer
 

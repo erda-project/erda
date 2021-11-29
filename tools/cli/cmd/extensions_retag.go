@@ -32,9 +32,7 @@ var EXTENSIONSRETAG = command.Command{
 	Name:       "retag",
 	ParentName: "EXT",
 	ShortHelp:  "generate retag script",
-	Example: `
-  $ dice ext retag -d extensions -r registry.default.svc.cluster.local:5000 -o retag.sh
-`,
+	Example:    "$ dice ext retag -d extensions -r registry.default.svc.cluster.local:5000 -o retag.sh",
 	Flags: []command.Flag{
 		command.StringFlag{Short: "d", Name: "dir", Doc: "extension dir", DefaultValue: "."},
 		command.StringFlag{Short: "r", Name: "registry", Doc: "new registry", DefaultValue: "registry.default.svc.cluster.local:5000"},

@@ -15,8 +15,6 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 )
@@ -25,24 +23,23 @@ var ADDONDELETE = command.Command{
 	Name:       "delete",
 	ParentName: "ADDON",
 	ShortHelp:  "Delete addon",
-	Example:    "erda-cli addon delete",
+	Example:    "$ erda-cli addon delete --addon-id=<id>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "addon-id", Doc: "The id of an addon", DefaultValue: ""},
 	},
 	Run: DeleteAddon,
 }
 
-func DeleteAddon(ctx *command.Context, orgId uint64, addonId string) error {
-	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return errors.New("invalid org id")
+func DeleteAddon(ctx *command.Context, orgId uint64, org, addonId string) error {
+	checkOrgParam(org, orgId)
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
 	}
 
-	if orgId == 0 && ctx.CurrentOrg.ID > 0 {
-		orgId = ctx.CurrentOrg.ID
-	}
-
-	err := common.DeleteAddon(ctx, orgId, addonId)
+	err = common.DeleteAddon(ctx, orgId, addonId)
 	if err != nil {
 		return err
 	}

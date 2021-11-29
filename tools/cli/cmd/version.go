@@ -23,8 +23,8 @@ import (
 
 var VERSION = command.Command{
 	Name:      "version",
-	ShortHelp: "Show dice version info",
-	Example:   `$ dice version`,
+	ShortHelp: "Show erda version info",
+	Example:   `$ erda-cli version`,
 	Run:       RunVersion,
 }
 
