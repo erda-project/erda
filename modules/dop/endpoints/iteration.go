@@ -296,18 +296,19 @@ func (e *Endpoints) PagingIterations(ctx context.Context, r *http.Request, vars 
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	iterations := make([]apistructs.Iteration, 0, len(iterationModels))
+	iterationMap := make(map[int64]*apistructs.Iteration, len(iterationModels))
 	for _, itr := range iterationModels {
 		iteration := itr.Convert()
-		// 默认不查询 summary
-		// TODO 这里面的逻辑需要优化，调用了太多次数据库 @周子曰
-		if !pageReq.WithoutIssueSummary {
-			iteration.IssueSummary, err = e.iteration.GetIssueSummary(iteration.ID, pageReq.ProjectID)
-			if err != nil {
-				return apierrors.ErrPagingIterations.InternalError(err).ToResp(), nil
-			}
+		iterationMap[iteration.ID] = &iteration
+	}
+	if !pageReq.WithoutIssueSummary {
+		if err := e.iteration.SetIssueSummaries(pageReq.ProjectID, iterationMap); err != nil {
+			return errorresp.ErrResp(err)
 		}
-		iterations = append(iterations, iteration)
+	}
+	iterations := make([]apistructs.Iteration, 0, len(iterationModels))
+	for _, itr := range iterationMap {
+		iterations = append(iterations, *itr)
 	}
 	// userIDs
 	var userIDs []string
