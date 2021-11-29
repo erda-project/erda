@@ -104,7 +104,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	ca.Props = map[string]interface{}{
 		"delay": 1000,
 	}
-	iterations, err := bdl.ListProjectIterations(apistructs.IterationPagingRequest{ProjectID: ca.InParams.ProjectID, PageSize: 999}, sdk.Identity.OrgID)
+	iterations, err := bdl.ListProjectIterations(apistructs.IterationPagingRequest{ProjectID: ca.InParams.ProjectID, PageSize: 999, WithoutIssueSummary: true}, sdk.Identity.OrgID)
 	if err != nil {
 		return err
 	}

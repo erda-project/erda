@@ -210,3 +210,93 @@ func (itr *Iteration) GetIssueSummary(iterationID int64, projectID uint64) (apis
 
 	return itr.db.GetIssueSummary(iterationID, taskState, bugState, requirementState), nil
 }
+
+func (itr *Iteration) SetIssueSummaries(projectID uint64, iterationMap map[int64]*apistructs.Iteration) error {
+	if projectID == 0 {
+		return apierrors.ErrPagingIterations.InvalidParameter("missing projectID")
+	}
+	if len(iterationMap) == 0 {
+		return apierrors.ErrPagingIterations.InvalidParameter("missing iteration ids")
+	}
+	iterationIDS := make([]int64, 0, len(iterationMap))
+	for _, iteration := range iterationMap {
+		iterationIDS = append(iterationIDS, iteration.ID)
+		iterationMap[iteration.ID] = iteration
+	}
+	summaryStates, err := itr.db.ListIssueSummaryStates(projectID, iterationIDS)
+	if err != nil {
+		return err
+	}
+
+	bugCloseStateIDS, err := itr.getDoneStateIDSByType(projectID, apistructs.IssueTypeBug)
+	if err != nil {
+		return err
+	}
+	taskDoneStateIDS, err := itr.getDoneStateIDSByType(projectID, apistructs.IssueTypeTask)
+	if err != nil {
+		return err
+	}
+	reqDoneStateIDS, err := itr.getDoneStateIDSByType(projectID, apistructs.IssueTypeRequirement)
+	if err != nil {
+		return err
+	}
+
+	for _, summary := range summaryStates {
+		iteration, ok := iterationMap[summary.IterationID]
+		if ok {
+			switch summary.IssueType {
+			case apistructs.IssueTypeBug:
+				if itr.isContainStateID(bugCloseStateIDS, summary.State) {
+					iteration.IssueSummary.Bug.Done += summary.Total
+					continue
+				}
+				iteration.IssueSummary.Bug.UnDone += summary.Total
+			case apistructs.IssueTypeTask:
+				if itr.isContainStateID(taskDoneStateIDS, summary.State) {
+					iteration.IssueSummary.Task.Done += summary.Total
+					continue
+				}
+				iteration.IssueSummary.Task.UnDone += summary.Total
+			case apistructs.IssueTypeRequirement:
+				if itr.isContainStateID(reqDoneStateIDS, summary.State) {
+					iteration.IssueSummary.Requirement.Done += summary.Total
+					continue
+				}
+				iteration.IssueSummary.Requirement.UnDone += summary.Total
+			}
+		}
+	}
+	return nil
+}
+
+func (itr *Iteration) getDoneStateIDSByType(projectID uint64, issueType apistructs.IssueType) ([]int64, error) {
+	states, err := itr.db.GetIssuesStatesByProjectID(projectID, issueType)
+	if err != nil {
+		return nil, err
+	}
+	stateIDS := make([]int64, 0)
+	for _, v := range states {
+		switch issueType {
+		case apistructs.IssueTypeTask, apistructs.IssueTypeRequirement:
+			if v.Belong == apistructs.IssueStateBelongDone {
+				stateIDS = append(stateIDS, int64(v.ID))
+			}
+		case apistructs.IssueTypeBug:
+			if v.Belong == apistructs.IssueStateBelongClosed {
+				stateIDS = append(stateIDS, int64(v.ID))
+			}
+		default:
+			continue
+		}
+	}
+	return stateIDS, nil
+}
+
+func (itr *Iteration) isContainStateID(stateIDS []int64, targetID int64) bool {
+	for _, stateID := range stateIDS {
+		if stateID == targetID {
+			return true
+		}
+	}
+	return false
+}

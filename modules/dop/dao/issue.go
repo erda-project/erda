@@ -80,6 +80,13 @@ func (Issue) TableName() string {
 	return "dice_issues"
 }
 
+type IssueSummary struct {
+	Total       int                  `json:"total,omitempty"`
+	IssueType   apistructs.IssueType `json:"issue_type,omitempty"`
+	State       int64                `json:"state,omitempty"`
+	IterationID int64                `json:"iteration_id,omitempty"`
+}
+
 // GetCanUpdateFields 获取所有可以被主动更新的字段
 func (i *Issue) GetCanUpdateFields() map[string]interface{} {
 	return map[string]interface{}{
@@ -432,6 +439,19 @@ func (client *DBClient) GetIssueSummary(iterationID int64, task, bug, requiremen
 			UnDone: bugUnDoneCount - bugDoneCount,
 		},
 	}
+}
+
+func (client *DBClient) ListIssueSummaryStates(projectID uint64, iterationIDS []int64) ([]IssueSummary, error) {
+	var summaries []IssueSummary
+	if err := client.Model(Issue{}).Where("project_id = ?", projectID).
+		Where("iteration_id in (?)", iterationIDS).
+		Where("deleted = ?", 0).
+		Group("iteration_id,state,type").
+		Select("count(*) as total,state,type as issue_type,iteration_id").
+		Scan(&summaries).Error; err != nil {
+		return nil, err
+	}
+	return summaries, nil
 }
 
 // GetIssueByIssueIDs 通过issueid获取issue
