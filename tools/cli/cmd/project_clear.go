@@ -40,16 +40,20 @@ var PROJECTCLEAR = command.Command{
 		command.StringFlag{Short: "", Name: "workspace", Doc: "the env workspace of a project, if set only clear runtimes and addons in the specific workspace", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "wait-runtime", Doc: "the minutes to wait runtimes deleted", DefaultValue: 3},
 		command.IntFlag{Short: "", Name: "wait-addon", Doc: "the minutes to wait addons deleted", DefaultValue: 3},
+		command.BoolFlag{Short: "", Name: "delete-apps", Doc: "If delete all applications", DefaultValue: false},
 	},
 	Run: ClearProject,
 }
 
-func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, workspace string, waitRuntime, waitAddon int) error {
+func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, workspace string, waitRuntime, waitAddon int, deleteApps bool) error {
 	if workspace != "" {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
 				workspace, apistructs.WorkSpace("").ValideList()))
 		}
+	}
+	if workspace != "" && deleteApps {
+		return errors.New("Should not both set --workspace and --deleteApps")
 	}
 	checkOrgParam(org, orgId)
 	checkProjectParam(project, projectId)
@@ -64,6 +68,13 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, w
 		return err
 	}
 
+	err = clearProject(ctx, orgId, projectId, workspace, waitRuntime, waitAddon, deleteApps)
+
+	ctx.Succ("Project clear success.")
+	return nil
+}
+
+func clearProject(ctx *command.Context, orgId, projectId uint64, workspace string, waitRuntime, waitAddon int, deleteApps bool) error {
 	apps, err := common.GetApplications(ctx, orgId, projectId)
 	if err != nil {
 		return err
@@ -148,7 +159,15 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, w
 		return false
 	}, time.Duration(waitAddon)*time.Minute)
 
-	ctx.Succ("Project clear success.")
+	if deleteApps {
+		for _, app := range apps {
+			err = common.DeleteApplication(ctx, app.ID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

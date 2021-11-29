@@ -128,3 +128,33 @@ func GetPagingApplications(ctx *command.Context, orgId, projectId uint64, pageNo
 
 	return resp.Data, nil
 }
+
+func DeleteApplication(ctx *command.Context, applicationId uint64) error {
+	var resp apistructs.ApplicationDeleteResponse
+	var b bytes.Buffer
+
+	response, err := ctx.Delete().
+		Path(fmt.Sprintf("/api/applications/%d", applicationId)).Do().Body(&b)
+	if err != nil {
+		return fmt.Errorf(
+			format.FormatErrMsg("delete", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return fmt.Errorf(format.FormatErrMsg("delete",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return fmt.Errorf(format.FormatErrMsg("delete",
+			fmt.Sprintf("failed to unmarshal releases remove application response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return fmt.Errorf(format.FormatErrMsg("delete",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+	return nil
+}
