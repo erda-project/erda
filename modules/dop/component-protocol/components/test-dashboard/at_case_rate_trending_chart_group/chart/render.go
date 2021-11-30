@@ -147,6 +147,10 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			if v.Type != apistructs.AutoTestPlan {
 				continue
 			}
+			// not include stopByUser
+			if v.Status == apistructs.PipelineStatusStopByUser {
+				continue
+			}
 			sucApiNum += v.SuccessApiNum
 			execApiNum += v.ExecuteApiNum
 			totalApiNum += v.TotalApiNum

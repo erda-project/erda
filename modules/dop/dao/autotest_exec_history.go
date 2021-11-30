@@ -86,7 +86,7 @@ func (AutoTestExecHistory) TableName() string {
 func (client *DBClient) ListAutoTestExecHistory(timeStart, timeEnd string, planIDs ...uint64) ([]AutoTestExecHistory, error) {
 	var list []AutoTestExecHistory
 	db := client.Model(&AutoTestExecHistory{}).
-		Select("type,success_api_num,execute_api_num,total_api_num,plan_id,pipeline_id,execute_time").
+		Select("type,success_api_num,execute_api_num,total_api_num,plan_id,pipeline_id,execute_time,status").
 		Where("plan_id IN (?)", planIDs).
 		Where("type = ?", apistructs.AutoTestPlan)
 	if timeStart != "" {

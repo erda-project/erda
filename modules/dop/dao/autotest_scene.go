@@ -654,10 +654,13 @@ func (db *DBClient) UpdateSceneRefSetID(copyRefs apistructs.AutoTestSceneCopyRef
 }
 
 // ListSceneBySceneSetID .
-func (db *DBClient) ListSceneBySceneSetID(setIDs ...uint64) ([]AutoTestScene, error) {
-	var scenes []AutoTestScene
-	err := db.Model(&AutoTestScene{}).Where("set_id IN (?)", setIDs).Find(&scenes).Error
-	return scenes, err
+func (db *DBClient) ListSceneBySceneSetID(setIDs ...uint64) ([]AutoTestScene, int64, error) {
+	var (
+		scenes []AutoTestScene
+		total  int64
+	)
+	err := db.Model(&AutoTestScene{}).Where("set_id IN (?)", setIDs).Find(&scenes).Count(&total).Error
+	return scenes, total, err
 }
 
 // ListAutotestSceneByGroupID .

@@ -1483,10 +1483,10 @@ func (svc *Service) GetAutotestScenesByIDs(sceneIDs []uint64) (map[uint64]apistr
 }
 
 // ListSceneBySceneSetID .
-func (svc *Service) ListSceneBySceneSetID(setIDs ...uint64) (scenes []apistructs.AutoTestScene, err error) {
-	list, err := svc.db.ListSceneBySceneSetID(setIDs...)
+func (svc *Service) ListSceneBySceneSetID(setIDs ...uint64) (scenes []apistructs.AutoTestScene, total int64, err error) {
+	list, total, err := svc.db.ListSceneBySceneSetID(setIDs...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	for _, v := range list {
 		// not include ref set

@@ -45,8 +45,12 @@ type Chart struct {
 
 func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
+	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 
-	sceneSteps := h.GetGlobalAtSceneStep()
+	sceneSteps, err := atSvc.ListAutoTestSceneSteps(h.GetGlobalAtSceneIDs())
+	if err != nil {
+		return err
+	}
 	sceneStepIDs := make([]uint64, 0, len(sceneSteps))
 	sceneStepMap := make(map[uint64]string, 0)
 	for _, v := range sceneSteps {
@@ -55,7 +59,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	}
 
 	timeFilter := h.GetAtSceneAndApiTimeFilter()
-	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	statusCounts, err := atSvc.ExecHistoryApiStatusCount(apistructs.StatisticsExecHistoryRequest{
 		TimeStart:    timeFilter.TimeStart,

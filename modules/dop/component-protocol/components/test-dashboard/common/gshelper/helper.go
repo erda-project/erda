@@ -214,35 +214,19 @@ func (h *GSHelper) GetGlobalAtStep() []apistructs.TestPlanV2Step {
 	return res
 }
 
-func (h *GSHelper) SetGlobalAtScene(l []apistructs.AutoTestScene) {
+func (h *GSHelper) SetGlobalAtSceneIDs(ids []uint64) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)["GlobalAtScene"] = l
+	(*h.gs)["GlobalAtSceneIDs"] = ids
 }
 
-func (h *GSHelper) GetGlobalAtScene() []apistructs.AutoTestScene {
+func (h *GSHelper) GetGlobalAtSceneIDs() []uint64 {
 	if h.gs == nil {
 		return nil
 	}
-	res := make([]apistructs.AutoTestScene, 0)
-	_ = assign((*h.gs)["GlobalAtScene"], &res)
-	return res
-}
-
-func (h *GSHelper) SetGlobalAtSceneStep(l []apistructs.AutoTestSceneStep) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["GlobalAtSceneStep"] = l
-}
-
-func (h *GSHelper) GetGlobalAtSceneStep() []apistructs.AutoTestSceneStep {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.AutoTestSceneStep, 0)
-	_ = assign((*h.gs)["GlobalAtSceneStep"], &res)
+	res := make([]uint64, 0)
+	_ = assign((*h.gs)["GlobalAtSceneIDs"], &res)
 	return res
 }
 
@@ -317,36 +301,11 @@ func (h *GSHelper) GetBlockAtStep() []apistructs.TestPlanV2Step {
 	return res
 }
 
-func (h *GSHelper) SetBlockAtScene(l []apistructs.AutoTestScene) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["BlockAtScene"] = l
-}
-
-func (h *GSHelper) GetBlockAtScene() []apistructs.AutoTestScene {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.AutoTestScene, 0)
-	_ = assign((*h.gs)["BlockAtScene"], &res)
-	return res
-}
-
 func (h *GSHelper) SetBlockAtSceneStep(l []apistructs.AutoTestSceneStep) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)["BlockAtSceneStep"] = l
-}
-
-func (h *GSHelper) GetBlockAtSceneStep() []apistructs.AutoTestSceneStep {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]apistructs.AutoTestSceneStep, 0)
-	_ = assign((*h.gs)["BlockAtSceneStep"], &res)
-	return res
 }
 
 func (h *GSHelper) SetGlobalQualityScore(score float64) {
