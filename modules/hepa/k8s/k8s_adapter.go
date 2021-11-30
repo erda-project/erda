@@ -132,9 +132,10 @@ func (impl *K8SAdapterImpl) countIngressController(namespace string) (int, error
 }
 
 func (impl *K8SAdapterImpl) CountIngressController() (count int, err error) {
-	count, err = impl.countIngressController(SYSTEM_NS)
+	count, err = impl.countIngressController(INGRESS_NS)
 	if err != nil {
-		count, err = impl.countIngressController(INGRESS_NS)
+		// use old version ingress
+		count, err = impl.countIngressController(SYSTEM_NS)
 	}
 	return
 }
@@ -292,11 +293,11 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
 	ingressName := strings.ToLower(name)
-	existed, err := impl.CheckIngressExist(namespace, ingressName)
+	exist, err := impl.CheckIngressExist(namespace, ingressName)
 	if err != nil {
 		return err
 	}
-	if !existed {
+	if !exist {
 		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, ingressName)
 		return nil
 	}
@@ -555,9 +556,10 @@ func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annot
 }
 
 func (impl *K8SAdapterImpl) UpdateIngressConroller(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) (err error) {
-	err = impl.updateIngressConroller(SYSTEM_NS, INGRESS_CONFIG_NAME, options, mainSnippet, httpSnippet, serverSnippet)
+	err = impl.updateIngressConroller(INGRESS_NS, INGRESS_CONFIG_NAME_NEW, options, mainSnippet, httpSnippet, serverSnippet)
 	if err != nil {
-		err = impl.updateIngressConroller(INGRESS_NS, INGRESS_CONFIG_NAME_NEW, options, mainSnippet, httpSnippet, serverSnippet)
+		// use old version ingress
+		err = impl.updateIngressConroller(SYSTEM_NS, INGRESS_CONFIG_NAME, options, mainSnippet, httpSnippet, serverSnippet)
 	}
 	return
 }
