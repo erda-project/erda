@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-cluster-list/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
@@ -93,24 +92,19 @@ func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	return nil
 }
 
-func (l *List) GetMetrics(ctx context.Context, clusterName string) map[string]*metrics.MetricsData {
+func (l *List) GetMetrics(ctx context.Context, clusterName, orgName string) map[string]*metrics.MetricsData {
 	// Get all nodes by cluster name
 	req := &metrics.MetricsRequest{
-		UserId:  l.SDK.Identity.UserID,
-		OrgId:   l.SDK.Identity.OrgID,
-		Cluster: clusterName,
-		Kind:    metrics.Node,
+		UserId:           l.SDK.Identity.UserID,
+		OrgId:            l.SDK.Identity.OrgID,
+		Cluster:          clusterName,
+		OrganizationName: orgName,
+		Kind:             metrics.Node,
 	}
-	metricsData, err := metricsServer.NodeMetrics(ctx, req)
+	metricsData, err := metricsServer.NodeAllMetrics(ctx, req)
 	if err != nil {
 		logrus.Error(err)
 		return nil
-	}
-	if metricsData == nil || len(metricsData) == 0 {
-		obj, _, _ := cache.GetFreeCache().Get(cache.GenerateKey(clusterName, metrics.NodeAll))
-		if obj != nil {
-			metricsData = obj[0].Value().(map[string]*metrics.MetricsData)
-		}
 	}
 	return metricsData
 }
@@ -270,6 +264,10 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	if err != nil {
 		return nil, err
 	}
+	org, err := l.Bdl.GetOrg(orgId)
+	if err != nil {
+		return nil, err
+	}
 	wg := sync.WaitGroup{}
 	wg.Add(3)
 	res := make(map[string]*ResData)
@@ -289,12 +287,14 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 				logrus.Error(err)
 			}
 			for _, m := range nodes {
-				cpuCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "cpu"))
-				memoryCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "memory"))
-				diskCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "ephemeral-storage"))
-				res[clusters[i].Name].CpuTotal += float64(cpuCapacity.Value())
-				res[clusters[i].Name].MemoryTotal += float64(memoryCapacity.Value())
-				res[clusters[i].Name].DiskTotal += float64(diskCapacity.Value())
+				if m.String("metadata", "labels", "type") != "virtual-kubelet" {
+					cpuCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "cpu"))
+					memoryCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "memory"))
+					diskCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "ephemeral-storage"))
+					res[clusters[i].Name].CpuTotal += float64(cpuCapacity.Value())
+					res[clusters[i].Name].MemoryTotal += float64(memoryCapacity.Value())
+					res[clusters[i].Name].DiskTotal += float64(diskCapacity.Value())
+				}
 			}
 			clusterInfos[clusters[i].Name].NodeCnt = len(nodes)
 		}
@@ -304,7 +304,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	go func() {
 		for i := 0; i < len(clusters); i++ {
 			cpuUsed, memoryUsed, diskUsed := 0.0, 0.0, 0.0
-			if metricsData := l.GetMetrics(l.Ctx, clusters[i].Name); metricsData != nil {
+			if metricsData := l.GetMetrics(l.Ctx, clusters[i].Name, org.Name); metricsData != nil {
 				for s, m := range metricsData {
 					if strings.Contains(s, metrics.Memory) {
 						memoryUsed += m.Used
@@ -377,9 +377,13 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 		if c.Description != "" {
 			description = c.Description
 		}
+		displayName := c.DisplayName
+		if c.DisplayName != "" {
+			displayName = c.Name
+		}
 		i := DataItem{
 			ID:            c.ID,
-			Title:         c.Name,
+			Title:         displayName,
 			Description:   description,
 			PrefixImg:     "cluster",
 			BackgroundImg: l.GetBgImage(c),
