@@ -226,7 +226,7 @@ func (h *GSHelper) GetGlobalAtSceneIDs() []uint64 {
 		return nil
 	}
 	res := make([]uint64, 0)
-	_ = assign((*h.gs)["GlobalAtScene"], &res)
+	_ = assign((*h.gs)["GlobalAtSceneIDs"], &res)
 	return res
 }
 

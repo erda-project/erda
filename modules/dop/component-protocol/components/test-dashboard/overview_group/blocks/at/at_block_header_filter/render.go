@@ -121,7 +121,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		}
 		return
 	}())
-	if err := f.SetBlockAtSceneAndStep(h); err != nil {
+	if err := f.SetBlockAtStep(h); err != nil {
 		return err
 	}
 	if err := f.setToComponent(c); err != nil {
@@ -154,7 +154,7 @@ func (f *Filter) setToComponent(c *cptype.Component) error {
 	return nil
 }
 
-func (f *Filter) SetBlockAtSceneAndStep(h *gshelper.GSHelper) error {
+func (f *Filter) SetBlockAtStep(h *gshelper.GSHelper) error {
 	steps, err := f.atTestPlan.ListStepByPlanID(func() []uint64 {
 		selectPlans := h.GetAtBlockFilterTestPlanList()
 		selectPlanIDs := make([]uint64, 0, len(selectPlans))
