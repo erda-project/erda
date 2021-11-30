@@ -216,7 +216,7 @@ func (itr *Iteration) SetIssueSummaries(projectID uint64, iterationMap map[int64
 		return apierrors.ErrPagingIterations.InvalidParameter("missing projectID")
 	}
 	if len(iterationMap) == 0 {
-		return apierrors.ErrPagingIterations.InvalidParameter("missing iteration ids")
+		return nil
 	}
 	iterationIDS := make([]int64, 0, len(iterationMap))
 	for _, iteration := range iterationMap {
