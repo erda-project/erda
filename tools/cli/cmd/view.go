@@ -59,7 +59,9 @@ var VIEW = command.Command{
 // RunViewPipe displays detailed information on the build record
 func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int, watch bool) (err error) {
 	if watch {
-		_ = BuildCheckLoop(ctx, strconv.FormatInt(int64(pipelineID), 10))
+		if err = BuildCheckLoop(ctx, strconv.FormatInt(int64(pipelineID), 10)); err != nil {
+			fmt.Println("[Warn]", err)
+		}
 	}
 
 	if _, err := os.Stat(".git"); err != nil {
