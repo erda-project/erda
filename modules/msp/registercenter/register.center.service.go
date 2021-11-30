@@ -60,19 +60,17 @@ func (s *registerCenterService) ListInterface(ctx context.Context, req *pb.ListI
 		}
 		adp := zkproxy.NewAdapter(clusterName, addr)
 		list, err := adp.GetAllInterfaceList(req.ProjectID, req.Env, namespace)
-		if err != nil {
-			return nil, errors.NewServiceInvokingError("zkproxy.GetAllInterfaceList", err)
+		if err == nil {
+			result.Data = append(result.Data, list...)
 		}
-		result.Data = append(result.Data, list...)
 	}
 	if addr, ok := config.Config["NACOS_ADDRESS"].(string); ok {
 		namespace, _ := config.Config["NACOS_TENANT_ID"].(string)
 		adp := nacos.NewAdapter(clusterName, addr)
 		list, err := adp.GetDubboInterfaceList(namespace)
-		if err != nil {
-			return nil, errors.NewServiceInvokingError("nacos.GetDubboInterfaceList", err)
+		if err == nil {
+			result.Data = append(result.Data, list...)
 		}
-		result.Data = append(result.Data, list...)
 	}
 	return result, nil
 }
