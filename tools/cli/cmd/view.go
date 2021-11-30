@@ -46,12 +46,22 @@ var VIEW = command.Command{
 		},
 		command.StringFlag{Short: "b", Name: "branch", Doc: "specify branch to show pipeline status, default is current branch", DefaultValue: ""},
 		command.IntFlag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},
+		command.BoolFlag{
+			Short:        "w",
+			Name:         "watch",
+			Doc:          "watch the status",
+			DefaultValue: false,
+		},
 	},
 	Run: RunViewPipe,
 }
 
 // RunViewPipe displays detailed information on the build record
-func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int) (err error) {
+func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int, watch bool) (err error) {
+	if watch {
+		_ = BuildCheckLoop(ctx, strconv.FormatInt(int64(pipelineID), 10))
+	}
+
 	if _, err := os.Stat(".git"); err != nil {
 		return err
 	}
@@ -146,15 +156,16 @@ func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int) (err
 			currentStageIndex = i
 		}
 	}
-	fmt.Printf("\rPipeline progress (current/total): %d/%d\n\n\r",
+	fmt.Printf("Pipeline progress (current/total): %d/%d\n",
 		currentStageIndex+1, total)
-
-	defer seeMore(ctx, orgName, int(repoStats.Data.ProjectID), int(repoStats.Data.ApplicationID), branch, pipelineID, ymlName)
-	defer printMetadata(pipelineInfoResp.Data.PipelineStages)
-
-	return table.NewTable().Header([]string{
+	if err = table.NewTable().Header([]string{
 		"pipelineID", "taskID", "taskName", "taskStatus", "startedAt",
-	}).Data(data).Flush()
+	}).Data(data).Flush(); err != nil {
+		return err
+	}
+	printMetadata(pipelineInfoResp.Data.PipelineStages)
+	seeMore(ctx, orgName, int(repoStats.Data.ProjectID), int(repoStats.Data.ApplicationID), branch, pipelineID, ymlName)
+	return nil
 }
 
 func seeMore(ctx *command.Context, orgName string, projectID, appID int, branch string, pipelineID int, pipelineName string) {

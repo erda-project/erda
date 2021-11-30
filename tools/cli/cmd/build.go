@@ -139,7 +139,7 @@ func RunBuild(ctx *command.Context, repo, branch, filename, alias string) (err e
 	if !pipelineResp.Success {
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
-	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via \nerda-cli view -i %d -b %s -r %s --host %s",
+	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via \nerda-cli view -w -i %d -b %s -r %s --host %s",
 		branch, pipelineResp.Data.ID, pipelineResp.Data.ID, branch, repo, ctx.CurrentOpenApiHost)
 
 	return nil
@@ -225,11 +225,13 @@ func BuildCheckLoop(ctx *command.Context, buildID string) error {
 			pipelineInfo.Status == apistructs.PipelineStatusTimeout {
 			fmt.Print(color_str.Green(fmt.Sprintf("build faild, status: %s, time elapsed: %s\n",
 				pipelineInfo.Status, format.ToTimeSpanString(int(pipelineInfo.CostTimeSec)))))
-			fmt.Println(pipelineInfo.Extra.ShowMessage.Stacks)
-
+			var msg = "nil"
+			if showMessage := pipelineInfo.Extra.ShowMessage; showMessage != nil {
+				fmt.Println(showMessage.Stacks)
+				msg = showMessage.Msg
+			}
 			return fmt.Errorf(format.FormatErrMsg("pipeline info",
-				"build error: "+pipelineInfo.Extra.ShowMessage.Msg, false))
-
+				"build error: "+msg, false))
 		}
 
 		if pipelineInfo.Status == apistructs.PipelineStatusSuccess {
