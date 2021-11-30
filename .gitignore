@@ -63,3 +63,10 @@ quick-start/data
 
 modules/openapi/api/generate
 /fake_subscriber.txt
+/.erda/pipelines/build-cmp.yaml
+/.erda/pipelines/build-cmp.sh
+/.erda/pipelines/build-cmp.yaml
+/.erda/pipelines/build-dop.sh
+/.erda/pipelines/build-dop.yaml
+/.erda/pipelines/build-orchestrator.sh
+/.erda/pipelines/build-orchestrator.yaml

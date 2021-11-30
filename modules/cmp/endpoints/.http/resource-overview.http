@@ -1,0 +1,28 @@
+## 资源报表 按项目聚合
+GET http://openapi.dev.terminus.io/api/resource-overview/report-table?clusterName=terminus-dev&cpuPerNode=8&memPerNode=32&groupBy=project
+lang: zh-CN
+org: erda
+accept-language: zh-CN,zh;q=0.9
+cookie:
+
+### 资源报表 按所有者聚合
+GET http://openapi.dev.terminus.io/api/resource-overview/report-table?clusterName=terminus-dev&cpuPerNode=8&memPerNode=32&groupBy=owner
+Accept: application/json
+accept: application/vnd.dice+json;version=1.0
+lang: zh-CN
+org: erda
+accept-language: zh-CN,zh;q=0.9
+cookie:
+
+### 项目资源趋势
+GET http://openapi.hkci.terminus.io/api/resource-overview/project-trend?clusterName=terminus-dev&start=1637810269000&end=1638415069000&interval=day&scope=project&scopeID=3&resourceType=cpu
+lang: zh-CN
+org-id: 1
+user-id: 2
+cookie: u_c_captain_dev_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiI5ZWJmMWI5MGM0ZmU3YWNlYmVlZGY4ZjM1YWY5NGY1N2E3YWVlZjQzNmNkNjk3NmM5OGFjODlmMTM5NmZkZjdjIiwibmJmIjoxNjM4NDE0NzIxLCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTYzOTAxOTUyMSwiaWF0IjoxNjM4NDE0NzIxfQ.oVg5wj-uaeqipmdMvhO0XuItjoEO_jnwFChyWo_ODxA; OPENAPISESSION=f0f95597-9e3d-41a1-9f0e-fba13a68ce70; u_c_captain_hkci_local=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsb2dpbiIsInBhdGgiOiIvIiwidG9rZW5LZXkiOiJkZGUwYzRmMzA1NWZiMTNmMGI5MzA0MjljZjI5MTBlYTUwMjdiZDkxYjU1YWJkZGE5NzIxYTgxNDBkYzg4OGQ1IiwibmJmIjoxNjM4NTIyMDc1LCJkb21haW4iOiJ0ZXJtaW51cy5pbyIsImlzcyI6ImRyYWNvIiwidGVuYW50SWQiOjEsImV4cGlyZV90aW1lIjo2MDQ4MDAsImV4cCI6MTYzOTEyNjg3NSwiaWF0IjoxNjM4NTIyMDc1fQ.JsXhD94_0Mlab4-AcIWosZqfe78ULbmWQd3eeH8Cl_o; OPENAPI-CSRF-TOKEN=K4CuPR0UqFHPoNueBK7fiKpX7942489Z
+
+> {%
+client.test("项目资源趋势", function (){
+    client.assert(response.status===200, "Response status is not 200");
+});
+%}

@@ -16,6 +16,7 @@ package project
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	cmpPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/cache"
@@ -39,20 +40,27 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		return nil, apierrors.ErrApplicationsResources.InvalidParameter(err)
 	}
 	var (
+		projectID, _ = req.GetProjectID()
+		orgID, _     = req.GetOrgID()
+		appsIDs      = req.Query.GetAppIDs()
+		ownersIDs    = req.Query.GetOwnerIDs()
+	)
+	l = l.WithField("projectID", projectID).WithField("filter appsIDs", appsIDs)
+	var (
 		applicationFilter = make(map[uint64]struct{})
 		ownerFilter       = map[uint64]struct{}{0: {}}
 	)
-	for _, applicationID := range req.Query.ApplicationsIDs {
+	for _, applicationID := range appsIDs {
 		applicationFilter[applicationID] = struct{}{}
 	}
-	for _, ownerID := range req.Query.OwnerIDs {
+	for _, ownerID := range ownersIDs {
 		ownerFilter[ownerID] = struct{}{}
 	}
 
 	var data apistructs.ApplicationsResourcesResponse
 
 	// query project info from core-services
-	project, err := p.bdl.GetProject(req.ProjectID)
+	project, err := p.bdl.GetProject(projectID)
 	if err != nil {
 		l.WithError(err).Errorf("failed to GetProject(%v)", req.ProjectID)
 		return nil, apierrors.ErrApplicationsResources.InternalError(err)
@@ -64,12 +72,13 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 
 	// query applications list from core-services
 	// todo: pageSize
-	apps, err := p.bdl.GetAppsByProject(req.ProjectID, req.OrgID, req.UserID)
+	apps, err := p.bdl.GetAppsByProject(projectID, orgID, req.UserID)
 	if err != nil {
 		l.WithError(err).Errorln("failed to GetAppsByProject")
 		return nil, apierrors.ErrApplicationsResources.InternalError(err)
 	}
 	if apps.Total == 0 || len(apps.List) == 0 {
+		l.Warnln("GetAppsByProject: no application in the project")
 		return &data, nil
 	}
 	var (
@@ -77,7 +86,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		items           = make(map[uint64]*apistructs.ApplicationsResourcesItem)
 	)
 	for _, application := range apps.List {
-		if _, ok := applicationFilter[application.ID]; !ok {
+		if _, ok := applicationFilter[application.ID]; !ok && len(applicationFilter) > 0 {
 			continue
 		}
 		var item = new(apistructs.ApplicationsResourcesItem)
@@ -99,15 +108,21 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		data.List = append(data.List, item)
 	}
 	if len(applicationsIDs) == 0 {
+		l.Warnln("no application in the given applications in the project")
 		return &data, nil
 	}
 
 	// query runtimes list from orchestrator
-	runtimesM, err := p.bdl.GetApplicationsRuntimes(req.OrgID, req.UserID, applicationsIDs)
+	runtimesM, err := p.bdl.ListRuntimesGroupByApps(orgID, req.UserID, applicationsIDs)
 	if err != nil {
-		l.WithError(err).Errorln("failed to GetApplicationsRuntimes")
+		l.WithError(err).Errorln("failed to ListRuntimesGroupByApps")
 		return nil, apierrors.ErrApplicationsResources.InternalError(err)
 	}
+	if len(runtimesM) == 0 {
+		l.Warnln("runtime record not found")
+	}
+	runtimeMContent,_:=json.Marshal(runtimesM)
+	l.Infof("runtimeM: %s", runtimeMContent)
 
 	// serviceGroupID group by applicationID and workspace
 	var (
@@ -115,31 +130,42 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		applicationWorkspaceServiceGroups = make(map[uint64]map[string][]string)
 	)
 	for applicationID, runtimes := range runtimesM {
+		l := l.WithField("applicationID", applicationID)
 		workspaceServiceGroups, ok := applicationWorkspaceServiceGroups[applicationID]
 		if !ok {
 			workspaceServiceGroups = make(map[string][]string)
 		}
+		if len(runtimes) == 0 {
+			l.Warnln("len(runtimes) == 0")
+		}
 		for _, runtime := range runtimes {
-			if runtime.Extra != nil {
-				workspace := strings.ToUpper(runtime.Extra.Workspace)
-				workspaceServiceGroups[workspace] = append(workspaceServiceGroups[workspace], runtime.ServiceGroupName)
+			if runtime.Extra == nil {
+				runtimeContent, _ := json.Marshal(runtime)
+				l.WithField("runtime", string(runtimeContent)).Warnln("runtime.Extra == nil")
+				continue
 			}
+			workspace := strings.ToUpper(runtime.Extra.Workspace)
+			workspaceServiceGroups[workspace] = append(workspaceServiceGroups[workspace], runtime.ServiceGroupName)
 		}
 		applicationWorkspaceServiceGroups[applicationID] = workspaceServiceGroups
 	}
 
-	// query pods by the label "servicegroup-id" for every application and workspace
-	for applicationsID, workspaceServiceGroup := range applicationWorkspaceServiceGroups {
+	// query pods by the label "servicegroup-id" for every application and workspace from cmp
+	for applicationsID, workspaceServiceGroups := range applicationWorkspaceServiceGroups {
 		item := items[applicationsID]
-
-		for workspace, serviceGroupIDs := range workspaceServiceGroup {
-			getPodsRequest := dashboardPb.GetPodsByLabelsRequest{
+		for workspace, serviceGroupIDs := range workspaceServiceGroups {
+			cluster := project.ClusterConfig[workspace]
+			labels := strings.Join(serviceGroupIDs, ",")
+			l := l.WithFields(map[string]interface{}{"cluster": cluster, "servicegroup-id in": labels, "workspace": workspace})
+			pods, err := p.cmp.GetPodsByLabels(ctx, &cmpPb.GetPodsByLabelsRequest{
 				Cluster: project.ClusterConfig[workspace],
-				Labels:  []string{fmt.Sprintf("servicegroup-id in (%s)", strings.Join(serviceGroupIDs, ","))},
-			}
-			pods, err := p.cmp.GetPodsByLabels(ctx, &getPodsRequest)
+				Labels:  []string{fmt.Sprintf("servicegroup-id in (%s)", labels)},
+			})
 			if err != nil {
-				l.WithError(err).Errorf("failed to GetPodsByLabels, request: %+v", getPodsRequest)
+				l.WithError(err).Errorln("failed to GetPodsByLabels")
+			}
+			if len(pods.List) == 0 {
+				l.Warnln("len(pods.List) == 0")
 			}
 			for _, pod := range pods.List {
 				item.AddResource(workspace, 1, pod.CpuRequest, pod.MemRequest)
@@ -149,7 +175,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 
 	data.Total = len(data.List)
 	data.OrderBy(req.Query.OrderBy...)
-	data.Paging(req.Query.PageSize, req.Query.PageNo)
+	data.Paging(req.Query.GetPageSize(), req.Query.GetPageNo())
 	return &data, nil
 }
 

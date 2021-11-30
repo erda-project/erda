@@ -12,22 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dop
+package orchestrator
 
-import (
-	"net/http"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
-
-var APPLICATIONS_RESOURCES_LIST = apis.ApiSpec{
-	Path:        "/api/projects/<projectID>/applications-resources",
-	BackendPath: "/api/projects/<projectID>/applications-resources",
-	Method:      http.MethodGet,
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+var ORCHESTRATOR_RUNTIME_GROUP_BY_APPS = apis.ApiSpec{
+	Path:        "/api/runtimes/actions/group-by-apps",
+	BackendPath: "/api/runtimes/actions/group-by-apps",
+	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:      "http",
+	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "the list of applications resources in the project",
-	IsOpenAPI:   true,
+	Doc: `
+summary: 按给定的 app 分组返回 runtimes 列表
+`,
 }
