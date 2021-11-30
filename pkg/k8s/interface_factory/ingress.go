@@ -31,12 +31,12 @@ import (
 const IngressKind = "Ingress"
 
 func CreateIngressesHelper(client *kubernetes.Clientset) (union_interface.IngressesHelper, error) {
-	exist, err := IsResourceExist(client, IngressKind, extensionsv1beta1.SchemeGroupVersion.String())
+	exist, err := IsResourceExist(client, IngressKind, v1.SchemeGroupVersion.String())
 	if err != nil {
 		return nil, err
 	}
 	if exist {
-		return erdaextensionsv1beta1.NewIngressHelper(client.ExtensionsV1beta1()), nil
+		return erdav1.NewIngressHelper(client.NetworkingV1()), nil
 	}
 	exist, err = IsResourceExist(client, IngressKind, v1beta1.SchemeGroupVersion.String())
 	if err != nil {
@@ -45,12 +45,12 @@ func CreateIngressesHelper(client *kubernetes.Clientset) (union_interface.Ingres
 	if exist {
 		return erdav1beta1.NewIngressHelper(client.NetworkingV1beta1()), nil
 	}
-	exist, err = IsResourceExist(client, IngressKind, v1.SchemeGroupVersion.String())
+	exist, err = IsResourceExist(client, IngressKind, extensionsv1beta1.SchemeGroupVersion.String())
 	if err != nil {
 		return nil, err
 	}
 	if exist {
-		return erdav1.NewIngressHelper(client.NetworkingV1()), nil
+		return erdaextensionsv1beta1.NewIngressHelper(client.ExtensionsV1beta1()), nil
 	}
 
 	return nil, errors.New("there is no ingress kind")
