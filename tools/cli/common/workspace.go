@@ -35,6 +35,15 @@ func GetWorkspaceBranch() (string, error) {
 	return branch, nil
 }
 
+func GetOriginRepo() string {
+	return GetRepo("origin")
+}
+
+func GetRepo(remote string) string {
+	out, _ := exec.Command("git", "config", "--get", "remote."+remote+".url").CombinedOutput()
+	return string(out)
+}
+
 func GetWorkspaceInfo() (org string, project string, app string, err error) {
 	remoteCmd := exec.Command("git", "remote", "get-url", "origin")
 	out, err := remoteCmd.CombinedOutput()
@@ -44,7 +53,11 @@ func GetWorkspaceInfo() (org string, project string, app string, err error) {
 
 	re := regexp.MustCompile(`\r?\n`)
 	newStr := re.ReplaceAllString(string(out), "")
-	u, err := url.Parse(newStr)
+	return GetWorkspaceInfoFromErdaRepo(newStr)
+}
+
+func GetWorkspaceInfoFromErdaRepo(erdaRepo string) (org, project, app string, err error) {
+	u, err := url.Parse(erdaRepo)
 	if err != nil {
 		return "", "", "", err
 	}

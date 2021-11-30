@@ -15,9 +15,15 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,17 +41,35 @@ var BUILD = command.Command{
 	ShortHelp: "Create an pipeline and run it",
 	Example:   `$ erda-cli build`,
 	Flags: []command.Flag{
+		command.StringFlag{
+			Short:        "r",
+			Name:         "repo",
+			Doc:          "the repo on Erda DOP",
+			DefaultValue: os.Getenv("ERDA_REPO"),
+		},
 		command.StringFlag{Short: "b", Name: "branch", Doc: "branch to create pipeline, default is current branch", DefaultValue: ""},
+		command.StringFlag{
+			Short:        "f",
+			Name:         "pipeline-file",
+			Doc:          "The specified local pipeline file",
+			DefaultValue: "",
+		},
+		command.StringFlag{
+			Short:        "",
+			Name:         "alias",
+			Doc:          "pipeline task alias name",
+			DefaultValue: "",
+		},
 	},
 	Run: RunBuild,
 }
 
 // RunBuild Create an pipeline and run it
-func RunBuild(ctx *command.Context, branch string) error {
+func RunBuild(ctx *command.Context, repo, branch, filename, alias string) (err error) {
 	// 1. check if .git dir exists in current directory
 	// 2. parse current branch
 	// 3. create pipeline, run it
-	if _, err := os.Stat(".git"); err != nil {
+	if _, err = os.Stat(".git"); err != nil {
 		return err
 	}
 
@@ -58,7 +82,14 @@ func RunBuild(ctx *command.Context, branch string) error {
 	}
 
 	// fetch appID
-	orgName, projectName, appName, err := common.GetWorkspaceInfo()
+	if repo == "" {
+		fmt.Printf("repo not specified, use origin")
+		repo = common.GetOriginRepo()
+	}
+	if repo == "" {
+		return errors.New("repo not found. Exit.")
+	}
+	orgName, projectName, appName, err := common.GetWorkspaceInfoFromErdaRepo(repo)
 	if err != nil {
 		return err
 	}
@@ -84,6 +115,19 @@ func RunBuild(ctx *command.Context, branch string) error {
 	request.PipelineYmlSource = apistructs.PipelineYmlSourceGittar
 	request.AutoRun = true
 
+	if filename != "" {
+		content, err := parsePipeline(filename)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parsePipeline: %s", filename)
+		}
+		request.PipelineYmlSource = apistructs.PipelineYmlSourceContent
+		request.PipelineYmlName = strings.TrimSuffix(path.Base(filename), path.Ext(filename))
+		request.PipelineYmlContent = string(content)
+	}
+	if alias != "" {
+		request.PipelineYmlName = alias
+	}
+
 	// create pipeline
 	response, err := ctx.Post().Path("/api/cicds").JSONBody(request).Do().JSON(&pipelineResp)
 	if err != nil {
@@ -95,7 +139,8 @@ func RunBuild(ctx *command.Context, branch string) error {
 	if !pipelineResp.Success {
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
-	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via `erda-cli status -i <pipelineID>`", branch, pipelineResp.Data.ID)
+	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via \nerda-cli pipe -i %d -b %s -r %s --host %s",
+		branch, pipelineResp.Data.ID, pipelineResp.Data.ID, branch, repo, ctx.CurrentOpenApiHost)
 
 	return nil
 }
@@ -329,4 +374,30 @@ func PrintWorkFlow(ctx *command.Context, buildID string) error {
 	}
 
 	return nil
+}
+
+func parsePipeline(filename string) (string, error) {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to ReadFile: %s", filename)
+	}
+
+	branch, _ := common.GetWorkspaceBranch()
+	content = bytes.ReplaceAll(content, []byte("((branch))"), []byte(branch))
+
+	remotes := regexp.MustCompile(`\(\(remote\..*\)\)`).FindAllString(string(content), -1)
+	for _, remote := range remotes {
+		ss := strings.Split(remote, ".")
+		if len(ss) < 2 {
+			continue
+		}
+		remoteName := strings.TrimRight(ss[1], ")")
+		out, err := exec.Command("git", "config", "--get", "remote."+remoteName+".url").CombinedOutput()
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get git remote url, remote name: %s", remoteName)
+		}
+		content = bytes.ReplaceAll(content, []byte("((remote."+remoteName+"))"), out)
+	}
+
+	return string(content), nil
 }
