@@ -31,27 +31,27 @@ import (
 	"github.com/erda-project/erda/tools/cli/common"
 )
 
-var FETCH_PIPE = command.Command{
-	Name:      "pipe",
-	ShortHelp: "Show build status",
+var VIEW = command.Command{
+	Name:      "view",
+	ShortHelp: "View build status",
 	Example: `
-  $ erda-cli pipe -b develop -i <pipelineID> -h https://openapi.erda.cloud
+  $ erda-cli view -b develop -i <pipelineID> --host https://openapi.erda.cloud
 `,
 	Flags: []command.Flag{
 		command.StringFlag{
 			Short:        "r",
 			Name:         "repo",
-			Doc:          "the repo on Erda DOP",
+			Doc:          "the repo on Erda DOP, default current repo.",
 			DefaultValue: os.Getenv("ERDA_REPO"),
 		},
 		command.StringFlag{Short: "b", Name: "branch", Doc: "specify branch to show pipeline status, default is current branch", DefaultValue: ""},
 		command.IntFlag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},
 	},
-	Run: RunFetchPipe,
+	Run: RunViewPipe,
 }
 
-// RunBuildsInspect displays detailed information on the build record
-func RunFetchPipe(ctx *command.Context, repo, branch string, pipelineID int) (err error) {
+// RunViewPipe displays detailed information on the build record
+func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int) (err error) {
 	if _, err := os.Stat(".git"); err != nil {
 		return err
 	}
@@ -125,8 +125,11 @@ func RunFetchPipe(ctx *command.Context, repo, branch string, pipelineID int) (er
 		return errors.Errorf("status fail: %+v", pipelineInfoResp.Error)
 	}
 
-	data := [][]string{}
-	var currentStageIndex int
+	var (
+		data              [][]string
+		currentStageIndex int
+		total             = len(pipelineInfoResp.Data.PipelineStages)
+	)
 	for i, stage := range pipelineInfoResp.Data.PipelineStages {
 		success := true
 		for _, task := range stage.PipelineTasks {
@@ -143,9 +146,8 @@ func RunFetchPipe(ctx *command.Context, repo, branch string, pipelineID int) (er
 			currentStageIndex = i
 		}
 	}
-
-	fmt.Printf("Pipeline progress (success/total): %d/%d\n\n",
-		currentStageIndex+1, len(pipelineInfoResp.Data.PipelineStages))
+	fmt.Printf("\rPipeline progress (current/total): %d/%d\n\n\r",
+		currentStageIndex+1, total)
 
 	defer seeMore(ctx, orgName, int(repoStats.Data.ProjectID), int(repoStats.Data.ApplicationID), branch, pipelineID, ymlName)
 	defer printMetadata(pipelineInfoResp.Data.PipelineStages)

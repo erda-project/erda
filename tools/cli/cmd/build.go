@@ -139,7 +139,7 @@ func RunBuild(ctx *command.Context, repo, branch, filename, alias string) (err e
 	if !pipelineResp.Success {
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
-	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via \nerda-cli pipe -i %d -b %s -r %s --host %s",
+	ctx.Succ("building for branch: %s, pipelineID: %d, you can view building status via \nerda-cli view -i %d -b %s -r %s --host %s",
 		branch, pipelineResp.Data.ID, pipelineResp.Data.ID, branch, repo, ctx.CurrentOpenApiHost)
 
 	return nil
