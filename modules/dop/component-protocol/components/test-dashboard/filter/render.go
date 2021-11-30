@@ -164,7 +164,7 @@ func (f *Filter) SetGlobalAtSceneAndStep(h *gshelper.GSHelper) error {
 		return err
 	}
 
-	scenes, err := f.atTestPlan.ListSceneBySceneSetID(func() []uint64 {
+	scenes, _, err := f.atTestPlan.ListSceneBySceneSetID(func() []uint64 {
 		setIDs := make([]uint64, 0, len(steps))
 		for _, v := range steps {
 			setIDs = append(setIDs, v.SceneSetID)
@@ -175,20 +175,13 @@ func (f *Filter) SetGlobalAtSceneAndStep(h *gshelper.GSHelper) error {
 		return err
 	}
 
-	sceneSteps, err := f.atTestPlan.ListAutoTestSceneSteps(func() []uint64 {
-		sceneIDs := make([]uint64, 0, len(scenes))
-		for _, v := range scenes {
-			sceneIDs = append(sceneIDs, v.ID)
-		}
-		return sceneIDs
-	}())
-	if err != nil {
-		return err
+	sceneIDs := make([]uint64, 0, len(scenes))
+	for _, v := range scenes {
+		sceneIDs = append(sceneIDs, v.ID)
 	}
 
 	h.SetGlobalAtStep(steps)
-	h.SetGlobalAtScene(scenes)
-	h.SetGlobalAtSceneStep(sceneSteps)
+	h.SetGlobalAtSceneIDs(sceneIDs)
 	return nil
 }
 
