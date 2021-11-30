@@ -16,25 +16,21 @@ package kind
 
 import "github.com/erda-project/erda/pkg/common/errors"
 
-type AliyunSMS struct {
-	AccessKeyId     string
-	AccessKeySecret string
-	SignName        string
-	TemplateCode    string
+type DingDingWorkNotice struct {
+	AgentId   int64
+	AppKey    string
+	AppSecret string
 }
 
-func (asm *AliyunSMS) Validate() error {
-	if asm.SignName == "" {
-		return errors.NewMissingParameterError("signName")
+func (ding *DingDingWorkNotice) Validate() error {
+	if ding.AgentId == 0 {
+		return errors.NewMissingParameterError("agentId")
 	}
-	if asm.TemplateCode == "" {
-		return errors.NewMissingParameterError("templateCode")
+	if ding.AppSecret == "" {
+		return errors.NewMissingParameterError("appSecret")
 	}
-	if asm.AccessKeyId == "" {
-		return errors.NewMissingParameterError("accessKeyId")
-	}
-	if asm.AccessKeySecret == "" {
-		return errors.NewMissingParameterError("accessKeySecret")
+	if ding.AppKey == "" {
+		return errors.NewMissingParameterError("appKey")
 	}
 	return nil
 }
