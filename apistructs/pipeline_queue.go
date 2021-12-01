@@ -198,6 +198,16 @@ func (req *PipelineQueueCreateRequest) Validate() error {
 	return nil
 }
 
+type PipelineQueueCreateResponse struct {
+	Header
+	Data *PipelineQueue `json:"data"`
+}
+
+type PipelineQueueListResponse struct {
+	Header
+	Data *PipelineQueuePagingData `json:"data"`
+}
+
 // PipelineQueuePagingRequest
 type PipelineQueuePagingRequest struct {
 	Name string `schema:"name"`
