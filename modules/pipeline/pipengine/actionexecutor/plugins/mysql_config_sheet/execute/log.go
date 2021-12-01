@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
 )
 
-func printOutParams(ctx context.Context, outParams map[string]interface{}, meta *Meta) {
+func printOutParams(ctx context.Context, outParamsResult map[string]interface{}, outParams []apistructs.APIOutParam) {
 	log := log_collector.Clog(ctx)
 
 	if len(outParams) == 0 {
@@ -33,15 +33,13 @@ func printOutParams(ctx context.Context, outParams map[string]interface{}, meta 
 	defer addNewLine(ctx)
 
 	// 按定义顺序返回
-	for _, define := range meta.OutParams {
+	for _, define := range outParams {
 		k := define.Key
-		v, ok := outParams[k]
+		v, ok := outParamsResult[k]
 		if !ok {
 			continue
 		}
-		meta.OutParamsResult[k] = v
 		log.Printf("  arg: %s", k)
-		log.Printf("  source: %s", define.Source.String())
 		if define.Expression != "" {
 			log.Printf("  expr: %s", define.Expression)
 		}
@@ -76,7 +74,6 @@ func printAssertResults(ctx context.Context, success bool, results []*apistructs
 		addLineDelimiter(ctx, "  ")
 	}
 }
-
 
 func addLineDelimiter(ctx context.Context, prefix ...string) {
 	log := log_collector.Clog(ctx)

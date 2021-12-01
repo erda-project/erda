@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -35,7 +36,7 @@ func TestWriteMetaFile(t *testing.T) {
 
 	t.Run("writeMetaFile", func(t *testing.T) {
 		ctx := context.Background()
-		ctx = context.WithValue(ctx, CtxKeyLogger, &logrus.Entry{})
+		ctx = context.WithValue(ctx, log_collector.CtxKeyLogger, &logrus.Entry{})
 		writeMetaFile(ctx, &spec.PipelineTask{}, meta)
 	})
 }

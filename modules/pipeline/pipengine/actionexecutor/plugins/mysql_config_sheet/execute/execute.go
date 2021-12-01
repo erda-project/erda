@@ -15,15 +15,19 @@
 package execute
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/pkg/jsonparse"
 	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
@@ -32,7 +36,6 @@ import (
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	jsonfilter "github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/envconf"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/loop"
 )
 
@@ -48,17 +51,19 @@ const (
 	ResultFailed  = "failed"
 )
 
-func Do(ctx context.Context, task *spec.PipelineTask) {
+func Do(ctx context.Context, task *spec.PipelineTask, bdl *bundle.Bundle) {
 	logger := log_collector.NewLogger().WithContext(context.WithValue(context.Background(), log_collector.CtxKeyCollectorLogID, task.Extra.UUID))
 	ctx = context.WithValue(ctx, log_collector.CtxKeyLogger, logger)
 
 	meta := NewMeta()
+	meta.AssertResult = true
 	var err error
 
 	defer writeMetaFile(ctx, task, meta)
 	defer func() {
 		if err != nil {
 			log_collector.Clog(ctx).Errorf(err.Error())
+			logrus.Errorf("mysql_config_sheet exec error %v", err)
 			meta.Err = err
 			meta.AssertResult = false
 		}
@@ -71,8 +76,9 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 		return
 	}
 
-	var req = genRequest(ctx, cfg, meta)
-	if req == nil {
+	req, err := genRequest(cfg, bdl)
+	if err != nil {
+		err = fmt.Errorf("failed to genRequest, err: %v", err)
 		return
 	}
 	req.ClusterKey = task.Extra.ClusterName
@@ -84,145 +90,181 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 		err = fmt.Errorf("dbOpen error %v", err)
 		return
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	if cfg.Database != "" {
-		log_collector.Clog(ctx).Infof("sql: USE %v", cfg.Database)
-
-		_, err = db.Exec("USE " + cfg.Database)
-		if err != nil {
-			err = fmt.Errorf("sql %v exec error %v", "USE "+cfg.Database, err)
-			return
-		}
+		cfg.Executors = append([]SqlExecutor{
+			{
+				Sql: "USE " + cfg.Database,
+			},
+		}, cfg.Executors...)
 	}
 
-	log_collector.Clog(ctx).Infof("sql： %v", cfg.Sql)
-	runSQL(ctx, cfg, db, meta)
-	log_collector.Clog(ctx).Infof("result： %v", meta.Result)
-
-	meta.OutParams = cfg.OutParams
-	meta.OutParamsResult = map[string]interface{}{}
-	for _, outputParam := range cfg.OutParams {
-		output := jsonfilter.FilterJson([]byte(meta.Result), outputParam.Expression, "")
-		meta.OutParamsResult[outputParam.Key] = output
+	err = exec(ctx, db, meta, cfg.Executors)
+	if err != nil {
+		err = fmt.Errorf("sql exec error %v", err)
+		return
 	}
 
-	printOutParams(ctx, meta.OutParamsResult, meta)
-
-	var judgeObject = &apitestsv2.APITest{}
-	if len(cfg.Asserts) > 0 {
-
-		succ, assertResults := judgeObject.JudgeAsserts(meta.OutParamsResult, cfg.Asserts)
-		printAssertResults(ctx, succ, assertResults)
-		meta.AssertResult = succ
-
-		if !succ {
-			addNewLine(ctx)
-			err = fmt.Errorf( "sql run Success, but asserts failed")
-			return
-		}
-	}
 	return
 }
 
-func runSQL(ctx context.Context, cfg Conf, db *sql.DB, meta *Meta)  {
-	switch cfg.SqlType {
-	case "query":
-		if strings.HasPrefix(cfg.Sql, "select") {
-			result, err := db.Query(cfg.Sql)
-			if err != nil {
-				err = fmt.Errorf("sql %v query error %v", cfg.Sql, err)
-				return
-			}
+func exec(ctx context.Context, db *sql.DB, meta *Meta, executors []SqlExecutor) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("db translate begin error %v", err)
+	}
 
-			var results = []map[string]interface{}{}
-			for result.Next() {
-				columes, err := result.Columns()
-				if err != nil {
-					err = fmt.Errorf("sql %v query error %v", cfg.Sql, err)
-					return
-				}
-
-				var scanObject =  make([]interface{}, len(columes))
-				err = result.Scan(scanObject...)
-				if err != nil {
-					err = fmt.Errorf("sql %v query error %v", cfg.Sql, err)
-					return
-				}
-
-				var object = map[string]interface{}{}
-				for index, colume := range  columes {
-					object[colume] = scanObject[index]
-				}
-				results = append(results, object)
-			}
-
-			meta.Result = jsonparse.JsonOneLine(ctx, results)
-			break
-		}
-		fallthrough
-	case "exec":
-		result, err := db.Exec(cfg.Sql)
+	var allResults = []interface{}{}
+	defer func() {
+		meta.Result = jsonfilter.JsonOneLine(allResults)
+	}()
+	meta.OutParamsResult = map[string]interface{}{}
+	meta.OutParams = []apistructs.APIOutParam{}
+	for _, exec := range executors {
+		log_collector.Clog(ctx).Infof("sql：%v", exec.Sql)
+		result, err := runSql(exec.Sql, tx)
 		if err != nil {
-			err = fmt.Errorf("sql %v exec error %v", "USE "+cfg.Database, err)
-			return
+			return err
 		}
+		log_collector.Clog(ctx).Infof("result： %v", jsonfilter.JsonOneLine(result))
+		allResults = append(allResults, result)
+
+		outParamsResult := map[string]interface{}{}
+		outParams := []apistructs.APIOutParam{}
+		for _, outputParam := range exec.OutParams {
+			output := jsonfilter.FilterJson([]byte(jsonfilter.JsonOneLine(result)), outputParam.Expression, "")
+			outParams = append(outParams, outputParam)
+			outParamsResult[outputParam.Key] = output
+		}
+
+		printOutParams(ctx, outParamsResult, outParams)
+
+		var judgeObject = &apitestsv2.APITest{}
+		if len(exec.Asserts) > 0 {
+			var asserts []apistructs.APIAssert
+			for _, ass := range exec.Asserts {
+				asserts = append(asserts, ass.convert())
+			}
+			succ, assertResults := judgeObject.JudgeAsserts(outParamsResult, asserts)
+			printAssertResults(ctx, succ, assertResults)
+			if !succ {
+				addNewLine(ctx)
+				return fmt.Errorf("sql run Success, but asserts failed")
+			}
+		}
+		for k, v := range outParamsResult {
+			meta.OutParamsResult[k] = v
+		}
+		meta.OutParams = append(meta.OutParams, outParams...)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("db translate commit error %v", err)
+	}
+
+	return nil
+}
+
+func runSql(execSql string, tx *sql.Tx) (interface{}, error) {
+	sqlCmd := strings.ToLower(strings.Split(strings.TrimSpace(execSql), " ")[0])
+	switch sqlCmd {
+	case "select":
+		var results = []map[string]string{}
+		result, err := tx.Query(execSql)
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				logrus.Errorf("sql %v query rollback error %v", execSql, rollbackErr)
+			}
+			return nil, fmt.Errorf("sql %v query error %v", execSql, err)
+		}
+
+		for result.Next() {
+			columes, err := result.Columns()
+			if err != nil {
+				rollbackErr := tx.Rollback()
+				if rollbackErr != nil {
+					logrus.Errorf("sql %v result columns rollback error %v", execSql, rollbackErr)
+				}
+				return nil, fmt.Errorf("sql %v result columns error %v", execSql, err)
+			}
+
+			var scanObject = make(map[string]string, len(columes))
+
+			err = ScanMap(&scanObject, result)
+			if err != nil {
+				rollbackErr := tx.Rollback()
+				if rollbackErr != nil {
+					logrus.Errorf("sql %v result scanMap rollback error %v", execSql, rollbackErr)
+				}
+				return nil, fmt.Errorf("sql %v result scanMap error %v", execSql, err)
+			}
+			results = append(results, scanObject)
+		}
+		return results, nil
+	default:
 		var results = map[string]interface{}{}
+
+		result, err := tx.Exec(execSql)
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				logrus.Errorf("sql %v exec rollback error %v", execSql, rollbackErr)
+			}
+			return nil, fmt.Errorf("sql %v exec error %v", execSql, err)
+		}
 		rowsAffected, err := result.RowsAffected()
 		if err != nil {
-			err = fmt.Errorf("sql %v exec error %v", "USE "+cfg.Database, err)
-			return
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				logrus.Errorf("sql %v exec rowsAffected rollback error %v", execSql, rollbackErr)
+			}
+			return nil, fmt.Errorf("sql %v exec rowsAffected error %v", execSql, err)
 		}
 
 		lastInsertId, err := result.LastInsertId()
 		if err != nil {
-			err = fmt.Errorf("sql %v exec error %v", "USE "+cfg.Database, err)
-			return
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				logrus.Errorf("sql %v exec lastInsertId rollback error %v", execSql, rollbackErr)
+			}
+			return nil, fmt.Errorf("sql %v exec lastInsertId error %v", execSql, err)
 		}
 
-		results["rows_affected"] = rowsAffected
-		results["last_Insert_id"] = lastInsertId
-		meta.Result = jsonparse.JsonOneLine(ctx, results)
+		results["lastInsertId"] = lastInsertId
+		results["rowsAffected"] = rowsAffected
+
+		return results, nil
 	}
 }
 
-func genRequest(ctx context.Context, cfg Conf, meta *Meta) *Request {
+func genRequest(cfg Conf, bdl *bundle.Bundle) (*Request, error) {
 	var req = Request{}
 
-	var err error
-	defer func() {
-		if err != nil {
-			log_collector.Clog(ctx).Errorf(err.Error())
-			meta.Err = err
-			meta.AssertResult = false
-		}
-	}()
-
 	if len(cfg.DataSource) > 0 {
-		mysqlAddon, err := getAddonFetchResponseData(ctx, cfg)
+		mysqlAddon, err := bdl.GetAddon(cfg.DataSource, cfg.OrgID, cfg.UserID)
 		if err != nil {
-			err = fmt.Errorf("getAddonFetchResponseData error %v", err)
+			return nil, fmt.Errorf("getAddonFetchResponseData error %v", err)
 		}
 		if mysqlAddon == nil {
-			err = fmt.Errorf("not find this %s mysql service", cfg.DataSource)
-			return nil
+			return nil, fmt.Errorf("not find this %s mysql service", cfg.DataSource)
 		}
 
 		if mysqlAddon.Config[mysqlHost] == nil {
-			err = fmt.Errorf("addon not find %s", mysqlHost)
-			return nil
+			return nil, fmt.Errorf("addon not find %s", mysqlHost)
 		}
 		if mysqlAddon.Config[mysqlPort] == nil {
-			err = fmt.Errorf("addon not find %s", mysqlPort)
-			return nil
+			return nil, fmt.Errorf("addon not find %s", mysqlPort)
 		}
 		if mysqlAddon.Config[mysqlUsername] == nil {
-			err = fmt.Errorf("addon not find %s", mysqlUsername)
-			return nil
+			return nil, fmt.Errorf("addon not find %s", mysqlUsername)
 		}
 		if mysqlAddon.Config[mysqlPassword] == nil {
-			err = fmt.Errorf("addon not find %s", mysqlPassword)
-			return nil
+			return nil, fmt.Errorf("addon not find %s", mysqlPassword)
 		}
 
 		req.Host = mysqlAddon.Config[mysqlHost].(string)
@@ -237,46 +279,21 @@ func genRequest(ctx context.Context, cfg Conf, meta *Meta) *Request {
 	}
 
 	if req.Host == "" {
-		err = fmt.Errorf("%s was empty", mysqlHost)
-		return nil
+		return nil, fmt.Errorf("%s was empty", mysqlHost)
 	}
 
 	if req.Port == "" {
-		err = fmt.Errorf("%s was empty", mysqlPort)
-		return nil
+		return nil, fmt.Errorf("%s was empty", mysqlPort)
 	}
 
 	if req.User == "" {
-		err = fmt.Errorf("%s was empty", mysqlUsername)
-		return nil
+		return nil, fmt.Errorf("%s was empty", mysqlUsername)
 	}
 
 	if req.Password == "" {
-		err = fmt.Errorf("%s was empty", mysqlPassword)
-		return nil
+		return nil, fmt.Errorf("%s was empty", mysqlPassword)
 	}
-	return &req
-}
-
-func getAddonFetchResponseData(ctx context.Context, cfg Conf) (*apistructs.AddonFetchResponseData, error) {
-	var buffer bytes.Buffer
-	resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Get(cfg.DiceOpenapiAddr).
-		Header("Authorization", cfg.DiceOpenapiToken).
-		Path(fmt.Sprintf("/api/addons/%s", cfg.DataSource)).
-		Do().Do().Body(&buffer)
-	if err != nil {
-		return nil, fmt.Errorf("failed to getAddonFetchResponseData, err: %v", err)
-	}
-	if !resp.IsOK() {
-		return nil, fmt.Errorf("failed to getAddonFetchResponseData, statusCode: %d, respBody: %s", resp.StatusCode(), buffer.String())
-	}
-	var result apistructs.AddonFetchResponse
-	respBody := buffer.String()
-	if err := json.Unmarshal([]byte(respBody), &result); err != nil {
-		return nil, fmt.Errorf("failed to getAddonFetchResponseData, err: %v, json string: %s", err, respBody)
-	}
-	return &result.Data, nil
+	return &req, nil
 }
 
 func parseConfFromTask(task *spec.PipelineTask) (Conf, error) {
@@ -301,15 +318,10 @@ func mergeEnvs(task *spec.PipelineTask) map[string]string {
 }
 
 type Meta struct {
-	Sql             string
-	MysqlHost       string
-	MysqlUser       string
-
-
 	AssertResult    bool
-	Result string
+	Result          string
 	OutParamsResult map[string]interface{}
-	Err error
+	Err             error
 
 	OutParams []apistructs.APIOutParam
 }
@@ -336,30 +348,18 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 	// kvs 保证顺序
 	kvs := &KVs{}
 
-	if meta.MysqlHost != "" {
-		kvs.add("mysql_host", jsonparse.JsonOneLine(ctx, meta.MysqlHost))
-	}
-
-	if meta.MysqlUser != "" {
-		kvs.add("mysql_user", jsonparse.JsonOneLine(ctx, meta.MysqlUser))
-	}
-
-	if meta.Sql != "" {
-		kvs.add("sql", jsonparse.JsonOneLine(ctx, meta.Sql))
-	}
-
 	if meta.Result != "" {
 		kvs.add("result", jsonparse.JsonOneLine(ctx, meta.Result))
 	}
 
 	if meta.AssertResult {
 		kvs.add("assert_result", ResultSuccess)
-	}else{
+	} else {
 		kvs.add("assert_result", ResultFailed)
 	}
 
-	if meta.Err.Error() != "" {
-		kvs.add("error_info", jsonparse.JsonOneLine(ctx, meta.Result))
+	if meta.Err != nil {
+		kvs.add("error_info", jsonparse.JsonOneLine(ctx, meta.Err.Error()))
 	}
 
 	if len(meta.OutParamsResult) > 0 {
@@ -394,4 +394,35 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 			return true, nil
 		})
 	return
+}
+
+func ScanMap(dest interface{}, rows *sql.Rows) error {
+	vv := reflect.ValueOf(dest)
+	if vv.Kind() != reflect.Ptr || vv.Elem().Kind() != reflect.Map {
+		return errors.New("dest should be a map's pointer")
+	}
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	newDest := make([]interface{}, len(cols))
+	vvv := vv.Elem()
+
+	for i := range cols {
+		newDest[i] = reflect.MakeSlice(reflect.SliceOf(vvv.Type().Elem()), 200, 200).Index(0).Addr().Interface()
+	}
+
+	err = rows.Scan(newDest...)
+	if err != nil {
+		return err
+	}
+
+	for i, name := range cols {
+		vname := reflect.ValueOf(name)
+		vvv.SetMapIndex(vname, reflect.ValueOf(newDest[i]).Elem())
+	}
+
+	return nil
 }

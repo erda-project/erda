@@ -16,10 +16,12 @@ package logic
 
 import (
 	"context"
+
+	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
 )
 
 func printLogo(ctx context.Context) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 	log.Println(`/////////////////////////////////////////////////`)
 	log.Println(`//   __   ____  __     ____  ____  ____  ____  //`)
 	log.Println(`//  / _\ (  _ \(  )___(_  _)(  __)/ ___)(_  _) //`)

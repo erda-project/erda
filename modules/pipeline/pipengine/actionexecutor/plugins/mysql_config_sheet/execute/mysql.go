@@ -18,8 +18,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/go-sql-driver/mysql"
+
+	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
 type Request struct {
@@ -37,6 +38,7 @@ func (r Request) dsn(proto string) string {
 func (r Request) dbOpen() (*sql.DB, error) {
 	proto := "tcp"
 	proto = fmt.Sprintf("tcp-%s", r.ClusterKey)
+
 	mysql.RegisterDialContext(proto, mysql.DialContextFunc(clusterdialer.DialContextTCP(r.ClusterKey)))
 	db, err := sql.Open("mysql", r.dsn(proto))
 	if err != nil {

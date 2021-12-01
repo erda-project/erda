@@ -22,6 +22,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent"
+	jsonformat "github.com/erda-project/erda/modules/pipeline/pkg/jsonparse"
+	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/apitestsv2"
@@ -72,7 +74,7 @@ func (kvs *KVs) add(k, v string) {
 }
 
 func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	// kvs 保证顺序
 	kvs := &KVs{}
@@ -83,10 +85,10 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 		kvs.add(metaKeyAPIAssertDetail, meta.AssertDetail)
 	}
 	if meta.Req != nil {
-		kvs.add(metaKeyAPIRequest, jsonOneLine(ctx, meta.Req))
+		kvs.add(metaKeyAPIRequest, jsonformat.JsonOneLine(ctx, meta.Req))
 	}
 	if meta.Resp != nil {
-		kvs.add(metaKeyAPIResponse, jsonOneLine(ctx, meta.Resp))
+		kvs.add(metaKeyAPIResponse, jsonformat.JsonOneLine(ctx, meta.Resp))
 		if len(meta.Resp.Headers) > 0 {
 			if headerSetCookie := meta.Resp.Headers[apitestsv2.HeaderSetCookie]; len(headerSetCookie) > 0 {
 				kvs.add(metaKeyAPISetCookie, jsonparse.JsonOneLine(headerSetCookie)) // format: []string
@@ -99,7 +101,7 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 			if !ok {
 				continue
 			}
-			kvs.add(define.Key, jsonOneLine(ctx, v))
+			kvs.add(define.Key, jsonformat.JsonOneLine(ctx, v))
 		}
 	}
 

@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
@@ -59,8 +60,8 @@ func parseConfFromTask(task *spec.PipelineTask) (EnvConfig, error) {
 //   push log to collector
 //   save metadata
 func Do(ctx context.Context, task *spec.PipelineTask) {
-	logger := newLogger().WithContext(context.WithValue(context.Background(), CtxKeyCollectorLogID, task.Extra.UUID))
-	ctx = context.WithValue(ctx, CtxKeyLogger, logger)
+	logger := log_collector.NewLogger().WithContext(context.WithValue(context.Background(), log_collector.CtxKeyCollectorLogID, task.Extra.UUID))
+	ctx = context.WithValue(ctx, log_collector.CtxKeyLogger, logger)
 
 	// print logo
 	printLogo(ctx)
@@ -68,7 +69,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 	// parse conf from task
 	cfg, err := parseConfFromTask(task)
 	if err != nil {
-		clog(ctx).Errorf("failed to parse config from task, err: %v", err)
+		log_collector.Clog(ctx).Errorf("failed to parse config from task, err: %v", err)
 		return
 	}
 
@@ -118,7 +119,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 		err := json.Unmarshal([]byte(apiTestEnvData.Header[CookieJar]), &cookies)
 		if err != nil {
 			success = false
-			clog(ctx).Errorf("failed to unmarshal cookieJar from header, err: %v\n", err)
+			log_collector.Clog(ctx).Errorf("failed to unmarshal cookieJar from header, err: %v\n", err)
 			return
 		}
 		cookieJar.SetEntries(cookies)
@@ -138,7 +139,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 	}
 	if err != nil {
 		meta.Result = ResultFailed
-		clog(ctx).Errorf("failed to do api test, err: %v", err)
+		log_collector.Clog(ctx).Errorf("failed to do api test, err: %v", err)
 		success = false
 		return
 	}
@@ -155,7 +156,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 			printAssertResults(ctx, succ, assertResults)
 			if !succ {
 				addNewLine(ctx)
-				clog(ctx).Errorf("API Test Success, but asserts failed")
+				log_collector.Clog(ctx).Errorf("API Test Success, but asserts failed")
 				success = false
 				return
 			}
@@ -165,5 +166,5 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 	meta.Result = ResultSuccess
 
 	addNewLine(ctx, 2)
-	clog(ctx).Println("API Test Success")
+	log_collector.Clog(ctx).Println("API Test Success")
 }

@@ -19,10 +19,12 @@ import (
 	"reflect"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pkg/jsonparse"
+	"github.com/erda-project/erda/modules/pipeline/pkg/log_collector"
 )
 
 func addLineDelimiter(ctx context.Context, prefix ...string) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	var _prefix string
 	if len(prefix) > 0 {
@@ -32,7 +34,7 @@ func addLineDelimiter(ctx context.Context, prefix ...string) {
 }
 
 func addNewLine(ctx context.Context, num ...int) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	_num := 1
 	if len(num) > 0 {
@@ -47,7 +49,7 @@ func addNewLine(ctx context.Context, num ...int) {
 }
 
 func printOriginalAPIInfo(ctx context.Context, api *apistructs.APIInfo) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	if api == nil {
 		return
@@ -90,7 +92,7 @@ func printOriginalAPIInfo(ctx context.Context, api *apistructs.APIInfo) {
 	if api.Body.Type != "" {
 		log.Printf("request body:")
 		log.Printf("  type: %s", api.Body.Type.String())
-		log.Printf("  content: %s", jsonOneLine(ctx, api.Body.Content))
+		log.Printf("  content: %s", jsonparse.JsonOneLine(ctx, api.Body.Content))
 	}
 	// out params
 	if len(api.OutParams) > 0 {
@@ -119,7 +121,7 @@ func printOriginalAPIInfo(ctx context.Context, api *apistructs.APIInfo) {
 }
 
 func printGlobalAPIConfig(ctx context.Context, cfg *apistructs.APITestEnvData) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	if cfg == nil {
 		return
@@ -158,7 +160,7 @@ func printGlobalAPIConfig(ctx context.Context, cfg *apistructs.APITestEnvData) {
 }
 
 func printRenderedHTTPReq(ctx context.Context, req *apistructs.APIRequestInfo) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	if req == nil {
 		return
@@ -205,7 +207,7 @@ func printRenderedHTTPReq(ctx context.Context, req *apistructs.APIRequestInfo) {
 }
 
 func printHTTPResp(ctx context.Context, resp *apistructs.APIResp) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	if resp == nil {
 		return
@@ -235,7 +237,7 @@ func printHTTPResp(ctx context.Context, resp *apistructs.APIResp) {
 }
 
 func printOutParams(ctx context.Context, outParams map[string]interface{}, meta *Meta) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	if len(outParams) == 0 {
 		return
@@ -256,7 +258,7 @@ func printOutParams(ctx context.Context, outParams map[string]interface{}, meta 
 		if define.Expression != "" {
 			log.Printf("  expr: %s", define.Expression)
 		}
-		log.Printf("  value: %s", jsonOneLine(ctx, v))
+		log.Printf("  value: %s", jsonparse.JsonOneLine(ctx, v))
 		var vtype string
 		if v == nil {
 			vtype = "nil"
@@ -269,7 +271,7 @@ func printOutParams(ctx context.Context, outParams map[string]interface{}, meta 
 }
 
 func printAssertResults(ctx context.Context, success bool, results []*apistructs.APITestsAssertData) {
-	log := clog(ctx)
+	log := log_collector.Clog(ctx)
 
 	log.Printf("Assert Result: %t", success)
 	defer addNewLine(ctx)
@@ -279,7 +281,7 @@ func printAssertResults(ctx context.Context, success bool, results []*apistructs
 		log.Printf("  arg: %s", result.Arg)
 		log.Printf("  operator: %s", result.Operator)
 		log.Printf("  value: %s", result.Value)
-		log.Printf("  actualValue: %s", jsonOneLine(ctx, result.ActualValue))
+		log.Printf("  actualValue: %s", jsonparse.JsonOneLine(ctx, result.ActualValue))
 		log.Printf("  success: %t", result.Success)
 		if result.ErrorInfo != "" {
 			log.Printf("  errorInfo: %s", result.ErrorInfo)

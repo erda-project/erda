@@ -24,15 +24,10 @@ func (at *APITest) JudgeAsserts(outParams map[string]interface{}, asserts []apis
 	var results []*apistructs.APITestsAssertData
 	for _, ast := range asserts {
 		// 出参里的值
-		actualValue := outParams[ast.Arg]
-		//var buffer bytes.Buffer
-		//enc := json.NewEncoder(&buffer)
-		//enc.SetEscapeHTML(false)
-		//enc.Encode(actualValue)
-		//actualValueString := buffer.String()
-		//if len(actualValueString) > 0 {
-		//	actualValueString = actualValueString[:len(actualValueString)-1]
-		//}
+		actualValue, ok := outParams[ast.Arg]
+		if !ok {
+			actualValue = ast.Arg
+		}
 		succ, err := assert.DoAssert(actualValue, ast.Operator, ast.Value)
 		result := apistructs.APITestsAssertData{
 			Arg:         ast.Arg,

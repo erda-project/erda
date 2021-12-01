@@ -145,11 +145,12 @@ var (
 type PipelineTaskExecutorKind string
 
 var (
-	PipelineTaskExecutorKindScheduler PipelineTaskExecutorKind = "SCHEDULER"
-	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
-	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
-	PipelineTaskExecutorKindWait      PipelineTaskExecutorKind = "WAIT"
-	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait}
+	PipelineTaskExecutorKindScheduler        PipelineTaskExecutorKind = "SCHEDULER"
+	PipelineTaskExecutorKindMemory           PipelineTaskExecutorKind = "MEMORY"
+	PipelineTaskExecutorKindAPITest          PipelineTaskExecutorKind = "APITEST"
+	PipelineTaskExecutorKindWait             PipelineTaskExecutorKind = "WAIT"
+	PipelineTaskExecutorKindMysqlConfigSheet PipelineTaskExecutorKind = "MYSQLCONFIGSHEET"
+	PipelineTaskExecutorKindList                                      = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait, PipelineTaskExecutorKindMysqlConfigSheet}
 )
 
 func (that PipelineTaskExecutorKind) Check() bool {
@@ -168,11 +169,12 @@ func (that PipelineTaskExecutorName) String() string {
 }
 
 var (
-	PipelineTaskExecutorNameEmpty            PipelineTaskExecutorName = ""
-	PipelineTaskExecutorNameSchedulerDefault PipelineTaskExecutorName = "scheduler"
-	PipelineTaskExecutorNameAPITestDefault   PipelineTaskExecutorName = "api-test"
-	PipelineTaskExecutorNameWaitDefault      PipelineTaskExecutorName = "wait"
-	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault}
+	PipelineTaskExecutorNameEmpty                   PipelineTaskExecutorName = ""
+	PipelineTaskExecutorNameSchedulerDefault        PipelineTaskExecutorName = "scheduler"
+	PipelineTaskExecutorNameAPITestDefault          PipelineTaskExecutorName = "api-test"
+	PipelineTaskExecutorNameWaitDefault             PipelineTaskExecutorName = "wait"
+	PipelineTaskExecutorNameMysqlConfigSheetDefault PipelineTaskExecutorName = "mysql-config-sheet"
+	PipelineTaskExecutorNameList                                             = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault, PipelineTaskExecutorNameMysqlConfigSheetDefault}
 )
 
 func (that PipelineTaskExecutorName) Check() bool {

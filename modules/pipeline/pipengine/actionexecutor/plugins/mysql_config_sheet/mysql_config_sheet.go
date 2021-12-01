@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mysql_assert
+package mysql_config_sheet
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/mysql_assert/execute"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/mysql_config_sheet/execute"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -31,10 +31,10 @@ import (
 var Kind = types.Kind(spec.PipelineTaskExecutorKindMysqlConfigSheet)
 
 type define struct {
-	name        types.Name
-	options     map[string]string
-	dbClient    *dbclient.Client
-	bdl         *bundle.Bundle
+	name     types.Name
+	options  map[string]string
+	dbClient *dbclient.Client
+	bdl      *bundle.Bundle
 }
 
 func (d *define) Kind() types.Kind { return Kind }
@@ -73,7 +73,6 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 	if err != nil {
 		return apistructs.PipelineStatusDesc{}, err
 	}
-
 	if !created {
 		return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusAnalyzed}, nil
 	}
@@ -82,10 +81,9 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 		return apistructs.PipelineStatusDesc{Status: task.Status}, nil
 	}
 
-	if task.Status == apistructs.RunnerTaskStatusRunning {
+	if task.Status == apistructs.PipelineStatusRunning {
 		var status = apistructs.PipelineStatusFailed
-		execute.Do(ctx, task)
-
+		execute.Do(ctx, task, d.bdl)
 		latestTask, err := d.dbClient.GetPipelineTask(task.ID)
 		if err != nil {
 			logrus.Errorf("failed to query latest task, err: %v \n", err)
@@ -102,7 +100,7 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 		return apistructs.PipelineStatusDesc{Status: status}, nil
 	}
 
-	return apistructs.PipelineStatusDesc{Status: apistructs.RunnerTaskStatusRunning}, nil
+	return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusRunning}, nil
 }
 
 func (d *define) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
@@ -129,10 +127,10 @@ func init() {
 		}
 		bdl := bundle.New(bundle.WithAllAvailableClients())
 		return &define{
-			name:        name,
-			options:     options,
-			dbClient:    dbClient,
-			bdl: bdl,
+			name:     name,
+			options:  options,
+			dbClient: dbClient,
+			bdl:      bdl,
 		}, nil
 	})
 }

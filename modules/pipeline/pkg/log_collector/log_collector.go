@@ -52,6 +52,7 @@ func (f *actionLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return append([]byte("[Action Log] "), _bytes...), nil
 }
 
