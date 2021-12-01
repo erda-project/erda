@@ -341,15 +341,15 @@ func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K
 	}
 	if len(annotation) > 0 || locationSnippet != nil {
 		err = k8sAdapter.UpdateIngressAnnotaion(namespace, zone.Name, annotation, locationSnippet)
-		cause := errors.Error()
-		lines := strings.Split(cause, "\n")
-		for i := len(lines) - 1; i >= 0; i-- {
-			// move the useless warn info of nginx
-			if strings.Contains(lines[i], "[warn]") {
-				lines = append(lines[:i], lines[i+1:]...)
-			}
-		}
 		if err != nil {
+			cause := err.Error()
+			lines := strings.Split(cause, "\n")
+			for i := len(lines) - 1; i >= 0; i-- {
+				// move the useless warn info of nginx
+				if strings.Contains(lines[i], "[warn]") {
+					lines = append(lines[:i], lines[i+1:]...)
+				}
+			}
 			return errors.New(strings.Join(lines, "\n"))
 		}
 	}
