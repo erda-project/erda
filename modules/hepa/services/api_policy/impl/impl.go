@@ -342,7 +342,15 @@ func (impl GatewayApiPolicyServiceImpl) deployAnnotationChanges(k8sAdapter k8s.K
 	if len(annotation) > 0 || locationSnippet != nil {
 		err = k8sAdapter.UpdateIngressAnnotaion(namespace, zone.Name, annotation, locationSnippet)
 		if err != nil {
-			return err
+			cause := err.Error()
+			lines := strings.Split(cause, "\n")
+			for i := len(lines) - 1; i >= 0; i-- {
+				// move the useless warn info of nginx
+				if strings.Contains(lines[i], "[warn]") {
+					lines = append(lines[:i], lines[i+1:]...)
+				}
+			}
+			return errors.New(strings.Join(lines, "\n"))
 		}
 	}
 	return nil
@@ -838,12 +846,12 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 	return "", nil
 }
 
-func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, packageApiId string, config []byte) (result interface{}, err error) {
+func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, packageApiId string, config []byte) (result interface{}, rerr error) {
 	auditCtx := map[string]interface{}{}
 	var pack *orm.GatewayPackage
 	defer func() {
-		if err != nil {
-			log.Errorf("error happened, err:%+v", err)
+		if rerr != nil {
+			log.Errorf("error happened, err:%+v", rerr)
 		}
 		if pack == nil {
 			return
@@ -879,40 +887,40 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		}
 	}()
 	if category == "" || packageId == "" {
-		err = errors.New("invalid argument")
+		rerr = errors.New("invalid argument")
 		return
 	}
-	pack, err = impl.packageDb.Get(packageId)
-	if err != nil {
+	pack, rerr = impl.packageDb.Get(packageId)
+	if rerr != nil {
 		return
 	}
 	if pack == nil {
-		err = errors.New("endpoint not found")
+		rerr = errors.New("endpoint not found")
 		return
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(pack.DiceClusterName)
-	if err != nil {
+	az, rerr := impl.azDb.GetAzInfoByClusterName(pack.DiceClusterName)
+	if rerr != nil {
 		return
 	}
 	if packageApiId == "" {
 		var msg string
-		msg, err = impl.SetPackageDefaultPolicyConfig(category, packageId, az, config)
-		if err != nil {
-			log.Errorf("set default policy config failed, err:%+v", err)
+		msg, rerr = impl.SetPackageDefaultPolicyConfig(category, packageId, az, config)
+		if rerr != nil {
+			log.Errorf("set default policy config failed, err:%+v", rerr)
 			if msg != "" {
-				err = errors.Errorf("update config failed: %s", msg)
+				rerr = errors.Errorf("update config failed: %s", msg)
 			}
 			return
 		}
 		result = true
 		return
 	}
-	api, err := impl.packageApiDb.Get(packageApiId)
-	if err != nil {
+	api, rerr := impl.packageApiDb.Get(packageApiId)
+	if rerr != nil {
 		return
 	}
 	if api == nil {
-		err = errors.New("api not found")
+		rerr = errors.New("api not found")
 		return
 	}
 	auditCtx["path"] = api.ApiPath
@@ -920,34 +928,34 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 	var zone *orm.GatewayZone
 	if api.ZoneId == "" {
 		var domains []string
-		domains, err = (*impl.domainBiz).GetPackageDomains(packageId)
-		if err != nil {
+		domains, rerr = (*impl.domainBiz).GetPackageDomains(packageId)
+		if rerr != nil {
 			return
 		}
 		var zoneId string
-		zoneId, err = (*impl.packageBiz).TouchPackageApiZone(endpoint_api.PackageApiInfo{api, domains, pack.DiceProjectId, pack.DiceEnv, pack.DiceClusterName, false})
-		if err != nil {
+		zoneId, rerr = (*impl.packageBiz).TouchPackageApiZone(endpoint_api.PackageApiInfo{api, domains, pack.DiceProjectId, pack.DiceEnv, pack.DiceClusterName, false})
+		if rerr != nil {
 			return
 		}
-		zone, err = (*impl.zoneBiz).GetZone(zoneId)
-		if err != nil || zone == nil {
-			err = errors.Errorf("get zone failed, err:%+v", err)
+		zone, rerr = (*impl.zoneBiz).GetZone(zoneId)
+		if rerr != nil || zone == nil {
+			rerr = errors.Errorf("get zone failed, err:%+v", rerr)
 			return
 		}
 		api.ZoneId = zoneId
-		err = impl.packageApiDb.Update(api)
-		if err != nil {
+		rerr = impl.packageApiDb.Update(api)
+		if rerr != nil {
 			return
 		}
 	} else {
-		zone, err = (*impl.zoneBiz).GetZone(api.ZoneId)
-		if err != nil || zone == nil {
-			err = errors.Errorf("get zone failed, api:%+v, err:%+v", api, err)
+		zone, rerr = (*impl.zoneBiz).GetZone(api.ZoneId)
+		if rerr != nil || zone == nil {
+			rerr = errors.Errorf("get zone failed, api:%+v, err:%+v", api, rerr)
 			return
 		}
 	}
-	helper, err := db.NewSessionHelper()
-	if err != nil {
+	helper, rerr := db.NewSessionHelper()
+	if rerr != nil {
 		return
 	}
 	transSucc := false
@@ -956,7 +964,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			_ = helper.Commit()
 		} else {
 			_ = helper.Rollback()
-			err = impl.RefreshZoneIngress(*zone, *az)
+			err := impl.RefreshZoneIngress(*zone, *az)
 			if err != nil {
 				log.Errorf("refresh zone ingress failed, %+v", err)
 			}
@@ -964,28 +972,28 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 		}
 		helper.Close()
 	}()
-	dto, msg, err := impl.SetZonePolicyConfig(zone, category, config, helper)
-	if err != nil {
-		log.Errorf("set zone policy config failed, err:%+v", err)
+	dto, msg, rerr := impl.SetZonePolicyConfig(zone, category, config, helper)
+	if rerr != nil {
+		log.Errorf("set zone policy config failed, err:%+v", rerr)
 		if msg != "" {
-			err = errors.Errorf("update config failed: %s", msg)
+			rerr = errors.Errorf("update config failed: %s", msg)
 		}
 		return
 	}
-	ingressPolicyService, err := impl.ingressPolicyDb.NewSession(helper)
-	if err != nil {
+	ingressPolicyService, rerr := impl.ingressPolicyDb.NewSession(helper)
+	if rerr != nil {
 		return
 	}
 	if dto.IsGlobal() {
 		config = []byte{}
 	}
-	err = ingressPolicyService.UpdatePartial(&orm.GatewayIngressPolicy{
+	rerr = ingressPolicyService.UpdatePartial(&orm.GatewayIngressPolicy{
 		Az:     az.Az,
 		ZoneId: zone.Id,
 		Name:   category,
 		Config: config,
 	}, "config")
-	if err != nil {
+	if rerr != nil {
 		return
 	}
 	transSucc = true
