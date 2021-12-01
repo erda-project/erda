@@ -88,8 +88,10 @@ zh-CN:
     {{failedDetail}}
   notify.issue.issue_create: 创建项目协同事件
   notify.issue.issue_create.markdown_template: "事件【{{issue_title}}】{{content}}"
+  notify.issue.issue_create.ding_talk.markdown_template: "事件【{{issue_title}}】{{content}} [链接]({{issueEmailLink}})"
   notify.issue.issue_update: 更新项目协同事件
   notify.issue.issue_update.markdown_template: "你关注的事件【{{issue_title}}】 {{content}}"
+  notify.issue.issue_update.ding_talk.markdown_template: "你关注的事件【{{issue_title}}】 {{content}} [链接]({{issueEmailLink}})"
   notify.autotest.autotest-plan-execute: 执行自动化测试计划
   notify.autotest.autotest-plan-execute.markdown_template: |-
     {{org_name}}/{{project_name}} {{plan_name}} 测试计划执行完成，接口通过率: {{pass_rate}}%，接口总数: {{api_total_num}}，时长: {{execute_duration}}
@@ -217,8 +219,10 @@ en-US:
     {{failedDetail}}
   notify.issue.issue_create: Create Issue
   notify.issue.issue_create.markdown_template: "Event【{{issue_title}}】 {{content}}"
+  notify.issue.issue_create.ding_talk.markdown_template: "Event【{{issue_title}}】{{content}} [Link]({{issueEmailLink}})"
   notify.issue.issue_update: Update Issue
   notify.issue.issue_update.markdown_template: "Event【{{issue_title}}】 {{content}}"
+  notify.issue.issue_update.ding_talk.markdown_template: "Event【{{issue_title}}】 {{content}} [Link]({{issueEmailLink}})"
   notify.autotest.autotest-plan-execute: Execute Autotest TestPlan
   notify.autotest.autotest-plan-execute.markdown_template: |-
     {{org_name}}/{{project_name}} {{plan_name}} Test plan execution completed, API pass rate: {{pass_rate}}%, API total number: {{api_total_num}}, Time duration: {{execute_duration}}

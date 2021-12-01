@@ -17,13 +17,14 @@ package dingtalk_worknotice
 import (
 	"encoding/json"
 
-	"github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
+	"github.com/erda-project/erda/pkg/template"
 )
 
 type DingWorkNoticeSubscriber struct {
@@ -68,12 +69,17 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 	if err != nil {
 		return []error{err}
 	}
+	// render template params
+	workNotifyData.Template = template.Render(workNotifyData.Template, workNotifyData.Params)
 	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(workNotifyData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_DINGTALK_WORK_NOTICE)
 	if err != nil {
-		logrus.Errorf("do not support channel provider: %s", notifyChannel.ChannelProviderType.Name)
+		return []error{errors.Errorf("non-enaled dingtalk_work_notify channel, orgID: %d, err: %v", workNotifyData.OrgID, err)}
+	}
+	if notifyChannel.ID == "" {
+		return []error{errors.Errorf("non-enaled dingtalk_work_notify channel, orgID: %d", workNotifyData.OrgID)}
 	}
 	agentId, appKey, appSecret := d.AgentId, d.AppKey, d.AppSecret
-	if err == nil && notifyChannel.Config != nil && notifyChannel.Config.AgentId != 0 && notifyChannel.Config.AppKey != "" && notifyChannel.Config.AppSecret != "" {
+	if notifyChannel.Config != nil && notifyChannel.Config.AgentId != 0 && notifyChannel.Config.AppKey != "" && notifyChannel.Config.AppSecret != "" {
 		agentId = notifyChannel.Config.AgentId
 		appKey = notifyChannel.Config.AppKey
 		appSecret = notifyChannel.Config.AppSecret
