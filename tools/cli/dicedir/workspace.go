@@ -151,7 +151,7 @@ func InputAndChoose(prompt, yes, no string) string {
 	return ans
 }
 
-type pagingList func(int, int) (bool, error)
+type pagingList func(pageNo, pageSize int) (bool, error)
 
 func PagingView(p pagingList, choose string, pageSize int, interactive bool) error {
 	pageNo := 1

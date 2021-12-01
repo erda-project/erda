@@ -36,12 +36,13 @@ var ADDONCREATE = command.Command{
 		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "The env workspace of an addon", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "addon-type", Doc: "The type of the addon, one of [erda|custom]", DefaultValue: "erda"},
+		command.StringFlag{Short: "", Name: "addon-type", Doc: "The type of the addon, one of [erda|custom]", DefaultValue: "custom"},
 		command.StringFlag{Short: "", Name: "addon-name", Doc: "The name of the addon", DefaultValue: "custom"},
 		command.StringFlag{Short: "", Name: "name", Doc: "The name of the addon instance", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "configs", Doc: "The configs of the addon instance in format of key/value. (e.g. --configs='key1=value1,key2=value2')"},
 		command.StringFlag{Short: "", Name: "plan", Doc: "The plan of the addon instance", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "wait-addon", Doc: "the minutes to wait erad addon create", DefaultValue: 3},
+		// command.StringListFlag{Short: "", Name: "erda-yaml", Doc: "the erda.yml path to add addon", DefaultValue: nil},
 	},
 	Run: AddonCreate,
 }
@@ -102,5 +103,66 @@ func AddonCreate(ctx *command.Context, orgId, projectId uint64, org, project, wo
 	}
 
 	ctx.Succ("Addon created.")
+
+	//if erdaYamls != nil {
+	//	for _, ey := range erdaYamls {
+	//		//if !strings.HasSuffix(ey, "erda.yml") {
+	//		//	return errors.New("--erda-yaml only support erda.yml")
+	//		//}
+	//
+	//		var absEY string
+	//		if path.IsAbs(ey) {
+	//			absEY = ey
+	//		} else {
+	//			wd, err := os.Getwd()
+	//			if err != nil {
+	//				return err
+	//			}
+	//			absEY = path.Join(wd, ey)
+	//		}
+	//		_, err = os.Stat(absEY)
+	//		if err != nil {
+	//			return err
+	//		}
+	//		yml, err := format.ReadYml(absEY)
+	//		if err != nil {
+	//			return err
+	//		}
+	//		dyml, err := diceyml.New(yml, true)
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		var envType diceyml.EnvType = diceyml.BaseEnv
+	//		switch apistructs.WorkSpace(workspace) {
+	//		case apistructs.WorkspaceDev:
+	//			if err := dyml.MergeEnv("development"); err != nil {
+	//				return err
+	//			}
+	//			envType = diceyml.DevEnv
+	//		case apistructs.WorkspaceTest:
+	//			if err := dyml.MergeEnv("test"); err != nil {
+	//				return err
+	//			}
+	//			envType = diceyml.TestEnv
+	//		case apistructs.WorkspaceStaging:
+	//			if err := dyml.MergeEnv("staging"); err != nil {
+	//				return err
+	//			}
+	//			envType = diceyml.StagingEnv
+	//		case apistructs.WorkspaceProd:
+	//			if err := dyml.MergeEnv("production"); err != nil {
+	//				return err
+	//			}
+	//			envType = diceyml.ProdEnv
+	//		}
+	//
+	//		dyml.
+	//			dyml.InsertAddonOptions(envType, name, map[string]string{})
+	//
+	//		fmt.Println(dyml.JSON())
+	//	}
+	//}
+
 	return nil
 }
