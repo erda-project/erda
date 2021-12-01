@@ -154,6 +154,43 @@ func (b *Bundle) CreateMboxNotify(templatename string, params map[string]string,
 	return nil
 }
 
+func (b *Bundle) CreateDingTalkWorkNotify(templatename string, params map[string]string, locale string, orgid uint64, mobiles []string) error {
+	host, err := b.urls.EventBox()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+	request := map[string]interface{}{
+		"template": b.GetLocaleLoader().Locale(locale).Get(templatename),
+		"type":     "markdown",
+		"params":   params,
+		"orgID":    int64(orgid),
+	}
+	eventBoxRequest := &apistructs.EventBoxRequest{
+		Sender: "bundle",
+		Labels: map[string]interface{}{
+			"DINGTALK_WORK_NOTICE": mobiles,
+		},
+		Content: request,
+	}
+	var buf bytes.Buffer
+	resp, err := hc.Post(host).Path("/api/dice/eventbox/message/create").
+		Header("Accept", "application/json").
+		JSONBody(&eventBoxRequest).
+		Do().Body(&buf)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return apierrors.ErrInvoke.InternalError(
+			errors.Errorf("failed to create ding-talk-work-notice, status-code: %d, body: %v",
+				resp.StatusCode(),
+				buf.String(),
+			))
+	}
+	return nil
+}
+
 func (b *Bundle) CreateEmailNotify(templatename string, params map[string]string, locale string, orgid uint64, emailaddrs []string) error {
 	host, err := b.urls.EventBox()
 	if err != nil {
