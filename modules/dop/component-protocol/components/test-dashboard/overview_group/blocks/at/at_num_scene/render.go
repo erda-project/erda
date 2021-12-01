@@ -43,12 +43,13 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	h := gshelper.NewGSHelper(gs)
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 
-	_, total, err := atSvc.ListSceneBySceneSetID(func() []uint64 {
-		setIDs := make([]uint64, 0, len(h.GetBlockAtStep()))
-		for _, v := range h.GetBlockAtStep() {
-			setIDs = append(setIDs, v.SceneSetID)
+	sceneCount, err := atSvc.CountSceneByPlanIDs(func() []uint64 {
+		selectPlans := h.GetAtBlockFilterTestPlanList()
+		selectPlanIDs := make([]uint64, 0, len(selectPlans))
+		for _, v := range selectPlans {
+			selectPlanIDs = append(selectPlanIDs, v.ID)
 		}
-		return setIDs
+		return selectPlanIDs
 	}()...)
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 
 	tv := pkg.TextValue{
 		Value: strutil.String(func() int {
-			return int(total)
+			return sceneCount.Count
 		}()),
 		Kind: cputil.I18n(ctx, "auto-test-scene-num"),
 	}
