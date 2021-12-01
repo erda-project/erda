@@ -75,6 +75,7 @@ func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64, or
 		}
 		data = append(data, []string{
 			l.ID,
+			l.Name,
 			l.AddonName,
 			l.Workspace,
 			strconv.Itoa(l.Reference),
@@ -85,7 +86,7 @@ func GetAddons(ctx *command.Context, noHeaders bool, orgId, projectId uint64, or
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"AddonID", "Name", "ENV", "Reference", "DisplayName",
+			"AddonID", "Name", "AddonName", "ENV", "Reference", "DisplayName",
 		})
 	}
 	return t.Data(data).Flush()

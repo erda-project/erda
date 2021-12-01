@@ -19,50 +19,51 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-
-	"github.com/erda-project/erda/tools/cli/httputils"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/httputils"
 )
 
-//func GetAddonDetail(ctx *command.Context, orgId, projectId, applicationId int) (
-//	apistructs.ApplicationFetchResponse, error) {
-//	var (
-//		resp apistructs.ApplicationFetchResponse
-//		b    bytes.Buffer
-//	)
-//
-//	response, err := ctx.Get().Header("Org-ID", strconv.Itoa(orgId)).
-//		Path(fmt.Sprintf("/api/applications/%d?projectId=%d", applicationId, projectId)).
-//		Do().Body(&b)
-//	if err != nil {
-//		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg(
-//			"get application detail", "failed to request ("+err.Error()+")", false))
-//	}
-//
-//	if !response.IsOK() {
-//		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
-//			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-//				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-//	}
-//
-//	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-//		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
-//			fmt.Sprintf("failed to unmarshal application detail response ("+err.Error()+")"), false))
-//	}
-//
-//	if !resp.Success {
-//		return apistructs.ApplicationFetchResponse{}, fmt.Errorf(format.FormatErrMsg("get application detail",
-//			fmt.Sprintf("failed to request, error code: %s, error message: %s",
-//				resp.Error.Code, resp.Error.Msg), false))
-//	}
-//
-//	return resp, nil
-//}
+func GetAddonDetail(ctx *command.Context, orgId uint64, addonId string) (
+	apistructs.AddonFetchResponseData, error) {
+	var (
+		resp apistructs.AddonFetchResponse
+		b    bytes.Buffer
+	)
 
-// TODO paging
+	response, err := ctx.Get().Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		Path(fmt.Sprintf("/api/addons/%s", addonId)).
+		Do().Body(&b)
+	if err != nil {
+		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg(
+			"get addon detail", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get addon detail",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+			fmt.Sprintf("failed to unmarshal addon detail response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	return resp.Data, nil
+}
+
 func GetAddonList(ctx *command.Context, orgId, projectId uint64) (apistructs.AddonListResponse, error) {
 	var resp apistructs.AddonListResponse
 	var b bytes.Buffer
@@ -98,10 +99,10 @@ func GetAddonList(ctx *command.Context, orgId, projectId uint64) (apistructs.Add
 	return resp, nil
 }
 
-func DeleteAddon(ctx *command.Context, orgID uint64, addonID string) error {
+func DeleteAddon(ctx *command.Context, orgId uint64, addonId string) error {
 	r := ctx.Delete().
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
-		Path(fmt.Sprintf("/api/addons/%s", addonID))
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		Path(fmt.Sprintf("/api/addons/%s", addonId))
 	resp, err := httputils.DoResp(r)
 	if err != nil {
 		return fmt.Errorf(
@@ -111,6 +112,100 @@ func DeleteAddon(ctx *command.Context, orgID uint64, addonID string) error {
 		return fmt.Errorf(
 			format.FormatErrMsg(
 				"remove", "failed to parse remove addon response, error: "+err.Error(), false))
+	}
+
+	return nil
+}
+
+func CreateErdaAddon(ctx *command.Context, orgId, projectId uint64, clusterName, workspace, name, plan string, timeout int) error {
+	var request apistructs.AddonDirectCreateRequest
+	request.OrgID = orgId
+	request.ProjectID = projectId
+	request.ClusterName = clusterName
+	request.Workspace = workspace
+	request.Addons = diceyml.AddOns{name: &diceyml.AddOn{Plan: plan}}
+	request.ShareScope = "PROJECT"
+
+	var response apistructs.AddonCreateResponse
+	var b bytes.Buffer
+
+	resp, err := ctx.Post().Path("/api/addons/actions/create-addon").
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		JSONBody(request).
+		Do().Body(&b)
+	if err != nil {
+		return fmt.Errorf(
+			format.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !resp.IsOK() {
+		return fmt.Errorf(format.FormatErrMsg("create",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
+		return fmt.Errorf(format.FormatErrMsg("create",
+			fmt.Sprintf("failed to unmarshal application create response ("+err.Error()+")"), false))
+	}
+
+	if !response.Success {
+		return fmt.Errorf(format.FormatErrMsg("create",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				response.Error.Code, response.Error.Msg), false))
+	}
+
+	aId := response.Data
+	fmt.Println(aId)
+	err = dicedir.DoTaskWithTimeout(func() (bool, error) {
+		s, err := GetAddonDetail(ctx, orgId, aId)
+		if err == nil && s.Status == "ATTACHED" {
+			return true, nil
+		}
+		return false, nil
+	}, time.Duration(timeout)*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateCustomAddon(ctx *command.Context, orgId, projectId uint64, workspace,
+	addonName, name string, configs map[string]interface{}) error {
+	var request apistructs.CustomAddonCreateRequest
+	request.AddonName = addonName
+	request.Name = name
+	request.ProjectID = projectId
+	request.Workspace = workspace
+	request.Configs = configs
+
+	var response apistructs.AddonCreateResponse
+	var b bytes.Buffer
+	resp, err := ctx.Post().Path("/api/addons/actions/create-custom").
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		JSONBody(request).
+		Do().Body(&b)
+	if err != nil {
+		return fmt.Errorf(
+			format.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !resp.IsOK() {
+		return fmt.Errorf(format.FormatErrMsg("create",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
+		return fmt.Errorf(format.FormatErrMsg("create",
+			fmt.Sprintf("failed to unmarshal application create response ("+err.Error()+")"), false))
+	}
+
+	if !response.Success {
+		return fmt.Errorf(format.FormatErrMsg("create",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				response.Error.Code, response.Error.Msg), false))
 	}
 
 	return nil

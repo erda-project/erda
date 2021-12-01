@@ -16,6 +16,7 @@ package dicedir
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -23,6 +24,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -191,5 +194,71 @@ func PagingAll(p pagingList, pageSize int) error {
 			break
 		}
 	}
+	return nil
+}
+
+type TaskRunner func(id interface{}) bool
+
+func DoTaskListWithTimeout(ids []interface{}, c TaskRunner, timeout time.Duration) error {
+	wg := sync.WaitGroup{}
+	timeoutCtx, _ := context.WithTimeout(context.Background(), timeout)
+
+	for _, id := range ids {
+		wg.Add(1)
+		go func(id interface{}) {
+			defer wg.Done()
+			timeTicker := time.NewTicker(2 * time.Second)
+			for {
+				select {
+				case <-timeTicker.C:
+					if c(id) {
+						return
+					}
+				case <-timeoutCtx.Done():
+					return
+				}
+			}
+		}(id)
+	}
+	wg.Wait()
+	if timeoutCtx.Err() != nil {
+		return timeoutCtx.Err()
+	}
+	return nil
+}
+
+type TaskRunnerE func() (bool, error)
+
+func DoTaskWithTimeout(c TaskRunnerE, timeout time.Duration) error {
+	wg := sync.WaitGroup{}
+	timeoutCtx, _ := context.WithTimeout(context.Background(), timeout)
+	wg.Add(1)
+
+	var err error
+	go func() {
+		defer wg.Done()
+		timeTicker := time.NewTicker(2 * time.Second)
+		for {
+			select {
+			case <-timeTicker.C:
+				var rs bool
+				rs, err = c()
+				if rs {
+					return
+				}
+			case <-timeoutCtx.Done():
+				return
+			}
+		}
+	}()
+	wg.Wait()
+
+	if err != nil {
+		return err
+	}
+	if timeoutCtx.Err() != nil {
+		return timeoutCtx.Err()
+	}
+
 	return nil
 }

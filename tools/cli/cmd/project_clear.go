@@ -15,10 +15,10 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"sync"
 	"time"
+
+	"github.com/erda-project/erda/tools/cli/dicedir"
 
 	"github.com/pkg/errors"
 
@@ -41,11 +41,12 @@ var PROJECTCLEAR = command.Command{
 		command.IntFlag{Short: "", Name: "wait-runtime", Doc: "the minutes to wait runtimes deleted", DefaultValue: 3},
 		command.IntFlag{Short: "", Name: "wait-addon", Doc: "the minutes to wait addons deleted", DefaultValue: 3},
 		command.BoolFlag{Short: "", Name: "delete-apps", Doc: "If delete all applications", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "delete-custom-addons", Doc: "If delete all custom addons", DefaultValue: false},
 	},
 	Run: ClearProject,
 }
 
-func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, workspace string, waitRuntime, waitAddon int, deleteApps bool) error {
+func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, workspace string, waitRuntime, waitAddon int, deleteApps, deleteCAs bool) error {
 	if workspace != "" {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
@@ -55,6 +56,7 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, w
 	if workspace != "" && deleteApps {
 		return errors.New("Should not both set --workspace and --deleteApps")
 	}
+
 	checkOrgParam(org, orgId)
 	checkProjectParam(project, projectId)
 
@@ -68,13 +70,13 @@ func ClearProject(ctx *command.Context, orgId, projectId uint64, org, project, w
 		return err
 	}
 
-	err = clearProject(ctx, orgId, projectId, workspace, waitRuntime, waitAddon, deleteApps)
+	err = clearProject(ctx, orgId, projectId, workspace, waitRuntime, waitAddon, deleteApps, deleteCAs)
 
 	ctx.Succ("Project clear success.")
 	return nil
 }
 
-func clearProject(ctx *command.Context, orgId, projectId uint64, workspace string, waitRuntime, waitAddon int, deleteApps bool) error {
+func clearProject(ctx *command.Context, orgId, projectId uint64, workspace string, waitRuntime, waitAddon int, deleteApps, deleteCAs bool) error {
 	apps, err := common.GetApplications(ctx, orgId, projectId)
 	if err != nil {
 		return err
@@ -104,7 +106,7 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		}
 	}
 	// Check Clear Runtimes Done
-	doTaskWithTimeout(appList, func(id interface{}) bool {
+	err = dicedir.DoTaskListWithTimeout(appList, func(id interface{}) bool {
 		aId, ok := id.(uint64)
 		if !ok {
 			return false
@@ -112,6 +114,9 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 
 		return checkApplication(ctx, orgId, aId, workspace)
 	}, time.Duration(waitRuntime)*time.Minute)
+	if err != nil {
+		return err
+	}
 
 	// Clear Addons
 	resp, err := common.GetAddonList(ctx, orgId, projectId)
@@ -123,10 +128,13 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		if workspace != "" && workspace != a.Workspace {
 			continue
 		}
+		if !deleteCAs && a.Category == "custom" {
+			continue
+		}
 		addonList = append(addonList, a.ID)
 	}
 
-	doTaskWithTimeout(addonList, func(id interface{}) bool {
+	err = dicedir.DoTaskListWithTimeout(addonList, func(id interface{}) bool {
 		aId, ok := id.(string)
 		if !ok {
 			return false
@@ -137,9 +145,12 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		}
 		return false
 	}, 3*time.Minute)
+	if err != nil {
+		return err
+	}
 
 	// Check Clear Addons Done
-	doTaskWithTimeout([]interface{}{projectId}, func(id interface{}) bool {
+	err = dicedir.DoTaskListWithTimeout([]interface{}{projectId}, func(id interface{}) bool {
 		pId, ok := id.(uint64)
 		if !ok {
 			return false
@@ -151,6 +162,9 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 			if workspace != "" && workspace != a.Workspace {
 				continue
 			}
+			if !deleteCAs && a.Category == "custom" {
+				continue
+			}
 			as = append(as, a)
 		}
 		if err == nil && len(as) == 0 {
@@ -158,6 +172,9 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		}
 		return false
 	}, time.Duration(waitAddon)*time.Minute)
+	if err != nil {
+		return err
+	}
 
 	if deleteApps {
 		for _, app := range apps {
@@ -185,34 +202,4 @@ func checkApplication(ctx *command.Context, orgId uint64, appId uint64, workspac
 	}
 
 	return false
-}
-
-type taskRunner func(id interface{}) bool
-
-func doTaskWithTimeout(ids []interface{}, c taskRunner, timeout time.Duration) error {
-	wg := sync.WaitGroup{}
-	timeoutCtx, _ := context.WithTimeout(context.Background(), timeout)
-
-	for _, id := range ids {
-		wg.Add(1)
-		go func(id interface{}) {
-			defer wg.Done()
-			timeTicker := time.NewTicker(2 * time.Second)
-			for {
-				select {
-				case <-timeTicker.C:
-					if c(id) {
-						return
-					}
-				case <-timeoutCtx.Done():
-					return
-				}
-			}
-		}(id)
-	}
-	wg.Wait()
-	if timeoutCtx.Err() != nil {
-		return timeoutCtx.Err()
-	}
-	return nil
 }

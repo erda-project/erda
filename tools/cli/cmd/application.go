@@ -17,6 +17,11 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
+
+	"github.com/erda-project/erda/apistructs"
+
+	"github.com/erda-project/erda/modules/core-services/types"
 
 	"github.com/pkg/errors"
 
@@ -37,11 +42,12 @@ var APPLICATION = command.Command{
 		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "page-size", Doc: "The number of page size", DefaultValue: 10},
+		command.BoolFlag{Short: "", Name: "with-owner", Doc: "If return owners of projects", DefaultValue: false},
 	},
 	Run: GetApplications,
 }
 
-func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint64, org, project string, pageSize int) error {
+func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint64, org, project string, pageSize int, withOwner bool) error {
 	checkOrgParam(org, orgId)
 	checkProjectParam(project, projectId)
 
@@ -65,19 +71,39 @@ func GetApplications(ctx *command.Context, noHeaders bool, orgId, projectId uint
 
 			data := [][]string{}
 			for _, p := range pagingApplication.List {
-				data = append(data, []string{
+				line := []string{
 					strconv.FormatUint(p.ID, 10),
 					p.Name,
 					p.DisplayName,
-					p.Desc,
-				})
+				}
+
+				if withOwner {
+					var ns []string
+					ms, err := common.GetMembers(ctx, apistructs.AppScope, p.ID, []string{types.RoleAppOwner})
+					if err != nil {
+						return false, err
+					}
+					for _, m := range ms {
+						ns = append(ns, m.Nick)
+					}
+					line = append(line, strings.Join(ns, ","))
+				}
+
+				line = append(line, p.Desc)
+
+				data = append(data, line)
 			}
 
 			t := table.NewTable()
 			if !noHeaders {
-				t.Header([]string{
-					"ApplicationID", "Name", "DisplayName", "Description",
-				})
+				h := []string{
+					"ApplicationID", "Name", "DisplayName",
+				}
+				if withOwner {
+					h = append(h, "Owner")
+				}
+				h = append(h, "Description")
+				t.Header(h)
 			}
 			err = t.Data(data).Flush()
 			if err != nil {

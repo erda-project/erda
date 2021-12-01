@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
-	"github.com/pkg/errors"
 )
 
 func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs.ProjectDetailResponse, error) {
@@ -58,6 +59,20 @@ func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs
 	}
 
 	return resp, nil
+}
+
+func GetProjectByName(ctx *command.Context, orgId uint64, project string) (apistructs.ProjectDTO, error) {
+	pList, err := GetProjects(ctx, orgId)
+	if err != nil {
+		return apistructs.ProjectDTO{}, err
+	}
+	for _, p := range pList {
+		if p.Name == project {
+			return p, nil
+		}
+	}
+
+	return apistructs.ProjectDTO{}, errors.New(fmt.Sprintf("Invalid project name %s, may not exist or has no permission", project))
 }
 
 func GetProjectIdByName(ctx *command.Context, orgId uint64, project string) (uint64, error) {

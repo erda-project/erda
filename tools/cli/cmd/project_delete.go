@@ -51,7 +51,7 @@ func ProjectDelete(ctx *command.Context, org, project string, orgId, projectId u
 	}
 
 	if clear {
-		err = clearProject(ctx, orgId, projectId, "", waitRuntime, waitAddon, true)
+		err = clearProject(ctx, orgId, projectId, "", waitRuntime, waitAddon, true, true)
 		if err != nil {
 			return err
 		}
