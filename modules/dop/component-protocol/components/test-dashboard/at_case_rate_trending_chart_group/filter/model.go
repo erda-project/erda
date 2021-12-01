@@ -45,6 +45,7 @@ type InParams struct {
 type State struct {
 	Conditions []filter.PropCondition `json:"conditions,omitempty"`
 	Values     Values                 `json:"values,omitempty"`
+	IsClick    bool                   `json:"isClick"`
 }
 
 type CustomProps struct {
