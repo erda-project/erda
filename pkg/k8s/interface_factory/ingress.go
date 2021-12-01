@@ -17,20 +17,19 @@ package interface_factory
 import (
 	"errors"
 
-	v1 "k8s.io/api/apps/v1"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
-	"k8s.io/api/networking/v1beta1"
+	v1 "k8s.io/api/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
 	erdaextensionsv1beta1 "github.com/erda-project/erda/pkg/k8s/typed/extensions/v1beta1"
 	erdav1 "github.com/erda-project/erda/pkg/k8s/typed/networking/v1"
-	erdav1beta1 "github.com/erda-project/erda/pkg/k8s/typed/networking/v1beta1"
 	"github.com/erda-project/erda/pkg/k8s/union_interface"
 )
 
 const IngressKind = "Ingress"
 
 func CreateIngressesHelper(client *kubernetes.Clientset) (union_interface.IngressesHelper, error) {
+	// k8s version >=1.19
 	exist, err := IsResourceExist(client, IngressKind, v1.SchemeGroupVersion.String())
 	if err != nil {
 		return nil, err
@@ -38,13 +37,7 @@ func CreateIngressesHelper(client *kubernetes.Clientset) (union_interface.Ingres
 	if exist {
 		return erdav1.NewIngressHelper(client.NetworkingV1()), nil
 	}
-	exist, err = IsResourceExist(client, IngressKind, v1beta1.SchemeGroupVersion.String())
-	if err != nil {
-		return nil, err
-	}
-	if exist {
-		return erdav1beta1.NewIngressHelper(client.NetworkingV1beta1()), nil
-	}
+	// k8s version < 1.19
 	exist, err = IsResourceExist(client, IngressKind, extensionsv1beta1.SchemeGroupVersion.String())
 	if err != nil {
 		return nil, err
