@@ -1,0 +1,1 @@
+ALTER TABLE `pipeline_extras` DROP `commit`, DROP `org_name`, DROP `snippets`;
