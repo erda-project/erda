@@ -154,39 +154,47 @@ func newExporter() (exporter sdktrace.SpanExporter, err error) {
 }
 
 func getEndpointOptions() ([]otlptracehttp.Option, error) {
-	otlpEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
-	if len(otlpEndpoint) > 0 {
-		return []otlptracehttp.Option{
-			otlptracehttp.WithEndpoint(otlpEndpoint),
-		}, nil
-	}
-	isEdge, _ := strconv.ParseBool(os.Getenv("DICE_IS_EDGE"))
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithURLPath("/api/otlp/v1/traces"),
 	}
-	if isEdge {
-		collectorURL := os.Getenv("COLLECTOR_PUBLIC_URL")
-		if len(collectorURL) <= 0 {
-			return nil, fmt.Errorf("not found COLLECTOR_PUBLIC_URL")
-		}
-		u, err := url.Parse(collectorURL)
+	otlpEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	if len(otlpEndpoint) > 0 {
+		u, err := url.Parse(otlpEndpoint)
 		if err != nil {
-			return nil, fmt.Errorf("invalid COLLECTOR_PUBLIC_URL: %w", err)
+			return nil, fmt.Errorf("invalid OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: %w", err)
 		}
-		opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
+		opts = append(opts, otlptracehttp.WithEndpoint(u.Host), otlptracehttp.WithURLPath(u.Path))
 		if u.Scheme != "https" {
 			opts = append(opts, otlptracehttp.WithInsecure())
 		}
 	} else {
-		collectorAddr := os.Getenv("COLLECTOR_ADDR")
-		if len(collectorAddr) <= 0 {
-			return nil, fmt.Errorf("not found COLLECTOR_ADDR")
+		isEdge, _ := strconv.ParseBool(os.Getenv("DICE_IS_EDGE"))
+
+		if isEdge {
+			collectorURL := os.Getenv("COLLECTOR_PUBLIC_URL")
+			if len(collectorURL) <= 0 {
+				return nil, fmt.Errorf("not found COLLECTOR_PUBLIC_URL")
+			}
+			u, err := url.Parse(collectorURL)
+			if err != nil {
+				return nil, fmt.Errorf("invalid COLLECTOR_PUBLIC_URL: %w", err)
+			}
+			opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
+			if u.Scheme != "https" {
+				opts = append(opts, otlptracehttp.WithInsecure())
+			}
+		} else {
+			collectorAddr := os.Getenv("COLLECTOR_ADDR")
+			if len(collectorAddr) <= 0 {
+				return nil, fmt.Errorf("not found COLLECTOR_ADDR")
+			}
+			opts = append(opts,
+				otlptracehttp.WithEndpoint(collectorAddr),
+				otlptracehttp.WithInsecure(),
+			)
 		}
-		opts = append(opts,
-			otlptracehttp.WithEndpoint(collectorAddr),
-			otlptracehttp.WithInsecure(),
-		)
 	}
+
 	return opts, nil
 }
 
