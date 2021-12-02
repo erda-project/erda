@@ -28,7 +28,6 @@ import (
 var serviceName = "erda.oap.collector.receiver.opentelemetry.OpenTelemetryService"
 
 type config struct {
-	// some fields of config for this provider
 	Kafka struct {
 		Producer kafka.ProducerConfig `file:"producer"  desc:"kafka Producer Config"`
 	} `file:"kafka"`
