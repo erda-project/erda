@@ -15,7 +15,6 @@
 package jaeger
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"html"
@@ -27,9 +26,6 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-oap-thirdparty-protocol/jaeger-thrift/jaeger"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	tracing "github.com/erda-project/erda-proto-go/oap/trace/pb"
@@ -41,26 +37,7 @@ var (
 		"application/x-thrift":                 {},
 		"application/vnd.apache.thrift.binary": {},
 	}
-
-	JAEGER_MSP_ENV_ID    = "msp.env.id"
-	JAEGER_MSP_ENV_TOKEN = "msp.env.token"
 )
-
-func injectCtx(next interceptor.Handler) interceptor.Handler {
-	return func(ctx context.Context, entity interface{}) (interface{}, error) {
-		req := transhttp.ContextRequest(ctx)
-		req.Header.Set("Accept", "application/json")
-
-		header := transport.ContextHeader(ctx)
-		header.Set(common.HEADER_MSP_ENV_ID, req.Header.Get(common.HEADER_MSP_ENV_ID))
-		header.Set(common.HEADER_MSP_ENV_TOKEN, req.Header.Get(common.HEADER_MSP_ENV_TOKEN))
-
-		if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
-			ctx = common.WithSpans(ctx, data.Spans)
-		}
-		return next(ctx, entity)
-	}
-}
 
 func ThriftDecoder(r *http.Request, entity interface{}) error {
 	contentType := r.Header.Get("Content-Type")
@@ -123,15 +100,20 @@ func extractTraceID(tSpan *jaeger.Span) string {
 func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
 	if tags != nil {
 		for _, tag := range tags {
-			if tag.Key == common.TAG_MSP_ENV_ID || tag.Key == JAEGER_MSP_ENV_ID {
+			if tag.Key == common.TAG_ERDA_ENV_ID || tag.Key == common.TAG_ERDA_ENV_ID_C {
 				// If the headers does not have x-msp-env-id, use msp.env.id contained in tags
-				if val := r.Header.Get(common.HEADER_MSP_ENV_ID); val == "" {
-					r.Header.Set(common.HEADER_MSP_ENV_ID, extractTagValue(tag))
+				if val := r.Header.Get(common.HEADER_ERDA_ENV_ID); val == "" {
+					r.Header.Set(common.HEADER_ERDA_ENV_ID, getTagValue(tag))
 				}
 			}
-			if tag.Key == common.TAG_MSP_ENV_TOKEN || tag.Key == JAEGER_MSP_ENV_TOKEN {
-				if val := r.Header.Get(common.HEADER_MSP_ENV_TOKEN); val == "" {
-					r.Header.Set(common.HEADER_MSP_ENV_TOKEN, extractTagValue(tag))
+			if tag.Key == common.TAG_ERDA_ENV_TOKEN || tag.Key == common.TAG_ERDA_ENV_TOKEN_C {
+				if val := r.Header.Get(common.HEADER_ERDA_ENV_TOKEN); val == "" {
+					r.Header.Set(common.HEADER_ERDA_ENV_TOKEN, getTagValue(tag))
+				}
+			}
+			if tag.Key == common.TAG_ERDA_ORG || tag.Key == common.TAG_ERDA_ORG_C {
+				if val := r.Header.Get(common.HEADER_ERDA_ORG); val == "" {
+					r.Header.Set(common.HEADER_ERDA_ORG, getTagValue(tag))
 				}
 			}
 		}
@@ -141,12 +123,12 @@ func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
 func extractAttributes(span *tracing.Span, tags []*jaeger.Tag) {
 	if tags != nil {
 		for _, tag := range tags {
-			span.Attributes[tag.Key] = extractTagValue(tag)
+			span.Attributes[tag.Key] = getTagValue(tag)
 		}
 	}
 }
 
-func extractTagValue(tag *jaeger.Tag) string {
+func getTagValue(tag *jaeger.Tag) string {
 	if tag.IsSetVStr() {
 		return tag.GetVStr()
 	}
