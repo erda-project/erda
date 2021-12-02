@@ -20,6 +20,9 @@ envs:
   OPENAPI_ADDR: openapi:9529
   CMP_ADDR: cmp:9027
   ORCHESTRATOR_ADDR: orchestrator:8081
+  OTEL_TRACES_ENABLED: true
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://collector:7076/api/otlp/v1/traces
+  OTEL_TRACES_SAMPLER_ARG: 1
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"

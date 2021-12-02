@@ -79,13 +79,15 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 			spans := p.GetSpans()
 			for _, span := range spans {
 				for k, v := range span.Attributes {
-					if idx := strings.Index(k, "."); idx > -1 {
-						span.Attributes[strings.Replace(k, ".", "_", -1)] = v
+					key := k
+					if idx := strings.Index(key, "."); idx > -1 {
+						key = strings.Replace(k, ".", "_", -1)
+						span.Attributes[key] = v
 						delete(span.Attributes, k)
 					}
-					if idx := strings.Index(k, "erda_"); idx > -1 {
-						span.Attributes[k[idx:]] = v
-						delete(span.Attributes, k)
+					if idx := strings.Index(key, "erda_"); idx == 0 {
+						span.Attributes[key[5:]] = v
+						delete(span.Attributes, key)
 					}
 				}
 				if _, ok := span.Attributes[TAG_ORG_NAME]; !ok {
