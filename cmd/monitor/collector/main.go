@@ -30,6 +30,7 @@ import (
 	_ "github.com/erda-project/erda/modules/oap/collector/authentication"
 	_ "github.com/erda-project/erda/modules/oap/collector/receivers/common"
 	_ "github.com/erda-project/erda/modules/oap/collector/receivers/jaeger"
+	_ "github.com/erda-project/erda/modules/oap/collector/receivers/opentelemetry"
 
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
