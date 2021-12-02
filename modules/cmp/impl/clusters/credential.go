@@ -23,7 +23,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -79,10 +78,19 @@ func (c *Clusters) GetOrCreateAccessKey(clusterName string) (*credentialpb.Acces
 func (c *Clusters) GetOrCreateAccessKeyWithRecord(clusterName, userID, orgID string) (*credentialpb.AccessKeysItem, error) {
 	var (
 		detailInfo string
+		err        error
+		res        = &credentialpb.AccessKeysItem{}
 		status     = dbclient.StatusTypeSuccess
 	)
 
-	res, err := c.GetOrCreateAccessKey(clusterName)
+	if clusterName == conf.ErdaClusterName() {
+		if cs, err := k8sclient.NewForInCluster(); err == nil {
+			res, err = c.ResetAccessKeyWithClientSet(clusterName, cs.ClientSet)
+		}
+	} else {
+		res, err = c.GetOrCreateAccessKey(clusterName)
+	}
+
 	if err != nil {
 		detailInfo = err.Error()
 		status = dbclient.StatusTypeFailed
@@ -145,15 +153,13 @@ func (c *Clusters) DeleteAccessKey(clusterName string) error {
 func (c *Clusters) ResetAccessKey(clusterName string) (*credentialpb.AccessKeysItem, error) {
 	// In cluster use Inner clientSet priority.
 	if clusterName == conf.ErdaClusterName() {
-		if ic, err := rest.InClusterConfig(); err == nil {
-			inClusterCs, err := kubernetes.NewForConfig(ic)
-			if err != nil {
-				logrus.Errorf("get kubernetes client error when reset accesskey, err: %v", err)
-				tipErr := fmt.Errorf("connect to cluster: %s error: %v", clusterName, err)
-				return nil, tipErr
-			}
-			return c.ResetAccessKeyWithClientSet(clusterName, inClusterCs)
+		kc, err := k8sclient.NewForInCluster()
+		if err != nil {
+			tipErr := fmt.Errorf("get inCluster kubernetes client error: %v", err)
+			logrus.Errorf(tipErr.Error())
+			return nil, tipErr
 		}
+		return c.ResetAccessKeyWithClientSet(clusterName, kc.ClientSet)
 	}
 
 	// Get configmap and PreCheck cluster connection
