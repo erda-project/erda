@@ -59,18 +59,19 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
+			ConfigValidate := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
 				if channelType == "error" {
 					return nil, errors.New("not support")
 				}
 				return c, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
+			defer ConfigValidate.Unpatch()
+			CovertToPbNotifyChannel := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Name: "test", Type: &pb.NotifyChannelType{Name: "test", DisplayName: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test", DisplayName: "test"}}
 			})
-
+			defer CovertToPbNotifyChannel.Unpatch()
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByName", func(ncdb *db.NotifyChannelDB, name string) (*model.NotifyChannel, error) {
+			GetByName := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByName", func(ncdb *db.NotifyChannelDB, name string) (*model.NotifyChannel, error) {
 				if name == "" {
 					return nil, errors.New("err")
 				}
@@ -79,33 +80,41 @@ func Test_notifyChannelService_CreateNotifyChannel(t *testing.T) {
 				}
 				return nil, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "Create", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
+			defer GetByName.Unpatch()
+			Create := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "Create", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
 				if notifyChannel.Name == "create_error" {
 					return nil, errors.New("create_error")
 				}
 				return notifyChannel, nil
 			})
+			defer Create.Unpatch()
 			var b *bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSCreateKey", func(b *bundle.Bundle, req apistructs.KMSCreateKeyRequest) (*kmstypes.CreateKeyResponse, error) {
+			KMSCreateKey := monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSCreateKey", func(b *bundle.Bundle, req apistructs.KMSCreateKeyRequest) (*kmstypes.CreateKeyResponse, error) {
 				return &kmstypes.CreateKeyResponse{KeyMetadata: kmstypes.KeyMetadata{KeyID: "test"}}, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSEncrypt", func(b *bundle.Bundle, req apistructs.KMSEncryptRequest) (*kmstypes.EncryptResponse, error) {
+			defer KMSCreateKey.Unpatch()
+			KMSEncrypt := monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSEncrypt", func(b *bundle.Bundle, req apistructs.KMSEncryptRequest) (*kmstypes.EncryptResponse, error) {
 				return &kmstypes.EncryptResponse{KeyID: req.KeyID, CiphertextBase64: "test"}, nil
 			})
+			defer KMSEncrypt.Unpatch()
 			var uc *ucauth.UCClient
-			monkey.PatchInstanceMethod(reflect.TypeOf(uc), "GetUser", func(uc *ucauth.UCClient, userID string) (*ucauth.User, error) {
+			GetUser := monkey.PatchInstanceMethod(reflect.TypeOf(uc), "GetUser", func(uc *ucauth.UCClient, userID string) (*ucauth.User, error) {
 				return &ucauth.User{ID: "test"}, nil
 			})
+			defer GetUser.Unpatch()
 
-			monkey.Patch(apis.GetUserID, func(ctx context.Context) string {
+			GetUserID := monkey.Patch(apis.GetUserID, func(ctx context.Context) string {
 				return "1"
 			})
-			monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+			defer GetUserID.Unpatch()
+			GetOrgID := monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 				return "1"
 			})
-			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+			defer GetOrgID.Unpatch()
+			Language := monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
+			defer Language.Unpatch()
 
 			s := &notifyChannelService{
 				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
@@ -134,41 +143,48 @@ func Test_notifyChannelService_GetNotifyChannels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+			GetOrgID := monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 				return "1"
 			})
-			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+			defer GetOrgID.Unpatch()
+			Language := monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
+			defer Language.Unpatch()
 
 			var base *base64.Encoding
-			monkey.PatchInstanceMethod(reflect.TypeOf(base), "DecodeString", func(base *base64.Encoding, s string) ([]byte, error) {
+			DecodeString := monkey.PatchInstanceMethod(reflect.TypeOf(base), "DecodeString", func(base *base64.Encoding, s string) ([]byte, error) {
 				return []byte("test"), nil
 			})
+			defer DecodeString.Unpatch()
 
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
+			CovertToPbNotifyChannel := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Type: &pb.NotifyChannelType{Name: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test"}, Config: map[string]*structpb.Value{}}
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
+			defer CovertToPbNotifyChannel.Unpatch()
+			ConfigValidate := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
 				if channelType == "error" {
 					return nil, errors.New("not support")
 				}
 				return c, nil
 			})
+			defer ConfigValidate.Unpatch()
 
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "ListByPage", func(ncdb *db.NotifyChannelDB, offset, pageSize int64, scopeId, scopeType, channelType string) (int64, []model.NotifyChannel, error) {
+			ListByPage := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "ListByPage", func(ncdb *db.NotifyChannelDB, offset, pageSize int64, scopeId, scopeType, channelType string) (int64, []model.NotifyChannel, error) {
 				var channels []model.NotifyChannel
 				for i := 0; i < 10; i++ {
 					channels = append(channels, model.NotifyChannel{Id: strconv.Itoa(i), Name: strconv.Itoa(i), Type: strconv.Itoa(i), ChannelProvider: strconv.Itoa(i)})
 				}
 				return 10, channels, nil
 			})
+			defer ListByPage.Unpatch()
 			var b *bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSDecrypt", func(b *bundle.Bundle, req apistructs.KMSDecryptRequest) (*kmstypes.DecryptResponse, error) {
+			KMSDecrypt := monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSDecrypt", func(b *bundle.Bundle, req apistructs.KMSDecryptRequest) (*kmstypes.DecryptResponse, error) {
 				return &kmstypes.DecryptResponse{PlaintextBase64: "test"}, nil
 			})
+			defer KMSDecrypt.Unpatch()
 
 			s := &notifyChannelService{
 				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
@@ -207,11 +223,12 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+			Language := monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
+			defer Language.Unpatch()
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+			GetById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
 				if id == "error" {
 					return nil, errors.New("error")
 				}
@@ -220,13 +237,15 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 				}
 				return &model.NotifyChannel{Id: id}, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "UpdateById", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
+			defer GetById.Unpatch()
+			UpdateById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "UpdateById", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
 				if notifyChannel.Id == "error" {
 					return nil, errors.New("error")
 				}
 				return notifyChannel, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetCountByName", func(ncdb *db.NotifyChannelDB, name string) (int64, error) {
+			defer UpdateById.Unpatch()
+			GetCountByName := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetCountByName", func(ncdb *db.NotifyChannelDB, name string) (int64, error) {
 				if name == "error" {
 					return 0, errors.New("error")
 				}
@@ -238,17 +257,23 @@ func Test_notifyChannelService_UpdateNotifyChannel(t *testing.T) {
 				}
 				return 0, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByName", func(ncdb *db.NotifyChannelDB, name string) (*model.NotifyChannel, error) {
+			defer GetCountByName.Unpatch()
+			GetByName := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByName", func(ncdb *db.NotifyChannelDB, name string) (*model.NotifyChannel, error) {
 				return &model.NotifyChannel{Id: "test", Name: name}, nil
 			})
+			defer GetByName.Unpatch()
+
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
+			CovertToPbNotifyChannel := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Type: &pb.NotifyChannelType{Name: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test"}, Config: map[string]*structpb.Value{}}
 			})
+			defer CovertToPbNotifyChannel.Unpatch()
+
 			var b *bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSEncrypt", func(b *bundle.Bundle, req apistructs.KMSEncryptRequest) (*kmstypes.EncryptResponse, error) {
+			KMSEncrypt := monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSEncrypt", func(b *bundle.Bundle, req apistructs.KMSEncryptRequest) (*kmstypes.EncryptResponse, error) {
 				return &kmstypes.EncryptResponse{KeyID: req.KeyID, CiphertextBase64: "test"}, nil
 			})
+			defer KMSEncrypt.Unpatch()
 
 			s := &notifyChannelService{
 				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
@@ -278,11 +303,12 @@ func Test_notifyChannelService_GetNotifyChannel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+			Language := monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
+			defer Language.Unpatch()
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+			GetById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
 				if id == "error" {
 					return nil, errors.New("error")
 				}
@@ -291,25 +317,30 @@ func Test_notifyChannelService_GetNotifyChannel(t *testing.T) {
 				}
 				return &model.NotifyChannel{Id: id, Config: "{\"xx\": \"xx\"}"}, nil
 			})
+			defer GetById.Unpatch()
+
 			var base *base64.Encoding
-			monkey.PatchInstanceMethod(reflect.TypeOf(base), "DecodeString", func(base *base64.Encoding, s string) ([]byte, error) {
+			DecodeString := monkey.PatchInstanceMethod(reflect.TypeOf(base), "DecodeString", func(base *base64.Encoding, s string) ([]byte, error) {
 				return []byte("test"), nil
 			})
-
+			defer DecodeString.Unpatch()
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
+			CovertToPbNotifyChannel := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				return &pb.NotifyChannel{Type: &pb.NotifyChannelType{Name: "test"}, ChannelProviderType: &pb.NotifyChannelProviderType{Name: "test"}, Config: map[string]*structpb.Value{}}
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
+			defer CovertToPbNotifyChannel.Unpatch()
+			ConfigValidate := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
 				if channelType == "error" {
 					return nil, errors.New("not support")
 				}
 				return c, nil
 			})
+			defer ConfigValidate.Unpatch()
 			var b *bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSDecrypt", func(b *bundle.Bundle, req apistructs.KMSDecryptRequest) (*kmstypes.DecryptResponse, error) {
+			KMSDecrypt := monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSDecrypt", func(b *bundle.Bundle, req apistructs.KMSDecryptRequest) (*kmstypes.DecryptResponse, error) {
 				return &kmstypes.DecryptResponse{PlaintextBase64: "test"}, nil
 			})
+			defer KMSDecrypt.Unpatch()
 			s := &notifyChannelService{
 				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
 			}
@@ -339,7 +370,7 @@ func Test_notifyChannelService_DeleteNotifyChannel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "DeleteById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+			DeleteById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "DeleteById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
 				if id == "error" {
 					return nil, errors.New("error")
 				}
@@ -348,6 +379,7 @@ func Test_notifyChannelService_DeleteNotifyChannel(t *testing.T) {
 				}
 				return &model.NotifyChannel{Id: id}, nil
 			})
+			defer DeleteById.Unpatch()
 
 			s := &notifyChannelService{}
 			_, err := s.DeleteNotifyChannel(tt.args.ctx, tt.args.req)
@@ -400,9 +432,10 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+			Language := monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
+			defer Language.Unpatch()
 			var ncdb *db.NotifyChannelDB
 			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
 				if scopeId == "error" {
@@ -411,7 +444,7 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 				return &model.NotifyChannel{Id: "test", Config: "{\"xx\": \"xx\"}"}, nil
 			})
 			var ncs *notifyChannelService
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
+			CovertToPbNotifyChannel := monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "CovertToPbNotifyChannel", func(ncs *notifyChannelService, lang i18n.LanguageCodes, channel *model.NotifyChannel, needConfig bool) *pb.NotifyChannel {
 				nc := pb.NotifyChannel{}
 				err := copier.CopyWithOption(&nc, channel, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 				if err != nil {
@@ -419,6 +452,7 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 				}
 				return &nc
 			})
+			defer CovertToPbNotifyChannel.Unpatch()
 			monkey.PatchInstanceMethod(reflect.TypeOf(ncs), "ConfigValidate", func(ncs *notifyChannelService, channelType string, c map[string]*structpb.Value) (map[string]*structpb.Value, error) {
 				if channelType == "error" {
 					return nil, errors.New("not support")
@@ -426,13 +460,15 @@ func Test_notifyChannelService_GetNotifyChannelEnabled(t *testing.T) {
 				return c, nil
 			})
 			var base *base64.Encoding
-			monkey.PatchInstanceMethod(reflect.TypeOf(base), "DecodeString", func(base *base64.Encoding, s string) ([]byte, error) {
+			DecodeString := monkey.PatchInstanceMethod(reflect.TypeOf(base), "DecodeString", func(base *base64.Encoding, s string) ([]byte, error) {
 				return []byte("test"), nil
 			})
+			defer DecodeString.Unpatch()
 			var b *bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSDecrypt", func(b *bundle.Bundle, req apistructs.KMSDecryptRequest) (*kmstypes.DecryptResponse, error) {
+			KMSDecrypt := monkey.PatchInstanceMethod(reflect.TypeOf(b), "KMSDecrypt", func(b *bundle.Bundle, req apistructs.KMSDecryptRequest) (*kmstypes.DecryptResponse, error) {
 				return &kmstypes.DecryptResponse{PlaintextBase64: "test"}, nil
 			})
+			defer KMSDecrypt.Unpatch()
 			s := &notifyChannelService{
 				p: &provider{bdl: bundle.New(), uc: ucauth.NewUCClient("test", "ucClientId", "ucClientSecret")},
 			}
@@ -465,11 +501,12 @@ func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
+			Language := monkey.Patch(apis.Language, func(ctx context.Context) i18n.LanguageCodes {
 				return i18n.LanguageCodes{{Code: "zh"}}
 			})
+			defer Language.Unpatch()
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+			GetById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
 				if id == "error" {
 					return nil, errors.New("error")
 				}
@@ -488,8 +525,9 @@ func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
 				}
 				return &model.NotifyChannel{ScopeId: "test", ScopeType: "test", Type: "test", IsEnabled: false}, nil
 			})
+			defer GetById.Unpatch()
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
+			GetByScopeAndType := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
 				if channelType == "type_error" {
 					return nil, errors.New("error")
 				}
@@ -498,24 +536,28 @@ func Test_notifyChannelService_UpdateNotifyChannelEnabled(t *testing.T) {
 				}
 				return &model.NotifyChannel{Id: channelType}, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "SwitchEnable", func(ncdb *db.NotifyChannelDB, currentNotifyChannel, switchNotifyChannel *model.NotifyChannel) error {
+			defer GetByScopeAndType.Unpatch()
+			SwitchEnable := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "SwitchEnable", func(ncdb *db.NotifyChannelDB, currentNotifyChannel, switchNotifyChannel *model.NotifyChannel) error {
 				if currentNotifyChannel.Type == "type_error" {
 					return errors.New("error")
 				}
 				return nil
 			})
+			defer SwitchEnable.Unpatch()
 
 			mt := &MockTran{}
-			monkey.PatchInstanceMethod(reflect.TypeOf(mt), "Text", func(mt *MockTran, lang i18n.LanguageCodes, key string) string {
+			Text := monkey.PatchInstanceMethod(reflect.TypeOf(mt), "Text", func(mt *MockTran, lang i18n.LanguageCodes, key string) string {
 				return ""
 			})
+			defer Text.Unpatch()
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "UpdateById", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
+			UpdateById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "UpdateById", func(ncdb *db.NotifyChannelDB, notifyChannel *model.NotifyChannel) (*model.NotifyChannel, error) {
 				if notifyChannel.Type == "update_error" {
 					return nil, errors.New("error")
 				}
 				return notifyChannel, nil
 			})
+			defer UpdateById.Unpatch()
 
 			s := &notifyChannelService{
 				p: &provider{I18n: &MockTran{}},
@@ -560,7 +602,7 @@ func Test_notifyChannelService_GetNotifyChannelEnabledStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
+			GetById := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetById", func(ncdb *db.NotifyChannelDB, id string) (*model.NotifyChannel, error) {
 				if id == "error" {
 					return nil, errors.New("error")
 				}
@@ -581,7 +623,8 @@ func Test_notifyChannelService_GetNotifyChannelEnabledStatus(t *testing.T) {
 				}
 				return &model.NotifyChannel{Id: id}, nil
 			})
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
+			defer GetById.Unpatch()
+			GetByScopeAndType := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "GetByScopeAndType", func(ncdb *db.NotifyChannelDB, scopeId, scopeType, channelType string) (*model.NotifyChannel, error) {
 				if scopeId == "error" {
 					return nil, errors.New("error")
 				}
@@ -590,6 +633,7 @@ func Test_notifyChannelService_GetNotifyChannelEnabledStatus(t *testing.T) {
 				}
 				return &model.NotifyChannel{Id: "test", Config: "{\"xx\": \"xx\"}"}, nil
 			})
+			defer GetByScopeAndType.Unpatch()
 
 			s := &notifyChannelService{}
 			_, err := s.GetNotifyChannelEnabledStatus(tt.args.ctx, tt.args.req)
@@ -621,11 +665,12 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+			GetOrgID := monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 				return "1"
 			})
+			defer GetOrgID.Unpatch()
 			var ncdb *db.NotifyChannelDB
-			monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "EnabledChannelList", func(ncdb *db.NotifyChannelDB, scopeId, scopeType string) ([]model.NotifyChannel, error) {
+			EnabledChannelList := monkey.PatchInstanceMethod(reflect.TypeOf(ncdb), "EnabledChannelList", func(ncdb *db.NotifyChannelDB, scopeId, scopeType string) ([]model.NotifyChannel, error) {
 				return []model.NotifyChannel{
 					{
 						Id:              "21",
@@ -644,13 +689,17 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 					},
 				}, nil
 			})
-			monkey.Patch(apis.GetUserID, func(ctx context.Context) string {
+			defer EnabledChannelList.Unpatch()
+
+			GetUserID := monkey.Patch(apis.GetUserID, func(ctx context.Context) string {
 				return "1"
 			})
+			defer GetUserID.Unpatch()
 			var bund *bundle.Bundle
-			monkey.PatchInstanceMethod(reflect.TypeOf(bund), "GetNotifyConfigMS", func(bdl *bundle.Bundle, userId, orgId string) (bool, error) {
+			GetNotifyConfigMS := monkey.PatchInstanceMethod(reflect.TypeOf(bund), "GetNotifyConfigMS", func(bdl *bundle.Bundle, userId, orgId string) (bool, error) {
 				return true, nil
 			})
+			defer GetNotifyConfigMS.Unpatch()
 			pro := provider{
 				Cfg:                 nil,
 				Log:                 nil,
@@ -668,6 +717,75 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetNotifyChannelsEnabled() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func Test_notifyChannelService_CovertToPbNotifyChannel(t *testing.T) {
+	type args struct {
+		lang       i18n.LanguageCodes
+		channel    *model.NotifyChannel
+		needConfig bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pb.NotifyChannel
+	}{
+		{
+			name: "case1",
+			args: args{channel: &model.NotifyChannel{Id: "case", Name: "case", Type: "case"}},
+			want: &pb.NotifyChannel{
+				Id:                  "case",
+				Name:                "case",
+				Type:                &pb.NotifyChannelType{Name: "case"},
+				ChannelProviderType: &pb.NotifyChannelProviderType{},
+				CreatorName:         "test_nick",
+				CreateAt:            "0001-01-01 00:00:00",
+				UpdateAt:            "0001-01-01 00:00:00",
+			}},
+		{
+			name: "case2",
+			args: args{channel: &model.NotifyChannel{Id: "case", Name: "case", Type: "case", ChannelProvider: "case"}},
+			want: &pb.NotifyChannel{
+				Id:                  "case",
+				Name:                "case",
+				Type:                &pb.NotifyChannelType{Name: "case"},
+				ChannelProviderType: &pb.NotifyChannelProviderType{Name: "case"},
+				CreatorName:         "test_nick",
+				CreateAt:            "0001-01-01 00:00:00",
+				UpdateAt:            "0001-01-01 00:00:00",
+			}},
+		{
+			name: "case3",
+			args: args{channel: &model.NotifyChannel{Id: "case", Name: "case", CreatorId: "not_nick"}},
+			want: &pb.NotifyChannel{
+				Id:                  "case",
+				Name:                "case",
+				CreatorName:         "test",
+				Type:                &pb.NotifyChannelType{},
+				ChannelProviderType: &pb.NotifyChannelProviderType{},
+				CreateAt:            "0001-01-01 00:00:00",
+				UpdateAt:            "0001-01-01 00:00:00",
+			}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var uc *ucauth.UCClient
+			GetUser := monkey.PatchInstanceMethod(reflect.TypeOf(uc), "GetUser", func(uc *ucauth.UCClient, userID string) (*ucauth.User, error) {
+				if userID == "not_nick" {
+					return &ucauth.User{Name: "test"}, nil
+				}
+				return &ucauth.User{Name: "test", Nick: "test_nick"}, nil
+			})
+			defer GetUser.Unpatch()
+			s := &notifyChannelService{
+				p: &provider{I18n: &MockTran{}, uc: &ucauth.UCClient{}},
+			}
+			got := s.CovertToPbNotifyChannel(tt.args.lang, tt.args.channel, tt.args.needConfig)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CovertToPbNotifyChannel() = %v, want %v", got, tt.want)
 			}
 		})
 	}
