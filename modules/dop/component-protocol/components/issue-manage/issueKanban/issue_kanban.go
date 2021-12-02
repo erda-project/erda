@@ -138,6 +138,7 @@ type DragOperationInfo struct {
 	Reload bool `json:"reload"`
 	// 可拖拽的范围
 	TargetKeys interface{} `json:"targetKeys"`
+	Async      bool        `json:"async,omitempty"`
 	Disabled   bool        `json:"disabled"`
 }
 
@@ -208,6 +209,7 @@ func (c *IssueCart) RenderDragOperation() {
 	o.Reload = true
 	o.Meta = OpMetaInfo{IssueID: c.ID}
 	o.TargetKeys = targetKeys
+	o.Async = true
 	c.Operations[apistructs.DragOperation.String()] = o
 }
 
@@ -248,6 +250,7 @@ func (c *IssueCart) RenderDragToCustomOperation(mp map[cptype.OperationKey]inter
 	o.Meta = OpMetaInfo{
 		IssueID: c.ID,
 	}
+	o.Async = true
 	o.TargetKeys = targetKeys
 	c.Operations[apistructs.DragOperation.String()] = o
 }
@@ -281,6 +284,7 @@ func (c *IssueCart) RenderDragToAssigneeOperation(mp map[cptype.OperationKey]int
 	o.Meta = OpMetaInfo{
 		IssueID: c.ID,
 	}
+	o.Async = true
 	o.TargetKeys = targetKeys
 	c.Operations[apistructs.DragOperation.String()] = o
 }
@@ -314,6 +318,7 @@ func (c *IssueCart) RenderDragToPriorityOperation(i apistructs.Issue, mp map[cpt
 	}
 	o := DragOperation{}
 	o.Reload = true
+	o.Async = true
 	o.Meta = OpMetaInfo{
 		IssueID: c.ID,
 	}
