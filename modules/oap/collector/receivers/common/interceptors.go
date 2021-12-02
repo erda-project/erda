@@ -97,7 +97,7 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 					span.Attributes[TAG_ENV_ID] = envId
 				}
 				if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
-					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_ERDA_ENV_ID]
+					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_ENV_ID]
 				}
 				if _, ok := span.Attributes[TAG_SERVICE_ID]; !ok {
 					span.Attributes[TAG_SERVICE_ID] = span.Attributes[TAG_SERVICE_NAME]
