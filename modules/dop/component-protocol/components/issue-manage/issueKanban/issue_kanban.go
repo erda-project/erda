@@ -45,7 +45,6 @@ type IssueCart struct {
 	ID             int64                         `json:"id"`
 	Title          string                        `json:"title"`
 	Type           apistructs.IssueType          `json:"type"`
-	State          int64                         `json:"state"`
 	IssueButton    []apistructs.IssueStateButton `json:"issueButton"`
 	IterationID    int64                         `json:"iterationID"`
 	PlanFinishedAt *time.Time                    `json:"planFinishedAt"`
@@ -813,32 +812,14 @@ func (i ComponentIssueBoard) GetIssues(req apistructs.IssuePagingRequest, ignore
 
 func GenCart(bt BoardType, i apistructs.Issue, ctx context.Context, s ChartOperationSwitch, mp map[cptype.OperationKey]interface{}, stateByStateID map[int64]apistructs.IssueStatus) IssueCart {
 	var c IssueCart
-	switch bt {
-	case BoardTypeTime:
-		c.Assignee = i.Assignee
-		c.Priority = i.Priority
-		c.PlanFinishedAt = i.PlanFinishedAt
-		c.State = i.State
-	case BoardTypeCustom:
-		c.Assignee = i.Assignee
-		c.Priority = i.Priority
-		c.State = i.State
-	case BoardTypePriority:
-		c.Assignee = i.Assignee
-		c.State = i.State
-	case BoardTypeAssignee:
-		c.Priority = i.Priority
-		c.State = i.State
-	case BoardTypeStatus:
-		c.Assignee = i.Assignee
-		c.Priority = i.Priority
-	default:
-	}
 	c.ID = i.ID
 	c.Title = i.Title
 	c.Type = i.Type
 	c.IssueButton = i.IssueButton
 	c.IterationID = i.IterationID
+	c.Assignee = i.Assignee
+	c.Priority = i.Priority
+	c.PlanFinishedAt = i.PlanFinishedAt
 	c.Status = func() (cardStatus CardStatus) {
 		if len(stateByStateID) == 0 {
 			return
