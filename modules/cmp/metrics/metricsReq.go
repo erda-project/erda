@@ -21,21 +21,23 @@ import (
 )
 
 type MetricsRequest struct {
-	UserId       string
-	OrgId        string
-	Cluster      string
-	Type         string
-	Kind         string
-	PodRequests  []MetricsReqInterface
-	NodeRequests []MetricsReqInterface
+	UserId           string
+	OrgId            string
+	OrganizationName string
+	Cluster          string
+	Type             string
+	Kind             string
+	PodRequests      []MetricsReqInterface
+	NodeRequests     []MetricsReqInterface
+	AllRequests      []MetricsReqInterface
 }
 
 func (m MetricsRequest) UserID() string {
 	return m.UserId
 }
 
-func (m MetricsRequest) OrgID() string {
-	return m.OrgId
+func (m MetricsRequest) OrgName() string {
+	return m.OrganizationName
 }
 
 func (m MetricsRequest) ResourceType() string {
@@ -86,8 +88,7 @@ func (m *MetricsPodRequest) Namespace() string {
 }
 
 type Basic interface {
-	UserID() string
-	OrgID() string
+	OrgName() string
 	ResourceType() string
 	ResourceKind() string
 	ClusterName() string
@@ -140,7 +141,7 @@ func (m *MetricsNodeRequest) UserID() string {
 	return m.UserId
 }
 
-func (m *MetricsNodeRequest) OrgID() string {
+func (m *MetricsNodeRequest) OrgName() string {
 	return m.OrgId
 }
 
@@ -154,6 +155,46 @@ func (m *MetricsNodeRequest) ResourceKind() string {
 
 func (m *MetricsNodeRequest) IP() string {
 	return m.Ip
+}
+
+type MetricsAllRequest struct {
+	*MetricsRequest
+}
+
+func (m *MetricsAllRequest) CacheKey() string {
+	return cache.GenerateKey(m.Cluster, m.ResourceType(), m.ResourceKind(), m.OrgName())
+}
+
+func (m *MetricsAllRequest) UserID() string {
+	return ""
+}
+
+func (m *MetricsAllRequest) OrgName() string {
+	return m.OrganizationName
+}
+
+func (m *MetricsAllRequest) ResourceType() string {
+	return m.Type
+}
+
+func (m *MetricsAllRequest) ResourceKind() string {
+	return m.Kind
+}
+
+func (m *MetricsAllRequest) ClusterName() string {
+	return ""
+}
+
+func (m *MetricsAllRequest) PodName() string {
+	return ""
+}
+
+func (m *MetricsAllRequest) Namespace() string {
+	return ""
+}
+
+func (m *MetricsAllRequest) IP() string {
+	return ""
 }
 
 type MetricsData struct {
