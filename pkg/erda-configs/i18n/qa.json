@@ -48,6 +48,7 @@
         "tp.export.scene.ref.set.num": "关联场景集编号",
         "tp.export.scene.description": "场景描述",
         "tp.export.scene.group.id": "组编号",
+        "tp.export.scene.policy": "策略",
 
         "tp.export.scene.input.sheet.name": "自动化测试场景入参",
         "tp.export.scene.input.num": "用例编号",
@@ -144,6 +145,7 @@
         "tp.export.scene.pre.num": "pre num",
         "tp.export.scene.description": "description",
         "tp.export.scene.group.id": "group id",
+        "tp.export.scene.policy": "policy",
 
         "tp.export.scene.input.sheet.name": "AutoTest Scene Input",
         "tp.export.scene.input.num": "input num",
