@@ -234,3 +234,11 @@ type AutoTestSpaceStats struct {
 	SceneNum int
 	StepNum  int
 }
+
+type AutoTestSceneCount struct {
+	Count int
+}
+
+type AutoTestSceneStepCount struct {
+	Count int
+}

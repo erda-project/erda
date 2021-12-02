@@ -142,7 +142,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	}())
 
 	//  set global auto test scene and step
-	if err = f.SetGlobalAtSceneAndStep(h); err != nil {
+	if err = f.SetGlobalAtStep(h); err != nil {
 		return err
 	}
 
@@ -158,30 +158,13 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	return nil
 }
 
-func (f *Filter) SetGlobalAtSceneAndStep(h *gshelper.GSHelper) error {
+func (f *Filter) SetGlobalAtStep(h *gshelper.GSHelper) error {
 	steps, err := f.atTestPlan.ListStepByPlanID(h.GetGlobalAutoTestPlanIDs()...)
 	if err != nil {
 		return err
 	}
 
-	scenes, _, err := f.atTestPlan.ListSceneBySceneSetID(func() []uint64 {
-		setIDs := make([]uint64, 0, len(steps))
-		for _, v := range steps {
-			setIDs = append(setIDs, v.SceneSetID)
-		}
-		return setIDs
-	}()...)
-	if err != nil {
-		return err
-	}
-
-	sceneIDs := make([]uint64, 0, len(scenes))
-	for _, v := range scenes {
-		sceneIDs = append(sceneIDs, v.ID)
-	}
-
 	h.SetGlobalAtStep(steps)
-	h.SetGlobalAtSceneIDs(sceneIDs)
 	return nil
 }
 

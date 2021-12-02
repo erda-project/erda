@@ -43,35 +43,20 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	h := gshelper.NewGSHelper(gs)
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 
-	scenes, _, err := atSvc.ListSceneBySceneSetID(func() []uint64 {
-		setIDs := make([]uint64, 0, len(h.GetBlockAtStep()))
-		for _, v := range h.GetBlockAtStep() {
-			setIDs = append(setIDs, v.SceneSetID)
+	stepCount, err := atSvc.CountAutoTestSceneSteps(func() []uint64 {
+		selectPlans := h.GetAtBlockFilterTestPlanList()
+		selectPlanIDs := make([]uint64, 0, len(selectPlans))
+		for _, v := range selectPlans {
+			selectPlanIDs = append(selectPlanIDs, v.ID)
 		}
-		return setIDs
-	}()...)
-	if err != nil {
-		return err
-	}
-	sceneSteps, err := atSvc.ListAutoTestSceneSteps(func() []uint64 {
-		sceneIDs := make([]uint64, 0, len(scenes))
-		for _, v := range scenes {
-			sceneIDs = append(sceneIDs, v.ID)
-		}
-		return sceneIDs
+		return selectPlanIDs
 	}())
 	if err != nil {
 		return err
 	}
 	tv := pkg.TextValue{
 		Value: strutil.String(func() int {
-			var count int
-			for _, v := range sceneSteps {
-				if v.Type.IsEffectiveStepType() && v.Name != "" {
-					count++
-				}
-			}
-			return count
+			return stepCount.Count
 		}()),
 		Kind: cputil.I18n(ctx, "auto-test-api-num"),
 	}

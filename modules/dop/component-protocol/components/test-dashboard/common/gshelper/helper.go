@@ -216,22 +216,6 @@ func (h *GSHelper) GetGlobalAtStep() []apistructs.TestPlanV2Step {
 	return res
 }
 
-func (h *GSHelper) SetGlobalAtSceneIDs(ids []uint64) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["GlobalAtSceneIDs"] = ids
-}
-
-func (h *GSHelper) GetGlobalAtSceneIDs() []uint64 {
-	if h.gs == nil {
-		return nil
-	}
-	res := make([]uint64, 0)
-	_ = assign((*h.gs)["GlobalAtSceneIDs"], &res)
-	return res
-}
-
 type AtSceneAndApiTimeFilter struct {
 	TimeStart string `json:"timeStart"`
 	TimeEnd   string `json:"timeEnd"`
