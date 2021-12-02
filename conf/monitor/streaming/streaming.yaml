@@ -348,7 +348,7 @@ span-persist:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
   oap_input:
-    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace}"
+    topics: "${OAP_TRACE_TOPICS:msp-jaeger-trace,erda-spans}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
     parallelism: ${SPOT_OAPSPAN_CONSUMERS:3}
     options:
