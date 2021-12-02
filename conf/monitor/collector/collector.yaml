@@ -11,18 +11,30 @@ erda.oap.collector.receiver.common:
 erda.oap.collector.receiver.jaeger:
   _enable: "${COLLECTOR_RECEIVER_JAEGER_ENABLE:true}"
   kafka:
-#    server: ${BOOTSTRAP_SERVERS:localhost:9092}
     producer:
-      topic: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_TOPIC:msp-jaeger-trace}
+      topic: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_TOPIC:erda-spans}
       shared: "false"
       options:
             go.produce.channel.size: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_PRODUCE_CHANNEL_SIZE:100}
             queue.buffering.max.kbytes: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
 
+erda.oap.collector.receiver.opentelemetry:
+  _enable: "${COLLECTOR_RECEIVER_OPENTELEMETRY_ENABLE:true}"
+  kafka:
+    producer:
+      topic: ${COLLECTOR_RECEIVER_OPENTELEMETRY_KAFKA_TOPIC:erda-spans}
+      shared: "false"
+      options:
+            go.produce.channel.size: ${COLLECTOR_RECEIVER_OPENTELEMETRY_KAFKA_PRODUCE_CHANNEL_SIZE:100}
+            queue.buffering.max.kbytes: ${COLLECTOR_RECEIVER_OPENTELEMETRY_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
+
 erda.oap.collector.authentication:
   sync_interval: ${COLLECTOR_AUTHENTICATION_AK_SYNC_INTERVAL:2m}
 
 kafka@receiver-jaeger:
+  servers: ${BOOTSTRAP_SERVERS:localhost:9092}
+
+kafka@receiver-opentelemetry:
   servers: ${BOOTSTRAP_SERVERS:localhost:9092}
 
 grpc-client@erda.core.services.authentication.credentials.accesskey.accessKeyService:

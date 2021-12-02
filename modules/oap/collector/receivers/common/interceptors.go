@@ -17,6 +17,8 @@ package common
 import (
 	"context"
 	"errors"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"net/url"
 	"strings"
 
@@ -35,16 +37,46 @@ type Interceptors interface {
 	Authentication(next interceptor.Handler) interceptor.Handler
 
 	SpanTagOverwrite(next interceptor.Handler) interceptor.Handler
+
+	ExtractHttpHeaders(next interceptor.Handler) interceptor.Handler
 }
 
 type interceptorImpl struct {
 	validator authentication.Validator
 }
 
+func (i *interceptorImpl) ExtractHttpHeaders(next interceptor.Handler) interceptor.Handler {
+	return func(ctx context.Context, entity interface{}) (interface{}, error) {
+		req := transhttp.ContextRequest(ctx)
+		req.Header.Set("Accept", "application/json")
+
+		ctxBaggage := transport.ContextHeader(ctx)
+
+		if envId := req.Header.Get(HEADER_ERDA_ENV_ID); envId != "" {
+			ctxBaggage.Set(HEADER_ERDA_ENV_ID, envId)
+		}
+
+		if token := req.Header.Get(HEADER_ERDA_ENV_TOKEN); token != "" {
+			ctxBaggage.Set(HEADER_ERDA_ENV_TOKEN, token)
+		}
+
+		if orgName := req.Header.Get(HEADER_ERDA_ORG); orgName != "" {
+			ctxBaggage.Set(HEADER_ERDA_ORG, orgName)
+		}
+
+		//if data, ok := entity.(*jaegerpb.PostSpansRequest); ok {
+		//	ctx = common.WithSpans(ctx, data.Spans)
+		//}
+		return next(ctx, entity)
+	}
+}
+
 func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		spans, ok := Spans(ctx)
-		if ok {
+		envId := apis.GetHeader(ctx, HEADER_ERDA_ENV_ID)
+		orgName := apis.GetHeader(ctx, HEADER_ERDA_ORG)
+		if p, ok := req.(SpansProvider); ok && p.GetSpans() != nil {
+			spans := p.GetSpans()
 			for _, span := range spans {
 				for k, v := range span.Attributes {
 					if idx := strings.Index(k, "."); idx > -1 {
@@ -52,8 +84,17 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						delete(span.Attributes, k)
 					}
 				}
+				if _, ok := span.Attributes[TAG_ORG_NAME]; !ok {
+					span.Attributes[TAG_ORG_NAME] = orgName
+				}
+				if _, ok := span.Attributes[TAG_ENV_ID]; !ok {
+					span.Attributes[TAG_ENV_ID] = envId
+				}
 				if _, ok := span.Attributes[TAG_TERMINUS_KEY]; !ok {
-					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_MSP_ENV_ID]
+					span.Attributes[TAG_TERMINUS_KEY] = span.Attributes[TAG_ERDA_ENV_ID]
+				}
+				if _, ok := span.Attributes[TAG_SERVICE_ID]; !ok {
+					span.Attributes[TAG_SERVICE_ID] = span.Attributes[TAG_SERVICE_NAME]
 				}
 				if _, ok := span.Attributes[TAG_IP]; ok {
 					span.Attributes[TAG_SERVICE_INSTANCE_IP] = span.Attributes[TAG_IP]
@@ -64,6 +105,10 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						if u, err := url.Parse(span.Attributes[TAG_HTTP_URL]); err == nil {
 							span.Attributes[TAG_HTTP_PATH] = u.Path
 						}
+					} else if _, ok := span.Attributes[TAG_HTTP_TARGET]; ok {
+						if u, err := url.Parse(span.Attributes[TAG_HTTP_TARGET]); err == nil {
+							span.Attributes[TAG_HTTP_PATH] = u.Path
+						}
 					}
 				}
 				if _, ok := span.Attributes[TAG_SERVICE_INSTANCE_ID]; !ok {
@@ -72,7 +117,7 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 					}
 				}
 
-				delete(span.Attributes, TAG_MSP_ENV_TOKEN)
+				delete(span.Attributes, TAG_ERDA_ENV_TOKEN)
 			}
 		}
 		return next(ctx, req)
@@ -81,8 +126,8 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 
 func (i *interceptorImpl) Authentication(next interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		envId := apis.GetHeader(ctx, HEADER_MSP_ENV_ID)
-		token := apis.GetHeader(ctx, HEADER_MSP_ENV_TOKEN)
+		envId := apis.GetHeader(ctx, HEADER_ERDA_ENV_ID)
+		token := apis.GetHeader(ctx, HEADER_ERDA_ENV_TOKEN)
 
 		if envId == "" {
 			return nil, INVALID_MSP_ENV_ID

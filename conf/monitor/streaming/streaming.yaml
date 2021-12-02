@@ -18,13 +18,15 @@ kafka.topic.initializer:
     - spot-job-log
     - spot-metrics
     - spot-events
-    - msp-tracing-metrics
     - spot-analytics
     - spot-trace
-    - msp-jaeger-trace
     - spot-alert-record
     - spot-notify-record
     - spot-entity
+    - msp-tracing-metrics
+    - msp-jaeger-trace
+    - erda-spans
+    - erda-trace-metrics
 
 mysql:
   host: "${MYSQL_HOST:localhost}"

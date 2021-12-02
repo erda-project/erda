@@ -21,20 +21,34 @@ import (
 )
 
 var (
-	TAG_SERVICE_NAME        = "service_name"
-	TAG_SERVICE_ID          = "service_id"
-	TAG_SERVICE_INSTANCE_IP = "service_instance_ip"
-	TAG_SERVICE_INSTANCE_ID = "service_instance_id"
-	TAG_CLIENT_UUID         = "client_uuid"
-	TAG_MSP_ENV_ID          = "msp_env_id"
-	TAG_MSP_ENV_TOKEN       = "msp_env_token"
-	TAG_TERMINUS_KEY        = "terminus_key"
-	TAG_IP                  = "ip"
-	TAG_HTTP_PATH           = "http_path"
-	TAG_HTTP_URL            = "http_url"
+	TAG_SERVICE_NAME                    = "service_name"
+	TAG_SERVICE_ID                      = "service_id"
+	TAG_SERVICE_INSTANCE_IP             = "service_instance_ip"
+	TAG_SERVICE_INSTANCE_ID             = "service_instance_id"
+	TAG_CLIENT_UUID                     = "client_uuid"
+	TAG_TERMINUS_KEY                    = "terminus_key"
+	TAG_IP                              = "ip"
+	TAG_HTTP_PATH                       = "http_path"
+	TAG_HTTP_URL                        = "http_url"
+	TAG_HTTP_TARGET                     = "http_target"
+	TAG_INSTRUMENTATION_LIBRARY         = "instrumentation_library"
+	TAG_INSTRUMENTATION_LIBRARY_VERSION = "instrumentation_library_version"
+	TAG_SPAN_KIND                       = "span_kind"
+	TAG_ORG_NAME                        = "org_name"
+	TAG_ENV_ID                          = "env_id"
 
-	HEADER_MSP_ENV_ID    = "x-msp-env-id"
-	HEADER_MSP_ENV_TOKEN = "x-msp-env-token"
+	TAG_ERDA_ENV_ID    = "erda_env_id"
+	TAG_ERDA_ENV_TOKEN = "erda_env_token"
+	TAG_ERDA_ORG       = "erda_org"
+	// C means compatible
+	// Separator of tag key compatible with third-party protocols, such as opentracing, opentelemetry
+	TAG_ERDA_ENV_ID_C    = "erda.env.id"
+	TAG_ERDA_ENV_TOKEN_C = "erda.env.token"
+	TAG_ERDA_ORG_C       = "erda.org"
+
+	HEADER_ERDA_ENV_ID    = "x-erda-env-id"
+	HEADER_ERDA_ENV_TOKEN = "x-erda-env-token"
+	HEADER_ERDA_ORG       = "x-erda-org"
 
 	SCOPE_MSP_ENV = "msp_env"
 )
