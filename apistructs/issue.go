@@ -51,6 +51,7 @@ type Issue struct {
 	IssueButton      []IssueStateButton `json:"issueButton"` // 状态流转按钮
 	IssueSummary     *IssueSummary      `json:"issueSummary"`
 	Labels           []string           `json:"labels"` // label 列表
+	LabelDetails     []ProjectLabel     `json:"labelDetails,omitempty"`
 	ManHour          IssueManHour       `json:"issueManHour"`
 	Source           string             `json:"source"`
 	TaskType         string             `json:"taskType"` // 任务类型
