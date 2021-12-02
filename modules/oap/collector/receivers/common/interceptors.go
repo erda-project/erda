@@ -20,11 +20,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/erda-project/erda-infra/pkg/transport"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
 var (
