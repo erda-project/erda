@@ -81,6 +81,15 @@ func NewForRestConfig(c *rest.Config, schemes ...func(scheme *runtime.Scheme) er
 	return &kc, nil
 }
 
+// NewForInCluster New client for in cluster
+func NewForInCluster() (*K8sClient, error) {
+	rc, err := config.GetInClusterRestConfig()
+	if err != nil {
+		return nil, err
+	}
+	return NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
+}
+
 // GetRestConfig get rest config with clusterName
 func GetRestConfig(clusterName string) (*rest.Config, error) {
 	b := bundle.New(bundle.WithClusterManager())
