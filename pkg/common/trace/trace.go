@@ -155,15 +155,6 @@ func getEndpointOptions() ([]otlptracehttp.Option, error) {
 		otlptracehttp.WithURLPath("/api/otlp/v1/traces"),
 	}
 	if isEdge {
-		collectorAddr := os.Getenv("COLLECTOR_ADDR")
-		if len(collectorAddr) <= 0 {
-			return nil, fmt.Errorf("not found COLLECTOR_ADDR")
-		}
-		opts = append(opts,
-			otlptracehttp.WithEndpoint(collectorAddr),
-			otlptracehttp.WithInsecure(),
-		)
-	} else {
 		collectorURL := os.Getenv("COLLECTOR_PUBLIC_URL")
 		if len(collectorURL) <= 0 {
 			return nil, fmt.Errorf("not found COLLECTOR_PUBLIC_URL")
@@ -176,6 +167,15 @@ func getEndpointOptions() ([]otlptracehttp.Option, error) {
 		if u.Scheme != "https" {
 			opts = append(opts, otlptracehttp.WithInsecure())
 		}
+	} else {
+		collectorAddr := os.Getenv("COLLECTOR_ADDR")
+		if len(collectorAddr) <= 0 {
+			return nil, fmt.Errorf("not found COLLECTOR_ADDR")
+		}
+		opts = append(opts,
+			otlptracehttp.WithEndpoint(collectorAddr),
+			otlptracehttp.WithInsecure(),
+		)
 	}
 	return opts, nil
 }
