@@ -73,17 +73,35 @@ func (client *DBClient) GetAuditSettings() ([]model.AuditSettings, error) {
 }
 
 // DeleteAuditsByTimeAndOrg 软删除某个企业的审计事件
-func (client *DBClient) DeleteAuditsByTimeAndOrg(startTime time.Time, orgIDs []uint64) error {
+func (client *DBClient) DeleteAuditsByTimeAndOrg(startTime time.Time, orgID uint64) error {
 	// var audit model.Audit
-	return client.Table("dice_audit").Where("org_id in ( ? )", orgIDs).Where("start_time <= ?", startTime).
-		Where("scope_type != 'sys'").Update("deleted", "1").Error
+	var minID BaseModel
+	baseSql := client.Table("dice_audit").Where("org_id = ?", orgID).Where("start_time <= ?", startTime).
+		Where("scope_type != 'sys'").Where("deleted = 0")
+	if err := baseSql.Select("min(id) as id").Scan(&minID).Error; err != nil {
+		return err
+	}
+	// use min id reduce update scope
+	if minID.ID > 0 {
+		baseSql = baseSql.Where("id >= ?", minID.ID)
+	}
+	return baseSql.Update("deleted", "1").Error
 }
 
 // DeleteAuditsByTimeAndSys 软删除系统级别的审计事件
 func (client *DBClient) DeleteAuditsByTimeAndSys(startTime time.Time) error {
 	// var audit model.Audit
-	return client.Table("dice_audit").Where("start_time <= ?", startTime).Where("scope_type = 'sys'").
-		Update("deleted", "1").Error
+	var minID BaseModel
+	baseSql := client.Table("dice_audit").Where("start_time <= ?", startTime).Where("scope_type = 'sys'").
+		Where("deleted = 0")
+	if err := baseSql.Select("min(id) as id").Scan(&minID).Error; err != nil {
+		return err
+	}
+	// use min id reduce update scope
+	if minID.ID > 0 {
+		baseSql = baseSql.Where("id >= ?", minID.ID)
+	}
+	return baseSql.Update("deleted", "1").Error
 }
 
 // ArchiveAuditsByTimeAndOrg 归档某个企业的审计事件
