@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	INVALID_MSP_ENV_ID    = errors.New("invalid msp.env.id tag")
-	INVALID_MSP_ENV_TOKEN = errors.New("invalid msp.env.token tag")
+	INVALID_MSP_ENV_ID    = errors.New("invalid erda.env.id tag")
+	INVALID_MSP_ENV_TOKEN = errors.New("invalid erda.env.token tag")
 	AUTHENTICATION_FAILED = errors.New("authentication failed, please use the correct accessKey and accessKeySecret")
 )
 
@@ -83,6 +83,10 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						span.Attributes[strings.Replace(k, ".", "_", -1)] = v
 						delete(span.Attributes, k)
 					}
+					if idx := strings.Index(k, "erda_"); idx > -1 {
+						span.Attributes[k[idx:]] = v
+						delete(span.Attributes, k)
+					}
 				}
 				if _, ok := span.Attributes[TAG_ORG_NAME]; !ok {
 					span.Attributes[TAG_ORG_NAME] = orgName
@@ -117,6 +121,7 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 					}
 				}
 
+				delete(span.Attributes, TAG_ENV_TOKEN)
 				delete(span.Attributes, TAG_ERDA_ENV_TOKEN)
 			}
 		}

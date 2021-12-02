@@ -36,6 +36,7 @@ var (
 	TAG_SPAN_KIND                       = "span_kind"
 	TAG_ORG_NAME                        = "org_name"
 	TAG_ENV_ID                          = "env_id"
+	TAG_ENV_TOKEN                       = "env_token"
 
 	TAG_ERDA_ENV_ID    = "erda_env_id"
 	TAG_ERDA_ENV_TOKEN = "erda_env_token"
