@@ -8,6 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
+	github.com/Shopify/sarama v1.19.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
@@ -37,7 +38,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/erda-project/erda-infra v0.0.0-20211123061255-960b922553f2
+	github.com/erda-project/erda-infra v0.0.0-20211202072930-ca1a6904780f
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -139,13 +140,17 @@ require (
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
+	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.2.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
+	go.opentelemetry.io/otel/sdk v1.2.0
 	go.opentelemetry.io/proto/otlp v0.11.0
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
+	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
+	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
 	google.golang.org/genproto v0.0.0-20210916144049-3192f974c780
@@ -195,6 +200,8 @@ replace (
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
+	go.opentelemetry.io/otel/exporters/stdout => go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
+	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
 	k8s.io/api => k8s.io/api v0.21.2
