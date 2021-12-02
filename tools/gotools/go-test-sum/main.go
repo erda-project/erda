@@ -386,7 +386,7 @@ func runTest(file string) (profiles []*cover.Profile, err error) {
 			os.Remove(coverage)
 		}()
 	}
-	args := append([]string{"test", "-tags=musl", "-work", "-cpu=2", "-timeout=30s", "-failfast", "-race", "-coverprofile=" + coverage, "-covermode=atomic"})
+	args := append([]string{"test", "-tags=musl", "-gcflags=-l", "-work", "-cpu=2", "-timeout=30s", "-failfast", "-race", "-coverprofile=" + coverage, "-covermode=atomic"})
 	args = append(args, []string{"-ldflags", "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn"}...)
 	args = append(args, []string{"-gcflags", "-N -l"}...)
 	args = append(args, file)
