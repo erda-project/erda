@@ -15,6 +15,8 @@
 package gshelper
 
 import (
+	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -264,24 +266,28 @@ func (h *GSHelper) GetAtCaseRateTrendingTimeFilter() AtSceneAndApiTimeFilter {
 }
 
 type SelectChartItemData struct {
-	PlanID     uint64 `json:"planID"`
-	Name       string `json:"name"`
-	PipelineID uint64 `json:"pipelineID"`
+	PlanID      uint64 `json:"planID"`
+	Name        string `json:"name"`
+	PipelineID  uint64 `json:"pipelineID"`
+	ExecuteTime string `json:"executeTime"`
 }
 
-func (h *GSHelper) SetSelectChartItemData(t SelectChartItemData) {
+func (h *GSHelper) SetSelectChartItemData(t map[string]SelectChartItemData) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)["GlobalSelectChartItemData"] = t
 }
 
-func (h *GSHelper) GetSelectChartHistoryData() SelectChartItemData {
+func (h *GSHelper) GetSelectChartHistoryData() map[string]SelectChartItemData {
 	if h.gs == nil {
-		return SelectChartItemData{}
+		return nil
 	}
-	data := SelectChartItemData{}
-	_ = assign((*h.gs)["GlobalSelectChartItemData"], &data)
+	data := make(map[string]SelectChartItemData, 0)
+	err := assign((*h.gs)["GlobalSelectChartItemData"], &data)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return data
 }
 
@@ -324,4 +330,20 @@ func (h *GSHelper) GetGlobalQualityScore() float64 {
 		return 0
 	}
 	return v.(float64)
+}
+
+func (h *GSHelper) SetWaterfallChartPipelineID(id uint64) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalWaterfallChartPipelineIDs"] = id
+}
+
+func (h *GSHelper) GetWaterfallChartPipelineID() uint64 {
+	if h.gs == nil {
+		return 0
+	}
+	var data uint64
+	_ = assign((*h.gs)["GlobalWaterfallChartPipelineIDs"], &data)
+	return data
 }

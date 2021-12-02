@@ -17,6 +17,7 @@ package filter
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -42,10 +43,11 @@ type Filter struct {
 type State struct {
 	Conditions []filter.PropCondition `json:"conditions,omitempty"`
 	Values     PipelineIDValues       `json:"values,omitempty"`
+	IsClick    bool                   `json:"isClick"`
 }
 
 type PipelineIDValues struct {
-	PipelineID []uint64 `json:"pipelineID"`
+	PipelineID uint64 `json:"pipelineID"`
 }
 
 type AtPlanFilterStateValues struct {
@@ -59,24 +61,50 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	}
 
 	h := gshelper.NewGSHelper(gs)
+	data := h.GetSelectChartHistoryData()
+	list := make([]gshelper.SelectChartItemData, 0, len(data))
 	f.State.Conditions = []filter.PropCondition{
 		{
+			CustomProps: map[string]interface{}{
+				"mode": "single",
+			},
 			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "pipelineID",
 			Label:     cputil.I18n(ctx, "Test Plan"),
 			Options: func() (opts []filter.PropConditionOption) {
-				data := h.GetSelectChartHistoryData()
-				opts = append(opts, filter.PropConditionOption{
-					Label: data.Name,
-					Value: data.PipelineID,
+				for _, v := range data {
+					list = append(list, v)
+				}
+				sort.Slice(list, func(i, j int) bool {
+					return list[i].ExecuteTime > list[j].ExecuteTime
 				})
+				for _, v := range list {
+					opts = append(opts, filter.PropConditionOption{
+						Label: v.Name,
+						Value: v.PipelineID,
+					})
+				}
 				return
 			}(),
 			Type: filter.PropConditionTypeSelect,
 		},
 	}
+	f.State.Values = PipelineIDValues{
+		PipelineID: func() uint64 {
+			if f.State.Values.PipelineID != 0 && !f.State.IsClick {
+				return f.State.Values.PipelineID
+			}
+			if len(list) == 0 {
+				return 0
+			}
+			return list[0].PipelineID
+		}(),
+	}
+	h.SetWaterfallChartPipelineID(f.State.Values.PipelineID)
 
+	// clear
+	f.State.IsClick = false
 	if err := f.setToComponent(c); err != nil {
 		return err
 	}

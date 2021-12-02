@@ -51,7 +51,7 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	}
 
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
-	historyList, err := atSvc.ListExecHistorySceneSetByParentPID(h.GetSelectChartHistoryData().PipelineID)
+	historyList, err := atSvc.ListExecHistorySceneSetByParentPID(h.GetWaterfallChartPipelineID())
 	if err != nil {
 		return err
 	}

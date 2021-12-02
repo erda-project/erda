@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -41,9 +42,10 @@ func init() {
 type Chart struct {
 	base.DefaultProvider
 
-	PData []Data `json:"pData"`
-	EData []Data `json:"eData"`
-	XAxis XAxis  `json:"xAxis"`
+	PData []Data                 `json:"pData"`
+	EData []Data                 `json:"eData"`
+	XAxis XAxis                  `json:"xAxis"`
+	State map[string]interface{} `json:"state"`
 }
 
 type Props struct {
@@ -53,8 +55,8 @@ type Props struct {
 }
 
 type Data struct {
-	Value    string                       `json:"value"`
-	MetaData gshelper.SelectChartItemData `json:"metaData"`
+	Value    string                                  `json:"value"`
+	MetaData map[string]gshelper.SelectChartItemData `json:"metaData"`
 }
 
 type TestPlanV2 struct {
@@ -109,6 +111,10 @@ type PData struct {
 
 func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	h := gshelper.NewGSHelper(gs)
+	if c.State == nil {
+		c.State = map[string]interface{}{}
+	}
+	c.State["isClick"] = false
 	switch event.Operation {
 	case RateTrendingSelectItemOperationKey:
 		opData := OperationData{}
@@ -121,6 +127,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		}
 
 		h.SetSelectChartItemData(opData.MetaData.Data.Data.MetaData)
+		c.State["isClick"] = true
 		return nil
 	case cptype.InitializeOperation, cptype.DefaultRenderingKey, cptype.RenderingOperation:
 		atPlans := h.GetRateTrendingFilterTestPlanList()
@@ -143,6 +150,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		eData := make([]Data, 0, len(historyList))
 		xAxis := make([]string, 0, len(historyList))
 		var sucApiNum, execApiNum, totalApiNum int64
+		metaData := make(map[string]gshelper.SelectChartItemData, 0)
 		for _, v := range historyList {
 			if v.Type != apistructs.AutoTestPlan {
 				continue
@@ -154,7 +162,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			sucApiNum += v.SuccessApiNum
 			execApiNum += v.ExecuteApiNum
 			totalApiNum += v.TotalApiNum
-			metaData := gshelper.SelectChartItemData{
+			metaData[strconv.FormatUint(v.PlanID, 10)] = gshelper.SelectChartItemData{
 				PlanID: v.PlanID,
 				Name: func() string {
 					for _, v2 := range h.GetGlobalAutoTestPlanList() {
@@ -164,14 +172,19 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 					}
 					return ""
 				}(),
-				PipelineID: v.PipelineID,
+				PipelineID:  v.PipelineID,
+				ExecuteTime: v.ExecuteTime.Format("2006-01-02 15:04"),
+			}
+			currMeta := make(map[string]gshelper.SelectChartItemData, 0)
+			for k, data := range metaData {
+				currMeta[k] = data
 			}
 			pData = append(pData, Data{
-				MetaData: metaData,
+				MetaData: currMeta,
 				Value:    calRate(sucApiNum, totalApiNum),
 			})
 			eData = append(eData, Data{
-				MetaData: metaData,
+				MetaData: currMeta,
 				Value:    calRate(execApiNum, totalApiNum),
 			})
 			xAxis = append(xAxis, v.ExecuteTime.Format("2006-01-02 15:04:05"))
@@ -181,23 +194,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		ch.XAxis = XAxis{xAxis}
 		c.Props = ch.convertToProps(ctx)
 		c.Operations = getOperations()
-		h.SetSelectChartItemData(func() gshelper.SelectChartItemData {
-			if len(historyList) == 0 {
-				return gshelper.SelectChartItemData{}
-			}
-			return gshelper.SelectChartItemData{
-				PlanID:     historyList[len(historyList)-1].PlanID,
-				PipelineID: historyList[len(historyList)-1].PipelineID,
-				Name: func() string {
-					for _, v := range h.GetGlobalAutoTestPlanList() {
-						if v.ID == historyList[len(historyList)-1].PlanID {
-							return v.Name
-						}
-					}
-					return ""
-				}(),
-			}
-		}())
+		h.SetSelectChartItemData(metaData)
 		return nil
 	}
 	return nil
