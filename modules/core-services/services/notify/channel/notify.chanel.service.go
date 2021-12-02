@@ -510,18 +510,29 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		}
 		ncpb.Config = config
 	}
-	ncpb.Type = &pb.NotifyChannelType{
-		Name:        channel.Type,
-		DisplayName: s.p.I18n.Text(lang, channel.Type),
+	if channel.Type != "" {
+		ncpb.Type = &pb.NotifyChannelType{
+			Name:        channel.Type,
+			DisplayName: s.p.I18n.Text(lang, channel.Type),
+		}
 	}
-	ncpb.ChannelProviderType = &pb.NotifyChannelProviderType{
-		Name:        channel.ChannelProvider,
-		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
+	if channel.ChannelProvider != "" {
+		ncpb.ChannelProviderType = &pb.NotifyChannelProviderType{
+			Name:        channel.ChannelProvider,
+			DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
+		}
 	}
 	user, err := s.p.uc.GetUser(channel.CreatorId)
+	if err != nil {
+		return nil
+	}
 	if user != nil && user.Name != "" {
 		ncpb.CreatorName = user.Name
+		if user.Nick != "" {
+			ncpb.CreatorName = user.Nick
+		}
 	}
+
 	ncpb.Enable = channel.IsEnabled
 	layout := "2006-01-02 15:04:05"
 	ncpb.CreateAt = channel.CreatedAt.Format(layout)

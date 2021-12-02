@@ -672,3 +672,34 @@ func Test_notifyChannelService_GetNotifyChannelsEnabled(t *testing.T) {
 		})
 	}
 }
+
+func Test_notifyChannelService_CovertToPbNotifyChannel(t *testing.T) {
+
+	type args struct {
+		lang       i18n.LanguageCodes
+		channel    *model.NotifyChannel
+		needConfig bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{lang: nil, channel: new(model.NotifyChannel), needConfig: false}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			var uc *ucauth.UCClient
+			monkey.PatchInstanceMethod(reflect.TypeOf(uc), "GetUser", func(uc *ucauth.UCClient, userID string) (*ucauth.User, error) {
+				return &ucauth.User{Name: "test", Nick: "test_nick"}, nil
+			})
+
+			s := &notifyChannelService{
+				p: &provider{I18n: &MockTran{}, uc: &ucauth.UCClient{}},
+			}
+
+			s.CovertToPbNotifyChannel(tt.args.lang, tt.args.channel, tt.args.needConfig)
+		})
+	}
+}
