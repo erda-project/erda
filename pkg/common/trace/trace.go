@@ -76,6 +76,7 @@ func getResourceAttributes() []attribute.KeyValue {
 		}
 	}
 
+	// Not required
 	addEnvIfExist(semconv.K8SNamespaceNameKey, "POD_NAMESPACE", "DICE_NAMESPACE")
 	addEnvIfExist(semconv.K8SPodNameKey, "POD_NAME")
 	addEnvIfExist(semconv.K8SPodUIDKey, "POD_UUID")
@@ -83,8 +84,9 @@ func getResourceAttributes() []attribute.KeyValue {
 	addEnvIfExist(semconv.K8SClusterNameKey, "DICE_CLUSTER_NAME")
 	addEnvIfExist(attribute.Key("host.ip"), "HOST_IP")
 
+	// Not required
 	addEnvIfExist(attribute.Key("erda.org.id"), "DICE_ORG_ID")
-	addEnvIfExist(attribute.Key("erda.org.name"), "DICE_ORG_NAME")
+	addEnvIfExist(attribute.Key("erda.org.name"), "ERDA_ORG", "DICE_ORG_NAME")
 	addEnvIfExist(attribute.Key("erda.project.id"), "DICE_PROJECT_ID", "DICE_PROJECT")
 	addEnvIfExist(attribute.Key("erda.project.name"), "DICE_PROJECT_NAME")
 	addEnvIfExist(attribute.Key("erda.application.id"), "DICE_APPLICATION_ID", "DICE_APPLICATION")
@@ -93,14 +95,13 @@ func getResourceAttributes() []attribute.KeyValue {
 	addEnvIfExist(attribute.Key("erda.application.name"), "DICE_RUNTIME_NAME")
 	addEnvIfExist(attribute.Key("erda.workspace"), "DICE_WORKSPACE")
 	addEnvIfExist(attribute.Key("erda.env.id"), "ERDA_ENV_ID", "TERMINUS_KEY")
-
 	addEnvIfExist(semconv.ServiceVersionKey, "DICE_VERSION")
 	return attrs
 }
 
 func getSamplingRate() (rate float64) {
 	rate = 0.1
-	envValue := os.Getenv("TRACE_SAMPLING_RATE")
+	envValue := os.Getenv("OTEL_TRACES_SAMPLER_ARG")
 	if len(envValue) > 0 {
 		v, err := strconv.ParseFloat(envValue, 64)
 		if err == nil {
@@ -110,7 +111,10 @@ func getSamplingRate() (rate float64) {
 	return rate
 }
 
-var debug = os.Getenv("TRACE_DEBUG") == "true"
+var (
+	debug         = os.Getenv("OTEL_TRACES_DEBUG") == "true"
+	tracesEnabled = os.Getenv("OTEL_TRACES_ENABLED") == "true"
+)
 
 func newExporter() (exporter sdktrace.SpanExporter, err error) {
 	if debug {
@@ -127,6 +131,8 @@ func newExporter() (exporter sdktrace.SpanExporter, err error) {
 			}
 		}
 	}
+
+	// Required
 	addHeaderIfExist("x-erda-env-id", "ERDA_ENV_ID", "TERMINUS_KEY")
 	addHeaderIfExist("x-erda-env-token", "ERDA_ENV_TOKEN")
 	addHeaderIfExist("x-erda-org", "ERDA_ORG", "DICE_ORG_NAME")
@@ -148,6 +154,12 @@ func newExporter() (exporter sdktrace.SpanExporter, err error) {
 }
 
 func getEndpointOptions() ([]otlptracehttp.Option, error) {
+	otlpEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	if len(otlpEndpoint) > 0 {
+		return []otlptracehttp.Option{
+			otlptracehttp.WithEndpoint(otlpEndpoint),
+		}, nil
+	}
 	isEdge, _ := strconv.ParseBool(os.Getenv("DICE_IS_EDGE"))
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithURLPath("/api/otlp/v1/traces"),
@@ -179,6 +191,10 @@ func getEndpointOptions() ([]otlptracehttp.Option, error) {
 }
 
 func init() {
+	if !tracesEnabled {
+		log.Println("[INFO] Opentelemetry traces exporter disabled ")
+		return
+	}
 	exporter, err := newExporter()
 	if err != nil {
 		log.Printf("[ERROR] failed to initialize trace exporter %s\n", err)
