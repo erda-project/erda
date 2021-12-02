@@ -45,7 +45,6 @@ type provider struct {
 	Interceptors common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
 }
 
-// Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		writer, err := p.Kafka.NewProducer(&p.Cfg.Kafka.Producer)
@@ -55,10 +54,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.otlpService = &otlpService{Log: p.Log, writer: writer}
 		pb.RegisterOpenTelemetryServiceImp(p.Register, p.otlpService, transport.WithHTTPOptions(transhttp.WithDecoder(ProtoDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
 			transport.WithInterceptors(p.Interceptors.SpanTagOverwrite))
-		//transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.SpanTagOverwrite))
-		//p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer}
-		//pb.RegisterJaegerServiceImp(p.Register, p.jaegerService, transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder), transhttp.WithInterceptor(injectCtx)),
-		//	transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.SpanTagOverwrite))
 	}
 	return nil
 }
