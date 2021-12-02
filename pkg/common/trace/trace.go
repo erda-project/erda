@@ -148,32 +148,44 @@ func newExporter() (exporter sdktrace.SpanExporter, err error) {
 }
 
 func getEndpointOptions() ([]otlptracehttp.Option, error) {
-	isEdge, _ := strconv.ParseBool(os.Getenv("DICE_IS_EDGE"))
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithURLPath("/api/otlp/v1/traces"),
 	}
-	if isEdge {
-		collectorURL := os.Getenv("COLLECTOR_PUBLIC_URL")
-		if len(collectorURL) <= 0 {
-			return nil, fmt.Errorf("not found COLLECTOR_PUBLIC_URL")
-		}
-		u, err := url.Parse(collectorURL)
+	otlpCollectorURL := os.Getenv("OTLP_COLLECTOR_URL")
+	if len(otlpCollectorURL) > 0 {
+		u, err := url.Parse(otlpCollectorURL)
 		if err != nil {
-			return nil, fmt.Errorf("invalid COLLECTOR_PUBLIC_URL: %w", err)
+			return nil, fmt.Errorf("invalid OTLP_COLLECTOR_URL: %w", err)
 		}
 		opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
 		if u.Scheme != "https" {
 			opts = append(opts, otlptracehttp.WithInsecure())
 		}
 	} else {
-		collectorAddr := os.Getenv("COLLECTOR_ADDR")
-		if len(collectorAddr) <= 0 {
-			return nil, fmt.Errorf("not found COLLECTOR_ADDR")
+		isEdge, _ := strconv.ParseBool(os.Getenv("DICE_IS_EDGE"))
+		if isEdge {
+			collectorURL := os.Getenv("COLLECTOR_PUBLIC_URL")
+			if len(collectorURL) <= 0 {
+				return nil, fmt.Errorf("not found COLLECTOR_PUBLIC_URL")
+			}
+			u, err := url.Parse(collectorURL)
+			if err != nil {
+				return nil, fmt.Errorf("invalid COLLECTOR_PUBLIC_URL: %w", err)
+			}
+			opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
+			if u.Scheme != "https" {
+				opts = append(opts, otlptracehttp.WithInsecure())
+			}
+		} else {
+			collectorAddr := os.Getenv("COLLECTOR_ADDR")
+			if len(collectorAddr) <= 0 {
+				return nil, fmt.Errorf("not found COLLECTOR_ADDR")
+			}
+			opts = append(opts,
+				otlptracehttp.WithEndpoint(collectorAddr),
+				otlptracehttp.WithInsecure(),
+			)
 		}
-		opts = append(opts,
-			otlptracehttp.WithEndpoint(collectorAddr),
-			otlptracehttp.WithInsecure(),
-		)
 	}
 	return opts, nil
 }
