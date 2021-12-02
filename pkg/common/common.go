@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	_ "github.com/erda-project/erda/pkg/common/trace" //nolint
 )
 
 var instanceID = uuid.NewV4().String()
