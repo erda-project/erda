@@ -16,7 +16,6 @@ package at_api_avg_cost_chart
 
 import (
 	"context"
-	"sort"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -47,17 +46,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	h := gshelper.NewGSHelper(gs)
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 
-	sceneSteps, err := atSvc.ListAutoTestSceneSteps(h.GetGlobalAtSceneIDs())
-	if err != nil {
-		return err
-	}
-	sceneStepIDs := make([]uint64, 0, len(sceneSteps))
-	sceneStepMap := make(map[uint64]string, 0)
-	for _, v := range sceneSteps {
-		sceneStepMap[v.ID] = v.Name
-		sceneStepIDs = append(sceneStepIDs, v.ID)
-	}
-
 	timeFilter := h.GetAtSceneAndApiTimeFilter()
 	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	costTimeAvg, err := atSvc.ExecHistoryApiAvgCostTime(apistructs.StatisticsExecHistoryRequest{
@@ -73,20 +61,17 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	if err != nil {
 		return err
 	}
-	sort.Slice(costTimeAvg, func(i, j int) bool {
-		return costTimeAvg[i].Avg > costTimeAvg[j].Avg
-	})
 
 	var (
 		values     []int64
 		categories []string
 	)
 	for _, v := range costTimeAvg {
-		if _, ok := sceneStepMap[v.StepID]; !ok {
-			continue
+		if v.Avg <= 0 {
+			v.Avg = 0
 		}
 		values = append(values, int64(v.Avg))
-		categories = append(categories, sceneStepMap[v.StepID])
+		categories = append(categories, v.Name)
 	}
 
 	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "api-avg-cost"), "{value}s")

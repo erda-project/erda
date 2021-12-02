@@ -16,7 +16,6 @@ package scene_avg_cost_chart
 
 import (
 	"context"
-	"sort"
 	"strconv"
 	"time"
 
@@ -48,25 +47,7 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	h := gshelper.NewGSHelper(gs)
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 
-	scenes, _, err := atSvc.ListSceneBySceneSetID(func() []uint64 {
-		setIDs := make([]uint64, 0, len(h.GetGlobalAtStep()))
-		for _, v := range h.GetGlobalAtStep() {
-			setIDs = append(setIDs, v.SceneSetID)
-		}
-		return setIDs
-	}()...)
-	if err != nil {
-		return err
-	}
-	sceneIDs := make([]uint64, 0, len(scenes))
-	sceneMap := make(map[uint64]string, 0)
-	for _, v := range scenes {
-		sceneMap[v.ID] = v.Name
-		sceneIDs = append(sceneIDs, v.ID)
-	}
-
 	timeFilter := h.GetAtSceneAndApiTimeFilter()
-
 	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	costTimeAvg, err := atSvc.ExecHistorySceneAvgCostTime(apistructs.StatisticsExecHistoryRequest{
 		TimeStart:    timeFilter.TimeStart,
@@ -81,20 +62,17 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	if err != nil {
 		return err
 	}
-	sort.Slice(costTimeAvg, func(i, j int) bool {
-		return costTimeAvg[i].Avg > costTimeAvg[j].Avg
-	})
 
 	var (
 		values     []int64
 		categories []string
 	)
 	for _, v := range costTimeAvg {
-		if _, ok := sceneMap[v.SceneID]; !ok {
-			continue
+		if v.Avg <= 0 {
+			v.Avg = 0
 		}
 		values = append(values, int64(v.Avg))
-		categories = append(categories, sceneMap[v.SceneID])
+		categories = append(categories, v.Name)
 	}
 
 	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "scene-avg-cost"), "{value}s")

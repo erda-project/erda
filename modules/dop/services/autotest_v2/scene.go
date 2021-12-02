@@ -1497,6 +1497,11 @@ func (svc *Service) ListSceneBySceneSetID(setIDs ...uint64) (scenes []apistructs
 	return
 }
 
+// CountSceneByPlanIDs .
+func (svc *Service) CountSceneByPlanIDs(planIDs ...uint64) (count apistructs.AutoTestSceneCount, err error) {
+	return svc.db.CountSceneByPlanIDs(planIDs...)
+}
+
 // ListAutoTestSceneSteps .
 func (svc *Service) ListAutoTestSceneSteps(sceneIDs []uint64) (sceneSteps []apistructs.AutoTestSceneStep, err error) {
 	list, err := svc.db.ListAutoTestSceneSteps(sceneIDs)
@@ -1507,6 +1512,11 @@ func (svc *Service) ListAutoTestSceneSteps(sceneIDs []uint64) (sceneSteps []apis
 		sceneSteps = append(sceneSteps, *v.Convert())
 	}
 	return
+}
+
+// CountAutoTestSceneSteps .
+func (svc *Service) CountAutoTestSceneSteps(planIDs []uint64) (stepCount apistructs.AutoTestSceneStepCount, err error) {
+	return svc.db.CountAutoTestSceneSteps(planIDs)
 }
 
 // ListAutotestSceneByGroupID .

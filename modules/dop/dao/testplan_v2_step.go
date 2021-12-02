@@ -319,7 +319,7 @@ func (client *DBClient) CheckRelatedSceneSet(setId uint64) (bool, error) {
 // ListStepByPlanID .
 func (client *DBClient) ListStepByPlanID(planIDs ...uint64) ([]TestPlanV2StepJoin, error) {
 	var steps []TestPlanV2StepJoin
-	err := client.Debug().Table("dice_autotest_plan_step").
+	err := client.Table("dice_autotest_plan_step").
 		Select("dice_autotest_plan_step.*,dice_autotest_scene_set.name").
 		Joins("LEFT JOIN dice_autotest_scene_set ON dice_autotest_plan_step.scene_set_id = dice_autotest_scene_set.id").
 		Where("dice_autotest_plan_step.plan_id IN (?)", planIDs).

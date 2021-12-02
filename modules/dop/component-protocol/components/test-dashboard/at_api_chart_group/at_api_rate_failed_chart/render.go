@@ -47,17 +47,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	h := gshelper.NewGSHelper(gs)
 	atSvc := ctx.Value(types.AutoTestPlanService).(*autotestv2.Service)
 
-	sceneSteps, err := atSvc.ListAutoTestSceneSteps(h.GetGlobalAtSceneIDs())
-	if err != nil {
-		return err
-	}
-	sceneStepIDs := make([]uint64, 0, len(sceneSteps))
-	sceneStepMap := make(map[uint64]string, 0)
-	for _, v := range sceneSteps {
-		sceneStepMap[v.ID] = v.Name
-		sceneStepIDs = append(sceneStepIDs, v.ID)
-	}
-
 	timeFilter := h.GetAtSceneAndApiTimeFilter()
 	projectID, _ := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
 	statusCounts, err := atSvc.ExecHistoryApiStatusCount(apistructs.StatisticsExecHistoryRequest{
@@ -89,12 +78,12 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		values     []int64
 		categories []string
 	)
-	for _, v := range statusCounts {
-		if _, ok := sceneStepMap[v.StepID]; !ok {
-			continue
+	for i, v := range statusCounts {
+		if i == 500 {
+			break
 		}
 		values = append(values, int64(v.FailRate))
-		categories = append(categories, sceneStepMap[v.StepID])
+		categories = append(categories, v.Name)
 	}
 
 	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "api-failed-rate"), "{value}%")

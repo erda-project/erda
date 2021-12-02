@@ -109,88 +109,94 @@ func (client *DBClient) GetAutoTestExecHistoryByPipelineID(pipelineID uint64) (A
 
 // ExecHistorySceneAvgCostTime .
 func (client *DBClient) ExecHistorySceneAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneAvgCostTime, err error) {
-	db := client.Table("dice_autotest_exec_history").Select("scene_id,AVG(cost_time_sec) AS avg").
-		Where("project_id = ?", req.ProjectID).
-		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeScene)
+	db := client.Table("dice_autotest_scene AS s").
+		Select("s.id AS scene_id,s.`name`,AVG(cost_time_sec) AS avg").
+		Joins("LEFT JOIN dice_autotest_exec_history AS h FORCE INDEX(`idx_project_id_iteration_id_type_execute_time`) ON s.id = h.scene_id ").
+		Where("h.project_id = ?", req.ProjectID).
+		Where("h.iteration_id IN (?)", req.IterationIDs).
+		Where("h.type = ?", apistructs.StepTypeScene)
 	if req.TimeStart != "" {
-		db = db.Where("execute_time >= ?", req.TimeStart)
+		db = db.Where("h.execute_time >= ?", req.TimeStart)
 	}
 	if req.TimeEnd != "" {
-		db = db.Where("execute_time <= ?", req.TimeEnd)
+		db = db.Where("h.execute_time <= ?", req.TimeEnd)
 	}
-	err = db.Group("scene_id").Find(&list).Error
+	err = db.Group("s.id").Order("avg DESC").Limit(500).Find(&list).Error
 	return
 }
 
 // ExecHistorySceneStatusCount .
 func (client *DBClient) ExecHistorySceneStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneStatusCount, err error) {
-	db := client.Table("dice_autotest_exec_history").
-		Select("scene_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
-			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
-		Where("project_id = ?", req.ProjectID).
-		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeScene)
+	db := client.Table("dice_autotest_scene AS s").
+		Select("s.id AS scene_id,s.`name`,sum( CASE WHEN h.`status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
+			"sum( CASE WHEN h.`status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
+		Joins("LEFT JOIN dice_autotest_exec_history AS h FORCE INDEX(`idx_project_id_iteration_id_type_execute_time`) ON s.id = h.scene_id ").
+		Where("h.project_id = ?", req.ProjectID).
+		Where("h.iteration_id IN (?)", req.IterationIDs).
+		Where("h.type = ?", apistructs.StepTypeScene)
 	if req.TimeStart != "" {
-		db = db.Where("execute_time >= ?", req.TimeStart)
+		db = db.Where("h.execute_time >= ?", req.TimeStart)
 	}
 	if req.TimeEnd != "" {
-		db = db.Where("execute_time <= ?", req.TimeEnd)
+		db = db.Where("h.execute_time <= ?", req.TimeEnd)
 	}
-	err = db.Group("scene_id").Find(&list).Error
+	err = db.Group("s.id").Find(&list).Error
 	return
 }
 
 // ExecHistorySceneApiStatusCount .
 func (client *DBClient) ExecHistorySceneApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistorySceneApiStatusCount, err error) {
-	db := client.Table("dice_autotest_exec_history").
-		Select("scene_id,SUM(`success_api_num`) AS 'success_count',"+
-			"SUM(`total_api_num`) AS 'total_count'").
-		Where("project_id = ?", req.ProjectID).
-		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type = ?", apistructs.StepTypeScene)
+	db := client.Table("dice_autotest_scene AS s").
+		Select("s.id AS scene_id,s.`name`,SUM(h.`success_api_num`) AS 'success_count',"+
+			"SUM(h.`total_api_num`) AS 'total_count'").
+		Joins("LEFT JOIN dice_autotest_exec_history AS h FORCE INDEX(`idx_project_id_iteration_id_type_execute_time`) ON s.id = h.scene_id ").
+		Where("h.project_id = ?", req.ProjectID).
+		Where("h.iteration_id IN (?)", req.IterationIDs).
+		Where("h.type = ?", apistructs.StepTypeScene)
 	if req.TimeStart != "" {
-		db = db.Where("execute_time >= ?", req.TimeStart)
+		db = db.Where("h.execute_time >= ?", req.TimeStart)
 	}
 	if req.TimeEnd != "" {
-		db = db.Where("execute_time <= ?", req.TimeEnd)
+		db = db.Where("h.execute_time <= ?", req.TimeEnd)
 	}
-	err = db.Group("scene_id").Find(&list).Error
+	err = db.Group("s.id").Find(&list).Error
 	return
 }
 
 // ExecHistoryApiAvgCostTime .
 func (client *DBClient) ExecHistoryApiAvgCostTime(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiAvgCostTime, err error) {
-	db := client.Table("dice_autotest_exec_history").
-		Select("step_id,AVG(cost_time_sec) AS avg").
-		Where("project_id = ?", req.ProjectID).
-		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type IN (?)", apistructs.EffectiveStepType)
+	db := client.Table("dice_autotest_scene_step AS s").
+		Select("s.id AS step_id,s.`name`,AVG( h.cost_time_sec ) AS avg").
+		Joins("LEFT JOIN dice_autotest_exec_history AS h FORCE INDEX(`idx_project_id_iteration_id_type_execute_time`) ON s.id = h.step_id ").
+		Where("h.project_id = ?", req.ProjectID).
+		Where("h.iteration_id IN (?)", req.IterationIDs).
+		Where("h.type IN (?)", apistructs.EffectiveStepType)
 	if req.TimeStart != "" {
-		db = db.Where("execute_time >= ?", req.TimeStart)
+		db = db.Where("h.execute_time >= ?", req.TimeStart)
 	}
 	if req.TimeEnd != "" {
-		db = db.Where("execute_time <= ?", req.TimeEnd)
+		db = db.Where("h.execute_time <= ?", req.TimeEnd)
 	}
-	err = db.Group("step_id").Find(&list).Error
+	err = db.Group("s.id").Order("avg DESC").Limit(500).Find(&list).Error
 	return
 }
 
 // ExecHistoryApiStatusCount .
 func (client *DBClient) ExecHistoryApiStatusCount(req apistructs.StatisticsExecHistoryRequest) (list []apistructs.ExecHistoryApiStatusCount, err error) {
-	db := client.Table("dice_autotest_exec_history").
-		Select("step_id,sum( CASE WHEN `status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
-			"sum( CASE WHEN `status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
-		Where("project_id = ?", req.ProjectID).
-		Where("plan_id IN (?)", req.PlanIDs).
-		Where("type IN (?)", apistructs.EffectiveStepType)
+	db := client.Table("dice_autotest_scene_step AS s").
+		Select("s.id AS step_id,s.`name`,sum( CASE WHEN h.`status` = 'Failed' THEN 1 ELSE 0 END ) AS 'fail_count',"+
+			"sum( CASE WHEN h.`status` = 'Success' THEN 1 ELSE 0 END ) AS 'success_count'").
+		Joins("LEFT JOIN dice_autotest_exec_history AS h FORCE INDEX(`idx_project_id_iteration_id_type_execute_time`) ON s.id = h.step_id ").
+		Where("h.project_id = ?", req.ProjectID).
+		Where("h.iteration_id IN (?)", req.IterationIDs).
+		Where("h.type IN (?)", apistructs.EffectiveStepType)
 	if req.TimeStart != "" {
-		db = db.Where("execute_time >= ?", req.TimeStart)
+		db = db.Where("h.execute_time >= ?", req.TimeStart)
 	}
 	if req.TimeEnd != "" {
-		db = db.Where("execute_time <= ?", req.TimeEnd)
+		db = db.Where("h.execute_time <= ?", req.TimeEnd)
 	}
-	err = db.Group("step_id").Find(&list).Error
+	err = db.Group("s.id").Find(&list).Error
 	return
 }
 
