@@ -250,7 +250,7 @@ func (a *Audit) cronCleanAudit() {
 		startAt := time.Now().AddDate(0, 0, interval)
 		// delete org audit one by one to avoid very long IN clause
 		for _, org := range orgs {
-			if err := a.db.DeleteAuditsByTimeAndOrg(startAt, []uint64{org}); err != nil {
+			if err := a.db.DeleteAuditsByTimeAndOrg(startAt, org); err != nil {
 				logrus.Errorf(err.Error())
 			}
 		}
