@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -499,35 +498,30 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 	if channel == nil {
 		return nil
 	}
-	ncpb := pb.NotifyChannel{}
-	err := copier.CopyWithOption(&ncpb, &channel, copier.Option{IgnoreEmpty: true, DeepCopy: true})
-	if err != nil {
-		return nil
+	ncpb := pb.NotifyChannel{
+		Id:        channel.Id,
+		Name:      channel.Name,
+		ScopeId:   channel.ScopeId,
+		ScopeType: channel.ScopeType,
+		Enable:    channel.IsEnabled,
 	}
 	if needConfig {
 		var config map[string]*structpb.Value
-		err = json.Unmarshal([]byte(channel.Config), &config)
+		err := json.Unmarshal([]byte(channel.Config), &config)
 		if err != nil {
 			return nil
 		}
 		ncpb.Config = config
 	}
-	if channel.Type != "" {
-		ncpb.Type = &pb.NotifyChannelType{
-			Name:        channel.Type,
-			DisplayName: s.p.I18n.Text(lang, channel.Type),
-		}
+	ncpb.Type = &pb.NotifyChannelType{
+		Name:        channel.Type,
+		DisplayName: s.p.I18n.Text(lang, channel.Type),
 	}
-	if channel.ChannelProvider != "" {
-		ncpb.ChannelProviderType = &pb.NotifyChannelProviderType{
-			Name:        channel.ChannelProvider,
-			DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
-		}
+	ncpb.ChannelProviderType = &pb.NotifyChannelProviderType{
+		Name:        channel.ChannelProvider,
+		DisplayName: s.p.I18n.Text(lang, channel.ChannelProvider),
 	}
-	user, err := s.p.uc.GetUser(channel.CreatorId)
-	if err != nil {
-		return nil
-	}
+	user, _ := s.p.uc.GetUser(channel.CreatorId)
 	if user != nil && user.Name != "" {
 		ncpb.CreatorName = user.Name
 		if user.Nick != "" {
@@ -535,7 +529,6 @@ func (s *notifyChannelService) CovertToPbNotifyChannel(lang i18n.LanguageCodes, 
 		}
 	}
 
-	ncpb.Enable = channel.IsEnabled
 	layout := "2006-01-02 15:04:05"
 	ncpb.CreateAt = channel.CreatedAt.Format(layout)
 	ncpb.UpdateAt = channel.UpdatedAt.Format(layout)
