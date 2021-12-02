@@ -19,19 +19,19 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
-	"github.com/recallsong/go-utils/reflectx"
 	"html"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/recallsong/go-utils/reflectx"
 	otlpv11 "go.opentelemetry.io/proto/otlp/common/v1"
 	otlpv1 "go.opentelemetry.io/proto/otlp/trace/v1"
 
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	tracepb "github.com/erda-project/erda-proto-go/oap/trace/pb"
+	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 )
 
 var (
