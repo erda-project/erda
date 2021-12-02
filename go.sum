@@ -1528,8 +1528,8 @@ github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhD
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294 h1:1CONHJOaZVu3fJv11U+/KSstXi4KK3PvdFNPyf6MjYA=
 github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294/go.mod h1:NARLokMUOzyJ55oYXvPcxQh3rBoTBAbolNfqou6AqdY=
-github.com/recallsong/opentelemetry-proto-go/otlp v0.10.1-0.20211201092743-7da1c7a15d54 h1:f8ClHzL+O04rjp7Oi+L7iPLWHy0JokvmU52feJc33hQ=
-github.com/recallsong/opentelemetry-proto-go/otlp v0.10.1-0.20211201092743-7da1c7a15d54/go.mod h1:zG20xCK0szZ1xdokeSOwEcmlXu+x9kkdRe6N1DhKcfU=
+github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5 h1:V4dAp1kh5ammxYSN1yegxOgvMNUiGs3GFZqGiLpNDog=
+github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5/go.mod h1:QpEjXPrNQzrFDZgoTo49dgHR9RYRSrg3NAKnUGl9YpQ=
 github.com/recallsong/unmarshal v1.0.0 h1:y18hJihfxJ6vIkXAYROKPh9i3xKmZHH9wTiRvshY9bQ=
 github.com/recallsong/unmarshal v1.0.0/go.mod h1:NnPiL4s7z9XV1aBS5LJaXo3V7r1l/ZH3wWOzCkKqyWo=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=

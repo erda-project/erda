@@ -201,7 +201,7 @@ replace (
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
 	go.opentelemetry.io/otel/exporters/stdout => go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
-	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.10.1-0.20211201092743-7da1c7a15d54
+	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
 	k8s.io/api => k8s.io/api v0.21.2
