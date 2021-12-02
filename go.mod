@@ -144,7 +144,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.2.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
 	go.opentelemetry.io/otel/sdk v1.2.0
-	go.opentelemetry.io/proto/otlp v0.11.0 // indirect
+	go.opentelemetry.io/proto/otlp v0.11.0
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
