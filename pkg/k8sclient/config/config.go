@@ -116,3 +116,16 @@ func GetRestConfig(c *apistructs.ManageConfig) (*rest.Config, error) {
 
 	return rc, nil
 }
+
+// GetInClusterRestConfig get in cluster rest config
+func GetInClusterRestConfig() (*rest.Config, error) {
+	rc, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	rc.QPS = 1000
+	rc.Burst = 100
+
+	return rc, nil
+}

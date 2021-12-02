@@ -133,7 +133,11 @@ func Test_ResetAccessKey_InCluster_Error(t *testing.T) {
 		return nil, csErr
 	})
 
+	monkey.Patch(k8sclient.NewForInCluster, func() (*k8sclient.K8sClient, error) {
+		return nil, csErr
+	})
+
 	c := New(db, bdl, nil)
 	_, err := c.ResetAccessKey(emptyClusterName)
-	assert.Equal(t, err, fmt.Errorf("connect to cluster: %s error: %s", emptyClusterName, csErr.Error()))
+	assert.Equal(t, err, fmt.Errorf("get inCluster kubernetes client error: %s", csErr.Error()))
 }
