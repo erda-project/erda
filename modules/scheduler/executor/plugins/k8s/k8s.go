@@ -32,6 +32,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/scheduler/conf"
 	eventboxapi "github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -66,6 +67,8 @@ import (
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
+	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -273,11 +276,26 @@ func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioc
 // New new kubernetes executor struct
 func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
 	// get cluster from cluster manager
-	b := bundle.New(bundle.WithClusterManager())
-	cluster, err := b.GetCluster(clusterName)
+	bdl := bundle.New(
+		bundle.WithClusterManager(),
+		bundle.WithCoreServices(),
+	)
+	cluster, err := bdl.GetCluster(clusterName)
 	if err != nil {
 		logrus.Errorf("get cluster error: %v", cluster)
 		return nil, err
+	}
+
+	rc, err := k8sclientconfig.ParseManageConfig(clusterName, cluster.ManageConfig)
+	if err != nil {
+		return nil, errors.Errorf("parse rest.config error: %v", err)
+	}
+
+	rc.Timeout = conf.ExecutorClientTimeout()
+
+	k8sClient, err := k8sclient.NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
+	if err != nil {
+		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
 	}
 
 	addr, client, err := util.GetClient(clusterName, cluster.ManageConfig)
@@ -337,9 +355,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 	resourceInfo := resourceinfo.New(addr, client)
 
-	// Synchronize cluster info to ETCD (every 10m)
-	go clusterInfo.LoopLoadAndSync(context.Background(), true)
-
 	var istioEngine istioctl.IstioEngine
 
 	rawData, err := clusterInfo.Get()
@@ -360,11 +375,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
-	bdl := bundle.New(bundle.WithCoreServices())
-	k8sClient, err := k8sclient.New(clusterName)
-	if err != nil {
-		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
-	}
+	// Synchronize cluster info to ETCD (every 10m)
+	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
 	k := &Kubernetes{
 		name:                     name,
