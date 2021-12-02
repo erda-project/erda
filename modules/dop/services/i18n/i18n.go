@@ -61,6 +61,7 @@ const (
 	I18nKeySceneRefSetNum   = "tp.export.scene.ref.set.num"
 	I18nKeySceneDescription = "tp.export.scene.description"
 	I18nKeySceneGroupID     = "tp.export.scene.group.id"
+	I18nKeyScenePolicy      = "tp.export.scene.policy"
 
 	I18nKeySceneInputSheetName   = "tp.export.scene.input.sheet.name"
 	I18nKeySceneInputNum         = "tp.export.scene.input.num"

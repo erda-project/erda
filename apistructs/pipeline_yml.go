@@ -137,6 +137,14 @@ func (p PolicyType) GetZhName() string {
 	}
 }
 
+func (p PolicyType) ToString() string {
+	return string(p)
+}
+
+func (p PolicyType) IsValid() bool {
+	return p == "" || p == NewRunPolicyType || p == TryLatestSuccessResultPolicyType
+}
+
 type Policy struct {
 	Type PolicyType `json:"type,omitempty"`
 }
