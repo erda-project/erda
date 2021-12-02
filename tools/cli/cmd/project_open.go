@@ -15,53 +15,42 @@
 package cmd
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
-	"github.com/erda-project/erda/tools/cli/format"
-	"github.com/erda-project/erda/tools/cli/prettyjson"
 )
 
-var ORGINSPECT = command.Command{
-	Name:       "inspect",
-	ParentName: "ORG",
-	ShortHelp:  "Display detail information of one organization",
-	Example:    "$ erda-cli org inspect --org=<name>",
+var PROJECTOPEN = command.Command{
+	Name:       "open",
+	ParentName: "PROJECT",
+	ShortHelp:  "Open the project page in browser",
+	Example:    "$ erda-cli project open --org=<name> --project=<name>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
 	},
-	Run: OrgInspect,
+	Run: ProjectOpen,
 }
 
-func OrgInspect(ctx *command.Context, orgId uint64, org string) error {
+func ProjectOpen(ctx *command.Context, orgId, projectId uint64, org, project string) error {
 	checkOrgParam(org, orgId)
+	checkProjectParam(project, projectId)
 
-	orgIdorName := ""
-	if org != "" {
-		orgIdorName = org
-	} else if orgId > 0 {
-		orgIdorName = strconv.FormatUint(orgId, 10)
-	} else if orgId <= 0 && ctx.CurrentOrg.ID > 0 {
-		orgIdorName = strconv.FormatUint(ctx.CurrentOrg.ID, 10)
-	} else {
-		return fmt.Errorf(format.FormatErrMsg("org inspect", "invalid Org or OrgID", true))
-	}
-
-	o, err := common.GetOrgDetail(ctx, orgIdorName)
+	orgId, err := getOrgId(ctx, org, orgId)
 	if err != nil {
 		return err
 	}
 
-	s, err := prettyjson.Marshal(o)
+	projectId, err = getProjectId(ctx, orgId, project, projectId)
 	if err != nil {
-		return fmt.Errorf(format.FormatErrMsg("org inspect",
-			"failed to prettyjson marshal organization data ("+err.Error()+")", false))
+		return err
 	}
 
-	fmt.Println(string(s))
+	err = common.Open(ctx, common.ProjectEntity, org, orgId, projectId, 0)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

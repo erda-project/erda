@@ -84,7 +84,7 @@ func getOrgId(ctx *command.Context, org string, orgId uint64) (uint64, error) {
 		if err != nil {
 			return orgId, err
 		}
-		orgId = o.Data.ID
+		orgId = o.ID
 	}
 
 	if orgId <= 0 && ctx.CurrentOrg.ID <= 0 {

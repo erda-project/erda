@@ -72,7 +72,7 @@ func PipelineRun(ctx *command.Context, branch, filename string) error {
 		return err
 	}
 
-	orgID := strconv.FormatUint(org.Data.ID, 10)
+	orgID := strconv.FormatUint(org.ID, 10)
 	repoStats, err := common.GetRepoStats(ctx, orgID, info.Project, info.Application)
 	if err != nil {
 		return err

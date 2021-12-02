@@ -48,9 +48,9 @@ func RunOrganizationsSwitch(ctx *command.Context, org string) error {
 	}
 
 	// switch org, and save to config
-	ctx.CurrentOrg.ID = orgResp.Data.ID
-	ctx.CurrentOrg.Name = orgResp.Data.Name
-	ctx.CurrentOrg.Desc = orgResp.Data.Desc
+	ctx.CurrentOrg.ID = orgResp.ID
+	ctx.CurrentOrg.Name = orgResp.Name
+	ctx.CurrentOrg.Desc = orgResp.Desc
 
 	f, conf, err := command.GetConfig()
 	if err == dicedir.NotExist {

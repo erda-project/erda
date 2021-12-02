@@ -15,53 +15,34 @@
 package cmd
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
-	"github.com/erda-project/erda/tools/cli/format"
-	"github.com/erda-project/erda/tools/cli/prettyjson"
 )
 
-var ORGINSPECT = command.Command{
-	Name:       "inspect",
+var ORGOPEN = command.Command{
+	Name:       "open",
 	ParentName: "ORG",
-	ShortHelp:  "Display detail information of one organization",
-	Example:    "$ erda-cli org inspect --org=<name>",
+	ShortHelp:  "Open the organization page in browser",
+	Example:    "$ erda-cli org open --org=<name>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
 	},
-	Run: OrgInspect,
+	Run: OrgOpen,
 }
 
-func OrgInspect(ctx *command.Context, orgId uint64, org string) error {
+func OrgOpen(ctx *command.Context, orgId uint64, org string) error {
 	checkOrgParam(org, orgId)
 
-	orgIdorName := ""
-	if org != "" {
-		orgIdorName = org
-	} else if orgId > 0 {
-		orgIdorName = strconv.FormatUint(orgId, 10)
-	} else if orgId <= 0 && ctx.CurrentOrg.ID > 0 {
-		orgIdorName = strconv.FormatUint(ctx.CurrentOrg.ID, 10)
-	} else {
-		return fmt.Errorf(format.FormatErrMsg("org inspect", "invalid Org or OrgID", true))
-	}
-
-	o, err := common.GetOrgDetail(ctx, orgIdorName)
+	orgId, err := getOrgId(ctx, org, orgId)
 	if err != nil {
 		return err
 	}
 
-	s, err := prettyjson.Marshal(o)
+	err = common.Open(ctx, common.OrgEntity, org, orgId, 0, 0)
 	if err != nil {
-		return fmt.Errorf(format.FormatErrMsg("org inspect",
-			"failed to prettyjson marshal organization data ("+err.Error()+")", false))
+		return err
 	}
-
-	fmt.Println(string(s))
 
 	return nil
 }
