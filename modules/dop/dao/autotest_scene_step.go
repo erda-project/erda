@@ -123,6 +123,19 @@ func (db *DBClient) ListAutoTestSceneSteps(sceneID []uint64) ([]AutoTestSceneSte
 	return steps, nil
 }
 
+func (db *DBClient) CountAutoTestSceneSteps(planIDs []uint64) (stepCount apistructs.AutoTestSceneStepCount, err error) {
+	err = db.Table("dice_autotest_scene_step AS step").
+		Select("COUNT(DISTINCT(step.id)) AS count").
+		Joins("LEFT JOIN dice_autotest_scene AS scene ON step.scene_id = scene.id").
+		Joins("LEFT JOIN dice_autotest_scene_set AS `set` ON scene.set_id = `set`.id").
+		Joins("LEFT JOIN dice_autotest_plan_step AS plan_step ON `set`.id = plan_step.scene_set_id").
+		Where("plan_step.plan_id IN (?)", planIDs).
+		Where("step.type IN (?)", apistructs.EffectiveStepType).
+		Where("step.name != ''").
+		Find(&stepCount).Error
+	return
+}
+
 func (db *DBClient) GetAutoTestSceneStepNumber(sceneID uint64) (uint64, error) {
 	var total uint64
 	if err := db.Table("dice_autotest_scene_step").Where("scene_id = ?", sceneID).Count(&total).Error; err != nil {

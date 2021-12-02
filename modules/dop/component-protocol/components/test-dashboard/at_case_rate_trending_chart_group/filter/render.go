@@ -60,6 +60,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		return err
 	}
 
+	f.State.IsClick = true
 	return f.setToComponent(c)
 }
 

@@ -197,6 +197,13 @@ func (a *AutoTestSpaceExcel) SetScenes() error {
 				return err
 			}
 		}
+		// policy
+		if len(sceneRow) >= 9 {
+			scene.Policy = apistructs.PolicyType(sceneRow[8])
+			if !scene.Policy.IsValid() {
+				return fmt.Errorf("invalid policy, scene name: %s, policy: %s", scene.Name, scene.Policy)
+			}
+		}
 		for _, input := range inputList {
 			if input.SceneID == scene.ID {
 				scene.Inputs = append(scene.Inputs, input)

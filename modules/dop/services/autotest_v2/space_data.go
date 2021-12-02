@@ -194,6 +194,7 @@ func (a *AutoTestSpaceData) addSceneToExcel(file *excel.XlsxFile) error {
 		excel.NewCell(l.Get(i18n.I18nKeySceneRefSetNum)),
 		excel.NewCell(l.Get(i18n.I18nKeySceneDescription)),
 		excel.NewCell(l.Get(i18n.I18nKeySceneGroupID)),
+		excel.NewCell(l.Get(i18n.I18nKeyScenePolicy)),
 	}
 
 	inputTitle := []excel.Cell{
@@ -230,6 +231,7 @@ func (a *AutoTestSpaceData) addSceneToExcel(file *excel.XlsxFile) error {
 				excel.NewCell(strutil.String(scene.RefSetID)),
 				excel.NewCell(scene.Description),
 				excel.NewCell(strutil.String(scene.GroupID)),
+				excel.NewCell(scene.Policy.ToString()),
 			})
 
 			inputLines := [][]excel.Cell{}
@@ -624,6 +626,13 @@ func (a *AutoTestSpaceData) CopyScenes() error {
 				CreatorID:   a.UserID,
 				Status:      apistructs.DefaultSceneStatus,
 				RefSetID:    a.sceneSetIDAssociationMap[each.RefSetID],
+				Policy:      each.Policy,
+			}
+			if each.RefSetID != 0 && newScene.RefSetID == 0 {
+				quoteSceneSet, err := a.svc.db.GetSceneSet(each.RefSetID)
+				if err == nil && quoteSceneSet != nil && quoteSceneSet.SpaceID == a.NewSpace.ID {
+					newScene.RefSetID = each.RefSetID
+				}
 			}
 			if err = a.svc.db.Insert(newScene, preID); err != nil {
 				return err

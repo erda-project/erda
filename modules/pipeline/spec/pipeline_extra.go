@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // PipelineExtra represents `pipeline_extras` table.
@@ -49,13 +48,6 @@ type PipelineExtra struct {
 
 	ExtraTimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created 'time_created'"`
 	ExtraTimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated 'time_updated'"`
-
-	// 以下为冗余字段，因为使用 sql 迁移时，无法将 应用相关字段 迁移到 labels 中，所以要先做冗余
-	// 新建的流水线，不会插入以下字段
-	Commit  string `json:"commit"`
-	OrgName string `json:"orgName"`
-
-	Snippets []pipelineyml.SnippetPipelineYmlCache `json:"snippets" xorm:"snippets"`
 }
 
 func (*PipelineExtra) TableName() string {
@@ -194,10 +186,7 @@ type RerunFailedDetail struct {
 }
 
 func (extra *PipelineExtra) GetCommitID() string {
-	if extra.CommitDetail.CommitID != "" {
-		return extra.CommitDetail.CommitID
-	}
-	return extra.Commit
+	return extra.CommitDetail.CommitID
 }
 
 func (extra *PipelineExtra) GetOrgName() string {
@@ -207,5 +196,5 @@ func (extra *PipelineExtra) GetOrgName() string {
 			return orgName
 		}
 	}
-	return extra.OrgName
+	return ""
 }

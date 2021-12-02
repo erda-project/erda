@@ -51,10 +51,12 @@ type AutoTestExecHistoryResp struct {
 type ExecHistorySceneAvgCostTime struct {
 	SceneID uint64  `json:"sceneID" gorm:"scene_id"`
 	Avg     float64 `json:"avg" gorm:"avg"`
+	Name    string  `json:"name" gorm:"name"`
 }
 
 type ExecHistorySceneStatusCount struct {
 	SceneID      uint64  `json:"sceneID" gorm:"scene_id"`
+	Name         string  `json:"name" gorm:"name"`
 	SuccessCount uint64  `json:"successCount" gorm:"success_count"`
 	FailCount    uint64  `json:"failCount" gorm:"fail_count"`
 	FailRate     float64 `json:"failRate"`
@@ -64,18 +66,21 @@ type ExecHistorySceneApiStatusCount struct {
 	SceneID      uint64  `json:"sceneID" gorm:"scene_id"`
 	SuccessCount uint64  `json:"successCount" gorm:"success_count"`
 	TotalCount   uint64  `json:"failCount" gorm:"total_count"`
+	Name         string  `json:"name" gorm:"name"`
 	PassRate     float64 `json:"passRate"`
 }
 
 type ExecHistoryApiAvgCostTime struct {
 	StepID uint64  `json:"stepID" gorm:"step_id"`
 	Avg    float64 `json:"avg" gorm:"avg"`
+	Name   string  `json:"name" gorm:"name"`
 }
 
 type ExecHistoryApiStatusCount struct {
 	StepID       uint64  `json:"stepID" gorm:"step_id"`
 	SuccessCount uint64  `json:"successCount" gorm:"success_count"`
 	FailCount    uint64  `json:"failCount" gorm:"fail_count"`
+	Name         string  `json:"name" gorm:"name"`
 	FailRate     float64 `json:"failRate"`
 }
 

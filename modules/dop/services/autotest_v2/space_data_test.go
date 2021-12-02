@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 func TestCopy(t *testing.T) {
@@ -110,4 +112,49 @@ func TestCopy(t *testing.T) {
 	}
 	_, err = emptyScenesData.Copy()
 	assert.Equal(t, false, err == nil)
+}
+
+func TestCopyScenes(t *testing.T) {
+	var db *dao.DBClient
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetSceneSet", func(client *dao.DBClient, id uint64) (*dao.SceneSet, error) {
+		return &dao.SceneSet{BaseModel: dbengine.BaseModel{ID: id}}, nil
+	})
+	defer pm1.Unpatch()
+
+	pm2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "Insert", func(client *dao.DBClient, scene *dao.AutoTestScene, id uint64) error {
+		return nil
+	})
+	defer pm2.Unpatch()
+
+	a := &AutoTestSpaceData{
+		Space:        &apistructs.AutoTestSpace{Status: "open", ID: 1},
+		IsCopy:       false,
+		NewSpace:     &apistructs.AutoTestSpace{},
+		IdentityInfo: apistructs.IdentityInfo{UserID: "1"},
+		Steps: map[uint64][]apistructs.AutoTestSceneStep{
+			1: []apistructs.AutoTestSceneStep{},
+		},
+		Scenes: map[uint64][]apistructs.AutoTestScene{
+			1: []apistructs.AutoTestScene{
+				{
+					RefSetID: 1,
+					Name:     "test-scene",
+				},
+			},
+		},
+		SceneSets: map[uint64][]apistructs.SceneSet{
+			1: []apistructs.SceneSet{
+				{
+					ID: 1,
+				},
+			},
+		},
+		sceneIDAssociationMap:    map[uint64]uint64{},
+		sceneSetIDAssociationMap: map[uint64]uint64{},
+	}
+	autotestSvc := New(WithDBClient(db))
+	a.svc = autotestSvc
+
+	err := a.CopyScenes()
+	assert.NoError(t, err)
 }
