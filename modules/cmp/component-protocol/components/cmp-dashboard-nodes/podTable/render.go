@@ -38,18 +38,17 @@ func (pt *PodInfoTable) GetProps() map[string]interface{} {
 		"rowKey":         "id",
 		"sortDirections": []string{"descend", "ascend"},
 		"columns": []table.Columns{
-			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true, Width: 400, Show: true},
-			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true, Show: true},
-			{DataIndex: "Usage", Title: pt.SDK.I18n("usedRate"), Sortable: true, Align: "right", Show: true},
-			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true, Show: true},
-			{DataIndex: "Role", Title: pt.SDK.I18n("Role"), Sortable: true, Show: true},
-			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Sortable: true, Show: false},
-			{DataIndex: "Operate", Title: pt.SDK.I18n("operate"), Fixed: "right", Show: true},
+			{DataIndex: "Node", Title: pt.SDK.I18n("node"), Sortable: true},
+			{DataIndex: "Status", Title: pt.SDK.I18n("status"), Sortable: true},
+			{DataIndex: "Usage", Title: pt.SDK.I18n("usedRate"), Sortable: true, Align: "left"},
+			{DataIndex: "IP", Title: pt.SDK.I18n("ip"), Sortable: true},
+			{DataIndex: "Role", Title: pt.SDK.I18n("Role"), Sortable: true},
+			{DataIndex: "Version", Title: pt.SDK.I18n("version"), Sortable: true, Hidden: true},
+			{DataIndex: "Operate", Title: pt.SDK.I18n("operate"), Fixed: "right"},
 		},
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
 		"batchOperations": []string{"cordon", "uncordon", "drain"},
-		"scroll":          table.Scroll{X: 1200},
 	}
 }
 

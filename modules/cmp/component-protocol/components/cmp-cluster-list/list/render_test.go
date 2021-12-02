@@ -145,6 +145,11 @@ func TestList_GetExtraInfos(t *testing.T) {
 			args: args{clusterInfo: &ClusterInfoDetail{}},
 			want: []ExtraInfos{
 				ExtraInfos{
+					Icon:    "type",
+					Text:    "-",
+					Tooltip: "cluster type",
+				},
+				ExtraInfos{
 					Icon:    "management",
 					Text:    "-",
 					Tooltip: "manage type",
@@ -155,19 +160,14 @@ func TestList_GetExtraInfos(t *testing.T) {
 					Tooltip: "create time",
 				},
 				ExtraInfos{
-					Icon:    "machine",
-					Text:    "0",
-					Tooltip: "machine count",
-				},
-				ExtraInfos{
-					Icon:    "type",
-					Text:    "-",
-					Tooltip: "cluster type",
-				},
-				ExtraInfos{
 					Icon:    "version",
 					Text:    "-",
 					Tooltip: "cluster version",
+				},
+				ExtraInfos{
+					Icon:    "machine",
+					Text:    "0",
+					Tooltip: "machine count",
 				},
 			},
 		},

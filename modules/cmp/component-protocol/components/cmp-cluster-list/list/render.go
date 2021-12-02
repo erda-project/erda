@@ -421,6 +421,11 @@ func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
 	ei := make([]ExtraInfos, 0)
 	ei = append(ei,
 		ExtraInfos{
+			Icon:    "type",
+			Text:    l.WithType(clusterInfo),
+			Tooltip: l.SDK.I18n("cluster type"),
+		},
+		ExtraInfos{
 			Icon:    "management",
 			Text:    l.WithManage(clusterInfo),
 			Tooltip: l.SDK.I18n("manage type"),
@@ -431,19 +436,14 @@ func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
 			Tooltip: l.SDK.I18n("create time"),
 		},
 		ExtraInfos{
-			Icon:    "machine",
-			Text:    l.WithMachine(clusterInfo),
-			Tooltip: l.SDK.I18n("machine count"),
-		},
-		ExtraInfos{
-			Icon:    "type",
-			Text:    l.WithType(clusterInfo),
-			Tooltip: l.SDK.I18n("cluster type"),
-		},
-		ExtraInfos{
 			Icon:    "version",
 			Text:    l.WithVersion(clusterInfo),
 			Tooltip: l.SDK.I18n("cluster version"),
+		},
+		ExtraInfos{
+			Icon:    "machine",
+			Text:    l.WithMachine(clusterInfo),
+			Tooltip: l.SDK.I18n("machine count"),
 		},
 	)
 	return ei
