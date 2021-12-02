@@ -92,7 +92,7 @@ func getResourceAttributes() []attribute.KeyValue {
 	addEnvIfExist(attribute.Key("erda.runtime.id"), "DICE_RUNTIME_ID", "DICE_RUNTIME")
 	addEnvIfExist(attribute.Key("erda.application.name"), "DICE_RUNTIME_NAME")
 	addEnvIfExist(attribute.Key("erda.workspace"), "DICE_WORKSPACE")
-	addEnvIfExist(attribute.Key("msp.env.id"), "msp.env.id", "TERMINUS_KEY")
+	addEnvIfExist(attribute.Key("erda.env.id"), "ERDA_ENV_ID", "TERMINUS_KEY")
 
 	addEnvIfExist(semconv.ServiceVersionKey, "DICE_VERSION")
 	return attrs
@@ -127,11 +127,9 @@ func newExporter() (exporter sdktrace.SpanExporter, err error) {
 			}
 		}
 	}
-	addHeaderIfExist("Org", "DICE_ORG_NAME")
-	addHeaderIfExist("Org-ID", "DICE_ORG_ID")
-	addHeaderIfExist("x-msp-env-id", "msp.env.id", "TERMINUS_KEY")
-	addHeaderIfExist("x-msp-env-token", "msp.env.token")
-	addHeaderIfExist("x-msp-env-org", "DICE_ORG_NAME")
+	addHeaderIfExist("x-erda-env-id", "ERDA_ENV_ID", "TERMINUS_KEY")
+	addHeaderIfExist("x-erda-env-token", "ERDA_ENV_TOKEN")
+	addHeaderIfExist("x-erda-org", "ERDA_ORG", "DICE_ORG_NAME")
 
 	opts := []otlptracehttp.Option{
 		// otlptracehttp.WithCompression(otlptracehttp.GzipCompression),
