@@ -120,6 +120,7 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 
 	emailTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.email", strings.ToLower(req.Action))
 	mboxTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.markdown", strings.ToLower(req.Action))
+	dingTalkTemplateName := fmt.Sprintf("notify.issue.issue_%s.ding_talk.markdown_template", strings.ToLower(req.Action))
 
 	org, err := e.bdl.GetOrg(req.OrgID)
 	if err != nil {
@@ -130,14 +131,19 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	}
 
 	params := req.GenEventParams(org.Locale, conf.UIPublicURL())
+	params["content"] = req.Content.Content
+	params["atUserIDs"] = req.Content.AtUserIDs
+	params["issue_title"] = req.Content.Title
 
 	var emailAddrs []string
+	var mobiles []string
 	users, err := e.bdl.ListUsers(apistructs.UserListRequest{Plaintext: true, UserIDs: req.Content.Receivers})
 	if err != nil {
 		return err
 	}
 	for _, v := range users.Users {
 		emailAddrs = append(emailAddrs, v.Email)
+		mobiles = append(mobiles, v.Phone)
 	}
 
 	logrus.Debugf("params of issue event is: %v", params)
@@ -151,6 +157,9 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	}
 	if err := e.bdl.CreateMboxNotify(mboxTemplateName, params, org.Locale, org.ID, req.Content.Receivers); err != nil {
 		logrus.Errorf("send personal issue %s event mbox err: %v", params["issueID"], err)
+	}
+	if err := e.bdl.CreateDingTalkWorkNotify(dingTalkTemplateName, params, org.Locale, org.ID, mobiles); err != nil {
+		logrus.Errorf("send personal issue %s event ding talk work notice err: %v", params["issueID"], err)
 	}
 
 	return nil

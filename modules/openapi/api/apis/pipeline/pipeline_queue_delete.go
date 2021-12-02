@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmp
+package pipeline
 
 import (
-	"context"
+	"net/http"
 
-	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-func (p *provider) NodeMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {
-	return p.Metrics.NodeMetrics(ctx, req)
-}
-
-func (p *provider) PodMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {
-	return p.Metrics.PodMetrics(ctx, req)
-}
-
-func (p *provider) NodeAllMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {
-	return p.Metrics.NodeAllMetrics(ctx, req)
+var PIPELINE_QUEUE_DELETE = apis.ApiSpec{
+	Path:        "/api/pipeline-queues/<queueID>",
+	BackendPath: "/api/pipeline-queues/<queueID>",
+	Host:        "pipeline.marathon.l4lb.thisdcos.directory:3081",
+	Scheme:      "http",
+	Method:      http.MethodDelete,
+	IsOpenAPI:   true,
+	CheckToken:  true,
+	Doc:         "summary: 删除 pipeline 队列",
 }
