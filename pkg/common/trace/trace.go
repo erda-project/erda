@@ -1,0 +1,182 @@
+package trace
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	stdout "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+
+	traceinject "github.com/erda-project/erda-infra/pkg/trace/inject"
+)
+
+func getServiceName() string {
+	for _, key := range []string{
+		"DICE_SERVICE_NAME",
+		"DICE_SERVICE",
+		"APP_NAME",
+	} {
+		name := os.Getenv(key)
+		if len(name) > 0 {
+			return name
+		}
+	}
+	name := filepath.Base(os.Args[0])
+	if name != "main" {
+		return name
+	}
+	name, _ = os.Hostname()
+	if len(name) > 0 {
+		idx := strings.IndexAny(name, ".-")
+		if idx > 0 {
+			return name[:idx]
+		}
+		return name
+	}
+	return "" // unknown
+}
+
+func getResourceAttributes() []attribute.KeyValue {
+	attrs := []attribute.KeyValue{
+		semconv.ServiceNameKey.String(getServiceName()),
+	}
+
+	addEnvIfExist := func(key attribute.Key, env ...string) {
+		for _, k := range env {
+			value := os.Getenv(k)
+			if len(value) > 0 {
+				attrs = append(attrs, key.String(value))
+				return
+			}
+		}
+	}
+
+	addEnvIfExist(semconv.K8SNamespaceNameKey, "POD_NAMESPACE", "DICE_NAMESPACE")
+	addEnvIfExist(semconv.K8SPodNameKey, "POD_NAME")
+	addEnvIfExist(semconv.K8SPodUIDKey, "POD_UUID")
+	addEnvIfExist(attribute.Key("k8s.pod.ip"), "POD_IP")
+	addEnvIfExist(semconv.K8SClusterNameKey, "DICE_CLUSTER_NAME")
+	addEnvIfExist(attribute.Key("host.ip"), "HOST_IP")
+
+	addEnvIfExist(attribute.Key("erda.org.id"), "DICE_ORG_ID")
+	addEnvIfExist(attribute.Key("erda.org.name"), "DICE_ORG_NAME")
+	addEnvIfExist(attribute.Key("erda.project.id"), "DICE_PROJECT_ID", "DICE_PROJECT")
+	addEnvIfExist(attribute.Key("erda.project.name"), "DICE_PROJECT_NAME")
+	addEnvIfExist(attribute.Key("erda.application.id"), "DICE_APPLICATION_ID", "DICE_APPLICATION")
+	addEnvIfExist(attribute.Key("erda.application.name"), "DICE_APPLICATION_NAME")
+	addEnvIfExist(attribute.Key("erda.runtime.id"), "DICE_RUNTIME_ID", "DICE_RUNTIME")
+	addEnvIfExist(attribute.Key("erda.application.name"), "DICE_RUNTIME_NAME")
+	addEnvIfExist(attribute.Key("erda.workspace"), "DICE_WORKSPACE")
+	addEnvIfExist(attribute.Key("msp.env.id"), "msp.env.id", "TERMINUS_KEY")
+
+	addEnvIfExist(semconv.ServiceVersionKey, "DICE_VERSION")
+	return attrs
+}
+
+func getSamplingRate() (rate float64) {
+	rate = 0.1
+	envValue := os.Getenv("TRACE_SAMPLING_RATE")
+	if len(envValue) > 0 {
+		v, err := strconv.ParseFloat(envValue, 64)
+		if err == nil {
+			rate = v
+		}
+	}
+	return rate
+}
+
+var debug = os.Getenv("TRACE_DEBUG") == "true"
+
+func newExporter() (exporter sdktrace.SpanExporter, err error) {
+	if debug {
+		return stdout.New(stdout.WithPrettyPrint())
+	}
+
+	headers := make(map[string]string)
+	addHeaderIfExist := func(name string, keys ...string) {
+		for _, key := range keys {
+			value := os.Getenv(key)
+			if len(value) > 0 {
+				headers[name] = value
+				return
+			}
+		}
+	}
+	addHeaderIfExist("Org", "DICE_ORG_NAME")
+	addHeaderIfExist("Org-ID", "DICE_ORG_ID")
+	addHeaderIfExist("x-msp-env-id", "msp.env.id", "TERMINUS_KEY")
+	addHeaderIfExist("x-msp-env-token", "msp.env.token")
+	addHeaderIfExist("x-msp-env-org", "DICE_ORG_NAME")
+
+	opts := []otlptracehttp.Option{
+		// otlptracehttp.WithCompression(otlptracehttp.GzipCompression),
+		otlptracehttp.WithRetry(otlptracehttp.RetryConfig{
+			Enabled: false,
+		}),
+		otlptracehttp.WithTimeout(60 * time.Second),
+		otlptracehttp.WithHeaders(headers),
+	}
+	endpoint, err := getEndpointOptions()
+	if err != nil {
+		return nil, err
+	}
+	opts = append(opts, endpoint...)
+	return otlptracehttp.New(context.Background(), opts...)
+}
+
+func getEndpointOptions() ([]otlptracehttp.Option, error) {
+	isEdge, _ := strconv.ParseBool(os.Getenv("DICE_IS_EDGE"))
+	opts := []otlptracehttp.Option{
+		otlptracehttp.WithURLPath("/api/otlp/v1/traces"),
+	}
+	if isEdge {
+		collectorAddr := os.Getenv("COLLECTOR_ADDR")
+		if len(collectorAddr) <= 0 {
+			return nil, fmt.Errorf("not found COLLECTOR_ADDR")
+		}
+		opts = append(opts,
+			otlptracehttp.WithEndpoint(collectorAddr),
+			otlptracehttp.WithInsecure(),
+		)
+	} else {
+		collectorURL := os.Getenv("COLLECTOR_PUBLIC_URL")
+		if len(collectorURL) <= 0 {
+			return nil, fmt.Errorf("not found COLLECTOR_PUBLIC_URL")
+		}
+		u, err := url.Parse(collectorURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid COLLECTOR_PUBLIC_URL: %w", err)
+		}
+		opts = append(opts, otlptracehttp.WithEndpoint(u.Host))
+		if u.Scheme != "https" {
+			opts = append(opts, otlptracehttp.WithInsecure())
+		}
+	}
+	return opts, nil
+}
+
+func init() {
+	exporter, err := newExporter()
+	if err != nil {
+		log.Printf("[ERROR] failed to initialize trace exporter %s\n", err)
+		return
+	}
+
+	sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(getSamplingRate()))
+
+	traceinject.Init(sdktrace.WithSampler(sampler),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, getResourceAttributes()...)),
+	)
+}
