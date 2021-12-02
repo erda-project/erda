@@ -18,13 +18,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var PROJECT = command.Command{
@@ -64,11 +63,13 @@ func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, org string,
 			})
 		}
 
+		headers := []string{
+			"ProjectID", "Name", "DisplayName", "Description",
+		}
+
 		t := table.NewTable()
 		if !noHeaders {
-			t.Header([]string{
-				"ProjectID", "Name", "DisplayName", "Description",
-			})
+			t.Header(headers)
 		}
 		err = t.Data(data).Flush()
 		if err != nil {
