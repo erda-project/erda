@@ -45,7 +45,7 @@ func TestGenTimeoutProps1(t *testing.T) {
 					ComponentProps: map[string]interface{}{
 						"placeholder": "wb.content.action.input.label.timeoutPlaceholder",
 					},
-					DefaultValue: "3600",
+					DefaultValue: 3600,
 				},
 			},
 			wantErr: false,
