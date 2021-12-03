@@ -7,31 +7,31 @@ import "google/protobuf/struct.proto";
 service LogService {
   rpc HistogramAggregation(HistogramAggregationRequest) returns(HistogramAggregationResponse) {
     option (google.api.http) = {
-      get: "/api/log-service/statistics/histogram",
+      get: "/api/log-service/{addon}/statistics/histogram",
     };
   }
 
   rpc BucketAggregation(BucketAggregationRequest) returns(BucketAggregationResponse) {
     option (google.api.http) = {
-      get: "/api/log-service/statistics/bucket",
+      get: "/api/log-service/{addon}/statistics/bucket",
     };
   }
 
   rpc PagedSearch(PagedSearchRequest) returns(PagedSearchResponse) {
     option (google.api.http) = {
-      get: "/api/log-service/search/paged",
+      get: "/api/log-service/{addon}/search/paged",
     };
   }
 
   rpc SequentialSearch(SequentialSearchRequest) returns(SequentialSearchResponse) {
     option (google.api.http) = {
-      get: "/api/log-service/search/sequential",
+      get: "/api/log-service/{addon}/search/sequential",
     };
   }
 
   rpc GetFieldSettings(GetFieldSettingsRequest) returns(GetFieldSettingsResponse) {
     option (google.api.http) = {
-      get: "/api/log-service/settings/fields",
+      get: "/api/log-service/{addon}/settings/fields",
     };
   }
 
@@ -41,6 +41,7 @@ service LogService {
 // for get field settings request
 
 message GetFieldSettingsRequest {
+  string addon = 1;
 }
 
 message GetFieldSettingsResponse {
@@ -89,6 +90,7 @@ message PagedSearchRequest {
   int64           pageNo      = 7;
   int64           pageSize    = 8;
   repeated string sort        = 9;
+  bool            highlight   = 10;
 }
 
 message PagedSearchResponse {
@@ -96,21 +98,25 @@ message PagedSearchResponse {
 }
 
 message LogQueryResult {
-  int64            total = 1;
-  repeated LogItem data  = 2;
+  int64                 total = 1;
+  repeated HighlightLog data  = 2;
+}
+
+message HighlightLog {
+  LogItem                                source    = 1;
+  map<string, google.protobuf.ListValue> highlight = 2;
 }
 
 message LogItem {
-  string                                 docId          = 1 [json_name = "_id"];
-  string                                 id             = 2;
-  string                                 source         = 3;
-  string                                 stream         = 4;
-  string                                 content        = 5;
-  int64                                  offset         = 6;
-  int64                                  timestamp      = 7;
-  string                                 timestampNanos = 8;
-  map<string, string>                    tags           = 9;
-  map<string, google.protobuf.ListValue> highlight      = 10;
+  string              docId          = 1 [json_name = "_id"];
+  string              id             = 2;
+  string              source         = 3;
+  string              stream         = 4;
+  string              content        = 5;
+  int64               offset         = 6;
+  int64               timestamp      = 7;
+  string              timestampNanos = 8;
+  map<string, string> tags           = 9;
 }
 
 // for bucket aggregation request
@@ -177,11 +183,11 @@ message CountHistogram {
 }
 
 message ArrayAgg {
-  string         unitType  = 1;
-  string         unit      = 2;
-  string         chartType = 3;
-  int64          axisIndex = 4;
-  string         name      = 5;
-  string         tag       = 6;
-  repeated float data      = 7;
+  string          unitType  = 1;
+  string          unit      = 2;
+  string          chartType = 3;
+  int64           axisIndex = 4;
+  string          name      = 5;
+  string          tag       = 6;
+  repeated double data      = 7;
 }

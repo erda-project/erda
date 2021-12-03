@@ -45,3 +45,19 @@ func (db *LogInstanceDB) GetLatestByLogKey(logKey string, logType LogType) (*Log
 
 	return &instance, nil
 }
+
+func (db *LogInstanceDB) GetListByClusterAndProjectIdAndWorkspace(clusterName, projectId, workspace string) ([]LogInstance, error) {
+	var list []LogInstance
+	result := db.Table(TableLogInstance).
+		Where("`cluster_name`=?", clusterName).
+		Where("`project_id`=?", projectId).
+		Where("`workspace`=?", workspace).
+		Where("`is_delete`=0").
+		Find(&list)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return list, nil
+}

@@ -43,7 +43,6 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/cleaner"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/retention-strategy"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
