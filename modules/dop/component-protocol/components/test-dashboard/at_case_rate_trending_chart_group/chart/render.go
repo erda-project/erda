@@ -173,7 +173,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 					return ""
 				}(),
 				PipelineID:  v.PipelineID,
-				ExecuteTime: v.ExecuteTime.Format("2006-01-02 15:04"),
+				ExecuteTime: v.ExecuteTime.Format("2006-01-02 15:04:05"),
 			}
 			currMeta := make(map[string]gshelper.SelectChartItemData, 0)
 			for k, data := range metaData {
