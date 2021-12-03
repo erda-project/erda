@@ -4,9 +4,8 @@ import (
 	"io/ioutil"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/jinzhu/gorm"
+	"gopkg.in/yaml.v3"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"

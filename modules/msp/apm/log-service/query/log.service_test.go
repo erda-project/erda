@@ -2,10 +2,11 @@ package log_service
 
 import (
 	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
 	reflect "reflect"
 	testing "testing"
+
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	pb "github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
 )
 
 func Test_logService_HistogramAggregation(t *testing.T) {

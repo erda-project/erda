@@ -19,10 +19,9 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
