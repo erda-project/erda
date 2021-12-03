@@ -79,9 +79,10 @@ type Item struct {
 }
 
 type Extra struct {
-	Type   string `json:"type"`
-	User   string `json:"user"`
-	Status Status `json:"status"`
+	Type        string `json:"type"`
+	User        string `json:"user"`
+	Status      Status `json:"status"`
+	IterationID int64  `json:"iteration"`
 }
 
 type Status struct {

@@ -131,6 +131,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 						Text:   issue.Name,
 						Status: apistructs.IssueStateBelong(issue.Belong).GetFrontEndStatus(),
 					},
+					IterationID: issue.IterationID,
 				},
 			},
 		)
@@ -155,6 +156,7 @@ func (f *ComponentGantt) convertIssueItem(issues []dao.IssueItem) []Item {
 					Text:   issue.Name,
 					Status: apistructs.IssueStateBelong(issue.Belong).GetFrontEndStatus(),
 				},
+				IterationID: issue.IterationID,
 			},
 		}
 		if issue.PlanStartedAt != nil {
