@@ -94,7 +94,7 @@ type Columns struct {
 	Sortable  bool   `json:"sorter,omitempty"`
 	Fixed     string `json:"fixed,omitempty"`
 	TitleTip  string `json:"titleTip"`
-	Show      bool   `json:"show"`
+	Hidden    bool   `json:"hidden"`
 	Align     string `json:"align"`
 }
 
