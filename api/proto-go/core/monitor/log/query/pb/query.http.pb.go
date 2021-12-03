@@ -27,6 +27,10 @@ type LogQueryServiceHandler interface {
 	// for organization log
 	// GET /api/orgCenter/logs
 	GetLogByOrganization(context.Context, *GetLogByOrganizationRequest) (*GetLogByOrganizationResponse, error)
+	// GET /api/logs/search
+	GetLogByExpression(context.Context, *GetLogByExpressionRequest) (*GetLogByExpressionResponse, error)
+	// GET /api/logs/aggregation
+	LogAggregation(context.Context, *LogAggregationRequest) (*LogAggregationResponse, error)
 }
 
 // RegisterLogQueryServiceHandler register LogQueryServiceHandler to http.Router.
@@ -160,7 +164,81 @@ func RegisterLogQueryServiceHandler(r http.Router, srv LogQueryServiceHandler, o
 		)
 	}
 
+	add_GetLogByExpression := func(method, path string, fn func(context.Context, *GetLogByExpressionRequest) (*GetLogByExpressionResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetLogByExpressionRequest))
+		}
+		var GetLogByExpression_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetLogByExpression_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "GetLogByExpression", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetLogByExpression_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetLogByExpressionRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_LogAggregation := func(method, path string, fn func(context.Context, *LogAggregationRequest) (*LogAggregationResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*LogAggregationRequest))
+		}
+		var LogAggregation_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			LogAggregation_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "LogAggregation", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, LogAggregation_info)
+				}
+				r = r.WithContext(ctx)
+				var in LogAggregationRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_GetLog("GET", "/api/logs", srv.GetLog)
 	add_GetLogByRuntime("GET", "/api/runtime/logs", srv.GetLogByRuntime)
 	add_GetLogByOrganization("GET", "/api/orgCenter/logs", srv.GetLogByOrganization)
+	add_GetLogByExpression("GET", "/api/logs/search", srv.GetLogByExpression)
+	add_LogAggregation("GET", "/api/logs/aggregation", srv.LogAggregation)
 }

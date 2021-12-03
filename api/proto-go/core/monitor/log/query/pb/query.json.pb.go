@@ -21,12 +21,36 @@ var _ json.Marshaler = (*GetLogByRuntimeRequest)(nil)
 var _ json.Unmarshaler = (*GetLogByRuntimeRequest)(nil)
 var _ json.Marshaler = (*GetLogByOrganizationRequest)(nil)
 var _ json.Unmarshaler = (*GetLogByOrganizationRequest)(nil)
+var _ json.Marshaler = (*QueryMeta)(nil)
+var _ json.Unmarshaler = (*QueryMeta)(nil)
+var _ json.Marshaler = (*LogUniqueID)(nil)
+var _ json.Unmarshaler = (*LogUniqueID)(nil)
+var _ json.Marshaler = (*ExtraFilter)(nil)
+var _ json.Unmarshaler = (*ExtraFilter)(nil)
+var _ json.Marshaler = (*GetLogByExpressionRequest)(nil)
+var _ json.Unmarshaler = (*GetLogByExpressionRequest)(nil)
+var _ json.Marshaler = (*HistogramAggOptions)(nil)
+var _ json.Unmarshaler = (*HistogramAggOptions)(nil)
+var _ json.Marshaler = (*TermsAggOptions)(nil)
+var _ json.Unmarshaler = (*TermsAggOptions)(nil)
+var _ json.Marshaler = (*AggregationDescriptor)(nil)
+var _ json.Unmarshaler = (*AggregationDescriptor)(nil)
+var _ json.Marshaler = (*LogAggregationRequest)(nil)
+var _ json.Unmarshaler = (*LogAggregationRequest)(nil)
+var _ json.Marshaler = (*AggregationBucket)(nil)
+var _ json.Unmarshaler = (*AggregationBucket)(nil)
+var _ json.Marshaler = (*AggregationResult)(nil)
+var _ json.Unmarshaler = (*AggregationResult)(nil)
+var _ json.Marshaler = (*LogAggregationResponse)(nil)
+var _ json.Unmarshaler = (*LogAggregationResponse)(nil)
 var _ json.Marshaler = (*GetLogResponse)(nil)
 var _ json.Unmarshaler = (*GetLogResponse)(nil)
 var _ json.Marshaler = (*GetLogByRuntimeResponse)(nil)
 var _ json.Unmarshaler = (*GetLogByRuntimeResponse)(nil)
 var _ json.Marshaler = (*GetLogByOrganizationResponse)(nil)
 var _ json.Unmarshaler = (*GetLogByOrganizationResponse)(nil)
+var _ json.Marshaler = (*GetLogByExpressionResponse)(nil)
+var _ json.Unmarshaler = (*GetLogByExpressionResponse)(nil)
 
 // LogItem implement json.Marshaler.
 func (m *LogItem) MarshalJSON() ([]byte, error) {
@@ -100,6 +124,204 @@ func (m *GetLogByOrganizationRequest) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// QueryMeta implement json.Marshaler.
+func (m *QueryMeta) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// QueryMeta implement json.Marshaler.
+func (m *QueryMeta) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// LogUniqueID implement json.Marshaler.
+func (m *LogUniqueID) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// LogUniqueID implement json.Marshaler.
+func (m *LogUniqueID) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ExtraFilter implement json.Marshaler.
+func (m *ExtraFilter) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ExtraFilter implement json.Marshaler.
+func (m *ExtraFilter) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetLogByExpressionRequest implement json.Marshaler.
+func (m *GetLogByExpressionRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetLogByExpressionRequest implement json.Marshaler.
+func (m *GetLogByExpressionRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// HistogramAggOptions implement json.Marshaler.
+func (m *HistogramAggOptions) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// HistogramAggOptions implement json.Marshaler.
+func (m *HistogramAggOptions) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// TermsAggOptions implement json.Marshaler.
+func (m *TermsAggOptions) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TermsAggOptions implement json.Marshaler.
+func (m *TermsAggOptions) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AggregationDescriptor implement json.Marshaler.
+func (m *AggregationDescriptor) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AggregationDescriptor implement json.Marshaler.
+func (m *AggregationDescriptor) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// LogAggregationRequest implement json.Marshaler.
+func (m *LogAggregationRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// LogAggregationRequest implement json.Marshaler.
+func (m *LogAggregationRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AggregationBucket implement json.Marshaler.
+func (m *AggregationBucket) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AggregationBucket implement json.Marshaler.
+func (m *AggregationBucket) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AggregationResult implement json.Marshaler.
+func (m *AggregationResult) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AggregationResult implement json.Marshaler.
+func (m *AggregationResult) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// LogAggregationResponse implement json.Marshaler.
+func (m *LogAggregationResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// LogAggregationResponse implement json.Marshaler.
+func (m *LogAggregationResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // GetLogResponse implement json.Marshaler.
 func (m *GetLogResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -149,6 +371,24 @@ func (m *GetLogByOrganizationResponse) MarshalJSON() ([]byte, error) {
 
 // GetLogByOrganizationResponse implement json.Marshaler.
 func (m *GetLogByOrganizationResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetLogByExpressionResponse implement json.Marshaler.
+func (m *GetLogByExpressionResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetLogByExpressionResponse implement json.Marshaler.
+func (m *GetLogByExpressionResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

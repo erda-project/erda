@@ -27,6 +27,9 @@ type LogQueryServiceClient interface {
 	GetLogByRuntime(ctx context.Context, in *GetLogByRuntimeRequest, opts ...grpc.CallOption) (*GetLogByRuntimeResponse, error)
 	// for organization log
 	GetLogByOrganization(ctx context.Context, in *GetLogByOrganizationRequest, opts ...grpc.CallOption) (*GetLogByOrganizationResponse, error)
+	GetLogByExpression(ctx context.Context, in *GetLogByExpressionRequest, opts ...grpc.CallOption) (*GetLogByExpressionResponse, error)
+	LogAggregation(ctx context.Context, in *LogAggregationRequest, opts ...grpc.CallOption) (*LogAggregationResponse, error)
+	ScanLogsByExpression(ctx context.Context, in *GetLogByExpressionRequest, opts ...grpc.CallOption) (LogQueryService_ScanLogsByExpressionClient, error)
 }
 
 type logQueryServiceClient struct {
@@ -64,6 +67,56 @@ func (c *logQueryServiceClient) GetLogByOrganization(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *logQueryServiceClient) GetLogByExpression(ctx context.Context, in *GetLogByExpressionRequest, opts ...grpc.CallOption) (*GetLogByExpressionResponse, error) {
+	out := new(GetLogByExpressionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.log.query.LogQueryService/GetLogByExpression", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logQueryServiceClient) LogAggregation(ctx context.Context, in *LogAggregationRequest, opts ...grpc.CallOption) (*LogAggregationResponse, error) {
+	out := new(LogAggregationResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.log.query.LogQueryService/LogAggregation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logQueryServiceClient) ScanLogsByExpression(ctx context.Context, in *GetLogByExpressionRequest, opts ...grpc.CallOption) (LogQueryService_ScanLogsByExpressionClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_LogQueryService_serviceDesc.Streams[0], "/erda.core.monitor.log.query.LogQueryService/ScanLogsByExpression", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &logQueryServiceScanLogsByExpressionClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type LogQueryService_ScanLogsByExpressionClient interface {
+	Recv() (*LogItem, error)
+	grpc.ClientStream
+}
+
+type logQueryServiceScanLogsByExpressionClient struct {
+	grpc.ClientStream
+}
+
+func (x *logQueryServiceScanLogsByExpressionClient) Recv() (*LogItem, error) {
+	m := new(LogItem)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // LogQueryServiceServer is the server API for LogQueryService service.
 // All implementations should embed UnimplementedLogQueryServiceServer
 // for forward compatibility
@@ -74,6 +127,9 @@ type LogQueryServiceServer interface {
 	GetLogByRuntime(context.Context, *GetLogByRuntimeRequest) (*GetLogByRuntimeResponse, error)
 	// for organization log
 	GetLogByOrganization(context.Context, *GetLogByOrganizationRequest) (*GetLogByOrganizationResponse, error)
+	GetLogByExpression(context.Context, *GetLogByExpressionRequest) (*GetLogByExpressionResponse, error)
+	LogAggregation(context.Context, *LogAggregationRequest) (*LogAggregationResponse, error)
+	ScanLogsByExpression(*GetLogByExpressionRequest, LogQueryService_ScanLogsByExpressionServer) error
 }
 
 // UnimplementedLogQueryServiceServer should be embedded to have forward compatible implementations.
@@ -89,17 +145,164 @@ func (*UnimplementedLogQueryServiceServer) GetLogByRuntime(context.Context, *Get
 func (*UnimplementedLogQueryServiceServer) GetLogByOrganization(context.Context, *GetLogByOrganizationRequest) (*GetLogByOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogByOrganization not implemented")
 }
+func (*UnimplementedLogQueryServiceServer) GetLogByExpression(context.Context, *GetLogByExpressionRequest) (*GetLogByExpressionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLogByExpression not implemented")
+}
+func (*UnimplementedLogQueryServiceServer) LogAggregation(context.Context, *LogAggregationRequest) (*LogAggregationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogAggregation not implemented")
+}
+func (*UnimplementedLogQueryServiceServer) ScanLogsByExpression(*GetLogByExpressionRequest, LogQueryService_ScanLogsByExpressionServer) error {
+	return status.Errorf(codes.Unimplemented, "method ScanLogsByExpression not implemented")
+}
 
 func RegisterLogQueryServiceServer(s grpc1.ServiceRegistrar, srv LogQueryServiceServer, opts ...grpc1.HandleOption) {
 	s.RegisterService(_get_LogQueryService_serviceDesc(srv, opts...), srv)
 }
 
+func _LogQueryService_GetLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogQueryServiceServer).GetLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLog",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogQueryServiceServer).GetLog(ctx, req.(*GetLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogQueryService_GetLogByRuntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogByRuntimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogQueryServiceServer).GetLogByRuntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByRuntime",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogQueryServiceServer).GetLogByRuntime(ctx, req.(*GetLogByRuntimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogQueryService_GetLogByOrganization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogByOrganizationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogQueryServiceServer).GetLogByOrganization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByOrganization",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogQueryServiceServer).GetLogByOrganization(ctx, req.(*GetLogByOrganizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogQueryService_GetLogByExpression_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogByExpressionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogQueryServiceServer).GetLogByExpression(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByExpression",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogQueryServiceServer).GetLogByExpression(ctx, req.(*GetLogByExpressionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogQueryService_LogAggregation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogAggregationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogQueryServiceServer).LogAggregation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/erda.core.monitor.log.query.LogQueryService/LogAggregation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogQueryServiceServer).LogAggregation(ctx, req.(*LogAggregationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogQueryService_ScanLogsByExpression_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetLogByExpressionRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(LogQueryServiceServer).ScanLogsByExpression(m, &logQueryServiceScanLogsByExpressionServer{stream})
+}
+
+type LogQueryService_ScanLogsByExpressionServer interface {
+	Send(*LogItem) error
+	grpc.ServerStream
+}
+
+type logQueryServiceScanLogsByExpressionServer struct {
+	grpc.ServerStream
+}
+
+func (x *logQueryServiceScanLogsByExpressionServer) Send(m *LogItem) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _LogQueryService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "erda.core.monitor.log.query.LogQueryService",
 	HandlerType: (*LogQueryServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "query.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetLog",
+			Handler:    _LogQueryService_GetLog_Handler,
+		},
+		{
+			MethodName: "GetLogByRuntime",
+			Handler:    _LogQueryService_GetLogByRuntime_Handler,
+		},
+		{
+			MethodName: "GetLogByOrganization",
+			Handler:    _LogQueryService_GetLogByOrganization_Handler,
+		},
+		{
+			MethodName: "GetLogByExpression",
+			Handler:    _LogQueryService_GetLogByExpression_Handler,
+		},
+		{
+			MethodName: "LogAggregation",
+			Handler:    _LogQueryService_LogAggregation_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ScanLogsByExpression",
+			Handler:       _LogQueryService_ScanLogsByExpression_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "query.proto",
 }
 
 func _get_LogQueryService_serviceDesc(srv LogQueryServiceServer, opts ...grpc1.HandleOption) *grpc.ServiceDesc {
@@ -133,6 +336,24 @@ func _get_LogQueryService_serviceDesc(srv LogQueryServiceServer, opts ...grpc1.H
 	if h.Interceptor != nil {
 		_LogQueryService_GetLogByOrganization_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "GetLogByOrganization", srv)
 		_LogQueryService_GetLogByOrganization_Handler = h.Interceptor(_LogQueryService_GetLogByOrganization_Handler)
+	}
+
+	_LogQueryService_GetLogByExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetLogByExpression(ctx, req.(*GetLogByExpressionRequest))
+	}
+	var _LogQueryService_GetLogByExpression_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_LogQueryService_GetLogByExpression_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "GetLogByExpression", srv)
+		_LogQueryService_GetLogByExpression_Handler = h.Interceptor(_LogQueryService_GetLogByExpression_Handler)
+	}
+
+	_LogQueryService_LogAggregation_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.LogAggregation(ctx, req.(*LogAggregationRequest))
+	}
+	var _LogQueryService_LogAggregation_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_LogQueryService_LogAggregation_info = transport.NewServiceInfo("erda.core.monitor.log.query.LogQueryService", "LogAggregation", srv)
+		_LogQueryService_LogAggregation_Handler = h.Interceptor(_LogQueryService_LogAggregation_Handler)
 	}
 
 	var serviceDesc = _LogQueryService_serviceDesc
@@ -204,6 +425,52 @@ func _get_LogQueryService_serviceDesc(srv LogQueryServiceServer, opts ...grpc1.H
 					FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByOrganization",
 				}
 				return interceptor(ctx, in, info, _LogQueryService_GetLogByOrganization_Handler)
+			},
+		},
+		{
+			MethodName: "GetLogByExpression",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetLogByExpressionRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(LogQueryServiceServer).GetLogByExpression(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _LogQueryService_GetLogByExpression_info)
+				}
+				if interceptor == nil {
+					return _LogQueryService_GetLogByExpression_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.log.query.LogQueryService/GetLogByExpression",
+				}
+				return interceptor(ctx, in, info, _LogQueryService_GetLogByExpression_Handler)
+			},
+		},
+		{
+			MethodName: "LogAggregation",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(LogAggregationRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(LogQueryServiceServer).LogAggregation(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _LogQueryService_LogAggregation_info)
+				}
+				if interceptor == nil {
+					return _LogQueryService_LogAggregation_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.log.query.LogQueryService/LogAggregation",
+				}
+				return interceptor(ctx, in, info, _LogQueryService_LogAggregation_Handler)
 			},
 		},
 	}

@@ -4,10 +4,15 @@
 package pb
 
 import (
+	base64 "encoding/base64"
+	json "encoding/json"
 	url "net/url"
 	strconv "strconv"
+	strings "strings"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -16,9 +21,21 @@ var _ urlenc.URLValuesUnmarshaler = (*LogItem)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLogRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLogByRuntimeRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLogByOrganizationRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*QueryMeta)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*LogUniqueID)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ExtraFilter)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetLogByExpressionRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*HistogramAggOptions)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*TermsAggOptions)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AggregationDescriptor)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*LogAggregationRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AggregationBucket)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AggregationResult)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*LogAggregationResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLogResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLogByRuntimeResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLogByOrganizationResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetLogByExpressionResponse)(nil)
 
 // LogItem implement urlenc.URLValuesUnmarshaler.
 func (m *LogItem) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -51,6 +68,8 @@ func (m *LogItem) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Level = vals[0]
 			case "requestId":
 				m.RequestId = vals[0]
+			case "uniqId":
+				m.UniqId = vals[0]
 			}
 		}
 	}
@@ -232,6 +251,617 @@ func (m *GetLogByOrganizationRequest) UnmarshalURLValues(prefix string, values u
 	return nil
 }
 
+// QueryMeta implement urlenc.URLValuesUnmarshaler.
+func (m *QueryMeta) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "orgName":
+				m.OrgName = vals[0]
+			case "mspEnvIds":
+				m.MspEnvIds = vals
+			case "ignoreMaxTimeRangeLimit":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IgnoreMaxTimeRangeLimit = val
+			case "highlight":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Highlight = val
+			case "preferredBufferSize":
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.PreferredBufferSize = int32(val)
+			case "preferredIterateStyle":
+			}
+		}
+	}
+	return nil
+}
+
+// LogUniqueID implement urlenc.URLValuesUnmarshaler.
+func (m *LogUniqueID) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "unixNano":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.UnixNano = val
+			case "id":
+				m.Id = vals[0]
+			case "offset":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Offset = val
+			}
+		}
+	}
+	return nil
+}
+
+// ExtraFilter implement urlenc.URLValuesUnmarshaler.
+func (m *ExtraFilter) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "after":
+				if m.After == nil {
+					m.After = &LogUniqueID{}
+				}
+			case "after.unixNano":
+				if m.After == nil {
+					m.After = &LogUniqueID{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.After.UnixNano = val
+			case "after.id":
+				if m.After == nil {
+					m.After = &LogUniqueID{}
+				}
+				m.After.Id = vals[0]
+			case "after.offset":
+				if m.After == nil {
+					m.After = &LogUniqueID{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.After.Offset = val
+			case "positionOffset":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PositionOffset = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetLogByExpressionRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetLogByExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "start":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Start = val
+			case "end":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.End = val
+			case "queryExpression":
+				m.QueryExpression = vals[0]
+			case "queryMeta":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+			case "queryMeta.orgName":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+				m.QueryMeta.OrgName = vals[0]
+			case "queryMeta.mspEnvIds":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+				m.QueryMeta.MspEnvIds = vals
+			case "queryMeta.ignoreMaxTimeRangeLimit":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.QueryMeta.IgnoreMaxTimeRangeLimit = val
+			case "queryMeta.highlight":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.QueryMeta.Highlight = val
+			case "queryMeta.preferredBufferSize":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.QueryMeta.PreferredBufferSize = int32(val)
+			case "queryMeta.preferredIterateStyle":
+				if m.QueryMeta == nil {
+					m.QueryMeta = &QueryMeta{}
+				}
+			case "extraFilter":
+				if m.ExtraFilter == nil {
+					m.ExtraFilter = &ExtraFilter{}
+				}
+			case "extraFilter.after":
+				if m.ExtraFilter == nil {
+					m.ExtraFilter = &ExtraFilter{}
+				}
+				if m.ExtraFilter.After == nil {
+					m.ExtraFilter.After = &LogUniqueID{}
+				}
+			case "extraFilter.after.unixNano":
+				if m.ExtraFilter == nil {
+					m.ExtraFilter = &ExtraFilter{}
+				}
+				if m.ExtraFilter.After == nil {
+					m.ExtraFilter.After = &LogUniqueID{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExtraFilter.After.UnixNano = val
+			case "extraFilter.after.id":
+				if m.ExtraFilter == nil {
+					m.ExtraFilter = &ExtraFilter{}
+				}
+				if m.ExtraFilter.After == nil {
+					m.ExtraFilter.After = &LogUniqueID{}
+				}
+				m.ExtraFilter.After.Id = vals[0]
+			case "extraFilter.after.offset":
+				if m.ExtraFilter == nil {
+					m.ExtraFilter = &ExtraFilter{}
+				}
+				if m.ExtraFilter.After == nil {
+					m.ExtraFilter.After = &LogUniqueID{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExtraFilter.After.Offset = val
+			case "extraFilter.positionOffset":
+				if m.ExtraFilter == nil {
+					m.ExtraFilter = &ExtraFilter{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExtraFilter.PositionOffset = val
+			case "count":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Count = val
+			case "debug":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Debug = val
+			case "live":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Live = val
+			}
+		}
+	}
+	return nil
+}
+
+// HistogramAggOptions implement urlenc.URLValuesUnmarshaler.
+func (m *HistogramAggOptions) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "preferredPoints":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PreferredPoints = val
+			case "minimumInterval":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.MinimumInterval = val
+			case "fixedInterval":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FixedInterval = val
+			}
+		}
+	}
+	return nil
+}
+
+// TermsAggOptions implement urlenc.URLValuesUnmarshaler.
+func (m *TermsAggOptions) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "size":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Size = val
+			case "missing":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Missing = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Missing = val
+					} else {
+						m.Missing = structpb.NewStringValue(vals[0])
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// AggregationDescriptor implement urlenc.URLValuesUnmarshaler.
+func (m *AggregationDescriptor) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "field":
+				m.Field = vals[0]
+			case "type":
+			case "options":
+				if m.Options == nil {
+					m.Options = &anypb.Any{}
+				}
+			case "options.type_url":
+				if m.Options == nil {
+					m.Options = &anypb.Any{}
+				}
+				m.Options.TypeUrl = vals[0]
+			case "options.value":
+				if m.Options == nil {
+					m.Options = &anypb.Any{}
+				}
+				val, err := base64.StdEncoding.DecodeString(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Options.Value = val
+			}
+		}
+	}
+	return nil
+}
+
+// LogAggregationRequest implement urlenc.URLValuesUnmarshaler.
+func (m *LogAggregationRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "query":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+			case "query.start":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Query.Start = val
+			case "query.end":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Query.End = val
+			case "query.queryExpression":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				m.Query.QueryExpression = vals[0]
+			case "query.queryMeta":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+			case "query.queryMeta.orgName":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+				m.Query.QueryMeta.OrgName = vals[0]
+			case "query.queryMeta.mspEnvIds":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+				m.Query.QueryMeta.MspEnvIds = vals
+			case "query.queryMeta.ignoreMaxTimeRangeLimit":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Query.QueryMeta.IgnoreMaxTimeRangeLimit = val
+			case "query.queryMeta.highlight":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Query.QueryMeta.Highlight = val
+			case "query.queryMeta.preferredBufferSize":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Query.QueryMeta.PreferredBufferSize = int32(val)
+			case "query.queryMeta.preferredIterateStyle":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.QueryMeta == nil {
+					m.Query.QueryMeta = &QueryMeta{}
+				}
+			case "query.extraFilter":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.ExtraFilter == nil {
+					m.Query.ExtraFilter = &ExtraFilter{}
+				}
+			case "query.extraFilter.after":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.ExtraFilter == nil {
+					m.Query.ExtraFilter = &ExtraFilter{}
+				}
+				if m.Query.ExtraFilter.After == nil {
+					m.Query.ExtraFilter.After = &LogUniqueID{}
+				}
+			case "query.extraFilter.after.unixNano":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.ExtraFilter == nil {
+					m.Query.ExtraFilter = &ExtraFilter{}
+				}
+				if m.Query.ExtraFilter.After == nil {
+					m.Query.ExtraFilter.After = &LogUniqueID{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Query.ExtraFilter.After.UnixNano = val
+			case "query.extraFilter.after.id":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.ExtraFilter == nil {
+					m.Query.ExtraFilter = &ExtraFilter{}
+				}
+				if m.Query.ExtraFilter.After == nil {
+					m.Query.ExtraFilter.After = &LogUniqueID{}
+				}
+				m.Query.ExtraFilter.After.Id = vals[0]
+			case "query.extraFilter.after.offset":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.ExtraFilter == nil {
+					m.Query.ExtraFilter = &ExtraFilter{}
+				}
+				if m.Query.ExtraFilter.After == nil {
+					m.Query.ExtraFilter.After = &LogUniqueID{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Query.ExtraFilter.After.Offset = val
+			case "query.extraFilter.positionOffset":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				if m.Query.ExtraFilter == nil {
+					m.Query.ExtraFilter = &ExtraFilter{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Query.ExtraFilter.PositionOffset = val
+			case "query.count":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Query.Count = val
+			case "query.debug":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Query.Debug = val
+			case "query.live":
+				if m.Query == nil {
+					m.Query = &GetLogByExpressionRequest{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Query.Live = val
+			}
+		}
+	}
+	return nil
+}
+
+// AggregationBucket implement urlenc.URLValuesUnmarshaler.
+func (m *AggregationBucket) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "key":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Key = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Key = val
+					} else {
+						m.Key = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "count":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Count = val
+			}
+		}
+	}
+	return nil
+}
+
+// AggregationResult implement urlenc.URLValuesUnmarshaler.
+func (m *AggregationResult) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// LogAggregationResponse implement urlenc.URLValuesUnmarshaler.
+func (m *LogAggregationResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
 // GetLogResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetLogResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
@@ -244,5 +874,22 @@ func (m *GetLogByRuntimeResponse) UnmarshalURLValues(prefix string, values url.V
 
 // GetLogByOrganizationResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetLogByOrganizationResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetLogByExpressionResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetLogByExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
 	return nil
 }
