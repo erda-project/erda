@@ -275,7 +275,7 @@ metric-storage-elasticsearch:
 
 metric-persist:
   input:
-    topics: "${METRIC_TOPICS:spot-metrics,msp-tracing-metrics}"
+    topics: "${METRIC_TOPICS:spot-metrics,erda-trace-metrics}"
     group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
   read_timeout: "5s"
   buffer_size: ${METRIC_BATCH_SIZE:200}
