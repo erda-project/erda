@@ -374,7 +374,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	if sel.End < sel.Start {
 		return nil, errors.NewInvalidParameterError("(start,end]", "start must be less than end")
 	} else if sel.End-sel.Start > maxTimeRange {
-		if queryMeta, ok := req.(ByExpressionRequest); ok && queryMeta.GetQueryMeta() != nil && !queryMeta.GetQueryMeta().GetIgnoreMaxTimeRangeLimit() {
+		if queryMeta, ok := req.(ByExpressionRequest); !ok || queryMeta.GetQueryMeta() != nil && !queryMeta.GetQueryMeta().GetIgnoreMaxTimeRangeLimit() {
 			return nil, errors.NewInvalidParameterError("(start,end]", "time range is too large")
 		}
 	}
