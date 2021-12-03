@@ -958,6 +958,9 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 	if r.Severity != nil {
 		fields["severity"] = *r.Severity
 	}
+	if r.PlanStartedAt != nil {
+		fields["plan_started_at"] = r.PlanStartedAt
+	}
 	fields["plan_finished_at"] = r.PlanFinishedAt
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee
@@ -978,12 +981,12 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 		fields["stage"] = *r.TaskType
 	}
 	if r.ManHour != nil {
-		if r.ManHour.ThisElapsedTime != 0 {
-			// 开始时间为当天0点
-			timeStr := time.Now().Format("2006-01-02")
-			t, _ := time.ParseInLocation("2006-01-02", timeStr, time.Local)
-			fields["plan_started_at"] = t
-		}
+		// if r.ManHour.ThisElapsedTime != 0 {
+		// 	// 开始时间为当天0点
+		// 	timeStr := time.Now().Format("2006-01-02")
+		// 	t, _ := time.ParseInLocation("2006-01-02", timeStr, time.Local)
+		// 	fields["plan_started_at"] = t
+		// }
 		// ManHour 是否改变提前特殊处理
 		// 只有当预期时间或剩余时间发生改变时，才认为工时信息发生了改变
 		// 所花时间，开始时间，工作内容是实时内容，只在事件动态里记录就好，在dice_issue表中是没有意义的数据
@@ -1000,7 +1003,6 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 			fields["man_hour"] = r.ManHour.Convert2String()
 		}
 	}
-
 	return fields
 }
 

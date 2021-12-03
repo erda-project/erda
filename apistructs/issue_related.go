@@ -21,7 +21,11 @@ type IssueRelationCreateRequest struct {
 	RelatedIssue uint64 `json:"relatedIssues"`
 	Comment      string `json:"comment"`
 	ProjectID    int64  `json:"projectId"`
+	Type         string `json:"type"`
 }
+
+const IssueRelationConnection = "connection"
+const IssueRelationInclusion = "inclusion"
 
 // Check 检查请求参数是否合法
 func (irc *IssueRelationCreateRequest) Check() error {
@@ -35,6 +39,14 @@ func (irc *IssueRelationCreateRequest) Check() error {
 
 	if irc.ProjectID == 0 {
 		return errors.New("projectId is required")
+	}
+
+	if len(irc.Type) == 0 {
+		return errors.New("type is required")
+	}
+
+	if irc.Type != IssueRelationConnection && irc.Type != IssueRelationInclusion {
+		return errors.New("invalid issue relation type")
 	}
 
 	return nil
@@ -51,4 +63,8 @@ type IssueRelationGetResponse struct {
 type IssueRelations struct {
 	RelatingIssues []Issue
 	RelatedIssues  []Issue
+}
+
+type IssueRelationRequest struct {
+	RelationTypes []string `schema:"type"`
 }

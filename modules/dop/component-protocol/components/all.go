@@ -20,6 +20,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-gantt"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/scenes-import-record"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard"

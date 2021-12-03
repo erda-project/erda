@@ -146,7 +146,7 @@ func TestConvertIssueToExcelList(t *testing.T) {
 
 	related := &issuerelated.IssueRelated{}
 	p5 := monkey.PatchInstanceMethod(reflect.TypeOf(related), "GetIssueRelationsByIssueIDs",
-		func(i *issuerelated.IssueRelated, issueID uint64) ([]uint64, []uint64, error) {
+		func(i *issuerelated.IssueRelated, issueID uint64, relationType []string) ([]uint64, []uint64, error) {
 			return []uint64{}, []uint64{}, nil
 		},
 	)

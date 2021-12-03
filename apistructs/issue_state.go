@@ -36,6 +36,19 @@ const (
 	IssueStateBelongClosed   IssueStateBelong = "CLOSED"   // 已关闭
 )
 
+func (s IssueStateBelong) GetFrontEndStatus() string {
+	switch s {
+	case IssueStateBelongOpen:
+		return "warning"
+	case IssueStateBelongWorking:
+		return "processing"
+	case IssueStateBelongDone:
+		return "success"
+	default:
+		return ""
+	}
+}
+
 type IssueStateRelation struct {
 	IssueStatus
 	StateRelation []int64 `json:"stateRelation"`

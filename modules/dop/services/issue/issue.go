@@ -112,6 +112,9 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Type == "" {
 		return nil, apierrors.ErrCreateIssue.MissingParameter("type")
 	}
+	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil && req.PlanStartedAt.After(*req.PlanFinishedAt) {
+		return nil, fmt.Errorf("plan started is after plan finished time")
+	}
 	// 不归属任何迭代时，IterationID=-1
 	if req.IterationID == 0 {
 		return nil, apierrors.ErrCreateIssue.MissingParameter("iterationID")
@@ -183,6 +186,11 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
 	}
 
+	if create.Type == apistructs.IssueTypeTask {
+		if err := svc.AfterIssueChildrenUpdate(create.ID); err != nil {
+			return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
+		}
+	}
 	// 生成活动记录
 	users, err := svc.uc.FindUsers([]string{req.UserID})
 	if err != nil {
@@ -493,6 +501,16 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	if err != nil {
 		return apierrors.ErrGetIssue.InternalError(err)
 	}
+
+	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil && req.PlanStartedAt.After(*req.PlanFinishedAt) {
+		return fmt.Errorf("plan started is after plan finished time")
+	}
+	if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
+		return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
+	}
+	if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
+		return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
+	}
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
 	if issueModel.Type == apistructs.IssueTypeBug {
 		currentState, err := svc.db.GetIssueStateByID(issueModel.State)
@@ -530,13 +548,13 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		if field == "man_hour" {
 			goto STREAM
 		}
-		if field == "plan_started_at" {
-			// 如已有开始时间，跳过
-			if issueModel.PlanStartedAt != nil {
-				delete(changedFields, field)
-			}
-			continue
-		}
+		// if field == "plan_started_at" {
+		// 	// 如已有开始时间，跳过
+		// 	if issueModel.PlanStartedAt != nil {
+		// 		delete(changedFields, field)
+		// 	}
+		// 	continue
+		// }
 		if reflect.DeepEqual(v, canUpdateFields[field]) || v == canUpdateFields[field] {
 			delete(changedFields, field)
 			continue
@@ -587,6 +605,12 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrUpdateIssue.InternalError(err)
 	}
 
+	if issueModel.Type == apistructs.IssueTypeTask {
+		if err := svc.AfterIssueChildrenUpdate(issueModel.ID); err != nil {
+			return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
+		}
+	}
+
 	// 需求迭代变更时，集联变更需求下的任务迭代
 	// if issueModel.Type == apistructs.IssueTypeRequirement {
 	// 	taskFields := map[string]interface{}{"iteration_id": req.IterationID}
@@ -601,6 +625,34 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
+	return nil
+}
+
+func (svc *Issue) AfterIssueChildrenUpdate(id uint64) error {
+	parents, err := svc.db.GetIssueParents(id, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+
+	if len(parents) == 1 {
+		item := parents[0]
+		fields := make(map[string]interface{})
+		start, end, err := svc.db.FindIssueChildrenTimeRange(item.ID)
+		if err != nil {
+			return err
+		}
+		if start != nil {
+			fields["plan_started_at"] = start
+		}
+		if end != nil {
+			fields["plan_finished_at"] = end
+		}
+		if len(fields) > 0 {
+			if err := svc.db.UpdateIssue(item.ID, fields); err != nil {
+				return apierrors.ErrUpdateIssue.InternalError(err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -743,7 +795,7 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 
 	// 删除史诗前判断是否关联了事件
 	if issueModel.Type == apistructs.IssueTypeEpic {
-		relatingIssueIDs, err := svc.db.GetRelatingIssues(uint64(issueModel.ID))
+		relatingIssueIDs, err := svc.db.GetRelatingIssues(uint64(issueModel.ID), []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return err
 		}
@@ -1536,4 +1588,29 @@ func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistru
 
 func (svc *Issue) GetIssueLabelsByProjectID(projectID uint64) ([]dao.IssueLabel, error) {
 	return svc.db.GetIssueLabelsByProjectID(projectID)
+}
+
+func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]dao.IssueItem, uint64, error) {
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
+	if id == 0 {
+		requirements, tasks, total, err := svc.db.FindIssueRoot(req)
+		if err != nil {
+			return nil, 0, err
+		}
+		return append(requirements, tasks...), total, nil
+	}
+	return svc.db.FindIssueChildren(id, req)
+}
+
+func (svc *Issue) GetIssueItem(id uint64) (dao.IssueItem, error) {
+	return svc.db.GetIssueItem(id)
+}
+
+func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.IssueItem, error) {
+	return svc.db.GetIssueParents(issueID, relationType)
 }
