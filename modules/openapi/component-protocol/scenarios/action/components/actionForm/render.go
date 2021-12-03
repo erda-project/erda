@@ -117,7 +117,7 @@ func GenTimeoutProps(local *i18n.LocaleResource) (props []apistructs.FormPropIte
 		ComponentProps: map[string]interface{}{
 			"placeholder": local.Get("wb.content.action.input.label.timeoutPlaceholder"),
 		},
-		DefaultValue: "3600",
+		DefaultValue: 3600,
 	}
 
 	props = append(props, timeout)
