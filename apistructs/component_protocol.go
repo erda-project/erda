@@ -225,6 +225,10 @@ const (
 
 	// workbench
 	SubmitOrgOperationKey OperationKey = "submitOrg"
+
+	// issue gantt
+	Update     OperationKey = "update"
+	ExpandNode OperationKey = "expandNode"
 )
 
 type ComponentProtocolParams interface{}

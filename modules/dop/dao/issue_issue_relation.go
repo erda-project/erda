@@ -15,8 +15,11 @@
 package dao
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -27,6 +30,7 @@ type IssueRelation struct {
 	IssueID      uint64
 	RelatedIssue uint64
 	Comment      string
+	Type         string
 }
 
 // TableName 表名
@@ -40,21 +44,33 @@ func (client *DBClient) CreateIssueRelations(issueRelation *IssueRelation) error
 }
 
 func (client *DBClient) IssueRelationExist(issueRelation *IssueRelation) (bool, error) {
+	if issueRelation.Type == apistructs.IssueRelationInclusion {
+		var parent int64
+		if err := client.Table("dice_issue_relation").Where("related_issue = ? and type = ?", issueRelation.RelatedIssue, issueRelation.Type).Count(&parent).Error; err != nil {
+			return false, err
+		}
+		if parent > 0 {
+			return false, fmt.Errorf("issue %v has been children of other issues", issueRelation.IssueID)
+		}
+	}
 	var count int64
-	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue = ?", issueRelation.IssueID, issueRelation.RelatedIssue).Count(&count).Error; err != nil {
+	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue = ? and type = ?", issueRelation.IssueID, issueRelation.RelatedIssue, issueRelation.Type).Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
 // GetRelatingIssues 获取该事件关联了哪些事件
-func (client *DBClient) GetRelatingIssues(issueID uint64) ([]uint64, error) {
+func (client *DBClient) GetRelatingIssues(issueID uint64, relationType []string) ([]uint64, error) {
 	var (
 		issueIDs       []uint64
 		issueRelations []IssueRelation
 	)
-
-	if err := client.Table("dice_issue_relation").Where("issue_id = ?", issueID).Find(&issueRelations).Error; err != nil {
+	query := client.Table("dice_issue_relation").Where("issue_id = ?", issueID)
+	if len(relationType) > 0 {
+		query = query.Where("type IN (?)", relationType)
+	}
+	if err := query.Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
@@ -68,13 +84,16 @@ func (client *DBClient) GetRelatingIssues(issueID uint64) ([]uint64, error) {
 }
 
 // GetRelatedIssues 获取该事件被哪些事件关联了
-func (client *DBClient) GetRelatedIssues(issueID uint64) ([]uint64, error) {
+func (client *DBClient) GetRelatedIssues(issueID uint64, relationType []string) ([]uint64, error) {
 	var (
 		issueIDs       []uint64
 		issueRelations []IssueRelation
 	)
-
-	if err := client.Table("dice_issue_relation").Where("related_issue = ?", issueID).Find(&issueRelations).Error; err != nil {
+	query := client.Table("dice_issue_relation").Where("related_issue = ?", issueID)
+	if len(relationType) > 0 {
+		query = query.Where("type IN (?)", relationType)
+	}
+	if err := query.Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
@@ -88,13 +107,12 @@ func (client *DBClient) GetRelatedIssues(issueID uint64) ([]uint64, error) {
 }
 
 // DeleteIssueRelation 删除两条issue之间的关联关系
-func (client *DBClient) DeleteIssueRelation(issueID, relatedIssueID uint64) error {
-	if err := client.Table("dice_issue_relation").Where("issue_id = ?", issueID).
-		Where("related_issue = ?", relatedIssueID).Delete(IssueRelation{}).Error; err != nil {
-		return err
+func (client *DBClient) DeleteIssueRelation(issueID, relatedIssueID uint64, relationTypes []string) error {
+	query := client.Table("dice_issue_relation").Where("issue_id = ?", issueID).Where("related_issue = ?", relatedIssueID)
+	if len(relationTypes) > 0 {
+		query = query.Where("type IN (?)", relationTypes)
 	}
-
-	return nil
+	return query.Delete(IssueRelation{}).Error
 }
 
 // ClearIssueRelation 清理所有的issue关联关系

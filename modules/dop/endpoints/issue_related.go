@@ -58,6 +58,7 @@ func (e *Endpoints) AddIssueRelation(ctx context.Context, r *http.Request, vars 
 	exist, err := e.db.IssueRelationExist(&dao.IssueRelation{
 		IssueID:      createReq.IssueID,
 		RelatedIssue: createReq.RelatedIssue,
+		Type:         createReq.Type,
 	})
 	if err != nil {
 		return apierrors.ErrCreateIssueRelation.InternalError(err).ToResp(), nil
@@ -89,7 +90,12 @@ func (e *Endpoints) GetIssueRelations(ctx context.Context, r *http.Request, vars
 		// TODO 鉴权
 	}
 
-	relatingIssueIDs, relatedIssueIDs, err := e.issueRelated.GetIssueRelationsByIssueIDs(uint64(issueID))
+	var req apistructs.IssueRelationRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrDeleteIssueRelation.InvalidParameter(err).ToResp(), nil
+	}
+
+	relatingIssueIDs, relatedIssueIDs, err := e.issueRelated.GetIssueRelationsByIssueIDs(uint64(issueID), req.RelationTypes)
 	if err != nil {
 		return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
 	}
@@ -104,6 +110,15 @@ func (e *Endpoints) GetIssueRelations(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
 	}
 
+	// containedIssueIDs, err := e.db.GetContainedIssues(uint64(issueID))
+	// if err != nil {
+	// 	return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+	// }
+	// containedIssues, err := e.issue.GetIssuesByIssueIDs(containedIssueIDs, identityInfo)
+	// if err != nil {
+	// 	return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+	// }
+
 	// userIDs
 	var userIDs []string
 	for _, issue := range relatingIssues {
@@ -112,11 +127,15 @@ func (e *Endpoints) GetIssueRelations(ctx context.Context, r *http.Request, vars
 	for _, issue := range relatedIssues {
 		userIDs = append(userIDs, issue.Creator, issue.Assignee)
 	}
+	// for _, issue := range containedIssues {
+	// 	userIDs = append(userIDs, issue.Creator, issue.Assignee)
+	// }
 	userIDs = strutil.DedupSlice(userIDs, true)
 
 	return httpserver.OkResp(apistructs.IssueRelations{
 		RelatingIssues: relatingIssues,
 		RelatedIssues:  relatedIssues,
+		// IssueChildren:  containedIssues,
 	}, userIDs)
 }
 
@@ -131,9 +150,14 @@ func (e *Endpoints) DeleteIssueRelation(ctx context.Context, r *http.Request, va
 		return apierrors.ErrDeleteIssueRelation.InvalidParameter(err).ToResp(), nil
 	}
 
-	if err := e.issueRelated.DeleteIssueRelation(uint64(issueID), uint64(relatedIssueID)); err != nil {
+	var req apistructs.IssueRelationRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrDeleteIssueRelation.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err := e.issueRelated.DeleteIssueRelation(uint64(issueID), uint64(relatedIssueID), req.RelationTypes); err != nil {
 		return apierrors.ErrDeleteIssueRelation.InternalError(err).ToResp(), nil
 	}
 
-	return httpserver.OkResp("delete sucess")
+	return httpserver.OkResp("delete success")
 }

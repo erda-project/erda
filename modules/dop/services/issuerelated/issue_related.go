@@ -15,6 +15,8 @@
 package issuerelated
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -51,12 +53,32 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+func (ir *IssueRelated) ValidIssueRelationType(id uint64, relationType apistructs.IssueType) error {
+	issue, err := ir.db.GetIssue(int64(id))
+	if err != nil {
+		return err
+	}
+	if issue.Type != relationType {
+		return fmt.Errorf("issue id %v type is %v, not %v", id, issue.Type, relationType)
+	}
+	return nil
+}
+
 // AddRelatedIssue 添加issue关联关系
 func (ir *IssueRelated) AddRelatedIssue(req *apistructs.IssueRelationCreateRequest) (*dao.IssueRelation, error) {
+	if req.Type == apistructs.IssueRelationInclusion {
+		if err := ir.ValidIssueRelationType(req.IssueID, apistructs.IssueTypeRequirement); err != nil {
+			return nil, err
+		}
+		if err := ir.ValidIssueRelationType(req.RelatedIssue, apistructs.IssueTypeTask); err != nil {
+			return nil, err
+		}
+	}
 	issueRel := &dao.IssueRelation{
 		IssueID:      req.IssueID,
 		RelatedIssue: req.RelatedIssue,
 		Comment:      req.Comment,
+		Type:         req.Type,
 	}
 
 	if err := ir.db.CreateIssueRelations(issueRel); err != nil {
@@ -67,13 +89,13 @@ func (ir *IssueRelated) AddRelatedIssue(req *apistructs.IssueRelationCreateReque
 }
 
 // GetIssueRelationsByIssueIDs 获取issue的关联关系
-func (ir *IssueRelated) GetIssueRelationsByIssueIDs(issueID uint64) ([]uint64, []uint64, error) {
-	relatingIssueIDs, err := ir.db.GetRelatingIssues(issueID)
+func (ir *IssueRelated) GetIssueRelationsByIssueIDs(issueID uint64, relationType []string) ([]uint64, []uint64, error) {
+	relatingIssueIDs, err := ir.db.GetRelatingIssues(issueID, relationType)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	relatedIssueIDs, err := ir.db.GetRelatedIssues(issueID)
+	relatedIssueIDs, err := ir.db.GetRelatedIssues(issueID, relationType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,8 +104,8 @@ func (ir *IssueRelated) GetIssueRelationsByIssueIDs(issueID uint64) ([]uint64, [
 }
 
 // DeleteIssueRelation 删除issue关联关系
-func (ir *IssueRelated) DeleteIssueRelation(issueID, relatedIssueID uint64) error {
-	if err := ir.db.DeleteIssueRelation(issueID, relatedIssueID); err != nil {
+func (ir *IssueRelated) DeleteIssueRelation(issueID, relatedIssueID uint64, relationTypes []string) error {
+	if err := ir.db.DeleteIssueRelation(issueID, relatedIssueID, relationTypes); err != nil {
 		return err
 	}
 

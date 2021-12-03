@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -887,4 +889,89 @@ func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) 
 	}
 
 	return result.Sum, result.Total, nil
+}
+
+const (
+	joinRelation      = "LEFT JOIN dice_issue_relation b ON a.id = b.related_issue and b.type = ?"
+	joinStateNew      = "LEFT JOIN dice_issue_state ON a.state = dice_issue_state.id"
+	joinIssueChildren = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
+	joinIssueParent   = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
+	joinLabelRelation = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
+)
+
+func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]IssueItem, uint64, error) {
+	sql := client.Debug().Table("dice_issue_relation b").Joins(joinIssueChildren).Joins(joinStateNew).
+		Where("b.issue_id = ? AND b.type = ?", id, apistructs.IssueRelationInclusion)
+	sql = sql.Where("a.deleted = 0").Where("a.project_id = ?", req.ProjectID)
+	if len(req.Type) > 0 {
+		sql = sql.Where("a.type IN (?)", req.Type)
+	}
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("a.assignee in (?)", req.Assignees)
+	}
+	if len(req.IterationIDs) > 0 {
+		sql = sql.Where("a.iteration_id in (?)", req.IterationIDs)
+	}
+	if len(req.Label) > 0 {
+		sql = sql.Joins(joinLabelRelation).Where("c.label_id IN (?)", req.Label)
+	}
+	offset := (req.PageNo - 1) * req.PageSize
+	var total uint64
+	var res []IssueItem
+	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order("a.type").Offset(offset).Limit(req.PageSize).Find(&res).
+		Offset(0).Limit(-1).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	return res, total, nil
+}
+
+func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]IssueItem, []IssueItem, uint64, error) {
+	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).Where("b.id IS NULL")
+	sql = sql.Where("a.deleted = 0").Where("a.project_id = ?", req.ProjectID)
+	if len(req.IterationIDs) > 0 {
+		sql = sql.Where("a.iteration_id in (?)", req.IterationIDs)
+	}
+	ts := sql.Where("a.Type = ?", apistructs.IssueTypeRequirement)
+	var res []IssueItem
+	var totalReq uint64
+	offset := (req.PageNo - 1) * req.PageSize
+	if err := ts.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Offset(offset).Limit(req.PageSize).Find(&res).
+		Offset(0).Limit(-1).Count(&totalReq).Error; err != nil {
+		return nil, nil, 0, err
+	}
+	sql = sql.Where("a.Type = ?", apistructs.IssueTypeTask)
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("a.assignee in (?)", req.Assignees)
+	}
+	if len(req.Label) > 0 {
+		sql = sql.Joins(joinLabelRelation).Where("c.label_id IN (?)", req.Label)
+	}
+	var items []IssueItem
+	var totalTask uint64
+	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Offset(offset).Limit(req.PageSize).Find(&items).
+		Offset(0).Limit(-1).Count(&totalTask).Error; err != nil {
+		return nil, nil, 0, err
+	}
+	return res, items, totalReq + totalTask, nil
+}
+
+func (client *DBClient) GetIssueItem(id uint64) (IssueItem, error) {
+	var issue IssueItem
+	err := client.Table("dice_issues").Joins(joinState).Where("deleted = 0").Where("dice_issues.id = ?", id).Select("dice_issues.*, dice_issue_state.name, dice_issue_state.belong").First(&issue).Error
+	return issue, err
+}
+
+func (client *DBClient) GetIssueParents(issueID uint64, relationType []string) ([]IssueItem, error) {
+	var issues []IssueItem
+	sql := client.Table("dice_issue_relation b").Joins(joinIssueParent).Joins(joinStateNew).Where("related_issue = ?", issueID)
+	if len(relationType) > 0 {
+		sql = sql.Where("b.type IN (?)", relationType)
+	}
+	if err := sql.Select("a.*, dice_issue_state.name, dice_issue_state.belong").Find(&issues).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return issues, nil
 }
