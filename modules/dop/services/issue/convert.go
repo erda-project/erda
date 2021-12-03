@@ -274,7 +274,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			finishTime = i.FinishTime.Format("2006-01-02 15:04:05")
 		}
 
-		_, relatedIssueIDs, err := svc.issueRelated.GetIssueRelationsByIssueIDs(uint64(i.ID))
+		_, relatedIssueIDs, err := svc.issueRelated.GetIssueRelationsByIssueIDs(uint64(i.ID), []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, err
 		}

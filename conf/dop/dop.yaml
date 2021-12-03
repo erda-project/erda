@@ -279,3 +279,11 @@ component-protocol.components.auto-test-scenes.scenesStagesOperations:
 component-protocol.components.auto-test-scenes.addScenesButton:
 component-protocol.components.auto-test-scenes.exportScenesButton:
 component-protocol.components.auto-test-scenes.referSceneSetButton:
+
+## issue-gantt
+component-protocol.components.issue-gantt.page:
+component-protocol.components.issue-gantt.filter:
+component-protocol.components.issue-gantt.gantt:
+component-protocol.components.issue-gantt.ganttContainer:
+component-protocol.components.issue-gantt.topHead:
+component-protocol.components.issue-gantt.issueAddButton:

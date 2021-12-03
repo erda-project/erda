@@ -96,7 +96,7 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 				falseReason = append(falseReason, fmt.Sprintf("failed to update issue: %s, err: %v", issue.Title, err))
 				continue
 			}
-			relateds, err := svc.db.GetRelatedIssues(issue.ID)
+			relateds, err := svc.db.GetRelatedIssues(issue.ID, []string{apistructs.IssueRelationConnection})
 			if err != nil {
 				falseIssue = append(falseIssue, excelIndex[index])
 				falseReason = append(falseReason, "failed to get related issues, er: "+err.Error())
