@@ -502,15 +502,19 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrGetIssue.InternalError(err)
 	}
 
-	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil && req.PlanStartedAt.After(*req.PlanFinishedAt) {
-		return fmt.Errorf("plan started is after plan finished time")
+	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil {
+		if req.PlanStartedAt.After(*req.PlanFinishedAt) {
+			return fmt.Errorf("plan started is after plan finished time")
+		}
+	} else {
+		if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
+		}
+		if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
+		}
 	}
-	if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
-		return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
-	}
-	if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
-		return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
-	}
+
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
 	if issueModel.Type == apistructs.IssueTypeBug {
 		currentState, err := svc.db.GetIssueStateByID(issueModel.State)
