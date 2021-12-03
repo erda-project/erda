@@ -121,8 +121,6 @@ func (tr *TaskRun) resetTaskForLoop() {
 	tr.Task.Extra.TimeBeginQueue = time.Time{}
 	tr.Task.Extra.TimeEndQueue = time.Time{}
 	tr.Task.TimeEnd = time.Time{}
-	// reset task result
-	tr.Task.Result = nil
 	// reset volume
 	tr.Task.Context = spec.PipelineTaskContext{}
 	tr.Task.Extra.Volumes = nil
@@ -132,4 +130,9 @@ func (tr *TaskRun) resetTaskForLoop() {
 	tr.QuitWaitTimeout = false
 	tr.StopQueueLoop = false
 	tr.StopWaitLoop = false
+
+	// Now tr.update will not update the field whose value is nil,
+	// so need to call a separate method to clear the task whose result is loop type.
+	// It does not matter if the result is not cleared, but the result will retain an extra copy of the previous result.
+	tr.cleanTaskResult()
 }
