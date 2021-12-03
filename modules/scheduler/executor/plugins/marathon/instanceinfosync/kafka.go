@@ -61,8 +61,8 @@ func (s *Syncer) Sync() {
 			logrus.Error(err)
 		}
 	}()
-	contianerTopic := conf.KafkaContainerTopic()
-	topics := []string{contianerTopic}
+	containerTopic := conf.KafkaContainerTopic()
+	topics := []string{containerTopic}
 	logrus.Infof("cmdb topics: %v", topics)
 	if err := c.SubscribeTopics(topics, nil); err != nil {
 		logrus.Errorf("failed to subscribe kafka topics: %v", err)
@@ -76,7 +76,7 @@ func (s *Syncer) Sync() {
 			continue
 		}
 		switch *msg.TopicPartition.Topic {
-		case contianerTopic:
+		case containerTopic:
 			s.processContainer(msg)
 		default:
 			logrus.Warnf("invalid kafka topic: %s", *msg.TopicPartition.Topic)
