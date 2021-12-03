@@ -117,11 +117,13 @@ type ResData struct {
 }
 
 type ClusterInfoDetail struct {
+	Name        string
 	Version     string
 	NodeCnt     int
 	ClusterType string
 	Management  string
 	CreateTime  string
+	UpdateTime  string
 	Status      string
 	RawStatus   string // "pending","online","offline" ,"initializing","initialize error","unknown"
 }
