@@ -82,7 +82,7 @@ type Extra struct {
 	Type        string `json:"type"`
 	User        string `json:"user"`
 	Status      Status `json:"status"`
-	IterationID int64  `json:"iteration"`
+	IterationID int64  `json:"iterationID"`
 }
 
 type Status struct {
