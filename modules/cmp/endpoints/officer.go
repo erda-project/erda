@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/pkg/colonyutil"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -72,35 +73,14 @@ func (e *Endpoints) RegistryRemoveManifests(ctx context.Context, r *http.Request
 		return mkResponseErr("400", err.Error())
 	}
 	s := vars["clusterName"]
-	clusterinfo, err := e.bdl.QueryClusterInfo(s)
-	if err != nil {
-		errstr := fmt.Sprintf("RegistryRemoveManifests queryclusterinfo err: %v, cluster: %v", err, s)
-		logrus.Errorf(errstr)
-		return mkResponseErr("400", errstr)
-	}
 
-	u := discover.Soldier()
-	if clusterinfo.MustGet(apistructs.DICE_IS_EDGE) == "true" {
-		u = clusterinfo.MustGetPublicURL("soldier")
+	if err := registry.DeleteManifests(e.bdl, s, req.Images); err != nil {
+		errstr := fmt.Sprintf("Registry deleteManifests failed: %v", err)
+		logrus.Errorf(errstr)
+		return mkResponseErr("502", errstr)
 	}
-	req.RegistryURL = clusterinfo.MustGet(apistructs.REGISTRY_ADDR)
 	var v apistructs.RegistryManifestsRemoveResponse
-	res, err := httpclient.New().Post(u).Path("/registry/remove/manifests").JSONBody(req).Do().JSON(&v)
-	if err != nil {
-		errstr := fmt.Sprintf("RegistryRemoveManifests call soldier failed: %v", err)
-		logrus.Errorf(errstr)
-		return mkResponseErr("502", errstr)
-	}
-	if res.StatusCode() != http.StatusOK {
-		errstr := fmt.Sprintf("call soldier failed: statuscode: %d", res.StatusCode())
-		logrus.Errorf(errstr)
-		return mkResponseErr("502", errstr)
-	}
-	if !v.Success {
-		errstr := fmt.Sprintf("call soldier failed: %v", v.Error.Msg)
-		logrus.Errorf(errstr)
-		return mkResponseErr("502", errstr)
-	}
+	v.Data.Succeed = req.Images
 	return mkResponseData(v.Data)
 }
 
