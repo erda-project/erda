@@ -16,6 +16,8 @@ package filter
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -44,6 +46,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 	f.projectID = projectID
+	if q := cputil.GetInParamByKey(ctx, "filter__urlQuery"); q != nil {
+		f.FrontendUrlQuery = q.(string)
+	}
+
 	iterations, iterationOptions, err := f.getPropIterationsOptions()
 	if err != nil {
 		return err
@@ -58,7 +64,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	switch event.Operation {
-	case cptype.InitializeOperation:
+	case cptype.InitializeOperation, cptype.RenderingOperation:
 		f.Props = filter.Props{
 			Delay: 1000,
 		}
@@ -68,7 +74,18 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				Reload: true,
 			},
 		}
-		f.State.Values.IterationIDs = []int64{defaultIterationRetriever(iterations)}
+		if f.FrontendUrlQuery != "" {
+			b, err := base64.StdEncoding.DecodeString(f.FrontendUrlQuery)
+			if err != nil {
+				return err
+			}
+			f.State.Values = FrontendConditions{}
+			if err := json.Unmarshal(b, &f.State.Values); err != nil {
+				return err
+			}
+		} else {
+			f.State.Values.IterationIDs = []int64{defaultIterationRetriever(iterations)}
+		}
 	}
 
 	f.State.Conditions = []filter.PropCondition{
@@ -100,7 +117,20 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			HaveFilter: true,
 		},
 	}
+	urlParam, err := f.generateUrlQueryParams()
+	if err != nil {
+		return err
+	}
+	f.State.Base64UrlQueryParams = urlParam
 	return nil
+}
+
+func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
+	fb, err := json.Marshal(f.State.Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
 func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Iteration, []filter.PropConditionOption, error) {
