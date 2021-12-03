@@ -975,3 +975,18 @@ func (client *DBClient) GetIssueParents(issueID uint64, relationType []string) (
 	}
 	return issues, nil
 }
+
+type timeRange struct {
+	Min *time.Time
+	Max *time.Time
+}
+
+func (client *DBClient) FindIssueChildrenTimeRange(id uint64) (*time.Time, *time.Time, error) {
+	sql := client.Debug().Table("dice_issue_relation b").Joins(joinIssueChildren).
+		Where("b.issue_id = ? AND b.type = ?", id, apistructs.IssueRelationInclusion)
+	var res timeRange
+	if err := sql.Select("MAX(a.`plan_finished_at`) as max, MIN(a.`plan_started_at`) as min").Find(&res).Error; err != nil {
+		return nil, nil, err
+	}
+	return res.Min, res.Max, nil
+}
