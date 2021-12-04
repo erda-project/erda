@@ -90,6 +90,7 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						delete(span.Attributes, key)
 					}
 				}
+				// env fields
 				if _, ok := span.Attributes[TAG_ORG_NAME]; !ok {
 					span.Attributes[TAG_ORG_NAME] = orgName
 				}
@@ -102,27 +103,50 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 				if _, ok := span.Attributes[TAG_SERVICE_ID]; !ok {
 					span.Attributes[TAG_SERVICE_ID] = span.Attributes[TAG_SERVICE_NAME]
 				}
-				if _, ok := span.Attributes[TAG_IP]; ok {
-					span.Attributes[TAG_SERVICE_INSTANCE_IP] = span.Attributes[TAG_IP]
+				if ip, ok := span.Attributes[TAG_IP]; ok {
+					span.Attributes[TAG_SERVICE_INSTANCE_IP] = ip
 					delete(span.Attributes, TAG_IP)
 				}
+				if _, ok := span.Attributes[TAG_SERVICE_INSTANCE_ID]; !ok {
+					if uuid, ok := span.Attributes[TAG_CLIENT_UUID]; ok {
+						span.Attributes[TAG_SERVICE_INSTANCE_ID] = uuid
+					}
+				}
+				// http fields
 				if _, ok := span.Attributes[TAG_HTTP_PATH]; !ok {
-					if _, ok := span.Attributes[TAG_HTTP_URL]; ok {
-						if u, err := url.Parse(span.Attributes[TAG_HTTP_URL]); err == nil {
+					if httpURL, ok := span.Attributes[TAG_HTTP_URL]; ok {
+						if u, err := url.Parse(httpURL); err == nil {
 							span.Attributes[TAG_HTTP_PATH] = u.Path
 						}
-					} else if _, ok := span.Attributes[TAG_HTTP_TARGET]; ok {
-						if u, err := url.Parse(span.Attributes[TAG_HTTP_TARGET]); err == nil {
+					} else if target, ok := span.Attributes[TAG_HTTP_TARGET]; ok {
+						if u, err := url.Parse(target); err == nil {
 							span.Attributes[TAG_HTTP_PATH] = u.Path
 						}
 					}
 				}
-				if _, ok := span.Attributes[TAG_SERVICE_INSTANCE_ID]; !ok {
-					if _, ok := span.Attributes[TAG_CLIENT_UUID]; ok {
-						span.Attributes[TAG_SERVICE_INSTANCE_ID] = span.Attributes[TAG_CLIENT_UUID]
+				if _, ok := span.Attributes[TAG_HTTP_TARGET]; !ok {
+					span.Attributes[TAG_HTTP_TARGET] = span.Attributes[TAG_HTTP_PATH]
+				}
+				// rpc fields
+				// dubbo rpc service
+				if dubboService, ok := span.Attributes[TAG_DUBBO_SERVICE]; ok {
+					span.Attributes[TAG_RPC_SERVICE] = dubboService
+					span.Attributes[TAG_RPC_METHOD] = span.Attributes[TAG_DUBBO_METHOD]
+					span.Attributes[TAG_RPC_SYSTEM] = TAG_RPC_SYSTEM_DUBBO
+				}
+				if _, ok := span.Attributes[TAG_RPC_TARGET]; !ok {
+					if rpcService, ok := span.Attributes[TAG_RPC_SERVICE]; ok {
+						span.Attributes[TAG_RPC_TARGET] = rpcService + "." + span.Attributes[TAG_RPC_METHOD]
 					}
 				}
 
+				// cache and db fields
+				if _, ok := span.Attributes[TAG_DB_SYSTEM]; !ok {
+					span.Attributes[TAG_DB_SYSTEM] = span.Attributes[TAG_DB_TYPE]
+				}
+				if _, ok := span.Attributes[TAG_DB_NAME]; !ok {
+					span.Attributes[TAG_DB_NAME] = span.Attributes[TAG_DB_INSTANCE]
+				}
 				delete(span.Attributes, TAG_ENV_TOKEN)
 				delete(span.Attributes, TAG_ERDA_ENV_TOKEN)
 			}

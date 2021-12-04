@@ -1919,12 +1919,12 @@ func handlerTranslationConditions(params translation, param map[string]interface
 			where.WriteString(" AND http_path::tag=~$field")
 		}
 	case "rpc":
-		field = "peer_service::tag"
+		field = "rpc_target::tag"
 		if params.Search != "" {
 			param["field"] = map[string]interface{}{
 				"regex": ".*" + params.Search + ".*",
 			}
-			where.WriteString(" AND peer_service::tag=~$field")
+			where.WriteString(" AND rpc_target::tag=~$field")
 		}
 	default:
 		return "", "", errors.New("not support layer name")
