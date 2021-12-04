@@ -125,7 +125,9 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 					}
 				}
 				if _, ok := span.Attributes[TAG_HTTP_TARGET]; !ok {
-					span.Attributes[TAG_HTTP_TARGET] = span.Attributes[TAG_HTTP_PATH]
+					if path, ok := span.Attributes[TAG_HTTP_PATH]; ok {
+						span.Attributes[TAG_HTTP_TARGET] = path
+					}
 				}
 				// rpc fields
 				// dubbo rpc service
@@ -147,7 +149,9 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 					span.Attributes[TAG_DB_SYSTEM] = dbType
 				}
 				if _, ok := span.Attributes[TAG_DB_NAME]; !ok {
-					span.Attributes[TAG_DB_NAME] = span.Attributes[TAG_DB_INSTANCE]
+					if dbInstance, ok := span.Attributes[TAG_DB_INSTANCE]; ok {
+						span.Attributes[TAG_DB_NAME] = dbInstance
+					}
 				}
 				delete(span.Attributes, TAG_ENV_TOKEN)
 				delete(span.Attributes, TAG_ERDA_ENV_TOKEN)
