@@ -141,8 +141,10 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 				}
 
 				// cache and db fields
-				if _, ok := span.Attributes[TAG_DB_SYSTEM]; !ok {
-					span.Attributes[TAG_DB_SYSTEM] = span.Attributes[TAG_DB_TYPE]
+				if dbSystem, ok := span.Attributes[TAG_DB_SYSTEM]; ok {
+					span.Attributes[TAG_DB_TYPE] = dbSystem
+				} else if dbType, ok := span.Attributes[TAG_DB_TYPE]; ok {
+					span.Attributes[TAG_DB_SYSTEM] = dbType
 				}
 				if _, ok := span.Attributes[TAG_DB_NAME]; !ok {
 					span.Attributes[TAG_DB_NAME] = span.Attributes[TAG_DB_INSTANCE]
