@@ -135,6 +135,8 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 					span.Attributes[TAG_RPC_SERVICE] = dubboService
 					span.Attributes[TAG_RPC_METHOD] = span.Attributes[TAG_DUBBO_METHOD]
 					span.Attributes[TAG_RPC_SYSTEM] = TAG_RPC_SYSTEM_DUBBO
+					delete(span.Attributes, TAG_DUBBO_SERVICE)
+					delete(span.Attributes, TAG_DUBBO_METHOD)
 				}
 				if _, ok := span.Attributes[TAG_RPC_TARGET]; !ok {
 					if rpcService, ok := span.Attributes[TAG_RPC_SERVICE]; ok {
@@ -151,6 +153,7 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 				if _, ok := span.Attributes[TAG_DB_NAME]; !ok {
 					if dbInstance, ok := span.Attributes[TAG_DB_INSTANCE]; ok {
 						span.Attributes[TAG_DB_NAME] = dbInstance
+						delete(span.Attributes, TAG_DB_INSTANCE)
 					}
 				}
 				delete(span.Attributes, TAG_ENV_TOKEN)
