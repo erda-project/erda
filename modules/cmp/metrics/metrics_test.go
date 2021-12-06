@@ -135,6 +135,40 @@ func TestToInfluxReq1(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test3",
+			args: args{
+				req:  podReq,
+				kind: NodeAll,
+			},
+			want: map[string]*MetricsReq{
+				namespace: {
+					rawReq: &pb.QueryWithInfluxFormatRequest{
+						Statement: NodeResourceUsageSelectStatement,
+						Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName)},
+						Start:     "before_5m",
+						End:       "now",
+					},
+				},
+			},
+		},
+		{
+			name: "test4",
+			args: args{
+				req:  podReq,
+				kind: Domain,
+			},
+			want: map[string]*MetricsReq{
+				namespace: {
+					rawReq: &pb.QueryWithInfluxFormatRequest{
+						Statement: PVResourceUsageSelectStatement,
+						Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName)},
+						Start:     "before_5m",
+						End:       "now",
+					},
+				},
+			},
+		},
 	}
 	m := &Metric{}
 	for _, tt := range tests {

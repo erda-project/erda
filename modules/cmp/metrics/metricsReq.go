@@ -27,9 +27,12 @@ type MetricsRequest struct {
 	Cluster          string
 	Type             string
 	Kind             string
+	StartTime        string
+	EndTime          string
 	PodRequests      []MetricsReqInterface
 	NodeRequests     []MetricsReqInterface
 	AllRequests      []MetricsReqInterface
+	PvRequest        []MetricsReqInterface
 }
 
 func (m MetricsRequest) UserID() string {
@@ -50,6 +53,14 @@ func (m MetricsRequest) ResourceKind() string {
 
 func (m MetricsRequest) ClusterName() string {
 	return m.Cluster
+}
+
+func (m MetricsRequest) Start() string {
+	return m.StartTime
+}
+
+func (m MetricsRequest) End() string {
+	return m.EndTime
 }
 
 type MetricsPodRequest struct {
@@ -87,11 +98,21 @@ func (m *MetricsPodRequest) Namespace() string {
 	return m.PodNamespace
 }
 
+func (m *MetricsPodRequest) Start() string {
+	return m.StartTime
+}
+
+func (m *MetricsPodRequest) End() string {
+	return m.EndTime
+}
+
 type Basic interface {
 	OrgName() string
 	ResourceType() string
 	ResourceKind() string
 	ClusterName() string
+	Start() string
+	End() string
 }
 type NodeMetrics interface {
 	Basic
@@ -157,6 +178,14 @@ func (m *MetricsNodeRequest) IP() string {
 	return m.Ip
 }
 
+func (m *MetricsNodeRequest) Start() string {
+	return m.StartTime
+}
+
+func (m *MetricsNodeRequest) End() string {
+	return m.EndTime
+}
+
 type MetricsAllRequest struct {
 	*MetricsRequest
 }
@@ -193,6 +222,14 @@ func (m *MetricsAllRequest) Namespace() string {
 	return ""
 }
 
+func (m *MetricsAllRequest) Start() string {
+	return m.StartTime
+}
+
+func (m *MetricsAllRequest) End() string {
+	return m.EndTime
+}
+
 func (m *MetricsAllRequest) IP() string {
 	return ""
 }
@@ -202,4 +239,6 @@ type MetricsData struct {
 	Used       float64 `json:"used"`
 	Unallocate float64 `json:"unallocate"`
 	Left       float64 `json:"left"`
+	Host       string
+	DateTime   string
 }

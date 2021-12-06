@@ -44,16 +44,23 @@ const (
 
 	DiskResourceUsageSelectStatement = `SELECT last(used::field) as diskUsed , cluster_name::tag FROM disk WHERE org_name::tag = $org_name GROUP BY cluster_name::tag limit 100000`
 
-	Memory  = "memory"
-	Cpu     = "cpu"
-	Disk    = "disk"
-	NodeAll = "nodeall" // cpu + disk + memory
+	PVResourceUsageSelectStatement = `SELECT elapsed_count::field as ec , host::field as host ,date(timestamp), FROM application_http WHERE org_name = $org_name GROUP BY date(timestamp) limit 100000`
 
-	Pod  = "pod"
-	Node = "node"
+	// Type
+	Memory = "memory"
+	Cpu    = "cpu"
+	Disk   = "disk"
+	PV     = "pv"
+
+	// Kind
+	Pod     = "pod"
+	Node    = "node"
+	Domain  = "domain"
+	NodeAll = "nodeall" // cpu + disk + memory
 
 	nodeAndPodSyncKey = "nodeAndPodSyncMetricsCacheSync"
 	diskSyncKey       = "diskMetricsCacheSync"
+	domainSyncKey     = "domainCacheSync"
 
 	queryTimeout = 30 * time.Second
 )
@@ -119,6 +126,7 @@ type Interface interface {
 	NodeMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error)
 	PodMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error)
 	NodeAllMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error)
+	PVMetrics(ctx context.Context, req *MetricsRequest) (map[string]map[string]*MetricsData, error)
 }
 
 func isEmptyResponse(resp *pb.QueryWithInfluxFormatResponse) bool {
@@ -218,9 +226,16 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 				}
 			case NodeAll:
 				if row.Values[0].GetKind() != nil {
-					k = cache.GenerateKey(Node, Disk, metricsRequest.rawReq.Params["org_name"].GetStringValue(), row.Values[1].GetStringValue())
+					k = cache.GenerateKey(NodeAll, Disk, metricsRequest.rawReq.Params["org_name"].GetStringValue(), row.Values[1].GetStringValue())
+					res[k] = d
+				}
+			case Domain:
+				if row.Values[0].GetKind() != nil {
+					k = cache.GenerateKey(Domain, PV, metricsRequest.rawReq.Params["org_name"].GetStringValue(), row.Values[1].GetStringValue(), row.Values[2].GetStringValue())
 					d = &MetricsData{
-						Used: row.Values[0].GetNumberValue(),
+						Used:     row.Values[0].GetNumberValue(),
+						Host:     row.Values[1].GetStringValue(),
+						DateTime: row.Values[2].GetStringValue(),
 					}
 					SetCache(k, d)
 					res[k] = d
@@ -234,6 +249,8 @@ func (m *Metric) Store(response *pb.QueryWithInfluxFormatResponse, metricsReques
 			allKey = GeneratePodAllKey(metricsRequest.rawReq.Params["cluster_name"].GetStringValue())
 		case NodeAll:
 			allKey = GenerateNodeallAllKey(metricsRequest.rawReq.Params["org_name"].GetStringValue())
+		case Domain:
+			allKey = GenerateDomainKey(metricsRequest.rawReq.Params["org_name"].GetStringValue())
 		}
 		if allKey != "" {
 			logrus.Infof("set all cache %s %v", allKey, res)
@@ -253,7 +270,11 @@ func GeneratePodAllKey(cluster string) string {
 }
 
 func GenerateNodeallAllKey(orgName string) string {
-	return cache.GenerateKey(orgName, Disk)
+	return cache.GenerateKey(orgName, NodeAll)
+}
+
+func GenerateDomainKey(orgName string) string {
+	return cache.GenerateKey(orgName, Domain)
 }
 
 func SetCache(k string, d interface{}) {
@@ -308,10 +329,11 @@ func GetAllCache(key string) map[string]*MetricsData {
 
 // NodeMetrics query cpu and memory metrics from es database, return immediately if cache hit.
 func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
-	metricsReq, noNeed, err := m.ToInfluxReq(req, Node)
+	metricsReq, noNeedIter, err := m.ToInfluxReq(req, Node)
 	if metricsReq == nil || err != nil {
-		return noNeed, err
+		return noNeedIter.(map[string]*MetricsData), err
 	}
+	noNeed := noNeedIter.(map[string]*MetricsData)
 	ctx2, cancelFunc := context.WithTimeout(ctx, queryTimeout)
 	defer cancelFunc()
 	logrus.Infof("qeury node metrics with timeout")
@@ -329,7 +351,11 @@ func (m *Metric) NodeMetrics(ctx context.Context, req *MetricsRequest) (map[stri
 }
 
 func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
-	metricsReq, noNeed, err := m.ToInfluxReq(req, Pod)
+	metricsReq, noNeedIter, err := m.ToInfluxReq(req, Pod)
+	noNeed, ok := noNeedIter.(map[string]*MetricsData)
+	if !ok {
+		return nil, err
+	}
 	if metricsReq == nil || err != nil {
 		return noNeed, err
 	}
@@ -350,12 +376,16 @@ func (m *Metric) PodMetrics(ctx context.Context, req *MetricsRequest) (map[strin
 }
 
 func (m *Metric) NodeAllMetrics(ctx context.Context, req *MetricsRequest) (map[string]*MetricsData, error) {
-	metricsReq, noNeed, err := m.ToInfluxReq(req, NodeAll)
+	metricsReq, noNeedIter, err := m.ToInfluxReq(req, NodeAll)
+	noNeed, ok := noNeedIter.(map[string]*MetricsData)
+	if !ok {
+		return nil, err
+	}
 	res := make(map[string]*MetricsData)
 	res[req.Cluster+Cpu] = &MetricsData{}
 	res[req.Cluster+Memory] = &MetricsData{}
 	res[req.Cluster+Disk] = &MetricsData{}
-	res = m.mergeRes(req.Cluster, noNeed, res)
+	res = m.mergeNodeAllRes(req.Cluster, noNeed, res)
 
 	if metricsReq == nil || len(metricsReq) == 0 || err != nil {
 		return res, err
@@ -372,14 +402,37 @@ func (m *Metric) NodeAllMetrics(ctx context.Context, req *MetricsRequest) (map[s
 		case <-ctx2.Done():
 			return nil, QueryTimeoutError
 		case resp := <-c:
-			res = m.mergeRes(req.Cluster, resp, res)
+			res = m.mergeNodeAllRes(req.Cluster, resp, res)
 		}
 	}
 	return res, nil
 }
 
-// mergeRes only Nodeall used
-func (m *Metric) mergeRes(cluster string, ma map[string]*MetricsData, res map[string]*MetricsData) map[string]*MetricsData {
+func (m *Metric) PVMetrics(ctx context.Context, req *MetricsRequest) (map[string]map[string]*MetricsData, error) {
+	metricsReq, noNeedIter, err := m.ToInfluxReq(req, Domain)
+	noNeed, ok := noNeedIter.(map[string]map[string]*MetricsData)
+	if !ok {
+		return nil, err
+	}
+	if metricsReq == nil || len(metricsReq) == 0 || err != nil {
+		return noNeed, err
+	}
+	ctx2, cancelFunc := context.WithTimeout(ctx, queryTimeout)
+	defer cancelFunc()
+	logrus.Infof("query cluster metrics with timeout")
+	c := make(chan map[string]*MetricsData)
+	go m.querySync(ctx2, metricsReq[0], c)
+	select {
+	case <-ctx2.Done():
+		return nil, QueryTimeoutError
+	case resp := <-c:
+		noNeed = m.mergePVRes(resp, noNeed)
+	}
+	return noNeed, nil
+}
+
+// mergeNodeAllRes only Nodeall used
+func (m *Metric) mergeNodeAllRes(cluster string, ma map[string]*MetricsData, res map[string]*MetricsData) map[string]*MetricsData {
 	if ma == nil {
 		return res
 	}
@@ -399,11 +452,23 @@ func (m *Metric) mergeRes(cluster string, ma map[string]*MetricsData, res map[st
 	return res
 }
 
-func (m *Metric) ToInfluxReq(request *MetricsRequest, reqKind string) ([]*MetricsReq, map[string]*MetricsData, error) {
+// mergeNodeAllRes only Nodeall used
+func (m *Metric) mergePVRes(ma map[string]*MetricsData, res map[string]map[string]*MetricsData) map[string]map[string]*MetricsData {
+	if ma == nil {
+		return res
+	}
+	for _, data := range ma {
+		res[data.Host][data.DateTime] = data
+	}
+	return res
+}
+
+func (m *Metric) ToInfluxReq(request *MetricsRequest, reqKind string) ([]*MetricsReq, interface{}, error) {
 	cluster := request.ClusterName()
 	orgName := request.OrgName()
 	var reqs []*MetricsReq
 	var noNeed = map[string]*MetricsData{}
+	var noNeedRange = map[string]map[string]*MetricsData{}
 	if request.Cluster == "" {
 		return nil, nil, errors.New(fmt.Sprintf("parameter %s not found", request.Cluster))
 	}
@@ -444,7 +509,7 @@ func (m *Metric) ToInfluxReq(request *MetricsRequest, reqKind string) ([]*Metric
 		if err != nil {
 			return nil, noNeed, err
 		}
-		if req2 == nil || !req.sync {
+		if req2 == nil || !req2.sync {
 			key := GenerateNodeallAllKey(orgName)
 			ma := GetAllCache(key)
 			for k, v := range ma {
@@ -453,6 +518,20 @@ func (m *Metric) ToInfluxReq(request *MetricsRequest, reqKind string) ([]*Metric
 		}
 		reqs = append(reqs, req2)
 		return reqs, noNeed, err
+	case Domain:
+		req, err := m.toPVReq(orgName, request.ResourceType(), request.Start(), request.End(), PVResourceUsageSelectStatement)
+		if err != nil {
+			return nil, noNeed, err
+		}
+		if req == nil || !req.sync {
+			key := GenerateDomainKey(orgName)
+			ma := GetAllCache(key)
+			for _, v := range ma {
+				noNeedRange[v.Host][v.DateTime] = v
+			}
+		}
+		reqs = append(reqs, req)
+		return reqs, noNeedRange, err
 	default:
 		logrus.Errorf("query metrics kind %v, %v", reqKind, ResourceNotSupport)
 		return nil, nil, ResourceNotSupport
@@ -534,6 +613,39 @@ func (m *Metric) toClusterReq(orgName, resType, resKind string, sql string) (*Me
 				s = true
 			}
 			queryReqs = &MetricsReq{rawReq: queryReq, sync: s, resType: resType, resKind: resKind}
+		}
+	} else {
+		logrus.Errorf("get %s %s cache error,%v", orgName, resType, err)
+	}
+	return queryReqs, nil
+}
+
+func (m *Metric) toPVReq(orgName, resType, start, end, sql string) (*MetricsReq, error) {
+	var queryReqs *MetricsReq
+	if v, expired, err := cache.GetFreeCache().Get(domainSyncKey); err == nil {
+		if v != nil && !expired {
+			return nil, nil
+		} else {
+			queryReq := &pb.QueryWithInfluxFormatRequest{}
+			queryReq.Start = start
+			queryReq.End = end
+			queryReq.Statement = sql
+			queryReq.Params = map[string]*structpb.Value{
+				"org_name": structpb.NewStringValue(orgName),
+			}
+			s := false
+			if v == nil {
+				syncV, err := cache.GetBoolValue(true)
+				if err != nil {
+					return nil, err
+				}
+				err = cache.GetFreeCache().Set(domainSyncKey, syncV, int64(queryTimeout))
+				if err != nil {
+					return nil, err
+				}
+				s = true
+			}
+			queryReqs = &MetricsReq{rawReq: queryReq, sync: s, resType: resType, resKind: Domain}
 		}
 	} else {
 		logrus.Errorf("get %s %s cache error,%v", orgName, resType, err)

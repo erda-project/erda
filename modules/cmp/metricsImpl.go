@@ -31,3 +31,7 @@ func (p *provider) PodMetrics(ctx context.Context, req *metrics.MetricsRequest) 
 func (p *provider) NodeAllMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]*metrics.MetricsData, error) {
 	return p.Metrics.NodeAllMetrics(ctx, req)
 }
+
+func (p *provider) PVMetrics(ctx context.Context, req *metrics.MetricsRequest) (map[string]map[string]*metrics.MetricsData, error) {
+	return p.Metrics.PVMetrics(ctx, req)
+}
