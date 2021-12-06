@@ -902,6 +902,10 @@ const (
 func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]IssueItem, uint64, error) {
 	sql := client.Debug().Table("dice_issue_relation b").Joins(joinIssueChildren).Joins(joinStateNew).
 		Where("b.issue_id = ? AND b.type = ?", id, apistructs.IssueRelationInclusion)
+	if id == 0 {
+		sql = client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
+			Where("b.id IS NULL")
+	}
 	sql = sql.Where("a.deleted = 0").Where("a.project_id = ?", req.ProjectID)
 	if len(req.Type) > 0 {
 		sql = sql.Where("a.type IN (?)", req.Type)

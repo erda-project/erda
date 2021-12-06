@@ -57,18 +57,6 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 		return err
 	}
 
-	req := apistructs.IssuePagingRequest{
-		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID:    f.projectID,
-			Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
-			IterationIDs: f.State.Values.IterationIDs,
-			Label:        f.State.Values.LabelIDs,
-			Assignees:    f.State.Values.AssigneeIDs,
-		},
-		PageNo:   1,
-		PageSize: 500,
-	}
-
 	expand := make(map[uint64][]Item)
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
@@ -86,12 +74,31 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			},
 		}
 
+		req := apistructs.IssuePagingRequest{
+			IssueListRequest: apistructs.IssueListRequest{
+				ProjectID:    f.projectID,
+				Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
+				IterationIDs: f.State.Values.IterationIDs,
+				Label:        f.State.Values.LabelIDs,
+				Assignees:    f.State.Values.AssigneeIDs,
+			},
+			PageNo:   1,
+			PageSize: 500,
+		}
 		issues, _, err := f.issueSvc.GetIssueChildren(0, req)
 		if err != nil {
 			return err
 		}
 		expand[0] = f.convertIssueItem(issues)
 	case cptype.OperationKey(apistructs.ExpandNode):
+		req := apistructs.IssuePagingRequest{
+			IssueListRequest: apistructs.IssueListRequest{
+				ProjectID: f.projectID,
+				Type:      []apistructs.IssueType{apistructs.IssueTypeTask},
+			},
+			PageNo:   1,
+			PageSize: 500,
+		}
 		for _, key := range op.Meta.Keys {
 			issues, _, err := f.issueSvc.GetIssueChildren(key, req)
 			if err != nil {
