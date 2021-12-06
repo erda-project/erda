@@ -60,7 +60,7 @@ type provider struct {
 	Register            transport.Register
 	logService          *logService
 	MonitorLogService   monitorpb.LogQueryServiceServer `autowired:"erda.core.monitor.log.query.LogQueryService" optional:"true"`
-	MonitorLogSvcClient monitorpb.LogQueryServiceClient `autowired:"erda.core.monitor.log.query.LogQueryService.client" optional:"false"`
+	MonitorLogSvcClient monitorpb.LogQueryServiceClient `autowired:"erda.core.monitor.log.query.LogQueryService.client" optional:"true"`
 	LoghubQuery         query.LoghubService             `autowired:"logs-index-query"`
 	DB                  *gorm.DB                        `autowired:"mysql-client"`
 	I18n                i18n.Translator                 `autowired:"i18n" translator:"msp-i18n"`
