@@ -474,6 +474,28 @@ func unmarshalSelector(selector *Selector, unmarshal func(interface{}) error) er
 	return fmt.Errorf("failed to unmarshal {Selector}: %s", s)
 }
 
+func (bs *Binds) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	binds := []Bind{}
+	if err := unmarshal(&binds); err != nil {
+		bindsstr := []string{}
+		if err := unmarshal(&bindsstr); err != nil {
+			return err
+		}
+		*bs = bindsstr
+		return nil
+	}
+	r := []string{}
+	for _, bind := range binds {
+		tp := bind.Type
+		if tp == "" {
+			tp = "rw"
+		}
+		r = append(r, strutil.Join([]string{bind.HostPath, bind.ContainerPath, tp}, ":", true))
+	}
+	*bs = r
+	return nil
+}
+
 func marshalSelector(selector Selector) (interface{}, error) {
 	if selector.Not && len(selector.Values) > 0 {
 		return strutil.Concat("NOT ", selector.Values[0]), nil
