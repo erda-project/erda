@@ -121,7 +121,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 	if len(runtimesM) == 0 {
 		l.Warnln("runtime record not found")
 	}
-	runtimeMContent,_:=json.Marshal(runtimesM)
+	runtimeMContent, _ := json.Marshal(runtimesM)
 	l.Infof("runtimeM: %s", runtimeMContent)
 
 	// serviceGroupID group by applicationID and workspace
