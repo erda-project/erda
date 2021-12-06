@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
 
 	"github.com/erda-project/erda/apistructs"
@@ -59,7 +60,7 @@ func GetReleaseDetail(ctx *command.Context, orgId uint64, releaseId string) (api
 	return resp.Data, nil
 }
 
-func GetPagingReleases(ctx *command.Context, orgId, applicationId uint64, branch string, pageNo, pageSize int) (apistructs.ReleaseListResponseData, error) {
+func GetPagingReleases(ctx *command.Context, orgId, applicationId uint64, branch string, isVersion bool, pageNo, pageSize int) (apistructs.ReleaseListResponseData, error) {
 	var resp apistructs.ReleaseListResponse
 	var b bytes.Buffer
 	req := ctx.Get().Path("/api/releases").
@@ -67,7 +68,8 @@ func GetPagingReleases(ctx *command.Context, orgId, applicationId uint64, branch
 		Param("pageNo", strconv.Itoa(pageNo)).
 		Param("pageSize", strconv.Itoa(pageSize)).
 		Param("applicationId", strconv.FormatUint(applicationId, 10)).
-		Param("branchName", branch)
+		Param("branchName", branch).
+		Param("isVersion", strconv.FormatBool(isVersion))
 	response, err := req.Do().Body(&b)
 	if err != nil {
 		return apistructs.ReleaseListResponseData{}, fmt.Errorf(format.FormatErrMsg(
@@ -92,4 +94,34 @@ func GetPagingReleases(ctx *command.Context, orgId, applicationId uint64, branch
 	}
 
 	return resp.Data, nil
+}
+
+func ChooseRelease(ctx *command.Context, orgId, applicationId uint64, branch, version string) (bool, apistructs.ReleaseGetResponseData, error) {
+	var release apistructs.ReleaseGetResponseData
+	num := 0
+	found := false
+	err := dicedir.PagingAll(func(pageNo, pageSize int) (bool, error) {
+		paging, err := GetPagingReleases(ctx, orgId, applicationId, branch, true, pageNo, pageSize)
+		if err != nil {
+			return false, err
+		}
+		for _, r := range paging.Releases {
+			if r.Version == version {
+				release = r
+				found = true
+				return false, nil
+			}
+		}
+		num += len(paging.Releases)
+		return paging.Total > int64(num), nil
+	}, 10)
+	if err != nil {
+		return false, apistructs.ReleaseGetResponseData{}, err
+	}
+
+	if !found {
+		return false, apistructs.ReleaseGetResponseData{}, nil
+	}
+
+	return true, release, nil
 }

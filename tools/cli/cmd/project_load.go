@@ -16,9 +16,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/elastic/cloud-on-k8s/pkg/utils/stringsutil"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
@@ -30,30 +33,50 @@ var PROJECTLOAD = command.Command{
 	Name:       "load",
 	ParentName: "PROJECT",
 	ShortHelp:  "Load project by releases",
-	Example:    "$ erda-cli project load --config=<filename>",
+	Example:    "$ erda-cli project load --project=<name> --workspace=<ENV> --branch=<b> --version=<v> --config=<filename>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "project", Doc: "the name of the project", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "config", Doc: "the name of the config file", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "config", Doc: "the name of the configuration file, specify workspace and version for applications", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "workspace", Doc: "the env workspace to deploy", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "branch", Doc: "If branch is specified, all applications use the same one", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "version", Doc: "If version is specified, all applications use the same one", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "wait-time", Doc: "the number of minutes to wait for runtime creating", DefaultValue: 5},
+		command.StringListFlag{Short: "", Name: "skip-apps", Doc: "the app to skip deploy", DefaultValue: nil},
 	},
 	Run: ProjectLoad,
 }
 
-func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, config, workspace, branch string, waitTime int) error {
+func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, config, workspace, branch, version string, waitTime int, skipApps []string) error {
 	checkOrgParam(org, orgId)
 	checkProjectParam(project, projectId)
 
 	if workspace == "" {
-		return errors.New("Must specific env workspace")
+		return errors.New("Must specify env workspace")
 	} else {
 		if !apistructs.WorkSpace(workspace).Valide() {
 			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
 				workspace, apistructs.WorkSpace("").ValideList()))
+		}
+	}
+
+	if branch == "" {
+		return errors.New("Must specify branch")
+	}
+	if version == "" {
+		return errors.New("Must specify version")
+	}
+
+	releaseConfig := ReleaseConfig{Applications: make(map[string]ReleaseApp)}
+	if config != "" {
+		f, err := os.Open(config)
+		if err != nil {
+			return err
+		}
+		if err := yaml.NewDecoder(f).Decode(&releaseConfig); err != nil {
+			return err
 		}
 	}
 
@@ -74,20 +97,33 @@ func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, co
 
 	var rDeployments []apistructs.RuntimeDeployDTO
 	for _, app := range appList {
-		// TODO handle branch with "" and config file
-		r, err := common.GetPagingReleases(ctx, orgId, app.ID, branch, 1, 1)
+		if stringsutil.StringInSlice(app.Name, skipApps) {
+			continue
+		}
+
+		releaseBranch := branch
+		releaseVersion := version
+		rc, ok := releaseConfig.Applications[app.Name]
+		if ok {
+			if rc.Branch != "" {
+				releaseBranch = rc.Branch
+			}
+			if rc.Version != "" {
+				releaseVersion = rc.Version
+			}
+		}
+
+		found, r, err := common.ChooseRelease(ctx, orgId, app.ID, releaseBranch, releaseVersion)
 		if err != nil {
 			return err
 		}
 
-		if len(r.Releases) < 1 {
+		if !found {
 			fmt.Println("Not found release for application", app.Name)
 			continue
 		}
 
-		release := r.Releases[0]
-		deployment, err := common.CreateRuntime(ctx, orgId, uint64(release.ProjectID), uint64(release.ApplicationID),
-			workspace, release.ReleaseID)
+		deployment, err := common.CreateRuntime(ctx, orgId, uint64(r.ProjectID), uint64(r.ApplicationID), workspace, r.ReleaseID)
 		if err != nil {
 			return err
 		}
@@ -111,4 +147,12 @@ func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, co
 	}
 
 	return nil
+}
+
+type ReleaseApp struct {
+	Branch  string `yaml:"branch"`
+	Version string `yaml:"version"`
+}
+type ReleaseConfig struct {
+	Applications map[string]ReleaseApp `yaml:"applications"`
 }

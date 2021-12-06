@@ -34,11 +34,12 @@ var RELEASE = command.Command{
 		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "branch", Doc: "The branch of an application", DefaultValue: ""},
+		command.BoolFlag{Short: "", Name: "is-version", Doc: "If list version only", DefaultValue: false},
 	},
 	Run: ReleaseList,
 }
 
-func ReleaseList(ctx *command.Context, noHeaders bool, orgId, applicationId uint64, org, branch string) error {
+func ReleaseList(ctx *command.Context, noHeaders bool, orgId, applicationId uint64, org, branch string, isVersin bool) error {
 	checkOrgParam(org, orgId)
 
 	orgId, err := getOrgId(ctx, org, orgId)
@@ -52,24 +53,30 @@ func ReleaseList(ctx *command.Context, noHeaders bool, orgId, applicationId uint
 
 	num := 0
 	err = dicedir.PagingView(func(pageNo, pageSize int) (bool, error) {
-		list, err := common.GetPagingReleases(ctx, orgId, applicationId, branch, pageNo, pageSize)
+		list, err := common.GetPagingReleases(ctx, orgId, applicationId, branch, isVersin, pageNo, pageSize)
 		if err != nil {
 			return false, err
 		}
 
 		data := [][]string{}
 		for _, l := range list.Releases {
+
+			gitBranch, _ := l.Labels["gitBranch"]
+			gitCommit, _ := l.Labels["gitCommitId"]
+
 			data = append(data, []string{
 				l.ReleaseID,
 				l.ReleaseName,
-				l.CreatedAt.String(),
+				l.UpdatedAt.String(),
+				gitBranch,
+				gitCommit,
 			})
 		}
 
 		t := table.NewTable()
 		if !noHeaders {
 			t.Header([]string{
-				"ReleaseD", "ReleaseName", "CreateAt",
+				"ReleaseID", "ReleaseName", "UpdatedAt", "GitBranch", "GitCommit",
 			})
 		}
 		err = t.Data(data).Flush()

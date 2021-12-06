@@ -18,20 +18,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var PROJECTCLEAR = command.Command{
 	Name:       "clear",
 	ParentName: "PROJECT",
 	ShortHelp:  "Clear project by delete runtimes and addons",
-	Example:    "$ erda-cli project clear --project-id=<id>",
+	Example:    "$ erda-cli project clear --project-id=<id> --workspace=<ENV>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
@@ -140,7 +139,6 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		appId := aId
 		deleteAddonRunners = append(deleteAddonRunners,
 			func() bool {
-				fmt.Println("2", orgId, appId)
 				err = common.DeleteAddon(ctx, orgId, appId)
 				if err == nil {
 					return true
