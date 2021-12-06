@@ -94,19 +94,17 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		item.Name = application.Name
 		item.DisplayName = application.DisplayName
 		owner := ownerUnknown()
-		item.OwnerUserID = owner.ID
-		item.OwnerUserName = owner.Name
-		item.OwnerUserNickname = owner.Nick
 		if cacheItem, _ := p.appOwnerCache.LoadWithUpdate(application.ID); cacheItem != nil {
 			owners := cacheItem.Object.(*memberCacheObject)
-			if owner, ok := owners.hasMemberIn(ownerFilter); ok {
-				item.OwnerUserID = owner.ID
-				item.OwnerUserName = owner.Name
-				item.OwnerUserNickname = owner.Nick
+			if chosen, ok := owners.hasMemberIn(ownerFilter); ok {
+				owner = chosen
 			} else if len(ownerFilter) > 0 {
 				continue
 			}
 		}
+		item.OwnerUserID = owner.ID
+		item.OwnerUserName = owner.Name
+		item.OwnerUserNickname = owner.Nick
 		applicationsIDs = append(applicationsIDs, application.ID)
 		items[application.ID] = item
 		data.List = append(data.List, item)
@@ -188,7 +186,8 @@ func (p *Project) updateMemberCache(key interface{}) (*cache.Item, bool) {
 
 	unknown := ownerUnknown()
 	object := newMemberCacheObject()
-	cacheItem := &cache.Item{Object: unknown}
+	object.m[unknown.ID] = unknown
+	cacheItem := &cache.Item{Object: object}
 
 	applicationID := key.(uint64)
 	if _, err := p.bdl.GetApp(applicationID); err != nil {
