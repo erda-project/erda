@@ -119,8 +119,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return err
 	}
 
-	cassandra := ctx.Service("cassandra").(cassandra.Interface)
-	if cassandra != nil {
+	cassandra, ok := ctx.Service("cassandra").(cassandra.Interface)
+	if ok && cassandra != nil {
 		session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
 		if err != nil {
 			return fmt.Errorf("fail to create cassandra session: %s", err)
