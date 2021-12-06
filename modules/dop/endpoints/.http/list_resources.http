@@ -1,5 +1,5 @@
 ### 应用资源排行
-GET http://openapi.dev.terminus.io/api/projects/5/applications-resources?applicationID=6
+GET http://openapi.dev.terminus.io/api/projects/5/applications-resources
 lang: zh-CN
 org-id: 1
 user-id: 2

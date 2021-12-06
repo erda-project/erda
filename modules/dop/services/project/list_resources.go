@@ -45,10 +45,10 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		appsIDs      = req.Query.GetAppIDs()
 		ownersIDs    = req.Query.GetOwnerIDs()
 	)
-	l = l.WithField("projectID", projectID).WithField("filter appsIDs", appsIDs)
+	l = l.WithFields(map[string]interface{}{"projectID": projectID, "filter appIDS": appsIDs, "filter ownerIDs": ownersIDs})
 	var (
 		applicationFilter = make(map[uint64]struct{})
-		ownerFilter       = map[uint64]struct{}{0: {}}
+		ownerFilter       = make(map[uint64]struct{})
 	)
 	for _, applicationID := range appsIDs {
 		applicationFilter[applicationID] = struct{}{}
@@ -96,7 +96,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		if cacheItem, _ := p.appOwnerCache.LoadWithUpdate(application.ID); cacheItem != nil {
 			owners := cacheItem.Object.(*memberCacheObject)
 			owner, ok := owners.hasMemberIn(ownerFilter)
-			if !ok && len(ownerFilter) > 0 {
+			if len(ownerFilter) > 0 && owner.ID != 0 && !ok {
 				continue
 			}
 			item.OwnerUserID = owner.ID
