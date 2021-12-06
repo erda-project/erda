@@ -558,7 +558,11 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 			records[day] = record
 		}
 		for day := startTime; day.Before(endTime) && day.Before(time.Now()); day = day.Add(time.Hour * 24) {
-			record := records[day.Format("2006-01-02")]
+			today := day.Format("2006-01-02")
+			record := records[today]
+			if record.CreatedAt.Format("2006-01-02") != today {
+				record.CreatedAt = day
+			}
 			tRes[day.YearDay()] = &record
 		}
 	}
