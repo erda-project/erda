@@ -143,8 +143,9 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 		}
 	}
 	var labelNames []string
+	var labels []apistructs.ProjectLabel
 	if needQueryLabels {
-		labels, _ := svc.bdl.ListLabelByIDs(labelIDs)
+		labels, _ = svc.bdl.ListLabelByIDs(labelIDs)
 		labelNames = make([]string, 0, len(labels))
 		for _, v := range labels {
 			labelNames = append(labelNames, v.Name)
@@ -154,6 +155,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 			label, ok := projectLabels[labelID]
 			if ok {
 				labelNames = append(labelNames, label.Name)
+				labels = append(labels, label)
 			}
 		}
 	}
@@ -187,6 +189,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 		Creator:        model.Creator,
 		Assignee:       model.Assignee,
 		Labels:         labelNames,
+		LabelDetails:   labels,
 		ManHour:        manHour.Clean(),
 		Source:         model.Source,
 		Owner:          model.Owner,
