@@ -127,6 +127,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cluster/actions/init-retry", Method: http.MethodPost, Handler: auth(i18nPrinter(e.InitClusterRetry))},
 		{Path: "/api/cluster/actions/upgrade", Method: http.MethodPost, Handler: auth(i18nPrinter(e.UpgradeEdgeCluster))},
 		{Path: "/api/cluster/actions/batch-upgrade", Method: http.MethodPost, Handler: auth(i18nPrinter(e.BatchUpgradeEdgeCluster))},
+		{Path: "/api/cluster/actions/batch-offline", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.BatchOfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.OfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
 		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
