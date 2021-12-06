@@ -93,15 +93,19 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		item.ID = application.ID
 		item.Name = application.Name
 		item.DisplayName = application.DisplayName
+		owner := ownerUnknown()
+		item.OwnerUserID = owner.ID
+		item.OwnerUserName = owner.Name
+		item.OwnerUserNickname = owner.Nick
 		if cacheItem, _ := p.appOwnerCache.LoadWithUpdate(application.ID); cacheItem != nil {
 			owners := cacheItem.Object.(*memberCacheObject)
-			owner, ok := owners.hasMemberIn(ownerFilter)
-			if len(ownerFilter) > 0 && owner.ID != 0 && !ok {
+			if owner, ok := owners.hasMemberIn(ownerFilter); ok {
+				item.OwnerUserID = owner.ID
+				item.OwnerUserName = owner.Name
+				item.OwnerUserNickname = owner.Nick
+			} else if len(ownerFilter) > 0 {
 				continue
 			}
-			item.OwnerUserID = owner.ID
-			item.OwnerUserName = owner.Name
-			item.OwnerUserNickname = owner.Nick
 		}
 		applicationsIDs = append(applicationsIDs, application.ID)
 		items[application.ID] = item
@@ -182,13 +186,9 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 func (p *Project) updateMemberCache(key interface{}) (*cache.Item, bool) {
 	l := logrus.WithField("func", "*Project.updateMemberCache")
 
-	unknown := &memberItem{
-		ID:   0,
-		Name: "OwnerUnknown",
-		Nick: "OwnerUnknown",
-	}
+	unknown := ownerUnknown()
 	object := newMemberCacheObject()
-	cacheItem := &cache.Item{Object: object}
+	cacheItem := &cache.Item{Object: unknown}
 
 	applicationID := key.(uint64)
 	if _, err := p.bdl.GetApp(applicationID); err != nil {
