@@ -84,12 +84,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"suffixIcon": "di",
 		"key":        "kanban",
 	}
-	optionGantt := map[string]interface{}{
-		"text":       cputil.I18n(ctx, "gantt-chart"),
-		"tooltip":    "",
-		"prefixIcon": "gantetu",
-		"key":        "gantt",
-	}
+	// optionGantt := map[string]interface{}{
+	// 	"text":       cputil.I18n(ctx, "gantt-chart"),
+	// 	"tooltip":    "",
+	// 	"prefixIcon": "gantetu",
+	// 	"key":        "gantt",
+	// }
 	optionKanbanChildren := []map[string]string{
 		{"text": cputil.I18n(ctx, "priority"), "key": "priority"},
 		//{"text": "处理人", "key": "assignee"},
@@ -100,7 +100,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		optionKanbanChildren = append(optionKanbanChildren, map[string]string{"text": cputil.I18n(ctx, "state"), "key": "status"})
 	}
 	optionKanban["children"] = optionKanbanChildren
-	props["options"] = []map[string]interface{}{optionTable, optionKanban, optionGantt}
+	props["options"] = []map[string]interface{}{optionTable, optionKanban}
 	c.Props = props
 
 	// set state
