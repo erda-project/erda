@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
@@ -123,6 +124,12 @@ func (n *Nodes) Merge(rs []dbclient.Record) ([]RecordWithPipeline, error) {
 				}
 			}
 		}
+
+		if status == dbclient.StatusTypeProcessing && record.CreatedAt.Before(time.Now().Add(-6*time.Hour)) {
+			status = dbclient.StatusTypeFailed
+			record.Detail = "timeout: 6h"
+		}
+
 		record.Status = status
 
 		if err := n.db.RecordsWriter().Update(record); err != nil {
