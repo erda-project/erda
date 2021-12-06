@@ -1,0 +1,65 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Files for macos
+*.DS_Store
+._*
+
+# Files for ideas
+.idea/*
+*.iml
+
+# Files for vim
+.*.sw?
+
+# Files for direnv
+.envrc
+
+# Files for vscode
+.vscode/*
+.vendor/*
+
+# Dependency directories (remove the comment below to include it)
+/vendor/
+
+# build output
+/bin
+
+# for local debug
+/.env
+/.env.*
+/conf/**/*.local.yaml
+modules/local/
+cmd/local
+conf/local
+
+# generated files
+# openapi
+modules/openapi/api/api.go
+modules/openapi/api/generate/collectAPIs.go
+modules/openapi/api/swagger.json
+modules/openapi/api/swagger_all.json
+modules/openapi/api/generate/collectEvents.go
+modules/openapi/api/events_all.json
+modules/openapi/component-protocol/generate/auto_register/auto_register.go
+# cli
+tools/cli/generated_cmd
+tools/cli/command/generate/collectCMDs.go
+# apistructs
+apistructs/generated_desc.go
+
+# temp data of quickstart
+quick-start/data
+
+modules/openapi/api/generate
+/fake_subscriber.txt
