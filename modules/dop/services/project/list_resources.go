@@ -96,7 +96,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		if cacheItem, _ := p.appOwnerCache.LoadWithUpdate(application.ID); cacheItem != nil {
 			owners := cacheItem.Object.(*memberCacheObject)
 			owner, ok := owners.hasMemberIn(ownerFilter)
-			if !ok {
+			if !ok && len(ownerFilter) > 0 {
 				continue
 			}
 			item.OwnerUserID = owner.ID
