@@ -113,6 +113,11 @@ type RuntimeCreateRequestExtra struct {
 	AddonActions map[string]interface{} `json:"actions,omitempty"`
 }
 
+type RuntimeReleaseCreateResponse struct {
+	Header
+	Data RuntimeDeployDTO `json:"data"`
+}
+
 type RuntimeCreateResponse struct {
 	Header
 	Data DeploymentCreateResponseDTO `json:"data"`

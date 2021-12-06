@@ -51,7 +51,6 @@ func GetOrgs(ctx *command.Context, noHeaders bool, pageSize int) error {
 				data = append(data, []string{
 					strconv.FormatUint(o.ID, 10),
 					o.Name,
-					o.Status,
 					o.Desc,
 				})
 			}
@@ -59,7 +58,7 @@ func GetOrgs(ctx *command.Context, noHeaders bool, pageSize int) error {
 			t := table.NewTable()
 			if !noHeaders {
 				t.Header([]string{
-					"OrgID", "Name", "Status", "Description",
+					"OrgID", "Name", "Description",
 				})
 			}
 			err = t.Data(data).Flush()

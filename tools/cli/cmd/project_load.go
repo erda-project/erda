@@ -1,0 +1,114 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package cmd
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
+)
+
+var PROJECTLOAD = command.Command{
+	Name:       "load",
+	ParentName: "PROJECT",
+	ShortHelp:  "Load project by releases",
+	Example:    "$ erda-cli project load --config=<filename>",
+	Flags: []command.Flag{
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of the project", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "config", Doc: "the name of the config file", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "workspace", Doc: "the env workspace to deploy", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "branch", Doc: "If branch is specified, all applications use the same one", DefaultValue: ""},
+		command.IntFlag{Short: "", Name: "wait-time", Doc: "the number of minutes to wait for runtime creating", DefaultValue: 5},
+	},
+	Run: ProjectLoad,
+}
+
+func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, config, workspace, branch string, waitTime int) error {
+	checkOrgParam(org, orgId)
+	checkProjectParam(project, projectId)
+
+	if workspace == "" {
+		return errors.New("Must specific env workspace")
+	} else {
+		if !apistructs.WorkSpace(workspace).Valide() {
+			return errors.New(fmt.Sprintf("Invalide workspace %s, should be one in %s",
+				workspace, apistructs.WorkSpace("").ValideList()))
+		}
+	}
+
+	orgId, err := getOrgId(ctx, org, orgId)
+	if err != nil {
+		return err
+	}
+
+	projectId, err = getProjectId(ctx, orgId, project, projectId)
+	if err != nil {
+		return err
+	}
+
+	appList, err := common.GetApplications(ctx, orgId, projectId)
+	if err != nil {
+		return err
+	}
+
+	var rDeployments []apistructs.RuntimeDeployDTO
+	for _, app := range appList {
+		// TODO handle branch with "" and config file
+		r, err := common.GetPagingReleases(ctx, orgId, app.ID, branch, 1, 1)
+		if err != nil {
+			return err
+		}
+
+		if len(r.Releases) < 1 {
+			fmt.Println("Not found release for application", app.Name)
+			continue
+		}
+
+		release := r.Releases[0]
+		deployment, err := common.CreateRuntime(ctx, orgId, uint64(release.ProjectID), uint64(release.ApplicationID),
+			workspace, release.ReleaseID)
+		if err != nil {
+			return err
+		}
+
+		rDeployments = append(rDeployments, deployment)
+	}
+
+	var taskRunners []dicedir.TaskRunner
+	for _, deployment := range rDeployments {
+		taskRunners = append(taskRunners, func() bool {
+			status, err := common.GetDeploymentStatus(ctx, orgId, deployment.PipelineID)
+			if err == nil && status == apistructs.PipelineStatusSuccess {
+				return true
+			}
+			return false
+		})
+	}
+	err = dicedir.DoTaskListWithTimeout(time.Duration(waitTime)*time.Minute, taskRunners)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

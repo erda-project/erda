@@ -142,10 +142,10 @@ github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrU
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
-github.com/XSAM/otelsql v0.9.0 h1:4GbpTNaFIAL8MeIoZGSDS2UaYxKIxqN04dRaMc5OqQA=
-github.com/XSAM/otelsql v0.9.0/go.mod h1:yzY6mmAtpKwRG/LPvvfBBMz3j4sUD7FWgBYEA5Dx6cY=
 github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d h1:npX89sRvdpLGthK9qEaEeSrgFzgHsTn098UzrssxBp8=
 github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d/go.mod h1:ZTOx+sJkS2TKlfdnrlx3WRWUUWqGCBng2V/ugrPxBRo=
+github.com/XSAM/otelsql v0.9.0 h1:4GbpTNaFIAL8MeIoZGSDS2UaYxKIxqN04dRaMc5OqQA=
+github.com/XSAM/otelsql v0.9.0/go.mod h1:yzY6mmAtpKwRG/LPvvfBBMz3j4sUD7FWgBYEA5Dx6cY=
 github.com/adrg/xdg v0.3.1/go.mod h1:7I2hH/IT30IsupOpKZ5ue7/qNi3CoKzD6tL3HwpaRMQ=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
@@ -2191,6 +2191,7 @@ golang.org/x/sys v0.0.0-20210426230700-d19ff857e887/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210510120138-977fb7262007/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20210616045830-e2b7044e8c71/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210819135213-f52c844e1c1c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211205182925-97ca703d548d h1:FjkYO/PPp4Wi0EAUOVLxePm7qVW4r4ctbWpURyuOD0E=
 golang.org/x/sys v0.0.0-20211205182925-97ca703d548d/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

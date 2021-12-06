@@ -15,35 +15,47 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/prettyjson"
+
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
 )
 
-var ADDONDELETE = command.Command{
-	Name:       "delete",
-	ParentName: "ADDON",
-	ShortHelp:  "Delete addon",
-	Example:    "$ erda-cli addon delete --addon-id=<id>",
+var RELEASEINSPECT = command.Command{
+	Name:       "inspect",
+	ParentName: "RELEASE",
+	ShortHelp:  "Inspect release",
+	Example:    "$ erda-cli release inspect --release-id=<id>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "addon-id", Doc: "The id of an addon", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "release-id", Doc: "The id of a release", DefaultValue: ""},
 	},
-	Run: DeleteAddon,
+	Run: ReleaseInspect,
 }
 
-func DeleteAddon(ctx *command.Context, orgId uint64, org string, addonId string) error {
+func ReleaseInspect(ctx *command.Context, orgId uint64, org, release string) error {
 	checkOrgParam(org, orgId)
+
 	orgId, err := getOrgId(ctx, org, orgId)
 	if err != nil {
 		return err
 	}
 
-	err = common.DeleteAddon(ctx, orgId, addonId)
+	r, err := common.GetReleaseDetail(ctx, orgId, release)
 	if err != nil {
 		return err
 	}
+	s, err := prettyjson.Marshal(r)
+	if err != nil {
+		return fmt.Errorf(format.FormatErrMsg("runtime inspect",
+			"failed to prettyjson marshal runtime data ("+err.Error()+")", false))
+	}
 
-	ctx.Succ("Addon deleted.")
+	fmt.Println(string(s))
+
 	return nil
 }

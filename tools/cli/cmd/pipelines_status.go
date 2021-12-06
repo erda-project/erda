@@ -39,7 +39,7 @@ var PIPELINESTATUS = command.Command{
 			Short: "b", Name: "branch",
 			Doc:          "specify branch to show pipeline status, default is current branch",
 			DefaultValue: ""},
-		command.IntFlag{
+		command.Uint64Flag{
 			Short: "i", Name: "pipelineID",
 			Doc:          "specify pipeline id to show pipeline status",
 			DefaultValue: 0},
@@ -48,7 +48,7 @@ var PIPELINESTATUS = command.Command{
 }
 
 // RunBuildsInspect displays detailed information on the build record
-func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
+func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64) error {
 	if _, err := os.Stat(".git"); err != nil {
 		return err
 	}
@@ -129,26 +129,17 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
 	}
 
 	if pipelineID == 0 {
-		pipelineID = int(pipelineListResp.Data.Pipelines[0].ID)
+		pipelineID = pipelineListResp.Data.Pipelines[0].ID
 	}
 
-	// fetch pipeline info
-	var pipelineInfoResp apistructs.PipelineDetailResponse
-	response, err = ctx.Get().Path(fmt.Sprintf("/api/pipelines/%d", pipelineID)).
-		Do().JSON(&pipelineInfoResp)
+	pipelineInfo, err := common.GetPipeline(ctx, org.ID, pipelineID)
 	if err != nil {
 		return err
-	}
-	if !response.IsOK() {
-		return errors.Errorf("status fail, status code: %d, err: %+v", response.StatusCode(), pipelineInfoResp.Error)
-	}
-	if !pipelineInfoResp.Success {
-		return errors.Errorf("status fail: %+v", pipelineInfoResp.Error)
 	}
 
 	data := [][]string{}
 	var currentStageIndex int
-	for i, stage := range pipelineInfoResp.Data.PipelineStages {
+	for i, stage := range pipelineInfo.PipelineStages {
 		currentStageIndex = i
 		stageDone := true
 		for _, task := range stage.PipelineTasks {
@@ -161,7 +152,7 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
 		if !stageDone {
 			for _, task := range stage.PipelineTasks {
 				data = append(data, []string{
-					strconv.Itoa(pipelineID),
+					strconv.FormatUint(pipelineID, 10),
 					strconv.FormatUint(task.ID, 10),
 					task.Name,
 					task.Status.String(),
@@ -173,7 +164,7 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID int) error {
 	}
 
 	fmt.Printf("pipeline progress (currentStage/totalStages): %d/%d\n\n",
-		currentStageIndex+1, len(pipelineInfoResp.Data.PipelineStages))
+		currentStageIndex+1, len(pipelineInfo.PipelineStages))
 
 	return table.NewTable().Header([]string{
 		"pipelineID", "taskID", "taskName", "taskStatus", "startedAt",

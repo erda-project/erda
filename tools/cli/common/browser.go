@@ -29,6 +29,7 @@ var (
 	OrgEntity     ErdaEntity = "org"
 	ProjectEntity ErdaEntity = "project"
 	AppEntity     ErdaEntity = "app"
+	ReleaseEntity ErdaEntity = "release"
 )
 
 func Open(ctx *command.Context, entity ErdaEntity, org string, orgId, projectId, applicationId uint64) error {
@@ -50,6 +51,30 @@ func Open(ctx *command.Context, entity ErdaEntity, org string, orgId, projectId,
 		paths = append(paths, org, "dop/projects", strconv.FormatUint(projectId, 10),
 			"apps", strconv.FormatUint(applicationId, 10))
 	}
+	url := strings.Join(paths, "/")
+	err := browser.OpenURL(url)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type OrgSubPath func() []string
+
+func Open2(ctx *command.Context, org string, orgId uint64, subPath OrgSubPath) error {
+	if org == "" && orgId != 0 {
+		o, err := GetOrgDetail(ctx, strconv.FormatUint(orgId, 10))
+		if err != nil {
+			return err
+		}
+		org = o.Name
+	}
+
+	paths := []string{strings.Replace(ctx.CurrentOpenApiHost, "openapi.", "", 1), org}
+
+	paths = append(paths, subPath()...)
+
 	url := strings.Join(paths, "/")
 	err := browser.OpenURL(url)
 	if err != nil {

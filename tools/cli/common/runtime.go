@@ -106,10 +106,10 @@ func GetRuntimeList(ctx *command.Context, orgId, applicationId uint64, workspace
 	return resp.Data, nil
 }
 
-func DeleteRuntime(ctx *command.Context, orgID, runtimeID uint64) error {
+func DeleteRuntime(ctx *command.Context, orgId, runtimeId uint64) error {
 	r := ctx.Delete().
-		Header("Org-ID", strconv.FormatUint(orgID, 10)).
-		Path(fmt.Sprintf("/api/runtimes/%d", runtimeID))
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		Path(fmt.Sprintf("/api/runtimes/%d", runtimeId))
 	resp, err := httputils.DoResp(r)
 	if err != nil {
 		return fmt.Errorf(
@@ -123,3 +123,120 @@ func DeleteRuntime(ctx *command.Context, orgID, runtimeID uint64) error {
 
 	return nil
 }
+
+func CreateRuntime(ctx *command.Context, orgId, projectId, applicationId uint64, workspace, releaseId string) (apistructs.RuntimeDeployDTO, error) {
+	var req apistructs.RuntimeReleaseCreateRequest
+	req.ProjectID = projectId
+	req.ApplicationID = applicationId
+	req.Workspace = workspace
+	req.ReleaseID = releaseId
+
+	var resp apistructs.RuntimeReleaseCreateResponse
+	var b bytes.Buffer
+	response, err := ctx.Post().Path("/api/runtimes/actions/deploy-release").
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+		JSONBody(&req).
+		Do().Body(&b)
+	if err != nil {
+		return apistructs.RuntimeDeployDTO{}, fmt.Errorf(
+			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return apistructs.RuntimeDeployDTO{}, fmt.Errorf(format.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return apistructs.RuntimeDeployDTO{}, fmt.Errorf(format.FormatErrMsg("list",
+			fmt.Sprintf("failed to unmarshal runtimes list response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return apistructs.RuntimeDeployDTO{}, fmt.Errorf(format.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	return resp.Data, nil
+}
+
+func GetDeploymentStatus(ctx *command.Context, orgId, deploymentId uint64) (apistructs.PipelineStatus, error) {
+
+	pipeline, err := GetPipeline(ctx, orgId, deploymentId)
+	if err != nil {
+		return apistructs.PipelineEmptyStatus, err
+	}
+
+	return pipeline.Status, nil
+}
+
+//func CreateRuntime(ctx *command.Context, orgId, projectId, applicationId uint64, workspace, releaseId string) (apistructs.DeploymentCreateResponseDTO, error) {
+//	var req apistructs.RuntimeReleaseCreateRequest
+//	req.ProjectID = projectId
+//	req.ApplicationID = applicationId
+//	req.Workspace = workspace
+//	req.ReleaseID = releaseId
+//
+//	var resp apistructs.RuntimeCreateResponse
+//	var b bytes.Buffer
+//	response, err := ctx.Post().Path("/api/runtimes/actions/deploy-release-action").
+//		Header("Org-ID", strconv.FormatUint(orgId, 10)).
+//		JSONBody(&req).
+//		Do().Body(&b)
+//	if err != nil {
+//		return apistructs.DeploymentCreateResponseDTO{}, fmt.Errorf(
+//			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+//	}
+//
+//	if !response.IsOK() {
+//		return apistructs.DeploymentCreateResponseDTO{}, fmt.Errorf(format.FormatErrMsg("list",
+//			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+//				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+//	}
+//
+//	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+//		return apistructs.DeploymentCreateResponseDTO{}, fmt.Errorf(format.FormatErrMsg("list",
+//			fmt.Sprintf("failed to unmarshal runtimes list response ("+err.Error()+")"), false))
+//	}
+//
+//	if !resp.Success {
+//		return apistructs.DeploymentCreateResponseDTO{}, fmt.Errorf(format.FormatErrMsg("list",
+//			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+//				resp.Error.Code, resp.Error.Msg), false))
+//	}
+//
+//	return resp.Data, nil
+//}
+//
+//func GetDeploymentStatus(ctx *command.Context, orgId, deploymentId uint64) (apistructs.DeploymentStatusDTO, error) {
+//	var resp apistructs.DeploymentStatusResponse
+//	var b bytes.Buffer
+//
+//	response, err := ctx.Get().Path(fmt.Sprintf("/api/deployments/%d/status", deploymentId)).
+//		Header("Org-ID", strconv.FormatUint(orgId, 10)).Do().Body(&b)
+//	if err != nil {
+//		return apistructs.DeploymentStatusDTO{}, fmt.Errorf(format.FormatErrMsg(
+//			"get runtime detail", "failed to request ("+err.Error()+")", false))
+//	}
+//
+//	if !response.IsOK() {
+//		return apistructs.DeploymentStatusDTO{}, fmt.Errorf(format.FormatErrMsg("get deployment status",
+//			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+//				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+//	}
+//
+//	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+//		return apistructs.DeploymentStatusDTO{}, fmt.Errorf(format.FormatErrMsg("get deployment status",
+//			fmt.Sprintf("failed to unmarshal runtime detail response ("+err.Error()+")"), false))
+//	}
+//
+//	if !resp.Success {
+//		return apistructs.DeploymentStatusDTO{}, fmt.Errorf(format.FormatErrMsg("get runtime detail",
+//			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+//				resp.Error.Code, resp.Error.Msg), false))
+//	}
+//
+//	return resp.Data, nil
+//}

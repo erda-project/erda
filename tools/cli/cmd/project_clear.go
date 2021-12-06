@@ -83,7 +83,7 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 	}
 
 	// Clear Runtimes
-	appList := []interface{}{}
+	var appList []uint64
 	for _, app := range apps {
 		rs, err := common.GetRuntimeList(ctx, orgId, app.ID, "", "")
 		if err != nil {
@@ -106,14 +106,14 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		}
 	}
 	// Check Clear Runtimes Done
-	err = dicedir.DoTaskListWithTimeout(appList, func(id interface{}) bool {
-		aId, ok := id.(uint64)
-		if !ok {
-			return false
-		}
-
-		return checkApplication(ctx, orgId, aId, workspace)
-	}, time.Duration(waitRuntime)*time.Minute)
+	var checkRuntimesRunners []dicedir.TaskRunner
+	for _, aId := range appList {
+		appId := aId
+		checkRuntimesRunners = append(checkRuntimesRunners, func() bool {
+			return checkApplication(ctx, orgId, appId, workspace)
+		})
+	}
+	err = dicedir.DoTaskListWithTimeout(time.Duration(waitRuntime)*time.Minute, checkRuntimesRunners)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 	if err != nil {
 		return err
 	}
-	addonList := []interface{}{}
+	var addonList []string
 	for _, a := range resp.Data {
 		if workspace != "" && workspace != a.Workspace {
 			continue
@@ -134,30 +134,32 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 		addonList = append(addonList, a.ID)
 	}
 
-	err = dicedir.DoTaskListWithTimeout(addonList, func(id interface{}) bool {
-		aId, ok := id.(string)
-		if !ok {
-			return false
-		}
-		err = common.DeleteAddon(ctx, orgId, aId)
-		if err == nil {
-			return true
-		}
-		return false
-	}, 3*time.Minute)
+	var deleteAddonRunners []dicedir.TaskRunner
+	for _, aId := range addonList {
+		// make local appId
+		appId := aId
+		deleteAddonRunners = append(deleteAddonRunners,
+			func() bool {
+				fmt.Println("2", orgId, appId)
+				err = common.DeleteAddon(ctx, orgId, appId)
+				if err == nil {
+					return true
+				}
+				return false
+			})
+	}
+	err = dicedir.DoTaskListWithTimeout(3*time.Minute, deleteAddonRunners)
 	if err != nil {
 		return err
 	}
 
 	// Check Clear Addons Done
-	err = dicedir.DoTaskListWithTimeout([]interface{}{projectId}, func(id interface{}) bool {
-		pId, ok := id.(uint64)
-		if !ok {
-			return false
-		}
-
+	err = dicedir.DoTaskWithTimeout(func() (bool, error) {
 		var as []apistructs.AddonFetchResponseData
-		resp, err = common.GetAddonList(ctx, orgId, pId)
+		resp, err = common.GetAddonList(ctx, orgId, projectId)
+		if err != nil {
+			return false, err
+		}
 		for _, a := range resp.Data {
 			if workspace != "" && workspace != a.Workspace {
 				continue
@@ -168,9 +170,9 @@ func clearProject(ctx *command.Context, orgId, projectId uint64, workspace strin
 			as = append(as, a)
 		}
 		if err == nil && len(as) == 0 {
-			return true
+			return true, nil
 		}
-		return false
+		return false, err
 	}, time.Duration(waitAddon)*time.Minute)
 	if err != nil {
 		return err

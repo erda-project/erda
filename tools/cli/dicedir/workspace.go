@@ -197,28 +197,28 @@ func PagingAll(p pagingList, pageSize int) error {
 	return nil
 }
 
-type TaskRunner func(id interface{}) bool
+type TaskRunner func() bool
 
-func DoTaskListWithTimeout(ids []interface{}, c TaskRunner, timeout time.Duration) error {
+func DoTaskListWithTimeout(timeout time.Duration, rs []TaskRunner) error {
 	wg := sync.WaitGroup{}
 	timeoutCtx, _ := context.WithTimeout(context.Background(), timeout)
 
-	for _, id := range ids {
+	for _, r := range rs {
 		wg.Add(1)
-		go func(id interface{}) {
+		go func(r TaskRunner) {
 			defer wg.Done()
 			timeTicker := time.NewTicker(2 * time.Second)
 			for {
 				select {
 				case <-timeTicker.C:
-					if c(id) {
+					if r() {
 						return
 					}
 				case <-timeoutCtx.Done():
 					return
 				}
 			}
-		}(id)
+		}(r)
 	}
 	wg.Wait()
 	if timeoutCtx.Err() != nil {
@@ -243,6 +243,9 @@ func DoTaskWithTimeout(c TaskRunnerE, timeout time.Duration) error {
 			case <-timeTicker.C:
 				var rs bool
 				rs, err = c()
+				if err != nil {
+					return
+				}
 				if rs {
 					return
 				}
