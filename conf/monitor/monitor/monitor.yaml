@@ -264,6 +264,7 @@ erda.core.monitor.alert:
   silence_policy: "${SILENCE_POLICY:fixed,doubled}"
   alert_conditions: "${CONFIG_PATH}/alert/trigger_conditions.yaml"
   cassandra:
+    enabled: ${QUERY_EVENT_FROM_CASSANDRA_ENABLE:true}
     session:
       keyspace:
         name: "spot_prod"

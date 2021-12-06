@@ -51,6 +51,7 @@ type config struct {
 	SilencePolicy               string `file:"silence_policy"`
 	AlertConditions             string `file:"alert_conditions"`
 	Cassandra                   struct {
+		Enabled                 bool `file:"enabled"`
 		cassandra.SessionConfig `file:"session"`
 		GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
 	} `file:"cassandra"`
@@ -119,15 +120,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return err
 	}
 
-	cassandra, ok := ctx.Service("cassandra").(cassandra.Interface)
-	if ok && cassandra != nil {
-		session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
-		if err != nil {
-			return fmt.Errorf("fail to create cassandra session: %s", err)
-		}
-		p.cql = cql.New(session.Session())
-		if err := p.cql.Init(p.L, p.C.Cassandra.GCGraceSeconds); err != nil {
-			return fmt.Errorf("fail to init cassandra: %s", err)
+	if p.C.Cassandra.Enabled {
+		cassandra, ok := ctx.Service("cassandra").(cassandra.Interface)
+		if ok && cassandra != nil {
+			session, err := cassandra.NewSession(&p.C.Cassandra.SessionConfig)
+			if err != nil {
+				return fmt.Errorf("fail to create cassandra session: %s", err)
+			}
+			p.cql = cql.New(session.Session())
+			if err := p.cql.Init(p.L, p.C.Cassandra.GCGraceSeconds); err != nil {
+				return fmt.Errorf("fail to init cassandra: %s", err)
+			}
 		}
 	}
 
