@@ -307,8 +307,10 @@ func (e *Endpoints) PagingIterations(ctx context.Context, r *http.Request, vars 
 		}
 	}
 	iterations := make([]apistructs.Iteration, 0, len(iterationModels))
-	for _, itr := range iterationMap {
-		iterations = append(iterations, *itr)
+	for _, itrModel := range iterationModels {
+		if itr, existed := iterationMap[int64(itrModel.ID)]; existed {
+			iterations = append(iterations, *itr)
+		}
 	}
 	// userIDs
 	var userIDs []string
