@@ -30,7 +30,12 @@ import (
 
 type config struct {
 	Cassandra   cassandra.SessionConfig `file:"cassandra"`
-	QuerySource string                  `file:"query_source"`
+	QuerySource querySource             `file:"query_source"`
+}
+
+type querySource struct {
+	ElasticSearch bool `file:"elasticsearch"`
+	Cassandra     bool `file:"cassandra"`
 }
 
 // +provider
@@ -38,7 +43,7 @@ type provider struct {
 	Cfg              *config
 	Log              logs.Logger
 	Register         transport.Register
-	Cassandra        cassandra.Interface `autowired:"cassandra"`
+	Cassandra        cassandra.Interface `autowired:"cassandra" optional:"true"`
 	exceptionService *exceptionService
 	cassandraSession *cassandra.Session
 	Metric           metricpb.MetricServiceServer    `autowired:"erda.core.monitor.metric.MetricService"`
@@ -47,11 +52,13 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
-	if err != nil {
-		return fmt.Errorf("fail to create cassandra session: %s", err)
+	if p.Cassandra != nil {
+		session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
+		if err != nil {
+			return fmt.Errorf("fail to create cassandra session: %s", err)
+		}
+		p.cassandraSession = session
 	}
-	p.cassandraSession = session
 	p.exceptionService = &exceptionService{
 		p:      p,
 		Metric: p.Metric,

@@ -27,6 +27,7 @@ import (
 )
 
 // -go:generate mockgen -destination=./mock_storage.go -package query -source=../storage/storage.go Storage
+// -go:generate mockgen -destination=./mock_log.go -package query github.com/erda-project/erda-infra/base/logs Logger
 func Test_eventQueryService_GetEvents(t *testing.T) {
 
 	type args struct {
@@ -146,9 +147,16 @@ func Test_eventQueryService_GetEvents_WithNilTags_Should_Not_Throw(t *testing.T)
 
 }
 
-func Test_eventQueryService_GetEvents_With_NilStorage_Should_Return_Error(t *testing.T) {
+func Test_eventQueryService_GetEvents_With_NilStorage_Should_Not_Return_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	logger := NewMockLogger(ctrl)
+	defer ctrl.Finish()
+	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 	querySvc := &eventQueryService{
 		storageReader: nil,
+		p: &provider{
+			Log: logger,
+		},
 	}
 	result, err := querySvc.GetEvents(context.Background(), &pb.GetEventsRequest{
 		Start:        1,
@@ -157,7 +165,7 @@ func Test_eventQueryService_GetEvents_With_NilStorage_Should_Return_Error(t *tes
 		RelationId:   "res-id",
 		RelationType: "res-type",
 	})
-	if result != nil || err == nil {
-		t.Errorf("should throw error")
+	if result == nil || err != nil {
+		t.Errorf("should not throw error")
 	}
 }

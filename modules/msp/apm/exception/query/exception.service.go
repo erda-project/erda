@@ -17,7 +17,6 @@ package query
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -42,7 +41,7 @@ type exceptionService struct {
 func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) (*pb.GetExceptionsResponse, error) {
 	var exceptions []*pb.Exception
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
 		// do cassandra query
 		exceptionsFromCassandra := fetchErdaErrorFromCassandra(ctx, s.Metric, s.p.cassandraSession.Session(), req)
 		for _, exception := range exceptionsFromCassandra {
@@ -50,7 +49,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 		}
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+	if s.p.Cfg.QuerySource.ElasticSearch {
 		// do es query
 		conditions := map[string]string{
 			"terminusKey": req.ScopeID,
@@ -73,7 +72,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) (*pb.GetExceptionEventIdsResponse, error) {
 	var data []string
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
 		// do cassandra query
 		iter := s.p.cassandraSession.Session().Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.ExceptionID, 999).Iter()
 
@@ -85,7 +84,7 @@ func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.Get
 			data = append(data, conv.ToString(row["event_id"]))
 		}
 	}
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+	if s.p.Cfg.QuerySource.ElasticSearch {
 		//do es query
 		tags := map[string]string{
 			"terminusKey": req.ScopeID,
@@ -116,7 +115,7 @@ func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.Get
 func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.GetExceptionEventResponse, error) {
 	event := pb.ExceptionEvent{}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+	if s.p.Cfg.QuerySource.ElasticSearch {
 		// do es query
 
 		tags := map[string]string{
@@ -162,7 +161,7 @@ func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExc
 		}
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") && len(event.Id) <= 0 {
+	if len(event.Id) <= 0 && s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
 		// do cassandra query
 		event = fetchErdaEventFromCassandra(s.p.cassandraSession.Session(), req)
 	}

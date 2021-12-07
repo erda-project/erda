@@ -16,7 +16,6 @@ package query
 
 import (
 	context "context"
-	"fmt"
 
 	pb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
 	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
@@ -31,7 +30,8 @@ type eventQueryService struct {
 
 func (s *eventQueryService) GetEvents(ctx context.Context, req *pb.GetEventsRequest) (*pb.GetEventsResponse, error) {
 	if s.storageReader == nil {
-		return nil, fmt.Errorf("storage service is nil")
+		s.p.Log.Warnf("storage service is nil")
+		return &pb.GetEventsResponse{Data: &pb.GetEventsResult{}}, nil
 	}
 	sel := &storage.Selector{
 		Start: req.Start,
