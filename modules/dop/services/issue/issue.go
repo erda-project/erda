@@ -1073,8 +1073,15 @@ func (svc *Issue) GetIssuesByIssueIDs(issueIDs []uint64, identityInfo apistructs
 	if err != nil {
 		return nil, err
 	}
-
-	issues, err := svc.BatchConvert(issueModels, apistructs.IssueTypes, identityInfo)
+	issueMap := make(map[uint64]*dao.Issue)
+	for i := range issueModels {
+		issueMap[issueModels[i].ID] = &issueModels[i]
+	}
+	results := make([]dao.Issue, 0, len(issueIDs))
+	for _, i := range issueIDs {
+		results = append(results, *issueMap[i])
+	}
+	issues, err := svc.BatchConvert(results, apistructs.IssueTypes, identityInfo)
 	if err != nil {
 		return nil, apierrors.ErrPagingIssues.InternalError(err)
 	}

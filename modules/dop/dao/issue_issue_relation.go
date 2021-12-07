@@ -70,7 +70,7 @@ func (client *DBClient) GetRelatingIssues(issueID uint64, relationType []string)
 	if len(relationType) > 0 {
 		query = query.Where("type IN (?)", relationType)
 	}
-	if err := query.Find(&issueRelations).Error; err != nil {
+	if err := query.Order("id desc").Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
@@ -93,7 +93,7 @@ func (client *DBClient) GetRelatedIssues(issueID uint64, relationType []string) 
 	if len(relationType) > 0 {
 		query = query.Where("type IN (?)", relationType)
 	}
-	if err := query.Find(&issueRelations).Error; err != nil {
+	if err := query.Order("id desc").Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}

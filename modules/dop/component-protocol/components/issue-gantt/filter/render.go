@@ -50,7 +50,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		f.FrontendUrlQuery = q.(string)
 	}
 
-	iterations, iterationOptions, err := f.getPropIterationsOptions()
+	iteration, iterationOptions, err := f.getPropIterationsOptions()
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				return err
 			}
 		} else {
-			f.State.Values.IterationIDs = []int64{defaultIterationRetriever(iterations)}
+			f.State.Values.IterationID = iteration
 		}
 	}
 
@@ -97,6 +97,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			Options:    iterationOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
+			Required:   true,
+			CustomProps: map[string]interface{}{
+				"mode": "single",
+			},
 		},
 		{
 			EmptyText:  "全部",
@@ -133,29 +137,27 @@ func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
 	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
-func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Iteration, []filter.PropConditionOption, error) {
+func (f *ComponentFilter) getPropIterationsOptions() (int64, []filter.PropConditionOption, error) {
 	iterations, err := f.bdl.ListProjectIterations(apistructs.IterationPagingRequest{
 		PageNo: 1, PageSize: 1000,
 		ProjectID: f.projectID, State: apistructs.IterationStateUnfiled,
 		WithoutIssueSummary: true,
 	}, f.sdk.Identity.OrgID)
 	if err != nil {
-		return nil, nil, err
+		return -1, nil, err
 	}
-	f.Iterations = append(iterations, apistructs.Iteration{
+	iterations = append(iterations, apistructs.Iteration{
 		ID:    -1,
 		Title: "待处理",
 	})
 	var options []filter.PropConditionOption
-	iterationMap := make(map[int64]apistructs.Iteration)
 	for _, iteration := range iterations {
 		options = append(options, filter.PropConditionOption{
 			Label: iteration.Title,
 			Value: iteration.ID,
 		})
-		iterationMap[iteration.ID] = iteration
 	}
-	return iterationMap, options, nil
+	return defaultIterationRetriever(iterations), options, nil
 }
 
 func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOption, error) {
@@ -187,10 +189,11 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOptio
 	return results, nil
 }
 
-func defaultIterationRetriever(iterations map[int64]apistructs.Iteration) int64 {
-	for i, iteration := range iterations {
-		if !time.Now().Before(*iteration.StartedAt) && !time.Now().After(*iteration.FinishedAt) {
-			return i
+func defaultIterationRetriever(iterations []apistructs.Iteration) int64 {
+	for _, iteration := range iterations {
+		if iteration.StartedAt != nil && !time.Now().Before(*iteration.StartedAt) &&
+			iteration.FinishedAt != nil && !time.Now().After(*iteration.FinishedAt) {
+			return iteration.ID
 		}
 	}
 	return -1
