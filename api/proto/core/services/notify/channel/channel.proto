@@ -238,7 +238,7 @@ message GetNotifyChannelsEnabledResponse {
 
 // channel type
 enum Type {
-  SHORT_MESSAGE        = 0;
+  SMS                  = 0;
   DINGTALK_WORK_NOTICE = 1;
   EMAIL                = 2;
   VMS                  = 3;

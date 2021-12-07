@@ -1,7 +1,7 @@
 en:
     aliyun_sms: "Ali Short Message Service"
     aliyun_vms: "Ali Voice Service"
-    short_message: "Short Message"
+    sms: "Short Message"
     vms: "Telephone"
     enabled_exception: "There are other enabled channel of this type %s"
     dingtalk: "DingTalk"
@@ -11,7 +11,7 @@ en:
 zh:
     aliyun_sms: "阿里云短信服务"
     aliyun_vms: "阿里云语音服务"
-    short_message: "短信"
+    sms: "短信"
     vms: "电话"
     enabled_exception: "%s类型已经存在开启状态的渠道"
     dingtalk: "钉钉"

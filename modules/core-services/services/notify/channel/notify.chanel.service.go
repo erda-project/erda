@@ -43,7 +43,7 @@ type notifyChannelService struct {
 }
 
 var ProviderAndType = map[string]string{
-	pb.ProviderType_ALIYUN_SMS.String(): pb.Type_SHORT_MESSAGE.String(),
+	pb.ProviderType_ALIYUN_SMS.String(): pb.Type_SMS.String(),
 	pb.ProviderType_DINGTALK.String():   pb.Type_DINGTALK_WORK_NOTICE.String(),
 	pb.ProviderType_SMTP.String():       pb.Type_EMAIL.String(),
 	pb.ProviderType_ALIYUN_VMS.String(): pb.Type_VMS.String(),

@@ -77,7 +77,7 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		logrus.Errorf("failed to get org info err:%s", err)
 	}
 
-	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mobileData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE)
+	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mobileData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_SMS)
 	if err != nil {
 		logrus.Errorf("failed to get notifychannel, err: %s", err)
 	}
