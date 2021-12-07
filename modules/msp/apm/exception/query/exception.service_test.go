@@ -18,6 +18,13 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/erda-project/erda-infra/providers/cassandra"
+
+	"bou.ke/monkey"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/gocql/gocql"
 
 	"github.com/golang/mock/gomock"
 
@@ -268,4 +275,92 @@ func TestExceptionService_fetchErdaErrorFromES(t *testing.T) {
 		t.Errorf("assert result failed")
 	}
 
+}
+
+func Test_GetExecptions_WithCassandra_Should_Not_Error(t *testing.T) {
+	s := &exceptionService{
+		p: &provider{
+			Cfg: &config{
+				QuerySource: querySource{
+					Cassandra:     true,
+					ElasticSearch: true,
+				},
+			},
+			cassandraSession: &cassandra.Session{},
+		},
+	}
+
+	req := &pb.GetExceptionsRequest{
+		StartTime: time.Now().AddDate(0, 0, 1).UnixNano(),
+		EndTime:   time.Now().UnixNano(),
+		ScopeID:   "scope-1",
+	}
+	callCassandra, callES := false, false
+
+	monkey.Patch(fetchErdaErrorFromCassandra, func(ctx context.Context, metric metricpb.MetricServiceServer, session *gocql.Session, req *pb.GetExceptionsRequest) []*pb.Exception {
+		callCassandra = true
+		return []*pb.Exception{}
+	})
+	defer monkey.Unpatch(fetchErdaErrorFromCassandra)
+
+	monkey.Patch(fetchErdaErrorFromES, func(ctx context.Context, Event eventpb.EventQueryServiceServer, Entity entitypb.EntityServiceServer, req *entitypb.ListEntitiesRequest, startTime int64, endTime int64) (exceptions []*pb.Exception, err error) {
+		callES = true
+		return []*pb.Exception{}, nil
+	})
+	defer monkey.Unpatch(fetchErdaErrorFromES)
+
+	_, err := s.GetExceptions(context.Background(), req)
+	if err != nil {
+		t.Fatalf("should not error")
+	}
+	if !callCassandra {
+		t.Errorf("cassandra should get called")
+	}
+	if !callES {
+		t.Errorf("es should get called")
+	}
+}
+
+func Test_GetExecptions_WithCassandraDisabled_Should_Not_CallCassandra(t *testing.T) {
+	s := &exceptionService{
+		p: &provider{
+			Cfg: &config{
+				QuerySource: querySource{
+					Cassandra:     false,
+					ElasticSearch: true,
+				},
+			},
+			cassandraSession: &cassandra.Session{},
+		},
+	}
+
+	req := &pb.GetExceptionsRequest{
+		StartTime: time.Now().AddDate(0, 0, 1).UnixNano(),
+		EndTime:   time.Now().UnixNano(),
+		ScopeID:   "scope-1",
+	}
+	callCassandra, callES := false, false
+
+	monkey.Patch(fetchErdaErrorFromCassandra, func(ctx context.Context, metric metricpb.MetricServiceServer, session *gocql.Session, req *pb.GetExceptionsRequest) []*pb.Exception {
+		callCassandra = true
+		return []*pb.Exception{}
+	})
+	defer monkey.Unpatch(fetchErdaErrorFromCassandra)
+
+	monkey.Patch(fetchErdaErrorFromES, func(ctx context.Context, Event eventpb.EventQueryServiceServer, Entity entitypb.EntityServiceServer, req *entitypb.ListEntitiesRequest, startTime int64, endTime int64) (exceptions []*pb.Exception, err error) {
+		callES = true
+		return []*pb.Exception{}, nil
+	})
+	defer monkey.Unpatch(fetchErdaErrorFromES)
+
+	_, err := s.GetExceptions(context.Background(), req)
+	if err != nil {
+		t.Fatalf("should not error")
+	}
+	if callCassandra {
+		t.Errorf("cassandra should not get called")
+	}
+	if !callES {
+		t.Errorf("es should get called")
+	}
 }
