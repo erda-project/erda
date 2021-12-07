@@ -207,6 +207,8 @@ erda.msp.apm.metric:
 erda.msp.tenant:
 erda.msp.tenant.project:
 
+erda.msp.apm.service:
+
 #resource deploy related
 erda.msp.resource:
 erda.msp.resource.deploy.coordinator:
