@@ -94,7 +94,7 @@ func TestApplicationsResourcesResponse_Paging(t *testing.T) {
 	)
 	for pageNo = 1; pageNo <= 10; pageNo++ {
 		r.List = initApplicationsResourcesResponseList()
-		r.Paging(pageSize, pageNo)
+		r.Paging(int64(pageSize), int64(pageNo))
 		names := extractNames(r.List)
 		t.Logf("pageSize: %v, pageNo: %v, names: %s", pageSize, pageNo, strings.Join(names, ","))
 		if len(names) == int(pageSize) {
