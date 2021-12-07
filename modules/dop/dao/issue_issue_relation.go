@@ -70,7 +70,7 @@ func (client *DBClient) GetRelatingIssues(issueID uint64, relationType []string)
 	if len(relationType) > 0 {
 		query = query.Where("type IN (?)", relationType)
 	}
-	if err := query.Find(&issueRelations).Error; err != nil {
+	if err := query.Order("id desc").Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
@@ -93,7 +93,7 @@ func (client *DBClient) GetRelatedIssues(issueID uint64, relationType []string) 
 	if len(relationType) > 0 {
 		query = query.Where("type IN (?)", relationType)
 	}
-	if err := query.Find(&issueRelations).Error; err != nil {
+	if err := query.Order("id desc").Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
@@ -135,4 +135,21 @@ func (client *DBClient) GetIssueRelationsByIDs(issueIDs []uint64) ([]IssueRelati
 	}
 
 	return issueRelations, nil
+}
+
+type childrenCount struct {
+	IssueID uint64
+	Count   int
+}
+
+func (client *DBClient) IssueChildrenCount(issueIDs []uint64, relationType []string) ([]childrenCount, error) {
+	sql := client.Table("dice_issue_relation").Where("issue_id IN (?)", issueIDs)
+	if len(relationType) > 0 {
+		sql = sql.Where("type IN (?)", relationType)
+	}
+	var res []childrenCount
+	if err := sql.Select("issue_id, count(id) as count").Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
 }

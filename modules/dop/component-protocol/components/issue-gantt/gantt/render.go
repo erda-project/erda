@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issue"
@@ -78,7 +79,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			IssueListRequest: apistructs.IssueListRequest{
 				ProjectID:    f.projectID,
 				Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
-				IterationIDs: f.State.Values.IterationIDs,
+				IterationIDs: []int64{f.State.Values.IterationID},
 				Label:        f.State.Values.LabelIDs,
 				Assignees:    f.State.Values.AssigneeIDs,
 			},
@@ -128,7 +129,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			Item{
 				Title:  issue.Title,
 				Key:    uint64(issue.ID),
-				IsLeaf: issue.Type == apistructs.IssueTypeTask,
+				IsLeaf: issue.ChildrenLength == 0,
 				Start:  issue.PlanStartedAt,
 				End:    issue.PlanFinishedAt,
 				Extra: Extra{
@@ -136,10 +137,11 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 					User: issue.Assignee,
 					Status: Status{
 						Text:   issue.Name,
-						Status: apistructs.IssueStateBelong(issue.Belong).GetFrontEndStatus(),
+						Status: common.GetUIIssueState(apistructs.IssueStateBelong(issue.Belong)),
 					},
 					IterationID: issue.IterationID,
 				},
+				ChildrenLength: issue.ChildrenLength,
 			},
 		)
 	}
@@ -155,16 +157,17 @@ func (f *ComponentGantt) convertIssueItem(issues []dao.IssueItem) []Item {
 		item := Item{
 			Title:  issue.Title,
 			Key:    issue.ID,
-			IsLeaf: issue.Type == apistructs.IssueTypeTask,
+			IsLeaf: issue.ChildrenLength == 0,
 			Extra: Extra{
 				Type: issue.Type.String(),
 				User: issue.Assignee,
 				Status: Status{
 					Text:   issue.Name,
-					Status: apistructs.IssueStateBelong(issue.Belong).GetFrontEndStatus(),
+					Status: common.GetUIIssueState(apistructs.IssueStateBelong(issue.Belong)),
 				},
 				IterationID: issue.IterationID,
 			},
+			ChildrenLength: issue.ChildrenLength,
 		}
 		if issue.PlanStartedAt != nil {
 			item.Start = issue.PlanStartedAt

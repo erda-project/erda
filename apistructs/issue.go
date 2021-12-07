@@ -768,6 +768,8 @@ type IssueListRequest struct {
 	CustomPanelID int64 `json:"customPanelID"`
 
 	OnlyIDResult bool `json:"onlyIdResult"`
+	// issues not included by others
+	NotIncluded bool `json:"notIncluded"`
 }
 
 func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
@@ -959,9 +961,7 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 	if r.Severity != nil {
 		fields["severity"] = *r.Severity
 	}
-	if r.PlanStartedAt != nil {
-		fields["plan_started_at"] = r.PlanStartedAt
-	}
+	fields["plan_started_at"] = r.PlanStartedAt
 	fields["plan_finished_at"] = r.PlanFinishedAt
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee
