@@ -1601,13 +1601,16 @@ func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest)
 	if req.PageSize == 0 {
 		req.PageSize = 20
 	}
-	// if id == 0 {
-	// 	requirements, tasks, total, err := svc.db.FindIssueRoot(req)
-	// 	if err != nil {
-	// 		return nil, 0, err
-	// 	}
-	// 	return append(requirements, tasks...), total, nil
-	// }
+	if id == 0 {
+		issues, total, err := svc.db.FindIssueChildren(id, req)
+		if err != nil {
+			return nil, 0, err
+		}
+		if err := svc.SetIssueChildrenCount(issues); err != nil {
+			return nil, 0, err
+		}
+		return issues, total, nil
+	}
 	return svc.db.FindIssueChildren(id, req)
 }
 
@@ -1615,6 +1618,32 @@ func (svc *Issue) GetIssueItem(id uint64) (dao.IssueItem, error) {
 	return svc.db.GetIssueItem(id)
 }
 
+func (svc *Issue) SetIssueChildrenCount(issues []dao.IssueItem) error {
+	issueIDs := make([]uint64, 0, len(issues))
+	issueMap := make(map[uint64]*dao.IssueItem)
+	for i := range issues {
+		issueIDs = append(issueIDs, issues[i].ID)
+		issueMap[issues[i].ID] = &issues[i]
+	}
+	countList, err := svc.db.IssueChildrenCount(issueIDs, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	for _, i := range countList {
+		if v, ok := issueMap[i.IssueID]; ok {
+			v.ChildrenLength = i.Count
+		}
+	}
+	return nil
+}
+
 func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.IssueItem, error) {
-	return svc.db.GetIssueParents(issueID, relationType)
+	issues, err := svc.db.GetIssueParents(issueID, relationType)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.SetIssueChildrenCount(issues); err != nil {
+		return nil, err
+	}
+	return issues, nil
 }
