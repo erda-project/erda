@@ -148,7 +148,7 @@ func (client *DBClient) IssueChildrenCount(issueIDs []uint64, relationType []str
 		sql = sql.Where("type IN (?)", relationType)
 	}
 	var res []childrenCount
-	if err := sql.Select("issue_id, count(id) as count").Find(&res).Error; err != nil {
+	if err := sql.Select("issue_id, count(id) as count").Group("issue_id").Find(&res).Error; err != nil {
 		return nil, err
 	}
 	return res, nil
