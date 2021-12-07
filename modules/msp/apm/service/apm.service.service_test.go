@@ -15,9 +15,17 @@
 package service
 
 import (
+	"bou.ke/monkey"
+	"context"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
+	"reflect"
+	"strings"
 	testing "testing"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 )
 
 func Test_parseLanguage(t *testing.T) {
@@ -44,6 +52,136 @@ func Test_parseLanguage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotLanguage := parseLanguage(tt.args.platform); gotLanguage != tt.wantLanguage {
 				t.Errorf("parseLanguage() = %v, want %v", gotLanguage, tt.wantLanguage)
+			}
+		})
+	}
+}
+
+func Test_apmServiceService_GetServices(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetServicesRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{ctx: nil, req: &pb.GetServicesRequest{}}, true},
+		{"case2", args{ctx: nil, req: &pb.GetServicesRequest{TenantId: "test-error", ServiceName: "test-service"}}, true},
+		{"case3", args{ctx: nil, req: &pb.GetServicesRequest{PageSize: 100, TenantId: "test-tenantId", ServiceName: "test-service"}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var msc *metricpb.UnimplementedMetricServiceServer
+			QueryWithInfluxFormat := monkey.PatchInstanceMethod(reflect.TypeOf(msc), "QueryWithInfluxFormat",
+				func(un *metricpb.UnimplementedMetricServiceServer, ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+					if v, ok := req.Params["terminus_key"]; ok && v.GetStringValue() == "test-error" {
+						return nil, errors.New("error")
+					}
+					if strings.Contains(req.Statement, "DISTINCT") {
+						return &metricpb.QueryWithInfluxFormatResponse{
+							Results: []*metricpb.Result{
+								{Series: []*metricpb.Serie{
+									{Rows: []*metricpb.Row{
+										{
+											Values: []*structpb.Value{
+												{Kind: &structpb.Value_NumberValue{NumberValue: 4}},
+											},
+										},
+									}},
+								}},
+							},
+						}, nil
+					}
+
+					return &metricpb.QueryWithInfluxFormatResponse{
+						Results: []*metricpb.Result{
+							{Series: []*metricpb.Serie{
+								{Rows: []*metricpb.Row{
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "jdk 1.2.3"}},
+											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+										},
+									},
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id2"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name2"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "py 1.2.3"}},
+											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+										},
+									},
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id3"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name3"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "golang 1.2.3"}},
+											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+										},
+									},
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id4"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-name4"}},
+											{Kind: &structpb.Value_StringValue{StringValue: "nodejs 1.2.3"}},
+											{Kind: &structpb.Value_NumberValue{NumberValue: 1638770074000}},
+										},
+									},
+								}},
+							}},
+						},
+					}, nil
+				})
+			defer QueryWithInfluxFormat.Unpatch()
+
+			s := &apmServiceService{
+				p: &provider{Metric: msc},
+			}
+			_, err := s.GetServices(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetServices() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_apmServiceService_GetServiceAnalyzerOverview(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetServiceAnalyzerOverviewRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{req: &pb.GetServiceAnalyzerOverviewRequest{}}, true},
+		{"case2", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id"}}, true},
+		{"case3", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id_error", ServiceId: "test_service_id"}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var msc *metricpb.UnimplementedMetricServiceServer
+			QueryWithInfluxFormat := monkey.PatchInstanceMethod(reflect.TypeOf(msc), "QueryWithInfluxFormat",
+				func(un *metricpb.UnimplementedMetricServiceServer, ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+					if v, ok := req.Params["terminus_key"]; ok && v.GetStringValue() == "test_tenant_id_error" {
+						return nil, errors.New("error")
+					}
+					return &metricpb.QueryWithInfluxFormatResponse{}, nil
+				})
+			defer QueryWithInfluxFormat.Unpatch()
+			s := &apmServiceService{
+				p: &provider{Metric: msc},
+			}
+			_, err := s.GetServiceAnalyzerOverview(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetServiceAnalyzerOverview() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
