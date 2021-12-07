@@ -59,10 +59,14 @@ type Server struct {
 type Endpoint struct {
 	Path           string
 	Method         string
-	Handler        func(context.Context, *http.Request, map[string]string) (Responser, error)
-	WriterHandler  func(context.Context, http.ResponseWriter, *http.Request, map[string]string) error
-	ReverseHandler func(context.Context, *http.Request, map[string]string) error
+	Handler        Handler
+	WriterHandler  WriterHandler
+	ReverseHandler ReverseHandler
 }
+
+type Handler func(context.Context, *http.Request, map[string]string) (Responser, error)
+type WriterHandler func(context.Context, http.ResponseWriter, *http.Request, map[string]string) error
+type ReverseHandler func(context.Context, *http.Request, map[string]string) error
 
 // New create an http server.
 func New(addr string) *Server {
