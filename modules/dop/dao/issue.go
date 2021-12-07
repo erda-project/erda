@@ -227,11 +227,14 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 	if req.RequirementID != nil && *req.RequirementID > 0 {
 		cond.RequirementID = req.RequirementID
 	}
-
 	sql := client.Debug()
 	if req.CustomPanelID != 0 {
 		joinSQL := "LEFT OUTER JOIN dice_issue_panel on dice_issues.id=dice_issue_panel.issue_id"
 		sql = sql.Joins(joinSQL).Where("relation = ?", req.CustomPanelID)
+	}
+	if req.NotIncluded {
+		sql = sql.Joins("LEFT JOIN dice_issue_relation b ON dice_issues.id = b.related_issue and b.type = ?", apistructs.IssueRelationInclusion).
+			Where("b.id IS NULL")
 	}
 	sql = sql.Where(cond).Where("deleted = ?", 0)
 	if len(req.IDs) > 0 {
@@ -243,7 +246,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 		sql = sql.Where("iteration_id in (?)", req.IterationIDs)
 	}
 	if len(req.Type) > 0 {
-		sql = sql.Where("type IN (?)", req.Type)
+		sql = sql.Where("dice_issues.type IN (?)", req.Type)
 	}
 	if len(req.Creators) > 0 {
 		sql = sql.Where("creator IN (?)", req.Creators)
@@ -275,7 +278,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 		sql = sql.Where("stage IN (?)", req.TaskType)
 	}
 	if len(req.ExceptIDs) > 0 {
-		sql = sql.Not("id", req.ExceptIDs)
+		sql = sql.Not("dice_issues.id", req.ExceptIDs)
 	}
 	if req.StartCreatedAt > 0 {
 		startCreatedAt := time.Unix(req.StartCreatedAt/1000, 0)
@@ -774,8 +777,9 @@ type IssueItem struct {
 	ReopenCount  int
 	StartTime    *time.Time
 
-	Name   string
-	Belong string
+	Name           string
+	Belong         string
+	ChildrenLength int
 }
 
 func (i *IssueItem) FilterPropertyRetriever(condition string) string {
