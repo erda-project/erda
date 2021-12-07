@@ -155,9 +155,9 @@ func TestList_GetExtraInfos(t *testing.T) {
 					Tooltip: "manage type",
 				},
 				ExtraInfos{
-					Icon:    "create-time",
-					Text:    "-",
-					Tooltip: "create time",
+					Icon:    "machine",
+					Text:    "0",
+					Tooltip: "machine count",
 				},
 				ExtraInfos{
 					Icon:    "version",
@@ -165,9 +165,9 @@ func TestList_GetExtraInfos(t *testing.T) {
 					Tooltip: "cluster version",
 				},
 				ExtraInfos{
-					Icon:    "machine",
-					Text:    "0",
-					Tooltip: "machine count",
+					Icon:    "update-time",
+					Text:    "-",
+					Tooltip: "update time",
 				},
 			},
 		},
