@@ -14,13 +14,17 @@
 
 package kind
 
-import "github.com/erda-project/erda/pkg/common/errors"
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/pkg/common/errors"
+)
 
 type Email struct {
 	SMTPHost     string `json:"smtpHost"`
 	SMTPUser     string `json:"smtpUser"`
 	SMTPPassword string `json:"smtpPassword"`
-	SMTPPort     string `json:"smtpPort"`
+	SMTPPort     int64  `json:"smtpPort"`
 	SMTPIsSSL    string `json:"smtpIsSSL"`
 }
 
@@ -34,8 +38,8 @@ func (email *Email) Validate() error {
 	if email.SMTPPassword == "" {
 		return errors.NewMissingParameterError("smtpPassword")
 	}
-	if email.SMTPPort == "" {
-		return errors.NewMissingParameterError("smtpPort")
+	if email.SMTPPort < 0 || email.SMTPPort > 65535 {
+		return fmt.Errorf("invalidate parameter %d", email.SMTPPort)
 	}
 	return nil
 }

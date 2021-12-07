@@ -297,6 +297,16 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 		Name:        strings.ToLower(pb.ProviderType_DINGTALK.String()),
 		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_DINGTALK.String())),
 	})
+	var emailProviderTypes []*pb.NotifyChannelProviderType
+	emailProviderTypes = append(emailProviderTypes, &pb.NotifyChannelProviderType{
+		Name:        strings.ToLower(pb.ProviderType_SMTP.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_SMTP.String())),
+	})
+	var vmsProviderTypes []*pb.NotifyChannelProviderType
+	vmsProviderTypes = append(vmsProviderTypes, &pb.NotifyChannelProviderType{
+		Name:        strings.ToLower(pb.ProviderType_ALIYUN_VMS.String()),
+		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_VMS.String())),
+	})
 
 	var types []*pb.NotifyChannelTypeResponse
 	types = append(types, &pb.NotifyChannelTypeResponse{
@@ -309,6 +319,16 @@ func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *p
 		Name:        strings.ToLower(pb.Type_DINGTALK_WORK_NOTICE.String()),
 		DisplayName: s.p.I18n.Text(language, pb.Type_DINGTALK_WORK_NOTICE.String()),
 		Providers:   dingWorkNoticeProviderTypes,
+	})
+	types = append(types, &pb.NotifyChannelTypeResponse{
+		Name:        strings.ToLower(pb.Type_EMAIL.String()),
+		DisplayName: s.p.I18n.Text(language, pb.Type_EMAIL.String()),
+		Providers:   emailProviderTypes,
+	})
+	types = append(types, &pb.NotifyChannelTypeResponse{
+		Name:        strings.ToLower(pb.Type_VMS.String()),
+		DisplayName: s.p.I18n.Text(language, pb.Type_VMS.String()),
+		Providers:   emailProviderTypes,
 	})
 	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
 }

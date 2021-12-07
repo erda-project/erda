@@ -187,7 +187,7 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpUser = notifyChannel.Config.SMTPUser
 		smtpPassword = notifyChannel.Config.SMTPPassword
 		smtpHost = notifyChannel.Config.SMTPHost
-		smtpPort = notifyChannel.Config.SMTPPort
+		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
 		ssl, err := d.IsSSLInConfig(smtpPort, notifyChannel.Config.SMTPIsSSL)
 		if err != nil {
 			return err
