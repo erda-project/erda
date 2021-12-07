@@ -46,6 +46,12 @@ type NotifyChannelConfig struct {
 	AgentId         int64  `json:"agentId"`
 	AppKey          string `json:"appKey"`
 	AppSecret       string `json:"appSecret"`
+	SMTPHost        string `json:"smtpHost"`
+	SMTPUser        string `json:"smtpUser"`
+	SMTPPassword    string `json:"smtpPassword"`
+	SMTPPort        string `json:"smtpPort"`
+	SMTPIsSSL       string `json:"smtpIsSsl"`
+	VMSTtsCode      string `json:"vmsTtsCode"`
 }
 
 type NotifyChannelType string
@@ -54,3 +60,5 @@ type NotifyChannelProviderType string
 const NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE = NotifyChannelType("short_message")
 const NOTIFY_CHANNEL_PROVIDER_TYPE_ALIYUN = NotifyChannelProviderType("aliyun_sms")
 const NOTIFY_CHANNEL_TYPE_DINGTALK_WORK_NOTICE = NotifyChannelType("dingtalk_work_notice")
+const NOTIFY_CHANNEL_TYPE_EMAIL = NotifyChannelType("email")
+const NOTIFY_CHANNEL_TYPE_VMS = NotifyChannelType("vms")

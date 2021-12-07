@@ -27,6 +27,7 @@ import (
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
@@ -107,6 +108,16 @@ func (d *MailSubscriber) IsSSL() bool {
 	return d.isSSL
 }
 
+func (d *MailSubscriber) IsSSLInConfig(SMTPPort, SMTPIsSSL string) (bool, error) {
+	if SMTPIsSSL == "" {
+		if SMTPPort == "465" {
+			return true, nil
+		}
+		return false, nil
+	}
+	return strconv.ParseBool(SMTPIsSSL)
+}
+
 func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *types.Message) []error {
 	errs := []error{}
 	if d.host == "" {
@@ -155,13 +166,33 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 	if err != nil {
 		logrus.Errorf("failed to get org info err:%s", err)
 	}
-	if err == nil && org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
+	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mailData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_EMAIL)
+	if err != nil {
+		return fmt.Errorf("no enabled email channel, orgID: %d, err: %v", mailData.OrgID, err)
+	}
+	if notifyChannel.ID == "" {
+		return fmt.Errorf("no enabled email channel, orgID: %d", mailData.OrgID)
+	}
+
+	if org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
 		orgConfig := org.Config
 		smtpHost = orgConfig.SMTPHost
 		smtpUser = orgConfig.SMTPUser
 		smtpPassword = orgConfig.SMTPPassword
 		smtpPort = strconv.FormatInt(orgConfig.SMTPPort, 10)
 		isSSL = orgConfig.SMTPIsSSL
+	}
+
+	if notifyChannel.Config != nil {
+		smtpUser = notifyChannel.Config.SMTPUser
+		smtpPassword = notifyChannel.Config.SMTPPassword
+		smtpHost = notifyChannel.Config.SMTPHost
+		smtpPort = notifyChannel.Config.SMTPPort
+		ssl, err := d.IsSSLInConfig(smtpPort, notifyChannel.Config.SMTPIsSSL)
+		if err != nil {
+			return err
+		}
+		isSSL = ssl
 	}
 
 	params := mailData.Params

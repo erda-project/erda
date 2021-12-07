@@ -240,10 +240,14 @@ message GetNotifyChannelsEnabledResponse {
 enum Type {
   SHORT_MESSAGE        = 0;
   DINGTALK_WORK_NOTICE = 1;
+  EMAIL                = 2;
+  VMS                  = 3;
 }
 
 // channel service provider type
 enum ProviderType {
   ALIYUN_SMS = 0;
   DINGTALK   = 1;
+  SMTP       = 2;
+  ALIYUN_VMS = 3;
 }

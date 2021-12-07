@@ -446,7 +446,7 @@ func (s *notifyChannelService) GetNotifyChannelsEnabled(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	targetList := []string{"dingding", "webhook", "email", "mbox", "ticket"}
+	targetList := []string{"dingding", "webhook", "mbox", "ticket"}
 	for _, v := range targetList {
 		result.Data[v] = true
 	}
@@ -488,6 +488,40 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		}
 		c["need_kms_key"] = structpb.NewStringValue("appSecret")
 		c["need_kms_data"] = structpb.NewStringValue(dingNotice.AppSecret)
+		return c, nil
+	case strings.ToLower(pb.ProviderType_SMTP.String()):
+		bytes, err := json.Marshal(c)
+		if err != nil {
+			return nil, errors.New("Json parser failed.")
+		}
+		var email kind.Email
+		err = json.Unmarshal(bytes, &email)
+		if err != nil {
+			return nil, err
+		}
+		err = email.Validate()
+		if err != nil {
+			return nil, err
+		}
+		c["need_kms_key"] = structpb.NewStringValue("smtpPassword")
+		c["need_kms_data"] = structpb.NewStringValue(email.SMTPPassword)
+		return c, nil
+	case strings.ToLower(pb.ProviderType_ALIYUN_VMS.String()):
+		bytes, err := json.Marshal(c)
+		if err != nil {
+			return nil, errors.New("Json parser failed.")
+		}
+		var vms kind.AliyunVMS
+		err = json.Unmarshal(bytes, &vms)
+		if err != nil {
+			return nil, err
+		}
+		err = vms.Validate()
+		if err != nil {
+			return nil, err
+		}
+		c["need_kms_key"] = structpb.NewStringValue("accessKeySecret")
+		c["need_kms_data"] = structpb.NewStringValue(vms.AccessKeySecret)
 		return c, nil
 	default:
 		return nil, errors.New("Not support notify channel type")

@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dyvmsapi"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
@@ -81,10 +82,22 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 		logrus.Errorf("failed to get org info err:%s", err)
 	}
 
+	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(voiceData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_VMS)
+	if err != nil {
+		return []error{fmt.Errorf("no enabled vms channel, orgID: %d, err: %v", voiceData.OrgID, err)}
+	}
+	if notifyChannel.ID == "" {
+		return []error{fmt.Errorf("no enabled vms channel, orgID: %d", voiceData.OrgID)}
+	}
+
 	accessKeyID, accessSecret := d.accessKeyID, d.accessSecret
-	if err == nil && org.Config != nil && org.Config.VMSKeyID != "" && org.Config.VMSKeySecret != "" {
+	if org.Config != nil && org.Config.VMSKeyID != "" && org.Config.VMSKeySecret != "" {
 		accessKeyID = org.Config.VMSKeyID
 		accessSecret = org.Config.VMSKeySecret
+	}
+	if notifyChannel.Config != nil && notifyChannel.Config.AccessKeyId != "" && notifyChannel.Config.AccessKeySecret != "" {
+		accessKeyID = notifyChannel.Config.AccessKeyId
+		accessSecret = notifyChannel.Config.AccessKeySecret
 	}
 
 	// 语音模版属于公共号码池外呼的时候，被叫显号必须是空
@@ -94,8 +107,12 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	if msg.Sender == "analyzer-alert" {
 		// 因为目前监控只用一个模板，所以监控的语音模版和被呼号码存在orgConfig里或者环境变量里
 		ttsCode, calledShowNumber = d.monitorTtsCode, d.monitorCalledShowNumber
-		if err == nil && org.Config != nil && org.Config.VMSMonitorTtsCode != "" {
+		if org.Config != nil && org.Config.VMSMonitorTtsCode != "" {
 			ttsCode, calledShowNumber = org.Config.VMSMonitorTtsCode, org.Config.VMSMonitorCalledShowNumber
+		}
+		if notifyChannel.Config != nil && notifyChannel.Config.VMSTtsCode != "" {
+			ttsCode = notifyChannel.Config.VMSTtsCode
+			calledShowNumber = ""
 		}
 	}
 

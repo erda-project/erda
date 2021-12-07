@@ -64,6 +64,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+	_ "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/common/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/entity/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/event/pb"
