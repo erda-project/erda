@@ -134,6 +134,7 @@ type Percent struct {
 }
 
 type Operate struct {
+	Value      string               `json:"value,omitempty"`
 	Operations map[string]Operation `json:"operations"`
 	RenderType string               `json:"renderType"`
 }
