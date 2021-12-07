@@ -104,3 +104,37 @@ func TestApplicationsResourcesResponse_Paging(t *testing.T) {
 		}
 	}
 }
+
+func TestApplicationsResourceQuery_Validate(t *testing.T) {
+	var arr apistructs.ApplicationsResourcesRequest
+	if err := arr.Validate(); err == nil {
+		t.Fatal("the orgID should not be valid")
+	}
+	arr.OrgID = "0"
+	if err := arr.Validate(); err == nil {
+		t.Fatal("the userID should not be valid")
+	}
+	arr.UserID = "0"
+	if err := arr.Validate(); err == nil {
+		t.Fatal("the projectID should not be valid")
+	}
+	arr.ProjectID = "0"
+	if err := arr.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestApplicationsResourceQuery(t *testing.T) {
+	var arq apistructs.ApplicationsResourceQuery
+	arq.AppsIDs = []string{"0", "1", "2", "3"}
+	arq.OwnerIDs = []string{"0", "1", "2", "3"}
+	arq.OrderBy = []string{"-createdAt", "updatedAt"}
+	arq.GetAppIDs()
+	arq.GetOwnerIDs()
+	arq.GetPageNo()
+	arq.GetPageSize()
+	arq.PageNo = "10"
+	arq.PageSize = "10"
+	arq.GetPageNo()
+	arq.GetPageSize()
+}
