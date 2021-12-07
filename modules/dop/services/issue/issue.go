@@ -1601,13 +1601,13 @@ func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest)
 	if req.PageSize == 0 {
 		req.PageSize = 20
 	}
-	if id == 0 {
-		requirements, tasks, total, err := svc.db.FindIssueRoot(req)
-		if err != nil {
-			return nil, 0, err
-		}
-		return append(requirements, tasks...), total, nil
-	}
+	// if id == 0 {
+	// 	requirements, tasks, total, err := svc.db.FindIssueRoot(req)
+	// 	if err != nil {
+	// 		return nil, 0, err
+	// 	}
+	// 	return append(requirements, tasks...), total, nil
+	// }
 	return svc.db.FindIssueChildren(id, req)
 }
 
