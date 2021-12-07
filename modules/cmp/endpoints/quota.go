@@ -21,6 +21,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/schema"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
@@ -116,22 +117,30 @@ func (e *Endpoints) GetResourceClusterTrend(ctx context.Context, r *http.Request
 }
 
 func (e *Endpoints) GetResourceProjectTrend(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
-	req := &apistructs.TrendRequest{}
-	lang := i18n.Language(r)
-	ctx = context.WithValue(ctx, resource.Lang, lang)
-	newDecoder := schema.NewDecoder()
-	orgIDStr := r.Header.Get(httputil.OrgHeader)
-	userIDStr := r.Header.Get(httputil.UserHeader)
-	if orgIDStr == "" {
-		errStr := fmt.Sprintf("org id is nil")
-		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
+	var l = logrus.WithField("func", "*Endpoints.GetResourceProjectTrend")
+	if err = r.ParseForm(); err != nil {
+		l.WithError(err).Errorln("failed to ParseForm")
+		return httpserver.ErrResp(http.StatusBadRequest, "", "invalid query params")
 	}
-	err = newDecoder.Decode(req, r.URL.Query())
-	if err != nil {
-		errStr := fmt.Sprintf("url param error, err: %v", err)
-		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)
+	var (
+		req = new(apistructs.TrendRequest)
+		q   = r.URL.Query()
+	)
+	req.OrgID = r.Header.Get(httputil.OrgHeader)
+	req.UserID = r.Header.Get(httputil.UserHeader)
+	req.Query = new(apistructs.TrendRequestQuery)
+	req.Query.Start = q.Get("start")
+	req.Query.End = q.Get("end")
+	req.Query.Interval = q.Get("interval")
+	req.Query.ClustersNames = q["clusterName"]
+	req.Query.Scope = q.Get("scope")
+	req.Query.ScopeID = q.Get("scopeID")
+	req.Query.ResourceType = q.Get("resourceType")
+	if err := req.Validate(); err != nil {
+		return httpserver.ErrResp(http.StatusBadRequest, "", err.Error())
 	}
-	pie, err := e.Resource.GetProjectTrend(ctx, orgIDStr, userIDStr, req)
+
+	pie, err := e.Resource.GetProjectTrend(ctx, req)
 	if err != nil || pie == nil {
 		errStr := fmt.Sprintf("get resource project trend error, err: %v", err)
 		return httpserver.ErrResp(http.StatusInternalServerError, "", errStr)

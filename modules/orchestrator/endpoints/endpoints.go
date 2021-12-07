@@ -190,6 +190,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/runtimes/actions/refer-cluster", Method: http.MethodGet, Handler: e.ReferCluster},
 		{Path: "/api/runtimes/deploy/logs", Method: http.MethodGet, Handler: e.RuntimeLogs},
 		{Path: "/api/runtimes/actions/get-app-workspace-releases", Method: http.MethodGet, Handler: e.GetAppWorkspaceReleases},
+		{Path: "/api/runtimes/actions/group-by-apps", Method: http.MethodGet, Handler: e.ListRuntimesGroupByApps},
 		// kill pod (only k8s)
 		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},
 

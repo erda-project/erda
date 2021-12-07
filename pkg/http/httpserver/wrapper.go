@@ -12,22 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dop
+package httpserver
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 )
 
-var APPLICATIONS_RESOURCES_LIST = apis.ApiSpec{
-	Path:        "/api/projects/<projectID>/applications-resources",
-	BackendPath: "/api/projects/<projectID>/applications-resources",
-	Method:      http.MethodGet,
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:      "http",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "the list of applications resources in the project",
-	IsOpenAPI:   true,
+func Wrap(h Handler, wrappers ...HandlerWrapper) Handler {
+	n := len(wrappers)
+	if n == 0 {
+		return h
+	}
+	for i := n - 1; i >= 0; i-- {
+		h = wrappers[i](h)
+	}
+	return h
+}
+
+type HandlerWrapper func(handler Handler) Handler
+
+func WithI18nCodes(h Handler) Handler {
+	return func(ctx context.Context, r *http.Request, vars map[string]string) (Responser, error) {
+		ctx = context.WithValue(ctx, "Lang", i18n.Language(r))
+		return h(ctx, r, vars)
+	}
 }

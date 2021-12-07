@@ -27,14 +27,14 @@ import (
 
 type endpoint func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error)
 
-func auth(f endpoint) endpoint {
+func auth(f httpserver.Handler) httpserver.Handler {
 	return func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 		// TODO: auth
 		return f(ctx, r, vars)
 	}
 }
 
-func i18nPrinter(f endpoint) endpoint {
+func i18nPrinter(f httpserver.Handler) httpserver.Handler {
 	return func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 		lang := r.Header.Get("Lang")
 		p := message.NewPrinter(language.English)

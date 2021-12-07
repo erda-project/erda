@@ -23,9 +23,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-type endpoint func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error)
-
-func auth(f endpoint) endpoint {
+func auth(f httpserver.Handler) httpserver.Handler {
 	return func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 		// TODO: Use new auth
 		if r.Header.Get(httputil.InternalHeader) == "" {

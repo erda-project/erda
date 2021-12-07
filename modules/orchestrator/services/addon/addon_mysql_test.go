@@ -152,7 +152,7 @@ func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
 				account: &dbclient.MySQLAccount{
 					Username: "uuu",
 					Password: "***",
-					KMSKey: "123",
+					KMSKey:   "123",
 				},
 			},
 			wantErr: false,

@@ -33,7 +33,7 @@ var CMP_RESOURCE_OVERVIEW_PROJECT_TREND = apis.ApiSpec{
 	NeedDesensitize: false,
 	CheckLogin:      true,
 	TryCheckLogin:   false,
-	CheckToken:      false,
+	CheckToken:      true,
 	CheckBasicAuth:  false,
 	ChunkAPI:        false,
 	Doc:             "",
