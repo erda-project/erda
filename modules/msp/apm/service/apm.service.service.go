@@ -60,8 +60,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 	}
 	if req.ServiceName != "" {
-		queryParams["service_name"] = structpb.NewStringValue(req.ServiceName)
-		condition += " AND service_name::tag=$service_name "
+		condition += " AND service_name::tag=~/.*" + req.ServiceName + ".*/ "
 	}
 	statement = strings.ReplaceAll(statement, "$condition", condition)
 	request := &metricpb.QueryWithInfluxFormatRequest{
