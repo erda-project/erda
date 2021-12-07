@@ -319,8 +319,38 @@ func (p *ComponentPodsTable) RenderTable() error {
 			containerNames = append(containerNames, containerStatus.String("name"))
 			containerIDs = append(containerIDs, getContainerID(containerStatus.String("containerID")))
 		}
-		if len(containerNames) == 0 || len(containerIDs) == 0 {
-			continue
+
+		operate := Operate{
+			Value:      "<none>",
+			RenderType: "text",
+		}
+		if len(containerNames) != 0 && len(containerIDs) != 0 {
+			operate = Operate{
+				Operations: map[string]Operation{
+					"log": {
+						Key:    "checkLog",
+						Text:   p.sdk.I18n("log"),
+						Reload: false,
+						Meta: map[string]interface{}{
+							"containerName": containerNames[0],
+							"podName":       name,
+							"namespace":     namespace,
+							"containerId":   containerIDs[0],
+						},
+					},
+					"console": {
+						Key:    "checkConsole",
+						Text:   p.sdk.I18n("console"),
+						Reload: false,
+						Meta: map[string]interface{}{
+							"containerName": containerNames[0],
+							"podName":       name,
+							"namespace":     namespace,
+						},
+					},
+				},
+				RenderType: "tableOperation",
+			}
 		}
 
 		id := fmt.Sprintf("%s_%s", podNamespace, podName)
@@ -466,32 +496,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
 			NodeName:        fields[6],
-			Operate: Operate{
-				Operations: map[string]Operation{
-					"log": {
-						Key:    "checkLog",
-						Text:   p.sdk.I18n("log"),
-						Reload: false,
-						Meta: map[string]interface{}{
-							"containerName": containerNames[0],
-							"podName":       name,
-							"namespace":     namespace,
-							"containerId":   containerIDs[0],
-						},
-					},
-					"console": {
-						Key:    "checkConsole",
-						Text:   p.sdk.I18n("console"),
-						Reload: false,
-						Meta: map[string]interface{}{
-							"containerName": containerNames[0],
-							"podName":       name,
-							"namespace":     namespace,
-						},
-					},
-				},
-				RenderType: "tableOperation",
-			},
+			Operate:         operate,
 		})
 	}
 

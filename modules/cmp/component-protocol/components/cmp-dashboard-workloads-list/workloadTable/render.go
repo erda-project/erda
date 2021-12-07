@@ -161,7 +161,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	abnormalCount := map[apistructs.K8SResType]int{}
 	succeededCount := map[apistructs.K8SResType]int{}
 	failedCount := map[apistructs.K8SResType]int{}
-	updateCount := map[apistructs.K8SResType]int{}
+	updatingCount := map[apistructs.K8SResType]int{}
 
 	for _, kind := range []apistructs.K8SResType{apistructs.K8SDeployment, apistructs.K8SStatefulSet,
 		apistructs.K8SDaemonSet, apistructs.K8SJob, apistructs.K8SCronJob} {
@@ -255,7 +255,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				if statusValue == "Active" {
 					activeCount[kind]++
 				} else if statusValue == "Updating" {
-					updateCount[kind]++
+					updatingCount[kind]++
 				} else {
 					abnormalCount[kind]++
 				}
@@ -270,6 +270,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 				if statusValue == "Active" {
 					activeCount[kind]++
+				} else if statusValue == "Updating" {
+					updatingCount[kind]++
 				} else {
 					abnormalCount[kind]++
 				}
@@ -286,6 +288,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 				if statusValue == "Active" {
 					activeCount[kind]++
+				} else if statusValue == "Updating" {
+					updatingCount[kind]++
 				} else {
 					abnormalCount[kind]++
 				}
@@ -325,15 +329,17 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 		DeploymentsCount: Count{
 			Active:   activeCount[apistructs.K8SDeployment],
 			Abnormal: abnormalCount[apistructs.K8SDeployment],
-			Updating: updateCount[apistructs.K8SDeployment],
+			Updating: updatingCount[apistructs.K8SDeployment],
 		},
 		DaemonSetCount: Count{
 			Active:   activeCount[apistructs.K8SDaemonSet],
 			Abnormal: abnormalCount[apistructs.K8SDaemonSet],
+			Updating: updatingCount[apistructs.K8SDaemonSet],
 		},
 		StatefulSetCount: Count{
 			Active:   activeCount[apistructs.K8SStatefulSet],
 			Abnormal: abnormalCount[apistructs.K8SStatefulSet],
+			Updating: updatingCount[apistructs.K8SStatefulSet],
 		},
 		JobCount: Count{
 			Active:    activeCount[apistructs.K8SJob],

@@ -88,10 +88,12 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	// daemonSet
 	activeDs := w.State.Values.DaemonSetCount.Active
 	abnormalDs := w.State.Values.DaemonSetCount.Abnormal
+	updatingDs := w.State.Values.DaemonSetCount.Updating
 
 	// statefulSet
 	activeSs := w.State.Values.StatefulSetCount.Active
 	abnormalSs := w.State.Values.StatefulSetCount.Abnormal
+	updatingSs := w.State.Values.StatefulSetCount.Updating
 
 	// job
 	activeJob := w.State.Values.JobCount.Active
@@ -147,7 +149,7 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			&updatingDeploy, nil, nil, nil, nil,
+			&updatingDeploy, &updatingSs, &updatingDs, nil, nil,
 		},
 	}
 	w.Data.Option.Series = []Series{
