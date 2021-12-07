@@ -86,9 +86,6 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	if err != nil {
 		return []error{fmt.Errorf("no enabled vms channel, orgID: %d, err: %v", voiceData.OrgID, err)}
 	}
-	if notifyChannel.ID == "" {
-		return []error{fmt.Errorf("no enabled vms channel, orgID: %d", voiceData.OrgID)}
-	}
 
 	accessKeyID, accessSecret := d.accessKeyID, d.accessSecret
 	if org.Config != nil && org.Config.VMSKeyID != "" && org.Config.VMSKeySecret != "" {

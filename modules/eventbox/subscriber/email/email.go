@@ -157,9 +157,6 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 	if err != nil {
 		return fmt.Errorf("no enabled email channel, orgID: %d, err: %v", mailData.OrgID, err)
 	}
-	if notifyChannel.ID == "" {
-		return fmt.Errorf("no enabled email channel, orgID: %d", mailData.OrgID)
-	}
 
 	if org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
 		orgConfig := org.Config
