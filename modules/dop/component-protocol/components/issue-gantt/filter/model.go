@@ -44,9 +44,10 @@ type State struct {
 }
 
 type FrontendConditions struct {
-	IterationIDs []int64  `json:"iteration,omitempty"`
-	AssigneeIDs  []string `json:"member,omitempty"`
-	LabelIDs     []uint64 `json:"label,omitempty"`
+	// IterationIDs []int64  `json:"iteration,omitempty"`
+	IterationID int64    `json:"iteration,omitempty"`
+	AssigneeIDs []string `json:"member,omitempty"`
+	LabelIDs    []uint64 `json:"label,omitempty"`
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"

@@ -959,9 +959,7 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 	if r.Severity != nil {
 		fields["severity"] = *r.Severity
 	}
-	if r.PlanStartedAt != nil {
-		fields["plan_started_at"] = r.PlanStartedAt
-	}
+	fields["plan_started_at"] = r.PlanStartedAt
 	fields["plan_finished_at"] = r.PlanFinishedAt
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee

@@ -78,7 +78,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			IssueListRequest: apistructs.IssueListRequest{
 				ProjectID:    f.projectID,
 				Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
-				IterationIDs: f.State.Values.IterationIDs,
+				IterationIDs: []int64{f.State.Values.IterationID},
 				Label:        f.State.Values.LabelIDs,
 				Assignees:    f.State.Values.AssigneeIDs,
 			},
