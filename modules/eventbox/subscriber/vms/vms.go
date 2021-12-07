@@ -101,16 +101,14 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	// 属于专属号码外呼的时候，被叫显号不能为空
 	// 通知组的语音模版和被叫显号存在notifyitem里
 	ttsCode, calledShowNumber := voiceData.Template, voiceData.CalledShowNumber
-	if msg.Sender == "analyzer-alert" {
-		// 因为目前监控只用一个模板，所以监控的语音模版和被呼号码存在orgConfig里或者环境变量里
-		ttsCode, calledShowNumber = d.monitorTtsCode, d.monitorCalledShowNumber
-		if org.Config != nil && org.Config.VMSMonitorTtsCode != "" {
-			ttsCode, calledShowNumber = org.Config.VMSMonitorTtsCode, org.Config.VMSMonitorCalledShowNumber
-		}
-		if notifyChannel.Config != nil && notifyChannel.Config.VMSTtsCode != "" {
-			ttsCode = notifyChannel.Config.VMSTtsCode
-			calledShowNumber = ""
-		}
+	// 因为目前监控只用一个模板，所以监控的语音模版和被呼号码存在orgConfig里或者环境变量里
+	ttsCode, calledShowNumber = d.monitorTtsCode, d.monitorCalledShowNumber
+	if org.Config != nil && org.Config.VMSMonitorTtsCode != "" {
+		ttsCode, calledShowNumber = org.Config.VMSMonitorTtsCode, org.Config.VMSMonitorCalledShowNumber
+	}
+	if notifyChannel.Config != nil && notifyChannel.Config.VMSTtsCode != "" {
+		ttsCode = notifyChannel.Config.VMSTtsCode
+		calledShowNumber = ""
 	}
 
 	if ttsCode == "" {
