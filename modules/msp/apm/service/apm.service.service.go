@@ -53,8 +53,8 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	end := time.Now().UnixNano() / 1e6
 
 	// get services list
-	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,MAX(timestamp) FROM application_service_node "+
-		"WHERE $condition GROUP BY service_id::tag ORDER BY MAX(start_time_min::field) DESC LIMIT %v OFFSET %v", req.PageSize, (req.PageNo-1)*req.PageSize)
+	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp) FROM application_service_node "+
+		"WHERE $condition GROUP BY service_id::tag ORDER BY max(timestamp) DESC LIMIT %v OFFSET %v", req.PageSize, (req.PageNo-1)*req.PageSize)
 	condition := " terminus_key::tag=$terminus_key "
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(req.TenantId),
