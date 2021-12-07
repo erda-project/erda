@@ -10,6 +10,8 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	_ "google.golang.org/protobuf/types/known/anypb"
+	_ "google.golang.org/protobuf/types/known/structpb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -18,6 +20,8 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 func (this *LogItem) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *GetLogRequest) Validate() error {
@@ -27,6 +31,89 @@ func (this *GetLogByRuntimeRequest) Validate() error {
 	return nil
 }
 func (this *GetLogByOrganizationRequest) Validate() error {
+	return nil
+}
+func (this *QueryMeta) Validate() error {
+	return nil
+}
+func (this *LogUniqueID) Validate() error {
+	return nil
+}
+func (this *ExtraFilter) Validate() error {
+	if this.After != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.After); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("After", err)
+		}
+	}
+	return nil
+}
+func (this *GetLogByExpressionRequest) Validate() error {
+	if this.QueryMeta != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.QueryMeta); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("QueryMeta", err)
+		}
+	}
+	if this.ExtraFilter != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ExtraFilter); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("ExtraFilter", err)
+		}
+	}
+	return nil
+}
+func (this *HistogramAggOptions) Validate() error {
+	return nil
+}
+func (this *TermsAggOptions) Validate() error {
+	if this.Missing != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Missing); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Missing", err)
+		}
+	}
+	return nil
+}
+func (this *AggregationDescriptor) Validate() error {
+	if this.Options != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Options); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Options", err)
+		}
+	}
+	return nil
+}
+func (this *LogAggregationRequest) Validate() error {
+	if this.Query != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Query); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Query", err)
+		}
+	}
+	for _, item := range this.Aggregations {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Aggregations", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *AggregationBucket) Validate() error {
+	if this.Key != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Key); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Key", err)
+		}
+	}
+	return nil
+}
+func (this *AggregationResult) Validate() error {
+	for _, item := range this.Buckets {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Buckets", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *LogAggregationResponse) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *GetLogResponse) Validate() error {
@@ -50,6 +137,16 @@ func (this *GetLogByRuntimeResponse) Validate() error {
 	return nil
 }
 func (this *GetLogByOrganizationResponse) Validate() error {
+	for _, item := range this.Lines {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Lines", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *GetLogByExpressionResponse) Validate() error {
 	for _, item := range this.Lines {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
