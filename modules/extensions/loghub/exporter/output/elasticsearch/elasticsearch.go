@@ -31,6 +31,7 @@ type config struct {
 		Prefix string `file:"prefix"`
 		Index  string `file:"index"`
 	} `file:"index"`
+	Disabled bool `file:"disabled"`
 }
 
 type provider struct {
@@ -42,6 +43,10 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if p.C.Disabled {
+		p.L.Warnf("provider disabled")
+		return nil
+	}
 	p.exp = ctx.Service("logs-exporter-base").(exporter.Interface)
 	p.es = ctx.Service("elasticsearch").(elasticsearch.Interface)
 	p.output = p.es.NewBatchWriter(&p.C.WriterConfig)
@@ -49,6 +54,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Start() error {
+	if p.exp == nil {
+		return nil
+	}
 	return p.exp.NewConsumer(p.newOutput)
 }
 

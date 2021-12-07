@@ -43,6 +43,10 @@ type (
 		Close() error
 	}
 
+	Counter interface {
+		Total() (int64, error)
+	}
+
 	// Flusher
 	Flusher interface {
 		Flush() error

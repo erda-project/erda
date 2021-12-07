@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package log_service
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_ADDON_LOGS_SEARCH_SEQUENTIAL = apis.ApiSpec{
+var MSP_ADDON_LOGS_SEARCH_SEQUENTIAL = apis.ApiSpec{
 	Path:        "/api/log-analytics/<addon>/sequentialSearch",
-	BackendPath: "/api/micro_service/<addon>/logs/sequentialSearch",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	BackendPath: "/api/log-service/<addon>/search/sequential",
+	Host:        "MSP.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

@@ -15,6 +15,7 @@
 package storekit
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/recallsong/go-utils/conv"
@@ -43,6 +44,9 @@ func (it EmptyIterator) Error() error { return nil }
 
 // Close .
 func (it EmptyIterator) Close() error { return nil }
+
+// Total .
+func (it EmptyIterator) Total() (int64, error) { return 0, nil }
 
 // Int64Comparer .
 type Int64Comparer struct{}
@@ -126,6 +130,11 @@ func (it *ListIterator) Error() error { return nil }
 
 // Close .
 func (it *ListIterator) Close() error { return nil }
+
+// Total .
+func (it *ListIterator) Total() (int64, error) {
+	return int64(len(it.list)), nil
+}
 
 // MergedHeadOverlappedIterator .
 func MergedHeadOverlappedIterator(cmp Comparer, its ...Iterator) Iterator {
@@ -297,4 +306,20 @@ func (it *headOverlappedIterator) Close() error {
 		}
 	}
 	return err
+}
+
+func (it *headOverlappedIterator) Total() (int64, error) {
+	var total int64
+	for _, item := range it.its {
+		counter, ok := item.Iterator.(Counter)
+		if !ok {
+			return total, fmt.Errorf("%T not implement %T", item, counter)
+		}
+		count, err := counter.Total()
+		if err != nil {
+			return total, err
+		}
+		total += count
+	}
+	return total, nil
 }
