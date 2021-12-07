@@ -21,15 +21,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
-
-	"github.com/erda-project/erda-infra/providers/cassandra"
-	"github.com/gocql/gocql"
-
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
+	"github.com/gocql/gocql"
+	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-infra/providers/cassandra"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/i18n"
