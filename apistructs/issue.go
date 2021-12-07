@@ -768,6 +768,8 @@ type IssueListRequest struct {
 	CustomPanelID int64 `json:"customPanelID"`
 
 	OnlyIDResult bool `json:"onlyIdResult"`
+	// issues not included by others
+	NotIncluded bool `json:"notIncluded"`
 }
 
 func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
