@@ -132,7 +132,11 @@ func (r *Resource) GetQuotaResource(ctx context.Context, ordId string, userID st
 		return
 	}
 	// 1. filter Cluster
-	names := r.FilterCluster(clusters, clusterNames)
+	var filter = make(map[string]struct{})
+	for _, cluster := range clusterNames {
+		filter[cluster] = struct{}{}
+	}
+	names := r.FilterCluster(clusters, filter)
 	if len(names) == 0 {
 		return nil, errNoClusterFound
 	}
@@ -230,21 +234,17 @@ func (r *Resource) GetQuotaResource(ctx context.Context, ordId string, userID st
 	return
 }
 
-func (r *Resource) FilterCluster(clusters []apistructs.ClusterInfo, clusterNames []string) []string {
-	names := make([]string, 0)
-	queryCluster := make(map[string]bool)
-	for _, name := range clusterNames {
-		queryCluster[name] = true
-	}
-	if len(queryCluster) == 0 {
-		for i := 0; i < len(clusters); i++ {
-			names = append(names, clusters[i].Name)
+func (r *Resource) FilterCluster(clusters []apistructs.ClusterInfo, clusterNames map[string]struct{}) []string {
+	var names []string
+	if len(clusterNames) == 0 {
+		for _, cluster := range clusters {
+			names = append(names, cluster.Name)
 		}
-	} else {
-		for i := 0; i < len(clusters); i++ {
-			if queryCluster[clusters[i].Name] {
-				names = append(names, clusters[i].Name)
-			}
+		return names
+	}
+	for _, cluster := range clusters {
+		if _, ok := clusterNames[cluster.Name]; ok {
+			names = append(names, cluster.Name)
 		}
 	}
 	return names

@@ -18,13 +18,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
+
+const listRuntimesGroupByAppsAPI = "/api/runtimes/actions/group-by-apps"
 
 func GetApplicationRuntimesAPI() string {
 	return "/api/runtimes"
@@ -129,10 +130,37 @@ func (b *Bundle) GetApplicationRuntimes(applicationID uint64, orgID uint64, user
 	return fetchResp.Data, nil
 }
 
-// GetApplicationsRuntimes queries the runtimes for the given applications ids
-func (b *Bundle) GetApplicationsRuntimes(orgID uint64, userID string, applicationsIDs []uint64) (map[uint64][]*GetApplicationRuntimesDataEle, error) {
-	// todo:
-	return nil, errors.New("not implement")
+// ListRuntimesGroupByApps queries the runtimes for the given applications ids
+func (b *Bundle) ListRuntimesGroupByApps(orgID uint64, userID string, applicationsIDs []uint64) (map[uint64][]*GetApplicationRuntimesDataEle, error) {
+	l := logrus.WithField("func", "*Bundle.ListRuntimesGroupByApps")
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+
+	type response struct {
+		apistructs.Header
+		Data map[uint64][]*GetApplicationRuntimesDataEle `json:"data"`
+	}
+	var fetchResp response
+	request := b.hc.Get(host).
+		Path(listRuntimesGroupByAppsAPI).
+		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", userID).
+		Header("Org-ID", strconv.FormatUint(orgID, 10))
+	for _, appID := range applicationsIDs {
+		request.Param("applicationID", strconv.FormatUint(appID, 10))
+	}
+	resp, err := request.Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, err
+	}
+	l.Infof("body: %s", string(resp.Body()))
+	if !resp.IsOK() || !fetchResp.Success {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return fetchResp.Data, nil
 }
 
 type GetRuntimeServicesResponse struct {
