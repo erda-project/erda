@@ -163,7 +163,7 @@ func Test_apmServiceService_GetServiceAnalyzerOverview(t *testing.T) {
 	}{
 		{"case1", args{req: &pb.GetServiceAnalyzerOverviewRequest{}}, true},
 		{"case2", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id"}}, true},
-		{"case3", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id_error", ServiceId: "test_service_id"}}, true},
+		{"case3", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id_error", ServiceIds: []string{"test_service_id"}}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

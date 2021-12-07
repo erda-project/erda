@@ -33,6 +33,16 @@ func (this *GetServiceAnalyzerOverviewResponse) Validate() error {
 	}
 	return nil
 }
+func (this *ServicesView) Validate() error {
+	for _, item := range this.Views {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Views", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *GetServicesRequest) Validate() error {
 	return nil
 }

@@ -39,12 +39,17 @@ service ApmServiceService {
 }
 
 message GetServiceAnalyzerOverviewRequest {
-  string tenantId  = 1;
-  string serviceId = 2;
+  string          tenantId   = 1;
+  repeated string serviceIds = 2;
 }
 
 message GetServiceAnalyzerOverviewResponse {
-  repeated ServiceChart list = 1;
+  repeated ServicesView list = 1;
+}
+
+message ServicesView {
+  string                serviceId = 1;
+  repeated ServiceChart views     = 2;
 }
 
 message GetServicesRequest {

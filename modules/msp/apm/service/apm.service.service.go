@@ -132,7 +132,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	if req.TenantId == "" {
 		return nil, errors.NewMissingParameterError("tenantId")
 	}
-	if req.ServiceId == "" {
+	if req.ServiceIds == nil || len(req.ServiceIds) == 0 {
 		return nil, errors.NewMissingParameterError("serviceId")
 	}
 
@@ -141,95 +141,104 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	start := time.Now().Add(h).UnixNano() / 1e6
 	end := time.Now().UnixNano() / 1e6
 
-	statement := "SELECT sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)" +
-		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service " +
-		"WHERE target_terminus_key::tag=$terminus_key AND target_service_id::tag=$service_id GROUP BY time(1m)"
-	queryParams := map[string]*structpb.Value{
-		"terminus_key": structpb.NewStringValue(req.TenantId),
-		"service_id":   structpb.NewStringValue(req.ServiceId),
-	}
-	request := &metricpb.QueryWithInfluxFormatRequest{
-		Start:     strconv.FormatInt(start, 10),
-		End:       strconv.FormatInt(end, 10),
-		Statement: statement,
-		Params:    queryParams,
-	}
-	serviceCharts := make([]*pb.ServiceChart, 0, 3)
-	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	servicesView := make([]*pb.ServicesView, 0, 10)
 
-	qpsCharts := make([]*pb.Chart, 0, 10)
-	durationCharts := make([]*pb.Chart, 0, 10)
-	errorRateCharts := make([]*pb.Chart, 0, 10)
+	for _, id := range req.ServiceIds {
 
-	rows := response.Results[0].Series[0].Rows
-
-	var (
-		countSum      int64
-		durationSum   int64
-		errorCountSum int64
-		avgDuration   float32
-		errorRate     float32
-	)
-	for _, row := range rows {
-		qpsChart := new(pb.Chart)
-		durationChart := new(pb.Chart)
-		errorRateChart := new(pb.Chart)
-		date := row.Values[0].GetStringValue()
-		parse, err := time.ParseInLocation("2006-01-02T15:04:05Z", date, time.Local)
+		statement := "SELECT sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)" +
+			"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service " +
+			"WHERE target_terminus_key::tag=$terminus_key AND target_service_id::tag=$service_id GROUP BY time(1m)"
+		queryParams := map[string]*structpb.Value{
+			"terminus_key": structpb.NewStringValue(req.TenantId),
+			"service_id":   structpb.NewStringValue(id),
+		}
+		request := &metricpb.QueryWithInfluxFormatRequest{
+			Start:     strconv.FormatInt(start, 10),
+			End:       strconv.FormatInt(end, 10),
+			Statement: statement,
+			Params:    queryParams,
+		}
+		serviceCharts := make([]*pb.ServiceChart, 0, 3)
+		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 		if err != nil {
-			return nil, err
-		}
-		timestamp := parse.UnixNano() / int64(time.Millisecond)
-		qpsChart.Timestamp = timestamp
-		durationChart.Timestamp = timestamp
-		errorRateChart.Timestamp = timestamp
-
-		count := int64(row.Values[1].GetNumberValue())
-		duration := int64(row.Values[2].GetNumberValue())
-		errorCount := int64(row.Values[3].GetNumberValue())
-		qpsChart.Value = float32(count) / 60
-		if count != 0 {
-			durationChart.Value = float32(duration / count)
-			errorRateChart.Value = float32(errorCount / count)
+			return nil, errors.NewInternalServerError(err)
 		}
 
-		countSum += count
-		durationSum += duration
-		errorCount += errorCount
+		qpsCharts := make([]*pb.Chart, 0, 10)
+		durationCharts := make([]*pb.Chart, 0, 10)
+		errorRateCharts := make([]*pb.Chart, 0, 10)
 
-		qpsCharts = append(qpsCharts, qpsChart)
-		durationCharts = append(durationCharts, durationChart)
-		errorRateCharts = append(errorRateCharts, errorRateChart)
+		rows := response.Results[0].Series[0].Rows
+
+		var (
+			countSum      int64
+			durationSum   int64
+			errorCountSum int64
+			avgDuration   float32
+			errorRate     float32
+		)
+		for _, row := range rows {
+			qpsChart := new(pb.Chart)
+			durationChart := new(pb.Chart)
+			errorRateChart := new(pb.Chart)
+			date := row.Values[0].GetStringValue()
+			parse, err := time.ParseInLocation("2006-01-02T15:04:05Z", date, time.Local)
+			if err != nil {
+				return nil, err
+			}
+			timestamp := parse.UnixNano() / int64(time.Millisecond)
+			qpsChart.Timestamp = timestamp
+			durationChart.Timestamp = timestamp
+			errorRateChart.Timestamp = timestamp
+
+			count := int64(row.Values[1].GetNumberValue())
+			duration := int64(row.Values[2].GetNumberValue())
+			errorCount := int64(row.Values[3].GetNumberValue())
+			qpsChart.Value = float32(count) / 60
+			if count != 0 {
+				durationChart.Value = float32(duration / count)
+				errorRateChart.Value = float32(errorCount / count)
+			}
+
+			countSum += count
+			durationSum += duration
+			errorCount += errorCount
+
+			qpsCharts = append(qpsCharts, qpsChart)
+			durationCharts = append(durationCharts, durationChart)
+			errorRateCharts = append(errorRateCharts, errorRateChart)
+		}
+
+		if countSum != 0 {
+			avgDuration = float32(durationSum / countSum)
+			errorRate = float32(errorCountSum / countSum)
+		}
+
+		// QPS Chart
+		serviceCharts = append(serviceCharts, &pb.ServiceChart{
+			Type: pb.ChartType_QPS.String(),
+			Data: float32(countSum / (60 * 60)),
+			View: qpsCharts,
+		})
+
+		// Avg Duration Chart
+		serviceCharts = append(serviceCharts, &pb.ServiceChart{
+			Type: pb.ChartType_AvgDuration.String(),
+			Data: avgDuration,
+			View: durationCharts,
+		})
+
+		// Error Rate Chart
+		serviceCharts = append(serviceCharts, &pb.ServiceChart{
+			Type: pb.ChartType_ErrorRate.String(),
+			Data: errorRate,
+			View: errorRateCharts,
+		})
+
+		servicesView = append(servicesView, &pb.ServicesView{
+			ServiceId: id,
+			Views:     serviceCharts,
+		})
 	}
-
-	if countSum != 0 {
-		avgDuration = float32(durationSum / countSum)
-		errorRate = float32(errorCountSum / countSum)
-	}
-
-	// QPS Chart
-	serviceCharts = append(serviceCharts, &pb.ServiceChart{
-		Type: pb.ChartType_QPS.String(),
-		Data: float32(countSum / (60 * 60)),
-		View: qpsCharts,
-	})
-
-	// Avg Duration Chart
-	serviceCharts = append(serviceCharts, &pb.ServiceChart{
-		Type: pb.ChartType_AvgDuration.String(),
-		Data: avgDuration,
-		View: durationCharts,
-	})
-
-	// Error Rate Chart
-	serviceCharts = append(serviceCharts, &pb.ServiceChart{
-		Type: pb.ChartType_ErrorRate.String(),
-		Data: errorRate,
-		View: errorRateCharts,
-	})
-
-	return &pb.GetServiceAnalyzerOverviewResponse{List: serviceCharts}, nil
+	return &pb.GetServiceAnalyzerOverviewResponse{List: servicesView}, nil
 }

@@ -17,6 +17,8 @@ var _ json.Marshaler = (*GetServiceAnalyzerOverviewRequest)(nil)
 var _ json.Unmarshaler = (*GetServiceAnalyzerOverviewRequest)(nil)
 var _ json.Marshaler = (*GetServiceAnalyzerOverviewResponse)(nil)
 var _ json.Unmarshaler = (*GetServiceAnalyzerOverviewResponse)(nil)
+var _ json.Marshaler = (*ServicesView)(nil)
+var _ json.Unmarshaler = (*ServicesView)(nil)
 var _ json.Marshaler = (*GetServicesRequest)(nil)
 var _ json.Unmarshaler = (*GetServicesRequest)(nil)
 var _ json.Marshaler = (*GetServicesResponse)(nil)
@@ -59,6 +61,24 @@ func (m *GetServiceAnalyzerOverviewResponse) MarshalJSON() ([]byte, error) {
 
 // GetServiceAnalyzerOverviewResponse implement json.Marshaler.
 func (m *GetServiceAnalyzerOverviewResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ServicesView implement json.Marshaler.
+func (m *ServicesView) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ServicesView implement json.Marshaler.
+func (m *ServicesView) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

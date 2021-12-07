@@ -14,6 +14,7 @@ import (
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*GetServiceAnalyzerOverviewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetServiceAnalyzerOverviewResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ServicesView)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetServicesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetServicesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Chart)(nil)
@@ -27,8 +28,8 @@ func (m *GetServiceAnalyzerOverviewRequest) UnmarshalURLValues(prefix string, va
 			switch prefix + key {
 			case "tenantId":
 				m.TenantId = vals[0]
-			case "serviceId":
-				m.ServiceId = vals[0]
+			case "serviceIds":
+				m.ServiceIds = vals
 			}
 		}
 	}
@@ -37,6 +38,19 @@ func (m *GetServiceAnalyzerOverviewRequest) UnmarshalURLValues(prefix string, va
 
 // GetServiceAnalyzerOverviewResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetServiceAnalyzerOverviewResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ServicesView implement urlenc.URLValuesUnmarshaler.
+func (m *ServicesView) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "serviceId":
+				m.ServiceId = vals[0]
+			}
+		}
+	}
 	return nil
 }
 
