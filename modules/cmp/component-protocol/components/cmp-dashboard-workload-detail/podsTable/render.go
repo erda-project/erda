@@ -680,7 +680,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		}
 		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-		value = fmt.Sprintf("%.2f", usedPercent)
+		value = fmt.Sprintf("%.1f", usedPercent)
 	} else {
 		totRes = totQty.Value()
 		usedRes = float64(totRes) * usedPercent / 100
@@ -693,7 +693,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		}
 		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
-		value = fmt.Sprintf("%.2f", usedPercent)
+		value = fmt.Sprintf("%.1f", usedPercent)
 	}
 	return status, value, tip
 }
@@ -725,7 +725,6 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "nodeName",
@@ -736,43 +735,36 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			DataIndex: "age",
 			Title:     cputil.I18n(ctx, "age"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "cpuRequests",
 			Title:     cputil.I18n(ctx, "cpuRequests"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "cpuLimits",
 			Title:     cputil.I18n(ctx, "cpuLimits"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "cpuPercent",
 			Title:     cputil.I18n(ctx, "cpuPercent"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "memoryRequests",
 			Title:     cputil.I18n(ctx, "memoryRequests"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "memoryLimits",
 			Title:     cputil.I18n(ctx, "memoryLimits"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "memoryPercent",
 			Title:     cputil.I18n(ctx, "memoryPercent"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		//{
 		//	DataIndex: "operate",

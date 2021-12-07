@@ -189,12 +189,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		{
 			DataIndex: "restartCount",
 			Title:     cputil.I18n(ctx, "restartCount"),
-			Align:     "right",
 		},
 		{
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
-			Fixed:     "right",
 		},
 	}
 	containerTable.Transfer(c)

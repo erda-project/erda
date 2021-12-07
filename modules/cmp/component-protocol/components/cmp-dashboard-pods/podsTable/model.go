@@ -156,6 +156,7 @@ type Column struct {
 	Sorter    bool   `json:"sorter"`
 	Fixed     string `json:"fixed,omitempty"`
 	Align     string `json:"align,omitempty"`
+	Hidden    bool   `json:"hidden"`
 }
 
 type Operation struct {

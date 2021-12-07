@@ -530,49 +530,41 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 		DataIndex: "age",
 		Title:     cputil.I18n(ctx, "age"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	readyColumn := Column{
 		DataIndex: "ready",
 		Title:     cputil.I18n(ctx, "ready"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	upToDateColumn := Column{
 		DataIndex: "upToDate",
 		Title:     cputil.I18n(ctx, "upToDate"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	availableColumn := Column{
 		DataIndex: "available",
 		Title:     cputil.I18n(ctx, "available"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	desiredColumn := Column{
 		DataIndex: "desired",
 		Title:     cputil.I18n(ctx, "desired"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	currentColumn := Column{
 		DataIndex: "current",
 		Title:     cputil.I18n(ctx, "current"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	completionsColumn := Column{
 		DataIndex: "completions",
 		Title:     cputil.I18n(ctx, "completions"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	durationColumn := Column{
 		DataIndex: "duration",
 		Title:     cputil.I18n(ctx, "jobDuration"),
 		Sorter:    true,
-		Align:     "right",
 	}
 	scheduleColumn := Column{
 		DataIndex: "schedule",
@@ -583,7 +575,6 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 		DataIndex: "lastSchedule",
 		Title:     cputil.I18n(ctx, "lastSchedule"),
 		Sorter:    true,
-		Align:     "right",
 	}
 
 	if len(w.State.Values.Kind) != 1 {

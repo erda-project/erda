@@ -424,7 +424,6 @@ func TestComponentWorkloadTable_Transfer(t *testing.T) {
 					DataIndex: "test",
 					Title:     "testTitle",
 					Sorter:    true,
-					Align:     "right",
 				},
 			},
 			RowKey:         "testKey",

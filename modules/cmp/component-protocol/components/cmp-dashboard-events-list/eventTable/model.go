@@ -82,6 +82,7 @@ type Column struct {
 	Title     string `json:"title,omitempty"`
 	Sorter    bool   `json:"sorter,omitempty"`
 	Align     string `json:"align,omitempty"`
+	Hidden    bool   `json:"hidden"`
 }
 
 type Operation struct {
