@@ -20,16 +20,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda-infra/providers/cassandra"
-
 	"bou.ke/monkey"
-	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/gocql/gocql"
-
 	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/cassandra"
 	eventpb "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	commonPb "github.com/erda-project/erda-proto-go/oap/common/pb"
 	entitypb "github.com/erda-project/erda-proto-go/oap/entity/pb"
