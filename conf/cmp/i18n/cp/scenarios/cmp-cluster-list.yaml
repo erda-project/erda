@@ -5,10 +5,10 @@ zh:
   Disk: 磁盘
   Memory: 内存
   manage type: 管理方式
-  create time: 创建时间
+  update time: 更新时间
   machine count: 机器数
   cluster type: 类型
-  cluster version: 版本
+  cluster version: Erda 版本
   Edit Configuration: 修改配置
   Add Machine: 添加机器
   Add Ali Cloud Machine: 添加阿里云机器

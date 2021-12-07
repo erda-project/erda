@@ -277,7 +277,9 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	for i := 0; i < len(clusters); i++ {
 		res[clusters[i].Name] = &ResData{}
 		clusterNames = append(clusterNames, clusters[i].Name)
-		clusterInfos[clusters[i].Name] = &ClusterInfoDetail{}
+		ci := &ClusterInfoDetail{}
+		ci.Name = clusters[i].Name
+		clusterInfos[clusters[i].Name] = ci
 	}
 	go func() {
 		logrus.Infof("get nodes start")
@@ -336,6 +338,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 				clusterInfos[c.Name].ClusterType = ci.Get(apistructs.DICE_CLUSTER_TYPE)
 				clusterInfos[c.Name].Management = common.ParseManageType(c.ManageConfig)
 				clusterInfos[c.Name].CreateTime = c.CreatedAt.Format("2006-01-02")
+				clusterInfos[c.Name].UpdateTime = c.UpdatedAt.Format("2006-01-02")
 				kc, err := k8sclient.NewWithTimeOut(c.Name, 2*time.Second)
 				if err != nil {
 					logrus.Error(err)
@@ -400,6 +403,17 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	logrus.Infof("cluster get data finished")
 	return d, nil
 }
+func (l *List) GetVersion(clusterName string) (string, error) {
+	client, err := k8sclient.New(clusterName)
+	if err != nil {
+		return "", err
+	}
+	info, err := client.ClientSet.ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	return info.GitVersion, nil
+}
 
 func (l *List) GetBgImage(c apistructs.ClusterInfo) string {
 	switch c.Type {
@@ -430,10 +444,11 @@ func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
 			Text:    l.WithManage(clusterInfo),
 			Tooltip: l.SDK.I18n("manage type"),
 		},
+
 		ExtraInfos{
-			Icon:    "create-time",
-			Text:    l.WithCreateTime(clusterInfo),
-			Tooltip: l.SDK.I18n("create time"),
+			Icon:    "machine",
+			Text:    l.WithMachine(clusterInfo),
+			Tooltip: l.SDK.I18n("machine count"),
 		},
 		ExtraInfos{
 			Icon:    "version",
@@ -441,9 +456,9 @@ func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
 			Tooltip: l.SDK.I18n("cluster version"),
 		},
 		ExtraInfos{
-			Icon:    "machine",
-			Text:    l.WithMachine(clusterInfo),
-			Tooltip: l.SDK.I18n("machine count"),
+			Icon:    "update-time",
+			Text:    l.WithUpdateTime(clusterInfo),
+			Tooltip: l.SDK.I18n("update time"),
 		},
 	)
 	return ei
@@ -456,11 +471,11 @@ func (l *List) WithVersion(clusterInfo *ClusterInfoDetail) string {
 		return clusterInfo.Version
 	}
 }
-func (l *List) WithCreateTime(clusterInfo *ClusterInfoDetail) string {
-	if clusterInfo.CreateTime == "" {
+func (l *List) WithUpdateTime(clusterInfo *ClusterInfoDetail) string {
+	if clusterInfo.UpdateTime == "" {
 		return "-"
 	} else {
-		return clusterInfo.CreateTime
+		return clusterInfo.UpdateTime
 	}
 }
 func (l *List) WithManage(clusterInfo *ClusterInfoDetail) string {
@@ -474,6 +489,13 @@ func (l *List) WithType(clusterInfo *ClusterInfoDetail) string {
 	if clusterInfo.ClusterType == "" {
 		return "-"
 	} else {
+		if clusterInfo.ClusterType == "kubernetes" {
+			vs, err := l.GetVersion(clusterInfo.Name)
+			if err != nil {
+				return clusterInfo.ClusterType
+			}
+			return clusterInfo.ClusterType + "(" + vs + ")"
+		}
 		return clusterInfo.ClusterType
 	}
 }
