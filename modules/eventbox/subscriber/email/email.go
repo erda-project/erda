@@ -110,9 +110,6 @@ func (d *MailSubscriber) IsSSL() bool {
 
 func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *types.Message) []error {
 	errs := []error{}
-	if d.host == "" {
-		return errs
-	}
 	var mails []string
 	var mailData MailData
 	err := json.Unmarshal([]byte(dest), &mails)
@@ -179,6 +176,10 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpHost = notifyChannel.Config.SMTPHost
 		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
 		isSSL = notifyChannel.Config.SMTPIsSSL
+	}
+
+	if smtpHost == "" {
+		return fmt.Errorf("send email host is null")
 	}
 
 	params := mailData.Params

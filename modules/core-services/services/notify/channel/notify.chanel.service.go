@@ -134,8 +134,8 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	if req.PageNo < 1 {
 		req.PageNo = 1
 	}
-	if req.PageSize < 15 {
-		req.PageSize = 15
+	if req.PageSize < 10 {
+		req.PageSize = 10
 	}
 	if req.PageSize > 60 {
 		req.PageSize = 60
