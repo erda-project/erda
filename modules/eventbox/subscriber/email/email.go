@@ -108,16 +108,6 @@ func (d *MailSubscriber) IsSSL() bool {
 	return d.isSSL
 }
 
-func (d *MailSubscriber) IsSSLInConfig(SMTPPort, SMTPIsSSL string) (bool, error) {
-	if SMTPIsSSL == "" {
-		if SMTPPort == "465" {
-			return true, nil
-		}
-		return false, nil
-	}
-	return strconv.ParseBool(SMTPIsSSL)
-}
-
 func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *types.Message) []error {
 	errs := []error{}
 	if d.host == "" {
@@ -188,11 +178,7 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpPassword = notifyChannel.Config.SMTPPassword
 		smtpHost = notifyChannel.Config.SMTPHost
 		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
-		ssl, err := d.IsSSLInConfig(smtpPort, notifyChannel.Config.SMTPIsSSL)
-		if err != nil {
-			return err
-		}
-		isSSL = ssl
+		isSSL = notifyChannel.Config.SMTPIsSSL
 	}
 
 	params := mailData.Params

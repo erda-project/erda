@@ -50,7 +50,7 @@ type NotifyChannelConfig struct {
 	SMTPUser        string `json:"smtpUser"`
 	SMTPPassword    string `json:"smtpPassword"`
 	SMTPPort        int64  `json:"smtpPort"`
-	SMTPIsSSL       string `json:"smtpIsSsl"`
+	SMTPIsSSL       bool   `json:"smtpIsSsl"`
 	VMSTtsCode      string `json:"vmsTtsCode"`
 }
 

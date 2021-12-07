@@ -42,6 +42,13 @@ type notifyChannelService struct {
 	NotifyChannelDB *db.NotifyChannelDB
 }
 
+var ProviderAndType = map[string]string{
+	pb.ProviderType_ALIYUN_SMS.String(): pb.Type_SHORT_MESSAGE.String(),
+	pb.ProviderType_DINGTALK.String():   pb.Type_DINGTALK_WORK_NOTICE.String(),
+	pb.ProviderType_SMTP.String():       pb.Type_EMAIL.String(),
+	pb.ProviderType_ALIYUN_VMS.String(): pb.Type_VMS.String(),
+}
+
 func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.CreateNotifyChannelRequest) (*pb.CreateNotifyChannelResponse, error) {
 	if req.Name == "" {
 		return nil, pkgerrors.NewMissingParameterError("name")
@@ -284,52 +291,22 @@ func (s *notifyChannelService) DeleteNotifyChannel(ctx context.Context, req *pb.
 }
 
 func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *pb.GetNotifyChannelTypesRequest) (*pb.GetNotifyChannelTypesResponse, error) {
-
 	language := apis.Language(ctx)
 
-	var shortMessageProviderTypes []*pb.NotifyChannelProviderType
-	shortMessageProviderTypes = append(shortMessageProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_SMS.String())),
-	})
-	var dingWorkNoticeProviderTypes []*pb.NotifyChannelProviderType
-	dingWorkNoticeProviderTypes = append(dingWorkNoticeProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_DINGTALK.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_DINGTALK.String())),
-	})
-	var emailProviderTypes []*pb.NotifyChannelProviderType
-	emailProviderTypes = append(emailProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_SMTP.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_SMTP.String())),
-	})
-	var vmsProviderTypes []*pb.NotifyChannelProviderType
-	vmsProviderTypes = append(vmsProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_ALIYUN_VMS.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_VMS.String())),
-	})
-
 	var types []*pb.NotifyChannelTypeResponse
-	types = append(types, &pb.NotifyChannelTypeResponse{
-		Name:        strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_SHORT_MESSAGE.String())),
-		Providers:   shortMessageProviderTypes,
-	})
-
-	types = append(types, &pb.NotifyChannelTypeResponse{
-		Name:        strings.ToLower(pb.Type_DINGTALK_WORK_NOTICE.String()),
-		DisplayName: s.p.I18n.Text(language, pb.Type_DINGTALK_WORK_NOTICE.String()),
-		Providers:   dingWorkNoticeProviderTypes,
-	})
-	types = append(types, &pb.NotifyChannelTypeResponse{
-		Name:        strings.ToLower(pb.Type_EMAIL.String()),
-		DisplayName: s.p.I18n.Text(language, pb.Type_EMAIL.String()),
-		Providers:   emailProviderTypes,
-	})
-	types = append(types, &pb.NotifyChannelTypeResponse{
-		Name:        strings.ToLower(pb.Type_VMS.String()),
-		DisplayName: s.p.I18n.Text(language, pb.Type_VMS.String()),
-		Providers:   emailProviderTypes,
-	})
+	for provider, channelType := range ProviderAndType {
+		providerTypes := []*pb.NotifyChannelProviderType{
+			{
+				Name:        strings.ToLower(provider),
+				DisplayName: s.p.I18n.Text(language, strings.ToLower(provider)),
+			},
+		}
+		types = append(types, &pb.NotifyChannelTypeResponse{
+			Name:        strings.ToLower(channelType),
+			DisplayName: s.p.I18n.Text(language, strings.ToLower(channelType)),
+			Providers:   providerTypes,
+		})
+	}
 	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
 }
 

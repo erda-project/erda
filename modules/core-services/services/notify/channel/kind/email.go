@@ -25,7 +25,7 @@ type Email struct {
 	SMTPUser     string `json:"smtpUser"`
 	SMTPPassword string `json:"smtpPassword"`
 	SMTPPort     int64  `json:"smtpPort"`
-	SMTPIsSSL    string `json:"smtpIsSSL"`
+	SMTPIsSSL    bool   `json:"smtpIsSSL"`
 }
 
 func (email *Email) Validate() error {
