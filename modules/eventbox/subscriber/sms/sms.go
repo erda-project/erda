@@ -105,15 +105,13 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 
 	// 通知组的短信模版存在notifyitem里
 	templateCode := mobileData.Template
-	if msg.Sender == "analyzer-alert" {
-		// 因为目前监控只用一个模板，并且不通过group的发送，所以监控的短信模版存在orgConfig里或者环境变量里
-		templateCode = d.monitorTemplateCode
-		if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
-			templateCode = org.Config.SMSMonitorTemplateCode
-		}
-		if err == nil && notifyChannel.Config != nil && notifyChannel.Config.TemplateCode != "" {
-			templateCode = notifyChannel.Config.TemplateCode
-		}
+	// 因为目前监控只用一个模板，并且不通过group的发送，所以监控的短信模版存在orgConfig里或者环境变量里
+	templateCode = d.monitorTemplateCode
+	if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
+		templateCode = org.Config.SMSMonitorTemplateCode
+	}
+	if err == nil && notifyChannel.Config != nil && notifyChannel.Config.TemplateCode != "" {
+		templateCode = notifyChannel.Config.TemplateCode
 	}
 
 	if templateCode == "" {
