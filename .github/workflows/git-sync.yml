@@ -1,0 +1,18 @@
+name: GIT SYNC
+
+on: [ push, delete ]
+
+jobs:
+  build:
+    if: github.repository == 'erda-project/erda'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: unshallow
+        run: git fetch --unshallow origin
+      - name: add remote
+        run: git remote add mirror https://${{ secrets.ERDA_CLOUD_MIRROR_GIT_USERNAME }}:${{ secrets.ERDA_CLOUD_MIRROR_GIT_PASSWORD }}@erda.cloud/erda/dop/erda-project/erda-mirror
+      - name: push
+        run: git push --tags --force --prune mirror "refs/remotes/origin/*:refs/heads/*"
+      - name: hack master
+        run: git push --force mirror "refs/remotes/origin/master:refs/heads/release/master"

@@ -1,0 +1,89 @@
+version: "1.1"
+
+on:
+  push:
+    branches:
+      - release/*
+    tags:
+      - v*
+
+stages:
+  - stage:
+      - git-checkout:
+          alias: erda
+          params:
+            depth: 1
+  - stage:
+      - extract-repo-version:
+          params:
+            git_dir: ${{ dirs.erda }}
+  - stage:
+      - custom-script:
+          alias: build-erda
+          commands:
+            - cd ${{ dirs.erda }}
+            - export VERSION=${{ outputs.extract-repo-version.version }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make prepare
+            - make build-push-all EXTENSION_ZIP_ADDRS="https://github.com/erda-project/erda-actions/archive/refs/heads/master.zip,https://github.com/erda-project/erda-addons/archive/refs/heads/master.zip"
+          loop:
+            break: task_status == 'Success'
+            strategy:
+              max_times: 5
+              decline_ratio: 2
+              decline_limit_sec: 60
+              interval_sec: 5
+          resources:
+            cpu: 2
+            mem: 2048
+      - custom-script:
+          alias: build-agent
+          commands:
+            - cd ${{ dirs.erda }}
+            - export VERSION=${{ outputs.extract-repo-version.version }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - MODULE_PATH=cluster-agent make build-push-image
+          loop:
+            break: task_status == 'Success'
+            strategy:
+              max_times: 5
+              decline_ratio: 2
+              decline_limit_sec: 60
+              interval_sec: 5
+          resources:
+            cpu: 2
+            mem: 2048
+  - stage:
+      - release:
+          alias: release-erda
+          params:
+            tag_version: ${{ outputs.extract-repo-version.version }}
+            check_diceyml: false
+            cross_cluster: "true"
+            dice_yml: ${{ dirs.erda }}/erda.yml
+            image:
+              action-runner-scheduler: ${{ outputs.build-erda.image }}
+              admin: ${{ outputs.build-erda.image }}
+              cluster-agent: ${{ outputs.build-agent.image }}
+              cluster-dialer: ${{ outputs.build-erda.image }}
+              cluster-manager: ${{ outputs.build-erda.image }}
+              cmp: ${{ outputs.build-erda.image }}
+              collector: ${{ outputs.build-erda.image }}
+              core-services: ${{ outputs.build-erda.image }}
+              dicehub: ${{ outputs.build-erda.image }}
+              dop: ${{ outputs.build-erda.image }}
+              ecp: ${{ outputs.build-erda.image }}
+              eventbox: ${{ outputs.build-erda.image }}
+              gittar: ${{ outputs.build-erda.image }}
+              hepa: ${{ outputs.build-erda.image }}
+              log-service: ${{ outputs.build-erda.image }}
+              monitor: ${{ outputs.build-erda.image }}
+              msp: ${{ outputs.build-erda.image }}
+              openapi: ${{ outputs.build-erda.image }}
+              orchestrator: ${{ outputs.build-erda.image }}
+              pipeline: ${{ outputs.build-erda.image }}
+              scheduler: ${{ outputs.build-erda.image }}
+              streaming: ${{ outputs.build-erda.image }}
+              uc-adaptor: ${{ outputs.build-erda.image }}
+            migration_type: erda
+            migration_dir: ${{ dirs.erda }}/.erda/migrations
