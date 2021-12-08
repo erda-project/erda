@@ -86,7 +86,7 @@ func TestResource_FilterCluster(t *testing.T) {
 	}
 	type args struct {
 		clusters     []apistructs.ClusterInfo
-		clusterNames []string
+		clusterNames map[string]struct{}
 	}
 	tests := []struct {
 		name   string
@@ -98,7 +98,7 @@ func TestResource_FilterCluster(t *testing.T) {
 			name: "test",
 			args: args{
 				clusters:     []apistructs.ClusterInfo{{Name: "terminus-dev"}},
-				clusterNames: []string{"terminus-dev"},
+				clusterNames: map[string]struct{}{"terminus-dev": {}},
 			},
 			want: []string{"terminus-dev"},
 		},

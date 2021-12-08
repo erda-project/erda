@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -252,6 +253,23 @@ func (db *DBClient) FindRuntimesByAppId(appId uint64) ([]Runtime, error) {
 		return nil, errors.Wrapf(err, "failed to find runtimes by appId: %v", appId)
 	}
 	return runtimes, nil
+}
+
+// FindRuntimesInApps finds all runtimes for the given appIDs.
+// The key in the returned map is appID.
+func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, error) {
+	var (
+		runtimes []*Runtime
+		m        = make(map[uint64][]*Runtime)
+	)
+	if err := db.Where("application_id IN (?)", appIDs).
+		Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+		return nil, err
+	}
+	for _, runtime := range runtimes {
+		m[runtime.ApplicationID] = append(m[runtime.ApplicationID], runtime)
+	}
+	return m, nil
 }
 
 func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,

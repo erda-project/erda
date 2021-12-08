@@ -31,8 +31,23 @@ func (o *memberCacheObject) hasMemberIn(filter map[uint64]struct{}) (*memberItem
 	return nil, false
 }
 
+func (o *memberCacheObject) first() *memberItem {
+	for _, v := range o.m {
+		return v
+	}
+	return ownerUnknown()
+}
+
 type memberItem struct {
 	ID   uint64
 	Name string
 	Nick string
+}
+
+func ownerUnknown() *memberItem {
+	return &memberItem{
+		ID:   0,
+		Name: "OwnerUnknown",
+		Nick: "OwnerUnknown",
+	}
 }
