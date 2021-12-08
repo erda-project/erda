@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var MSP_ADDON_LOGS_SEARCH_SEQUENTIAL = apis.ApiSpec{
 	Path:        "/api/log-analytics/<addon>/sequentialSearch",
 	BackendPath: "/api/log-service/<addon>/search/sequential",
-	Host:        "MSP.marathon.l4lb.thisdcos.directory:8080",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
