@@ -17,6 +17,7 @@ package gantt
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -44,11 +45,19 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
 	f.users = make([]string, 0)
-	projectID, err := strconv.ParseUint(cputil.GetInParamByKey(ctx, "projectId").(string), 10, 64)
+	inParamsBytes, err := json.Marshal(cputil.SDK(ctx).InParams)
+	if err != nil {
+		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", cputil.SDK(ctx).InParams, err)
+	}
+	var inParams InParams
+	if err := json.Unmarshal(inParamsBytes, &inParams); err != nil {
+		return err
+	}
+	f.projectID, err = strconv.ParseUint(inParams.ProjectID, 10, 64)
 	if err != nil {
 		return err
 	}
-	f.projectID = projectID
+	parentIDs := inParams.ParentIDs
 	var op OperationData
 	dataBody, err := json.Marshal(event.OperationData)
 	if err != nil {
@@ -59,6 +68,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	}
 
 	expand := make(map[uint64][]Item)
+	update := make([]Item, 0)
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		f.Operations = map[apistructs.OperationKey]Operation{
@@ -74,7 +84,6 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 				FillMeta: "keys",
 			},
 		}
-
 		req := apistructs.IssuePagingRequest{
 			IssueListRequest: apistructs.IssueListRequest{
 				ProjectID:    f.projectID,
@@ -86,11 +95,29 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			PageNo:   1,
 			PageSize: 500,
 		}
-		issues, _, err := f.issueSvc.GetIssueChildren(0, req)
-		if err != nil {
-			return err
+		if len(parentIDs) == 0 {
+			issues, _, err := f.issueSvc.GetIssueChildren(0, req)
+			if err != nil {
+				return err
+			}
+			expand[0] = f.convertIssueItems(issues)
+		} else {
+			for _, i := range parentIDs {
+				issues, _, err := f.issueSvc.GetIssueChildren(i, req)
+				if err != nil {
+					return err
+				}
+				expand[i] = f.convertIssueItems(issues)
+				if i != 0 {
+					issue, err := f.issueSvc.GetIssueItem(i)
+					if err != nil {
+						return err
+					}
+					update = append(update, *convertIssueItem(&issue))
+				}
+			}
 		}
-		expand[0] = f.convertIssueItem(issues)
+
 	case cptype.OperationKey(apistructs.ExpandNode):
 		req := apistructs.IssuePagingRequest{
 			IssueListRequest: apistructs.IssueListRequest{
@@ -105,7 +132,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			if err != nil {
 				return err
 			}
-			expand[key] = f.convertIssueItem(issues)
+			expand[key] = f.convertIssueItems(issues)
 		}
 	case cptype.OperationKey(apistructs.Update):
 		id := op.Meta.Nodes.Key
@@ -125,64 +152,47 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 		if err != nil {
 			return err
 		}
-		f.Data.UpdateList = append(f.convertIssueItem(parents),
-			Item{
-				Title:  issue.Title,
-				Key:    uint64(issue.ID),
-				IsLeaf: issue.ChildrenLength == 0,
-				Start:  issue.PlanStartedAt,
-				End:    issue.PlanFinishedAt,
-				Extra: Extra{
-					Type: issue.Type.String(),
-					User: issue.Assignee,
-					Status: Status{
-						Text:   issue.Name,
-						Status: common.GetUIIssueState(apistructs.IssueStateBelong(issue.Belong)),
-					},
-					IterationID: issue.IterationID,
-				},
-				ChildrenLength: issue.ChildrenLength,
-			},
-		)
+		update = append(f.convertIssueItems(parents), *convertIssueItem(&issue))
 	}
 
 	f.Data.ExpandList = expand
+	f.Data.UpdateList = update
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(f.users)
 	return nil
 }
 
-func (f *ComponentGantt) convertIssueItem(issues []dao.IssueItem) []Item {
+func (f *ComponentGantt) convertIssueItems(issues []dao.IssueItem) []Item {
 	res := make([]Item, 0, len(issues))
 	for _, issue := range issues {
-		item := Item{
-			Title:  issue.Title,
-			Key:    issue.ID,
-			IsLeaf: issue.ChildrenLength == 0,
-			Extra: Extra{
-				Type: issue.Type.String(),
-				User: issue.Assignee,
-				Status: Status{
-					Text:   issue.Name,
-					Status: common.GetUIIssueState(apistructs.IssueStateBelong(issue.Belong)),
-				},
-				IterationID: issue.IterationID,
-			},
-			ChildrenLength: issue.ChildrenLength,
-		}
-		if issue.PlanStartedAt != nil {
-			item.Start = issue.PlanStartedAt
-		}
-		if issue.PlanFinishedAt != nil {
-			item.End = issue.PlanFinishedAt
-		}
-		res = append(res, item)
+		res = append(res, *convertIssueItem(&issue))
 		f.users = append(f.users, issue.Assignee)
 	}
 	return res
 }
 
+func convertIssueItem(issue *dao.IssueItem) *Item {
+	return &Item{
+		Title:  issue.Title,
+		Key:    issue.ID,
+		IsLeaf: issue.ChildrenLength == 0,
+		Start:  issue.PlanStartedAt,
+		End:    issue.PlanFinishedAt,
+		Extra: Extra{
+			Type: issue.Type.String(),
+			User: issue.Assignee,
+			Status: Status{
+				Text:   issue.Name,
+				Status: common.GetUIIssueState(apistructs.IssueStateBelong(issue.Belong)),
+			},
+			IterationID: issue.IterationID,
+		},
+		ChildrenLength: issue.ChildrenLength,
+	}
+}
+
 func timeFromMilli(millis int64) *time.Time {
-	t := time.Unix(0, millis*int64(time.Millisecond))
+	// use seconds, ignore ms
+	t := time.Unix(millis/1000, 0)
 	return &t
 }
 

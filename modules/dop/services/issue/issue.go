@@ -649,6 +649,8 @@ func (svc *Issue) AfterIssueChildrenUpdate(id uint64) error {
 			fields["plan_started_at"] = start
 		}
 		if end != nil {
+			now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+			fields["expiry_status"] = getExpiryStatus(end, now)
 			fields["plan_finished_at"] = end
 		}
 		if len(fields) > 0 {
