@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snapshot
+package snapshot_test
 
 import (
-	"strings"
+	"testing"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
 )
 
-func IsCannotAddOrUpdateAChildRowError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "Error 1452")
+func TestIsCannotAddOrUpdateAChildRowError(t *testing.T) {
+	var err error
+	if ok := snapshot.IsCannotAddOrUpdateAChildRowError(err); ok {
+		t.Error("error")
+	}
 }

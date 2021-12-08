@@ -321,79 +321,79 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 	return nil
 }
 
-func TrimCollateOptionFromCols(createStmt *ast.CreateTableStmt) {
-	if createStmt == nil {
+func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
+	if create == nil {
 		return
 	}
-	for i := range createStmt.Cols {
-		for j := len(createStmt.Cols[i].Options) - 1; j >= 0; j-- {
-			if createStmt.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
-				createStmt.Cols[i].Options = append(createStmt.Cols[i].Options[:j], createStmt.Cols[i].Options[j+1:]...)
+	for i := range create.Cols {
+		for j := len(create.Cols[i].Options) - 1; j >= 0; j-- {
+			if create.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
+				create.Cols[i].Options = append(create.Cols[i].Options[:j], create.Cols[i].Options[j+1:]...)
 			}
 		}
 	}
 }
 
-func TrimCollateOptionFromCreateTable(createStmt *ast.CreateTableStmt) {
-	if createStmt == nil {
+func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
+	if create == nil {
 		return
 	}
-	for i := len(createStmt.Options) - 1; i >= 0; i-- {
-		if createStmt.Options[i].Tp == ast.TableOptionCollate {
-			createStmt.Options = append(createStmt.Options[:i], createStmt.Options[i+1:]...)
+	for i := len(create.Options) - 1; i >= 0; i-- {
+		if create.Options[i].Tp == ast.TableOptionCollate {
+			create.Options = append(create.Options[:i], create.Options[i+1:]...)
 		}
 	}
 }
 
-func TrimConstraintCheckFromCreateTable(createStmt *ast.CreateTableStmt) {
-	if createStmt == nil {
+func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
+	if create == nil {
 		return
 	}
-	for i := len(createStmt.Constraints) - 1; i >= 0; i-- {
-		if createStmt.Constraints[i].Tp == ast.ConstraintCheck {
-			createStmt.Constraints = append(createStmt.Constraints[:i], createStmt.Constraints[i+1:]...)
+	for i := len(create.Constraints) - 1; i >= 0; i-- {
+		if create.Constraints[i].Tp == ast.ConstraintCheck {
+			create.Constraints = append(create.Constraints[:i], create.Constraints[i+1:]...)
 		}
 	}
 }
 
-func TrimCharacterSetFromRawCreateTableSQL(createStmt string, except ...string) string {
+func TrimCharacterSetFromRawCreateTableSQL(create string, except ...string) string {
 	pat := `(?i)(?:DEFAULT)* (?:CHARACTER SET|CHARSET)\s*=\s*(\w+)`
 	re := regexp.MustCompile(pat)
-	found := re.FindStringSubmatch(createStmt)
+	found := re.FindStringSubmatch(create)
 	if len(found) == 0 {
-		return createStmt
+		return create
 	}
 	for _, ex := range except {
 		if strings.EqualFold(ex, found[len(found)-1]) {
-			return createStmt
+			return create
 		}
 	}
-	return re.ReplaceAllString(createStmt, "")
+	return re.ReplaceAllString(create, "")
 }
 
-func TrimBlockFormat(createStmt string) string {
-	return strings.ReplaceAll(createStmt, "BLOCK_FORMAT=ENCRYPTED", "")
+func TrimBlockFormat(create string) string {
+	return strings.ReplaceAll(create, "BLOCK_FORMAT=ENCRYPTED", "")
 }
 
 // ParseCreateTableStmt parses CreateTableStmt as *ast.CreateTableStmt node
-func ParseCreateTableStmt(createStmt string) (*ast.CreateTableStmt, error) {
-	createStmt = TrimCharacterSetFromRawCreateTableSQL(createStmt, CharsetWhite()...)
-	createStmt = TrimBlockFormat(createStmt)
-	node, err := parser.New().ParseOneStmt(createStmt, "", "")
+func ParseCreateTableStmt(create string) (*ast.CreateTableStmt, error) {
+	create = TrimCharacterSetFromRawCreateTableSQL(create, CharsetWhite()...)
+	create = TrimBlockFormat(create)
+	node, err := parser.New().ParseOneStmt(create, "", "")
 	if err != nil {
 		return nil, err
 	}
-	createTableStmt, ok := node.(*ast.CreateTableStmt)
+	stmt, ok := node.(*ast.CreateTableStmt)
 	if !ok {
-		return nil, errors.Errorf("the text is not CreateTableStmt, text: %s", createStmt)
+		return nil, errors.Errorf("the text is not CreateTableStmt, text: %s", create)
 	}
-	return createTableStmt, nil
+	return stmt, nil
 }
 
 func CharsetWhite() []string {
-	charsetWhite := strings.Split(os.Getenv(charsetWhiteEnv), ",")
-	if len(charsetWhite) == 0 {
+	white := strings.Split(os.Getenv(charsetWhiteEnv), ",")
+	if len(white) == 0 {
 		return defaultCharsetWhite
 	}
-	return charsetWhite
+	return white
 }

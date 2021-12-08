@@ -12,12 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snapshot
+package snapshot_test
 
 import (
-	"strings"
+	"os"
+	"testing"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
 )
 
-func IsCannotAddOrUpdateAChildRowError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "Error 1452")
+func TestSampling(t *testing.T) {
+	snapshot.Sampling()
+}
+
+func TestMaxSampling(t *testing.T) {
+	if n := snapshot.MaxSampling(); n != 300 {
+		t.Fatal("error")
+	}
+	os.Setenv("PIPELINE_MIGRATION_SAMPLING_SIZE", "100")
+	if n := snapshot.MaxSampling(); n != 100 {
+		t.Error("error")
+	}
 }
