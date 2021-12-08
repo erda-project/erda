@@ -17,12 +17,10 @@ package snapshot
 import (
 	"bytes"
 	"fmt"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -140,9 +138,8 @@ func (s *Snapshot) TableNames() []string {
 func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{}, uint64, error) {
 	var (
 		selectCount = fmt.Sprintf("SELECT COUNT(*) FROM `%s`", tableName)
-		//selectAll   = fmt.Sprintf("SELECT * FROM (select * from `%s` ORDER BY RAND()) LIMIT 20000", tableName)
-		selectAll = fmt.Sprintf("SELECT * FROM `%s` ORDER BY RAND() LIMIT %d", tableName, lines)
-		count     uint64
+		selectAll   = fmt.Sprintf("SELECT * FROM `%s` ORDER BY RAND() LIMIT %d", tableName, lines)
+		count       uint64
 	)
 	tx := s.from.Raw(selectCount)
 	if err := tx.Error; err != nil {
@@ -163,7 +160,6 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 	}
 	defer rows.Close()
 
-	rand.Seed(time.Now().Unix())
 	var data []map[string]interface{}
 	for rows.Next() {
 		columns, _ := rows.Columns()
