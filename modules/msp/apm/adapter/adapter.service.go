@@ -66,8 +66,8 @@ func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, requ
 				continue
 			}
 			renderMap := map[string]string{
-				"msp_env_id": request.ScopeId,
-				"endpoint":   s.p.Cfg.CollectorUrl + endpoints[request.Strategy],
+				"erda_env_id": request.ScopeId,
+				"endpoint":    s.p.Cfg.CollectorUrl + endpoints[request.Strategy],
 			}
 			result := template.Render(t.Template, renderMap)
 			return &pb.GetInstrumentationLibraryDocsResponse{
