@@ -147,7 +147,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 
 		statement := "SELECT sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)" +
 			"FROM application_http_service " +
-			"WHERE target_terminus_key::tag=$terminus_key AND target_service_id::tag=$service_id GROUP BY time(1m)"
+			"WHERE target_terminus_key::tag=$terminus_key AND target_service_id::tag=$service_id GROUP BY time(4m)"
 		queryParams := map[string]*structpb.Value{
 			"terminus_key": structpb.NewStringValue(req.TenantId),
 			"service_id":   structpb.NewStringValue(id),
@@ -194,7 +194,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			count := int64(row.Values[1].GetNumberValue())
 			duration := int64(row.Values[2].GetNumberValue())
 			errorCount := int64(row.Values[3].GetNumberValue())
-			qpsChart.Value = float32(count) / 60
+			qpsChart.Value = float32(count) / (60 * 4)
 			if count != 0 {
 				durationChart.Value = float32(duration / count)
 				errorRateChart.Value = float32(errorCount / count)
