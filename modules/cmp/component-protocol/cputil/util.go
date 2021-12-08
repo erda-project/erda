@@ -74,23 +74,27 @@ func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 		if len(fields) != 11 {
 			return "", "", false, fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
 		}
-		// desired and ready
-		if fields[1] == fields[3] {
+		desired := fields[1]
+		readyReplicas := fields[3]
+		updatedReplicas := fields[4]
+		if desired == readyReplicas && desired == updatedReplicas {
 			return "Active", "success", true, nil
-		} else {
-			return "Abnormal", "error", false, nil
 		}
+		if desired != updatedReplicas {
+			return "Updating", "processing", true, nil
+		}
+		return "Abnormal", "error", false, nil
 	case "StatefulSet":
-		if len(fields) != 5 {
-			return "", "", false, fmt.Errorf("statefulSet %s has invalid fields length", obj.String("metadata", "name"))
-		}
-		//
-		readyPods := strings.Split(fields[1], "/")
-		if readyPods[0] == readyPods[1] {
+		replicas := obj.String("status", "replicas")
+		readyReplicas := obj.String("status", "readyReplicas")
+		updatedReplicas := obj.String("status", "updatedReplicas")
+		if replicas == readyReplicas && replicas == updatedReplicas {
 			return "Active", "success", true, nil
-		} else {
-			return "Abnormal", "error", false, nil
 		}
+		if replicas != updatedReplicas {
+			return "Updating", "processing", true, nil
+		}
+		return "Abnormal", "error", false, nil
 	case "Job":
 		if len(fields) != 7 {
 			return "", "", false, fmt.Errorf("job %s has invalid fields length", obj.String("metadata", "name"))

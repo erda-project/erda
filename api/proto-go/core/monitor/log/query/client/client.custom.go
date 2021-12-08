@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package client
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 
-var MONITOR_ADDON_LOGS_DOWNLOAD = apis.ApiSpec{
-	Path:        "/api/log-analytics/<addon>/download",
-	BackendPath: "/api/micro_service/<addon>/logs/download",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 日志下载接口",
+var _ pb.LogQueryServiceServer = (*logQueryServiceWrapper)(nil)
+
+// ScanLogsByExpression do not call me
+// Notice: if you encounter func conflicting, delete that auto-generated one
+func (s *logQueryServiceWrapper) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
+	panic("do not call me")
 }

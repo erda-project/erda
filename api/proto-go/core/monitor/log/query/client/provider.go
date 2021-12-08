@@ -77,6 +77,7 @@ func init() {
 		Services: []string{
 			"erda.core.monitor.log.query.LogQueryService",
 			"erda.core.monitor.log.query-client",
+			"erda.core.monitor.log.query.LogQueryService.client",
 		},
 		Types: []reflect.Type{
 			clientsType,
