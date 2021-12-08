@@ -16,5 +16,5 @@ zh:
     enabled_exception: "%s类型已经存在开启状态的渠道"
     dingtalk: "钉钉"
     dingtalk_work_notice: "钉钉工作通知"
-    email: "邮箱"
+    email: "邮件"
     smtp: "SMTP"
