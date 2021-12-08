@@ -17,10 +17,12 @@ package snapshot
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -138,7 +140,7 @@ func (s *Snapshot) TableNames() []string {
 func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{}, uint64, error) {
 	var (
 		selectCount = fmt.Sprintf("SELECT COUNT(*) FROM `%s`", tableName)
-		selectAll   = fmt.Sprintf("SELECT * FROM `%s` ORDER BY RAND() LIMIT %d", tableName, lines)
+		selectAll   = fmt.Sprintf("SELECT * FROM `%s`", tableName)
 		count       uint64
 	)
 	tx := s.from.Raw(selectCount)
@@ -151,6 +153,7 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 	if count == 0 {
 		return nil, count, nil
 	}
+	var rate = float64(lines) / float64(count)
 	if err := tx.Raw(selectAll).Error; err != nil {
 		return nil, count, errors.Wrapf(err, "failed to Raw(%s)", strconv.Quote(selectAll))
 	}
@@ -160,8 +163,13 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 	}
 	defer rows.Close()
 
+	rand.Seed(time.Now().Unix())
 	var data []map[string]interface{}
 	for rows.Next() {
+		// use random numbers to determine whether to collect this row
+		if rand.Float64() > rate {
+			continue
+		}
 		columns, _ := rows.Columns()
 		values := make([]interface{}, len(columns))
 		for i := 0; i < len(values); i++ {
@@ -175,6 +183,9 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 			record[columns[i]] = values[i]
 		}
 		data = append(data, record)
+		if len(data) >= int(lines) {
+			break
+		}
 		// (1<<16)-1 is the max placeholders size to insert to for mysql default
 		if (len(data)+1)*len(columns) >= 1<<16 {
 			break
