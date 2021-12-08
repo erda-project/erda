@@ -60,7 +60,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	}
 
 	fields = make([]string, 11, 11)
-	fields[1], fields[3] = "1", "1"
+	fields[1], fields[3], fields[4] = "1", "1", "1"
 	daemonset := data.Object{
 		"kind": "DaemonSet",
 		"metadata": map[string]interface{}{
@@ -77,7 +77,7 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if !breathing {
 		t.Errorf("test failed, daemonset breathing is unexpected")
 	}
-	fields[1], fields[3] = "0", "1"
+	fields[1], fields[3], fields[4] = "2", "1", "2"
 	daemonset = data.Object{
 		"kind": "DaemonSet",
 		"metadata": map[string]interface{}{
@@ -95,12 +95,12 @@ func TestParseWorkloadStatus(t *testing.T) {
 		t.Errorf("test failed, daemonset breathing is unexpected")
 	}
 
-	fields = make([]string, 5, 5)
-	fields[1] = "1/1"
 	statefulset := data.Object{
 		"kind": "StatefulSet",
-		"metadata": map[string]interface{}{
-			"fields": fields,
+		"status": map[string]interface{}{
+			"replicas":        "1",
+			"readyReplicas":   "1",
+			"updatedReplicas": "1",
 		},
 	}
 	status, color, breathing, err = ParseWorkloadStatus(statefulset)
@@ -113,11 +113,12 @@ func TestParseWorkloadStatus(t *testing.T) {
 	if !breathing {
 		t.Errorf("test failed, statefulset breathing is unexpected")
 	}
-	fields[1] = "0/1"
 	statefulset = data.Object{
 		"kind": "StatefulSet",
-		"metadata": map[string]interface{}{
-			"fields": fields,
+		"status": map[string]interface{}{
+			"replicas":        "2",
+			"readyReplicas":   "1",
+			"updatedReplicas": "2",
 		},
 	}
 	status, color, breathing, err = ParseWorkloadStatus(statefulset)
