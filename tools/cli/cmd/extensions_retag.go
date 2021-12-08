@@ -31,12 +31,12 @@ import (
 var EXTENSIONSRETAG = command.Command{
 	Name:       "retag",
 	ParentName: "EXT",
-	ShortHelp:  "generate retag script",
-	Example:    "$ dice ext retag -d extensions -r registry.default.svc.cluster.local:5000 -o retag.sh",
+	ShortHelp:  "Generate retag script",
+	Example:    "$ erda-cli ext retag -d extensions -r registry.default.svc.cluster.local:5000 -o retag.sh",
 	Flags: []command.Flag{
-		command.StringFlag{Short: "d", Name: "dir", Doc: "extension dir", DefaultValue: "."},
-		command.StringFlag{Short: "r", Name: "registry", Doc: "new registry", DefaultValue: "registry.default.svc.cluster.local:5000"},
-		command.StringFlag{Short: "o", Name: "output", Doc: "output script file", DefaultValue: "retag.sh"},
+		command.StringFlag{Short: "d", Name: "dir", Doc: "The extension dir", DefaultValue: "."},
+		command.StringFlag{Short: "r", Name: "registry", Doc: "The new registry", DefaultValue: "registry.default.svc.cluster.local:5000"},
+		command.StringFlag{Short: "o", Name: "output", Doc: "The output script file", DefaultValue: "retag.sh"},
 	},
 	Run: RunExtensionsReTag,
 }

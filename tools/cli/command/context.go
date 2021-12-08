@@ -117,23 +117,23 @@ func (c *Context) AvailableOrgs() ([]apistructs.OrgDTO, error) {
 
 // 项目 .dice 目录下的 dice.yml
 func defaultYml(env string) (string, error) {
-	pdir, err := dicedir.FindProjectDiceDir()
+	pdir, err := dicedir.FindProjectErdaDir()
 	if err != nil {
-		return "", fmt.Errorf(format.FormatErrMsg("get default dice.yml",
-			"find dice dir of current project error: "+err.Error(), false))
+		return "", fmt.Errorf(format.FormatErrMsg("get default erda.yml",
+			"find erda dir of current project error: "+err.Error(), false))
 	}
 	var envfilename string
 	switch env {
 	case "dev":
-		envfilename = "dice_development.yml"
+		envfilename = "erda_development.yml"
 	case "test":
-		envfilename = "dice_test.yml"
+		envfilename = "erda_test.yml"
 	case "staging":
-		envfilename = "dice_staging.yml"
+		envfilename = "erda_staging.yml"
 	case "prod":
-		envfilename = "dice_production.yml"
+		envfilename = "erda_production.yml"
 	default:
-		envfilename = "dice.yml"
+		envfilename = "erda.yml"
 	}
 	ymlPath := filepath.Join(pdir, envfilename)
 
@@ -151,7 +151,7 @@ func defaultYmlCheckExist(env string) (string, error) {
 	}
 	if f.IsDir() {
 		return "", fmt.Errorf(
-			format.FormatErrMsg("check default dice.yml exist", "dice.yml can not be a dir", false))
+			format.FormatErrMsg("check default erda.yml exist", "erda.yml can not be a dir", false))
 	}
 	return path, nil
 }

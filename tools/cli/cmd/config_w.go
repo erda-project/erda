@@ -33,9 +33,9 @@ var CONFIGW = command.Command{
 		command.StringArg{}.Name("name"),
 	},
 	Flags: []command.Flag{
-		command.StringFlag{Short: "", Name: "server", Doc: "the http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
-		command.StringFlag{Short: "", Name: "org", Doc: "an org under the platform", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "platform", Doc: "the name of platform", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "server", Doc: "The http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
+		command.StringFlag{Short: "", Name: "org", Doc: "An org under the platform", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "platform", Doc: "The name of platform", DefaultValue: ""},
 	},
 	Run: ConfigOpsW,
 }

@@ -392,12 +392,12 @@ func Execute() {
 		}()
 	}
 
-	RootCmd.PersistentFlags().StringVar(&host, "host", "", "erda host to visit, eg: https://erda.cloud")
-	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "r", "origin", "the remote for erda git repo")
-	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "dice username to authenticate")
-	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "dice password to authenticate")
-	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "enable verbose mode")
-	RootCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "", true, "If interactive with user, default True")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda host to visit (e.g. https://erda.cloud)")
+	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "r", "origin", "The remote for Erda repo")
+	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Erda username to authenticate")
+	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Erda password to authenticate")
+	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "If true, enable verbose mode")
+	RootCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "", true, "If true, interactive with user")
 
 	RootCmd.Execute()
 }

@@ -31,8 +31,8 @@ import (
 var MigratePy = command.Command{
 	ParentName:     "Migrate",
 	Name:           "mkpy",
-	ShortHelp:      "make a python migration script pattern",
-	LongHelp:       "make a python migration scritp pattern.",
+	ShortHelp:      "Make a python migration script pattern",
+	LongHelp:       "Make a python migration scritp pattern.",
 	Example:        "$ erda-cli migrate mkpy --module my_module --name my_script_name",
 	Hidden:         false,
 	DontHideCursor: false,
@@ -47,19 +47,19 @@ var MigratePy = command.Command{
 		command.StringFlag{
 			Short:        "m",
 			Name:         "module",
-			Doc:          "migration module name",
+			Doc:          "Migration module name",
 			DefaultValue: "",
 		},
 		command.StringFlag{
 			Short:        "n",
 			Name:         "name",
-			Doc:          "script name",
+			Doc:          "Script name",
 			DefaultValue: "",
 		},
 		command.StringListFlag{
 			Short:        "",
 			Name:         "tables",
-			Doc:          "dependency tables",
+			Doc:          "Dependency tables",
 			DefaultValue: nil,
 		},
 	},

@@ -23,23 +23,20 @@ import (
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
-// CHECK command
-var CHECK = command.Command{
-	Name:      "check",
-	ShortHelp: "Validate dice.yml file",
-	Example: `
-  $ dice check -f dice.yml
-`,
+var ERDACHECK = command.Command{
+	Name:       "check",
+	ParentName: "ERDA",
+	ShortHelp:  "Validate erda.yml",
+	Example:    "$ erda-cli erda check -f erda.yml",
 	Flags: []command.Flag{
 		command.StringFlag{Short: "f", Name: "file",
-			Doc: "Specify the path of dice.yml file, default: .dice/dice.yml", DefaultValue: ""},
+			Doc: "Specify the path of erda.yml file, default: .erda/erda.yml", DefaultValue: ""},
 	},
-	Run:    RunCheck,
+	Run:    ErdaCheck,
 	Hidden: true,
 }
 
-// RunCheck validates dice.yml file
-func RunCheck(ctx *command.Context, ymlPath string) error {
+func ErdaCheck(ctx *command.Context, ymlPath string) error {
 	var yml []byte
 	var err error
 	if ymlPath != "" {

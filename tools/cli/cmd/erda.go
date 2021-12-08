@@ -25,12 +25,12 @@ var ERDA = command.Command{
 	ShortHelp: "List erda.yaml in .dice/ directory (current repo)",
 	Example:   "$ erda-cli erda",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
 	},
-	Run: GetErdas,
+	Run: ErdaGet,
 }
 
-func GetErdas(ctx *command.Context, noHeaders bool) error {
+func ErdaGet(ctx *command.Context, noHeaders bool) error {
 	branch, err := dicedir.GetWorkspaceBranch()
 	if err != nil {
 		return err

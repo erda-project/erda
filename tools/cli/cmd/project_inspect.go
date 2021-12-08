@@ -29,10 +29,10 @@ var PROJECTINSPECT = command.Command{
 	ShortHelp:  "Inspect project detail information",
 	Example:    "$ erda-cli project inspect --project-id=<id>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
-		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project", DefaultValue: ""},
 	},
 	Run: InspectProject,
 }

@@ -23,12 +23,14 @@ import (
 )
 
 var PARSE = command.Command{
-	Name:      "parse",
-	ShortHelp: "Parse the dice.yml file",
+	Name:       "parse",
+	ParentName: "ERDA",
+	ShortHelp:  "Parse erda.yml",
+	Example:    "$ erda-cli erda parse -f .erda/erda.yml",
 	Flags: []command.Flag{
 		command.StringFlag{"f", "file",
-			"Specify the path of dice.yml file, default: .dice/dice.yml", ""},
-		command.StringFlag{"s", "str", "Provide the content of dice.yml file as a string", ""},
+			"Specify the path of erda.yml file, default: .erda/erda.yml", ""},
+		command.StringFlag{"s", "str", "Provide the content of erda.yml file as a string", ""},
 		command.BoolFlag{"", "dev", "Parse the dice.yml file in development environment ", false},
 		command.BoolFlag{"", "test", "Parse the dice.yml file in test environment", false},
 		command.BoolFlag{"", "staging", "Parse the dice.yml file in staging environment", false},

@@ -16,25 +16,26 @@ package common
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
-func GetRepoStats(ctx *command.Context, orgID, project, application string) (apistructs.GittarStatsResponse, error) {
+func GetRepoStats(ctx *command.Context, orgId uint64, project, application string) (apistructs.GittarStatsData, error) {
 	var gitResp apistructs.GittarStatsResponse
 	resp, err := ctx.Get().Path(fmt.Sprintf("/api/repo/%s/%s/stats/", project, application)).
-		Header("Org-ID", orgID).
+		Header("Org-ID", strconv.FormatUint(orgId, 10)).
 		Do().JSON(&gitResp)
 	if err != nil {
-		return gitResp, err
+		return apistructs.GittarStatsData{}, err
 	}
 	if !resp.IsOK() {
-		return gitResp, fmt.Errorf("faild to find app when building, status code: %d", resp.StatusCode())
+		return apistructs.GittarStatsData{}, fmt.Errorf("faild to find application stats, status code: %d", resp.StatusCode())
 	}
 	if !gitResp.Success {
-		return gitResp, fmt.Errorf("failed to find app when building, %+v", gitResp.Error)
+		return apistructs.GittarStatsData{}, fmt.Errorf("failed to find application stats, %+v", gitResp.Error)
 	}
 
-	return gitResp, nil
+	return gitResp.Data, nil
 }

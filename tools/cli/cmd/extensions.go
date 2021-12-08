@@ -37,9 +37,9 @@ import (
 var EXT = command.Command{
 	Name:      "ext",
 	ShortHelp: "Extensions operation sets,including search, pull, push, retag",
-	Example:   "$ erda ext",
+	Example:   "$ erda-cli ext",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "a", Name: "all", Doc: "query all extensions", DefaultValue: false},
+		command.BoolFlag{Short: "a", Name: "all", Doc: "If true, query all extensions", DefaultValue: false},
 	},
 	Run: RunExtensions,
 }

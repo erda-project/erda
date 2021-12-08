@@ -35,11 +35,10 @@ var ORGANIZATIONSSWITCH = command.Command{
 	Args: []command.Arg{
 		command.StringArg{}.Name("orgIdorName"),
 	},
-	Run: RunOrganizationsSwitch,
+	Run: OrganizationsSwitch,
 }
 
-// RunOrganizationsSwitch switches organization
-func RunOrganizationsSwitch(ctx *command.Context, org string) error {
+func OrganizationsSwitch(ctx *command.Context, org string) error {
 	preOrg := ctx.CurrentOrg
 
 	orgResp, err := common.GetOrgDetail(ctx, org)

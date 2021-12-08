@@ -34,7 +34,7 @@ var ERDAINIT = command.Command{
 	ParentName: "ERDA",
 	ShortHelp:  "Init a erda.yml template",
 	LongHelp:   "Make a .erda dir in current directory, then create a erda.yml template",
-	Example:    "$ erda init",
+	Example:    "$ erda-cli erda init",
 	Flags: []command.Flag{
 		command.FloatFlag{Short: "c", Name: "cpu",
 			Doc:          "the quota of CPU for service",

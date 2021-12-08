@@ -29,12 +29,12 @@ var APPLICATIONINSPECT = command.Command{
 	ShortHelp:  "Inspect application",
 	Example:    "$ erda-cli application inspect --project=<name>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
-		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
-		command.Uint64Flag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project ", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "application", Doc: "the name of an application ", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application ", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project ", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "application", Doc: "The name of an application ", DefaultValue: ""},
 	},
 	Run: ApplicationInspect,
 }

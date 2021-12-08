@@ -34,9 +34,7 @@ var CONFIG = command.Command{
 		command.StringArg{}.Name("ops"),
 	},
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers",
-			Doc:          "When using the default or custom-column output format, don't print headers (default print headers)",
-			DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
 	},
 	Run: ConfigOps,
 }

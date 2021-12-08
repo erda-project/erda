@@ -27,16 +27,12 @@ var PIPELINE = command.Command{
 	ShortHelp: "List pipelines in .dice/pipelines directory (current repo)",
 	Example:   "$ erda-cli pipeline",
 	Flags: []command.Flag{
-		command.BoolFlag{
-			Short:        "",
-			Name:         "no-headers",
-			Doc:          "When using the default or custom-column output format, don't print headers (default print headers)",
-			DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
 	},
-	Run: GetPipelines,
+	Run: PipelineGet,
 }
 
-func GetPipelines(ctx *command.Context, noHeaders bool) error {
+func PipelineGet(ctx *command.Context, noHeaders bool) error {
 	branch, err := dicedir.GetWorkspaceBranch()
 	if err != nil {
 		return err

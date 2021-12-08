@@ -25,9 +25,9 @@ var APPLICATIONDELETE = command.Command{
 	Name:       "delete",
 	ParentName: "APPLICATION",
 	ShortHelp:  "Delete application",
-	Example:    "erda-cli application delete --application-id=<id>",
+	Example:    "$ erda-cli application delete --application-id=<id>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "application-id", Doc: "the id of an application ", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application ", DefaultValue: 0},
 	},
 	Run: ApplicationDelete,
 }

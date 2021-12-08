@@ -37,17 +37,16 @@ var PIPELINESTATUS = command.Command{
 	Flags: []command.Flag{
 		command.StringFlag{
 			Short: "b", Name: "branch",
-			Doc:          "specify branch to show pipeline status, default is current branch",
+			Doc:          "Specify branch to show pipeline status, default is current branch",
 			DefaultValue: ""},
 		command.Uint64Flag{
 			Short: "i", Name: "pipelineID",
-			Doc:          "specify pipeline id to show pipeline status",
+			Doc:          "Specify pipeline id to show pipeline status",
 			DefaultValue: 0},
 	},
 	Run: PipelineStatus,
 }
 
-// RunBuildsInspect displays detailed information on the build record
 func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64) error {
 	if _, err := os.Stat(".git"); err != nil {
 		return err
@@ -73,15 +72,14 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64) erro
 		return err
 	}
 
-	orgID := strconv.FormatUint(org.ID, 10)
-	repoStats, err := common.GetRepoStats(ctx, orgID, info.Project, info.Application)
+	repoStats, err := common.GetRepoStats(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
 		return err
 	}
 	// fetch ymlName path
 	var pipelineCombResp apistructs.PipelineInvokedComboResponse
 	response, err := ctx.Get().Path("/api/cicds/actions/app-invoked-combos").
-		Param("appID", strconv.FormatInt(repoStats.Data.ApplicationID, 10)).
+		Param("appID", strconv.FormatInt(repoStats.ApplicationID, 10)).
 		Do().JSON(&pipelineCombResp)
 	if err != nil {
 		return err
@@ -107,7 +105,7 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64) erro
 	// fetch pipelineID
 	var pipelineListResp apistructs.PipelinePageListResponse
 	response, err = ctx.Get().Path("/api/cicds").
-		Param("appID", strconv.FormatInt(repoStats.Data.ApplicationID, 10)).
+		Param("appID", strconv.FormatInt(repoStats.ApplicationID, 10)).
 		Param("sources", "dice").
 		Param("ymlNames", ymlName).
 		Param("branches", branch).

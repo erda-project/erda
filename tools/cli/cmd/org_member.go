@@ -32,9 +32,9 @@ var ORGMEMBER = command.Command{
 	ShortHelp:  "Display members of the organization",
 	Example:    "$ erda-cli org member --org=<name>",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "page-size", Doc: "The number of page size", DefaultValue: 10},
 		command.StringListFlag{Short: "", Name: "roles", Doc: "The roles to list", DefaultValue: nil},
 	},

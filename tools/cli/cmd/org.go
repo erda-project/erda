@@ -31,8 +31,8 @@ var ORG = command.Command{
 	ShortHelp: "List organizations",
 	Example:   "$ erda-cli org",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
+		command.IntFlag{Short: "", Name: "page-size", Doc: "The number of page size", DefaultValue: 10},
 	},
 	Run: GetOrgs,
 }

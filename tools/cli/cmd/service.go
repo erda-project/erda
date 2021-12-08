@@ -30,7 +30,7 @@ var SERVICE = command.Command{
 	ShortHelp: "List services",
 	Example:   "erda-cli service",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "When using the default or custom-column output format, don't print headers (default print headers)", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
 		command.Uint64Flag{Short: "", Name: "application-id", Doc: "The id of an application", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
