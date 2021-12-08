@@ -87,11 +87,6 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 	}
 
 	accessKeyID, accessSecret, signName := d.accessKeyId, d.accessSecret, d.signName
-	if err == nil && org.Config != nil && org.Config.SMSKeyID != "" && org.Config.SMSKeySecret != "" {
-		accessKeyID = org.Config.SMSKeyID
-		accessSecret = org.Config.SMSKeySecret
-		signName = org.Config.SMSSignName
-	}
 	if err == nil && notifyChannel.Config != nil && notifyChannel.Config.AccessKeyId != "" && notifyChannel.Config.AccessKeySecret != "" {
 		accessKeyID = notifyChannel.Config.AccessKeyId
 		accessSecret = notifyChannel.Config.AccessKeySecret
@@ -105,7 +100,6 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 
 	// 通知组的短信模版存在notifyitem里
 	templateCode := mobileData.Template
-	// 因为目前监控只用一个模板，并且不通过group的发送，所以监控的短信模版存在orgConfig里或者环境变量里
 	templateCode = d.monitorTemplateCode
 	if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
 		templateCode = org.Config.SMSMonitorTemplateCode
