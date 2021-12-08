@@ -157,6 +157,11 @@ type OfflineEdgeClusterRequest struct {
 	Force       bool   `json:"force"`
 }
 
+type BatchOfflineEdgeClusterRequest struct {
+	Clusters []string `json:"clusters"`
+	Force    bool     `json:"force"`
+}
+
 type OfflineEdgeClusterResponse struct {
 	Header
 	Data OfflineEdgeClusterData `json:"data"`

@@ -205,6 +205,44 @@ func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, var
 	})
 }
 
+func (e *Endpoints) BatchOfflineEdgeCluster(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
+
+	var req apistructs.BatchOfflineEdgeClusterRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to unmarshal to apistructs.BatchOfflineEdgeClusterRequest: %v", err)
+		return
+	}
+
+	userid := r.Header.Get("User-ID")
+
+	// permission check, need to be platform admin user
+	err = e.PermissionCheck(userid, "", "", apistructs.DeleteAction)
+	if err != nil {
+		return
+	}
+
+	err = e.clusters.BatchOfflineEdgeCluster(req, userid)
+	if err != nil {
+		err = fmt.Errorf("failed to offline cluster: %v", err)
+		return
+	}
+
+	return mkResponse(apistructs.OfflineEdgeClusterResponse{
+		Header: apistructs.Header{Success: true},
+	})
+}
+
 func (e *Endpoints) ClusterInfo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	clusternames := r.URL.Query().Get("clusterName")
 	clusternameList := strutil.Split(clusternames, ",", true)

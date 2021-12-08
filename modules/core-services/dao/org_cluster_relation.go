@@ -57,6 +57,15 @@ func (client *DBClient) GetOrgClusterRelationsByOrg(orgID int64) ([]model.OrgClu
 	return relations, nil
 }
 
+// GetOrgClusterRelationsByCluster 根据 cluster_name 获取企业对应集群关系
+func (client *DBClient) GetOrgClusterRelationsByCluster(clusterName string) ([]model.OrgClusterRelation, error) {
+	var relations []model.OrgClusterRelation
+	if err := client.Where("cluster_name = ?", clusterName).Find(&relations).Error; err != nil {
+		return nil, err
+	}
+	return relations, nil
+}
+
 // ListAllOrgClusterRelations 获取所有企业对应集群关系
 func (client *DBClient) ListAllOrgClusterRelations() ([]model.OrgClusterRelation, error) {
 	var relations []model.OrgClusterRelation

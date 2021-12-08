@@ -17,6 +17,7 @@ package clusters
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -108,20 +109,32 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			return recordID, err
 		}
 
-		err = c.bdl.DeleteCluster(req.ClusterName, map[string][]string{httputil.InternalHeader: {"cmp"}})
+		relations, err := c.bdl.ListOrgClusterRelation(userid, req.ClusterName)
 		if err != nil {
-			errstr := fmt.Sprintf("failed to delete cluster %s : %v", req.ClusterName, err)
-			logrus.Errorf(errstr)
-			err = errors.New(errstr)
+			logrus.Errorf("list org cluster relation failed, cluster: %s, error: %v", req.ClusterName, err)
 			return recordID, err
 		}
 
-		// Delete accessKey
-		if err = c.DeleteAccessKey(req.ClusterName); err != nil {
-			errStr := fmt.Sprintf("failed to delete cluster access key, cluster: %v, err: %v", req.ClusterName, err)
-			logrus.Error(errStr)
-			return recordID, err
+		if len(relations) == 0 || req.Force {
+			err = c.bdl.DeleteCluster(req.ClusterName, map[string][]string{httputil.InternalHeader: {"cmp"}})
+			if err != nil {
+				errstr := fmt.Sprintf("failed to delete cluster %s : %v", req.ClusterName, err)
+				logrus.Errorf(errstr)
+				err = errors.New(errstr)
+				return recordID, err
+			}
+
+			// Delete accessKey
+			if err = c.DeleteAccessKey(req.ClusterName); err != nil {
+				errStr := fmt.Sprintf("failed to delete cluster access key, cluster: %v, err: %v", req.ClusterName, err)
+				logrus.Error(errStr)
+				return recordID, err
+			}
 		}
+	}
+
+	if req.OrgID <= 0 {
+		return recordID, nil
 	}
 
 	recordID, err = createRecord(c.db, dbclient.Record{
@@ -144,4 +157,21 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 
 func createRecord(db *dbclient.DBClient, record dbclient.Record) (recordID uint64, err error) {
 	return db.RecordsWriter().Create(&record)
+}
+
+func (c *Clusters) BatchOfflineEdgeCluster(req apistructs.BatchOfflineEdgeClusterRequest, userid string) error {
+	for _, cluster := range req.Clusters {
+		req := apistructs.OfflineEdgeClusterRequest{
+			OrgID:       0,
+			ClusterName: cluster,
+			Force:       true,
+		}
+		_, err := c.OfflineEdgeCluster(req, "onlyYou", strconv.Itoa(int(req.OrgID)))
+		if err != nil {
+			err := fmt.Errorf("cluster offline failed, cluster: %s, error: %v", cluster, err)
+			logrus.Errorf(err.Error())
+			return err
+		}
+	}
+	return nil
 }
