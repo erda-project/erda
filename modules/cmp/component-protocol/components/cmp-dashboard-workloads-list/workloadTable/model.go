@@ -60,6 +60,7 @@ type Count struct {
 	Succeeded int `json:"succeeded"`
 	Failed    int `json:"failed"`
 	Updating  int `json:"updating"`
+	Stopped   int `json:"stopped"`
 }
 
 type Sorter struct {
