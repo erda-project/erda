@@ -29,6 +29,7 @@ const (
 	WorkloadSucceed  = "Succeeded"
 	WorkloadFailed   = "Failed"
 	WorkloadUpdating = "Updating"
+	WorkloadStopped  = "Stopped"
 
 	DeploymentType  = "Deployment"
 	DaemonSetType   = "DaemonSet"

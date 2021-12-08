@@ -276,6 +276,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 				Label: cputil.I18n(ctx, "Updating"),
 				Value: WorkloadUpdating,
 			},
+			{
+				Label: cputil.I18n(ctx, "Stopped"),
+				Value: WorkloadStopped,
+			},
 		},
 	})
 

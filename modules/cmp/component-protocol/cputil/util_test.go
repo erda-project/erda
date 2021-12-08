@@ -30,6 +30,9 @@ func TestParseWorkloadStatus(t *testing.T) {
 		"metadata": map[string]interface{}{
 			"fields": fields,
 		},
+		"status": map[string]interface{}{
+			"replicas": "1",
+		},
 	}
 	status, color, breathing, err := ParseWorkloadStatus(deployment)
 	if err != nil {
@@ -46,6 +49,9 @@ func TestParseWorkloadStatus(t *testing.T) {
 		"kind": "Deployment",
 		"metadata": map[string]interface{}{
 			"fields": fields,
+		},
+		"status": map[string]interface{}{
+			"replicas": "1",
 		},
 	}
 	status, color, breathing, err = ParseWorkloadStatus(deployment)

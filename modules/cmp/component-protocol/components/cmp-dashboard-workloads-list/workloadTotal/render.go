@@ -72,5 +72,5 @@ func (w *ComponentWorkloadTotal) Transfer(c *cptype.Component) {
 }
 
 func addCount(count Count) int {
-	return count.Active + count.Abnormal + count.Succeeded + count.Failed + count.Updating
+	return count.Active + count.Abnormal + count.Succeeded + count.Failed + count.Updating + count.Stopped
 }

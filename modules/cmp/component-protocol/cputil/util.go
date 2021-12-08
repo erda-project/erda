@@ -47,6 +47,10 @@ func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 
 	switch kind {
 	case "Deployment":
+		replicas := obj.String("status", "replicas")
+		if replicas == "0" || replicas == "" {
+			return "Stopped", "default", false, nil
+		}
 		conditions := obj.Slice("status", "conditions")
 		available, progressing, failure := false, false, false
 		for _, cond := range conditions {
@@ -75,6 +79,9 @@ func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 			return "", "", false, fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
 		}
 		desired := fields[1]
+		if desired == "0" || desired == "" {
+			return "Stopped", "default", false, nil
+		}
 		readyReplicas := fields[3]
 		updatedReplicas := fields[4]
 		if desired == readyReplicas && desired == updatedReplicas {
@@ -86,6 +93,9 @@ func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 		return "Abnormal", "error", false, nil
 	case "StatefulSet":
 		replicas := obj.String("status", "replicas")
+		if replicas == "0" || replicas == "" {
+			return "Stopped", "default", false, nil
+		}
 		readyReplicas := obj.String("status", "readyReplicas")
 		updatedReplicas := obj.String("status", "updatedReplicas")
 		if replicas == readyReplicas && replicas == updatedReplicas {
