@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/c2h5oh/datasize"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -58,6 +58,9 @@ type Conf struct {
 	ProjectStatsCacheCron string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	EnableProjectNS       bool   `env:"ENABLE_PROJECT_NS" default:"true"`
 	LegacyUIDomain        string `env:"LEGACY_UI_PUBLIC_ADDR"`
+
+	// subscribe config
+	SubscribeLimitNum uint64 `env:"SUBSCRIBE_LIMIT_NUM" default:"3"`
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
@@ -466,4 +469,8 @@ func FileTypesCanCarryActiveContent() []string {
 
 func OrgAuditMaxRetentionDays() uint64 {
 	return cfg.OrgAuditMaxRetentionDays
+}
+
+func SubscribeLimitNum() uint64 {
+	return cfg.SubscribeLimitNum
 }

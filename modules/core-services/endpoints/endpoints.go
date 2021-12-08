@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/subscribe"
 	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -73,6 +74,7 @@ type Endpoints struct {
 	errorbox           *errorbox.ErrorBox
 	fileSvc            *filesvc.FileService
 	user               *user.User
+	subscribe          *subscribe.Subscribe
 }
 
 type Option func(*Endpoints)
@@ -450,5 +452,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
+
+		// the interface of subscribe
+		{Path: "/api/subscribe", Method: http.MethodPost, Handler: e.Subscribe},
+		{Path: "/api/subscribe", Method: http.MethodDelete, Handler: e.UnSubscribe},
+		{Path: "/api/subscribe", Method: http.MethodGet, Handler: e.GetSubscribes},
 	}
 }
