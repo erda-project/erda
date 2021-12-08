@@ -156,31 +156,31 @@ func defaultYmlCheckExist(env string) (string, error) {
 	return path, nil
 }
 
-func (c *Context) DiceYml(checkExist bool) (string, error) {
+func (c *Context) ErdaYml(checkExist bool) (string, error) {
 	if checkExist {
 		return defaultYmlCheckExist("")
 	}
 	return defaultYml("")
 }
-func (c *Context) DevDiceYml(checkExist bool) (string, error) {
+func (c *Context) DevErdaYml(checkExist bool) (string, error) {
 	if checkExist {
 		return defaultYmlCheckExist("dev")
 	}
 	return defaultYml("dev")
 }
-func (c *Context) TestDiceYml(checkExist bool) (string, error) {
+func (c *Context) TestErdaYml(checkExist bool) (string, error) {
 	if checkExist {
 		return defaultYmlCheckExist("test")
 	}
 	return defaultYml("test")
 }
-func (c *Context) StagingDiceYml(checkExist bool) (string, error) {
+func (c *Context) StagingErdaYml(checkExist bool) (string, error) {
 	if checkExist {
 		return defaultYmlCheckExist("staging")
 	}
 	return defaultYml("staging")
 }
-func (c *Context) ProdDiceYml(checkExist bool) (string, error) {
+func (c *Context) ProdErdaYml(checkExist bool) (string, error) {
 	if checkExist {
 		return defaultYmlCheckExist("prod")
 	}

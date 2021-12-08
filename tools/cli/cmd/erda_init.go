@@ -32,32 +32,27 @@ import (
 var ERDAINIT = command.Command{
 	Name:       "init",
 	ParentName: "ERDA",
-	ShortHelp:  "Init a erda.yml template",
-	LongHelp:   "Make a .erda dir in current directory, then create a erda.yml template",
+	ShortHelp:  "Init an erda.yml",
+	LongHelp:   "Make an .erda directory in current directory, then create an erda.yml",
 	Example:    "$ erda-cli erda init",
 	Flags: []command.Flag{
-		command.FloatFlag{Short: "c", Name: "cpu",
-			Doc:          "the quota of CPU for service",
-			DefaultValue: 0.5},
-		command.IntFlag{Short: "m", Name: "memory",
-			Doc:          "the quota of Memory for service",
-			DefaultValue: 1024},
+		command.FloatFlag{Short: "c", Name: "cpu", Doc: "The quota of CPU for service", DefaultValue: 0.5},
+		command.IntFlag{Short: "m", Name: "memory", Doc: "The quota of Memory for service", DefaultValue: 1024},
 	},
 	Run:    ErdaInit,
 	Hidden: true,
 }
 
 func ErdaInit(ctx *command.Context, cpuQuota float64, memQuota int) error {
-	// TODO
 	if _, err := os.Stat(path.Join(dicedir.ProjectErdaDir, "erda.yml")); err == nil {
 		return fmt.Errorf(
-			format.FormatErrMsg("init", "failed to reinitialize existing erda project", false))
+			format.FormatErrMsg("init", "failed to recreate the erda.yml", false))
 	}
 
 	pdir, err := dicedir.CreateProjectErdaDir()
 	if err != nil && !os.IsExist(err) {
 		return fmt.Errorf(
-			format.FormatErrMsg("init", "failed to create project dice directory: "+err.Error(), false))
+			format.FormatErrMsg("init", "failed to create project erda directory: "+err.Error(), false))
 	}
 
 	p, err := common.ParseSpringBoot()
@@ -95,7 +90,7 @@ var erdaymlTemplate = strings.TrimSpace(`
 # 可选：NO
 # 值：2.0
 # 说明：version 字段目前只有 2.0 一个版本可选，如果没有配置 version: 2.0 将走老版本逻辑。
-version: 2.0
+version: "2.0"
 
 # envs: 环境变量
 # 可选：YES

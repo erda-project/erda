@@ -17,11 +17,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var CONFIGW = command.Command{

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -54,7 +53,10 @@ var (
 	loginWhiteList = []string{
 		"config <ops>",
 		"config-set <write-ops> <name>",
+		"erda",
 		"erda init",
+		"erda parse",
+		"erda check",
 		"ext retag",
 		"migrate",
 		"migrate lint",
@@ -64,8 +66,6 @@ var (
 		"pipeline",
 		"pipeline init",
 		"pipeline check",
-		"parse",
-		"check",
 		"version",
 		"help",
 	}
@@ -102,7 +102,6 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 		}
 		ctx.HttpClient = httpclient.New(httpOption...)
 
-		// TODO handle error
 		u, err := getFullUse(cmd)
 		if err != nil {
 			err = fmt.Errorf(color_str.Red("✗ ") + err.Error())
@@ -221,11 +220,10 @@ func parseCtx() error {
 					switch gitCredentialStorage {
 					case "osxkeychain", "store":
 						// fetch username & password from osxkeychain
-						username, password = fetchGitUserInfo(info.Host, gitCredentialStorage)
+						username, password, _ = fetchGitUserInfo(info.Host, gitCredentialStorage)
 					}
 				}
 
-				// TODO parse org from git remote url
 				ctx.CurrentOrg = OrgInfo{0, info.Org, ""}
 			} else {
 				if !strings.Contains(host, info.Host) {
@@ -302,26 +300,18 @@ func fetchGitCredentialStorage() string {
 	return strings.TrimSuffix(string(c), "\n")
 }
 
-func fetchGitUserInfo(host, credentialStorage string) (string, string) {
+func fetchGitUserInfo(host, credentialStorage string) (string, string, error) {
 	c1 := exec.Command("echo", fmt.Sprintf("host=%s", host))
 	c2 := exec.Command("git", fmt.Sprintf("credential-%s", credentialStorage), "get")
 
-	r, w := io.Pipe()
-	c1.Stdout = w
-	c2.Stdin = r
+	rs, err := dicedir.PipeCmds(c1, c2)
+	if err != nil {
+		return "", "", err
+	}
 
-	var buf bytes.Buffer
-	c2.Stdout = &buf
-
-	c1.Start()
-	c2.Start()
-	c1.Wait()
-	w.Close()
-	c2.Wait()
-
-	sl := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	sl := strings.Split(strings.TrimSpace(rs), "\n")
 	if len(sl) < 2 {
-		return "", ""
+		return "", "", errors.New("Get user info from git failed")
 	}
 
 	var (
@@ -336,7 +326,7 @@ func fetchGitUserInfo(host, credentialStorage string) (string, string) {
 		}
 	}
 
-	return username, password
+	return username, password, nil
 }
 
 func loginAndStoreSession(host, username, password string) error {
@@ -364,7 +354,6 @@ func loginAndStoreSession(host, username, password string) error {
 	expiredAt := time.Now().Add(time.Hour * 12)
 	s.ExpiredAt = &expiredAt
 
-	// TODO set orgID after login, get org info by org name
 	if err := status.StoreSessionInfo(host, s); err != nil {
 		return err
 	}

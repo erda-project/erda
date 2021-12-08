@@ -22,7 +22,7 @@ import (
 
 var ERDA = command.Command{
 	Name:      "erda",
-	ShortHelp: "List erda.yaml in .dice/ directory (current repo)",
+	ShortHelp: "List erda.yml in .erda directory (current repo)",
 	Example:   "$ erda-cli erda",
 	Flags: []command.Flag{
 		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
@@ -37,6 +37,28 @@ func ErdaGet(ctx *command.Context, noHeaders bool) error {
 	}
 
 	var erdaymls []string
+	{
+		e, err := ctx.ErdaYml(true)
+		if err == nil {
+			erdaymls = append(erdaymls, e)
+		}
+		d, err := ctx.DevErdaYml(true)
+		if err == nil {
+			erdaymls = append(erdaymls, d)
+		}
+		t, err := ctx.TestErdaYml(true)
+		if err == nil {
+			erdaymls = append(erdaymls, t)
+		}
+		s, err := ctx.StagingErdaYml(true)
+		if err == nil {
+			erdaymls = append(erdaymls, s)
+		}
+		p, err := ctx.ProdErdaYml(true)
+		if err == nil {
+			erdaymls = append(erdaymls, p)
+		}
+	}
 
 	var data [][]string
 	for _, p := range erdaymls {
@@ -49,7 +71,7 @@ func ErdaGet(ctx *command.Context, noHeaders bool) error {
 	t := table.NewTable()
 	if !noHeaders {
 		t.Header([]string{
-			"branch", "erda",
+			"branch", "erdayml",
 		})
 	}
 	return t.Data(data).Flush()

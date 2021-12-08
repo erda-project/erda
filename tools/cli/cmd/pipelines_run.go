@@ -48,6 +48,14 @@ func PipelineRun(ctx *command.Context, branch, filename string) error {
 		return err
 	}
 
+	dirty, err := dicedir.IsWorkspaceDirty()
+	if err != nil {
+		return err
+	}
+	if dirty {
+		return errors.New("Changes should be committed first")
+	}
+
 	if branch == "" {
 		b, err := dicedir.GetWorkspaceBranch()
 		if err != nil {

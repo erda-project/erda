@@ -19,11 +19,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
 )
 
@@ -59,19 +58,26 @@ func OrganizationsSwitch(ctx *command.Context, org string) error {
 	}
 
 	// TODO make sure api endpoint
+	switched := false
 	for _, p := range conf.Platforms {
 		if p.Server == ctx.CurrentOpenApiHost {
 			p.OrgInfo = &ctx.CurrentOrg
+			switched = true
+			break
 		}
+	}
+
+	if !switched {
+		return errors.New("org switch failed, due to no platform in configuration file")
 	}
 
 	if err := command.SetConfig(f, conf); err != nil {
 		return fmt.Errorf(
 			format.FormatErrMsg(
-				"orgs switch", "failed to switch ("+err.Error()+")", false))
+				"org switch", "failed to switch ("+err.Error()+")", false))
 	}
 
-	fmt.Printf("  Before: %-15s(%d)\n", preOrg.Name, preOrg.ID)
+	fmt.Printf("  Before : %-15s(%d)\n", preOrg.Name, preOrg.ID)
 	ctx.Succ(color_str.Green(fmt.Sprintf("Current: %-15s(%d)", ctx.CurrentOrg.Name, ctx.CurrentOrg.ID)))
 
 	return nil

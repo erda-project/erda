@@ -45,7 +45,7 @@ func ErdaCheck(ctx *command.Context, ymlPath string) error {
 			return err
 		}
 	} else {
-		ymlPath, err = ctx.DiceYml(true)
+		ymlPath, err = ctx.ErdaYml(true)
 		if err != nil {
 			return err
 		}

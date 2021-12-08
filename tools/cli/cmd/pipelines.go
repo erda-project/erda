@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
+// TODO move to .erda/pipelines
 var PIPELINE = command.Command{
 	Name:      "pipeline",
 	ShortHelp: "List pipelines in .dice/pipelines directory (current repo)",

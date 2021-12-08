@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
 )
 

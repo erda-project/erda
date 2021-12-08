@@ -17,11 +17,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/tools/cli/format"
-	"github.com/erda-project/erda/tools/cli/prettyjson"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/prettyjson"
 )
 
 var RELEASEINSPECT = command.Command{

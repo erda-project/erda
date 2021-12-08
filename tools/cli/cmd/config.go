@@ -17,13 +17,12 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var CONFIG = command.Command{

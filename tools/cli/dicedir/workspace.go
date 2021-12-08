@@ -16,8 +16,10 @@ package dicedir
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -49,6 +51,18 @@ func GetOriginRepo() string {
 func GetRepo(remote string) string {
 	out, _ := exec.Command("git", "config", "--get", "remote."+remote+".url").CombinedOutput()
 	return string(out)
+}
+
+func IsWorkspaceDirty() (bool, error) {
+	statusCmd := exec.Command("git", "status", "-s")
+	wcCmd := exec.Command("wc", "-l")
+
+	rs, err := PipeCmds(statusCmd, wcCmd)
+	if err != nil {
+		return true, errors.WithMessage(err, strings.TrimSpace(rs))
+	}
+	fmt.Println(strings.TrimSpace(rs))
+	return strings.TrimSpace(rs) != "0", nil
 }
 
 func GetWorkspacePipelines(dir string) ([]string, error) {
@@ -264,4 +278,37 @@ func DoTaskWithTimeout(c TaskRunnerE, timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+func PipeCmds(cur, next *exec.Cmd) (string, error) {
+	var buf bytes.Buffer
+
+	r, w := io.Pipe()
+	cur.Stdout = w
+	next.Stdin = r
+	next.Stdout = &buf
+
+	err := cur.Start()
+	if err != nil {
+		return "", err
+	}
+	err = next.Start()
+	if err != nil {
+		return "", err
+	}
+
+	err = cur.Wait()
+	if err != nil {
+		return "", err
+	}
+	err = w.Close()
+	if err != nil {
+		return "", err
+	}
+	err = next.Wait()
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }

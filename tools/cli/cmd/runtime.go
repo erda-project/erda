@@ -18,10 +18,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/apistructs"
-
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"

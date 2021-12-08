@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-	"github.com/erda-project/erda/tools/cli/format"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/dicedir"
+	"github.com/erda-project/erda/tools/cli/format"
 )
 
 func GetReleaseDetail(ctx *command.Context, orgId uint64, releaseId string) (apistructs.ReleaseGetResponseData, error) {

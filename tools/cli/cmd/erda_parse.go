@@ -15,11 +15,16 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/prettyjson"
 )
 
 var PARSE = command.Command{
@@ -30,18 +35,18 @@ var PARSE = command.Command{
 	Flags: []command.Flag{
 		command.StringFlag{"f", "file",
 			"Specify the path of erda.yml file, default: .erda/erda.yml", ""},
-		command.StringFlag{"s", "str", "Provide the content of erda.yml file as a string", ""},
-		command.BoolFlag{"", "dev", "Parse the dice.yml file in development environment ", false},
-		command.BoolFlag{"", "test", "Parse the dice.yml file in test environment", false},
-		command.BoolFlag{"", "staging", "Parse the dice.yml file in staging environment", false},
-		command.BoolFlag{"", "prod", "Parse the dice.yml in production environment", false},
-		command.BoolFlag{"o", "output", "Output the content as yaml", false},
+		command.StringFlag{"s", "str", "Provide the content of erda.yml as a string", ""},
+		command.BoolFlag{"", "dev", "If true, parse the erda.yml file in development environment ", false},
+		command.BoolFlag{"", "test", "If true, parse the erda.yml file in test environment", false},
+		command.BoolFlag{"", "staging", "If true, parse the erda.yml file in staging environment", false},
+		command.BoolFlag{"", "prod", "If true, parse the erda.yml in production environment", false},
+		command.StringFlag{"o", "output", "Output format. One of yaml|json", "yaml"},
 	},
 	Run:    RunParse,
 	Hidden: true,
 }
 
-func RunParse(ctx *command.Context, ymlPath string, ymlContent string, dev, test, staging, prod, outputYml bool) error {
+func RunParse(ctx *command.Context, ymlPath string, ymlContent string, dev, test, staging, prod bool, output string) error {
 	var yml []byte
 	var err error
 	if ymlPath != "" {
@@ -52,7 +57,7 @@ func RunParse(ctx *command.Context, ymlPath string, ymlContent string, dev, test
 	} else if ymlContent != "" {
 		yml = []byte(ymlContent)
 	} else {
-		ymlPath, err = ctx.DiceYml(true)
+		ymlPath, err = ctx.ErdaYml(true)
 		if err != nil {
 			return err
 		}
@@ -83,16 +88,22 @@ func RunParse(ctx *command.Context, ymlPath string, ymlContent string, dev, test
 		}
 	}
 	var res string
-	if outputYml {
+	switch strings.ToLower(output) {
+	case "json":
+		jsR, err := dyml.JSON()
+		if err != nil {
+			return err
+		}
+		pJSR, err := prettyjson.Format([]byte(jsR))
+		res = string(pJSR)
+	case "yaml":
 		res, err = dyml.YAML()
 		if err != nil {
 			return err
 		}
-	} else {
-		res, err = dyml.JSON()
-		if err != nil {
-			return err
-		}
+	default:
+		return errors.New(fmt.Sprintf("Invalid output format %s", output))
+
 	}
 	os.Stdout.WriteString(res)
 	return nil

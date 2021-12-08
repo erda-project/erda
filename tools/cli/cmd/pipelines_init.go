@@ -21,10 +21,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
-
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var PIPELINEINIT = command.Command{
@@ -101,6 +100,7 @@ func getErdaYamls() (string, error) {
 		return "", err
 	}
 
+	// TODO rename dice_yml to erda_yml
 	yamls := []string{"dice_yml: ${git-checkout}/.erda/erda.yml"}
 	for _, env := range []string{"dev", "test", "staging", "prod"} {
 		if _, err := os.Stat(".erda/erda_" + env + ".yml"); err == nil {
@@ -113,7 +113,7 @@ func getErdaYamls() (string, error) {
 	return strings.Join(yamls, "\n"), nil
 }
 
-var ymlTemplate = `version: 1.1
+var ymlTemplate = `version: "1.1"
 stages:
 - stage:
   - git-checkout:

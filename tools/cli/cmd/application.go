@@ -19,12 +19,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/apistructs"
-
-	"github.com/erda-project/erda/modules/core-services/types"
-
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
