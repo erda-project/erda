@@ -42,6 +42,13 @@ type notifyChannelService struct {
 	NotifyChannelDB *db.NotifyChannelDB
 }
 
+var ProviderAndType = map[string]string{
+	pb.ProviderType_ALIYUN_SMS.String(): pb.Type_SMS.String(),
+	pb.ProviderType_DINGTALK.String():   pb.Type_DINGTALK_WORK_NOTICE.String(),
+	pb.ProviderType_SMTP.String():       pb.Type_EMAIL.String(),
+	pb.ProviderType_ALIYUN_VMS.String(): pb.Type_VMS.String(),
+}
+
 func (s *notifyChannelService) CreateNotifyChannel(ctx context.Context, req *pb.CreateNotifyChannelRequest) (*pb.CreateNotifyChannelResponse, error) {
 	if req.Name == "" {
 		return nil, pkgerrors.NewMissingParameterError("name")
@@ -127,8 +134,8 @@ func (s *notifyChannelService) GetNotifyChannels(ctx context.Context, req *pb.Ge
 	if req.PageNo < 1 {
 		req.PageNo = 1
 	}
-	if req.PageSize < 15 {
-		req.PageSize = 15
+	if req.PageSize < 10 {
+		req.PageSize = 10
 	}
 	if req.PageSize > 60 {
 		req.PageSize = 60
@@ -284,32 +291,22 @@ func (s *notifyChannelService) DeleteNotifyChannel(ctx context.Context, req *pb.
 }
 
 func (s *notifyChannelService) GetNotifyChannelTypes(ctx context.Context, req *pb.GetNotifyChannelTypesRequest) (*pb.GetNotifyChannelTypesResponse, error) {
-
 	language := apis.Language(ctx)
 
-	var shortMessageProviderTypes []*pb.NotifyChannelProviderType
-	shortMessageProviderTypes = append(shortMessageProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_ALIYUN_SMS.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_ALIYUN_SMS.String())),
-	})
-	var dingWorkNoticeProviderTypes []*pb.NotifyChannelProviderType
-	dingWorkNoticeProviderTypes = append(dingWorkNoticeProviderTypes, &pb.NotifyChannelProviderType{
-		Name:        strings.ToLower(pb.ProviderType_DINGTALK.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.ProviderType_DINGTALK.String())),
-	})
-
 	var types []*pb.NotifyChannelTypeResponse
-	types = append(types, &pb.NotifyChannelTypeResponse{
-		Name:        strings.ToLower(pb.Type_SHORT_MESSAGE.String()),
-		DisplayName: s.p.I18n.Text(language, strings.ToLower(pb.Type_SHORT_MESSAGE.String())),
-		Providers:   shortMessageProviderTypes,
-	})
-
-	types = append(types, &pb.NotifyChannelTypeResponse{
-		Name:        strings.ToLower(pb.Type_DINGTALK_WORK_NOTICE.String()),
-		DisplayName: s.p.I18n.Text(language, pb.Type_DINGTALK_WORK_NOTICE.String()),
-		Providers:   dingWorkNoticeProviderTypes,
-	})
+	for provider, channelType := range ProviderAndType {
+		providerTypes := []*pb.NotifyChannelProviderType{
+			{
+				Name:        strings.ToLower(provider),
+				DisplayName: s.p.I18n.Text(language, strings.ToLower(provider)),
+			},
+		}
+		types = append(types, &pb.NotifyChannelTypeResponse{
+			Name:        strings.ToLower(channelType),
+			DisplayName: s.p.I18n.Text(language, strings.ToLower(channelType)),
+			Providers:   providerTypes,
+		})
+	}
 	return &pb.GetNotifyChannelTypesResponse{Data: types}, nil
 }
 
@@ -488,6 +485,40 @@ func (s *notifyChannelService) ConfigValidate(channelType string, c map[string]*
 		}
 		c["need_kms_key"] = structpb.NewStringValue("appSecret")
 		c["need_kms_data"] = structpb.NewStringValue(dingNotice.AppSecret)
+		return c, nil
+	case strings.ToLower(pb.ProviderType_SMTP.String()):
+		bytes, err := json.Marshal(c)
+		if err != nil {
+			return nil, errors.New("Json parser failed.")
+		}
+		var email kind.Email
+		err = json.Unmarshal(bytes, &email)
+		if err != nil {
+			return nil, err
+		}
+		err = email.Validate()
+		if err != nil {
+			return nil, err
+		}
+		c["need_kms_key"] = structpb.NewStringValue("smtpPassword")
+		c["need_kms_data"] = structpb.NewStringValue(email.SMTPPassword)
+		return c, nil
+	case strings.ToLower(pb.ProviderType_ALIYUN_VMS.String()):
+		bytes, err := json.Marshal(c)
+		if err != nil {
+			return nil, errors.New("Json parser failed.")
+		}
+		var vms kind.AliyunVMS
+		err = json.Unmarshal(bytes, &vms)
+		if err != nil {
+			return nil, err
+		}
+		err = vms.Validate()
+		if err != nil {
+			return nil, err
+		}
+		c["need_kms_key"] = structpb.NewStringValue("accessKeySecret")
+		c["need_kms_data"] = structpb.NewStringValue(vms.AccessKeySecret)
 		return c, nil
 	default:
 		return nil, errors.New("Not support notify channel type")

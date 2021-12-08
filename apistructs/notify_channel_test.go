@@ -24,7 +24,7 @@ func Test_NotifyChannelDTO_Deserialization(t *testing.T) {
         "id": "85fe1f9e-7cc4-4d65-baab-be0346d53849",
         "name": "test_channel18",
         "type": {
-            "name": "short_message",
+            "name": "sms",
             "displayName": "短信"
         },
         "config": {
@@ -50,7 +50,7 @@ func Test_NotifyChannelDTO_Deserialization(t *testing.T) {
 		Type: struct {
 			Name        NotifyChannelType `json:"name"`
 			DisplayName string            `json:"displayName"`
-		}{Name: NOTIFY_CHANNEL_TYPE_SHORT_MESSAGE, DisplayName: "短信"},
+		}{Name: NOTIFY_CHANNEL_TYPE_SMS, DisplayName: "短信"},
 		Config: &NotifyChannelConfig{
 			AccessKeyId:     "xx",
 			AccessKeySecret: "xx",

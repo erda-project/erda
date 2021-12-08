@@ -72,7 +72,7 @@ func (o *NotifyGroup) CheckNotifyGroupTarget(targets []apistructs.NotifyTarget) 
 func (o *NotifyGroup) CheckNotifyChannels(channelStr string) error {
 	channels := strings.Split(channelStr, ",")
 	for _, channel := range channels {
-		if channel != "dingding" && channel != "sms" && channel != "email" && channel != "mbox" && channel != "webhook" {
+		if _, ok := apistructs.ValidateNotifyChannel[channel]; !ok {
 			return errors.New("invalid channel: " + channel)
 		}
 	}
