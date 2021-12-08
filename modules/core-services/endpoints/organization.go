@@ -456,16 +456,28 @@ func (e *Endpoints) CreateOrgClusterRelation(ctx context.Context, r *http.Reques
 	return httpserver.OkResp("success")
 }
 
-// ListAllOrgClusterRelation 获取所有企业对应集群关系
-func (e *Endpoints) ListAllOrgClusterRelation(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetUserID(r)
+// ListOrgClusterRelation 获取所有企业对应集群关系
+func (e *Endpoints) ListOrgClusterRelation(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var (
+		err  error
+		rels []model.OrgClusterRelation
+	)
+	_, err = user.GetUserID(r)
 	if err != nil {
 		return apierrors.ErrRelateCluster.NotLogin().ToResp(), nil
 	}
 
-	rels, err := e.org.ListAllOrgClusterRelation()
-	if err != nil {
-		return apierrors.ErrGetOrgClusterRelation.InternalError(err).ToResp(), nil
+	cluster := r.URL.Query().Get("cluster")
+	if cluster == "" {
+		rels, err = e.org.ListAllOrgClusterRelation()
+		if err != nil {
+			return apierrors.ErrGetOrgClusterRelation.InternalError(err).ToResp(), nil
+		}
+	} else {
+		rels, err = e.db.GetOrgClusterRelationsByCluster(cluster)
+		if err != nil {
+			return apierrors.ErrGetOrgClusterRelationsByOrg.InvalidParameter(err).ToResp(), nil
+		}
 	}
 
 	var relDTOs []apistructs.OrgClusterRelationDTO
