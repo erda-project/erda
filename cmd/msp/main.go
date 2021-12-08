@@ -53,6 +53,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/log-service/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/apm/notifygroup"
+	_ "github.com/erda-project/erda/modules/msp/apm/service"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage/elasticsearch"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
