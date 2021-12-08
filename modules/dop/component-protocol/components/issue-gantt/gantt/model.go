@@ -39,6 +39,11 @@ type ComponentGantt struct {
 	users     []string `json:"-"`
 }
 
+type InParams struct {
+	ParentIDs []uint64 `json:"parentId"`
+	ProjectID string   `json:"projectId"`
+}
+
 type Data struct {
 	UpdateList []Item            `json:"updateList,omitempty"`
 	ExpandList map[uint64][]Item `json:"expandList,omitempty"`
