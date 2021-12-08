@@ -1042,8 +1042,13 @@ func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRa
 			requestMem, MIN_MEM_SIZE)
 	}
 
+	// max_mem set but smaller than request mem
+	if maxMem != 0 && maxMem < requestMem {
+		return errors.Errorf("invalid max mem, value: %v, (which is lower than request mem(%v))", maxMem, requestMem)
+	}
+
 	// if max_mem not set, use [mem/ratio, mem]; else use [mem, max_mem]
-	if maxMem < MIN_MEM_SIZE {
+	if maxMem == 0 {
 		maxMem = requestMem
 		requestMem = requestMem / memSubscribeRatio
 	}
@@ -1066,11 +1071,16 @@ func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[str
 			requestCPU, MIN_CPU_SIZE)
 	}
 
+	// max_cpu set but smaller than request cpu
+	if maxCPU != 0 && maxCPU < requestCPU {
+		return errors.Errorf("invalid max cpu, value: %v, (which is lower than request cpu(%v))", maxCPU, requestCPU)
+	}
+
 	// 2, Dealing with cpu oversold
 	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
 
 	// if max_cpu not set, use [cpu/ratio, cpu]; else use [cpu, max_cpu]
-	if maxCPU < MIN_CPU_SIZE {
+	if maxCPU == 0 {
 		maxCPU = requestCPU
 		actualCPU = requestCPU / ratio
 	}
