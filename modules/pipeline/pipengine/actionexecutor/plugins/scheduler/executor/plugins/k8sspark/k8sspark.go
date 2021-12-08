@@ -28,11 +28,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	sparkDriverType   = "driver"
+	sparkExecutorType = "executor"
 )
 
 func init() {
@@ -434,10 +441,10 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	}
 	sparkApp.Spec.Volumes = vols
 
-	sparkApp.Spec.Driver.SparkPodSpec = k.composePodSpec(conf, "driver", volMounts)
+	sparkApp.Spec.Driver.SparkPodSpec = k.composePodSpec(conf, sparkDriverType, volMounts)
 	sparkApp.Spec.Driver.ServiceAccount = stringptr(sparkServiceAccountName)
 
-	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(conf, "executor", volMounts)
+	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(conf, sparkExecutorType, volMounts)
 	sparkApp.Spec.Executor.Instances = int32ptr(conf.Spec.SparkConf.ExecutorResource.Replica)
 
 	return sparkApp, nil
@@ -449,16 +456,16 @@ func (k *K8sSpark) composePodSpec(conf *apistructs.BigdataConf, podType string, 
 	resource := apistructs.BigdataResource{}
 
 	switch podType {
-	case "driver":
+	case sparkDriverType:
 		resource = conf.Spec.SparkConf.DriverResource
-	case "executor":
+	case sparkExecutorType:
 		resource = conf.Spec.SparkConf.ExecutorResource
 	}
 
 	k.appendResource(&podSpec, &resource)
 	podSpec.Env = conf.Spec.Envs
-	k.appendEnvs(&podSpec, &resource)
-	podSpec.Labels = addLabels()
+	k.appendEnvs(&podSpec, &resource, conf.Name, podType)
+	podSpec.Labels = addLabels(conf)
 	podSpec.VolumeMounts = mount
 	return podSpec
 }
@@ -482,7 +489,7 @@ func (k *K8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *
 	podSpec.Memory = stringptr(memory)
 }
 
-func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource) {
+func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource, podName, podType string) {
 	cpu, err := strconv.ParseFloat(resource.CPU, 32)
 	if err != nil {
 		cpu = 1.0
@@ -502,12 +509,20 @@ func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apis
 		"IS_K8S":           "true",
 	}
 
+	switch podType {
+	case sparkDriverType:
+		envMap[apistructs.TerminusDefineTag] = containers.MakeSparkTaskDriverID(podName)
+	case sparkExecutorType:
+		envMap[apistructs.TerminusDefineTag] = containers.MakeSparkTaskExecutorID(podName)
+	}
+
 	for k, v := range envMap {
 		podSpec.Env = append(podSpec.Env, corev1.EnvVar{
 			Name:  k,
 			Value: v,
 		})
 	}
+	podSpec.EnvVars = envMap
 
 	clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
 	if err != nil {

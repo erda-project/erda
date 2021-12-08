@@ -162,6 +162,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	succeededCount := map[apistructs.K8SResType]int{}
 	failedCount := map[apistructs.K8SResType]int{}
 	updatingCount := map[apistructs.K8SResType]int{}
+	stoppedCount := map[apistructs.K8SResType]int{}
 
 	for _, kind := range []apistructs.K8SResType{apistructs.K8SDeployment, apistructs.K8SStatefulSet,
 		apistructs.K8SDaemonSet, apistructs.K8SJob, apistructs.K8SCronJob} {
@@ -197,6 +198,21 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				Value:      w.sdk.I18n(statusValue),
 				Status:     statusColor,
 				Breathing:  breathing,
+			}
+
+			switch statusValue {
+			case "Active":
+				activeCount[kind]++
+			case "Abnormal":
+				abnormalCount[kind]++
+			case "Updating":
+				updatingCount[kind]++
+			case "Stopped":
+				stoppedCount[kind]++
+			case "Succeeded":
+				succeededCount[kind]++
+			case "Failed":
+				failedCount[kind]++
 			}
 
 			name := workload.String("metadata", "name")
@@ -252,13 +268,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					logrus.Errorf("deployment %s:%s has invalid fields length %d", namespace, name, len(fields))
 					continue
 				}
-				if statusValue == "Active" {
-					activeCount[kind]++
-				} else if statusValue == "Updating" {
-					updatingCount[kind]++
-				} else {
-					abnormalCount[kind]++
-				}
 				item.Age = fields[4]
 				item.Ready = fields[1]
 				item.UpToDate = fields[2]
@@ -267,13 +276,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				if len(fields) != 11 {
 					logrus.Errorf("daemonset %s:%s has invalid fields length %d", namespace, name, len(fields))
 					continue
-				}
-				if statusValue == "Active" {
-					activeCount[kind]++
-				} else if statusValue == "Updating" {
-					updatingCount[kind]++
-				} else {
-					abnormalCount[kind]++
 				}
 				item.Age = fields[7]
 				item.Ready = fields[3]
@@ -286,27 +288,12 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					logrus.Errorf("statefulSet %s:%s has invalid fields length %d", namespace, name, len(fields))
 					continue
 				}
-				if statusValue == "Active" {
-					activeCount[kind]++
-				} else if statusValue == "Updating" {
-					updatingCount[kind]++
-				} else {
-					abnormalCount[kind]++
-				}
 				item.Age = fields[2]
 				item.Ready = fields[1]
 			case apistructs.K8SJob:
 				if len(fields) != 7 {
 					logrus.Errorf("job %s:%s has invalid fields length %d", namespace, name, len(fields))
 					continue
-				}
-				switch statusValue {
-				case "Active":
-					activeCount[kind]++
-				case "Succeeded":
-					succeededCount[kind]++
-				case "Failed":
-					failedCount[kind]++
 				}
 				item.Age = fields[3]
 				item.Completions = fields[1]
@@ -316,7 +303,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 					logrus.Errorf("cronJob %s:%s has invalid fields length %d", namespace, name, len(fields))
 					continue
 				}
-				activeCount[kind]++
 				item.Age = fields[5]
 				item.Schedule = fields[1]
 				item.LastSchedule = fields[4]
@@ -330,16 +316,19 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			Active:   activeCount[apistructs.K8SDeployment],
 			Abnormal: abnormalCount[apistructs.K8SDeployment],
 			Updating: updatingCount[apistructs.K8SDeployment],
+			Stopped:  stoppedCount[apistructs.K8SDeployment],
 		},
 		DaemonSetCount: Count{
 			Active:   activeCount[apistructs.K8SDaemonSet],
 			Abnormal: abnormalCount[apistructs.K8SDaemonSet],
 			Updating: updatingCount[apistructs.K8SDaemonSet],
+			Stopped:  stoppedCount[apistructs.K8SDaemonSet],
 		},
 		StatefulSetCount: Count{
 			Active:   activeCount[apistructs.K8SStatefulSet],
 			Abnormal: abnormalCount[apistructs.K8SStatefulSet],
 			Updating: updatingCount[apistructs.K8SStatefulSet],
+			Stopped:  updatingCount[apistructs.K8SDaemonSet],
 		},
 		JobCount: Count{
 			Active:    activeCount[apistructs.K8SJob],

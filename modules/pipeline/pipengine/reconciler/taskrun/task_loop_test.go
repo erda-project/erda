@@ -118,6 +118,11 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 				return map[string]string{}
 			})
 
+			var patch3 *monkey.PatchGuard
+			patch3 = monkey.PatchInstanceMethod(reflect.TypeOf(client), "CleanPipelineTaskResult", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) error {
+				return nil
+			})
+
 			var patch *monkey.PatchGuard
 			var tr = &TaskRun{}
 			if tt.fields.EnsureFetchLatestPipelineStatus != "" {
@@ -143,6 +148,7 @@ func TestTaskRun_handleTaskLoop(t *testing.T) {
 			}
 			patch1.Unpatch()
 			patch2.Unpatch()
+			patch3.Unpatch()
 		})
 	}
 }
