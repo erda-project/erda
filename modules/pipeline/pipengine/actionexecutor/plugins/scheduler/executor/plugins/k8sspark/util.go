@@ -72,7 +72,7 @@ func addMainApplicationFile(conf *apistructs.BigdataConf) (string, error) {
 	return "", errors.Errorf("invalid job spec, resource %s", appResource)
 }
 
-func addLabels() map[string]string {
+func addLabels(conf *apistructs.BigdataConf) map[string]string {
 	labels := make(map[string]string)
 
 	// "dice/job": ""

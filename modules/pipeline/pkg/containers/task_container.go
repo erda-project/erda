@@ -31,9 +31,9 @@ func GenContainers(task *spec.PipelineTask) ([]apistructs.TaskContainer, error) 
 		if spec.FlinkConf != nil {
 			return GenFlinkContainers(task), nil
 		}
-		//if spec.SparkConf != nil {
-		//	executorName = "k8sspark"
-		//}
+		if spec.SparkConf != nil {
+			return GenSparkContainers(task), nil
+		}
 	}
 	return GenTaskContainer(task), nil
 }
@@ -82,6 +82,35 @@ func GenFlinkContainers(task *spec.PipelineTask) []apistructs.TaskContainer {
 	containers = append(containers, apistructs.TaskContainer{
 		TaskName:    MakeFlinkTaskManagerName(task.Name),
 		ContainerID: MakeFLinkTaskManagerID(task.Extra.UUID),
+	})
+	return containers
+}
+
+func MakeSparkTaskDriverName(name string) string {
+	return fmt.Sprintf("%s-task-driver", name)
+}
+
+func MakeSparkTaskDriverID(uuid string) string {
+	return fmt.Sprintf("%s-task-driver", uuid)
+}
+
+func MakeSparkTaskExecutorName(name string) string {
+	return fmt.Sprintf("%s-task-executor", name)
+}
+
+func MakeSparkTaskExecutorID(uuid string) string {
+	return fmt.Sprintf("%s-task-executor", uuid)
+}
+
+func GenSparkContainers(task *spec.PipelineTask) []apistructs.TaskContainer {
+	containers := make([]apistructs.TaskContainer, 0)
+	containers = append(containers, apistructs.TaskContainer{
+		TaskName:    MakeSparkTaskDriverName(task.Name),
+		ContainerID: MakeSparkTaskDriverID(task.Extra.UUID),
+	})
+	containers = append(containers, apistructs.TaskContainer{
+		TaskName:    MakeSparkTaskExecutorName(task.Name),
+		ContainerID: MakeSparkTaskExecutorID(task.Extra.UUID),
 	})
 	return containers
 }
