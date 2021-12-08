@@ -85,7 +85,7 @@ type Item struct {
 	MemoryLimits      Multiple `json:"memoryLimits"`
 	MemoryLimitsNum   int64    `json:"MemoryLimitsNum,omitempty"`
 	Ready             string   `json:"ready,omitempty"`
-	Node              string   `json:"node,omitempty"`
+	Node              Link     `json:"node,omitempty"`
 	GotoWorkload      Link     `json:"gotoWorkload"`
 }
 

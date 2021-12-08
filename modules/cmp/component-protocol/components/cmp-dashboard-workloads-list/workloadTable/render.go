@@ -516,11 +516,6 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 		Title:     cputil.I18n(ctx, "name"),
 		Sorter:    true,
 	}
-	namespaceColumn := Column{
-		DataIndex: "namespace",
-		Title:     cputil.I18n(ctx, "namespace"),
-		Sorter:    true,
-	}
 	ageColumn := Column{
 		DataIndex: "age",
 		Title:     cputil.I18n(ctx, "age"),
@@ -574,27 +569,27 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 
 	if len(w.State.Values.Kind) != 1 {
 		w.Props.Columns = []Column{
-			nameColumn, statusColumn, kindColumn, namespaceColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.DeploymentType {
 		w.Props.Columns = []Column{
-			nameColumn, statusColumn, kindColumn, namespaceColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.DaemonSetType {
 		w.Props.Columns = []Column{
-			nameColumn, statusColumn, kindColumn, namespaceColumn, desiredColumn, currentColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, desiredColumn, currentColumn, readyColumn, upToDateColumn, availableColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.StatefulSetType {
 		w.Props.Columns = []Column{
-			nameColumn, statusColumn, kindColumn, namespaceColumn, readyColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, readyColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.JobType {
 		w.Props.Columns = []Column{
-			nameColumn, statusColumn, kindColumn, namespaceColumn, completionsColumn, durationColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, completionsColumn, durationColumn, ageColumn,
 		}
 	} else if w.State.Values.Kind[0] == filter.CronJobType {
 		w.Props.Columns = []Column{
-			nameColumn, statusColumn, kindColumn, namespaceColumn, scheduleColumn, lastScheduleColumn, ageColumn,
+			nameColumn, statusColumn, kindColumn, scheduleColumn, lastScheduleColumn, ageColumn,
 		}
 	}
 
