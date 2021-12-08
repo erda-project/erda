@@ -35,6 +35,15 @@ const (
 	WebhookNotifyTarget            NotifyTargetType = "webhook"
 )
 
+var ValidateNotifyChannel = map[string]bool{
+	"dingding": true,
+	"sms":      true,
+	"email":    true,
+	"mbox":     true,
+	"webhook":  true,
+	"vms":      true,
+}
+
 // NotifyTarget 通知目标
 type NotifyTarget struct {
 	Type   NotifyTargetType `json:"type"`
