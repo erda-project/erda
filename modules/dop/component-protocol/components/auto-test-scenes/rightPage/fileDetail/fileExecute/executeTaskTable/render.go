@@ -365,6 +365,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"path":     "",
 					"step":     stepIdx,
 				}
+				lists = append(lists, item)
 			} else {
 				switch task.Labels[apistructs.AutotestType] {
 				case apistructs.AutotestSceneStep:
