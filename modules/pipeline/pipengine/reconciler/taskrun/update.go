@@ -127,3 +127,10 @@ func (tr *TaskRun) EnsureFetchLatestPipelineStatus() {
 	})
 	tr.QueriedPipelineStatus = latestPStatus
 }
+
+func (tr *TaskRun) cleanTaskResult() {
+	tr.Task.Result = nil
+	if err := tr.DBClient.CleanPipelineTaskResult(tr.Task.ID); err != nil {
+		rlog.TWarnf(tr.P.ID, tr.Task.ID, "failed to clean task result, err: %v", err)
+	}
+}
