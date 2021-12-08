@@ -149,18 +149,6 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 	smtpPort := d.port
 	isSSL := d.IsSSL()
 	var err error
-	org, err := d.bundle.GetOrg(mailData.OrgID)
-	if err != nil {
-		logrus.Errorf("failed to get org info err:%s", err)
-	}
-	if org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
-		orgConfig := org.Config
-		smtpHost = orgConfig.SMTPHost
-		smtpUser = orgConfig.SMTPUser
-		smtpPassword = orgConfig.SMTPPassword
-		smtpPort = strconv.FormatInt(orgConfig.SMTPPort, 10)
-		isSSL = orgConfig.SMTPIsSSL
-	}
 	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mailData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_EMAIL)
 	if err != nil {
 		return fmt.Errorf("no enabled email channel, orgID: %d, err: %v", mailData.OrgID, err)
@@ -172,6 +160,19 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 		smtpHost = notifyChannel.Config.SMTPHost
 		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
 		isSSL = notifyChannel.Config.SMTPIsSSL
+	} else {
+		org, err := d.bundle.GetOrg(mailData.OrgID)
+		if err != nil {
+			logrus.Errorf("failed to get org info err:%s", err)
+		}
+		if org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
+			orgConfig := org.Config
+			smtpHost = orgConfig.SMTPHost
+			smtpUser = orgConfig.SMTPUser
+			smtpPassword = orgConfig.SMTPPassword
+			smtpPort = strconv.FormatInt(orgConfig.SMTPPort, 10)
+			isSSL = orgConfig.SMTPIsSSL
+		}
 	}
 
 	if smtpHost == "" {
