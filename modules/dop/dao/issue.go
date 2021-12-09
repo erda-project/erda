@@ -923,6 +923,9 @@ func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingR
 	if len(req.Label) > 0 {
 		sql = sql.Joins(joinLabelRelation).Where("c.label_id IN (?)", req.Label)
 	}
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
+	}
 	offset := (req.PageNo - 1) * req.PageSize
 	var total uint64
 	var res []IssueItem
