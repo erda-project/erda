@@ -78,6 +78,7 @@ openapi-v1-routes:
           - addon-mysql-consumer
           - auto-test-scenes
           - issue-gantt
+          - requirement-task-overview
       - addr: http://localhost:8080
         scenarios:
           - demo
