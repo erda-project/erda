@@ -67,13 +67,13 @@ message GetServicesResponse {
 }
 
 message Chart{
-  int64 timestamp = 1;
-  float value     = 2;
+  int64  timestamp = 1;
+  double value     = 2;
 }
 
 message ServiceChart{
   string         type = 1;
-  float          data = 2;
+  double         data = 2;
   repeated Chart view = 3;
 }
 
@@ -85,7 +85,7 @@ message Service {
 }
 
 enum ChartType {
-  QPS         = 0;
+  RPS         = 0;
   AvgDuration = 1;
   ErrorRate   = 3;
 }

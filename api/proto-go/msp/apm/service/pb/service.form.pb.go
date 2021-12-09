@@ -122,11 +122,11 @@ func (m *Chart) UnmarshalURLValues(prefix string, values url.Values) error {
 				}
 				m.Timestamp = val
 			case "value":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.Value = float32(val)
+				m.Value = val
 			}
 		}
 	}
@@ -141,11 +141,11 @@ func (m *ServiceChart) UnmarshalURLValues(prefix string, values url.Values) erro
 			case "type":
 				m.Type = vals[0]
 			case "data":
-				val, err := strconv.ParseFloat(vals[0], 32)
+				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.Data = float32(val)
+				m.Data = val
 			}
 		}
 	}
