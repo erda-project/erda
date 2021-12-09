@@ -52,3 +52,26 @@ func TestAbsInt64(t *testing.T) {
 	x = AbsInt64(-10)
 	assert.Equal(t, int64(10), x)
 }
+
+func TestTwoDecimalPlaces(t *testing.T) {
+	type args struct {
+		value float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		{"case1", args{value: 1.2345}, 1.23},
+		{"case2", args{value: 1.2355}, 1.24},
+		{"case3", args{value: 0.35000000000000003}, 0.35},
+		{"case4", args{value: 0.7000000000000001}, 0.70},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := TwoDecimalPlaces(tt.args.value); got != tt.want {
+				t.Errorf("TwoDecimalPlaces() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

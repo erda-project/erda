@@ -43,6 +43,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	pkgmath "github.com/erda-project/erda/pkg/math"
 )
 
 type Vo struct {
@@ -70,6 +71,7 @@ type Node struct {
 	Id              string  `json:"id,omitempty"`
 	Name            string  `json:"name,omitempty"`
 	Type            string  `json:"type,omitempty"`
+	TypeDisplay     string  `json:"typeDisplay,omitempty"`
 	AddonId         string  `json:"addonId,omitempty"`
 	AddonType       string  `json:"addonType,omitempty"`
 	ApplicationId   string  `json:"applicationId,omitempty"`
@@ -239,6 +241,7 @@ type Metric struct {
 	Replicas  float64 `json:"replicas,omitempty"`
 	Running   float64 `json:"running"`
 	Stopped   float64 `json:"stopped"`
+	RPS       float64 `json:"rps"`
 }
 
 const (
@@ -1366,7 +1369,9 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 }
 
 func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*Node, error) {
-	nodes := topology.GetTopology(params)
+	lang := api.Language(r)
+
+	nodes := topology.GetTopology(lang, params)
 
 	// instance count info
 	instances, err := topology.GetInstances(api.Language(r), params)
@@ -1477,9 +1482,10 @@ func (topology *provider) GetSearchTagv(r *http.Request, tag, scopeId string, st
 	}
 }
 
-func (topology *provider) GetTopology(param Vo) []*Node {
+func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node {
 
 	indices := createTypologyIndices(param.StartTime, param.EndTime)
+	timeRange := (param.EndTime - param.StartTime) / 1e3 // second
 	ctx := context.Background()
 
 	nodes := make([]*Node, 0)
@@ -1514,7 +1520,7 @@ func (topology *provider) GetTopology(param Vo) []*Node {
 			fmt.Println()
 		}
 
-		parseToTypologyNode(searchResult, relations, &nodes)
+		topology.parseToTypologyNode(lang, timeRange, searchResult, relations, &nodes)
 	}
 	//debug
 	//nodesData, _ := json.Marshal(nodes)
@@ -1530,7 +1536,7 @@ func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	return aggregationConditions, relations
 }
 
-func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
+func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
 	for _, nodeRelation := range relations {
 		targetNodeType := nodeRelation.Target
 		sourceNodeTypes := nodeRelation.Source
@@ -1562,12 +1568,14 @@ func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRe
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
+					node.TypeDisplay = topology.t.Text(lang, strings.ToLower(node.Type))
 					if targetNodeType.Type == TargetOtherNode && node.Type == TypeInternal {
 						continue
 					}
 
 					// aggs
 					metric := metricParser(targetNodeType, target)
+					metric.RPS = pkgmath.TwoDecimalPlaces(float64(metric.Count) / float64(timeRange))
 
 					node.Metric = metric
 
@@ -1807,6 +1815,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	}
 	node.DashboardId = getDashboardId(node.Type)
+
 	return &node
 }
 
