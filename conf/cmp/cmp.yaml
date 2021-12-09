@@ -80,6 +80,8 @@ component-protocol.components.cmp-dashboard-pods.addPodFileEditor:
 component-protocol.components.cmp-dashboard-pods.addPodFilter:
 component-protocol.components.cmp-dashboard-pods.topHead:
 component-protocol.components.cmp-dashboard-pods.charts:
+component-protocol.components.cmp-dashboard-pods.yamlDrawer:
+component-protocol.components.cmp-dashboard-pods.yamlFileEditor:
 
 component-protocol.components.cmp-dashboard-podDetail.page:
 component-protocol.components.cmp-dashboard-podDetail.header:
