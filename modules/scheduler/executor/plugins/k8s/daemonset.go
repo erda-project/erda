@@ -168,6 +168,9 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
 
+	maxCpu := fmt.Sprintf("%.fm", service.Resources.MaxCPU*1000)
+	maxMem := fmt.Sprintf("%.fMi", service.Resources.MaxMem)
+
 	container := corev1.Container{
 		// TODO, container name e.g. redis-1528180634
 		Name:  deployName,
@@ -176,6 +179,10 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse(cpu),
 				corev1.ResourceMemory: resource.MustParse(memory),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse(maxCpu),
+				corev1.ResourceMemory: resource.MustParse(maxMem),
 			},
 		},
 	}

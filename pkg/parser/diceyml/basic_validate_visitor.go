@@ -72,6 +72,26 @@ func (o *BasicValidateVisitor) VisitService(v DiceYmlVisitor, obj *Service) {
 	// if obj.Image == "" {
 	// 	o.collectErrors = append(o.collectErrors, errors.Wrap(invalidImage, o.currentService))
 	// }
+
+	res := obj.Resources
+
+	if res.MaxCPU <= 0 && res.CPU <= 0 {
+		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "resources")] = errors.Wrap(invalidCPU, o.currentService)
+	}
+
+	if res.MaxMem <= 0 && res.Mem <= 0 {
+		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "resources")] = errors.Wrap(invalidMem, o.currentService)
+	}
+
+	// check whether max_cpu set but smaller than cpu
+	if res.MaxCPU > 0 && res.MaxCPU < res.CPU {
+		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "resources")] = errors.Wrap(invalidMaxCPU, o.currentService)
+	}
+	// check whether max_mem set but smaller than mem
+	if res.MaxMem > 0 && res.MaxMem < res.Mem {
+		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "resources")] = errors.Wrap(invalidMaxMem, o.currentService)
+	}
+
 	for _, port := range obj.Ports {
 		if port.Port <= 0 {
 			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "ports")] = errors.Wrap(invalidPort, o.currentService)
@@ -90,6 +110,7 @@ func (o *BasicValidateVisitor) VisitService(v DiceYmlVisitor, obj *Service) {
 			break
 		}
 	}
+
 	switch obj.TrafficSecurity.Mode {
 	case "", "https":
 	default:

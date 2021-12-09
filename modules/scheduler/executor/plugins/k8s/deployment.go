@@ -523,6 +523,8 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		return nil, fmt.Errorf(errMsg)
 	}
 
+	logrus.Debugf("container name: %s, container resource spec: %+v", container.Name, container.Resources)
+
 	// Generate sidecars container configuration
 	sidecars := k.generateSidecarContainers(service.SideCars)
 
@@ -947,26 +949,34 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 	if memSubscribeRatio < 1.0 {
 		memSubscribeRatio = 1.0
 	}
-	requestCPU := "10m"
-	if service.Resources.Cpu*1000/cpuSubscribeRatio > 10.0 {
-		requestCPU = fmt.Sprintf("%dm", int(service.Resources.Cpu*1000/cpuSubscribeRatio))
-	}
-
-	requestMem := fmt.Sprintf("%dMi", int(service.Resources.Mem/memSubscribeRatio))
 
 	cpu := fmt.Sprintf("%dm", int(service.Resources.Cpu*1000))
 	memory := fmt.Sprintf("%dMi", int(service.Resources.Mem))
 
+	maxCpu := fmt.Sprintf("%dm", int(service.Resources.MaxCPU*1000))
+	maxMem := fmt.Sprintf("%dMi", int(service.Resources.MaxMem))
+
 	container.Resources = apiv1.ResourceRequirements{
 		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(requestCPU),
-			apiv1.ResourceMemory: resource.MustParse(requestMem),
-		},
-		Limits: apiv1.ResourceList{
 			apiv1.ResourceCPU:    resource.MustParse(cpu),
 			apiv1.ResourceMemory: resource.MustParse(memory),
 		},
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(maxCpu),
+			apiv1.ResourceMemory: resource.MustParse(maxMem),
+		},
 	}
+
+	if err := k.SetFineGrainedCPU(container, map[string]string{}, cpuSubscribeRatio); err != nil {
+		logrus.Errorf("set cpu resource failed, container name: %s, error: %v", container.Name, err)
+		return err
+	}
+	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
+		logrus.Errorf("set mem resource failed, container name: %s, error: %v", container.Name, err)
+		return err
+	}
+
+	logrus.Debugf("container name: %s, resource: %+v", container.Name, container.Resources)
 
 	return nil
 }
