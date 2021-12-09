@@ -23,13 +23,16 @@ import (
 )
 
 // GetAuthOption .
-func GetAuthOption(opt *common.APIAuth) func(r *http.Request) auth.Options {
+func GetAuthOption(opt *common.APIAuth, fn func(opts map[string]interface{}) map[string]interface{}) func(r *http.Request) auth.Options {
 	if opt == nil {
 		return func(r *http.Request) auth.Options {
 			return &authOption{}
 		}
 	}
 	opts := fieldsToMap(reflect.ValueOf(opt).Elem())
+	if fn != nil {
+		opts = fn(opts)
+	}
 	return func(r *http.Request) auth.Options {
 		return &authOption{opts: opts}
 	}
