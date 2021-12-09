@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.monitor.event-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.event.EventQueryService",
+			"erda.core.monitor.event.EventQueryService.client",
 			"erda.core.monitor.event-client",
 		},
 		Types: []reflect.Type{

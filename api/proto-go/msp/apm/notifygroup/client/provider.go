@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.apm.notifygroup-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.notifygroup.NotifyGroupService",
+			"erda.msp.apm.notifygroup.NotifyGroupService.client",
 			"erda.msp.apm.notifygroup-client",
 		},
 		Types: []reflect.Type{

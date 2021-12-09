@@ -86,7 +86,9 @@ func init() {
 	servicehub.Register("erda.msp.apm.checker-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.checker.CheckerService",
+			"erda.msp.apm.checker.CheckerService.client",
 			"erda.msp.apm.checker.CheckerV1Service",
+			"erda.msp.apm.checker.CheckerV1Service.client",
 			"erda.msp.apm.checker-client",
 		},
 		Types: []reflect.Type{

@@ -76,8 +76,8 @@ func init() {
 	servicehub.Register("erda.core.monitor.log.query-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.log.query.LogQueryService",
-			"erda.core.monitor.log.query-client",
 			"erda.core.monitor.log.query.LogQueryService.client",
+			"erda.core.monitor.log.query-client",
 		},
 		Types: []reflect.Type{
 			clientsType,

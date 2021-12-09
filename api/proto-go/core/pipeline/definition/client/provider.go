@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.definition-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.definition.DefinitionService",
+			"erda.core.pipeline.definition.DefinitionService.client",
 			"erda.core.pipeline.definition-client",
 		},
 		Types: []reflect.Type{

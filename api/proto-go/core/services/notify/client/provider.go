@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.services.notify-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.services.notify.NotifyService",
+			"erda.core.services.notify.NotifyService.client",
 			"erda.core.services.notify-client",
 		},
 		Types: []reflect.Type{

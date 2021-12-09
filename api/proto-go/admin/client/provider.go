@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.admin-client", &servicehub.Spec{
 		Services: []string{
 			"erda.admin.DingTalkTestService",
+			"erda.admin.DingTalkTestService.client",
 			"erda.admin-client",
 		},
 		Types: []reflect.Type{

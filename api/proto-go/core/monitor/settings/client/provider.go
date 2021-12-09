@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.monitor.settings-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.settings.SettingsService",
+			"erda.core.monitor.settings.SettingsService.client",
 			"erda.core.monitor.settings-client",
 		},
 		Types: []reflect.Type{

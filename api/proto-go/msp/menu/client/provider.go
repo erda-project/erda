@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.menu-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.menu.MenuService",
+			"erda.msp.menu.MenuService.client",
 			"erda.msp.menu-client",
 		},
 		Types: []reflect.Type{

@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.global-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.global.GlobalService",
+			"erda.core.hepa.global.GlobalService.client",
 			"erda.core.hepa.global-client",
 		},
 		Types: []reflect.Type{

@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.tenant-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.tenant.TenantService",
+			"erda.msp.tenant.TenantService.client",
 			"erda.msp.tenant-client",
 		},
 		Types: []reflect.Type{

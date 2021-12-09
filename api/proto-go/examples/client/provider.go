@@ -86,7 +86,9 @@ func init() {
 	servicehub.Register("erda.examples-client", &servicehub.Spec{
 		Services: []string{
 			"erda.examples.GreeterService",
+			"erda.examples.GreeterService.client",
 			"erda.examples.UserService",
+			"erda.examples.UserService.client",
 			"erda.examples-client",
 		},
 		Types: []reflect.Type{

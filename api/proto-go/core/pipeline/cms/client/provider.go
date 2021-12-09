@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.cms-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.cms.CmsService",
+			"erda.core.pipeline.cms.CmsService.client",
 			"erda.core.pipeline.cms-client",
 		},
 		Types: []reflect.Type{

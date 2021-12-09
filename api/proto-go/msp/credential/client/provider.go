@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.credential-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.credential.AccessKeyService",
+			"erda.msp.credential.AccessKeyService.client",
 			"erda.msp.credential-client",
 		},
 		Types: []reflect.Type{

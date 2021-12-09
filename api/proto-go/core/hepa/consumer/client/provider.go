@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.consumer-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.consumer.LegacyConsumerService",
+			"erda.core.hepa.consumer.LegacyConsumerService.client",
 			"erda.core.hepa.consumer-client",
 		},
 		Types: []reflect.Type{

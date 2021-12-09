@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.oap.entity-client", &servicehub.Spec{
 		Services: []string{
 			"erda.oap.entity.EntityService",
+			"erda.oap.entity.EntityService.client",
 			"erda.oap.entity-client",
 		},
 		Types: []reflect.Type{

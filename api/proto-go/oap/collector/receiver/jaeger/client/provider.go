@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.oap.collector.receiver.jaeger-client", &servicehub.Spec{
 		Services: []string{
 			"erda.oap.collector.receiver.jaeger.JaegerService",
+			"erda.oap.collector.receiver.jaeger.JaegerService.client",
 			"erda.oap.collector.receiver.jaeger-client",
 		},
 		Types: []reflect.Type{

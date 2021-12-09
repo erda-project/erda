@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.openapi_consumer-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.openapi_consumer.OpenapiConsumerService",
+			"erda.core.hepa.openapi_consumer.OpenapiConsumerService.client",
 			"erda.core.hepa.openapi_consumer-client",
 		},
 		Types: []reflect.Type{

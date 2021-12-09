@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.cron-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.cron.CronService",
+			"erda.core.pipeline.cron.CronService.client",
 			"erda.core.pipeline.cron-client",
 		},
 		Types: []reflect.Type{

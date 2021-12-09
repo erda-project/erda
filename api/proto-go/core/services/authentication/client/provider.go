@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.services.authentication-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.services.authentication.AuthenticationService",
+			"erda.core.services.authentication.AuthenticationService.client",
 			"erda.core.services.authentication-client",
 		},
 		Types: []reflect.Type{

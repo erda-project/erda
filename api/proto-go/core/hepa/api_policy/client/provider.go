@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.api_policy-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.api_policy.ApiPolicyService",
+			"erda.core.hepa.api_policy.ApiPolicyService.client",
 			"erda.core.hepa.api_policy-client",
 		},
 		Types: []reflect.Type{

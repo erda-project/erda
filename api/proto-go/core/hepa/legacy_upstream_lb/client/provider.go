@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.legacy_upstream_lb-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.legacy_upstream_lb.UpstreamLbService",
+			"erda.core.hepa.legacy_upstream_lb.UpstreamLbService.client",
 			"erda.core.hepa.legacy_upstream_lb-client",
 		},
 		Types: []reflect.Type{
