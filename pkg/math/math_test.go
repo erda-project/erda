@@ -64,6 +64,7 @@ func TestTwoDecimalPlaces(t *testing.T) {
 	}{
 		{"case1", args{value: 1.2345}, 1.23},
 		{"case2", args{value: 1.2355}, 1.24},
+		{"case2", args{value: 0.35000000000000003}, 0.35},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

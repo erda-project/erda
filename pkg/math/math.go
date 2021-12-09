@@ -14,7 +14,9 @@
 
 package math
 
-import "math"
+import (
+	"github.com/shopspring/decimal"
+)
 
 func AbsInt(x int) int {
 	y := x >> 31
@@ -33,5 +35,6 @@ func AbsInt64(x int64) int64 {
 
 // TwoDecimalPlaces Round to two decimal places
 func TwoDecimalPlaces(value float64) float64 {
-	return math.Trunc(value*1e2+0.5) * 1e-2
+	f, _ := decimal.NewFromFloat(value).Round(2).Float64()
+	return f
 }

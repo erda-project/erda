@@ -148,7 +148,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 
 		statement := "SELECT sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)" +
 			"FROM application_http_service,application_rpc_service " +
-			"WHERE target_terminus_key::tag=$terminus_key AND target_service_id::tag=$service_id GROUP BY time(4m)"
+			"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id GROUP BY time(4m)"
 		queryParams := map[string]*structpb.Value{
 			"terminus_key": structpb.NewStringValue(req.TenantId),
 			"service_id":   structpb.NewStringValue(id),
