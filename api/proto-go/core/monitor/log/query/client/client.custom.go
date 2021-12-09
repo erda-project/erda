@@ -17,9 +17,3 @@ package client
 import "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 
 var _ pb.LogQueryServiceServer = (*logQueryServiceWrapper)(nil)
-
-// ScanLogsByExpression do not call me
-// Notice: if you encounter func conflicting, delete that auto-generated one
-func (s *logQueryServiceWrapper) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
-	panic("do not call me")
-}

@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.cluster-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.cluster.ClusterService",
+			"erda.core.pipeline.cluster.ClusterService.client",
 			"erda.core.pipeline.cluster-client",
 		},
 		Types: []reflect.Type{

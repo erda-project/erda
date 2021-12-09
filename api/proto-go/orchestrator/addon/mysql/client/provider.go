@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.orchestrator.addon.mysql-client", &servicehub.Spec{
 		Services: []string{
 			"erda.orchestrator.addon.mysql.AddonMySQLService",
+			"erda.orchestrator.addon.mysql.AddonMySQLService.client",
 			"erda.orchestrator.addon.mysql-client",
 		},
 		Types: []reflect.Type{

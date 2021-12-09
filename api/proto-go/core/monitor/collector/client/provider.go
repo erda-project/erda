@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.monitor.collector-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.collector.CollectorService",
+			"erda.core.monitor.collector.CollectorService.client",
 			"erda.core.monitor.collector-client",
 		},
 		Types: []reflect.Type{
