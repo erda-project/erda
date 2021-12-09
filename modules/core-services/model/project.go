@@ -15,6 +15,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -46,4 +47,10 @@ type Project struct {
 // TableName 设置模型对应数据库表名称
 func (Project) TableName() string {
 	return "ps_group_projects"
+}
+
+func (p *Project) GetClusterConfig() map[string]string {
+	var clusterConfig = make(map[string]string)
+	_ = json.Unmarshal([]byte(p.ClusterConfig), &clusterConfig)
+	return clusterConfig
 }
