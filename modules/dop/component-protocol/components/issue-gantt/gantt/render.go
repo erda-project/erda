@@ -69,6 +69,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 
 	expand := make(map[uint64][]Item)
 	update := make([]Item, 0)
+	stateBelongs := []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking}
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		f.Operations = map[apistructs.OperationKey]Operation{
@@ -91,6 +92,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 				IterationIDs: []int64{f.State.Values.IterationID},
 				Label:        f.State.Values.LabelIDs,
 				Assignees:    f.State.Values.AssigneeIDs,
+				StateBelongs: stateBelongs,
 			},
 			PageNo:   1,
 			PageSize: 500,
@@ -121,8 +123,9 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	case cptype.OperationKey(apistructs.ExpandNode):
 		req := apistructs.IssuePagingRequest{
 			IssueListRequest: apistructs.IssueListRequest{
-				ProjectID: f.projectID,
-				Type:      []apistructs.IssueType{apistructs.IssueTypeTask},
+				ProjectID:    f.projectID,
+				Type:         []apistructs.IssueType{apistructs.IssueTypeTask},
+				StateBelongs: stateBelongs,
 			},
 			PageNo:   1,
 			PageSize: 500,
