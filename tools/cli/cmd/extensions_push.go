@@ -33,13 +33,13 @@ import (
 var EXTENSIONSPUSH = command.Command{
 	Name:       "push",
 	ParentName: "EXT",
-	ShortHelp:  "Push extension",
+	ShortHelp:  "push extension",
 	Example:    "$ erda-cli ext push -f --public",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "f", Name: "force", Doc: "If true, override exist version", DefaultValue: false},
-		command.BoolFlag{Short: "a", Name: "all", Doc: "If true, override exist extension and version, must with -f", DefaultValue: false},
-		command.StringFlag{Short: "d", Name: "dir", Doc: "The extension dir", DefaultValue: ""},
-		command.StringFlag{Short: "r", Name: "registry", Doc: "The new registry", DefaultValue: ""},
+		command.BoolFlag{Short: "f", Name: "force", Doc: "if true, override exist version", DefaultValue: false},
+		command.BoolFlag{Short: "a", Name: "all", Doc: "if true, override exist extension and version, must with -f", DefaultValue: false},
+		command.StringFlag{Short: "d", Name: "dir", Doc: "the extension dir", DefaultValue: ""},
+		command.StringFlag{Short: "r", Name: "registry", Doc: "the new registry", DefaultValue: ""},
 	},
 	Run: RunExtensionsPush,
 }

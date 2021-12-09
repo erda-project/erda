@@ -26,14 +26,13 @@ import (
 var ERDACHECK = command.Command{
 	Name:       "check",
 	ParentName: "ERDA",
-	ShortHelp:  "Validate erda.yml",
+	ShortHelp:  "validate erda.yml",
 	Example:    "$ erda-cli erda check -f erda.yml",
 	Flags: []command.Flag{
 		command.StringFlag{Short: "f", Name: "file",
-			Doc: "Specify the path of erda.yml file, default: .erda/erda.yml", DefaultValue: ""},
+			Doc: "specify the path of erda.yml file, default: .erda/erda.yml", DefaultValue: ""},
 	},
-	Run:    ErdaCheck,
-	Hidden: true,
+	Run: ErdaCheck,
 }
 
 func ErdaCheck(ctx *command.Context, ymlPath string) error {

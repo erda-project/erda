@@ -52,8 +52,8 @@ const recordSQLPat = `INSERT INTO schema_migration_history (
 var MigrateRecord = command.Command{
 	ParentName:     "Migrate",
 	Name:           "record",
-	ShortHelp:      "Manually insert the migration record",
-	LongHelp:       "Manually isnert the migration record",
+	ShortHelp:      "manually insert the migration record",
+	LongHelp:       "manually isnert the migration record",
 	Example:        "$ erda-cli migrate record --filename a.sql",
 	Hidden:         false,
 	DontHideCursor: false,
@@ -62,19 +62,19 @@ var MigrateRecord = command.Command{
 		command.StringFlag{
 			Short:        "",
 			Name:         "module",
-			Doc:          "The recording script module name",
+			Doc:          "the recording script module name",
 			DefaultValue: "",
 		},
 		command.StringFlag{
 			Short:        "",
 			Name:         "filename",
-			Doc:          "The recording script filename",
+			Doc:          "the recording script filename",
 			DefaultValue: "",
 		},
 		command.BoolFlag{
 			Short:        "",
 			Name:         "dry",
-			Doc:          "Dry run",
+			Doc:          "dry run",
 			DefaultValue: false,
 		},
 	),

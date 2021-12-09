@@ -22,11 +22,11 @@ import (
 var ORGOPEN = command.Command{
 	Name:       "open",
 	ParentName: "ORG",
-	ShortHelp:  "Open the organization page in browser",
+	ShortHelp:  "open the organization page in browser",
 	Example:    "$ erda-cli org open --org=<name>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
 	},
 	Run: OrgOpen,
 }

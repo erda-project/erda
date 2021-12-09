@@ -28,11 +28,11 @@ import (
 
 var ORG = command.Command{
 	Name:      "org",
-	ShortHelp: "List organizations",
+	ShortHelp: "list organizations",
 	Example:   "$ erda-cli org",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
-		command.IntFlag{Short: "", Name: "page-size", Doc: "The number of page size", DefaultValue: 10},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
+		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
 	},
 	Run: GetOrgs,
 }

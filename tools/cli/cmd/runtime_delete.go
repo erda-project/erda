@@ -24,12 +24,12 @@ import (
 var RUNTIMEDELETE = command.Command{
 	Name:       "delete",
 	ParentName: "RUNTIME",
-	ShortHelp:  "Delete runtime",
+	ShortHelp:  "delete runtime",
 	Example:    "erda-cli runtime delete",
 	Flags: []command.Flag{
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.Uint64Flag{Short: "", Name: "runtime-id", Doc: "The id of a runtime", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "runtime-id", Doc: "the id of a runtime", DefaultValue: 0},
 	},
 	Run: DeleteRuntime,
 }

@@ -33,13 +33,13 @@ import (
 var EXTENSIONSPULL = command.Command{
 	Name:       "pull",
 	ParentName: "EXT",
-	ShortHelp:  "Pull extension",
+	ShortHelp:  "pull extension",
 	Example:    "$ erda-cli ext pull git-checkout@1.0 -o git-checkout",
 	Args: []command.Arg{
 		command.StringArg{}.Name("extension"),
 	},
 	Flags: []command.Flag{
-		command.StringFlag{Short: "o", Name: "output", Doc: "The directory to export to", DefaultValue: ""},
+		command.StringFlag{Short: "o", Name: "output", Doc: "the directory to export to", DefaultValue: ""},
 	},
 	Run: RunExtensionsPull,
 }

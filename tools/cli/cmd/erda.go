@@ -22,10 +22,10 @@ import (
 
 var ERDA = command.Command{
 	Name:      "erda",
-	ShortHelp: "List erda.yml in .erda directory (current repo)",
+	ShortHelp: "list erda.yml in .erda directory (current repo)",
 	Example:   "$ erda-cli erda",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
 	},
 	Run: ErdaGet,
 }

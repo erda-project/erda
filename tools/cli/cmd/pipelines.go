@@ -25,10 +25,10 @@ import (
 // TODO move to .erda/pipelines
 var PIPELINE = command.Command{
 	Name:      "pipeline",
-	ShortHelp: "List pipelines in .dice/pipelines directory (current repo)",
+	ShortHelp: "list pipelines in .dice/pipelines directory (current repo)",
 	Example:   "$ erda-cli pipeline",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
 	},
 	Run: PipelineGet,
 }

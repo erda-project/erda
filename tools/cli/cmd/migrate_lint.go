@@ -76,7 +76,7 @@ var MigrationLint = command.Command{
 		command.BoolFlag{
 			Short:        "",
 			Name:         "custom",
-			Doc:          "Custom directory",
+			Doc:          "custom directory",
 			DefaultValue: false,
 		},
 	},

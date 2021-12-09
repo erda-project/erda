@@ -27,8 +27,8 @@ import (
 var MigrateMkPyPkg = command.Command{
 	ParentName:     "Migrate",
 	Name:           "mkpypkg",
-	ShortHelp:      "Generate python package",
-	LongHelp:       "Generate python package",
+	ShortHelp:      "generate python package",
+	LongHelp:       "generate python package",
 	Example:        "$ erda-cli migrate mkpypkg --filename=my_script.py --mysql-host localhost --mysql-port 3306 --mysql-username root --mysql-password *** --database erda --sandbox-port 3307",
 	Hidden:         true,
 	DontHideCursor: false,
@@ -38,13 +38,13 @@ var MigrateMkPyPkg = command.Command{
 		command.StringFlag{
 			Short:        "",
 			Name:         "filename",
-			Doc:          "Python script filename",
+			Doc:          "python script filename",
 			DefaultValue: "",
 		},
 		command.StringFlag{
 			Short:        "",
 			Name:         "requirements",
-			Doc:          "Requirements.txt file name",
+			Doc:          "requirements.txt file name",
 			DefaultValue: "",
 		},
 		command.BoolFlag{

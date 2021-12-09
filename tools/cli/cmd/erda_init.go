@@ -32,15 +32,14 @@ import (
 var ERDAINIT = command.Command{
 	Name:       "init",
 	ParentName: "ERDA",
-	ShortHelp:  "Init an erda.yml",
-	LongHelp:   "Make an .erda directory in current directory, then create an erda.yml",
+	ShortHelp:  "init an erda.yml",
+	LongHelp:   "make an .erda directory in current directory, then create an erda.yml",
 	Example:    "$ erda-cli erda init",
 	Flags: []command.Flag{
-		command.FloatFlag{Short: "c", Name: "cpu", Doc: "The quota of CPU for service", DefaultValue: 0.5},
-		command.IntFlag{Short: "m", Name: "memory", Doc: "The quota of Memory for service", DefaultValue: 1024},
+		command.FloatFlag{Short: "c", Name: "cpu", Doc: "the quota of CPU for service", DefaultValue: 0.5},
+		command.IntFlag{Short: "m", Name: "memory", Doc: "the quota of Memory for service", DefaultValue: 1024},
 	},
-	Run:    ErdaInit,
-	Hidden: true,
+	Run: ErdaInit,
 }
 
 func ErdaInit(ctx *command.Context, cpuQuota float64, memQuota int) error {

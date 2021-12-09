@@ -26,12 +26,12 @@ import (
 var ADDONINSPECT = command.Command{
 	Name:       "inspect",
 	ParentName: "ADDON",
-	ShortHelp:  "Inspect addon",
+	ShortHelp:  "inspect addon",
 	Example:    "$ erda-cli addon inspect --addon-id=<id>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "addon-id", Doc: "The id of an addon", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "addon-id", Doc: "the id of an addon", DefaultValue: ""},
 	},
 	Run: AddonInspect,
 }

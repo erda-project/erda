@@ -22,13 +22,13 @@ import (
 var PROJECTOPEN = command.Command{
 	Name:       "open",
 	ParentName: "PROJECT",
-	ShortHelp:  "Open the project page in browser",
+	ShortHelp:  "open the project page in browser",
 	Example:    "$ erda-cli project open --org=<name> --project=<name>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
 	},
 	Run: ProjectOpen,
 }

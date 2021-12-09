@@ -28,15 +28,15 @@ import (
 
 var ADDON = command.Command{
 	Name:      "addon",
-	ShortHelp: "List addons",
+	ShortHelp: "list addons",
 	Example:   "$ erda-cli addon --project=<name> --workspace=<ENV>",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "project", Doc: "The name of a project", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "workspace", Doc: "The env workspace", DefaultValue: ""},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "workspace", Doc: "the env workspace", DefaultValue: ""},
 	},
 	Run: GetAddons,
 }

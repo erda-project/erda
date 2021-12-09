@@ -25,16 +25,16 @@ import (
 
 var CONFIGW = command.Command{
 	Name:      "config-set",
-	ShortHelp: "Write config file for Erda CLI",
+	ShortHelp: "write config file for Erda CLI",
 	Example:   `$ erda-cli config-set <set-platform|set-context|use-context|delete-platform|delete-context> <name> [flags]`,
 	Args: []command.Arg{
 		command.StringArg{}.Name("write-ops"),
 		command.StringArg{}.Name("name"),
 	},
 	Flags: []command.Flag{
-		command.StringFlag{Short: "", Name: "server", Doc: "The http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
-		command.StringFlag{Short: "", Name: "org", Doc: "An org under the platform", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "platform", Doc: "The name of platform", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "server", Doc: "the http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
+		command.StringFlag{Short: "", Name: "org", Doc: "an org under the platform", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "platform", Doc: "the name of platform", DefaultValue: ""},
 	},
 	Run: ConfigOpsW,
 }

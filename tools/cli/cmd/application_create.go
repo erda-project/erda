@@ -30,15 +30,15 @@ import (
 var APPLICATIONCREATE = command.Command{
 	Name:       "create",
 	ParentName: "APPLICATION",
-	ShortHelp:  "Create application",
+	ShortHelp:  "create application",
 	Example:    "$ erda-cli application create --project-id=<id> -n <name>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "project-id", Doc: "The id of a project ", DefaultValue: 0},
-		command.StringFlag{Short: "n", Name: "application-name", Doc: "The name of an application ", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
+		command.StringFlag{Short: "n", Name: "application-name", Doc: "the name of an application ", DefaultValue: ""},
 		command.StringFlag{Short: "m", Name: "mode",
-			Doc:          "The id of an application, application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
+			Doc:          "the id of an application, application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
 			DefaultValue: "SERVICE"},
-		command.StringFlag{"d", "description", "Description of the application", ""},
+		command.StringFlag{"d", "description", "description of the application", ""},
 	},
 	Run: ApplicationCreate,
 }

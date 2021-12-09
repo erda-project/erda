@@ -22,12 +22,12 @@ import (
 var ADDONDELETE = command.Command{
 	Name:       "delete",
 	ParentName: "ADDON",
-	ShortHelp:  "Delete addon",
+	ShortHelp:  "delete addon",
 	Example:    "$ erda-cli addon delete --addon-id=<id>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "addon-id", Doc: "The id of an addon", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "addon-id", Doc: "the id of an addon", DefaultValue: ""},
 	},
 	Run: DeleteAddon,
 }

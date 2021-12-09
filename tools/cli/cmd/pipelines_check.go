@@ -28,13 +28,13 @@ import (
 var PIPELINECHECK = command.Command{
 	Name:       "check",
 	ParentName: "PIPELINE",
-	ShortHelp:  "Validate pipeline.yml",
+	ShortHelp:  "validate pipeline.yml",
 	Example:    "$ erda-cli pipeline check -f .dice/pipelines/pipeline.yml",
 	Flags: []command.Flag{
 		command.StringFlag{
 			"f",
 			"file",
-			"Specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
+			"specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
 			".dice/pipelines/pipeline.yml"},
 	},
 	Run: PipelineCheck,

@@ -27,23 +27,22 @@ import (
 	"github.com/erda-project/erda/tools/cli/prettyjson"
 )
 
-var PARSE = command.Command{
+var ERDAPARSE = command.Command{
 	Name:       "parse",
 	ParentName: "ERDA",
-	ShortHelp:  "Parse erda.yml",
+	ShortHelp:  "parse erda.yml",
 	Example:    "$ erda-cli erda parse -f .erda/erda.yml",
 	Flags: []command.Flag{
 		command.StringFlag{"f", "file",
-			"Specify the path of erda.yml file, default: .erda/erda.yml", ""},
-		command.StringFlag{"s", "str", "Provide the content of erda.yml as a string", ""},
-		command.BoolFlag{"", "dev", "If true, parse the erda.yml file in development environment ", false},
-		command.BoolFlag{"", "test", "If true, parse the erda.yml file in test environment", false},
-		command.BoolFlag{"", "staging", "If true, parse the erda.yml file in staging environment", false},
-		command.BoolFlag{"", "prod", "If true, parse the erda.yml in production environment", false},
-		command.StringFlag{"o", "output", "Output format. One of yaml|json", "yaml"},
+			"specify the path of erda.yml file, default: .erda/erda.yml", ""},
+		command.StringFlag{"s", "str", "provide the content of erda.yml as a string", ""},
+		command.BoolFlag{"", "dev", "if true, parse the erda.yml file in development environment ", false},
+		command.BoolFlag{"", "test", "if true, parse the erda.yml file in test environment", false},
+		command.BoolFlag{"", "staging", "if true, parse the erda.yml file in staging environment", false},
+		command.BoolFlag{"", "prod", "if true, parse the erda.yml in production environment", false},
+		command.StringFlag{"o", "output", "output format, one of yaml|json", "yaml"},
 	},
-	Run:    RunParse,
-	Hidden: true,
+	Run: RunParse,
 }
 
 func RunParse(ctx *command.Context, ymlPath string, ymlContent string, dev, test, staging, prod bool, output string) error {

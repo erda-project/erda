@@ -26,12 +26,12 @@ import (
 var RELEASEOPEN = command.Command{
 	Name:       "open",
 	ParentName: "RELEASE",
-	ShortHelp:  "Open the release page in browser",
+	ShortHelp:  "open the release page in browser",
 	Example:    "$ erda-cli release open --org=<name> --release-id=<id>",
 	Flags: []command.Flag{
-		command.Uint64Flag{Short: "", Name: "org-id", Doc: "The id of an organization", DefaultValue: 0},
-		command.StringFlag{Short: "", Name: "org", Doc: "The name of an organization", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "release-id", Doc: "The id of a release", DefaultValue: ""},
+		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization", DefaultValue: 0},
+		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
+		command.StringFlag{Short: "", Name: "release-id", Doc: "the id of a release", DefaultValue: ""},
 	},
 	Run: ReleaseOpen,
 }

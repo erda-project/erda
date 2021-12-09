@@ -27,13 +27,13 @@ import (
 
 var CONFIG = command.Command{
 	Name:      "config",
-	ShortHelp: "Read config file for Erda CLI",
+	ShortHelp: "read config file for Erda CLI",
 	Example:   `$ erda-cli config <inspect|current-context|get-contexts|get-platforms> <name>`,
 	Args: []command.Arg{
 		command.StringArg{}.Name("ops"),
 	},
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "If true, don't print headers (default print headers)", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
 	},
 	Run: ConfigOps,
 }

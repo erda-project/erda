@@ -32,16 +32,16 @@ import (
 var PIPELINESTATUS = command.Command{
 	Name:       "status",
 	ParentName: "PIPELINE",
-	ShortHelp:  "Show pipeline running status",
+	ShortHelp:  "show pipeline running status",
 	Example:    "$ erda-cli pipeline status -i <pipeline-id>",
 	Flags: []command.Flag{
 		command.StringFlag{
 			Short: "b", Name: "branch",
-			Doc:          "Specify branch to show pipeline status, default is current branch",
+			Doc:          "specify branch to show pipeline status (default is current branch)",
 			DefaultValue: ""},
 		command.Uint64Flag{
 			Short: "i", Name: "pipeline-id",
-			Doc:          "Specify pipeline id to show pipeline status",
+			Doc:          "specify pipeline id to show pipeline status",
 			DefaultValue: 0},
 	},
 	Run: PipelineStatus,

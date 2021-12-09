@@ -29,7 +29,7 @@ import (
 var ORGANIZATIONSSWITCH = command.Command{
 	Name:       "switch",
 	ParentName: "ORG",
-	ShortHelp:  "Switch organization",
+	ShortHelp:  "switch organization",
 	Example:    "$ erda-cli org switch <orgID/orgName>",
 	Args: []command.Arg{
 		command.StringArg{}.Name("orgIdorName"),

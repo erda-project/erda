@@ -29,11 +29,11 @@ import (
 var PIPELINEINIT = command.Command{
 	Name:       "init",
 	ParentName: "PIPELINE",
-	ShortHelp:  "Init pipelines in .dice/pipelines directory (current repo)",
+	ShortHelp:  "init pipelines in .dice/pipelines directory (current repo)",
 	Example:    "$ erda-cli pipeline init -f .dice/pipelines/pipeline.yml",
 	Flags: []command.Flag{
 		command.StringFlag{"f", "filename",
-			"Specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
+			"specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
 			""},
 	},
 	Run: PipelineInit,

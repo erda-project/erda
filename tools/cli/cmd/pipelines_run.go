@@ -30,11 +30,11 @@ import (
 var PIPELINERUN = command.Command{
 	Name:       "run",
 	ParentName: "PIPELINE",
-	ShortHelp:  "Create a pipeline and run it",
+	ShortHelp:  "create a pipeline and run it",
 	Example:    "$ erda-cli pipeline run -f <path-to/pipeline.yml>",
 	Flags: []command.Flag{
-		command.StringFlag{Short: "", Name: "branch", Doc: "Branch to create pipeline, default is current branch", DefaultValue: ""},
-		command.StringFlag{Short: "f", Name: "filename", Doc: "Filename for 'pipeline.yml'", DefaultValue: path.Join(dicedir.ProjectPipelineDir, "pipeline.yml")},
+		command.StringFlag{Short: "", Name: "branch", Doc: "branch to create pipeline, default is current branch", DefaultValue: ""},
+		command.StringFlag{Short: "f", Name: "filename", Doc: "filename for 'pipeline.yml'", DefaultValue: path.Join(dicedir.ProjectPipelineDir, "pipeline.yml")},
 	},
 	Run: PipelineRun,
 }

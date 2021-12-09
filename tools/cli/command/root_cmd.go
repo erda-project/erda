@@ -51,6 +51,7 @@ var (
 // Cmds which not require login
 var (
 	loginWhiteList = []string{
+		"completion",
 		"config <ops>",
 		"config-set <write-ops> <name>",
 		"erda",
@@ -108,7 +109,10 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 			fmt.Println(err)
 			return err
 		}
-
+		// For completion zsh etc.
+		if strings.HasPrefix(u, "completion ") {
+			return nil
+		}
 		for _, w := range loginWhiteList {
 			if w == u {
 				return nil
@@ -382,11 +386,11 @@ func Execute() {
 	}
 
 	RootCmd.PersistentFlags().StringVar(&host, "host", "", "Erda host to visit (e.g. https://erda.cloud)")
-	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "r", "origin", "The remote for Erda repo")
+	RootCmd.PersistentFlags().StringVarP(&Remote, "remote", "r", "origin", "the remote for Erda repo")
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Erda username to authenticate")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Erda password to authenticate")
-	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "If true, enable verbose mode")
-	RootCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "", true, "If true, interactive with user")
+	RootCmd.PersistentFlags().BoolVarP(&debugMode, "verbose", "V", false, "if true, enable verbose mode")
+	RootCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "", true, "if true, interactive with user")
 
 	RootCmd.Execute()
 }
