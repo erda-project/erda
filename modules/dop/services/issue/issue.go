@@ -1607,14 +1607,14 @@ func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest)
 		req.PageSize = 20
 	}
 	if id == 0 {
-		issues, total, err := svc.db.FindIssueChildren(id, req)
+		requirements, tasks, total, err := svc.db.FindIssueRoot(req)
 		if err != nil {
 			return nil, 0, err
 		}
-		if err := svc.SetIssueChildrenCount(issues); err != nil {
+		if err := svc.SetIssueChildrenCount(requirements); err != nil {
 			return nil, 0, err
 		}
-		return issues, total, nil
+		return append(requirements, tasks...), total, nil
 	}
 	return svc.db.FindIssueChildren(id, req)
 }

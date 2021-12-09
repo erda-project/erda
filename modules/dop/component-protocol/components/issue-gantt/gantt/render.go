@@ -69,7 +69,6 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 
 	expand := make(map[uint64][]Item)
 	update := make([]Item, 0)
-	stateBelongs := []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking}
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		f.Operations = map[apistructs.OperationKey]Operation{
@@ -85,27 +84,16 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 				FillMeta: "keys",
 			},
 		}
-		req := apistructs.IssuePagingRequest{
-			IssueListRequest: apistructs.IssueListRequest{
-				ProjectID:    f.projectID,
-				Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
-				IterationIDs: []int64{f.State.Values.IterationID},
-				Label:        f.State.Values.LabelIDs,
-				Assignees:    f.State.Values.AssigneeIDs,
-				StateBelongs: stateBelongs,
-			},
-			PageNo:   1,
-			PageSize: 500,
-		}
+
 		if len(parentIDs) == 0 {
-			issues, _, err := f.issueSvc.GetIssueChildren(0, req)
+			issues, err := f.issueChildrenRetriever(0)
 			if err != nil {
 				return err
 			}
 			expand[0] = f.convertIssueItems(issues)
 		} else {
 			for _, i := range parentIDs {
-				issues, _, err := f.issueSvc.GetIssueChildren(i, req)
+				issues, err := f.issueChildrenRetriever(i)
 				if err != nil {
 					return err
 				}
@@ -121,17 +109,8 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 		}
 
 	case cptype.OperationKey(apistructs.ExpandNode):
-		req := apistructs.IssuePagingRequest{
-			IssueListRequest: apistructs.IssueListRequest{
-				ProjectID:    f.projectID,
-				Type:         []apistructs.IssueType{apistructs.IssueTypeTask},
-				StateBelongs: stateBelongs,
-			},
-			PageNo:   1,
-			PageSize: 500,
-		}
 		for _, key := range op.Meta.Keys {
-			issues, _, err := f.issueSvc.GetIssueChildren(key, req)
+			issues, err := f.issueChildrenRetriever(key)
 			if err != nil {
 				return err
 			}
@@ -162,6 +141,35 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	f.Data.UpdateList = update
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(f.users)
 	return nil
+}
+
+func (f *ComponentGantt) issueChildrenRetriever(id uint64) ([]dao.IssueItem, error) {
+	stateBelongs := []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking}
+	req := apistructs.IssuePagingRequest{
+		IssueListRequest: apistructs.IssueListRequest{
+			ProjectID:    f.projectID,
+			Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
+			IterationIDs: []int64{f.State.Values.IterationID},
+			Label:        f.State.Values.LabelIDs,
+			Assignees:    f.State.Values.AssigneeIDs,
+			StateBelongs: stateBelongs,
+		},
+		PageNo:   1,
+		PageSize: 500,
+	}
+	if id > 0 {
+		req.IssueListRequest = apistructs.IssueListRequest{
+			ProjectID:    f.projectID,
+			Type:         []apistructs.IssueType{apistructs.IssueTypeTask},
+			Assignees:    f.State.Values.AssigneeIDs,
+			StateBelongs: stateBelongs,
+		}
+	}
+	issues, _, err := f.issueSvc.GetIssueChildren(id, req)
+	if err != nil {
+		return nil, err
+	}
+	return issues, nil
 }
 
 func (f *ComponentGantt) convertIssueItems(issues []dao.IssueItem) []Item {
