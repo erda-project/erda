@@ -101,6 +101,8 @@ func (i ComponentIssueBoard) GetFilterReq() (*IssueFilterRequest, error) {
 	}
 	req.PageSize = defaultPageSize
 	req.PageNo = 1
+	req.OrderBy = "updated_at"
+	req.Asc = false
 	return &req, nil
 }
 

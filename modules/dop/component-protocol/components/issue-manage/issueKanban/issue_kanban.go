@@ -94,7 +94,7 @@ func (cl *CartList) Delete(issueID int64) {
 }
 
 func (cl *CartList) Add(c IssueCart) {
-	cl.List = append([]IssueCart{c}, cl.List...)
+	cl.List = append(cl.List, c)
 }
 
 const (
