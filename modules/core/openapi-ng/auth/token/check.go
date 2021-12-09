@@ -16,9 +16,9 @@ package token
 
 import (
 	"net/http"
+	"strings"
 
 	openapiauth "github.com/erda-project/erda/modules/core/openapi-ng/auth"
-	"github.com/erda-project/erda/modules/openapi/api/spec"
 	"github.com/erda-project/erda/modules/openapi/auth"
 )
 
@@ -36,7 +36,7 @@ func (p *provider) Match(r *http.Request, opts openapiauth.Options) (bool, inter
 
 func (p *provider) Check(r *http.Request, data interface{}, opts openapiauth.Options) (bool, *http.Request, error) {
 	authorization := data.(string)
-	client, err := p.checkToken(nil, r, authorization)
+	client, err := p.checkToken(opts, r, authorization)
 	if err != nil {
 		return false, r, nil
 	}
@@ -53,7 +53,7 @@ type clientToken struct {
 // checkToken try:
 // 1. uc token
 // 2. openapi oauth2 token
-func (p *provider) checkToken(spec *spec.Spec, req *http.Request, token string) (clientToken, error) {
+func (p *provider) checkToken(opts openapiauth.Options, req *http.Request, token string) (clientToken, error) {
 	// 1. uc token
 	ucToken, err := auth.VerifyUCClientToken(token)
 	if err == nil {
@@ -63,7 +63,7 @@ func (p *provider) checkToken(spec *spec.Spec, req *http.Request, token string) 
 		}, nil
 	}
 	// 2. openapi oauth2 token
-	oauthToken, err := auth.VerifyOpenapiOAuth2Token(p.oauth2server, nil, req)
+	oauthToken, err := auth.VerifyOpenapiOAuth2Token(p.oauth2server, &OAuth2APISpec{opts}, req)
 	if err != nil {
 		return clientToken{}, err
 	}
@@ -71,4 +71,58 @@ func (p *provider) checkToken(spec *spec.Spec, req *http.Request, token string) 
 		ClientID:   oauthToken.ClientID,
 		ClientName: oauthToken.ClientName,
 	}, nil
+}
+
+// OAuth2APISpec .
+type OAuth2APISpec struct {
+	opts openapiauth.Options
+}
+
+func (s *OAuth2APISpec) MatchPath(template string) bool {
+	path, ok := s.opts.Get("path").(string)
+	if !ok {
+		return false
+	}
+	list1 := strings.Split(path, "/")
+	list2 := strings.Split(template, "/")
+	if len(list1) != len(list2) {
+		return false
+	}
+	for i, part := range list1 {
+		if (strings.HasPrefix(part, "<") && strings.HasSuffix(part, ">")) ||
+			(strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}")) {
+			// ingore variable name
+			continue
+		}
+		if part != list2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *OAuth2APISpec) PathVars(template, path string) map[string]string {
+	list1 := strings.Split(path, "/")
+	list2 := strings.Split(template, "/")
+	if len(list1) != len(list2) {
+		return nil
+	}
+	vars := make(map[string]string)
+	for i, part := range list2 {
+		if (strings.HasPrefix(part, "<") && strings.HasSuffix(part, ">")) ||
+			(strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}")) {
+			name := part[1 : len(part)-1]
+			vars[name] = list1[i]
+		}
+	}
+	return vars
+}
+
+func (s *OAuth2APISpec) Method() string {
+	method, _ := s.opts.Get("method").(string)
+	return method
+}
+
+func (s *OAuth2APISpec) Scheme() string {
+	return "http" // only support http now
 }
