@@ -680,21 +680,41 @@ type IssueExpiryStatus struct {
 	ExpiryStatus ExpireType
 }
 
-func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
-	sql := client.Table("dice_issues").Joins(joinState).Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status")
-	sql = sql.Where("deleted = 0").Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
-	if len(req.ProjectIDs) > 0 {
-		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, int, error) {
+	sql := client.issueExpiryStatusQuery(req)
+	offset := (req.PageNo - 1) * req.PageSize
+	var res []IssueExpiryStatus
+	var total int
+	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
+		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
+		return nil, 0, err
 	}
+	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	projectIDs := make([]uint64, 0, len(res))
+	for _, i := range res {
+		projectIDs = append(projectIDs, i.ProjectID)
+	}
+	req.ProjectIDs = projectIDs
+	sql = client.issueExpiryStatusQuery(req)
+	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
+		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
+		return nil, 0, err
+	}
+	return res, total, nil
+}
+
+func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
+	sql := client.Debug().Table("dice_issues").Joins(joinState)
+	sql = sql.Where("deleted = 0").Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
 	}
-	offset := (req.PageNo - 1) * req.PageSize
-	var res []IssueExpiryStatus
-	if err := sql.Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
-		return nil, err
+	if len(req.ProjectIDs) > 0 {
+		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
 	}
-	return res, nil
+	return sql
 }
 
 func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([]Issue, uint64, error) {
