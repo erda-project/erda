@@ -278,7 +278,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 		sql = sql.Where("stage IN (?)", req.TaskType)
 	}
 	if len(req.ExceptIDs) > 0 {
-		sql = sql.Not("dice_issues.id", req.ExceptIDs)
+		sql = sql.Where("dice_issues.id NOT IN (?)", req.ExceptIDs)
 	}
 	if req.StartCreatedAt > 0 {
 		startCreatedAt := time.Unix(req.StartCreatedAt/1000, 0)

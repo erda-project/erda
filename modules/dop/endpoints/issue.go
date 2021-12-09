@@ -145,6 +145,8 @@ func (e *Endpoints) PagingIssues(ctx context.Context, r *http.Request, vars map[
 		pageReq.OrderBy = "plan_finished_at"
 	case "assignee":
 		pageReq.OrderBy = "assignee"
+	case "updatedAt", "updated_at":
+		pageReq.OrderBy = "updated_at"
 	default:
 		return apierrors.ErrPagingIssues.InvalidParameter("orderBy").ToResp(), nil
 	}
