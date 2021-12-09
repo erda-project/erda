@@ -58,12 +58,14 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 			{
 				Main: strconv.Itoa(stats.Week),
 				Sub:  "本周截止",
+				Tip:  "不包含本日截止数据",
 			},
 		},
 		{
 			{
 				Main: strconv.Itoa(stats.Month),
 				Sub:  "本月截止",
+				Tip:  "不包含本日、本周截止数据",
 			},
 			{
 				Main: strconv.Itoa(stats.Undefined),
@@ -86,9 +88,10 @@ type Stats struct {
 
 func getStats(issues []dao.IssueItem) (s Stats) {
 	for _, v := range issues {
-		if v.FinishTime == nil {
-			s.Unclose++
+		if v.FinishTime != nil {
+			continue
 		}
+		s.Unclose++
 		switch v.ExpiryStatus {
 		case dao.ExpireTypeExpired:
 			s.Expire++

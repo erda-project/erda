@@ -38,6 +38,7 @@ type DataDetail struct {
 type Data struct {
 	Main string `json:"main"`
 	Sub  string `json:"sub"`
+	Tip  string `json:"tip"`
 }
 
 func (i *Info) SetToProtocolComponent(c *cptype.Component) error {
