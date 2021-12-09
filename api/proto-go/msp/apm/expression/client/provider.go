@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.apm.expression-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.expression.ExpressionService",
+			"erda.msp.apm.expression.ExpressionService.client",
 			"erda.msp.apm.expression-client",
 		},
 		Types: []reflect.Type{

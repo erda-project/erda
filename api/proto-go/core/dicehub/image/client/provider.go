@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.dicehub.image-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.dicehub.image.ImageService",
+			"erda.core.dicehub.image.ImageService.client",
 			"erda.core.dicehub.image-client",
 		},
 		Types: []reflect.Type{

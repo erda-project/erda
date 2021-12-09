@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.apm.log_service-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.log_service.LogService",
+			"erda.msp.apm.log_service.LogService.client",
 			"erda.msp.apm.log_service-client",
 		},
 		Types: []reflect.Type{

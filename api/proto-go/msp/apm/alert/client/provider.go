@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.apm.alert-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.alert.AlertService",
+			"erda.msp.apm.alert.AlertService.client",
 			"erda.msp.apm.alert-client",
 		},
 		Types: []reflect.Type{

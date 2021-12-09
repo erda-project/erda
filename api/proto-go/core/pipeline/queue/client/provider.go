@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.queue-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.queue.QueueService",
+			"erda.core.pipeline.queue.QueueService.client",
 			"erda.core.pipeline.queue-client",
 		},
 		Types: []reflect.Type{

@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.dop.autotest.testplan-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.dop.autotest.testplan.TestPlanService",
+			"erda.core.dop.autotest.testplan.TestPlanService.client",
 			"erda.core.dop.autotest.testplan-client",
 		},
 		Types: []reflect.Type{

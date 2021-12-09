@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.label-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.label.LabelService",
+			"erda.core.pipeline.label.LabelService.client",
 			"erda.core.pipeline.label-client",
 		},
 		Types: []reflect.Type{
