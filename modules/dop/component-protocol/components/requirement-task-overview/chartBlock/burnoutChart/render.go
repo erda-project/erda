@@ -41,7 +41,6 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 	}
 
 	h := gshelper.NewGSHelper(gs)
-	f.Issues = h.GetIssueList()
 
 	dates := make([]time.Time, 0)
 	dateMap := make(map[time.Time]int)
@@ -58,9 +57,9 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 		dateMap[date] = 0
 	}
 
-	issueCreateMap := make(map[time.Time][]dao.IssueItem, 0)
 	issueFinishMap := make(map[time.Time][]dao.IssueItem, 0)
-	for _, issue := range f.Issues {
+	sum := 0
+	for _, issue := range h.GetIssueList() {
 		if h.GetBurnoutChartType() == "requirement" &&
 			issue.Type != apistructs.IssueTypeRequirement {
 			continue
@@ -69,39 +68,29 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			issue.Type != apistructs.IssueTypeTask {
 			continue
 		}
-		issueCreateMap[common.DateTime(issue.CreatedAt)] = append(issueCreateMap[common.DateTime(issue.CreatedAt)], issue)
 		if issue.FinishTime != nil {
 			issueFinishMap[common.DateTime(*issue.FinishTime)] = append(issueFinishMap[common.DateTime(*issue.FinishTime)], issue)
 		}
+		if h.GetBurnoutChartDimension() == "total" {
+			sum++
+		} else {
+			if issue.ManHour != "" {
+				var manHour apistructs.IssueManHour
+				if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
+					return err
+				}
+				sum += int(manHour.EstimateTime)
+			}
+		}
+		f.Issues = append(f.Issues, issue)
 	}
 
-	cur := 0
-	sum := 0
-	for i, date := range dates {
-		if date.After(time.Now()) {
-			cur = i
-			break
-		}
-		if _, ok := issueCreateMap[date]; ok {
-			if h.GetBurnoutChartDimension() == "total" {
-				sum += len(issueCreateMap[date])
-			}
-			if h.GetBurnoutChartDimension() == "workTime" {
-				for _, issue := range issueCreateMap[date] {
-					if issue.ManHour != "" {
-						var manHour apistructs.IssueManHour
-						if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
-							return err
-						}
-						sum += int(manHour.EstimateTime) / 60
-					}
-				}
-			}
-		}
-
+	finishSumAll := 0
+	for _, date := range dates {
+		finishSum := 0
 		if _, ok := issueFinishMap[date]; ok {
 			if h.GetBurnoutChartDimension() == "total" {
-				sum -= len(issueFinishMap[date])
+				finishSum += len(issueFinishMap[date])
 			}
 			if h.GetBurnoutChartDimension() == "workTime" {
 				for _, issue := range issueFinishMap[date] {
@@ -110,12 +99,21 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 						if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
 							return err
 						}
-						sum -= int(manHour.ThisElapsedTime) / 60
+						finishSum += int(manHour.ElapsedTime)
 					}
 				}
 			}
 		}
-		dateMap[date] = sum
+		finishSumAll += finishSum
+		dateMap[date] = func() int {
+			if h.GetBurnoutChartDimension() == "total" {
+				return sum - finishSumAll
+			}
+			if sum-finishSumAll < 0 {
+				return 0
+			}
+			return (sum - finishSumAll) / 60
+		}()
 	}
 
 	f.Type = "Chart"
@@ -153,7 +151,7 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			Legend: Legend{
 				Show:   true,
 				Bottom: true,
-				Data:   []string{"实际燃尽"},
+				Data:   []string{"剩余数"},
 			},
 			Tooltip: map[string]interface{}{
 				"trigger": "axis",
@@ -162,12 +160,17 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 				{
 					Data: func() []int {
 						counts := make([]int, 0)
-						for _, v := range dates[:cur] {
+						for _, v := range dates {
 							counts = append(counts, dateMap[v])
 						}
 						return counts
 					}(),
-					Name:   "实际燃尽",
+					Name: func() string {
+						if h.GetBurnoutChartDimension() == "total" {
+							return "剩余数"
+						}
+						return "事项剩余工时"
+					}(),
 					Type:   "line",
 					Smooth: false,
 					ItemStyle: map[string]interface{}{
@@ -181,10 +184,20 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 						Data: [][]Data{
 							{
 								{
-									Name: "预设燃尽",
+									Name: func() string {
+										if h.GetBurnoutChartDimension() == "total" {
+											return "理想数"
+										}
+										return "理想工时"
+									}(),
 									Coord: func() []string {
 										ss := make([]string, 0, 2)
-										ss = append(ss, dates[0].Format("01-02"), strconv.Itoa(dateMap[dates[0]]))
+										ss = append(ss, dates[0].Format("01-02"))
+										if h.GetBurnoutChartDimension() == "total" {
+											ss = append(ss, strconv.Itoa(sum))
+										} else {
+											ss = append(ss, strconv.Itoa(sum/60))
+										}
 										return ss
 									}(),
 								},
