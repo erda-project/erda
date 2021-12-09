@@ -287,3 +287,16 @@ component-protocol.components.issue-gantt.gantt:
 component-protocol.components.issue-gantt.ganttContainer:
 component-protocol.components.issue-gantt.topHead:
 component-protocol.components.issue-gantt.issueAddButton:
+
+# requirement-task-overview
+component-protocol.components.requirement-task-overview.page:
+component-protocol.components.requirement-task-overview.distributePage:
+component-protocol.components.requirement-task-overview.topFilter:
+component-protocol.components.requirement-task-overview.container:
+component-protocol.components.requirement-task-overview.chartBlock:
+component-protocol.components.requirement-task-overview.simpleChart:
+component-protocol.components.requirement-task-overview.info:
+component-protocol.components.requirement-task-overview.burnoutChartFilter:
+component-protocol.components.requirement-task-overview.burnoutChart:
+component-protocol.components.requirement-task-overview.pageContent:
+component-protocol.components.requirement-task-overview.tabs:

@@ -1589,10 +1589,6 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
 	return svc.db.GetAllIssuesByProject(req)
-	// if err != nil {
-	// 	return data, nil
-	// }
-	// return data
 }
 
 func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
