@@ -15,7 +15,10 @@
 package issuepanel
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -115,11 +118,20 @@ func (ip *IssuePanel) UpdatePanelIssue(req *apistructs.IssuePanelRequest) (*dao.
 	if err != nil {
 		return nil, err
 	}
+	needUpdateIssue := true
+	defer func() {
+		if needUpdateIssue {
+			if err := ip.db.UpdateIssue(uint64(req.IssueID), map[string]interface{}{"updated_at": time.Now()}); err != nil {
+				logrus.Errorf("failed to update panel issue's updatedAt, issueID: %d, err: %v", req.IssueID, err)
+			}
+		}
+	}()
 	if panel != nil {
 		// 如果是将事件移出自定义看板
 		if req.PanelID == 0 {
 			if panel.ID != 0 {
 				if err := ip.db.DeletePanelByPanelID(int64(panel.ID)); err != nil {
+					needUpdateIssue = false
 					return nil, err
 				}
 			}
@@ -128,6 +140,7 @@ func (ip *IssuePanel) UpdatePanelIssue(req *apistructs.IssuePanelRequest) (*dao.
 		// 如果事件有所属看板则更新
 		panel.Relation = req.PanelID
 		if err := ip.db.UpdatePanel(panel); err != nil {
+			needUpdateIssue = false
 			return nil, err
 		}
 		return panel, nil
@@ -138,6 +151,7 @@ func (ip *IssuePanel) UpdatePanelIssue(req *apistructs.IssuePanelRequest) (*dao.
 	}
 	relatedPanel, err := ip.db.GetPanelByPanelID(req.PanelID)
 	if err != nil {
+		needUpdateIssue = false
 		return nil, err
 	}
 	issuePanel := &dao.IssuePanel{
@@ -148,6 +162,7 @@ func (ip *IssuePanel) UpdatePanelIssue(req *apistructs.IssuePanelRequest) (*dao.
 	}
 	err = ip.db.CreatePanel(issuePanel)
 	if err != nil {
+		needUpdateIssue = false
 		return nil, err
 	}
 	return issuePanel, nil
