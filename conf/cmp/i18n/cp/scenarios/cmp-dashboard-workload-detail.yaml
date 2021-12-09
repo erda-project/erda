@@ -1,13 +1,14 @@
 zh:
   workloadPods: 关联的Pods
   workloadDetail: 工作负载详情
-  restart: 重新调度
-  confirmRestart: 确认重新调度？
-  cannotRestart: 只有 Deployment、StatefulSet 和 DaemonSet 可以被重新调度
+  restart: 重新部署
+  confirmRestart: 确认重新部署？
+  cannotRestart: 只有 Deployment、StatefulSet 和 DaemonSet 可以被重新部署
   deletedWorkloadSuccessfully: 工作负载删除成功
   canNotDeleteSystemWorkload: 平台组件不可删除
-  restartWorkloadSuccessfully: 工作负载重新调度成功
+  restartWorkloadSuccessfully: 工作负载重新部署成功
   updateWorkloadSuccessfully: 工作负载更新成功
+  deletedPodSuccessfully: Pod 删除成功
   Active: 活跃
   Error: 错误
   Succeeded: 成功
@@ -40,5 +41,6 @@ en:
   deletedWorkloadSuccessfully: Deleted workload successfully
   restartWorkloadSuccessfully: Restarted workload successfully
   updateWorkloadSuccessfully: Updated workload successfully
+  deletedPodSuccessfully: Deleted Pod successfully
   console: Console
   log: Logs

@@ -33,7 +33,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator("cmp-dashboard-pods", "yamlFileEditor", func() servicehub.Provider {
+	base.InitProviderWithCreator("cmp-dashboard-workloads-list", "yamlFileEditor", func() servicehub.Provider {
 		return &ComponentYamlFileEditor{}
 	})
 }
@@ -58,21 +58,21 @@ func (f *ComponentYamlFileEditor) Render(ctx context.Context, component *cptype.
 
 	switch event.Operation {
 	case cptype.RenderingOperation:
-		podID, _ := (*gs)["podID"].(string)
-		if podID == "" {
+		workloadID, _ := (*gs)["workloadID"].(string)
+		if workloadID == "" {
 			return nil
 		}
-		f.State.PodID = podID
+		f.State.WorkloadID = workloadID
 		if err := f.RenderFile(); err != nil {
 			return errors.Errorf("failed to render yaml file, %v", err)
 		}
 	case "submit":
-		if err := f.UpdatePod(); err != nil {
-			return errors.Errorf("failed to update pod, %v", err)
+		if err := f.UpdateWorkload(); err != nil {
+			return errors.Errorf("failed to update workload, %v", err)
 		}
-		f.State.PodID = ""
+		f.State.WorkloadID = ""
 	}
-	delete(*gs, "podID")
+	delete(*gs, "workloadID")
 	f.SetComponentValue()
 	f.Transfer(component)
 	return nil
@@ -103,31 +103,89 @@ func (f *ComponentYamlFileEditor) GenComponentState(c *cptype.Component) error {
 }
 
 func (f *ComponentYamlFileEditor) RenderFile() error {
-	splits := strings.Split(f.State.PodID, "_")
-	if len(splits) != 2 {
-		return errors.Errorf("invalid pod id: %s", f.State.PodID)
+	splits := strings.Split(f.State.WorkloadID, "_")
+	if len(splits) != 3 {
+		return errors.Errorf("invalid workload id: %s", f.State.WorkloadID)
 	}
 
-	namespace, name := splits[0], splits[1]
+	kind, namespace, name := splits[0], splits[1], splits[2]
 	cli, err := cputil2.GetImpersonateClient(f.server, f.sdk.Identity.UserID, f.sdk.Identity.OrgID, f.State.ClusterName)
 	if err != nil {
 		return err
 	}
 
-	pod, err := cli.ClientSet.CoreV1().Pods(namespace).Get(f.ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return errors.Errorf("failed to get pod %s:%s, %v", namespace, name, err)
+	var workload interface{}
+	switch kind {
+	case string(apistructs.K8SDeployment):
+		deploy, err := cli.ClientSet.AppsV1().Deployments(namespace).Get(f.ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return errors.Errorf("failed to get deployment %s:%s, %v", namespace, name, err)
+		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(deploy)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			deploy.SetGroupVersionKind(gvk[0])
+		}
+		workload = deploy
+	case string(apistructs.K8SStatefulSet):
+		sts, err := cli.ClientSet.AppsV1().StatefulSets(namespace).Get(f.ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return errors.Errorf("failed to get statefulSet %s:%s, %v", namespace, name, err)
+		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(sts)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			sts.SetGroupVersionKind(gvk[0])
+		}
+		workload = sts
+	case string(apistructs.K8SDaemonSet):
+		ds, err := cli.ClientSet.AppsV1().DaemonSets(namespace).Get(f.ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return errors.Errorf("failed to get daemonSet %s:%s, %v", namespace, name, err)
+		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(ds)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			ds.SetGroupVersionKind(gvk[0])
+		}
+		workload = ds
+	case string(apistructs.K8SJob):
+		job, err := cli.ClientSet.BatchV1().Jobs(namespace).Get(f.ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return errors.Errorf("failed to get job %s:%s, %v", namespace, name, err)
+		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(job)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			job.SetGroupVersionKind(gvk[0])
+		}
+		workload = job
+	case string(apistructs.K8SCronJob):
+		cj, err := cli.ClientSet.BatchV1beta1().CronJobs(namespace).Get(f.ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return errors.Errorf("failed to get cronJob %s:%s, %v", namespace, name, err)
+		}
+		gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(cj)
+		if err != nil {
+			return errors.Errorf("failed to get object kind, %v", err)
+		}
+		if !unversioned && len(gvk) == 1 {
+			cj.SetGroupVersionKind(gvk[0])
+		}
+		workload = cj
+	default:
+		return errors.Errorf("invalid workload kind %s", kind)
 	}
 
-	gvk, unversioned, err := cli.CRClient.Scheme().ObjectKinds(pod)
-	if err != nil {
-		return errors.Errorf("failed to get object kind, %v", err)
-	}
-	if !unversioned && len(gvk) == 1 {
-		pod.SetGroupVersionKind(gvk[0])
-	}
-
-	data, err := json.Marshal(pod)
+	data, err := json.Marshal(workload)
 	if err != nil {
 		return err
 	}
@@ -141,30 +199,30 @@ func (f *ComponentYamlFileEditor) RenderFile() error {
 	return nil
 }
 
-func (f *ComponentYamlFileEditor) UpdatePod() error {
-	splits := strings.Split(f.State.PodID, "_")
-	if len(splits) != 2 {
-		return errors.Errorf("invalid pod id: %s", f.State.PodID)
+func (f *ComponentYamlFileEditor) UpdateWorkload() error {
+	splits := strings.Split(f.State.WorkloadID, "_")
+	if len(splits) != 3 {
+		return errors.Errorf("invalid workload id: %s", f.State.WorkloadID)
 	}
-	namespace, name := splits[0], splits[1]
+	kind, namespace, name := splits[0], splits[1], splits[2]
 
 	jsonData, err := yaml.YAMLToJSON([]byte(f.State.Value))
 	if err != nil {
 		return errors.Errorf("failed to convert yaml to json, %v", err)
 	}
-	var pod map[string]interface{}
-	if err = json.Unmarshal(jsonData, &pod); err != nil {
-		return errors.Errorf("failed to unmarshal pod, %v", err)
+	var workload map[string]interface{}
+	if err = json.Unmarshal(jsonData, &workload); err != nil {
+		return errors.Errorf("failed to unmarshal workload, %v", err)
 	}
 
 	req := &apistructs.SteveRequest{
 		UserID:      f.sdk.Identity.UserID,
 		OrgID:       f.sdk.Identity.OrgID,
-		Type:        apistructs.K8SPod,
+		Type:        apistructs.K8SResType(kind),
 		ClusterName: f.State.ClusterName,
 		Name:        name,
 		Namespace:   namespace,
-		Obj:         pod,
+		Obj:         workload,
 	}
 
 	_, err = f.server.UpdateSteveResource(f.ctx, req)
@@ -179,7 +237,7 @@ func (f *ComponentYamlFileEditor) SetComponentValue() {
 		"submit": Operation{
 			Key:        "submit",
 			Reload:     true,
-			SuccessMsg: f.sdk.I18n("updatePodSuccessfully"),
+			SuccessMsg: f.sdk.I18n("updateWorkloadSuccessfully"),
 		},
 	}
 }
@@ -188,7 +246,7 @@ func (f *ComponentYamlFileEditor) Transfer(c *cptype.Component) {
 	c.Props = f.Props
 	c.State = map[string]interface{}{
 		"clusterName": f.State.ClusterName,
-		"podId":       f.State.PodID,
+		"workloadId":  f.State.WorkloadID,
 		"value":       f.State.Value,
 	}
 	c.Operations = f.Operations
