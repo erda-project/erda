@@ -82,6 +82,6 @@ func TestBasicValidate(t *testing.T) {
 	d, err := New([]byte(basic_validate_yml), false)
 	assert.Nil(t, err)
 	es := BasicValidate(d.Obj())
-	assert.Equal(t, 3, len(es), "%v", es)
+	assert.Equal(t, 6, len(es), "%v", es)
 
 }

@@ -78,6 +78,9 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
 
+	maxCpu := fmt.Sprintf("%.fm", service.Resources.MaxCPU*1000)
+	maxMem := fmt.Sprintf("%.fMi", service.Resources.MaxMem)
+
 	affinity := constraintbuilders.K8S(&info.sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{
 			PodLabels: map[string]string{"addon_id": info.sg.Dice.ID},
@@ -118,6 +121,10 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 			Requests: apiv1.ResourceList{
 				apiv1.ResourceCPU:    resource.MustParse(cpu),
 				apiv1.ResourceMemory: resource.MustParse(memory),
+			},
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse(maxCpu),
+				apiv1.ResourceMemory: resource.MustParse(maxMem),
 			},
 		},
 	}
