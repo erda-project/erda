@@ -283,7 +283,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
 		{Path: "/api/orgs/actions/switch", Method: http.MethodPost, Handler: e.ChangeCurrentOrg},
 		{Path: "/api/orgs/actions/relate-cluster", Method: http.MethodPost, Handler: e.CreateOrgClusterRelation},
-		{Path: "/api/orgs/clusters/relations", Method: http.MethodGet, Handler: e.ListAllOrgClusterRelation},
+		{Path: "/api/orgs/clusters/relations", Method: http.MethodGet, Handler: e.ListOrgClusterRelation},
 		{Path: "/api/orgs/{orgID}/actions/set-release-cross-cluster", Method: http.MethodPost, Handler: e.SetReleaseCrossCluster},
 		{Path: "/api/orgs/actions/gen-verify-code", Method: http.MethodPost, Handler: e.GenVerifiCode},
 		{Path: "/api/orgs/{orgID}/actions/set-notify-config", Method: http.MethodPost, Handler: e.SetNotifyConfig},

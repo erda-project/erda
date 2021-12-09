@@ -328,6 +328,29 @@ func (b *Bundle) GetOrgClusterRelationsByOrg(orgID uint64) ([]apistructs.OrgClus
 	return resp.Data, nil
 }
 
+// ListOrgClusterRelation list all relations if cluster is empty, else list all relation related to this cluster
+func (b *Bundle) ListOrgClusterRelation(userID, clusterName string) ([]apistructs.OrgClusterRelationDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var resp apistructs.OrgClusterRelationDTOResponse
+	r, err := hc.Get(host).Path("/api/orgs/clusters/relations").
+		Header(httputil.UserHeader, userID).
+		Param("cluster", clusterName).
+		Do().JSON(&resp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return nil, toAPIError(r.StatusCode(), resp.Error)
+	}
+
+	return resp.Data, nil
+}
+
 // DereferenceCluster delete the relation of org and cluster
 func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string) (string, error) {
 	host, err := b.urls.CoreServices()

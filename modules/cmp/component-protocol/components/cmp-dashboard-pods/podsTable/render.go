@@ -420,7 +420,29 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
-			Node:            fields[6],
+			Node: Link{
+				RenderType: "linkText",
+				Value:      fields[6],
+				Operations: map[string]interface{}{
+					"click": LinkOperation{
+						Key:    "gotoNodeDetail",
+						Reload: false,
+						Command: &Command{
+							Key:    "goto",
+							Target: "cmpClustersNodeDetail",
+							State: CommandState{
+								Params: map[string]string{
+									"nodeId": fields[6],
+								},
+								Query: map[string]string{
+									"nodeIP": obj.String("status", "hostIP"),
+								},
+							},
+							JumpOut: true,
+						},
+					},
+				},
+			},
 			GotoWorkload: Link{
 				RenderType: "tableOperation",
 				Operations: map[string]interface{}{
@@ -551,7 +573,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "node":
 				return func(i int, j int) bool {
-					less := items[i].Node < items[j].Node
+					less := items[i].Node.Value < items[j].Node.Value
 					if ascend {
 						return less
 					}
@@ -641,11 +663,6 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Sorter:    true,
 			Hidden:    true,
 		},
-		{
-			DataIndex: "age",
-			Title:     cputil.I18n(ctx, "age"),
-			Sorter:    true,
-		},
 	}
 
 	if p.State.ActiveKey == "cpu" {
@@ -685,11 +702,17 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			},
 		}...)
 	}
-	p.Props.Columns = append(p.Props.Columns, Column{
-		DataIndex: "gotoWorkload",
-		Title:     cputil.I18n(ctx, "operate"),
-		Sorter:    false,
-	})
+	p.Props.Columns = append(p.Props.Columns, []Column{
+		{
+			DataIndex: "age",
+			Title:     cputil.I18n(ctx, "age"),
+			Sorter:    true,
+		},
+		{
+			DataIndex: "gotoWorkload",
+			Title:     cputil.I18n(ctx, "operate"),
+			Sorter:    false,
+		}}...)
 	p.Operations = map[string]interface{}{
 		"changeSort": Operation{
 			Key:    "changeSort",

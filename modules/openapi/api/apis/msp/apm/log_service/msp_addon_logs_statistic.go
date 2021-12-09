@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package log_service
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_ADDON_LOGS_STATISTIC = apis.ApiSpec{
+var MSP_ADDON_LOGS_STATISTIC = apis.ApiSpec{
 	Path:        "/api/log-analytics/<addon>/statistic",
-	BackendPath: "/api/micro_service/<addon>/logs/statistic/histogram",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	BackendPath: "/api/log-service/<addon>/statistics/histogram",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
