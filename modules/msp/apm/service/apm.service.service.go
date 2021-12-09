@@ -27,6 +27,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/math"
 )
 
 type apmServiceService struct {
@@ -174,8 +175,8 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			countSum      int64
 			durationSum   int64
 			errorCountSum int64
-			avgDuration   float32
-			errorRate     float32
+			avgDuration   float64
+			errorRate     float64
 		)
 		for _, row := range rows {
 			qpsChart := new(pb.Chart)
@@ -194,10 +195,10 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			count := int64(row.Values[1].GetNumberValue())
 			duration := int64(row.Values[2].GetNumberValue())
 			errorCount := int64(row.Values[3].GetNumberValue())
-			qpsChart.Value = float32(count) / (60 * 4)
+			qpsChart.Value = float64(count) / (60 * 4)
 			if count != 0 {
-				durationChart.Value = float32(duration / count)
-				errorRateChart.Value = float32(errorCount / count)
+				durationChart.Value = float64(duration / count)
+				errorRateChart.Value = float64(errorCount / count)
 			}
 
 			countSum += count
@@ -210,14 +211,14 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 		}
 
 		if countSum != 0 {
-			avgDuration = float32(durationSum / countSum)
-			errorRate = float32(errorCountSum / countSum)
+			avgDuration = float64(durationSum / countSum)
+			errorRate = float64(errorCountSum / countSum)
 		}
 
 		// QPS Chart
 		serviceCharts = append(serviceCharts, &pb.ServiceChart{
-			Type: pb.ChartType_QPS.String(),
-			Data: float32(countSum / (60 * 60)),
+			Type: pb.ChartType_RPS.String(),
+			Data: math.TwoDecimalPlaces(float64(countSum) / (60 * 60)),
 			View: qpsCharts,
 		})
 
