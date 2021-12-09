@@ -44,8 +44,8 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	if req.PageSize < 10 {
 		req.PageSize = 10
 	}
-	if req.PageSize > 60 {
-		req.PageSize = 60
+	if req.PageSize > 100 {
+		req.PageSize = 100
 	}
 
 	// default get time: 1 day.
