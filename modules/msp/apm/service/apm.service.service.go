@@ -41,8 +41,8 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	if req.PageNo <= 0 {
 		req.PageNo = 1
 	}
-	if req.PageSize < 15 {
-		req.PageSize = 15
+	if req.PageSize < 10 {
+		req.PageSize = 10
 	}
 	if req.PageSize > 60 {
 		req.PageSize = 60
@@ -147,7 +147,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	for _, id := range req.ServiceIds {
 
 		statement := "SELECT sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)" +
-			"FROM application_http_service " +
+			"FROM application_http_service,application_rpc_service " +
 			"WHERE target_terminus_key::tag=$terminus_key AND target_service_id::tag=$service_id GROUP BY time(4m)"
 		queryParams := map[string]*structpb.Value{
 			"terminus_key": structpb.NewStringValue(req.TenantId),
@@ -195,10 +195,10 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			count := int64(row.Values[1].GetNumberValue())
 			duration := int64(row.Values[2].GetNumberValue())
 			errorCount := int64(row.Values[3].GetNumberValue())
-			qpsChart.Value = float64(count) / (60 * 4)
+			qpsChart.Value = math.TwoDecimalPlaces(float64(count) / (60 * 4))
 			if count != 0 {
-				durationChart.Value = float64(duration / count)
-				errorRateChart.Value = float64(errorCount / count)
+				durationChart.Value = math.TwoDecimalPlaces(float64(duration / count))
+				errorRateChart.Value = math.TwoDecimalPlaces(float64(errorCount / count))
 			}
 
 			countSum += count
@@ -211,8 +211,8 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 		}
 
 		if countSum != 0 {
-			avgDuration = float64(durationSum / countSum)
-			errorRate = float64(errorCountSum / countSum)
+			avgDuration = math.TwoDecimalPlaces(float64(durationSum / countSum))
+			errorRate = math.TwoDecimalPlaces(float64(errorCountSum / countSum))
 		}
 
 		// QPS Chart
