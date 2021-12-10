@@ -96,6 +96,11 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 					rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, user abnormalErr: %v, don't need retry", taskOp.Op(), abnormalErr)
 					return abnormalErr
 				}
+				if isExceed, errCtx := tr.Task.Inspect.IsErrorsExceed(); isExceed {
+					rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, errors exceed limit, stop retry, retry times: %d, start itme: %s, pipelineID: %d, taskID: %d",
+						taskOp.Op(), errCtx.Ctx.Count, errCtx.Ctx.StartTime.Format("2006-01-02 15:04:05"), tr.P.ID, tr.Task.ID)
+					return abnormalErr
+				}
 				// don't contain user error mean err is platform error, should retry always
 				rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, continue retry, retry times: %d", taskOp.Op(), abnormalErr, platformErrRetryTimes)
 				resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
