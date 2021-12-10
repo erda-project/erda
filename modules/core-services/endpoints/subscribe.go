@@ -177,3 +177,18 @@ func getListSubscribeParam(r *http.Request) (*apistructs.GetSubscribeReq, error)
 	}
 	return &req, nil
 }
+
+func getListSubscribeParam(r *http.Request) (*apistructs.GetSubscribeReq, error) {
+	req := apistructs.GetSubscribeReq{}
+	req.Type = apistructs.SubscribeType(r.URL.Query().Get("type"))
+
+	id := r.URL.Query().Get("typeID")
+	if id != "" {
+		typeID, err := strconv.Atoi(id)
+		if err != nil {
+			return nil, fmt.Errorf("invalid param, typeID is invalid")
+		}
+		req.TypeID = uint64(typeID)
+	}
+	return &req, nil
+}
