@@ -1624,10 +1624,21 @@ func (svc *Issue) GetIssueItem(id uint64) (*dao.IssueItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := svc.SetIssueChildrenCount([]dao.IssueItem{issue}); err != nil {
+	if err := svc.IssueChildrenCount(&issue); err != nil {
 		return nil, err
 	}
 	return &issue, nil
+}
+
+func (svc *Issue) IssueChildrenCount(issue *dao.IssueItem) error {
+	countList, err := svc.db.IssueChildrenCount([]uint64{issue.ID}, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	if len(countList) > 0 {
+		issue.ChildrenLength = countList[0].Count
+	}
+	return nil
 }
 
 func (svc *Issue) SetIssueChildrenCount(issues []dao.IssueItem) error {
