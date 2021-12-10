@@ -44,7 +44,7 @@ var NotExist = map[string]bool{
 	//"RegisterCenter":  true,
 	//"ConfigCenter":    true,
 	//"AlarmManagement": true,
-	//"AlertCenter":   true,
+	"AlertCenter":   true,
 	"ServiceManage": true,
 }
 
