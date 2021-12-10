@@ -91,7 +91,7 @@ func PipelineInit(ctx *command.Context, ymlfile string) error {
 		return err
 	}
 
-	ctx.Succ(fmt.Sprintf("Init %s success", filepath))
+	ctx.Succ(fmt.Sprintf("Init %s success.", filepath))
 	return nil
 }
 

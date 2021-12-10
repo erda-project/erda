@@ -34,9 +34,9 @@ var APPLICATIONCREATE = command.Command{
 	Example:    "$ erda-cli application create --project-id=<id> -n <name>",
 	Flags: []command.Flag{
 		command.Uint64Flag{Short: "", Name: "project-id", Doc: "the id of a project ", DefaultValue: 0},
-		command.StringFlag{Short: "n", Name: "application-name", Doc: "the name of an application ", DefaultValue: ""},
+		command.StringFlag{Short: "n", Name: "name", Doc: "the name of an application ", DefaultValue: ""},
 		command.StringFlag{Short: "m", Name: "mode",
-			Doc:          "the id of an application, application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
+			Doc:          "application type, available values：LIBRARY, SERVICE, BIGDATA, PROJECT_SERVICE",
 			DefaultValue: "SERVICE"},
 		command.StringFlag{"d", "description", "description of the application", ""},
 	},
@@ -84,7 +84,7 @@ func ApplicationCreate(ctx *command.Context, projectId uint64, name, mode, desc 
 				response.Error.Code, response.Error.Msg), false))
 	}
 
-	ctx.Succ("Application created, details:")
+	ctx.Succ("Application created.")
 
 	s, err := prettyjson.Marshal(response.Data)
 	if err != nil {

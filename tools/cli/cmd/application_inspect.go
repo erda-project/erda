@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
@@ -35,11 +36,12 @@ var APPLICATIONINSPECT = command.Command{
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project ", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "application", Doc: "the name of an application ", DefaultValue: ""},
+		command.BoolFlag{Short: "", Name: "only-repo", Doc: "If true, only show git repo url", DefaultValue: false},
 	},
 	Run: ApplicationInspect,
 }
 
-func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId uint64, org, project, application string) error {
+func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId uint64, org, project, application string, onlyRepo bool) error {
 	checkOrgParam(org, orgId)
 	checkApplicationParam(application, applicationId)
 
@@ -63,13 +65,21 @@ func ApplicationInspect(ctx *command.Context, orgId, projectId, applicationId ui
 		return err
 	}
 
-	s, err := prettyjson.Marshal(resp)
-	if err != nil {
-		return fmt.Errorf(format.FormatErrMsg("application inspect",
-			"failed to prettyjson marshal application data ("+err.Error()+")", false))
-	}
+	if onlyRepo {
+		repoUrl := resp.GitRepoNew
+		if !(strings.HasPrefix(repoUrl, "http://") || strings.HasPrefix(repoUrl, "https://")) {
+			repoUrl = fmt.Sprintf("https://%s", repoUrl)
+		}
+		fmt.Println(repoUrl)
+	} else {
+		s, err := prettyjson.Marshal(resp)
+		if err != nil {
+			return fmt.Errorf(format.FormatErrMsg("application inspect",
+				"failed to prettyjson marshal application data ("+err.Error()+")", false))
+		}
 
-	fmt.Println(string(s))
+		fmt.Println(string(s))
+	}
 
 	return nil
 }

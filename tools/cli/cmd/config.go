@@ -27,18 +27,16 @@ import (
 
 var CONFIG = command.Command{
 	Name:      "config",
-	ShortHelp: "read config file for Erda CLI",
-	Example:   `$ erda-cli config <inspect|current-context|get-contexts|get-platforms> <name>`,
-	Args: []command.Arg{
-		command.StringArg{}.Name("ops"),
-	},
-	Flags: []command.Flag{
-		command.BoolFlag{Short: "", Name: "no-headers", Doc: "if true, don't print headers (default print headers)", DefaultValue: false},
-	},
-	Run: ConfigOps,
+	ShortHelp: "show config file for Erda CLI",
+	Example:   "$ erda-cli config",
+	Run:       ConfigRead,
 }
 
-func ConfigOps(ctx *command.Context, ops string, noHeaders bool) error {
+func ConfigRead(ctx *command.Context) error {
+	return configOps("inspect", true)
+}
+
+func configOps(ops string, noHeaders bool) error {
 	_, conf, err := command.GetConfig()
 	if err == dicedir.NotExist {
 		return errors.New("Please use 'erda-cli config-set' command to set configurations first")

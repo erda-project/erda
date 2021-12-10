@@ -32,6 +32,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var InvalidErdaRepo = errors.New("Invalid Erda git repository!")
+
 func GetWorkspaceBranch() (string, error) {
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	out, err := branchCmd.CombinedOutput()
@@ -61,7 +63,6 @@ func IsWorkspaceDirty() (bool, error) {
 	if err != nil {
 		return true, errors.WithMessage(err, strings.TrimSpace(rs))
 	}
-	fmt.Println(strings.TrimSpace(rs))
 	return strings.TrimSpace(rs) != "0", nil
 }
 
@@ -118,8 +119,7 @@ func GetWorkspaceInfoFromErdaRepo(erdaRepo string) (org, project, app string, er
 	// <org>/dop/<project>/<app>
 	paths := strings.Split(u.Path, "/")
 	if len(paths) != 5 || paths[2] != "dop" {
-		return WorkspaceInfo{}, errors.New(
-			fmt.Sprintf("Invalid Erda git repository: %s", newStr))
+		return WorkspaceInfo{}, InvalidErdaRepo
 	}
 
 	return WorkspaceInfo{

@@ -52,8 +52,15 @@ var (
 var (
 	loginWhiteList = []string{
 		"completion",
-		"config <ops>",
-		"config-set <write-ops> <name>",
+		"config",
+		"config current-context",
+		"config get-contexts",
+		"config get-platforms",
+		"config use-context <name>",
+		"config set-context <name>",
+		"config set-platform <name>",
+		"config delete-context <name>",
+		"config delete-platform <name>",
 		"erda",
 		"erda init",
 		"erda parse",
@@ -69,6 +76,7 @@ var (
 		"pipeline check",
 		"version",
 		"help",
+		"help [command]",
 	}
 )
 
@@ -109,8 +117,9 @@ _/_/_/_/       _/    _/      _/_/_/        _/    _/
 			fmt.Println(err)
 			return err
 		}
+
 		// For completion zsh etc.
-		if strings.HasPrefix(u, "completion ") {
+		if strings.HasPrefix(u, "completion ") || strings.HasPrefix(u, "__complete") {
 			return nil
 		}
 		for _, w := range loginWhiteList {
@@ -212,28 +221,30 @@ func parseCtx() error {
 		if _, err := os.Stat(".git"); err == nil {
 			// fetch host from git remote url
 			info, err := dicedir.GetWorkspaceInfo(Remote)
-			if err != nil {
+			if err != nil && err != dicedir.InvalidErdaRepo {
 				return err
 			}
 
-			if host == "" {
-				host = fmt.Sprintf("%s://%s", info.Scheme, info.Host)
+			if err == nil {
+				if host == "" {
+					host = fmt.Sprintf("%s://%s", info.Scheme, info.Host)
 
-				if username == "" || password == "" {
-					gitCredentialStorage := fetchGitCredentialStorage()
-					switch gitCredentialStorage {
-					case "osxkeychain", "store":
-						// fetch username & password from osxkeychain
-						username, password, _ = fetchGitUserInfo(info.Host, gitCredentialStorage)
+					if username == "" || password == "" {
+						gitCredentialStorage := fetchGitCredentialStorage()
+						switch gitCredentialStorage {
+						case "osxkeychain", "store":
+							// fetch username & password from osxkeychain
+							username, password, _ = fetchGitUserInfo(info.Host, gitCredentialStorage)
+						}
 					}
-				}
 
-				ctx.CurrentOrg = OrgInfo{0, info.Org, ""}
-			} else {
-				if !strings.Contains(host, info.Host) {
-					fmt.Println(color_str.Yellow(
-						fmt.Sprintf("current git repo remote %s: %s, different from config: %s",
-							Remote, info.Scheme+"://"+info.Host, host)))
+					ctx.CurrentOrg = OrgInfo{0, info.Org, ""}
+				} else {
+					if !strings.Contains(host, info.Host) {
+						fmt.Println(color_str.Yellow(
+							fmt.Sprintf("current git repo remote %s: %s, different from config: %s",
+								Remote, info.Scheme+"://"+info.Host, host)))
+					}
 				}
 			}
 		}

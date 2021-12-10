@@ -24,22 +24,27 @@ import (
 )
 
 var CONFIGW = command.Command{
-	Name:      "config-set",
-	ShortHelp: "write config file for Erda CLI",
-	Example:   `$ erda-cli config-set <set-platform|set-context|use-context|delete-platform|delete-context> <name> [flags]`,
+	Name:       "use-context",
+	ParentName: "CONFIG",
+	ShortHelp:  "use context in config file for Erda CLI",
+	Example:    "$ erda-cli config use-context <name>",
 	Args: []command.Arg{
-		command.StringArg{}.Name("write-ops"),
 		command.StringArg{}.Name("name"),
 	},
-	Flags: []command.Flag{
-		command.StringFlag{Short: "", Name: "server", Doc: "the http endpoint for openapi of platform", DefaultValue: "https://openapi.erda.cloud"},
-		command.StringFlag{Short: "", Name: "org", Doc: "an org under the platform", DefaultValue: ""},
-		command.StringFlag{Short: "", Name: "platform", Doc: "the name of platform", DefaultValue: ""},
-	},
-	Run: ConfigOpsW,
+	Run: ConfigOpsWUseCtx,
 }
 
-func ConfigOpsW(ctx *command.Context, ops, name, server, org, platform string) error {
+func ConfigOpsWUseCtx(ctx *command.Context, name string) error {
+	err := configOpsW("use-context", name, "", "", "")
+	if err != nil {
+		return err
+	}
+
+	ctx.Succ(fmt.Sprintf("Use context \"%s\".", name))
+	return nil
+}
+
+func configOpsW(ops, name, server, org, platform string) error {
 	file, conf, err := command.GetConfig()
 	if err != nil && err != dicedir.NotExist {
 		return err

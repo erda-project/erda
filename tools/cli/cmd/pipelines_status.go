@@ -135,6 +135,7 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64) erro
 		return err
 	}
 
+	pipelineDone := true
 	data := [][]string{}
 	var currentStageIndex int
 	for i, stage := range pipelineInfo.PipelineStages {
@@ -157,14 +158,24 @@ func PipelineStatus(ctx *command.Context, branch string, pipelineID uint64) erro
 					task.TimeBegin.Format("2006-01-02 15:04:05"),
 				})
 			}
+			pipelineDone = false
 			break
 		}
 	}
 
-	fmt.Printf("pipeline progress (currentStage/totalStages): %d/%d\n\n",
-		currentStageIndex+1, len(pipelineInfo.PipelineStages))
+	if pipelineDone {
+		ctx.Succ(fmt.Sprintf("Pipeline %d run successfully.", pipelineID))
+	} else {
+		fmt.Printf("pipeline progress (currentStage/totalStages): %d/%d\n\n",
+			currentStageIndex+1, len(pipelineInfo.PipelineStages))
 
-	return table.NewTable().Header([]string{
-		"pipelineID", "taskID", "taskName", "taskStatus", "startedAt",
-	}).Data(data).Flush()
+		err := table.NewTable().Header([]string{
+			"pipelineID", "taskID", "taskName", "taskStatus", "startedAt",
+		}).Data(data).Flush()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

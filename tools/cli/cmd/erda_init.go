@@ -80,7 +80,7 @@ func ErdaInit(ctx *command.Context, cpuQuota float64, memQuota int) error {
 				format.FormatErrMsg("init", "failed to write to file "+erdaYml, false))
 		}
 	}
-	ctx.Succ("Init .erda/erda.yml success")
+	ctx.Succ("Init .erda/erda.yml success.")
 	return nil
 }
 
