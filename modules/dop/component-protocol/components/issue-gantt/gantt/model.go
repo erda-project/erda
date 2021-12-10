@@ -47,6 +47,7 @@ type InParams struct {
 type Data struct {
 	UpdateList []Item            `json:"updateList,omitempty"`
 	ExpandList map[uint64][]Item `json:"expandList,omitempty"`
+	Refresh    bool              `json:"refresh"`
 }
 
 type Operation struct {
