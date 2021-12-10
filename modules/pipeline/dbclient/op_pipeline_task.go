@@ -267,8 +267,8 @@ func (client *Client) CleanPipelineTaskResult(id uint64, ops ...SessionOption) e
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	if _, err := session.Table("pipeline_tasks").ID(id).
-		Update(map[string]interface{}{"result": nil}); err != nil {
+	if _, err := session.Table("pipeline_tasks").
+		Where("id = ?", id).Cols("result").Update(&spec.PipelineTask{Result: nil}); err != nil {
 		return err
 	}
 	return nil
