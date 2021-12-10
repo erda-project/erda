@@ -1,6 +1,6 @@
 zh:
-  Rate: 使用率
-  Used: 已使用
+  Rate: 分配率
+  Request: 已分配
   Limit: 总额
   Disk: 磁盘
   Memory: 内存

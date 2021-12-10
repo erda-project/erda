@@ -112,8 +112,8 @@ type ResData struct {
 	CpuTotal    float64
 	MemoryUsed  float64
 	MemoryTotal float64
-	DiskUsed    float64
-	DiskTotal   float64
+	PodUsed     float64
+	PodTotal    float64
 }
 
 type ClusterInfoDetail struct {
