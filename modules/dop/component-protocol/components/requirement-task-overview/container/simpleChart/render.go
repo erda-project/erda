@@ -77,8 +77,8 @@ func (s *SimpleChart) Render(ctx context.Context, c *cptype.Component, scenario 
 	for k := range dateMap {
 		for _, issue := range s.Issues {
 			created := common.DateTime(issue.CreatedAt)
-			if created.Equal(common.DateTime(k)) {
-				dateMap[created]++
+			if !created.After(common.DateTime(k)) {
+				dateMap[k]++
 			}
 		}
 	}
@@ -95,10 +95,8 @@ func (s *SimpleChart) Render(ctx context.Context, c *cptype.Component, scenario 
 				Name: "需求&任务总数",
 				Data: func() []int {
 					counts := make([]int, 0, len(dates))
-					sum := 0
 					for _, v := range dates {
-						sum += dateMap[v]
-						counts = append(counts, sum)
+						counts = append(counts, dateMap[v])
 					}
 					return counts
 				}(),
