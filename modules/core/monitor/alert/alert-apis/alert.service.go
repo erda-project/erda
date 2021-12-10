@@ -517,7 +517,7 @@ func (m *alertService) addFilter(alertScope, scope, scopeId string, rule *pb.Cus
 		}
 		if scopeId != "" {
 			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-				Tag:      "_metric_scope_id",
+				Tag:      "org_name",
 				Operator: "eq",
 				Value:    structpb.NewStringValue(scopeId),
 			})

@@ -287,6 +287,9 @@ const (
 
 	any = "any"
 	all = "all"
+
+	targetTerminusKey = "target_terminus_key"
+	terminusKey       = "terminus_key"
 )
 
 // CustomizeAlerts .
