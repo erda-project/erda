@@ -143,6 +143,7 @@ type ExtraContent struct {
 }
 
 type Label struct {
+	Color string `json:"color"`
 	Label string `json:"label"`
 }
 
@@ -539,7 +540,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		closedAtCol +
 		`],
     "rowKey": "id",
-	"scroll": {"x": 1150},
 	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
 	var propsI interface{}
@@ -792,7 +792,7 @@ func (ca *ComponentAction) getNameColumn(issue *apistructs.Issue) Name {
 	for _, label := range issue.Labels {
 		for _, labelDef := range ca.labels {
 			if label == labelDef.Name {
-				tags = append(tags, Label{Label: labelDef.Name})
+				tags = append(tags, Label{Color: labelDef.Color, Label: labelDef.Name})
 			}
 		}
 	}
