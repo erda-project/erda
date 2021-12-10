@@ -22,7 +22,7 @@ hierarchy:
       - issueGantt
 
 options:
-  syncIntervalSecond: 30
+  syncIntervalSecond: 0
 
 components:
   issueManage:
