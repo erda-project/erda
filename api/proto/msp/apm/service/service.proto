@@ -82,6 +82,9 @@ message Service {
   string               name          = 2;
   erda.common.Language language      = 3;
   string               lastHeartbeat = 4;
+  double               rps           = 5;
+  double               avgDuration   = 6;
+  double               errorRate     = 7;
 }
 
 enum ChartType {

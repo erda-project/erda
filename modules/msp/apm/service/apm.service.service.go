@@ -17,6 +17,7 @@ package service
 import (
 	context "context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -49,9 +50,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	}
 
 	// default get time: 1 day.
-	d, _ := time.ParseDuration("-24h")
-	start := time.Now().Add(d).UnixNano() / 1e6
-	end := time.Now().UnixNano() / 1e6
+	start, end := timeRange("-24")
 
 	// get services list
 	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp) FROM application_service_node "+
@@ -86,6 +85,31 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		services = append(services, service)
 	}
 
+	sortStrategy, err := s.findData(req.TenantId, services, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(services, func(i, j int) bool {
+		switch sortStrategy {
+		case SortStrategyErrorRate:
+			if services[i].ErrorRate > services[j].ErrorRate {
+				return true
+			}
+			return false
+		case SortStrategyAvgDuration:
+			if services[i].AvgDuration > services[j].AvgDuration {
+				return true
+			}
+			return false
+		default:
+			if services[i].Rps > services[j].Rps {
+				return true
+			}
+			return false
+		}
+	})
+
 	// calculate total count
 	statement = "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
 	statement = strings.ReplaceAll(statement, "$condition", condition)
@@ -102,6 +126,86 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
+}
+
+const (
+	SortStrategyErrorRate   = "ErrorRateStrategy"
+	SortStrategyAvgDuration = "AvgDurationStrategy"
+	SortStrategyRPS         = "RpsRateStrategy"
+)
+
+func timeRange(s string) (start int64, end int64) {
+	d, _ := time.ParseDuration(s)
+	start = time.Now().Add(d).UnixNano() / 1e6
+	end = time.Now().UnixNano() / 1e6
+	return
+}
+
+func (s *apmServiceService) findData(tenantId string, services []*pb.Service, ctx context.Context) (sortStrategy string, err error) {
+	start, end := timeRange("-6h")
+
+	includeIds := ""
+	serviceMap := make(map[string]*pb.Service)
+	for _, service := range services {
+		includeIds += "'" + service.Id + "',"
+		serviceMap[service.Id] = service
+	}
+	includeIds = includeIds[:len(includeIds)-1]
+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)"+
+		"FROM application_http_service,application_rpc_service "+
+		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
+		"AND include(target_service_id::tag, %s) GROUP BY target_service_id::tag", includeIds)
+	condition := " terminus_key::tag=$terminus_key "
+
+	queryParams := map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(tenantId),
+	}
+
+	statement = strings.ReplaceAll(statement, "$condition", condition)
+	request := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(start, 10),
+		End:       strconv.FormatInt(end, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
+	if err != nil {
+		return "", err
+	}
+
+	var (
+		errorRateSum   float64
+		avgDurationSum float64
+		rpcSum         float64
+	)
+	if response != nil {
+		rows := response.Results[0].Series[0].Rows
+
+		for _, row := range rows {
+			if service, ok := serviceMap[row.Values[0].GetStringValue()]; ok {
+				countSum := row.Values[1].GetNumberValue()
+				durationSum := row.Values[2].GetNumberValue()
+				errorCountSum := row.Values[3].GetNumberValue()
+
+				service.Rps = math.TwoDecimalPlaces(float64(countSum) / (60 * 60))
+				if countSum != 0 {
+					service.AvgDuration = math.TwoDecimalPlaces(durationSum / countSum)
+					service.ErrorRate = math.TwoDecimalPlaces(errorCountSum / countSum)
+				}
+
+				avgDurationSum += service.AvgDuration
+				rpcSum += service.Rps
+				errorRateSum += service.ErrorRate
+			}
+		}
+	}
+	if errorRateSum > 0 {
+		return SortStrategyErrorRate, nil
+	} else if avgDurationSum > 0 {
+		return SortStrategyAvgDuration, nil
+	}
+	return SortStrategyRPS, nil
 }
 
 func parseLanguage(platform string) (language commonpb.Language) {
@@ -137,10 +241,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 		return nil, errors.NewMissingParameterError("serviceId")
 	}
 
-	// default get time: 1 h.
-	h, _ := time.ParseDuration("-1h")
-	start := time.Now().Add(h).UnixNano() / 1e6
-	end := time.Now().UnixNano() / 1e6
+	start, end := timeRange("-1h")
 
 	servicesView := make([]*pb.ServicesView, 0, 10)
 

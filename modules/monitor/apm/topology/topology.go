@@ -1587,6 +1587,7 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 							n.Metric.HttpError += node.Metric.HttpError
 							n.Metric.ErrorRate += node.Metric.ErrorRate
 							n.Metric.RT += node.Metric.RT
+							n.Metric.RPS += node.Metric.RPS
 							if n.RuntimeId == "" {
 								n.RuntimeId = node.RuntimeId
 							}
