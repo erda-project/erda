@@ -1619,8 +1619,15 @@ func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest)
 	return svc.db.FindIssueChildren(id, req)
 }
 
-func (svc *Issue) GetIssueItem(id uint64) (dao.IssueItem, error) {
-	return svc.db.GetIssueItem(id)
+func (svc *Issue) GetIssueItem(id uint64) (*dao.IssueItem, error) {
+	issue, err := svc.db.GetIssueItem(id)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.SetIssueChildrenCount([]dao.IssueItem{issue}); err != nil {
+		return nil, err
+	}
+	return &issue, nil
 }
 
 func (svc *Issue) SetIssueChildrenCount(issues []dao.IssueItem) error {

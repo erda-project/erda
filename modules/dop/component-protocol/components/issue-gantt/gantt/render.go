@@ -45,6 +45,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	f.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
 	f.users = make([]string, 0)
+	f.Data.Refresh = false
 	inParamsBytes, err := json.Marshal(cputil.SDK(ctx).InParams)
 	if err != nil {
 		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", cputil.SDK(ctx).InParams, err)
@@ -91,6 +92,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 				return err
 			}
 			expand[0] = f.convertIssueItems(issues)
+			f.Data.Refresh = true
 		} else {
 			for _, i := range parentIDs {
 				issues, err := f.issueChildrenRetriever(i)
@@ -103,7 +105,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 					if err != nil {
 						return err
 					}
-					update = append(update, *convertIssueItem(&issue))
+					update = append(update, *convertIssueItem(issue))
 				}
 			}
 		}
@@ -134,7 +136,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 		if err != nil {
 			return err
 		}
-		update = append(f.convertIssueItems(parents), *convertIssueItem(&issue))
+		update = append(f.convertIssueItems(parents), *convertIssueItem(issue))
 	}
 
 	f.Data.ExpandList = expand
