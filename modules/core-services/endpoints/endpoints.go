@@ -403,6 +403,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// the interface of notify
 		{Path: "/api/notify-groups", Method: http.MethodPost, Handler: e.CreateNotifyGroup},
 		{Path: "/api/notify-groups", Method: http.MethodGet, Handler: e.QueryNotifyGroup},
+		{Path: "/api/notify-groups/actions/list", Method: http.MethodGet, Handler: e.ListNotifyGroups},
 		{Path: "/api/notify-groups/{groupID}", Method: http.MethodGet, Handler: e.GetNotifyGroup},
 		{Path: "/api/notify-groups/{groupID}", Method: http.MethodPut, Handler: e.UpdateNotifyGroup},
 		{Path: "/api/notify-groups/{groupID}/detail", Method: http.MethodGet, Handler: e.GetNotifyGroupDetail},

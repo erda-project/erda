@@ -109,6 +109,28 @@ func (client *DBClient) QueryNotifyGroup(request *apistructs.QueryNotifyGroupReq
 	return result, nil
 }
 
+// QueryAllNotifyGroup 查询所有的通知组信息
+func (client *DBClient) QueryAllNotifyGroup(request *apistructs.QueryNotifyGroupRequest, orgID int64) (*apistructs.QueryNotifyGroupData, error) {
+	var notifyGroups []model.NotifyGroup
+	query := client.Model(&model.NotifyGroup{}).Where("org_id=? and auto_create=?", orgID, false)
+	var count int
+	if request.ScopeType != "" && request.ScopeID != "" {
+		query = query.Where("scope_type = ? and scope_id =?", request.ScopeType, request.ScopeID)
+	}
+	err := query.Order("updated_at desc").Find(&notifyGroups).Count(&count).Error
+	if err != nil {
+		return nil, err
+	}
+	result := &apistructs.QueryNotifyGroupData{
+		Total: count,
+		List:  []*apistructs.NotifyGroup{},
+	}
+	for _, notifyGroup := range notifyGroups {
+		result.List = append(result.List, notifyGroup.ToApiData())
+	}
+	return result, nil
+}
+
 // GetNotifyGroupByID 获取通知组
 func (client *DBClient) GetNotifyGroupByID(id int64, orgID int64) (*apistructs.NotifyGroup, error) {
 	var notifyGroup model.NotifyGroup

@@ -91,6 +91,29 @@ func (b *Bundle) QueryNotifyGroup(orgID string, request *apistructs.QueryNotifyG
 	return &getResp, nil
 }
 
+func (b *Bundle) ListNotifyGroups(orgID string, request *apistructs.ListNotifyGroupsRequest) (*apistructs.ListNotifyGroupsResponse, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var getResp apistructs.ListNotifyGroupsResponse
+	resp, err := hc.Get(host).Path("/api/notify-groups/actions/list").
+		Param("scopeType", request.ScopeType).
+		Param("scopeId", request.ScopeID).
+		Header("Org-ID", orgID).Do().JSON(&getResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !getResp.Success {
+		return nil, toAPIError(resp.StatusCode(), getResp.Error)
+	}
+	if !resp.IsOK() || !getResp.Success {
+		return nil, toAPIError(resp.StatusCode(), getResp.Error)
+	}
+	return &getResp, nil
+}
+
 func (b *Bundle) GetNotifyGroup(id int64, orgID string) (*apistructs.GetNotifyGroupResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {

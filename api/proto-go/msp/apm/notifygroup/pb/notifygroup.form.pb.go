@@ -21,6 +21,8 @@ var _ urlenc.URLValuesUnmarshaler = (*NotifyGroup)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryNotifyGroupRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryNotifyGroupResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryNotifyGroupData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListNotifyGroupsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListNotifyGroupsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyGroupRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyGroupResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UserInfo)(nil)
@@ -295,6 +297,45 @@ func (m *QueryNotifyGroupData) UnmarshalURLValues(prefix string, values url.Valu
 					return err
 				}
 				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// ListNotifyGroupsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListNotifyGroupsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeType":
+				m.ScopeType = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ListNotifyGroupsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListNotifyGroupsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &QueryNotifyGroupData{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &QueryNotifyGroupData{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
 			}
 		}
 	}

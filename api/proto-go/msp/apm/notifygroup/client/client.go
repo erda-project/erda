@@ -45,6 +45,10 @@ func (s *notifyGroupServiceWrapper) QueryNotifyGroup(ctx context.Context, req *p
 	return s.client.QueryNotifyGroup(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
+func (s *notifyGroupServiceWrapper) ListNotifyGroups(ctx context.Context, req *pb.ListNotifyGroupsRequest) (*pb.ListNotifyGroupsResponse, error) {
+	return s.client.ListNotifyGroups(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *notifyGroupServiceWrapper) GetNotifyGroup(ctx context.Context, req *pb.GetNotifyGroupRequest) (*pb.GetNotifyGroupResponse, error) {
 	return s.client.GetNotifyGroup(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
