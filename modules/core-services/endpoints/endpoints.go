@@ -254,6 +254,12 @@ func WithUserSvc(svc *user.User) Option {
 	}
 }
 
+func WithSubscribe(sub *subscribe.Subscribe) Option {
+	return func(e *Endpoints) {
+		e.subscribe = sub
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db

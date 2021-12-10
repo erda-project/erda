@@ -17,7 +17,9 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -124,13 +126,10 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 	if err != nil {
 		return apierrors.ErrGetSubscribe.InvalidParameter(err).ToResp(), nil
 	}
-	if r.Body == nil {
-		return apierrors.ErrGetSubscribe.MissingParameter("body is nil").ToResp(), nil
-	}
 
-	var req apistructs.GetSubscribeReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return apierrors.ErrGetSubscribe.InvalidParameter("can't decode body").ToResp(), nil
+	req, err := getListSubscribeParam(r)
+	if err != nil {
+		return apierrors.ErrGetSubscribe.InvalidParameter(err).ToResp(), nil
 	}
 	req.UserID = uid
 	if err := req.Validate(); err != nil {
@@ -151,7 +150,7 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 	}
 
 	// request process
-	items, err := e.subscribe.GetSubscribes(req)
+	items, err := e.subscribe.GetSubscribes(*req)
 	if err != nil {
 		return apierrors.ErrGetSubscribe.InternalError(err).ToResp(), nil
 	}
@@ -162,4 +161,19 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 	}
 
 	return httpserver.OkResp(resp)
+}
+
+func getListSubscribeParam(r *http.Request) (*apistructs.GetSubscribeReq, error) {
+	req := apistructs.GetSubscribeReq{}
+	req.Type = apistructs.SubscribeType(r.URL.Query().Get("type"))
+
+	id := r.URL.Query().Get("typeID")
+	if id != "" {
+		typeID, err := strconv.Atoi(id)
+		if err != nil {
+			return nil, fmt.Errorf("invalid param, typeID is invalid")
+		}
+		req.TypeID = uint64(typeID)
+	}
+	return &req, nil
 }

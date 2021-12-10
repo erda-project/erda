@@ -51,8 +51,13 @@ func (s *Subscribe) Subscribe(req apistructs.CreateSubscribeReq) (uint64, error)
 		logrus.Errorf("get subscribe count failed, request: %v, error: %v", req, err)
 		return 0, errors.Errorf("get subscribe count failed, error: %v", err)
 	}
-	if uint64(count) >= conf.SubscribeLimitNum() {
-		return 0, errors.Errorf("reach subscribe limie num: %v", conf.SubscribeLimitNum())
+
+	limit := conf.SubscribeLimitNum()
+
+	if uint64(count) >= limit {
+		err := errors.Errorf("reach subscribe limit: %v, count: %v", limit, count)
+		logrus.Errorf(err.Error())
+		return 0, err
 	}
 
 	// subscribe duplication check
@@ -61,7 +66,7 @@ func (s *Subscribe) Subscribe(req apistructs.CreateSubscribeReq) (uint64, error)
 		logrus.Errorf("get subscribe failed, request: %v, error:%v", req, err)
 		return 0, errors.Errorf("get subscribe failed, error:%v", err)
 	}
-	if d != nil {
+	if d != nil && d.TypeID == req.TypeID {
 		return 0, errors.Errorf("already subscribed, type: %v, id: %v", req.Type.String(), req.TypeID)
 	}
 
@@ -90,7 +95,7 @@ func (s *Subscribe) UnSubscribe(req apistructs.UnSubscribeReq) error {
 
 	// unsubscribe by userID
 	if req.TypeID == 0 && req.Type.IsEmpty() {
-		logrus.Debugf("delete subscribes by userid, userid: %d", req.UserID)
+		logrus.Debugf("delete subscribes by userid, userid: %v", req.UserID)
 		return s.db.DeleteSubscribeByUserID(req.UserID)
 	}
 
@@ -121,7 +126,10 @@ func (s *Subscribe) GetSubscribes(req apistructs.GetSubscribeReq) ([]apistructs.
 	if err != nil {
 		return nil, err
 	}
-	raw = []model.Subscribe{*sub}
+
+	if sub != nil {
+		raw = []model.Subscribe{*sub}
+	}
 
 	for _, v := range raw {
 		list = append(list, s.Convert(v))

@@ -168,6 +168,11 @@ func getAllFiles(pathname string, perms []model.RolePermission) []model.RolePerm
 	return perms
 }
 
+// LoadForTest unit test
+func LoadForTest() {
+	envconf.MustLoad(&cfg)
+}
+
 // Load 加载配置项.
 func Load() {
 	envconf.MustLoad(&cfg)
