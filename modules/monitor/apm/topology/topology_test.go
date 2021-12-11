@@ -464,10 +464,10 @@ func Test_handlerTranslationConditions(t *testing.T) {
 		{"case1", args{params: translation{Layer: "xxx"}, where: bytes.Buffer{}}, "", "", true},
 		{"case2", args{params: translation{Layer: ""}, where: bytes.Buffer{}}, "", "", true},
 		{"case3", args{params: translation{Layer: "http"}, where: bytes.Buffer{}}, "http_path::tag", " ORDER BY avg(elapsed_mean::field) DESC", false},
-		{"case4", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY avg(elapsed_mean::field) DESC", false},
+		{"case4", args{params: translation{Layer: "rpc"}, where: bytes.Buffer{}}, "rpc_target::tag", " ORDER BY avg(elapsed_mean::field) DESC", false},
 		{"case5", args{params: translation{Layer: "http", Sort: 0}, where: bytes.Buffer{}}, "http_path::tag", " ORDER BY avg(elapsed_mean::field) DESC", false},
-		{"case6", args{params: translation{Layer: "rpc", Sort: 1}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY sum(elapsed_count::field) DESC", false},
-		{"case7", args{params: translation{Layer: "rpc", Sort: 2}, where: bytes.Buffer{}}, "peer_service::tag", " ORDER BY count(error::tag) DESC", false},
+		{"case6", args{params: translation{Layer: "rpc", Sort: 1}, where: bytes.Buffer{}}, "rpc_target::tag", " ORDER BY sum(elapsed_count::field) DESC", false},
+		{"case7", args{params: translation{Layer: "rpc", Sort: 2}, where: bytes.Buffer{}}, "rpc_target::tag", " ORDER BY count(error::tag) DESC", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
