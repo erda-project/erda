@@ -35,7 +35,7 @@ type (
 	IterateStyle int32
 
 	QueryMeta struct {
-		OrgName               string
+		OrgNames              []string
 		MspEnvIds             []string
 		Highlight             bool
 		PreferredBufferSize   int

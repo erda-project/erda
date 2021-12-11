@@ -40,14 +40,14 @@ const useInMemContentFilter = true
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
-	var keyPaths []string
-	if len(sel.Meta.OrgName) > 0 {
-		keyPaths = append(keyPaths, sel.Meta.OrgName)
+	var keyPaths []loader.KeyPath
+	for _, orgName := range sel.Meta.OrgNames {
+		keyPaths = append(keyPaths, loader.KeyPath{
+			Keys:      []string{orgName},
+			Recursive: true,
+		})
 	}
-	indices := p.Loader.Indices(ctx, sel.Start, sel.End, loader.KeyPath{
-		Keys:      keyPaths,
-		Recursive: true,
-	})
+	indices := p.Loader.Indices(ctx, sel.Start, sel.End, keyPaths...)
 	pageSize := p.Cfg.ReadPageSize
 	if sel.Meta.PreferredBufferSize > 0 {
 		pageSize = sel.Meta.PreferredBufferSize
