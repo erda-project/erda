@@ -9,6 +9,7 @@ zh:
   Failed: 失败
   Updating: 更新中
   Abnormal: 异常
+  Stopped: 已停止
   createWorkload: 创建工作负载
   upToDate: 已更新
   available: 可用
@@ -19,6 +20,13 @@ zh:
   schedule: 运行计划
   lastSchedule: 上次运行时间
   totalWorkload: 工作负载总数
+  restart: 重新部署
+  confirmRestart: 确认重新部署？
+  cannotRestart: 只有 Deployment、StatefulSet 和 DaemonSet 可以被重新部署
+  deletedWorkloadSuccessfully: 工作负载删除成功
+  canNotDeleteSystemWorkload: 平台组件不可删除
+  restartWorkloadSuccessfully: 工作负载重新部署成功
+  updateWorkloadSuccessfully: 工作负载更新成功
 
 en:
   createWorkloadSuccessfully: Created workload successfully
@@ -105,4 +113,12 @@ en:
   SharedResources: Shared Resources on the Platform
   updateNodeSuccessfully: Updated Node successfully
   totalWorkload: Total Workloads
+  restart: Restart
+  confirmRestart: Sure to restart ?
+  cannotRestart: Only deployment, statefulSet and daemonSet can be restarted
+  canNotDeleteSystemWorkload: Platform components can not be deleted
+  deletedWorkloadSuccessfully: Deleted workload successfully
+  restartWorkloadSuccessfully: Restarted workload successfully
+  updateWorkloadSuccessfully: Updated workload successfully
+
 

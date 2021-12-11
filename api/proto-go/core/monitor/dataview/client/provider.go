@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.monitor.dataview-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.dataview.DataViewService",
+			"erda.core.monitor.dataview.DataViewService.client",
 			"erda.core.monitor.dataview-client",
 		},
 		Types: []reflect.Type{

@@ -502,15 +502,19 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrGetIssue.InternalError(err)
 	}
 
-	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil && req.PlanStartedAt.After(*req.PlanFinishedAt) {
-		return fmt.Errorf("plan started is after plan finished time")
+	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil {
+		if req.PlanStartedAt.After(*req.PlanFinishedAt) {
+			return fmt.Errorf("plan started is after plan finished time")
+		}
+	} else {
+		if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
+		}
+		if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
+		}
 	}
-	if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
-		return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
-	}
-	if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
-		return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
-	}
+
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
 	if issueModel.Type == apistructs.IssueTypeBug {
 		currentState, err := svc.db.GetIssueStateByID(issueModel.State)
@@ -645,6 +649,8 @@ func (svc *Issue) AfterIssueChildrenUpdate(id uint64) error {
 			fields["plan_started_at"] = start
 		}
 		if end != nil {
+			now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+			fields["expiry_status"] = getExpiryStatus(end, now)
 			fields["plan_finished_at"] = end
 		}
 		if len(fields) > 0 {
@@ -1069,8 +1075,15 @@ func (svc *Issue) GetIssuesByIssueIDs(issueIDs []uint64, identityInfo apistructs
 	if err != nil {
 		return nil, err
 	}
-
-	issues, err := svc.BatchConvert(issueModels, apistructs.IssueTypes, identityInfo)
+	issueMap := make(map[uint64]*dao.Issue)
+	for i := range issueModels {
+		issueMap[issueModels[i].ID] = &issueModels[i]
+	}
+	results := make([]dao.Issue, 0, len(issueIDs))
+	for _, i := range issueIDs {
+		results = append(results, *issueMap[i])
+	}
+	issues, err := svc.BatchConvert(results, apistructs.IssueTypes, identityInfo)
 	if err != nil {
 		return nil, apierrors.ErrPagingIssues.InternalError(err)
 	}
@@ -1576,10 +1589,6 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
 	return svc.db.GetAllIssuesByProject(req)
-	// if err != nil {
-	// 	return data, nil
-	// }
-	// return data
 }
 
 func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
@@ -1602,15 +1611,62 @@ func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest)
 		if err != nil {
 			return nil, 0, err
 		}
+		if err := svc.SetIssueChildrenCount(requirements); err != nil {
+			return nil, 0, err
+		}
 		return append(requirements, tasks...), total, nil
 	}
 	return svc.db.FindIssueChildren(id, req)
 }
 
-func (svc *Issue) GetIssueItem(id uint64) (dao.IssueItem, error) {
-	return svc.db.GetIssueItem(id)
+func (svc *Issue) GetIssueItem(id uint64) (*dao.IssueItem, error) {
+	issue, err := svc.db.GetIssueItem(id)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.IssueChildrenCount(&issue); err != nil {
+		return nil, err
+	}
+	return &issue, nil
+}
+
+func (svc *Issue) IssueChildrenCount(issue *dao.IssueItem) error {
+	countList, err := svc.db.IssueChildrenCount([]uint64{issue.ID}, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	if len(countList) > 0 {
+		issue.ChildrenLength = countList[0].Count
+	}
+	return nil
+}
+
+func (svc *Issue) SetIssueChildrenCount(issues []dao.IssueItem) error {
+	issueIDs := make([]uint64, 0, len(issues))
+	issueMap := make(map[uint64]*dao.IssueItem)
+	for i := range issues {
+		issueIDs = append(issueIDs, issues[i].ID)
+		issueMap[issues[i].ID] = &issues[i]
+	}
+	countList, err := svc.db.IssueChildrenCount(issueIDs, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	for _, i := range countList {
+		if v, ok := issueMap[i.IssueID]; ok {
+			v.ChildrenLength = i.Count
+		}
+	}
+	return nil
 }
 
 func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.IssueItem, error) {
-	return svc.db.GetIssueParents(issueID, relationType)
+	issues, err := svc.db.GetIssueParents(issueID, relationType)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.SetIssueChildrenCount(issues); err != nil {
+		return nil, err
+	}
+	return issues, nil
 }

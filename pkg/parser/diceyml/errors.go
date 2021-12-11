@@ -24,6 +24,7 @@ var (
 	invalidPolicy              = errortype("invalid policy defined in yaml")
 	invalidCPU                 = errortype("invalid cpu defined in yaml")
 	invalidMaxCPU              = errortype("invalid max cpu defined in yaml")
+	invalidMaxMem              = errortype("invalid max mem defined in yaml")
 	invalidMem                 = errortype("invalid memory defined in yaml")
 	invalidDisk                = errortype("invalid disk defined in yaml")
 	invalidNetworkMode         = errortype("invalid network mode defined in yaml, must be 'container' or 'host'")

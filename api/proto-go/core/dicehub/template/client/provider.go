@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.dicehub.template-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.dicehub.template.TemplateService",
+			"erda.core.dicehub.template.TemplateService.client",
 			"erda.core.dicehub.template-client",
 		},
 		Types: []reflect.Type{

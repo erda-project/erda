@@ -16,22 +16,85 @@ package apistructs
 
 import (
 	"sort"
+	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type ApplicationsResourcesRequest struct {
+	OrgID     string
 	UserID    string
-	OrgID     uint64
-	ProjectID uint64
+	ProjectID string
 	Query     *ApplicationsResourceQuery
 }
 
+func (arr ApplicationsResourcesRequest) Validate() error {
+	if _, err := arr.GetOrgID(); err != nil {
+		return errors.Wrap(err, "Org-ID is invalid")
+	}
+	if _, err := arr.GetUserID(); err != nil {
+		return errors.Wrap(err, "User-ID is invalid")
+	}
+	if _, err := arr.GetProjectID(); err != nil {
+		return errors.Wrap(err, "projectID is invalid")
+	}
+
+	return nil
+}
+
+func (arr ApplicationsResourcesRequest) GetOrgID() (uint64, error) {
+	return strconv.ParseUint(arr.OrgID, 10, 64)
+}
+
+func (arr ApplicationsResourcesRequest) GetUserID() (uint64, error) {
+	return strconv.ParseUint(arr.OrgID, 10, 64)
+}
+
+func (arr ApplicationsResourcesRequest) GetProjectID() (uint64, error) {
+	return strconv.ParseUint(arr.ProjectID, 10, 64)
+}
+
 type ApplicationsResourceQuery struct {
-	ApplicationsIDs []uint64
-	OwnerIDs        []uint64
-	OrderBy         []string
-	PageNo          uint64
-	PageSize        uint64
+	AppsIDs  []string
+	OwnerIDs []string
+	OrderBy  []string
+	PageNo   string
+	PageSize string
+}
+
+func (arq ApplicationsResourceQuery) GetAppIDs() []uint64 {
+	return arq.uin64Slice(arq.AppsIDs)
+}
+
+func (arq ApplicationsResourceQuery) GetOwnerIDs() []uint64 {
+	return arq.uin64Slice(arq.OwnerIDs)
+}
+
+func (arq ApplicationsResourceQuery) uin64Slice(ss []string) []uint64 {
+	var result []uint64
+	for _, s := range ss {
+		if v, err := strconv.ParseUint(s, 10, 64); err == nil {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+func (arq ApplicationsResourceQuery) GetPageNo() int64 {
+	i, err := strconv.ParseInt(arq.PageNo, 10, 64)
+	if err != nil || i < 1 {
+		return 1
+	}
+	return i
+}
+
+func (arq ApplicationsResourceQuery) GetPageSize() int64 {
+	i, err := strconv.ParseInt(arq.PageNo, 10, 64)
+	if err != nil || i < 1 {
+		return 15
+	}
+	return i
 }
 
 type ApplicationsResourcesResponse struct {
@@ -70,7 +133,7 @@ func (r *ApplicationsResourcesResponse) OrderBy(conditions ...string) {
 	}
 }
 
-func (r *ApplicationsResourcesResponse) Paging(pageSize, pageNo uint64) {
+func (r *ApplicationsResourcesResponse) Paging(pageSize, pageNo int64) {
 	if pageNo < 1 {
 		pageNo = 1
 	}

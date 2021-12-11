@@ -48,3 +48,16 @@ func (s *logQueryServiceWrapper) GetLogByRuntime(ctx context.Context, req *pb.Ge
 func (s *logQueryServiceWrapper) GetLogByOrganization(ctx context.Context, req *pb.GetLogByOrganizationRequest) (*pb.GetLogByOrganizationResponse, error) {
 	return s.client.GetLogByOrganization(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *logQueryServiceWrapper) GetLogByExpression(ctx context.Context, req *pb.GetLogByExpressionRequest) (*pb.GetLogByExpressionResponse, error) {
+	return s.client.GetLogByExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *logQueryServiceWrapper) LogAggregation(ctx context.Context, req *pb.LogAggregationRequest) (*pb.LogAggregationResponse, error) {
+	return s.client.LogAggregation(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+// ScanLogsByExpression This method has no implements, do not use it directly
+func (s *logQueryServiceWrapper) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
+	panic("not implemented")
+}

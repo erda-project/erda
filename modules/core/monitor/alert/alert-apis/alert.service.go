@@ -508,20 +508,11 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 
 func (m *alertService) addFilter(alertScope, scope, scopeId string, rule *pb.CustomizeAlertRule) {
 	if alertScope == "org" {
-		if scope != "" {
-			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-				Tag:      "_metric_scope",
-				Operator: "eq",
-				Value:    structpb.NewStringValue(scope),
-			})
-		}
-		if scopeId != "" {
-			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-				Tag:      "_metric_scope_id",
-				Operator: "eq",
-				Value:    structpb.NewStringValue(scopeId),
-			})
-		}
+		rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+			Tag:      "org_name",
+			Operator: "eq",
+			Value:    structpb.NewStringValue(scopeId),
+		})
 	}
 }
 

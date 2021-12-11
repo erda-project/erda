@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -37,11 +38,13 @@ func NewSearchIterator(
 	ctx context.Context,
 	client *elastic.Client,
 	timeout time.Duration,
+	fromOffset int,
 	pageSize int,
 	indices []string,
 	sorts []*SortItem,
+	searchAfter []interface{},
 	search func() (*elastic.SearchSource, error),
-	decode func(data []byte) (interface{}, error),
+	decode func(data *elastic.SearchHit) (interface{}, error),
 ) (storekit.Iterator, error) {
 	if pageSize <= 1 {
 		// avoid query result only contains the last duplicated data,
@@ -54,15 +57,18 @@ func NewSearchIterator(
 	}
 	timeoutMS := strconv.FormatInt(ms, 10) + "ms"
 	return &searchIterator{
-		ctx:       ctx,
-		client:    client,
-		timeout:   timeout,
-		timeoutMS: timeoutMS,
-		pageSize:  pageSize,
-		indices:   indices,
-		search:    search,
-		sorts:     sorts,
-		decode:    decode,
+		ctx:            ctx,
+		client:         client,
+		timeout:        timeout,
+		timeoutMS:      timeoutMS,
+		pageSize:       pageSize,
+		indices:        indices,
+		search:         search,
+		sorts:          sorts,
+		decode:         decode,
+		fromOffset:     fromOffset,
+		searchAfter:    searchAfter,
+		lastSortValues: searchAfter,
 	}, nil
 }
 
@@ -75,7 +81,7 @@ func NewScrollIterator(
 	indices []string,
 	sorts []*SortItem,
 	search func() (*elastic.SearchSource, error),
-	decode func(data []byte) (interface{}, error),
+	decode func(data *elastic.SearchHit) (interface{}, error),
 ) (storekit.Iterator, error) {
 	if pageSize <= 0 {
 		return nil, fmt.Errorf("pageSize must greater than 0")
@@ -111,15 +117,17 @@ const (
 )
 
 type searchIterator struct {
-	ctx       context.Context
-	client    *elastic.Client
-	timeout   time.Duration
-	timeoutMS string
-	pageSize  int
-	indices   []string
-	search    func() (*elastic.SearchSource, error)
-	sorts     []*SortItem
-	decode    func(data []byte) (interface{}, error)
+	ctx         context.Context
+	client      *elastic.Client
+	timeout     time.Duration
+	timeoutMS   string
+	fromOffset  int
+	pageSize    int
+	indices     []string
+	search      func() (*elastic.SearchSource, error)
+	sorts       []*SortItem
+	searchAfter []interface{}
+	decode      func(data *elastic.SearchHit) (interface{}, error)
 
 	lastID         string
 	lastSortValues []interface{}
@@ -128,13 +136,15 @@ type searchIterator struct {
 	value          interface{}
 	err            error
 	closed         bool
+	total          int64
+	totalCached    bool
 }
 
 func (it *searchIterator) First() bool {
 	if it.checkClosed() {
 		return false
 	}
-	it.lastSortValues, it.lastID = nil, ""
+	it.lastSortValues, it.lastID = it.searchAfter, ""
 	it.fetch(iteratorForward)
 	return it.yield()
 }
@@ -143,7 +153,7 @@ func (it *searchIterator) Last() bool {
 	if it.checkClosed() {
 		return false
 	}
-	it.lastSortValues, it.lastID = nil, ""
+	it.lastSortValues, it.lastID = it.searchAfter, ""
 	it.fetch(iteratorBackward)
 	return it.yield()
 }
@@ -201,7 +211,7 @@ func (it *searchIterator) fetch(dir iteratorDir) error {
 				return it.err
 			}
 			ss := it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).Timeout(it.timeoutMS).
-				SearchSource(searchSource).Size(it.pageSize).SearchAfter(it.lastSortValues...)
+				SearchSource(searchSource).From(it.fromOffset).Size(it.pageSize).SearchAfter(it.lastSortValues...)
 			if reverse {
 				for _, item := range it.sorts {
 					ss = ss.Sort(item.Key, !item.Ascending)
@@ -222,6 +232,8 @@ func (it *searchIterator) fetch(dir iteratorDir) error {
 				it.err = io.EOF
 				return it.err
 			}
+			atomic.SwapInt64(&it.total, resp.TotalHits())
+			it.totalCached = true
 			it.buffer = it.parseHits(resp.Hits.Hits)
 			if len(resp.Hits.Hits) < it.pageSize {
 				it.err = io.EOF
@@ -230,6 +242,30 @@ func (it *searchIterator) fetch(dir iteratorDir) error {
 			return nil
 		}()
 	}
+	return nil
+}
+
+func (it *searchIterator) count() error {
+	searchSource, err := it.search()
+	if err != nil {
+		it.err = err
+		return it.err
+	}
+	ss := it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).Timeout(it.timeoutMS).
+		SearchSource(searchSource).Size(0)
+	var resp *elastic.SearchResult
+	ctx, cancel := context.WithTimeout(it.ctx, it.timeout)
+	defer cancel()
+	resp, it.err = ss.Do(ctx)
+	if it.err != nil {
+		return it.err
+	}
+	if resp == nil || resp.Error != nil {
+		it.err = fmt.Errorf(resp.Error.Reason)
+		return it.err
+	}
+	atomic.SwapInt64(&it.total, resp.TotalHits())
+	it.totalCached = true
 	return nil
 }
 
@@ -245,6 +281,17 @@ func (it *searchIterator) yield() bool {
 func (it *searchIterator) Close() error {
 	it.closed = true
 	return nil
+}
+
+func (it *searchIterator) Total() (int64, error) {
+	if it.totalCached {
+		return it.total, nil
+	}
+	err := it.count()
+	if err != nil {
+		return 0, err
+	}
+	return it.total, nil
 }
 
 func (it *searchIterator) checkClosed() bool {
@@ -272,9 +319,10 @@ func (it *searchIterator) parseHits(hits []*elastic.SearchHit) (list []interface
 		if hit.Source == nil || (checkID && hit.Id == lastID) {
 			continue
 		}
+		it.fromOffset = 0
 		it.lastSortValues = hit.Sort
 		it.lastID = hit.Id
-		data, err := it.decode(*hit.Source)
+		data, err := it.decode(hit)
 		if err != nil {
 			continue
 		}
@@ -292,7 +340,7 @@ type scrollIterator struct {
 	indices      []string
 	searchSource *elastic.SearchSource
 	sorts        []*SortItem
-	decode       func(data []byte) (interface{}, error)
+	decode       func(data *elastic.SearchHit) (interface{}, error)
 
 	scrollIDs    map[string]struct{}
 	lastScrollID string
@@ -301,6 +349,8 @@ type scrollIterator struct {
 	value        interface{}
 	err          error
 	closed       bool
+	total        int64
+	totalCached  bool
 }
 
 func (it *scrollIterator) First() bool {
@@ -429,11 +479,32 @@ func (it *scrollIterator) fetch(dir iteratorDir) error {
 				return it.err
 			}
 
+			atomic.SwapInt64(&it.total, resp.TotalHits())
+			it.totalCached = true
 			// parse result
 			it.buffer = it.parseHits(resp.Hits.Hits)
 			return nil
 		}()
 	}
+	return nil
+}
+
+func (it *scrollIterator) count() error {
+	ss := it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).
+		SearchSource(it.searchSource).Size(0)
+	var resp *elastic.SearchResult
+	ctx, cancel := context.WithTimeout(it.ctx, it.timeout)
+	defer cancel()
+	resp, it.err = ss.Do(ctx)
+	if it.err != nil {
+		return it.err
+	}
+	if resp == nil || resp.Error != nil {
+		it.err = fmt.Errorf(resp.Error.Reason)
+		return it.err
+	}
+	atomic.SwapInt64(&it.total, resp.TotalHits())
+	it.totalCached = true
 	return nil
 }
 
@@ -450,6 +521,18 @@ func (it *scrollIterator) Close() error {
 	it.closed = true
 	it.release()
 	return nil
+}
+
+func (it *scrollIterator) Total() (int64, error) {
+	if !it.totalCached {
+		return it.total, nil
+	}
+	err := it.count()
+	if err != nil {
+		return 0, err
+
+	}
+	return it.total, nil
 }
 
 func (it *scrollIterator) checkClosed() bool {
@@ -475,7 +558,7 @@ func (it *scrollIterator) parseHits(hits []*elastic.SearchHit) (list []interface
 		if hit.Source == nil {
 			continue
 		}
-		data, err := it.decode(*hit.Source)
+		data, err := it.decode(hit)
 		if err != nil {
 			continue
 		}

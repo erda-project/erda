@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -25,6 +26,7 @@ import (
 type ComponentWorkloadTable struct {
 	base.DefaultProvider
 	sdk    *cptype.SDK
+	bdl    *bundle.Bundle
 	ctx    context.Context
 	server cmp.SteveServer
 
@@ -60,6 +62,7 @@ type Count struct {
 	Succeeded int `json:"succeeded"`
 	Failed    int `json:"failed"`
 	Updating  int `json:"updating"`
+	Stopped   int `json:"stopped"`
 }
 
 type Sorter struct {
@@ -95,6 +98,12 @@ type Item struct {
 	Duration     string   `json:"duration,omitempty"`
 	Schedule     string   `json:"schedule,omitempty"`
 	LastSchedule string   `json:"lastSchedule,omitempty"`
+	Operations   Operate  `json:"operations"`
+}
+
+type Operate struct {
+	RenderType string                 `json:"renderType,omitempty"`
+	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
 type Status struct {
@@ -123,8 +132,14 @@ type Link struct {
 }
 
 type LinkOperation struct {
-	Reload bool   `json:"reload"`
-	Key    string `json:"key,omitempty"`
+	Reload      bool                   `json:"reload"`
+	Key         string                 `json:"key,omitempty"`
+	Text        string                 `json:"text,omitempty"`
+	Meta        map[string]interface{} `json:"meta,omitempty"`
+	Confirm     string                 `json:"confirm,omitempty"`
+	SuccessMsg  string                 `json:"successMsg,omitempty"`
+	Disabled    bool                   `json:"disabled"`
+	DisabledTip string                 `json:"disabledTip,omitempty"`
 }
 
 type Kind struct {

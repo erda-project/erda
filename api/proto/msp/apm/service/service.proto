@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package erda.msp.apm.service;
+option go_package = "github.com/erda-project/erda-proto-go/msp/apm/service/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/descriptor.proto";
+import "common/openapi.proto";
+import "common/language.proto";
+
+service ApmServiceService {
+  rpc GetServices (GetServicesRequest) returns (GetServicesResponse) {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/services",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/services",
+      service: "msp",
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
+    };
+  }
+
+  rpc GetServiceAnalyzerOverview (GetServiceAnalyzerOverviewRequest) returns (GetServiceAnalyzerOverviewResponse) {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/service/analyzer-overview",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/service/analyzer-overview",
+      service: "msp",
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
+    };
+  }
+}
+
+message GetServiceAnalyzerOverviewRequest {
+  string          tenantId   = 1;
+  repeated string serviceIds = 2;
+}
+
+message GetServiceAnalyzerOverviewResponse {
+  repeated ServicesView list = 1;
+}
+
+message ServicesView {
+  string                serviceId = 1;
+  repeated ServiceChart views     = 2;
+}
+
+message GetServicesRequest {
+  int64  pageNo      = 1;
+  int64  pageSize    = 2;
+  string tenantId    = 3;
+  string serviceName = 4;
+}
+
+message GetServicesResponse {
+  int64            pageNo   = 1;
+  int64            pageSize = 2;
+  int64            total    = 3;
+  repeated Service list     = 4;
+}
+
+message Chart{
+  int64  timestamp = 1;
+  double value     = 2;
+}
+
+message ServiceChart{
+  string         type = 1;
+  double         data = 2;
+  repeated Chart view = 3;
+}
+
+message Service {
+  string               id            = 1;
+  string               name          = 2;
+  erda.common.Language language      = 3;
+  string               lastHeartbeat = 4;
+}
+
+enum ChartType {
+  RPS         = 0;
+  AvgDuration = 1;
+  ErrorRate   = 3;
+}

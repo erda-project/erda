@@ -76,7 +76,36 @@ func NewUCTokenClient(req *ucauth.NewClientRequest) (*ucauth.NewClientResponse, 
 	return ucTokenAuth.NewClient(req)
 }
 
-func VerifyOpenapiOAuth2Token(o *oauth2.OAuth2Server, spec *spec.Spec, r *http.Request) (TokenClient, error) {
+// OAuth2APISpec .
+type OAuth2APISpec interface {
+	MatchPath(path string) bool
+	PathVars(temp, path string) map[string]string
+	Method() string
+	Scheme() string
+}
+
+// OpenapiSpec .
+type OpenapiSpec struct {
+	*spec.Spec
+}
+
+func (s *OpenapiSpec) MatchPath(path string) bool {
+	return s.Spec.Path.String() == path
+}
+
+func (s *OpenapiSpec) Method() string {
+	return s.Spec.Method
+}
+
+func (s *OpenapiSpec) Scheme() string {
+	return s.Spec.Scheme.String()
+}
+
+func (s *OpenapiSpec) PathVars(template, path string) map[string]string {
+	return s.Spec.Path.Vars(path)
+}
+
+func VerifyOpenapiOAuth2Token(o *oauth2.OAuth2Server, spec OAuth2APISpec, r *http.Request) (TokenClient, error) {
 	// add Bearer prefix
 	tokenHeader := r.Header.Get(HeaderAuthorization)
 	if !strings.HasPrefix(tokenHeader, HeaderAuthorizationBearerPrefix) {
@@ -97,9 +126,11 @@ func VerifyOpenapiOAuth2Token(o *oauth2.OAuth2Server, spec *spec.Spec, r *http.R
 	if !claims.Payload.AllowAccessAllAPIs {
 		// validate accessible api list
 		foundAccessibleAPI := false
+		var path string
 		for _, accessibleAPI := range claims.Payload.AccessibleAPIs {
 			if matchAPISpec(accessibleAPI, spec) {
 				foundAccessibleAPI = true
+				path = accessibleAPI.Path
 				break
 			}
 		}
@@ -111,7 +142,7 @@ func VerifyOpenapiOAuth2Token(o *oauth2.OAuth2Server, spec *spec.Spec, r *http.R
 		// wildcards: pipelineID=1
 		// metadata:  pipelineID=2
 		// validate failed
-		wildcards := spec.Path.Vars(r.URL.Path)
+		wildcards := spec.PathVars(path, r.URL.Path)
 		invalidWildcardNames := []string{}
 		for k, v := range wildcards {
 			mv, ok := claims.Payload.Metadata[k]
@@ -151,8 +182,8 @@ func VerifyOpenapiOAuth2Token(o *oauth2.OAuth2Server, spec *spec.Spec, r *http.R
 	}, nil
 }
 
-func matchAPISpec(accessibleAPI apistructs.AccessibleAPI, spec *spec.Spec) bool {
-	return accessibleAPI.Path == spec.Path.String() &&
-		accessibleAPI.Method == spec.Method &&
-		strutil.Equal(accessibleAPI.Schema, spec.Scheme.String(), true)
+func matchAPISpec(accessibleAPI apistructs.AccessibleAPI, spec OAuth2APISpec) bool {
+	return spec.MatchPath(accessibleAPI.Path) &&
+		accessibleAPI.Method == spec.Method() &&
+		strutil.Equal(accessibleAPI.Schema, spec.Scheme(), true)
 }

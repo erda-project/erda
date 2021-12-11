@@ -199,8 +199,11 @@ func TestComponentPodsTable_Transfer(t *testing.T) {
 					},
 					MemoryLimitsNum: 1 << 30,
 					Ready:           "1",
-					Node:            "testNode",
-					GotoWorkload: Link{
+					Node: Operate{
+						RenderType: "testType",
+						Value:      "testValue",
+					},
+					Operations: Operate{
 						RenderType: "testType",
 						Value:      "testValue",
 						Operations: map[string]interface{}{

@@ -203,6 +203,11 @@ func UserID(r *http.Request) string {
 	return r.Header.Get("User-ID")
 }
 
+// OrgName .
+func OrgName(r *http.Request) string {
+	return r.Header.Get("org")
+}
+
 // OrgIDInt .
 func OrgIDInt(r *http.Request) (int64, *Response) {
 	id, err := strconv.ParseInt(OrgID(r), 10, 64)

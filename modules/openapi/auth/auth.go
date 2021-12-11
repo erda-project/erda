@@ -201,7 +201,7 @@ func (a *Auth) checkToken(spec *spec.Spec, req *http.Request) (TokenClient, Auth
 		}, AuthResult{AuthSucc, ""}
 	}
 	// 2. openapi oauth2 token
-	oauth2TC, err := VerifyOpenapiOAuth2Token(a.OAuth2Server, spec, req)
+	oauth2TC, err := VerifyOpenapiOAuth2Token(a.OAuth2Server, &OpenapiSpec{Spec: spec}, req)
 	if err != nil {
 		return TokenClient{}, AuthResult{AuthFail, err.Error()}
 	}

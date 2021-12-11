@@ -21,6 +21,9 @@ hierarchy:
       - issueKanban
       - issueGantt
 
+options:
+  syncIntervalSecond: 0
+
 components:
   issueManage:
     type: Container

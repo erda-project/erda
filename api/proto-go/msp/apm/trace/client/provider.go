@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.apm.trace-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.trace.TraceService",
+			"erda.msp.apm.trace.TraceService.client",
 			"erda.msp.apm.trace-client",
 		},
 		Types: []reflect.Type{

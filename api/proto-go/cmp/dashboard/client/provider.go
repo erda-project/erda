@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.cmp.dashboard.resource-client", &servicehub.Spec{
 		Services: []string{
 			"erda.cmp.dashboard.resource.ClusterResource",
+			"erda.cmp.dashboard.resource.ClusterResource.client",
 			"erda.cmp.dashboard.resource-client",
 		},
 		Types: []reflect.Type{

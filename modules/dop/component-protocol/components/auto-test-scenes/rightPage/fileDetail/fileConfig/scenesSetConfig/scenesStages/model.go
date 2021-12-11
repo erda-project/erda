@@ -201,6 +201,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 			Icon:     "shanchu",
 			Reload:   true,
 			Disabled: false,
+			Confirm:  "是否确认删除",
 		},
 		Meta: OpMetaInfo{
 			ID: scene.ID,

@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.monitor.alertdetail-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.alertdetail.AlertDetailService",
+			"erda.core.monitor.alertdetail.AlertDetailService.client",
 			"erda.core.monitor.alertdetail-client",
 		},
 		Types: []reflect.Type{

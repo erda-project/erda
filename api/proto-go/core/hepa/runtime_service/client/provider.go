@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.runtime_service-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.runtime_service.RuntimeService",
+			"erda.core.hepa.runtime_service.RuntimeService.client",
 			"erda.core.hepa.runtime_service-client",
 		},
 		Types: []reflect.Type{

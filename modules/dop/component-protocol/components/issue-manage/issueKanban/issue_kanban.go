@@ -30,6 +30,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
+	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -42,11 +45,25 @@ type IssueCart struct {
 	ID             int64                         `json:"id"`
 	Title          string                        `json:"title"`
 	Type           apistructs.IssueType          `json:"type"`
-	State          int64                         `json:"state"`
 	IssueButton    []apistructs.IssueStateButton `json:"issueButton"`
 	IterationID    int64                         `json:"iterationID"`
 	PlanFinishedAt *time.Time                    `json:"planFinishedAt"`
 	Operations     map[string]interface{}        `json:"operations"`
+
+	Status CardStatus  `json:"status,omitempty"`
+	Labels *CardLabels `json:"labels,omitempty"`
+}
+
+type CardStatus struct {
+	Text   string `json:"text,omitempty"`
+	Status string `json:"status,omitempty"`
+}
+type CardLabels struct {
+	Value []CardLabel `json:"value,omitempty"`
+}
+type CardLabel struct {
+	Label string `json:"label,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type CartList struct {
@@ -77,7 +94,7 @@ func (cl *CartList) Delete(issueID int64) {
 }
 
 func (cl *CartList) Add(c IssueCart) {
-	cl.List = append([]IssueCart{c}, cl.List...)
+	cl.List = append(cl.List, c)
 }
 
 const (
@@ -120,6 +137,7 @@ type DragOperationInfo struct {
 	Reload bool `json:"reload"`
 	// 可拖拽的范围
 	TargetKeys interface{} `json:"targetKeys"`
+	Async      bool        `json:"async,omitempty"`
 	Disabled   bool        `json:"disabled"`
 }
 
@@ -190,6 +208,7 @@ func (c *IssueCart) RenderDragOperation() {
 	o.Reload = true
 	o.Meta = OpMetaInfo{IssueID: c.ID}
 	o.TargetKeys = targetKeys
+	o.Async = true
 	c.Operations[apistructs.DragOperation.String()] = o
 }
 
@@ -230,6 +249,7 @@ func (c *IssueCart) RenderDragToCustomOperation(mp map[cptype.OperationKey]inter
 	o.Meta = OpMetaInfo{
 		IssueID: c.ID,
 	}
+	o.Async = true
 	o.TargetKeys = targetKeys
 	c.Operations[apistructs.DragOperation.String()] = o
 }
@@ -263,6 +283,7 @@ func (c *IssueCart) RenderDragToAssigneeOperation(mp map[cptype.OperationKey]int
 	o.Meta = OpMetaInfo{
 		IssueID: c.ID,
 	}
+	o.Async = true
 	o.TargetKeys = targetKeys
 	c.Operations[apistructs.DragOperation.String()] = o
 }
@@ -296,6 +317,7 @@ func (c *IssueCart) RenderDragToPriorityOperation(i apistructs.Issue, mp map[cpt
 	}
 	o := DragOperation{}
 	o.Reload = true
+	o.Async = true
 	o.Meta = OpMetaInfo{
 		IssueID: c.ID,
 	}
@@ -458,7 +480,9 @@ func (c *ChartOperationSwitch) ClearAble() {
 type ComponentIssueBoard struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
-	// ctxBdl protocol.ContextBundle
+
+	issueSvc      *issue_svc.Issue
+	issueStateSvc *issuestate.IssueState
 
 	boardType BoardType
 	swt       ChartOperationSwitch
@@ -652,6 +676,18 @@ func (i *ComponentIssueBoard) disableOperationPermission(op interface{}) interfa
 }
 
 func (i *ComponentIssueBoard) Filter(ctx context.Context, req IssueFilterRequest) (ib *IssueBoard, err error) {
+	// statuses
+	stateByIssueType, err := i.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{ProjectID: req.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	stateByStateID := make(map[int64]apistructs.IssueStatus)
+	for _, statuses := range stateByIssueType {
+		for _, status := range statuses {
+			stateByStateID[status.StateID] = status
+		}
+	}
+
 	var (
 		cls   []CartList
 		board IssueBoard
@@ -662,14 +698,14 @@ func (i *ComponentIssueBoard) Filter(ctx context.Context, req IssueFilterRequest
 	switch req.BoardType {
 	// 所有，不含此分类
 	case BoardTypeStatus:
-		cls, uids, err = i.FilterByStatusConcurrent(ctx, req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByStatusConcurrent(ctx, req.IssuePagingRequest, req.KanbanKey, stateByStateID)
 	case BoardTypeTime:
-		cls, uids, err = i.FilterByTime(ctx, req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByTime(ctx, req.IssuePagingRequest, req.KanbanKey, stateByStateID)
 	case BoardTypePriority:
-		cls, uids, err = i.FilterByPriority(ctx, req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByPriority(ctx, req.IssuePagingRequest, req.KanbanKey, stateByStateID)
 	// 所有，不含此分类
 	case BoardTypeCustom:
-		cls, uids, err = i.FilterByCustom(ctx, req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByCustom(ctx, req.IssuePagingRequest, req.KanbanKey, stateByStateID)
 		// Created custom board max num 15
 		o := CreateBoardOperation{}
 		o.Disabled = false
@@ -683,7 +719,7 @@ func (i *ComponentIssueBoard) Filter(ctx context.Context, req IssueFilterRequest
 		i.Operations[apistructs.CreateCustomOperation.String()] = o
 	default:
 		//err = fmt.Errorf("invalid board type [%s], must in [%v]", req.BoardType, SupportBoardTypes)
-		cls, uids, err = i.FilterByPriority(ctx, req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByPriority(ctx, req.IssuePagingRequest, req.KanbanKey, stateByStateID)
 	}
 	if err != nil {
 		return
@@ -774,34 +810,42 @@ func (i ComponentIssueBoard) GetIssues(req apistructs.IssuePagingRequest, ignore
 	return
 }
 
-func GenCart(bt BoardType, i apistructs.Issue, ctx context.Context, s ChartOperationSwitch, mp map[cptype.OperationKey]interface{}) IssueCart {
+func GenCart(bt BoardType, i apistructs.Issue, ctx context.Context, s ChartOperationSwitch, mp map[cptype.OperationKey]interface{}, stateByStateID map[int64]apistructs.IssueStatus) IssueCart {
 	var c IssueCart
-	switch bt {
-	case BoardTypeTime:
-		c.Assignee = i.Assignee
-		c.Priority = i.Priority
-		c.PlanFinishedAt = i.PlanFinishedAt
-		c.State = i.State
-	case BoardTypeCustom:
-		c.Assignee = i.Assignee
-		c.Priority = i.Priority
-		c.State = i.State
-	case BoardTypePriority:
-		c.Assignee = i.Assignee
-		c.State = i.State
-	case BoardTypeAssignee:
-		c.Priority = i.Priority
-		c.State = i.State
-	case BoardTypeStatus:
-		c.Assignee = i.Assignee
-		c.Priority = i.Priority
-	default:
-	}
 	c.ID = i.ID
 	c.Title = i.Title
 	c.Type = i.Type
 	c.IssueButton = i.IssueButton
 	c.IterationID = i.IterationID
+	c.Assignee = i.Assignee
+	c.Priority = i.Priority
+	c.PlanFinishedAt = i.PlanFinishedAt
+	c.Status = func() (cardStatus CardStatus) {
+		if len(stateByStateID) == 0 {
+			return
+		}
+		status, ok := stateByStateID[i.State]
+		if !ok {
+			return
+		}
+		return CardStatus{
+			Text:   status.StateName,
+			Status: common.GetUIIssueState(status.StateBelong),
+		}
+	}()
+	c.Labels = func() *CardLabels {
+		var labels []CardLabel
+		for _, label := range i.LabelDetails {
+			labels = append(labels, CardLabel{
+				Label: label.Name,
+				Color: label.Color,
+			})
+		}
+		if len(labels) == 0 {
+			return nil
+		}
+		return &CardLabels{Value: labels}
+	}()
 	c.SetCtx(ctx)
 	c.RenderCartOperations(s, i, mp)
 	return c
@@ -813,7 +857,7 @@ func (c *CartList) GenCartList(ctx context.Context, s ChartOperationSwitch) {
 }
 
 // 按状态过滤 并发
-func (i ComponentIssueBoard) FilterByStatusConcurrent(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByStatusConcurrent(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string, stateByStateID map[int64]apistructs.IssueStatus) (cls []CartList, uids []string, err error) {
 	if len(req.Type) == 0 || len(req.Type) != 1 {
 		err = fmt.Errorf("issue type number is not 1, type: %v", req.Type)
 		return
@@ -886,7 +930,7 @@ loop:
 				cl.RenderChangePageNoOperation(strconv.FormatInt(cl.LabelKey.(int64), 10))
 			}
 			for _, v := range rsp.Data.List {
-				c := GenCart(i.boardType, v, ctx, i.swt, nil)
+				c := GenCart(i.boardType, v, ctx, i.swt, nil, stateByStateID)
 				cl.Add(c)
 			}
 
@@ -906,7 +950,7 @@ loop:
 }
 
 // FilterByPriority 按优先级过滤 去掉终态状态 [CLOSED, DONE]
-func (i ComponentIssueBoard) FilterByPriority(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByPriority(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string, stateByStateID map[int64]apistructs.IssueStatus) (cls []CartList, uids []string, err error) {
 	// 用于生成权限
 	var priorityList []apistructs.IssuePriority
 	if kanbanKey != "" {
@@ -956,7 +1000,7 @@ func (i ComponentIssueBoard) FilterByPriority(ctx context.Context, req apistruct
 				cl.RenderChangePageNoOperation(cl.LabelKey.(string))
 			}
 			for _, v := range rsp.Data.List {
-				c := GenCart(i.boardType, v, ctx, i.swt, mp)
+				c := GenCart(i.boardType, v, ctx, i.swt, mp, stateByStateID)
 				cl.Add(c)
 			}
 			date.Lock.Lock()
@@ -975,7 +1019,7 @@ func (i ComponentIssueBoard) FilterByPriority(ctx context.Context, req apistruct
 }
 
 // FilterByTime 根据完成时间(planFinishedAt)分为：未分类，已过期，1天内过期，2天内，7天内，30天，未来
-func (i ComponentIssueBoard) FilterByTime(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByTime(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string, stateByStateID map[int64]apistructs.IssueStatus) (cls []CartList, uids []string, err error) {
 	// 为减少事件数量，不需要展示终态的事项[CLOSED, DONE]
 	timeMap := getTimeMap()
 	// map并发写需要加锁
@@ -1036,7 +1080,7 @@ func (i ComponentIssueBoard) FilterByTime(ctx context.Context, req apistructs.Is
 				cl.RenderChangePageNoOperation(cl.LabelKey.(string))
 			}
 			for _, v := range rsp.Data.List {
-				c := GenCart(i.boardType, v, ctx, i.swt, nil)
+				c := GenCart(i.boardType, v, ctx, i.swt, nil, stateByStateID)
 				cl.Add(c)
 			}
 			date.Lock.Lock()
@@ -1073,7 +1117,7 @@ func getTimeMap() map[ExpireType][]int64 {
 }
 
 // 按自定义看板 过滤
-func (i ComponentIssueBoard) FilterByCustom(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByCustom(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string, stateByStateID map[int64]apistructs.IssueStatus) (cls []CartList, uids []string, err error) {
 	rsp, err := i.bdl.GetIssuePanel(apistructs.IssuePanelRequest{IssuePagingRequest: req})
 	if err != nil {
 		return
@@ -1124,7 +1168,7 @@ func (i ComponentIssueBoard) FilterByCustom(ctx context.Context, req apistructs.
 			cl.PageSize = req.PageSize
 			if rsp.Total > 0 {
 				for _, v := range rsp.Issues {
-					c := GenCart(i.boardType, v, ctx, i.swt, mp)
+					c := GenCart(i.boardType, v, ctx, i.swt, mp, stateByStateID)
 					// 不能转移到自己
 					cMove := c.Operations[apistructs.MoveToCustomOperation.String()+panel.PanelName].(MoveToCustomOperation)
 					cMove.Disabled = true

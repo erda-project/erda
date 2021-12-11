@@ -79,7 +79,6 @@ const (
 
 const (
 	SMS                = "sms"
-	shortMessage       = "short_message"
 	dingtalkWorkNotice = "dingtalk_work_notice"
 )
 
@@ -204,10 +203,6 @@ func (a *Adapt) AggregatorKeysSet() map[string]bool {
 func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, config map[string]bool) []*pb.DisplayKey {
 	var keys []*pb.DisplayKey
 	for item := range config {
-		if item == shortMessage {
-			keys = append(keys, &pb.DisplayKey{Key: SMS, Display: a.t.Text(code, SMS)})
-			continue
-		}
 		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 	}
 	return keys

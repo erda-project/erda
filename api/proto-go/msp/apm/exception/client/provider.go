@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.msp.apm.exception-client", &servicehub.Spec{
 		Services: []string{
 			"erda.msp.apm.exception.ExceptionService",
+			"erda.msp.apm.exception.ExceptionService.client",
 			"erda.msp.apm.exception-client",
 		},
 		Types: []reflect.Type{

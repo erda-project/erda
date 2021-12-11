@@ -15,6 +15,7 @@
 package storekit
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -84,6 +85,39 @@ func TestNewListIterator_Prev(t *testing.T) {
 			for it.Prev() {
 				result = append(result, it.Value())
 			}
+			if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("NewListIterator().Prev() got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewListIterator_Total(t *testing.T) {
+	type args struct {
+	}
+	tests := []struct {
+		name string
+		list []Data
+		want int64
+	}{
+		{
+			list: []Data{},
+			want: 0,
+		},
+		{
+			list: []Data{1},
+			want: 1,
+		},
+		{
+			list: []Data{1, 2, 3, 4, 5},
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			it := NewListIterator(tt.list...).(Counter)
+			var result int64
+			result, _ = it.Total()
 			if !reflect.DeepEqual(result, tt.want) {
 				t.Errorf("NewListIterator().Prev() got %v, want %v", result, tt.want)
 			}
@@ -375,4 +409,109 @@ func TestMergedHeadOverlappedIterator_Prev(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMergedHeadOverlappedIterator_Total(t *testing.T) {
+	tests := []struct {
+		name    string
+		cmp     Comparer
+		its     []Iterator
+		want    int64
+		wantErr bool
+	}{
+		{
+			cmp:  Int64Comparer{},
+			its:  []Iterator{},
+			want: 0,
+		},
+		{
+			cmp: Int64Comparer{},
+			its: []Iterator{
+				NewListIterator(), NewListIterator(),
+			},
+			want: 0,
+		},
+		{
+			cmp: Int64Comparer{},
+			its: []Iterator{
+				NewListIterator(6, 7, 8),
+				NewListIterator(4, 5, 6),
+				NewListIterator(1, 2, 3),
+			},
+			want: 9,
+		},
+		{
+			cmp: Int64Comparer{},
+			its: []Iterator{
+				NewListIterator(6, 7, 8),
+				NewListIterator(4, 5, 6),
+				NewListIterator(1, 2, 3),
+			},
+			want: 9,
+		},
+		{
+			cmp: Int64Comparer{},
+			its: []Iterator{
+				MockIterator{returnTotal: 1},
+				MockIterator{returnTotal: 2},
+			},
+			want: 3,
+		},
+		{
+			cmp: Int64Comparer{},
+			its: []Iterator{
+				MockIterator{returnError: fmt.Errorf("mock error")},
+			},
+			want:    0,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			it := MergedHeadOverlappedIterator(tt.cmp, tt.its...)
+			result, err := it.(Counter).Total()
+			if tt.wantErr && err == nil {
+				t.Errorf("MergedHeadOverlappedIterator().Prev() want error, but it successful")
+			} else if !tt.wantErr && err != nil {
+				t.Errorf("MergedHeadOverlappedIterator().Prev() got error: %v", it.Error())
+			} else if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("MergedHeadOverlappedIterator().Prev() got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+// MockIterator .
+type MockIterator struct {
+	returnError error
+	returnTotal int64
+}
+
+// First .
+func (it MockIterator) First() bool { return false }
+
+// Last .
+func (it MockIterator) Last() bool { return false }
+
+// Next .
+func (it MockIterator) Next() bool { return false }
+
+// Prev .
+func (it MockIterator) Prev() bool { return false }
+
+// Value .
+func (it MockIterator) Value() interface{} { return nil }
+
+// Error .
+func (it MockIterator) Error() error { return nil }
+
+// Close .
+func (it MockIterator) Close() error { return nil }
+
+// Total .
+func (it MockIterator) Total() (int64, error) {
+	if it.returnError != nil {
+		return 0, it.returnError
+	}
+	return it.returnTotal, nil
 }

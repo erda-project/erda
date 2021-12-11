@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.endpoint_api-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.endpoint_api.EndpointApiService",
+			"erda.core.hepa.endpoint_api.EndpointApiService.client",
 			"erda.core.hepa.endpoint_api-client",
 		},
 		Types: []reflect.Type{

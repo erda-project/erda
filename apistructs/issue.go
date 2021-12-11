@@ -51,6 +51,7 @@ type Issue struct {
 	IssueButton      []IssueStateButton `json:"issueButton"` // 状态流转按钮
 	IssueSummary     *IssueSummary      `json:"issueSummary"`
 	Labels           []string           `json:"labels"` // label 列表
+	LabelDetails     []ProjectLabel     `json:"labelDetails,omitempty"`
 	ManHour          IssueManHour       `json:"issueManHour"`
 	Source           string             `json:"source"`
 	TaskType         string             `json:"taskType"` // 任务类型
@@ -767,6 +768,8 @@ type IssueListRequest struct {
 	CustomPanelID int64 `json:"customPanelID"`
 
 	OnlyIDResult bool `json:"onlyIdResult"`
+	// issues not included by others
+	NotIncluded bool `json:"notIncluded"`
 }
 
 func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
@@ -958,9 +961,7 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 	if r.Severity != nil {
 		fields["severity"] = *r.Severity
 	}
-	if r.PlanStartedAt != nil {
-		fields["plan_started_at"] = r.PlanStartedAt
-	}
+	fields["plan_started_at"] = r.PlanStartedAt
 	fields["plan_finished_at"] = r.PlanFinishedAt
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee

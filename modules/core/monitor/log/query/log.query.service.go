@@ -16,13 +16,18 @@ package query
 
 import (
 	context "context"
+	"fmt"
 	"regexp"
 	"sort"
 	"time"
 
+	linq "github.com/ahmetb/go-linq/v3"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -35,7 +40,9 @@ type logQueryService struct {
 }
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
-	items, err := s.queryLogItems(ctx, req, nil)
+	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+		return s.tryFillQueryMeta(ctx, sel)
+	}, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -46,14 +53,15 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 	if len(req.ApplicationId) <= 0 {
 		return nil, errors.NewMissingParameterError("applicationId")
 	}
-	items, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Filters = append(sel.Filters, &storage.Filter{
 			Key:   "tags.dice_application_id",
 			Op:    storage.EQ,
 			Value: req.ApplicationId,
 		})
+		s.tryFillQueryMeta(ctx, sel)
 		return sel
-	})
+	}, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -64,45 +72,171 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 	if len(req.ClusterName) <= 0 {
 		return nil, errors.NewMissingParameterError("clusterName")
 	}
-	items, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
 		sel.Filters = append(sel.Filters, &storage.Filter{
 			Key:   "tags.dice_cluster_name",
 			Op:    storage.EQ,
 			Value: req.ClusterName,
 		})
+		s.tryFillQueryMeta(ctx, sel)
 		return sel
-	})
+	}, true, false)
 	if err != nil {
 		return nil, err
 	}
 	return &pb.GetLogByOrganizationResponse{Lines: items}, nil
 }
 
-func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector) ([]*pb.LogItem, error) {
-	sel, err := toQuerySelector(req)
+func (s *logQueryService) GetLogByExpression(ctx context.Context, req *pb.GetLogByExpressionRequest) (*pb.GetLogByExpressionResponse, error) {
+	items, total, err := s.queryLogItems(ctx, req, nil, false, true)
 	if err != nil {
 		return nil, err
+	}
+	return &pb.GetLogByExpressionResponse{Lines: items, Total: total}, nil
+}
+
+func (s *logQueryService) LogAggregation(ctx context.Context, req *pb.LogAggregationRequest) (*pb.LogAggregationResponse, error) {
+	if s.storageReader == nil {
+		return nil, fmt.Errorf("elasticsearch storage provider is required")
+	}
+	aggregator, ok := s.storageReader.(storage.Aggregator)
+	if !ok {
+		return nil, fmt.Errorf("%T not implment %T", s.storageReader, aggregator)
+	}
+
+	aggReq, err := s.toAggregation(req)
+	if err != nil {
+		return nil, err
+	}
+	aggResp, err := aggregator.Aggregate(ctx, aggReq)
+	if err != nil {
+		return nil, err
+	}
+
+	aggregations := map[string]*pb.AggregationResult{}
+	for name, agg := range aggResp.Aggregations {
+		var buckets []*pb.AggregationBucket
+		linq.From(agg.Buckets).Select(func(item interface{}) interface{} {
+			bucket := item.(*storage.AggregationBucket)
+			key, _ := structpb.NewValue(bucket.Key)
+			return &pb.AggregationBucket{
+				Key:   key,
+				Count: bucket.Count,
+			}
+		}).ToSlice(&buckets)
+		aggregations[name] = &pb.AggregationResult{Buckets: buckets}
+	}
+	result := &pb.LogAggregationResponse{
+		Total:        aggResp.Total,
+		Aggregations: aggregations,
+	}
+	return result, nil
+}
+
+func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest, stream pb.LogQueryService_ScanLogsByExpressionServer) error {
+	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
+		return stream.Send(item)
+	})
+}
+
+func (s *logQueryService) tryFillQueryMeta(ctx context.Context, sel *storage.Selector) *storage.Selector {
+	if len(sel.Meta.OrgNames) > 0 {
+		return sel
+	}
+	orgNames := []string{""}
+	if reqOrg := apis.GetHeader(ctx, "org"); len(reqOrg) > 0 {
+		orgNames = append(orgNames, reqOrg)
+	}
+	sel.Meta.OrgNames = orgNames
+	return sel
+}
+
+func (s *logQueryService) toAggregation(req *pb.LogAggregationRequest) (*storage.Aggregation, error) {
+	if req.Query == nil {
+		return nil, fmt.Errorf("query should not be nil")
+	}
+	if len(req.Aggregations) == 0 {
+		return nil, fmt.Errorf("aggregations should not be empty")
+	}
+	agg := &storage.Aggregation{}
+	sel, err := toQuerySelector(req.Query)
+	if err != nil {
+		return nil, err
+	}
+	agg.Selector = sel
+
+	for _, descriptor := range req.Aggregations {
+		aggDesc := &storage.AggregationDescriptor{
+			Name:  descriptor.Name,
+			Field: descriptor.Field,
+		}
+		agg.Aggs = append(agg.Aggs, aggDesc)
+		switch descriptor.Type {
+		case pb.AggregationType_Histogram:
+			var histogramOptions pb.HistogramAggOptions
+			err = descriptor.Options.UnmarshalTo(&histogramOptions)
+			if err != nil {
+				return nil, err
+			}
+			aggDesc.Typ = storage.AggregationHistogram
+			aggDesc.Options = storage.HistogramAggOptions{
+				MinimumInterval: histogramOptions.MinimumInterval,
+				PreferredPoints: histogramOptions.PreferredPoints,
+				FixedInterval:   histogramOptions.FixedInterval,
+			}
+		case pb.AggregationType_Terms:
+			var termsOptions pb.TermsAggOptions
+			err = descriptor.Options.UnmarshalTo(&termsOptions)
+			if err != nil {
+				return nil, err
+			}
+			aggDesc.Typ = storage.AggregationTerms
+			aggDesc.Options = storage.TermsAggOptions{
+				Size:    termsOptions.Size,
+				Missing: termsOptions.Missing.AsInterface(),
+			}
+		}
+	}
+
+	return agg, nil
+}
+
+func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) *storage.Selector, ascendingResult bool, withTotal bool) ([]*pb.LogItem, int64, error) {
+	sel, err := toQuerySelector(req)
+	if err != nil {
+		return nil, 0, err
 	}
 	if fn != nil {
 		sel = fn(sel)
 	}
 	it, err := s.getIterator(ctx, sel, req.GetLive())
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, 0, errors.NewInternalServerError(err)
 	}
 	defer it.Close()
 
-	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()))
+	items, err := toLogItems(ctx, it, req.GetCount() >= 0, getLimit(req.GetCount()), ascendingResult)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, 0, errors.NewInternalServerError(err)
 	}
-	return items, nil
+	if !withTotal {
+		return items, 0, nil
+	}
+	counter, ok := it.(storekit.Counter)
+	if !ok {
+		return items, 0, fmt.Errorf("failed to get total: %T not implement %T", it, counter)
+	}
+	total, err := counter.Total()
+	if err != nil {
+		return items, 0, errors.NewInternalServerError(err)
+	}
+	return items, total, nil
 }
 
 func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
-	if req.GetCount() < 0 {
-		return errors.NewInvalidParameterError("count", "not allowed negative")
-	}
+	//if req.GetCount() < 0 {
+	//	return errors.NewInvalidParameterError("count", "not allowed negative")
+	//}
 	sel, err := toQuerySelector(req)
 	if err != nil {
 		return err
@@ -118,7 +252,13 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 		return errors.NewInternalServerError(err)
 	}
 	defer it.Close()
-	for it.Next() {
+
+	next := it.Next
+	if req.GetCount() < 0 {
+		next = it.Prev
+	}
+
+	for next() {
 		log, ok := it.Value().(*pb.LogItem)
 		if !ok {
 			continue
@@ -135,6 +275,12 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 }
 
 func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
+	if sel.Scheme == "advanced" {
+		if s.storageReader == nil {
+			return storekit.EmptyIterator{}, nil
+		}
+		return s.storageReader.Iterator(ctx, sel)
+	}
 	if sel.Scheme != "container" || !live {
 		if s.storageReader != nil && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
 			return s.storageReader.Iterator(ctx, sel)
@@ -176,17 +322,26 @@ func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selec
 type Request interface {
 	GetStart() int64
 	GetEnd() int64
-	GetOffset() int64
 	GetCount() int64
+	GetLive() bool
+	GetDebug() bool
+}
+
+type ByContainerIdRequest interface {
+	Request
+	GetOffset() int64
 	GetPattern() string
-
 	GetRequestId() string
-
 	GetId() string
 	GetSource() string
 	GetStream() string
-	GetLive() bool
-	GetDebug() bool
+}
+
+type ByExpressionRequest interface {
+	Request
+	GetQueryExpression() string
+	GetQueryMeta() *pb.QueryMeta
+	GetExtraFilter() *pb.ExtraFilter
 }
 
 const (
@@ -236,55 +391,88 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 	if sel.End < sel.Start {
 		return nil, errors.NewInvalidParameterError("(start,end]", "start must be less than end")
 	} else if sel.End-sel.Start > maxTimeRange {
-		return nil, errors.NewInvalidParameterError("(start,end]", "time range is too large")
+		if queryMeta, ok := req.(ByExpressionRequest); !ok || queryMeta.GetQueryMeta() != nil && !queryMeta.GetQueryMeta().GetIgnoreMaxTimeRangeLimit() {
+			return nil, errors.NewInvalidParameterError("(start,end]", "time range is too large")
+		}
 	}
 
-	if len(req.GetRequestId()) > 0 {
-		sel.Scheme = "trace"
-		sel.Filters = append(sel.Filters, &storage.Filter{
-			Key:   "tags.request_id",
-			Op:    storage.EQ,
-			Value: req.GetRequestId(),
-		})
-	} else if len(req.GetId()) > 0 {
-		sel.Scheme = req.GetSource()
-		sel.Filters = append(sel.Filters, &storage.Filter{
-			Key:   "id",
-			Op:    storage.EQ,
-			Value: req.GetId(),
-		})
-		if len(req.GetSource()) > 0 {
+	if byContainerIdRequest, ok := req.(ByContainerIdRequest); ok {
+		if len(byContainerIdRequest.GetRequestId()) > 0 {
+			sel.Scheme = "trace"
 			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "source",
+				Key:   "tags.request_id",
 				Op:    storage.EQ,
-				Value: req.GetSource(),
+				Value: byContainerIdRequest.GetRequestId(),
+			})
+		} else if len(byContainerIdRequest.GetId()) > 0 {
+			sel.Scheme = byContainerIdRequest.GetSource()
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "id",
+				Op:    storage.EQ,
+				Value: byContainerIdRequest.GetId(),
+			})
+			if len(byContainerIdRequest.GetSource()) > 0 {
+				sel.Filters = append(sel.Filters, &storage.Filter{
+					Key:   "source",
+					Op:    storage.EQ,
+					Value: byContainerIdRequest.GetSource(),
+				})
+			}
+			if len(byContainerIdRequest.GetStream()) > 0 {
+				sel.Filters = append(sel.Filters, &storage.Filter{
+					Key:   "stream",
+					Op:    storage.EQ,
+					Value: byContainerIdRequest.GetStream(),
+				})
+			}
+		} else {
+			return nil, errors.NewMissingParameterError("id")
+		}
+		if len(byContainerIdRequest.GetPattern()) > 0 {
+			_, err := regexp.Compile(byContainerIdRequest.GetPattern())
+			if err != nil {
+				return nil, errors.NewInvalidParameterError("pattern", err.Error())
+			}
+			sel.Filters = append(sel.Filters, &storage.Filter{
+				Key:   "content",
+				Op:    storage.REGEXP,
+				Value: byContainerIdRequest.GetPattern(),
 			})
 		}
-		if len(req.GetStream()) > 0 {
+	}
+
+	if byExpressionRequest, ok := req.(ByExpressionRequest); ok {
+		sel.Scheme = "advanced"
+		if expr := byExpressionRequest.GetQueryExpression(); len(expr) > 0 {
 			sel.Filters = append(sel.Filters, &storage.Filter{
-				Key:   "stream",
-				Op:    storage.EQ,
-				Value: req.GetStream(),
+				Key:   "_",
+				Op:    storage.EXPRESSION,
+				Value: expr,
 			})
 		}
-	} else {
-		return nil, errors.NewMissingParameterError("id")
-	}
-	if len(req.GetPattern()) > 0 {
-		_, err := regexp.Compile(req.GetPattern())
-		if err != nil {
-			return nil, errors.NewInvalidParameterError("pattern", err.Error())
+		if extraFilter := byExpressionRequest.GetExtraFilter(); extraFilter != nil {
+			if after := byExpressionRequest.GetExtraFilter().GetAfter(); after != nil {
+				sel.Skip.AfterId = &storage.UniqueId{Id: after.Id, Timestamp: after.UnixNano, Offset: after.Offset}
+			}
+			if offset := byExpressionRequest.GetExtraFilter().GetPositionOffset(); offset > 0 {
+				sel.Skip.FromOffset = int(offset)
+			}
 		}
-		sel.Filters = append(sel.Filters, &storage.Filter{
-			Key:   "content",
-			Op:    storage.REGEXP,
-			Value: req.GetPattern(),
-		})
+		if meta := byExpressionRequest.GetQueryMeta(); meta != nil {
+			sel.Meta = storage.QueryMeta{
+				OrgNames:              []string{meta.GetOrgName()},
+				MspEnvIds:             meta.GetMspEnvIds(),
+				Highlight:             meta.GetHighlight(),
+				PreferredBufferSize:   int(meta.GetPreferredBufferSize()),
+				PreferredIterateStyle: storage.IterateStyle(meta.PreferredIterateStyle),
+			}
+		}
 	}
+
 	return sel, nil
 }
 
-func toLogItems(ctx context.Context, it storekit.Iterator, forward bool, limit int) (list []*pb.LogItem, err error) {
+func toLogItems(ctx context.Context, it storekit.Iterator, forward bool, limit int, ascendingResult bool) (list []*pb.LogItem, err error) {
 	if limit <= 0 {
 		return nil, nil
 	}
@@ -310,7 +498,9 @@ func toLogItems(ctx context.Context, it storekit.Iterator, forward bool, limit i
 				break
 			}
 		}
-		sort.Sort(storage.Logs(list))
+		if ascendingResult {
+			sort.Sort(storage.Logs(list))
+		}
 	}
 	return list, it.Error()
 }

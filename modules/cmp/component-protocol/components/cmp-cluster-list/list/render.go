@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -70,7 +69,10 @@ func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	l.SDK = cputil.SDK(ctx)
 	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	l.Bdl = bdl
-	l.GetComponentValue()
+	err = l.GetComponentValue()
+	if err != nil {
+		return err
+	}
 	l.Ctx = ctx
 	switch event.Operation {
 	case cptype.DefaultRenderingKey, common.CMPClusterList, cptype.InitializeOperation:
@@ -92,22 +94,22 @@ func (l *List) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	return nil
 }
 
-func (l *List) GetMetrics(ctx context.Context, clusterName, orgName string) map[string]*metrics.MetricsData {
-	// Get all nodes by cluster name
-	req := &metrics.MetricsRequest{
-		UserId:           l.SDK.Identity.UserID,
-		OrgId:            l.SDK.Identity.OrgID,
-		Cluster:          clusterName,
-		OrganizationName: orgName,
-		Kind:             metrics.Node,
-	}
-	metricsData, err := metricsServer.NodeAllMetrics(ctx, req)
-	if err != nil {
-		logrus.Error(err)
-		return nil
-	}
-	return metricsData
-}
+//func (l *List) GetMetrics(ctx context.Context, clusterName, orgName string) map[string]*metrics.MetricsData {
+//	// Get all nodes by cluster name
+//	req := &metrics.MetricsRequest{
+//		UserId:           l.SDK.Identity.UserID,
+//		OrgId:            l.SDK.Identity.OrgID,
+//		Cluster:          clusterName,
+//		OrganizationName: orgName,
+//		Kind:             metrics.Node,
+//	}
+//	metricsData, err := metricsServer.NodeAllMetrics(ctx, req)
+//	if err != nil {
+//		logrus.Error(err)
+//		return nil
+//	}
+//	return metricsData
+//}
 
 func (l *List) GetNodes(clusterName string) ([]data.Object, error) {
 	var nodes []data.Object
@@ -264,12 +266,8 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	org, err := l.Bdl.GetOrg(orgId)
-	if err != nil {
-		return nil, err
-	}
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(2)
 	res := make(map[string]*ResData)
 	clusterNames := make([]string, 0)
 	// cluster -> key -> value
@@ -277,7 +275,9 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	for i := 0; i < len(clusters); i++ {
 		res[clusters[i].Name] = &ResData{}
 		clusterNames = append(clusterNames, clusters[i].Name)
-		clusterInfos[clusters[i].Name] = &ClusterInfoDetail{}
+		ci := &ClusterInfoDetail{}
+		ci.Name = clusters[i].Name
+		clusterInfos[clusters[i].Name] = ci
 	}
 	go func() {
 		logrus.Infof("get nodes start")
@@ -286,43 +286,28 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 			if err != nil {
 				logrus.Error(err)
 			}
+			allocatedRes, err := cmp.GetNodesAllocatedRes(ctx, steveServer, false, clusters[i].Name, l.SDK.Identity.UserID, l.SDK.Identity.OrgID, nodes)
+			if err != nil {
+				return
+			}
 			for _, m := range nodes {
-				if m.String("metadata", "labels", "type") != "virtual-kubelet" {
-					cpuCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "cpu"))
-					memoryCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "memory"))
-					diskCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "ephemeral-storage"))
-					res[clusters[i].Name].CpuTotal += float64(cpuCapacity.Value())
-					res[clusters[i].Name].MemoryTotal += float64(memoryCapacity.Value())
-					res[clusters[i].Name].DiskTotal += float64(diskCapacity.Value())
+				if cmp.IsVirtualNode(m) {
+					continue
 				}
+				cpuCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "cpu"))
+				memoryCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "memory"))
+				podCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "pods"))
+				res[clusters[i].Name].CpuTotal += float64(cpuCapacity.Value())
+				res[clusters[i].Name].MemoryTotal += float64(memoryCapacity.Value())
+				res[clusters[i].Name].PodTotal += float64(podCapacity.Value())
+				id := m.String("metadata", "name")
+				res[clusters[i].Name].CpuUsed += float64(allocatedRes[id].CPU) / 1000
+				res[clusters[i].Name].MemoryUsed += float64(allocatedRes[id].Mem)
+				res[clusters[i].Name].PodUsed += float64(allocatedRes[id].PodNum)
 			}
 			clusterInfos[clusters[i].Name].NodeCnt = len(nodes)
 		}
 		logrus.Infof("get nodes from steve finished")
-		wg.Done()
-	}()
-	go func() {
-		for i := 0; i < len(clusters); i++ {
-			cpuUsed, memoryUsed, diskUsed := 0.0, 0.0, 0.0
-			if metricsData := l.GetMetrics(l.Ctx, clusters[i].Name, org.Name); metricsData != nil {
-				for s, m := range metricsData {
-					if strings.Contains(s, metrics.Memory) {
-						memoryUsed += m.Used
-					}
-					if strings.Contains(s, metrics.Cpu) {
-						cpuUsed += m.Used
-					}
-					if strings.Contains(s, metrics.Disk) {
-						diskUsed += m.Used
-					}
-				}
-				res[clusters[i].Name].MemoryUsed = memoryUsed
-				res[clusters[i].Name].CpuUsed = cpuUsed
-				res[clusters[i].Name].DiskUsed = diskUsed
-				logrus.Infof("get data from cluster %s, cpu :%f, memory:%f,disk :%f", clusters[i].Name, cpuUsed, memoryUsed, diskUsed)
-			}
-			logrus.Infof("get data from metrics finished")
-		}
 		wg.Done()
 	}()
 	go func() {
@@ -336,6 +321,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 				clusterInfos[c.Name].ClusterType = ci.Get(apistructs.DICE_CLUSTER_TYPE)
 				clusterInfos[c.Name].Management = common.ParseManageType(c.ManageConfig)
 				clusterInfos[c.Name].CreateTime = c.CreatedAt.Format("2006-01-02")
+				clusterInfos[c.Name].UpdateTime = c.UpdatedAt.Format("2006-01-02")
 				kc, err := k8sclient.NewWithTimeOut(c.Name, 2*time.Second)
 				if err != nil {
 					logrus.Error(err)
@@ -400,6 +386,17 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 	logrus.Infof("cluster get data finished")
 	return d, nil
 }
+func (l *List) GetVersion(clusterName string) (string, error) {
+	client, err := k8sclient.New(clusterName)
+	if err != nil {
+		return "", err
+	}
+	info, err := client.ClientSet.ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	return info.GitVersion, nil
+}
 
 func (l *List) GetBgImage(c apistructs.ClusterInfo) string {
 	switch c.Type {
@@ -421,19 +418,15 @@ func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
 	ei := make([]ExtraInfos, 0)
 	ei = append(ei,
 		ExtraInfos{
-			Icon:    "type",
-			Text:    l.WithType(clusterInfo),
-			Tooltip: l.SDK.I18n("cluster type"),
-		},
-		ExtraInfos{
 			Icon:    "management",
 			Text:    l.WithManage(clusterInfo),
 			Tooltip: l.SDK.I18n("manage type"),
 		},
+
 		ExtraInfos{
-			Icon:    "create-time",
-			Text:    l.WithCreateTime(clusterInfo),
-			Tooltip: l.SDK.I18n("create time"),
+			Icon:    "machine",
+			Text:    l.WithMachine(clusterInfo),
+			Tooltip: l.SDK.I18n("machine count"),
 		},
 		ExtraInfos{
 			Icon:    "version",
@@ -441,9 +434,14 @@ func (l *List) GetExtraInfos(clusterInfo *ClusterInfoDetail) []ExtraInfos {
 			Tooltip: l.SDK.I18n("cluster version"),
 		},
 		ExtraInfos{
-			Icon:    "machine",
-			Text:    l.WithMachine(clusterInfo),
-			Tooltip: l.SDK.I18n("machine count"),
+			Icon:    "time",
+			Text:    l.WithUpdateTime(clusterInfo),
+			Tooltip: l.SDK.I18n("update time"),
+		},
+		ExtraInfos{
+			Icon:    "type",
+			Text:    l.WithType(clusterInfo),
+			Tooltip: l.SDK.I18n("cluster type"),
 		},
 	)
 	return ei
@@ -456,11 +454,11 @@ func (l *List) WithVersion(clusterInfo *ClusterInfoDetail) string {
 		return clusterInfo.Version
 	}
 }
-func (l *List) WithCreateTime(clusterInfo *ClusterInfoDetail) string {
-	if clusterInfo.CreateTime == "" {
+func (l *List) WithUpdateTime(clusterInfo *ClusterInfoDetail) string {
+	if clusterInfo.UpdateTime == "" {
 		return "-"
 	} else {
-		return clusterInfo.CreateTime
+		return clusterInfo.UpdateTime
 	}
 }
 func (l *List) WithManage(clusterInfo *ClusterInfoDetail) string {
@@ -474,6 +472,13 @@ func (l *List) WithType(clusterInfo *ClusterInfoDetail) string {
 	if clusterInfo.ClusterType == "" {
 		return "-"
 	} else {
+		if clusterInfo.ClusterType == "kubernetes" {
+			vs, err := l.GetVersion(clusterInfo.Name)
+			if err != nil {
+				return clusterInfo.ClusterType
+			}
+			return clusterInfo.ClusterType + "(" + vs + ")"
+		}
 		return clusterInfo.ClusterType
 	}
 }
@@ -486,15 +491,15 @@ func (l *List) GetExtraContent(res *ResData) ExtraContent {
 		Type: "PieChart",
 		//RowNum: 3,
 	}
-	cpuRate, memRate, diskRate := 0.0, 0.0, 0.0
+	cpuRate, memRate, podRate := 0.0, 0.0, 0.0
 	if res.CpuTotal != 0 {
 		cpuRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.CpuUsed/res.CpuTotal*100), 64)
 	}
 	if res.MemoryTotal != 0 {
 		memRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.MemoryUsed/res.MemoryTotal*100), 64)
 	}
-	if res.DiskTotal != 0 {
-		diskRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.DiskUsed/res.DiskTotal*100), 64)
+	if res.PodTotal != 0 {
+		podRate, _ = strconv.ParseFloat(fmt.Sprintf("%.1f", res.PodUsed/res.PodTotal*100), 64)
 	}
 	ec.ExtraData = []ExtraData{
 		{
@@ -509,7 +514,7 @@ func (l *List) GetExtraContent(res *ResData) ExtraContent {
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: fmt.Sprintf("%.1f %s", res.CpuUsed, l.SDK.I18n("Core")),
-					Sub:  l.SDK.I18n("Used"),
+					Sub:  l.SDK.I18n("Request"),
 				}, {
 					Main: fmt.Sprintf("%.1f %s", res.CpuTotal, l.SDK.I18n("Core")),
 					Sub:  l.SDK.I18n("Limit"),
@@ -528,7 +533,7 @@ func (l *List) GetExtraContent(res *ResData) ExtraContent {
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
 					Main: common.RescaleBinary(res.MemoryUsed),
-					Sub:  l.SDK.I18n("Used"),
+					Sub:  l.SDK.I18n("Request"),
 				}, {
 					Main: common.RescaleBinary(res.MemoryTotal),
 					Sub:  l.SDK.I18n("Limit"),
@@ -536,20 +541,20 @@ func (l *List) GetExtraContent(res *ResData) ExtraContent {
 			},
 		},
 		{
-			Name:        l.SDK.I18n("Disk Rate"),
-			Value:       diskRate,
+			Name:        l.SDK.I18n("Pod Rate"),
+			Value:       podRate,
 			Total:       100,
 			Color:       "green",
-			CenterLabel: l.SDK.I18n("Disk"),
+			CenterLabel: l.SDK.I18n("Pod"),
 			Info: []ExtraDataItem{
 				{
-					Main: fmt.Sprintf("%.1f%%", diskRate),
+					Main: fmt.Sprintf("%.1f%%", podRate),
 					Sub:  l.SDK.I18n("Rate"),
 				}, {
-					Main: common.RescaleBinary(res.DiskUsed),
-					Sub:  l.SDK.I18n("Used"),
+					Main: fmt.Sprintf("%d", int64(res.PodUsed)),
+					Sub:  l.SDK.I18n("Request"),
 				}, {
-					Main: common.RescaleBinary(res.DiskTotal),
+					Main: fmt.Sprintf("%d", int64(res.PodTotal)),
 					Sub:  l.SDK.I18n("Limit"),
 				},
 			},

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -31,6 +32,7 @@ import (
 
 const (
 	CPU     = "cpu"
+	Mem     = "mem"
 	Memory  = "memory"
 	Owner   = "owner"
 	Project = "project"
@@ -100,7 +102,11 @@ func (r *Resource) GetPie(ctx context.Context, ordId, userId string, request *ap
 	if err != nil {
 		return
 	}
-	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
+	var filter = make(map[string]struct{})
+	for _, cluster := range request.ClusterName {
+		filter[cluster] = struct{}{}
+	}
+	request.ClusterName = r.FilterCluster(clusters, filter)
 	if len(request.ClusterName) == 0 {
 		return nil, errNoClusterFound
 	}
@@ -329,6 +335,10 @@ func (r *Resource) PieSort(series []SerieData) {
 func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
 	logrus.Debug("func GetClusterTrend start")
 	defer logrus.Debug("func GetClusterTrend finished")
+	var (
+		start, _ = request.Query.GetStart()
+		end, _   = request.Query.GetEnd()
+	)
 	langCodes := ctx.Value(Lang).(i18n.LanguageCodes)
 	td = &Histogram{
 		Name: r.I18n(langCodes, "cluster trend"),
@@ -350,23 +360,23 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 	if err != nil {
 		return nil, err
 	}
-	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
-	if len(request.ClusterName) == 0 {
+	request.Query.ClustersNames = r.FilterCluster(clusters, request.Query.GetClustersNames())
+	if len(request.Query.ClustersNames) == 0 {
 		return nil, errNoClusterFound
 	}
 
-	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
-	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
+	startTime := time.Unix(int64(start)/1e3, int64(start)%1e3*1e6)
+	endTime := time.Unix(int64(end)/1e3, int64(end)%1e3*1e6)
 	db := r.DB.Table("cmp_cluster_resource_daily")
 	db = db.Where(" updated_at > ? and updated_at < ? ", startTime.Format("2006-01-02 15:01:05"), endTime.Format("2006-01-02 15:01:05"))
-	db = db.Where("cluster_name in (?)", request.ClusterName)
+	db = db.Where("cluster_name in (?)", request.Query.ClustersNames)
 	logrus.Debug("cluster trend start get daily quota from db")
 	if err = db.Scan(&pd).Error; err != nil {
 		return
 	}
 	logrus.Debug("cluster trend get daily quota finished")
 	tRes := make(map[int]apistructs.ClusterResourceDailyModel)
-	switch request.Interval {
+	switch request.Query.Interval {
 	case Week:
 		for _, model := range pd {
 			_, wk := model.CreatedAt.ISOWeek()
@@ -420,13 +430,13 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 		return pd[i].ID < pd[j].ID
 	})
 
-	switch request.ResourceType {
-	case Memory:
+	switch request.Query.ResourceType {
+	case Memory, Mem:
 		td.YAxis.Name = r.I18n(langCodes, "memory") + " (GB)"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
-			switch request.Interval {
+			switch request.Query.Interval {
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
@@ -441,7 +451,7 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
-			switch request.Interval {
+			switch request.Query.GetInterval() {
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
@@ -455,13 +465,18 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 	return
 }
 
-func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
-	logrus.Debug("func GetProjectTrend start")
-	defer logrus.Debug("func GetProjectTrend finished")
-	langCodes := ctx.Value(Lang).(i18n.LanguageCodes)
-	td = &Histogram{
-		Name: r.I18n(langCodes, "project trend"),
-	}
+func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.TrendRequest) (*Histogram, error) {
+	var (
+		//l          = logrus.WithField("func", "*Resource.GetProjectTrend")
+		langCodes = ctx.Value(Lang).(i18n.LanguageCodes)
+		td        = new(Histogram)
+		orgID, _  = request.GetOrgID()
+		//userID, _  = request.GetUserID()
+		start, _   = request.Query.GetStart()
+		end, _     = request.Query.GetEnd()
+		scopeID, _ = request.Query.GetScopeID()
+	)
+	td.Name = r.I18n(langCodes, "project trend")
 	td.XAxis = XAxis{
 		Type: "category",
 	}
@@ -472,37 +487,37 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 	td.Series[0].Name = r.I18n(langCodes, "request")
 	td.Series[1].Name = r.I18n(langCodes, "quota")
 	var (
-		pd       []apistructs.ProjectResourceDailyModel
+		pd       []*apistructs.ProjectResourceDailyModel
 		clusters []apistructs.ClusterInfo
 	)
-	orgID, err := strconv.ParseUint(ordId, 10, 64)
+	clusters, err := r.Bdl.ListClusters("", orgID)
 	if err != nil {
 		return nil, err
 	}
-	clusters, err = r.Bdl.ListClusters("", orgID)
-	if err != nil {
-		return nil, err
-	}
-	request.ClusterName = r.FilterCluster(clusters, request.ClusterName)
-	if len(request.ClusterName) == 0 {
+	request.Query.ClustersNames = r.FilterCluster(clusters, request.Query.GetClustersNames())
+	if len(request.Query.ClustersNames) == 0 {
 		return nil, errNoClusterFound
 	}
-	startTime := time.Unix(request.Start/1e3, request.Start%1e3*1e6)
-	endTime := time.Unix(request.End/1e3, request.End%1e3*1e6)
-	db := r.DB.Table("cmp_project_resource_daily")
-	db = db.Where(" updated_at > ? and updated_at < ? ", startTime.Format("2006-01-02 15:01:05"), endTime.Format("2006-01-02 15:01:05"))
-	db = db.Where("cluster_name in (?)", request.ClusterName)
-	if len(request.ProjectId) != 0 {
-		db = db.Where("project_id in (?)", request.ProjectId)
+	startTime := time.Unix(int64(start)/1e3, int64(start)%1e3*1e6)
+	endTime := time.Unix(int64(end)/1e3, int64(end)%1e3*1e6)
+	var projectDailies []*apistructs.ProjectResourceDailyModel
+	db := r.DB.Where(" updated_at >= ? and created_at <= ? ",
+		startTime.Format("2006-01-02 15:01:05"), endTime.Format("2006-01-02 15:01:05")).
+		Where("cluster_name in (?)", request.Query.ClustersNames)
+	switch strings.ToLower(request.Query.GetScope()) {
+	case "owner":
+		db = db.Where(map[string]interface{}{"owner_user_id": scopeID})
+	default:
+		db = db.Where(map[string]interface{}{"project_id": scopeID})
 	}
-	if err = db.Scan(&pd).Error; err != nil {
-		return
+	if err = db.Debug().Find(&projectDailies).Error; err != nil {
+		return td, err
 	}
 
-	tRes := make(map[int]apistructs.ProjectResourceDailyModel)
-	switch request.Interval {
+	tRes := make(map[int]*apistructs.ProjectResourceDailyModel)
+	switch request.Query.GetInterval() {
 	case Week:
-		for _, model := range pd {
+		for _, model := range projectDailies {
 			_, wk := model.CreatedAt.ISOWeek()
 			if v, ok := tRes[wk]; ok {
 				v.CPURequest += model.CPURequest
@@ -516,7 +531,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 			}
 		}
 	case Month:
-		for _, model := range pd {
+		for _, model := range projectDailies {
 			m := int(model.CreatedAt.Month())
 			if v, ok := tRes[m]; ok {
 				v.CPURequest += model.CPURequest
@@ -531,36 +546,39 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 		}
 	default:
 		// Day
-		for _, model := range pd {
-			// assume data not over one year
-			yd := model.CreatedAt.YearDay()
-			if v, ok := tRes[yd]; ok {
-				v.CPURequest += model.CPURequest
-				v.CPUQuota += model.CPUQuota
-				v.MemRequest += model.MemRequest
-				v.MemQuota += model.MemQuota
-				v.ID = uint64(model.CreatedAt.YearDay())
-				tRes[yd] = v
-			} else {
-				tRes[yd] = model
+		var records = make(map[string]apistructs.ProjectResourceDailyModel)
+		for _, model := range projectDailies {
+			day := model.CreatedAt.Format("2006-01-02")
+			var record = records[day]
+			record.CreatedAt = model.CreatedAt
+			record.CPUQuota += model.CPUQuota
+			record.MemQuota += model.CPUQuota
+			record.CPURequest += model.CPURequest
+			record.MemRequest += model.MemRequest
+			records[day] = record
+		}
+		for day := startTime; day.Before(endTime) && day.Before(time.Now()); day = day.Add(time.Hour * 24) {
+			today := day.Format("2006-01-02")
+			record := records[today]
+			if record.CreatedAt.Format("2006-01-02") != today {
+				record.CreatedAt = day
 			}
+			tRes[day.YearDay()] = &record
 		}
 	}
-	pd = make([]apistructs.ProjectResourceDailyModel, 0)
 	for _, model := range tRes {
 		pd = append(pd, model)
 	}
 	sort.Slice(pd, func(i, j int) bool {
 		return pd[i].ID < pd[j].ID
 	})
-	switch request.ResourceType {
-
-	case Memory:
+	switch request.Query.GetResourceType() {
+	case Memory, Mem:
 		td.YAxis.Name = r.I18n(langCodes, "memory") + " (GB)"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
-			switch request.Interval {
+			switch request.Query.GetInterval() {
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
@@ -569,14 +587,13 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 			default:
 				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
 			}
-
 		}
 	default:
 		td.YAxis.Name = r.I18n(langCodes, "cpu") + " (" + r.I18n(langCodes, "core") + ")"
 		for _, quota := range pd {
 			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
 			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
-			switch request.Interval {
+			switch request.Query.GetInterval() {
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
 			case Week:
@@ -587,7 +604,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, ordId, userId string, re
 			}
 		}
 	}
-	return
+	return td, nil
 }
 
 func toCore(mCores float64) float64 {

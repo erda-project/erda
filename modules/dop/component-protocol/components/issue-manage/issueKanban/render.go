@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -99,6 +101,8 @@ func (i ComponentIssueBoard) GetFilterReq() (*IssueFilterRequest, error) {
 	}
 	req.PageSize = defaultPageSize
 	req.PageNo = 1
+	req.OrderBy = "updated_at"
+	req.Asc = false
 	return &req, nil
 }
 
@@ -442,6 +446,8 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 
 	i.sdk = cputil.SDK(ctx)
 	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	i.issueSvc = ctx.Value(types.IssueService).(*issue_svc.Issue)
+	i.issueStateSvc = ctx.Value(types.IssueStateService).(*issuestate.IssueState)
 
 	visable := make(map[string]bool)
 	visable["visible"] = false

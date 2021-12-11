@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueViewGroup"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -77,12 +78,13 @@ type TableColumnTagsRowTag struct {
 }
 
 type State struct {
-	Operations  map[string]interface{} `json:"operations"`
-	PrefixIcon  string                 `json:"prefixIcon"`
-	Value       string                 `json:"value"`
-	RenderType  string                 `json:"renderType"`
-	Disabled    bool                   `json:"disabled"`
-	DisabledTip string                 `json:"disabledTip"`
+	Menus []map[string]interface{} `json:"menus"`
+	// Operations  map[string]interface{} `json:"operations"`
+	// PrefixIcon  string                 `json:"prefixIcon"`
+	Value       string `json:"value"`
+	RenderType  string `json:"renderType"`
+	Disabled    bool   `json:"disabled"`
+	DisabledTip string `json:"disabledTip"`
 }
 
 type Priority struct {
@@ -113,18 +115,42 @@ type Assignee struct {
 }
 type TableItem struct {
 	//Assignee    map[string]string `json:"assignee"`
-	Id          string   `json:"id"`
-	IterationID int64    `json:"iterationID"`
-	Priority    Priority `json:"priority"`
-	Progress    Progress `json:"progress,omitempty"`
-	Severity    Severity `json:"severity,omitempty"`
-	Complexity  string   `json:"complexity,omitempty"`
-	State       State    `json:"state"`
-	Title       Title    `json:"title"`
-	Type        string   `json:"type"`
-	Deadline    Deadline `json:"deadline"`
-	Assignee    Assignee `json:"assignee"`
-	ClosedAt    ClosedAt `json:"closedAt"`
+	Id          string     `json:"id"`
+	IterationID int64      `json:"iterationID"`
+	Priority    Priority   `json:"priority"`
+	Progress    Progress   `json:"progress,omitempty"`
+	Severity    Severity   `json:"severity,omitempty"`
+	Complexity  Complexity `json:"complexity,omitempty"`
+	State       State      `json:"state"`
+	// Title       Title      `json:"title"`
+	Type     string   `json:"type"`
+	Deadline Deadline `json:"deadline"`
+	Assignee Assignee `json:"assignee"`
+	ClosedAt ClosedAt `json:"closedAt"`
+	Name     Name     `json:"name"`
+}
+
+type Name struct {
+	RenderType   string       `json:"renderType"`
+	PrefixIcon   string       `json:"prefixIcon"`
+	Value        string       `json:"value"`
+	ExtraContent ExtraContent `json:"extraContent"`
+}
+
+type ExtraContent struct {
+	RenderType string  `json:"renderType"`
+	Value      []Label `json:"value"`
+}
+
+type Label struct {
+	Color string `json:"color"`
+	Label string `json:"label"`
+}
+
+type Complexity struct {
+	RenderType string `json:"renderType"`
+	PrefixIcon string `json:"prefixIcon"`
+	Value      string `json:"value"`
 }
 
 type ClosedAt struct {
@@ -467,7 +493,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	progressCol := ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeRequirement {
 		progressCol = `{
-            "width": 100,
             "dataIndex": "progress",
             "title": "进度"
         },`
@@ -475,51 +500,46 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	severityCol, closedAtCol := "", ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
-		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "width": 100 },`
-		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "width": 100 }`
+		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": true },`
+		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "hidden": true }`
 	}
 	props := `{
     "columns": [
 		{
 			"dataIndex": "id",
 			"title": "ID",
-			"width": 80
+			"hidden": true
         },
         {
-            "dataIndex": "title",
+            "dataIndex": "name",
             "title": "` + cputil.I18n(ctx, "title") + `"
         },` +
 		progressCol +
 		severityCol +
 		`{
-            "width": 90,
             "dataIndex": "complexity",
-            "title": "` + cputil.I18n(ctx, "complexity") + `"
+            "title": "` + cputil.I18n(ctx, "complexity") + `",
+			"hidden": true
         },
         {
-            "width": 90,
             "dataIndex": "priority",
             "title": "` + cputil.I18n(ctx, "priority") + `"
         },
         {
-            "width": 100,
             "dataIndex": "state",
             "title": "` + cputil.I18n(ctx, "state") + `"
         },
         {
-            "width": 110,
             "dataIndex": "assignee",
             "title": "` + cputil.I18n(ctx, "assignee") + `"
         },
         {
-            "width": 100,
             "dataIndex": "deadline",
             "title": "` + cputil.I18n(ctx, "deadline") + `"
         }` +
 		closedAtCol +
 		`],
     "rowKey": "id",
-	"scroll": {"x": 1150},
 	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
 	var propsI interface{}
@@ -558,7 +578,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 			break
 		}
 	}
-	titleColumn := ca.getTitleColumn(data)
+	nameColumn := ca.getNameColumn(data)
 	progress := Progress{
 		RenderType: "progress",
 		Value:      "",
@@ -603,7 +623,7 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 			true: "无权限",
 		}[ca.isGuest],
 	}
-	stateOperations := map[string]interface{}{}
+	stateMenus := make([]map[string]interface{}, 0, len(data.IssueButton))
 	stateAllDisable := true
 	for i, s := range data.IssueButton {
 		if s.Permission {
@@ -612,22 +632,26 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		if ca.isGuest {
 			stateAllDisable = true
 		}
-		if s.Permission {
-			stateOperations["changeStateTo"+strconv.Itoa(i)+s.StateName] = map[string]interface{}{
-				"meta": map[string]string{
-					"state": strconv.FormatInt(s.StateID, 10),
-					"id":    strconv.FormatInt(data.ID, 10),
-				},
-				"prefixIcon": stateIcon[string(s.StateBelong)],
-				"text":       s.StateName,
-				"reload":     true,
-				"key":        "changeStateTo" + strconv.Itoa(i) + s.StateName,
-				"disabled":   !s.Permission,
-				"disabledTip": map[bool]string{
-					false: "无法转移",
-				}[s.Permission],
-			}
+		menu := map[string]interface{}{
+			"meta": map[string]string{
+				"state": strconv.FormatInt(s.StateID, 10),
+				"id":    strconv.FormatInt(data.ID, 10),
+			},
+			"id": s.StateName,
+			// "prefixIcon": stateIcon[string(s.StateBelong)],
+			"status":   common.GetUIIssueState(s.StateBelong),
+			"text":     s.StateName,
+			"reload":   true,
+			"key":      "changeStateTo" + strconv.Itoa(i) + s.StateName,
+			"disabled": !s.Permission,
+			"disabledTip": map[bool]string{
+				false: "无法转移",
+			}[s.Permission],
 		}
+		if !s.Permission {
+			menu["hidden"] = true
+		}
+		stateMenus = append(stateMenus, menu)
 	}
 	AssigneeMapOperations := map[string]interface{}{}
 	AssigneeMapOperations["onChange"] = map[string]interface{}{
@@ -673,15 +697,16 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		closedAt.Value = data.FinishTime.Format(time.RFC3339)
 	}
 	state := State{
-		Operations: stateOperations,
-		RenderType: "operationsDropdownMenu",
+		// Operations: stateOperations,
+		RenderType: "dropdownMenu",
+		Menus:      stateMenus,
 		Disabled:   stateAllDisable,
 		DisabledTip: map[bool]string{
 			true: "无权限",
 		}[stateAllDisable],
 	}
 	if issuestate != nil {
-		state.PrefixIcon = stateIcon[string(issuestate.StateBelong)]
+		// state.PrefixIcon = stateIcon[string(issuestate.StateBelong)]
 		state.Value = issuestate.StateName
 	}
 	return &TableItem{
@@ -691,7 +716,11 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		Type:        string(data.Type),
 		Progress:    progress,
 		Severity:    severity,
-		Complexity:  cputil.I18n(ctx, string(data.Complexity)),
+		Complexity: Complexity{
+			RenderType: "textWithIcon",
+			PrefixIcon: "ISSUE_ICON.complexity." + string(data.Complexity),
+			Value:      cputil.I18n(ctx, string(data.Complexity)),
+		},
 		Priority: Priority{
 			Value:      cputil.I18n(ctx, strings.ToLower(string(data.Priority))),
 			RenderType: "operationsDropdownMenu",
@@ -752,38 +781,28 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 				true: "无权限",
 			}[ca.isGuest],
 		},
-		Title:    titleColumn,
+		Name:     nameColumn,
 		Deadline: deadline,
 		ClosedAt: closedAt,
 	}
 }
 
-func (ca *ComponentAction) getTitleColumn(issue *apistructs.Issue) Title {
-	var tags []TableColumnTagsRowTag
+func (ca *ComponentAction) getNameColumn(issue *apistructs.Issue) Name {
+	var tags []Label
 	for _, label := range issue.Labels {
 		for _, labelDef := range ca.labels {
 			if label == labelDef.Name {
-				tags = append(tags, TableColumnTagsRowTag{Color: labelDef.Color, Label: labelDef.Name})
+				tags = append(tags, Label{Color: labelDef.Color, Label: labelDef.Name})
 			}
 		}
 	}
-	return Title{
-		RenderType: "multiple",
-		Renders: [][]interface{}{
-			{
-				TableColumnTextWithIcon{
-					RenderType: "textWithIcon",
-					Value:      issue.Title,
-					PrefixIcon: getPrefixIcon(string(issue.Type)),
-				},
-			},
-			{
-				TableColumnTagsRow{
-					RenderType: "tagsRow",
-					Value:      tags,
-					ShowCount:  5,
-				},
-			},
+	return Name{
+		RenderType: "doubleRowWithIcon",
+		PrefixIcon: getPrefixIcon(string(issue.Type)),
+		Value:      issue.Title,
+		ExtraContent: ExtraContent{
+			RenderType: "tags",
+			Value:      tags,
 		},
 	}
 }

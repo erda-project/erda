@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.orchestrator.runtime-client", &servicehub.Spec{
 		Services: []string{
 			"erda.orchestrator.runtime.RuntimeService",
+			"erda.orchestrator.runtime.RuntimeService.client",
 			"erda.orchestrator.runtime-client",
 		},
 		Types: []reflect.Type{

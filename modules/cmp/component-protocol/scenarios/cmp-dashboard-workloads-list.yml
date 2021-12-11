@@ -8,6 +8,7 @@ hierarchy:
       - charts
       - table
       - addWorkloadDrawer
+      - yamlDrawer
     workloadHead:
       - addWorkloadButton
     charts:
@@ -23,6 +24,8 @@ hierarchy:
     table:
       slot: filter
       table: workloadTable
+    yamlDrawer:
+      content: yamlFileEditor
 
 components:
   page:
@@ -53,6 +56,10 @@ components:
     type: Button
   table:
     type: ComposeTable
+  yamlDrawer:
+    type: Drawer
+  yamlFileEditor:
+    type: FileEditor
 
 rendering:
   __DefaultRendering__:
@@ -81,7 +88,14 @@ rendering:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
     - name: addWorkloadButton
-  workloadTable: []
+  workloadTable:
+    - name: yamlDrawer
+    - name: yamlFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ workloadTable.clusterName }}"
+    - name: workloadTotal
+    - name: workloadChart
   filter:
     - name: workloadTable
       state:
@@ -136,5 +150,10 @@ rendering:
       state:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
+  yamlFileEditor:
+    - name: yamlDrawer
+    - name: workloadTable
+    - name: workloadTotal
+    - name: workloadChart
 
 

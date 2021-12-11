@@ -27,6 +27,7 @@ import (
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
@@ -109,9 +110,6 @@ func (d *MailSubscriber) IsSSL() bool {
 
 func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *types.Message) []error {
 	errs := []error{}
-	if d.host == "" {
-		return errs
-	}
 	var mails []string
 	var mailData MailData
 	err := json.Unmarshal([]byte(dest), &mails)
@@ -151,17 +149,34 @@ func (d *MailSubscriber) sendToMail(mails []string, mailData *MailData) error {
 	smtpPort := d.port
 	isSSL := d.IsSSL()
 	var err error
-	org, err := d.bundle.GetOrg(mailData.OrgID)
+	notifyChannel, err := d.bundle.GetEnabledNotifyChannelByType(mailData.OrgID, apistructs.NOTIFY_CHANNEL_TYPE_EMAIL)
 	if err != nil {
-		logrus.Errorf("failed to get org info err:%s", err)
+		return fmt.Errorf("no enabled email channel, orgID: %d, err: %v", mailData.OrgID, err)
 	}
-	if err == nil && org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
-		orgConfig := org.Config
-		smtpHost = orgConfig.SMTPHost
-		smtpUser = orgConfig.SMTPUser
-		smtpPassword = orgConfig.SMTPPassword
-		smtpPort = strconv.FormatInt(orgConfig.SMTPPort, 10)
-		isSSL = orgConfig.SMTPIsSSL
+
+	if notifyChannel.Config != nil {
+		smtpUser = notifyChannel.Config.SMTPUser
+		smtpPassword = notifyChannel.Config.SMTPPassword
+		smtpHost = notifyChannel.Config.SMTPHost
+		smtpPort = strconv.Itoa(int(notifyChannel.Config.SMTPPort))
+		isSSL = notifyChannel.Config.SMTPIsSSL
+	} else {
+		org, err := d.bundle.GetOrg(mailData.OrgID)
+		if err != nil {
+			logrus.Errorf("failed to get org info err:%s", err)
+		}
+		if org.Config.SMTPUser != "" && org.Config.SMTPPassword != "" {
+			orgConfig := org.Config
+			smtpHost = orgConfig.SMTPHost
+			smtpUser = orgConfig.SMTPUser
+			smtpPassword = orgConfig.SMTPPassword
+			smtpPort = strconv.FormatInt(orgConfig.SMTPPort, 10)
+			isSSL = orgConfig.SMTPIsSSL
+		}
+	}
+
+	if smtpHost == "" {
+		return fmt.Errorf("send email host is null")
 	}
 
 	params := mailData.Params

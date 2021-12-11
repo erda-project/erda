@@ -67,14 +67,16 @@ func (ing IngressHelper) NewIngress(material union_interface.IngressMaterial) in
 		}
 	}
 	for _, route := range material.Routes {
+		pathType := PathTypeImplementationSpecific
 		ingress.Spec.Rules = append(ingress.Spec.Rules, IngressRule{
 			Host: route.Domain,
 			IngressRuleValue: IngressRuleValue{
 				HTTP: &HTTPIngressRuleValue{
 					Paths: []HTTPIngressPath{
 						{
-							Path:    route.Path,
-							Backend: ingressBackend,
+							Path:     route.Path,
+							PathType: &pathType,
+							Backend:  ingressBackend,
 						},
 					},
 				},

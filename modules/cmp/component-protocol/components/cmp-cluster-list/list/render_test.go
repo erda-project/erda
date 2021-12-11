@@ -51,8 +51,8 @@ func TestList_GetExtraContent(t *testing.T) {
 				CpuTotal:    2,
 				MemoryUsed:  3,
 				MemoryTotal: 4,
-				DiskUsed:    9,
-				DiskTotal:   10,
+				PodUsed:     9,
+				PodTotal:    10,
 			}},
 			want: ExtraContent{
 				Type: "PieChart",
@@ -69,7 +69,7 @@ func TestList_GetExtraContent(t *testing.T) {
 								Sub:  "Rate",
 							}, {
 								Main: "1.0 Core",
-								Sub:  "Used",
+								Sub:  "Request",
 							}, {
 								Main: "2.0 Core",
 								Sub:  "Limit",
@@ -88,7 +88,7 @@ func TestList_GetExtraContent(t *testing.T) {
 								Sub:  "Rate",
 							}, {
 								Main: "3.0 B",
-								Sub:  "Used",
+								Sub:  "Request",
 							}, {
 								Main: "4.0 B",
 								Sub:  "Limit",
@@ -96,20 +96,20 @@ func TestList_GetExtraContent(t *testing.T) {
 						},
 					},
 					{
-						Name:        "Disk Rate",
+						Name:        "Pod Rate",
 						Value:       90.0,
 						Total:       100,
 						Color:       "green",
-						CenterLabel: "Disk",
+						CenterLabel: "Pod",
 						Info: []ExtraDataItem{
 							{
 								Main: "90.0%",
 								Sub:  "Rate",
 							}, {
-								Main: "9.0 B",
-								Sub:  "Used",
+								Main: "9",
+								Sub:  "Request",
 							}, {
-								Main: "10.0 B",
+								Main: "10",
 								Sub:  "Limit",
 							},
 						},
@@ -144,20 +144,16 @@ func TestList_GetExtraInfos(t *testing.T) {
 			name: "1",
 			args: args{clusterInfo: &ClusterInfoDetail{}},
 			want: []ExtraInfos{
-				ExtraInfos{
-					Icon:    "type",
-					Text:    "-",
-					Tooltip: "cluster type",
-				},
+
 				ExtraInfos{
 					Icon:    "management",
 					Text:    "-",
 					Tooltip: "manage type",
 				},
 				ExtraInfos{
-					Icon:    "create-time",
-					Text:    "-",
-					Tooltip: "create time",
+					Icon:    "machine",
+					Text:    "0",
+					Tooltip: "machine count",
 				},
 				ExtraInfos{
 					Icon:    "version",
@@ -165,9 +161,14 @@ func TestList_GetExtraInfos(t *testing.T) {
 					Tooltip: "cluster version",
 				},
 				ExtraInfos{
-					Icon:    "machine",
-					Text:    "0",
-					Tooltip: "machine count",
+					Icon:    "time",
+					Text:    "-",
+					Tooltip: "update time",
+				},
+				ExtraInfos{
+					Icon:    "type",
+					Text:    "-",
+					Tooltip: "cluster type",
 				},
 			},
 		},

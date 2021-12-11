@@ -86,7 +86,9 @@ func init() {
 	servicehub.Register("erda.core.dicehub.release-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.dicehub.release.ReleaseGetDiceService",
+			"erda.core.dicehub.release.ReleaseGetDiceService.client",
 			"erda.core.dicehub.release.ReleaseService",
+			"erda.core.dicehub.release.ReleaseService.client",
 			"erda.core.dicehub.release-client",
 		},
 		Types: []reflect.Type{

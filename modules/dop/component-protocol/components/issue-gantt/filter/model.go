@@ -31,20 +31,23 @@ type ComponentFilter struct {
 	State State `json:"state,omitempty"`
 	base.DefaultProvider
 
-	projectID  uint64                 `json:"-"`
-	Iterations []apistructs.Iteration `json:"-"`
-	Members    []apistructs.Member    `json:"-"`
+	FrontendUrlQuery string                 `json:"-"`
+	projectID        uint64                 `json:"-"`
+	Iterations       []apistructs.Iteration `json:"-"`
+	Members          []apistructs.Member    `json:"-"`
 }
 
 type State struct {
-	Conditions []filter.PropCondition `json:"conditions,omitempty"`
-	Values     FrontendConditions     `json:"values,omitempty"`
+	Base64UrlQueryParams string                 `json:"filter__urlQuery,omitempty"`
+	Conditions           []filter.PropCondition `json:"conditions,omitempty"`
+	Values               FrontendConditions     `json:"values,omitempty"`
 }
 
 type FrontendConditions struct {
-	IterationIDs []int64  `json:"iteration,omitempty"`
-	AssigneeIDs  []string `json:"member,omitempty"`
-	LabelIDs     []uint64 `json:"label,omitempty"`
+	// IterationIDs []int64  `json:"iteration,omitempty"`
+	IterationID int64    `json:"iteration,omitempty"`
+	AssigneeIDs []string `json:"member,omitempty"`
+	LabelIDs    []uint64 `json:"label,omitempty"`
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"
