@@ -54,7 +54,7 @@
                     "zh": "缓存类型"
                   }
                 },
-                "key": "db_type",
+                "key": "db_system",
                 "resultType": "string",
                 "type": "field"
               },

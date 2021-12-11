@@ -1928,12 +1928,12 @@ func handlerTranslationConditions(params translation, param map[string]interface
 			where.WriteString(" AND http_path::tag=~$field")
 		}
 	case "rpc":
-		field = "peer_service::tag"
+		field = "rpc_target::tag"
 		if params.Search != "" {
 			param["field"] = map[string]interface{}{
 				"regex": ".*" + params.Search + ".*",
 			}
-			where.WriteString(" AND peer_service::tag=~$field")
+			where.WriteString(" AND rpc_target::tag=~$field")
 		}
 	default:
 		return "", "", errors.New("not support layer name")
@@ -1999,7 +1999,7 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
 
-	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
+	sql := fmt.Sprintf("SELECT db_statement::tag,db_system::tag,db_name::tag,db_host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
 		"source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
 		params.Layer, where.String(), orderby)
@@ -2015,9 +2015,9 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 	result := make(map[string]interface{}, 0)
 	cols := []map[string]interface{}{
 		{"_key": "tags.db_statement", "flag": "tag|groupby", "key": "operation"},
-		{"_key": "tags.db_type", "flag": "tag", "key": "db_type"},
-		{"_key": "tags.db_instance", "flag": "tag", "key": "instance_type"},
-		{"_key": "tags.host", "flag": "tag", "key": "db_host"},
+		{"_key": "tags.db_system", "flag": "tag", "key": "db_system"},
+		{"_key": "tags.db_name", "flag": "tag", "key": "db_name"},
+		{"_key": "tags.db_host", "flag": "tag", "key": "db_host"},
 		{"_key": "", "flag": "field|func|agg", "key": "call_count"},
 		{"_key": "", "flag": "field|func|agg", "key": "avg_elapsed"},
 		{"_key": "", "flag": "field|func|agg", "key": "slow_elapsed_count"},
@@ -2027,8 +2027,8 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 	for _, r := range source.ResultSet.Rows {
 		itemResult := make(map[string]interface{})
 		itemResult["operation"] = r[0]
-		itemResult["db_type"] = r[1]
-		itemResult["db_instance"] = r[2]
+		itemResult["db_system"] = r[1]
+		itemResult["db_name"] = r[2]
 		itemResult["db_host"] = r[3]
 		itemResult["call_count"] = r[4]
 		itemResult["avg_elapsed"] = r[5]
