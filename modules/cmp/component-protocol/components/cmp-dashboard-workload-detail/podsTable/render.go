@@ -86,6 +86,14 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 		}
 	case "changePageSize", "changeSort":
 		p.State.PageNo = 1
+	case "delete":
+		podID, err := getPodID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err = p.DeletePod(podID); err != nil {
+			return err
+		}
 	}
 
 	if err := p.RenderTable(); err != nil {
@@ -157,6 +165,25 @@ func (p *ComponentPodsTable) EncodeURLQuery() error {
 	encode := base64.StdEncoding.EncodeToString(jsonData)
 	p.State.PodsTableURLQuery = encode
 	return nil
+}
+
+func (p *ComponentPodsTable) DeletePod(podID string) error {
+	splits := strings.Split(podID, "_")
+	if len(splits) != 2 {
+		return errors.Errorf("invalid pod id, %s", podID)
+	}
+	namespace, name := splits[0], splits[1]
+
+	req := &apistructs.SteveRequest{
+		UserID:      p.sdk.Identity.UserID,
+		OrgID:       p.sdk.Identity.OrgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: p.State.ClusterName,
+		Name:        name,
+		Namespace:   namespace,
+	}
+
+	return p.server.DeleteSteveResource(p.ctx, req)
 }
 
 func (p *ComponentPodsTable) RenderTable() error {
@@ -320,40 +347,46 @@ func (p *ComponentPodsTable) RenderTable() error {
 			containerIDs = append(containerIDs, getContainerID(containerStatus.String("containerID")))
 		}
 
+		id := fmt.Sprintf("%s_%s", podNamespace, podName)
 		operate := Operate{
-			Value:      "<none>",
-			RenderType: "text",
+			RenderType: "tableOperation",
+			Operations: map[string]interface{}{
+				"delete": LinkOperation{
+					Reload: true,
+					Key:    "delete",
+					Text:   p.sdk.I18n("delete"),
+					Meta: map[string]interface{}{
+						"podID": id,
+					},
+					Confirm:    p.sdk.I18n("confirmDelete"),
+					SuccessMsg: p.sdk.I18n("deletedPodSuccessfully"),
+				},
+			},
 		}
 		if len(containerNames) != 0 && len(containerIDs) != 0 {
-			operate = Operate{
-				Operations: map[string]Operation{
-					"log": {
-						Key:    "checkLog",
-						Text:   p.sdk.I18n("log"),
-						Reload: false,
-						Meta: map[string]interface{}{
-							"containerName": containerNames[0],
-							"podName":       name,
-							"namespace":     namespace,
-							"containerId":   containerIDs[0],
-						},
-					},
-					"console": {
-						Key:    "checkConsole",
-						Text:   p.sdk.I18n("console"),
-						Reload: false,
-						Meta: map[string]interface{}{
-							"containerName": containerNames[0],
-							"podName":       name,
-							"namespace":     namespace,
-						},
-					},
+			operate.Operations["log"] = LinkOperation{
+				Key:    "checkLog",
+				Text:   p.sdk.I18n("log"),
+				Reload: false,
+				Meta: map[string]interface{}{
+					"containerName": containerNames[0],
+					"podName":       name,
+					"namespace":     namespace,
+					"containerId":   containerIDs[0],
 				},
-				RenderType: "tableOperation",
+			}
+			operate.Operations["console"] = LinkOperation{
+				Key:    "checkConsole",
+				Text:   p.sdk.I18n("console"),
+				Reload: false,
+				Meta: map[string]interface{}{
+					"containerName": containerNames[0],
+					"podName":       name,
+					"namespace":     namespace,
+				},
 			}
 		}
 
-		id := fmt.Sprintf("%s_%s", podNamespace, podName)
 		items = append(items, Item{
 			ID:     id,
 			Status: status,
@@ -373,7 +406,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 							Value:      name,
 							Operations: map[string]interface{}{
 								"click": LinkOperation{
-									Command: Command{
+									Command: &Command{
 										Key:    "goto",
 										Target: "cmpClustersPodDetail",
 										State: CommandState{
@@ -495,8 +528,30 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
-			NodeName:        fields[6],
-			Operate:         operate,
+			Node: Operate{
+				RenderType: "linkText",
+				Value:      fields[6],
+				Operations: map[string]interface{}{
+					"click": LinkOperation{
+						Key:    "gotoNodeDetail",
+						Reload: false,
+						Command: &Command{
+							Key:    "goto",
+							Target: "cmpClustersNodeDetail",
+							State: CommandState{
+								Params: map[string]string{
+									"nodeId": fields[6],
+								},
+								Query: map[string]string{
+									"nodeIP": obj.String("status", "hostIP"),
+								},
+							},
+							JumpOut: true,
+						},
+					},
+				},
+			},
+			Operate: operate,
 		})
 	}
 
@@ -612,7 +667,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "nodeName":
 				return func(i int, j int) bool {
-					less := items[i].NodeName < items[j].NodeName
+					less := items[i].Node.Value < items[j].Node.Value
 					if ascend {
 						return less
 					}
@@ -732,13 +787,8 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Sorter:    true,
 		},
 		{
-			DataIndex: "nodeName",
+			DataIndex: "node",
 			Title:     cputil.I18n(ctx, "node"),
-			Sorter:    true,
-		},
-		{
-			DataIndex: "age",
-			Title:     cputil.I18n(ctx, "age"),
 			Sorter:    true,
 		},
 		{
@@ -771,12 +821,17 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Title:     cputil.I18n(ctx, "memoryPercent"),
 			Sorter:    true,
 		},
-		//{
-		//	DataIndex: "operate",
-		//	Title:     cputil.I18n(ctx, "operate"),
-		//	Sorter:    false,
-		//	Fixed:     "right",
-		//},
+		{
+			DataIndex: "age",
+			Title:     cputil.I18n(ctx, "age"),
+			Sorter:    true,
+		},
+		{
+			DataIndex: "operate",
+			Title:     cputil.I18n(ctx, "operate"),
+			Sorter:    false,
+			Fixed:     "right",
+		},
 	}
 
 	p.Operations = map[string]interface{}{
@@ -858,4 +913,16 @@ func getContainerID(id string) string {
 		return id
 	}
 	return splits[1]
+}
+
+func getPodID(operationData map[string]interface{}) (string, error) {
+	meta, ok := operationData["meta"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("invalid type of meta")
+	}
+	podID, ok := meta["podID"].(string)
+	if !ok {
+		return "", errors.New("invalid type of podID")
+	}
+	return podID, nil
 }

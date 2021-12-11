@@ -162,7 +162,7 @@ func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (data.Object,
 }
 
 // CreateSteveResource creates a k8s resource described by req.Obj from steve server.
-// Required fields: ClusterName, Type, Obj
+// Required fields: ClusterName, Namespace, Type, Obj
 func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (data.Object, error) {
 	if req.Type == "" || req.ClusterName == "" {
 		return nil, errors.New("clusterName and type fields are required")
@@ -176,7 +176,7 @@ func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (data.Object,
 		return nil, err
 	}
 
-	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type))
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
 	headers := http.Header{
 		httputil.InternalHeader: []string{"bundle"},
 		httputil.UserHeader:     []string{req.UserID},
