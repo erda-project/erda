@@ -160,10 +160,10 @@ func TestComponentOperationButton_SetComponentValue(t *testing.T) {
 	b.State.WorkloadID = fmt.Sprintf("%s_default_test", apistructs.K8SDeployment)
 	b.SetComponentValue()
 	menu := b.Props.Menu
-	if len(menu) != 2 {
+	if len(menu) != 3 {
 		t.Fatalf("length of menu is unexpected")
 	}
-	operation, ok := menu[1].Operations["click"].(Operation)
+	operation, ok := menu[2].Operations["click"].(Operation)
 	if !ok {
 		t.Fatalf("unexpect type of click operation")
 	}
@@ -174,10 +174,10 @@ func TestComponentOperationButton_SetComponentValue(t *testing.T) {
 	b.State.WorkloadID = fmt.Sprintf("%s_default_test", apistructs.K8SDaemonSet)
 	b.SetComponentValue()
 	menu = b.Props.Menu
-	if len(menu) != 2 {
+	if len(menu) != 3 {
 		t.Fatalf("length of menu is unexpected")
 	}
-	operation, ok = menu[1].Operations["click"].(Operation)
+	operation, ok = menu[2].Operations["click"].(Operation)
 	if !ok {
 		t.Fatalf("unexpect type of click operation")
 	}
@@ -188,10 +188,10 @@ func TestComponentOperationButton_SetComponentValue(t *testing.T) {
 	b.State.WorkloadID = fmt.Sprintf("%s_default_test", apistructs.K8SStatefulSet)
 	b.SetComponentValue()
 	menu = b.Props.Menu
-	if len(menu) != 2 {
+	if len(menu) != 3 {
 		t.Fatalf("length of menu is unexpected")
 	}
-	operation, ok = menu[1].Operations["click"].(Operation)
+	operation, ok = menu[2].Operations["click"].(Operation)
 	if !ok {
 		t.Fatalf("unexpect type of click operation")
 	}

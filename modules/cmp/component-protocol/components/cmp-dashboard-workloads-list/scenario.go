@@ -29,4 +29,6 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadHead"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/workloadTotal"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/yamlDrawer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/yamlFileEditor"
 )

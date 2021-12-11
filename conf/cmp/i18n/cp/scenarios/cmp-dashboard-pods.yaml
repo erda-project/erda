@@ -1,4 +1,6 @@
 zh:
+  deletedPodSuccessfully: Pod 删除成功
+  updatePodSuccessfully: Pod 更新成功
   gotoWorkload: 查看工作负载
   createPod: 创建 Pod
   createdPodSuccessfully: Pod 创建成功
@@ -19,6 +21,8 @@ zh:
   podSearchPlaceHolder: 搜索 Pod 名称或 IP
 
 en:
+  deletedPodSuccessfully: Deleted Pod successfully
+  updatePodSuccessfully: Updated Pod successfully
   gotoWorkload: Goto Workload
   createPod: Create Pod
   createdPodSuccessfully: Created Pod successfully

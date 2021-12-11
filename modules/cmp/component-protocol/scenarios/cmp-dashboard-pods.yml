@@ -14,6 +14,7 @@ hierarchy:
       - tabs
       - tabsTable
       - addPodDrawer
+      - yamlDrawer
     charts:
       - chartContainer
     chartContainer:
@@ -26,6 +27,8 @@ hierarchy:
     tabsTable:
       slot: filter
       table: podsTable
+    yamlDrawer:
+      content: yamlFileEditor
 
 components:
   addPodDrawer:
@@ -60,6 +63,10 @@ components:
     type: Table
   tabs:
     type: Radio
+  yamlDrawer:
+    type: Drawer
+  yamlFileEditor:
+    type: FileEditor
 
 
 rendering:
@@ -87,7 +94,14 @@ rendering:
     - name: chartContainer
     - name: podsTotal
     - name: podsCharts
-  podsTable: []
+  podsTable:
+    - name: yamlDrawer
+    - name: yamlFileEditor
+      state:
+        - name: "clusterName"
+          value: "{{ podsTable.clusterName }}"
+    - name: podsTotal
+    - name: podsCharts
   tabs:
     - name: podsTable
       state:
@@ -133,4 +147,8 @@ rendering:
           value: "{{ tabs.value }}"
     - name: podsTotal
     - name: podsCharts
-
+  yamlFileEditor:
+    - name: yamlDrawer
+    - name: podsTable
+    - name: podsCharts
+    - name: podsTotal

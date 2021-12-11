@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -26,6 +27,7 @@ type ComponentOperationButton struct {
 	base.DefaultProvider
 
 	ctx    context.Context
+	bdl    *bundle.Bundle
 	sdk    *cptype.SDK
 	server cmp.SteveServer
 	Type   string `json:"type,omitempty"`

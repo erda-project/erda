@@ -20,6 +20,8 @@ component-protocol.components.cmp-dashboard-workloads-list.addWorkloadFilter:
 component-protocol.components.cmp-dashboard-workloads-list.workloadHead:
 component-protocol.components.cmp-dashboard-workloads-list.charts:
 component-protocol.components.cmp-dashboard-workloads-list.table:
+component-protocol.components.cmp-dashboard-workloads-list.yamlDrawer:
+component-protocol.components.cmp-dashboard-workloads-list.yamlFileEditor:
 
 component-protocol.components.cmp-dashboard-workload-detail.podsTable:
 component-protocol.components.cmp-dashboard-workload-detail.podsTableTitle:
@@ -30,7 +32,6 @@ component-protocol.components.cmp-dashboard-workload-detail.workloadTitle:
 component-protocol.components.cmp-dashboard-workload-detail.leftContent:
 component-protocol.components.cmp-dashboard-workload-detail.rightContent:
 component-protocol.components.cmp-dashboard-workload-detail.operationButton:
-component-protocol.components.cmp-dashboard-workload-detail.restartButton:
 component-protocol.components.cmp-dashboard-workload-detail.yamlDrawer:
 component-protocol.components.cmp-dashboard-workload-detail.yamlFileEditor:
 
@@ -80,6 +81,8 @@ component-protocol.components.cmp-dashboard-pods.addPodFileEditor:
 component-protocol.components.cmp-dashboard-pods.addPodFilter:
 component-protocol.components.cmp-dashboard-pods.topHead:
 component-protocol.components.cmp-dashboard-pods.charts:
+component-protocol.components.cmp-dashboard-pods.yamlDrawer:
+component-protocol.components.cmp-dashboard-pods.yamlFileEditor:
 
 component-protocol.components.cmp-dashboard-podDetail.page:
 component-protocol.components.cmp-dashboard-podDetail.header:

@@ -91,6 +91,21 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 		} else {
 			p.State.PageNo = 1
 		}
+	case "delete":
+		podID, err := getPodID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err = p.DeletePod(podID); err != nil {
+			return err
+		}
+	case "checkYaml":
+		podID, err := getPodID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		(*gs)["podID"] = podID
+		return nil
 	}
 	if err := p.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render podsTable component, %v", err)
@@ -163,6 +178,25 @@ func (p *ComponentPodsTable) EncodeURLQuery() error {
 	encode := base64.StdEncoding.EncodeToString(jsonData)
 	p.State.PodsTableURLQuery = encode
 	return nil
+}
+
+func (p *ComponentPodsTable) DeletePod(podID string) error {
+	splits := strings.Split(podID, "_")
+	if len(splits) != 2 {
+		return errors.Errorf("invalid pod id, %s", podID)
+	}
+	namespace, name := splits[0], splits[1]
+
+	req := &apistructs.SteveRequest{
+		UserID:      p.sdk.Identity.UserID,
+		OrgID:       p.sdk.Identity.OrgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: p.State.ClusterName,
+		Name:        name,
+		Namespace:   namespace,
+	}
+
+	return p.server.DeleteSteveResource(p.ctx, req)
 }
 
 func (p *ComponentPodsTable) RenderTable() error {
@@ -306,7 +340,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 						},
 					},
 					[]interface{}{
-						Link{
+						Operate{
 							RenderType: "linkText",
 							Value:      name,
 							Operations: map[string]interface{}{
@@ -420,7 +454,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
-			Node: Link{
+			Node: Operate{
 				RenderType: "linkText",
 				Value:      fields[6],
 				Operations: map[string]interface{}{
@@ -443,7 +477,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 					},
 				},
 			},
-			GotoWorkload: Link{
+			Operations: Operate{
 				RenderType: "tableOperation",
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
@@ -463,6 +497,24 @@ func (p *ComponentPodsTable) RenderTable() error {
 						Reload: false,
 						Key:    "gotoWorkload",
 						Text:   p.sdk.I18n("gotoWorkload"),
+					},
+					"checkYaml": LinkOperation{
+						Reload: true,
+						Key:    "checkYaml",
+						Text:   p.sdk.I18n("viewOrEditYaml"),
+						Meta: map[string]interface{}{
+							"podID": id,
+						},
+					},
+					"delete": LinkOperation{
+						Reload: true,
+						Key:    "delete",
+						Text:   p.sdk.I18n("delete"),
+						Meta: map[string]interface{}{
+							"podID": id,
+						},
+						Confirm:    p.sdk.I18n("confirmDelete"),
+						SuccessMsg: p.sdk.I18n("deletedPodSuccessfully"),
 					},
 				},
 			},
@@ -709,7 +761,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			Sorter:    true,
 		},
 		{
-			DataIndex: "gotoWorkload",
+			DataIndex: "operations",
 			Title:     cputil.I18n(ctx, "operate"),
 			Sorter:    false,
 		}}...)
@@ -770,4 +822,16 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 	}
 	res, _ := resource.ParseQuantity(str)
 	return &res
+}
+
+func getPodID(operationData map[string]interface{}) (string, error) {
+	meta, ok := operationData["meta"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("invalid type of meta")
+	}
+	podID, ok := meta["podID"].(string)
+	if !ok {
+		return "", errors.New("invalid type of podID")
+	}
+	return podID, nil
 }

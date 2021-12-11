@@ -31,4 +31,6 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/tabs"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/tabsTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/topHead"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/yamlDrawer"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/yamlFileEditor"
 )

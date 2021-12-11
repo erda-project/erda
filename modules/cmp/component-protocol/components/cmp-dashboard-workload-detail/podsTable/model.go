@@ -75,7 +75,7 @@ type Item struct {
 	MemoryLimits      Multiple `json:"memoryLimits,omitempty"`
 	MemoryLimitsNum   int64    `json:"MemoryLimitsNum,omitempty"`
 	Ready             string   `json:"ready,omitempty"`
-	NodeName          string   `json:"nodeName,omitempty"`
+	Node              Operate  `json:"node"`
 	Operate           Operate  `json:"operate"`
 }
 
@@ -110,8 +110,13 @@ type Link struct {
 }
 
 type LinkOperation struct {
-	Command Command `json:"command,omitempty"`
-	Reload  bool    `json:"reload"`
+	Command    *Command               `json:"command,omitempty"`
+	Reload     bool                   `json:"reload"`
+	Key        string                 `json:"key,omitempty"`
+	Text       string                 `json:"text,omitempty"`
+	Meta       map[string]interface{} `json:"meta,omitempty"`
+	Confirm    string                 `json:"confirm,omitempty"`
+	SuccessMsg string                 `json:"successMsg,omitempty"`
 }
 
 type Command struct {
@@ -134,9 +139,9 @@ type Percent struct {
 }
 
 type Operate struct {
-	Value      string               `json:"value,omitempty"`
-	Operations map[string]Operation `json:"operations"`
-	RenderType string               `json:"renderType"`
+	Value      string                 `json:"value,omitempty"`
+	Operations map[string]interface{} `json:"operations"`
+	RenderType string                 `json:"renderType"`
 }
 
 type Props struct {
@@ -157,8 +162,6 @@ type Column struct {
 }
 
 type Operation struct {
-	Key    string                 `json:"key,omitempty"`
-	Text   string                 `json:"text,omitempty"`
-	Reload bool                   `json:"reload"`
-	Meta   map[string]interface{} `json:"meta,omitempty"`
+	Key    string `json:"key,omitempty"`
+	Reload bool   `json:"reload"`
 }

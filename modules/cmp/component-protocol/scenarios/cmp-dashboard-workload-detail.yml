@@ -17,7 +17,6 @@ hierarchy:
       - workloadTitle
       - workloadStatus
     rightContent:
-      - restartButton
       - operationButton
     yamlDrawer:
       content: yamlFileEditor
@@ -44,8 +43,6 @@ components:
   podsTable:
     type: Table
   operationButton:
-    type: Button
-  restartButton:
     type: Button
   yamlDrawer:
     type: Drawer
@@ -92,13 +89,8 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
           value: "{{ workloadTitle.workloadId }}"
-    - name: restartButton
-      state:
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-        - name: "workloadId"
-          value: "{{ workloadTitle.workloadId }}"
-  podsTable: []
+  podsTable:
+    - name: workloadStatus
   operationButton:
     - name: yamlDrawer
     - name: yamlFileEditor
@@ -107,7 +99,6 @@ rendering:
           value: "{{ __InParams__.clusterName }}"
         - name: "workloadId"
           value: "{{ workloadTitle.workloadId }}"
-  restartButton:
     - name: workloadStatus
     - name: workloadInfo
     - name: podsTable
