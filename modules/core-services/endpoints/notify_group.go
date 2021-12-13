@@ -185,7 +185,26 @@ func (e *Endpoints) QueryNotifyGroup(ctx context.Context, r *http.Request, vars 
 	if err != nil {
 		return apierrors.ErrQueryNotifyGroup.MissingParameter("Org-ID header is nil").ToResp(), nil
 	}
+
+	pageNoStr := r.URL.Query().Get("pageNo")
+	pageNo, err := strconv.Atoi(pageNoStr)
+	if err != nil {
+		return apierrors.ErrQueryNotifyGroup.InternalError(err).ToResp(), nil
+	}
+	if pageNo < 1 {
+		pageNo = 1
+	}
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		return apierrors.ErrQueryNotifyGroup.InternalError(err).ToResp(), nil
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
 	queryReq := apistructs.QueryNotifyGroupRequest{
+		PageSize:  int64(pageSize),
+		PageNo:    int64(pageNo),
 		ScopeType: r.URL.Query().Get("scopeType"),
 		ScopeID:   r.URL.Query().Get("scopeId"),
 		Label:     r.URL.Query().Get("label"),
