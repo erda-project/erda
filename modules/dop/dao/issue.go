@@ -956,7 +956,7 @@ func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]Issu
 	// requirements with children
 	sql = client.Debug().Table("dice_issue_relation b").Joins(joinIssueParent).Joins("LEFT JOIN dice_issues d ON d.id = b.related_issue").
 		Joins("LEFT JOIN dice_issue_state e ON a.state = e.id").Joins("LEFT JOIN dice_issue_state f ON d.state = f.id")
-	sql = sql.Where("a.Type = ?", apistructs.IssueTypeRequirement)
+	sql = sql.Where("a.type = ?", apistructs.IssueTypeRequirement).Where("b.type = ?", apistructs.IssueRelationInclusion)
 	sql = sql.Where("d.deleted = 0").Where("d.project_id = ?", req.ProjectID)
 	sql = applyCondition(sql, req)
 	if len(req.Assignees) > 0 {
