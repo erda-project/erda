@@ -114,6 +114,7 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 					Value: req.ApplicationID,
 				})
 			}
+			p.logQueryService.tryFillQueryMeta(r.Context(), sel, r.Header.Get("org"))
 			return sel, nil
 		},
 		func(item *pb.LogItem) error {
