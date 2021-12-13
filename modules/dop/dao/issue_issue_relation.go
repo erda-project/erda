@@ -125,15 +125,18 @@ func (client *DBClient) CleanIssueRelation(issueID uint64) error {
 	return nil
 }
 
-func (client *DBClient) GetIssueRelationsByIDs(issueIDs []uint64) ([]IssueRelation, error) {
+func (client *DBClient) GetIssueRelationsByIDs(issueIDs []uint64, relationTypes []string) ([]IssueRelation, error) {
+	sql := client.Table("dice_issue_relation").Where("issue_id in (?)", issueIDs)
+	if len(relationTypes) > 0 {
+		sql = sql.Where("type IN (?)", relationTypes)
+	}
 	var issueRelations []IssueRelation
-	if err := client.Debug().Table("dice_issue_relation").Where("issue_id in (?)", issueIDs).Find(&issueRelations).Error; err != nil {
+	if err := sql.Find(&issueRelations).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-
 	return issueRelations, nil
 }
 

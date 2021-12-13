@@ -274,7 +274,7 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
 		// 获取事件关联关系
-		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs, []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
@@ -352,9 +352,12 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 						requirementIDs = append(requirementIDs, id)
 					}
 				}
-
+				relationTypes := []string{apistructs.IssueRelationConnection}
+				if t == apistructs.IssueTypeRequirement {
+					relationTypes = []string{apistructs.IssueRelationInclusion}
+				}
 				// 获取需求id对应的关联事件ids
-				relations, err := svc.db.GetIssueRelationsByIDs(requirementIDs)
+				relations, err := svc.db.GetIssueRelationsByIDs(requirementIDs, relationTypes)
 				if err != nil {
 					return nil, 0, err
 				}
@@ -427,7 +430,7 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 	}
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
-		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs, []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
