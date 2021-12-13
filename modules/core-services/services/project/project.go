@@ -346,7 +346,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return nil, errors.Wrap(err, "failed to GetProjectByID")
 	}
 	var oldClusterConfig = make(map[string]string)
-	_ = json.Unmarshal([]byteproject.ClusterConfig, &oldClusterConfig)
+	_ = json.Unmarshal([]byte(project.ClusterConfig), &oldClusterConfig)
 	oldQuota, err := p.db.GetQuotaByProjectID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetQuotaByProjectID")
