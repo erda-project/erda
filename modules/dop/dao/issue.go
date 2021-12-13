@@ -896,11 +896,12 @@ func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) 
 }
 
 const (
-	joinRelation      = "LEFT JOIN dice_issue_relation b ON a.id = b.related_issue and b.type = ?"
-	joinStateNew      = "LEFT JOIN dice_issue_state ON a.state = dice_issue_state.id"
-	joinIssueChildren = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
-	joinIssueParent   = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
-	joinLabelRelation = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
+	joinRelation       = "LEFT JOIN dice_issue_relation b ON a.id = b.related_issue and b.type = ?"
+	joinRelationParent = "left join dice_issue_relation d on a.id = d.issue_id and d.type = ?"
+	joinStateNew       = "LEFT JOIN dice_issue_state ON a.state = dice_issue_state.id"
+	joinIssueChildren  = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
+	joinIssueParent    = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
+	joinLabelRelation  = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
 )
 
 func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]IssueItem, uint64, error) {
@@ -931,9 +932,9 @@ func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingR
 }
 
 func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]IssueItem, []IssueItem, uint64, error) {
-	// task and requirements without parent
+	// task and requirements without children
 	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
-		Joins("left join dice_issue_relation d on a.id = d.issue_id").Where("b.id IS NULL and d.id is NULL")
+		Joins(joinRelationParent, apistructs.IssueRelationInclusion).Where("b.id IS NULL and d.id is NULL")
 	offset := (req.PageNo - 1) * req.PageSize
 	if len(req.Type) > 0 {
 		sql = sql.Where("a.type IN (?)", req.Type)
