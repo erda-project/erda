@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -256,6 +257,7 @@ func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (strin
 
 	hcOptions := []httpclient.OpOption{
 		httpclient.WithHTTPS(),
+		httpclient.WithTimeout(conf.ExecutorClientTimeout(), conf.ExecutorClientTimeout()),
 	}
 
 	// check mange config type
