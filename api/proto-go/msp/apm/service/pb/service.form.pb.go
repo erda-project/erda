@@ -140,12 +140,6 @@ func (m *ServiceChart) UnmarshalURLValues(prefix string, values url.Values) erro
 			switch prefix + key {
 			case "type":
 				m.Type = vals[0]
-			case "data":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Data = val
 			}
 		}
 	}

@@ -85,7 +85,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		services = append(services, service)
 	}
 
-	sortStrategy, err := s.findData(req.TenantId, services, ctx)
+	sortStrategy, err := s.aggregateMetric(req.TenantId, services, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func timeRange(s string) (start int64, end int64) {
 	return
 }
 
-func (s *apmServiceService) findData(tenantId string, services []*pb.Service, ctx context.Context) (sortStrategy string, err error) {
+func (s *apmServiceService) aggregateMetric(tenantId string, services []*pb.Service, ctx context.Context) (sortStrategy string, err error) {
 	start, end := timeRange("-6h")
 
 	includeIds := ""
@@ -152,7 +152,7 @@ func (s *apmServiceService) findData(tenantId string, services []*pb.Service, ct
 	}
 	includeIds = includeIds[:len(includeIds)-1]
 
-	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)"+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(count_sum::field)/(60*60),sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)"+
 		"FROM application_http_service,application_rpc_service "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND include(target_service_id::tag, %s) GROUP BY target_service_id::tag", includeIds)
@@ -175,34 +175,33 @@ func (s *apmServiceService) findData(tenantId string, services []*pb.Service, ct
 	}
 
 	var (
-		errorRateSum   float64
-		avgDurationSum float64
-		rpcSum         float64
+		errorRateSortSign   float64
+		avgDurationSortSign float64
+		rpcSortSign         float64
 	)
 	if response != nil {
 		rows := response.Results[0].Series[0].Rows
 
 		for _, row := range rows {
-			if service, ok := serviceMap[row.Values[0].GetStringValue()]; ok {
-				countSum := row.Values[1].GetNumberValue()
-				durationSum := row.Values[2].GetNumberValue()
-				errorCountSum := row.Values[3].GetNumberValue()
+			serviceId := row.Values[0].GetStringValue()
+			if service, ok := serviceMap[serviceId]; ok {
+				rps := row.Values[1].GetNumberValue()
+				avgDuration := row.Values[2].GetNumberValue()
+				errorRate := row.Values[3].GetNumberValue() * 100 // to %
 
-				service.Rps = math.TwoDecimalPlaces(float64(countSum) / (60 * 60))
-				if countSum != 0 {
-					service.AvgDuration = math.TwoDecimalPlaces(durationSum / countSum)
-					service.ErrorRate = math.TwoDecimalPlaces(errorCountSum / countSum)
-				}
+				service.Rps = math.DecimalPlacesWithDigitsNumber(rps, 2)
+				service.AvgDuration = math.DecimalPlacesWithDigitsNumber(avgDuration, 2)
+				service.ErrorRate = math.DecimalPlacesWithDigitsNumber(errorRate, 2)
 
-				avgDurationSum += service.AvgDuration
-				rpcSum += service.Rps
-				errorRateSum += service.ErrorRate
+				avgDurationSortSign += service.AvgDuration
+				rpcSortSign += service.Rps
+				errorRateSortSign += service.ErrorRate
 			}
 		}
 	}
-	if errorRateSum > 0 {
+	if errorRateSortSign > 0 {
 		return SortStrategyErrorRate, nil
-	} else if avgDurationSum > 0 {
+	} else if avgDurationSortSign > 0 {
 		return SortStrategyAvgDuration, nil
 	}
 	return SortStrategyRPS, nil
@@ -272,13 +271,6 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 
 		rows := response.Results[0].Series[0].Rows
 
-		var (
-			countSum      int64
-			durationSum   int64
-			errorCountSum int64
-			avgDuration   float64
-			errorRate     float64
-		)
 		for _, row := range rows {
 			qpsChart := new(pb.Chart)
 			durationChart := new(pb.Chart)
@@ -296,44 +288,32 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			count := int64(row.Values[1].GetNumberValue())
 			duration := int64(row.Values[2].GetNumberValue())
 			errorCount := int64(row.Values[3].GetNumberValue())
-			qpsChart.Value = math.TwoDecimalPlaces(float64(count) / (60 * 4))
+			qpsChart.Value = math.DecimalPlacesWithDigitsNumber(float64(count)/(60*4), 2)
 			if count != 0 {
-				durationChart.Value = math.TwoDecimalPlaces(float64(duration / count))
-				errorRateChart.Value = math.TwoDecimalPlaces(float64(errorCount / count))
+				durationChart.Value = math.DecimalPlacesWithDigitsNumber(float64(duration/count), 2)
+				errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(float64(errorCount/count), 2)
 			}
-
-			countSum += count
-			durationSum += duration
-			errorCount += errorCount
 
 			qpsCharts = append(qpsCharts, qpsChart)
 			durationCharts = append(durationCharts, durationChart)
 			errorRateCharts = append(errorRateCharts, errorRateChart)
 		}
 
-		if countSum != 0 {
-			avgDuration = math.TwoDecimalPlaces(float64(durationSum / countSum))
-			errorRate = math.TwoDecimalPlaces(float64(errorCountSum / countSum))
-		}
-
 		// QPS Chart
 		serviceCharts = append(serviceCharts, &pb.ServiceChart{
 			Type: pb.ChartType_RPS.String(),
-			Data: math.TwoDecimalPlaces(float64(countSum) / (60 * 60)),
 			View: qpsCharts,
 		})
 
 		// Avg Duration Chart
 		serviceCharts = append(serviceCharts, &pb.ServiceChart{
 			Type: pb.ChartType_AvgDuration.String(),
-			Data: avgDuration,
 			View: durationCharts,
 		})
 
 		// Error Rate Chart
 		serviceCharts = append(serviceCharts, &pb.ServiceChart{
 			Type: pb.ChartType_ErrorRate.String(),
-			Data: errorRate,
 			View: errorRateCharts,
 		})
 

@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pkgmath "github.com/erda-project/erda/pkg/math"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -43,7 +43,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
-	pkgmath "github.com/erda-project/erda/pkg/math"
 )
 
 type Vo struct {
@@ -242,6 +241,7 @@ type Metric struct {
 	Running   float64 `json:"running"`
 	Stopped   float64 `json:"stopped"`
 	RPS       float64 `json:"rps"`
+	Duration  float64 `json:"duration"`
 }
 
 const (
@@ -1575,7 +1575,6 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 
 					// aggs
 					metric := metricParser(targetNodeType, target)
-					metric.RPS = pkgmath.TwoDecimalPlaces(float64(metric.Count) / float64(timeRange))
 
 					node.Metric = metric
 
@@ -1585,9 +1584,8 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 						if n.Id == node.Id {
 							n.Metric.Count += node.Metric.Count
 							n.Metric.HttpError += node.Metric.HttpError
-							n.Metric.ErrorRate += node.Metric.ErrorRate
+							n.Metric.Duration += node.Metric.Duration
 							n.Metric.RT += node.Metric.RT
-							n.Metric.RPS += node.Metric.RPS
 							if n.RuntimeId == "" {
 								n.RuntimeId = node.RuntimeId
 							}
@@ -1600,9 +1598,6 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 						*topologyNodes = append(*topologyNodes, node)
 						node.Parents = []*Node{}
 					}
-
-					//tNode, _ := json.Marshal(node)
-					//fmt.Println("target:", string(tNode))
 
 					// sourceNodeTypes
 					for _, nodeType := range sourceNodeTypes {
@@ -1639,15 +1634,19 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 
 							sourceNode.Metric = sourceMetric
 							sourceNode.Parents = []*Node{}
-
-							//sNode, _ := json.Marshal(sourceNode)
-							//fmt.Println("source:", string(sNode))
-
 							node.Parents = append(node.Parents, sourceNode)
 						}
 					}
 				}
 			}
+		}
+	}
+
+	for _, node := range *topologyNodes {
+		if node.Metric.Count != 0 { // by zero
+			node.Metric.RT = pkgmath.DecimalPlacesWithDigitsNumber(node.Metric.Duration/float64(node.Metric.Count)/1e6, 2)
+			node.Metric.ErrorRate = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.HttpError)/float64(node.Metric.Count)*100, 2)
+			node.Metric.RPS = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.Count)/float64(timeRange), 2)
 		}
 	}
 }
@@ -1680,10 +1679,11 @@ func metricParser(targetNodeType *NodeType, target elastic.Aggregations) *Metric
 	countSum := field.CountSum
 	metric.Count = int64(countSum)
 	metric.HttpError = int64(field.ErrorsSum)
-	if countSum != 0 { // by zero
-		metric.RT = toTwoDecimalPlaces(field.ELapsedSum / countSum / 1e6)
-		metric.ErrorRate = math.Round(float64(metric.HttpError)/countSum*1e4) / 1e2
-	}
+	metric.Duration = field.ELapsedSum
+	//if countSum != 0 { // by zero
+	//	metric.RT = toTwoDecimalPlaces(field.ELapsedSum / countSum / 1e6)
+	//	//metric.ErrorRate = math.Round(float64(metric.HttpError)/countSum*1e4) / 1e2
+	//}
 
 	return &metric
 }
