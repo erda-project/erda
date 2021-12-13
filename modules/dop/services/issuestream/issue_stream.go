@@ -87,7 +87,7 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 
 	// send issue create or update event when creat issue stream
 	go func() {
-		if err := s.CreateIssueEvent(req.IssueID, req.StreamType, req.StreamParams); err != nil {
+		if err := s.CreateIssueEvent(req); err != nil {
 			logrus.Errorf("create issue %d event err: %v", req.IssueID, err)
 		}
 	}()
@@ -143,22 +143,22 @@ func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistru
 }
 
 // CreateIssueEvent create issue event
-func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType,
-	streamParams apistructs.ISTParam) error {
-	content, err := getDefaultContentForMsgSending(streamType, streamParams)
+func (s *IssueStream) CreateIssueEvent(req *apistructs.IssueStreamCreateRequest) error {
+	content, err := getDefaultContentForMsgSending(req.StreamType, req.StreamParams)
 	if err != nil {
-		logrus.Errorf("get issue %d content error: %v, content will be empty", issueID, err)
+		logrus.Errorf("get issue %d content error: %v, content will be empty", req.IssueID, err)
 	}
 	logrus.Debugf("old issue content is: %s", content)
-	issue, err := s.db.GetIssue(issueID)
+	issue, err := s.db.GetIssue(req.IssueID)
 	if err != nil {
 		return err
 	}
-	receivers, err := s.db.GetReceiversByIssueID(issueID)
+	receivers, err := s.db.GetReceiversByIssueID(req.IssueID)
 	if err != nil {
-		logrus.Errorf("get issue %d  recevier error: %v, recevicer will be empty", issueID, err)
+		logrus.Errorf("get issue %d  recevier error: %v, recevicer will be empty", req.IssueID, err)
 		receivers = []string{}
 	}
+	receivers = s.filterReceiversByOperatorID(receivers, req.Operator)
 	projectModel, err := s.bdl.GetProject(issue.ProjectID)
 	if err != nil {
 		return err
@@ -170,7 +170,7 @@ func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.Issu
 	ev := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.IssueEvent,
-			Action:        streamType.GetEventAction(),
+			Action:        req.StreamType.GetEventAction(),
 			OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
 			ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
 			ApplicationID: "-1",
@@ -182,16 +182,26 @@ func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.Issu
 			Content:      content,
 			AtUserIDs:    issue.Assignee,
 			IssueType:    issue.Type,
-			StreamType:   streamType,
-			StreamParams: streamParams,
+			StreamType:   req.StreamType,
+			StreamParams: req.StreamParams,
 			Receivers:    receivers,
 			Params: map[string]string{
 				"orgName":     orgModel.Name,
 				"projectName": projectModel.Name,
-				"issueID":     strconv.FormatInt(issueID, 10),
+				"issueID":     strconv.FormatInt(req.IssueID, 10),
 			},
 		},
 	}
 
 	return s.bdl.CreateEvent(ev)
+}
+
+func (s *IssueStream) filterReceiversByOperatorID(receivers []string, operatorID string) []string {
+	users := make([]string, 0)
+	for _, userID := range receivers {
+		if userID != operatorID {
+			users = append(users, userID)
+		}
+	}
+	return users
 }
