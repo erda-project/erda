@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	pkgmath "github.com/erda-project/erda/pkg/math"
 	"log"
 	"net/http"
 	"net/url"
@@ -43,6 +42,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	pkgmath "github.com/erda-project/erda/pkg/math"
 )
 
 type Vo struct {
@@ -1680,10 +1680,6 @@ func metricParser(targetNodeType *NodeType, target elastic.Aggregations) *Metric
 	metric.Count = int64(countSum)
 	metric.HttpError = int64(field.ErrorsSum)
 	metric.Duration = field.ELapsedSum
-	//if countSum != 0 { // by zero
-	//	metric.RT = toTwoDecimalPlaces(field.ELapsedSum / countSum / 1e6)
-	//	//metric.ErrorRate = math.Round(float64(metric.HttpError)/countSum*1e4) / 1e2
-	//}
 
 	return &metric
 }
