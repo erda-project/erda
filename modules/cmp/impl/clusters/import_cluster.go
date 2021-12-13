@@ -439,6 +439,7 @@ func ParseKubeconfig(kubeconfig []byte) (*apistructs.ManageConfig, error) {
 	if len(authInfo.Token) != 0 {
 		mc.Type = apistructs.ManageToken
 		mc.Token = authInfo.Token
+		return &mc, nil
 	}
 
 	// TODO: support username and password
