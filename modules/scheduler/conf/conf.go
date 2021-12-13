@@ -15,6 +15,8 @@
 package conf
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/pkg/envconf"
 )
 
@@ -39,6 +41,8 @@ type Conf struct {
 	TerminalSecurity bool `env:"TERMINAL_SECURITY" default:"false"`
 
 	WsDiceRootDomain string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
+
+	ExecutorClientTimeout int `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
 }
 
 var cfg Conf
@@ -95,4 +99,8 @@ func TerminalSecurity() bool {
 
 func WsDiceRootDomain() string {
 	return cfg.WsDiceRootDomain
+}
+
+func ExecutorClientTimeout() time.Duration {
+	return time.Duration(cfg.ExecutorClientTimeout) * time.Second
 }
