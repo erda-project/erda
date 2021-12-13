@@ -193,10 +193,10 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	}
 	client := getClusterClient(server, clusterKey, timeout)
 	id := atomic.AddInt64(&counter, 1)
-	logrus.Infof("[%d] REQ timeout=%s %s", id, timeout, url)
+	logrus.Infof("[%d] REQ cluster=%s setting-timeout=%s %s", id, clusterKey, timeout, url)
 	proxyReq, err := http.NewRequest(req.Method, url, req.Body)
 	if err != nil {
-		logrus.Errorf("[%d] NEW REQ %s: %v", id, url, err)
+		logrus.Errorf("[%d] NEW REQ cluster=%s %s: %v", id, clusterKey, url, err)
 		remotedialer.DefaultErrorWriter(rw, req, 500, err)
 		return
 	}
@@ -208,19 +208,19 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	start := time.Now()
 	resp, err := client.Do(proxyReq)
 	if err != nil {
-		logrus.Errorf("[%d] REQ ERR latency=%dms %s: %v", id, time.Since(start).Milliseconds(), url, err)
+		logrus.Errorf("[%d] REQ ERR cluster=%s latency=%dms %s: %v", id, clusterKey, time.Since(start).Milliseconds(), url, err)
 		remotedialer.DefaultErrorWriter(rw, req, 500, err)
 		return
 	}
 	defer resp.Body.Close()
-	logrus.Infof("[%d] REQ OK code=%d latency=%dms %s", id, resp.StatusCode, time.Since(start).Milliseconds(), url)
+	logrus.Infof("[%d] REQ OK cluster=%s code=%d latency=%dms %s", id, clusterKey, resp.StatusCode, time.Since(start).Milliseconds(), url)
 	rwHeader := rw.Header()
 	for key, values := range resp.Header {
 		rwHeader[textproto.CanonicalMIMEHeaderKey(key)] = values
 	}
 	rw.WriteHeader(resp.StatusCode)
 	io.Copy(rw, resp.Body)
-	logrus.Infof("[%d] REQ DONE latency=%dms %s", id, time.Since(start).Milliseconds(), url)
+	logrus.Infof("[%d] REQ DONE cluster=%s latency=%dms %s", id, clusterKey, time.Since(start).Milliseconds(), url)
 }
 
 func getClusterClient(server *remotedialer.Server, clusterKey string, timeout time.Duration) *http.Client {
