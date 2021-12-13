@@ -359,9 +359,10 @@ type ByExpressionRequest interface {
 }
 
 const (
-	defaultQueryCount = 50
-	maxQueryCount     = 700
-	maxTimeRange      = 30 * 24 * int64(time.Hour)
+	defaultQueryCount     = 50
+	maxQueryCount         = 700
+	maxTimeRange          = 30 * 24 * int64(time.Hour)
+	defaultQueryTimeRange = 3 * int64(time.Hour)
 )
 
 func getLimit(count int64) int {
@@ -392,7 +393,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		sel.End = time.Now().UnixNano()
 	}
 	if sel.Start <= 0 {
-		sel.Start = sel.End - maxTimeRange
+		sel.Start = sel.End - defaultQueryTimeRange
 		if sel.Start < 0 {
 			sel.Start = 0
 		}
