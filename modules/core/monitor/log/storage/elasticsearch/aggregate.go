@@ -29,14 +29,14 @@ import (
 )
 
 func (p *provider) Aggregate(ctx context.Context, req *storage.Aggregation) (*storage.AggregationResponse, error) {
-	var keyPaths []string
-	if len(req.Meta.OrgName) > 0 {
-		keyPaths = append(keyPaths, req.Meta.OrgName)
+	var keyPaths []loader.KeyPath
+	for _, orgName := range req.Meta.OrgNames {
+		keyPaths = append(keyPaths, loader.KeyPath{
+			Keys:      []string{orgName},
+			Recursive: true,
+		})
 	}
-	indices := p.Loader.Indices(ctx, req.Start, req.End, loader.KeyPath{
-		Keys:      keyPaths,
-		Recursive: true,
-	})
+	indices := p.Loader.Indices(ctx, req.Start, req.End, keyPaths...)
 	searchSource, err := getAggregateSearchSource(req)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,10 @@ cluster-dialer:
   debug: ${DEBUG:false}
   authWhitelist: ${AUTH_WHITELIST}
 
+pprof:
+http-server@admin:
+    addr: ":9093"
+
 # core service credential
 grpc-client@erda.core.services.authentication.credentials.accesskey:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"

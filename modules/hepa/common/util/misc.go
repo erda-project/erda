@@ -22,22 +22,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func UniqStringSlice(slice []string) []string {
-	sort.Strings(slice)
+func UniqStringSlice(s []string) []string {
+	sort.Strings(s)
 	i := 0
-	for j := 1; j < len(slice); j++ {
-		if slice[i] == slice[j] {
+	for j := 1; j < len(s); j++ {
+		if s[i] == s[j] {
 			continue
 		} else {
 			i++
-			slice[i] = slice[j]
+			s[i] = s[j]
 		}
 	}
 	size := i + 1
-	if size > len(slice) {
-		return slice
+	if size > len(s) {
+		return s
 	} else {
-		return slice[:size]
+		return s[:size]
 	}
 }
 

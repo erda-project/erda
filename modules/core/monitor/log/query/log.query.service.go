@@ -27,6 +27,7 @@ import (
 	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -39,7 +40,9 @@ type logQueryService struct {
 }
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
-	items, _, err := s.queryLogItems(ctx, req, nil, true, false)
+	items, _, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+		return s.tryFillQueryMeta(ctx, sel)
+	}, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +59,7 @@ func (s *logQueryService) GetLogByRuntime(ctx context.Context, req *pb.GetLogByR
 			Op:    storage.EQ,
 			Value: req.ApplicationId,
 		})
+		s.tryFillQueryMeta(ctx, sel)
 		return sel
 	}, true, false)
 	if err != nil {
@@ -74,6 +78,7 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 			Op:    storage.EQ,
 			Value: req.ClusterName,
 		})
+		s.tryFillQueryMeta(ctx, sel)
 		return sel
 	}, true, false)
 	if err != nil {
@@ -132,6 +137,32 @@ func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest
 	return s.walkLogItems(context.Background(), req, nil, func(item *pb.LogItem) error {
 		return stream.Send(item)
 	})
+}
+
+func (s *logQueryService) tryFillQueryMeta(ctx context.Context, sel *storage.Selector, orgNames ...string) *storage.Selector {
+	if len(sel.Meta.OrgNames) > 0 {
+		return sel
+	}
+	orgNameList := []string{""}
+	if reqOrg := apis.GetHeader(ctx, "org"); len(reqOrg) > 0 {
+		orgNameList = append(orgNameList, reqOrg)
+	}
+	contains := func(orgName string) bool {
+		for _, item := range orgNameList {
+			if item == orgName {
+				return true
+			}
+		}
+		return false
+	}
+	for _, orgName := range orgNames {
+		if contains(orgName) {
+			continue
+		}
+		orgNameList = append(orgNameList, orgName)
+	}
+	sel.Meta.OrgNames = orgNameList
+	return sel
 }
 
 func (s *logQueryService) toAggregation(req *pb.LogAggregationRequest) (*storage.Aggregation, error) {
@@ -443,7 +474,7 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 		}
 		if meta := byExpressionRequest.GetQueryMeta(); meta != nil {
 			sel.Meta = storage.QueryMeta{
-				OrgName:               meta.GetOrgName(),
+				OrgNames:              []string{meta.GetOrgName()},
 				MspEnvIds:             meta.GetMspEnvIds(),
 				Highlight:             meta.GetHighlight(),
 				PreferredBufferSize:   int(meta.GetPreferredBufferSize()),

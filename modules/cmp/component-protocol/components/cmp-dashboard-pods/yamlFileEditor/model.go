@@ -12,50 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package restartButton
+package yamlFileEditor
 
 import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-type ComponentRestartButton struct {
+type ComponentYamlFileEditor struct {
 	base.DefaultProvider
 
 	ctx        context.Context
 	sdk        *cptype.SDK
-	bdl        *bundle.Bundle
 	server     cmp.SteveServer
-	Type       string                 `json:"type"`
-	State      State                  `json:"state"`
 	Props      Props                  `json:"props"`
+	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
+}
+
+type Props struct {
+	Bordered     bool     `json:"bordered"`
+	FileValidate []string `json:"fileValidate,omitempty"`
+	MinLines     int      `json:"minLines"`
+	Actions      Actions  `json:"actions"`
+}
+
+type Actions struct {
+	Copy bool `json:"copy"`
 }
 
 type State struct {
 	ClusterName string `json:"clusterName,omitempty"`
-	WorkloadID  string `json:"workloadId,omitempty"`
-}
-
-type Props struct {
-	Type     string   `json:"type"`
-	Text     string   `json:"text"`
-	TipProps TipProps `json:"tipProps"`
-}
-
-type TipProps struct {
-	Placement string `json:"placement,omitempty"`
+	PodID       string `json:"podId,omitempty"`
+	Value       string `json:"value,omitempty"`
 }
 
 type Operation struct {
-	Key         string `json:"key,omitempty"`
-	Reload      bool   `json:"reload"`
-	Confirm     string `json:"confirm,omitempty"`
-	Disabled    bool   `json:"disabled"`
-	SuccessMsg  string `json:"successMsg,omitempty"`
-	DisabledTip string `json:"disabledTip,omitempty"`
+	Key        string `json:"key,omitempty"`
+	Reload     bool   `json:"reload"`
+	SuccessMsg string `json:"successMsg,omitempty"`
 }
