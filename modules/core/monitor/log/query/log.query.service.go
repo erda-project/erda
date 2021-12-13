@@ -139,15 +139,29 @@ func (s *logQueryService) ScanLogsByExpression(req *pb.GetLogByExpressionRequest
 	})
 }
 
-func (s *logQueryService) tryFillQueryMeta(ctx context.Context, sel *storage.Selector) *storage.Selector {
+func (s *logQueryService) tryFillQueryMeta(ctx context.Context, sel *storage.Selector, orgNames ...string) *storage.Selector {
 	if len(sel.Meta.OrgNames) > 0 {
 		return sel
 	}
-	orgNames := []string{""}
+	orgNameList := []string{""}
 	if reqOrg := apis.GetHeader(ctx, "org"); len(reqOrg) > 0 {
-		orgNames = append(orgNames, reqOrg)
+		orgNameList = append(orgNameList, reqOrg)
 	}
-	sel.Meta.OrgNames = orgNames
+	contains := func(orgName string) bool {
+		for _, item := range orgNameList {
+			if item == orgName {
+				return true
+			}
+		}
+		return false
+	}
+	for _, orgName := range orgNames {
+		if contains(orgName) {
+			continue
+		}
+		orgNameList = append(orgNameList, orgName)
+	}
+	sel.Meta.OrgNames = orgNameList
 	return sel
 }
 
