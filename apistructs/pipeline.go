@@ -32,6 +32,15 @@ const (
 	PipelinePageListRequestIdColumn = "id"
 )
 
+const (
+	BuildkitSecretMountName = "cert"
+	BuildkitSecretMountPath = "/.buildkit"
+	BuildkitClientSecret    = "buildkit-client-certs"
+
+	BuildkitEnable  = "BUILDKIT_ENABLE"
+	BuildkitHitRate = "BUILDKIT_HIT_RATE"
+)
+
 // pipeline create
 
 type PipelineCreateRequest struct {

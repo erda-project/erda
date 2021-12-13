@@ -17,9 +17,11 @@ package k8sjob
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -151,7 +153,7 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 		return nil, err
 	}
 
-	if err := k.createImageSecretIfNotExist(job.Namespace); err != nil {
+	if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.AliyunRegistry); err != nil {
 		return nil, err
 	}
 
@@ -499,6 +501,54 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		return nil, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
 	}
 
+	buildkitEnable := false
+
+	if clusterInfo[apistructs.BuildkitEnable] != "" {
+		buildkitEnable, err = strconv.ParseBool(clusterInfo[apistructs.BuildkitEnable])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse buildkit enbable, err: %v", err)
+		}
+	}
+
+	if buildkitEnable {
+		delete(clusterInfo, apistructs.BuildkitEnable)
+
+		hitRate := 100
+
+		if clusterInfo[apistructs.BuildkitHitRate] != "" {
+			hitRate, err = strconv.Atoi(clusterInfo[apistructs.BuildkitHitRate])
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse buildkit hit rate, err: %v", err)
+			}
+		}
+
+		if isBuildkitHit(hitRate) {
+			//create buildkit client secret
+			if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.BuildkitClientSecret); err != nil {
+				return nil, err
+			}
+			//Inject buildkit switch variables
+			container.Env = append(container.Env, corev1.EnvVar{
+				Name:  apistructs.BuildkitEnable,
+				Value: "true",
+			})
+
+			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+				Name:      apistructs.BuildkitSecretMountName,
+				MountPath: apistructs.BuildkitSecretMountPath,
+			})
+
+			kubeJob.Spec.Template.Spec.Volumes = append(kubeJob.Spec.Template.Spec.Volumes, corev1.Volume{
+				Name: apistructs.BuildkitSecretMountName,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: apistructs.BuildkitClientSecret,
+					},
+				},
+			})
+		}
+	}
+
 	// envs
 	env, err := k.generateContainerEnvs(&job, clusterInfo)
 	if err != nil {
@@ -776,10 +826,10 @@ func parseFailedReason(message string) (string, error) {
 	}
 }
 
-func (k *K8sJob) createImageSecretIfNotExist(namespace string) error {
+func (k *K8sJob) createInnerSecretIfNotExist(namespace, secretName string) error {
 	var err error
 
-	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
+	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -788,7 +838,7 @@ func (k *K8sJob) createImageSecretIfNotExist(namespace string) error {
 	}
 
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
+	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil
@@ -889,4 +939,12 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 
 func makeJobName(namespace string, taskUUID string) string {
 	return strutil.Concat(namespace, ".", taskUUID)
+}
+
+func isBuildkitHit(hitRate int) bool {
+	rand.Seed(time.Now().UnixNano())
+	if rand.Intn(100) < hitRate {
+		return true
+	}
+	return false
 }
