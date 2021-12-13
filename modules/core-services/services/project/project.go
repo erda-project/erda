@@ -69,16 +69,16 @@ func New(opts ...Option) *Project {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(dbClient *dao.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(project *Project) {
-		project.db = dbClient
+		project.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(ucClient *ucauth.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(project *Project) {
-		project.uc = ucClient
+		project.uc = uc
 	}
 }
 
