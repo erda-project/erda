@@ -48,6 +48,8 @@ func GetManager() *Manager {
 
 // Manager is a executor manager, it holds the all executor instances.
 type Manager struct {
+	sync.Mutex
+
 	factory   map[executortypes.Kind]executortypes.CreateFn
 	executors map[executortypes.Name]executortypes.Executor
 	pools     map[executortypes.Name]*goroutinepool.GoroutinePool
@@ -85,15 +87,20 @@ func (m *Manager) initialize() error {
 			case storetypes.Update:
 				logrus.Infof("watched executor(%s) updated, key: %s", config.Name, k)
 				conf.GetConfStore().ExecutorStore.Store(config.Name, config)
-				if err := updateOneExecutor(m, config); err != nil {
-					logrus.Errorf("updating executor(name: %s, key: %s) error: %v", config.Name, k, err)
-				}
+				m.pools[defaultGoPool].MustGo(func() {
+					if err := updateOneExecutor(m, config); err != nil {
+						logrus.Errorf("updating executor(name: %s, key: %s) error: %v", config.Name, k, err)
+					}
+				})
 			case storetypes.Add:
 				logrus.Infof("watched executor(%s) created, key: %s", config.Name, k)
 				conf.GetConfStore().ExecutorStore.Store(config.Name, config)
-				if err := createOneExecutor(m, config); err != nil {
-					logrus.Errorf("creating executor(name: %s, key: %s) error: %v", config.Name, k, err)
-				}
+				// Use default goroutine pool to execute creating job.
+				m.pools[defaultGoPool].MustGo(func() {
+					if err := createOneExecutor(m, config); err != nil {
+						logrus.Errorf("failed to create executor(name: %s, key: %s) error: %v", config.Name, k, err)
+					}
+				})
 			}
 		}
 		option := jsonstore.UseMemEtcdStore(context.Background(), conf.CLUSTERS_CONFIG_PATH, f, executorconfig.ExecutorConfig{})
@@ -101,7 +108,6 @@ func (m *Manager) initialize() error {
 			r = err
 		}
 		logrus.Infof("executor factories:%+v", m.factory)
-		logrus.Infof("executors:%+v", m.executors)
 	})
 	return r
 }
@@ -119,6 +125,10 @@ func createOneExecutor(m *Manager, eConfig *executorconfig.ExecutorConfig) error
 	if err != nil {
 		return err
 	}
+
+	m.Lock()
+	defer m.Unlock()
+
 	m.executors[name] = executor
 	m.pools[name] = goroutinepool.New(conf.PoolSize())
 	m.pools[name].Start()

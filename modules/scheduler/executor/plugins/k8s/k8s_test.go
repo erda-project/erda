@@ -15,6 +15,7 @@
 package k8s
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -22,11 +23,18 @@ import (
 	"github.com/pkg/errors"
 	"gotest.tools/assert"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/clusterinfo"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/istioctl/executors"
+	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
 func TestComposeDeploymentNodeAffinityPreferredWithServiceWorkspace(t *testing.T) {
@@ -203,4 +211,37 @@ func Test_getIstioEngine(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNew(t *testing.T) {
+	var (
+		bdl         = bundle.New()
+		mockCluster = "mock-cluster"
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCluster", func(_ *bundle.Bundle, _ string) (*apistructs.ClusterInfo, error) {
+		return &apistructs.ClusterInfo{}, nil
+	})
+
+	monkey.Patch(k8sclientconfig.ParseManageConfig, func(_ string, _ *apistructs.ManageConfig) (*rest.Config, error) {
+		return &rest.Config{}, nil
+	})
+
+	monkey.Patch(util.GetClient, func(_ string, _ *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
+		return "localhost", httpclient.New(), nil
+	})
+
+	monkey.Patch(dbengine.Open, func(_ ...*dbengine.Conf) (*dbengine.DBEngine, error) {
+		return &dbengine.DBEngine{}, nil
+	})
+
+	monkey.Patch(clusterinfo.New, func(_ string, _ ...clusterinfo.Option) (*clusterinfo.ClusterInfo, error) {
+		return &clusterinfo.ClusterInfo{}, nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	_, err := New("MARATHONFORMOCKCLUSTER", mockCluster, map[string]string{})
+	//assert.NilError(t, err)
+	fmt.Println(err)
 }
