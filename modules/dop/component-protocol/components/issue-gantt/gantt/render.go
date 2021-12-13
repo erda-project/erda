@@ -124,6 +124,9 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 			ID:             id,
 			PlanStartedAt:  timeFromMilli(op.Meta.Nodes.Start),
 			PlanFinishedAt: timeFromMilli(op.Meta.Nodes.End),
+			IdentityInfo: apistructs.IdentityInfo{
+				UserID: f.sdk.Identity.UserID,
+			},
 		}); err != nil {
 			return err
 		}
