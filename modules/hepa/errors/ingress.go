@@ -12,45 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package errors
 
 import (
-	"encoding/json"
-	"runtime/debug"
-	"sort"
-
-	log "github.com/sirupsen/logrus"
+	"regexp"
+	"strings"
 )
 
-func UniqStringSlice(s []string) []string {
-	sort.Strings(s)
-	i := 0
-	for j := 1; j < len(s); j++ {
-		if s[i] == s[j] {
-			continue
-		} else {
-			i++
-			s[i] = s[j]
-		}
+func IsRouteOptionAlreadyDefinedInIngressError(err error) (namespace, ingressName string, ok bool) {
+	if err == nil {
+		return "", "", false
 	}
-	size := i + 1
-	if size > len(s) {
-		return s
-	} else {
-		return s[:size]
+	if !strings.Contains(strings.ToLower(err.Error()), "is already defined in ingress") {
+		return "", "", false
 	}
-}
-
-func GetPureInterface(i interface{}) interface{} {
-	var res interface{}
-	bytes, _ := json.Marshal(i)
-	json.Unmarshal(bytes, &res)
-	return res
-}
-
-func DoRecover() {
-	if r := recover(); r != nil {
-		log.Errorf("recovered from: %+v ", r)
-		debug.PrintStack()
+	compile := regexp.MustCompile(`([\w\-]*)/([\w\-]*)$`)
+	found := compile.FindStringSubmatch(err.Error())
+	if len(found) != 3 {
+		return "", "", true
 	}
+	return found[1], found[2], true
 }

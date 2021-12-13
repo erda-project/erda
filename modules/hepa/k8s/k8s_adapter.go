@@ -17,6 +17,7 @@ package k8s
 import (
 	"bytes"
 	"context"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -33,6 +34,7 @@ import (
 
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
+	kErrors "github.com/erda-project/erda/modules/hepa/errors"
 	"github.com/erda-project/erda/pkg/k8s/interface_factory"
 	"github.com/erda-project/erda/pkg/k8s/union_interface"
 	"github.com/erda-project/erda/pkg/k8sclient"
@@ -388,19 +390,7 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	}
 	ing = impl.newIngress(namespace, ingName, routes, backend, routeOptions.EnableTLS)
 	if k8serrors.IsNotFound(err) {
-		err := impl.setOptionAnnotations(ing, routeOptions)
-		if err != nil {
-			return false, err
-		}
-		log.Debugf("begin create ingress, name:%s, ns:%s", ingName, namespace)
-
-		_, err = ns.Create(context.Background(), ing, metav1.CreateOptions{})
-		if err != nil {
-			return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
-				ingName, namespace, err)
-		}
-		log.Infof("new ingress created, name:%s, ns:%s", ingName, namespace)
-		return false, nil
+		return impl.createIngress(context.Background(), ns, ing, routeOptions, ingName, namespace)
 	}
 	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
 	if err != nil {
@@ -422,6 +412,34 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 	}
 	log.Infof("ingress updated, name:%s, ns:%s", ingName, namespace)
 	return true, nil
+}
+
+func (impl *K8SAdapterImpl) createIngress(ctx context.Context, ns union_interface.IngressInterface, ing interface{}, options RouteOptions,
+	ingressName, namespace string) (bool, error) {
+	err := impl.setOptionAnnotations(ing, options)
+	if err != nil {
+		return false, err
+	}
+	log.Debugf("begin create ingress, name:%s, ns:%s", ingressName, namespace)
+
+	_, err = ns.Create(context.Background(), ing, metav1.CreateOptions{})
+	if err == nil {
+		return false, nil
+	}
+	namespace_, name_, ok := kErrors.IsRouteOptionAlreadyDefinedInIngressError(err)
+	if !ok || namespace_ == "" || name_ == "" {
+		return false, errors.Wrapf(err, "failed to create ingress, ingress name: %s, namespace:%s",
+			ingressName, namespace)
+	}
+	log.WithError(err).WithFields(map[string]interface{}{
+		"namespace":                          namespace,
+		"ingress name":                       ingressName,
+		"route option is already defined in": filepath.Join(namespace_, name_),
+	}).Warnln("the route option is already defined in an other Ingress, try to delete the old and create again")
+	if err = impl.DeleteIngress(namespace_, name_); err != nil {
+		return false, errors.Wrapf(err, "the same route option is defined in %s, but failed to clear it", filepath.Join(namespace_, name_))
+	}
+	return impl.createIngress(ctx, ns, ing, options, ingressName, namespace)
 }
 
 func (impl *K8SAdapterImpl) SetUpstreamHost(namespace, name, host string) error {

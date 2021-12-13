@@ -458,7 +458,7 @@ func (a *Addon) AddonProvisionCallback(insId string, response *apistructs.AddonC
 	if err != nil {
 		return err
 	}
-	if addonIns.ID == "" {
+	if addonIns == nil || addonIns.ID == "" {
 		return errors.New("找不到对应addon instance信息，instanceID：" + insId)
 	}
 	// addon终结状态不需要修改
