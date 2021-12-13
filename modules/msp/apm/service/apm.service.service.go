@@ -245,9 +245,8 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	servicesView := make([]*pb.ServicesView, 0, 10)
 
 	for _, id := range req.ServiceIds {
-
-		statement := "SELECT sum(count_sum::field),sum(elapsed_sum::field),sum(errors_sum::field)" +
-			"FROM application_http_service,application_rpc_service " +
+		statement := "SELECT sum(count_sum::field)/240,sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)" +
+			"FROM application_http_service" +
 			"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id GROUP BY time(4m)"
 		queryParams := map[string]*structpb.Value{
 			"terminus_key": structpb.NewStringValue(req.TenantId),
@@ -281,18 +280,14 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 				return nil, err
 			}
 			timestamp := parse.UnixNano() / int64(time.Millisecond)
+
 			qpsChart.Timestamp = timestamp
 			durationChart.Timestamp = timestamp
 			errorRateChart.Timestamp = timestamp
 
-			count := int64(row.Values[1].GetNumberValue())
-			duration := int64(row.Values[2].GetNumberValue())
-			errorCount := int64(row.Values[3].GetNumberValue())
-			qpsChart.Value = math.DecimalPlacesWithDigitsNumber(float64(count)/(60*4), 2)
-			if count != 0 {
-				durationChart.Value = math.DecimalPlacesWithDigitsNumber(float64(duration/count), 2)
-				errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(float64(errorCount/count), 2)
-			}
+			qpsChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+			durationChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
+			errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[3].GetNumberValue(), 2) * 100
 
 			qpsCharts = append(qpsCharts, qpsChart)
 			durationCharts = append(durationCharts, durationChart)
