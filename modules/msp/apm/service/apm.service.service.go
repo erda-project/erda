@@ -76,6 +76,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 
 	services := make([]*pb.Service, 0, 10)
 	rows := response.Results[0].Series[0].Rows
+
 	for _, row := range rows {
 		service := new(pb.Service)
 		service.Id = row.Values[0].GetStringValue()
@@ -83,6 +84,25 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		service.Language = parseLanguage(row.Values[2].GetStringValue())
 		service.LastHeartbeat = time.Unix(0, int64(row.Values[3].GetNumberValue())).Format("2006-01-02 15:04:05")
 		services = append(services, service)
+	}
+
+	// calculate total count
+	statement = "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
+	statement = strings.ReplaceAll(statement, "$condition", condition)
+	countRequest := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(start, 10),
+		End:       strconv.FormatInt(end, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+
+	if rows == nil || len(rows) == 0 {
+		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
 	}
 
 	sortStrategy, err := s.aggregateMetric(req.TenantId, services, ctx)
@@ -109,21 +129,6 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 			return false
 		}
 	})
-
-	// calculate total count
-	statement = "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
-	statement = strings.ReplaceAll(statement, "$condition", condition)
-	countRequest := &metricpb.QueryWithInfluxFormatRequest{
-		Start:     strconv.FormatInt(start, 10),
-		End:       strconv.FormatInt(end, 10),
-		Statement: statement,
-		Params:    queryParams,
-	}
-	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
 }
@@ -246,7 +251,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 
 	for _, id := range req.ServiceIds {
 		statement := "SELECT sum(count_sum::field)/240,sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)" +
-			"FROM application_http_service" +
+			"FROM application_http_service " +
 			"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id GROUP BY time(4m)"
 		queryParams := map[string]*structpb.Value{
 			"terminus_key": structpb.NewStringValue(req.TenantId),
