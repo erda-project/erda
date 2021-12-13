@@ -92,8 +92,6 @@ func (client *DBClient) QueryNotifyGroup(request *apistructs.QueryNotifyGroupReq
 		return nil, err
 	}
 	err = query.Order("updated_at desc").
-		Offset((request.PageNo - 1) * request.PageSize).
-		Limit(request.PageSize).
 		Find(&notifyGroups).Error
 	if err != nil {
 		return nil, err

@@ -101,8 +101,6 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
 	orgId := apis.GetOrgID(ctx)
 	queryReq := &apistructs.QueryNotifyGroupRequest{
-		PageNo:      request.PageNo,
-		PageSize:    request.PageSize,
 		ScopeType:   request.ScopeType,
 		ScopeID:     request.ScopeId,
 		Label:       request.Label,
