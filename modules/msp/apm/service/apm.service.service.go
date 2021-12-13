@@ -147,7 +147,7 @@ func timeRange(s string) (start int64, end int64) {
 }
 
 func (s *apmServiceService) aggregateMetric(tenantId string, services []*pb.Service, ctx context.Context) (sortStrategy string, err error) {
-	start, end := timeRange("-6h")
+	start, end := timeRange("-1h")
 
 	includeIds := ""
 	serviceMap := make(map[string]*pb.Service)
