@@ -210,6 +210,17 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, err
 	}
 
+	// create issue state circulation
+	if err = svc.db.CreateIssueStateCirculation(&dao.IssueStateCirculation{
+		ProjectID: create.ProjectID,
+		IssueID:   create.ID,
+		StateFrom: 0,
+		StateTO:   uint64(create.State),
+		Creator:   create.Creator,
+	}); err != nil {
+		return nil, err
+	}
+
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
@@ -628,6 +639,19 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
 	}
 
+	// create issue state circulation
+	if issueModel.State != *req.State {
+		if err = svc.db.CreateIssueStateCirculation(&dao.IssueStateCirculation{
+			ProjectID: issueModel.ProjectID,
+			IssueID:   issueModel.ID,
+			StateFrom: uint64(issueModel.State),
+			StateTO:   uint64(*req.State),
+			Creator:   req.UserID,
+		}); err != nil {
+			return err
+		}
+	}
+
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
 }
@@ -823,6 +847,10 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 		if err := svc.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
+	}
+	// delete issue state circulation
+	if err = svc.db.DeleteIssuesStateCirculation(issueID); err != nil {
+		return apierrors.ErrDeleteIssue.InternalError(err)
 	}
 
 	err = svc.db.DeleteIssue(issueID)
