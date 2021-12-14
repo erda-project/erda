@@ -215,7 +215,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		ProjectID: create.ProjectID,
 		IssueID:   create.ID,
 		StateFrom: 0,
-		StateTO:   uint64(create.State),
+		StateTo:   uint64(create.State),
 		Creator:   create.Creator,
 	}); err != nil {
 		return nil, err
@@ -645,7 +645,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			ProjectID: issueModel.ProjectID,
 			IssueID:   issueModel.ID,
 			StateFrom: uint64(issueModel.State),
-			StateTO:   uint64(*req.State),
+			StateTo:   uint64(*req.State),
 			Creator:   req.UserID,
 		}); err != nil {
 			return err
@@ -1697,4 +1697,8 @@ func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.
 		return nil, err
 	}
 	return issues, nil
+}
+
+func (svc *Issue) ListStatesCircusByProjectID(projectID uint64) ([]dao.IssueStateCirculation, error) {
+	return svc.db.ListStatesCircusByProjectID(projectID)
 }

@@ -24,7 +24,7 @@ type IssueStateCirculation struct {
 	ProjectID uint64
 	IssueID   uint64
 	StateFrom uint64
-	StateTO   uint64
+	StateTo   uint64
 	Creator   string
 }
 
@@ -32,10 +32,19 @@ func (IssueStateCirculation) TableName() string {
 	return "dice_issue_state_circulation"
 }
 
-func (client *DBClient) CreateIssueStateCirculation(dao *IssueStateCirculation) error {
-	return client.Create(dao).Error
+func (client *DBClient) CreateIssueStateCirculation(StatesCircus *IssueStateCirculation) error {
+	return client.Create(StatesCircus).Error
 }
 
 func (client *DBClient) DeleteIssuesStateCirculation(issueID uint64) error {
 	return client.Model(&IssueStateCirculation{}).Where("issue_id = ?", issueID).Delete(IssueStateCirculation{}).Error
+}
+
+func (client *DBClient) ListStatesCircusByProjectID(projectID uint64) ([]IssueStateCirculation, error) {
+	var statesCircus []IssueStateCirculation
+	db := client.Model(&IssueStateCirculation{}).Where("project_id = ?", projectID)
+	if err := db.Find(&statesCircus).Error; err != nil {
+		return nil, err
+	}
+	return statesCircus, nil
 }
