@@ -33,8 +33,8 @@ func AbsInt64(x int64) int64 {
 	return (x ^ y) - y
 }
 
-// TwoDecimalPlaces Round to two decimal places
-func TwoDecimalPlaces(value float64) float64 {
-	f, _ := decimal.NewFromFloat(value).Round(2).Float64()
+// DecimalPlacesWithDigitsNumber Round to decimal places by number of digits
+func DecimalPlacesWithDigitsNumber(value float64, digitsNumber int) float64 {
+	f, _ := decimal.NewFromFloat(value).Round(int32(digitsNumber)).Float64()
 	return f
 }

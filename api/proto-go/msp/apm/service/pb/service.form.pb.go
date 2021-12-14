@@ -140,12 +140,6 @@ func (m *ServiceChart) UnmarshalURLValues(prefix string, values url.Values) erro
 			switch prefix + key {
 			case "type":
 				m.Type = vals[0]
-			case "data":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Data = val
 			}
 		}
 	}
@@ -164,6 +158,24 @@ func (m *Service) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "language":
 			case "lastHeartbeat":
 				m.LastHeartbeat = vals[0]
+			case "rps":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Rps = val
+			case "avgDuration":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.AvgDuration = val
+			case "errorRate":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.ErrorRate = val
 			}
 		}
 	}

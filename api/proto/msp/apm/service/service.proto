@@ -73,8 +73,7 @@ message Chart{
 
 message ServiceChart{
   string         type = 1;
-  double         data = 2;
-  repeated Chart view = 3;
+  repeated Chart view = 2;
 }
 
 message Service {
@@ -82,6 +81,9 @@ message Service {
   string               name          = 2;
   erda.common.Language language      = 3;
   string               lastHeartbeat = 4;
+  double               rps           = 5;
+  double               avgDuration   = 6;
+  double               errorRate     = 7;
 }
 
 enum ChartType {
