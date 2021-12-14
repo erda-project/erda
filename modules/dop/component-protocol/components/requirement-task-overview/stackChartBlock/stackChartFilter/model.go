@@ -36,7 +36,7 @@ type State struct {
 }
 
 type Values struct {
-	Type      string `json:"type"`
+	Type string `json:"type"`
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"

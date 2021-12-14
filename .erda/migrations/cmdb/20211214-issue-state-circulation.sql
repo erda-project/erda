@@ -2,7 +2,7 @@ CREATE TABLE `dice_issue_state_circulation`
 (
     `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
     `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '表记录创建时间',
-    `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '表记录更新时间',
+    `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '表记录更新时间',
     `project_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '所属项目 ID',
     `state_from` bigint(20) NOT NULL DEFAULT '0' COMMENT '更新前状态',
     `state_to`   bigint(20) NOT NULL DEFAULT '0' COMMENT '更新后状态',

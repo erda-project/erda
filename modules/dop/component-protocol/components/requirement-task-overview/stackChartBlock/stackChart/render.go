@@ -60,10 +60,6 @@ func (f *StackChart) setProps() {
 	f.Type = "Chart"
 	series := make([]Series, 0, len(f.States))
 	for _, v := range f.States {
-		data := make([]int, 0)
-		for _, date := range f.Dates {
-			data = append(data, f.DateMap[date][v.ID])
-		}
 		series = append(series, Series{
 			Data: func() []int {
 				array := make([]int, 0)
@@ -126,7 +122,7 @@ func (f *StackChart) setProps() {
 			Tooltip: map[string]interface{}{
 				"trigger": "axis",
 			},
-			Color:  []string{},
+			Color:  getColors(len(f.States)),
 			Series: series,
 		},
 	}
@@ -165,10 +161,10 @@ func (f *StackChart) setDateMap() {
 			continue
 		}
 		if _, ok := dateMap[f.Dates[0]][v.StateFrom]; ok && v.StateFrom != 0 {
-			baseCount[v.StateFrom] --
+			baseCount[v.StateFrom] -= 1
 		}
 		if _, ok := dateMap[f.Dates[0]][v.StateTo]; ok {
-			baseCount[v.StateTo] ++
+			baseCount[v.StateTo] += 1
 		}
 
 	}
@@ -181,10 +177,10 @@ func (f *StackChart) setDateMap() {
 					continue
 				}
 				if _, ok3 := dateMap[f.Dates[i]][v.StateFrom]; ok3 && v.StateFrom != 0 {
-					baseCount[v.StateFrom] --
+					baseCount[v.StateFrom] -= 1
 				}
 				if _, ok3 := dateMap[f.Dates[i]][v.StateTo]; ok3 {
-					baseCount[v.StateTo] ++
+					baseCount[v.StateTo] += 1
 				}
 			}
 		}
