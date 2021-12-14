@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor-injector-server
+  namespace: default
+  labels:
+    app: monitor-injector-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitor-injector-server
+  template:
+    metadata:
+      labels:
+        app: monitor-injector-server
+    spec:
+      containers:
+      - name: server
+        image: registry.cn-hangzhou.aliyuncs.com/terminus/monitor:agent-injector-1.5-alpha-20211214151210-451eb0f9c
+        imagePullPolicy: Always
+        env:
+        - name: INIT_CONTAINER_IMAGE
+          value: registry.cn-hangzhou.aliyuncs.com/terminus/monitor:agent-injector-1.5-alpha-20211214151210-451eb0f9c
+        command:
+        - "/app/agent-injector"
+        workingDir: "/app"
+        ports:
+        - containerPort: 8443
+          name: server-https
+        - containerPort: 8080
+          name: server-http
+        livenessProbe:
+          failureThreshold: 28
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - name: monitor-injector-tls
+          mountPath: /etc/server/certs
+          readOnly: true
+      imagePullSecrets:
+        - name: aliyun-registry
+      volumes:
+      - name: monitor-injector-tls
+        secret:
+          secretName: monitor-injector-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitor-injector
+  namespace: default
+spec:
+  selector:
+    app: monitor-injector-server
+  ports:
+    - port: 443
+      targetPort: server-https
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: monitor-injector
+webhooks:
+  - name: monitor-injector.default.svc
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]
+    clientConfig:
+      service:
+        name: monitor-injector
+        namespace: default
+        path: "/apis/pods/mutate"
+      caBundle: ${CA_PEM_B64}
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
