@@ -292,7 +292,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 
 			qpsChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 			durationChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
-			errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[3].GetNumberValue(), 2) * 100
+			errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[3].GetNumberValue()*100, 2)
 
 			qpsCharts = append(qpsCharts, qpsChart)
 			durationCharts = append(durationCharts, durationChart)
