@@ -14,7 +14,11 @@
 
 package apistructs
 
-import "github.com/pkg/errors"
+import (
+	"strconv"
+
+	"github.com/pkg/errors"
+)
 
 // MemberListRequest 查询成员 GET /api/members
 type MemberListRequest struct {
@@ -65,6 +69,11 @@ type Member struct {
 	// uc注销用户的标记，用于分页查询member时的返回
 	Deleted bool   `json:"deleted"`
 	Token   string `json:"token"`
+}
+
+func (m Member) GetUserID() uint64 {
+	i, _ := strconv.ParseUint(m.UserID, 10, 32)
+	return i
 }
 
 // RoleInfo 角色信息

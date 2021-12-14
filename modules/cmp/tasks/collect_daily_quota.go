@@ -17,6 +17,7 @@ package tasks
 import (
 	"context"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -122,6 +123,24 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		var record apistructs.ProjectResourceDailyModel
 		record.ProjectID = project.ID
 		record.ProjectName = project.Name
+		record.ProjectDisplayName = project.DisplayName
+
+		// 查询 Owner 信息
+		var member = apistructs.Member{UserID: "0", Name: "OwnerUnknown", Nick: "OwnerUnknown"}
+		if members, err := d.bdl.GetMembers(apistructs.MemberListRequest{
+			ScopeType: apistructs.ProjectScope,
+			ScopeID:   int64(project.ID),
+			Roles:     []string{"Owner", "Lead"},
+			Labels:    nil,
+			Q:         "",
+			PageNo:    1,
+			PageSize:  1000,
+		}); err == nil && members != nil {
+			hitFirstValidOwnerOrLead(&member, members.List)
+		}
+		record.OwnerUserID = member.GetUserID()
+		record.OwnerUserName = member.Name
+		record.OwnerUserNickname = member.Nick
 
 		var params = make(url.Values)
 		params.Add("withQuota", "true")
@@ -293,5 +312,21 @@ func DailyQuotaCollectorWithCMPAPI(cmp interface {
 }) DailyQuotaCollectorOption {
 	return func(c *DailyQuotaCollector) {
 		c.cmp = cmp
+	}
+}
+
+func hitFirstValidOwnerOrLead(defaultOne *apistructs.Member, members []apistructs.Member) {
+	if defaultOne == nil {
+		return
+	}
+	for _, role_ := range []string{"Owner", "Lead"} {
+		for _, member := range members {
+			for _, role := range member.Roles {
+				if strings.EqualFold(role, role_) {
+					*defaultOne = member
+					return
+				}
+			}
+		}
 	}
 }

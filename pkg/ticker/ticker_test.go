@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tasks_test
+package ticker_test
 
 import (
 	"fmt"
@@ -21,26 +21,26 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/cmp/tasks"
+	"github.com/erda-project/erda/pkg/ticker"
 )
 
 func TestExitError_Error(t *testing.T) {
-	var e = tasks.ExitError{Message: "something wrong"}
+	var e = ticker.ExitError{Message: "something wrong"}
 	t.Log(e.Error())
 }
 
 func TestTicker_Close(t *testing.T) {
 	var times = 0
-	ticker := tasks.New(time.Millisecond*200, func() (bool, error) {
+	tic := ticker.New(time.Millisecond*200, func() (bool, error) {
 		times++
 		fmt.Println("times:", times)
 		if times > 5 {
-			return true, &tasks.ExitError{Message: "time over"}
+			return true, &ticker.ExitError{Message: "time over"}
 		}
 		if times > 3 {
 			return false, errors.New("normal error")
 		}
 		return false, nil
 	})
-	ticker.Run()
+	tic.Run()
 }

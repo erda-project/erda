@@ -85,6 +85,7 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ticker"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -500,6 +501,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithTrans(p.ResourceTrans),
 		project.WithCMP(p.Cmp),
 	)
+	go ticker.New(time.Hour, proj.CollectApplicationsResource)
 
 	codeCvc := code_coverage.New(
 		code_coverage.WithDBClient(db),
