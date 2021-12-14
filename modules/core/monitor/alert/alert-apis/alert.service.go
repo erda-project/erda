@@ -486,6 +486,11 @@ func (m *alertService) addFilter(alertScope, scope, scopeId string, rule *pb.Cus
 			Operator: "eq",
 			Value:    structpb.NewStringValue(scopeId),
 		})
+		rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+			Tag:      "cluster_name",
+			Operator: "in",
+			Value:    structpb.NewStringValue("$" + "cluster_name"),
+		})
 	}
 }
 
