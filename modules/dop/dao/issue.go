@@ -685,10 +685,12 @@ func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchR
 	offset := (req.PageNo - 1) * req.PageSize
 	var res []IssueExpiryStatus
 	var total int
+	// paged projects with unfinished issues
 	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
 		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
 		return nil, 0, err
 	}
+	// total of matched projects
 	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -698,6 +700,7 @@ func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchR
 	}
 	req.ProjectIDs = projectIDs
 	sql = client.issueExpiryStatusQuery(req)
+	// query with matched projects
 	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
 		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
 		return nil, 0, err
