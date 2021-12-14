@@ -710,7 +710,7 @@ func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchR
 
 func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
 	sql := client.Debug().Table("dice_issues").Joins(joinState)
-	sql = sql.Where("deleted = 0").Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
+	sql = sql.Where("deleted = 0").Where("assignee IN (?) AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
 	}
