@@ -284,6 +284,9 @@ const (
 	applicationIdValue             = "$application_id"
 	clusterNameTag                 = "cluster_name"
 	clusterNameValue               = "$cluster_name"
+
+	targetTerminusKey = "target_terminus_key"
+	terminusKey       = "terminus_key"
 )
 
 // CustomizeAlerts .
