@@ -474,6 +474,9 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 				}
 			}
 		}
+		if tag == targetTerminusKey {
+			tag = terminusKey
+		}
 		if attr, ok := attributes[tag]; ok {
 			val, err := formatOperatorValue(opType, utils.StringType, attr)
 			if err != nil {
