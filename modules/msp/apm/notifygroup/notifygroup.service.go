@@ -131,33 +131,6 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 	return result, nil
 }
 
-func (n *notifyGroupService) ListNotifyGroups(ctx context.Context, request *pb.ListNotifyGroupsRequest) (*pb.ListNotifyGroupsResponse, error) {
-	orgId := apis.GetOrgID(ctx)
-	queryReq := &apistructs.ListNotifyGroupsRequest{
-		ScopeType: request.ScopeType,
-		ScopeID:   request.ScopeId,
-	}
-	resp, err := n.p.bdl.ListNotifyGroups(orgId, queryReq)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	data, err := json.Marshal(resp.Data.List)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	result := &pb.ListNotifyGroupsResponse{
-		Data: &pb.QueryNotifyGroupData{
-			List:  make([]*pb.NotifyGroup, 0),
-			Total: int64(resp.Data.Total),
-		},
-	}
-	err = json.Unmarshal(data, &result.Data.List)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	return result, nil
-}
-
 func (n *notifyGroupService) GetNotifyGroup(ctx context.Context, request *pb.GetNotifyGroupRequest) (*pb.GetNotifyGroupResponse, error) {
 	orgId := apis.GetOrgID(ctx)
 	resp, err := n.p.bdl.GetNotifyGroup(request.GroupID, orgId)
