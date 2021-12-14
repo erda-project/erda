@@ -83,3 +83,19 @@ func (client *DBClient) FindIssueStream(issueId int) ([]IssueStream, error) {
 	}
 	return issueStreams, nil
 }
+
+type IssueStreamExtra struct {
+	IssueStream
+	ProjectID uint64
+	IssueType apistructs.IssueType
+}
+
+func (client *DBClient) ListIssueStreamExtraForMigration() ([]IssueStreamExtra, error) {
+	var issueStreamExtras []IssueStreamExtra
+	err := client.Table("dice_issue_streams AS stream").
+		Select("stream.*, issue.project_id, issue.type AS issue_type").
+		Joins("LEFT JOIN dice_issues issue ON stream.issue_id = issue.id").
+		Where("stream.stream_type = ?", apistructs.ISTTransferState).
+		Find(&issueStreamExtras).Error
+	return issueStreamExtras, err
+}

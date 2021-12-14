@@ -133,14 +133,14 @@ func (f *StackChart) setProps() {
 }
 
 func (f *StackChart) setDateMap() {
-	dateMap := make(map[time.Time]stateCount)
+	dateMap := make(map[time.Time]map[uint64]int)
 	for rd := common.RangeDate(*f.Itr.StartedAt, *f.Itr.FinishedAt); ; {
 		date := rd()
 		if date.IsZero() {
 			break
 		}
 		f.Dates = append(f.Dates, date)
-		count := make(stateCount, 0)
+		count := make(map[uint64]int, 0)
 		for _, v := range f.States {
 			count[v.ID] = 0
 		}
@@ -149,7 +149,7 @@ func (f *StackChart) setDateMap() {
 
 	baseList := make([]dao.IssueStateCirculation, 0)
 	for k, v := range f.StatesCircusMap {
-		if !common.DateTime(k).After(*f.Itr.StartedAt) {
+		if !common.DateTime(k).After(f.Dates[0]) {
 			baseList = append(baseList, v...)
 		}
 	}
@@ -159,20 +159,20 @@ func (f *StackChart) setDateMap() {
 		issueIDMap[v.ID] = struct{}{}
 	}
 
-	baseCount := make(stateCount, 0)
+	baseCount := make(map[uint64]int, 0)
 	for _, v := range baseList {
 		if _, ok := issueIDMap[v.IssueID]; !ok {
 			continue
 		}
-		if _, ok := baseCount[v.StateFrom]; ok && v.StateFrom != 0 {
+		if _, ok := dateMap[f.Dates[0]][v.StateFrom]; ok && v.StateFrom != 0 {
 			baseCount[v.StateFrom] --
 		}
-		if _, ok := baseCount[v.StateTo]; ok {
+		if _, ok := dateMap[f.Dates[0]][v.StateTo]; ok {
 			baseCount[v.StateTo] ++
 		}
 
 	}
-	dateMap[*f.Itr.StartedAt] = deepCopy(baseCount)
+	dateMap[f.Dates[0]] = deepCopy(baseCount)
 
 	for i := 1; i < len(f.Dates); i++ {
 		if _, ok := f.StatesCircusMap[f.Dates[i]]; ok {
@@ -234,8 +234,8 @@ func (f *StackChart) setStatesCircusMap() error {
 	return nil
 }
 
-func deepCopy(count stateCount) stateCount {
-	newCount := make(stateCount, 0)
+func deepCopy(count map[uint64]int) map[uint64]int {
+	newCount := make(map[uint64]int, 0)
 	for k, v := range count {
 		newCount[k] = v
 	}

@@ -39,13 +39,11 @@ type StackChart struct {
 	Issues          []dao.IssueItem                           `json:"-"`
 	StateMap        map[uint64]string                         `json:"-"`
 	StatesCircusMap map[time.Time][]dao.IssueStateCirculation `json:"-"`
-	DateMap         map[time.Time]stateCount                  `json:"-"`
+	DateMap         map[time.Time]map[uint64]int              `json:"-"`
 	Dates           []time.Time                               `json:"-"`
 	Itr             apistructs.Iteration                      `json:"-"`
 	States          []dao.IssueState                          `json:"-"`
 }
-
-type stateCount map[uint64]int
 
 type InParams struct {
 	FrontEndProjectID string `json:"projectId,omitempty"`
@@ -127,7 +125,7 @@ func (f *StackChart) InitFromProtocol(ctx context.Context, c *cptype.Component) 
 	}
 
 	f.issueSvc = ctx.Value(types.IssueService).(*issue.Issue)
-	f.DateMap = make(map[time.Time]stateCount, 0)
+	f.DateMap = make(map[time.Time]map[uint64]int, 0)
 	f.Dates = make([]time.Time, 0)
 	return f.setInParams(ctx)
 }

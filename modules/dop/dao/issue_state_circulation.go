@@ -32,8 +32,12 @@ func (IssueStateCirculation) TableName() string {
 	return "dice_issue_state_circulation"
 }
 
-func (client *DBClient) CreateIssueStateCirculation(StatesCircus *IssueStateCirculation) error {
-	return client.Create(StatesCircus).Error
+func (client *DBClient) CreateIssueStateCirculation(statesCircus *IssueStateCirculation) error {
+	return client.Create(statesCircus).Error
+}
+
+func (client *DBClient) BatchCreateIssueStateCirculation(statesCircus []IssueStateCirculation) error {
+	return client.BulkInsert(statesCircus)
 }
 
 func (client *DBClient) DeleteIssuesStateCirculation(issueID uint64) error {
