@@ -69,16 +69,16 @@ func New(opts ...Option) *Project {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(dbClient *dao.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(project *Project) {
-		project.db = dbClient
+		project.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(ucClient *ucauth.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(project *Project) {
-		project.uc = ucClient
+		project.uc = uc
 	}
 }
 
@@ -345,6 +345,8 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetProjectByID")
 	}
+	var oldClusterConfig = make(map[string]string)
+	_ = json.Unmarshal([]byte(project.ClusterConfig), &oldClusterConfig)
 	oldQuota, err := p.db.GetQuotaByProjectID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetQuotaByProjectID")
@@ -372,7 +374,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return &project, nil
 	}
 
-	// check new quota is less than reqeust
+	// check new quota is less than request
 	var dto = new(apistructs.ProjectDTO)
 	dto.ID = uint64(project.ID)
 	setProjectDtoQuotaFromModel(dto, project.Quota)
@@ -380,6 +382,10 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	changedRecord := make(map[string]bool)
 	if oldQuota == nil {
 		oldQuota = new(apistructs.ProjectQuota)
+		oldQuota.ProdClusterName = oldClusterConfig["PROD"]
+		oldQuota.StagingClusterName = oldClusterConfig["STAGING"]
+		oldQuota.TestClusterName = oldClusterConfig["TEST"]
+		oldQuota.DevClusterName = oldClusterConfig["DEV"]
 	}
 	isQuotaChangedOnTheWorkspace(changedRecord, *oldQuota, *project.Quota)
 	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto, changedRecord); !ok {
