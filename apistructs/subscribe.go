@@ -54,6 +54,11 @@ type CreateSubscribeReq struct {
 	UserID string        `json:"userID"`
 }
 
+type CreateSubscribeRsp struct {
+	Header
+	Data uint64 `json:"data"`
+}
+
 func (c CreateSubscribeReq) Validate() error {
 	if c.Type.IsEmpty() {
 		return fmt.Errorf("empty type")
@@ -87,7 +92,12 @@ func (c GetSubscribeReq) Validate() error {
 	return nil
 }
 
-type GetSubscribesResponse struct {
+type SubscribeDTO struct {
 	Total int         `json:"total"`
 	List  []Subscribe `json:"list"`
+}
+
+type GetSubscribesResponse struct {
+	Header
+	Data SubscribeDTO `json:"data"`
 }

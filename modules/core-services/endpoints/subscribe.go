@@ -155,12 +155,12 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrGetSubscribe.InternalError(err).ToResp(), nil
 	}
 
-	resp := apistructs.GetSubscribesResponse{
+	data := apistructs.SubscribeDTO{
 		Total: len(items),
 		List:  items,
 	}
 
-	return httpserver.OkResp(resp)
+	return httpserver.OkResp(data)
 }
 
 func getListSubscribeParam(r *http.Request) (*apistructs.GetSubscribeReq, error) {
