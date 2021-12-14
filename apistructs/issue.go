@@ -187,7 +187,7 @@ func (t IssueType) GetStateBelongIndex() []IssueStateBelong {
 	case IssueTypeEpic:
 		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWorking, IssueStateBelongDone}
 	case IssueTypeBug:
-		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWontfix, IssueStateBelongReopen, IssueStateBelongResloved, IssueStateBelongClosed}
+		return []IssueStateBelong{IssueStateBelongOpen, IssueStateBelongWontfix, IssueStateBelongReopen, IssueStateBelongResolved, IssueStateBelongClosed}
 	default:
 		panic(fmt.Sprintf("invalid issue type: %s", string(t)))
 	}

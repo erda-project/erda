@@ -526,7 +526,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResloved {
+			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResolved {
 				req.Owner = &req.IdentityInfo.UserID
 			}
 		}
