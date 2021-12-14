@@ -31,14 +31,6 @@ service NotifyGroupService {
       path: "/api/msp/notify-groups"
     };
   }
-  rpc ListNotifyGroups (ListNotifyGroupsRequest) returns (ListNotifyGroupsResponse) {
-    option (google.api.http)     = {
-      get: "/api/msp/notify-groups/actions/list"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups/actions/list"
-    };
-  }
   rpc GetNotifyGroup (GetNotifyGroupRequest) returns (GetNotifyGroupResponse) {
     option (google.api.http)     = {
       get: "/api/msp/notify-groups/{groupID}"
@@ -127,15 +119,6 @@ message QueryNotifyGroupResponse {
 message QueryNotifyGroupData {
   repeated NotifyGroup list  = 1;
   int64                total = 2;
-}
-
-message ListNotifyGroupsRequest {
-  string scopeType = 1;
-  string scopeId   = 2;
-}
-
-message ListNotifyGroupsResponse {
-  QueryNotifyGroupData data = 1;
 }
 
 message GetNotifyGroupRequest {

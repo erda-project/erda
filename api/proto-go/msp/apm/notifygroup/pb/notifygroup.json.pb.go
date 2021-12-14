@@ -29,10 +29,6 @@ var _ json.Marshaler = (*QueryNotifyGroupResponse)(nil)
 var _ json.Unmarshaler = (*QueryNotifyGroupResponse)(nil)
 var _ json.Marshaler = (*QueryNotifyGroupData)(nil)
 var _ json.Unmarshaler = (*QueryNotifyGroupData)(nil)
-var _ json.Marshaler = (*ListNotifyGroupsRequest)(nil)
-var _ json.Unmarshaler = (*ListNotifyGroupsRequest)(nil)
-var _ json.Marshaler = (*ListNotifyGroupsResponse)(nil)
-var _ json.Unmarshaler = (*ListNotifyGroupsResponse)(nil)
 var _ json.Marshaler = (*GetNotifyGroupRequest)(nil)
 var _ json.Unmarshaler = (*GetNotifyGroupRequest)(nil)
 var _ json.Marshaler = (*GetNotifyGroupResponse)(nil)
@@ -195,42 +191,6 @@ func (m *QueryNotifyGroupData) MarshalJSON() ([]byte, error) {
 
 // QueryNotifyGroupData implement json.Marshaler.
 func (m *QueryNotifyGroupData) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// ListNotifyGroupsRequest implement json.Marshaler.
-func (m *ListNotifyGroupsRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// ListNotifyGroupsRequest implement json.Marshaler.
-func (m *ListNotifyGroupsRequest) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// ListNotifyGroupsResponse implement json.Marshaler.
-func (m *ListNotifyGroupsResponse) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// ListNotifyGroupsResponse implement json.Marshaler.
-func (m *ListNotifyGroupsResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

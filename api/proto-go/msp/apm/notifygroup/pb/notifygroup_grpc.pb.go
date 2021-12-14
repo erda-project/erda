@@ -23,7 +23,6 @@ const _ = grpc.SupportPackageIsVersion5
 type NotifyGroupServiceClient interface {
 	CreateNotifyGroup(ctx context.Context, in *CreateNotifyGroupRequest, opts ...grpc.CallOption) (*CreateNotifyGroupResponse, error)
 	QueryNotifyGroup(ctx context.Context, in *QueryNotifyGroupRequest, opts ...grpc.CallOption) (*QueryNotifyGroupResponse, error)
-	ListNotifyGroups(ctx context.Context, in *ListNotifyGroupsRequest, opts ...grpc.CallOption) (*ListNotifyGroupsResponse, error)
 	GetNotifyGroup(ctx context.Context, in *GetNotifyGroupRequest, opts ...grpc.CallOption) (*GetNotifyGroupResponse, error)
 	UpdateNotifyGroup(ctx context.Context, in *UpdateNotifyGroupRequest, opts ...grpc.CallOption) (*UpdateNotifyGroupResponse, error)
 	GetNotifyGroupDetail(ctx context.Context, in *GetNotifyGroupDetailRequest, opts ...grpc.CallOption) (*GetNotifyGroupDetailResponse, error)
@@ -50,15 +49,6 @@ func (c *notifyGroupServiceClient) CreateNotifyGroup(ctx context.Context, in *Cr
 func (c *notifyGroupServiceClient) QueryNotifyGroup(ctx context.Context, in *QueryNotifyGroupRequest, opts ...grpc.CallOption) (*QueryNotifyGroupResponse, error) {
 	out := new(QueryNotifyGroupResponse)
 	err := c.cc.Invoke(ctx, "/erda.msp.apm.notifygroup.NotifyGroupService/QueryNotifyGroup", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *notifyGroupServiceClient) ListNotifyGroups(ctx context.Context, in *ListNotifyGroupsRequest, opts ...grpc.CallOption) (*ListNotifyGroupsResponse, error) {
-	out := new(ListNotifyGroupsResponse)
-	err := c.cc.Invoke(ctx, "/erda.msp.apm.notifygroup.NotifyGroupService/ListNotifyGroups", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +97,6 @@ func (c *notifyGroupServiceClient) DeleteNotifyGroup(ctx context.Context, in *De
 type NotifyGroupServiceServer interface {
 	CreateNotifyGroup(context.Context, *CreateNotifyGroupRequest) (*CreateNotifyGroupResponse, error)
 	QueryNotifyGroup(context.Context, *QueryNotifyGroupRequest) (*QueryNotifyGroupResponse, error)
-	ListNotifyGroups(context.Context, *ListNotifyGroupsRequest) (*ListNotifyGroupsResponse, error)
 	GetNotifyGroup(context.Context, *GetNotifyGroupRequest) (*GetNotifyGroupResponse, error)
 	UpdateNotifyGroup(context.Context, *UpdateNotifyGroupRequest) (*UpdateNotifyGroupResponse, error)
 	GetNotifyGroupDetail(context.Context, *GetNotifyGroupDetailRequest) (*GetNotifyGroupDetailResponse, error)
@@ -123,9 +112,6 @@ func (*UnimplementedNotifyGroupServiceServer) CreateNotifyGroup(context.Context,
 }
 func (*UnimplementedNotifyGroupServiceServer) QueryNotifyGroup(context.Context, *QueryNotifyGroupRequest) (*QueryNotifyGroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryNotifyGroup not implemented")
-}
-func (*UnimplementedNotifyGroupServiceServer) ListNotifyGroups(context.Context, *ListNotifyGroupsRequest) (*ListNotifyGroupsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListNotifyGroups not implemented")
 }
 func (*UnimplementedNotifyGroupServiceServer) GetNotifyGroup(context.Context, *GetNotifyGroupRequest) (*GetNotifyGroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNotifyGroup not implemented")
@@ -174,15 +160,6 @@ func _get_NotifyGroupService_serviceDesc(srv NotifyGroupServiceServer, opts ...g
 	if h.Interceptor != nil {
 		_NotifyGroupService_QueryNotifyGroup_info = transport.NewServiceInfo("erda.msp.apm.notifygroup.NotifyGroupService", "QueryNotifyGroup", srv)
 		_NotifyGroupService_QueryNotifyGroup_Handler = h.Interceptor(_NotifyGroupService_QueryNotifyGroup_Handler)
-	}
-
-	_NotifyGroupService_ListNotifyGroups_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.ListNotifyGroups(ctx, req.(*ListNotifyGroupsRequest))
-	}
-	var _NotifyGroupService_ListNotifyGroups_info transport.ServiceInfo
-	if h.Interceptor != nil {
-		_NotifyGroupService_ListNotifyGroups_info = transport.NewServiceInfo("erda.msp.apm.notifygroup.NotifyGroupService", "ListNotifyGroups", srv)
-		_NotifyGroupService_ListNotifyGroups_Handler = h.Interceptor(_NotifyGroupService_ListNotifyGroups_Handler)
 	}
 
 	_NotifyGroupService_GetNotifyGroup_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -267,29 +244,6 @@ func _get_NotifyGroupService_serviceDesc(srv NotifyGroupServiceServer, opts ...g
 					FullMethod: "/erda.msp.apm.notifygroup.NotifyGroupService/QueryNotifyGroup",
 				}
 				return interceptor(ctx, in, info, _NotifyGroupService_QueryNotifyGroup_Handler)
-			},
-		},
-		{
-			MethodName: "ListNotifyGroups",
-			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(ListNotifyGroupsRequest)
-				if err := dec(in); err != nil {
-					return nil, err
-				}
-				if interceptor == nil && h.Interceptor == nil {
-					return srv.(NotifyGroupServiceServer).ListNotifyGroups(ctx, in)
-				}
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _NotifyGroupService_ListNotifyGroups_info)
-				}
-				if interceptor == nil {
-					return _NotifyGroupService_ListNotifyGroups_Handler(ctx, in)
-				}
-				info := &grpc.UnaryServerInfo{
-					Server:     srv,
-					FullMethod: "/erda.msp.apm.notifygroup.NotifyGroupService/ListNotifyGroups",
-				}
-				return interceptor(ctx, in, info, _NotifyGroupService_ListNotifyGroups_Handler)
 			},
 		},
 		{

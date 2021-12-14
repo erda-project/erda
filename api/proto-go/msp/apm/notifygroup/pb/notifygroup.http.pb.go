@@ -26,8 +26,6 @@ type NotifyGroupServiceHandler interface {
 	CreateNotifyGroup(context.Context, *CreateNotifyGroupRequest) (*CreateNotifyGroupResponse, error)
 	// GET /api/msp/notify-groups
 	QueryNotifyGroup(context.Context, *QueryNotifyGroupRequest) (*QueryNotifyGroupResponse, error)
-	// GET /api/msp/notify-groups/actions/list
-	ListNotifyGroups(context.Context, *ListNotifyGroupsRequest) (*ListNotifyGroupsResponse, error)
 	// GET /api/msp/notify-groups/{groupID}
 	GetNotifyGroup(context.Context, *GetNotifyGroupRequest) (*GetNotifyGroupResponse, error)
 	// PUT /api/msp/notify-groups/{groupID}
@@ -115,42 +113,6 @@ func RegisterNotifyGroupServiceHandler(r http.Router, srv NotifyGroupServiceHand
 				}
 				r = r.WithContext(ctx)
 				var in QueryNotifyGroupRequest
-				if err := h.Decode(r, &in); err != nil {
-					return nil, err
-				}
-				var input interface{} = &in
-				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
-					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
-						return nil, err
-					}
-				}
-				out, err := handler(ctx, &in)
-				if err != nil {
-					return out, err
-				}
-				return out, nil
-			}),
-		)
-	}
-
-	add_ListNotifyGroups := func(method, path string, fn func(context.Context, *ListNotifyGroupsRequest) (*ListNotifyGroupsResponse, error)) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*ListNotifyGroupsRequest))
-		}
-		var ListNotifyGroups_info transport.ServiceInfo
-		if h.Interceptor != nil {
-			ListNotifyGroups_info = transport.NewServiceInfo("erda.msp.apm.notifygroup.NotifyGroupService", "ListNotifyGroups", srv)
-			handler = h.Interceptor(handler)
-		}
-		r.Add(method, path, encodeFunc(
-			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
-				ctx := http.WithRequest(r.Context(), r)
-				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListNotifyGroups_info)
-				}
-				r = r.WithContext(ctx)
-				var in ListNotifyGroupsRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -423,7 +385,6 @@ func RegisterNotifyGroupServiceHandler(r http.Router, srv NotifyGroupServiceHand
 
 	add_CreateNotifyGroup("POST", "/api/msp/notify-groups", srv.CreateNotifyGroup)
 	add_QueryNotifyGroup("GET", "/api/msp/notify-groups", srv.QueryNotifyGroup)
-	add_ListNotifyGroups("GET", "/api/msp/notify-groups/actions/list", srv.ListNotifyGroups)
 	add_GetNotifyGroup("GET", "/api/msp/notify-groups/{groupID}", srv.GetNotifyGroup)
 	add_UpdateNotifyGroup("PUT", "/api/msp/notify-groups/{groupID}", srv.UpdateNotifyGroup)
 	add_GetNotifyGroupDetail("GET", "/api/msp/notify-groups/{groupID}/detail", srv.GetNotifyGroupDetail)

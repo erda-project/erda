@@ -231,26 +231,6 @@ func (e *Endpoints) QueryNotifyGroup(ctx context.Context, r *http.Request, vars 
 	return httpserver.OkResp(result, userIDs)
 }
 
-func (e *Endpoints) ListNotifyGroups(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	orgID, err := strconv.ParseInt(r.Header.Get("Org-ID"), 10, 64)
-	if err != nil {
-		return apierrors.ErrQueryNotifyGroup.MissingParameter("Org-ID header is nil").ToResp(), nil
-	}
-	queryReq := apistructs.QueryNotifyGroupRequest{
-		ScopeType: r.URL.Query().Get("scopeType"),
-		ScopeID:   r.URL.Query().Get("scopeId"),
-	}
-	err = e.checkNotifyPermission(r, queryReq.ScopeType, queryReq.ScopeID, apistructs.ListAction)
-	if err != nil {
-		return apierrors.ErrQueryNotifyGroup.InternalError(err).ToResp(), nil
-	}
-	result, err := e.notifyGroup.GetAllGroups(&queryReq, orgID)
-	if err != nil {
-		return apierrors.ErrQueryNotifyGroup.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp(result)
-}
-
 // BatchGetNotifyGroup 批量根据id查询通知组 内部接口
 func (e *Endpoints) BatchGetNotifyGroup(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {

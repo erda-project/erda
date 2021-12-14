@@ -112,10 +112,6 @@ func (o *NotifyGroup) Query(queryReq *apistructs.QueryNotifyGroupRequest, orgID 
 	return o.db.QueryNotifyGroup(queryReq, orgID)
 }
 
-func (o *NotifyGroup) GetAllGroups(queryReq *apistructs.QueryNotifyGroupRequest, orgID int64) (*apistructs.QueryNotifyGroupData, error) {
-	return o.db.QueryAllNotifyGroup(queryReq, orgID)
-}
-
 func (o *NotifyGroup) GetDetail(id int64, orgID int64) (*apistructs.NotifyGroupDetail, error) {
 	result := &apistructs.NotifyGroupDetail{}
 	group, err := o.db.GetNotifyGroupByID(id, orgID)

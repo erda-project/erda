@@ -198,17 +198,6 @@ type QueryNotifyGroupData struct {
 	Total int            `json:"total"`
 }
 
-// ListNotifyGroupsRequest 查询所有的通知组
-type ListNotifyGroupsRequest struct {
-	ScopeType string `query:"scopeType"`
-	ScopeID   string `query:"scopeID"`
-}
-
-type ListNotifyGroupsResponse struct {
-	Header
-	Data QueryNotifyGroupData `json:"data"`
-}
-
 // GetNotifyGroupResponse 查询通知组响应
 type GetNotifyGroupResponse struct {
 	Header
