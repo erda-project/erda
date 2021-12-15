@@ -110,34 +110,34 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	case "ALL":
 		menu = []AddButtonCandidate{requirementCandidate, taskCandidate, bugCandidate}
 		props.Menu = menu
-		c.Props = props
+		c.Props = cputil.MustConvertProps(props)
 	case apistructs.IssueTypeRequirement.String():
 		prop.Text = cputil.I18n(ctx, "create-requirement")
-		c.Operations = make(cptype.ComponentOps)
+		c.Operations = make(cptype.ComponentOperations)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
 			Key      string `json:"key"`
 			Disabled bool   `json:"disabled"`
 		}{Reload: false, Key: "createRequirement", Disabled: isGuest}
-		c.Props = prop
+		c.Props = cputil.MustConvertProps(prop)
 	case apistructs.IssueTypeTask.String():
 		prop.Text = cputil.I18n(ctx, "create-task")
-		c.Operations = make(cptype.ComponentOps)
+		c.Operations = make(cptype.ComponentOperations)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
 			Key      string `json:"key"`
 			Disabled bool   `json:"disabled"`
 		}{Reload: false, Key: "createTask", Disabled: isGuest}
-		c.Props = prop
+		c.Props = cputil.MustConvertProps(prop)
 	case apistructs.IssueTypeBug.String():
 		prop.Text = cputil.I18n(ctx, "create-bug")
-		c.Operations = make(cptype.ComponentOps)
+		c.Operations = make(cptype.ComponentOperations)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
 			Key      string `json:"key"`
 			Disabled bool   `json:"disabled"`
 		}{Reload: false, Key: "createBug", Disabled: isGuest}
-		c.Props = prop
+		c.Props = cputil.MustConvertProps(prop)
 	}
 
 	return nil

@@ -18,7 +18,7 @@ hierarchy:
       - issueImport
     content:
       - issueTable
-      - issueKanban
+      - issueKanbanV2
       - issueGantt
 
 options:
@@ -49,8 +49,11 @@ components:
     type: Button
   issueTable:
     type: Table
-  issueKanban:
+  issueKanbanV2:
     type: IssueKanban
+    options:
+      flatMeta: true
+      removeMetaAfterFlat: true
   issueGantt:
     type: Table
 
@@ -71,7 +74,7 @@ rendering:
           value: "{{ issueViewGroup.value }}"
         - name: "filterConditions"
           value: "{{ issueFilter.issuePagingRequest }}"
-    - name: issueKanban
+    - name: issueKanbanV2
       state:
         - name: "issueViewGroupValue"
           value: "{{ issueViewGroup.value }}"
@@ -94,7 +97,7 @@ rendering:
           value: "{{ issueViewGroup.value }}"
         - name: "filterConditions"
           value: "{{ issueFilter.issuePagingRequest }}"
-    - name: issueKanban
+    - name: issueKanbanV2
       state:
         - name: "issueViewGroupValue"
           value: "{{ issueViewGroup.value }}"
@@ -131,7 +134,7 @@ rendering:
           value: "{{ issueViewGroup.value }}"
         - name: "filterConditions"
           value: "{{ issueFilter.issuePagingRequest }}"
-    - name: issueKanban
+    - name: issueKanbanV2
       state:
         - name: "issueViewGroupValue"
           value: "{{ issueViewGroup.value }}"

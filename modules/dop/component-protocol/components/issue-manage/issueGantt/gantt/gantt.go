@@ -64,7 +64,7 @@ var (
 )
 
 var Operations = map[cptype.OperationKey]cptype.Operation{
-	OpChangePageNo: {Reload: true},
+	OpChangePageNo: {},
 }
 
 type Data struct {

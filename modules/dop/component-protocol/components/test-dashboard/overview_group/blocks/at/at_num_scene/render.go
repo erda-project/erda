@@ -61,6 +61,6 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		}()),
 		Kind: cputil.I18n(ctx, "auto-test-scene-num"),
 	}
-	c.Props = tv.ConvertToProps()
+	c.Props = cputil.MustConvertProps(tv.ConvertToProps())
 	return nil
 }

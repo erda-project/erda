@@ -75,7 +75,9 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, v.Name)
 	}
 
-	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "scene-avg-cost"), "{value}s")
+	c.Props = cputil.MustConvertProps(
+		common.NewBarProps(values, categories, cputil.I18n(ctx, "scene-avg-cost"), "{value}s"),
+	)
 	return nil
 }
 

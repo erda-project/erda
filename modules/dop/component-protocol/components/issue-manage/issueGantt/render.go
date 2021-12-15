@@ -49,7 +49,7 @@ func (g *Gantt) Render(ctx context.Context, c *cptype.Component, scenario cptype
 			if viewType != issueViewGroup.ViewTypeGantt {
 				visible = false
 				c.Props = map[string]interface{}{}
-				c.Props.(map[string]interface{})["visible"] = visible
+				c.Props["visible"] = visible
 				return nil
 			}
 		}
@@ -58,7 +58,7 @@ func (g *Gantt) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	}
 	if !visible {
 		c.Props = map[string]interface{}{}
-		c.Props.(map[string]interface{})["visible"] = visible
+		c.Props["visible"] = visible
 		return nil
 	}
 

@@ -101,7 +101,7 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		return fmt.Errorf("invalid text: %s", c.Name)
 	}
 
-	c.Props = tv.convertToProps()
+	c.Props = cputil.MustConvertProps(tv.convertToProps())
 
 	return nil
 }

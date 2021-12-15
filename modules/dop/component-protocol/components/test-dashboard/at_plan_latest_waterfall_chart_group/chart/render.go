@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -70,6 +71,6 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, sceneSetMap[v.SceneSetID])
 	}
 
-	c.Props = NewBarProps(indexes, values, categories, "")
+	c.Props = cputil.MustConvertProps(NewBarProps(indexes, values, categories, ""))
 	return nil
 }

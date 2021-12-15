@@ -86,6 +86,8 @@ func (f *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptype
 		categories = append(categories, v.Name)
 	}
 
-	c.Props = common.NewBarProps(values, categories, cputil.I18n(ctx, "api-failed-rate"), "{value}%")
+	c.Props = cputil.MustConvertProps(
+		common.NewBarProps(values, categories, cputil.I18n(ctx, "api-failed-rate"), "{value}%"),
+	)
 	return nil
 }

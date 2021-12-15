@@ -373,7 +373,7 @@ func (g *Gantt) setData(data []gantt.DataItem) {
 
 func (g *Gantt) setOperations() {
 	ops := make(map[cptype.OperationKey]cptype.Operation)
-	ops[gantt.OpChangePageNo] = cptype.Operation{Key: gantt.OpChangePageNo.String(), Reload: true}
+	ops[gantt.OpChangePageNo] = cptype.Operation{}
 	g.Operations = ops
 }
 

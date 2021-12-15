@@ -58,6 +58,6 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		}(),
 		Kind: cputil.I18n(ctx, "test-case-rate-passed"),
 	}
-	c.Props = tv.ConvertToProps()
+	c.Props = cputil.MustConvertProps(tv.ConvertToProps())
 	return nil
 }

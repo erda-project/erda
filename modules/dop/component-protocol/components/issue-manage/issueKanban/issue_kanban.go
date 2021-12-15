@@ -116,6 +116,7 @@ type OperationBaseInfo struct {
 	// 前端操作是否需要触发后端
 	Reload      bool   `json:"reload"`
 	DisabledTip string `json:"disabledTip"`
+	Async       bool   `json:"async,omitempty"`
 }
 
 type OpMetaInfo struct {
@@ -322,6 +323,7 @@ func (c *IssueCart) RenderDragToPriorityOperation(i apistructs.Issue, mp map[cpt
 		IssueID: c.ID,
 	}
 	o.TargetKeys = targetKeys
+	o.Async = true
 	c.Operations[apistructs.DragOperation.String()] = o
 }
 
@@ -565,6 +567,7 @@ func (i *ComponentIssueBoard) SetOperationSwitch(req *IssueFilterRequest) error 
 	case BoardTypePriority:
 		i.swt.enableMoveToPriority = true
 		i.swt.enableDragToPriority = true
+		i.swt.enableDrag = true
 	case BoardTypeCustom:
 		i.swt.enableMoveToCustom = true
 		i.swt.enableDragToCustom = true

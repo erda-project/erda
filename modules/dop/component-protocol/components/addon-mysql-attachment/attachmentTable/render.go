@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
@@ -61,7 +62,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	props.Columns = getTitles()
 	props.RowKey = "id"
 	props.RequestIgnore = []string{"props", "data", "operations"}
-	c.Props = props
+	c.Props = *cputil.MustObjJSONTransfer(&props, &cptype.ComponentProps{}).(*cptype.ComponentProps)
 
 	c.Data = make(map[string]interface{})
 	c.Data["list"] = f.getData()

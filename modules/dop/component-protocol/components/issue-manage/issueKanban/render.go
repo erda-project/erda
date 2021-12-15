@@ -453,12 +453,12 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 	visable["visible"] = false
 	if i.State.IssueViewGroupValue != "kanban" {
 		visable["visible"] = false
-		c.Props = visable
+		//c.Props = visable
 		return
 	}
 	visable["visible"] = true
 	visable["isLoadMore"] = true
-	c.Props = visable
+	//c.Props = visable
 
 	fReq, err := i.GetFilterReq()
 	if err != nil {
