@@ -25,7 +25,7 @@ import (
 const Layout = "2006-01-02T15:04:05Z"
 
 type Chart interface {
-	GetChart(ctx context.Context)
+	GetChart(ctx context.Context) (*pb.ServiceChart, error)
 }
 
 type BaseChart struct {
