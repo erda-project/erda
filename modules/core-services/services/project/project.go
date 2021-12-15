@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
+	local "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -637,14 +638,15 @@ func (p *Project) DeleteWithEvent(projectID int64) error {
 
 // Delete 删除项目
 func (p *Project) Delete(projectID int64) (*model.Project, error) {
+	langCodes, _ := i18n.ParseLanguageCode(local.GetGoroutineBindLang())
 	// check if application exists
 	if count, err := p.db.GetApplicationCountByProjectID(projectID); err != nil || count > 0 {
-		return nil, errors.Errorf("failed to delete project(there exists applications)")
+		return nil, errors.Errorf(p.trans.Text(langCodes, "DeleteProjectErrorApplicationExist"))
 	}
 
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
-		return nil, errors.Errorf("failed to get project, (%v)", err)
+		return nil, errors.Errorf(p.trans.Text(langCodes, "FailedGetProject")+"(%v)", err)
 	}
 
 	// TODO We need to turn this check on after adding the delete portal to the UI
@@ -658,7 +660,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	// }
 
 	if err = p.db.DeleteProject(projectID); err != nil {
-		return nil, errors.Errorf("failed to delete project, (%v)", err)
+		return nil, errors.Errorf(p.trans.Text(langCodes, "FailedDeleteProject")+"(%v)", err)
 	}
 	_ = p.db.DeleteProjectQutoa(projectID)
 	logrus.Infof("deleted project %d", projectID)

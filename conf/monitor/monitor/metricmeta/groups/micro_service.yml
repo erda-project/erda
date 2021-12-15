@@ -96,6 +96,8 @@ groups:
           name: Cluster
     - id: application_status
       name: Application Status
+    - id: application_exception
+      name: Application Exception
     - id: browser_analysis
       name: Browser Analysis
       children:
@@ -206,6 +208,8 @@ mapping:
         - name: nodejs_cluster
     application_status:
         - name: status_page
+    application_exception:
+      - name: error_alert
     # Browser Analysis
     ta_timing:
       - name: ta_timing
