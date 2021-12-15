@@ -49,6 +49,7 @@ var aggNames = map[string]string{
 	"diff":     "Difference",
 	"diffps":   "Difference Per Second",
 	"distinct": "Distinct",
+	"rateps" : "Rete Per Second",
 }
 
 func (m *Manager) getTypeAggDefine(langCodes i18n.LanguageCodes, mode string) (*pb.MetaMode, error) {
