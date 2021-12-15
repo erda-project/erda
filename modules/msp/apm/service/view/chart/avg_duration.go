@@ -17,13 +17,15 @@ package chart
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
+	"google.golang.org/protobuf/types/known/structpb"
+
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
-	"google.golang.org/protobuf/types/known/structpb"
-	"strconv"
-	"time"
 )
 
 type AvgDurationChart struct {
