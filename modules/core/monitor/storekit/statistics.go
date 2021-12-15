@@ -14,19 +14,30 @@
 
 package storekit
 
+import (
+	"time"
+)
+
+// Milliseconds
+var DefaultLatencyBuckets = []float64{1, 50, 100, 250, 500, 750, 1000, 5000, 10000}
+
 // ConsumeStatistics .
 type ConsumeStatistics interface {
 	ReadError(err error)
 	WriteError(data []Data, err error)
 	ConfirmError(data []Data, err error)
 	Success(data []Data)
+	ObserveReadLatency(start time.Time)
+	ObserveWriteLatency(start time.Time)
 }
 
 type nopConsumeStatistics struct{}
 
 var NopConsumeStatistics ConsumeStatistics = &nopConsumeStatistics{}
 
-func (*nopConsumeStatistics) ReadError(err error)                 {}
-func (*nopConsumeStatistics) WriteError(data []Data, err error)   {}
-func (*nopConsumeStatistics) ConfirmError(data []Data, err error) {}
-func (*nopConsumeStatistics) Success(data []Data)                 {}
+func (*nopConsumeStatistics) ReadError(err error)                   {}
+func (*nopConsumeStatistics) WriteError(data []Data, err error)     {}
+func (*nopConsumeStatistics) ConfirmError(data []Data, err error)   {}
+func (*nopConsumeStatistics) Success(data []Data)                   {}
+func (s *nopConsumeStatistics) ObserveReadLatency(start time.Time)  {}
+func (s *nopConsumeStatistics) ObserveWriteLatency(start time.Time) {}
