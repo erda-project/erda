@@ -219,6 +219,10 @@ type Kubernetes struct {
 	istioEngine istioctl.IstioEngine
 }
 
+func (k *Kubernetes) SetCpuQuota(quota float64) {
+	k.cpuNumQuota = quota
+}
+
 func (k *Kubernetes) GetK8SAddr() string {
 	return k.addr
 }

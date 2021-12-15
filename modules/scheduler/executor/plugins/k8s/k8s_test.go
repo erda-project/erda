@@ -19,6 +19,8 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"bou.ke/monkey"
 	"github.com/pkg/errors"
 	"gotest.tools/assert"
@@ -244,4 +246,77 @@ func TestNew(t *testing.T) {
 	_, err := New("MARATHONFORMOCKCLUSTER", mockCluster, map[string]string{})
 	//assert.NilError(t, err)
 	fmt.Println(err)
+}
+
+func TestSetFineGrainedCPU(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestCpu     float64
+		maxCpu         float64
+		ratio          int
+		wantErr        bool
+		wantRequestCPU string
+		wantMaxCPU     string
+	}{
+		{
+			name:    "test1_request_cpu_not_set",
+			wantErr: true,
+		},
+		{
+			name:       "test2_invalid_max_cpu",
+			requestCpu: 0.5,
+			maxCpu:     0.25,
+			wantErr:    true,
+		},
+		{
+			name:           "test3_ratio_with_max_cpu_not_set",
+			ratio:          2,
+			requestCpu:     0.5,
+			wantErr:        false,
+			wantMaxCPU:     "500m",
+			wantRequestCPU: "250m",
+		},
+		{
+			name:           "test3_ratio_with_max_cpu_set",
+			ratio:          2,
+			requestCpu:     0.5,
+			maxCpu:         1,
+			wantErr:        false,
+			wantMaxCPU:     "1000m",
+			wantRequestCPU: "500m",
+		},
+	}
+
+	k := &Kubernetes{}
+	k.SetCpuQuota(100)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			subRatio := float64(tt.ratio)
+
+			cpu := fmt.Sprintf("%.fm", tt.requestCpu*1000)
+			maxCpu := fmt.Sprintf("%.fm", tt.maxCpu*1000)
+			c := &apiv1.Container{
+				Name: "test-container",
+				Resources: apiv1.ResourceRequirements{
+					Requests: apiv1.ResourceList{
+						apiv1.ResourceCPU: resource.MustParse(cpu),
+					},
+					Limits: apiv1.ResourceList{
+						apiv1.ResourceCPU: resource.MustParse(maxCpu),
+					},
+				},
+			}
+
+			err := k.SetFineGrainedCPU(c, map[string]string{}, subRatio)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("failed, error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil {
+				assert.Equal(t, tt.wantRequestCPU, fmt.Sprintf("%vm", c.Resources.Requests.Cpu().MilliValue()))
+				assert.Equal(t, tt.wantMaxCPU, fmt.Sprintf("%vm", c.Resources.Limits.Cpu().MilliValue()))
+			}
+		})
+	}
 }

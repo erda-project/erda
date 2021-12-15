@@ -1042,6 +1042,10 @@ type AddonPlanItem struct {
 	CPU float64 `json:"cpu"`
 	// Mem 内存大小
 	Mem int `json:"mem"`
+
+	MaxCPU float64 `json:"max_cpu"`
+	MaxMem int     `json:"max_mem"`
+
 	// Nodes 节点数量
 	Nodes int `json:"nodes"`
 	// 内部组件依赖信息，如果有，则用内部组件的信息

@@ -129,9 +129,9 @@ func applyOverlay__(services *diceyml.Services, name string, serviceOverlay *dic
 
 		r := service.Resources
 		r.CPU = serviceOverlay.Resources.CPU
-		r.MaxCPU = serviceOverlay.Resources.CPU
+		r.MaxCPU = serviceOverlay.Resources.MaxCPU
 		r.Mem = int(serviceOverlay.Resources.Mem)
-		r.MaxMem = int(serviceOverlay.Resources.Mem)
+		r.MaxMem = serviceOverlay.Resources.MaxMem
 		r.Disk = int(serviceOverlay.Resources.Disk)
 		service.Resources = r
 	}
@@ -149,9 +149,9 @@ func applyOverlayJobs__(jobs *diceyml.Jobs, name string, serviceOverlay *spec.Se
 		if serviceOverlay.Resources != nil {
 			r := service.Resources
 			r.CPU = serviceOverlay.Resources.CPU
-			r.MaxCPU = serviceOverlay.Resources.CPU
+			r.MaxCPU = serviceOverlay.Resources.MaxCPU
 			r.Mem = int(serviceOverlay.Resources.Mem)
-			r.MaxMem = int(serviceOverlay.Resources.Mem)
+			r.MaxMem = int(serviceOverlay.Resources.MaxMem)
 			r.Disk = int(serviceOverlay.Resources.Disk)
 			service.Resources = r
 		}

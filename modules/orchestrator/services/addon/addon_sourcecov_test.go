@@ -57,6 +57,9 @@ func TestSourcecovAddonManagement_BuildSourceCovServiceItem(t *testing.T) {
 				CPU:   float64(1),
 				Mem:   1024,
 				Nodes: 1,
+
+				MaxCPU: float64(2),
+				MaxMem: 1025,
 			},
 		},
 	}, diceYml, nil)
@@ -68,8 +71,8 @@ func TestSourcecovAddonManagement_BuildSourceCovServiceItem(t *testing.T) {
 	assert.Equal("1", diceYml.Services["app"].Envs["PROJECT_ID"])
 	assert.Equal("org", diceYml.Services["app"].Envs["ORG_NAME"])
 	assert.Equal("", diceYml.Services["app"].Envs["CENTER_HOST"])
-	assert.Equal(1024, diceYml.Services["app"].Resources.MaxMem)
-	assert.Equal(float64(1), diceYml.Services["app"].Resources.MaxCPU)
+	assert.Equal(1025, diceYml.Services["app"].Resources.MaxMem)
+	assert.Equal(float64(2), diceYml.Services["app"].Resources.MaxCPU)
 	status, err := sam.DeployStatus(nil, nil)
 	assert.Nil(err)
 	assert.Equal("true", status["SOURCECOV_ENABLED"])
