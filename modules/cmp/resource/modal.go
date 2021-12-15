@@ -70,26 +70,3 @@ func (r *Resource) Init(ctx servicehub.Context) error {
 	r.Ctx = ctx
 	return nil
 }
-
-type XAxis struct {
-	Type string   `json:"type"`
-	Data []string `json:"data"`
-}
-
-type YAxis struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-}
-
-type Series struct {
-	Name string    `json:"name"`
-	Type string    `json:"type"`
-	Data []float64 `json:"data"`
-}
-
-type Histogram struct {
-	XAxis  XAxis            `json:"xAxis"`
-	YAxis  YAxis            `json:"yAxis"`
-	Series []HistogramSerie `json:"series"`
-	Name   string           `json:"name"`
-}

@@ -103,7 +103,7 @@ func (rq TrendRequestQuery) getTime(t string) (uint64, error) {
 		return 0, err
 	}
 	if v < 1_000_000_000_000 || v > 9_999_999_999_999 {
-		return 0, errors.New("start time is invalid")
+		return 0, errors.New("timestamp is invalid")
 	}
 	return v, nil
 }

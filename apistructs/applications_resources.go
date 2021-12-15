@@ -197,3 +197,92 @@ func (i *ApplicationsResourcesItem) AddResource(workspace string, pods, cpu, mem
 	i.CPURequest = i.ProdCPURequest + i.StagingCPURequest + i.TestCPURequest + i.DevCPURequest
 	i.MemRequest = i.ProdMemRequest + i.StagingMemRequest + i.TestMemRequest + i.DevMemRequest
 }
+
+type GetResourceApplicationTrendReq struct {
+	OrgID     string
+	UserID    string
+	ProjectID string
+
+	Query *GetResourceApplicationTrendReqQuery
+}
+
+func (req GetResourceApplicationTrendReq) Validate() error {
+	if _, err := req.GetOrgID(); err != nil {
+		return err
+	}
+	if _, err := req.GetUserID(); err != nil {
+		return err
+	}
+	if _, err := req.GetProjectID(); err != nil {
+		return err
+	}
+	if req.Query == nil {
+		return errors.New("the Query is empty")
+	}
+	return req.Query.Validate()
+}
+
+func (req GetResourceApplicationTrendReq) GetOrgID() (uint64, error) {
+	return strconv.ParseUint(req.OrgID, 10, 32)
+}
+
+func (req GetResourceApplicationTrendReq) GetUserID() (uint64, error) {
+	return strconv.ParseUint(req.UserID, 10, 32)
+}
+
+func (req GetResourceApplicationTrendReq) GetProjectID() (uint64, error) {
+	return strconv.ParseUint(req.ProjectID, 10, 32)
+}
+
+type GetResourceApplicationTrendReqQuery struct {
+	ApplicationID string // 要统计的应用 id
+	Start         string // 统计值起始时间, 13 位时间戳
+	End           string // 统计值结束时间, 13 位时间戳
+	Interval      string // 统计聚合维度: 周期, 枚举: day, week, month
+	ResourceType  string // 资源类型, 枚举: cpu, mem
+}
+
+func (rq GetResourceApplicationTrendReqQuery) Validate() error {
+	if _, err := rq.GetApplicationID(); err != nil {
+		return err
+	}
+	if _, err := rq.GetStart(); err != nil {
+		return err
+	}
+	if _, err := rq.GetEnd(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rq GetResourceApplicationTrendReqQuery) GetApplicationID() (uint64, error) {
+	return strconv.ParseUint(rq.ApplicationID, 10, 32)
+}
+
+func (rq GetResourceApplicationTrendReqQuery) GetStart() (uint64, error) {
+	return rq.getTime(rq.Start)
+}
+
+func (rq GetResourceApplicationTrendReqQuery) GetEnd() (uint64, error) {
+	return rq.getTime(rq.End)
+}
+
+func (rq GetResourceApplicationTrendReqQuery) GetInterval() string {
+	switch i := strings.ToLower(rq.Interval); i {
+	case "day", "week", "month":
+		return i
+	default:
+		return "day"
+	}
+}
+
+func (rq GetResourceApplicationTrendReqQuery) getTime(t string) (uint64, error) {
+	v, err := strconv.ParseUint(t, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	if v < 1_000_000_000_000 || v > 9_999_999_999_999 {
+		return 0, errors.New("timestamp is invalid")
+	}
+	return v, nil
+}

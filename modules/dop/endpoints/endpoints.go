@@ -620,6 +620,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// resources
 		{Path: "/api/projects/{projectID}/applications-resources", Method: http.MethodGet, Handler: e.ApplicationsResources},
+		{Path: "/api/projects/{projectID}/applications-resources/actions/trend", Method: http.MethodGet,
+			Handler: httpserver.Wrap(e.GetResourceApplicationTrend, httpserver.WithI18nCodes)},
 
 		// core-services application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},

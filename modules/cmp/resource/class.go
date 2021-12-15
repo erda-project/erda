@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/apistructs/echarts"
 )
 
 const (
@@ -54,12 +55,6 @@ type PieSerie struct {
 	Data []SerieData `json:"data"`
 	Name string      `json:"name"`
 	Type string      `json:"type"`
-}
-
-type HistogramSerie struct {
-	Data []float64 `json:"data"`
-	Name string    `json:"name"`
-	Type string    `json:"type"`
 }
 
 type SerieData struct {
@@ -332,7 +327,7 @@ func (r *Resource) PieSort(series []SerieData) {
 	})
 }
 
-func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId string, request *apistructs.TrendRequest) (td *Histogram, err error) {
+func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId string, request *apistructs.TrendRequest) (td *echarts.Histogram, err error) {
 	logrus.Debug("func GetClusterTrend start")
 	defer logrus.Debug("func GetClusterTrend finished")
 	var (
@@ -340,14 +335,14 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 		end, _   = request.Query.GetEnd()
 	)
 	langCodes := ctx.Value(Lang).(i18n.LanguageCodes)
-	td = &Histogram{
+	td = &echarts.Histogram{
 		Name: r.I18n(langCodes, "cluster trend"),
 	}
-	td.XAxis = XAxis{
+	td.XAxis = echarts.XAxis{
 		Type: "category",
 	}
-	td.YAxis = YAxis{Type: "value"}
-	td.Series = make([]HistogramSerie, 2)
+	td.YAxis = echarts.YAxis{Type: "value"}
+	td.Series = make([]echarts.HistogramSerie, 2)
 	td.Series[0].Type = "bar"
 	td.Series[1].Type = "bar"
 	td.Series[0].Name = r.I18n(langCodes, "quota")
@@ -465,11 +460,11 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 	return
 }
 
-func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.TrendRequest) (*Histogram, error) {
+func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.TrendRequest) (*echarts.Histogram, error) {
 	var (
 		//l          = logrus.WithField("func", "*Resource.GetProjectTrend")
 		langCodes = ctx.Value(Lang).(i18n.LanguageCodes)
-		td        = new(Histogram)
+		td        = new(echarts.Histogram)
 		orgID, _  = request.GetOrgID()
 		//userID, _  = request.GetUserID()
 		start, _   = request.Query.GetStart()
@@ -477,11 +472,11 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 		scopeID, _ = request.Query.GetScopeID()
 	)
 	td.Name = r.I18n(langCodes, "project trend")
-	td.XAxis = XAxis{
+	td.XAxis = echarts.XAxis{
 		Type: "category",
 	}
-	td.YAxis = YAxis{Type: "value"}
-	td.Series = make([]HistogramSerie, 2)
+	td.YAxis = echarts.YAxis{Type: "value"}
+	td.Series = make([]echarts.HistogramSerie, 2)
 	td.Series[0].Type = "bar"
 	td.Series[1].Type = "bar"
 	td.Series[0].Name = r.I18n(langCodes, "request")
@@ -502,7 +497,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 	endTime := time.Unix(int64(end)/1e3, int64(end)%1e3*1e6)
 	var projectDailies []*apistructs.ProjectResourceDailyModel
 	db := r.DB.Where(" updated_at >= ? and created_at <= ? ",
-		startTime.Format("2006-01-02 15:01:05"), endTime.Format("2006-01-02 15:01:05")).
+		startTime.Format("2006-01-02 15:04:05"), endTime.Format("2006-01-02 15:04:05")).
 		Where("cluster_name in (?)", request.Query.ClustersNames)
 	switch strings.ToLower(request.Query.GetScope()) {
 	case "owner":
