@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ahmetb/go-linq/v3"
+
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
@@ -345,7 +347,8 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 		case "MonitorCenter":
 			monitor = item
 		case "DiagnoseAnalyzer":
-			loghub = item
+			loghub, _ = linq.From(item.Children).
+				FirstWith(func(i interface{}) bool { return i.(*pb.MenuItem).Key == "LogAnalyze" }).(*pb.MenuItem)
 		}
 	}
 	if monitor != nil {
