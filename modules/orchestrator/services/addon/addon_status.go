@@ -385,7 +385,7 @@ func (a *Addon) BuildZookeeperServiceItem(params *apistructs.AddonHandlerCreateI
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
@@ -452,7 +452,7 @@ func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
@@ -515,7 +515,7 @@ func (a *Addon) BuildConsulServiceItem(params *apistructs.AddonHandlerCreateItem
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
@@ -550,7 +550,7 @@ func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, ad
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
@@ -646,7 +646,7 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: kafkaPlan.CPU, MaxCPU: kafkaPlan.CPU, Mem: kafkaPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: kafkaPlan.CPU, MaxCPU: kafkaPlan.MaxCPU, Mem: kafkaPlan.Mem, MaxMem: kafkaPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
@@ -686,7 +686,7 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 	// 从dice.yml中取出对应addon信息
 	managerServiceItem := addonDice.Services[addonSpec.Name+"-manager"]
 	// manager资源
-	managerServiceItem.Resources = diceyml.Resources{CPU: kafkaManagerPlan.CPU, MaxCPU: kafkaManagerPlan.CPU, Mem: kafkaManagerPlan.Mem}
+	managerServiceItem.Resources = diceyml.Resources{CPU: kafkaManagerPlan.CPU, MaxCPU: kafkaManagerPlan.MaxCPU, Mem: kafkaManagerPlan.Mem, MaxMem: kafkaManagerPlan.MaxMem}
 	// envs
 	heapSize := getHeapSize(apistructs.KafkaManagerMem)
 	managerServiceItem.Envs = map[string]string{
@@ -740,7 +740,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 		// nameSrv构建
 		nameServiceItem := *addonDice.Services[addonSpec.Name+"-namesrv"]
 		// Resource资源
-		nameServiceItem.Resources = diceyml.Resources{CPU: nameSrvPlan.CPU, MaxCPU: nameSrvPlan.CPU, Mem: nameSrvPlan.Mem}
+		nameServiceItem.Resources = diceyml.Resources{CPU: nameSrvPlan.CPU, MaxCPU: nameSrvPlan.MaxCPU, Mem: nameSrvPlan.Mem, MaxMem: nameSrvPlan.MaxMem}
 		// label
 		if len(nameServiceItem.Labels) == 0 {
 			nameServiceItem.Labels = map[string]string{}
@@ -785,7 +785,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 		nodeName := strings.Join([]string{addonSpec.Name, "broker", strconv.Itoa(i)}, "-")
 		brokerServiceItem := *addonDice.Services[addonSpec.Name+"-broker"]
 		// Resource资源
-		brokerServiceItem.Resources = diceyml.Resources{CPU: brokerPlan.CPU, MaxCPU: brokerPlan.CPU, Mem: brokerPlan.Mem}
+		brokerServiceItem.Resources = diceyml.Resources{CPU: brokerPlan.CPU, MaxCPU: brokerPlan.MaxCPU, Mem: brokerPlan.Mem, MaxMem: brokerPlan.MaxMem}
 		// label
 		if len(brokerServiceItem.Labels) == 0 {
 			brokerServiceItem.Labels = map[string]string{}
@@ -826,7 +826,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 	// 从dice.yml中取出对应addon信息
 	consoleServiceItem := addonDice.Services[addonSpec.Name+"-console"]
 	// Resource资源
-	consoleServiceItem.Resources = diceyml.Resources{CPU: consolePlan.CPU, MaxCPU: consolePlan.CPU, Mem: consolePlan.Mem}
+	consoleServiceItem.Resources = diceyml.Resources{CPU: consolePlan.CPU, MaxCPU: consolePlan.MaxCPU, Mem: consolePlan.Mem, MaxMem: consolePlan.MaxMem}
 	// label
 	if len(consoleServiceItem.Labels) == 0 {
 		consoleServiceItem.Labels = map[string]string{}
@@ -879,7 +879,7 @@ func (a *Addon) BuildMysqlServiceItem(params *apistructs.AddonHandlerCreateItem,
 		}
 
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		labels := make(map[string]string)
 		for k, v := range serviceItem.Labels {
@@ -1010,7 +1010,7 @@ func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem,
 	// 初始化amster节点
 	masterServiceItem := addonDice.Services[apistructs.RedisMasterNamePrefix]
 	// resource信息
-	masterServiceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+	masterServiceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 	// envs
 	masterServiceItem.Envs = map[string]string{
 		"ADDON_ID":       addonIns.ID,
@@ -1298,7 +1298,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
@@ -1359,7 +1359,7 @@ func (a *Addon) BuildRabbitmqServiceItem(params *apistructs.AddonHandlerCreateIt
 		// 从dice.yml中取出对应addon信息
 		serviceItem := *addonDice.Services[addonSpec.Name]
 		// Resource资源
-		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.CPU, Mem: addonDeployPlan.Mem}
+		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
 		if len(serviceItem.Labels) == 0 {
 			serviceItem.Labels = map[string]string{}
