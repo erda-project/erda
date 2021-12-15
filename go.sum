@@ -569,8 +569,9 @@ github.com/go-bindata/go-bindata/v3 v3.1.3/go.mod h1:1/zrpXsLD8YDIbhZRqXzm1Ghc7N
 github.com/go-chi/chi v4.0.2+incompatible/go.mod h1:eB3wogJHnLi3x/kFX2A+IbTBlXxmMeXJVKy9tTv1XzQ=
 github.com/go-echarts/go-echarts/v2 v2.2.4 h1:SKJpdyNIyD65XjbUZjzg6SwccTNXEgmh+PlaO23g2H0=
 github.com/go-echarts/go-echarts/v2 v2.2.4/go.mod h1:6TOomEztzGDVDkOSCFBq3ed7xOYfbOqhaBzD0YV771A=
-github.com/go-eden/routine v0.0.1 h1:EFzGtHcxmv2gAcdoG7vMESe+26nuIl0/vTMtc030m/4=
 github.com/go-eden/routine v0.0.1/go.mod h1:R+sklWRKa0GPYXW5Opyr1nSb9KbwpEF9AXBARb7r1XI=
+github.com/go-eden/routine v0.0.2 h1:jcRSRZEKX0R1OqYqfbBRXxpaDxANUJn2m7liPe7KzQI=
+github.com/go-eden/routine v0.0.2/go.mod h1:R+sklWRKa0GPYXW5Opyr1nSb9KbwpEF9AXBARb7r1XI=
 github.com/go-errors/errors v1.0.1 h1:LUHzmkK3GUKUrL/1gfBUxAHzcev3apQlezX/+O7ma6w=
 github.com/go-errors/errors v1.0.1/go.mod h1:f4zRHt4oKfwPJE5k8C9vpYG+aDHdBFUsgrm6/TyX73Q=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=

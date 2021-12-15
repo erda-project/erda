@@ -32,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/http/customhttp"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/terminal/loading"
 )
 
@@ -105,6 +106,13 @@ func (r *Request) Do() AfterDo {
 	for k, v := range r.header {
 		req.Header.Set(k, v)
 	}
+
+	// get goroutine context il8n header to bdl request
+	localeName := i18n.GetGoroutineBindLang()
+	if localeName != "" {
+		req.Header.Set(i18n.LangHeader, localeName)
+	}
+
 	for _, v := range r.cookie {
 		req.AddCookie(v)
 	}
