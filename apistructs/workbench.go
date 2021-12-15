@@ -47,6 +47,17 @@ type WorkbenchProjectItem struct {
 	IssueList           []Issue    `json:"issueList"`
 }
 
+type AppWorkBenchItem struct {
+	ApplicationDTO
+	AppRuntimeNum int `json:"appRuntimeNum"`
+	AppOpenMrNum  int `json:"appMrNum"`
+}
+
+type AppWorkbenchResponseData struct {
+	TotalApps int                `json:"totalApps"`
+	List      []AppWorkBenchItem `json:"list"`
+}
+
 var StateBelongs = []IssueStateBelong{
 	IssueStateBelongOpen,
 	IssueStateBelongWorking,
