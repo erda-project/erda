@@ -90,7 +90,7 @@ type IssueStreamExtra struct {
 	IssueType apistructs.IssueType
 }
 
-func (client *DBClient) ListIssueStreamExtraForMigration() ([]IssueStreamExtra, error) {
+func (client *DBClient) ListIssueStreamExtraForIssueStateTransMigration() ([]IssueStreamExtra, error) {
 	var issueStreamExtras []IssueStreamExtra
 	err := client.Table("dice_issue_streams AS stream").
 		Select("stream.*, issue.project_id, issue.type AS issue_type").

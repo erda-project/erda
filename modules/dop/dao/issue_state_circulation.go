@@ -20,7 +20,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type IssueStateCirculation struct {
+type IssueStateTransition struct {
 	ID        string `gorm:"primary_key"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -31,32 +31,32 @@ type IssueStateCirculation struct {
 	Creator   string
 }
 
-func (IssueStateCirculation) TableName() string {
-	return "erda_issue_state_circulation"
+func (IssueStateTransition) TableName() string {
+	return "erda_issue_state_transition"
 }
 
-func (client *DBClient) CreateIssueStateCirculation(statesCircus *IssueStateCirculation) error {
+func (client *DBClient) CreateIssueStateTransition(statesTrans *IssueStateTransition) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return err
 	}
-	statesCircus.ID = id.String()
-	return client.Create(statesCircus).Error
+	statesTrans.ID = id.String()
+	return client.Create(statesTrans).Error
 }
 
-func (client *DBClient) BatchCreateIssueStateCirculation(statesCircus []IssueStateCirculation) error {
-	return client.BulkInsert(statesCircus)
+func (client *DBClient) BatchCreateIssueTransition(statesTrans []IssueStateTransition) error {
+	return client.BulkInsert(statesTrans)
 }
 
-func (client *DBClient) DeleteIssuesStateCirculation(issueID uint64) error {
-	return client.Model(&IssueStateCirculation{}).Where("issue_id = ?", issueID).Delete(IssueStateCirculation{}).Error
+func (client *DBClient) DeleteIssuesStateTransition(issueID uint64) error {
+	return client.Model(&IssueStateTransition{}).Where("issue_id = ?", issueID).Delete(IssueStateTransition{}).Error
 }
 
-func (client *DBClient) ListStatesCircusByProjectID(projectID uint64) ([]IssueStateCirculation, error) {
-	var statesCircus []IssueStateCirculation
-	db := client.Model(&IssueStateCirculation{}).Where("project_id = ?", projectID)
-	if err := db.Find(&statesCircus).Error; err != nil {
+func (client *DBClient) ListStatesTransByProjectID(projectID uint64) ([]IssueStateTransition, error) {
+	var statesTrans []IssueStateTransition
+	db := client.Model(&IssueStateTransition{}).Where("project_id = ?", projectID)
+	if err := db.Find(&statesTrans).Error; err != nil {
 		return nil, err
 	}
-	return statesCircus, nil
+	return statesTrans, nil
 }

@@ -210,8 +210,8 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, err
 	}
 
-	// create issue state circulation
-	if err = svc.db.CreateIssueStateCirculation(&dao.IssueStateCirculation{
+	// create issue state transition
+	if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
 		ProjectID: create.ProjectID,
 		IssueID:   create.ID,
 		StateFrom: 0,
@@ -639,9 +639,9 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
 	}
 
-	// create issue state circulation
+	// create issue state transition
 	if issueModel.State != *req.State {
-		if err = svc.db.CreateIssueStateCirculation(&dao.IssueStateCirculation{
+		if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
 			ProjectID: issueModel.ProjectID,
 			IssueID:   issueModel.ID,
 			StateFrom: uint64(issueModel.State),
@@ -848,8 +848,8 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
 	}
-	// delete issue state circulation
-	if err = svc.db.DeleteIssuesStateCirculation(issueID); err != nil {
+	// delete issue state transition
+	if err = svc.db.DeleteIssuesStateTransition(issueID); err != nil {
 		return apierrors.ErrDeleteIssue.InternalError(err)
 	}
 
@@ -1699,6 +1699,6 @@ func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.
 	return issues, nil
 }
 
-func (svc *Issue) ListStatesCircusByProjectID(projectID uint64) ([]dao.IssueStateCirculation, error) {
-	return svc.db.ListStatesCircusByProjectID(projectID)
+func (svc *Issue) ListStatesTransByProjectID(projectID uint64) ([]dao.IssueStateTransition, error) {
+	return svc.db.ListStatesTransByProjectID(projectID)
 }

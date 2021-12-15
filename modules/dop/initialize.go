@@ -232,7 +232,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		}
 	}()
 
-	// compensate issue state circulation
+	// compensate issue state transition
 	go func() {
 		// add etcd lock to ensure that it is executed only once
 		resp, err := p.EtcdClient.Get(context.Background(), EtcdIssueStateCompensate)
@@ -241,7 +241,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 			return
 		}
 		if len(resp.Kvs) == 0 {
-			logrus.Infof("start compensate issue state circulation")
+			logrus.Infof("start compensate issue state transition")
 			if err = compensateIssueStateCirculation(ep); err != nil {
 				logrus.Error(err)
 				return
@@ -787,11 +787,11 @@ func compensatePipelineCms(ep *endpoints.Endpoints) error {
 	return nil
 }
 
-// compensateIssueStateCirculation compensate issue state circulation
+// compensateIssueStateCirculation compensate issue state transition
 // it will be deprecated in the later version
 func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 	// get all issue stream
-	issueStreamExtras, err := ep.DBClient().ListIssueStreamExtraForMigration()
+	issueStreamExtras, err := ep.DBClient().ListIssueStreamExtraForIssueStateTransMigration()
 	if err != nil {
 		return nil
 	}
@@ -800,7 +800,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 		proIssueStreamMap[v.ProjectID] = append(proIssueStreamMap[v.ProjectID], v)
 	}
 
-	statesCircus := make([]dao.IssueStateCirculation, 0)
+	statesTrans := make([]dao.IssueStateTransition, 0)
 	for k, streams := range proIssueStreamMap {
 		states, err := ep.DBClient().GetIssuesStatesByProjectID(k, "")
 		if err != nil {
@@ -818,7 +818,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 			if err != nil {
 				return err
 			}
-			statesCircus = append(statesCircus, dao.IssueStateCirculation{
+			statesTrans = append(statesTrans, dao.IssueStateTransition{
 				ID:        id.String(),
 				CreatedAt: v.CreatedAt,
 				UpdatedAt: v.UpdatedAt,
@@ -830,7 +830,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 			})
 		}
 	}
-	issues, err := ep.DBClient().ListIssueForMigration()
+	issues, err := ep.DBClient().ListIssueForIssueStateTransMigration()
 	if err != nil {
 		return err
 	}
@@ -858,7 +858,7 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 		if err != nil {
 			return err
 		}
-		statesCircus = append(statesCircus, dao.IssueStateCirculation{
+		statesTrans = append(statesTrans, dao.IssueStateTransition{
 			ID:        id.String(),
 			CreatedAt: v.CreatedAt,
 			UpdatedAt: v.UpdatedAt,
@@ -870,5 +870,5 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 		})
 	}
 
-	return ep.DBClient().BatchCreateIssueStateCirculation(statesCircus)
+	return ep.DBClient().BatchCreateIssueTransition(statesTrans)
 }

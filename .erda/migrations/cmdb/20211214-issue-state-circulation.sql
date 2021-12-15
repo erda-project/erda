@@ -1,4 +1,4 @@
-CREATE TABLE `erda_issue_state_circulation`
+CREATE TABLE `erda_issue_state_transition`
 (
     `id`         varchar(36)  NOT NULL COMMENT 'primary key',
     `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '表记录创建时间',
@@ -10,4 +10,4 @@ CREATE TABLE `erda_issue_state_circulation`
     `issue_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT 'issue_id',
     PRIMARY KEY (`id`),
     KEY          `idx_project_id` (`project_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=6432 DEFAULT CHARSET=utf8mb4 COMMENT='issue状态流转表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='issue状态流转表';

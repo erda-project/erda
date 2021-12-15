@@ -46,7 +46,7 @@ func (f *StackChart) Render(ctx context.Context, c *cptype.Component, scenario c
 	}
 	f.Itr = itr
 	f.setIssues(h)
-	if err := f.setStatesCircusMap(); err != nil {
+	if err := f.setStatesTransMap(); err != nil {
 		return err
 	}
 	if err := f.setIssueStates(h); err != nil {
@@ -144,8 +144,8 @@ func (f *StackChart) setDateMap() {
 		dateMap[date] = count
 	}
 
-	baseList := make([]dao.IssueStateCirculation, 0)
-	for k, v := range f.StatesCircusMap {
+	baseList := make([]dao.IssueStateTransition, 0)
+	for k, v := range f.StatesTransMap {
 		if !common.DateTime(k).After(f.Dates[0]) {
 			baseList = append(baseList, v...)
 		}
@@ -172,8 +172,8 @@ func (f *StackChart) setDateMap() {
 	dateMap[f.Dates[0]] = deepCopy(baseCount)
 
 	for i := 1; i < len(f.Dates); i++ {
-		if _, ok := f.StatesCircusMap[f.Dates[i]]; ok {
-			for _, v := range f.StatesCircusMap[f.Dates[i]] {
+		if _, ok := f.StatesTransMap[f.Dates[i]]; ok {
+			for _, v := range f.StatesTransMap[f.Dates[i]] {
 				if _, ok2 := issueIDMap[v.IssueID]; !ok2 {
 					continue
 				}
@@ -212,17 +212,17 @@ func (f *StackChart) setIssues(h *gshelper.GSHelper) {
 	}
 }
 
-func (f *StackChart) setStatesCircusMap() error {
-	statesCircus, err := f.issueSvc.ListStatesCircusByProjectID(f.InParams.ProjectID)
+func (f *StackChart) setStatesTransMap() error {
+	statesTrans, err := f.issueSvc.ListStatesTransByProjectID(f.InParams.ProjectID)
 	if err != nil {
 		return err
 	}
 
-	statesCircusMap := make(map[time.Time][]dao.IssueStateCirculation, 0)
-	for _, v := range statesCircus {
-		statesCircusMap[common.DateTime(v.CreatedAt)] = append(statesCircusMap[common.DateTime(v.CreatedAt)], v)
+	statesTransMap := make(map[time.Time][]dao.IssueStateTransition, 0)
+	for _, v := range statesTrans {
+		statesTransMap[common.DateTime(v.CreatedAt)] = append(statesTransMap[common.DateTime(v.CreatedAt)], v)
 	}
-	f.StatesCircusMap = statesCircusMap
+	f.StatesTransMap = statesTransMap
 	return nil
 }
 

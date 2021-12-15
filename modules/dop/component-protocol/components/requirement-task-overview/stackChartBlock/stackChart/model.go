@@ -32,17 +32,17 @@ import (
 type StackChart struct {
 	base.DefaultProvider
 
-	issueSvc        *issue.Issue
-	InParams        InParams                                  `json:"-"`
-	Type            string                                    `json:"type"`
-	Props           Props                                     `json:"props"`
-	Issues          []dao.IssueItem                           `json:"-"`
-	StateMap        map[uint64]string                         `json:"-"`
-	StatesCircusMap map[time.Time][]dao.IssueStateCirculation `json:"-"`
-	DateMap         map[time.Time]map[uint64]int              `json:"-"`
-	Dates           []time.Time                               `json:"-"`
-	Itr             apistructs.Iteration                      `json:"-"`
-	States          []dao.IssueState                          `json:"-"`
+	issueSvc       *issue.Issue
+	InParams       InParams                                 `json:"-"`
+	Type           string                                   `json:"type"`
+	Props          Props                                    `json:"props"`
+	Issues         []dao.IssueItem                          `json:"-"`
+	StateMap       map[uint64]string                        `json:"-"`
+	StatesTransMap map[time.Time][]dao.IssueStateTransition `json:"-"`
+	DateMap        map[time.Time]map[uint64]int             `json:"-"`
+	Dates          []time.Time                              `json:"-"`
+	Itr            apistructs.Iteration                     `json:"-"`
+	States         []dao.IssueState                         `json:"-"`
 }
 
 type InParams struct {
