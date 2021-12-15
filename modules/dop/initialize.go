@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/google/uuid"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
@@ -813,12 +814,14 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 			stateMap[v.IssueType][v.Name] = v.ID
 		}
 		for _, v := range streams {
+			id, err := uuid.NewRandom()
+			if err != nil {
+				return err
+			}
 			statesCircus = append(statesCircus, dao.IssueStateCirculation{
-				BaseModel: dbengine.BaseModel{
-					ID:        0,
-					CreatedAt: v.CreatedAt,
-					UpdatedAt: v.UpdatedAt,
-				},
+				ID:        id.String(),
+				CreatedAt: v.CreatedAt,
+				UpdatedAt: v.UpdatedAt,
 				ProjectID: k,
 				IssueID:   uint64(v.IssueID),
 				StateFrom: stateMap[v.IssueType][v.StreamParams.CurrentState],
@@ -851,12 +854,14 @@ func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
 		}
 	}
 	for _, v := range issues {
+		id, err := uuid.NewRandom()
+		if err != nil {
+			return err
+		}
 		statesCircus = append(statesCircus, dao.IssueStateCirculation{
-			BaseModel: dbengine.BaseModel{
-				ID:        0,
-				CreatedAt: v.CreatedAt,
-				UpdatedAt: v.UpdatedAt,
-			},
+			ID:        id.String(),
+			CreatedAt: v.CreatedAt,
+			UpdatedAt: v.UpdatedAt,
 			ProjectID: v.ProjectID,
 			IssueID:   v.ID,
 			StateFrom: 0,

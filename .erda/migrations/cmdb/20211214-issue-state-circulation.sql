@@ -1,6 +1,6 @@
-CREATE TABLE `dice_issue_state_circulation`
+CREATE TABLE `erda_issue_state_circulation`
 (
-    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `id`         varchar(36)  NOT NULL COMMENT 'primary key',
     `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '表记录创建时间',
     `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '表记录更新时间',
     `project_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '所属项目 ID',

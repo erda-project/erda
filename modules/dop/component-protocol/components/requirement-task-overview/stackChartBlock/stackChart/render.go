@@ -16,6 +16,7 @@ package stackChart
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -204,12 +205,7 @@ func (f *StackChart) setIssueStates(h *gshelper.GSHelper) error {
 
 func (f *StackChart) setIssues(h *gshelper.GSHelper) {
 	for _, issue := range h.GetIssueList() {
-		if h.GetStackChartType() == "requirement" &&
-			issue.Type != apistructs.IssueTypeRequirement {
-			continue
-		}
-		if h.GetStackChartType() == "task" &&
-			issue.Type != apistructs.IssueTypeTask {
+		if strings.ToLower(issue.Type.String()) != h.GetStackChartType() {
 			continue
 		}
 		f.Issues = append(f.Issues, issue)

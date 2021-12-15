@@ -15,12 +15,15 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/pkg/database/dbengine"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type IssueStateCirculation struct {
-	dbengine.BaseModel
-
+	ID        string `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	ProjectID uint64
 	IssueID   uint64
 	StateFrom uint64
@@ -29,10 +32,15 @@ type IssueStateCirculation struct {
 }
 
 func (IssueStateCirculation) TableName() string {
-	return "dice_issue_state_circulation"
+	return "erda_issue_state_circulation"
 }
 
 func (client *DBClient) CreateIssueStateCirculation(statesCircus *IssueStateCirculation) error {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	statesCircus.ID = id.String()
 	return client.Create(statesCircus).Error
 }
 
