@@ -1522,10 +1522,10 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	return nil
 }
 
-func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
-	stats, err := svc.db.GetIssueExpiryStatusByProjects(req)
+func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, int, error) {
+	stats, total, err := svc.db.GetIssueExpiryStatusByProjects(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	projectMap := make(map[uint64]*apistructs.WorkbenchProjectItem)
@@ -1559,7 +1559,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 
 	pMap, err := svc.bdl.GetProjectsMap(projectIDs)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	for i := range projectMap {
@@ -1568,7 +1568,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 			req.ProjectID = dto.ID
 			issues, total, err := svc.db.GetIssuesByProject(req.IssuePagingRequest)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			issueList := make([]apistructs.Issue, 0, len(issues))
 			for _, v := range issues {
@@ -1584,7 +1584,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		}
 	}
 
-	return projectMap, nil
+	return projectMap, total, nil
 }
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {

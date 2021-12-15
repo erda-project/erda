@@ -176,13 +176,13 @@ func (w *Workbench) GetUndoneProjectItems(req apistructs.WorkbenchRequest, userI
 			Asc:          true,
 		},
 	}
-	projectMap, err := w.issueSvc.GetIssuesByStates(req)
+	projectMap, total, err := w.issueSvc.GetIssuesByStates(req)
 	if err != nil {
 		return nil, err
 	}
 
 	res := &apistructs.WorkbenchResponse{}
-	res.Data.TotalProject = len(projectMap)
+	res.Data.TotalProject = total
 	res.Data.List = make([]*apistructs.WorkbenchProjectItem, 0)
 	for _, v := range projectMap {
 		res.Data.List = append(res.Data.List, v)
