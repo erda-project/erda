@@ -17,6 +17,7 @@ package middleware
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -28,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/go-ansiterm"
+	"github.com/bugaolengdeyuxiaoer/go-ansiterm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -57,7 +58,7 @@ const (
 	AuditTargetLabel  = "targetLabel"
 	AuditCommands     = "commands"
 
-	maxAuditLength = 40000
+	maxAuditLength = 1 << 16
 )
 
 type Auditor struct {
@@ -74,24 +75,15 @@ func NewAuditor(bdl *bundle.Bundle) *Auditor {
 func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		vars, _ := req.Context().Value(varsKey).(map[string]string)
-		var body []byte
+		var (
+			body []byte
+			ctx  map[string]interface{}
+		)
 		if req.Body != nil {
 			body, _ = ioutil.ReadAll(req.Body)
 		}
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
-		writer := &wrapWriter{
-			ResponseWriter: resp,
-			statusCode:     http.StatusOK,
-		}
-		next.ServeHTTP(writer, req)
-
-		if body == nil {
-			return
-		}
-		if writer.statusCode < 200 || writer.statusCode >= 300 {
-			return
-		}
+		_, _ = req.Body.Read(body)
 
 		clusterName := vars["clusterName"]
 		typ := vars["type"]
@@ -104,39 +96,39 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		scopeID, _ := strconv.ParseUint(orgID, 10, 64)
 		now := strconv.FormatInt(time.Now().Unix(), 10)
 
+		ctx = map[string]interface{}{
+			AuditClusterName: clusterName,
+		}
 		auditReq := apistructs.AuditCreateRequest{
 			Audit: apistructs.Audit{
-				UserID:    userID,
-				ScopeType: apistructs.OrgScope,
-				ScopeID:   scopeID,
-				OrgID:     scopeID,
-				Result:    "success",
-				StartTime: now,
-				EndTime:   now,
-				ClientIP:  getRealIP(req),
-				UserAgent: req.UserAgent(),
+				UserID:       userID,
+				ScopeType:    apistructs.OrgScope,
+				ScopeID:      scopeID,
+				OrgID:        scopeID,
+				Result:       "success",
+				StartTime:    now,
+				EndTime:      now,
+				ClientIP:     getRealIP(req),
+				UserAgent:    req.UserAgent(),
+				Context:      ctx,
+				TemplateName: AuditKubectlShell,
 			},
 		}
 
-		ctx := map[string]interface{}{
-			AuditClusterName: clusterName,
+		writer := &wrapWriter{
+			ResponseWriter: resp,
+			statusCode:     http.StatusOK,
+			auditReq:       auditReq,
+			bdl:            a.bdl,
+			ctx:            req.Context(),
 		}
-		if vars["kubectl-shell"] == "true" {
-			auditReq.TemplateName = AuditKubectlShell
-			var cmds []string
-			for _, cwt := range writer.wc.cmds {
-				cmd := fmt.Sprintf("%s: %s", cwt.start.Format(time.RFC3339), cwt.cmd)
-				cmds = append(cmds, cmd)
-			}
-			if len(cmds) == 0 {
-				return
-			}
-			res := fmt.Sprintf("\n%s", strings.Join(cmds, "\n"))
-			if len(res) > maxAuditLength {
-				res = res[:maxAuditLength] + "..."
-			}
-			ctx[AuditCommands] = res
-		} else {
+
+		next.ServeHTTP(writer, req)
+		if writer.statusCode < 200 || writer.statusCode >= 300 {
+			return
+		}
+
+		if vars["kubectl-shell"] != "true" {
 			if typ == "" {
 				return
 			}
@@ -210,11 +202,11 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 			default:
 				return
 			}
+			if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
+				logrus.Errorf("faild to audit in steve audit, %v", err)
+			}
 		}
-		auditReq.Context = ctx
-		if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
-			logrus.Errorf("faild to audit in steve audit, %v", err)
-		}
+
 	})
 }
 
@@ -225,9 +217,11 @@ type reqBody struct {
 
 type wrapWriter struct {
 	http.ResponseWriter
+	ctx        context.Context
 	statusCode int
 	buf        bytes.Buffer
-	wc         *wrapConn
+	auditReq   apistructs.AuditCreateRequest
+	bdl        *bundle.Bundle
 }
 
 func (w *wrapWriter) WriteHeader(statusCode int) {
@@ -249,22 +243,61 @@ func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	d := NewDispatcher()
+	closeChan := make(chan struct{})
+	auditReqChan := make(chan *cmdWithTimestamp)
+	d := NewDispatcher(auditReqChan, closeChan)
 	parser := ansiterm.CreateParser("Ground", d)
 	wc := &wrapConn{
 		Conn:       conn,
 		parser:     parser,
 		dispatcher: d,
+		auditReq:   w.auditReq,
+		ctx:        w.ctx,
 	}
-	w.wc = wc
+	go func(w *wrapWriter) {
+		for {
+			auditStr := ""
+		LOOP:
+			for {
+				select {
+				case cmd := <-d.auditReqChan:
+					auditStr += fmt.Sprintf("%s: %s\n", cmd.start.Format(time.RFC3339), cmd.cmd)
+					if len(auditStr) > maxAuditLength {
+						break LOOP
+					}
+				case <-w.ctx.Done():
+					w.sendWebsocketAudit(auditStr)
+					return
+				case <-closeChan:
+					w.sendWebsocketAudit(auditStr)
+					return
+				}
+				w.sendWebsocketAudit(auditStr)
+			}
+
+		}
+	}(w)
 	return wc, rw, nil
+}
+
+func (w *wrapWriter) sendWebsocketAudit(auditStr string) {
+	if len(auditStr) > 0 {
+		w.auditReq.Context[AuditCommands] = auditStr
+		if err := w.bdl.CreateAuditEvent(&w.auditReq); err != nil {
+			logrus.Errorf("faild to audit in steve audit, %v", err)
+		} else {
+			logrus.Infof("send audit message with websocket ,length : %d,", len(auditStr))
+		}
+	}
 }
 
 type wrapConn struct {
 	net.Conn
 	parser     *ansiterm.AnsiParser
 	dispatcher *dispatcher
-	cmds       []*cmdWithTimestamp
+	auditReq   apistructs.AuditCreateRequest
+	bdl        *bundle.Bundle
+	ctx        context.Context
 }
 
 type cmdWithTimestamp struct {
@@ -279,21 +312,22 @@ func (w *wrapConn) Read(p []byte) (n int, err error) {
 			logrus.Error(r)
 		}
 	}()
-	data := websocket.DecodeFrame(p)
-	if len(data) <= 1 || data[0] != '0' {
-		return
-	}
-	for _, d := range strings.Split(string(data), "\n") {
-		decoded, _ := base64.StdEncoding.DecodeString(d[1:])
-		if err != nil || len(decoded) == 0 {
+	data := websocket.DecodeFrames(p[:n])
+	for _, datum := range data {
+		if datum[0] != '0' {
 			return
 		}
-		_, err = w.parser.Parse(decoded)
-		if err != nil {
-			return 0, err
+		for _, d := range strings.Split(string(datum), "\n") {
+			decoded, _ := base64.StdEncoding.DecodeString(d[1:])
+			if len(decoded) == 0 {
+				continue
+			}
+			_, err = w.parser.Parse(decoded)
+			if err != nil {
+				logrus.Errorf("audit message parse err :%v", err)
+			}
 		}
 	}
-	w.cmds = w.dispatcher.cmds
 	return
 }
 

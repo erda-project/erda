@@ -23,8 +23,8 @@ func TestDecodeFrame(t *testing.T) {
 	frame := []byte{129, 144, 155, 182, 186, 247, 250, 241, 236, 132, 249, 241, 130, 144, 255, 132, 131, 142, 249,
 		241, 235, 202, 0, 62, 249, 122, 86, 4, 248, 80, 11, 4, 165, 72, 17, 5, 140, 87, 44,
 	}
-	data := DecodeFrame(frame)
-	res, err := base64.StdEncoding.DecodeString(string(data))
+	data := DecodeFrames(frame)
+	res, err := base64.StdEncoding.DecodeString(string(data[0]))
 	if err != nil {
 		t.Error(err)
 	}
