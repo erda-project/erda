@@ -15,6 +15,8 @@
 package persist
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
@@ -40,6 +42,10 @@ type statistics struct {
 	decodeErrors   prometheus.Counter
 	validateErrors *prometheus.CounterVec
 	metadataError  *prometheus.CounterVec
+
+	// performance
+	readLatency  prometheus.Histogram
+	writeLatency prometheus.Histogram
 }
 
 var sharedStatistics = newStatistics()
@@ -47,6 +53,20 @@ var sharedStatistics = newStatistics()
 func newStatistics() Statistics {
 	const subSystem = "error_persist"
 	s := &statistics{
+		readLatency: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Name:      "read_latency",
+				Subsystem: subSystem,
+				Buckets:   storekit.DefaultLatencyBuckets,
+			},
+		),
+		writeLatency: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Name:      "write_latency",
+				Subsystem: subSystem,
+				Buckets:   storekit.DefaultLatencyBuckets,
+			},
+		),
 		readErrors: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name:      "read_errors",
@@ -136,25 +156,33 @@ func (s *statistics) ValidateError(data *exception.Erda_error) {
 
 func (*statistics) MetadataError(data *exception.Erda_error, err error) {}
 
+func (s *statistics) ObserveReadLatency(start time.Time) {
+	s.readLatency.Observe(float64(time.Since(start).Milliseconds()))
+}
+
+func (s *statistics) ObserveWriteLatency(start time.Time) {
+	s.writeLatency.Observe(float64(time.Since(start).Milliseconds()))
+}
+
 var distinguishingKeys = []string{
 	"org_name", "cluster_name",
-	"scope", "scope_id",
+	// "scope", "scope_id",
 }
 
 func getStatisticsLabels(data *exception.Erda_error) []string {
-	var scope, scopeID string
-
-	if app, ok := data.Tags["application_name"]; ok {
-		scope = "app"
-		if project, ok := data.Tags["project_name"]; ok {
-			scopeID = project + "/" + app
-		} else {
-			scopeID = app
-		}
-	}
+	// var scope, scopeID string
+	//
+	// if app, ok := data.Tags["application_name"]; ok {
+	// 	scope = "app"
+	// 	if project, ok := data.Tags["project_name"]; ok {
+	// 		scopeID = project + "/" + app
+	// 	} else {
+	// 		scopeID = app
+	// 	}
+	// }
 	return []string{
 		data.Tags["org_name"],
 		data.Tags["cluster_name"],
-		scope, scopeID,
+		// scope, scopeID,
 	}
 }
