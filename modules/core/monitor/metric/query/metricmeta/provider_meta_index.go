@@ -77,7 +77,9 @@ func (p *MetaIndexGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Tra
 
 func (p *MetaIndexGroupProvider) getCustomGroupsMetrics(ms map[string]*pb.MetricMeta) map[string][]*GroupMetricMap {
 	return p.getDynamicGroupsMetrics("custom", ms, func(m *pb.MetricMeta) bool {
-		return m.Labels != nil && m.Labels["custom"] == "true"
+		// m.Labels != nil && m.Labels["custom"] == "true"
+		// msp should also display all metrics
+		return true
 	})
 }
 
