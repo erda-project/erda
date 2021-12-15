@@ -176,7 +176,9 @@ components:
           placeholder: 选择优先级
           type: select
       values:
-        type: requirement
+        type:
+          - requirement
+          - task
         dimension: total
     operations:
       filter:

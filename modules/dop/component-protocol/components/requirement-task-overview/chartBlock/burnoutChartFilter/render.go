@@ -55,9 +55,6 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 	f.State = State{
 		Conditions: []filter.PropCondition{
 			{
-				CustomProps: map[string]interface{}{
-					"mode": "single",
-				},
 				Key:       "type",
 				Label:     "类型",
 				EmptyText: "全部",
@@ -96,10 +93,10 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			},
 		},
 		Values: Values{
-			Type: func() string {
+			Type: func() []string {
 				if event.Operation != cptype.OperationKey(f.Operations[OperationKeyFilter].Key) ||
-					f.State.Values.Type == "" {
-					return "requirement"
+					len(f.State.Values.Type) == 0 {
+					return nil
 				}
 				return f.State.Values.Type
 			}(),
