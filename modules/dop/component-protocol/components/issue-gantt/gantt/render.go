@@ -153,11 +153,11 @@ func (f *ComponentGantt) issueChildrenRetriever(id uint64) ([]dao.IssueItem, err
 	req := apistructs.IssuePagingRequest{
 		IssueListRequest: apistructs.IssueListRequest{
 			ProjectID:    f.projectID,
-			Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask},
+			Type:         []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug},
 			IterationIDs: []int64{f.State.Values.IterationID},
 			Label:        f.State.Values.LabelIDs,
 			Assignees:    f.State.Values.AssigneeIDs,
-			StateBelongs: stateBelongs,
+			StateBelongs: apistructs.UnfinishedStateBelongs,
 		},
 		PageNo:   1,
 		PageSize: 500,

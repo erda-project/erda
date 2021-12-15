@@ -925,6 +925,7 @@ const (
 	joinIssueChildren  = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
 	joinIssueParent    = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
 	joinLabelRelation  = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
+	ganttOrder         = "FIELD(a.type,'REQUIREMENT','TASK','BUG')"
 )
 
 func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]IssueItem, uint64, error) {
@@ -955,7 +956,7 @@ func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingR
 }
 
 func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]IssueItem, []IssueItem, uint64, error) {
-	// task and requirements without children
+	// issues without children
 	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
 		Joins(joinRelationParent, apistructs.IssueRelationInclusion).Where("b.id IS NULL and d.id is NULL")
 	offset := (req.PageNo - 1) * req.PageSize
@@ -971,7 +972,7 @@ func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]Issu
 	}
 	var items []IssueItem
 	var totalTask uint64
-	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order("a.type").Offset(offset).Limit(req.PageSize).Find(&items).
+	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order(ganttOrder).Offset(offset).Limit(req.PageSize).Find(&items).
 		Offset(0).Limit(-1).Count(&totalTask).Error; err != nil {
 		return nil, nil, 0, err
 	}
