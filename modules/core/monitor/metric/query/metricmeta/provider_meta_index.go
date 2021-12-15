@@ -43,7 +43,7 @@ func NewMetaIndexGroupProvider(index indexloader.Interface) (*MetaIndexGroupProv
 
 // MappingsByID .
 func (p *MetaIndexGroupProvider) MappingsByID(id, scope, scopeID string, names []string, ms map[string]*pb.MetricMeta) (gmm []*GroupMetricMap, err error) {
-	if id == "custom" || id == "other" {
+	if id == "all" {
 		for _, name := range names {
 			if mm, ok := ms[name]; ok {
 				gmm = append(gmm, &GroupMetricMap{

@@ -111,8 +111,9 @@ groups:
            name: Browser Request
         -  id: ta_document
            name: Browser Document
-    - id: custom
-      name: Custom
+    - id: all
+      name: All Metrics
+
 mapping:
     # http
     application_http_request:

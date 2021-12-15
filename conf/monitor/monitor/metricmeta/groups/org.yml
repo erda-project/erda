@@ -146,8 +146,8 @@ groups:
         name: Storage
   - id: log_metrics
     name: Log Metrics
-  - id: other
-    name: Other
+  - id: all
+    name: All Metrics
 
 mapping:
   machine_cpu:
