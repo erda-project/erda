@@ -27,6 +27,7 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
 )
 
 func Test_parseLanguage(t *testing.T) {
@@ -164,61 +165,57 @@ func Test_apmServiceService_GetServiceAnalyzerOverview(t *testing.T) {
 		{"case1", args{req: &pb.GetServiceAnalyzerOverviewRequest{}}, true},
 		{"case2", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id"}}, true},
 		{"case3", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id_error", ServiceIds: []string{"test_service_id"}}}, true},
-		{"case4", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id_TopologyChart", ServiceIds: []string{"test_service_id"}, Position: "TopologyChart"}}, false},
+		{"case4", args{req: &pb.GetServiceAnalyzerOverviewRequest{TenantId: "test_tenant_id_TopologyChart", ServiceIds: []string{"test_service_id"}, View: "topology_service_node"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var msc *metricpb.UnimplementedMetricServiceServer
-			QueryWithInfluxFormat := monkey.PatchInstanceMethod(reflect.TypeOf(msc), "QueryWithInfluxFormat",
-				func(un *metricpb.UnimplementedMetricServiceServer, ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
-					if v, ok := req.Params["terminus_key"]; ok && v.GetStringValue() == "test_tenant_id_error" {
-						return nil, errors.New("error")
-					}
-
-					return &metricpb.QueryWithInfluxFormatResponse{Results: []*metricpb.Result{
-						{
-							Series: []*metricpb.Serie{
-								{
-									Rows: []*metricpb.Row{
-										{
-											Values: []*structpb.Value{
-												structpb.NewStringValue("2006-01-02T15:04:05Z"),
-												structpb.NewNumberValue(1.0),
-												structpb.NewNumberValue(1.0),
-												structpb.NewNumberValue(1.0),
-											},
-										},
-										{
-											Values: []*structpb.Value{
-												structpb.NewStringValue("2006-01-02T15:04:05Z"),
-												structpb.NewNumberValue(2.0),
-												structpb.NewNumberValue(2.0),
-												structpb.NewNumberValue(2.0),
-											},
-										},
-										{
-											Values: []*structpb.Value{
-												structpb.NewStringValue("2006-01-02T15:04:05Z"),
-												structpb.NewNumberValue(3.0),
-												structpb.NewNumberValue(3.0),
-												structpb.NewNumberValue(3.0),
-											},
-										},
-										{
-											Values: []*structpb.Value{
-												structpb.NewStringValue("2006-01-02T15:04:05Z"),
-												structpb.NewNumberValue(4.0),
-												structpb.NewNumberValue(4.0),
-												structpb.NewNumberValue(4.0),
-											},
-										},
-									},
-								},
+			Selector := monkey.Patch(Selector, func(viewType string, config *config, baseChart *chart.BaseChart, ctx context.Context) ([]*pb.ServiceChart, error) {
+				if baseChart.TenantId == "test_tenant_id_error" {
+					return nil, errors.New("error")
+				}
+				return []*pb.ServiceChart{
+					{
+						Type: "HttpCode",
+						View: []*pb.Chart{
+							{
+								Timestamp: 1638509880000,
+								Value:     1.0,
+								Dimension: "200",
 							},
 						},
-					}}, nil
-				})
-			defer QueryWithInfluxFormat.Unpatch()
+					},
+					{
+						Type: "Rps",
+						View: []*pb.Chart{
+							{
+								Timestamp: 1638509880000,
+								Value:     1.0,
+							},
+						},
+					},
+					{
+						Type: "AvgDuration",
+						View: []*pb.Chart{
+							{
+								Timestamp: 1638509880000,
+								Value:     1.0,
+							},
+						},
+					},
+					{
+						Type: "ErrorRate",
+						View: []*pb.Chart{
+							{
+								Timestamp: 1638509880000,
+								Value:     1.0,
+							},
+						},
+					},
+				}, nil
+			})
+			defer Selector.Unpatch()
+
 			s := &apmServiceService{
 				p: &provider{Metric: msc},
 			}
