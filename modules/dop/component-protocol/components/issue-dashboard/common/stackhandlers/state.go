@@ -41,7 +41,7 @@ var stateColorMap = map[apistructs.IssueStateBelong][]string{
 	// 进行中
 	apistructs.IssueStateBelongWorking: {"blue", "steelblue", "darkslategray", "darkslateblue"},
 	// 已解决
-	apistructs.IssueStateBelongResloved: {"green"},
+	apistructs.IssueStateBelongResolved: {"green"},
 	// 已完成
 	apistructs.IssueStateBelongDone: {"green"},
 	// 重新打开

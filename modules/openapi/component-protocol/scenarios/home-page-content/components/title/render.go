@@ -105,7 +105,7 @@ func (t *Title) getUndoneIssueNum() (int, error) {
 				apistructs.IssueStateBelongOpen,
 				apistructs.IssueStateBelongWorking,
 				apistructs.IssueStateBelongReopen,
-				apistructs.IssueStateBelongResloved,
+				apistructs.IssueStateBelongResolved,
 				apistructs.IssueStateBelongWontfix,
 			},
 			External: true,

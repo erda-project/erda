@@ -38,7 +38,7 @@ func GetUIIssueState(stateBelong apistructs.IssueStateBelong) string {
 		return UIStatusDefault
 	case apistructs.IssueStateBelongReopen:
 		return UIStatusError
-	case apistructs.IssueStateBelongResloved:
+	case apistructs.IssueStateBelongResolved:
 		return UIStatusSuccess
 	case apistructs.IssueStateBelongClosed:
 		return UIStatusSuccess

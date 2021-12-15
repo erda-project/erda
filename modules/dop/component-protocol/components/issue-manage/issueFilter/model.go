@@ -293,7 +293,7 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 			Options: func() []filter.PropConditionOption {
 				// open := filter.PropConditionOption{Label: cputil.I18n(ctx, "open"), Value: apistructs.IssueStateBelongOpen, Icon: ""}
 				// reopen := filter.PropConditionOption{Label: cputil.I18n(ctx, "reopen"), Value: apistructs.IssueStateBelongReopen, Icon: ""}
-				// resolved := filter.PropConditionOption{Label: cputil.I18n(ctx, "resolved"), Value: apistructs.IssueStateBelongResloved, Icon: ""}
+				// resolved := filter.PropConditionOption{Label: cputil.I18n(ctx, "resolved"), Value: apistructs.IssueStateBelongResolved, Icon: ""}
 				// wontfix := filter.PropConditionOption{Label: cputil.I18n(ctx, "wontfix"), Value: apistructs.IssueStateBelongWontfix, Icon: ""}
 				// closed := filter.PropConditionOption{Label: cputil.I18n(ctx, "closed"), Value: apistructs.IssueStateBelongClosed, Icon: ""}
 				// working := filter.PropConditionOption{Label: cputil.I18n(ctx, "working"), Value: apistructs.IssueStateBelongWorking, Icon: ""}
