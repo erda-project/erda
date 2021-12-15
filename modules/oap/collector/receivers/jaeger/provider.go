@@ -50,8 +50,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			return err
 		}
 		p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer}
-		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService, transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
-			transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.SpanTagOverwrite))
+		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService,
+			transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder),
+				transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
+			transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.SpanTagOverwrite),
+		)
 	}
 	return nil
 }
