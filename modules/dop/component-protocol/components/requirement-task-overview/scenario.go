@@ -25,5 +25,8 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/distributePage/topFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/page"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/pageContent"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/stackChartBlock"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/stackChartBlock/stackChart"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/stackChartBlock/stackChartFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/tabs"
 )

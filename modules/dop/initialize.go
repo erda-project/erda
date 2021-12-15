@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/google/uuid"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
@@ -88,7 +89,10 @@ import (
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
-const EtcdPipelineCmsCompensate = "dop/pipelineCms/compensate"
+const (
+	EtcdPipelineCmsCompensate = "dop/pipelineCms/compensate"
+	EtcdIssueStateCompensate  = "dop/issueState/compensate"
+)
 
 // Initialize 初始化应用启动服务.
 func (p *provider) Initialize(ctx servicehub.Context) error {
@@ -226,7 +230,27 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 				logrus.Error(err)
 			}
 		}
+	}()
 
+	// compensate issue state transition
+	go func() {
+		// add etcd lock to ensure that it is executed only once
+		resp, err := p.EtcdClient.Get(context.Background(), EtcdIssueStateCompensate)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		if len(resp.Kvs) == 0 {
+			logrus.Infof("start compensate issue state transition")
+			if err = compensateIssueStateCirculation(ep); err != nil {
+				logrus.Error(err)
+				return
+			}
+			_, err = p.EtcdClient.Put(context.Background(), EtcdIssueStateCompensate, "true")
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
 	}()
 
 	// instantly run once
@@ -761,4 +785,90 @@ func compensatePipelineCms(ep *endpoints.Endpoints) error {
 		}
 	}
 	return nil
+}
+
+// compensateIssueStateCirculation compensate issue state transition
+// it will be deprecated in the later version
+func compensateIssueStateCirculation(ep *endpoints.Endpoints) error {
+	// get all issue stream
+	issueStreamExtras, err := ep.DBClient().ListIssueStreamExtraForIssueStateTransMigration()
+	if err != nil {
+		return nil
+	}
+	proIssueStreamMap := make(map[uint64][]dao.IssueStreamExtra)
+	for _, v := range issueStreamExtras {
+		proIssueStreamMap[v.ProjectID] = append(proIssueStreamMap[v.ProjectID], v)
+	}
+
+	statesTrans := make([]dao.IssueStateTransition, 0)
+	for k, streams := range proIssueStreamMap {
+		states, err := ep.DBClient().GetIssuesStatesByProjectID(k, "")
+		if err != nil {
+			return err
+		}
+		stateMap := make(map[apistructs.IssueType]map[string]uint64)
+		for _, v := range states {
+			if _, ok := stateMap[v.IssueType]; !ok {
+				stateMap[v.IssueType] = make(map[string]uint64)
+			}
+			stateMap[v.IssueType][v.Name] = v.ID
+		}
+		for _, v := range streams {
+			id, err := uuid.NewRandom()
+			if err != nil {
+				return err
+			}
+			statesTrans = append(statesTrans, dao.IssueStateTransition{
+				ID:        id.String(),
+				CreatedAt: v.CreatedAt,
+				UpdatedAt: v.UpdatedAt,
+				ProjectID: k,
+				IssueID:   uint64(v.IssueID),
+				StateFrom: stateMap[v.IssueType][v.StreamParams.CurrentState],
+				StateTo:   stateMap[v.IssueType][v.StreamParams.NewState],
+				Creator:   v.Operator,
+			})
+		}
+	}
+	issues, err := ep.DBClient().ListIssueForIssueStateTransMigration()
+	if err != nil {
+		return err
+	}
+
+	proInitStateMap := make(map[uint64]map[apistructs.IssueType]uint64)
+	for _, v := range issues {
+		if _, ok := proInitStateMap[v.ProjectID]; !ok {
+			proInitStateMap[v.ProjectID] = make(map[apistructs.IssueType]uint64)
+		}
+	}
+	for k := range proInitStateMap {
+		for _, v := range apistructs.IssueTypes {
+			states, err := ep.DBClient().GetIssuesStatesByProjectID(k, v)
+			if err != nil {
+				return err
+			}
+			if len(states) == 0 {
+				continue
+			}
+			proInitStateMap[k][v] = states[0].ID
+		}
+	}
+	for _, v := range issues {
+		id, err := uuid.NewRandom()
+		if err != nil {
+			return err
+		}
+		statesTrans = append(statesTrans, dao.IssueStateTransition{
+			ID:        id.String(),
+			CreatedAt: v.CreatedAt,
+			UpdatedAt: v.UpdatedAt,
+			ProjectID: v.ProjectID,
+			IssueID:   v.ID,
+			StateFrom: 0,
+			StateTo:   proInitStateMap[v.ProjectID][v.Type],
+			Creator:   v.Creator,
+		})
+	}
+
+	return ep.DBClient().BatchCreateIssueTransition(statesTrans)
 }

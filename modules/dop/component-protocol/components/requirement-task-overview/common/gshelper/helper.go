@@ -164,3 +164,19 @@ func assign(src, dst interface{}) error {
 	}
 	return mapstructure.Decode(src, dst)
 }
+
+func (h *GSHelper) SetStackChartType(t string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["StackChartType"] = t
+}
+
+func (h *GSHelper) GetStackChartType() string {
+	if h.gs == nil {
+		return ""
+	}
+	var t string
+	_ = assign((*h.gs)["StackChartType"], &t)
+	return t
+}
