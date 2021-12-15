@@ -88,7 +88,7 @@ message GetServiceCountResponse {
 message GetServiceAnalyzerOverviewRequest {
   string          tenantId   = 1;
   repeated string serviceIds = 2;
-  string          position   = 3;
+  string          view       = 3;
   int64           startTime  = 4;
   int64           endTime    = 5;
 }
@@ -167,4 +167,9 @@ enum ChartType {
 enum ChartPosition {
   TopologyChart    = 0;
   ServiceListChart = 1;
+}
+
+enum ViewType {
+  SERVICE_OVERVIEW      = 0;
+  TOPOLOGY_SERVICE_NODE = 1;
 }

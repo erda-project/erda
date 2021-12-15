@@ -17,6 +17,7 @@ package service
 import (
 	context "context"
 	"fmt"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
 	"sort"
 	"strconv"
 	"strings"
@@ -260,133 +261,39 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	if req.ServiceIds == nil || len(req.ServiceIds) == 0 {
 		return nil, errors.NewMissingParameterError("serviceId")
 	}
+	if req.View == "" {
+		req.View = strings.ToLower(pb.ViewType_SERVICE_OVERVIEW.String())
+	}
+	interval := ""
 	start := req.StartTime
 	end := req.EndTime
 	if req.StartTime == 0 && req.EndTime == 0 {
 		start, end = timeRange("-1h")
 	}
 
+	if req.View == strings.ToLower(pb.ViewType_SERVICE_OVERVIEW.String()) {
+		interval = "4m"
+	}
+
+	baseChart := &chart.BaseChart{
+		StartTime: start,
+		EndTime:   end,
+		Interval:  interval,
+		TenantId:  req.TenantId,
+		ServiceId: req.ServiceIds[0],
+		Metric:    s.p.Metric,
+	}
+
 	servicesView := make([]*pb.ServicesView, 0, 10)
 
 	for _, id := range req.ServiceIds {
-		statement := "SELECT sum(count_sum::field)/240,sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)" +
-			"FROM application_http_service " +
-			"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id GROUP BY time(4m)"
-		queryParams := map[string]*structpb.Value{
-			"terminus_key": structpb.NewStringValue(req.TenantId),
-			"service_id":   structpb.NewStringValue(id),
-		}
-		request := &metricpb.QueryWithInfluxFormatRequest{
-			Start:     strconv.FormatInt(start, 10),
-			End:       strconv.FormatInt(end, 10),
-			Statement: statement,
-			Params:    queryParams,
-		}
-		serviceCharts := make([]*pb.ServiceChart, 0, 3)
-		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
+		view, err := Selector(req.View, s.p.Cfg, baseChart, ctx)
 		if err != nil {
-			return nil, errors.NewInternalServerError(err)
+			return nil, err
 		}
-
-		qpsCharts := make([]*pb.Chart, 0, 10)
-		durationCharts := make([]*pb.Chart, 0, 10)
-		errorRateCharts := make([]*pb.Chart, 0, 10)
-
-		rows := response.Results[0].Series[0].Rows
-
-		for _, row := range rows {
-			qpsChart := new(pb.Chart)
-			durationChart := new(pb.Chart)
-			errorRateChart := new(pb.Chart)
-			date := row.Values[0].GetStringValue()
-			parse, err := time.ParseInLocation("2006-01-02T15:04:05Z", date, time.Local)
-			if err != nil {
-				return nil, err
-			}
-			timestamp := parse.UnixNano() / int64(time.Millisecond)
-
-			qpsChart.Timestamp = timestamp
-			durationChart.Timestamp = timestamp
-			errorRateChart.Timestamp = timestamp
-
-			qpsChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
-			durationChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
-			errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[3].GetNumberValue()*100, 2)
-
-			qpsCharts = append(qpsCharts, qpsChart)
-			durationCharts = append(durationCharts, durationChart)
-			errorRateCharts = append(errorRateCharts, errorRateChart)
-		}
-
-		if req.Position == pb.ChartPosition_TopologyChart.String() {
-			statement = "SELECT sum(http_status_code_count::field),http_status_code::tag " +
-				"FROM application_http " +
-				"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
-				"AND target_service_id::tag=$service_id " +
-				"GROUP BY time(4m),http_status_code::tag"
-			queryParams = map[string]*structpb.Value{
-				"terminus_key": structpb.NewStringValue(req.TenantId),
-				"service_id":   structpb.NewStringValue(id),
-			}
-			request = &metricpb.QueryWithInfluxFormatRequest{
-				Start:     strconv.FormatInt(start, 10),
-				End:       strconv.FormatInt(end, 10),
-				Statement: statement,
-				Params:    queryParams,
-			}
-			response, err = s.p.Metric.QueryWithInfluxFormat(ctx, request)
-			if err != nil {
-				return nil, errors.NewInternalServerError(err)
-			}
-			httpCodeCharts := make([]*pb.Chart, 0, 10)
-			rows = response.Results[0].Series[0].Rows
-			for _, row := range rows {
-				httpCodeChart := new(pb.Chart)
-				date := row.Values[0].GetStringValue()
-				parse, err := time.ParseInLocation("2006-01-02T15:04:05Z", date, time.Local)
-				if err != nil {
-					return nil, err
-				}
-				timestamp := parse.UnixNano() / int64(time.Millisecond)
-				httpCodeChart.Timestamp = timestamp
-				httpCodeChart.Value = row.Values[1].GetNumberValue()
-				httpCodeChart.Dimension = row.Values[2].GetStringValue()
-
-				if httpCodeChart.Dimension == "" {
-					continue
-				}
-
-				httpCodeCharts = append(httpCodeCharts, httpCodeChart)
-			}
-
-			// Http Code Chart
-			serviceCharts = append(serviceCharts, &pb.ServiceChart{
-				Type: pb.ChartType_HttpCode.String(),
-				View: httpCodeCharts,
-			})
-		}
-
-		// QPS Chart
-		serviceCharts = append(serviceCharts, &pb.ServiceChart{
-			Type: pb.ChartType_RPS.String(),
-			View: qpsCharts,
-		})
-
-		// Avg Duration Chart
-		serviceCharts = append(serviceCharts, &pb.ServiceChart{
-			Type: pb.ChartType_AvgDuration.String(),
-			View: durationCharts,
-		})
-
-		// Error Rate Chart
-		serviceCharts = append(serviceCharts, &pb.ServiceChart{
-			Type: pb.ChartType_ErrorRate.String(),
-			View: errorRateCharts,
-		})
-
 		servicesView = append(servicesView, &pb.ServicesView{
 			ServiceId: id,
-			Views:     serviceCharts,
+			Views:     view,
 		})
 	}
 	return &pb.GetServiceAnalyzerOverviewResponse{List: servicesView}, nil

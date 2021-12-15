@@ -97,8 +97,8 @@ func (m *GetServiceAnalyzerOverviewRequest) UnmarshalURLValues(prefix string, va
 				m.TenantId = vals[0]
 			case "serviceIds":
 				m.ServiceIds = vals
-			case "position":
-				m.Position = vals[0]
+			case "view":
+				m.View = vals[0]
 			case "startTime":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
