@@ -68,8 +68,8 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 		timestamp := parse.UnixNano() / int64(time.Millisecond)
 
 		rpsChart.Timestamp = timestamp
-
 		rpsChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+		rpsChart.Dimension = "RPS"
 
 		rpsCharts = append(rpsCharts, rpsChart)
 	}

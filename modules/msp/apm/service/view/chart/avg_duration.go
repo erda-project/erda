@@ -67,8 +67,8 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 		timestamp := parse.UnixNano() / int64(time.Millisecond)
 
 		avgDurationChart.Timestamp = timestamp
-
 		avgDurationChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+		avgDurationChart.Dimension = "Avg Duration"
 
 		avgDurationCharts = append(avgDurationCharts, avgDurationChart)
 	}

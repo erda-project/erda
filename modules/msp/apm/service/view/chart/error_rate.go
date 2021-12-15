@@ -67,9 +67,8 @@ func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart
 		timestamp := parse.UnixNano() / int64(time.Millisecond)
 
 		errorRateChart.Timestamp = timestamp
-
 		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
-
+		errorRateChart.Dimension = "Error Rate"
 		errorRateCharts = append(errorRateCharts, errorRateChart)
 	}
 	return &pb.ServiceChart{Type: pb.ChartType_ErrorRate.String(), View: errorRateCharts}, err
