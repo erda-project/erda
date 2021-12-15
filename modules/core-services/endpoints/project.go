@@ -245,7 +245,7 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	orgID, err := strutil.Atoi64(orgIDStr)
 	if err != nil {
-		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrDeleteProject.InvalidParameter(err).ToResp(), nil
 	}
 
 	// 获取当前用户
