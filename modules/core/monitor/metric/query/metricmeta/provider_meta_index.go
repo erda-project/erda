@@ -43,7 +43,7 @@ func NewMetaIndexGroupProvider(index indexloader.Interface) (*MetaIndexGroupProv
 
 // MappingsByID .
 func (p *MetaIndexGroupProvider) MappingsByID(id, scope, scopeID string, names []string, ms map[string]*pb.MetricMeta) (gmm []*GroupMetricMap, err error) {
-	if id == "custom" || id == "other" {
+	if id == "all" {
 		for _, name := range names {
 			if mm, ok := ms[name]; ok {
 				gmm = append(gmm, &GroupMetricMap{
@@ -57,32 +57,17 @@ func (p *MetaIndexGroupProvider) MappingsByID(id, scope, scopeID string, names [
 
 // Groups .
 func (p *MetaIndexGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Translator, scope, scopeID string, ms map[string]*pb.MetricMeta) (groups []*pb.Group, err error) {
-	if scope == "org" || scope == "dice" { // For the moment hard-coded.
-		groups = append(groups, &pb.Group{
-			Id:    "other",
-			Name:  t.Text(langCodes, "Other"),
-			Order: math.MaxInt32,
-		})
-		groups = appendMetricToGroup(groups, "@", ms, p.getOtherGroupsMetrics(ms), true)
-	} else {
-		groups = append(groups, &pb.Group{
-			Id:    "custom",
-			Name:  t.Text(langCodes, "Custom"),
-			Order: math.MaxInt32,
-		})
-		groups = appendMetricToGroup(groups, "@", ms, p.getCustomGroupsMetrics(ms), true)
-	}
+	groups = append(groups, &pb.Group{
+		Id:    "all",
+		Name:  t.Text(langCodes, "All Metrics"),
+		Order: math.MaxInt32,
+	})
+	groups = appendMetricToGroup(groups, "@", ms, p.getAllGroupsMetrics(ms), true)
 	return groups, nil
 }
 
-func (p *MetaIndexGroupProvider) getCustomGroupsMetrics(ms map[string]*pb.MetricMeta) map[string][]*GroupMetricMap {
-	return p.getDynamicGroupsMetrics("custom", ms, func(m *pb.MetricMeta) bool {
-		return m.Labels != nil && m.Labels["custom"] == "true"
-	})
-}
-
-func (p *MetaIndexGroupProvider) getOtherGroupsMetrics(ms map[string]*pb.MetricMeta) map[string][]*GroupMetricMap {
-	return p.getDynamicGroupsMetrics("other", ms, func(m *pb.MetricMeta) bool {
+func (p *MetaIndexGroupProvider) getAllGroupsMetrics(ms map[string]*pb.MetricMeta) map[string][]*GroupMetricMap {
+	return p.getDynamicGroupsMetrics("all", ms, func(m *pb.MetricMeta) bool {
 		return true
 	})
 }
