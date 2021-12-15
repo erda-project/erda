@@ -22,6 +22,10 @@ type ApmServiceServiceHandler interface {
 	GetServices(context.Context, *GetServicesRequest) (*GetServicesResponse, error)
 	// GET /api/msp/apm/service/analyzer-overview
 	GetServiceAnalyzerOverview(context.Context, *GetServiceAnalyzerOverviewRequest) (*GetServiceAnalyzerOverviewResponse, error)
+	// GET /api/msp/apm/service/count
+	GetServiceCount(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error)
+	// GET /api/msp/apm/service/analyzer-overview-top
+	GetServiceOverviewTop(context.Context, *GetServiceOverviewTopRequest) (*GetServiceOverviewTopResponse, error)
 }
 
 // RegisterApmServiceServiceHandler register ApmServiceServiceHandler to http.Router.
@@ -119,6 +123,80 @@ func RegisterApmServiceServiceHandler(r http.Router, srv ApmServiceServiceHandle
 		)
 	}
 
+	add_GetServiceCount := func(method, path string, fn func(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetServiceCountRequest))
+		}
+		var GetServiceCount_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetServiceCount_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceCount", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetServiceCount_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetServiceCountRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetServiceOverviewTop := func(method, path string, fn func(context.Context, *GetServiceOverviewTopRequest) (*GetServiceOverviewTopResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetServiceOverviewTopRequest))
+		}
+		var GetServiceOverviewTop_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetServiceOverviewTop_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceOverviewTop", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetServiceOverviewTop_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetServiceOverviewTopRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_GetServices("GET", "/api/msp/apm/services", srv.GetServices)
 	add_GetServiceAnalyzerOverview("GET", "/api/msp/apm/service/analyzer-overview", srv.GetServiceAnalyzerOverview)
+	add_GetServiceCount("GET", "/api/msp/apm/service/count", srv.GetServiceCount)
+	add_GetServiceOverviewTop("GET", "/api/msp/apm/service/analyzer-overview-top", srv.GetServiceOverviewTop)
 }

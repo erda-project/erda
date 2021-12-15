@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -201,6 +203,20 @@ func (s *apmServiceService) aggregateMetric(tenantId string, services []*pb.Serv
 				avgDurationSortSign += service.AvgDuration
 				rpcSortSign += service.Rps
 				errorRateSortSign += service.ErrorRate
+
+				// TODO service list optimize
+				//aggregateMetric := &pb.AggregateMetric{
+				//	AvgRps:      math.DecimalPlacesWithDigitsNumber(rps, 2),
+				//	MaxRps:      math.DecimalPlacesWithDigitsNumber(rps, 2),
+				//	AvgDuration: math.DecimalPlacesWithDigitsNumber(avgDuration, 2),
+				//	MaxDuration: math.DecimalPlacesWithDigitsNumber(avgDuration, 2),
+				//	ErrorRate:   math.DecimalPlacesWithDigitsNumber(errorRate, 2),
+				//}
+				//service.AggregateMetric = aggregateMetric
+				//
+				//avgDurationSortSign += aggregateMetric.AvgDuration
+				//rpcSortSign += aggregateMetric.AvgRps
+				//errorRateSortSign += aggregateMetric.ErrorRate
 			}
 		}
 	}
@@ -244,8 +260,11 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	if req.ServiceIds == nil || len(req.ServiceIds) == 0 {
 		return nil, errors.NewMissingParameterError("serviceId")
 	}
-
-	start, end := timeRange("-1h")
+	start := req.StartTime
+	end := req.EndTime
+	if req.StartTime == 0 && req.EndTime == 0 {
+		start, end = timeRange("-1h")
+	}
 
 	servicesView := make([]*pb.ServicesView, 0, 10)
 
@@ -299,6 +318,54 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			errorRateCharts = append(errorRateCharts, errorRateChart)
 		}
 
+		if req.Position == pb.ChartPosition_TopologyChart.String() {
+			statement = "SELECT sum(http_status_code_count::field),http_status_code::tag " +
+				"FROM application_http " +
+				"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
+				"AND target_service_id::tag=$service_id " +
+				"GROUP BY time(4m),http_status_code::tag"
+			queryParams = map[string]*structpb.Value{
+				"terminus_key": structpb.NewStringValue(req.TenantId),
+				"service_id":   structpb.NewStringValue(id),
+			}
+			request = &metricpb.QueryWithInfluxFormatRequest{
+				Start:     strconv.FormatInt(start, 10),
+				End:       strconv.FormatInt(end, 10),
+				Statement: statement,
+				Params:    queryParams,
+			}
+			response, err = s.p.Metric.QueryWithInfluxFormat(ctx, request)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			httpCodeCharts := make([]*pb.Chart, 0, 10)
+			rows = response.Results[0].Series[0].Rows
+			for _, row := range rows {
+				httpCodeChart := new(pb.Chart)
+				date := row.Values[0].GetStringValue()
+				parse, err := time.ParseInLocation("2006-01-02T15:04:05Z", date, time.Local)
+				if err != nil {
+					return nil, err
+				}
+				timestamp := parse.UnixNano() / int64(time.Millisecond)
+				httpCodeChart.Timestamp = timestamp
+				httpCodeChart.Value = row.Values[1].GetNumberValue()
+				httpCodeChart.Dimension = row.Values[2].GetStringValue()
+
+				if httpCodeChart.Dimension == "" {
+					continue
+				}
+
+				httpCodeCharts = append(httpCodeCharts, httpCodeChart)
+			}
+
+			// Http Code Chart
+			serviceCharts = append(serviceCharts, &pb.ServiceChart{
+				Type: pb.ChartType_HttpCode.String(),
+				View: httpCodeCharts,
+			})
+		}
+
 		// QPS Chart
 		serviceCharts = append(serviceCharts, &pb.ServiceChart{
 			Type: pb.ChartType_RPS.String(),
@@ -323,4 +390,78 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 		})
 	}
 	return &pb.GetServiceAnalyzerOverviewResponse{List: servicesView}, nil
+}
+
+func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServiceCountRequest) (*pb.GetServiceCountResponse, error) {
+	// default get time: 1 day.
+	start, end := timeRange("-24")
+
+	// calculate total count
+	condition := " terminus_key::tag=$terminus_key "
+	statement := "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
+	statement = strings.ReplaceAll(statement, "$condition", condition)
+	queryParams := map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(req.TenantId),
+	}
+	countRequest := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(start, 10),
+		End:       strconv.FormatInt(end, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+
+	// unhealthy count
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
+	unhealthyCondition := condition + " AND errors_sum::field>0 "
+	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
+
+	queryParams = map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(req.TenantId),
+	}
+	countRequest = &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(start, 10),
+		End:       strconv.FormatInt(end, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	countResponse, err = s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	unhealthyCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+
+	// withoutRequest count
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
+	withoutRequestCondition := condition + " AND count_sum::field<=0 "
+	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
+	queryParams = map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(req.TenantId),
+	}
+	countRequest = &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(start, 10),
+		End:       strconv.FormatInt(end, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	countResponse, err = s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	withoutRequestCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+
+	return &pb.GetServiceCountResponse{
+		TotalCount:          total,
+		UnhealthyCount:      unhealthyCount,
+		WithoutRequestCount: withoutRequestCount,
+	}, nil
+}
+
+func (s *apmServiceService) GetServiceOverviewTop(ctx context.Context, req *pb.GetServiceOverviewTopRequest) (*pb.GetServiceOverviewTopResponse, error) {
+	// TODO .
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceOverviewTop not implemented")
 }
