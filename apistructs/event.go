@@ -177,6 +177,7 @@ type IssueEventData struct {
 	AtUserIDs    string            `json:"atUserIds"`
 	Receivers    []string          `json:"receivers"`
 	IssueType    IssueType         `json:"issueType"`
+	StreamTypes  []IssueStreamType `json:"streamTypes"`
 	StreamType   IssueStreamType   `json:"streamType"`
 	StreamParams ISTParam          `json:"streamParams"`
 	Params       map[string]string `json:"params"`
