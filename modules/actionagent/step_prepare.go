@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -30,7 +31,9 @@ import (
 )
 
 const (
-	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
+	EnvStdErrRegexpList            = "ACTIONAGENT_STDERR_REGEXP_LIST"
+	EnvMaxWaitingPathUnlockSec     = "ACTIONAGENT_MAX_WAITING_PATH_UNLOCK_SEC"
+	DefaultMaxWaitingPathUnlockSec = 10
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -111,6 +114,18 @@ func (agent *Agent) prepare() {
 			agent.StdErrRegexpList = append(agent.StdErrRegexpList, reg)
 		}
 	}
+	maxWaitSec := DefaultMaxWaitingPathUnlockSec
+	maxWaitStr := os.Getenv(EnvMaxWaitingPathUnlockSec)
+	if maxWaitStr != "" {
+		maxWait, err := strconv.Atoi(maxWaitStr)
+		if err != nil {
+			agent.AppendError(err)
+		}
+		if maxWait > DefaultMaxWaitingPathUnlockSec {
+			maxWaitSec = maxWait
+		}
+	}
+	agent.MaxWaitingPathUnlockSec = maxWaitSec
 
 	// 6. watch files
 	agent.watchFiles()

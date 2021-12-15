@@ -53,7 +53,8 @@ type Agent struct {
 	Cancel   context.CancelFunc // cancel when logic done
 	ExitCode int
 
-	StdErrRegexpList []*regexp.Regexp
+	StdErrRegexpList        []*regexp.Regexp
+	MaxWaitingPathUnlockSec int
 
 	TextBlackList []string // enciphered data will Replaced by '******' when log output
 }
