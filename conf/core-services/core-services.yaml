@@ -27,3 +27,7 @@ mysql:
 
 erda.core.services.authentication.credentials.accesskey:
 erda.core.services.notify.channel:
+
+http-server@admin:
+  addr: ":7098"
+pprof:

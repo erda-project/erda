@@ -412,6 +412,32 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
+	"rateps": {
+		Flag: FuncFlagSelect,
+		New: newUnaryAggFunction(
+			"rateps",
+			func(ctx *Context, id, field string, script *elastic.Script, flags ...FuncFlag) (elastic.Aggregation, error) {
+				if script != nil {
+					return elastic.NewSumAggregation().Script(script), nil
+				}
+				return elastic.NewSumAggregation().Field(field), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				sum, _ := aggs.Sum(id)
+				if sum == nil {
+					return nil, false
+				}
+				if sum.Value == nil {
+					return 0, true
+				}
+				if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
+					ctx.targetTimeUnit = tsql.Nanosecond
+				}
+				seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
+				return *sum.Value / seconds, true
+			},
+		),
+	},
 	"first": newSourceFieldAggFunction("first", tsql.TimestampKey, true),
 	"last":  newSourceFieldAggFunction("last", tsql.TimestampKey, false),
 	"value": newSourceFieldAggFunction("value", tsql.TimestampKey, false),
