@@ -72,10 +72,10 @@ func TestWorkbench_GetUndoneProjectItems(t *testing.T) {
 		},
 	}
 	m := monkey.PatchInstanceMethod(reflect.TypeOf(issueSvc), "GetIssuesByStates",
-		func(issueSvc *issue.Issue, req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
+		func(issueSvc *issue.Issue, req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, int, error) {
 			return map[uint64]*apistructs.WorkbenchProjectItem{
 				1: item,
-			}, nil
+			}, 1, nil
 		})
 	defer m.Unpatch()
 
