@@ -119,7 +119,7 @@ func (podInfo *PodInfo) GenComponentState(c *cptype.Component) error {
 }
 
 func (podInfo *PodInfo) Transfer(component *cptype.Component) {
-	component.Props = podInfo.Props
+	component.Props = cputil.MustConvertProps(podInfo.Props)
 	component.Data = map[string]interface{}{}
 	for k, v := range podInfo.Data {
 		component.Data[k] = v

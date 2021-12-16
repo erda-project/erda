@@ -56,7 +56,7 @@ func (alm *AddLabelModal) Render(ctx context.Context, c *cptype.Component, s cpt
 	}
 	switch event.Operation {
 	case common.CMPDashboardSubmit:
-		c.Props = alm.Props
+		c.Props = cputil.MustConvertProps(alm.Props)
 		req := &apistructs.SteveRequest{
 			UserID:      alm.SDK.Identity.UserID,
 			OrgID:       alm.SDK.Identity.OrgID,

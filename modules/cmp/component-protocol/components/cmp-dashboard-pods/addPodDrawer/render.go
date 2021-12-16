@@ -47,7 +47,7 @@ func (d *ComponentAddPodDrawer) InitComponent(ctx context.Context) {
 }
 
 func (d *ComponentAddPodDrawer) Transfer(component *cptype.Component) {
-	component.Props = d.Props
+	component.Props = cputil.MustConvertProps(d.Props)
 	component.State = map[string]interface{}{
 		"visible": d.State.Visible,
 	}

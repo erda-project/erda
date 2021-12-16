@@ -135,7 +135,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	c.State = state
 
 	c.Operations = map[string]interface{}{
-		"submit": cptype.Operation{
+		"submit": cptype.LegacyOperation{
 			Key:    "submit",
 			Reload: true,
 		},

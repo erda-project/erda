@@ -135,12 +135,12 @@ func (q *Q) Render(ctx context.Context, c *cptype.Component, scenario cptype.Sce
 	radar.JSON()
 
 	// set props
-	c.Props = Props{
+	c.Props = cputil.MustConvertProps(Props{
 		RadarOption: radar.JSON(),
 		Style:       Style{Height: 265},
 		Title:       cputil.I18n(ctx, "radar-total-quality-score"),
 		Tip:         genTip(ctx),
-	}
+	})
 
 	return nil
 }

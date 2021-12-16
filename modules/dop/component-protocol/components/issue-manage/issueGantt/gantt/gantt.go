@@ -20,13 +20,13 @@ import (
 )
 
 type CommonGantt struct {
-	Version    string                                   `json:"version,omitempty"`
-	Name       string                                   `json:"name,omitempty"`
-	Type       string                                   `json:"type,omitempty"`
-	Props      Props                                    `json:"props,omitempty"`
-	State      State                                    `json:"state,omitempty"`
-	Operations map[cptype.OperationKey]cptype.Operation `json:"operations,omitempty"`
-	Data       Data                                     `json:"data,omitempty"`
+	Version    string                                         `json:"version,omitempty"`
+	Name       string                                         `json:"name,omitempty"`
+	Type       string                                         `json:"type,omitempty"`
+	Props      Props                                          `json:"props,omitempty"`
+	State      State                                          `json:"state,omitempty"`
+	Operations map[cptype.OperationKey]cptype.LegacyOperation `json:"operations,omitempty"`
+	Data       Data                                           `json:"data,omitempty"`
 }
 
 type State struct {
@@ -63,7 +63,7 @@ var (
 	OpChangePageNo cptype.OperationKey = "changePageNo"
 )
 
-var Operations = map[cptype.OperationKey]cptype.Operation{
+var Operations = map[cptype.OperationKey]cptype.LegacyOperation{
 	OpChangePageNo: {Reload: true},
 }
 
