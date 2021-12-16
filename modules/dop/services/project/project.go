@@ -20,12 +20,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/dbclient"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/pkg/cache"
 )
 
 type Project struct {
-	db    *dbclient.DBClient
+	db    *dao.DBClient
 	bdl   *bundle.Bundle
 	trans i18n.Translator
 	cmp   dashboardPb.ClusterResourceServer

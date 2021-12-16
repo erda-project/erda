@@ -497,6 +497,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	// init project service
 	proj := project.New(
+		project.WithDB(db),
 		project.WithBundle(bdl.Bdl),
 		project.WithTrans(p.ResourceTrans),
 		project.WithCMP(p.Cmp),

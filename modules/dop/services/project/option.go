@@ -18,10 +18,19 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/dbclient"
 )
 
 // Option the is fun to set *Project property
 type Option func(project *Project)
+
+// WithDB sets the db client
+func WithDB(db *dao.DBClient) Option {
+	return func(p *Project) {
+		p.db = db
+	}
+}
 
 // WithBundle sets the bundle to invoke other services
 func WithBundle(bdl *bundle.Bundle) Option {
