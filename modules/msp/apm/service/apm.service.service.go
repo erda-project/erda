@@ -271,10 +271,6 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 		start, end = timeRange("-1h")
 	}
 
-	if req.View == strings.ToLower(pb.ViewType_SERVICE_OVERVIEW.String()) {
-		interval = "4m"
-	}
-
 	baseChart := &chart.BaseChart{
 		StartTime: start,
 		EndTime:   end,

@@ -33,8 +33,8 @@ type ErrorRateChart struct {
 }
 
 func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
-	statement := fmt.Sprintf("SELECT sum(errors_sum::field)/sum(count_sum::field) "+
-		"FROM application_http_service "+
+	statement := fmt.Sprintf("SELECT sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field),timestamp "+
+		"FROM application_http "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"GROUP BY time(%s)", errorRate.Interval)
@@ -59,15 +59,11 @@ func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart
 
 	for _, row := range rows {
 		errorRateChart := new(pb.Chart)
-		date := row.Values[0].GetStringValue()
-		parse, err := time.ParseInLocation(Layout, date, time.Local)
-		if err != nil {
-			return nil, err
-		}
-		timestamp := parse.UnixNano() / int64(time.Millisecond)
+		timestampNano := row.Values[2].GetNumberValue()
+		timestamp := int64(timestampNano) / int64(time.Millisecond)
 
 		errorRateChart.Timestamp = timestamp
-		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue()*1e2, 2)
 		errorRateChart.Dimension = "Error Rate"
 		errorRateCharts = append(errorRateCharts, errorRateChart)
 	}

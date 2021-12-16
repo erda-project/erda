@@ -28,27 +28,31 @@ func Selector(viewType string, config *config, baseChart *chart.BaseChart, ctx c
 	case strings.ToLower(pb.ViewType_SERVICE_OVERVIEW.String()):
 		view := GetView(config, strings.ToLower(pb.ViewType_SERVICE_OVERVIEW.String()))
 		serviceCharts := make([]*pb.ServiceChart, 0, 3)
-		for _, c := range view.Charts {
-			selector, err := chart.Selector(strings.ToLower(c), baseChart, ctx)
-			if err != nil {
-				return nil, err
-			}
-			serviceCharts = append(serviceCharts, selector)
+		err := getViewData(view.Charts, baseChart, ctx, &serviceCharts)
+		if err != nil {
+			return nil, err
 		}
 		return serviceCharts, nil
-
 	case strings.ToLower(pb.ViewType_TOPOLOGY_SERVICE_NODE.String()):
 		view := GetView(config, strings.ToLower(pb.ViewType_TOPOLOGY_SERVICE_NODE.String()))
 		serviceCharts := make([]*pb.ServiceChart, 0, 4)
-		for _, c := range view.Charts {
-			selector, err := chart.Selector(strings.ToLower(c), baseChart, ctx)
-			if err != nil {
-				return nil, err
-			}
-			serviceCharts = append(serviceCharts, selector)
+		err := getViewData(view.Charts, baseChart, ctx, &serviceCharts)
+		if err != nil {
+			return nil, err
 		}
 		return serviceCharts, nil
 	default:
 		return nil, nil
 	}
+}
+
+func getViewData(charts []string, baseChart *chart.BaseChart, ctx context.Context, serviceCharts *[]*pb.ServiceChart) error {
+	for _, c := range charts {
+		chartData, err := chart.Selector(strings.ToLower(c), baseChart, ctx)
+		if err != nil {
+			return err
+		}
+		*serviceCharts = append(*serviceCharts, chartData)
+	}
+	return nil
 }
