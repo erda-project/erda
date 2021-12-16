@@ -59,13 +59,10 @@ component-protocol.components.issue-manage.head:
 component-protocol.components.issue-manage.issueAddButton:
 component-protocol.components.issue-manage.issueExport:
 component-protocol.components.issue-manage.issueFilter:
-component-protocol.components.issue-manage.issueGantt:
 component-protocol.components.issue-manage.issueImport:
-component-protocol.components.issue-manage.issueKanban:
 component-protocol.components.issue-manage.issueManage:
 component-protocol.components.issue-manage.issueOperations:
 component-protocol.components.issue-manage.issueTable:
-component-protocol.components.issue-manage.issueViewGroup:
 component-protocol.components.issue-manage.topHead:
 
 component-protocol.components.code-coverage.treeMapChart:
