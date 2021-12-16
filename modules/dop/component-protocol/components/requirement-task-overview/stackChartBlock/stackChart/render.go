@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -239,9 +240,14 @@ var Colors = []string{
 	"warning8", "warning7", "warning6", "warning5", "warning4", "warning3", "warning2", "warning1",
 }
 
-func getColors(len int) []string {
-	if len < 16 {
-		return Colors[:len]
+func getColors(n int) []string {
+	colors := make([]string, 0, len(Colors))
+	for _, v := range Colors {
+		colors = append(colors, v)
 	}
-	return Colors
+	if n < 16 {
+		colors = colors[:n]
+	}
+	strutil.ReverseSlice(colors)
+	return colors
 }
