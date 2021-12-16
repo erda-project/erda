@@ -643,7 +643,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	}
 
 	// create issue state transition
-	if issueModel.State != *req.State {
+	if req.State != nil && issueModel.State != *req.State {
 		if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
 			ProjectID: issueModel.ProjectID,
 			IssueID:   issueModel.ID,
