@@ -300,3 +300,6 @@ component-protocol.components.requirement-task-overview.burnoutChartFilter:
 component-protocol.components.requirement-task-overview.burnoutChart:
 component-protocol.components.requirement-task-overview.pageContent:
 component-protocol.components.requirement-task-overview.tabs:
+component-protocol.components.requirement-task-overview.stackChart:
+component-protocol.components.requirement-task-overview.stackChartBlock:
+component-protocol.components.requirement-task-overview.stackChartFilter:

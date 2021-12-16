@@ -210,6 +210,17 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, err
 	}
 
+	// create issue state transition
+	if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
+		ProjectID: create.ProjectID,
+		IssueID:   create.ID,
+		StateFrom: 0,
+		StateTo:   uint64(create.State),
+		Creator:   create.Creator,
+	}); err != nil {
+		return nil, err
+	}
+
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
@@ -274,7 +285,7 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
 		// 获取事件关联关系
-		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs, []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
@@ -352,9 +363,12 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 						requirementIDs = append(requirementIDs, id)
 					}
 				}
-
+				relationTypes := []string{apistructs.IssueRelationConnection}
+				if t == apistructs.IssueTypeRequirement {
+					relationTypes = []string{apistructs.IssueRelationInclusion}
+				}
 				// 获取需求id对应的关联事件ids
-				relations, err := svc.db.GetIssueRelationsByIDs(requirementIDs)
+				relations, err := svc.db.GetIssueRelationsByIDs(requirementIDs, relationTypes)
 				if err != nil {
 					return nil, 0, err
 				}
@@ -427,7 +441,7 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 	}
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
-		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs, []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
@@ -526,7 +540,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResloved {
+			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResolved {
 				req.Owner = &req.IdentityInfo.UserID
 			}
 		}
@@ -626,6 +640,19 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// create stream and send issue update event
 	if err := svc.CreateStream(req, issueStreamFields); err != nil {
 		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
+	}
+
+	// create issue state transition
+	if issueModel.State != *req.State {
+		if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
+			ProjectID: issueModel.ProjectID,
+			IssueID:   issueModel.ID,
+			StateFrom: uint64(issueModel.State),
+			StateTo:   uint64(*req.State),
+			Creator:   req.UserID,
+		}); err != nil {
+			return err
+		}
 	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
@@ -823,6 +850,10 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 		if err := svc.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
+	}
+	// delete issue state transition
+	if err = svc.db.DeleteIssuesStateTransition(issueID); err != nil {
+		return apierrors.ErrDeleteIssue.InternalError(err)
 	}
 
 	err = svc.db.DeleteIssue(issueID)
@@ -1522,10 +1553,10 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	return nil
 }
 
-func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
-	stats, err := svc.db.GetIssueExpiryStatusByProjects(req)
+func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, int, error) {
+	stats, total, err := svc.db.GetIssueExpiryStatusByProjects(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	projectMap := make(map[uint64]*apistructs.WorkbenchProjectItem)
@@ -1559,7 +1590,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 
 	pMap, err := svc.bdl.GetProjectsMap(projectIDs)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	for i := range projectMap {
@@ -1568,7 +1599,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 			req.ProjectID = dto.ID
 			issues, total, err := svc.db.GetIssuesByProject(req.IssuePagingRequest)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			issueList := make([]apistructs.Issue, 0, len(issues))
 			for _, v := range issues {
@@ -1584,7 +1615,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		}
 	}
 
-	return projectMap, nil
+	return projectMap, total, nil
 }
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
@@ -1669,4 +1700,8 @@ func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.
 		return nil, err
 	}
 	return issues, nil
+}
+
+func (svc *Issue) ListStatesTransByProjectID(projectID uint64) ([]dao.IssueStateTransition, error) {
+	return svc.db.ListStatesTransByProjectID(projectID)
 }

@@ -442,6 +442,9 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		logrus.Errorf(errstr)
 		return nil, err
 	}
+	if err := r.setClusterName(runtime); err != nil {
+		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
+	}
 	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
 		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
 		PipelineYml:  string(b),
@@ -465,6 +468,19 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 	}
 
 	return convertRuntimeDeployDto(app, releaseResp, dto)
+}
+
+func (r *Runtime) setClusterName(rt *dbclient.Runtime) error {
+	clusterInfo, err := r.bdl.QueryClusterInfo(rt.ClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", rt.ClusterName, err)
+		return err
+	}
+	jobCluster := clusterInfo.Get(apistructs.JOB_CLUSTER)
+	if jobCluster != "" {
+		rt.ClusterName = jobCluster
+	}
+	return nil
 }
 
 // Redeploy 重新部署

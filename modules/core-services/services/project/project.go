@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
+	local "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -69,16 +70,16 @@ func New(opts ...Option) *Project {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(dbClient *dao.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(project *Project) {
-		project.db = dbClient
+		project.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(ucClient *ucauth.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(project *Project) {
-		project.uc = ucClient
+		project.uc = uc
 	}
 }
 
@@ -345,6 +346,8 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetProjectByID")
 	}
+	var oldClusterConfig = make(map[string]string)
+	_ = json.Unmarshal([]byte(project.ClusterConfig), &oldClusterConfig)
 	oldQuota, err := p.db.GetQuotaByProjectID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetQuotaByProjectID")
@@ -372,7 +375,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return &project, nil
 	}
 
-	// check new quota is less than reqeust
+	// check new quota is less than request
 	var dto = new(apistructs.ProjectDTO)
 	dto.ID = uint64(project.ID)
 	setProjectDtoQuotaFromModel(dto, project.Quota)
@@ -380,6 +383,10 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	changedRecord := make(map[string]bool)
 	if oldQuota == nil {
 		oldQuota = new(apistructs.ProjectQuota)
+		oldQuota.ProdClusterName = oldClusterConfig["PROD"]
+		oldQuota.StagingClusterName = oldClusterConfig["STAGING"]
+		oldQuota.TestClusterName = oldClusterConfig["TEST"]
+		oldQuota.DevClusterName = oldClusterConfig["DEV"]
 	}
 	isQuotaChangedOnTheWorkspace(changedRecord, *oldQuota, *project.Quota)
 	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto, changedRecord); !ok {
@@ -631,14 +638,15 @@ func (p *Project) DeleteWithEvent(projectID int64) error {
 
 // Delete 删除项目
 func (p *Project) Delete(projectID int64) (*model.Project, error) {
+	langCodes, _ := i18n.ParseLanguageCode(local.GetGoroutineBindLang())
 	// check if application exists
 	if count, err := p.db.GetApplicationCountByProjectID(projectID); err != nil || count > 0 {
-		return nil, errors.Errorf("failed to delete project(there exists applications)")
+		return nil, errors.Errorf(p.trans.Text(langCodes, "DeleteProjectErrorApplicationExist"))
 	}
 
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
-		return nil, errors.Errorf("failed to get project, (%v)", err)
+		return nil, errors.Errorf(p.trans.Text(langCodes, "FailedGetProject")+"(%v)", err)
 	}
 
 	// TODO We need to turn this check on after adding the delete portal to the UI
@@ -652,7 +660,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	// }
 
 	if err = p.db.DeleteProject(projectID); err != nil {
-		return nil, errors.Errorf("failed to delete project, (%v)", err)
+		return nil, errors.Errorf(p.trans.Text(langCodes, "FailedDeleteProject")+"(%v)", err)
 	}
 	_ = p.db.DeleteProjectQutoa(projectID)
 	logrus.Infof("deleted project %d", projectID)
