@@ -1049,7 +1049,11 @@ func (e *EDAS) deleteAppByName(appName string) error {
 		return err
 	}
 
-	orderList, _ := e.listRecentChangeOrderInfo(appID)
+	orderList, err := e.listRecentChangeOrderInfo(appID)
+	if err != nil {
+		logrus.Errorf("failed to list recent change order info, app id: %s, err: %v", appID, err)
+		return err
+	}
 
 	if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
 		e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)

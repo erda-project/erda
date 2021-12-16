@@ -53,7 +53,7 @@ var StateBelongs = []IssueStateBelong{
 	IssueStateBelongDone,
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
-	IssueStateBelongResloved,
+	IssueStateBelongResolved,
 	IssueStateBelongClosed,
 }
 
@@ -62,7 +62,7 @@ var UnfinishedStateBelongs = []IssueStateBelong{
 	IssueStateBelongWorking,
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
-	IssueStateBelongResloved,
+	IssueStateBelongResolved,
 }
 
 var UnclosedStateBelongs = []IssueStateBelong{
@@ -71,5 +71,5 @@ var UnclosedStateBelongs = []IssueStateBelong{
 	IssueStateBelongDone,
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
-	IssueStateBelongResloved,
+	IssueStateBelongResolved,
 }

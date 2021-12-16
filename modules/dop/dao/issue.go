@@ -680,21 +680,44 @@ type IssueExpiryStatus struct {
 	ExpiryStatus ExpireType
 }
 
-func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
-	sql := client.Table("dice_issues").Joins(joinState).Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status")
-	sql = sql.Where("deleted = 0").Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
-	if len(req.ProjectIDs) > 0 {
-		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, int, error) {
+	sql := client.issueExpiryStatusQuery(req)
+	offset := (req.PageNo - 1) * req.PageSize
+	var res []IssueExpiryStatus
+	var total int
+	// paged projects with unfinished issues
+	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
+		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
+		return nil, 0, err
 	}
+	// total of matched projects
+	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	projectIDs := make([]uint64, 0, len(res))
+	for _, i := range res {
+		projectIDs = append(projectIDs, i.ProjectID)
+	}
+	req.ProjectIDs = projectIDs
+	sql = client.issueExpiryStatusQuery(req)
+	// query with matched projects
+	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
+		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
+		return nil, 0, err
+	}
+	return res, total, nil
+}
+
+func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
+	sql := client.Debug().Table("dice_issues").Joins(joinState)
+	sql = sql.Where("deleted = 0").Where("assignee IN (?) AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
 	}
-	offset := (req.PageNo - 1) * req.PageSize
-	var res []IssueExpiryStatus
-	if err := sql.Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
-		return nil, err
+	if len(req.ProjectIDs) > 0 {
+		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
 	}
-	return res, nil
+	return sql
 }
 
 func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([]Issue, uint64, error) {
@@ -902,6 +925,7 @@ const (
 	joinIssueChildren  = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
 	joinIssueParent    = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
 	joinLabelRelation  = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
+	ganttOrder         = "FIELD(a.type,'REQUIREMENT','TASK','BUG')"
 )
 
 func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]IssueItem, uint64, error) {
@@ -932,7 +956,7 @@ func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingR
 }
 
 func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]IssueItem, []IssueItem, uint64, error) {
-	// task and requirements without children
+	// issues without children
 	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
 		Joins(joinRelationParent, apistructs.IssueRelationInclusion).Where("b.id IS NULL and d.id is NULL")
 	offset := (req.PageNo - 1) * req.PageSize
@@ -948,7 +972,7 @@ func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]Issu
 	}
 	var items []IssueItem
 	var totalTask uint64
-	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order("a.type").Offset(offset).Limit(req.PageSize).Find(&items).
+	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order(ganttOrder).Offset(offset).Limit(req.PageSize).Find(&items).
 		Offset(0).Limit(-1).Count(&totalTask).Error; err != nil {
 		return nil, nil, 0, err
 	}
@@ -1019,4 +1043,10 @@ func (client *DBClient) FindIssueChildrenTimeRange(id uint64) (*time.Time, *time
 		return nil, nil, err
 	}
 	return res.Min, res.Max, nil
+}
+
+func (client *DBClient) ListIssueForIssueStateTransMigration() ([]Issue, error) {
+	var issues []Issue
+	err := client.Model(&Issue{}).Where("deleted = 0").Find(&issues).Error
+	return issues, err
 }

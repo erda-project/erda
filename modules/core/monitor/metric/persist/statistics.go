@@ -15,6 +15,8 @@
 package persist
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/modules/core/monitor/metric"
@@ -43,6 +45,10 @@ type statistics struct {
 	metadataError  *prometheus.CounterVec
 
 	metadataUpdates prometheus.Counter
+
+	// performance
+	readLatency  prometheus.Histogram
+	writeLatency prometheus.Histogram
 }
 
 var sharedStatistics = newStatistics()
@@ -50,6 +56,20 @@ var sharedStatistics = newStatistics()
 func newStatistics() Statistics {
 	const subSystem = "metric_persist"
 	s := &statistics{
+		readLatency: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Name:      "read_latency",
+				Subsystem: subSystem,
+				Buckets:   storekit.DefaultLatencyBuckets,
+			},
+		),
+		writeLatency: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Name:      "write_latency",
+				Subsystem: subSystem,
+				Buckets:   storekit.DefaultLatencyBuckets,
+			},
+		),
 		readErrors: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name:      "read_errors",
@@ -108,6 +128,8 @@ func newStatistics() Statistics {
 
 	// only register once
 	prometheus.MustRegister(
+		s.readLatency,
+		s.writeLatency,
 		s.readErrors,
 		s.readBytes,
 		s.writeErrors,
@@ -159,14 +181,22 @@ func (s *statistics) MetadataUpdates(v int) {
 	s.metadataUpdates.Add(float64(v))
 }
 
+func (s *statistics) ObserveReadLatency(start time.Time) {
+	s.readLatency.Observe(float64(time.Since(start).Milliseconds()))
+}
+
+func (s *statistics) ObserveWriteLatency(start time.Time) {
+	s.writeLatency.Observe(float64(time.Since(start).Milliseconds()))
+}
+
 var distinguishingKeys = []string{
-	"metric",
+	// "metric",
 	"org_name", "cluster_name",
 }
 
 func getStatisticsLabels(data *metric.Metric) []string {
 	return []string{
-		data.Name,
+		// data.Name,
 		data.Tags["org_name"],
 		data.Tags["cluster_name"],
 	}

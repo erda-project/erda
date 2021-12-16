@@ -84,6 +84,7 @@ consumeLoop:
 		}
 
 		// read with timeout
+		start := time.Now()
 		n, err := r.ReadN(buf, opts.ReadTimeout)
 		if err != nil {
 			if err == ErrExitConsume {
@@ -100,6 +101,8 @@ consumeLoop:
 			}
 			continue
 		}
+		stats.ObserveReadLatency(start)
+
 		if n <= 0 {
 			continue
 		}
@@ -108,6 +111,7 @@ consumeLoop:
 		// write data
 	retryLoop:
 		for {
+			start := time.Now()
 			_, err := w.WriteN(list...)
 			if err == nil && flush {
 				err = flusher.Flush()
@@ -128,6 +132,8 @@ consumeLoop:
 				}
 				continue retryLoop
 			}
+			stats.ObserveWriteLatency(start)
+
 			err = r.Confirm()
 			if err != nil {
 				stats.ConfirmError(list, err)

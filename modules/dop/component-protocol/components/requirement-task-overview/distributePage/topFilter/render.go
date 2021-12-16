@@ -238,7 +238,7 @@ func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Itera
 			return &t
 		}(),
 		FinishedAt: func() *time.Time {
-			t := time.Now().AddDate(0, -1, 0)
+			t := time.Now()
 			return &t
 		}(),
 	})
