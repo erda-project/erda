@@ -271,18 +271,19 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 		start, end = timeRange("-1h")
 	}
 
-	baseChart := &chart.BaseChart{
-		StartTime: start,
-		EndTime:   end,
-		Interval:  interval,
-		TenantId:  req.TenantId,
-		ServiceId: req.ServiceIds[0],
-		Metric:    s.p.Metric,
-	}
-
 	servicesView := make([]*pb.ServicesView, 0, 10)
 
 	for _, id := range req.ServiceIds {
+
+		baseChart := &chart.BaseChart{
+			StartTime: start,
+			EndTime:   end,
+			Interval:  interval,
+			TenantId:  req.TenantId,
+			ServiceId: id,
+			Metric:    s.p.Metric,
+		}
+
 		view, err := Selector(req.View, s.p.Cfg, baseChart, ctx)
 		if err != nil {
 			return nil, err
