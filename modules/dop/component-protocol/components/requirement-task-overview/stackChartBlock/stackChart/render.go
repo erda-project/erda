@@ -88,7 +88,6 @@ func (f *StackChart) setProps() {
 		Title:     "累积流图",
 		PureChart: true,
 		Option: Option{
-			Grid: map[string]interface{}{"bottom": 60},
 			XAxis: XAxis{
 				Type: "category",
 				Data: func() []string {
